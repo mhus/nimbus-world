@@ -1,0 +1,22 @@
+ ______   __         ______     __  __     ______     ______
+/\  == \ /\ \       /\  __ \   /\ \_\ \   /\  ___\   /\  == \
+\ \  _-/ \ \ \____  \ \  __ \  \ \____ \  \ \  __\   \ \  __<
+ \ \_\    \ \_____\  \ \_\ \_\  \/\_____\  \ \_____\  \ \_\ \_\
+  \/_/     \/_____/   \/_/\/_/   \/_____/   \/_____/   \/_/ /_/
+
+:: Nimbus Server :: module: world-player :: ${spring.application.name:world-player}
+
+Nimbus – NOTICE
+
+This software is provided free of charge under a restrictive license.
+
+Permitted use:
+- non-commercial
+- non-production
+- testing, evaluation, research only
+
+Production, operational, or commercial use is NOT permitted.
+
+Any modifications must be released under the same license.
+
+See LICENSE for full terms. https://github.com/mhus/nimbus/blob/main/LICENSE.txt

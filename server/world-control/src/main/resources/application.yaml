@@ -1,0 +1,93 @@
+spring:
+  application:
+    name: WorldEditor
+    host: localhost
+  data:
+    mongodb:
+      uri: ${MONGODB_URI:mongodb://root:example@localhost:27017/world?authSource=admin}
+      database: world
+
+nimbus:
+  encryption:
+    password: ${NIMBUS_ENCRYPTION_PASSWORD}
+  chunk:
+    compression:
+      enabled: ${CHUNK_COMPRESSION_ENABLED:true}
+  layer:
+    terrain:
+      compression:
+        enabled: ${LAYER_TERRAIN_COMPRESSION_ENABLED:true}
+  asset:
+    compression:
+      enabled: ${ASSET_COMPRESSION_ENABLED:true}
+  schema:
+    auto-migrate: ${NIMBUS_SCHEMA_AUTO_MIGRATE:true}
+  access:
+    accessUrls: ${NIMBUS_ACCESS_URLS:}
+    jumpUrlAgent: ${NIMBUS_JUMP_URL_AGENT:}
+    jumpUrlEditor: ${NIMBUS_JUMP_URL_EDITOR:}
+    jumpUrlViewer: ${NIMBUS_JUMP_URL_VIEWER:}
+    loginUrl: ${NIMBUS_LOGIN_URL:}
+    logoutUrl: ${NIMBUS_LOGOUT_URL:}
+  server:
+    websocketUrl: ${NIMBUS_WEBSOCKET_URL:}
+  pod:
+    controlBaseUrl: ${NIMBUS_POD_CONTROL_BASE_URL:}
+    playerBaseUrl: ${NIMBUS_POD_PLAYER_BASE_URL:}
+    lifeBaseUrl: ${NIMBUS_POD_LIFE_BASE_URL:}
+    generatorBaseUrl: ${NIMBUS_POD_GENERATOR_BASE_URL:}
+  wchat:
+    remote:
+      generator:
+        enabled: ${WCHAT_REMOTE_GENERATOR_ENABLED:true}
+        server-url: ${WCHAT_REMOTE_GENERATOR_URL:http://localhost:9045}
+      life:
+        enabled: ${WCHAT_REMOTE_LIFE_ENABLED:false}
+        server-url: ${WCHAT_REMOTE_LIFE_URL:http://localhost:9044}
+
+
+world:
+  client:
+    player-base-url: ${PLAYER_BASE_URL:http://localhost:9042}
+    life-base-url: ${LIFE_BASE_URL:http://localhost:9044}
+    control-base-url: ${CONTROL_BASE_URL:http://localhost:9043}
+    command-timeout-ms: 5000
+  control:
+    chunk-update-interval-ms: 5000  # 5 seconds between chunk update runs
+    chunk-update-batch-size: 10     # Process 10 chunks per run
+    chunk-update-world-id: main     # Target world for chunk updates
+  redis:
+    host: ${REDIS_HOST:localhost}
+    port: ${REDIS_PORT:6379}
+    database: ${REDIS_DATABASE:0}
+    password: ${REDIS_PASSWORD:}
+    ssl: ${REDIS_SSL:false}
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:}
+
+server:
+  port: 9043
+  error:
+    include-message: always
+    include-binding-errors: always
+    include-exception: true
+    include-stacktrace: always
+
+logging:
+  level:
+    root: INFO
+#    de.mhus.nimbus: DEBUG
+
+management:
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: always
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  health:
+    readinessstate:
+      enabled: true

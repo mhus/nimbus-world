@@ -1,0 +1,9 @@
+# Narrow config for network/messages-only test in evaluate module
+basePackage: de.mhus.nimbus.evaluate.generated
+ignoreTsItems: []
+excludeDirSuffixes:
+  - errors
+  - logger
+packageRules:
+  - dirEndsWith: network/messages
+    pkg: de.mhus.nimbus.evaluate.generated.network.messages

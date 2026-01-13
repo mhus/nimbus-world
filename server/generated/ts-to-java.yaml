@@ -1,0 +1,40 @@
+# Configuration for generate-ts-to-java-maven-plugin in generated module
+# Generate Java sources into sub-packages according to TS folder structure.
+# Base package for all generated code in this module:
+basePackage: de.mhus.nimbus.generated
+
+# Optional: list of TS item names to ignore during generation
+ignoreTsItems: []
+
+# Map TS source folders (suffix) to explicit Java packages
+packageRules:
+  - dirEndsWith: types
+    pkg: de.mhus.nimbus.generated.types
+  - dirEndsWith: configs
+    pkg: de.mhus.nimbus.generated.configs
+  - dirEndsWith: network/messages
+    pkg: de.mhus.nimbus.generated.network.messages
+  - dirEndsWith: rest
+    pkg: de.mhus.nimbus.generated.rest
+  - dirEndsWith: scrawl
+    pkg: de.mhus.nimbus.generated.scrawl
+excludeDirSuffixes:
+  - errors
+  - logger
+  - utils
+  - validators
+  - generated/entities
+  - generated/dto
+  - generated
+additionalClassAnnotations:
+  - com.fasterxml.jackson.annotation.JsonIgnoreProperties(ignoreUnknown = true)
+  - org.springframework.aot.hint.annotation.Reflective
+additionalFieldAnnotations:
+additionalOptionalFieldAnnotations:
+  - com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
+additionalNonOptionalFieldAnnotations:
+
+# Enum interface mappings for runtime identification and extension
+enumInterfaceMapping:
+  "*": "de.mhus.nimbus.types.TsEnum"
+

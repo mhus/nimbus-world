@@ -1,0 +1,4 @@
+{
+  "apiUrl": "http://localhost:9042",
+  "exitUrl": "http://localhost:3002/controls/dev-login.html"
+}

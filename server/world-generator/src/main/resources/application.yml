@@ -1,0 +1,99 @@
+spring:
+  application:
+    name: WorldGenerator
+    host: localhost
+  data:
+    mongodb:
+      uri: ${MONGODB_URI:mongodb://root:example@localhost:27017/world?authSource=admin}
+      database: world
+#      auto-index-creation: true
+
+nimbus:
+  encryption:
+    password: ${NIMBUS_ENCRYPTION_PASSWORD}
+  schema:
+    auto-migrate: ${NIMBUS_SCHEMA_AUTO_MIGRATE:true}
+  pod:
+    controlBaseUrl: ${NIMBUS_POD_CONTROL_BASE_URL:}
+    playerBaseUrl: ${NIMBUS_POD_PLAYER_BASE_URL:}
+    lifeBaseUrl: ${NIMBUS_POD_LIFE_BASE_URL:}
+    generatorBaseUrl: ${NIMBUS_POD_GENERATOR_BASE_URL:}
+
+server:
+  port: 9045
+  error:
+    include-message: always
+    include-binding-errors: always
+    include-exception: true
+    include-stacktrace: always
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true
+  health:
+    readinessstate:
+      enabled: true
+
+logging:
+  level:
+    root: INFO
+    de.mhus.nimbus: DEBUG
+
+# LangChain4j Configuration
+langchain4j:
+  openai:
+    # API key from environment variable or set directly (not recommended for production)
+    api-key: ${OPENAI_API_KEY:}
+    # Model to use (gpt-3.5-turbo, gpt-4, gpt-4-turbo, etc.)
+    model-name: ${LANGCHAIN4J_MODEL:gpt-3.5-turbo}
+    # Request timeout in seconds
+    timeout-seconds: 60
+    # Temperature for response generation (0.0 - 2.0, higher = more creative)
+    temperature: 0.7
+    # Maximum tokens in response
+    max-tokens: 1000
+  gemini:
+    # API key from environment variable or set directly (not recommended for production)
+    api-key: ${GEMINI_API_KEY:}
+    # Rate limit in requests per minute for Flash models (Gemini Flash free tier: 15 RPM)
+    # Only applies to models with "flash" in their name (e.g., gemini-1.5-flash)
+    # Shared globally across all Flash model chat instances
+    flash-rate-limit: 15
+
+# AI Model Configuration
+ai:
+  model:
+    # Model mappings: default:<alias>=<provider>:<model>
+    # Example: chat=openai:gpt-4,generate=gemini:gemini-pro
+    mappings: ${AI_MODEL_MAPPINGS:chat=openai:gpt-3.5-turbo,generate=gemini:gemini-pro}
+
+# Asset Description Generation Configuration
+asset:
+  description:
+    # Maximum file size in bytes for description generation (default: 5MB)
+    max-size-bytes: 5242880
+    # AI model to use for description generation (supports model mappings)
+    ai-model: default:generate
+
+world:
+  redis:
+    host: ${REDIS_HOST:localhost}
+    port: ${REDIS_PORT:6379}
+    database: ${REDIS_DATABASE:0}
+    password: ${REDIS_PASSWORD:}
+    ssl: ${REDIS_SSL:false}
+  job:
+    processing-enabled: true
+    processing-interval-ms: 5000
+    max-jobs-per-cycle: 10
+    cleanup-enabled: true
+    cleanup-interval-ms: 3600000
+    retention-hours: 24
+    hard-delete: false

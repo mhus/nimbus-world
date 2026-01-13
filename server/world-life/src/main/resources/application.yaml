@@ -1,0 +1,82 @@
+spring:
+  application:
+    name: WorldLife
+    host: localhost
+  data:
+    mongodb:
+      uri: ${MONGODB_URI:mongodb://root:example@localhost:27017/world?authSource=admin}
+      database: world
+
+nimbus:
+  encryption:
+    password: ${NIMBUS_ENCRYPTION_PASSWORD}
+  chunk:
+    compression:
+      enabled: ${CHUNK_COMPRESSION_ENABLED:true}
+  layer:
+    terrain:
+      compression:
+        enabled: ${LAYER_TERRAIN_COMPRESSION_ENABLED:true}
+  asset:
+    compression:
+      enabled: ${ASSET_COMPRESSION_ENABLED:true}
+      threshold: ${ASSET_COMPRESSION_THRESHOLD:1000}  # Files below this size (in bytes) are stored uncompressed
+  schema:
+    auto-migrate: ${NIMBUS_SCHEMA_AUTO_MIGRATE:true}
+  pod:
+    controlBaseUrl: ${NIMBUS_POD_CONTROL_BASE_URL:}
+    playerBaseUrl: ${NIMBUS_POD_PLAYER_BASE_URL:}
+    lifeBaseUrl: ${NIMBUS_POD_LIFE_BASE_URL:}
+    generatorBaseUrl: ${NIMBUS_POD_GENERATOR_BASE_URL:}
+
+world:
+  life:
+    simulation-interval-ms: 1000          # 1 second
+    # chunk-refresh-interval-ms: 300000   # DEPRECATED: Replaced by TTL-based mechanism
+    chunk-ttl-ms: 300000                  # 5 minutes - Chunk TTL
+    chunk-ttl-cleanup-interval-ms: 60000  # 1 minute - TTL cleanup interval
+    ownership-heartbeat-interval-ms: 5000 # 5 seconds
+    ownership-stale-threshold-ms: 10000   # 10 seconds
+    orphan-detection-interval-ms: 30000   # 30 seconds
+    pathway-interval-ms: 5000             # 5 seconds
+  client:
+    player-base-url: http://localhost:9042
+    life-base-url: http://localhost:9044
+    control-base-url: http://localhost:9043
+    command-timeout-ms: 5000
+  redis:
+    host: ${REDIS_HOST:localhost}
+    port: ${REDIS_PORT:6379}
+    database: ${REDIS_DATABASE:0}
+    password: ${REDIS_PASSWORD:}
+    ssl: ${REDIS_SSL:false}
+
+server:
+  port: 9044
+  error:
+    include-message: always
+    include-binding-errors: always
+    include-exception: true
+    include-stacktrace: always
+
+logging:
+  level:
+    root: INFO
+    de.mhus.nimbus: DEBUG
+    de.mhus.nimbus.world.life.service.SimulatorService: DEBUG
+    de.mhus.nimbus.world.life.service.EntityOwnershipService: DEBUG
+    de.mhus.nimbus.world.life.service.ChunkAliveService: DEBUG
+
+management:
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: always
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  health:
+    readinessstate:
+      enabled: true

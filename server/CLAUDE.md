@@ -1,0 +1,36 @@
+
+## Rules
+
+- Nutze Java 25, Spring Boot 3, JPA, Spring Security
+- Nutze lombok annotations, JPA mit mongoDB
+- Nutze Apache Commons Libraries
+- Schreibe, wenn gefordert, Unit Tests mit JUnit 5, Mockito, AssertJ
+- Es wir zwischen Unit Tests (mvn test) und Integration Tests (/src/integration-test/java, mvn verify) unterschieden
+- Es wird immer zwischen Inbound-/Outbound- und Business-Logik unterschieden. 
+  - RestController sind inbound: Prüfen die Parameter und geben an einen Service zur Verarbeitung weiter
+  - JPA Repositories sind in/outbound, sie werden von einem Service controlliert
+  - Services sind Business Logik
+  - Für Outbound REST wird ein 'Client' Service erstellt, nur er darf als Client mit der remote REST API interagieren
+- Folge Clean Code Prinzipien
+- **KEINE HACKS!** Saubere Architektur mit DTOs, Services und klaren Verantwortlichkeiten. Keine JSON-Manipulation oder deepCopy-Tricks. Nutze typisierte Klassen und Builder Patterns
+- Im World Umfeld wird noch redis (nur world-* module) für Messaging, Locking und auch Caching verwendet (session related ist oft direkt an der Session im Speicher, nicht in redis)
+- In World Player ist Performance wichtig
+- Im Modul 'generated' liegen generierte Klassen, die nicht geändert werden können, sie sind der Contract zum Frontend und müssen mit EngineMapper (Service) de/serialisiert werden
+- Die Module universe, region, world-* werden als Kubernetes Pods geplant und gestartet. Nur world-player hat an der WebSocket Session einen internen state. Sobald die Socket abbricht, ist dieser ungültig
+- Source Code und Kommentare in Englisch
+- Spreche sonst Deutsch mit mir
+- Es müssen nicht immer alle Compile Fehler und Tests gefixt werden. Reporte Probleme
+- Konzentriere die auf die aktuelle Aufgabe und löse diese Schritt für Schritt
+- Entity Parameter
+  - id: Datenbank Id, sonst in der Anwendung keine Verwendung, nur wenn DB Dokumente in der DB z.b. adressiert werden
+  - name: ist ein technischer name, in Bereichen (z.b. World, region, global) Eindeutiger Name einer entity, wenn entities in der App (zusammen mit z.b. worldId) adressiert werden
+  - title: display Name, nicht eindeutig, darstellung au UI
+  - parameter die mit 'Id' am Ende (worldId, regionId, itemId) sind wie name eindeutig
+- UI controls html element namen convention (../client/packages/controls):
+  - *-editor.html: Elemente für Administratoren und Editoren, eher technisch organisiert, werden in HomeApp verlinkt
+    - Greife auf REST Controller unter /control/ zu, nicht auf /control/player/ - diese sind PLAYER vorbehalten.
+  - *-panel.html: Elemente die vom Player genutzt werden, sollen stylisch angepasst werden, werden in der PanelApp verlinkt, immer vollbild.
+    - greifen nur auf REST Controller unter /control/player/ zu. Hier eigene Controller implementieren, nicht die von editor nutzen, diese sind für player gesperrt.
+  - *-widget.html: Elemente die auch vom Player genutzt, sollen stylisch angepasst werden, werden separat geoffnet, meist nur ein teil des Bildschirms.
+      - wie panel: greifen nur auf REST Controller unter /control/player/ zu. Hier eigene Controller implementieren, nicht die von editor nutzen, diese sind für player gesperrt.
+- Ich erwarte keine TODOs im code sondern implementierte funktionalität

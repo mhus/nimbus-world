@@ -1,0 +1,68 @@
+import { defineConfig } from 'vite';
+import vue from '@vitejs/plugin-vue';
+import { resolve } from 'path';
+
+export default defineConfig({
+  base: '/controls/',
+  plugins: [vue()],
+  server: {
+    port: 3002,
+    open: '/controls/',
+  },
+  resolve: {
+    alias: {
+      '@': resolve(__dirname, './src'),
+      '@components': resolve(__dirname, './src/components'),
+      '@editors': resolve(__dirname, './src/editors'),
+      '@material': resolve(__dirname, './src/material'),
+      '@blocktype': resolve(__dirname, './src/blocktype'),
+      '@asset': resolve(__dirname, './src/asset'),
+      '@layer': resolve(__dirname, './src/layer'),
+      '@block': resolve(__dirname, './src/block'),
+      '@editconfig': resolve(__dirname, './src/editconfig'),
+      '@devlogin': resolve(__dirname, './src/devlogin'),
+      '@nimbus/shared': resolve(__dirname, '../shared/src'),
+      '@shared': resolve(__dirname, '../shared/src'),
+    },
+  },
+  build: {
+    outDir: 'dist',
+    sourcemap: true,
+    rollupOptions: {
+      input: {
+        'redirect': resolve(__dirname, 'redirect.html'),
+        'index': resolve(__dirname, 'index.html'),
+        'material-editor': resolve(__dirname, 'material-editor.html'),
+        'blocktype-editor': resolve(__dirname, 'blocktype-editor.html'),
+        'asset-editor': resolve(__dirname, 'asset-editor.html'),
+        'mc-asset-editor': resolve(__dirname, 'mc-asset-editor.html'),
+        'layer-editor': resolve(__dirname, 'layer-editor.html'),
+        'block-editor': resolve(__dirname, 'block-editor.html'),
+        'edit-config': resolve(__dirname, 'edit-config.html'),
+        'item-editor': resolve(__dirname, 'item-editor.html'),
+        'itemtype-editor': resolve(__dirname, 'itemtype-editor.html'),
+        'scrawl-editor': resolve(__dirname, 'scrawl-editor.html'),
+        'dev-login': resolve(__dirname, 'dev-login.html'),
+        'logout': resolve(__dirname, 'logout.html'),
+        'region-editor': resolve(__dirname, 'region-editor.html'),
+        'user-editor': resolve(__dirname, 'user-editor.html'),
+        'character-editor': resolve(__dirname, 'character-editor.html'),
+        'world-editor': resolve(__dirname, 'world-editor.html'),
+        'entity-editor': resolve(__dirname, 'entity-editor.html'),
+        'entitymodel-editor': resolve(__dirname, 'entitymodel-editor.html'),
+        'backdrop-editor': resolve(__dirname, 'backdrop-editor.html'),
+        'settings-editor': resolve(__dirname, 'settings-editor.html'),
+        'storage-editor': resolve(__dirname, 'storage-editor.html'),
+        'job-editor': resolve(__dirname, 'job-editor.html'),
+        'flat-editor': resolve(__dirname, 'flat-editor.html'),
+        'chest-editor': resolve(__dirname, 'chest-editor.html'),
+        'chunk-editor': resolve(__dirname, 'chunk-editor.html'),
+        'editcache-editor': resolve(__dirname, 'editcache-editor.html'),
+        'hex-editor': resolve(__dirname, 'hex-editor.html'),
+        'anything-editor': resolve(__dirname, 'anything-editor.html'),
+        'editor-shortcut-panel': resolve(__dirname, 'editor-shortcut-panel.html'),
+        'panels': resolve(__dirname, 'panels.html'),
+      },
+    },
+  },
+});

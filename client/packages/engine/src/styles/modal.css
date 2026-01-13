@@ -1,0 +1,423 @@
+/**
+ * Nimbus Modal Styles
+ *
+ * Styles for ModalService HTML IFrame modals
+ */
+
+/* Backdrop - semi-transparent overlay */
+.nimbus-modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(2px);
+  transition: opacity 0.2s ease-in-out;
+}
+
+/* Centered backdrop uses flexbox */
+.nimbus-modal-backdrop.nimbus-modal-centered {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Modal container */
+.nimbus-modal-container {
+  background-color: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  max-width: 95vw;
+  max-height: 95vh;
+}
+
+/* Modal header */
+.nimbus-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  background-color: #f5f5f5;
+  border-bottom: 1px solid #e0e0e0;
+  flex-shrink: 0;
+}
+
+/* Modal title */
+.nimbus-modal-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+  flex-grow: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Buttons container */
+.nimbus-modal-buttons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* Minimize button */
+.nimbus-modal-minimize {
+  background: none;
+  border: none;
+  font-size: 24px;
+  line-height: 1;
+  color: #666;
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.nimbus-modal-minimize:hover {
+  background-color: rgba(0, 0, 0, 0.1);
+  color: #333;
+}
+
+.nimbus-modal-minimize:active {
+  background-color: rgba(0, 0, 0, 0.15);
+}
+
+/* Break-out button */
+.nimbus-modal-breakout {
+  background: none;
+  border: none;
+  font-size: 24px;
+  line-height: 1;
+  color: #666;
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.nimbus-modal-breakout:hover {
+  background-color: rgba(0, 0, 0, 0.1);
+  color: #333;
+}
+
+.nimbus-modal-breakout:active {
+  background-color: rgba(0, 0, 0, 0.15);
+}
+
+/* Close button */
+.nimbus-modal-close {
+  background: none;
+  border: none;
+  font-size: 32px;
+  line-height: 1;
+  color: #666;
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.nimbus-modal-close:hover {
+  background-color: rgba(0, 0, 0, 0.1);
+  color: #333;
+}
+
+.nimbus-modal-close:active {
+  background-color: rgba(0, 0, 0, 0.15);
+}
+
+/* IFrame */
+.nimbus-modal-iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+  flex-grow: 1;
+  background-color: #ffffff;
+}
+
+/* Minimized state - only header visible */
+.nimbus-modal-minimized {
+  height: auto !important;
+  min-height: unset !important;
+}
+
+.nimbus-modal-minimized .nimbus-modal-iframe {
+  display: none;
+}
+
+/* Animations */
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes modalSlideIn {
+  from {
+    transform: translateY(-20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.nimbus-modal-backdrop {
+  animation: modalFadeIn 0.2s ease-in-out;
+}
+
+.nimbus-modal-container {
+  animation: modalSlideIn 0.3s ease-out;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .nimbus-modal-container {
+    width: 95% !important;
+    height: 90% !important;
+    max-width: none;
+    max-height: none;
+  }
+
+  .nimbus-modal-header {
+    padding: 12px 16px;
+  }
+
+  .nimbus-modal-title {
+    font-size: 16px;
+  }
+
+  .nimbus-modal-minimize {
+    font-size: 20px;
+    width: 28px;
+    height: 28px;
+  }
+
+  .nimbus-modal-breakout {
+    font-size: 20px;
+    width: 28px;
+    height: 28px;
+  }
+
+  .nimbus-modal-close {
+    font-size: 28px;
+    width: 28px;
+    height: 28px;
+  }
+}
+
+/* NO_BACKGROUND_LOCK - Transparent backdrop, no interaction blocking */
+.nimbus-modal-backdrop.nimbus-modal-no-background-lock {
+  background-color: transparent;
+  backdrop-filter: none;
+  pointer-events: none;
+}
+
+.nimbus-modal-backdrop.nimbus-modal-no-background-lock .nimbus-modal-container {
+  pointer-events: auto;
+}
+
+/* MOVEABLE - Draggable header */
+.nimbus-modal-header-moveable {
+  cursor: move;
+  user-select: none;
+}
+
+/* RESIZEABLE - Resize handles */
+.nimbus-modal-resizeable {
+  position: relative;
+}
+
+/* Edge resize handles */
+.nimbus-resize-handle-n,
+.nimbus-resize-handle-s,
+.nimbus-resize-handle-e,
+.nimbus-resize-handle-w {
+  position: absolute;
+  background-color: transparent;
+  z-index: 10;
+}
+
+.nimbus-resize-handle-n {
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 8px;
+  cursor: ns-resize;
+}
+
+.nimbus-resize-handle-s {
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 8px;
+  cursor: ns-resize;
+}
+
+.nimbus-resize-handle-e {
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 8px;
+  cursor: ew-resize;
+}
+
+.nimbus-resize-handle-w {
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 8px;
+  cursor: ew-resize;
+}
+
+/* Corner resize handles */
+.nimbus-resize-handle-ne,
+.nimbus-resize-handle-nw,
+.nimbus-resize-handle-se,
+.nimbus-resize-handle-sw {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  background-color: transparent;
+  z-index: 11;
+}
+
+.nimbus-resize-handle-ne {
+  top: 0;
+  right: 0;
+  cursor: nesw-resize;
+}
+
+.nimbus-resize-handle-nw {
+  top: 0;
+  left: 0;
+  cursor: nwse-resize;
+}
+
+.nimbus-resize-handle-se {
+  bottom: 0;
+  right: 0;
+  cursor: nwse-resize;
+}
+
+.nimbus-resize-handle-sw {
+  bottom: 0;
+  left: 0;
+  cursor: nesw-resize;
+}
+
+/* Visual indicator for resize handles (optional) */
+.nimbus-modal-resizeable:hover .nimbus-resize-handle-se::after,
+.nimbus-modal-resizeable:hover .nimbus-resize-handle-sw::after,
+.nimbus-modal-resizeable:hover .nimbus-resize-handle-ne::after,
+.nimbus-modal-resizeable:hover .nimbus-resize-handle-nw::after {
+  content: '';
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 2px;
+}
+
+.nimbus-resize-handle-se::after {
+  bottom: 2px;
+  right: 2px;
+}
+
+.nimbus-resize-handle-sw::after {
+  bottom: 2px;
+  left: 2px;
+}
+
+.nimbus-resize-handle-ne::after {
+  top: 2px;
+  right: 2px;
+}
+
+.nimbus-resize-handle-nw::after {
+  top: 2px;
+  left: 2px;
+}
+
+/* Dark mode support (optional) */
+@media (prefers-color-scheme: dark) {
+  .nimbus-modal-container {
+    background-color: #2a2a2a;
+  }
+
+  .nimbus-modal-header {
+    background-color: #1e1e1e;
+    border-bottom-color: #404040;
+  }
+
+  .nimbus-modal-title {
+    color: #e0e0e0;
+  }
+
+  .nimbus-modal-minimize {
+    color: #999;
+  }
+
+  .nimbus-modal-minimize:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: #fff;
+  }
+
+  .nimbus-modal-breakout {
+    color: #999;
+  }
+
+  .nimbus-modal-breakout:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: #fff;
+  }
+
+  .nimbus-modal-close {
+    color: #999;
+  }
+
+  .nimbus-modal-close:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: #fff;
+  }
+
+  .nimbus-modal-iframe {
+    background-color: #2a2a2a;
+  }
+
+  /* Dark mode resize handle indicators */
+  .nimbus-modal-resizeable:hover .nimbus-resize-handle-se::after,
+  .nimbus-modal-resizeable:hover .nimbus-resize-handle-sw::after,
+  .nimbus-modal-resizeable:hover .nimbus-resize-handle-ne::after,
+  .nimbus-modal-resizeable:hover .nimbus-resize-handle-nw::after {
+    background-color: rgba(255, 255, 255, 0.3);
+  }
+}

@@ -1,0 +1,150 @@
+/* Compass Bar Styling */
+
+#compass-bar {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 600px;
+  height: 60px;
+  pointer-events: none;
+  z-index: 100;
+  overflow: visible;
+}
+
+.compass-bar-content {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+/* Cardinal direction markers (N, E, S, W) */
+.compass-cardinal {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  transform: translate(-50%, -50%);
+  font-size: 18px;
+  font-weight: bold;
+  color: rgba(255, 255, 255, 0.9);
+  text-shadow:
+    0 0 10px rgba(0, 0, 0, 0.8),
+    0 0 20px rgba(0, 0, 0, 0.5);
+  user-select: none;
+  transition: none;
+  will-change: transform, display;
+}
+
+/* Highlight North marker */
+.compass-cardinal:first-child {
+  color: rgba(255, 100, 100, 1);
+  font-size: 20px;
+  text-shadow:
+    0 0 10px rgba(0, 0, 0, 0.8),
+    0 0 20px rgba(255, 0, 0, 0.5);
+}
+
+/* Custom markers container */
+.compass-markers {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+}
+
+/* Custom marker styles */
+.compass-marker {
+  position: absolute;
+  left: 0;
+  font-size: 16px;
+  user-select: none;
+  transition: none;
+  will-change: transform, display;
+  text-shadow:
+    0 0 10px rgba(0, 0, 0, 0.8),
+    0 0 20px rgba(0, 0, 0, 0.5);
+}
+
+/* Marker vertical positions */
+.compass-marker-top {
+  top: 0;
+  transform: translate(-50%, -100%);
+}
+
+.compass-marker-center {
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.compass-marker-bottom {
+  top: 100%;
+  transform: translate(-50%, 0);
+}
+
+/* Optional: Add a subtle center line indicator */
+.compass-bar-content::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 2px;
+  height: 40px;
+  background: rgba(255, 255, 255, 0.3);
+  pointer-events: none;
+}
+
+/* Optional: Add horizontal guide lines */
+.compass-bar-content::after {
+  content: '';
+  position: absolute;
+  left: 10%;
+  right: 10%;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.2) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  pointer-events: none;
+}
+
+/* Time Display with Season (Editor mode only, left side) */
+.compass-time-display {
+  position: absolute;
+  left: -250px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+  font-weight: bold;
+  color: rgba(255, 255, 255, 0.9);
+  text-shadow:
+    0 0 10px rgba(0, 0, 0, 0.8),
+    0 0 20px rgba(0, 0, 0, 0.5);
+  user-select: none;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/* Position Display (Editor mode only, right side) */
+.compass-position-display {
+  position: absolute;
+  right: -160px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+  font-weight: bold;
+  color: rgba(255, 255, 255, 0.9);
+  text-shadow:
+    0 0 10px rgba(0, 0, 0, 0.8),
+    0 0 20px rgba(0, 0, 0, 0.5);
+  user-select: none;
+  white-space: nowrap;
+  pointer-events: none;
+}

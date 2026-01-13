@@ -1,0 +1,25 @@
+# Instance Cleanup Configuration
+# This file contains example configuration for automatic cleanup of unused world instances.
+# Copy these settings to your main application.yml or create an application-instance-cleanup.yml profile.
+
+nimbus:
+  instance:
+    cleanup:
+      # Enable/disable automatic cleanup (default: true)
+      enabled: true
+
+      # Maximum age of unused instances in hours before deletion (default: 48h)
+      # Instances with updatedAt older than this will be deleted
+      max-age-hours: 48
+
+      # Cleanup interval in milliseconds (default: 3600000 = 1 hour)
+      # How often the cleanup scheduler runs
+      cleanup-interval-ms: 3600000
+
+      # Maximum number of instances to delete per cleanup run (default: 100)
+      # Prevents overload if many instances need cleanup at once
+      max-deletes-per-run: 100
+
+      # Dry-run mode: log what would be deleted but don't actually delete (default: false)
+      # Useful for testing and monitoring before enabling cleanup
+      dry-run: false

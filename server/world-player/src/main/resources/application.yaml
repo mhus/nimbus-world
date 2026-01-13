@@ -1,0 +1,90 @@
+spring:
+  application:
+    name: WorldPlayer
+    host: localhost
+  data:
+    mongodb:
+      database: world
+      uri: ${MONGODB_URI:mongodb://root:example@localhost:27017/world?authSource=admin}
+  redis:
+    url: ${REDIS_URL:redis://localhost:6379}
+
+nimbus:
+  encryption:
+    password: ${NIMBUS_ENCRYPTION_PASSWORD}
+  chunk:
+    compression:
+      enabled: ${CHUNK_COMPRESSION_ENABLED:true}
+  layer:
+    terrain:
+      compression:
+        enabled: ${LAYER_TERRAIN_COMPRESSION_ENABLED:true}
+  asset:
+    compression:
+      enabled: ${ASSET_COMPRESSION_ENABLED:true}
+      threshold: ${ASSET_COMPRESSION_THRESHOLD:1000}  # Files below this size (in bytes) are stored uncompressed
+  schema:
+    auto-migrate: ${NIMBUS_SCHEMA_AUTO_MIGRATE:false}
+  server:
+    websocketUrl: ${NIMBUS_WEBSOCKET_URL:}
+    controlsBaseUrl: ${NIMBUS_CONTROLS_BASE_URL:}
+  pod:
+    controlBaseUrl: ${NIMBUS_POD_CONTROL_BASE_URL:}
+    playerBaseUrl: ${NIMBUS_POD_PLAYER_BASE_URL:}
+    lifeBaseUrl: ${NIMBUS_POD_LIFE_BASE_URL:}
+    generatorBaseUrl: ${NIMBUS_POD_GENERATOR_BASE_URL:}
+  access:
+    teleportUrl: ${NIMBUS_TELEPORT_URL:}
+
+world:
+  player:
+    readiness:
+      max-active-sessions: 100
+    chunk-publish-interval-ms: 60000  # 1 minute - Periodic chunk list publish interval
+    pathway-broadcast-interval-ms: 100  # Broadcast pathways every 100ms
+    entity-update-timeout-ms: 200  # Skip inactive entities after 200ms
+    pathway-prediction-time-ms: 100  # Predict position 100ms ahead
+    session-save-enabled: ${SESSION_SAVE_ENABLED:true}  # Enable/disable player session persistence
+    session-save-interval-ticks: ${SESSION_SAVE_INTERVAL_TICKS:60}  # Save every N ticks (60 ticks = 60s)
+  client:
+    player-base-url: ${PLAYER_BASE_URL:http://localhost:9042}
+    life-base-url: ${LIFE_BASE_URL:http://localhost:9044}
+    control-base-url: ${CONTROL_BASE_URL:http://localhost:9043}
+    command-timeout-ms: 5000
+  development:
+    enabled: true
+  redis:
+    host: ${REDIS_HOST:localhost}
+    port: ${REDIS_PORT:6379}
+    database: ${REDIS_DATABASE:0}
+    password: ${REDIS_PASSWORD:}
+    ssl: ${REDIS_SSL:false}
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:}
+
+server:
+  port: 9042
+  error:
+    include-exception: true
+    include-binding-errors: always
+    include-message: always
+    include-stacktrace: always
+
+management:
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: always
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  health:
+    readinessstate:
+      enabled: true
+
+logging:
+  level:
+    root: INFO
+    de.mhus.nimbus: DEBUG

@@ -1,0 +1,22 @@
+ ______     ______     __   __     ______     ______     ______     ______   ______     ______
+/\  ___\   /\  ___\   /\ "-.\ \   /\  ___\   /\  == \   /\  __ \   /\__  _\ /\  __ \   /\  == \
+\ \ \__ \  \ \  __\   \ \ \-.  \  \ \  __\   \ \  __<   \ \  __ \  \/_/\ \/ \ \ \/\ \  \ \  __<
+ \ \_____\  \ \_____\  \ \_\\"\_\  \ \_____\  \ \_\ \_\  \ \_\ \_\    \ \_\  \ \_____\  \ \_\ \_\
+  \/_____/   \/_____/   \/_/ \/_/   \/_____/   \/_/ /_/   \/_/\/_/     \/_/   \/_____/   \/_/ /_/
+
+:: Nimbus Server :: module: world-editor :: ${spring.application.name:world-editor}
+
+Nimbus – NOTICE
+
+This software is provided free of charge under a restrictive license.
+
+Permitted use:
+- non-commercial
+- non-production
+- testing, evaluation, research only
+
+Production, operational, or commercial use is NOT permitted.
+
+Any modifications must be released under the same license.
+
+See LICENSE for full terms. https://github.com/mhus/nimbus/blob/main/LICENSE.txt

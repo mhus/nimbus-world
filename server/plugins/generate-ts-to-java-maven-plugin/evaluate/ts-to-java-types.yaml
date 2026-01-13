@@ -1,0 +1,22 @@
+# Narrow config for types-only test in evaluate module
+basePackage: de.mhus.nimbus.evaluate.generated
+ignoreTsItems: []
+excludeDirSuffixes:
+  - errors
+  - logger
+additionalClassAnnotations:
+  - Deprecated
+additionalFieldAnnotations:
+  - Deprecated
+additionalOptionalFieldAnnotations:
+  - SuppressWarnings("optional")
+additionalNonOptionalFieldAnnotations:
+  - SuppressWarnings("required")
+packageRules:
+  - dirEndsWith: types
+    pkg: de.mhus.nimbus.evaluate.generated.types
+
+# Field-specific type overrides (for testing feature)
+fieldTypeMappings:
+  # Override Req.kind to be a ColorHex instead of default String
+  de.mhus.nimbus.evaluate.generated.types.Req.kind: de.mhus.nimbus.evaluate.generated.types.ColorHex

@@ -1,0 +1,23 @@
+# Example Dockerfile for nimbus-controls
+# This shows how to use the runtime config with docker-entrypoint.sh
+
+FROM nginx:alpine
+
+# Copy built files
+COPY dist/ /usr/share/nginx/html/
+
+# Copy entrypoint script
+COPY docker-entrypoint.sh /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh
+
+# Set default environment variable
+ENV VITE_CONTROL_API_URL=http://localhost:9043
+
+# Use custom entrypoint
+ENTRYPOINT ["/docker-entrypoint.sh"]
+CMD ["nginx", "-g", "daemon off;"]
+
+# Usage:
+# Build: docker build -t nimbus-controls .
+# Run with custom API URL:
+#   docker run -p 8080:80 -e VITE_CONTROL_API_URL=http://api.example.com:9043 nimbus-controls

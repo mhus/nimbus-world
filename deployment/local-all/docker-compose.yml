@@ -1,0 +1,361 @@
+version: '3.8'
+
+# All world services and client services and infrastructure services.
+# Espose all ports separately.
+
+services:
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: nimbus-nginx
+    ports:
+      - "8081:8081"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    networks:
+      - nimbus-network
+    depends_on:
+      world-player:
+        condition: service_healthy
+      world-control:
+        condition: service_healthy
+      world-life:
+        condition: service_healthy
+      world-generator:
+        condition: service_healthy
+      viewer:
+        condition: service_healthy
+      editor:
+        condition: service_healthy
+      controls:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "pidof","nginx"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # Backend Services
+
+  world-player:
+    image: nimbus-world-player:latest
+    container_name: nimbus-world-player
+    expose:
+      - "9042"
+    ports:
+      - "9042:9042"
+    environment:
+      - MONGODB_URI=mongodb://root:${MONGO_ROOT_PASSWORD:-example}@mongodb:27017/world?authSource=admin
+      - REDIS_URL=redis://redis:6379
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_DATABASE=0
+      - REDIS_PASSWORD=
+      - REDIS_SSL=false
+      - PLAYER_BASE_URL=http://world-player:9042
+      - LIFE_BASE_URL=http://world-life:9044
+      - CONTROL_BASE_URL=http://world-control:9043
+      - NIMBUS_ENCRYPTION_PASSWORD=${NIMBUS_ENCRYPTION_PASSWORD:-changeme}
+      - CHUNK_COMPRESSION_ENABLED=${CHUNK_COMPRESSION_ENABLED:-true}
+      - LAYER_TERRAIN_COMPRESSION_ENABLED=${LAYER_TERRAIN_COMPRESSION_ENABLED:-true}
+      - ASSET_COMPRESSION_ENABLED=${ASSET_COMPRESSION_ENABLED:-true}
+      - NIMBUS_SCHEMA_AUTO_MIGRATE=${NIMBUS_SCHEMA_AUTO_MIGRATE:-false}
+      - NIMBUS_WEBSOCKET_URL=ws://${NIMBUS_PUBLIC_HOST:-localhost:8081}/player/ws
+      - NIMBUS_CONTROLS_BASE_URL=http://${NIMBUS_PUBLIC_HOST:-localhost:3002}/controls
+      - CORS_ALLOWED_ORIGINS=http://${NIMBUS_PUBLIC_HOST:-localhost:8081}
+      - NIMBUS_POD_CONTROL_BASE_URL=http://world-control:9043
+      - NIMBUS_POD_PLAYER_BASE_URL=http://world-player:9042
+      - NIMBUS_POD_LIFE_BASE_URL=http://world-life:9044
+      - NIMBUS_POD_GENERATOR_BASE_URL=http://world-generator:9045
+      - NIMBUS_SERVER_IP=world-player
+      - NIMBUS_TELEPORT_URL=http://${NIMBUS_PUBLIC_HOST:-localhost:3002}/controls/teleport-login.html
+    networks:
+      - nimbus-network
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9042/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  world-control:
+    image: nimbus-world-control:latest
+    container_name: nimbus-world-control
+    expose:
+      - "9043"
+    ports:
+      - "9043:9043"
+    environment:
+      - NIMBUS_ACCESS_URLS=/player/aaa/authorize,/control/aaa/authorize
+      - NIMBUS_JUMP_URL_AGENT=/controls
+      - NIMBUS_JUMP_URL_EDITOR=/editor?worldId={worldId}&session={session}
+      - NIMBUS_JUMP_URL_VIEWER=/viewer?worldId={worldId}&session={session}
+      - NIMBUS_LOGIN_URL=/control/dev-login.html
+      - NIMBUS_LOGOUT_URL=/control/dev-login.html
+      - MONGODB_URI=mongodb://root:${MONGO_ROOT_PASSWORD:-example}@mongodb:27017/world?authSource=admin
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_DATABASE=0
+      - REDIS_PASSWORD=
+      - REDIS_SSL=false
+      - PLAYER_BASE_URL=http://world-player:9042
+      - LIFE_BASE_URL=http://world-life:9044
+      - CONTROL_BASE_URL=http://world-control:9043
+      - NIMBUS_ENCRYPTION_PASSWORD=${NIMBUS_ENCRYPTION_PASSWORD:-changeme}
+      - CHUNK_COMPRESSION_ENABLED=${CHUNK_COMPRESSION_ENABLED:-true}
+      - LAYER_TERRAIN_COMPRESSION_ENABLED=${LAYER_TERRAIN_COMPRESSION_ENABLED:-true}
+      - ASSET_COMPRESSION_ENABLED=${ASSET_COMPRESSION_ENABLED:-true}
+      - NIMBUS_SCHEMA_AUTO_MIGRATE=${NIMBUS_SCHEMA_AUTO_MIGRATE:-true}
+      - CORS_ALLOWED_ORIGINS=http://${NIMBUS_PUBLIC_HOST:-localhost:8081}
+      - NIMBUS_POD_CONTROL_BASE_URL=http://world-control:9043
+      - NIMBUS_POD_PLAYER_BASE_URL=http://world-player:9042
+      - NIMBUS_POD_LIFE_BASE_URL=http://world-life:9044
+      - NIMBUS_POD_GENERATOR_BASE_URL=http://world-generator:9045
+      - NIMBUS_SERVER_IP=world-control
+    networks:
+      - nimbus-network
+    volumes:
+      - ./tmp/world-control:/data
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9043/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  world-life:
+    image: nimbus-world-life:latest
+    container_name: nimbus-world-life
+    expose:
+      - "9044"
+    environment:
+      - MONGODB_URI=mongodb://root:${MONGO_ROOT_PASSWORD:-example}@mongodb:27017/world?authSource=admin
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_DATABASE=0
+      - REDIS_PASSWORD=
+      - REDIS_SSL=false
+      - PLAYER_BASE_URL=${PLAYER_BASE_URL:-http://world-player:9042}
+      - LIFE_BASE_URL=${LIFE_BASE_URL:-http://world-life:9044}
+      - CONTROL_BASE_URL=${CONTROL_BASE_URL:-http://world-control:9043}
+      - NIMBUS_ENCRYPTION_PASSWORD=${NIMBUS_ENCRYPTION_PASSWORD:-changeme}
+      - CHUNK_COMPRESSION_ENABLED=${CHUNK_COMPRESSION_ENABLED:-true}
+      - LAYER_TERRAIN_COMPRESSION_ENABLED=${LAYER_TERRAIN_COMPRESSION_ENABLED:-true}
+      - ASSET_COMPRESSION_ENABLED=${ASSET_COMPRESSION_ENABLED:-true}
+      - NIMBUS_SCHEMA_AUTO_MIGRATE=${NIMBUS_SCHEMA_AUTO_MIGRATE:-false}
+      - NIMBUS_POD_CONTROL_BASE_URL=http://world-control:9043
+      - NIMBUS_POD_PLAYER_BASE_URL=http://world-player:9042
+      - NIMBUS_POD_LIFE_BASE_URL=http://world-life:9044
+      - NIMBUS_POD_GENERATOR_BASE_URL=http://world-generator:9045
+      - NIMBUS_SERVER_IP=world-life
+    networks:
+      - nimbus-network
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9044/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  world-generator:
+    image: nimbus-world-generator:latest
+    container_name: nimbus-world-generator
+    expose:
+      - "9045"
+    environment:
+      - MONGODB_URI=mongodb://root:${MONGO_ROOT_PASSWORD:-example}@mongodb:27017/world?authSource=admin
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_DATABASE=0
+      - REDIS_PASSWORD=
+      - REDIS_SSL=false
+      - PLAYER_BASE_URL=${PLAYER_BASE_URL:-http://world-player:9042}
+      - LIFE_BASE_URL=${LIFE_BASE_URL:-http://world-life:9044}
+      - CONTROL_BASE_URL=${CONTROL_BASE_URL:-http://world-control:9043}
+      - NIMBUS_ENCRYPTION_PASSWORD=${NIMBUS_ENCRYPTION_PASSWORD:-changeme}
+      - CHUNK_COMPRESSION_ENABLED=${CHUNK_COMPRESSION_ENABLED:-true}
+      - LAYER_TERRAIN_COMPRESSION_ENABLED=${LAYER_TERRAIN_COMPRESSION_ENABLED:-true}
+      - ASSET_COMPRESSION_ENABLED=${ASSET_COMPRESSION_ENABLED:-true}
+      - NIMBUS_SCHEMA_AUTO_MIGRATE=${NIMBUS_SCHEMA_AUTO_MIGRATE:-false}
+      - NIMBUS_POD_CONTROL_BASE_URL=http://world-control:9043
+      - NIMBUS_POD_PLAYER_BASE_URL=http://world-player:9042
+      - NIMBUS_POD_LIFE_BASE_URL=http://world-life:9044
+      - NIMBUS_POD_GENERATOR_BASE_URL=http://world-generator:9045
+      - NIMBUS_SERVER_IP=world-generator
+    networks:
+      - nimbus-network
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9045/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # Frontend Services
+
+  viewer:
+    image: nimbus-viewer:latest
+    container_name: nimbus-viewer
+    expose:
+      - "3000"
+    environment:
+      - VITE_SERVER_API_URL=http://${NIMBUS_PUBLIC_HOST:-localhost:8081}
+      - VITE_EXIT_URL=http://${NIMBUS_PUBLIC_HOST:-localhost:8081}/controls/dev-login.html
+    networks:
+      - nimbus-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  editor:
+    image: nimbus-editor:latest
+    container_name: nimbus-editor
+    expose:
+      - "3001"
+    environment:
+      - VITE_SERVER_API_URL=http://${NIMBUS_PUBLIC_HOST:-localhost:8081}
+      - VITE_EXIT_URL=http://${NIMBUS_PUBLIC_HOST:-localhost:8081}/controls/dev-login.html
+    networks:
+      - nimbus-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  controls:
+    image: nimbus-controls:latest
+    container_name: nimbus-controls
+    expose:
+      - "3002"
+    environment:
+      - VITE_CONTROL_API_URL=http://${NIMBUS_PUBLIC_HOST:-localhost:8081}
+    networks:
+      - nimbus-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Infrastructure Services
+
+  mongodb:
+    image: l33tlamer/mongodb-without-avx:latest # mongo:latest -> WARNING: MongoDB 5.0+ requires a CPU with AVX support, and your current system does not appear to have that!
+    container_name: nimbus-mongodb
+    expose:
+      - "27017"
+    ports:
+        - "27017:27017"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=root
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_ROOT_PASSWORD:-example}
+      - MONGO_INITDB_DATABASE=world
+    volumes:
+      - ./tmp/mongodb:/data/db
+      - mongodb-config:/data/configdb
+    networks:
+      - nimbus-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mongo", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: nimbus-redis
+    expose:
+      - "6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - nimbus-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Admin Tools
+
+  mongo-express:
+    image: mongo-express:latest
+    container_name: nimbus-mongo-express
+    expose:
+      - "8081"
+    ports:
+      - "8082:8081"
+    environment:
+      - ME_CONFIG_MONGODB_ADMINUSERNAME=root
+      - ME_CONFIG_MONGODB_ADMINPASSWORD=${MONGO_ROOT_PASSWORD:-example}
+      - ME_CONFIG_MONGODB_URL=mongodb://mongodb:27017/world?authSource=admin
+      - ME_CONFIG_MONGODB_SERVER=mongodb
+      - ME_CONFIG_BASICAUTH=false
+      - ME_CONFIG_SITE_BASEURL=/mongo/
+    networks:
+      - nimbus-network
+    depends_on:
+      - mongodb
+    restart: unless-stopped
+
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: nimbus-redis-commander
+    expose:
+      - "8081"
+    environment:
+      - REDIS_HOSTS=local:redis:6379
+      - URL_PREFIX=/redis
+    networks:
+      - nimbus-network
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+networks:
+  nimbus-network:
+    driver: bridge
+
+volumes:
+  mongodb-config:
+    driver: local
+  redis-data:
+    driver: local

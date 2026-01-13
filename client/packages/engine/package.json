@@ -1,0 +1,46 @@
+{
+  "name": "@nimbus/engine",
+  "version": "2.0.0",
+  "description": "Nimbus Voxel Engine - 3D Engine (Viewer + Editor builds)",
+  "type": "module",
+  "main": "./dist/NimbusClient.js",
+  "types": "./dist/NimbusClient.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/NimbusClient.d.ts",
+      "default": "./dist/NimbusClient.js"
+    },
+    "./types": {
+      "types": "./dist/types/index.d.ts",
+      "default": "./dist/types/index.js"
+    }
+  },
+  "scripts": {
+    "dev": "vite --mode viewer --port 3000",
+    "dev:editor": "vite --mode editor",
+    "build": "pnpm build:viewer && pnpm build:editor && tsc",
+    "build:viewer": "vite build --mode viewer",
+    "build:editor": "vite build --mode editor",
+    "preview": "vite preview",
+    "preview:editor": "vite preview --outDir dist/editor",
+    "clean": "rm -rf dist *.tsbuildinfo",
+    "test": "jest",
+    "lint": "eslint src --ext .ts"
+  },
+  "dependencies": {
+    "@nimbus/shared": "workspace:*",
+    "@babylonjs/core": "^8.41.2",
+    "@babylonjs/gui": "^8.41.2",
+    "@babylonjs/loaders": "^8.43.0",
+    "@babylonjs/materials": "^8.41.2",
+    "dotenv": "^17.2.3"
+  },
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "@types/node": "^20.11.0",
+    "jest": "^30.2.0",
+    "ts-jest": "^29.4.5",
+    "typescript": "^5.3.3",
+    "vite": "^5.0.0"
+  }
+}

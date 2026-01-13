@@ -1,0 +1,10 @@
+import { createApp } from 'vue';
+import EditCacheApp from './EditCacheApp.vue';
+import '../style.css';
+import { initializeApp } from '@/utils/initApp';
+
+// Initialize app with runtime config before mounting
+initializeApp().then(() => {
+  const app = createApp(EditCacheApp);
+  app.mount('#app');
+});

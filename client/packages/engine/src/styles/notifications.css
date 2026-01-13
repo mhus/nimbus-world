@@ -1,0 +1,207 @@
+/**
+ * Notification System Styles
+ *
+ * Four notification areas:
+ * - System (bottom-left): System info, errors, command results
+ * - Chat (bottom-right): Chat messages
+ * - Overlay (center): Big overlay messages
+ * - Quest (top-right): Current quest info
+ */
+
+/* === Container Base === */
+.notification-container {
+  position: fixed;
+  pointer-events: none; /* Let events pass through to canvas */
+  z-index: 9000; /* Above canvas, below modals */
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 400px;
+}
+
+/* === Container Positions === */
+.notification-container.system {
+  bottom: 20px;
+  left: 20px;
+  align-items: flex-start;
+}
+
+.notification-container.chat {
+  bottom: 20px;
+  right: 20px;
+  align-items: flex-end;
+}
+
+.notification-container.overlay {
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  align-items: center;
+  max-width: 80%;
+}
+
+.notification-container.quest {
+  top: 20px;
+  right: 20px;
+  align-items: flex-end;
+}
+
+/* === Notification Base === */
+.notification {
+  pointer-events: auto; /* Allow interaction with notifications */
+  background: rgba(0, 0, 0, 0.85);
+  border-radius: 8px;
+  padding: 12px 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  animation: notification-fade-in 0.3s ease-out;
+  transition: opacity 0.3s ease-out, transform 0.3s ease-out;
+  word-wrap: break-word;
+  max-width: 100%;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+
+.notification.hiding {
+  animation: notification-fade-out 0.3s ease-out;
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+/* === Notification Sizes === */
+.notification.size-small {
+  font-size: 12px;
+  padding: 8px 12px;
+}
+
+.notification.size-medium {
+  font-size: 14px;
+  padding: 12px 16px;
+}
+
+.notification.size-large {
+  font-size: 20px;
+  padding: 20px 30px;
+  font-weight: 600;
+}
+
+/* === Notification Colors === */
+.notification.color-white {
+  color: #ffffff;
+  border-left: 4px solid #ffffff;
+}
+
+.notification.color-red {
+  color: #ff6b6b;
+  border-left: 4px solid #ff6b6b;
+}
+
+.notification.color-green {
+  color: #51cf66;
+  border-left: 4px solid #51cf66;
+}
+
+.notification.color-yellow {
+  color: #ffd43b;
+  border-left: 4px solid #ffd43b;
+}
+
+.notification.color-blue {
+  color: #74c0fc;
+  border-left: 4px solid #74c0fc;
+}
+
+/* === Notification Icon === */
+.notification-icon {
+  flex-shrink: 0;
+}
+
+.notification-icon img {
+  display: block;
+}
+
+/* === Notification Content === */
+.notification-from {
+  font-weight: 600;
+  margin-bottom: 4px;
+  opacity: 0.9;
+}
+
+.notification-message {
+  opacity: 0.95;
+  line-height: 1.4;
+}
+
+/* === Overlay Specific === */
+.notification-container.overlay .notification {
+  background: rgba(0, 0, 0, 0.95);
+  min-width: 300px;
+}
+
+/* Center text only when no icon is present */
+.notification-container.overlay .notification:not(:has(.notification-icon)) {
+  text-align: center;
+}
+
+.notification-container.overlay .notification.size-large {
+  font-size: 32px;
+  padding: 30px 50px;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+}
+
+/* === Quest Specific === */
+.notification-container.quest .notification {
+  background: rgba(20, 20, 20, 0.9);
+  border-left: none;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  min-width: 250px;
+}
+
+.notification-container.quest .notification-message {
+  font-weight: 500;
+}
+
+/* === Animations === */
+@keyframes notification-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes notification-fade-out {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+}
+
+/* === Responsive === */
+@media (max-width: 768px) {
+  .notification-container {
+    max-width: calc(100vw - 40px);
+  }
+
+  .notification-container.system,
+  .notification-container.chat {
+    bottom: 10px;
+    left: 10px;
+    right: 10px;
+  }
+
+  .notification-container.quest {
+    top: 10px;
+    right: 10px;
+    left: 10px;
+  }
+}

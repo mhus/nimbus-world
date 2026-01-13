@@ -1,0 +1,29 @@
+{
+  "name": "@nimbus/root",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Nimbus Voxel Engine - Client 2.0",
+  "scripts": {
+    "build": "pnpm build:shared && pnpm build:engine",
+    "build:shared": "pnpm --filter @nimbus/shared build",
+    "build:engine": "pnpm --filter @nimbus/engine build",
+    "build:viewer": "pnpm build:shared && pnpm --filter @nimbus/engine build:viewer",
+    "build:editor": "pnpm build:shared && pnpm --filter @nimbus/engine build:editor",
+    "build:controls": "pnpm build:shared && pnpm --filter @nimbus/controls build",
+    "dev:engine": "pnpm --filter @nimbus/engine dev",
+    "dev:viewer": "pnpm --filter @nimbus/engine dev",
+    "dev:editor": "pnpm --filter @nimbus/engine dev:editor",
+    "dev:controls": "pnpm --filter @nimbus/controls dev",
+    "test": "pnpm -r test",
+    "lint": "pnpm -r lint",
+    "clean": "pnpm -r clean && rm -rf node_modules"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=8.0.0"
+  }
+}
