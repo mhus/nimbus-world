@@ -76,8 +76,8 @@ importers:
         specifier: ^8.43.0
         version: 8.43.0(@babylonjs/core@8.41.2)(babylonjs-gltf2interface@8.41.2)
       '@babylonjs/materials':
-        specifier: ^8.41.2
-        version: 8.41.2(@babylonjs/core@8.41.2)
+        specifier: ^8.45.3
+        version: 8.45.3(@babylonjs/core@8.41.2)
       '@nimbus/shared':
         specifier: workspace:*
         version: link:../shared
@@ -298,8 +298,8 @@ packages:
       '@babylonjs/core': ^8.0.0
       babylonjs-gltf2interface: ^8.0.0
 
-  '@babylonjs/materials@8.41.2':
-    resolution: {integrity: sha512-MTRK7nZ27A+xluy1aIx05MTqArQ2NScrCyTmUSsVft7wTRpUTyY+OUNTaKy1BdFrheui/E7WG/BesAdCRJm90A==}
+  '@babylonjs/materials@8.45.3':
+    resolution: {integrity: sha512-/+FTxiGN3of+rtkLzV5hRohkyyrmLoe40EmLde4TPoGky1f7gTn8We/kBjkaSoD2btg/RuzsU9VAdnIzb/QIFQ==}
     peerDependencies:
       '@babylonjs/core': ^8.6.0
 
@@ -2931,7 +2931,7 @@ snapshots:
       '@babylonjs/core': 8.41.2
       babylonjs-gltf2interface: 8.41.2
 
-  '@babylonjs/materials@8.41.2(@babylonjs/core@8.41.2)':
+  '@babylonjs/materials@8.45.3(@babylonjs/core@8.41.2)':
     dependencies:
       '@babylonjs/core': 8.41.2
 
