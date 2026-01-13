@@ -1,0 +1,53 @@
+name: Build Client
+
+on:
+  push:
+    paths:
+      - 'client/**'
+      - '.github/workflows/build-client.yml'
+  pull_request:
+    paths:
+      - 'client/**'
+      - '.github/workflows/build-client.yml'
+  workflow_dispatch:
+
+jobs:
+  build:
+    if: |
+      !(
+        (github.event_name == 'push' && startsWith(github.event.head_commit.message, 'wip:')) ||
+        (github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, 'wip:'))
+      )
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Debug Check for lockfile
+        run: |
+          ls -l client/pnpm-lock.yaml
+          head -20 client/pnpm-lock.yaml
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 9
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+          cache-dependency-path: client/pnpm-lock.yaml
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        working-directory: ./client
+      - name: Build shared package
+        run: pnpm --filter @nimbus/shared... build
+        working-directory: ./client
+      - name: Build engine (viewer)
+        run: pnpm --filter @nimbus/engine... build:viewer
+        working-directory: ./client
+      - name: Build engine (editor)
+        run: pnpm --filter @nimbus/engine... build:editor
+        working-directory: ./client
+      - name: Build controls
+        run: pnpm --filter @nimbus/controls... build
+        working-directory: ./client
