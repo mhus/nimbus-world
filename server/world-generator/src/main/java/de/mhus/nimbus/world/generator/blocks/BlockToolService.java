@@ -1,7 +1,9 @@
 package de.mhus.nimbus.world.generator.blocks;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import de.mhus.nimbus.world.shared.util.ModelSelector;
+import dev.langchain4j.agent.tool.Tool;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +25,7 @@ import java.util.Optional;
 public class BlockToolService {
 
     private final BlockManipulatorService blockManipulatorService;
+    private final ObjectMapper objectMapper;
 
     /**
      * Tool information record.
@@ -275,5 +278,93 @@ public class BlockToolService {
         private final String name;
         private final String title;
         private final String description;
+    }
+
+    // ========== AI Tool Methods (for langchain4j) ==========
+
+    /**
+     * Get list of available block manipulators for AI agents (formatted).
+     *
+     * @return Formatted list of available manipulators
+     */
+    @Tool("Get list of all available block manipulators with their names, titles, and descriptions. Use this to discover what types of blocks can be generated.")
+    public String getAvailableManipulatorsFormatted() {
+        List<String> manipulatorNames = blockManipulatorService.getManipulatorNames();
+
+        if (manipulatorNames.isEmpty()) {
+            return "No manipulators available";
+        }
+
+        StringBuilder result = new StringBuilder();
+        result.append(String.format("Found %d block manipulator(s):\n\n", manipulatorNames.size()));
+
+        for (String name : manipulatorNames) {
+            Optional<ManipulatorInfo> info = getManipulatorInfo(name);
+            if (info.isPresent()) {
+                result.append(String.format("Name: %s\n", info.get().getName()));
+                result.append(String.format("Title: %s\n", info.get().getTitle()));
+                if (info.get().getDescription() != null) {
+                    result.append(String.format("Description: %s\n", info.get().getDescription()));
+                }
+                result.append("---\n\n");
+            }
+        }
+
+        return result.toString();
+    }
+
+    /**
+     * Execute a block manipulator for AI agents.
+     *
+     * @param manipulatorName Name of the manipulator (e.g., "plateau", "cube", "sphere")
+     * @param parametersJson JSON string with manipulator parameters
+     * @param worldId World ID where blocks will be placed
+     * @param sessionId Session ID for context (can be empty)
+     * @param layerDataId Layer data ID (optional, can be empty)
+     * @param layerName Layer name (optional, can be empty)
+     * @param modelName Model name for MODEL layers (optional, can be empty)
+     * @return Execution result message
+     */
+    @Tool("Execute a block manipulator to generate blocks. Provide the manipulator name, parameters as JSON, worldId, sessionId, and layer information. Returns success message with block count.")
+    public String executeManipulator(
+            String manipulatorName,
+            String parametersJson,
+            String worldId,
+            String sessionId,
+            String layerDataId,
+            String layerName,
+            String modelName) {
+
+        log.info("AI Tool: executeManipulator - manipulator={}, worldId={}, sessionId={}, layerDataId={}, layerName={}",
+                manipulatorName, worldId, sessionId, layerDataId, layerName);
+
+        // Parse parameters JSON
+        ObjectNode params;
+        try {
+            params = (ObjectNode) objectMapper.readTree(parametersJson);
+        } catch (Exception e) {
+            return "ERROR: Invalid parameters JSON: " + e.getMessage();
+        }
+
+        // Build context
+        ManipulatorContext context = ManipulatorContext.builder()
+                .service(blockManipulatorService)
+                .worldId(worldId)
+                .sessionId(sessionId != null && !sessionId.isBlank() ? sessionId : null)
+                .layerDataId(layerDataId != null && !layerDataId.isBlank() ? layerDataId : null)
+                .layerName(layerName != null && !layerName.isBlank() ? layerName : null)
+                .modelName(modelName != null && !modelName.isBlank() ? modelName : null)
+                .groupId(0)
+                .params(params)
+                .build();
+
+        // Execute
+        BlockToolResult result = executeManipulator(manipulatorName, context);
+
+        if (result.isSuccess()) {
+            return String.format("SUCCESS: %s (Blocks generated: %d)", result.getMessage(), result.getBlockCount());
+        } else {
+            return String.format("ERROR: %s", result.getError());
+        }
     }
 }

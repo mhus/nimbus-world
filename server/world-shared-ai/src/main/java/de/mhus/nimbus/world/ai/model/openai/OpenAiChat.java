@@ -6,8 +6,8 @@ import de.mhus.nimbus.world.ai.model.AiChatOptions;
 import dev.langchain4j.data.message.AiMessage;
 import dev.langchain4j.data.message.SystemMessage;
 import dev.langchain4j.data.message.UserMessage;
-import dev.langchain4j.model.chat.ChatLanguageModel;
-import dev.langchain4j.model.output.Response;
+import dev.langchain4j.model.chat.ChatModel;
+import dev.langchain4j.model.chat.response.ChatResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -22,7 +22,7 @@ import java.util.List;
 public class OpenAiChat implements AiChat {
 
     private final String name;
-    private final ChatLanguageModel chatModel;
+    private final ChatModel chatModel;
     private final AiChatOptions options;
 
     @Override
@@ -48,9 +48,9 @@ public class OpenAiChat implements AiChat {
             messages.add(UserMessage.from(question));
 
             // Generate response
-            Response<AiMessage> response = chatModel.generate(messages);
+            ChatResponse response = chatModel.chat(messages);
 
-            String answer = response.content().text();
+            String answer = response.aiMessage().text();
             log.debug("OpenAI response for '{}': {}", question.substring(0, Math.min(50, question.length())),
                     answer.substring(0, Math.min(100, answer.length())));
 

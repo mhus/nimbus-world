@@ -3,7 +3,7 @@ package de.mhus.nimbus.world.ai.model.openai;
 import de.mhus.nimbus.world.ai.model.AiChat;
 import de.mhus.nimbus.world.ai.model.AiChatOptions;
 import de.mhus.nimbus.world.ai.model.LangchainModel;
-import dev.langchain4j.model.chat.ChatLanguageModel;
+import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.openai.OpenAiChatModel;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -38,7 +38,7 @@ public class OpenAiLangchainModel implements LangchainModel {
         }
 
         try {
-            ChatLanguageModel chatModel = OpenAiChatModel.builder()
+            ChatModel chatModel = OpenAiChatModel.builder()
                     .apiKey(settings.getApiKey())
                     .modelName(modelName)
                     .temperature(options.getTemperature())

@@ -46,21 +46,27 @@
             <version>${project.version}</version>
         </dependency>
 
-        <!-- LangChain4j dependencies -->
+        <!-- LangChain4j dependencies - Upgraded to 1.10.0 for agentic API support -->
         <dependency>
             <groupId>dev.langchain4j</groupId>
             <artifactId>langchain4j</artifactId>
-            <version>0.36.2</version>
+            <version>1.10.0</version>
         </dependency>
         <dependency>
             <groupId>dev.langchain4j</groupId>
             <artifactId>langchain4j-open-ai</artifactId>
-            <version>0.36.2</version>
+            <version>1.10.0</version>
         </dependency>
         <dependency>
             <groupId>dev.langchain4j</groupId>
             <artifactId>langchain4j-google-ai-gemini</artifactId>
-            <version>0.36.2</version>
+            <version>1.10.0</version>
+        </dependency>
+        <!-- Agentic Extension for declarative multi-agent systems -->
+        <dependency>
+            <groupId>dev.langchain4j</groupId>
+            <artifactId>langchain4j-agentic</artifactId>
+            <version>1.10.0-beta18</version>
         </dependency>
 
         <!-- Spring Boot Starter Test -->

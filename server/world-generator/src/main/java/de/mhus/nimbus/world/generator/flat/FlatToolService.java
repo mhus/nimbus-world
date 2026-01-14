@@ -1,9 +1,11 @@
 package de.mhus.nimbus.world.generator.flat;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import de.mhus.nimbus.world.shared.generator.WFlat;
 import de.mhus.nimbus.world.shared.generator.WFlatService;
+import dev.langchain4j.agent.tool.Tool;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +32,7 @@ public class FlatToolService {
     private final FlatCreateService flatCreateService;
     private final FlatExportService flatExportService;
     private final WFlatService wFlatService;
+    private final ObjectMapper objectMapper;
 
     /**
      * Tool information record.
@@ -520,5 +523,132 @@ public class FlatToolService {
         // For now, return empty list - can be implemented later
         log.warn("getAvailableManipulators() not yet fully implemented");
         return List.of();
+    }
+
+    // ========== AI Tool Methods (for langchain4j) ==========
+
+    /**
+     * Create a new flat terrain for AI agents.
+     *
+     * @param flatId Unique flat ID
+     * @param worldId World ID
+     * @param sizeX Size in X direction
+     * @param sizeZ Size in Z direction
+     * @param title Flat title
+     * @param description Flat description
+     * @return Execution result
+     */
+    @Tool("Create a new flat terrain. Provide flatId, worldId, sizeX, sizeZ, title, and description. Returns the created flatId.")
+    public String executeCreate(
+            String flatId,
+            String worldId,
+            int sizeX,
+            int sizeZ,
+            String title,
+            String description) {
+
+        log.info("AI Tool: executeCreate - flatId={}, worldId={}, sizeX={}, sizeZ={}",
+                flatId, worldId, sizeX, sizeZ);
+
+        // Build params
+        ObjectNode params = objectMapper.createObjectNode();
+        params.put("flatId", flatId);
+        params.put("worldId", worldId);
+        params.put("layerDataId", ""); // Empty for flats
+        params.put("sizeX", sizeX);
+        params.put("sizeZ", sizeZ);
+        params.put("mountX", 0);
+        params.put("mountZ", 0);
+        params.put("title", title);
+        params.put("description", description);
+
+        // Execute
+        FlatToolResult result = executeCreate(params, worldId);
+
+        if (result.isSuccess()) {
+            return String.format("SUCCESS: Flat '%s' created (%dx%d blocks)",
+                result.getFlatId(), sizeX, sizeZ);
+        } else {
+            return String.format("ERROR: %s", result.getError());
+        }
+    }
+
+    /**
+     * Manipulate a flat terrain for AI agents.
+     *
+     * @param flatId Flat ID to manipulate
+     * @param manipulatorName Manipulator name (e.g., "raise", "lower", "smooth")
+     * @param parametersJson JSON parameters for manipulator
+     * @return Execution result
+     */
+    @Tool("Manipulate an existing flat terrain. Provide flatId, manipulator name (raise/lower/smooth/plateau), and parameters as JSON. Returns affected column count.")
+    public String executeManipulator(
+            String flatId,
+            String manipulatorName,
+            String parametersJson) {
+
+        log.info("AI Tool: executeManipulator - flatId={}, manipulator={}",
+                flatId, manipulatorName);
+
+        // Parse parameters
+        ObjectNode params;
+        try {
+            params = (ObjectNode) objectMapper.readTree(parametersJson);
+        } catch (Exception e) {
+            return "ERROR: Invalid parameters JSON: " + e.getMessage();
+        }
+
+        // Add flatId and manipulatorName to params
+        params.put("flatId", flatId);
+        params.put("manipulatorName", manipulatorName);
+
+        // Execute
+        FlatToolResult result = executeManipulator(params);
+
+        if (result.isSuccess()) {
+            return String.format("SUCCESS: %s (Affected columns: %d)",
+                result.getMessage(), result.getAffectedColumns());
+        } else {
+            return String.format("ERROR: %s", result.getError());
+        }
+    }
+
+    /**
+     * Export a flat terrain to a world layer for AI agents.
+     *
+     * @param flatId Flat ID to export
+     * @param worldId World ID
+     * @param layerName Layer name (usually "GROUND")
+     * @param smoothCorners Whether to smooth corners
+     * @param optimizeFaces Whether to optimize faces
+     * @return Execution result
+     */
+    @Tool("Export a flat terrain to a world layer to activate it. Provide flatId, worldId, layerName (usually 'GROUND'), smoothCorners (true/false), and optimizeFaces (true/false). This MUST be called after create or manipulate to make changes visible.")
+    public String executeExport(
+            String flatId,
+            String worldId,
+            String layerName,
+            boolean smoothCorners,
+            boolean optimizeFaces) {
+
+        log.info("AI Tool: executeExport - flatId={}, worldId={}, layerName={}",
+                flatId, worldId, layerName);
+
+        // Build params
+        ObjectNode params = objectMapper.createObjectNode();
+        params.put("flatId", flatId);
+        params.put("worldId", worldId);
+        params.put("layerName", layerName);
+        params.put("smoothCorners", smoothCorners);
+        params.put("optimizeFaces", optimizeFaces);
+
+        // Execute
+        FlatToolResult result = executeExport(params, worldId);
+
+        if (result.isSuccess()) {
+            return String.format("SUCCESS: %s", result.getMessage());
+        } else {
+            return String.format("ERROR: %s", result.getError());
+        }
     }
 }

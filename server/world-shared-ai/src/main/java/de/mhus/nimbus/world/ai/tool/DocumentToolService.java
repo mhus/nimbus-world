@@ -7,6 +7,7 @@ import de.mhus.nimbus.world.shared.world.WDocumentService;
 import dev.langchain4j.agent.tool.Tool;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
+import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
@@ -19,6 +20,7 @@ import java.util.stream.Collectors;
  * Both worldId and collection parameters must always be provided by the agent for each tool call.
  */
 @Slf4j
+@Service
 public class DocumentToolService {
 
     private final WDocumentService documentService;

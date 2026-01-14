@@ -4,7 +4,7 @@ import de.mhus.nimbus.shared.service.SSettingsService;
 import de.mhus.nimbus.shared.settings.SettingDouble;
 import de.mhus.nimbus.shared.settings.SettingInteger;
 import de.mhus.nimbus.shared.settings.SettingString;
-import dev.langchain4j.model.chat.ChatLanguageModel;
+import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.openai.OpenAiChatModel;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
@@ -57,7 +57,7 @@ public class LangChain4jSettings {
     }
 
     @Bean
-    public ChatLanguageModel chatLanguageModel() {
+    public ChatModel chatLanguageModel() {
         String key = apiKey.get();
         if (key == null || key.isBlank()) {
             log.warn("OpenAI API key not configured. LangChain4j features will be limited.");
@@ -69,7 +69,7 @@ public class LangChain4jSettings {
         double temp = temperature.get();
         int tokens = maxTokens.get();
 
-        log.info("Initializing OpenAI ChatLanguageModel: model={}, timeout={}s, temperature={}",
+        log.info("Initializing OpenAI ChatModel: model={}, timeout={}s, temperature={}",
                 model, timeout, temp);
 
         return OpenAiChatModel.builder()
