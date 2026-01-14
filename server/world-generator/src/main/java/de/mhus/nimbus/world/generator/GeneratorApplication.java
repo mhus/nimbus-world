@@ -16,6 +16,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableMongoRepositories(basePackages = {
         "de.mhus.nimbus.world.generator",
         "de.mhus.nimbus.world.shared",
+        "de.mhus.nimbus.world.ai",
         "de.mhus.nimbus.shared"
 })
 @SpringBootApplication
@@ -24,6 +25,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @ComponentScan(basePackages = {
         "de.mhus.nimbus.world.generator",
         "de.mhus.nimbus.world.shared",
+        "de.mhus.nimbus.world.ai",
         "de.mhus.nimbus.shared"
 })
 public class GeneratorApplication {

@@ -617,11 +617,48 @@ public class BlockManipulatorService {
             }
         }
 
-        log.debug("Created BlockPainter: world={}, layerDataId={}, modelName={}, groupId={}, blockType={}, painter={}",
+        // Apply painter flavor if specified via "painterFlavor" parameter
+        String painterFlavor = context.getParameter("painterFlavor");
+        if (painterFlavor != null && !painterFlavor.isBlank()) {
+            EditCachePainter.BlockPainter currentPainter = painter.getPainter();
+            EditCachePainter.BlockPainter wrappedPainter = applyPainterFlavor(painterFlavor, currentPainter);
+
+            if (wrappedPainter != null) {
+                painter.setPainter(wrappedPainter);
+                log.debug("Applied painter flavor: {}", painterFlavor);
+            } else {
+                log.warn("Unknown painter flavor '{}', ignoring. Available flavors: no-overwrite", painterFlavor);
+            }
+        }
+
+        log.debug("Created BlockPainter: world={}, layerDataId={}, modelName={}, groupId={}, blockType={}, painter={}, flavor={}",
                 worldId, layerDataId, modelName, groupId, blockDef.getBlockTypeId(),
-                painterType != null ? painterType : "default");
+                painterType != null ? painterType : "default",
+                painterFlavor != null ? painterFlavor : "none");
 
         return painter;
+    }
+
+    /**
+     * Apply a painter flavor to wrap an existing painter.
+     * Painter flavors are decorators that modify the behavior of a painter.
+     *
+     * @param flavorName name of the flavor to apply
+     * @param basePainter painter to wrap
+     * @return wrapped painter, or null if flavor not found
+     */
+    private EditCachePainter.BlockPainter applyPainterFlavor(String flavorName, EditCachePainter.BlockPainter basePainter) {
+        if (flavorName == null || basePainter == null) {
+            return null;
+        }
+
+        return switch (flavorName.toLowerCase()) {
+            case "no-overwrite" -> new EditCachePainter.NoOverwritePainter(basePainter);
+            default -> {
+                log.warn("Unknown painter flavor: {}", flavorName);
+                yield null;
+            }
+        };
     }
 
     /**

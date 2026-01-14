@@ -1,10 +1,10 @@
 package de.mhus.nimbus.world.generator.assets;
 
 import de.mhus.nimbus.shared.types.WorldId;
-import de.mhus.nimbus.world.generator.ai.model.AiChat;
-import de.mhus.nimbus.world.generator.ai.model.AiChatException;
-import de.mhus.nimbus.world.generator.ai.model.AiChatOptions;
-import de.mhus.nimbus.world.generator.ai.model.AiModelService;
+import de.mhus.nimbus.world.ai.model.AiChat;
+import de.mhus.nimbus.world.ai.model.AiChatException;
+import de.mhus.nimbus.world.ai.model.AiChatOptions;
+import de.mhus.nimbus.world.ai.model.AiModelService;
 import de.mhus.nimbus.world.shared.job.JobExecutionException;
 import de.mhus.nimbus.world.shared.job.JobExecutor;
 import de.mhus.nimbus.world.shared.job.WJob;

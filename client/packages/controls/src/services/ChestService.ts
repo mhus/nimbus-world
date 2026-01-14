@@ -29,11 +29,11 @@ export interface ItemRefRequest {
 
 export class ChestService {
   /**
-   * Get all chests in a region with optional filters
+   * Get all chests in a world with optional filters
    */
-  async getChests(regionId: string, params?: ChestListParams): Promise<WChest[]> {
+  async getChests(worldId: string, params?: ChestListParams): Promise<WChest[]> {
     return apiService.get<WChest[]>(
-      `/control/regions/${regionId}/chests`,
+      `/control/world/${worldId}/chests`,
       params
     );
   }
@@ -41,45 +41,45 @@ export class ChestService {
   /**
    * Get user-specific chests
    */
-  async getUserChests(regionId: string, userId: string): Promise<WChest[]> {
+  async getUserChests(worldId: string, userId: string): Promise<WChest[]> {
     return apiService.get<WChest[]>(
-      `/control/regions/${regionId}/chests/user/${userId}`
+      `/control/world/${worldId}/chests/user/${userId}`
     );
   }
 
   /**
    * Get region-related chests
    */
-  async getRegionChests(regionId: string): Promise<WChest[]> {
+  async getRegionChests(worldId: string): Promise<WChest[]> {
     return apiService.get<WChest[]>(
-      `/control/regions/${regionId}/chests/region`
+      `/control/world/${worldId}/chests/region`
     );
   }
 
   /**
    * Get world-related chests
    */
-  async getWorldChests(regionId: string, worldId: string): Promise<WChest[]> {
+  async getWorldChests(worldId: string): Promise<WChest[]> {
     return apiService.get<WChest[]>(
-      `/control/regions/${regionId}/chests/world/${worldId}`
+      `/control/world/${worldId}/chests`
     );
   }
 
   /**
    * Get chest by name
    */
-  async getChest(regionId: string, name: string): Promise<WChest> {
+  async getChest(worldId: string, name: string): Promise<WChest> {
     return apiService.get<WChest>(
-      `/control/regions/${regionId}/chests/${name}`
+      `/control/world/${worldId}/chests/${name}`
     );
   }
 
   /**
    * Create new chest
    */
-  async createChest(regionId: string, request: ChestRequest): Promise<WChest> {
+  async createChest(worldId: string, request: ChestRequest): Promise<WChest> {
     return apiService.post<WChest>(
-      `/control/regions/${regionId}/chests`,
+      `/control/world/${worldId}/chests`,
       request
     );
   }
@@ -87,9 +87,9 @@ export class ChestService {
   /**
    * Update existing chest
    */
-  async updateChest(regionId: string, name: string, request: Partial<ChestRequest>): Promise<WChest> {
+  async updateChest(worldId: string, name: string, request: Partial<ChestRequest>): Promise<WChest> {
     return apiService.put<WChest>(
-      `/control/regions/${regionId}/chests/${name}`,
+      `/control/world/${worldId}/chests/${name}`,
       request
     );
   }
@@ -97,18 +97,18 @@ export class ChestService {
   /**
    * Delete chest
    */
-  async deleteChest(regionId: string, name: string): Promise<void> {
+  async deleteChest(worldId: string, name: string): Promise<void> {
     return apiService.delete<void>(
-      `/control/regions/${regionId}/chests/${name}`
+      `/control/world/${worldId}/chests/${name}`
     );
   }
 
   /**
    * Add item reference to chest
    */
-  async addItem(regionId: string, name: string, itemRef: ItemRef): Promise<WChest> {
+  async addItem(worldId: string, name: string, itemRef: ItemRef): Promise<WChest> {
     return apiService.post<WChest>(
-      `/control/regions/${regionId}/chests/${name}/items`,
+      `/control/world/${worldId}/chests/${name}/items`,
       { itemRef }
     );
   }
@@ -116,9 +116,9 @@ export class ChestService {
   /**
    * Update item amount in chest
    */
-  async updateItemAmount(regionId: string, name: string, itemId: string, amount: number): Promise<WChest> {
+  async updateItemAmount(worldId: string, name: string, itemId: string, amount: number): Promise<WChest> {
     return apiService.patch<WChest>(
-      `/control/regions/${regionId}/chests/${name}/items/${itemId}`,
+      `/control/world/${worldId}/chests/${name}/items/${itemId}`,
       { amount }
     );
   }
@@ -126,9 +126,9 @@ export class ChestService {
   /**
    * Remove item from chest
    */
-  async removeItem(regionId: string, name: string, itemId: string): Promise<WChest> {
+  async removeItem(worldId: string, name: string, itemId: string): Promise<WChest> {
     return apiService.delete<WChest>(
-      `/control/regions/${regionId}/chests/${name}/items/${itemId}`
+      `/control/world/${worldId}/chests/${name}/items/${itemId}`
     );
   }
 }

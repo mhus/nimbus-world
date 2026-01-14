@@ -87,10 +87,10 @@ import { useWorld } from '@/composables/useWorld';
 import { useFlats } from '@/composables/useFlats';
 import LoadingSpinner from '@components/LoadingSpinner.vue';
 import ErrorAlert from '@components/ErrorAlert.vue';
+import JobWatch from '@components/JobWatch.vue';
 import FlatList from '../components/FlatList.vue';
 import FlatDetailModal from '../components/FlatDetailModal.vue';
 import FlatCreateDialog from '../components/FlatCreateDialog.vue';
-import JobWatch from '../components/JobWatch.vue';
 import type { Job } from '@/composables/useJobs';
 
 const { currentWorldId, loadWorlds } = useWorld();

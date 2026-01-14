@@ -127,7 +127,7 @@ const logger = getLogger('ItemRefDialog');
 interface Props {
   item: ItemSearchResult;
   chest: WChest;
-  regionId: string;
+  worldId: string;
 }
 
 const props = defineProps<Props>();
@@ -169,9 +169,9 @@ const handleAdd = async () => {
       amount: amount.value,
     };
 
-    await chestService.addItem(props.regionId, props.chest.name, itemRef);
+    await chestService.addItem(props.worldId, props.chest.name, itemRef);
     logger.info('Added item to chest', {
-      regionId: props.regionId,
+      worldId: props.worldId,
       chestName: props.chest.name,
       itemId: props.item.itemId,
       amount: amount.value
@@ -181,7 +181,7 @@ const handleAdd = async () => {
   } catch (err) {
     error.value = 'Failed to add item to chest';
     logger.error('Failed to add item to chest', {
-      regionId: props.regionId,
+      worldId: props.worldId,
       chestName: props.chest.name,
       itemId: props.item.itemId
     }, err as Error);

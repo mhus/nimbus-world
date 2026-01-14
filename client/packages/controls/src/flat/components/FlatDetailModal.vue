@@ -1,5 +1,5 @@
 <template>
-  <div class="modal modal-open">
+  <div class="modal modal-open" @click.self="$emit('close')">
     <div class="modal-box max-w-5xl">
       <!-- Header -->
       <div class="flex justify-between items-center mb-4">

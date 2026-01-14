@@ -13,19 +13,19 @@
         <h1 class="text-xl font-bold px-4">Nimbus Chest Editor</h1>
       </div>
       <div class="flex-none">
-        <!-- Region Selector -->
-        <RegionSelector />
+        <!-- World Selector -->
+        <WorldSelector />
       </div>
     </header>
 
     <!-- Main Content -->
     <main class="flex-1 container mx-auto px-4 py-6">
-      <!-- Show message if no region selected -->
-      <div v-if="!currentRegionId" class="alert alert-info">
+      <!-- Show message if no world selected -->
+      <div v-if="!currentWorldId" class="alert alert-info">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
-        <span>Please select a region from the dropdown above</span>
+        <span>Please select a world from the dropdown above</span>
       </div>
 
       <!-- Chest Editor -->
@@ -37,9 +37,9 @@
 </template>
 
 <script setup lang="ts">
-import { useRegion } from '@/composables/useRegion';
-import RegionSelector from '@/character/components/RegionSelector.vue';
+import { useWorld } from '@/composables/useWorld';
+import WorldSelector from '@/material/components/WorldSelector.vue';
 import ChestEditor from '@material/views/ChestEditor.vue';
 
-const { currentRegionId } = useRegion();
+const { currentWorldId } = useWorld();
 </script>

@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.generator.blocks.BlockManipulatorService;
+import de.mhus.nimbus.world.generator.blocks.BlockToolService;
 import de.mhus.nimbus.world.generator.blocks.ManipulatorContext;
 import de.mhus.nimbus.world.generator.blocks.ManipulatorResult;
 import de.mhus.nimbus.world.shared.chat.WChatAgent;
@@ -60,6 +61,7 @@ public class TechnicalBlockChatAgent implements WChatAgent {
     private static final String AGENT_ID = "technical-block-builder-agent";
 
     private final BlockManipulatorService blockManipulatorService;
+    private final BlockToolService blockToolService;
     private final WSessionService wSessionService;
     private final WChatService chatService;
     private final WorldClientService worldClientService;
@@ -215,23 +217,15 @@ public class TechnicalBlockChatAgent implements WChatAgent {
     }
 
     private List<WChatMessage> executeManipulator(String manipulatorName, WorldId worldId, String playerId, ManipulatorContext context) {
-        // Execute manipulator
-        ManipulatorResult result;
-        try {
-            result = blockManipulatorService.execute(manipulatorName, context);
-        } catch (Exception e) {
-            log.error("Manipulator '{}' execution failed for player {}", manipulatorName, playerId, e);
-            return List.of(createErrorMessage(worldId,
-                    "Manipulator execution failed: " + e.getMessage()));
-        }
+        // Execute manipulator using BlockToolService
+        BlockToolService.BlockToolResult result = blockToolService.executeManipulator(manipulatorName, context);
 
         // Build response messages
         List<WChatMessage> responses = new ArrayList<>();
 
         if (!result.isSuccess()) {
             // Execution failed
-            responses.add(createErrorMessage(worldId, result.getMessage()));
-            return responses;
+            return List.of(createErrorMessage(worldId, result.getError()));
         }
 
         // Success - add text message
@@ -253,7 +247,7 @@ public class TechnicalBlockChatAgent implements WChatAgent {
                 List<String> modelSelectorData = ModelSelectorUtil.toStringList(result.getModelSelector());
                 String modelSelectorJson = objectMapper.writeValueAsString(modelSelectorData);
 
-                log.info("Generated ModelSelector: blocks={}", result.getModelSelector().getBlockCount());
+                log.info("Generated ModelSelector: blocks={}", result.getBlockCount());
 
                 // Create command message with ModelSelector data as JSON in message field
                 // world-control will parse this and store in Redis
@@ -268,8 +262,7 @@ public class TechnicalBlockChatAgent implements WChatAgent {
                         .build();
                 responses.add(commandMessage);
 
-                log.debug("Created model-selector command message with {} blocks",
-                        result.getModelSelector().getBlockCount());
+                log.debug("Created model-selector command message with {} blocks", result.getBlockCount());
 
             } catch (Exception e) {
                 log.error("Failed to create ModelSelector command message", e);

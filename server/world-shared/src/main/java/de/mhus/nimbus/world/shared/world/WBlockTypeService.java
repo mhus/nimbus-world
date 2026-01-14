@@ -193,6 +193,89 @@ public class WBlockTypeService {
         return all;
     }
 
+    /**
+     * Lookup block types from multiple sources:
+     * - Search in @shared collections first (preferred)
+     * - If worldId is not a collection, also search in the region collection
+     * - Search in the specified worldId and collection last
+     * All results are merged and returned as one collection, with @shared results first.
+     *
+     * @param worldId The world identifier
+     * @return List of all block types from all sources (shared first, then region, then world)
+     */
+    @Transactional(readOnly = true)
+    public List<WBlockType> lookupBlockTypes(WorldId worldId) {
+        if (worldId.isInstanceOrZone()) {
+            worldId = worldId.mainWorld();
+        }
+
+        java.util.Set<String> uniqueIds = new java.util.HashSet<>();
+        List<WBlockType> results = new ArrayList<>();
+
+        // 1. Search in @shared collections first (preferred)
+        // We check common shared collections: @shared:n, @shared:default
+        for (String sharedName : List.of("n", "default")) {
+            WorldId sharedCollection = WorldId.of(WorldId.COLLECTION_SHARED, sharedName)
+                    .orElse(null);
+            if (sharedCollection != null) {
+                List<WBlockType> sharedBlocks = repository.findByWorldId(sharedCollection.getId());
+                for (WBlockType block : sharedBlocks) {
+                    String key = block.getWorldId() + ":" + block.getBlockId();
+                    if (uniqueIds.add(key)) {
+                        results.add(block);
+                    }
+                }
+                log.debug("Found {} block types in shared collection={}", sharedBlocks.size(), sharedCollection);
+            }
+        }
+
+        // 2. If worldId is not a collection, also search in the region collection
+        if (!worldId.isCollection()) {
+            WorldId regionCollection = worldId.toRegionCollection();
+            List<WBlockType> regionBlocks = repository.findByWorldId(regionCollection.getId());
+            for (WBlockType block : regionBlocks) {
+                String key = block.getWorldId() + ":" + block.getBlockId();
+                if (uniqueIds.add(key)) {
+                    results.add(block);
+                }
+            }
+            log.debug("Found {} block types in region collection={}", regionBlocks.size(), regionCollection);
+        }
+
+        // 3. Search in the specified worldId last
+        List<WBlockType> worldBlocks = repository.findByWorldId(worldId.getId());
+        for (WBlockType block : worldBlocks) {
+            String key = block.getWorldId() + ":" + block.getBlockId();
+            if (uniqueIds.add(key)) {
+                results.add(block);
+            }
+        }
+        log.debug("Found {} block types in worldId={}", worldBlocks.size(), worldId);
+
+        log.debug("Total block types found: {} (from {} unique sources)", results.size(), uniqueIds.size());
+        return results;
+    }
+
+    /**
+     * Lookup block types and filter by query string.
+     * Searches in @shared (preferred), region, and world collections.
+     *
+     * @param worldId The world identifier
+     * @param query Search query for filtering results
+     * @return Filtered list of block types from all sources
+     */
+    @Transactional(readOnly = true)
+    public List<WBlockType> lookupBlockTypesByQuery(WorldId worldId, String query) {
+        List<WBlockType> all = lookupBlockTypes(worldId);
+
+        // Apply search filter if provided
+        if (query != null && !query.isBlank()) {
+            all = filterByQuery(all, query);
+        }
+
+        return all;
+    }
+
     private List<WBlockType> filterByQuery(List<WBlockType> blockTypes, String query) {
         String lowerQuery = query.toLowerCase();
         return blockTypes.stream()

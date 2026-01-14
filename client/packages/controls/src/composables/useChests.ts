@@ -11,7 +11,7 @@ import { getLogger } from '@nimbus/shared';
 
 const logger = getLogger('useChests');
 
-export function useChests(regionId: string) {
+export function useChests(worldId: string) {
   const chests = ref<WChest[]>([]);
   const loading = ref(false);
   const error = ref<string | null>(null);
@@ -29,7 +29,7 @@ export function useChests(regionId: string) {
     error.value = null;
 
     try {
-      chests.value = await chestService.getChests(regionId, {
+      chests.value = await chestService.getChests(worldId, {
         type: typeFilter.value,
         userId: userIdFilter.value,
         worldId: worldIdFilter.value,
@@ -37,7 +37,7 @@ export function useChests(regionId: string) {
 
       logger.info('Loaded chests', {
         count: chests.value.length,
-        regionId,
+        worldId,
         filters: {
           type: typeFilter.value,
           userId: userIdFilter.value,
@@ -46,7 +46,7 @@ export function useChests(regionId: string) {
       });
     } catch (err) {
       error.value = 'Failed to load chests';
-      logger.error('Failed to load chests', { regionId }, err as Error);
+      logger.error('Failed to load chests', { worldId }, err as Error);
     } finally {
       loading.value = false;
     }
@@ -60,11 +60,11 @@ export function useChests(regionId: string) {
     error.value = null;
 
     try {
-      chests.value = await chestService.getUserChests(regionId, userId);
-      logger.info('Loaded user chests', { count: chests.value.length, regionId, userId });
+      chests.value = await chestService.getUserChests(worldId, userId);
+      logger.info('Loaded user chests', { count: chests.value.length, worldId, userId });
     } catch (err) {
       error.value = 'Failed to load user chests';
-      logger.error('Failed to load user chests', { regionId, userId }, err as Error);
+      logger.error('Failed to load user chests', { worldId, userId }, err as Error);
     } finally {
       loading.value = false;
     }
@@ -78,11 +78,11 @@ export function useChests(regionId: string) {
     error.value = null;
 
     try {
-      chests.value = await chestService.getRegionChests(regionId);
-      logger.info('Loaded region chests', { count: chests.value.length, regionId });
+      chests.value = await chestService.getRegionChests(worldId);
+      logger.info('Loaded region chests', { count: chests.value.length, worldId });
     } catch (err) {
       error.value = 'Failed to load region chests';
-      logger.error('Failed to load region chests', { regionId }, err as Error);
+      logger.error('Failed to load region chests', { worldId }, err as Error);
     } finally {
       loading.value = false;
     }
@@ -96,11 +96,11 @@ export function useChests(regionId: string) {
     error.value = null;
 
     try {
-      chests.value = await chestService.getWorldChests(regionId, worldId);
-      logger.info('Loaded world chests', { count: chests.value.length, regionId, worldId });
+      chests.value = await chestService.getWorldChests(worldId);
+      logger.info('Loaded world chests', { count: chests.value.length, worldId });
     } catch (err) {
       error.value = 'Failed to load world chests';
-      logger.error('Failed to load world chests', { regionId, worldId }, err as Error);
+      logger.error('Failed to load world chests', { worldId }, err as Error);
     } finally {
       loading.value = false;
     }
@@ -113,13 +113,13 @@ export function useChests(regionId: string) {
     error.value = null;
 
     try {
-      const chest = await chestService.createChest(regionId, request);
-      logger.info('Created chest', { regionId, name: chest.name });
+      const chest = await chestService.createChest(worldId, request);
+      logger.info('Created chest', { worldId, name: chest.name });
       await loadChests(); // Refresh list
       return chest;
     } catch (err) {
       error.value = 'Failed to create chest';
-      logger.error('Failed to create chest', { regionId, name: request.name }, err as Error);
+      logger.error('Failed to create chest', { worldId, name: request.name }, err as Error);
       return null;
     }
   };
@@ -131,13 +131,13 @@ export function useChests(regionId: string) {
     error.value = null;
 
     try {
-      const chest = await chestService.updateChest(regionId, name, request);
-      logger.info('Updated chest', { regionId, name });
+      const chest = await chestService.updateChest(worldId, name, request);
+      logger.info('Updated chest', { worldId, name });
       await loadChests(); // Refresh list
       return chest;
     } catch (err) {
       error.value = 'Failed to update chest';
-      logger.error('Failed to update chest', { regionId, name }, err as Error);
+      logger.error('Failed to update chest', { worldId, name }, err as Error);
       return null;
     }
   };
@@ -147,13 +147,13 @@ export function useChests(regionId: string) {
    */
   const deleteChest = async (name: string): Promise<boolean> => {
     try {
-      await chestService.deleteChest(regionId, name);
-      logger.info('Deleted chest', { regionId, name });
+      await chestService.deleteChest(worldId, name);
+      logger.info('Deleted chest', { worldId, name });
       await loadChests(); // Refresh list
       return true;
     } catch (err) {
       error.value = 'Failed to delete chest';
-      logger.error('Failed to delete chest', { regionId, name }, err as Error);
+      logger.error('Failed to delete chest', { worldId, name }, err as Error);
       return false;
     }
   };
@@ -165,13 +165,13 @@ export function useChests(regionId: string) {
     error.value = null;
 
     try {
-      await chestService.addItem(regionId, chestName, itemRef);
-      logger.info('Added item to chest', { regionId, chestName, itemId: itemRef.itemId });
+      await chestService.addItem(worldId, chestName, itemRef);
+      logger.info('Added item to chest', { worldId, chestName, itemId: itemRef.itemId });
       await loadChests(); // Refresh list
       return true;
     } catch (err) {
       error.value = 'Failed to add item to chest';
-      logger.error('Failed to add item to chest', { regionId, chestName, itemId: itemRef.itemId }, err as Error);
+      logger.error('Failed to add item to chest', { worldId, chestName, itemId: itemRef.itemId }, err as Error);
       return false;
     }
   };
@@ -183,13 +183,13 @@ export function useChests(regionId: string) {
     error.value = null;
 
     try {
-      await chestService.removeItem(regionId, chestName, itemId);
-      logger.info('Removed item from chest', { regionId, chestName, itemId });
+      await chestService.removeItem(worldId, chestName, itemId);
+      logger.info('Removed item from chest', { worldId, chestName, itemId });
       await loadChests(); // Refresh list
       return true;
     } catch (err) {
       error.value = 'Failed to remove item from chest';
-      logger.error('Failed to remove item from chest', { regionId, chestName, itemId }, err as Error);
+      logger.error('Failed to remove item from chest', { worldId, chestName, itemId }, err as Error);
       return false;
     }
   };

@@ -181,16 +181,12 @@
                   <div class="text-sm font-semibold mb-2">Metadata</div>
                   <div class="grid grid-cols-2 gap-2 text-sm">
                     <div>
-                      <span class="text-base-content/60">Region ID:</span>
-                      <span class="ml-2 font-mono text-xs">{{ chest.regionId }}</span>
+                      <span class="text-base-content/60">World ID:</span>
+                      <span class="ml-2 font-mono text-xs">{{ chest.worldId }}</span>
                     </div>
                     <div>
                       <span class="text-base-content/60">Created:</span>
                       <span class="ml-2 text-xs">{{ formatDate(chest.createdAt) }}</span>
-                    </div>
-                    <div v-if="chest.worldId">
-                      <span class="text-base-content/60">World ID:</span>
-                      <span class="ml-2 font-mono text-xs">{{ chest.worldId }}</span>
                     </div>
                     <div v-if="chest.updatedAt">
                       <span class="text-base-content/60">Updated:</span>
@@ -239,7 +235,7 @@ import { getLogger } from '@nimbus/shared';
 const logger = getLogger('ChestDialog');
 
 interface Props {
-  regionId: string;
+  worldId: string;
   chest?: WChest | null;
 }
 
@@ -323,7 +319,7 @@ const handleSave = async () => {
   try {
     if (isEditMode.value && props.chest) {
       // Update existing chest
-      await chestService.updateChest(props.regionId, props.chest.name, {
+      await chestService.updateChest(props.worldId, props.chest.name, {
         displayName: formData.value.displayName,
         description: formData.value.description,
         // Note: name, type, worldId, userId cannot be changed in edit mode
@@ -331,7 +327,7 @@ const handleSave = async () => {
       logger.info('Updated chest', { name: props.chest.name });
     } else {
       // Create new chest
-      await chestService.createChest(props.regionId, formData.value);
+      await chestService.createChest(props.worldId, formData.value);
       logger.info('Created chest', { name: formData.value.name });
     }
 
@@ -355,7 +351,7 @@ const handleRemoveItem = async (itemId: string) => {
   }
 
   try {
-    await chestService.removeItem(props.regionId, props.chest.name, itemId);
+    await chestService.removeItem(props.worldId, props.chest.name, itemId);
     logger.info('Removed item from chest', { chestName: props.chest.name, itemId });
     emit('saved'); // Trigger reload
   } catch (err) {

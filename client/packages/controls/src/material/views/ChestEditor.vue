@@ -195,7 +195,7 @@
     <!-- Create/Edit Chest Dialog -->
     <ChestDialog
       v-if="isDialogOpen"
-      :region-id="currentRegionId!"
+      :world-id="currentWorldId!"
       :chest="selectedChest"
       @close="closeDialog"
       @saved="handleChestSaved"
@@ -206,7 +206,7 @@
       v-if="isItemRefDialogOpen && selectedItem && selectedChest"
       :item="selectedItem"
       :chest="selectedChest"
-      :region-id="currentRegionId!"
+      :world-id="currentWorldId!"
       @close="closeItemRefDialog"
       @saved="handleItemRefSaved"
     />
@@ -216,7 +216,7 @@
       v-if="isAmountEditDialogOpen && editingItemRef && editingChest"
       :item-ref="editingItemRef"
       :chest="editingChest"
-      :region-id="currentRegionId!"
+      :world-id="currentWorldId!"
       @close="closeAmountEditDialog"
       @saved="handleAmountEditSaved"
     />
@@ -228,7 +228,6 @@ import { ref, computed, onMounted, watch } from 'vue';
 import type { WChest, ChestType } from '@shared/generated/entities/WChest';
 import type { ItemRef } from '@shared/generated/types/ItemRef';
 import type { ItemSearchResult } from '@/composables/useItems';
-import { useRegion } from '@/composables/useRegion';
 import { useWorld } from '@/composables/useWorld';
 import { useChests } from '@/composables/useChests';
 import { useItems } from '@/composables/useItems';
@@ -238,15 +237,14 @@ import ChestDialog from '@material/components/ChestDialog.vue';
 import ItemRefDialog from '@material/components/ItemRefDialog.vue';
 import AmountEditDialog from '@material/components/AmountEditDialog.vue';
 
-const { currentRegionId } = useRegion();
 const { currentWorldId, worlds, loadWorlds } = useWorld();
 
 const selectedWorldId = ref<string | null>(currentWorldId.value);
 const selectedChestType = ref<ChestType | ''>('');
 
 const chestsComposable = computed(() => {
-  if (!currentRegionId.value) return null;
-  return useChests(currentRegionId.value);
+  if (!currentWorldId.value) return null;
+  return useChests(currentWorldId.value);
 });
 
 const itemsComposable = computed(() => {
@@ -452,10 +450,9 @@ const handleRemoveItemFromChest = async (chest: WChest, itemId: string) => {
   await chestsComposable.value.removeItem(chest.name, itemId);
 };
 
-// Load worlds and chests when region changes
-watch(currentRegionId, () => {
-  if (currentRegionId.value) {
-    loadWorlds('mainOnly');
+// Load worlds and chests when world changes
+watch(currentWorldId, () => {
+  if (currentWorldId.value) {
     if (chestsComposable.value) {
       chestsComposable.value.loadChests();
     }
@@ -465,7 +462,7 @@ watch(currentRegionId, () => {
 onMounted(async () => {
   await loadWorlds('mainOnly');
 
-  if (currentRegionId.value && chestsComposable.value) {
+  if (currentWorldId.value && chestsComposable.value) {
     await chestsComposable.value.loadChests();
   }
 });

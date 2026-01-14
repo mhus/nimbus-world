@@ -41,6 +41,48 @@ public class EditCachePainter {
         }
     };
 
+    public static class ConcatinatingPainter extends BlockPainter {
+        private final BlockPainter[] painters;
+        public ConcatinatingPainter(BlockPainter... painters) {
+            this.painters = painters;
+        }
+        @Override
+        public void paint(EditCachePainter painter, int x, int y, int z) {
+            for (BlockPainter p : painters) {
+                p.paint(painter, x, y, z);
+            }
+        }
+    }
+
+    /**
+     * NoOverwritePainter - Painter flavor that does not overwrite existing blocks.
+     * This painter checks if a block already exists at the target position before painting.
+     * If a block exists, it skips painting at that position.
+     */
+    public static class NoOverwritePainter extends BlockPainter {
+        private final BlockPainter wrappedPainter;
+
+        public NoOverwritePainter(BlockPainter wrappedPainter) {
+            this.wrappedPainter = wrappedPainter;
+        }
+
+        @Override
+        public void paint(EditCachePainter painter, int x, int y, int z) {
+            // Check if block already exists at this position
+            boolean blockExists = painter.editService.findByCoordinates(
+                    painter.world.getWorldId(),
+                    painter.layerDataId,
+                    painter.modelName,
+                    x, y, z
+            ).isPresent();
+
+            // Only paint if no block exists
+            if (!blockExists) {
+                wrappedPainter.paint(painter, x, y, z);
+            }
+        }
+    }
+
     @Getter
     private final WEditCacheService editService;
     @Getter
@@ -455,6 +497,311 @@ public class EditCachePainter {
         }
         // Basis-Outline
         circleOutlineY(x, y, z, radius);
+    }
+
+    /**
+     * Zeichnet eine Treppe von (x,y,z) nach oben in angegebener Richtung.
+     * @param x Start X-Position
+     * @param y Start Y-Position
+     * @param z Start Z-Position
+     * @param steps Anzahl der Stufen
+     * @param dirX Richtung in X-Achse (0, 1 oder -1)
+     * @param dirZ Richtung in Z-Achse (0, 1 oder -1)
+     * @param stepWidth Breite der Stufe quer zur Richtung
+     */
+    public void stairs(int x, int y, int z, int steps, int dirX, int dirZ, int stepWidth) {
+        if (steps < 1 || stepWidth < 1) return;
+
+        // Calculate perpendicular direction for width
+        int perpX = dirZ;
+        int perpZ = -dirX;
+
+        for (int i = 0; i < steps; i++) {
+            int baseX = x + i * dirX;
+            int baseY = y + i;
+            int baseZ = z + i * dirZ;
+
+            // Draw step width
+            for (int w = 0; w < stepWidth; w++) {
+                paint(baseX + w * perpX, baseY, baseZ + w * perpZ);
+            }
+        }
+    }
+
+    /**
+     * Zeichnet eine Spiraltreppe um einen Mittelpunkt mit gegebenem Radius und Höhe.
+     * @param x Mittelpunkt X
+     * @param y Start-Höhe Y
+     * @param z Mittelpunkt Z
+     * @param radius Radius der Spirale
+     * @param height Gesamthöhe
+     * @param rotations Anzahl der vollständigen Drehungen
+     */
+    public void spiral(int x, int y, int z, int radius, int height, double rotations) {
+        if (radius < 1 || height < 1 || rotations <= 0) return;
+
+        int totalSteps = Math.max(height, (int) (rotations * 2 * Math.PI * radius));
+        double angleStep = (rotations * 2 * Math.PI) / totalSteps;
+        double heightStep = (double) height / totalSteps;
+
+        for (int i = 0; i < totalSteps; i++) {
+            double angle = i * angleStep;
+            int xi = x + (int) Math.round(Math.cos(angle) * radius);
+            int yi = y + (int) Math.round(i * heightStep);
+            int zi = z + (int) Math.round(Math.sin(angle) * radius);
+            paint(xi, yi, zi);
+
+            // Add platform width (2x2 blocks)
+            paint(xi + 1, yi, zi);
+            paint(xi, yi, zi + 1);
+            paint(xi + 1, yi, zi + 1);
+        }
+    }
+
+    /**
+     * Zeichnet einen Torbogen in Z-Richtung mit gegebener Breite und Höhe.
+     * @param x Linke untere Ecke X
+     * @param y Boden Y
+     * @param z Start Z
+     * @param width Breite des Bogens
+     * @param height Höhe des Bogens
+     * @param depth Tiefe des Bogens
+     */
+    public void arch(int x, int y, int z, int width, int height, int depth) {
+        if (width < 3 || height < 2 || depth < 1) return;
+
+        int radius = width / 2;
+        int centerX = x + radius;
+
+        // Draw pillars on both sides
+        for (int d = 0; d < depth; d++) {
+            for (int h = 0; h < height; h++) {
+                paint(x, y + h, z + d); // left pillar
+                paint(x + width - 1, y + h, z + d); // right pillar
+            }
+        }
+
+        // Draw arch top (semicircle)
+        int archY = y + height;
+        for (int d = 0; d < depth; d++) {
+            for (int i = 0; i <= width; i++) {
+                int dx = i - radius;
+                double archHeight = Math.sqrt(Math.max(0, radius * radius - dx * dx));
+                if (archHeight > 0) {
+                    paint(x + i, archY + (int) archHeight, z + d);
+                }
+            }
+        }
+    }
+
+    /**
+     * Zeichnet einen Tunnel durch Gelände von einem Punkt zum anderen.
+     * @param x1 Start X
+     * @param y1 Start Y
+     * @param z1 Start Z
+     * @param x2 End X
+     * @param y2 End Y
+     * @param z2 End Z
+     * @param width Breite des Tunnels
+     * @param height Höhe des Tunnels
+     */
+    public void tunnel(int x1, int y1, int z1, int x2, int y2, int z2, int width, int height) {
+        if (width < 1 || height < 1) return;
+
+        int dx = x2 - x1;
+        int dy = y2 - y1;
+        int dz = z2 - z1;
+        int steps = Math.max(Math.max(Math.abs(dx), Math.abs(dy)), Math.abs(dz));
+
+        if (steps == 0) return;
+
+        double xInc = dx / (double) steps;
+        double yInc = dy / (double) steps;
+        double zInc = dz / (double) steps;
+
+        for (int i = 0; i <= steps; i++) {
+            int xi = x1 + (int) Math.round(i * xInc);
+            int yi = y1 + (int) Math.round(i * yInc);
+            int zi = z1 + (int) Math.round(i * zInc);
+
+            // Create cross-section at each point
+            for (int w = -width / 2; w <= width / 2; w++) {
+                for (int h = 0; h < height; h++) {
+                    paint(xi + w, yi + h, zi);
+                }
+            }
+        }
+    }
+
+    /**
+     * Zeichnet eine Brücke zwischen zwei Punkten mit Pfeilern.
+     * @param x1 Start X
+     * @param y1 Start Y (Deck-Höhe)
+     * @param z1 Start Z
+     * @param x2 End X
+     * @param y2 End Y (Deck-Höhe)
+     * @param z2 End Z
+     * @param width Breite der Brücke
+     * @param pillarSpacing Abstand zwischen Pfeilern (0 = keine Pfeiler)
+     */
+    public void bridge(int x1, int y1, int z1, int x2, int y2, int z2, int width, int pillarSpacing) {
+        if (width < 1) return;
+
+        int dx = x2 - x1;
+        int dy = y2 - y1;
+        int dz = z2 - z1;
+        int length = Math.max(Math.max(Math.abs(dx), Math.abs(dy)), Math.abs(dz));
+
+        if (length == 0) return;
+
+        double xInc = dx / (double) length;
+        double yInc = dy / (double) length;
+        double zInc = dz / (double) length;
+
+        // Draw bridge deck
+        for (int i = 0; i <= length; i++) {
+            int xi = x1 + (int) Math.round(i * xInc);
+            int yi = y1 + (int) Math.round(i * yInc);
+            int zi = z1 + (int) Math.round(i * zInc);
+
+            for (int w = -width / 2; w <= width / 2; w++) {
+                paint(xi + w, yi, zi);
+                // Railings
+                if (w == -width / 2 || w == width / 2) {
+                    paint(xi + w, yi + 1, zi);
+                }
+            }
+
+            // Draw pillars
+            if (pillarSpacing > 0 && i % pillarSpacing == 0 && yi > 0) {
+                for (int py = 0; py < yi; py++) {
+                    paint(xi, py, zi);
+                }
+            }
+        }
+    }
+
+    /**
+     * Zeichnet einen Turm (Zylinder mit Kegel-Dach).
+     * @param x Mittelpunkt X
+     * @param y Boden Y
+     * @param z Mittelpunkt Z
+     * @param radius Radius des Turms
+     * @param bodyHeight Höhe des Zylinder-Körpers
+     * @param roofHeight Höhe des Daches
+     */
+    public void tower(int x, int y, int z, int radius, int bodyHeight, int roofHeight) {
+        if (radius < 1 || bodyHeight < 1 || roofHeight < 1) return;
+
+        // Draw cylinder body
+        cylinderOutline(x, y, z, radius, bodyHeight);
+
+        // Draw cone roof
+        coneOutline(x, y + bodyHeight, z, radius, roofHeight);
+    }
+
+    /**
+     * Zeichnet ein vordefiniertes Haus-Template.
+     * @param x Linke untere Ecke X
+     * @param y Boden Y
+     * @param z Linke untere Ecke Z
+     * @param width Breite des Hauses
+     * @param length Länge des Hauses
+     * @param wallHeight Höhe der Wände
+     * @param roofHeight Höhe des Daches
+     */
+    public void house(int x, int y, int z, int width, int length, int wallHeight, int roofHeight) {
+        if (width < 3 || length < 3 || wallHeight < 2 || roofHeight < 1) return;
+
+        // Draw walls (outline)
+        cubeOutline(x, y, z, width, wallHeight, length);
+
+        // Draw floor
+        rectangleY(x, y, z, width, length);
+
+        // Draw roof (pyramid style)
+        int roofLayers = roofHeight;
+        for (int layer = 0; layer < roofLayers; layer++) {
+            int offset = layer;
+            int layerWidth = width - 2 * offset;
+            int layerLength = length - 2 * offset;
+
+            if (layerWidth > 0 && layerLength > 0) {
+                rectangleOutlineY(x + offset, y + wallHeight + layer, z + offset, layerWidth, layerLength);
+            }
+        }
+
+        // Add door (2 blocks high, centered on one wall)
+        int doorX = x + width / 2;
+        paint(doorX, y + 1, z);
+        paint(doorX, y + 2, z);
+
+        // Add windows
+        if (width > 5) {
+            paint(x + 2, y + wallHeight / 2, z); // front left window
+            paint(x + width - 3, y + wallHeight / 2, z); // front right window
+        }
+    }
+
+    /**
+     * Zeichnet einen Baum mit Stamm und Krone.
+     * @param x Stamm-Mitte X
+     * @param y Boden Y
+     * @param z Stamm-Mitte Z
+     * @param trunkHeight Höhe des Stammes
+     * @param crownRadius Radius der Baumkrone
+     */
+    public void tree(int x, int y, int z, int trunkHeight, int crownRadius) {
+        if (trunkHeight < 1 || crownRadius < 1) return;
+
+        // Draw trunk
+        for (int h = 0; h < trunkHeight; h++) {
+            paint(x, y + h, z);
+        }
+
+        // Draw crown (sphere or dome)
+        int crownY = y + trunkHeight;
+        for (int dx = -crownRadius; dx <= crownRadius; dx++) {
+            for (int dy = 0; dy <= crownRadius; dy++) {
+                for (int dz = -crownRadius; dz <= crownRadius; dz++) {
+                    int d2 = dx * dx + dy * dy + dz * dz;
+                    if (d2 <= crownRadius * crownRadius) {
+                        paint(x + dx, crownY + dy, z + dz);
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Zeichnet eine gefüllte Pyramide mit quadratischer Basis.
+     * @param x Mittelpunkt X
+     * @param y Boden Y
+     * @param z Mittelpunkt Z
+     * @param size Größe der Basis
+     * @param height Höhe der Pyramide
+     */
+    public void pyramid(int x, int y, int z, int size, int height) {
+        if (size < 1 || height < 1) return;
+
+        int half = size / 2;
+
+        for (int h = 0; h < height; h++) {
+            // Calculate size at this height
+            double ratio = 1.0 - (double) h / height;
+            int layerSize = (int) Math.round(size * ratio);
+
+            if (layerSize < 1) layerSize = 1;
+
+            int layerHalf = layerSize / 2;
+
+            // Draw layer
+            for (int dx = -layerHalf; dx <= layerHalf; dx++) {
+                for (int dz = -layerHalf; dz <= layerHalf; dz++) {
+                    paint(x + dx, y + h, z + dz);
+                }
+            }
+        }
     }
 
     public static class BlockPainter {

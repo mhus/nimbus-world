@@ -20,6 +20,7 @@
         <module>generated</module>
         <module>shared</module>
         <module>world-shared</module>
+        <module>world-shared-ai</module>
         <module>world-player</module>
         <module>world-control</module>
         <module>world-life</module>

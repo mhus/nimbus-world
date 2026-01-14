@@ -378,6 +378,18 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
           </svg>
         </EditorCard>
+
+        <!-- Document Editor -->
+        <EditorCard
+          v-if="hasAccess('DOCUMENT_EDITOR')"
+          title="Document Editor"
+          description="Manage text documents in collections (lore, quests, etc.)"
+          url="/controls/document-editor.html"
+        >
+          <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+        </EditorCard>
       </div>
     </main>
 
@@ -445,6 +457,7 @@ const editorRoleMap: Record<string, string[]> = {
   'ANYTHING_EDITOR': ['SECTOR_ADMIN', 'ANYTHING_EDITOR', 'WORLD_EDITOR'],
   'SETTINGS_EDITOR': ['SECTOR_ADMIN'],
   'STORAGE_EDITOR': ['SECTOR_ADMIN', 'STORAGE_EDITOR'],
+  'DOCUMENT_EDITOR': ['SECTOR_ADMIN', 'DOCUMENT_EDITOR', 'WORLD_EDITOR'],
 };
 
 /**

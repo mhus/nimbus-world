@@ -107,7 +107,7 @@ const logger = getLogger('AmountEditDialog');
 interface Props {
   itemRef: ItemRef;
   chest: WChest;
-  regionId: string;
+  worldId: string;
 }
 
 const props = defineProps<Props>();
@@ -143,18 +143,18 @@ const handleSave = async () => {
   try {
     if (newAmount.value === 0) {
       // Remove item from chest
-      await chestService.removeItem(props.regionId, props.chest.name, props.itemRef.itemId);
+      await chestService.removeItem(props.worldId, props.chest.name, props.itemRef.itemId);
       logger.info('Removed item from chest (amount set to 0)', {
-        regionId: props.regionId,
+        worldId: props.worldId,
         chestName: props.chest.name,
         itemId: props.itemRef.itemId
       });
     } else {
       // Update amount using dedicated endpoint
-      await chestService.updateItemAmount(props.regionId, props.chest.name, props.itemRef.itemId, newAmount.value);
+      await chestService.updateItemAmount(props.worldId, props.chest.name, props.itemRef.itemId, newAmount.value);
 
       logger.info('Updated item amount in chest', {
-        regionId: props.regionId,
+        worldId: props.worldId,
         chestName: props.chest.name,
         itemId: props.itemRef.itemId,
         oldAmount: props.itemRef.amount,
@@ -166,7 +166,7 @@ const handleSave = async () => {
   } catch (err) {
     error.value = 'Failed to update amount';
     logger.error('Failed to update amount', {
-      regionId: props.regionId,
+      worldId: props.worldId,
       chestName: props.chest.name,
       itemId: props.itemRef.itemId
     }, err as Error);

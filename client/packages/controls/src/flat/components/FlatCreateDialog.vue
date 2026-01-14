@@ -1,5 +1,5 @@
 <template>
-  <div class="modal modal-open">
+  <div class="modal modal-open" @click.self="$emit('close')">
     <div class="modal-box max-w-2xl">
       <h3 class="font-bold text-lg mb-4">Create New Flat</h3>
 
