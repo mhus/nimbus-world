@@ -1,5 +1,6 @@
 package de.mhus.nimbus.world.shared.job;
 
+import de.mhus.nimbus.shared.types.WorldId;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
@@ -44,7 +45,10 @@ public class WJobService {
         }
 
         // IMPORTANT: Filter out instances - jobs are per world only
-        de.mhus.nimbus.shared.types.WorldId parsedWorldId = de.mhus.nimbus.shared.types.WorldId.unchecked(worldId);
+        WorldId parsedWorldId = de.mhus.nimbus.shared.types.WorldId.unchecked(worldId);
+        if (parsedWorldId.isCollection()) {
+            throw new IllegalArgumentException("Cannot create job for instance worldId: " + worldId);
+        }
         String lookupWorldId = parsedWorldId.withoutInstance().getId();
 
         WJob job = WJob.builder()
@@ -74,7 +78,10 @@ public class WJobService {
     @Transactional(readOnly = true)
     public List<WJob> getJobsByWorld(String worldId) {
         // IMPORTANT: Filter out instances - jobs are per world only
-        de.mhus.nimbus.shared.types.WorldId parsedWorldId = de.mhus.nimbus.shared.types.WorldId.unchecked(worldId);
+        WorldId parsedWorldId = de.mhus.nimbus.shared.types.WorldId.unchecked(worldId);
+        if (parsedWorldId.isCollection()) {
+            throw new IllegalArgumentException("Cannot create job for instance worldId: " + worldId);
+        }
         String lookupWorldId = parsedWorldId.withoutInstance().getId();
 
         return jobRepository.findByWorldId(lookupWorldId);
@@ -83,7 +90,10 @@ public class WJobService {
     @Transactional(readOnly = true)
     public List<WJob> getJobsByWorldAndStatus(String worldId, JobStatus status) {
         // IMPORTANT: Filter out instances - jobs are per world only
-        de.mhus.nimbus.shared.types.WorldId parsedWorldId = de.mhus.nimbus.shared.types.WorldId.unchecked(worldId);
+        WorldId parsedWorldId = de.mhus.nimbus.shared.types.WorldId.unchecked(worldId);
+        if (parsedWorldId.isCollection()) {
+            throw new IllegalArgumentException("Cannot create job for instance worldId: " + worldId);
+        }
         String lookupWorldId = parsedWorldId.withoutInstance().getId();
 
         return jobRepository.findByWorldIdAndStatus(lookupWorldId, status.name());
@@ -179,7 +189,10 @@ public class WJobService {
     @Transactional(readOnly = true)
     public long countJobs(String worldId, JobStatus status) {
         // IMPORTANT: Filter out instances - jobs are per world only
-        de.mhus.nimbus.shared.types.WorldId parsedWorldId = de.mhus.nimbus.shared.types.WorldId.unchecked(worldId);
+        WorldId parsedWorldId = de.mhus.nimbus.shared.types.WorldId.unchecked(worldId);
+        if (parsedWorldId.isCollection()) {
+            throw new IllegalArgumentException("Cannot create job for instance worldId: " + worldId);
+        }
         String lookupWorldId = parsedWorldId.withoutInstance().getId();
 
         return jobRepository.countByWorldIdAndStatus(lookupWorldId, status.name());
@@ -192,7 +205,10 @@ public class WJobService {
     @Transactional(readOnly = true)
     public List<WJob> getJobsByWorldAndQuery(String worldId, String query) {
         // IMPORTANT: Filter out instances - jobs are per world only
-        de.mhus.nimbus.shared.types.WorldId parsedWorldId = de.mhus.nimbus.shared.types.WorldId.unchecked(worldId);
+        WorldId parsedWorldId = de.mhus.nimbus.shared.types.WorldId.unchecked(worldId);
+        if (parsedWorldId.isCollection()) {
+            throw new IllegalArgumentException("Cannot create job for instance worldId: " + worldId);
+        }
         String lookupWorldId = parsedWorldId.withoutInstance().getId();
 
         List<WJob> all = jobRepository.findByWorldId(lookupWorldId);

@@ -94,7 +94,7 @@ public class WChatController extends BaseEditorController {
         log.debug("GET chats for player: worldId={}, pathPlayerId={}, userId={}, characterId={}, archived={}",
             worldId, playerId, userId, characterId, archived);
 
-        if (blank(worldId)) {
+        if (Strings.isBlank(worldId)) {
             return bad("worldId required");
         }
 
@@ -108,7 +108,7 @@ public class WChatController extends BaseEditorController {
             actualPlayerId = playerId; // Fallback to path parameter
         }
 
-        if (blank(actualPlayerId)) {
+        if (Strings.isBlank(actualPlayerId)) {
             return bad("playerId required - not authenticated");
         }
 
@@ -141,10 +141,10 @@ public class WChatController extends BaseEditorController {
 
         log.debug("GET messages: worldId={}, chatId={}, afterMessageId={} limit={}", worldId, chatId, afterMessageId, limit);
 
-        if (blank(worldId)) {
+        if (Strings.isBlank(worldId)) {
             return bad("worldId required");
         }
-        if (blank(chatId)) {
+        if (Strings.isBlank(chatId)) {
             return bad("chatId required");
         }
 
@@ -197,16 +197,16 @@ public class WChatController extends BaseEditorController {
         log.debug("POST create chat: worldId={}, pathPlayerId={}, actualPlayerId={}, request={}",
             worldId, playerId, actualPlayerId, request);
 
-        if (blank(worldId)) {
+        if (Strings.isBlank(worldId)) {
             return bad("worldId required");
         }
-        if (blank(actualPlayerId)) {
+        if (Strings.isBlank(actualPlayerId)) {
             return bad("playerId required - not authenticated");
         }
-        if (blank(request.name())) {
+        if (Strings.isBlank(request.name())) {
             return bad("name required");
         }
-        if (blank(request.type())) {
+        if (Strings.isBlank(request.type())) {
             return bad("type required");
         }
 
@@ -238,16 +238,16 @@ public class WChatController extends BaseEditorController {
 
         log.debug("POST send message: worldId={}, chatId={}, playerId={}", worldId, chatId, playerId);
 
-        if (blank(worldId)) {
+        if (Strings.isBlank(worldId)) {
             return bad("worldId required");
         }
-        if (blank(chatId)) {
+        if (Strings.isBlank(chatId)) {
             return bad("chatId required");
         }
-        if (blank(playerId)) {
+        if (Strings.isBlank(playerId)) {
             return bad("playerId required");
         }
-        if (blank(request.message())) {
+        if (Strings.isBlank(request.message())) {
             return bad("message required");
         }
 
@@ -299,16 +299,16 @@ public class WChatController extends BaseEditorController {
         log.debug("POST execute command: worldId={}, chatId={}, playerId={}, command={}",
                 worldId, chatId, playerId, request.command());
 
-        if (blank(worldId)) {
+        if (Strings.isBlank(worldId)) {
             return bad("worldId required");
         }
-        if (blank(chatId)) {
+        if (Strings.isBlank(chatId)) {
             return bad("chatId required");
         }
-        if (blank(playerId)) {
+        if (Strings.isBlank(playerId)) {
             return bad("playerId required");
         }
-        if (blank(request.command())) {
+        if (Strings.isBlank(request.command())) {
             return bad("command required");
         }
 
@@ -366,7 +366,7 @@ public class WChatController extends BaseEditorController {
 
         log.debug("worldId={}, sessionId={}", worldId, sessionId);
 
-        if (blank(worldId)) {
+        if (Strings.isBlank(worldId)) {
             return bad("worldId required - not authenticated");
         }
 
@@ -397,10 +397,10 @@ public class WChatController extends BaseEditorController {
 
         log.debug("PUT archive chat: worldId={}, chatId={}", worldId, chatId);
 
-        if (blank(worldId)) {
+        if (Strings.isBlank(worldId)) {
             return bad("worldId required");
         }
-        if (blank(chatId)) {
+        if (Strings.isBlank(chatId)) {
             return bad("chatId required");
         }
 

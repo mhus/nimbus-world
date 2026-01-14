@@ -1,6 +1,7 @@
 package de.mhus.nimbus.world.shared.world;
 
 import de.mhus.nimbus.generated.types.ItemRef;
+import de.mhus.nimbus.shared.types.WorldId;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -21,27 +22,11 @@ public class WChestService {
     private final WChestRepository repository;
 
     /**
-     * Find chest by regionId and name.
-     */
-    @Transactional(readOnly = true)
-    public Optional<WChest> getByRegionIdAndName(String regionId, String name) {
-        return repository.findByRegionIdAndName(regionId, name);
-    }
-
-    /**
      * Find chest by worldId and name.
      */
     @Transactional(readOnly = true)
     public Optional<WChest> getByWorldIdAndName(String worldId, String name) {
         return repository.findByWorldIdAndName(worldId, name);
-    }
-
-    /**
-     * Find all chests for a specific region.
-     */
-    @Transactional(readOnly = true)
-    public List<WChest> findByRegionId(String regionId) {
-        return repository.findByRegionId(regionId);
     }
 
     /**
@@ -53,27 +38,11 @@ public class WChestService {
     }
 
     /**
-     * Find all chests for a specific user in a region.
-     */
-    @Transactional(readOnly = true)
-    public List<WChest> findByRegionIdAndUserId(String regionId, String userId) {
-        return repository.findByRegionIdAndUserId(regionId, userId);
-    }
-
-    /**
      * Find all chests for a specific user in a world.
      */
     @Transactional(readOnly = true)
     public List<WChest> findByWorldIdAndUserId(String worldId, String userId) {
         return repository.findByWorldIdAndUserId(worldId, userId);
-    }
-
-    /**
-     * Find all chests of a specific type in a region.
-     */
-    @Transactional(readOnly = true)
-    public List<WChest> findByRegionIdAndType(String regionId, WChest.ChestType type) {
-        return repository.findByRegionIdAndType(regionId, type);
     }
 
     /**
@@ -87,7 +56,6 @@ public class WChestService {
     /**
      * Create a new chest.
      *
-     * @param regionId Region identifier (required)
      * @param worldId World identifier (optional)
      * @param name Internal name/identifier
      * @param title Display name (optional)
@@ -97,14 +65,17 @@ public class WChestService {
      * @return Created chest entity
      */
     @Transactional
-    public WChest createChest(String regionId, String worldId, String name, String title,
+    public WChest createChest(String worldId, String name, String title,
                               String description, String userId, WChest.ChestType type) {
-        if (repository.findByRegionIdAndName(regionId, name).isPresent()) {
+        if (repository.findByWorldIdAndName(worldId, name).isPresent()) {
             throw new IllegalStateException("Chest with name already exists in region: " + name);
+        }
+        WorldId parsedWorldId = WorldId.of(worldId).orElseThrow();
+        if (parsedWorldId.isSharedCollection() || parsedWorldId.isPublicRegion()) {
+            throw new IllegalArgumentException("WChest can't be in shared or public region");
         }
 
         WChest chest = WChest.builder()
-                .regionId(regionId)
                 .worldId(worldId)
                 .name(name)
                 .title(title)
@@ -114,7 +85,7 @@ public class WChestService {
                 .build();
         chest.touchCreate();
         repository.save(chest);
-        log.debug("Chest created: regionId={}, name={}, type={}", regionId, name, type);
+        log.debug("Chest created: worldId={}, name={}, type={}", worldId, name, type);
         return chest;
     }
 
@@ -239,25 +210,13 @@ public class WChestService {
     @Transactional
     public WChest save(WChest chest) {
         chest.touchUpdate();
+        WorldId parsedWorldId = WorldId.of(chest.getWorldId()).orElseThrow();
+        if (parsedWorldId.isSharedCollection() || parsedWorldId.isPublicRegion()) {
+            throw new IllegalArgumentException("WChest can't be in shared or public region");
+        }
         WChest saved = repository.save(chest);
         log.debug("Chest saved: id={}", chest.getId());
         return saved;
-    }
-
-    /**
-     * Delete a chest by regionId and name.
-     *
-     * @param regionId Region identifier
-     * @param name Chest name
-     * @return true if chest was deleted
-     */
-    @Transactional
-    public boolean deleteChest(String regionId, String name) {
-        return repository.findByRegionIdAndName(regionId, name).map(chest -> {
-            repository.delete(chest);
-            log.debug("Chest deleted: regionId={}, name={}", regionId, name);
-            return true;
-        }).orElse(false);
     }
 
     /**
@@ -273,5 +232,17 @@ public class WChestService {
             log.debug("Chest deleted: id={}", chestId);
             return true;
         }).orElse(false);
+    }
+
+    @Transactional
+    public void deleteChest(String worldId, String name) {
+        WorldId parsedWorldId = WorldId.of(worldId).orElseThrow();
+        if (parsedWorldId.isSharedCollection() || parsedWorldId.isPublicRegion()) {
+            throw new IllegalArgumentException("WChest can't be in shared or public region");
+        }
+        getByWorldIdAndName(worldId, name).ifPresent(chest  ->{
+            repository.delete(chest);
+            log.debug("Chest deleted: worldId={}, name={}", worldId, name);
+        });
     }
 }

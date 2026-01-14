@@ -158,4 +158,15 @@ public class WAnything implements Identifiable {
             return Optional.empty();
         }
     }
+
+    public WAnything appendWorldPrefix() {
+        id = WorldCollection.appendPrefix(worldId, id);
+        return this;
+    }
+
+    public  WAnything removeWorldPrefix() {
+        id = WorldCollection.removePrefix(id);
+        return this;
+    }
+
 }

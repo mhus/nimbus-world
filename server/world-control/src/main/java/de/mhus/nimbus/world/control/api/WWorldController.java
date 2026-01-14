@@ -6,6 +6,7 @@ import de.mhus.nimbus.world.shared.world.WWorld;
 import de.mhus.nimbus.world.shared.world.WWorldService;
 import de.mhus.nimbus.shared.types.WorldId;
 import lombok.RequiredArgsConstructor;
+import org.apache.logging.log4j.util.Strings;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -294,11 +295,11 @@ public class WWorldController extends BaseEditorController {
         var error = validateId(regionId, "regionId");
         if (error != null) return error;
 
-        if (blank(request.worldId())) {
+        if (Strings.isBlank(request.worldId())) {
             return bad("worldId is required");
         }
 
-        if (blank(request.name())) {
+        if (Strings.isBlank(request.name())) {
             return bad("name is required");
         }
 

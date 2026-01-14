@@ -4,6 +4,7 @@ import de.mhus.nimbus.generated.types.Backdrop;
 import de.mhus.nimbus.shared.types.WorldId;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.logging.log4j.util.Strings;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,7 +30,7 @@ public class WBackdropService {
      */
     @Transactional(readOnly = true)
     public Optional<WBackdrop> findByBackdropId(WorldId worldId, String backdropId) {
-        var lookupWorld = worldId.withoutInstanceAndZone().mainWorld();
+        var lookupWorld = worldId.mainWorld();
         var collection = WorldCollection.of(lookupWorld, backdropId);
         return repository.findByWorldIdAndBackdropId(collection.worldId().getId(), backdropId);
     }
@@ -50,7 +51,7 @@ public class WBackdropService {
      */
     @Transactional(readOnly = true)
     public List<WBackdrop> findAllEnabled(WorldId worldId) {
-        var lookupWorld = worldId.withoutInstanceAndZone();
+        var lookupWorld = worldId.mainWorld();
         return repository.findByWorldIdAndEnabled(lookupWorld.getId(), true);
     }
 
@@ -60,19 +61,20 @@ public class WBackdropService {
      */
     @Transactional
     public WBackdrop save(WorldId worldId, String backdropId, Backdrop publicData) {
-        if (blank(backdropId)) {
+        if (Strings.isBlank(backdropId)) {
             throw new IllegalArgumentException("backdropId required");
         }
         if (publicData == null) {
             throw new IllegalArgumentException("publicData required");
         }
+        if (worldId.isInstanceOrZone()) {
+            throw new IllegalArgumentException("Cannot save backdrop to instance or zone world");
+        }
 
-        var lookupWorld = worldId.withoutInstanceAndZone();
-
-        WBackdrop entity = repository.findByWorldIdAndBackdropId(lookupWorld.getId(), backdropId).orElseGet(() -> {
+        WBackdrop entity = repository.findByWorldIdAndBackdropId(worldId.getId(), backdropId).orElseGet(() -> {
             WBackdrop neu = WBackdrop.builder()
                     .backdropId(backdropId)
-                    .worldId(lookupWorld.getId())
+                    .worldId(worldId.getId())
                     .enabled(true)
                     .build();
             neu.touchCreate();
@@ -82,6 +84,7 @@ public class WBackdropService {
 
         entity.setPublicData(publicData);
         entity.touchUpdate();
+        entity.removeWorldPrefix();
 
         WBackdrop saved = repository.save(entity);
         log.debug("Saved WBackdrop: {}", backdropId);
@@ -90,11 +93,16 @@ public class WBackdropService {
 
     @Transactional
     public List<WBackdrop> saveAll(WorldId worldId, List<WBackdrop> entities) {
+        if (worldId.isInstanceOrZone()) {
+            throw new IllegalArgumentException("Cannot save backdrop to instance or zone world");
+        }
         entities.forEach(e -> {
             if (e.getCreatedAt() == null) {
                 e.touchCreate();
             }
             e.touchUpdate();
+            e.setWorldId(worldId.getId());
+            e.removeWorldPrefix();
         });
         List<WBackdrop> saved = repository.saveAll(entities);
         log.debug("Saved {} WBackdrop entities", saved.size());
@@ -107,10 +115,13 @@ public class WBackdropService {
      */
     @Transactional
     public Optional<WBackdrop> update(WorldId worldId, String backdropId, Consumer<WBackdrop> updater) {
-        var lookupWorld = worldId.withoutInstanceAndZone();
-        return repository.findByWorldIdAndBackdropId(lookupWorld.getId(), backdropId).map(entity -> {
+        if (worldId.isInstanceOrZone()) {
+            throw new IllegalArgumentException("Cannot save backdrop to instance or zone world");
+        }
+        return repository.findByWorldIdAndBackdropId(worldId.getId(), backdropId).map(entity -> {
             updater.accept(entity);
             entity.touchUpdate();
+            entity.removeWorldPrefix();
             WBackdrop saved = repository.save(entity);
             log.debug("Updated WBackdrop: {}", backdropId);
             return saved;
@@ -123,8 +134,10 @@ public class WBackdropService {
      */
     @Transactional
     public boolean delete(WorldId worldId, String backdropId) {
-        var lookupWorld = worldId.withoutInstanceAndZone();
-        return repository.findByWorldIdAndBackdropId(lookupWorld.getId(), backdropId).map(entity -> {
+        if (worldId.isInstanceOrZone()) {
+            throw new IllegalArgumentException("Cannot save backdrop to instance or zone world");
+        }
+        return repository.findByWorldIdAndBackdropId(worldId.getId(), backdropId).map(entity -> {
             repository.delete(entity);
             log.debug("Deleted WBackdrop: {}", backdropId);
             return true;
@@ -168,7 +181,4 @@ public class WBackdropService {
                 .collect(java.util.stream.Collectors.toList());
     }
 
-    private boolean blank(String s) {
-        return s == null || s.isBlank();
-    }
 }

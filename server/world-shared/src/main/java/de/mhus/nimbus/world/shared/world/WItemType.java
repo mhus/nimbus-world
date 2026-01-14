@@ -78,4 +78,17 @@ public class WItemType implements Identifiable {
     public void touchUpdate() {
         updatedAt = Instant.now();
     }
+
+    public WItemType appendWorldPrefix() {
+        if (publicData == null) return this;
+        publicData.setName(WorldCollection.appendPrefix(worldId, publicData.getName()));
+        return this;
+    }
+
+    public  WItemType removeWorldPrefix() {
+        if (publicData == null) return this;
+        publicData.setName(WorldCollection.removePrefix(publicData.getName()));
+        return this;
+    }
+
 }

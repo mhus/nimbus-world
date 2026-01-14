@@ -57,7 +57,7 @@ public class BlockTypeController {
 
         List<BlockType> blockTypes = service.findByBlockTypeGroup(worldId, groupName).stream()
         .filter(WBlockType::isEnabled)
-        .map(WBlockType::getPublicDataWithFullId)
+        .map(t -> t.appendWorldPrefix().getPublicData())
         .toList();
 
         log.debug("Returning {} BlockTypes for group: {}", blockTypes.size(), groupName);
@@ -100,7 +100,7 @@ public class BlockTypeController {
         log.debug("GET blocktype: blockId={}, worldId={}", finalBlockId, worldId);
 
         return service.findByBlockId(worldId, finalBlockId)
-                        .map(WBlockType::getPublicDataWithFullId)
+                        .map(t -> t.appendWorldPrefix().getPublicData())
                         .map(ResponseEntity::ok)
                         .orElseGet(() -> {
                             log.warn("BlockType not found: blockId={}", finalBlockId);

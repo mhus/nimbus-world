@@ -13,6 +13,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.logging.log4j.util.Strings;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -60,7 +61,7 @@ public class WorldAssetInfoController extends BaseEditorController {
         var wid = WorldId.of(worldId).orElseThrow(
                 () -> new IllegalStateException("Invalid worldId: " + worldId)
         );
-        if (blank(path)) {
+        if (Strings.isBlank(path)) {
             return bad("asset path required");
         }
 
@@ -110,7 +111,7 @@ public class WorldAssetInfoController extends BaseEditorController {
         var wid = WorldId.of(worldId).orElseThrow(
                 () -> new IllegalStateException("Invalid worldId: " + worldId)
         );
-        if (blank(path)) {
+        if (Strings.isBlank(path)) {
             return bad("asset path required");
         }
 

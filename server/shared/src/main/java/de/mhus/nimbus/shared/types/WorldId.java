@@ -151,12 +151,13 @@ public class WorldId implements Comparable<WorldId> {
         return new WorldId(sb.toString());
     }
 
+    /**
+     * @deprecated Use mainWorld() instead
+     * @return
+     */
+    @Deprecated
     public WorldId withoutInstanceAndZone() {
-        parseId();
-        if (instance == null && zone == null) return this;
-        StringBuilder sb = new StringBuilder();
-        sb.append(regionId).append(":").append(worldName);
-        return new WorldId(sb.toString());
+        return mainWorld();
     }
 
     /**
@@ -185,14 +186,31 @@ public class WorldId implements Comparable<WorldId> {
      *
      * @return WorldId for the region collection (@region:regionId)
      */
-    public WorldId toRegionWorldId() {
+    public WorldId toRegionCollection() {
         parseId();
+        if (isCollection()) return this;
         return WorldId.of(COLLECTION_REGION, regionId)
                 .orElseThrow(() -> new IllegalArgumentException("Invalid region worldId: " + regionId));
     }
 
     public WorldId mainWorld() {
         parseId();
-        return WorldId.of(regionId + ":" + worldName).get();
+        return new WorldId(regionId + ":" + worldName);
+    }
+
+    public boolean isInstanceOrZone() {
+        return isInstance() || isZone();
+    }
+
+    public boolean isRegionCollection() {
+        return id.startsWith(COLLECTION_REGION + ":");
+    }
+
+    public boolean isSharedCollection() {
+        return id.startsWith(COLLECTION_SHARED + ":");
+    }
+
+    public boolean isPublicRegion() {
+        return id.startsWith(COLLECTION_PUBLIC + ":");
     }
 }

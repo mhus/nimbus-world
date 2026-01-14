@@ -12,6 +12,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.logging.log4j.util.Strings;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -155,7 +156,7 @@ public class EEntityModelController extends BaseEditorController {
         var wid = WorldId.of(worldId).orElseThrow(
                 () -> new IllegalStateException("Invalid worldId: " + worldId)
         );
-        if (blank(request.modelId())) {
+        if (Strings.isBlank(request.modelId())) {
             return bad("modelId required");
         }
 
@@ -180,6 +181,10 @@ public class EEntityModelController extends BaseEditorController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "Internal server error"));
         }
+    }
+
+    private boolean isBlank(String s) {
+        return false;
     }
 
     /**

@@ -5,6 +5,7 @@ import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.shared.types.WorldId;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.logging.log4j.util.Strings;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,7 +38,7 @@ public class WHexGridService {
      */
     @Transactional(readOnly = true)
     public Optional<WHexGrid> findByWorldIdAndPosition(String worldId, HexVector2 hexPos) {
-        if (worldId == null || worldId.isBlank()) {
+        if (Strings.isBlank(worldId)) {
             throw new IllegalArgumentException("worldId required");
         }
         if (hexPos == null) {
@@ -47,7 +48,10 @@ public class WHexGridService {
         String positionKey = HexMathUtil.positionKey(hexPos);
 
         // Parse WorldId and filter instances
-        WorldId parsedWorldId = WorldId.unchecked(worldId);
+        WorldId parsedWorldId = WorldId.of(worldId).orElseThrow();
+        if (parsedWorldId.isCollection()) {
+            throw new IllegalArgumentException("WHexGrid cannot be in a collection");
+        }
         var lookupWorld = parsedWorldId.withoutInstance();
 
         return repository.findByWorldIdAndPosition(lookupWorld.getId(), positionKey);
@@ -62,11 +66,14 @@ public class WHexGridService {
      */
     @Transactional(readOnly = true)
     public List<WHexGrid> findByWorldId(String worldId) {
-        if (worldId == null || worldId.isBlank()) {
+        if (Strings.isBlank(worldId)) {
             throw new IllegalArgumentException("worldId required");
         }
 
-        WorldId parsedWorldId = WorldId.unchecked(worldId);
+        WorldId parsedWorldId = WorldId.of(worldId).orElseThrow();
+        if (parsedWorldId.isCollection()) {
+            throw new IllegalArgumentException("WHexGrid cannot be in a collection");
+        }
         var lookupWorld = parsedWorldId.withoutInstance();
 
         return repository.findByWorldId(lookupWorld.getId());
@@ -81,11 +88,14 @@ public class WHexGridService {
      */
     @Transactional(readOnly = true)
     public List<WHexGrid> findAllEnabled(String worldId) {
-        if (worldId == null || worldId.isBlank()) {
+        if (Strings.isBlank(worldId)) {
             throw new IllegalArgumentException("worldId required");
         }
 
-        WorldId parsedWorldId = WorldId.unchecked(worldId);
+        WorldId parsedWorldId = WorldId.of(worldId).orElseThrow();
+        if (parsedWorldId.isCollection()) {
+            throw new IllegalArgumentException("WHexGrid cannot be in a collection");
+        }
         var lookupWorld = parsedWorldId.withoutInstance();
 
         return repository.findByWorldIdAndEnabled(lookupWorld.getId(), true);
@@ -106,6 +116,10 @@ public class WHexGridService {
         }
         if (entity.getPublicData() == null) {
             throw new IllegalArgumentException("publicData required");
+        }
+        WorldId worldId = WorldId.of(entity.getWorldId()).orElseThrow();
+        if (worldId.isCollection() || worldId.isInstance()) {
+            throw new IllegalArgumentException("WHexGrid cannot be in a collection or instance");
         }
 
         // Ensure position key is synchronized
@@ -135,25 +149,27 @@ public class WHexGridService {
      */
     @Transactional
     public WHexGrid create(String worldId, HexGrid publicData, Map<String, String> generatorParams) {
-        if (worldId == null || worldId.isBlank()) {
+        if (Strings.isBlank(worldId)) {
             throw new IllegalArgumentException("worldId required");
         }
         if (publicData == null || publicData.getPosition() == null) {
             throw new IllegalArgumentException("publicData with position required");
         }
 
-        WorldId parsedWorldId = WorldId.unchecked(worldId);
-        var lookupWorld = parsedWorldId.withoutInstance();
+        WorldId parsedWorldId = WorldId.of(worldId).orElseThrow();
+        if (parsedWorldId.isCollection() || parsedWorldId.isInstance()) {
+            throw new IllegalArgumentException("WHexGrid cannot be in a collection or instance");
+        }
 
         String positionKey = HexMathUtil.positionKey(publicData.getPosition());
 
         // Check if already exists
-        if (repository.existsByWorldIdAndPosition(lookupWorld.getId(), positionKey)) {
-            throw new IllegalStateException("Hex grid already exists at worldId=" + lookupWorld.getId() + ", position=" + positionKey);
+        if (repository.existsByWorldIdAndPosition(parsedWorldId.getId(), positionKey)) {
+            throw new IllegalStateException("Hex grid already exists at worldId=" + parsedWorldId.getId() + ", position=" + positionKey);
         }
 
         WHexGrid entity = WHexGrid.builder()
-                .worldId(lookupWorld.getId())
+                .worldId(parsedWorldId.getId())
                 .publicData(publicData)
                 .position(positionKey)
                 .generatorParameters(generatorParams != null ? generatorParams : Map.of())
@@ -163,7 +179,7 @@ public class WHexGridService {
         entity.touchCreate();
 
         WHexGrid saved = repository.save(entity);
-        log.info("Created WHexGrid: worldId={}, position={}", lookupWorld.getId(), positionKey);
+        log.info("Created WHexGrid: worldId={}, position={}", parsedWorldId.getId(), positionKey);
         return saved;
     }
 
@@ -188,18 +204,20 @@ public class WHexGridService {
             throw new IllegalArgumentException("updater required");
         }
 
-        WorldId parsedWorldId = WorldId.unchecked(worldId);
-        var lookupWorld = parsedWorldId.withoutInstance();
+        WorldId parsedWorldId = WorldId.of(worldId).orElseThrow();
+        if (parsedWorldId.isCollection() || parsedWorldId.isInstance()) {
+            throw new IllegalArgumentException("WHexGrid cannot be in a collection or instance");
+        }
 
         String positionKey = HexMathUtil.positionKey(hexPos);
 
-        return repository.findByWorldIdAndPosition(lookupWorld.getId(), positionKey).map(entity -> {
+        return repository.findByWorldIdAndPosition(parsedWorldId.getId(), positionKey).map(entity -> {
             updater.accept(entity);
             entity.syncPositionKey();
             entity.touchUpdate();
 
             WHexGrid saved = repository.save(entity);
-            log.debug("Updated WHexGrid: worldId={}, position={}", lookupWorld.getId(), positionKey);
+            log.debug("Updated WHexGrid: worldId={}, position={}", parsedWorldId.getId(), positionKey);
             return saved;
         });
     }
@@ -245,14 +263,16 @@ public class WHexGridService {
             throw new IllegalArgumentException("hexPos required");
         }
 
-        WorldId parsedWorldId = WorldId.unchecked(worldId);
-        var lookupWorld = parsedWorldId.withoutInstance();
+        WorldId parsedWorldId = WorldId.of(worldId).orElseThrow();
+        if (parsedWorldId.isCollection() || parsedWorldId.isInstance()) {
+            throw new IllegalArgumentException("WHexGrid cannot be in a collection or instance");
+        }
 
         String positionKey = HexMathUtil.positionKey(hexPos);
 
-        return repository.findByWorldIdAndPosition(lookupWorld.getId(), positionKey).map(entity -> {
+        return repository.findByWorldIdAndPosition(parsedWorldId.getId(), positionKey).map(entity -> {
             repository.delete(entity);
-            log.info("Deleted WHexGrid: worldId={}, position={}", lookupWorld.getId(), positionKey);
+            log.info("Deleted WHexGrid: worldId={}, position={}", parsedWorldId.getId(), positionKey);
             return true;
         }).orElse(false);
     }

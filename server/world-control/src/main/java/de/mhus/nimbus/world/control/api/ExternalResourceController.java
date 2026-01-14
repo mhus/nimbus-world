@@ -10,6 +10,7 @@ import de.mhus.nimbus.world.shared.world.WAnythingService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.apache.logging.log4j.util.Strings;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -83,13 +84,13 @@ public class ExternalResourceController extends BaseEditorController {
     @PostMapping
     @Operation(summary = "Create external resource definition")
     public ResponseEntity<?> create(@RequestBody CreateResourceRequest request) {
-        if (blank(request.name())) {
+        if (Strings.isBlank(request.name())) {
             return bad("Name is required");
         }
-        if (blank(request.localPath())) {
+        if (Strings.isBlank(request.localPath())) {
             return bad("Local path is required");
         }
-        if (blank(request.worldId())) {
+        if (Strings.isBlank(request.worldId())) {
             return bad("World ID is required");
         }
 
@@ -154,7 +155,7 @@ public class ExternalResourceController extends BaseEditorController {
     @GetMapping("/{name}")
     @Operation(summary = "Get external resource definition")
     public ResponseEntity<?> get(@RequestParam String worldId, @PathVariable String name) {
-        if (blank(worldId)) {
+        if (Strings.isBlank(worldId)) {
             return bad("World ID is required");
         }
 
@@ -171,7 +172,7 @@ public class ExternalResourceController extends BaseEditorController {
     public ResponseEntity<?> update(@RequestParam String worldId,
                                     @PathVariable String name,
                                     @RequestBody UpdateResourceRequest request) {
-        if (blank(worldId)) {
+        if (Strings.isBlank(worldId)) {
             return bad("World ID is required");
         }
 
@@ -207,7 +208,7 @@ public class ExternalResourceController extends BaseEditorController {
     @DeleteMapping("/{name}")
     @Operation(summary = "Delete external resource definition")
     public ResponseEntity<?> delete(@RequestParam String worldId, @PathVariable String name) {
-        if (blank(worldId)) {
+        if (Strings.isBlank(worldId)) {
             return bad("World ID is required");
         }
 
@@ -228,7 +229,7 @@ public class ExternalResourceController extends BaseEditorController {
                                     @PathVariable String name,
                                     @RequestParam(defaultValue = "false") boolean force,
                                     @RequestParam(defaultValue = "false") boolean remove) {
-        if (blank(worldId)) {
+        if (Strings.isBlank(worldId)) {
             return bad("World ID is required");
         }
 
@@ -279,7 +280,7 @@ public class ExternalResourceController extends BaseEditorController {
                                        @PathVariable String name,
                                        @RequestParam(defaultValue = "false") boolean force,
                                        @RequestParam(defaultValue = "false") boolean remove) {
-        if (blank(worldId)) {
+        if (Strings.isBlank(worldId)) {
             return bad("World ID is required");
         }
 

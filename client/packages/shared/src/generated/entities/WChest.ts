@@ -12,7 +12,6 @@ export enum ChestType {
 }
 
 export interface WChest {
-  regionId: string;
   worldId?: string;
   name: string;
   title?: string;

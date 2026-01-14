@@ -4,6 +4,7 @@ import de.mhus.nimbus.world.shared.region.RCharacter;
 import de.mhus.nimbus.world.shared.region.RCharacterService;
 import de.mhus.nimbus.world.shared.rest.BaseEditorController;
 import lombok.RequiredArgsConstructor;
+import org.apache.logging.log4j.util.Strings;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -65,7 +66,7 @@ public class RCharacterController extends BaseEditorController {
 
         try {
             List<CharacterResponse> result;
-            if (blank(userId)) {
+            if (Strings.isBlank(userId)) {
                 // List all characters in region
                 result = characterService.listCharactersByRegion(regionId).stream()
                         .map(this::toResponse)
@@ -99,11 +100,11 @@ public class RCharacterController extends BaseEditorController {
         var error2 = validateId(characterId, "characterId");
         if (error2 != null) return error2;
 
-        if (blank(userId)) {
+        if (Strings.isBlank(userId)) {
             return bad("userId parameter is required");
         }
 
-        if (blank(name)) {
+        if (Strings.isBlank(name)) {
             return bad("name parameter is required");
         }
 
@@ -125,11 +126,11 @@ public class RCharacterController extends BaseEditorController {
         var error = validateId(regionId, "regionId");
         if (error != null) return error;
 
-        if (blank(request.userId())) {
+        if (Strings.isBlank(request.userId())) {
             return bad("userId is required");
         }
 
-        if (blank(request.name())) {
+        if (Strings.isBlank(request.name())) {
             return bad("name is required");
         }
 
@@ -174,11 +175,11 @@ public class RCharacterController extends BaseEditorController {
         var error2 = validateId(characterId, "characterId");
         if (error2 != null) return error2;
 
-        if (blank(userId)) {
+        if (Strings.isBlank(userId)) {
             return bad("userId parameter is required");
         }
 
-        if (blank(name)) {
+        if (Strings.isBlank(name)) {
             return bad("name parameter is required");
         }
 
@@ -217,11 +218,11 @@ public class RCharacterController extends BaseEditorController {
         var error2 = validateId(characterId, "characterId");
         if (error2 != null) return error2;
 
-        if (blank(userId)) {
+        if (Strings.isBlank(userId)) {
             return bad("userId parameter is required");
         }
 
-        if (blank(name)) {
+        if (Strings.isBlank(name)) {
             return bad("name parameter is required");
         }
 
@@ -252,7 +253,7 @@ public class RCharacterController extends BaseEditorController {
         var error2 = validateId(characterId, "characterId");
         if (error2 != null) return error2;
 
-        if (blank(userId) || blank(name)) {
+        if (Strings.isBlank(userId) || Strings.isBlank(name)) {
             return bad("userId and name parameters are required");
         }
 
@@ -287,7 +288,7 @@ public class RCharacterController extends BaseEditorController {
         var error2 = validateId(characterId, "characterId");
         if (error2 != null) return error2;
 
-        if (blank(userId) || blank(name)) {
+        if (Strings.isBlank(userId) || Strings.isBlank(name)) {
             return bad("userId and name parameters are required");
         }
 

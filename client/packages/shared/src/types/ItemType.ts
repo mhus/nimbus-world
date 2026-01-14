@@ -17,12 +17,18 @@ export interface ItemType {
   type: string;
 
   /**
-   * Display name for this item type
-   * Example: "Sword", "Magic Wand", "Health Potion"
+   * Technical name for this item type
+   * Example: "Sword", "MagicWand", "HealthPotion"
    */
   name: string;
 
-  /**
+    /**
+     * Display name for this item type
+     * Example: "Sword", "Magic Wand", "Health Potion"
+     */
+    title?: string;
+
+    /**
    * Optional description
    * Provides context about this item type
    */

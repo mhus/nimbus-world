@@ -5,6 +5,7 @@ import de.mhus.nimbus.world.shared.job.WJob;
 import de.mhus.nimbus.world.shared.job.WJobService;
 import de.mhus.nimbus.world.shared.rest.BaseEditorController;
 import lombok.RequiredArgsConstructor;
+import org.apache.logging.log4j.util.Strings;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -198,14 +199,14 @@ public class JobController extends BaseEditorController {
         var error = validateId(worldId, "worldId");
         if (error != null) return error;
 
-        if (blank(request.executor())) {
+        if (Strings.isBlank(request.executor())) {
             return bad("executor is required");
         }
 
         try {
             int priority = request.priority() != null ? request.priority() : 5;
             int maxRetries = request.maxRetries() != null ? request.maxRetries() : 0;
-            String type = blank(request.type()) ? "" : request.type();
+            String type = Strings.isBlank(request.type()) ? "" : request.type();
 
             WJob created = jobService.createJob(
                     worldId,

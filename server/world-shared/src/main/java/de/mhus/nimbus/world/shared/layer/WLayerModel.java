@@ -88,8 +88,7 @@ public class WLayerModel implements Identifiable {
     /**
      * Reference to another layer model.
      * If this is set first the referenced model will be rendered and then this model on top.
-     * Currently: The referenced model can not reference another model. No cascading.
-     * e.g. r:
+     * e.g. r:LayerName:ModelName
      */
     @TypeScript(optional = true)
     private String referenceModelId;

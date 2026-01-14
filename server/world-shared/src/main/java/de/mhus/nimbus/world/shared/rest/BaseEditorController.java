@@ -1,5 +1,6 @@
 package de.mhus.nimbus.world.shared.rest;
 
+import org.apache.logging.log4j.util.Strings;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
@@ -30,13 +31,8 @@ public abstract class BaseEditorController {
     }
 
     // Validation Helpers
-
-    protected boolean blank(String s) {
-        return s == null || s.isBlank();
-    }
-
     protected ResponseEntity<?> validateId(String id, String fieldName) {
-        if (blank(id)) {
+        if (Strings.isBlank(id)) {
             return bad(fieldName + " required");
         }
         return null;

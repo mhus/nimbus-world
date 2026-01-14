@@ -50,6 +50,9 @@ public class WItemPositionService {
         if (itemBlockRef.getPosition() == null) {
             throw new IllegalArgumentException("itemBlockRef.position required");
         }
+        if (worldId.isCollection()) {
+            throw new IllegalArgumentException("WItemPosition cannot be in a collection");
+        }
 
         String itemId = itemBlockRef.getId();
         Vector3 position = itemBlockRef.getPosition();
@@ -92,7 +95,9 @@ public class WItemPositionService {
      */
     @Transactional(readOnly = true)
     public List<ItemBlockRef> getItemsInChunk(WorldId worldId, int cx, int cz) {
-        WWorld world = worldService.getByWorldId(worldId.getId()).get();
+        if (worldId.isCollection()) {
+            throw new IllegalArgumentException("WItemPosition cannot be in a collection");
+        }
         String chunk = BlockUtil.toChunkKey(cx, cz);
         List<WItemPosition> positions = repository.findByWorldIdAndChunkAndEnabled(
                 worldId.getId(), chunk, true);
@@ -113,6 +118,9 @@ public class WItemPositionService {
      */
     @Transactional(readOnly = true)
     public List<WItemPosition> getAllItems(WorldId worldId) {
+        if (worldId.isCollection()) {
+            throw new IllegalArgumentException("WItemPosition cannot be in a collection");
+        }
         return repository.findByWorldId(worldId.getId());
     }
 
@@ -125,6 +133,9 @@ public class WItemPositionService {
      */
     @Transactional(readOnly = true)
     public Optional<WItemPosition> findItem(WorldId worldId, String itemId) {
+        if (worldId.isCollection()) {
+            throw new IllegalArgumentException("WItemPosition cannot be in a collection");
+        }
         return repository.findByWorldIdAndItemId(worldId.getId(), itemId);
     }
 
@@ -138,6 +149,9 @@ public class WItemPositionService {
      */
     @Transactional
     public boolean deleteItemPosition(WorldId worldId, String itemId) {
+        if (worldId.isCollection()) {
+            throw new IllegalArgumentException("WItemPosition cannot be in a collection");
+        }
         Optional<WItemPosition> itemOpt = repository.findByWorldIdAndItemId(worldId.getId(), itemId);
 
         if (itemOpt.isEmpty()) {
@@ -164,6 +178,9 @@ public class WItemPositionService {
      */
     @Transactional
     public void hardDeleteItemPosition(WorldId worldId, String itemId) {
+        if (worldId.isCollection()) {
+            throw new IllegalArgumentException("WItemPosition cannot be in a collection");
+        }
         repository.deleteByWorldIdAndItemId(worldId.getId(), itemId);
         log.info("Hard deleted item: world={}, itemId={}",
                 worldId, itemId);
@@ -177,6 +194,9 @@ public class WItemPositionService {
      */
     @Transactional
     public List<WItemPosition> saveAll(WorldId worldId, List<WItemPosition> items) {
+        if (worldId.isCollection()) {
+            throw new IllegalArgumentException("WItemPosition cannot be in a collection");
+        }
         items.forEach(item -> {
             if (item.getCreatedAt() == null) {
                 item.touchCreate();
@@ -200,6 +220,9 @@ public class WItemPositionService {
      */
     @Transactional(readOnly = true)
     public long countItemsInChunk(WorldId worldId, int cx, int cz) {
+        if (worldId.isCollection()) {
+            throw new IllegalArgumentException("WItemPosition cannot be in a collection");
+        }
         String chunk = BlockUtil.toChunkKey(cx, cz);
         return repository.findByWorldIdAndChunkAndEnabled(
                 worldId.getId(), chunk, true).size();

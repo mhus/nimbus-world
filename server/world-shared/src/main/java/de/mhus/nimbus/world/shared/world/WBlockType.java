@@ -79,31 +79,16 @@ public class WBlockType implements Identifiable {
         updatedAt = Instant.now();
     }
 
-    /**
-     * Get publicData with full blockId including prefix.
-     * Reconstructs the full ID from worldId and blockId.
-     * <p>
-     * Example: blockId="wfr", worldId="r:..." -> returns BlockType with id="r:wfr"
-     *
-     * @return BlockType with corrected full ID
-     */
-    public BlockType getPublicDataWithFullId() {
-        if (publicData == null) {
-            return null;
-        }
-
-        // Determine prefix from worldId using WorldCollection
-        var wid = de.mhus.nimbus.shared.types.WorldId.of(worldId).orElse(null);
-        if (wid != null) {
-            // Use WorldCollection to determine the correct prefix
-            var collection = WorldCollection.of(wid, blockId);
-            String fullId = collection.typeString() + ":" + blockId;
-            publicData.setId(fullId);
-        } else {
-            // Fallback: use blockId as-is if worldId is invalid
-            publicData.setId(blockId);
-        }
-
-        return publicData;
+    public WBlockType appendWorldPrefix() {
+        if (publicData == null) return this;
+        publicData.setId(WorldCollection.appendPrefix(worldId, publicData.getId()));
+        return this;
     }
+
+    public  WBlockType removeWorldPrefix() {
+        if (publicData == null) return this;
+        publicData.setId(WorldCollection.removePrefix(publicData.getId()));
+        return this;
+    }
+
 }

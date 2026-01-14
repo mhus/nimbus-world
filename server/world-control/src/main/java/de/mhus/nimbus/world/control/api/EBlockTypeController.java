@@ -105,7 +105,7 @@ public class EBlockTypeController extends BaseEditorController {
 
         log.debug("Returning blocktype: blockId={}", blockId);
         // Return publicData with full ID (e.g., "r:wfr" not just "wfr")
-        return ResponseEntity.ok(opt.get().getPublicDataWithFullId());
+        return ResponseEntity.ok(opt.get().appendWorldPrefix().getPublicData());
     }
 
     /**
@@ -137,11 +137,11 @@ public class EBlockTypeController extends BaseEditorController {
 
         int totalCount = all.size();
 
-        // Apply pagination and return with full IDs (e.g., "r:wfr" not just "wfr")
+        // Apply pagination and return with IDs+Prefix (e.g., "r:wfr" not just "wfr")
         List<BlockType> publicDataList = all.stream()
                 .skip(offset)
                 .limit(limit)
-                .map(WBlockType::getPublicDataWithFullId)
+                .map(t -> t.appendWorldPrefix().getPublicData())
                 .collect(Collectors.toList());
 
         log.debug("Returning {} blocktypes (total: {})", publicDataList.size(), totalCount);
@@ -177,7 +177,7 @@ public class EBlockTypeController extends BaseEditorController {
         var wid = WorldId.of(worldId).orElseThrow(
                 () -> new IllegalStateException("Invalid worldId: " + worldId)
         );
-        if (blank(groupName)) {
+        if (Strings.isBlank(groupName)) {
             return bad("groupName required");
         }
 
@@ -190,7 +190,7 @@ public class EBlockTypeController extends BaseEditorController {
 
         // Map to DTOs with full IDs (e.g., "r:wfr" not just "wfr")
         List<BlockType> publicDataList = blockTypes.stream()
-                .map(WBlockType::getPublicDataWithFullId)
+                .map(t -> t.appendWorldPrefix().getPublicData())
                 .collect(Collectors.toList());
 
         log.debug("Returning {} blocktypes for group: {}", publicDataList.size(), groupName);
@@ -219,7 +219,7 @@ public class EBlockTypeController extends BaseEditorController {
         var wid = WorldId.of(worldId).orElseThrow(
                 () -> new IllegalStateException("Invalid worldId: " + worldId)
         );
-        if (blank(request.blockId())) {
+        if (Strings.isBlank(request.blockId())) {
             return bad("blockId required");
         }
 
@@ -234,7 +234,7 @@ public class EBlockTypeController extends BaseEditorController {
 
         try {
             // Extract or set blockTypeGroup
-            final String blockTypeGroup = blank(request.blockTypeGroup())
+            final String blockTypeGroup = Strings.isBlank(request.blockTypeGroup())
                     ? extractGroupFromBlockId(request.blockId())
                     : request.blockTypeGroup();
 
@@ -315,7 +315,7 @@ public class EBlockTypeController extends BaseEditorController {
                 // Ensure publicData.id has full blockId with prefix (e.g., "r:wfr" not just "wfr")
                 BlockType publicData = request.publicData();
                 var collection = WorldCollection.of(actualWid, finalBlockId);
-                String fullBlockId = collection.typeString() + ":" + collection.path();
+                String fullBlockId = collection.prefix() + ":" + collection.path();
 
                 // Create a deep copy with corrected ID (important for MongoDB to detect change)
                 try {
@@ -539,7 +539,7 @@ public class EBlockTypeController extends BaseEditorController {
         var wid = WorldId.of(worldId).orElseThrow(
                 () -> new IllegalStateException("Invalid worldId: " + worldId)
         );
-        if (blank(blockTypeId)) {
+        if (Strings.isBlank(blockTypeId)) {
             return bad("blockTypeId required");
         }
 
@@ -626,7 +626,7 @@ public class EBlockTypeController extends BaseEditorController {
     private BlockTypeDto toDto(WBlockType entity) {
         return new BlockTypeDto(
                 entity.getBlockId(),
-                entity.getPublicDataWithFullId(),
+                entity.appendWorldPrefix().getPublicData(),
                 entity.getWorldId(),
                 entity.isEnabled(),
                 entity.getCreatedAt(),

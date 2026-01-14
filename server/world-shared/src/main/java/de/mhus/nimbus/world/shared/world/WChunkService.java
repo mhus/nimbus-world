@@ -11,6 +11,7 @@ import de.mhus.nimbus.shared.types.SchemaVersion;
 import de.mhus.nimbus.shared.types.WorldId;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.logging.log4j.util.Strings;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -67,12 +68,14 @@ public class WChunkService {
      */
     @Transactional
     public WChunk saveChunk(WorldId worldId, String chunkKey, ChunkData data) {
-        if (blank(worldId.getId()) || blank(chunkKey)) {
+        if (Strings.isBlank(worldId.getId()) || Strings.isBlank(chunkKey)) {
             throw new IllegalArgumentException("worldId und chunkKey erforderlich");
         }
         if (data == null) throw new IllegalArgumentException("ChunkData erforderlich");
 
-        var lookupWorld = worldId.withoutInstance();
+        if (worldId.isCollection() || worldId.isInstance()) {
+            throw new IllegalArgumentException("Chunks können nur für Welten/Zonen gespeichert werden, nicht für Collections/Instanzen");
+        }
 
         // Extract server metadata from blocks and store in separate map
         Map<String, Map<String, String>> infoServer = extractServerMetadata(data);
@@ -88,9 +91,9 @@ public class WChunkService {
             throw new IllegalStateException("Serialisierung ChunkData fehlgeschlagen", e);
         }
 
-        WChunk entity = repository.findByWorldIdAndChunk(lookupWorld.getId(), chunkKey)
+        WChunk entity = repository.findByWorldIdAndChunk(worldId.getId(), chunkKey)
                 .orElseGet(() -> {
-                    WChunk neu = WChunk.builder().worldId(lookupWorld.getId()).chunk(chunkKey).build();
+                    WChunk neu = WChunk.builder().worldId(worldId.getId()).chunk(chunkKey).build();
                     neu.touchCreate();
                     return neu;
                 });
@@ -123,11 +126,11 @@ public class WChunkService {
                 storageInfo = storageService.update(STORAGE_SCHEMA, STORAGE_SCHEMA_VERSION, entity.getStorageId(), stream);
             } else {
                 // Create new chunk
-                storageInfo = storageService.store(STORAGE_SCHEMA, STORAGE_SCHEMA_VERSION, lookupWorld.getId(), "chunk/" + chunkKey, stream);
+                storageInfo = storageService.store(STORAGE_SCHEMA, STORAGE_SCHEMA_VERSION, worldId.getId(), "chunk/" + chunkKey, stream);
             }
             entity.setStorageId(storageInfo.id());
             log.debug("Chunk extern gespeichert chunkKey={} size={} storageId={} world={} compressed={}",
-                    chunkKey, storageInfo.size(), storageInfo.id(), lookupWorld.getId(), entity.isCompressed());
+                    chunkKey, storageInfo.size(), storageInfo.id(), worldId.getId(), entity.isCompressed());
         } catch (Exception e) {
             throw new IllegalStateException("Speichern ChunkData fehlgeschlagen", e);
         }
@@ -143,6 +146,9 @@ public class WChunkService {
      */
     @Transactional(readOnly = true)
     public InputStream getStream(WorldId worldId, String chunkKey) {
+        if (worldId.isCollection()) {
+            throw new IllegalArgumentException("Chunks can't be in Collections");
+        }
         var lookupWorld = worldId.withoutInstance();
 
         WChunk chunk = repository.findByWorldIdAndChunk(lookupWorld.getId(), chunkKey).orElse(null);
@@ -177,6 +183,9 @@ public class WChunkService {
      */
     @Transactional(readOnly = true)
     public InputStream getCompressedStream(WorldId worldId, String chunkKey) {
+        if (worldId.isCollection()) {
+            throw new IllegalArgumentException("Chunks can't be in Collections");
+        }
         var lookupWorld = worldId.withoutInstance();
 
         WChunk chunk = repository.findByWorldIdAndChunk(lookupWorld.getId(), chunkKey).orElse(null);
@@ -197,9 +206,11 @@ public class WChunkService {
      */
     @Transactional(readOnly = true)
     public boolean streamToResponse(WorldId worldId, String chunkKey, jakarta.servlet.http.HttpServletResponse response) {
-        var lookupWorld = worldId.withoutInstance();
+        if (worldId.isCollection() || worldId.isInstance()) {
+            throw new IllegalArgumentException("Chunks können nur für Welten/Zonen gespeichert werden, nicht für Collections/Instanzen");
+        }
 
-        WChunk chunk = repository.findByWorldIdAndChunk(lookupWorld.getId(), chunkKey).orElse(null);
+        WChunk chunk = repository.findByWorldIdAndChunk(worldId.getId(), chunkKey).orElse(null);
 
         if (chunk == null || chunk.getStorageId() == null) {
             return false;
@@ -239,6 +250,9 @@ public class WChunkService {
      */
     @Transactional(readOnly = true)
     public Optional<ChunkData> loadChunkData(WorldId worldId, String chunkKey, boolean create) {
+        if (worldId.isCollection()) {
+            throw new IllegalArgumentException("Chunks can't be in Collections");
+        }
         var lookupWorld = worldId.withoutInstance();
 
         Optional<WChunk> chunkOpt = repository.findByWorldIdAndChunk(lookupWorld.getId(), chunkKey);
@@ -296,7 +310,8 @@ public class WChunkService {
             int cz = Integer.parseInt(parts[1]);
 
             // Load world configuration
-            WWorld world = worldService.getByWorldId(worldId).orElse(null);
+            WorldId lookupWorldId = WorldId.of(worldId).orElseThrow().withoutInstance();
+            WWorld world = worldService.getByWorldId(lookupWorldId).orElse(null);
             if (world == null) {
                 log.warn("World not found for default chunk generation: {}", worldId);
                 return null;
@@ -374,6 +389,9 @@ public class WChunkService {
      */
     @Transactional
     public boolean delete(WorldId worldId, String chunkKey) {
+        if (worldId.isCollection()) {
+            throw new IllegalArgumentException("Chunks can't be in Collections");
+        }
         var lookupWorld = worldId.withoutInstance();
         return repository.findByWorldIdAndChunk(lookupWorld.getId(), chunkKey).map(c -> {
             if (c.getStorageId() != null) {
@@ -400,6 +418,9 @@ public class WChunkService {
      */
     public ChunkDataTransferObject toTransferObject(WorldId worldId, WChunk chunk) {
         if (chunk == null) return null;
+        if (worldId.isCollection()) {
+            throw new IllegalArgumentException("Chunks can't be in Collections");
+        }
 
         String chunkKey = chunk.getChunk();
         int cx = Integer.parseInt(chunkKey.split(":")[0]);
@@ -583,7 +604,11 @@ public class WChunkService {
      */
     public Map<String, String> getServerInfo(WorldId worldId, int x, int y, int z) {
         // Load world to get chunkSize
-        Optional<WWorld> worldOpt = worldService.getByWorldId(worldId.withoutInstance().getId());
+        if (worldId.isCollection()) {
+            throw new IllegalArgumentException("Chunks can't be in Collections");
+        }
+        WorldId lookupWorldId = worldId.withoutInstance();
+        Optional<WWorld> worldOpt = worldService.getByWorldId(lookupWorldId.getId());
         if (worldOpt.isEmpty()) {
             log.warn("World not found for server info lookup: worldId={}", worldId);
             return null;
@@ -596,7 +621,7 @@ public class WChunkService {
                 worldId, x, y, z, chunkKey);
 
         // Load chunk
-        Optional<WChunk> chunkOpt = find(worldId, chunkKey);
+        Optional<WChunk> chunkOpt = find(lookupWorldId, chunkKey);
         if (chunkOpt.isEmpty()) {
             log.trace("Chunk not found for server info lookup: worldId={}, chunkKey={}",
                     worldId, chunkKey);
@@ -608,5 +633,4 @@ public class WChunkService {
         return chunk.getServerInfoForBlock(x, y, z);
     }
 
-    private boolean blank(String s) { return s == null || s.isBlank(); }
 }

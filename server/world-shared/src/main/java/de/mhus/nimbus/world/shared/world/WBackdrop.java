@@ -78,4 +78,17 @@ public class WBackdrop implements Identifiable {
     public void touchUpdate() {
         updatedAt = Instant.now();
     }
+
+    public WBackdrop appendWorldPrefix() {
+        if (publicData == null) return this;
+        publicData.setId(WorldCollection.appendPrefix(worldId, publicData.getId()));
+        return this;
+    }
+
+    public  WBackdrop removeWorldPrefix() {
+        if (publicData == null) return this;
+        publicData.setId(WorldCollection.removePrefix(publicData.getId()));
+        return this;
+    }
+
 }

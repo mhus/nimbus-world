@@ -4893,6 +4893,13 @@
         "javaTypeHint" : null,
         "comment" : null
       }, {
+        "name" : "title",
+        "type" : "string",
+        "optional" : true,
+        "visibility" : null,
+        "javaTypeHint" : null,
+        "comment" : null
+      }, {
         "name" : "description",
         "type" : "string",
         "optional" : true,

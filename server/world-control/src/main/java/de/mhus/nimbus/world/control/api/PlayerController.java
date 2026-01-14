@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.logging.log4j.util.Strings;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -52,11 +53,11 @@ public class PlayerController extends BaseEditorController {
 
         log.debug("GET playerinfo: worldId={}, playerId={}", worldId, playerId);
 
-        if (blank(worldId)) {
+        if (Strings.isBlank(worldId)) {
             return bad("worldId required");
         }
 
-        if (blank(playerId)) {
+        if (Strings.isBlank(playerId)) {
             return bad("playerId required");
         }
 
@@ -123,11 +124,11 @@ public class PlayerController extends BaseEditorController {
 
         log.debug("PUT playerinfo: worldId={}, playerId={}", worldId, playerId);
 
-        if (blank(worldId)) {
+        if (Strings.isBlank(worldId)) {
             return bad("worldId required");
         }
 
-        if (blank(playerId)) {
+        if (Strings.isBlank(playerId)) {
             return bad("playerId required");
         }
 

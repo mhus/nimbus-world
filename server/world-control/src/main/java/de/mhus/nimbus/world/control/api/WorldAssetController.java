@@ -13,6 +13,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.logging.log4j.util.Strings;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -126,7 +127,7 @@ public class WorldAssetController extends BaseEditorController {
         var wid = WorldId.of(worldId).orElseThrow(
                 () -> new IllegalStateException("Invalid worldId: " + worldId)
         );
-        if (blank(path)) {
+        if (Strings.isBlank(path)) {
             return bad("asset path required");
         }
 
@@ -193,7 +194,7 @@ public class WorldAssetController extends BaseEditorController {
         var wid = WorldId.of(worldId).orElseThrow(
                 () -> new IllegalStateException("Invalid worldId: " + worldId)
         );
-        if (blank(path)) {
+        if (Strings.isBlank(path)) {
             return bad("asset path required");
         }
 
@@ -245,7 +246,7 @@ public class WorldAssetController extends BaseEditorController {
         var wid = WorldId.of(worldId).orElseThrow(
                 () -> new IllegalStateException("Invalid worldId: " + worldId)
         );
-        if (blank(path)) {
+        if (Strings.isBlank(path)) {
             return bad("asset path required");
         }
 
@@ -304,7 +305,7 @@ public class WorldAssetController extends BaseEditorController {
         var wid = WorldId.of(worldId).orElseThrow(
                 () -> new IllegalStateException("Invalid worldId: " + worldId)
         );
-        if (blank(path)) {
+        if (Strings.isBlank(path)) {
             return bad("asset path required");
         }
 
@@ -343,8 +344,8 @@ public class WorldAssetController extends BaseEditorController {
         log.debug("DUPLICATE asset: worldId={}, sourcePath={}, newPath={}",
                 worldId, sourcePath, newPath);
 
-        if (blank(sourcePath)) return bad("sourcePath required");
-        if (blank(newPath)) return bad("newPath required");
+        if (Strings.isBlank(sourcePath)) return bad("sourcePath required");
+        if (Strings.isBlank(newPath)) return bad("newPath required");
         if (sourcePath.equals(newPath)) return bad("sourcePath and newPath must be different");
 
         WorldId wid = WorldId.of(worldId).orElse(null);
@@ -406,9 +407,9 @@ public class WorldAssetController extends BaseEditorController {
         log.debug("COPY asset cross-world: sourceWorldId={}, sourcePath={}, targetWorldId={}, newPath={}",
                 sourceWorldId, sourcePath, worldId, newPath);
 
-        if (blank(sourceWorldId)) return bad("sourceWorldId required");
-        if (blank(sourcePath)) return bad("sourcePath required");
-        if (blank(newPath)) return bad("newPath required");
+        if (Strings.isBlank(sourceWorldId)) return bad("sourceWorldId required");
+        if (Strings.isBlank(sourcePath)) return bad("sourcePath required");
+        if (Strings.isBlank(newPath)) return bad("newPath required");
 
         WorldId sourceWid = WorldId.of(sourceWorldId).orElse(null);
         WorldId targetWid = WorldId.of(worldId).orElse(null);

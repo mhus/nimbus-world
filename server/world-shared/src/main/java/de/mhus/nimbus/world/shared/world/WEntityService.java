@@ -4,6 +4,7 @@ import de.mhus.nimbus.generated.types.Entity;
 import de.mhus.nimbus.shared.types.WorldId;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.logging.log4j.util.Strings;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,71 +26,84 @@ public class WEntityService {
 
     /**
      * Find entity by entityId.
-     * Instances and zones always look up in their main world.
+     * Instances always look up in their world.
      */
     @Transactional(readOnly = true)
     public Optional<WEntity> findByWorldIdAndEntityId(WorldId worldId, String entityId) {
-        var lookupWorld = worldId.withoutInstanceAndZone();
+        if (worldId.isCollection()) {
+            throw new IllegalArgumentException("worldId must not be a collection id");
+        }
+        var lookupWorld = worldId.withoutInstance();
         return repository.findByWorldIdAndEntityId(lookupWorld.getId(), entityId);
     }
 
     /**
-     * Find all entities for specific world (no COW fallback for lists).
-     * Filters out instances and zones.
+     * Find all entities for specific world.
+     * Filters out instances.
      */
     @Transactional(readOnly = true)
     public List<WEntity> findByWorldId(WorldId worldId) {
-        var lookupWorld = worldId.withoutInstanceAndZone();
+        if (worldId.isCollection()) {
+            throw new IllegalArgumentException("worldId must not be a collection id");
+        }
+        var lookupWorld = worldId.withoutInstance();
         return repository.findByWorldId(lookupWorld.getId());
     }
 
     /**
-     * Find entities by modelId for specific world (no COW fallback for lists).
-     * Filters out instances and zones.
+     * Find entities by modelId for specific world.
+     * Filters out instances.
      */
     @Transactional(readOnly = true)
     public List<WEntity> findByModelId(WorldId worldId, String modelId) {
-        var lookupWorld = worldId.withoutInstanceAndZone();
+        if (worldId.isCollection()) {
+            throw new IllegalArgumentException("worldId must not be a collection id");
+        }
+        var lookupWorld = worldId.withoutInstance();
         return repository.findByWorldIdAndModelId(lookupWorld.getId(), modelId);
     }
 
     /**
-     * Find all enabled entities for specific world (no COW fallback for lists).
-     * Filters out instances and zones.
+     * Find all enabled entities for specific world.
+     * Filters out instances.
      */
     @Transactional(readOnly = true)
     public List<WEntity> findAllEnabled(WorldId worldId) {
-        var lookupWorld = worldId.withoutInstanceAndZone();
+        if (worldId.isCollection()) {
+            throw new IllegalArgumentException("worldId must not be a collection id");
+        }
+        var lookupWorld = worldId.withoutInstance();
         return repository.findByWorldIdAndEnabled(lookupWorld.getId(), true);
     }
 
     /**
      * Save or update an entity.
-     * Filters out instances and zones - entities are stored per world.
+     * Filters out instances.
      */
     @Transactional
     public WEntity save(WorldId worldId, String entityId, Entity publicData, String modelId) {
         if (worldId == null) {
             throw new IllegalArgumentException("worldId required");
         }
-        if (blank(entityId)) {
+        if (Strings.isBlank(entityId)) {
             throw new IllegalArgumentException("entityId required");
         }
         if (publicData == null) {
             throw new IllegalArgumentException("publicData required");
         }
+        if (worldId.isInstance() || worldId.isCollection()) {
+            throw new IllegalArgumentException("worldId must be a world id (no instance, no collection)");
+        }
 
-        var lookupWorld = worldId.withoutInstanceAndZone();
-
-        WEntity entity = repository.findByWorldIdAndEntityId(lookupWorld.getId(), entityId).orElseGet(() -> {
+        WEntity entity = repository.findByWorldIdAndEntityId(worldId.getId(), entityId).orElseGet(() -> {
             WEntity neu = WEntity.builder()
-                    .worldId(lookupWorld.getId())
+                    .worldId(worldId.getId())
                     .entityId(entityId)
                     .modelId(modelId)
                     .enabled(true)
                     .build();
             neu.touchCreate();
-            log.debug("Creating new WEntity: world={}, entityId={}", lookupWorld, entityId);
+            log.debug("Creating new WEntity: world={}, entityId={}", worldId, entityId);
             return neu;
         });
 
@@ -98,7 +112,7 @@ public class WEntityService {
         entity.touchUpdate();
 
         WEntity saved = repository.save(entity);
-        log.debug("Saved WEntity: world={}, entityId={}", lookupWorld, entityId);
+        log.debug("Saved WEntity: world={}, entityId={}", worldId, entityId);
         return saved;
     }
 
@@ -117,31 +131,36 @@ public class WEntityService {
 
     /**
      * Update an entity.
-     * Filters out instances and zones.
+     * Denies out instances and collections.
      */
     @Transactional
     public Optional<WEntity> update(WorldId worldId, String entityId, Consumer<WEntity> updater) {
-        var lookupWorld = worldId.withoutInstanceAndZone();
-        return repository.findByWorldIdAndEntityId(lookupWorld.getId(), entityId).map(entity -> {
+        if (worldId.isInstance() || worldId.isCollection()) {
+            throw new IllegalArgumentException("worldId must be a world id (no instance, no collection)");
+        }
+
+        return repository.findByWorldIdAndEntityId(worldId.getId(), entityId).map(entity -> {
             updater.accept(entity);
             entity.touchUpdate();
             WEntity saved = repository.save(entity);
-            log.debug("Updated WEntity: world={}, entityId={}", lookupWorld, entityId);
+            log.debug("Updated WEntity: world={}, entityId={}", worldId, entityId);
             return saved;
         });
     }
 
     /**
      * Delete an entity.
-     * Filters out instances and zones.
+     * Denies out instances and collections.
      */
     @Transactional
     public boolean delete(WorldId worldId, String entityId) {
-        var lookupWorld = worldId.withoutInstanceAndZone();
+        if (worldId.isInstance() || worldId.isCollection()) {
+            throw new IllegalArgumentException("worldId must be a world id (no instance, no collection)");
+        }
 
-        return repository.findByWorldIdAndEntityId(lookupWorld.getId(), entityId).map(entity -> {
+        return repository.findByWorldIdAndEntityId(worldId.getId(), entityId).map(entity -> {
             repository.delete(entity);
-            log.debug("Deleted WEntity: world={}, entityId={}", lookupWorld, entityId);
+            log.debug("Deleted WEntity: world={}, entityId={}", worldId, entityId);
             return true;
         }).orElse(false);
     }
@@ -158,12 +177,14 @@ public class WEntityService {
 
     /**
      * Find all entities for specific world with optional query filter.
-     * No COW fallback for lists - returns only entities in this specific world context.
-     * Filters out instances and zones.
+     * Filters out instances.
      */
     @Transactional(readOnly = true)
     public List<WEntity> findByWorldIdAndQuery(WorldId worldId, String query) {
-        var lookupWorld = worldId.withoutInstanceAndZone();
+        if (worldId.isCollection()) {
+            throw new IllegalArgumentException("worldId must not be a collection id");
+        }
+        var lookupWorld = worldId.withoutInstance();
         List<WEntity> all = repository.findByWorldId(lookupWorld.getId());
 
         // Apply search filter if provided
@@ -187,7 +208,4 @@ public class WEntityService {
                 .collect(java.util.stream.Collectors.toList());
     }
 
-    private boolean blank(String s) {
-        return s == null || s.isBlank();
-    }
 }

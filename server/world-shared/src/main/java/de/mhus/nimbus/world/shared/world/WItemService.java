@@ -29,7 +29,10 @@ public class WItemService {
      */
     @Transactional(readOnly = true)
     public List<WItem> findByWorldId(WorldId worldId) {
-        var regionWorldId = worldId.toRegionWorldId();
+        var regionWorldId = worldId.toRegionCollection(); // could also be a regular other collection
+        if (!regionWorldId.isRegionCollection()) {
+            throw new IllegalArgumentException("worldId must be a region collection: " + worldId);
+        }
         return repository.findByWorldId(regionWorldId.getId());
     }
 
@@ -39,7 +42,10 @@ public class WItemService {
      */
     @Transactional(readOnly = true)
     public List<WItem> findEnabledByWorldId(WorldId worldId) {
-        var regionWorldId = worldId.toRegionWorldId();
+        var regionWorldId = worldId.toRegionCollection(); // could also be a regular other collection
+        if (!regionWorldId.isRegionCollection()) {
+            throw new IllegalArgumentException("worldId must be a region collection: " + worldId);
+        }
         return repository.findByWorldIdAndEnabled(regionWorldId.getId(), true);
     }
 
@@ -49,7 +55,10 @@ public class WItemService {
      */
     @Transactional(readOnly = true)
     public Optional<WItem> findByItemId(WorldId worldId, String itemId) {
-        var regionWorldId = worldId.toRegionWorldId();
+        var regionWorldId = worldId.toRegionCollection();
+        if (!regionWorldId.isRegionCollection()) {
+            throw new IllegalArgumentException("worldId must be a region collection: " + worldId);
+        }
         return repository.findByWorldIdAndItemId(regionWorldId.getId(), itemId);
     }
 
@@ -66,7 +75,10 @@ public class WItemService {
             throw new IllegalArgumentException("itemId is required");
         }
 
-        var regionWorldId = worldId.toRegionWorldId();
+        var regionWorldId = worldId.toRegionCollection();
+        if (!regionWorldId.isRegionCollection()) {
+            throw new IllegalArgumentException("worldId must be a region collection: " + worldId);
+        }
 
         Optional<WItem> existing = repository.findByWorldIdAndItemId(regionWorldId.getId(), itemId);
         if (existing.isPresent()) {
@@ -95,7 +107,10 @@ public class WItemService {
      */
     @Transactional
     public Optional<WItem> update(WorldId worldId, String itemId, Item publicData) {
-        var regionWorldId = worldId.toRegionWorldId();
+        var regionWorldId = worldId.toRegionCollection();
+        if (!regionWorldId.isRegionCollection()) {
+            throw new IllegalArgumentException("worldId must be a region collection: " + worldId);
+        }
         return repository.findByWorldIdAndItemId(regionWorldId.getId(), itemId).map(item -> {
             item.setPublicData(publicData);
             item.touchUpdate();
@@ -110,7 +125,10 @@ public class WItemService {
      */
     @Transactional
     public boolean disable(WorldId worldId, String itemId) {
-        var regionWorldId = worldId.toRegionWorldId();
+        var regionWorldId = worldId.toRegionCollection();
+        if (!regionWorldId.isRegionCollection()) {
+            throw new IllegalArgumentException("worldId must be a region collection: " + worldId);
+        }
         return repository.findByWorldIdAndItemId(regionWorldId.getId(), itemId).map(item -> {
             if (!item.isEnabled()) return false;
             item.setEnabled(false);
@@ -127,7 +145,10 @@ public class WItemService {
      */
     @Transactional
     public boolean delete(WorldId worldId, String itemId) {
-        var regionWorldId = worldId.toRegionWorldId();
+        var regionWorldId = worldId.toRegionCollection();
+        if (!regionWorldId.isRegionCollection()) {
+            throw new IllegalArgumentException("worldId must be a region collection: " + worldId);
+        }
         return repository.findByWorldIdAndItemId(regionWorldId.getId(), itemId).map(item -> {
             repository.delete(item);
             log.debug("Deleted item: regionWorldId={}, itemId={}", regionWorldId, itemId);
@@ -149,7 +170,10 @@ public class WItemService {
      */
     @Transactional(readOnly = true)
     public List<WItem> findEnabledByWorldIdAndQuery(WorldId worldId, String query) {
-        var regionWorldId = worldId.toRegionWorldId();
+        var regionWorldId = worldId.toRegionCollection();
+        if (!regionWorldId.isRegionCollection()) {
+            throw new IllegalArgumentException("worldId must be a region collection: " + worldId);
+        }
         List<WItem> all = repository.findByWorldIdAndEnabled(regionWorldId.getId(), true);
 
         // Apply search filter if provided

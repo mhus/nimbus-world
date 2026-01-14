@@ -78,5 +78,16 @@ public class SAsset implements Identifiable {
     @Indexed
     private String worldId; // kann null sein
 
+
+    public SAsset appendWorldPrefix() {
+        path = WorldCollection.appendPrefix(worldId, path);
+        return this;
+    }
+
+    public  SAsset removeWorldPrefix() {
+        path = WorldCollection.removePrefix(path);
+        return this;
+    }
+
 }
 

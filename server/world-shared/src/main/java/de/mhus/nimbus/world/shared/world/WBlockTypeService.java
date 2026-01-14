@@ -39,7 +39,7 @@ public class WBlockTypeService {
     }
 
     /**
-     * Find block types by group for specific world (no COW fallback for lists).
+     * Find block types by group for specific world.
      * Filters out instances and zones.
      */
     @Transactional(readOnly = true)
@@ -60,7 +60,7 @@ public class WBlockTypeService {
     }
 
     /**
-     * Find all enabled block types for specific world (no COW fallback for lists).
+     * Find all enabled block types for specific world.
      * Filters out instances and zones.
      */
     @Transactional(readOnly = true)
@@ -82,7 +82,9 @@ public class WBlockTypeService {
         if (publicData == null) {
             throw new IllegalArgumentException("publicData required");
         }
-
+        if (worldId.isInstanceOrZone()) {
+            throw new IllegalArgumentException("Cannot save block type to instance or zone world");
+        }
         var collection = WorldCollection.of(worldId.mainWorld(), blockId);
         var entityOpt = repository.findByWorldIdAndBlockId(collection.worldId().getId(), collection.path());
         WBlockType entity = null;
@@ -100,12 +102,13 @@ public class WBlockTypeService {
 
         entity.setBlockId(collection.path()); // maybe update if group changed
 
-        // Ensure publicData.id has full blockId with prefix (e.g., "r:wfr" not just "wfr")
-        String fullBlockId = collection.typeString() + ":" + collection.path();
+        // Ensure publicData.id has NOT full blockId with prefix (e.g., "wfr" not "r:wfr")
+        String fullBlockId = collection.path();
         publicData.setId(fullBlockId);
 
         entity.setPublicData(publicData);
         entity.touchUpdate();
+        entity.removeWorldPrefix();
 
         WBlockType saved = repository.save(entity);
         log.debug("Saved WBlockType: {}", blockId);
@@ -114,8 +117,12 @@ public class WBlockTypeService {
 
     @Transactional
     public List<WBlockType> saveAll(WorldId worldId, List<WBlockType> entities) {
+        if (worldId.isInstanceOrZone()) {
+            throw new IllegalArgumentException("Cannot save backdrop to instance or zone world");
+        }
         final List<WBlockType> saved = new ArrayList<>();
         entities.forEach(e -> {
+            e.removeWorldPrefix();
             saved.add(save(worldId, e.getBlockId(), e.getPublicData()));
         });
         return saved;
@@ -131,6 +138,7 @@ public class WBlockTypeService {
         return repository.findByWorldIdAndBlockId(collection.worldId().getId(), collection.path()).map(entity -> {
             updater.accept(entity);
             entity.touchUpdate();
+            entity.removeWorldPrefix();
             WBlockType saved = repository.save(entity);
             log.debug("Updated WBlockType: {}", blockId);
             return saved;

@@ -3,9 +3,11 @@ package de.mhus.nimbus.world.shared.layer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.shared.storage.StorageService;
 import de.mhus.nimbus.shared.types.SchemaVersion;
+import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.shared.world.WWorldService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.logging.log4j.util.Strings;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -71,14 +73,18 @@ public class WLayerService {
     public WLayer createLayer(String worldId, String name, LayerType layerType,
                               int order, boolean allChunks, List<String> affectedChunks, boolean baseGround) {
         // Validate
-        if (worldId == null || worldId.isBlank()) {
+        if (Strings.isBlank(worldId)) {
             throw new IllegalArgumentException("worldId is required");
         }
-        if (name == null || name.isBlank()) {
+        if (Strings.isBlank(name)) {
             throw new IllegalArgumentException("name is required");
         }
         if (layerType == null) {
             throw new IllegalArgumentException("layerType is required");
+        }
+        WorldId parsedWorldId = WorldId.of(worldId).orElseThrow();
+        if (parsedWorldId.isInstance()) {
+            throw new IllegalArgumentException("Cannot create layer for instance worldId");
         }
 
         // Check for duplicate name
@@ -123,6 +129,10 @@ public class WLayerService {
         if (layerOpt.isEmpty()) {
             return Optional.empty();
         }
+        WorldId parsedWorldId = WorldId.of(worldId).orElseThrow();
+        if (parsedWorldId.isInstance()) {
+            throw new IllegalArgumentException("Cannot create layer for instance or collection worldId");
+        }
 
         WLayer layer = layerOpt.get();
         updater.accept(layer);
@@ -150,6 +160,10 @@ public class WLayerService {
         if (layerOpt.isEmpty()) {
             return false;
         }
+        WorldId parsedWorldId = WorldId.of(worldId).orElseThrow();
+        if (parsedWorldId.isInstance() || parsedWorldId.isCollection()) {
+            throw new IllegalArgumentException("Cannot create layer for instance or collection worldId");
+        }
 
         WLayer layer = layerOpt.get();
 
@@ -171,9 +185,10 @@ public class WLayerService {
     }
 
     /**
-     * Find a layer by ID.
+     * Find a layer by ID. -- TODO this is not a good option.
      */
     @Transactional(readOnly = true)
+    @Deprecated
     public Optional<WLayer> findById(String id) {
         return layerRepository.findById(id);
     }
@@ -183,7 +198,8 @@ public class WLayerService {
      */
     @Transactional(readOnly = true)
     public Optional<WLayer> findLayer(String worldId, String layerName) {
-        return layerRepository.findByWorldIdAndName(worldId, layerName);
+        WorldId parsedWorldId = WorldId.of(worldId).orElseThrow();
+        return layerRepository.findByWorldIdAndName(parsedWorldId.withoutInstance().getId(), layerName);
     }
 
     /**
@@ -191,7 +207,8 @@ public class WLayerService {
      */
     @Transactional(readOnly = true)
     public Optional<WLayer> findByWorldIdAndName(String worldId, String layerName) {
-        return layerRepository.findByWorldIdAndName(worldId, layerName);
+        WorldId parsedWorldId = WorldId.of(worldId).orElseThrow();
+        return layerRepository.findByWorldIdAndName(parsedWorldId.withoutInstance().getId(), layerName);
     }
 
     /**
@@ -200,7 +217,8 @@ public class WLayerService {
      */
     @Transactional(readOnly = true)
     public Optional<WLayer> findByWorldIdAndLayerDataId(String worldId, String layerDataId) {
-        return layerRepository.findByWorldIdAndLayerDataId(worldId, layerDataId);
+        WorldId parsedWorldId = WorldId.of(worldId).orElseThrow();
+        return layerRepository.findByWorldIdAndLayerDataId(parsedWorldId.withoutInstance().getId(), layerDataId);
     }
 
     /**
@@ -211,7 +229,8 @@ public class WLayerService {
      */
     @Transactional(readOnly = true)
     public List<WLayer> findLayersByWorld(String worldId) {
-        return layerRepository.findByWorldIdOrderByOrderAsc(worldId);
+        WorldId parsedWorldId = WorldId.of(worldId).orElseThrow();
+        return layerRepository.findByWorldIdOrderByOrderAsc(parsedWorldId.withoutInstance().getId());
     }
 
     /**
@@ -222,7 +241,8 @@ public class WLayerService {
      */
     @Transactional(readOnly = true)
     public List<WLayer> findByWorldId(String worldId) {
-        return layerRepository.findByWorldIdOrderByOrderAsc(worldId);
+        WorldId parsedWorldId = WorldId.of(worldId).orElseThrow();
+        return layerRepository.findByWorldIdOrderByOrderAsc(parsedWorldId.withoutInstance().getId());
     }
 
     /**
@@ -233,7 +253,8 @@ public class WLayerService {
      */
     @Transactional(readOnly = true)
     public List<WLayer> findByWorldIdAndQuery(String worldId, String query) {
-        List<WLayer> all = layerRepository.findByWorldIdOrderByOrderAsc(worldId);
+        WorldId parsedWorldId = WorldId.of(worldId).orElseThrow();
+        List<WLayer> all = layerRepository.findByWorldIdOrderByOrderAsc(parsedWorldId.withoutInstance().getId());
 
         // Apply search filter if provided
         if (query != null && !query.isBlank()) {
@@ -260,6 +281,10 @@ public class WLayerService {
      */
     @Transactional
     public WLayer save(WLayer layer) {
+        WorldId parsedWorldId = WorldId.of(layer.getWorldId()).orElseThrow();
+        if (parsedWorldId.isInstance()) {
+            throw new IllegalArgumentException("Cannot create layer for instance worldId");
+        }
         return layerRepository.save(layer);
     }
 
@@ -300,6 +325,10 @@ public class WLayerService {
      */
     @Transactional(readOnly = true)
     public List<WLayer> getLayersAffectingChunk(String worldId, String chunkKey) {
+        WorldId parsedWorldId = WorldId.of(worldId).orElseThrow();
+        if (parsedWorldId.isInstance()) {
+            throw new IllegalArgumentException("Cannot create layer for instance worldId");
+        }
         return layerRepository.findLayersAffectingChunk(worldId, chunkKey)
                 .stream()
                 .sorted(Comparator.comparingInt(WLayer::getOrder))
@@ -322,6 +351,10 @@ public class WLayerService {
                                           String chunkKey, LayerChunkData data) {
         if (data == null) {
             throw new IllegalArgumentException("LayerChunkData is required");
+        }
+        WorldId parsedWorldId = WorldId.of(worldId).orElseThrow();
+        if (parsedWorldId.isInstance()) {
+            throw new IllegalArgumentException("Cannot create layer for instance worldId");
         }
 
         // Serialize to JSON
@@ -695,6 +728,10 @@ public class WLayerService {
         if (parts.length != 2) {
             log.warn("Invalid chunk key format: {}", chunkKey);
             return;
+        }
+        WorldId parsedWorldId = WorldId.of(worldId).orElseThrow();
+        if (parsedWorldId.isInstance()) {
+            throw new IllegalArgumentException("Cannot create layer for instance worldId");
         }
         var world = worldService.getByWorldId(worldId).orElseThrow(
                 () -> new IllegalArgumentException("World not found: " + worldId)
@@ -1195,6 +1232,10 @@ public class WLayerService {
         if (content == null) {
             throw new IllegalArgumentException("Content is required");
         }
+        WorldId parsedWorldId = WorldId.of(worldId).orElseThrow();
+        if (parsedWorldId.isInstance()) {
+            throw new IllegalArgumentException("Cannot create layer for instance worldId");
+        }
 
         WLayerModel newModel = WLayerModel.builder()
                 .worldId(worldId)
@@ -1486,6 +1527,10 @@ public class WLayerService {
         if (content == null) {
             throw new IllegalArgumentException("Content is required");
         }
+        WorldId parsedWorldId = WorldId.of(worldId).orElseThrow();
+        if (parsedWorldId.isInstance()) {
+            throw new IllegalArgumentException("Cannot create layer for instance worldId");
+        }
 
         // Find or create entity (old behavior - only one model per layerDataId)
         WLayerModel entity = modelRepository.findFirstByLayerDataId(layerDataId)
@@ -1627,6 +1672,10 @@ public class WLayerService {
     @Transactional(readOnly = true)
     public BlockOrigin findBlockOrigin(String worldId, int x, int y, int z) {
         // Calculate chunk key
+        WorldId parsedWorldId = WorldId.of(worldId).orElseThrow();
+        if (parsedWorldId.isInstance()) {
+            throw new IllegalArgumentException("Cannot create layer for instance worldId");
+        }
         var world = worldService.getByWorldId(worldId).orElseThrow(
                 () -> new IllegalArgumentException("World not found: " + worldId)
         );

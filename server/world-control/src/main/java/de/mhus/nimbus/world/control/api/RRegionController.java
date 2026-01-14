@@ -6,6 +6,7 @@ import de.mhus.nimbus.world.shared.rest.BaseEditorController;
 import de.mhus.nimbus.world.shared.world.WWorldCollectionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.logging.log4j.util.Strings;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -77,7 +78,7 @@ public class RRegionController extends BaseEditorController {
      */
     @PostMapping
     public ResponseEntity<?> create(@RequestBody RegionRequest request) {
-        if (blank(request.name())) {
+        if (Strings.isBlank(request.name())) {
             return bad("name is required");
         }
 
@@ -210,7 +211,7 @@ public class RRegionController extends BaseEditorController {
         var error = validateId(regionId, "regionId");
         if (error != null) return error;
 
-        if (blank(request.userId())) {
+        if (Strings.isBlank(request.userId())) {
             return bad("userId is required");
         }
 
@@ -234,7 +235,7 @@ public class RRegionController extends BaseEditorController {
         var error = validateId(regionId, "regionId");
         if (error != null) return error;
 
-        if (blank(userId)) {
+        if (Strings.isBlank(userId)) {
             return bad("userId is required");
         }
 

@@ -30,7 +30,7 @@ public class WEntityModelService {
      */
     @Transactional(readOnly = true)
     public Optional<WEntityModel> findByModelId(WorldId worldId, String modelId) {
-        var regionWorldId = worldId.toRegionWorldId();
+        var regionWorldId = worldId.toRegionCollection();
         return repository.findByWorldIdAndModelId(regionWorldId.getId(), modelId);
     }
 
@@ -40,7 +40,7 @@ public class WEntityModelService {
      */
     @Transactional(readOnly = true)
     public List<WEntityModel> findByWorldId(WorldId worldId) {
-        var regionWorldId = worldId.toRegionWorldId();
+        var regionWorldId = worldId.toRegionCollection();
         return repository.findByWorldId(regionWorldId.getId());
     }
 
@@ -50,7 +50,7 @@ public class WEntityModelService {
      */
     @Transactional(readOnly = true)
     public List<WEntityModel> findAllEnabled(WorldId worldId) {
-        var regionWorldId = worldId.toRegionWorldId();
+        var regionWorldId = worldId.toRegionCollection();
         return repository.findByWorldIdAndEnabled(regionWorldId.getId(), true);
     }
 
@@ -66,13 +66,14 @@ public class WEntityModelService {
         if (publicData == null) {
             throw new IllegalArgumentException("publicData required");
         }
+        if (!worldId.isCollection()) {
+            throw new IllegalArgumentException("worldId must be a collection id");
+        }
 
-        var regionWorldId = worldId.toRegionWorldId();
-
-        WEntityModel entity = repository.findByWorldIdAndModelId(regionWorldId.getId(), modelId).orElseGet(() -> {
+        WEntityModel entity = repository.findByWorldIdAndModelId(worldId.getId(), modelId).orElseGet(() -> {
             WEntityModel neu = WEntityModel.builder()
                     .modelId(modelId)
-                    .worldId(regionWorldId.getId())
+                    .worldId(worldId.getId())
                     .enabled(true)
                     .build();
             neu.touchCreate();
@@ -82,6 +83,7 @@ public class WEntityModelService {
 
         entity.setPublicData(publicData);
         entity.touchUpdate();
+        entity.removeWorldPrefix();
 
         WEntityModel saved = repository.save(entity);
         log.debug("Saved WEntityModel: {}", modelId);
@@ -90,11 +92,16 @@ public class WEntityModelService {
 
     @Transactional
     public List<WEntityModel> saveAll(WorldId worldId, List<WEntityModel> entities) {
+        if (!worldId.isCollection()) {
+            throw new IllegalArgumentException("worldId must be a collection id");
+        }
         entities.forEach(e -> {
             if (e.getCreatedAt() == null) {
                 e.touchCreate();
             }
+            e.setWorldId(worldId.getId());
             e.touchUpdate();
+            e.removeWorldPrefix();
         });
         List<WEntityModel> saved = repository.saveAll(entities);
         log.debug("Saved {} WEntityModel entities", saved.size());
@@ -107,10 +114,13 @@ public class WEntityModelService {
      */
     @Transactional
     public Optional<WEntityModel> update(WorldId worldId, String modelId, Consumer<WEntityModel> updater) {
-        var regionWorldId = worldId.toRegionWorldId();
-        return repository.findByWorldIdAndModelId(regionWorldId.getId(), modelId).map(entity -> {
+        if (!worldId.isCollection()) {
+            throw new IllegalArgumentException("worldId must be a collection id");
+        }
+        return repository.findByWorldIdAndModelId(worldId.getId(), modelId).map(entity -> {
             updater.accept(entity);
             entity.touchUpdate();
+            entity.removeWorldPrefix();
             WEntityModel saved = repository.save(entity);
             log.debug("Updated WEntityModel: {}", modelId);
             return saved;
@@ -123,8 +133,10 @@ public class WEntityModelService {
      */
     @Transactional
     public boolean delete(WorldId worldId, String modelId) {
-        var regionWorldId = worldId.toRegionWorldId();
-        return repository.findByWorldIdAndModelId(regionWorldId.getId(), modelId).map(entity -> {
+        if (!worldId.isCollection()) {
+            throw new IllegalArgumentException("worldId must be a collection id");
+        }
+        return repository.findByWorldIdAndModelId(worldId.getId(), modelId).map(entity -> {
             repository.delete(entity);
             log.debug("Deleted WEntityModel: {}", modelId);
             return true;
@@ -147,7 +159,7 @@ public class WEntityModelService {
      */
     @Transactional(readOnly = true)
     public List<WEntityModel> findByWorldIdAndQuery(WorldId worldId, String query) {
-        var regionWorldId = worldId.toRegionWorldId();
+        var regionWorldId = worldId.toRegionCollection();
         List<WEntityModel> all = repository.findByWorldId(regionWorldId.getId());
 
         // Apply search filter if provided

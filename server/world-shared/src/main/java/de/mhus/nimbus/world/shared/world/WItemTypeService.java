@@ -4,6 +4,7 @@ import de.mhus.nimbus.generated.types.ItemType;
 import de.mhus.nimbus.shared.types.WorldId;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.logging.log4j.util.Strings;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,7 +31,7 @@ public class WItemTypeService {
      */
     @Transactional(readOnly = true)
     public Optional<WItemType> findByItemType(WorldId worldId, String itemType) {
-        var regionWorldId = worldId.toRegionWorldId();
+        var regionWorldId = worldId.toRegionCollection();
         return repository.findByWorldIdAndItemType(regionWorldId.getId(), itemType);
     }
 
@@ -40,7 +41,7 @@ public class WItemTypeService {
      */
     @Transactional(readOnly = true)
     public List<WItemType> findByWorldId(WorldId worldId) {
-        var regionWorldId = worldId.toRegionWorldId();
+        var regionWorldId = worldId.toRegionCollection();
         return repository.findByWorldId(regionWorldId.getId());
     }
 
@@ -50,7 +51,7 @@ public class WItemTypeService {
      */
     @Transactional(readOnly = true)
     public List<WItemType> findAllEnabled(WorldId worldId) {
-        var regionWorldId = worldId.toRegionWorldId();
+        var regionWorldId = worldId.toRegionCollection();
         return repository.findByWorldIdAndEnabled(regionWorldId.getId(), true);
     }
 
@@ -61,14 +62,14 @@ public class WItemTypeService {
      */
     @Transactional
     public WItemType save(WorldId worldId, String itemType, ItemType publicData) {
-        if (blank(itemType)) {
+        if (Strings.isBlank(itemType)) {
             throw new IllegalArgumentException("itemType required");
         }
         if (publicData == null) {
             throw new IllegalArgumentException("publicData required");
         }
 
-        var regionWorldId = worldId.toRegionWorldId();
+        var regionWorldId = worldId.toRegionCollection();
 
         WItemType entity = repository.findByWorldIdAndItemType(regionWorldId.getId(), itemType).orElseGet(() -> {
             WItemType neu = WItemType.builder()
@@ -91,11 +92,14 @@ public class WItemTypeService {
 
     @Transactional
     public List<WItemType> saveAll(WorldId worldId, List<WItemType> entities) {
+        var regionWorldId = worldId.toRegionCollection();
         entities.forEach(e -> {
             if (e.getCreatedAt() == null) {
                 e.touchCreate();
             }
+            e.setWorldId(regionWorldId.getId());
             e.touchUpdate();
+            e.removeWorldPrefix();
         });
         List<WItemType> saved = repository.saveAll(entities);
         log.debug("Saved {} WItemType entities", saved.size());
@@ -108,10 +112,11 @@ public class WItemTypeService {
      */
     @Transactional
     public Optional<WItemType> update(WorldId worldId, String itemType, Consumer<WItemType> updater) {
-        var regionWorldId = worldId.toRegionWorldId();
+        var regionWorldId = worldId.toRegionCollection();
         return repository.findByWorldIdAndItemType(regionWorldId.getId(), itemType).map(entity -> {
             updater.accept(entity);
             entity.touchUpdate();
+            entity.removeWorldPrefix();
             WItemType saved = repository.save(entity);
             log.debug("Updated WItemType: {}", itemType);
             return saved;
@@ -124,7 +129,7 @@ public class WItemTypeService {
      */
     @Transactional
     public boolean delete(WorldId worldId, String itemType) {
-        var regionWorldId = worldId.toRegionWorldId();
+        var regionWorldId = worldId.toRegionCollection();
         return repository.findByWorldIdAndItemType(regionWorldId.getId(), itemType).map(entity -> {
             repository.delete(entity);
             log.debug("Deleted WItemType: {}", itemType);
@@ -148,7 +153,7 @@ public class WItemTypeService {
      */
     @Transactional(readOnly = true)
     public List<WItemType> findByWorldIdAndQuery(WorldId worldId, String query) {
-        var regionWorldId = worldId.toRegionWorldId();
+        var regionWorldId = worldId.toRegionCollection();
         List<WItemType> all = repository.findByWorldId(regionWorldId.getId());
 
         // Apply search filter if provided
@@ -172,7 +177,4 @@ public class WItemTypeService {
                 .collect(java.util.stream.Collectors.toList());
     }
 
-    private boolean blank(String s) {
-        return s == null || s.isBlank();
-    }
 }

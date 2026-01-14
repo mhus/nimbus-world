@@ -43,12 +43,6 @@ public class WChest implements Identifiable {
     private String id;
 
     /**
-     * Region identifier - always set, separate from worldId.
-     */
-    @Indexed
-    private String regionId;
-
-    /**
      * World identifier - optional.
      */
     @Indexed

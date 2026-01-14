@@ -1,6 +1,7 @@
 package de.mhus.nimbus.world.shared.world;
 
 import de.mhus.nimbus.shared.types.WorldId;
+import org.apache.logging.log4j.util.Strings;
 
 public record WorldCollection(TYPE type, WorldId worldId, String path) {
 
@@ -48,7 +49,7 @@ public record WorldCollection(TYPE type, WorldId worldId, String path) {
         }
     }
 
-    public String typeString() {
+    public String prefix() {
         switch (type) {
             case WORLD:
                 return "w";
@@ -63,5 +64,60 @@ public record WorldCollection(TYPE type, WorldId worldId, String path) {
         }
         return "w"; // should not happen
     }
+
+    public static String findPrefix(WorldId worldId) {
+        if (worldId.isCollection()) {
+            switch (worldId.getRegionId()) {
+                case WorldId.COLLECTION_REGION -> {
+                    return "r";
+                }
+                case WorldId.COLLECTION_PUBLIC -> {
+                    return "rp";
+                }
+                default -> {
+                    return worldId.getRegionId();
+                }
+            }
+        } else {
+            return "w";
+        }
+    }
+
+    public static  String findPrefix(String worldId) {
+        if (Strings.isBlank(worldId))
+            return "w";
+        if (worldId.startsWith("@")) {
+            var parts = worldId.split(":");
+            if (parts.length > 1) {
+                switch (parts[1]) {
+                    case WorldId.COLLECTION_REGION -> {
+                        return "r";
+                    }
+                    case WorldId.COLLECTION_PUBLIC -> {
+                        return "rp";
+                    }
+                    default -> {
+                        return parts[1];
+                    }
+                }
+            }
+        }
+        return "w";
+    }
+
+    public static String appendPrefix(String worldId, String id) {
+        if (id == null) return null;
+        if (worldId == null) return id;
+        var prefix = findPrefix(worldId);
+        return prefix + ":" + removePrefix(id);
+    }
+
+    public static String removePrefix(String id) {
+        if (id == null) return null;
+        int pos = id.indexOf(':');
+        if (pos >= 0) return id.substring(pos + 1);
+        return id;
+    }
+
 
 }

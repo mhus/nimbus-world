@@ -4,6 +4,7 @@ import de.mhus.nimbus.world.shared.rest.BaseEditorController;
 import de.mhus.nimbus.world.shared.world.WWorldCollection;
 import de.mhus.nimbus.world.shared.world.WWorldCollectionService;
 import lombok.RequiredArgsConstructor;
+import org.apache.logging.log4j.util.Strings;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -94,7 +95,7 @@ public class WWorldCollectionController extends BaseEditorController {
      */
     @PostMapping
     public ResponseEntity<?> create(@RequestBody CollectionRequest request) {
-        if (blank(request.worldId())) {
+        if (Strings.isBlank(request.worldId())) {
             return bad("worldId is required");
         }
 
@@ -102,7 +103,7 @@ public class WWorldCollectionController extends BaseEditorController {
             return bad("Collection worldId must start with '@'");
         }
 
-        if (blank(request.title())) {
+        if (Strings.isBlank(request.title())) {
             return bad("title is required");
         }
 

@@ -10,6 +10,7 @@ import de.mhus.nimbus.world.shared.rest.BaseEditorController;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.logging.log4j.util.Strings;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -172,7 +173,7 @@ public class ControlAaaController extends BaseEditorController {
 
         // Validate session-specific fields
         if (!request.isAgent()) {
-            if (blank(request.characterId())) {
+            if (Strings.isBlank(request.characterId())) {
                 return bad("characterId is required for session login");
             }
             if (request.actor() == null) {

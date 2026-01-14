@@ -6,6 +6,7 @@ import de.mhus.nimbus.world.shared.rest.BaseEditorController;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
 import de.mhus.nimbus.world.shared.world.WHexGridService;
 import lombok.RequiredArgsConstructor;
+import org.apache.logging.log4j.util.Strings;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -345,7 +346,7 @@ public class HexGridController extends BaseEditorController {
             @PathVariable int q,
             @PathVariable int r) {
 
-        if (blank(worldId)) {
+        if (Strings.isBlank(worldId)) {
             return bad("worldId is required");
         }
 

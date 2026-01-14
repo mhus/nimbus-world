@@ -12,6 +12,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.logging.log4j.util.Strings;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -154,17 +155,17 @@ public class EItemController extends BaseEditorController {
         var wid = WorldId.of(worldId).orElseThrow(
                 () -> new IllegalArgumentException("invalid worldId")
         );
-        if (blank(request.name())) {
+        if (Strings.isBlank(request.name())) {
             return bad("name is required");
         }
 
-        if (blank(request.itemType())) {
+        if (Strings.isBlank(request.itemType())) {
             return bad("itemType is required");
         }
 
         // Generate ID if not provided
         String itemId = request.id();
-        if (blank(itemId)) {
+        if (Strings.isBlank(itemId)) {
             itemId = "item_" + System.currentTimeMillis() + "_" +
                     Long.toHexString(Double.doubleToLongBits(Math.random())).substring(0, 7);
         }

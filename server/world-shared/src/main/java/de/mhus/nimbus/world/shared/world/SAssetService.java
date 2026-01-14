@@ -58,11 +58,11 @@ public class SAssetService {
         if (stream == null) return null;
 
         // world lookup
-        if (worldId.isInstance()) {
+        if (worldId.isInstanceOrZone()) {
             throw new IllegalArgumentException("can't be save to a world instance: " + worldId);
         }
 
-        var collection = WorldCollection.of(worldId.withoutInstanceAndZone(), path);
+        var collection = WorldCollection.of(worldId.mainWorld(), path);
 
         SAsset asset = SAsset.builder()
                 .worldId(collection.worldId().getId())
@@ -73,6 +73,7 @@ public class SAssetService {
                 .publicData(publicData)
                 .build();
         asset.setCreatedAt(Instant.now());
+        asset.removeWorldPrefix();
 
         // Read first threshold bytes to determine if we should compress
         byte[] initialBuffer = new byte[compressionThreshold];
@@ -159,7 +160,7 @@ public class SAssetService {
      * WARNING: This loads ALL assets into memory. Use searchAssets() for large result sets.
      */
     public List<SAsset> findByWorldId(WorldId worldId) {
-        var lookupWorld = worldId.withoutInstanceAndZone();
+        var lookupWorld = worldId.mainWorld();
         return repository.findByWorldId(lookupWorld.getId());
     }
 
@@ -174,7 +175,7 @@ public class SAssetService {
     public Optional<SAsset> findByPath(WorldId worldId, String path) {
 
         // world lookup - always use main world (no branches, no instances, no zones)
-        var lookupWorld = worldId.withoutInstanceAndZone();
+        var lookupWorld = worldId.mainWorld();
         var collection = WorldCollection.of(lookupWorld, path);
         return repository.findByWorldIdAndPath(collection.worldId().getId(), collection.path());
     }
@@ -203,6 +204,12 @@ public class SAssetService {
 
     @Transactional
     public void disable(SAsset asset) {
+
+        // world lookup
+        if (WorldId.of(asset.getWorldId()).get().isInstanceOrZone()) {
+            throw new IllegalArgumentException("can't be save to a world instance: " + asset.getWorldId());
+        }
+
         repository.findById(asset.getId()).ifPresent(a -> {
             if (!a.isEnabled()) return;
             a.setEnabled(false);
@@ -213,6 +220,12 @@ public class SAssetService {
 
     @Transactional
     public void delete(SAsset asset) {
+
+        // world lookup
+        if (WorldId.of(asset.getWorldId()).get().isInstanceOrZone()) {
+            throw new IllegalArgumentException("can't be save to a world instance: " + asset.getWorldId());
+        }
+        asset.removeWorldPrefix();
         repository.findById(asset.getId()).ifPresent(a -> {
             try {
                 storageService.delete(a.getStorageId());
@@ -226,7 +239,14 @@ public class SAssetService {
 
     @Transactional
     public SAsset updateContent(SAsset asset, InputStream stream) {
+
         if (stream == null) return null;
+        // world lookup
+        if (WorldId.of(asset.getWorldId()).get().isInstanceOrZone()) {
+            throw new IllegalArgumentException("can't be save to a world instance: " + asset.getWorldId());
+        }
+        asset.removeWorldPrefix();
+
         return repository.findById(asset.getId()).map(a -> {
             if (!a.isEnabled()) throw new IllegalStateException("Asset disabled: " + a.getId());
 
@@ -322,6 +342,12 @@ public class SAssetService {
 
     @Transactional
     public Optional<SAsset> updateMetadata(SAsset asset, AssetMetadata metadata) {
+        // world lookup
+        if (WorldId.of(asset.getWorldId()).get().isInstanceOrZone()) {
+            throw new IllegalArgumentException("can't be save to a world instance: " + asset.getWorldId());
+        }
+        asset.removeWorldPrefix();
+
         return repository.findById(asset.getId()).map(a -> {
             if (!a.isEnabled()) throw new IllegalStateException("Asset disabled: " + a.getId());
             a.setPublicData(metadata);
@@ -336,6 +362,11 @@ public class SAssetService {
      */
     @Transactional
     public SAsset duplicateAsset(SAsset source, String newPath, String createdBy) {
+        // world lookup
+        if (WorldId.of(source.getWorldId()).get().isInstanceOrZone()) {
+            throw new IllegalArgumentException("can't be save to a world instance: " + source.getWorldId());
+        }
+
         return duplicateAssetToWorld(source, WorldId.of(source.getWorldId()).orElseThrow(), newPath, createdBy);
     }
 
@@ -351,6 +382,15 @@ public class SAssetService {
         if (targetWorldId == null) throw new IllegalArgumentException("targetWorldId required");
         if (newPath == null || newPath.isBlank()) throw new IllegalArgumentException("newPath required");
         if (!source.isEnabled()) throw new IllegalStateException("Source asset disabled: " + source.getId());
+        // world lookup
+        if (WorldId.of(source.getWorldId()).get().isInstanceOrZone()) {
+            throw new IllegalArgumentException("can't be laoded to a world instance: " + source.getWorldId());
+        }
+        // world lookup
+        if (targetWorldId.isInstanceOrZone()) {
+            throw new IllegalArgumentException("can't be save to a world instance: " + targetWorldId);
+        }
+        source.removeWorldPrefix();
 
         // Load RAW content from storage (without decompression) to preserve exact binary data
         InputStream sourceContent = storageService.load(source.getStorageId());
@@ -359,7 +399,7 @@ public class SAssetService {
         }
 
         // Handle world collection prefix in newPath
-        var collection = WorldCollection.of(targetWorldId.withoutInstanceAndZone(), newPath);
+        var collection = WorldCollection.of(targetWorldId.mainWorld(), newPath);
 
         // Create new asset entity with target worldId
         // Copy compression state and metadata from source
@@ -373,6 +413,7 @@ public class SAssetService {
                 .publicData(source.getPublicData()) // Copy metadata
                 .build();
         duplicate.setCreatedAt(Instant.now());
+        duplicate.removeWorldPrefix();
 
         // Store content in new location (use target worldId)
         // Store as-is without re-compression to preserve exact size
@@ -615,6 +656,10 @@ public class SAssetService {
         if (oldPrefix == null || oldPrefix.isEmpty()) throw new IllegalArgumentException("oldPrefix required");
         if (newPrefix == null || newPrefix.isEmpty()) throw new IllegalArgumentException("newPrefix required");
         if (oldPrefix.equals(newPrefix)) throw new IllegalArgumentException("oldPrefix and newPrefix must be different");
+        // world lookup
+        if (worldId.isInstanceOrZone()) {
+            throw new IllegalArgumentException("can't be save to a world instance: " + worldId);
+        }
 
         // Normalize paths (remove trailing slashes) - make final for lambda
         final String normalizedOldPrefix = oldPrefix.replaceAll("/+$", "");

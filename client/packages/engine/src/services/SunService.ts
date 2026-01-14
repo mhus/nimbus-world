@@ -200,6 +200,8 @@ export class SunService {
     new LensFlare(0.12, 0.8, new Color3(0.4, 0.3, 0.2), flareTextureUrl, this.lensFlareSystem);
     new LensFlare(0.2, 1.0, new Color3(0.5, 0.425, 0.3), flareTextureUrl, this.lensFlareSystem);
 
+    // TODO wait until all LensFlair textures are loaded before enabling or it will crash !!!
+
     // Configure lens flare system
     this.lensFlareSystem.borderLimit = 300; // Distance from screen edge before fading
     this.lensFlareSystem.isEnabled = this.lensFlareEnabled;

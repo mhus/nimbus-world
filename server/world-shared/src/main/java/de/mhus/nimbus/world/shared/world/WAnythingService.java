@@ -1,5 +1,6 @@
 package de.mhus.nimbus.world.shared.world;
 
+import de.mhus.nimbus.shared.types.WorldId;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -35,13 +36,14 @@ public class WAnythingService {
      */
     @Transactional(readOnly = true)
     public Optional<WAnything> findByWorldIdAndCollectionAndName(String worldId, String collection, String name) {
-        var result = repository.findByWorldIdAndCollectionAndName(worldId, collection, name);
+        WorldId world = WorldId.of(worldId).orElseThrow().withoutInstance();
+        var result = repository.findByWorldIdAndCollectionAndName(world.getId(), collection, name);
         if (result.isPresent()) {
             return result;
         }
 
         // Fallback: search all matching entities and return newest
-        var all = repository.findByWorldIdAndCollection(worldId, collection).stream()
+        var all = repository.findByWorldIdAndCollection(world.getId(), collection).stream()
                 .filter(e -> name.equals(e.getName()))
                 .toList();
 
@@ -51,7 +53,7 @@ public class WAnythingService {
 
         if (all.size() > 1) {
             log.warn("Multiple entities found for worldId={}, collection={}, name={} - returning newest (count: {})",
-                    worldId, collection, name, all.size());
+                    world, collection, name, all.size());
         }
 
         return all.stream()
@@ -98,41 +100,6 @@ public class WAnythingService {
     }
 
     /**
-     * Find single entity scoped by region, world, collection, and name.
-     * If multiple entities exist (data inconsistency), returns the newest one and logs a warning.
-     */
-    @Transactional(readOnly = true)
-    public Optional<WAnything> findByRegionIdAndWorldIdAndCollectionAndName(
-            String regionId, String worldId, String collection, String name) {
-        var result = repository.findByRegionIdAndWorldIdAndCollectionAndName(regionId, worldId, collection, name);
-        if (result.isPresent()) {
-            return result;
-        }
-
-        // Fallback: search all matching entities and return newest
-        var all = repository.findByRegionIdAndWorldIdAndCollection(regionId, worldId, collection).stream()
-                .filter(e -> name.equals(e.getName()))
-                .toList();
-
-        if (all.isEmpty()) {
-            return Optional.empty();
-        }
-
-        if (all.size() > 1) {
-            log.warn("Multiple entities found for regionId={}, worldId={}, collection={}, name={} - returning newest (count: {})",
-                    regionId, worldId, collection, name, all.size());
-        }
-
-        return all.stream()
-                .max((a, b) -> {
-                    if (a.getUpdatedAt() == null && b.getUpdatedAt() == null) return 0;
-                    if (a.getUpdatedAt() == null) return -1;
-                    if (b.getUpdatedAt() == null) return 1;
-                    return a.getUpdatedAt().compareTo(b.getUpdatedAt());
-                });
-    }
-
-    /**
      * Find all entities in a collection.
      */
     @Transactional(readOnly = true)
@@ -145,7 +112,8 @@ public class WAnythingService {
      */
     @Transactional(readOnly = true)
     public List<WAnything> findByWorldIdAndCollection(String worldId, String collection) {
-        return repository.findByWorldIdAndCollection(worldId, collection);
+        WorldId world = WorldId.of(worldId).orElseThrow().withoutInstance();
+        return repository.findByWorldIdAndCollection(world.getId(), collection);
     }
 
     /**
@@ -154,15 +122,6 @@ public class WAnythingService {
     @Transactional(readOnly = true)
     public List<WAnything> findByRegionIdAndCollection(String regionId, String collection) {
         return repository.findByRegionIdAndCollection(regionId, collection);
-    }
-
-    /**
-     * Find all entities in a collection scoped by region and world.
-     */
-    @Transactional(readOnly = true)
-    public List<WAnything> findByRegionIdAndWorldIdAndCollection(
-            String regionId, String worldId, String collection) {
-        return repository.findByRegionIdAndWorldIdAndCollection(regionId, worldId, collection);
     }
 
     /**
@@ -178,7 +137,8 @@ public class WAnythingService {
      */
     @Transactional(readOnly = true)
     public List<WAnything> findByWorldIdAndCollectionAndEnabled(String worldId, String collection, boolean enabled) {
-        return repository.findByWorldIdAndCollectionAndEnabled(worldId, collection, enabled);
+        WorldId world = WorldId.of(worldId).orElseThrow().withoutInstance();
+        return repository.findByWorldIdAndCollectionAndEnabled(world.getId(), collection, enabled);
     }
 
     /**
@@ -187,15 +147,6 @@ public class WAnythingService {
     @Transactional(readOnly = true)
     public List<WAnything> findByRegionIdAndCollectionAndEnabled(String regionId, String collection, boolean enabled) {
         return repository.findByRegionIdAndCollectionAndEnabled(regionId, collection, enabled);
-    }
-
-    /**
-     * Find all enabled entities in a collection scoped by region and world.
-     */
-    @Transactional(readOnly = true)
-    public List<WAnything> findByRegionIdAndWorldIdAndCollectionAndEnabled(
-            String regionId, String worldId, String collection, boolean enabled) {
-        return repository.findByRegionIdAndWorldIdAndCollectionAndEnabled(regionId, worldId, collection, enabled);
     }
 
     /**
@@ -211,7 +162,8 @@ public class WAnythingService {
      */
     @Transactional(readOnly = true)
     public List<WAnything> findByWorldIdAndCollectionAndType(String worldId, String collection, String type) {
-        return repository.findByWorldIdAndCollectionAndType(worldId, collection, type);
+        WorldId world = WorldId.of(worldId).orElseThrow().withoutInstance();
+        return repository.findByWorldIdAndCollectionAndType(world.getId(), collection, type);
     }
 
     /**
@@ -220,15 +172,6 @@ public class WAnythingService {
     @Transactional(readOnly = true)
     public List<WAnything> findByRegionIdAndCollectionAndType(String regionId, String collection, String type) {
         return repository.findByRegionIdAndCollectionAndType(regionId, collection, type);
-    }
-
-    /**
-     * Find all entities by region, world, collection, and type.
-     */
-    @Transactional(readOnly = true)
-    public List<WAnything> findByRegionIdAndWorldIdAndCollectionAndType(
-            String regionId, String worldId, String collection, String type) {
-        return repository.findByRegionIdAndWorldIdAndCollectionAndType(regionId, worldId, collection, type);
     }
 
     /**
@@ -247,6 +190,10 @@ public class WAnythingService {
      */
     @Transactional
     public WAnything createWithWorldId(String worldId, String collection, String name, String title, String description, String type, Object data) {
+        if (WorldId.of(worldId).orElseThrow().withoutInstance().isInstance()) {
+            throw new IllegalArgumentException("worldId must not contain instance part: " + worldId);
+        }
+
         if (repository.existsByWorldIdAndCollectionAndName(worldId, collection, name)) {
             throw new IllegalStateException("Entity already exists: worldId=" + worldId +
                     ", collection=" + collection + ", name=" + name);
@@ -267,19 +214,6 @@ public class WAnythingService {
     }
 
     /**
-     * Create a new entity scoped by region and world.
-     */
-    @Transactional
-    public WAnything createWithRegionIdAndWorldId(
-            String regionId, String worldId, String collection, String name, String title, String description, String type, Object data) {
-        if (repository.existsByRegionIdAndWorldIdAndCollectionAndName(regionId, worldId, collection, name)) {
-            throw new IllegalStateException("Entity already exists: regionId=" + regionId +
-                    ", worldId=" + worldId + ", collection=" + collection + ", name=" + name);
-        }
-        return saveNew(regionId, worldId, collection, name, title, description, type, data);
-    }
-
-    /**
      * Update an existing entity by ID.
      */
     @Transactional
@@ -287,6 +221,7 @@ public class WAnythingService {
         return repository.findById(id).map(existing -> {
             updater.accept(existing);
             existing.touchUpdate();
+            existing.removeWorldPrefix();
             repository.save(existing);
             log.debug("WAnythingEntity updated: id={}, collection={}, name={}",
                     id, existing.getCollection(), existing.getName());
@@ -300,6 +235,7 @@ public class WAnythingService {
     @Transactional
     public WAnything save(WAnything entity) {
         entity.touchUpdate();
+        entity.removeWorldPrefix();
         WAnything saved = repository.save(entity);
         log.debug("WAnythingEntity saved: id={}, collection={}, name={}",
                 saved.getId(), saved.getCollection(), saved.getName());
@@ -320,6 +256,9 @@ public class WAnythingService {
      */
     @Transactional
     public void deleteByWorldIdAndCollectionAndName(String worldId, String collection, String name) {
+        if (WorldId.of(worldId).orElseThrow().withoutInstance().isInstance()) {
+            throw new IllegalArgumentException("worldId must not contain instance part: " + worldId);
+        }
         repository.deleteByWorldIdAndCollectionAndName(worldId, collection, name);
         log.debug("WAnythingEntity deleted: worldId={}, collection={}, name={}", worldId, collection, name);
     }
@@ -331,17 +270,6 @@ public class WAnythingService {
     public void deleteByRegionIdAndCollectionAndName(String regionId, String collection, String name) {
         repository.deleteByRegionIdAndCollectionAndName(regionId, collection, name);
         log.debug("WAnythingEntity deleted: regionId={}, collection={}, name={}", regionId, collection, name);
-    }
-
-    /**
-     * Delete entity scoped by region, world, collection, and name.
-     */
-    @Transactional
-    public void deleteByRegionIdAndWorldIdAndCollectionAndName(
-            String regionId, String worldId, String collection, String name) {
-        repository.deleteByRegionIdAndWorldIdAndCollectionAndName(regionId, worldId, collection, name);
-        log.debug("WAnythingEntity deleted: regionId={}, worldId={}, collection={}, name={}",
-                regionId, worldId, collection, name);
     }
 
     /**
@@ -357,7 +285,8 @@ public class WAnythingService {
      */
     @Transactional(readOnly = true)
     public boolean existsWithWorldId(String worldId, String collection, String name) {
-        return repository.existsByWorldIdAndCollectionAndName(worldId, collection, name);
+        WorldId world = WorldId.of(worldId).orElseThrow().withoutInstance();
+        return repository.existsByWorldIdAndCollectionAndName(world.getId(), collection, name);
     }
 
     /**
@@ -369,17 +298,12 @@ public class WAnythingService {
     }
 
     /**
-     * Check if entity exists with region and world scope.
-     */
-    @Transactional(readOnly = true)
-    public boolean existsWithRegionIdAndWorldId(String regionId, String worldId, String collection, String name) {
-        return repository.existsByRegionIdAndWorldIdAndCollectionAndName(regionId, worldId, collection, name);
-    }
-
-    /**
      * Internal helper to create and save a new entity.
      */
     private WAnything saveNew(String regionId, String worldId, String collection, String name, String title, String description, String type, Object data) {
+        if (WorldId.of(worldId).orElseThrow().withoutInstance().isInstance()) {
+            throw new IllegalArgumentException("worldId must not contain instance part: " + worldId);
+        }
         WAnything entity = WAnything.builder()
                 .regionId(regionId)
                 .worldId(worldId)
@@ -391,6 +315,8 @@ public class WAnythingService {
                 .data(data)
                 .build();
         entity.touchCreate();
+        entity.removeWorldPrefix();
+
         repository.save(entity);
         log.debug("WAnythingEntity created: regionId={}, worldId={}, collection={}, name={}, title={}, type={}",
                 regionId, worldId, collection, name, title, type);

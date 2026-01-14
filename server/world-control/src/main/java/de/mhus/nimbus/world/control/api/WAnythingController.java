@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.logging.log4j.util.Strings;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -96,8 +97,8 @@ public class WAnythingController extends BaseEditorController {
 
         log.debug("GET anything by collection: collection={}, name={}", collection, name);
 
-        if (blank(collection)) return bad("collection required");
-        if (blank(name)) return bad("name required");
+        if (Strings.isBlank(collection)) return bad("collection required");
+        if (Strings.isBlank(name)) return bad("name required");
 
         Optional<WAnything> opt = anythingService.findByCollectionAndName(collection, name);
         if (opt.isEmpty()) {
@@ -127,9 +128,9 @@ public class WAnythingController extends BaseEditorController {
 
         log.debug("GET anything by world: worldId={}, collection={}, name={}", worldId, collection, name);
 
-        if (blank(worldId)) return bad("worldId required");
-        if (blank(collection)) return bad("collection required");
-        if (blank(name)) return bad("name required");
+        if (Strings.isBlank(worldId)) return bad("worldId required");
+        if (Strings.isBlank(collection)) return bad("collection required");
+        if (Strings.isBlank(name)) return bad("name required");
 
         Optional<WAnything> opt = anythingService.findByWorldIdAndCollectionAndName(worldId, collection, name);
         if (opt.isEmpty()) {
@@ -159,9 +160,9 @@ public class WAnythingController extends BaseEditorController {
 
         log.debug("GET anything by region: regionId={}, collection={}, name={}", regionId, collection, name);
 
-        if (blank(regionId)) return bad("regionId required");
-        if (blank(collection)) return bad("collection required");
-        if (blank(name)) return bad("name required");
+        if (Strings.isBlank(regionId)) return bad("regionId required");
+        if (Strings.isBlank(collection)) return bad("collection required");
+        if (Strings.isBlank(name)) return bad("name required");
 
         Optional<WAnything> opt = anythingService.findByRegionIdAndCollectionAndName(regionId, collection, name);
         if (opt.isEmpty()) {
@@ -220,7 +221,7 @@ public class WAnythingController extends BaseEditorController {
         log.debug("LIST anything: collection={}, worldId={}, regionId={}, type={}, enabledOnly={}, offset={}, limit={}",
                 collection, worldId, regionId, type, enabledOnly, offset, limit);
 
-        if (blank(collection)) return bad("collection required");
+        if (Strings.isBlank(collection)) return bad("collection required");
 
         var validation = validatePagination(offset, limit);
         if (validation != null) return validation;
@@ -228,35 +229,32 @@ public class WAnythingController extends BaseEditorController {
         List<WAnything> all;
 
         // Find by scope and type
-        if (type != null && !type.isBlank()) {
-            if (regionId != null && worldId != null) {
-                all = anythingService.findByRegionIdAndWorldIdAndCollectionAndType(regionId, worldId, collection, type);
-            } else if (regionId != null) {
-                all = anythingService.findByRegionIdAndCollectionAndType(regionId, collection, type);
-            } else if (worldId != null) {
+        if (Strings.isBlank(type)) {
+            if (worldId != null) {
                 all = anythingService.findByWorldIdAndCollectionAndType(worldId, collection, type);
+            } else
+            if (regionId != null) {
+                all = anythingService.findByRegionIdAndCollectionAndType(regionId, collection, type);
             } else {
                 all = anythingService.findByCollectionAndType(collection, type);
             }
         } else if (enabledOnly) {
             // Find by scope with enabled filter
-            if (regionId != null && worldId != null) {
-                all = anythingService.findByRegionIdAndWorldIdAndCollectionAndEnabled(regionId, worldId, collection, true);
-            } else if (regionId != null) {
-                all = anythingService.findByRegionIdAndCollectionAndEnabled(regionId, collection, true);
-            } else if (worldId != null) {
+            if (worldId != null) {
                 all = anythingService.findByWorldIdAndCollectionAndEnabled(worldId, collection, true);
+            } else
+            if (regionId != null) {
+                all = anythingService.findByRegionIdAndCollectionAndEnabled(regionId, collection, true);
             } else {
                 all = anythingService.findByCollectionAndEnabled(collection, true);
             }
         } else {
             // Find by scope without filters
-            if (regionId != null && worldId != null) {
-                all = anythingService.findByRegionIdAndWorldIdAndCollection(regionId, worldId, collection);
-            } else if (regionId != null) {
-                all = anythingService.findByRegionIdAndCollection(regionId, collection);
-            } else if (worldId != null) {
+            if (worldId != null) {
                 all = anythingService.findByWorldIdAndCollection(worldId, collection);
+            } else
+            if (regionId != null) {
+                all = anythingService.findByRegionIdAndCollection(regionId, collection);
             } else {
                 all = anythingService.findByCollection(collection);
             }
@@ -297,11 +295,11 @@ public class WAnythingController extends BaseEditorController {
         log.debug("CREATE anything: collection={}, name={}, worldId={}, regionId={}",
                 request.collection(), request.name(), request.worldId(), request.regionId());
 
-        if (blank(request.collection())) {
+        if (Strings.isBlank(request.collection())) {
             return bad("collection required");
         }
 
-        if (blank(request.name())) {
+        if (Strings.isBlank(request.name())) {
             return bad("name required");
         }
 
@@ -309,17 +307,14 @@ public class WAnythingController extends BaseEditorController {
             WAnything saved;
 
             // Create with appropriate scope
-            if (request.regionId() != null && request.worldId() != null) {
-                saved = anythingService.createWithRegionIdAndWorldId(
-                        request.regionId(), request.worldId(), request.collection(),
-                        request.name(), request.title(), request.description(), request.type(), request.data());
-            } else if (request.regionId() != null) {
-                saved = anythingService.createWithRegionId(
-                        request.regionId(), request.collection(),
-                        request.name(), request.title(), request.description(), request.type(), request.data());
-            } else if (request.worldId() != null) {
+            if (request.worldId() != null) {
                 saved = anythingService.createWithWorldId(
                         request.worldId(), request.collection(),
+                        request.name(), request.title(), request.description(), request.type(), request.data());
+            } else
+            if (request.regionId() != null) {
+                saved = anythingService.createWithRegionId(
+                        request.regionId(), request.collection(),
                         request.name(), request.title(), request.description(), request.type(), request.data());
             } else {
                 saved = anythingService.create(
@@ -357,7 +352,7 @@ public class WAnythingController extends BaseEditorController {
 
         log.debug("UPDATE anything: id={}", id);
 
-        if (blank(id)) return bad("id required");
+        if (Strings.isBlank(id)) return bad("id required");
 
         if (request.title() == null && request.description() == null && request.type() == null &&
                 request.data() == null && request.enabled() == null) {
@@ -407,8 +402,8 @@ public class WAnythingController extends BaseEditorController {
 
         log.debug("DELETE anything by collection: collection={}, name={}", collection, name);
 
-        if (blank(collection)) return bad("collection required");
-        if (blank(name)) return bad("name required");
+        if (Strings.isBlank(collection)) return bad("collection required");
+        if (Strings.isBlank(name)) return bad("name required");
 
         anythingService.deleteByCollectionAndName(collection, name);
         log.info("Deleted entity: collection={}, name={}", collection, name);
@@ -432,9 +427,9 @@ public class WAnythingController extends BaseEditorController {
 
         log.debug("DELETE anything by world: worldId={}, collection={}, name={}", worldId, collection, name);
 
-        if (blank(worldId)) return bad("worldId required");
-        if (blank(collection)) return bad("collection required");
-        if (blank(name)) return bad("name required");
+        if (Strings.isBlank(worldId)) return bad("worldId required");
+        if (Strings.isBlank(collection)) return bad("collection required");
+        if (Strings.isBlank(name)) return bad("name required");
 
         anythingService.deleteByWorldIdAndCollectionAndName(worldId, collection, name);
         log.info("Deleted entity: worldId={}, collection={}, name={}", worldId, collection, name);
@@ -458,9 +453,9 @@ public class WAnythingController extends BaseEditorController {
 
         log.debug("DELETE anything by region: regionId={}, collection={}, name={}", regionId, collection, name);
 
-        if (blank(regionId)) return bad("regionId required");
-        if (blank(collection)) return bad("collection required");
-        if (blank(name)) return bad("name required");
+        if (Strings.isBlank(regionId)) return bad("regionId required");
+        if (Strings.isBlank(collection)) return bad("collection required");
+        if (Strings.isBlank(name)) return bad("name required");
 
         anythingService.deleteByRegionIdAndCollectionAndName(regionId, collection, name);
         log.info("Deleted entity: regionId={}, collection={}, name={}", regionId, collection, name);
