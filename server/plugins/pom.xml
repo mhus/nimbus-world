@@ -4,7 +4,7 @@
 
     <parent>
         <groupId>de.mhus.nimbus</groupId>
-        <artifactId>nimbus-server</artifactId>
+        <artifactId>nimbus-world</artifactId>
         <version>1.0.0-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>

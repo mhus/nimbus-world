@@ -1,0 +1,23 @@
+
+# Install a database backup from google drive storage into world database
+# set the GOOGLE_BACKUP_URL environment variable to the path of the backup file
+
+services:
+  restore-db:
+    image: nimbus-world-installer:latest
+    container_name: restore-db
+    environment:
+      - GOOGLE_BACKUP_URL=${GOOGLE_BACKUP_URL}
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_NAME=world
+      - DB_USER=admin
+      - DB_PASSWORD=example
+    networks:
+      - nimbus-network
+    depends_on:
+      - db
+    restart: "no"
+networks:
+  nimbus-network:
+    external: true
