@@ -412,6 +412,12 @@ export class SunService {
 
   /**
    * Update sun root position based on current angleY and elevation
+   *
+   * The sun moves on a tilted orbit around the center (XYZ):
+   * - angleY: Position in the daily cycle (0-360°)
+   * - elevation: Tilt of the orbit plane
+   *   - 0°: Flat orbit in XZ plane (horizontal, like at equator)
+   *   - 90°: Vertical orbit in XY plane (steep, like at poles)
    */
   private updateSunPosition(): void {
     if (!this.sunRoot) return;
@@ -420,11 +426,21 @@ export class SunService {
     const angleYRad = this.currentAngleY * (Math.PI / 180);
     const elevationRad = this.currentElevation * (Math.PI / 180);
 
-    // Calculate position on sphere (relative to camera)
-    const y = this.orbitRadius * Math.sin(elevationRad);
-    const horizontalDist = this.orbitRadius * Math.cos(elevationRad);
-    const x = horizontalDist * Math.sin(angleYRad);
-    const z = horizontalDist * Math.cos(angleYRad);
+    // Step 1: Calculate position on a flat circle in XZ plane
+    const x0 = this.orbitRadius * Math.sin(angleYRad);
+    const y0 = 0;
+    const z0 = this.orbitRadius * Math.cos(angleYRad);
+
+    // Step 2: Rotate around X-axis by elevation angle
+    // This tilts the orbit plane from horizontal (elevation=0°) to vertical (elevation=90°)
+    const x = x0; // X unchanged (rotation around X-axis)
+    const y = y0 * Math.cos(elevationRad) - z0 * Math.sin(elevationRad);
+    const z = y0 * Math.sin(elevationRad) + z0 * Math.cos(elevationRad);
+
+    // Simplified (since y0 = 0):
+    // const x = this.orbitRadius * Math.sin(angleYRad);
+    // const y = -this.orbitRadius * Math.cos(angleYRad) * Math.sin(elevationRad);
+    // const z = this.orbitRadius * Math.cos(angleYRad) * Math.cos(elevationRad);
 
     this.sunRoot.position.set(x, y, z);
 
@@ -455,19 +471,30 @@ export class SunService {
     const angleYRad = this.currentAngleY * (Math.PI / 180);
     const elevationRad = this.currentElevation * (Math.PI / 180);
 
+    // Calculate sun position using the same formula as updateSunPosition()
+    const x0 = Math.sin(angleYRad);
+    const y0 = 0;
+    const z0 = Math.cos(angleYRad);
+
+    // Rotate around X-axis by elevation angle
+    const x = x0;
+    const y = y0 * Math.cos(elevationRad) - z0 * Math.sin(elevationRad);
+    const z = y0 * Math.sin(elevationRad) + z0 * Math.cos(elevationRad);
+
     // Calculate sun light direction (pointing from sun position to origin)
     // This creates shadows as if light is coming from the sun
-    const dirX = -Math.cos(elevationRad) * Math.sin(angleYRad);
-    const dirY = -Math.sin(elevationRad);
-    const dirZ = -Math.cos(elevationRad) * Math.cos(angleYRad);
+    const dirX = -x;
+    const dirY = -y;
+    const dirZ = -z;
 
     // Set sun light direction
     environmentService.setSunLightDirection(dirX, dirY, dirZ);
 
-    // Calculate intensity based on elevation
-    // Elevation range: -90° (below horizon) to 90° (zenith)
-    // Intensity: 0 when below horizon, max at zenith
-    const elevationNormalized = Math.max(0, this.currentElevation / 90); // 0-1 range
+    // Calculate intensity based on sun's Y position (height)
+    // When Y > 0: sun is above horizon
+    // When Y <= 0: sun is below horizon
+    const sunHeight = y;
+    const elevationNormalized = Math.max(0, Math.min(1, sunHeight)); // 0-1 range
 
     // Apply smooth curve for more realistic light falloff
     // Use squared value for softer sunrise/sunset
@@ -486,7 +513,9 @@ export class SunService {
     logger.debug('Automatic lighting updated', {
       elevation: this.currentElevation,
       angleY: this.currentAngleY,
+      sunPosition: { x, y, z },
       sunLightDirection: { x: dirX, y: dirY, z: dirZ },
+      sunHeight,
       sunLightIntensity,
       ambientLightIntensity,
       intensityFactor,

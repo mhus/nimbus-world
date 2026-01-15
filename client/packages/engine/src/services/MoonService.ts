@@ -254,7 +254,13 @@ export class MoonService {
   }
 
   /**
-   * Update moon position using spherical coordinates
+   * Update moon position based on current settings
+   *
+   * The moon moves on a tilted orbit around the center (XYZ):
+   * - positionOnCircle: Position in the orbital cycle (0-360°)
+   * - heightOverCamera: Tilt of the orbit plane
+   *   - 0°: Flat orbit in XZ plane (horizontal)
+   *   - 90°: Vertical orbit in XY plane (steep)
    */
   private updateMoonPosition(index: number): void {
     const moon = this.moons[index];
@@ -264,11 +270,16 @@ export class MoonService {
     const elevationRad = moon.heightOverCamera * (Math.PI / 180);
     const distance = moon.distance;
 
-    // Spherical coordinates
-    const y = distance * Math.sin(elevationRad);
-    const horizontalDist = distance * Math.cos(elevationRad);
-    const x = horizontalDist * Math.sin(angleYRad);
-    const z = horizontalDist * Math.cos(angleYRad);
+    // Step 1: Calculate position on a flat circle in XZ plane
+    const x0 = distance * Math.sin(angleYRad);
+    const y0 = 0;
+    const z0 = distance * Math.cos(angleYRad);
+
+    // Step 2: Rotate around X-axis by elevation angle
+    // This tilts the orbit plane from horizontal (elevation=0°) to vertical (elevation=90°)
+    const x = x0; // X unchanged (rotation around X-axis)
+    const y = y0 * Math.cos(elevationRad) - z0 * Math.sin(elevationRad);
+    const z = y0 * Math.sin(elevationRad) + z0 * Math.cos(elevationRad);
 
     moon.root.position.set(x, y, z);
 
