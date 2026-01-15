@@ -1,6 +1,9 @@
 package de.mhus.nimbus.world.shared.world;
 
+import de.mhus.nimbus.generated.types.Area;
 import de.mhus.nimbus.generated.types.HexVector2;
+import de.mhus.nimbus.generated.types.Vector2;
+import de.mhus.nimbus.generated.types.Vector2Pair;
 import lombok.experimental.UtilityClass;
 
 import java.util.Iterator;
@@ -10,6 +13,9 @@ import java.util.NoSuchElementException;
  * Utility class for hexagonal grid mathematics.
  * Uses pointy-top hexagon orientation (hexagon point facing up).
  * Coordinates are axial (q, r) with cube coordinates s = -q - r.
+ *
+ * Hex Position Key Format: "q;r"
+ *
  */
 @UtilityClass
 public class HexMathUtil {
@@ -20,19 +26,19 @@ public class HexMathUtil {
      * Generates a position key string from hex coordinates.
      *
      * @param hex The hex vector with q and r coordinates
-     * @return Position key in format "q:r"
+     * @return Position key in format "q;r"
      */
     public static String positionKey(HexVector2 hex) {
         if (hex == null) {
             throw new IllegalArgumentException("HexVector2 cannot be null");
         }
-        return hex.getQ() + ":" + hex.getR();
+        return hex.getQ() + ";" + hex.getR();
     }
 
     /**
      * Parses a position key string to hex coordinates.
      *
-     * @param key Position key in format "q:r"
+     * @param key Position key in format "q;r"
      * @return HexVector2 with parsed coordinates
      * @throws IllegalArgumentException if key format is invalid
      */
@@ -41,9 +47,9 @@ public class HexMathUtil {
             throw new IllegalArgumentException("Position key cannot be null or empty");
         }
 
-        String[] parts = key.split(":");
+        String[] parts = key.split(";");
         if (parts.length != 2) {
-            throw new IllegalArgumentException("Invalid position key format: " + key + " (expected 'q:r')");
+            throw new IllegalArgumentException("Invalid position key format: " + key + " (expected 'q;r')");
         }
 
         try {
@@ -226,4 +232,273 @@ public class HexMathUtil {
             nextPosition = null;
         }
     }
+
+    /**
+     * Calculates the world coordinate bounds of all hexagons within a specified range from a center hex.
+     *
+     * @param hexSize   The size (radius) of each hexagon in blocks
+     * @param centerHex The center hex coordinates
+     * @param range     The range (in hexes) from the center to include
+     * @return Array of Vector2Pair representing the world coordinates of the hex corners
+     */
+    public static Vector2[] getHexAreaBounds(int hexSize, HexVector2 centerHex, int range) {
+        java.util.List<Vector2> bounds = new java.util.ArrayList<>();
+        for (int dq = -range; dq <= range; dq++) {
+            for (int dr = Math.max(-range, -dq - range); dr <= Math.min(range, -dq + range); dr++) {
+                int q = centerHex.getQ() + dq;
+                int r = centerHex.getR() + dr;
+                // Berechne die Weltkoordinaten der Hex-Ecken
+                double centerX = hexSize * (Math.sqrt(3) * q + Math.sqrt(3) / 2 * r);
+                double centerZ = hexSize * (3.0 / 2 * r);
+                for (int i = 0; i < 6; i++) {
+                    double angle = Math.PI / 3 * i;
+                    double x = centerX + hexSize * Math.cos(angle);
+                    double z = centerZ + hexSize * Math.sin(angle);
+                    bounds.add(Vector2.builder().x(x).z(z).build());
+                }
+            }
+        }
+        return bounds.toArray(new Vector2[bounds.size()]);
+    }
+
+    /**
+     * Calculates the hex coordinate for a given chunk in the world.
+     * This allocates one exact hex coordinate per chunk.
+     *
+     * @param world
+     * @param cx
+     * @param cz
+     * @return
+     */
+    public static HexVector2 getHexForChunk(WWorld world, int cx, int cz) {
+        int hexSize = world.getPublicData().getHexGridSize();
+        int chunkSize = world.getPublicData().getChunkSize();
+        return getHexForChunk(hexSize, chunkSize, cx, cz);
+    }
+
+    public static HexVector2 getHexForChunk(int hexSize, int chunkSize, int cx, int cz) {
+        // Berechne Weltkoordinaten des Chunk-Ursprungs
+        int worldX = cx * chunkSize;
+        int worldZ = cz * chunkSize;
+        // Umrechnung in Hex-Koordinaten (axial)
+        // Annahme: HexMathUtil bietet eine Methode worldToHex(int x, int z, int hexSize)
+        // Falls nicht, einfache Umrechnung: q = worldX / hexSize, r = worldZ / hexSize
+        int q = worldX / hexSize;
+        int r = worldZ / hexSize;
+        return HexVector2.builder().q(q).r(r).build();
+    }
+
+    public static HexVector2[] getHexesForChunk(WWorld world, int cx, int cz) {
+        int hexSize = world.getPublicData().getHexGridSize();
+        int chunkSize = world.getPublicData().getChunkSize();
+        return getHexesForChunk(hexSize, chunkSize, cx, cz);
+    }
+
+    public static HexVector2[] getHexesForChunk(int hexSize, int chunkSize, int cx, int cz) {
+        // Weltkoordinaten der vier Ecken des Chunks
+        int[][] ecken = new int[][]{
+                {cx * chunkSize, cz * chunkSize}, // oben links
+                {(cx + 1) * chunkSize - 1, cz * chunkSize}, // oben rechts
+                {cx * chunkSize, (cz + 1) * chunkSize - 1}, // unten links
+                {(cx + 1) * chunkSize - 1, (cz + 1) * chunkSize - 1} // unten rechts
+        };
+        java.util.Set<String> uniqueHexes = new java.util.HashSet<>();
+        java.util.List<HexVector2> result = new java.util.ArrayList<>();
+        for (int[] ecke : ecken) {
+            int q = ecke[0] / hexSize;
+            int r = ecke[1] / hexSize;
+            String key = q + "," + r;
+            if (!uniqueHexes.contains(key)) {
+                uniqueHexes.add(key);
+                result.add(HexVector2.builder().q(q).r(r).build());
+                if (result.size() == 3) break; // maximal 3 Hexfelder
+            }
+        }
+        return result.toArray(new HexVector2[result.size()]);
+    }
+
+    public static HexVector2[] getHexesForArea(int hexSize, Area area) {
+        int worldX1 = area.getPosition().getX();
+        int worldZ1 = area.getPosition().getZ();
+        int worldX2 = worldX1 + area.getSize().getX();
+        int worldZ2 = worldZ1 + area.getSize().getZ();
+        // Weltkoordinaten der vier Ecken der Area
+        int[][] ecken = new int[][]{
+                {worldX1, worldZ1}, // oben links
+                {worldX2 - 1, worldZ1}, // oben rechts
+                {worldX1, worldZ2 - 1}, // unten links
+                {worldX2 - 1, worldZ2 - 1} // unten rechts
+        };
+        java.util.Set<String> uniqueHexes = new java.util.HashSet<>();
+        java.util.List<HexVector2> result = new java.util.ArrayList<>();
+        for (int[] ecke : ecken) {
+            int q = ecke[0] / hexSize;
+            int r = ecke[1] / hexSize;
+            String key = q + "," + r;
+            if (!uniqueHexes.contains(key)) {
+                uniqueHexes.add(key);
+                result.add(HexVector2.builder().q(q).r(r).build());
+                if (result.size() == 3) break; // maximal 3 Hexfelder
+            }
+        }
+        return result.toArray(new HexVector2[result.size()]);
+    }
+
+    /**
+     * Calculates up to three intersection lines (Vector2Pair) between a chunk (rectangle)
+     * and the corresponding hexagon (hex tile) on the x,z plane.
+     * Returns an array with 1 to 3 Vector2Pair objects representing the intersection lines.
+     *
+     * @param world The world instance
+     * @param cx Chunk X coordinate
+     * @param cz Chunk Z coordinate
+     * @return Array with 1 to 3 Vector2Pair (each representing an intersection line)
+     */
+    public Vector2Pair[] getHexChunkIntersectionLines(WWorld world, int cx, int cz) {
+        int hexSize = world.getPublicData().getHexGridSize();
+        int chunkSize = world.getPublicData().getChunkSize();
+        double minX = cx * chunkSize;
+        double minZ = cz * chunkSize;
+        double maxX = (cx + 1) * chunkSize;
+        double maxZ = (cz + 1) * chunkSize;
+        double[][] chunkCorners = new double[][] {
+            {minX, minZ},
+            {maxX, minZ},
+            {maxX, maxZ},
+            {minX, maxZ}
+        };
+        HexVector2 hex = HexVector2.builder().q((int)(minX / hexSize)).r((int)(minZ / hexSize)).build();
+        double[] hexCenter = hexToCartesian(hex, hexSize);
+        double radius = hexSize / 2.0;
+        double[][] hexCorners = new double[6][2];
+        for (int i = 0; i < 6; i++) {
+            double angle = Math.PI / 180 * (60 * i - 30);
+            hexCorners[i][0] = hexCenter[0] + radius * Math.cos(angle);
+            hexCorners[i][1] = hexCenter[1] + radius * Math.sin(angle);
+        }
+        java.util.List<Vector2> intersections = new java.util.ArrayList<>();
+        for (int ci = 0; ci < 4; ci++) {
+            double[] c1 = chunkCorners[ci];
+            double[] c2 = chunkCorners[(ci + 1) % 4];
+            for (int hi = 0; hi < 6; hi++) {
+                double[] h1 = hexCorners[hi];
+                double[] h2 = hexCorners[(hi + 1) % 6];
+                double[] p = intersectSegments(c1, c2, h1, h2);
+                if (p != null) {
+                    intersections.add(Vector2.builder().x(p[0]).z(p[1]).build());
+                }
+            }
+        }
+        java.util.List<Vector2Pair> result = new java.util.ArrayList<>();
+        for (int i = 0; i + 1 < intersections.size(); i += 2) {
+            result.add(Vector2Pair.builder().a(intersections.get(i)).b(intersections.get(i + 1)).build());
+            if (result.size() == 3) break;
+        }
+        return result.toArray(new Vector2Pair[result.size()]);
+    }
+
+    // Helper function: intersection point of two line segments (2D)
+    private static double[] intersectSegments(double[] p1, double[] p2, double[] q1, double[] q2) {
+        double s1_x = p2[0] - p1[0];
+        double s1_z = p2[1] - p1[1];
+        double s2_x = q2[0] - q1[0];
+        double s2_z = q2[1] - q1[1];
+        double denom = (-s2_x * s1_z + s1_x * s2_z);
+        if (denom == 0) return null; // parallel
+        double s = (-s1_z * (p1[0] - q1[0]) + s1_x * (p1[1] - q1[1])) / denom;
+        double t = ( s2_x * (p1[1] - q1[1]) - s2_z * (p1[0] - q1[0])) / denom;
+        if (s >= 0 && s <= 1 && t >= 0 && t <= 1) {
+            // Schnittpunkt innerhalb beider Segmente
+            double ix = p1[0] + (t * s1_x);
+            double iz = p1[1] + (t * s1_z);
+            return new double[] {ix, iz};
+        }
+        return null;
+    }
+
+    /**
+     * Determines the hex grid coordinate (HexVector2) that has the largest overlapping area with the given chunk.
+     * This is done by checking all hexes overlapping the chunk and selecting the one with the largest intersection area.
+     *
+     * @param world The world instance
+     * @param cx Chunk X coordinate
+     * @param cz Chunk Z coordinate
+     * @return The HexVector2 of the hex with the largest overlap
+     */
+    public static HexVector2 getDominantHexForChunk(WWorld world, int cx, int cz) {
+        int hexSize = world.getPublicData().getHexGridSize();
+        int chunkSize = world.getPublicData().getChunkSize();
+        // Get all hexes overlapping the chunk
+        HexVector2[] hexes = getHexesForChunk(hexSize, chunkSize, cx, cz);
+        // Rectangle (chunk) bounds
+        double minX = cx * chunkSize;
+        double minZ = cz * chunkSize;
+        double maxX = (cx + 1) * chunkSize;
+        double maxZ = (cz + 1) * chunkSize;
+        // For each hex, estimate overlap area by sampling points in the chunk
+        int sampleStep = Math.max(1, chunkSize / 8); // sample grid granularity
+        HexVector2 bestHex = hexes[0];
+        int maxCount = -1;
+        for (HexVector2 hex : hexes) {
+            double[] hexCenter = hexToCartesian(hex, hexSize);
+            int count = 0;
+            for (double x = minX; x < maxX; x += sampleStep) {
+                for (double z = minZ; z < maxZ; z += sampleStep) {
+                    if (isPointInHex(x, z, hexCenter[0], hexCenter[1], hexSize)) {
+                        count++;
+                    }
+                }
+            }
+            if (count > maxCount) {
+                maxCount = count;
+                bestHex = hex;
+            }
+        }
+        return bestHex;
+    }
+
+    /**
+     * Determines the hex grid coordinate (HexVector2) that has the largest overlapping area with the given chunk.
+     * This is done by checking all hexes overlapping the chunk and selecting the one with the largest intersection area.
+     *
+     * @param world The world instance
+     * @param area The area to evaluate
+     * @return The HexVector2 of the hex with the largest overlap
+     */
+    public static HexVector2 getDominantHexForArea(WWorld world, Area area) {
+        int hexSize = world.getPublicData().getHexGridSize();
+        int chunkSize = world.getPublicData().getChunkSize();
+        // Get all hexes overlapping the chunk
+        HexVector2[] hexes = getHexesForArea(hexSize, area);
+        // Rectangle (chunk) bounds
+        int minX = area.getPosition().getX();
+        int minZ = area.getPosition().getZ();
+        int maxX = minX + area.getSize().getX();
+        int maxZ = minZ + area.getSize().getZ();
+        int worldX1 = area.getPosition().getX();
+        int worldZ1 = area.getPosition().getZ();
+        int worldX2 = worldX1 + area.getSize().getX();
+        int worldZ2 = worldZ1 + area.getSize().getZ();
+        // For each hex, estimate overlap area by sampling points in the chunk
+        int sampleStep = Math.max(1, chunkSize / 8); // sample grid granularity
+        HexVector2 bestHex = hexes[0];
+        int maxCount = -1;
+        for (HexVector2 hex : hexes) {
+            double[] hexCenter = hexToCartesian(hex, hexSize);
+            int count = 0;
+            for (double x = minX; x < maxX; x += sampleStep) {
+                for (double z = minZ; z < maxZ; z += sampleStep) {
+                    if (isPointInHex(x, z, hexCenter[0], hexCenter[1], hexSize)) {
+                        count++;
+                    }
+                }
+            }
+            if (count > maxCount) {
+                maxCount = count;
+                bestHex = hex;
+            }
+        }
+        return bestHex;
+    }
+
 }

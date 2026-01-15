@@ -2874,6 +2874,32 @@
       "target" : null
     } ]
   }, {
+    "path" : "/Users/hummel/sources/mhus/nimbus-wb/repos/nimbus-world/server/generated/../client_shared_src/types/Vector2Pair.ts",
+    "imports" : [ "./Vector2" ],
+    "interfaces" : [ {
+      "name" : "Vector2Pair",
+      "extendsList" : [ ],
+      "properties" : [ {
+        "name" : "a",
+        "type" : "Vector2",
+        "optional" : false,
+        "visibility" : null,
+        "javaTypeHint" : null,
+        "comment" : null
+      }, {
+        "name" : "b",
+        "type" : "Vector2",
+        "optional" : false,
+        "visibility" : null,
+        "javaTypeHint" : null,
+        "comment" : null
+      } ],
+      "methods" : [ ]
+    } ],
+    "enums" : [ ],
+    "classes" : [ ],
+    "typeAliases" : [ ]
+  }, {
     "path" : "/Users/hummel/sources/mhus/nimbus-wb/repos/nimbus-world/server/generated/../client_shared_src/types/RegionItemInfo.ts",
     "imports" : [ ],
     "interfaces" : [ {
@@ -3152,9 +3178,16 @@
         "javaTypeHint" : null,
         "comment" : null
       }, {
+        "name" : "title",
+        "type" : "string",
+        "optional" : true,
+        "visibility" : null,
+        "javaTypeHint" : null,
+        "comment" : null
+      }, {
         "name" : "description",
         "type" : "string",
-        "optional" : false,
+        "optional" : true,
         "visibility" : null,
         "javaTypeHint" : null,
         "comment" : null
@@ -4465,6 +4498,32 @@
     "classes" : [ ],
     "typeAliases" : [ ]
   }, {
+    "path" : "/Users/hummel/sources/mhus/nimbus-wb/repos/nimbus-world/server/generated/../client_shared_src/types/Vector2.ts",
+    "imports" : [ ],
+    "interfaces" : [ {
+      "name" : "Vector2",
+      "extendsList" : [ ],
+      "properties" : [ {
+        "name" : "x",
+        "type" : "number",
+        "optional" : false,
+        "visibility" : null,
+        "javaTypeHint" : null,
+        "comment" : null
+      }, {
+        "name" : "z",
+        "type" : "number",
+        "optional" : false,
+        "visibility" : null,
+        "javaTypeHint" : null,
+        "comment" : null
+      } ],
+      "methods" : [ ]
+    } ],
+    "enums" : [ ],
+    "classes" : [ ],
+    "typeAliases" : [ ]
+  }, {
     "path" : "/Users/hummel/sources/mhus/nimbus-wb/repos/nimbus-world/server/generated/../client_shared_src/types/HexVector2.ts",
     "imports" : [ ],
     "interfaces" : [ {
@@ -4491,28 +4550,35 @@
     "classes" : [ ],
     "typeAliases" : [ ]
   }, {
-    "path" : "/Users/hummel/sources/mhus/nimbus-wb/repos/nimbus-world/server/generated/../client_shared_src/types/ServerEntitySpawnDefinition.ts",
-    "imports" : [ "./Vector3", "./Rotation", "./EntityData" ],
+    "path" : "/Users/hummel/sources/mhus/nimbus-wb/repos/nimbus-world/server/generated/../client_shared_src/types/Vector3Pair.ts",
+    "imports" : [ "./Vector3" ],
     "interfaces" : [ {
-      "name" : "Vector2",
+      "name" : "Vector3Pair",
       "extendsList" : [ ],
       "properties" : [ {
-        "name" : "x",
-        "type" : "number",
+        "name" : "a",
+        "type" : "Vector3",
         "optional" : false,
         "visibility" : null,
         "javaTypeHint" : null,
         "comment" : null
       }, {
-        "name" : "z",
-        "type" : "number",
+        "name" : "b",
+        "type" : "Vector3",
         "optional" : false,
         "visibility" : null,
         "javaTypeHint" : null,
         "comment" : null
       } ],
       "methods" : [ ]
-    }, {
+    } ],
+    "enums" : [ ],
+    "classes" : [ ],
+    "typeAliases" : [ ]
+  }, {
+    "path" : "/Users/hummel/sources/mhus/nimbus-wb/repos/nimbus-world/server/generated/../client_shared_src/types/ServerEntitySpawnDefinition.ts",
+    "imports" : [ "./Vector3", "./Rotation", "./EntityData", "./Vector2" ],
+    "interfaces" : [ {
       "name" : "BehaviorConfig",
       "extendsList" : [ ],
       "properties" : [ {

@@ -1,7 +1,9 @@
 package de.mhus.nimbus.world.shared.world;
 
+import de.mhus.nimbus.generated.network.messages.ChunkCoordinate;
 import de.mhus.nimbus.generated.types.HexGrid;
 import de.mhus.nimbus.generated.types.HexVector2;
+import de.mhus.nimbus.generated.types.Vector2Pair;
 import de.mhus.nimbus.shared.types.WorldId;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,6 +22,8 @@ import java.util.function.Consumer;
  *
  * HexGrids exist separately for each world/zone.
  * Instances CANNOT have their own hex grids - always taken from the defined world.
+ *
+ * Hex Position Key Format: "q;r"
  */
 @Service
 @RequiredArgsConstructor
@@ -33,7 +37,7 @@ public class WHexGridService {
      * Instances always look up in their world (without instance suffix).
      *
      * @param worldId The world identifier
-     * @param hexPos The hex vector with q and r coordinates
+     * @param hexPos  The hex vector with q and r coordinates
      * @return Optional containing the hex grid if found
      */
     @Transactional(readOnly = true)
@@ -141,8 +145,8 @@ public class WHexGridService {
      * Creates a new hex grid.
      * Filters out instances.
      *
-     * @param worldId The world identifier
-     * @param publicData The hex grid public data with position and metadata
+     * @param worldId         The world identifier
+     * @param publicData      The hex grid public data with position and metadata
      * @param generatorParams Optional generator parameters (can be null or empty)
      * @return The created hex grid entity
      * @throws IllegalStateException if a hex grid already exists at this position
@@ -188,7 +192,7 @@ public class WHexGridService {
      * Filters out instances.
      *
      * @param worldId The world identifier
-     * @param hexPos The hex vector with q and r coordinates
+     * @param hexPos  The hex vector with q and r coordinates
      * @param updater Consumer function to modify the entity
      * @return Optional containing the updated entity if found
      */
@@ -226,7 +230,7 @@ public class WHexGridService {
      * Disables a hex grid (soft delete).
      *
      * @param worldId The world identifier
-     * @param hexPos The hex vector with q and r coordinates
+     * @param hexPos  The hex vector with q and r coordinates
      * @return true if the hex grid was found and disabled
      */
     @Transactional
@@ -238,7 +242,7 @@ public class WHexGridService {
      * Enables a hex grid.
      *
      * @param worldId The world identifier
-     * @param hexPos The hex vector with q and r coordinates
+     * @param hexPos  The hex vector with q and r coordinates
      * @return true if the hex grid was found and enabled
      */
     @Transactional
@@ -251,7 +255,7 @@ public class WHexGridService {
      * Filters out instances.
      *
      * @param worldId The world identifier
-     * @param hexPos The hex vector with q and r coordinates
+     * @param hexPos  The hex vector with q and r coordinates
      * @return true if the hex grid was found and deleted
      */
     @Transactional
@@ -276,4 +280,5 @@ public class WHexGridService {
             return true;
         }).orElse(false);
     }
+
 }

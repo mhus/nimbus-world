@@ -1,6 +1,6 @@
 /*
- * Source TS: Vector2.ts
- * Original TS: 'interface Vector2'
+ * Source TS: Vector3Pair.ts
+ * Original TS: 'interface Vector3Pair'
  */
 package de.mhus.nimbus.generated.types;
 
@@ -10,7 +10,7 @@ package de.mhus.nimbus.generated.types;
 @lombok.experimental.SuperBuilder
 @lombok.NoArgsConstructor
 @lombok.AllArgsConstructor(access = lombok.AccessLevel.PROTECTED)
-public class Vector2 {
-    private double x;
-    private double z;
+public class Vector3Pair {
+    private Vector3 a;
+    private Vector3 b;
 }

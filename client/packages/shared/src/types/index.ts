@@ -4,10 +4,15 @@
 
 // Core types
 export * from './Vector3';
+export * from './Vector3Int';
+export * from './Vector3Pair';
 export * from './Vector3Color';
 export * from './Rotation';
 export * from './Color';
 export * from './Shape';
+export * from './Vector2';
+export * from './Vector2Pair';
+export * from './Area';
 
 // Block types
 export * from './Block';
@@ -74,4 +79,3 @@ export * from './EditSettings';
 // Hex grid types
 export * from './HexData';
 export * from './HexVector2';
-export * from './Area';

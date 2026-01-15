@@ -4,6 +4,7 @@ import de.mhus.nimbus.generated.types.Block;
 import de.mhus.nimbus.generated.types.BlockType;
 import de.mhus.nimbus.generated.types.BlockTypeType;
 import de.mhus.nimbus.shared.types.WorldId;
+import de.mhus.nimbus.shared.utils.TypeUtil;
 import de.mhus.nimbus.world.shared.generator.WFlat;
 import de.mhus.nimbus.world.shared.generator.WFlatService;
 import de.mhus.nimbus.world.shared.layer.LayerBlock;
@@ -82,6 +83,9 @@ public class FlatCreateService {
                 .mountZ(mountZ)
                 .oceanLevel(oceanLevel)
                 .oceanBlockId(oceanBlockId)
+                .hexGrid(HexMathUtil.getDominantHexForArea(
+                        world, TypeUtil.area(mountX, mountZ, sizeX, sizeZ)
+                ))
                 .build();
 
         // Initialize with size
@@ -169,6 +173,9 @@ public class FlatCreateService {
                 .mountZ(mountZ)
                 .oceanLevel(oceanLevel)
                 .oceanBlockId(oceanBlockId)
+                .hexGrid(HexMathUtil.getDominantHexForArea(
+                        world, TypeUtil.area(mountX, mountZ, sizeX, sizeZ)
+                ))
                 .build();
 
         // Initialize with size
@@ -368,6 +375,9 @@ public class FlatCreateService {
                 .mountZ(mountZ)
                 .oceanLevel(oceanLevel)
                 .oceanBlockId(oceanBlockId)
+                .hexGrid(HexMathUtil.getDominantHexForArea(
+                        world, TypeUtil.area(mountX, mountZ, sizeX, sizeZ)
+                ))
                 .build();
 
         // Initialize with size (sets all levels to 0)
@@ -525,6 +535,9 @@ public class FlatCreateService {
                 .oceanLevel(oceanLevel)
                 .oceanBlockId(oceanBlockId)
                 .unknownProtected(true)  // Set unknownProtected to true for HexGrid flats
+                .hexGrid(HexMathUtil.getDominantHexForArea(
+                        world, TypeUtil.area(mountX, mountZ, sizeX, sizeZ)
+                ))
                 .build();
 
         // Initialize with size (sets all levels to 0)
@@ -685,6 +698,9 @@ public class FlatCreateService {
                 .oceanLevel(oceanLevel)
                 .oceanBlockId(oceanBlockId)
                 .unknownProtected(true)  // Set unknownProtected to true for HexGrid flats
+                .hexGrid(HexMathUtil.getDominantHexForArea(
+                        world, TypeUtil.area(mountX, mountZ, sizeX, sizeZ)
+                ))
                 .build();
 
         // Initialize with size

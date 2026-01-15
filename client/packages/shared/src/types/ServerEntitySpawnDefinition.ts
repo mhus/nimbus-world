@@ -8,15 +8,7 @@
 import type { Vector3 } from './Vector3';
 import type { Rotation } from './Rotation';
 import type { EntityPathway } from './EntityData';
-
-/**
- * Vector2 for chunk coordinates
- */
-export interface Vector2 {
-  x: number;
-  z: number;
-}
-
+import type { Vector2 } from './Vector2';
 /**
  * Behavior configuration for entity movement
  */

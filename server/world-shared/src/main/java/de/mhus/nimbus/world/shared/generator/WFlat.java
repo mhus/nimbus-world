@@ -1,5 +1,6 @@
 package de.mhus.nimbus.world.shared.generator;
 
+import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.shared.persistence.ActualSchemaVersion;
 import de.mhus.nimbus.shared.types.Identifiable;
 import lombok.AllArgsConstructor;
@@ -85,6 +86,9 @@ public class WFlat implements Identifiable {
     private byte[] columns;
     @Builder.Default
     private HashMap<String, String> extraBlocks = new HashMap<>(); // for water and ocean ...
+
+    @Getter
+    private HexVector2 hexGrid;
 
     @Builder.Default
     private HashMap<Byte, MaterialDefinition> materials = new HashMap<>();

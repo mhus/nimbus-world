@@ -6,7 +6,8 @@ export interface HexGrid {
   position : HexVector2;
   entryPoint? : Area;
   name: string;
-  description: string;
+  title?: string;
+  description?: string;
   icon?: string;
   splashScreen?: string;
   splashScreenAudio?: string;
