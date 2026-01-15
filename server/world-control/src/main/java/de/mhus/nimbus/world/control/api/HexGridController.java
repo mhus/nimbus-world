@@ -2,6 +2,8 @@ package de.mhus.nimbus.world.control.api;
 
 import de.mhus.nimbus.generated.types.HexGrid;
 import de.mhus.nimbus.generated.types.HexVector2;
+import de.mhus.nimbus.generated.types.Vector2Int;
+import de.mhus.nimbus.shared.utils.TypeUtil;
 import de.mhus.nimbus.world.shared.rest.BaseEditorController;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
 import de.mhus.nimbus.world.shared.world.WHexGridService;
@@ -36,7 +38,8 @@ public class HexGridController extends BaseEditorController {
      */
     public record HexGridRequest(
             HexGrid publicData,
-            Map<String, String> generatorParameters,
+            Map<String, String> parameters,
+            Map<String, Map<String, String>> areas,
             Boolean enabled
     ) {}
 
@@ -48,7 +51,8 @@ public class HexGridController extends BaseEditorController {
             String worldId,
             String position,
             HexGrid publicData,
-            Map<String, String> generatorParameters,
+            Map<String, String> parameters,
+            Map<String, Map<String, String>> areas,
             Instant createdAt,
             Instant updatedAt,
             boolean enabled
@@ -61,6 +65,7 @@ public class HexGridController extends BaseEditorController {
                 hexGrid.getPosition(),
                 hexGrid.getPublicData(),
                 hexGrid.getParameters(),
+                hexGrid.getAreas(),
                 hexGrid.getCreatedAt(),
                 hexGrid.getUpdatedAt(),
                 hexGrid.isEnabled()
@@ -127,6 +132,72 @@ public class HexGridController extends BaseEditorController {
     }
 
     /**
+     * Find hex grid by chunk coordinates
+     * GET /control/worlds/{worldId}/hexgrid/by-chunk/{cx}/{cz}
+     *
+     * Returns the hex grid that contains the given chunk, or the calculated hex position if not found
+     */
+    @GetMapping("/by-chunk/{cx}/{cz}")
+    public ResponseEntity<?> getByChunk(
+            @PathVariable String worldId,
+            @PathVariable int cx,
+            @PathVariable int cz) {
+
+        var error = validateId(worldId, "worldId");
+        if (error != null) return error;
+
+        try {
+            // Get world to get chunk size
+            var world = worldService.getByWorldId(worldId).orElseThrow(
+                    () -> new IllegalArgumentException("World not found: " + worldId)
+            );
+
+            if (world.getPublicData() == null || world.getPublicData().getChunkSize() <= 0) {
+                return bad("World chunkSize not configured");
+            }
+
+            int chunkSize = world.getPublicData().getChunkSize();
+
+            // Convert chunk coordinates to flat world coordinates (center of chunk)
+            int flatX = cx * chunkSize + (chunkSize / 2);
+            int flatZ = cz * chunkSize + (chunkSize / 2);
+
+            // Convert flat world coordinates to hex coordinates using HexMathUtil
+            Vector2Int flatPos = TypeUtil.vector2int(flatX, flatZ);
+
+            HexVector2 hexPos = de.mhus.nimbus.world.shared.world.HexMathUtil.flatToHex(
+                flatPos,
+                world.getPublicData().getHexGridSize()
+            );
+
+            // Try to find hex grid at this position
+            var hexGridOpt = hexGridService.findByWorldIdAndPosition(worldId, hexPos);
+
+            if (hexGridOpt.isPresent()) {
+                // Found hex grid
+                return ResponseEntity.ok(Map.of(
+                    "found", true,
+                    "hexGrid", toResponse(hexGridOpt.get()),
+                    "hexPosition", Map.of("q", hexPos.getQ(), "r", hexPos.getR()),
+                    "chunkPosition", Map.of("cx", cx, "cz", cz)
+                ));
+            } else {
+                // Not found, return calculated hex position
+                return ResponseEntity.ok(Map.of(
+                    "found", false,
+                    "hexPosition", Map.of("q", hexPos.getQ(), "r", hexPos.getR()),
+                    "chunkPosition", Map.of("cx", cx, "cz", cz)
+                ));
+            }
+
+        } catch (IllegalArgumentException e) {
+            return bad(e.getMessage());
+        } catch (Exception e) {
+            return bad("Failed to find hex grid by chunk: " + e.getMessage());
+        }
+    }
+
+    /**
      * Create new hex grid
      * POST /control/worlds/{worldId}/hexgrid
      */
@@ -150,7 +221,8 @@ public class HexGridController extends BaseEditorController {
             WHexGrid created = hexGridService.create(
                     worldId,
                     request.publicData(),
-                    request.generatorParameters()
+                    request.parameters(),
+                    request.areas()
             );
 
             // Apply enabled flag if specified
@@ -195,8 +267,11 @@ public class HexGridController extends BaseEditorController {
                 if (request.publicData() != null) {
                     hexGrid.setPublicData(request.publicData());
                 }
-                if (request.generatorParameters() != null) {
-                    hexGrid.setParameters(request.generatorParameters());
+                if (request.parameters() != null) {
+                    hexGrid.setParameters(request.parameters());
+                }
+                if (request.areas() != null) {
+                    hexGrid.setAreas(request.areas());
                 }
                 if (request.enabled() != null) {
                     hexGrid.setEnabled(request.enabled());
@@ -233,10 +308,15 @@ public class HexGridController extends BaseEditorController {
         try {
             var updated = hexGridService.update(worldId, position, hexGrid -> {
                 // Only update fields that are present in the request
-                if (updates.containsKey("generatorParameters")) {
+                if (updates.containsKey("parameters")) {
                     @SuppressWarnings("unchecked")
-                    Map<String, String> params = (Map<String, String>) updates.get("generatorParameters");
+                    Map<String, String> params = (Map<String, String>) updates.get("parameters");
                     hexGrid.setParameters(params);
+                }
+                if (updates.containsKey("areas")) {
+                    @SuppressWarnings("unchecked")
+                    Map<String, Map<String, String>> areasMap = (Map<String, Map<String, String>>) updates.get("areas");
+                    hexGrid.setAreas(areasMap);
                 }
                 if (updates.containsKey("enabled")) {
                     hexGrid.setEnabled((Boolean) updates.get("enabled"));

@@ -14,7 +14,8 @@ export interface HexGridWithId {
   worldId: string;
   position: string;
   publicData: HexGrid;
-  generatorParameters?: Record<string, string>;
+  parameters?: Record<string, string>;
+  areas?: Record<string, Record<string, string>>;
   createdAt?: string;
   updatedAt?: string;
   enabled: boolean;

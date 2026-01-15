@@ -96,6 +96,8 @@
 import { ref, computed, watch, onMounted } from 'vue';
 import { useWorld } from '@/composables/useWorld';
 import { useHexGrids, type HexGridWithId } from '@/composables/useHexGrids';
+import { apiService } from '@/services/ApiService';
+import { TypeUtil } from '@nimbus/shared';
 import SearchInput from '@components/SearchInput.vue';
 import LoadingSpinner from '@components/LoadingSpinner.vue';
 import ErrorAlert from '@components/ErrorAlert.vue';
@@ -151,18 +153,49 @@ const filteredHexGrids = computed(() => {
 });
 
 /**
- * Parse position string (e.g., "0:0") to q and r
+ * Parse position string (e.g., "0;0") to q and r
  */
 const parsePosition = (position: string): { q: number; r: number } => {
-  const [q, r] = position.split(':').map(Number);
-  return { q, r };
+  return TypeUtil.parseHexCoord(position);
 };
 
 /**
  * Handle search
  */
-const handleSearch = (query: string) => {
+const handleSearch = async (query: string) => {
   searchQuery.value = query;
+
+  // Check if query is chunk coordinates format (e.g., "10:20")
+  const chunkPattern = /^(-?\d+):(-?\d+)$/;
+  const match = query.trim().match(chunkPattern);
+
+  if (match && currentWorldId.value && currentWorldId.value !== '?') {
+    const cx = parseInt(match[1]);
+    const cz = parseInt(match[2]);
+
+    try {
+      // Call the by-chunk endpoint
+      const response = await apiService.get<{
+        found: boolean;
+        hexGrid?: any;
+        hexPosition: { q: number; r: number };
+        chunkPosition: { cx: number; cz: number };
+      }>(`/control/worlds/${currentWorldId.value}/hexgrid/by-chunk/${cx}/${cz}`);
+
+      if (response.found && response.hexGrid) {
+        // Found existing hex grid, open edit dialog
+        selectedHexGrid.value = response.hexGrid;
+        isEditorOpen.value = true;
+      } else {
+        // Not found, open create dialog with calculated hex position
+        const { q, r } = response.hexPosition;
+        openCreateDialogAtPosition(q, r);
+      }
+    } catch (err) {
+      console.error('Failed to search by chunk:', err);
+      alert(`Failed to search for chunk ${cx}:${cz}: ${(err as Error).message}`);
+    }
+  }
 };
 
 /**
@@ -182,7 +215,7 @@ const openCreateDialogAtPosition = (q: number, r: number) => {
   selectedHexGrid.value = {
     id: '',
     worldId: currentWorldId.value || '',
-    position: `${q}:${r}`,
+    position: TypeUtil.toStringHexCoord({ q, r }),
     publicData: {
       position: { q, r },
       name: '',
@@ -199,13 +232,23 @@ const openCreateDialogAtPosition = (q: number, r: number) => {
 const openEditDialog = async (hexGrid: HexGridWithId) => {
   if (!hexGridsComposable.value) return;
 
-  // Load fresh data from server
+  // Check if this is a temporary hex grid (no ID) - if so, use it directly for create mode
+  if (!hexGrid.id) {
+    selectedHexGrid.value = hexGrid;
+    isEditorOpen.value = true;
+    return;
+  }
+
+  // Load fresh data from server for existing hex grids
   const { q, r } = parsePosition(hexGrid.position);
   const freshData = await hexGridsComposable.value.loadHexGrid(q, r);
 
   if (freshData) {
     selectedHexGrid.value = freshData;
     isEditorOpen.value = true;
+  } else {
+    // If loading failed, show error message
+    alert(`Failed to load hex grid at position ${q}:${r}. It may have been deleted.`);
   }
 };
 

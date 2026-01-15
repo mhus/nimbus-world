@@ -6559,6 +6559,32 @@
       "target" : null
     } ]
   }, {
+    "path" : "/Users/hummel/sources/mhus/nimbus-wb/repos/nimbus-world/server/generated/../client_shared_src/types/Vector2Int.ts",
+    "imports" : [ ],
+    "interfaces" : [ {
+      "name" : "Vector2Int",
+      "extendsList" : [ ],
+      "properties" : [ {
+        "name" : "x",
+        "type" : "number",
+        "optional" : false,
+        "visibility" : null,
+        "javaTypeHint" : "int",
+        "comment" : "// javaType: int"
+      }, {
+        "name" : "z",
+        "type" : "number",
+        "optional" : false,
+        "visibility" : null,
+        "javaTypeHint" : "int",
+        "comment" : "// javaType: int"
+      } ],
+      "methods" : [ ]
+    } ],
+    "enums" : [ ],
+    "classes" : [ ],
+    "typeAliases" : [ ]
+  }, {
     "path" : "/Users/hummel/sources/mhus/nimbus-wb/repos/nimbus-world/server/generated/../client_shared_src/types/PlayerInfo.ts",
     "imports" : [ "./ShortcutDefinition" ],
     "interfaces" : [ {

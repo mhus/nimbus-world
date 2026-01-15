@@ -3,7 +3,9 @@ package de.mhus.nimbus.world.shared.world;
 import de.mhus.nimbus.generated.types.Area;
 import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.generated.types.Vector2;
+import de.mhus.nimbus.generated.types.Vector2Int;
 import de.mhus.nimbus.generated.types.Vector2Pair;
+import de.mhus.nimbus.shared.utils.TypeUtil;
 import lombok.experimental.UtilityClass;
 
 import java.util.Iterator;
@@ -84,7 +86,7 @@ public class HexMathUtil {
      * @param gridSize The diameter of the hexagon in blocks
      * @return Iterator over FlatPosition objects within the hexagon
      */
-    public static Iterator<FlatPosition> createFlatPositionIterator(HexVector2 hex, int gridSize) {
+    public static Iterator<Vector2Int> createFlatPositionIterator(HexVector2 hex, int gridSize) {
         if (hex == null) {
             throw new IllegalArgumentException("HexVector2 cannot be null");
         }
@@ -116,10 +118,35 @@ public class HexMathUtil {
         }
     }
 
+    public static HexVector2 flatToHex(Vector2Int flatPos, int hexGridSize) {
+        int x = flatPos.getX();
+        int z = flatPos.getZ();
+        double radius = hexGridSize / 2.0;
+
+        double q = (SQRT_3 / 3.0 * x - 1.0 / 3.0 * z) / radius;
+        double r = (2.0 / 3.0 * z) / radius;
+
+        int rq = (int) Math.round(q);
+        int rr = (int) Math.round(r);
+        int rs = (int) Math.round(-q - r);
+
+        double q_diff = Math.abs(rq - q);
+        double r_diff = Math.abs(rr - r);
+        double s_diff = Math.abs(rs + q + r);
+
+        if (q_diff > r_diff && q_diff > s_diff) {
+            rq = -rr - rs;
+        } else if (r_diff > s_diff) {
+            rr = -rq - rs;
+        }
+
+        return HexVector2.builder().q(rq).r(rr).build();
+    }
+
     /**
      * Internal iterator implementation for lazy position generation.
      */
-    private static class HexPositionIterator implements Iterator<FlatPosition> {
+    private static class HexPositionIterator implements Iterator<Vector2Int> {
         private final double hexCenterX;
         private final double hexCenterZ;
         private final int gridSize;
@@ -130,7 +157,7 @@ public class HexMathUtil {
 
         private int currentX;
         private int currentZ;
-        private FlatPosition nextPosition;
+        private Vector2Int nextPosition;
         private boolean hasSearchedNext;
 
         HexPositionIterator(HexVector2 hex, int gridSize) {
@@ -160,12 +187,12 @@ public class HexMathUtil {
         }
 
         @Override
-        public FlatPosition next() {
+        public Vector2Int next() {
             if (!hasNext()) {
                 throw new NoSuchElementException("No more positions in hexagon");
             }
 
-            FlatPosition result = nextPosition;
+            Vector2Int result = nextPosition;
             hasSearchedNext = false;
             nextPosition = null;
             return result;
@@ -177,7 +204,7 @@ public class HexMathUtil {
             while (currentZ <= maxZ) {
                 while (currentX <= maxX) {
                     if (isPointInHex(currentX, currentZ, hexCenterX, hexCenterZ, gridSize)) {
-                        nextPosition = new FlatPosition(currentX, currentZ);
+                        nextPosition = TypeUtil.vector2int(currentX, currentZ);
                         currentX++;
                         return;
                     }

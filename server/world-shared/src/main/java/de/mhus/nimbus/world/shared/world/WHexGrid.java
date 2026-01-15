@@ -3,6 +3,7 @@ package de.mhus.nimbus.world.shared.world;
 import de.mhus.nimbus.generated.types.Area;
 import de.mhus.nimbus.generated.types.HexGrid;
 import de.mhus.nimbus.generated.types.HexVector2;
+import de.mhus.nimbus.generated.types.Vector2Int;
 import de.mhus.nimbus.shared.persistence.ActualSchemaVersion;
 import de.mhus.nimbus.shared.types.Identifiable;
 import de.mhus.nimbus.shared.utils.TypeUtil;
@@ -137,7 +138,7 @@ public class WHexGrid implements Identifiable {
      * @throws IllegalStateException if publicData or position is null
      * @throws IllegalArgumentException if worldEntity has no publicData or hexGridSize
      */
-    public Iterable<FlatPosition> getFlatPositionSet(WWorld worldEntity) {
+    public Iterable<Vector2Int> getFlatPositionSet(WWorld worldEntity) {
         if (publicData == null || publicData.getPosition() == null) {
             throw new IllegalStateException("Cannot calculate positions: publicData or position is null");
         }
@@ -191,10 +192,10 @@ public class WHexGrid implements Identifiable {
         java.util.Set<String> chunkKeys = new java.util.HashSet<>();
 
         // Iterate over all flat positions in this hex grid
-        for (FlatPosition pos : getFlatPositionSet(worldEntity)) {
+        for (Vector2Int pos : getFlatPositionSet(worldEntity)) {
             // Calculate chunk coordinates
-            int cx = Math.floorDiv(pos.x(), chunkSize);
-            int cz = Math.floorDiv(pos.z(), chunkSize);
+            int cx = Math.floorDiv(pos.getX(), chunkSize);
+            int cz = Math.floorDiv(pos.getZ(), chunkSize);
             String chunkKey = cx + ":" + cz;
             chunkKeys.add(chunkKey);
         }

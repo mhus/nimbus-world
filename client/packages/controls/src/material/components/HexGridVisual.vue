@@ -84,6 +84,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
+import { TypeUtil } from '@nimbus/shared';
 import type { HexGridWithId } from '@/composables/useHexGrids';
 
 interface Props {
@@ -156,8 +157,7 @@ const getNeighbors = (q: number, r: number): Array<{ q: number; r: number }> => 
  * Parse position string to q and r
  */
 const parsePosition = (position: string): { q: number; r: number } => {
-  const [q, r] = position.split(':').map(Number);
-  return { q, r };
+  return TypeUtil.parseHexCoord(position);
 };
 
 /**
@@ -205,9 +205,10 @@ const allHexagons = computed(() => {
   props.hexGrids.forEach(hexGrid => {
     const { q, r } = parsePosition(hexGrid.position);
     const { x, y } = hexToPixel(q, r);
+    const posKey = TypeUtil.toStringHexCoord({ q, r });
 
     hexagons.push({
-      key: `${q}:${r}`,
+      key: posKey,
       q,
       r,
       centerX: x,
@@ -216,14 +217,14 @@ const allHexagons = computed(() => {
       color: hexGrid.enabled ? '#3b82f6' : '#6b7280',
       strokeColor: hexGrid.enabled ? '#2563eb' : '#4b5563',
       textColor: '#ffffff',
-      label: hexGrid.publicData.name || `${q}:${r}`,
+      label: hexGrid.publicData.name || posKey,
       isExisting: true,
       hexGrid
     });
 
     // Add empty neighbors
     getNeighbors(q, r).forEach(neighbor => {
-      const key = `${neighbor.q}:${neighbor.r}`;
+      const key = TypeUtil.toStringHexCoord({ q: neighbor.q, r: neighbor.r });
       if (!hasHexAt(neighbor.q, neighbor.r) && !emptyPositions.has(key)) {
         emptyPositions.add(key);
       }
@@ -232,7 +233,7 @@ const allHexagons = computed(() => {
 
   // Add empty hexagons
   emptyPositions.forEach(posKey => {
-    const [q, r] = posKey.split(':').map(Number);
+    const { q, r } = TypeUtil.parseHexCoord(posKey);
     const { x, y } = hexToPixel(q, r);
 
     hexagons.push({
@@ -250,11 +251,12 @@ const allHexagons = computed(() => {
     });
   });
 
-  // If no hexagons exist, show hex at 0:0
+  // If no hexagons exist, show hex at 0;0
   if (hexagons.length === 0) {
     const { x, y } = hexToPixel(0, 0);
+    const posKey = TypeUtil.toStringHexCoord({ q: 0, r: 0 });
     hexagons.push({
-      key: '0:0',
+      key: posKey,
       q: 0,
       r: 0,
       centerX: x,

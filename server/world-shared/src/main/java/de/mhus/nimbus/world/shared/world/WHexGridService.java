@@ -144,14 +144,15 @@ public class WHexGridService {
      * Creates a new hex grid.
      * Filters out instances.
      *
-     * @param worldId         The world identifier
-     * @param publicData      The hex grid public data with position and metadata
-     * @param generatorParams Optional generator parameters (can be null or empty)
+     * @param worldId    The world identifier
+     * @param publicData The hex grid public data with position and metadata
+     * @param parameters Optional generator parameters (can be null or empty)
+     * @param areas      Optional area-specific parameter maps (can be null or empty)
      * @return The created hex grid entity
      * @throws IllegalStateException if a hex grid already exists at this position
      */
     @Transactional
-    public WHexGrid create(String worldId, HexGrid publicData, Map<String, String> generatorParams) {
+    public WHexGrid create(String worldId, HexGrid publicData, Map<String, String> parameters, Map<String, Map<String, String>> areas) {
         if (Strings.isBlank(worldId)) {
             throw new IllegalArgumentException("worldId required");
         }
@@ -175,7 +176,8 @@ public class WHexGridService {
                 .worldId(parsedWorldId.getId())
                 .publicData(publicData)
                 .position(positionKey)
-                .parameters(generatorParams != null ? generatorParams : Map.of())
+                .parameters(parameters != null ? parameters : Map.of())
+                .areas(areas != null ? areas : Map.of())
                 .enabled(true)
                 .build();
 

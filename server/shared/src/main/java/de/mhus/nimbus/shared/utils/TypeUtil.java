@@ -3,6 +3,7 @@ package de.mhus.nimbus.shared.utils;
 import de.mhus.nimbus.generated.types.Area;
 import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.generated.types.Vector2;
+import de.mhus.nimbus.generated.types.Vector2Int;
 import de.mhus.nimbus.generated.types.Vector2Pair;
 import de.mhus.nimbus.generated.types.Vector3;
 import de.mhus.nimbus.generated.types.Vector3Int;
@@ -206,5 +207,12 @@ public class TypeUtil {
         Vector3Int pos = a.getPosition();
         Vector3Int size = a.getSize();
         return toStringWorldCoord(pos) + "+" + toStringSize(vector2(size.getX(), size.getZ()));
+    }
+
+    public static Vector2Int vector2int(int x, int z) {
+        return Vector2Int.builder()
+                .x(x)
+                .z(z)
+                .build();
     }
 }

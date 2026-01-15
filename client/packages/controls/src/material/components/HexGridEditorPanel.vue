@@ -1,6 +1,6 @@
 <template>
   <TransitionRoot :show="true" as="template">
-    <Dialog as="div" class="relative z-50" @close="$emit('close')">
+    <Dialog as="div" class="relative z-50" @close="handleDialogClose">
       <TransitionChild
         as="template"
         enter="ease-out duration-300"
@@ -68,8 +68,21 @@
             v-model="formData.name"
             type="text"
             class="input input-bordered"
-            placeholder="Enter hex grid name"
+            placeholder="Enter hex grid name (technical identifier)"
             required
+          />
+        </div>
+
+        <!-- Title -->
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text">Title</span>
+          </label>
+          <input
+            v-model="formData.title"
+            type="text"
+            class="input input-bordered"
+            placeholder="Enter hex grid title (display name)"
           />
         </div>
 
@@ -219,6 +232,115 @@
           </label>
         </div>
 
+        <!-- Parameters -->
+        <div class="divider">Parameters (Generator Configuration)</div>
+        <div class="space-y-2">
+          <div v-for="(value, key) in formData.parameters" :key="key" class="flex gap-2">
+            <input
+              :value="key"
+              type="text"
+              class="input input-bordered input-sm flex-1"
+              placeholder="Key"
+              readonly
+            />
+            <input
+              v-model="formData.parameters[key]"
+              type="text"
+              class="input input-bordered input-sm flex-1"
+              placeholder="Value"
+            />
+            <button
+              type="button"
+              class="btn btn-sm btn-ghost btn-square"
+              @click="removeParameter(key)"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          <div class="flex gap-2">
+            <input
+              v-model="newParamKey"
+              type="text"
+              class="input input-bordered input-sm flex-1"
+              placeholder="New parameter key"
+              @keyup.enter="addParameter"
+            />
+            <input
+              v-model="newParamValue"
+              type="text"
+              class="input input-bordered input-sm flex-1"
+              placeholder="New parameter value"
+              @keyup.enter="addParameter"
+            />
+            <button
+              type="button"
+              class="btn btn-sm btn-primary"
+              @click="addParameter"
+              :disabled="!newParamKey || !newParamValue"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Areas -->
+        <div class="divider">Areas (Regional Configuration)</div>
+        <div class="space-y-2">
+          <div class="text-sm text-base-content/70 mb-2">
+            Configure regional parameters for specific areas within the hex grid.
+          </div>
+
+          <!-- Areas List -->
+          <div v-for="(params, areaKey) in formData.areas" :key="areaKey" class="card bg-base-200 p-3">
+            <div class="flex justify-between items-center">
+              <div class="flex-1">
+                <div class="font-semibold text-sm">{{ parseAreaKey(areaKey).display }}</div>
+                <div class="text-xs text-base-content/60">
+                  {{ Object.keys(params).length }} parameter(s)
+                </div>
+              </div>
+              <div class="flex gap-1">
+                <button
+                  type="button"
+                  class="btn btn-xs btn-ghost"
+                  @click="editArea(areaKey)"
+                  title="Edit area"
+                >
+                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-xs btn-ghost"
+                  @click="removeArea(areaKey)"
+                  title="Delete area"
+                >
+                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Add Area Button -->
+          <button
+            type="button"
+            class="btn btn-sm btn-outline w-full"
+            @click="addNewArea"
+          >
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            </svg>
+            Add Area
+          </button>
+        </div>
+
         <!-- Error Display -->
         <ErrorAlert v-if="saveError" :message="saveError" />
 
@@ -282,6 +404,13 @@
     :model-value="formData"
     @apply="handleJsonApply"
   />
+
+  <!-- Area Editor Dialog -->
+  <AreaEditorDialog
+    v-model:is-open="showAreaEditor"
+    :area="editingArea"
+    @save="handleAreaSave"
+  />
 </template>
 
 <script setup lang="ts">
@@ -291,6 +420,7 @@ import { useHexGrids, type HexGridWithId } from '@/composables/useHexGrids';
 import { apiService } from '@/services/ApiService';
 import ErrorAlert from '@components/ErrorAlert.vue';
 import JsonEditorDialog from '@components/JsonEditorDialog.vue';
+import AreaEditorDialog, { type AreaData } from './AreaEditorDialog-simple.vue';
 
 const props = defineProps<{
   hexGrid: HexGridWithId | null;
@@ -310,6 +440,7 @@ const isEditMode = computed(() => props.hexGrid !== null);
 const formData = ref({
   position: { q: 0, r: 0 },
   name: '',
+  title: '',
   description: '',
   icon: '',
   splashScreen: '',
@@ -318,13 +449,24 @@ const formData = ref({
   entryPoint: {
     position: { x: 0, y: 0, z: 0 },
     size: { x: 10, y: 10, z: 10 }
-  }
+  },
+  parameters: {} as Record<string, string>,
+  areas: {} as Record<string, Record<string, string>>
 });
 
 const saving = ref(false);
 const markingDirty = ref(false);
 const saveError = ref<string | null>(null);
 const showJsonEditor = ref(false);
+const showAreaEditor = ref(false);
+
+// Parameters editing
+const newParamKey = ref('');
+const newParamValue = ref('');
+
+// Area editing
+const editingArea = ref<AreaData | null>(null);
+const editingAreaKey = ref<string | null>(null);
 
 // Initialize form with existing data
 watch(() => props.hexGrid, (hexGrid) => {
@@ -332,6 +474,7 @@ watch(() => props.hexGrid, (hexGrid) => {
     formData.value = {
       position: { ...hexGrid.publicData.position },
       name: hexGrid.publicData.name || '',
+      title: hexGrid.publicData.title || '',
       description: hexGrid.publicData.description || '',
       icon: hexGrid.publicData.icon || '',
       splashScreen: hexGrid.publicData.splashScreen || '',
@@ -343,13 +486,16 @@ watch(() => props.hexGrid, (hexGrid) => {
       } : {
         position: { x: 0, y: 0, z: 0 },
         size: { x: 10, y: 10, z: 10 }
-      }
+      },
+      parameters: hexGrid.parameters ? { ...hexGrid.parameters } : {},
+      areas: hexGrid.areas ? JSON.parse(JSON.stringify(hexGrid.areas)) : {}
     };
   } else {
     // Reset for create mode
     formData.value = {
       position: { q: 0, r: 0 },
       name: '',
+      title: '',
       description: '',
       icon: '',
       splashScreen: '',
@@ -358,7 +504,9 @@ watch(() => props.hexGrid, (hexGrid) => {
       entryPoint: {
         position: { x: 0, y: 0, z: 0 },
         size: { x: 10, y: 10, z: 10 }
-      }
+      },
+      parameters: {},
+      areas: {}
     };
   }
 }, { immediate: true });
@@ -405,6 +553,9 @@ const handleSave = async () => {
     };
 
     // Add optional fields
+    if (formData.value.title) {
+      publicData.title = formData.value.title;
+    }
     if (formData.value.icon) {
       publicData.icon = formData.value.icon;
     }
@@ -422,6 +573,8 @@ const handleSave = async () => {
     const payload = {
       publicData: publicData,
       enabled: formData.value.enabled,
+      parameters: formData.value.parameters,
+      areas: formData.value.areas
     };
 
     if (isEditMode.value) {
@@ -477,5 +630,114 @@ const handleMarkDirty = async () => {
  */
 const handleJsonApply = (jsonData: any) => {
   formData.value = jsonData;
+};
+
+/**
+ * Add parameter
+ */
+const addParameter = () => {
+  if (!newParamKey.value || !newParamValue.value) return;
+
+  formData.value.parameters[newParamKey.value] = newParamValue.value;
+  newParamKey.value = '';
+  newParamValue.value = '';
+};
+
+/**
+ * Remove parameter
+ */
+const removeParameter = (key: string) => {
+  delete formData.value.parameters[key];
+};
+
+/**
+ * Handle dialog close - prevent closing if area editor is open
+ */
+const handleDialogClose = () => {
+  if (showAreaEditor.value) {
+    // Don't close main dialog if area editor is open
+    return;
+  }
+  emit('close');
+};
+
+/**
+ * Parse area key for display
+ */
+const parseAreaKey = (key: string): { display: string } => {
+  try {
+    const [pos, size] = key.split('+');
+    const [x, z] = pos.split(',').map(Number);
+    const [sizeX, sizeZ] = size.split('x').map(Number);
+    return {
+      display: `Position (${x}, ${z}) | Size ${sizeX} x ${sizeZ}`
+    };
+  } catch {
+    return { display: key };
+  }
+};
+
+/**
+ * Format area key: "x,z+sizeX'x'sizeZ"
+ */
+const formatAreaKey = (x: number, z: number, sizeX: number, sizeZ: number): string => {
+  return `${x},${z}+${sizeX}x${sizeZ}`;
+};
+
+/**
+ * Parse area key to AreaData
+ */
+const parseAreaKeyToData = (key: string, parameters: Record<string, string>): AreaData => {
+  try {
+    const [pos, size] = key.split('+');
+    const [x, z] = pos.split(',').map(Number);
+    const [sizeX, sizeZ] = size.split('x').map(Number);
+    return { x, z, sizeX, sizeZ, parameters };
+  } catch {
+    return { x: 0, z: 0, sizeX: 16, sizeZ: 16, parameters };
+  }
+};
+
+/**
+ * Add new area
+ */
+const addNewArea = () => {
+  editingArea.value = null;
+  editingAreaKey.value = null;
+  showAreaEditor.value = true;
+};
+
+/**
+ * Edit area
+ */
+const editArea = (areaKey: string) => {
+  const params = formData.value.areas[areaKey] || {};
+  editingArea.value = parseAreaKeyToData(areaKey, params);
+  editingAreaKey.value = areaKey;
+  showAreaEditor.value = true;
+};
+
+/**
+ * Remove area
+ */
+const removeArea = (areaKey: string) => {
+  if (confirm(`Remove area ${parseAreaKey(areaKey).display}?`)) {
+    delete formData.value.areas[areaKey];
+  }
+};
+
+/**
+ * Handle area save
+ */
+const handleAreaSave = (area: AreaData) => {
+  const newKey = formatAreaKey(area.x, area.z, area.sizeX, area.sizeZ);
+
+  // If editing and key changed, remove old key
+  if (editingAreaKey.value && editingAreaKey.value !== newKey) {
+    delete formData.value.areas[editingAreaKey.value];
+  }
+
+  // Save with new/same key
+  formData.value.areas[newKey] = area.parameters;
 };
 </script>

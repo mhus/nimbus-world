@@ -3,9 +3,9 @@
     <table class="table w-full">
       <thead>
         <tr>
-          <th>Position (Q:R)</th>
+          <th>Position (Q;R)</th>
           <th>Name</th>
-          <th>Description</th>
+          <th>Title</th>
           <th>Status</th>
           <th>Created</th>
           <th>Actions</th>
@@ -28,10 +28,10 @@
             <div v-if="hexGrid.publicData.icon" class="text-xs text-base-content/50">{{ hexGrid.publicData.icon }}</div>
           </td>
 
-          <!-- Description -->
+          <!-- Title -->
           <td @click="$emit('edit', hexGrid)">
             <div class="text-sm text-base-content/70 max-w-xs truncate">
-              {{ hexGrid.publicData.description || '-' }}
+              {{ hexGrid.publicData.title || '-' }}
             </div>
           </td>
 
