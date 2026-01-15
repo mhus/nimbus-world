@@ -406,7 +406,7 @@ public class WEditCacheDirtyService {
             // Transform world coordinates to layer-relative coordinates
             de.mhus.nimbus.generated.types.Vector3Int relativePos = worldToLayerCoordinates(
                     cache.getX(),
-                    cache.getBlock().getBlock().getPosition().getY(), // Y from block, not cache
+                    cache.getY(),
                     cache.getZ(),
                     model.getMountX(),
                     model.getMountY(),

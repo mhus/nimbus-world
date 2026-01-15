@@ -5017,15 +5017,15 @@
         "type" : "Vector3",
         "optional" : false,
         "visibility" : null,
-        "javaTypeHint" : null,
-        "comment" : null
+        "javaTypeHint" : "Vector3Int",
+        "comment" : "// javaType: Vector3Int"
       }, {
         "name" : "b",
         "type" : "Vector3",
         "optional" : false,
         "visibility" : null,
-        "javaTypeHint" : null,
-        "comment" : null
+        "javaTypeHint" : "Vector3Int",
+        "comment" : "// javaType: Vector3Int"
       }, {
         "name" : "p",
         "type" : "Record<string, string>",

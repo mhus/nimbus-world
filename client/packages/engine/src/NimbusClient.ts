@@ -74,7 +74,7 @@ async function initializeApp(): Promise<AppContext> {
     console.log('Production, operational, or commercial use is NOT permitted.\n');
     console.log('Any modifications must be released under the same license.\n');
     console.log('See LICENSE for full terms.');
-    console.log('https://github.com/mhus/nimbus/blob/main/LICENSE.txt');
+    console.log('https://github.com/mhus/nimbus-world/blob/main/LICENSE.txt');
     console.log('='.repeat(70) + '\n');
 
     // Load client configuration

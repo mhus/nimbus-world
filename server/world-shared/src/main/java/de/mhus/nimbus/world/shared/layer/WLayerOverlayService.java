@@ -1,20 +1,25 @@
 package de.mhus.nimbus.world.shared.layer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import de.mhus.nimbus.generated.types.Area;
+import de.mhus.nimbus.generated.types.AreaData;
 import de.mhus.nimbus.generated.types.Block;
 import de.mhus.nimbus.generated.types.ChunkData;
-import de.mhus.nimbus.generated.types.Vector3;
 import de.mhus.nimbus.generated.types.Vector3Int;
 import de.mhus.nimbus.shared.storage.StorageService;
+import de.mhus.nimbus.shared.utils.TypeUtil;
+import de.mhus.nimbus.world.shared.world.HexMathUtil;
+import de.mhus.nimbus.world.shared.world.WHexGridService;
+import de.mhus.nimbus.world.shared.world.WWorld;
 import de.mhus.nimbus.world.shared.world.WWorldService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.InputStream;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Service for layer overlay algorithm.
@@ -32,6 +37,7 @@ public class WLayerOverlayService {
     private final ObjectMapper objectMapper;
     private final WWorldService worldService;
     private final de.mhus.nimbus.world.shared.world.WBlockTypeService blockTypeService;
+    private final WHexGridService hexGridService;
 
     /**
      * Generate final chunk by overlaying all enabled layers.
@@ -78,7 +84,7 @@ public class WLayerOverlayService {
             return Optional.empty();
         }
 
-        // Initialize canvas: Map<"x:y:z", Block>
+        // Initialize canvas: Map<"x,y,z", Block>
         Map<String, Block> blockMap = new HashMap<>();
 
         // Overlay each layer (bottom to top)
@@ -97,7 +103,6 @@ public class WLayerOverlayService {
             }
         }
 
-
         // Convert map to ChunkData
         ChunkData result = new ChunkData();
         result.setCx(cx);
@@ -109,10 +114,111 @@ public class WLayerOverlayService {
         int[][] heightData = calculateHeightData(worldId, chunkSize, blockMap.values(), layers);
         result.setHeightData(heightData);
 
+        List<AreaData> areaData = calculateAreaData(world, cx, cz);
+        result.setA(areaData);
+
         log.debug("Generated chunk {} from {} layers, {} blocks",
                 chunkKey, layers.size(), blockMap.size());
 
         return Optional.of(result);
+    }
+
+    private List<AreaData> calculateAreaData(WWorld world, int cx, int cz) {
+        var hexes = HexMathUtil.getHexesForChunk(world, cx, cz);
+        var mainHex = HexMathUtil.getDominantHexForChunk(world, cx, cz);
+        var mainGridOpt = hexGridService.findByWorldIdAndPosition(
+                world.getWorldId(),
+                mainHex
+        );
+        var chunkSize = world.getPublicData().getChunkSize();
+        var minX = cx * chunkSize;
+        var minZ = cz * chunkSize;
+        var maxX = minX + chunkSize - 1;
+        var maxZ = minZ + chunkSize - 1;
+
+        List<AreaData> areaDataList = new ArrayList<>();
+        for (var hex : hexes) {
+            var gridOpt = hexGridService.findByWorldIdAndPosition(
+                    world.getWorldId(),
+                    hex
+            );
+            if (gridOpt.isEmpty()) continue;
+            var grid = gridOpt.get();
+            if (grid.getAreas() == null) continue;
+            for (var areaEntry : grid.getAreas().entrySet()) {
+                try {
+                    var area = TypeUtil.parseArea(areaEntry.getKey());
+                    var areaData = deltaArea(area, minX, minZ, maxX, maxZ);
+                    if (areaData == null) continue;
+                    HashMap<String,String> p = grid.getParameters().entrySet().stream().filter(e -> e.getKey().startsWith("e."))
+                            .map(e -> new AreaEntry(e.getKey().substring(2), e.getValue()))
+                            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (a,b) -> b, HashMap::new));
+                    if (p.isEmpty()) continue;
+                    p.put("grid", grid.getPosition());
+                    areaData.setP(p);
+                    areaDataList.add(areaData);
+                } catch (Exception e) {
+                    log.warn("Invalid area key in hex grid {}: {}", grid.getPosition(), areaEntry.getKey());
+                    continue;
+                }
+            }
+        }
+        if (mainGridOpt.isPresent()) {
+            var mainGrid = mainGridOpt.get();
+            if (mainGrid.getAreas() != null) {
+                for (var areaEntry : mainGrid.getAreas().entrySet()) {
+                    try {
+                        var area = TypeUtil.parseArea(areaEntry.getKey());
+                        var areaData = deltaArea(area, minX, minZ, maxX, maxZ);
+                        if (areaData == null) continue;
+                        Map<String,String> p = mainGrid.getParameters().entrySet().stream().filter(e -> e.getKey().startsWith("e."))
+                                .map(e -> new AreaEntry(e.getKey().substring(2), e.getValue()))
+                                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (a,b) -> b, HashMap::new));
+                        if (p.isEmpty()) continue;
+                        p.put("grid", mainGrid.getPosition());
+                        if (mainGrid.getPublicData().getTitle() != null)
+                            p.put("title", mainGrid.getPublicData().getTitle());
+                        areaData.setP(p);
+                        areaDataList.add(areaData);
+                    } catch (Exception e) {
+                        log.warn("Invalid area key in main hex grid {}: {}", mainGrid.getPosition(), areaEntry.getKey());
+                    }
+                }
+            }
+        }
+        return areaDataList;
+    }
+
+    private AreaData deltaArea(Area area, int minX, int minZ, int maxX, int maxZ) {
+        var areaMin = area.getPosition();
+        var areaSize = area.getSize();
+        var areaMaxX = areaMin.getX() + areaSize.getX() - 1;
+        var areaMaxZ = areaMin.getZ() + areaSize.getZ() - 1;
+
+        var deltaMinX = Math.max(areaMin.getX(), minX);
+        var deltaMinZ = Math.max(areaMin.getZ(), minZ);
+        var deltaMaxX = Math.min(areaMaxX, maxX);
+        var deltaMaxZ = Math.min(areaMaxZ, maxZ);
+
+        if (deltaMinX > deltaMaxX || deltaMinZ > deltaMaxZ) {
+            return null; // No overlap
+        }
+
+        AreaData deltaArea = new AreaData();
+        // point A
+        Vector3Int positionA = new Vector3Int();
+        positionA.setX(deltaMinX);
+        positionA.setY(0);
+        positionA.setZ(deltaMinZ);
+        deltaArea.setA(positionA);
+
+        Vector3Int positionB = new Vector3Int();
+        positionB.setX(deltaMaxX);
+        positionB.setY(0);
+        positionB.setZ(deltaMaxZ);
+        deltaArea.setB(positionB);
+
+        return deltaArea;
     }
 
     /**
@@ -270,7 +376,7 @@ public class WLayerOverlayService {
      * Generate block key from position.
      */
     private String blockKey(Vector3Int pos) {
-        return pos.getX() + ":" + pos.getY() + ":" + pos.getZ();
+        return pos.getX() + "," + pos.getY() + "," + pos.getZ();
     }
 
     /**
@@ -407,4 +513,32 @@ public class WLayerOverlayService {
             // Track blocks for future use if needed
         }
     }
+
+    private static class AreaEntry implements Map.Entry<String,String> {
+        private final String key;
+        private String value;
+
+        public AreaEntry(String key, String value) {
+            this.key = key;
+            this.value = value;
+        }
+
+        @Override
+        public String getKey() {
+            return key;
+        }
+
+        @Override
+        public String getValue() {
+            return value;
+        }
+
+        @Override
+        public String setValue(String value) {
+            String old = this.value;
+            this.value = value;
+            return old;
+        }
+    }
+
 }

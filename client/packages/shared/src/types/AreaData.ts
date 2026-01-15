@@ -6,10 +6,10 @@ import type { Vector3 } from './Vector3';
 
 export interface AreaData {
   /** Start position */
-  a: Vector3;
+  a: Vector3; // javaType: Vector3Int
 
   /** End position */
-  b: Vector3;
+  b: Vector3; // javaType: Vector3Int
 
   /** Parameters */
   p: Record<string, string>;

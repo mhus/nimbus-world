@@ -19,4 +19,4 @@ Production, operational, or commercial use is NOT permitted.
 
 Any modifications must be released under the same license.
 
-See LICENSE for full terms. https://github.com/mhus/nimbus/blob/main/LICENSE.txt
+See LICENSE for full terms. https://github.com/mhus/nimbus-world/blob/main/LICENSE.txt

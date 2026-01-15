@@ -475,7 +475,7 @@ public class WChunkService {
                 .i(items.isEmpty() ? null : items)  // items from registry → i
                 .h(chunkData.getHeightData())
                 .backdrop(convertBackdrop(chunkData.getBackdrop()))
-                // Note: AreaData (a) currently not in ChunkData
+                .a(chunkData.getA())
                 .build();
     }
 

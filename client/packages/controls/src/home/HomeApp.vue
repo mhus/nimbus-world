@@ -405,7 +405,7 @@
           </div>
           <div class="text-sm text-center md:text-right">
             <a
-              href="https://github.com/mhus/nimbus/blob/main/LICENSE.txt"
+              href="https://github.com/mhus/nimbus-world/blob/main/LICENSE.txt"
               target="_blank"
               rel="noopener noreferrer"
               class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors"
@@ -513,7 +513,7 @@ onMounted(() => {
   console.log('Production, operational, or commercial use is NOT permitted.\n');
   console.log('Any modifications must be released under the same license.\n');
   console.log('See LICENSE for full terms.');
-  console.log('https://github.com/mhus/nimbus/blob/main/LICENSE.txt');
+  console.log('https://github.com/mhus/nimbus-world/blob/main/LICENSE.txt');
   console.log('='.repeat(70) + '\n');
 
   loadAuthStatus();

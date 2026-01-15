@@ -11,7 +11,7 @@ package de.mhus.nimbus.generated.types;
 @lombok.NoArgsConstructor
 @lombok.AllArgsConstructor(access = lombok.AccessLevel.PROTECTED)
 public class AreaData {
-    private Vector3 a;
-    private Vector3 b;
+    private Vector3Int a;
+    private Vector3Int b;
     private java.util.Map<String, String> p;
 }
