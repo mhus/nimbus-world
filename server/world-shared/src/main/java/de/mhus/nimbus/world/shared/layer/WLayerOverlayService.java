@@ -9,6 +9,7 @@ import de.mhus.nimbus.generated.types.Vector3Int;
 import de.mhus.nimbus.shared.storage.StorageService;
 import de.mhus.nimbus.shared.utils.TypeUtil;
 import de.mhus.nimbus.world.shared.world.HexMathUtil;
+import de.mhus.nimbus.world.shared.world.WBlockType;
 import de.mhus.nimbus.world.shared.world.WHexGridService;
 import de.mhus.nimbus.world.shared.world.WWorld;
 import de.mhus.nimbus.world.shared.world.WWorldService;
@@ -102,6 +103,9 @@ public class WLayerOverlayService {
                 // Continue with other layers
             }
         }
+
+        // Apply face visibility optimization before converting to ChunkData
+        calculateAndApplyFaceVisibility(blockMap, cx, cz, chunkSize, worldId);
 
         // Convert map to ChunkData
         ChunkData result = new ChunkData();
@@ -481,6 +485,148 @@ public class WLayerOverlayService {
                shapeInt == de.mhus.nimbus.generated.types.Shape.RIVER.getTsIndex() ||
                shapeInt == de.mhus.nimbus.generated.types.Shape.OCEAN_MAELSTROM.getTsIndex() ||
                shapeInt == de.mhus.nimbus.generated.types.Shape.OCEAN_COAST.getTsIndex();
+    }
+
+    /**
+     * Calculate and apply face visibility for all blocks in the chunk.
+     * Sets faceVisibility to hide non-visible faces (faces that have GROUND type neighbors).
+     * Only checks within the chunk - chunk boundaries are treated as missing blocks (faces visible).
+     * Skips blocks that already have faceVisibility set with the FIXED bit (64).
+     * Only GROUND type blocks can hide faces of other blocks.
+     *
+     * FaceFlag bits (set bit = visible face):
+     * TOP = 1, BOTTOM = 2, LEFT = 4, RIGHT = 8, FRONT = 16, BACK = 32, FIXED = 64
+     *
+     * @param blockMap Map of all blocks in the chunk (key: "x,y,z", value: Block)
+     * @param cx Chunk X coordinate
+     * @param cz Chunk Z coordinate
+     * @param chunkSize Chunk size
+     * @param worldId World identifier for block type lookup
+     */
+    private void calculateAndApplyFaceVisibility(Map<String, Block> blockMap, int cx, int cz, int chunkSize, String worldId) {
+        int chunkMinX = cx * chunkSize;
+        int chunkMaxX = chunkMinX + chunkSize - 1;
+        int chunkMinZ = cz * chunkSize;
+        int chunkMaxZ = chunkMinZ + chunkSize - 1;
+
+        // BlockType cache for this chunk to avoid repeated lookups
+        Map<String, WBlockType> blockTypeCache = new HashMap<>();
+
+        // Parse worldId for block type lookup
+        de.mhus.nimbus.shared.types.WorldId wid = de.mhus.nimbus.shared.types.WorldId.of(worldId).orElse(null);
+        if (wid == null) {
+            log.warn("Invalid worldId for face visibility calculation: {}", worldId);
+            return;
+        }
+
+        int processedCount = 0;
+        int skippedFixedCount = 0;
+
+        for (Block block : blockMap.values()) {
+            if (block == null || block.getPosition() == null) {
+                continue;
+            }
+
+            // Check if faceVisibility is already set with FIXED bit (64)
+            Integer existingFaceVis = block.getFaceVisibility();
+            if (existingFaceVis != null && (existingFaceVis & 64) != 0) {
+                // FIXED bit is set, don't modify
+                skippedFixedCount++;
+                continue;
+            }
+
+            int x = block.getPosition().getX();
+            int y = block.getPosition().getY();
+            int z = block.getPosition().getZ();
+
+            // FaceFlag bits (set bit = visible face):
+            // TOP = 1, BOTTOM = 2, LEFT = 4, RIGHT = 8, FRONT = 16, BACK = 32
+            int faceVisibility = 0;
+
+            // Check each face for GROUND type neighbors
+            // TOP (y+1): visible if no GROUND neighbor above
+            String topKey = blockKey(x, y + 1, z);
+            if (!hasGroundBlockAt(blockMap, topKey, blockTypeCache, wid)) {
+                faceVisibility |= 1;  // TOP visible
+            }
+
+            // BOTTOM (y-1): visible if no GROUND neighbor below
+            String bottomKey = blockKey(x, y - 1, z);
+            if (!hasGroundBlockAt(blockMap, bottomKey, blockTypeCache, wid)) {
+                faceVisibility |= 2;  // BOTTOM visible
+            }
+
+            // LEFT / West (x-1): visible if no GROUND neighbor or at chunk boundary
+            String leftKey = blockKey(x - 1, y, z);
+            if (!hasGroundBlockAt(blockMap, leftKey, blockTypeCache, wid) || x == chunkMinX) {
+                faceVisibility |= 4;  // LEFT visible
+            }
+
+            // RIGHT / East (x+1): visible if no GROUND neighbor or at chunk boundary
+            String rightKey = blockKey(x + 1, y, z);
+            if (!hasGroundBlockAt(blockMap, rightKey, blockTypeCache, wid) || x == chunkMaxX) {
+                faceVisibility |= 8;  // RIGHT visible
+            }
+
+            // FRONT (South): visible if no GROUND neighbor at North (z+1) or at chunk boundary (swapped)
+            String northKey = blockKey(x, y, z + 1);
+            if (!hasGroundBlockAt(blockMap, northKey, blockTypeCache, wid) || z == chunkMaxZ) {
+                faceVisibility |= 16;  // FRONT visible
+            }
+
+            // BACK (North): visible if no GROUND neighbor at South (z-1) or at chunk boundary (swapped)
+            String southKey = blockKey(x, y, z - 1);
+            if (!hasGroundBlockAt(blockMap, southKey, blockTypeCache, wid) || z == chunkMinZ) {
+                faceVisibility |= 32;  // BACK visible
+            }
+
+            // Set faceVisibility on block
+            block.setFaceVisibility(faceVisibility);
+            processedCount++;
+        }
+
+        log.debug("Applied face visibility to chunk {}:{} - processed: {}, skipped (fixed): {}, cached types: {}",
+                cx, cz, processedCount, skippedFixedCount, blockTypeCache.size());
+    }
+
+    /**
+     * Check if there is a GROUND type block at the given position.
+     * Uses cache to avoid repeated block type lookups.
+     *
+     * @param blockMap Map of all blocks in the chunk
+     * @param blockKey Position key "x,y,z"
+     * @param blockTypeCache Cache for block types
+     * @param wid World identifier
+     * @return true if a GROUND type block exists at this position, false otherwise
+     */
+    private boolean hasGroundBlockAt(Map<String, Block> blockMap, String blockKey,
+                                      Map<String, WBlockType> blockTypeCache,
+                                      de.mhus.nimbus.shared.types.WorldId wid) {
+        Block neighbor = blockMap.get(blockKey);
+        if (neighbor == null || neighbor.getBlockTypeId() == null) {
+            return false;
+        }
+
+        String blockTypeId = neighbor.getBlockTypeId();
+
+        // Get or cache block type
+        WBlockType blockType = blockTypeCache.computeIfAbsent(blockTypeId, id ->
+                blockTypeService.findByBlockId(wid, id).orElse(null)
+        );
+
+        if (blockType == null || blockType.getPublicData() == null || blockType.getPublicData().getType() == null) {
+            return false;
+        }
+
+        // Check if block type is GROUND
+        return blockType.getPublicData().getType() == de.mhus.nimbus.generated.types.BlockTypeType.GROUND;
+    }
+
+    /**
+     * Generate block key from coordinates.
+     */
+    private String blockKey(int x, int y, int z) {
+        return x + "," + y + "," + z;
     }
 
     /**

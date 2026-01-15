@@ -155,7 +155,6 @@ const handleMarkDirty = async (chunkKey: string) => {
 
   try {
     await chunksComposable.value?.markChunkDirty(chunkKey);
-    alert(`Chunk ${chunkKey} marked as dirty successfully!`);
   } catch (e: any) {
     alert(`Failed to mark chunk as dirty: ${e.message}`);
   }
