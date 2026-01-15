@@ -460,8 +460,14 @@ export class SunService {
   /**
    * Update sun light and ambient light based on sun position
    * Automatically adjusts direction and intensity based on elevation
+   * Disabled in EDITOR mode
    */
   private updateAutomaticLighting(): void {
+    // @ts-ignore - __EDITOR__ is defined by Vite
+    if (typeof __EDITOR__ !== 'undefined' && __EDITOR__) {
+      return; // Skip automatic lighting in EDITOR mode
+    }
+
     const environmentService = this.appContext.services.environment;
     if (!environmentService) {
       return;
