@@ -51,6 +51,7 @@ export enum BlockTypeType {
     RAMP = 16,
     BRIDGE = 17,
     LIGHT = 18,
+    BLOCK = 19,
     OTHER = 99,
 }
 

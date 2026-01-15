@@ -488,11 +488,16 @@ public class WLayerOverlayService {
     }
 
     /**
-     * Calculate and apply face visibility for all blocks in the chunk.
-     * Sets faceVisibility to hide non-visible faces (faces that have GROUND type neighbors).
+     * Calculate and apply face visibility for GROUND, PATH and BLOCK type blocks in the chunk.
+     * Sets faceVisibility to hide non-visible faces (faces that have GROUND, PATH or BLOCK type neighbors).
+     * Only GROUND, PATH and BLOCK type blocks are processed - other block types are skipped.
      * Only checks within the chunk - chunk boundaries are treated as missing blocks (faces visible).
      * Skips blocks that already have faceVisibility set with the FIXED bit (64).
-     * Only GROUND type blocks can hide faces of other blocks.
+     *
+     * Rules:
+     * - Only GROUND, PATH and BLOCK blocks are optimized (checked via WBlockType.publicData.type)
+     * - A face is hidden only if there is a GROUND, PATH or BLOCK neighbor block at that position
+     * - Other block types (trees, items, etc.) remain unchanged
      *
      * FaceFlag bits (set bit = visible face):
      * TOP = 1, BOTTOM = 2, LEFT = 4, RIGHT = 8, FRONT = 16, BACK = 32, FIXED = 64
@@ -521,9 +526,10 @@ public class WLayerOverlayService {
 
         int processedCount = 0;
         int skippedFixedCount = 0;
+        int skippedNonGroundCount = 0;
 
         for (Block block : blockMap.values()) {
-            if (block == null || block.getPosition() == null) {
+            if (block == null || block.getPosition() == null || block.getBlockTypeId() == null) {
                 continue;
             }
 
@@ -535,6 +541,27 @@ public class WLayerOverlayService {
                 continue;
             }
 
+            // Only process GROUND, PATH or BLOCK type blocks - get or cache block type
+            String blockTypeId = block.getBlockTypeId();
+            WBlockType blockType = blockTypeCache.computeIfAbsent(blockTypeId, id ->
+                    blockTypeService.findByBlockId(wid, id).orElse(null)
+            );
+
+            if (blockType == null || blockType.getPublicData() == null || blockType.getPublicData().getType() == null) {
+                // Can't determine type, skip
+                skippedNonGroundCount++;
+                continue;
+            }
+
+            // Only process GROUND, PATH or BLOCK blocks
+            de.mhus.nimbus.generated.types.BlockTypeType blockTypeType = blockType.getPublicData().getType();
+            if (blockTypeType != de.mhus.nimbus.generated.types.BlockTypeType.GROUND &&
+                blockTypeType != de.mhus.nimbus.generated.types.BlockTypeType.PATH &&
+                blockTypeType != de.mhus.nimbus.generated.types.BlockTypeType.BLOCK) {
+                skippedNonGroundCount++;
+                continue;
+            }
+
             int x = block.getPosition().getX();
             int y = block.getPosition().getY();
             int z = block.getPosition().getZ();
@@ -543,38 +570,38 @@ public class WLayerOverlayService {
             // TOP = 1, BOTTOM = 2, LEFT = 4, RIGHT = 8, FRONT = 16, BACK = 32
             int faceVisibility = 0;
 
-            // Check each face for GROUND type neighbors
-            // TOP (y+1): visible if no GROUND neighbor above
+            // Check each face for GROUND, PATH or BLOCK type neighbors
+            // TOP (y+1): visible if no GROUND/PATH/BLOCK neighbor above
             String topKey = blockKey(x, y + 1, z);
             if (!hasGroundBlockAt(blockMap, topKey, blockTypeCache, wid)) {
                 faceVisibility |= 1;  // TOP visible
             }
 
-            // BOTTOM (y-1): visible if no GROUND neighbor below
+            // BOTTOM (y-1): visible if no GROUND/PATH/BLOCK neighbor below
             String bottomKey = blockKey(x, y - 1, z);
             if (!hasGroundBlockAt(blockMap, bottomKey, blockTypeCache, wid)) {
                 faceVisibility |= 2;  // BOTTOM visible
             }
 
-            // LEFT / West (x-1): visible if no GROUND neighbor or at chunk boundary
+            // LEFT / West (x-1): visible if no GROUND/PATH/BLOCK neighbor or at chunk boundary
             String leftKey = blockKey(x - 1, y, z);
             if (!hasGroundBlockAt(blockMap, leftKey, blockTypeCache, wid) || x == chunkMinX) {
                 faceVisibility |= 4;  // LEFT visible
             }
 
-            // RIGHT / East (x+1): visible if no GROUND neighbor or at chunk boundary
+            // RIGHT / East (x+1): visible if no GROUND/PATH/BLOCK neighbor or at chunk boundary
             String rightKey = blockKey(x + 1, y, z);
             if (!hasGroundBlockAt(blockMap, rightKey, blockTypeCache, wid) || x == chunkMaxX) {
                 faceVisibility |= 8;  // RIGHT visible
             }
 
-            // FRONT (South): visible if no GROUND neighbor at North (z+1) or at chunk boundary (swapped)
+            // FRONT (South): visible if no GROUND/PATH/BLOCK neighbor at North (z+1) or at chunk boundary (swapped)
             String northKey = blockKey(x, y, z + 1);
             if (!hasGroundBlockAt(blockMap, northKey, blockTypeCache, wid) || z == chunkMaxZ) {
                 faceVisibility |= 16;  // FRONT visible
             }
 
-            // BACK (North): visible if no GROUND neighbor at South (z-1) or at chunk boundary (swapped)
+            // BACK (North): visible if no GROUND/PATH/BLOCK neighbor at South (z-1) or at chunk boundary (swapped)
             String southKey = blockKey(x, y, z - 1);
             if (!hasGroundBlockAt(blockMap, southKey, blockTypeCache, wid) || z == chunkMinZ) {
                 faceVisibility |= 32;  // BACK visible
@@ -585,19 +612,19 @@ public class WLayerOverlayService {
             processedCount++;
         }
 
-        log.debug("Applied face visibility to chunk {}:{} - processed: {}, skipped (fixed): {}, cached types: {}",
-                cx, cz, processedCount, skippedFixedCount, blockTypeCache.size());
+        log.debug("Applied face visibility to chunk {}:{} - processed: {}, skipped (fixed): {}, skipped (non-ground): {}, cached types: {}",
+                cx, cz, processedCount, skippedFixedCount, skippedNonGroundCount, blockTypeCache.size());
     }
 
     /**
-     * Check if there is a GROUND type block at the given position.
+     * Check if there is a GROUND, PATH or BLOCK type block at the given position.
      * Uses cache to avoid repeated block type lookups.
      *
      * @param blockMap Map of all blocks in the chunk
      * @param blockKey Position key "x,y,z"
      * @param blockTypeCache Cache for block types
      * @param wid World identifier
-     * @return true if a GROUND type block exists at this position, false otherwise
+     * @return true if a GROUND, PATH or BLOCK type block exists at this position, false otherwise
      */
     private boolean hasGroundBlockAt(Map<String, Block> blockMap, String blockKey,
                                       Map<String, WBlockType> blockTypeCache,
@@ -618,8 +645,11 @@ public class WLayerOverlayService {
             return false;
         }
 
-        // Check if block type is GROUND
-        return blockType.getPublicData().getType() == de.mhus.nimbus.generated.types.BlockTypeType.GROUND;
+        // Check if block type is GROUND, PATH or BLOCK
+        de.mhus.nimbus.generated.types.BlockTypeType blockTypeType = blockType.getPublicData().getType();
+        return blockTypeType == de.mhus.nimbus.generated.types.BlockTypeType.GROUND ||
+               blockTypeType == de.mhus.nimbus.generated.types.BlockTypeType.PATH ||
+               blockTypeType == de.mhus.nimbus.generated.types.BlockTypeType.BLOCK;
     }
 
     /**
