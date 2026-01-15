@@ -454,6 +454,11 @@ export class PhysicsService {
     // Get entity dimensions from state values
     const dimensions = getStateValuesForEntity(entity).dimensions;
 
+    // Store previous block position for area detection
+    const prevBlockX = Math.floor(entity.position.x);
+    const prevBlockY = Math.floor(entity.position.y);
+    const prevBlockZ = Math.floor(entity.position.z);
+
     // Determine which controller to use based on movement mode
     const useWalkController =
       entity.movementMode === 'walk' ||
@@ -494,6 +499,15 @@ export class PhysicsService {
         this.updateFlyMode(entity, deltaTime);
       }
       entity.jumpRequested = false;
+    }
+
+    // Check for block position change and detect areas
+    const newBlockX = Math.floor(entity.position.x);
+    const newBlockY = Math.floor(entity.position.y);
+    const newBlockZ = Math.floor(entity.position.z);
+
+    if (prevBlockX !== newBlockX || prevBlockZ !== newBlockZ) {
+      this.checkAreaAtPosition(entity, newBlockX, newBlockY, newBlockZ);
     }
 
     // Reset wishMove for next frame
@@ -1259,6 +1273,86 @@ export class PhysicsService {
       block,
       movementType,
     });
+  }
+
+  /**
+   * Check for areas at the given block position
+   * Emits 'area:entered' event with matching areas
+   *
+   * @param entity Entity that moved
+   * @param blockX Block X coordinate
+   * @param blockY Block Y coordinate
+   * @param blockZ Block Z coordinate
+   */
+  private checkAreaAtPosition(entity: PhysicsEntity, blockX: number, blockY: number, blockZ: number): void {
+    if (!this.chunkService) {
+      return;
+    }
+
+    // Get chunk at this position
+    const chunk = this.chunkService.getChunkForBlockPosition(new Vector3(blockX, blockY, blockZ));
+    if (!chunk || !chunk.data.areaData) {
+      return;
+    }
+
+    // Find all areas that contain this position
+    const matchingAreas: any[] = [];
+
+    for (const area of chunk.data.areaData) {
+      if (this.isPositionInArea(blockX, blockY, blockZ, area)) {
+        matchingAreas.push(area);
+      }
+    }
+    // Emit event if any areas found
+    if (matchingAreas.length > 0) {
+      this.emit('area:entered', {
+        entityId: entity.entityId,
+        position: { x: blockX, y: blockY, z: blockZ },
+        areas: matchingAreas,
+      });
+
+      logger.debug('Entity entered areas', {
+        entityId: entity.entityId,
+        position: { x: blockX, y: blockY, z: blockZ },
+        areaCount: matchingAreas.length,
+      });
+    }
+  }
+
+  /**
+   * Check if a position is inside an area
+   * If a.y == 0 and b.y == 0, only checks X and Z (flat 2D coordinate)
+   * Otherwise checks X, Y, and Z (3D coordinate)
+   *
+   * @param x Block X coordinate
+   * @param y Block Y coordinate
+   * @param z Block Z coordinate
+   * @param area AreaData to check
+   * @returns true if position is inside area
+   */
+  private isPositionInArea(x: number, y: number, z: number, area: any): boolean {
+    const { a, b } = area;
+
+    // Ensure min/max order for each axis
+    const minX = Math.min(a.x, b.x);
+    const maxX = Math.max(a.x, b.x);
+    const minZ = Math.min(a.z, b.z);
+    const maxZ = Math.max(a.z, b.z);
+
+    // Check X and Z
+    const inXZ = x >= minX && x <= maxX && z >= minZ && z <= maxZ;
+
+    // If both Y coordinates are 0, it's a flat 2D coordinate - only check X,Z
+    if (a.y === 0 && b.y === 0) {
+      return inXZ;
+    }
+
+    // 3D coordinate - also check Y
+    const minY = Math.min(a.y, b.y);
+    const maxY = Math.max(a.y, b.y);
+    const inY = y >= minY && y <= maxY;
+
+    return inXZ && inY;
   }
 
   /**

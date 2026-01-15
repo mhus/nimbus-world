@@ -91,7 +91,54 @@ export class NotificationService {
       this.updateVitalsDisplay(vitals);
     });
 
+    // Subscribe to area:entered events from PhysicsService
+    const physicsService = this.appContext.services.physics;
+    if (physicsService) {
+      physicsService.on('area:entered', (data: any) => {
+        this.handleAreaEntered(data);
+      });
+      logger.debug('Subscribed to area:entered events from PhysicsService');
+    }
+
     logger.debug('NotificationService event subscriptions initialized');
+  }
+
+  /**
+   * Handle area:entered event from PhysicsService
+   * Checks for areas with 'grid' and 'title' parameters and displays location title
+   *
+   * @param data Event data with entityId, position, and areas
+   */
+  private handleAreaEntered(data: any): void {
+    try {
+      const { areas } = data;
+
+      if (!areas || areas.length === 0) {
+        return;
+      }
+
+      // Find first area with 'grid' and 'title' parameters
+      for (const area of areas) {
+        const params = area.p || {};
+
+        // Check if this area has both 'grid' and 'title' parameters
+        if (params['grid'] && params['title']) {
+          const title = params['title'];
+
+          // Only show if title has changed
+          if (title !== this.currentLocationTitle) {
+            this.currentLocationTitle = title;
+            this.newNotification(31, null, title);
+            logger.debug('Location title changed', { title });
+          }
+
+          // Only use first matching area
+          break;
+        }
+      }
+    } catch (error) {
+      ExceptionHandler.handle(error, 'NotificationService.handleAreaEntered', { data });
+    }
   }
 
   /**
@@ -568,6 +615,9 @@ export class NotificationService {
 
   /** Splash screen audio modifier (priority 5) */
   private splashScreenAudioModifier?: Modifier<string>;
+
+  /** Cached location title (for area-based location display) */
+  private currentLocationTitle: string | null = null;
 
   /**
    * Get current shortcut mode

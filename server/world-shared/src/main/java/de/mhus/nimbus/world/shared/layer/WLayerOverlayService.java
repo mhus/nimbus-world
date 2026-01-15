@@ -165,26 +165,16 @@ public class WLayerOverlayService {
         }
         if (mainGridOpt.isPresent()) {
             var mainGrid = mainGridOpt.get();
-            if (mainGrid.getAreas() != null) {
-                for (var areaEntry : mainGrid.getAreas().entrySet()) {
-                    try {
-                        var area = TypeUtil.parseArea(areaEntry.getKey());
-                        var areaData = deltaArea(area, minX, minZ, maxX, maxZ);
-                        if (areaData == null) continue;
-                        Map<String,String> p = mainGrid.getParameters().entrySet().stream().filter(e -> e.getKey().startsWith("e."))
-                                .map(e -> new AreaEntry(e.getKey().substring(2), e.getValue()))
-                                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (a,b) -> b, HashMap::new));
-                        if (p.isEmpty()) continue;
-                        p.put("grid", mainGrid.getPosition());
-                        if (mainGrid.getPublicData().getTitle() != null)
-                            p.put("title", mainGrid.getPublicData().getTitle());
-                        areaData.setP(p);
-                        areaDataList.add(areaData);
-                    } catch (Exception e) {
-                        log.warn("Invalid area key in main hex grid {}: {}", mainGrid.getPosition(), areaEntry.getKey());
-                    }
-                }
-            }
+            var areaData = new AreaData();
+            areaData.setA(TypeUtil.vector3(minX, 0, minZ));
+            areaData.setB(TypeUtil.vector3(maxX, 0, maxZ));
+            HashMap<String,String> p = new HashMap<>();
+            p.put("grid", mainGrid.getPosition());
+            if (mainGrid.getPublicData().getTitle() != null)
+                p.put("title", mainGrid.getPublicData().getTitle());
+            areaData.setP(p);
+            if (p.size() > 1) // more then grid
+                areaDataList.add(areaData);
         }
         return areaDataList;
     }
