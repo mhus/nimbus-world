@@ -859,7 +859,9 @@ export class ChunkService {
 
     const areaData = new Array<AreaData>();
     if (chunkData.a) {
-
+        for (const area of chunkData.a) {
+            areaData.push(area);
+        }
     }
 
     return {
