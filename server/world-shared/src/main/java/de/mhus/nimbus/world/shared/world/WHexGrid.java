@@ -1,9 +1,11 @@
 package de.mhus.nimbus.world.shared.world;
 
+import de.mhus.nimbus.generated.types.Area;
 import de.mhus.nimbus.generated.types.HexGrid;
 import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.shared.persistence.ActualSchemaVersion;
 import de.mhus.nimbus.shared.types.Identifiable;
+import de.mhus.nimbus.shared.utils.TypeUtil;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -70,7 +72,21 @@ public class WHexGrid implements Identifiable {
      * Used by world generators to configure terrain/biome generation.
      */
     @Builder.Default
-    private Map<String, String> generatorParameters = new HashMap<>();
+    private Map<String, String> parameters = new HashMap<>();
+
+    /**
+     * Area-specific data maps.
+     * Each key is an area, mapping to another map of parameters for this area.
+     * Used for defining areas within the grid.
+     * Key is an Area of Flat World Coordinates as specified in COORDINATES.md
+     *
+     * Key format: x,z+sizeX'x'sizeZ (e.g., "0,0+16x16" for a 16x16 area at origin).
+     *
+     * areas can and should overlap. It will return the smallest matching area found.
+     *
+     */
+    @Builder.Default
+    private Map<String, Map<String, String>> areas = new HashMap<>();
 
     private Instant createdAt;
     private Instant updatedAt;
@@ -108,7 +124,7 @@ public class WHexGrid implements Identifiable {
         if (publicData == null || publicData.getPosition() == null) {
             throw new IllegalStateException("Cannot sync position key: publicData or position is null");
         }
-        this.position = HexMathUtil.positionKey(publicData.getPosition());
+        this.position = TypeUtil.toStringHexCoord(publicData.getPosition());
     }
 
     /**
@@ -184,5 +200,202 @@ public class WHexGrid implements Identifiable {
         }
 
         return chunkKeys;
+    }
+
+    // --- Area methods using TypeUtil for key parsing/formatting ---
+
+    /**
+     * Returns the parameter map for the given area, or null if not present.
+     */
+    public Map<String, String> getAreaData(Area area) {
+        if (area == null) return null;
+        String key = TypeUtil.toStringArea(area);
+        return areas.get(key);
+    }
+
+    /**
+     * Sets the parameter map for the given area (overwrites if already present).
+     */
+    public void setAreaData(Area area, Map<String, String> data) {
+        if (area == null) throw new IllegalArgumentException("Area is null");
+        String key = TypeUtil.toStringArea(area);
+        areas.put(key, data);
+    }
+
+    public void setAreaData(Area area, String key, String value) {
+        if (area == null) throw new IllegalArgumentException("Area is null");
+        String areaKey = TypeUtil.toStringArea(area);
+        Map<String, String> data = areas.get(areaKey);
+        if (data == null) {
+            data = new HashMap<>();
+            areas.put(areaKey, data);
+        }
+        data.put(key, value);
+    }
+
+    public void removeAreaData(Area area, String key) {
+        if (area == null) return;
+        String areaKey = TypeUtil.toStringArea(area);
+        Map<String, String> data = areas.get(areaKey);
+        if (data != null) {
+            data.remove(key);
+        }
+    }
+
+    public String getAreaDataValue(Area area, String key) {
+        if (area == null) return null;
+        String areaKey = TypeUtil.toStringArea(area);
+        Map<String, String> data = areas.get(areaKey);
+        if (data != null) {
+            return data.get(key);
+        }
+        return null;
+    }
+
+    /**
+     * Removes the area entry for the given area.
+     */
+    public void removeArea(Area area) {
+        if (area == null) return;
+        String key = TypeUtil.toStringArea(area);
+        areas.remove(key);
+    }
+
+    /**
+     * Returns all areas as a Set of Area objects.
+     */
+    public java.util.Set<Area> getAllAreas() {
+        java.util.Set<Area> result = new java.util.HashSet<>();
+        for (String key : areas.keySet()) {
+            try {
+                result.add(TypeUtil.parseArea(key));
+            } catch (Exception ignore) {}
+        }
+        return result;
+    }
+
+    /**
+     * Returns the smallest matching area (by area size) that contains the given area.
+     * Returns null if no area contains the given area.
+     */
+    public Area getSmallestMatchingArea(Area area) {
+        if (area == null) return null;
+        Area best = null;
+        int bestSize = Integer.MAX_VALUE;
+        for (String key : areas.keySet()) {
+            try {
+                Area candidate = TypeUtil.parseArea(key);
+                if (containsArea(candidate, area)) {
+                    int size = candidate.getSize().getX() * candidate.getSize().getZ();
+                    if (size < bestSize) {
+                        best = candidate;
+                        bestSize = size;
+                    }
+                }
+            } catch (Exception ignore) {}
+        }
+        return best;
+    }
+
+    /**
+     * Returns true if outer contains inner (flat world coordinates, inclusive).
+     */
+    private static boolean containsArea(Area outer, Area inner) {
+        int ox = outer.getPosition().getX();
+        int oz = outer.getPosition().getZ();
+        int osx = outer.getSize().getX();
+        int osz = outer.getSize().getZ();
+        int ix = inner.getPosition().getX();
+        int iz = inner.getPosition().getZ();
+        int isx = inner.getSize().getX();
+        int isz = inner.getSize().getZ();
+        return ix >= ox && iz >= oz && (ix + isx) <= (ox + osx) && (iz + isz) <= (oz + osz);
+    }
+
+    /**
+     * Returns the parameter map for the smallest matching area containing the given x,z point (flat world coordinates).
+     * Returns null if no area contains the point.
+     */
+    public Map<String, String> getAreaData(int x, int z) {
+        Area pointArea = Area.builder()
+            .position(de.mhus.nimbus.generated.types.Vector3Int.builder().x(x).y(0).z(z).build())
+            .size(de.mhus.nimbus.generated.types.Vector3Int.builder().x(1).y(1).z(1).build())
+            .build();
+        Area match = getSmallestMatchingArea(pointArea);
+        if (match == null) return null;
+        return getAreaData(match);
+    }
+
+    /**
+     * Returns a map of all areas (as Area objects) that overlap with the given chunk (cx,cz).
+     * The returned map is a subset of the 'areas' map: key is the Area object, value is the parameter map.
+     */
+    public java.util.Map<Area, Map<String, String>> findAreasForChunk(WWorld world, int cx, int cz) {
+        java.util.Map<Area, Map<String, String>> result = new java.util.HashMap<>();
+        int chunkSize = world.getPublicData().getChunkSize(); // Default, ideally from world config
+        // Try to get chunk size from parameters if available
+        try {
+            if (parameters != null && parameters.containsKey("chunkSize")) {
+                chunkSize = Integer.parseInt(parameters.get("chunkSize"));
+            }
+        } catch (Exception ignore) {}
+        int minX = cx * chunkSize;
+        int minZ = cz * chunkSize;
+        int maxX = (cx + 1) * chunkSize - 1;
+        int maxZ = (cz + 1) * chunkSize - 1;
+        for (Map.Entry<String, Map<String, String>> entry : areas.entrySet()) {
+            try {
+                Area area = TypeUtil.parseArea(entry.getKey());
+                int ax = area.getPosition().getX();
+                int az = area.getPosition().getZ();
+                int asx = area.getSize().getX();
+                int asz = area.getSize().getZ();
+                int amaxX = ax + asx - 1;
+                int amaxZ = az + asz - 1;
+                boolean overlap = (minX <= amaxX && maxX >= ax && minZ <= amaxZ && maxZ >= az);
+                if (overlap) result.put(area, entry.getValue());
+            } catch (Exception ignore) {}
+        }
+        return result;
+    }
+
+    /**
+     * Returns a map of all areas (as Area objects) whose parameter map contains the given key-value pair.
+     * The returned map is a subset of the 'areas' map: key is the Area object, value is the parameter map.
+     */
+    public java.util.Map<Area, Map<String, String>> findAreasForParameter(String key, String value) {
+        java.util.Map<Area, Map<String, String>> result = new java.util.HashMap<>();
+        for (Map.Entry<String, Map<String, String>> entry : areas.entrySet()) {
+            Map<String, String> data = entry.getValue();
+            if (data != null && value != null && value.equals(data.get(key))) {
+                try {
+                    Area area = TypeUtil.parseArea(entry.getKey());
+                    result.put(area, data);
+                } catch (Exception ignore) {}
+            }
+        }
+        return result;
+    }
+
+    /**
+     * Returns a map of all areas (as Area objects) whose area contains the given world coordinate (x,z).
+     * The returned map is a subset of the 'areas' map: key is the Area object, value is the parameter map.
+     */
+    public java.util.Map<Area, Map<String, String>> findAreasForWorldCoord(int x, int z) {
+        java.util.Map<Area, Map<String, String>> result = new java.util.HashMap<>();
+        for (Map.Entry<String, Map<String, String>> entry : areas.entrySet()) {
+            try {
+                Area area = TypeUtil.parseArea(entry.getKey());
+                int ax = area.getPosition().getX();
+                int az = area.getPosition().getZ();
+                int asx = area.getSize().getX();
+                int asz = area.getSize().getZ();
+                int amaxX = ax + asx - 1;
+                int amaxZ = az + asz - 1;
+                boolean contains = (x >= ax && x <= amaxX && z >= az && z <= amaxZ);
+                if (contains) result.put(area, entry.getValue());
+            } catch (Exception ignore) {}
+        }
+        return result;
     }
 }

@@ -3,6 +3,7 @@ package de.mhus.nimbus.world.shared.world;
 import de.mhus.nimbus.generated.types.ItemBlockRef;
 import de.mhus.nimbus.generated.types.Vector3;
 import de.mhus.nimbus.shared.types.WorldId;
+import de.mhus.nimbus.shared.utils.TypeUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -98,7 +99,7 @@ public class WItemPositionService {
         if (worldId.isCollection()) {
             throw new IllegalArgumentException("WItemPosition cannot be in a collection");
         }
-        String chunk = BlockUtil.toChunkKey(cx, cz);
+        String chunk = TypeUtil.toStringChunkCoord(cx, cz);
         List<WItemPosition> positions = repository.findByWorldIdAndChunkAndEnabled(
                 worldId.getId(), chunk, true);
 
@@ -223,7 +224,7 @@ public class WItemPositionService {
         if (worldId.isCollection()) {
             throw new IllegalArgumentException("WItemPosition cannot be in a collection");
         }
-        String chunk = BlockUtil.toChunkKey(cx, cz);
+        String chunk = TypeUtil.toStringChunkCoord(cx, cz);
         return repository.findByWorldIdAndChunkAndEnabled(
                 worldId.getId(), chunk, true).size();
     }

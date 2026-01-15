@@ -192,7 +192,7 @@ public class FlatCreateService {
 
         for (int chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
             for (int chunkZ = minChunkZ; chunkZ <= maxChunkZ; chunkZ++) {
-                requiredChunkKeys.add(BlockUtil.toChunkKey(chunkX, chunkZ));
+                requiredChunkKeys.add(TypeUtil.toStringChunkCoord(chunkX, chunkZ));
             }
         }
 
@@ -218,7 +218,7 @@ public class FlatCreateService {
                 // Calculate chunk coordinates
                 int chunkX = world.getChunkX(worldX);
                 int chunkZ = world.getChunkZ(worldZ);
-                String chunkKey = BlockUtil.toChunkKey(chunkX, chunkZ);
+                String chunkKey = TypeUtil.toStringChunkCoord(chunkX, chunkZ);
 
                 // Get chunk from cache
                 LayerChunkData chunkData = chunkCache.get(chunkKey);
@@ -400,7 +400,7 @@ public class FlatCreateService {
 
         for (int chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
             for (int chunkZ = minChunkZ; chunkZ <= maxChunkZ; chunkZ++) {
-                requiredChunkKeys.add(BlockUtil.toChunkKey(chunkX, chunkZ));
+                requiredChunkKeys.add(TypeUtil.toStringChunkCoord(chunkX, chunkZ));
             }
         }
 
@@ -433,7 +433,7 @@ public class FlatCreateService {
                 // Calculate chunk coordinates
                 int chunkX = world.getChunkX(worldX);
                 int chunkZ = world.getChunkZ(worldZ);
-                String chunkKey = BlockUtil.toChunkKey(chunkX, chunkZ);
+                String chunkKey = TypeUtil.toStringChunkCoord(chunkX, chunkZ);
 
                 // Get chunk from cache
                 LayerChunkData chunkData = chunkCache.get(chunkKey);
@@ -562,7 +562,7 @@ public class FlatCreateService {
 
         for (int chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
             for (int chunkZ = minChunkZ; chunkZ <= maxChunkZ; chunkZ++) {
-                requiredChunkKeys.add(BlockUtil.toChunkKey(chunkX, chunkZ));
+                requiredChunkKeys.add(TypeUtil.toStringChunkCoord(chunkX, chunkZ));
             }
         }
 
@@ -598,7 +598,7 @@ public class FlatCreateService {
                     // Calculate chunk coordinates
                     int chunkX = world.getChunkX(worldX);
                     int chunkZ = world.getChunkZ(worldZ);
-                    String chunkKey = BlockUtil.toChunkKey(chunkX, chunkZ);
+                    String chunkKey = TypeUtil.toStringChunkCoord(chunkX, chunkZ);
 
                     // Get chunk from cache
                     LayerChunkData chunkData = chunkCache.get(chunkKey);
@@ -726,7 +726,7 @@ public class FlatCreateService {
 
         for (int chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
             for (int chunkZ = minChunkZ; chunkZ <= maxChunkZ; chunkZ++) {
-                requiredChunkKeys.add(BlockUtil.toChunkKey(chunkX, chunkZ));
+                requiredChunkKeys.add(TypeUtil.toStringChunkCoord(chunkX, chunkZ));
             }
         }
 
@@ -753,7 +753,7 @@ public class FlatCreateService {
                 // Calculate chunk coordinates
                 int chunkX = world.getChunkX(worldX);
                 int chunkZ = world.getChunkZ(worldZ);
-                String chunkKey = BlockUtil.toChunkKey(chunkX, chunkZ);
+                String chunkKey = TypeUtil.toStringChunkCoord(chunkX, chunkZ);
 
                 // Get chunk from cache
                 LayerChunkData chunkData = chunkCache.get(chunkKey);
@@ -855,7 +855,7 @@ public class FlatCreateService {
 
         for (int chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
             for (int chunkZ = minChunkZ; chunkZ <= maxChunkZ; chunkZ++) {
-                requiredChunkKeys.add(BlockUtil.toChunkKey(chunkX, chunkZ));
+                requiredChunkKeys.add(TypeUtil.toStringChunkCoord(chunkX, chunkZ));
             }
         }
 
@@ -888,7 +888,7 @@ public class FlatCreateService {
                 // Calculate chunk coordinates
                 int chunkX = world.getChunkX(worldX);
                 int chunkZ = world.getChunkZ(worldZ);
-                String chunkKey = BlockUtil.toChunkKey(chunkX, chunkZ);
+                String chunkKey = TypeUtil.toStringChunkCoord(chunkX, chunkZ);
 
                 // Get chunk from cache
                 LayerChunkData chunkData = chunkCache.get(chunkKey);

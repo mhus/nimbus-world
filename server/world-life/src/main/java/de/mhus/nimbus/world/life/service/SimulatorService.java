@@ -4,11 +4,13 @@ import de.mhus.nimbus.generated.types.EntityPathway;
 import de.mhus.nimbus.generated.types.Vector3;
 import de.mhus.nimbus.generated.types.Waypoint;
 import de.mhus.nimbus.shared.types.WorldId;
+import de.mhus.nimbus.shared.utils.TypeUtil;
 import de.mhus.nimbus.world.life.behavior.BehaviorRegistry;
 import de.mhus.nimbus.world.life.behavior.EntityBehavior;
 import de.mhus.nimbus.world.life.model.ChunkCoordinate;
 import de.mhus.nimbus.world.life.model.SimulationState;
 import de.mhus.nimbus.world.life.redis.PathwayPublisher;
+import de.mhus.nimbus.world.shared.world.BlockUtil;
 import de.mhus.nimbus.world.shared.world.WEntity;
 import de.mhus.nimbus.world.shared.world.WEntityService;
 import de.mhus.nimbus.world.shared.world.WWorld;
@@ -27,8 +29,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-
-import static de.mhus.nimbus.world.shared.world.BlockUtil.toChunkKey;
 
 /**
  * Main entity simulation service.
@@ -205,7 +205,7 @@ public class SimulatorService {
 
             try {
                 // 1. Check if entity is in an active chunk
-                String entityChunk = toChunkKey(world, entity.getPosition());
+                String entityChunk = BlockUtil.toChunkKey(world, entity.getPosition());
                 if (entityChunk == null || !multiWorldChunkService.isChunkActive(worldId, entityChunk)) {
                     // Entity chunk is not active, release ownership if we own it
                     if (ownershipService.isOwnedByThisPod(worldId, entityId)) {
@@ -356,7 +356,7 @@ public class SimulatorService {
             }
 
             WEntity entity = state.getEntity();
-            String entityChunk = toChunkKey(worldOpt.get(), entity.getPosition());
+            String entityChunk = BlockUtil.toChunkKey(worldOpt.get(), entity.getPosition());
 
             if (entityChunk == null) {
                 log.debug("Entity {} has no chunk information", entityId);

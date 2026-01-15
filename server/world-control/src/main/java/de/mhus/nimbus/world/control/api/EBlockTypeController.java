@@ -24,7 +24,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import static de.mhus.nimbus.world.shared.world.BlockUtil.extractGroupFromBlockId;
+import static de.mhus.nimbus.world.shared.world.BlockUtil.extractCollectionFromBlockId;
 
 /**
  * REST Controller for BlockType CRUD operations.
@@ -64,7 +64,7 @@ public class EBlockTypeController extends BaseEditorController {
      * Get single BlockType by ID.
      * GET /control/worlds/{worldId}/blocktypes/type/{blockId}
      */
-    @GetMapping("/type/{*blockId}")
+    @GetMapping("/type/{blockId}")
     @Operation(summary = "Get BlockType by ID")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "BlockType found"),
@@ -75,15 +75,10 @@ public class EBlockTypeController extends BaseEditorController {
             @Parameter(description = "World identifier") @PathVariable String worldId,
             @Parameter(description = "Block identifier") @PathVariable String blockId) {
 
-        // Strip leading slash from wildcard pattern {*blockId}
-        if (blockId != null && blockId.startsWith("/")) {
-            blockId = blockId.substring(1);
-        }
-
-        // Extract ID from format "w/310" -> "310" or "310" -> "310"
+        // Extract ID from format "w:310" -> "310" or "310" -> "310"
         // In DB: blockId stores only the number, blockTypeGroup stores "w"
-        if (blockId != null && blockId.contains("/")) {
-            String[] parts = blockId.split("/", 2);
+        if (blockId != null && blockId.contains(":")) {
+            String[] parts = blockId.split(":", 2);
             if (parts.length == 2) {
                 blockId = parts[1];  // Use the ID part after the slash
             }
@@ -235,7 +230,7 @@ public class EBlockTypeController extends BaseEditorController {
         try {
             // Extract or set blockTypeGroup
             final String blockTypeGroup = Strings.isBlank(request.blockTypeGroup())
-                    ? extractGroupFromBlockId(request.blockId())
+                    ? extractCollectionFromBlockId(request.blockId())
                     : request.blockTypeGroup();
 
             WBlockType saved = blockTypeService.save(wid, request.blockId(), request.publicData());
@@ -259,7 +254,7 @@ public class EBlockTypeController extends BaseEditorController {
      * Update existing BlockType.
      * PUT /control/worlds/{worldId}/blocktypes/type/{blockId}
      */
-    @PutMapping("/type/{*blockId}")
+    @PutMapping("/type/{blockId}")
     @Operation(summary = "Update BlockType")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "BlockType updated"),
@@ -271,14 +266,9 @@ public class EBlockTypeController extends BaseEditorController {
             @Parameter(description = "Block identifier") @PathVariable String blockId,
             @RequestBody UpdateBlockTypeRequest request) {
 
-        // Strip leading slash from wildcard pattern {*blockId}
-        if (blockId != null && blockId.startsWith("/")) {
-            blockId = blockId.substring(1);
-        }
-
-        // Extract ID from format "w/310" -> "310" or "310" -> "310"
-        if (blockId != null && blockId.contains("/")) {
-            String[] parts = blockId.split("/", 2);
+        // Extract ID from format "w:310" -> "310" or "310" -> "310"
+        if (blockId != null && blockId.contains(":")) {
+            String[] parts = blockId.split(":", 2);
             if (parts.length == 2) {
                 blockId = parts[1];
             }
@@ -350,7 +340,7 @@ public class EBlockTypeController extends BaseEditorController {
      * Delete BlockType.
      * DELETE /control/worlds/{worldId}/blocktypes/type/{blockId}
      */
-    @DeleteMapping("/type/{*blockId}")
+    @DeleteMapping("/type/{blockId}")
     @Operation(summary = "Delete BlockType")
     @ApiResponses({
             @ApiResponse(responseCode = "204", description = "BlockType deleted"),
@@ -361,14 +351,9 @@ public class EBlockTypeController extends BaseEditorController {
             @Parameter(description = "World identifier") @PathVariable String worldId,
             @Parameter(description = "Block identifier") @PathVariable String blockId) {
 
-        // Strip leading slash from wildcard pattern {*blockId}
-        if (blockId != null && blockId.startsWith("/")) {
-            blockId = blockId.substring(1);
-        }
-
-        // Extract ID from format "w/310" -> "310" or "310" -> "310"
-        if (blockId != null && blockId.contains("/")) {
-            String[] parts = blockId.split("/", 2);
+        // Extract ID from format "w:310" -> "310" or "310" -> "310"
+        if (blockId != null && blockId.contains(":")) {
+            String[] parts = blockId.split(":", 2);
             if (parts.length == 2) {
                 blockId = parts[1];
             }
@@ -399,7 +384,7 @@ public class EBlockTypeController extends BaseEditorController {
      *
      * Creates a copy of an existing BlockType with a new ID.
      */
-    @PostMapping("/duplicate/{*sourceBlockId}")
+    @PostMapping("/duplicate/{sourceBlockId}")
     @Operation(summary = "Duplicate BlockType",
                description = "Creates a copy of an existing BlockType with a new ID")
     @ApiResponses({
@@ -415,20 +400,15 @@ public class EBlockTypeController extends BaseEditorController {
 
         String newBlockId = body.get("newBlockId");
 
-        // Strip leading slash from wildcard pattern
-        if (sourceBlockId != null && sourceBlockId.startsWith("/")) {
-            sourceBlockId = sourceBlockId.substring(1);
-        }
-
-        // Extract ID from format "w/310" -> "310" or "310" -> "310"
-        if (sourceBlockId != null && sourceBlockId.contains("/")) {
-            String[] parts = sourceBlockId.split("/", 2);
+        // Extract ID from format "w:310" -> "310" or "310" -> "310"
+        if (sourceBlockId != null && sourceBlockId.contains(":")) {
+            String[] parts = sourceBlockId.split(":", 2);
             if (parts.length == 2) {
                 sourceBlockId = parts[1];
             }
         }
-        if (newBlockId != null && newBlockId.contains("/")) {
-            String[] parts = newBlockId.split("/", 2);
+        if (newBlockId != null && newBlockId.contains(":")) {
+            String[] parts = newBlockId.split(":", 2);
             if (parts.length == 2) {
                 newBlockId = parts[1];
             }
@@ -482,7 +462,7 @@ public class EBlockTypeController extends BaseEditorController {
             newPublicData.setDescription(originalDescription + " (Copy)");
 
             // Extract blockTypeGroup from newBlockId
-            String blockTypeGroup = extractGroupFromBlockId(newBlockId);
+            String blockTypeGroup = extractCollectionFromBlockId(newBlockId);
 
             // Save the new BlockType
             WBlockType saved = blockTypeService.save(wid, newBlockId, newPublicData);
@@ -516,7 +496,7 @@ public class EBlockTypeController extends BaseEditorController {
      * Converts a custom Block (JSON payload) into a BlockType template.
      * The blockTypeId is provided in the URL path.
      */
-    @PostMapping("/fromBlock/{*blockTypeId}")
+    @PostMapping("/fromBlock/{blockTypeId}")
     @Operation(summary = "Create BlockType from custom Block",
                description = "Converts a custom Block instance into a reusable BlockType template")
     @ApiResponses({
@@ -528,11 +508,6 @@ public class EBlockTypeController extends BaseEditorController {
             @Parameter(description = "World identifier") @PathVariable String worldId,
             @Parameter(description = "New BlockType identifier") @PathVariable String blockTypeId,
             @RequestBody Map<String, Object> blockPayload) {
-
-        // Strip leading slash from wildcard pattern {*blockTypeId}
-        if (blockTypeId != null && blockTypeId.startsWith("/")) {
-            blockTypeId = blockTypeId.substring(1);
-        }
 
         log.debug("CREATE blocktype from block: worldId={}, blockTypeId={}", worldId, blockTypeId);
 
@@ -560,7 +535,7 @@ public class EBlockTypeController extends BaseEditorController {
             blockType.setId(blockTypeId);
 
             // Extract blockTypeGroup from blockTypeId (e.g., "custom" from "custom:stone" or "w" from "w/123")
-            String blockTypeGroup = extractGroupFromBlockId(blockTypeId);
+            String blockTypeGroup = extractCollectionFromBlockId(blockTypeId);
 
             // Save BlockType
             WBlockType saved = blockTypeService.save(wid, blockTypeId, blockType);

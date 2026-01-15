@@ -60,7 +60,7 @@ public class HexGridController extends BaseEditorController {
                 hexGrid.getWorldId(),
                 hexGrid.getPosition(),
                 hexGrid.getPublicData(),
-                hexGrid.getGeneratorParameters(),
+                hexGrid.getParameters(),
                 hexGrid.getCreatedAt(),
                 hexGrid.getUpdatedAt(),
                 hexGrid.isEnabled()
@@ -196,7 +196,7 @@ public class HexGridController extends BaseEditorController {
                     hexGrid.setPublicData(request.publicData());
                 }
                 if (request.generatorParameters() != null) {
-                    hexGrid.setGeneratorParameters(request.generatorParameters());
+                    hexGrid.setParameters(request.generatorParameters());
                 }
                 if (request.enabled() != null) {
                     hexGrid.setEnabled(request.enabled());
@@ -236,7 +236,7 @@ public class HexGridController extends BaseEditorController {
                 if (updates.containsKey("generatorParameters")) {
                     @SuppressWarnings("unchecked")
                     Map<String, String> params = (Map<String, String>) updates.get("generatorParameters");
-                    hexGrid.setGeneratorParameters(params);
+                    hexGrid.setParameters(params);
                 }
                 if (updates.containsKey("enabled")) {
                     hexGrid.setEnabled((Boolean) updates.get("enabled"));

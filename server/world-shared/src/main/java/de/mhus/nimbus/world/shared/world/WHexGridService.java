@@ -1,10 +1,9 @@
 package de.mhus.nimbus.world.shared.world;
 
-import de.mhus.nimbus.generated.network.messages.ChunkCoordinate;
 import de.mhus.nimbus.generated.types.HexGrid;
 import de.mhus.nimbus.generated.types.HexVector2;
-import de.mhus.nimbus.generated.types.Vector2Pair;
 import de.mhus.nimbus.shared.types.WorldId;
+import de.mhus.nimbus.shared.utils.TypeUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
@@ -49,7 +48,7 @@ public class WHexGridService {
             throw new IllegalArgumentException("hexPos required");
         }
 
-        String positionKey = HexMathUtil.positionKey(hexPos);
+        String positionKey = TypeUtil.toStringHexCoord(hexPos);
 
         // Parse WorldId and filter instances
         WorldId parsedWorldId = WorldId.of(worldId).orElseThrow();
@@ -165,7 +164,7 @@ public class WHexGridService {
             throw new IllegalArgumentException("WHexGrid cannot be in a collection or instance");
         }
 
-        String positionKey = HexMathUtil.positionKey(publicData.getPosition());
+        String positionKey = TypeUtil.toStringHexCoord(publicData.getPosition());
 
         // Check if already exists
         if (repository.existsByWorldIdAndPosition(parsedWorldId.getId(), positionKey)) {
@@ -176,7 +175,7 @@ public class WHexGridService {
                 .worldId(parsedWorldId.getId())
                 .publicData(publicData)
                 .position(positionKey)
-                .generatorParameters(generatorParams != null ? generatorParams : Map.of())
+                .parameters(generatorParams != null ? generatorParams : Map.of())
                 .enabled(true)
                 .build();
 
@@ -213,7 +212,7 @@ public class WHexGridService {
             throw new IllegalArgumentException("WHexGrid cannot be in a collection or instance");
         }
 
-        String positionKey = HexMathUtil.positionKey(hexPos);
+        String positionKey = TypeUtil.toStringHexCoord(hexPos);
 
         return repository.findByWorldIdAndPosition(parsedWorldId.getId(), positionKey).map(entity -> {
             updater.accept(entity);
@@ -272,7 +271,7 @@ public class WHexGridService {
             throw new IllegalArgumentException("WHexGrid cannot be in a collection or instance");
         }
 
-        String positionKey = HexMathUtil.positionKey(hexPos);
+        String positionKey = TypeUtil.toStringHexCoord(hexPos);
 
         return repository.findByWorldIdAndPosition(parsedWorldId.getId(), positionKey).map(entity -> {
             repository.delete(entity);

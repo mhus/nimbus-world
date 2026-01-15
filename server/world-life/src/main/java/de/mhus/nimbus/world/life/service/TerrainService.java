@@ -3,6 +3,7 @@ package de.mhus.nimbus.world.life.service;
 import de.mhus.nimbus.generated.types.Block;
 import de.mhus.nimbus.generated.types.ChunkData;
 import de.mhus.nimbus.shared.types.WorldId;
+import de.mhus.nimbus.shared.utils.TypeUtil;
 import de.mhus.nimbus.world.shared.world.BlockUtil;
 import de.mhus.nimbus.world.shared.world.WChunkService;
 import de.mhus.nimbus.world.shared.world.WWorldService;
@@ -55,7 +56,7 @@ public class TerrainService {
             // Calculate chunk coordinates
             int chunkX = world.getChunkX(x);
             int chunkZ = world.getChunkZ(z);
-            String chunkKey = BlockUtil.toChunkKey(chunkX, chunkZ);
+            String chunkKey = TypeUtil.toStringChunkCoord(chunkX, chunkZ);
 
             // Load chunk from database (regionId = worldId for main world, create=false)
             Optional<ChunkData> chunkDataOpt = chunkService.loadChunkData(worldId, chunkKey, false);
@@ -181,7 +182,7 @@ public class TerrainService {
             // Calculate chunk coordinates
             int chunkX = world.getChunkX(x);
             int chunkZ = world.getChunkZ(z);
-            String chunkKey = BlockUtil.toChunkKey(chunkX, chunkZ);
+            String chunkKey = TypeUtil.toStringChunkCoord(chunkX, chunkZ);
 
             // Load chunk from database
             Optional<ChunkData> chunkDataOpt = chunkService.loadChunkData(worldId, chunkKey, false);

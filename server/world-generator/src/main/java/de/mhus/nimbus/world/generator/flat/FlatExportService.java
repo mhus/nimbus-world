@@ -5,6 +5,7 @@ import de.mhus.nimbus.generated.types.BlockTypeType;
 import de.mhus.nimbus.generated.types.Vector3Int;
 import de.mhus.nimbus.shared.types.BlockDef;
 import de.mhus.nimbus.shared.types.WorldId;
+import de.mhus.nimbus.shared.utils.TypeUtil;
 import de.mhus.nimbus.world.shared.generator.WFlat;
 import de.mhus.nimbus.world.shared.generator.WFlatService;
 import de.mhus.nimbus.world.shared.layer.LayerBlock;
@@ -104,7 +105,7 @@ public class FlatExportService {
                 // Calculate chunk coordinates
                 int chunkX = world.getChunkX(worldX);
                 int chunkZ = world.getChunkZ(worldZ);
-                String chunkKey = BlockUtil.toChunkKey(chunkX, chunkZ);
+                String chunkKey = TypeUtil.toStringChunkCoord(chunkX, chunkZ);
 
                 // Get or create chunk data
                 LayerChunkData chunkData = modifiedChunks.computeIfAbsent(chunkKey, key -> {

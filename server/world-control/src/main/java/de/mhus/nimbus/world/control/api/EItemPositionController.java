@@ -2,6 +2,7 @@ package de.mhus.nimbus.world.control.api;
 
 import de.mhus.nimbus.generated.types.ItemBlockRef;
 import de.mhus.nimbus.shared.types.WorldId;
+import de.mhus.nimbus.shared.utils.TypeUtil;
 import de.mhus.nimbus.world.shared.rest.BaseEditorController;
 import de.mhus.nimbus.world.shared.world.BlockUtil;
 import de.mhus.nimbus.world.shared.world.WItemPosition;
@@ -131,7 +132,7 @@ public class EItemPositionController extends BaseEditorController {
             // Convert ItemBlockRef back to WItemPosition for filtering (simplified approach)
             all = itemRegistryService.getAllItems(wid).stream()
                     .filter(item -> {
-                        String chunkKey = BlockUtil.toChunkKey(cx, cz);
+                        String chunkKey = TypeUtil.toStringChunkCoord(cx, cz);
                         return chunkKey.equals(item.getChunk());
                     })
                     .collect(Collectors.toList());

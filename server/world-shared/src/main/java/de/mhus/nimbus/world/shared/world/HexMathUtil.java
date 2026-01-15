@@ -23,45 +23,6 @@ public class HexMathUtil {
     private static final double SQRT_3 = Math.sqrt(3.0);
 
     /**
-     * Generates a position key string from hex coordinates.
-     *
-     * @param hex The hex vector with q and r coordinates
-     * @return Position key in format "q;r"
-     */
-    public static String positionKey(HexVector2 hex) {
-        if (hex == null) {
-            throw new IllegalArgumentException("HexVector2 cannot be null");
-        }
-        return hex.getQ() + ";" + hex.getR();
-    }
-
-    /**
-     * Parses a position key string to hex coordinates.
-     *
-     * @param key Position key in format "q;r"
-     * @return HexVector2 with parsed coordinates
-     * @throws IllegalArgumentException if key format is invalid
-     */
-    public static HexVector2 parsePositionKey(String key) {
-        if (key == null || key.isEmpty()) {
-            throw new IllegalArgumentException("Position key cannot be null or empty");
-        }
-
-        String[] parts = key.split(";");
-        if (parts.length != 2) {
-            throw new IllegalArgumentException("Invalid position key format: " + key + " (expected 'q;r')");
-        }
-
-        try {
-            int q = Integer.parseInt(parts[0]);
-            int r = Integer.parseInt(parts[1]);
-            return HexVector2.builder().q(q).r(r).build();
-        } catch (NumberFormatException e) {
-            throw new IllegalArgumentException("Invalid position key format: " + key + " (coordinates must be integers)", e);
-        }
-    }
-
-    /**
      * Converts hex coordinates to cartesian coordinates (center position).
      * Uses pointy-top hexagon orientation.
      *

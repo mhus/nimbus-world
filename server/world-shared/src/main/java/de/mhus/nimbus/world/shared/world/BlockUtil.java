@@ -3,6 +3,7 @@ package de.mhus.nimbus.world.shared.world;
 import de.mhus.nimbus.generated.types.Block;
 import de.mhus.nimbus.generated.types.Vector3;
 import de.mhus.nimbus.generated.types.Vector3Int;
+import de.mhus.nimbus.shared.utils.TypeUtil;
 import lombok.experimental.UtilityClass;
 
 /**
@@ -43,68 +44,31 @@ public class BlockUtil {
     }
 
     /**
-     * Generate position key from coordinates.
-     *
-     * @param x X coordinate
-     * @param y Y coordinate
-     * @param z Z coordinate
-     * @return Position key string
-     */
-    public static String positionKey(int x, int y, int z) {
-        return x + ":" + y + ":" + z;
-    }
-
-    /**
      * Extract position key from Block.
      *
      * @param block Block instance
      * @return Position key string
      */
     public static String positionKey(Block block) {
-        return block != null ? positionKey(block.getPosition()) : "0:0:0";
+        return block != null ? TypeUtil.toStringWorldCoord(block.getPosition()) : "0,0,0";
     }
 
     /**
-     * Extract group from blockId.
-     * Format: "{group}/{key}" (e.g., "core:stone" → "core", "w/123" → "w")
-     * If no group prefix, defaults to "w".
+     * Extract collection from blockId.
+     * Format: "{collection}:{key}" (e.g., "core:stone" → "core", "w:123" → "w")
+     * If no collection prefix, defaults to "w".
      */
-    public static String extractGroupFromBlockId(String blockId) {
-        if (blockId == null || !blockId.contains("/")) {
-            return "w";  // default group
+    public static String extractCollectionFromBlockId(String blockId) {
+        if (blockId == null || !blockId.contains(":")) {
+            return "w";  // default collection
         }
-        String[] parts = blockId.split("/", 2);
+        String[] parts = blockId.split(":", 2);
         String group = parts[0].toLowerCase();
         // Validate group format
         if (group.matches("^[a-z0-9_-]+$")) {
             return group;
         }
         return "w";
-    }
-
-    /**
-     * Normalize blockId to always include group prefix.
-     * Format: "{group}/{key}"
-     * If no group prefix exists, prepends "w/" as default.
-     *
-     * Examples:
-     * - "310" → "w/310"
-     * - "w/310" → "w/310"
-     * - "core/stone" → "core/stone"
-     *
-     * @param blockId Block identifier (may be with or without group prefix)
-     * @return Normalized block identifier with group prefix
-     */
-    public static String normalizeBlockId(String blockId) {
-        if (blockId == null || blockId.isEmpty()) {
-            return blockId;
-        }
-        // If already has group prefix, return as-is
-        if (blockId.contains("/")) {
-            return blockId;
-        }
-        // Add default "w/" prefix
-        return "w/" + blockId;
     }
 
     /**
@@ -129,14 +93,6 @@ public class BlockUtil {
                 .modifiers(originalBlock.getModifiers())
                 .metadata(originalBlock.getMetadata())
                 .build();
-    }
-
-    public static String toChunkKey(int cx, int cz) {
-        return cx + ":" + cz;
-    }
-
-    public static String toChunkKey(double cx, double cz) {
-        return (int)Math.floor(cx) + ":" + (int)Math.floor(cz);
     }
 
     public static String toChunkKey(WWorld world, Vector3 position) {
