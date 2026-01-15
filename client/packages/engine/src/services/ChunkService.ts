@@ -6,23 +6,23 @@
  */
 
 import {
-  BaseMessage,
-  MessageType,
-  ChunkCoordinate,
-  ChunkRegisterData,
-  ChunkDataTransferObject,
-  Block,
-  Item,
-  Shape,
-  getLogger,
-  ExceptionHandler,
-  Backdrop,
-  Vector3,
-  AudioType,
-  itemToBlock,
-  type AudioDefinition, ItemBlockRef,
-  normalizeBlockTypeId,
-  getBlockTypeGroup, BlockType,
+    BaseMessage,
+    MessageType,
+    ChunkCoordinate,
+    ChunkRegisterData,
+    ChunkDataTransferObject,
+    Block,
+    Item,
+    Shape,
+    getLogger,
+    ExceptionHandler,
+    Backdrop,
+    Vector3,
+    AudioType,
+    itemToBlock,
+    type AudioDefinition, ItemBlockRef,
+    normalizeBlockTypeId,
+    getBlockTypeGroup, BlockType, type AreaData,
 } from '@nimbus/shared';
 import type { AppContext } from '../AppContext';
 import type { NetworkService } from './NetworkService';
@@ -249,6 +249,7 @@ export class ChunkService {
             chunkData.b = cChunk.blocks || [];
             chunkData.h = cChunk.heightData || [];
             chunkData.backdrop = cChunk.backdrop;
+            chunkData.a = cChunk.a || [];
 
             // Important: free memory
             chunkData.c = undefined as any;
@@ -856,12 +857,18 @@ export class ChunkService {
     // STEP 5: Process backdrop data - add default backdrop if not provided
     const backdrop = this.processBackdropData(chunkData);
 
+    const areaData = new Array<AreaData>();
+    if (chunkData.a) {
+
+    }
+
     return {
       transfer: chunkData,
       data: clientBlocksMap,
       hightData: heightData,
       statusData: statusData,
       backdrop,
+      areaData,
     };
   }
 

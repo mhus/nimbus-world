@@ -10,6 +10,7 @@
 import type { Block } from './Block';
 import type { ItemBlockRef } from './ItemBlockRef';
 import type { Backdrop } from './Backdrop';
+import {AreaData} from "./AreaData";
 
 /**
  * Height data for chunk column
@@ -101,7 +102,10 @@ export interface ChunkData {
     w?: Array<Backdrop>;
   };
 
-  /**
+    /** Area data with effects */
+    a?: Array<AreaData>;
+
+    /**
    * Binary compressed chunk data (optional)
    * Used for efficient storage or transfer of chunk information
    * The format and compression method are implementation-specific

@@ -53,7 +53,6 @@ export * from '../generated/dto/BlockOriginDto';
 // Animation and effects
 export * from './AnimationData';
 export * from './AreaData';
-export * from './EffectData';
 
 // Entity types
 export * from './EntityData';

@@ -5,7 +5,7 @@
  * client-side state for rendering and management.
  */
 
-import type {ChunkDataTransferObject, Backdrop, Vector3} from '@nimbus/shared';
+import {ChunkDataTransferObject, Backdrop, Vector3, AreaData} from '@nimbus/shared';
 import type { ClientBlock } from './ClientBlock';
 import type { DisposableResources } from '../rendering/DisposableResources';
 
@@ -60,6 +60,10 @@ export interface ClientChunkData {
 
   /** Map of block position key -> permanent audio Sound (for per-block audio management) */
   permanentAudioSounds?: Map<string, any>;
+
+  /** Area data with parameters */
+  areaData?: Array<AreaData>;
+
 }
 
 /**

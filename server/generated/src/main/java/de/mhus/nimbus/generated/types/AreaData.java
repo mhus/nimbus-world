@@ -13,5 +13,5 @@ package de.mhus.nimbus.generated.types;
 public class AreaData {
     private Vector3 a;
     private Vector3 b;
-    private java.util.List<EffectData> e;
+    private java.util.Map<String, String> p;
 }

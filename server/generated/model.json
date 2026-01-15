@@ -2000,7 +2000,7 @@
     "typeAliases" : [ ]
   }, {
     "path" : "/Users/hummel/sources/mhus/nimbus-wb/repos/nimbus-world/server/generated/../client_shared_src/types/ChunkData.ts",
-    "imports" : [ "./Block", "./ItemBlockRef", "./Backdrop" ],
+    "imports" : [ "./Block", "./ItemBlockRef", "./Backdrop", "./AreaData" ],
     "interfaces" : [ {
       "name" : "ChunkData",
       "extendsList" : [ ],
@@ -2053,6 +2053,13 @@
         "visibility" : null,
         "javaTypeHint" : "int[][]",
         "comment" : "// javaType: int[][]"
+      }, {
+        "name" : "a",
+        "type" : "Array<AreaData>",
+        "optional" : true,
+        "visibility" : null,
+        "javaTypeHint" : null,
+        "comment" : null
       }, {
         "name" : "c",
         "type" : "Uint8Array",
@@ -4993,58 +5000,6 @@
     "classes" : [ ],
     "typeAliases" : [ ]
   }, {
-    "path" : "/Users/hummel/sources/mhus/nimbus-wb/repos/nimbus-world/server/generated/../client_shared_src/types/EffectData.ts",
-    "imports" : [ ],
-    "interfaces" : [ {
-      "name" : "EffectData",
-      "extendsList" : [ ],
-      "properties" : [ {
-        "name" : "n",
-        "type" : "string",
-        "optional" : false,
-        "visibility" : null,
-        "javaTypeHint" : null,
-        "comment" : null
-      }, {
-        "name" : "p",
-        "type" : "EffectDataPDTO",
-        "optional" : false,
-        "visibility" : null,
-        "javaTypeHint" : null,
-        "comment" : null
-      } ],
-      "methods" : [ ]
-    }, {
-      "name" : "EffectDataPDTO",
-      "extendsList" : [ ],
-      "properties" : [ {
-        "name" : "intensity",
-        "type" : "number",
-        "optional" : true,
-        "visibility" : null,
-        "javaTypeHint" : null,
-        "comment" : null
-      }, {
-        "name" : "color",
-        "type" : "string",
-        "optional" : true,
-        "visibility" : null,
-        "javaTypeHint" : null,
-        "comment" : null
-      }, {
-        "name" : "[key: string]",
-        "type" : "any",
-        "optional" : false,
-        "visibility" : null,
-        "javaTypeHint" : null,
-        "comment" : null
-      } ],
-      "methods" : [ ]
-    } ],
-    "enums" : [ ],
-    "classes" : [ ],
-    "typeAliases" : [ ]
-  }, {
     "path" : "/Users/hummel/sources/mhus/nimbus-wb/repos/nimbus-world/server/generated/../client_shared_src/types/index.ts",
     "imports" : [ ],
     "interfaces" : [ ],
@@ -5053,7 +5008,7 @@
     "typeAliases" : [ ]
   }, {
     "path" : "/Users/hummel/sources/mhus/nimbus-wb/repos/nimbus-world/server/generated/../client_shared_src/types/AreaData.ts",
-    "imports" : [ "./Vector3", "./EffectData" ],
+    "imports" : [ "./Vector3" ],
     "interfaces" : [ {
       "name" : "AreaData",
       "extendsList" : [ ],
@@ -5072,8 +5027,8 @@
         "javaTypeHint" : null,
         "comment" : null
       }, {
-        "name" : "e",
-        "type" : "EffectData[]",
+        "name" : "p",
+        "type" : "Record<string, string>",
         "optional" : false,
         "visibility" : null,
         "javaTypeHint" : null,
