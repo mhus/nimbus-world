@@ -7,13 +7,14 @@ WORKDIR /build
 COPY pom.xml .
 
 # Copy project directories (excluding exports, data, etc.)
-COPY plugins/ plugins/
-COPY generated/ generated/
-COPY shared/ shared/
-COPY world-shared/ world-shared/
-COPY world-player/ world-player/
-COPY world-control/ world-control/
-COPY world-life/ world-life/
+COPY server/plugins/ plugins/
+COPY server/generated/ generated/
+COPY server/shared/ shared/
+COPY server/world-shared/ world-shared/
+COPY server/world-player/ world-player/
+COPY server/world-control/ world-control/
+COPY server/world-life/ world-life/
+COPY server/world-generator/ world-generator/
 
 # Copy client shared sources to client_shared_src (mimics the symlink structure)
 COPY client/packages/shared/src/ client_shared_src/
