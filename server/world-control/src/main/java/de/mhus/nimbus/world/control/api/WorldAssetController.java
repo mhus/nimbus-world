@@ -601,6 +601,7 @@ public class WorldAssetController extends BaseEditorController {
     }
 
     private AssetListItemDto toListDto(SAsset asset) {
+        asset.appendWorldPrefix();
         return new AssetListItemDto(
                 asset.getPath(),
                 asset.getSize(),
