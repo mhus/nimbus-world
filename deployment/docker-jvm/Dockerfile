@@ -14,7 +14,6 @@ COPY world-shared/ world-shared/
 COPY world-player/ world-player/
 COPY world-control/ world-control/
 COPY world-life/ world-life/
-COPY world-generator/ world-generator/
 
 # Copy client shared sources to client_shared_src (mimics the symlink structure)
 COPY client/packages/shared/src/ client_shared_src/
