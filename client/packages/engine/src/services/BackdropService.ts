@@ -579,7 +579,7 @@ export class BackdropService {
         const worldZ = chunk.data.transfer.cz * chunkSize + z;
 
         const key = `${worldX},${worldZ}`;
-        const height = heightData.get(key);
+        const height = heightData[key];
         if (height) {
           const groundLevel = height[2]; // groundLevel is at index 2
           if (groundLevel < minGroundLevel) {

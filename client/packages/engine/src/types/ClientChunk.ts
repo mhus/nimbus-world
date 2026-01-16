@@ -40,8 +40,8 @@ export interface ClientChunkData {
 
   /** Map of block position key(x,y,z) -> ClientBlock (with merged modifiers) */
   data: Map<string, ClientBlock>;
-  /** Map of height position key(x,z) -> ClientHeightData */
-  hightData: Map<string, HeightData>;
+  /** Record of height position key(x,z) -> HeightData */
+  hightData: Record<string, HeightData>;
 
   statusData: Map<string, number>;
 
@@ -107,7 +107,7 @@ export class ClientChunk {
     const worldX = Math.floor(posX);
     const worldZ = Math.floor(posZ);
 
-    return this.data?.hightData?.get(`${worldX},${worldZ}`);
+    return this.data?.hightData?.[`${worldX},${worldZ}`];
   }
 
   getHeightDataForPosition(position: Vector3) {
