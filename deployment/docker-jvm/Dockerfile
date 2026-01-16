@@ -4,7 +4,7 @@ FROM maven:3.9-eclipse-temurin-25 AS build
 WORKDIR /build
 
 # Copy root pom.xml
-COPY pom.xml .
+COPY server/pom.xml .
 
 # Copy project directories (excluding exports, data, etc.)
 COPY server/plugins/ plugins/
