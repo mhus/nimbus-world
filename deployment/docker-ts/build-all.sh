@@ -53,7 +53,7 @@ done
 # Get the project root directory
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
-DOCKERFILE="server/deployment/docker-ts/Dockerfile"
+DOCKERFILE="deployment/docker-ts/Dockerfile"
 
 echo "========================================"
 echo "Building all frontend services"

@@ -59,7 +59,7 @@ done
 
 # Set image name based on service
 IMAGE_NAME="nimbus-${SERVICE}"
-DOCKERFILE="server/deployment/docker-ts/Dockerfile"
+DOCKERFILE="deployment/docker-ts/Dockerfile"
 TARGET_STAGE="${SERVICE}"
 
 # Get the project root directory (3 levels up from docker-ts to nimbus-server root)

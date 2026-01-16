@@ -60,7 +60,7 @@ done
 
 # Set image name based on service
 IMAGE_NAME="nimbus-world-${SERVICE}"
-DOCKERFILE="server/deployment/docker-jvm/Dockerfile"
+DOCKERFILE="deployment/docker-jvm/Dockerfile"
 TARGET_STAGE="world-${SERVICE}"
 
 # Get the project root directory (3 levels up from docker-jvm to nimbus-server root)

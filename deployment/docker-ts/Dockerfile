@@ -58,7 +58,7 @@ COPY client/packages/engine/docker-entrypoint.sh /docker-entrypoint.sh
 RUN chmod +x /docker-entrypoint.sh
 
 # Copy custom nginx config
-COPY server/deployment/docker-ts/nginx-viewer.conf /etc/nginx/conf.d/default.conf
+COPY deployment/docker-ts/nginx-viewer.conf /etc/nginx/conf.d/default.conf
 
 # Set default environment variable
 ENV VITE_SERVER_API_URL=http://localhost:9042
@@ -86,7 +86,7 @@ COPY client/packages/engine/docker-entrypoint.sh /docker-entrypoint.sh
 RUN chmod +x /docker-entrypoint.sh
 
 # Copy custom nginx config
-COPY server/deployment/docker-ts/nginx-editor.conf /etc/nginx/conf.d/default.conf
+COPY deployment/docker-ts/nginx-editor.conf /etc/nginx/conf.d/default.conf
 
 # Set default environment variable
 ENV VITE_SERVER_API_URL=http://localhost:9042
@@ -114,7 +114,7 @@ COPY client/packages/controls/docker-entrypoint.sh /docker-entrypoint.sh
 RUN chmod +x /docker-entrypoint.sh
 
 # Copy custom nginx config
-COPY server/deployment/docker-ts/nginx-controls.conf /etc/nginx/conf.d/default.conf
+COPY deployment/docker-ts/nginx-controls.conf /etc/nginx/conf.d/default.conf
 
 # Set default environment variable
 ENV VITE_CONTROL_API_URL=http://localhost:9043
