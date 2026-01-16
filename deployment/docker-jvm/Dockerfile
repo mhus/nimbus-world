@@ -4,19 +4,17 @@ FROM maven:3.9-eclipse-temurin-25 AS build
 WORKDIR /build
 
 # Copy root pom.xml
-COPY server/pom.xml .
+COPY pom.xml .
 
 # Copy project directories (excluding exports, data, etc.)
-COPY server/plugins/ plugins/
-COPY server/generated/ generated/
-COPY server/shared/ shared/
-COPY server/universe/ universe/
-COPY server/world-shared/ world-shared/
-COPY server/world-player/ world-player/
-COPY server/world-control/ world-control/
-COPY server/world-life/ world-life/
-COPY server/world-generator/ world-generator/
-COPY server/tools/ tools/
+COPY plugins/ plugins/
+COPY generated/ generated/
+COPY shared/ shared/
+COPY world-shared/ world-shared/
+COPY world-player/ world-player/
+COPY world-control/ world-control/
+COPY world-life/ world-life/
+COPY world-generator/ world-generator/
 
 # Copy client shared sources to client_shared_src (mimics the symlink structure)
 COPY client/packages/shared/src/ client_shared_src/
