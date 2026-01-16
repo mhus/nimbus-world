@@ -1287,6 +1287,16 @@
       </svg>
       <span>{{ successMessage }}</span>
     </div>
+
+    <!-- Job Watch Modal -->
+    <JobWatch
+      v-if="showJobWatch && jobWatchWorldId && jobWatchJobId"
+      :world-id="jobWatchWorldId"
+      :job-id="jobWatchJobId"
+      @close="handleJobWatchClose"
+      @completed="handleJobCompleted"
+      @failed="handleJobFailed"
+    />
   </div>
 </template>
 
@@ -1294,6 +1304,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useRegion } from '@/composables/useRegion';
 import { worldServiceFrontend, type World, type WorldInfo } from '../services/WorldServiceFrontend';
+import JobWatch from '@/components/JobWatch.vue';
 
 const props = defineProps<{
   world: World | 'new';
@@ -1311,6 +1322,11 @@ const isNew = computed(() => props.world === 'new');
 const saving = ref(false);
 const error = ref<string | null>(null);
 const successMessage = ref<string | null>(null);
+
+// Job watch for world defaults creation
+const showJobWatch = ref(false);
+const jobWatchWorldId = ref('');
+const jobWatchJobId = ref('');
 
 // Timer for world time updates
 const currentTime = ref(Date.now());
@@ -1783,23 +1799,47 @@ const handleSave = async () => {
     };
 
     if (isNew.value) {
-      await worldServiceFrontend.createWorld(currentRegionId.value, request);
-      successMessage.value = 'World created successfully';
+      const result = await worldServiceFrontend.createWorld(currentRegionId.value, request);
+      successMessage.value = 'World created successfully. Initializing default entities...';
+
+      // Show JobWatch dialog for world defaults creation
+      jobWatchWorldId.value = result.worldId;
+      jobWatchJobId.value = result.jobId;
+      showJobWatch.value = true;
     } else {
       const world = props.world as World;
       await worldServiceFrontend.updateWorld(currentRegionId.value, world.worldId, request);
       successMessage.value = 'World updated successfully';
-    }
 
-    setTimeout(() => {
-      emit('saved');
-    }, 1000);
+      setTimeout(() => {
+        emit('saved');
+      }, 1000);
+    }
   } catch (e) {
     error.value = e instanceof Error ? e.message : 'Failed to save world';
     console.error('[WorldEditor] Failed to save world:', e);
   } finally {
     saving.value = false;
   }
+};
+
+const handleJobWatchClose = () => {
+  showJobWatch.value = false;
+  jobWatchWorldId.value = '';
+  jobWatchJobId.value = '';
+};
+
+const handleJobCompleted = async () => {
+  console.log('[WorldEditor] World defaults job completed successfully');
+  handleJobWatchClose();
+  // Return to world list
+  emit('saved');
+};
+
+const handleJobFailed = () => {
+  console.error('[WorldEditor] World defaults job failed');
+  error.value = 'Failed to initialize world defaults. Please check the job logs.';
+  // Don't close JobWatch automatically on failure
 };
 
 const handleBack = () => {

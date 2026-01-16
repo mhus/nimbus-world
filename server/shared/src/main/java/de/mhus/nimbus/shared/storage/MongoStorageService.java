@@ -229,4 +229,60 @@ public class MongoStorageService extends StorageService {
             );
         }
     }
+
+    @Override
+    @Transactional
+    public String duplicate(String sourceStorageId, String targetWorldId) {
+        if (sourceStorageId == null || sourceStorageId.isBlank()) {
+            log.error("Cannot duplicate with null/empty sourceStorageId");
+            return null;
+        }
+
+        if (targetWorldId == null || targetWorldId.isBlank()) {
+            log.error("Cannot duplicate with null/empty targetWorldId");
+            return null;
+        }
+
+        // Get source storage info
+        StorageInfo sourceInfo = info(sourceStorageId);
+        if (sourceInfo == null) {
+            log.error("Source storage not found: {}", sourceStorageId);
+            return null;
+        }
+
+        // Load source data
+        InputStream sourceStream = load(sourceStorageId);
+        if (sourceStream == null) {
+            log.error("Cannot load source storage data: {}", sourceStorageId);
+            return null;
+        }
+
+        try {
+            // Store with new worldId
+            StorageInfo newInfo = store(
+                    sourceInfo.schema(),
+                    sourceInfo.schemaVersion(),
+                    targetWorldId,
+                    sourceInfo.path(),
+                    sourceStream
+            );
+
+            if (newInfo == null) {
+                log.error("Failed to store duplicated storage data");
+                return null;
+            }
+
+            log.debug("Duplicated storage: sourceId={} targetId={} targetWorldId={}",
+                    sourceStorageId, newInfo.id(), targetWorldId);
+
+            return newInfo.id();
+
+        } finally {
+            try {
+                sourceStream.close();
+            } catch (IOException e) {
+                log.warn("Error closing source stream", e);
+            }
+        }
+    }
 }

@@ -6,6 +6,7 @@ import de.mhus.nimbus.world.shared.world.WWorld;
 import de.mhus.nimbus.world.shared.world.WWorldService;
 import de.mhus.nimbus.shared.types.WorldId;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -25,10 +26,12 @@ import java.util.Set;
 @RestController
 @RequestMapping("/control/regions/{regionId}/worlds")
 @RequiredArgsConstructor
+@Slf4j
 public class WWorldController extends BaseEditorController {
 
     private final WWorldService worldService;
     private final de.mhus.nimbus.shared.engine.EngineMapper engineMapper;
+    private final de.mhus.nimbus.world.shared.job.WJobService jobService;
 
     // DTOs
     public record WorldRequest(
@@ -70,6 +73,30 @@ public class WWorldController extends BaseEditorController {
             Set<String> supporter,
             Set<String> player,
             boolean publicFlag
+    ) {}
+
+    public record WorldCreateResponse(
+            String id,
+            String worldId,
+            String regionId,
+            String name,
+            String description,
+            WorldInfo publicData,
+            Instant createdAt,
+            Instant updatedAt,
+            boolean enabled,
+            String parent,
+            boolean instanceable,
+            int groundLevel,
+            Integer waterLevel,
+            String groundBlockType,
+            String waterBlockType,
+            Set<String> owner,
+            Set<String> editor,
+            Set<String> supporter,
+            Set<String> player,
+            boolean publicFlag,
+            String jobId
     ) {}
 
     private WorldResponse toResponse(WWorld world) {
@@ -326,9 +353,47 @@ public class WWorldController extends BaseEditorController {
                 if (request.waterBlockType() != null) w.setWaterBlockType(request.waterBlockType());
             });
 
+            // Create job to initialize world defaults
+            Map<String, String> jobParameters = Map.of("worldId", request.worldId());
+
+            de.mhus.nimbus.world.shared.job.WJob job = jobService.createJob(
+                    request.worldId(),
+                    "create-world-defaults",
+                    "initialize",
+                    jobParameters,
+                    5,  // priority
+                    0   // no retries
+            );
+
             WWorld updated = worldService.getByWorldId(worldIdObj).orElseThrow();
+            WorldResponse worldResponse = toResponse(updated);
+
+            WorldCreateResponse response = new WorldCreateResponse(
+                    worldResponse.id(),
+                    worldResponse.worldId(),
+                    worldResponse.regionId(),
+                    worldResponse.name(),
+                    worldResponse.description(),
+                    worldResponse.publicData(),
+                    worldResponse.createdAt(),
+                    worldResponse.updatedAt(),
+                    worldResponse.enabled(),
+                    worldResponse.parent(),
+                    worldResponse.instanceable(),
+                    worldResponse.groundLevel(),
+                    worldResponse.waterLevel(),
+                    worldResponse.groundBlockType(),
+                    worldResponse.waterBlockType(),
+                    worldResponse.owner(),
+                    worldResponse.editor(),
+                    worldResponse.supporter(),
+                    worldResponse.player(),
+                    worldResponse.publicFlag(),
+                    job.getId()
+            );
+
             return ResponseEntity.created(URI.create("/control/regions/" + regionId + "/worlds/" + updated.getWorldId()))
-                    .body(toResponse(updated));
+                    .body(response);
         } catch (IllegalStateException | IllegalArgumentException e) {
             return bad(e.getMessage());
         }
@@ -461,6 +526,116 @@ public class WWorldController extends BaseEditorController {
                     .body(toResponse(zoneWorld));
         } catch (IllegalStateException | IllegalArgumentException e) {
             return bad(e.getMessage());
+        }
+    }
+
+    /**
+     * Duplicate world with all its data
+     * POST /control/regions/{regionId}/worlds/{worldId}/duplicate
+     *
+     * Request body: { "targetWorldId": "new-world", "targetWorldName": "New World" }
+     * Response: { "jobId": "...", "targetWorldId": "...", "targetWorldName": "..." }
+     */
+    @PostMapping("/{worldId}/duplicate")
+    public ResponseEntity<?> duplicate(
+            @PathVariable String regionId,
+            @PathVariable String worldId,
+            @RequestBody Map<String, String> request) {
+
+        var error = validateId(regionId, "regionId");
+        if (error != null) return error;
+
+        var error2 = validateId(worldId, "worldId");
+        if (error2 != null) return error2;
+
+        String targetWorldId = request.get("targetWorldId");
+        if (targetWorldId == null || targetWorldId.isBlank()) {
+            return bad("targetWorldId is required");
+        }
+
+        String targetWorldName = request.get("targetWorldName");
+        if (targetWorldName == null || targetWorldName.isBlank()) {
+            return bad("targetWorldName is required");
+        }
+
+        // Validate source world exists
+        Optional<WWorld> sourceWorld = worldService.getByWorldId(worldId);
+        if (sourceWorld.isEmpty()) {
+            return notFound("Source world not found: " + worldId);
+        }
+
+        if (!regionId.equals(sourceWorld.get().getRegionId())) {
+            return notFound("World not found in this region");
+        }
+
+        // Validate target worldId doesn't exist
+        Optional<WWorld> existingTarget = worldService.getByWorldId(targetWorldId);
+        if (existingTarget.isPresent()) {
+            return bad("Target world already exists: " + targetWorldId);
+        }
+
+        try {
+            WWorld source = sourceWorld.get();
+
+            // Create target world entity with same properties as source
+            WorldId targetWorldIdObj = WorldId.of(targetWorldId).orElseThrow(() ->
+                new IllegalArgumentException("Invalid targetWorldId: " + targetWorldId));
+
+            WorldInfo targetInfo = source.getPublicData() != null ? source.getPublicData() : new WorldInfo();
+
+            WWorld targetWorld = worldService.createWorld(
+                    targetWorldIdObj,
+                    targetInfo,
+                    source.getParent(),
+                    source.isEnabled()
+            );
+
+            // Set additional fields
+            worldService.updateWorld(targetWorldIdObj, w -> {
+                w.setRegionId(regionId);
+                w.setName(targetWorldName);
+                w.setDescription(source.getDescription());
+                w.setGroundLevel(source.getGroundLevel());
+                w.setWaterLevel(source.getWaterLevel());
+                w.setGroundBlockType(source.getGroundBlockType());
+                w.setWaterBlockType(source.getWaterBlockType());
+                w.setInstanceable(source.isInstanceable());
+                w.setOwner(source.getOwner());
+                w.setEditor(source.getEditor());
+                w.setSupporter(source.getSupporter());
+                w.setPlayer(source.getPlayer());
+                w.setPublicFlag(source.isPublicFlag());
+            });
+
+            // Create duplication job
+            Map<String, String> jobParameters = Map.of(
+                    "sourceWorldId", worldId,
+                    "targetWorldId", targetWorldId
+            );
+
+            de.mhus.nimbus.world.shared.job.WJob job = jobService.createJob(
+                    targetWorldId,
+                    "duplicate-world",
+                    "duplicate",
+                    jobParameters,
+                    5,  // priority
+                    0   // no retries
+            );
+
+            // Return job info
+            Map<String, String> response = Map.of(
+                    "jobId", job.getId(),
+                    "targetWorldId", targetWorldId,
+                    "targetWorldName", targetWorldName
+            );
+
+            return ResponseEntity.ok(response);
+
+        } catch (IllegalStateException | IllegalArgumentException e) {
+            return bad(e.getMessage());
+        } catch (Exception e) {
+            log.error("Failed to duplicate world", e);
+            return bad("Failed to duplicate world: " + e.getMessage());
         }
     }
 }

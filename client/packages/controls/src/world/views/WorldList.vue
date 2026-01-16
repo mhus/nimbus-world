@@ -117,6 +117,15 @@
                 </svg>
               </button>
               <button
+                class="btn btn-ghost btn-xs text-success"
+                @click.stop="handleDuplicate(world.worldId, world.name)"
+                title="Duplicate World"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />
+                </svg>
+              </button>
+              <button
                 class="btn btn-ghost btn-xs text-error"
                 @click.stop="handleDelete(world.worldId, world.name)"
               >
@@ -190,6 +199,62 @@
         <button>close</button>
       </form>
     </dialog>
+
+    <!-- Duplicate World Modal -->
+    <dialog ref="duplicateModal" class="modal">
+      <div class="modal-box">
+        <h3 class="font-bold text-lg">Duplicate World</h3>
+        <p class="py-4">Create a copy of world: <strong>{{ duplicateSourceWorldName }}</strong></p>
+        <div class="space-y-4">
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text">New World ID</span>
+            </label>
+            <input
+              v-model="duplicateTargetWorldId"
+              type="text"
+              placeholder="Enter new world ID..."
+              class="input input-bordered"
+            />
+          </div>
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text">New World Name</span>
+            </label>
+            <input
+              v-model="duplicateTargetWorldName"
+              type="text"
+              placeholder="Enter new world name..."
+              class="input input-bordered"
+              @keyup.enter="handleConfirmDuplicate"
+            />
+          </div>
+        </div>
+        <div class="modal-action">
+          <button class="btn btn-ghost" @click="handleCancelDuplicate">Cancel</button>
+          <button
+            class="btn btn-primary"
+            @click="handleConfirmDuplicate"
+            :disabled="!duplicateTargetWorldId || duplicateTargetWorldId.trim() === '' || !duplicateTargetWorldName || duplicateTargetWorldName.trim() === ''"
+          >
+            Duplicate World
+          </button>
+        </div>
+      </div>
+      <form method="dialog" class="modal-backdrop">
+        <button>close</button>
+      </form>
+    </dialog>
+
+    <!-- Job Watch Modal -->
+    <JobWatch
+      v-if="showJobWatch && jobWatchWorldId && jobWatchJobId"
+      :world-id="jobWatchWorldId"
+      :job-id="jobWatchJobId"
+      @close="handleJobWatchClose"
+      @completed="handleJobCompleted"
+      @failed="handleJobFailed"
+    />
   </div>
 </template>
 
@@ -197,6 +262,7 @@
 import { ref, computed, watch } from 'vue';
 import { useRegion } from '@/composables/useRegion';
 import { worldServiceFrontend, type World } from '../services/WorldServiceFrontend';
+import JobWatch from '@/components/JobWatch.vue';
 
 const emit = defineEmits<{
   select: [world: World];
@@ -221,6 +287,18 @@ const zoneModal = ref<HTMLDialogElement | null>(null);
 const zoneName = ref('');
 const zoneSourceWorldId = ref('');
 const zoneSourceWorldName = ref('');
+
+// Duplicate world modal
+const duplicateModal = ref<HTMLDialogElement | null>(null);
+const duplicateSourceWorldId = ref('');
+const duplicateSourceWorldName = ref('');
+const duplicateTargetWorldId = ref('');
+const duplicateTargetWorldName = ref('');
+
+// Job watch
+const showJobWatch = ref(false);
+const jobWatchWorldId = ref('');
+const jobWatchJobId = ref('');
 
 const filteredWorlds = computed(() => {
   let result = worlds.value;
@@ -363,6 +441,77 @@ const handleConfirmCreateZone = async () => {
   } finally {
     loading.value = false;
   }
+};
+
+const handleDuplicate = (worldId: string, name: string) => {
+  duplicateSourceWorldId.value = worldId;
+  duplicateSourceWorldName.value = name;
+  duplicateTargetWorldId.value = '';
+  duplicateTargetWorldName.value = '';
+  duplicateModal.value?.showModal();
+};
+
+const handleCancelDuplicate = () => {
+  duplicateSourceWorldId.value = '';
+  duplicateSourceWorldName.value = '';
+  duplicateTargetWorldId.value = '';
+  duplicateTargetWorldName.value = '';
+  duplicateModal.value?.close();
+};
+
+const handleConfirmDuplicate = async () => {
+  if (!duplicateTargetWorldId.value || duplicateTargetWorldId.value.trim() === '') {
+    return;
+  }
+
+  if (!duplicateTargetWorldName.value || duplicateTargetWorldName.value.trim() === '') {
+    return;
+  }
+
+  if (!currentRegionId.value) {
+    return;
+  }
+
+  try {
+    loading.value = true;
+    const result = await worldServiceFrontend.duplicateWorld(
+      currentRegionId.value,
+      duplicateSourceWorldId.value,
+      duplicateTargetWorldId.value.trim(),
+      duplicateTargetWorldName.value.trim()
+    );
+
+    // Close modal
+    handleCancelDuplicate();
+
+    // Show job watch dialog
+    jobWatchWorldId.value = result.targetWorldId;
+    jobWatchJobId.value = result.jobId;
+    showJobWatch.value = true;
+  } catch (e) {
+    error.value = e instanceof Error ? e.message : 'Failed to duplicate world';
+    console.error('[WorldList] Failed to duplicate world:', e);
+  } finally {
+    loading.value = false;
+  }
+};
+
+const handleJobWatchClose = () => {
+  showJobWatch.value = false;
+  jobWatchWorldId.value = '';
+  jobWatchJobId.value = '';
+};
+
+const handleJobCompleted = async () => {
+  console.log('[WorldList] Job completed successfully');
+  handleJobWatchClose();
+  // Reload worlds list
+  await loadWorlds();
+};
+
+const handleJobFailed = () => {
+  console.error('[WorldList] Job failed');
+  // Don't reload, let user close manually
 };
 
 // Watch for region changes

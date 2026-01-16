@@ -126,6 +126,10 @@ export interface WorldRequest {
   waterBlockType?: string;
 }
 
+export interface WorldCreateResponse extends World {
+  jobId: string;
+}
+
 class WorldServiceFrontend {
   async listWorlds(regionId: string): Promise<World[]> {
     return apiService.get<World[]>(`/control/regions/${regionId}/worlds`);
@@ -135,8 +139,8 @@ class WorldServiceFrontend {
     return apiService.get<World>(`/control/regions/${regionId}/worlds/${worldId}`);
   }
 
-  async createWorld(regionId: string, request: WorldRequest): Promise<World> {
-    return apiService.post<World>(`/control/regions/${regionId}/worlds`, request);
+  async createWorld(regionId: string, request: WorldRequest): Promise<WorldCreateResponse> {
+    return apiService.post<WorldCreateResponse>(`/control/regions/${regionId}/worlds`, request);
   }
 
   async updateWorld(regionId: string, worldId: string, request: WorldRequest): Promise<World> {
@@ -151,6 +155,18 @@ class WorldServiceFrontend {
     return apiService.post<World>(
       `/control/regions/${regionId}/worlds/${sourceWorldId}/zones`,
       { zoneName }
+    );
+  }
+
+  async duplicateWorld(
+    regionId: string,
+    sourceWorldId: string,
+    targetWorldId: string,
+    targetWorldName: string
+  ): Promise<{ jobId: string; targetWorldId: string; targetWorldName: string }> {
+    return apiService.post(
+      `/control/regions/${regionId}/worlds/${sourceWorldId}/duplicate`,
+      { targetWorldId, targetWorldName }
     );
   }
 }

@@ -54,6 +54,16 @@ public abstract class StorageService {
 
     public abstract StorageInfo info(String storageId);
 
+    /**
+     * Duplicate existing stored data with a new worldId.
+     * Loads the data from the source storageId and stores it with the target worldId.
+     *
+     * @param sourceStorageId The storageId to duplicate
+     * @param targetWorldId The target worldId for the duplicated data
+     * @return New StorageInfo with the new storageId
+     */
+    public abstract String duplicate(String sourceStorageId, String targetWorldId);
+
     public record StorageInfo(String id, long size, Date createdAt, String worldId, String path, String schema, SchemaVersion schemaVersion) { }
 
 }

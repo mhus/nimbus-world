@@ -1873,4 +1873,39 @@ public class WLayerService {
             dirtyChunkService.markChunksDirty(layer.getWorldId(), layer.getAffectedChunks(), reason);
         }
     }
+
+    /**
+     * Creates default layers for a new world.
+     * Creates three ground layers:
+     * - 'ground' (order 10, baseGround=true)
+     * - 'terrain' (order 20, baseGround=true)
+     * - 'flora' (order 30)
+     *
+     * All layers have allChunks=true and enabled=true.
+     *
+     * @param worldId World identifier (without instance)
+     */
+    @Transactional
+    public void createDefaultLayers(String worldId) {
+        log.info("Creating default layers for world: {}", worldId);
+
+        try {
+            // Layer 1: ground (order 10, baseGround=true)
+            createLayer(worldId, "ground", LayerType.GROUND, 10, true, null, true);
+            log.debug("Created default layer 'ground' for world {}", worldId);
+
+            // Layer 2: terrain (order 20, baseGround=true)
+            createLayer(worldId, "terrain", LayerType.GROUND, 20, true, null, true);
+            log.debug("Created default layer 'terrain' for world {}", worldId);
+
+            // Layer 3: flora (order 30, baseGround=false)
+            createLayer(worldId, "flora", LayerType.GROUND, 30, true, null, false);
+            log.debug("Created default layer 'flora' for world {}", worldId);
+
+            log.info("Successfully created default layers for world: {}", worldId);
+        } catch (Exception e) {
+            log.error("Failed to create default layers for world {}: {}", worldId, e.getMessage(), e);
+            throw new RuntimeException("Failed to create default layers for world " + worldId, e);
+        }
+    }
 }
