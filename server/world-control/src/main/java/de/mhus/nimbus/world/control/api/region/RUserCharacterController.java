@@ -44,7 +44,7 @@ public class RUserCharacterController {
 //    @PostMapping
 //    public ResponseEntity<?> create(@RequestBody CreateCharacterRequest req) {
 //        try {
-//            var c = characterService.createCharacter(req.userId(), req.regionId(), req.name(), req.display());
+//            var c = characterService.createCharacter(req.userId(), req.regionId(), req.title(), req.display());
 //            return ResponseEntity.status(HttpStatus.CREATED).body(toResponse(c));
 //        } catch (IllegalArgumentException | IllegalStateException ex) {
 //            log.warn("create character {} failed", req, ex);
@@ -133,7 +133,7 @@ public class RUserCharacterController {
 //                .id(c.getId())
 //                .userId(c.getUserId())
 //                .regionId(c.getRegionId())
-//                .name(c.getName())
+//                .title(c.getName())
 //                .display(c.getDisplay())
 //                .backpack(backpack)
 //                .wearing(wearingConv)

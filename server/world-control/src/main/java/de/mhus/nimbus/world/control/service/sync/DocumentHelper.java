@@ -17,7 +17,7 @@ public class DocumentHelper {
      *
      * @param mongoTemplate MongoDB template
      * @param doc           Document to save
-     * @param collection    Collection name
+     * @param collection    Collection title
      * @param fields        Field names that form the unique constraint
      * @return Document ready to save (with correct _id)
      */
@@ -53,7 +53,7 @@ public class DocumentHelper {
      *
      * @param existing       Existing document in database
      * @param imported       Imported document from file
-     * @param timestampField Field name for timestamp comparison (e.g., "updatedAt", "createdAt")
+     * @param timestampField Field title for timestamp comparison (e.g., "updatedAt", "createdAt")
      * @return true if should skip import (DB is newer), false otherwise
      */
     public static boolean shouldSkipImport(Document existing, Document imported, String timestampField) {

@@ -13,7 +13,7 @@ package de.mhus.nimbus.generated.types;
 public class WorldInfo {
     @com.fasterxml.jackson.annotation.JsonProperty("worldId")
     private String worldId;
-    private String name;
+    private String title;
     @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
     private String description;
     @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)

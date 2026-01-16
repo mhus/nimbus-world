@@ -202,13 +202,13 @@ public class EditorController extends BaseEditorController {
         WorldId.of(worldId).orElseThrow(
                 () -> new IllegalStateException("Invalid worldId: " + worldId)
         );
-        var validation = validateId(request.name(), "name");
+        var validation = validateId(request.name(), "title");
         if (validation != null) return validation;
 
         // Check if layer already exists
         Optional<WLayer> existing = layerService.findLayer(worldId, request.name());
         if (existing.isPresent()) {
-            return conflict("Layer with name '" + request.name() + "' already exists");
+            return conflict("Layer with title '" + request.name() + "' already exists");
         }
 
         // Create new layer

@@ -40,7 +40,7 @@ public class RRegionController extends BaseEditorController {
 
     /**
      * List all regions with optional filtering
-     * GET /control/region?name=...&enabled=true
+     * GET /control/region?title=...&enabled=true
      */
     @GetMapping
     public ResponseEntity<List<RegionResponse>> list(
@@ -79,7 +79,7 @@ public class RRegionController extends BaseEditorController {
     @PostMapping
     public ResponseEntity<?> create(@RequestBody RegionRequest request) {
         if (Strings.isBlank(request.name())) {
-            return bad("name is required");
+            return bad("title is required");
         }
 
         try {

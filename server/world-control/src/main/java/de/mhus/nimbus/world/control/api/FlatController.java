@@ -1044,7 +1044,7 @@ public class FlatController extends BaseEditorController {
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Success"),
             @ApiResponse(responseCode = "404", description = "Flat not found"),
-            @ApiResponse(responseCode = "400", description = "Invalid palette name")
+            @ApiResponse(responseCode = "400", description = "Invalid palette title")
     })
     public ResponseEntity<List<MaterialDefinitionDto>> applyPalette(
             @Parameter(description = "Flat ID", required = true)
@@ -1056,7 +1056,7 @@ public class FlatController extends BaseEditorController {
         String paletteName = request.paletteName().toLowerCase();
 
         if (!paletteName.equals("nimbus") && !paletteName.equals("legacy")) {
-            log.warn("Invalid palette name: {}", paletteName);
+            log.warn("Invalid palette title: {}", paletteName);
             return ResponseEntity.badRequest().build();
         }
 
@@ -1068,7 +1068,7 @@ public class FlatController extends BaseEditorController {
 
         WFlat flat = flatOpt.get();
 
-        // Apply palette based on name
+        // Apply palette based on title
         applyPaletteToFlat(flat, paletteName);
         flat.touchUpdate();
 

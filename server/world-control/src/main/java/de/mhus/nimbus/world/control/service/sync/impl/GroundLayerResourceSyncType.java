@@ -75,10 +75,10 @@ public class GroundLayerResourceSyncType implements ResourceSyncType {
 
         for (Document layerDoc : layerDocs) {
             try {
-                String layerName = layerDoc.getString("name");
+                String layerName = layerDoc.getString("title");
                 String layerDataId = layerDoc.getString("layerDataId");
                 if (layerName == null || layerDataId == null) {
-                    log.warn("Layer without name or layerDataId, skipping");
+                    log.warn("Layer without title or layerDataId, skipping");
                     continue;
                 }
 
@@ -215,13 +215,13 @@ public class GroundLayerResourceSyncType implements ResourceSyncType {
                     // Transform document (worldId replacement + prefix mapping)
                     migratedLayerDoc = documentTransformer.transformForImport(migratedLayerDoc, definition);
 
-                    // Find existing layer by unique constraint (worldId + name)
+                    // Find existing layer by unique constraint (worldId + title)
                     String targetWorldId = migratedLayerDoc.getString("worldId");
-                    String targetName = migratedLayerDoc.getString("name");
+                    String targetName = migratedLayerDoc.getString("title");
 
                     Query findLayerQuery = new Query(
                             Criteria.where("worldId").is(targetWorldId)
-                                    .and("name").is(targetName)
+                                    .and("title").is(targetName)
                     );
                     Document existingLayer = mongoTemplate.findOne(findLayerQuery, Document.class, LAYER_COLLECTION);
 

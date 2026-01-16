@@ -17,7 +17,7 @@ public interface RepositoryControl {
      *
      * @param localPath      Local filesystem path
      * @param repositoryUrl  Git repository URL (optional)
-     * @param branch         Branch name (optional, defaults to main/master)
+     * @param branch         Branch title (optional, defaults to main/master)
      * @param username       Git username for authentication (optional)
      * @param password       Git password/token for authentication (optional)
      * @throws IOException if initialization fails

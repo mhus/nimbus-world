@@ -49,7 +49,7 @@ export class WorldInfoCommand extends CommandHandler {
     // Basic Information
     lines.push('Basic Information:');
     lines.push(`  World ID        : ${worldInfo.worldId}`);
-    lines.push(`  Name            : ${worldInfo.name}`);
+    lines.push(`  Title           : ${worldInfo.title}`);
     if (worldInfo.description) {
       lines.push(`  Description     : ${worldInfo.description}`);
     }

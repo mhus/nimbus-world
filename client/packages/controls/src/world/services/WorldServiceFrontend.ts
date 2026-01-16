@@ -65,7 +65,7 @@ export interface Vector3 {
 // Main WorldInfo interface
 export interface WorldInfo {
   worldId?: string;
-  name?: string;
+  title?: string;
   description?: string;
   chunkSize?: number;
   hexGridSize?: number;
@@ -89,7 +89,7 @@ export interface World {
   id: string;
   worldId: string;
   regionId: string;
-  name: string;
+  title: string;
   description: string;
   publicData: WorldInfo;
   createdAt: string;
@@ -110,7 +110,7 @@ export interface World {
 
 export interface WorldRequest {
   worldId: string;
-  name: string;
+  title: string;
   description?: string;
   publicData?: WorldInfo;
   enabled?: boolean;
@@ -147,8 +147,8 @@ class WorldServiceFrontend {
     return apiService.put<World>(`/control/regions/${regionId}/worlds/${worldId}`, request);
   }
 
-  async deleteWorld(regionId: string, worldId: string): Promise<void> {
-    return apiService.delete<void>(`/control/regions/${regionId}/worlds/${worldId}`);
+  async deleteWorld(regionId: string, worldId: string): Promise<{ jobId: string }> {
+    return apiService.delete<{ jobId: string }>(`/control/regions/${regionId}/worlds/${worldId}`);
   }
 
   async createZone(regionId: string, sourceWorldId: string, zoneName: string): Promise<World> {
@@ -162,11 +162,11 @@ class WorldServiceFrontend {
     regionId: string,
     sourceWorldId: string,
     targetWorldId: string,
-    targetWorldName: string
-  ): Promise<{ jobId: string; targetWorldId: string; targetWorldName: string }> {
+    targetWorldTitle: string
+  ): Promise<{ jobId: string; targetWorldId: string; targetWorldTitle: string }> {
     return apiService.post(
       `/control/regions/${regionId}/worlds/${sourceWorldId}/duplicate`,
-      { targetWorldId, targetWorldName }
+      { targetWorldId, targetWorldTitle }
     );
   }
 }

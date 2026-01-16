@@ -22,13 +22,11 @@
       </svg>
       <div class="text-sm">
         <span class="font-medium">Hierarchy:</span>
-        <span class="ml-2">region: {{ currentRegionId || '-' }}</span>
+        <span class="ml-2">region: {{ worldIdParts.region }}</span>
         <span class="mx-1">→</span>
-        <span>world: {{ formData.worldId || '-' }}</span>
+        <span>world: {{ worldIdParts.world }}</span>
         <span class="mx-1">→</span>
-        <span>zone: -</span>
-        <span class="mx-1">→</span>
-        <span>instance: -</span>
+        <span>zone: {{ worldIdParts.zone }}</span>
       </div>
     </div>
 
@@ -60,33 +58,48 @@
         <div class="card-body">
           <h3 class="card-title">Basic Information</h3>
           <form @submit.prevent="handleSave" class="space-y-4">
-            <!-- World ID -->
+            <!-- World Name and Zone -->
             <div class="form-control">
               <label class="label">
-                <span class="label-text font-medium">World ID</span>
+                <span class="label-text font-medium">World Name and Zone</span>
               </label>
-              <input
-                v-model="formData.worldId"
-                type="text"
-                placeholder="Enter unique world ID (e.g., main-world-1)"
-                class="input input-bordered w-full"
-                :disabled="!isNew"
-                required
-              />
+              <div class="flex items-center gap-2">
+                <span class="text-base-content/70">{{ currentRegionId }}:</span>
+                <input
+                  v-model="worldNameInput"
+                  type="text"
+                  placeholder="World name (e.g., main)"
+                  class="input input-bordered flex-1"
+                  :disabled="!isNew"
+                  pattern="[a-zA-Z0-9_-]+"
+                  @input="handleWorldNameInput"
+                  required
+                />
+                <span class="text-base-content/70">:</span>
+                <input
+                  v-model="zoneInput"
+                  type="text"
+                  placeholder="Zone (optional)"
+                  class="input input-bordered flex-1"
+                  :disabled="!isNew"
+                  pattern="[a-zA-Z0-9_-]*"
+                  @input="handleZoneInput"
+                />
+              </div>
               <label class="label">
-                <span class="label-text-alt">Unique identifier for this world</span>
+                <span class="label-text-alt">World name and optional zone (only letters, numbers, underscore and hyphen)</span>
               </label>
             </div>
 
-            <!-- Name -->
+            <!-- Title -->
             <div class="form-control">
               <label class="label">
-                <span class="label-text font-medium">Name</span>
+                <span class="label-text font-medium">Title</span>
               </label>
               <input
-                v-model="formData.name"
+                v-model="formData.title"
                 type="text"
-                placeholder="Enter world name"
+                placeholder="Enter world title"
                 class="input input-bordered w-full"
                 required
               />
@@ -1328,6 +1341,45 @@ const showJobWatch = ref(false);
 const jobWatchWorldId = ref('');
 const jobWatchJobId = ref('');
 
+// World name input (without regionId prefix)
+const worldNameInput = ref('');
+const zoneInput = ref('');
+
+// Computed: Parse worldId into components
+const worldIdParts = computed(() => {
+  const worldId = formData.value.worldId;
+  if (!worldId) {
+    return { region: '-', world: '-', zone: '-', instance: '-' };
+  }
+
+  // Format: regionId:worldName[:zone][!instance]
+  const parts = {
+    region: '-',
+    world: '-',
+    zone: '-',
+    instance: '-'
+  };
+
+  // Split by !instance first
+  const instanceSplit = worldId.split('!');
+  const baseId = instanceSplit[0];
+  parts.instance = instanceSplit[1] || '-';
+
+  // Split by :region:world:zone
+  const colonSplit = baseId.split(':');
+  if (colonSplit.length >= 1) {
+    parts.region = colonSplit[0];
+  }
+  if (colonSplit.length >= 2) {
+    parts.world = colonSplit[1];
+  }
+  if (colonSplit.length >= 3) {
+    parts.zone = colonSplit[2];
+  }
+
+  return parts;
+});
+
 // Timer for world time updates
 const currentTime = ref(Date.now());
 let timeUpdateInterval: number | null = null;
@@ -1397,7 +1449,7 @@ const activeWorldInfoTab = ref<'basic' | 'boundaries' | 'entryPoint' | 'visual' 
 
 const formData = ref({
   worldId: '',
-  name: '',
+  title: '',
   description: '',
   enabled: true,
   publicFlag: false,
@@ -1413,7 +1465,7 @@ const formData = ref({
   waterBlockType: 'r/ocean',
   publicData: {
     worldId: '',
-    name: '',
+    title: '',
     description: '',
     chunkSize: 16,
     hexGridSize: 16,
@@ -1505,7 +1557,7 @@ const loadWorld = () => {
   if (isNew.value) {
     formData.value = {
       worldId: '',
-      name: '',
+      title: '',
       description: '',
       enabled: true,
       publicFlag: false,
@@ -1521,7 +1573,7 @@ const loadWorld = () => {
       waterBlockType: 'r/ocean',
       publicData: {
         worldId: '',
-        name: '',
+        title: '',
         description: '',
         chunkSize: 16,
         hexGridSize: 16,
@@ -1608,6 +1660,8 @@ const loadWorld = () => {
         }
       }
     };
+    worldNameInput.value = '';
+    zoneInput.value = '';
     return;
   }
 
@@ -1618,7 +1672,7 @@ const loadWorld = () => {
   const mergePublicData = (worldData: any) => {
     return {
       worldId: worldData?.worldId || '',
-      name: worldData?.name || '',
+      title: worldData?.title || '',
       description: worldData?.description || '',
       chunkSize: worldData?.chunkSize || 16,
       hexGridSize: worldData?.hexGridSize || 16,
@@ -1694,9 +1748,19 @@ const loadWorld = () => {
     };
   };
 
+  // Extract world name and zone from worldId (format: region:world:zone)
+  const worldIdParts = world.worldId.split(':');
+  if (worldIdParts.length >= 2) {
+    worldNameInput.value = worldIdParts[1]; // world name
+    zoneInput.value = worldIdParts[2] || ''; // zone (optional)
+  } else {
+    worldNameInput.value = world.worldId;
+    zoneInput.value = '';
+  }
+
   formData.value = {
     worldId: world.worldId,
-    name: world.name,
+    title: world.title,
     description: world.description || '',
     enabled: world.enabled,
     publicFlag: world.publicFlag,
@@ -1769,6 +1833,40 @@ const removeEnvironmentScript = (index: number) => {
   }
 };
 
+const handleWorldNameInput = (event: Event) => {
+  const input = event.target as HTMLInputElement;
+  // Only allow: a-z, A-Z, 0-9, underscore, hyphen
+  const sanitized = input.value.replace(/[^a-zA-Z0-9_-]/g, '');
+  worldNameInput.value = sanitized;
+  input.value = sanitized;
+
+  // Update formData.worldId with regionId prefix and zone if present
+  if (isNew.value && currentRegionId.value) {
+    if (zoneInput.value) {
+      formData.value.worldId = `${currentRegionId.value}:${sanitized}:${zoneInput.value}`;
+    } else {
+      formData.value.worldId = `${currentRegionId.value}:${sanitized}`;
+    }
+  }
+};
+
+const handleZoneInput = (event: Event) => {
+  const input = event.target as HTMLInputElement;
+  // Only allow: a-z, A-Z, 0-9, underscore, hyphen
+  const sanitized = input.value.replace(/[^a-zA-Z0-9_-]/g, '');
+  zoneInput.value = sanitized;
+  input.value = sanitized;
+
+  // Update formData.worldId with regionId prefix and zone if present
+  if (isNew.value && currentRegionId.value && worldNameInput.value) {
+    if (sanitized) {
+      formData.value.worldId = `${currentRegionId.value}:${worldNameInput.value}:${sanitized}`;
+    } else {
+      formData.value.worldId = `${currentRegionId.value}:${worldNameInput.value}`;
+    }
+  }
+};
+
 const handleSave = async () => {
   if (!currentRegionId.value) {
     error.value = 'No region selected';
@@ -1780,9 +1878,20 @@ const handleSave = async () => {
   successMessage.value = null;
 
   try {
+    // Ensure worldId has correct format with regionId prefix and zone
+    let worldIdToSave = formData.value.worldId;
+    if (isNew.value) {
+      if (zoneInput.value) {
+        worldIdToSave = `${currentRegionId.value}:${worldNameInput.value}:${zoneInput.value}`;
+      } else {
+        worldIdToSave = `${currentRegionId.value}:${worldNameInput.value}`;
+      }
+      formData.value.worldId = worldIdToSave;
+    }
+
     const request = {
-      worldId: formData.value.worldId,
-      name: formData.value.name,
+      worldId: worldIdToSave,
+      title: formData.value.title,
       description: formData.value.description,
       enabled: formData.value.enabled,
       parent: formData.value.parent,

@@ -36,7 +36,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * <p>Arguments:</p>
  * <ol>
- *   <li>Collection name (e.g., "users", "worlds", "w_chunks")</li>
+ *   <li>Collection title (e.g., "users", "worlds", "w_chunks")</li>
  *   <li>Document ID or "*" for all documents or "no-schema" for documents without _schema field</li>
  *   <li>Entity type (e.g., "UUser", "WWorld", "WChunk")</li>
  *   <li>Target schema version (e.g., "1.0.0")</li>

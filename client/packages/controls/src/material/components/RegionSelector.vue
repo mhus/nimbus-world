@@ -1,8 +1,8 @@
 <template>
   <div class="dropdown dropdown-end">
     <label tabindex="0" class="btn btn-ghost">
-      <span class="mr-2">World:</span>
-      <span class="font-bold">{{ currentWorld?.title || 'Loading...' }}</span>
+      <span class="mr-2">Region:</span>
+      <span class="font-bold">{{ currentRegion?.title || currentRegionId || 'Loading...' }}</span>
       <svg class="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
       </svg>
@@ -12,15 +12,15 @@
         <a class="disabled">Loading...</a>
       </li>
       <li v-else-if="error">
-        <a class="text-error disabled">Error loading worlds</a>
+        <a class="text-error disabled">Error loading regions</a>
       </li>
       <template v-else>
-        <li v-for="world in worlds" :key="world.worldId">
+        <li v-for="region in regions" :key="region.name">
           <a
-            @click="selectWorld(world.worldId)"
-            :class="{ 'active': world.worldId === currentWorldId }"
+            @click="selectRegion(region.name)"
+            :class="{ 'active': region.name === currentRegionId }"
           >
-            {{ world.title }}
+            {{ region.title || region.name }}
           </a>
         </li>
       </template>
@@ -30,20 +30,11 @@
 
 <script setup lang="ts">
 import { onMounted } from 'vue';
-import { useWorld } from '@/composables/useWorld';
-import type { WorldFilter } from '@/services/WorldService';
+import { useRegion } from '@/composables/useRegion';
 
-interface Props {
-  filter?: WorldFilter;
-}
-
-const props = withDefaults(defineProps<Props>(), {
-  filter: undefined
-});
-
-const { currentWorld, currentWorldId, worlds, loading, error, loadWorlds, selectWorld } = useWorld();
+const { currentRegion, currentRegionId, regions, loading, error, loadRegions, selectRegion } = useRegion();
 
 onMounted(() => {
-  loadWorlds(props.filter);
+  loadRegions();
 });
 </script>

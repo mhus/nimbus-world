@@ -70,8 +70,8 @@
           @click="handleSelect(world.worldId)"
         >
           <div class="card-body p-4">
-            <h3 class="card-title text-base truncate" :title="world.name">
-              {{ world.name }}
+            <h3 class="card-title text-base truncate" :title="world.title">
+              {{ world.title }}
             </h3>
             <div class="space-y-2">
               <div class="text-xs text-base-content/70 truncate" :title="world.worldId">
@@ -109,7 +109,7 @@
               </button>
               <button
                 class="btn btn-ghost btn-xs text-info"
-                @click.stop="handleCreateZone(world.worldId, world.name)"
+                @click.stop="handleCreateZone(world.worldId, world.title)"
                 title="Create Zone"
               >
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -118,7 +118,7 @@
               </button>
               <button
                 class="btn btn-ghost btn-xs text-success"
-                @click.stop="handleDuplicate(world.worldId, world.name)"
+                @click.stop="handleDuplicate(world.worldId, world.title)"
                 title="Duplicate World"
               >
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -127,7 +127,7 @@
               </button>
               <button
                 class="btn btn-ghost btn-xs text-error"
-                @click.stop="handleDelete(world.worldId, world.name)"
+                @click.stop="handleDelete(world.worldId, world.title)"
               >
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -219,12 +219,12 @@
           </div>
           <div class="form-control">
             <label class="label">
-              <span class="label-text">New World Name</span>
+              <span class="label-text">New World Title</span>
             </label>
             <input
-              v-model="duplicateTargetWorldName"
+              v-model="duplicateTargetWorldTitle"
               type="text"
-              placeholder="Enter new world name..."
+              placeholder="Enter new world title..."
               class="input input-bordered"
               @keyup.enter="handleConfirmDuplicate"
             />
@@ -235,7 +235,7 @@
           <button
             class="btn btn-primary"
             @click="handleConfirmDuplicate"
-            :disabled="!duplicateTargetWorldId || duplicateTargetWorldId.trim() === '' || !duplicateTargetWorldName || duplicateTargetWorldName.trim() === ''"
+            :disabled="!duplicateTargetWorldId || duplicateTargetWorldId.trim() === '' || !duplicateTargetWorldTitle || duplicateTargetWorldTitle.trim() === ''"
           >
             Duplicate World
           </button>
@@ -293,7 +293,7 @@ const duplicateModal = ref<HTMLDialogElement | null>(null);
 const duplicateSourceWorldId = ref('');
 const duplicateSourceWorldName = ref('');
 const duplicateTargetWorldId = ref('');
-const duplicateTargetWorldName = ref('');
+const duplicateTargetWorldTitle = ref('');
 
 // Job watch
 const showJobWatch = ref(false);
@@ -369,8 +369,8 @@ const handleSelect = (worldId: string) => {
   }
 };
 
-const handleDelete = async (worldId: string, name: string) => {
-  if (!confirm(`Are you sure you want to delete world "${name}"?`)) {
+const handleDelete = async (worldId: string, title: string) => {
+  if (!confirm(`Are you sure you want to delete world "${title}"?\n\nThis will delete the world and all associated resources (assets, layers, entities, etc.).`)) {
     return;
   }
 
@@ -379,11 +379,18 @@ const handleDelete = async (worldId: string, name: string) => {
   }
 
   try {
-    await worldServiceFrontend.deleteWorld(currentRegionId.value, worldId);
-    await loadWorlds();
+    loading.value = true;
+    const result = await worldServiceFrontend.deleteWorld(currentRegionId.value, worldId);
+
+    // Show job watch dialog for resource cleanup
+    jobWatchWorldId.value = worldId;
+    jobWatchJobId.value = result.jobId;
+    showJobWatch.value = true;
   } catch (e) {
     error.value = e instanceof Error ? e.message : 'Failed to delete world';
     console.error('[WorldList] Failed to delete world:', e);
+  } finally {
+    loading.value = false;
   }
 };
 
@@ -399,9 +406,9 @@ const handlePreviousPage = () => {
   }
 };
 
-const handleCreateZone = (worldId: string, name: string) => {
+const handleCreateZone = (worldId: string, title: string) => {
   zoneSourceWorldId.value = worldId;
-  zoneSourceWorldName.value = name;
+  zoneSourceWorldName.value = title;
   zoneName.value = '';
   zoneModal.value?.showModal();
 };
@@ -443,11 +450,11 @@ const handleConfirmCreateZone = async () => {
   }
 };
 
-const handleDuplicate = (worldId: string, name: string) => {
+const handleDuplicate = (worldId: string, title: string) => {
   duplicateSourceWorldId.value = worldId;
-  duplicateSourceWorldName.value = name;
+  duplicateSourceWorldName.value = title;
   duplicateTargetWorldId.value = '';
-  duplicateTargetWorldName.value = '';
+  duplicateTargetWorldTitle.value = '';
   duplicateModal.value?.showModal();
 };
 
@@ -455,7 +462,7 @@ const handleCancelDuplicate = () => {
   duplicateSourceWorldId.value = '';
   duplicateSourceWorldName.value = '';
   duplicateTargetWorldId.value = '';
-  duplicateTargetWorldName.value = '';
+  duplicateTargetWorldTitle.value = '';
   duplicateModal.value?.close();
 };
 
@@ -464,7 +471,7 @@ const handleConfirmDuplicate = async () => {
     return;
   }
 
-  if (!duplicateTargetWorldName.value || duplicateTargetWorldName.value.trim() === '') {
+  if (!duplicateTargetWorldTitle.value || duplicateTargetWorldTitle.value.trim() === '') {
     return;
   }
 
@@ -478,7 +485,7 @@ const handleConfirmDuplicate = async () => {
       currentRegionId.value,
       duplicateSourceWorldId.value,
       duplicateTargetWorldId.value.trim(),
-      duplicateTargetWorldName.value.trim()
+      duplicateTargetWorldTitle.value.trim()
     );
 
     // Close modal

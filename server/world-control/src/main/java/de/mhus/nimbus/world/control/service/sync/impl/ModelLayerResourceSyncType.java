@@ -69,10 +69,10 @@ public class ModelLayerResourceSyncType implements ResourceSyncType {
 
         for (Document layerDoc : layerDocs) {
             try {
-                String layerName = layerDoc.getString("name");
+                String layerName = layerDoc.getString("title");
                 String layerDataId = layerDoc.getString("layerDataId");
                 if (layerName == null || layerDataId == null) {
-                    log.warn("Layer without name or layerDataId, skipping");
+                    log.warn("Layer without title or layerDataId, skipping");
                     continue;
                 }
 
@@ -90,9 +90,9 @@ public class ModelLayerResourceSyncType implements ResourceSyncType {
                 List<Document> modelDocs = mongoTemplate.find(modelQuery, Document.class, MODEL_COLLECTION);
 
                 for (Document modelDoc : modelDocs) {
-                    String modelName = modelDoc.getString("name");
+                    String modelName = modelDoc.getString("title");
                     if (modelName == null) {
-                        log.warn("Model without name, skipping");
+                        log.warn("Model without title, skipping");
                         continue;
                     }
 
@@ -166,13 +166,13 @@ public class ModelLayerResourceSyncType implements ResourceSyncType {
                     // Transform document (worldId replacement + prefix mapping)
                     migratedLayerDoc = documentTransformer.transformForImport(migratedLayerDoc, definition);
 
-                    // Find existing layer by worldId + name (unique constraint)
+                    // Find existing layer by worldId + title (unique constraint)
                     String targetWorldId = migratedLayerDoc.getString("worldId");
-                    String targetName = migratedLayerDoc.getString("name");
+                    String targetName = migratedLayerDoc.getString("title");
 
                     Query findLayerQuery = new Query(
                             Criteria.where("worldId").is(targetWorldId)
-                                    .and("name").is(targetName)
+                                    .and("title").is(targetName)
                     );
                     Document existingLayer = mongoTemplate.findOne(findLayerQuery, Document.class, LAYER_COLLECTION);
 
@@ -205,7 +205,7 @@ public class ModelLayerResourceSyncType implements ResourceSyncType {
                         for (Path modelFile : modelFiles.filter(f -> f.toString().endsWith(".yaml") && !f.getFileName().toString().equals("_info.yaml")).toList()) {
                             try {
                                 Document modelDoc = yamlMapper.readValue(modelFile.toFile(), Document.class);
-                                String modelName = modelDoc.getString("name");
+                                String modelName = modelDoc.getString("title");
                                 modelNames.add(modelName);
 
                                 String modelJson = objectMapper.writeValueAsString(modelDoc);
@@ -219,15 +219,15 @@ public class ModelLayerResourceSyncType implements ResourceSyncType {
                                 // Transform document (worldId replacement + prefix mapping)
                                 migratedModelDoc = documentTransformer.transformForImport(migratedModelDoc, definition);
 
-                                // Find existing model by worldId + layerDataId + name (should be unique)
+                                // Find existing model by worldId + layerDataId + title (should be unique)
                                 String modelTargetWorldId = migratedModelDoc.getString("worldId");
                                 String modelLayerDataId = migratedModelDoc.getString("layerDataId");
-                                String modelTargetName = migratedModelDoc.getString("name");
+                                String modelTargetName = migratedModelDoc.getString("title");
 
                                 Query findModelQuery = new Query(
                                         Criteria.where("worldId").is(modelTargetWorldId)
                                                 .and("layerDataId").is(modelLayerDataId)
-                                                .and("name").is(modelTargetName)
+                                                .and("title").is(modelTargetName)
                                 );
                                 Document existingModel = mongoTemplate.findOne(findModelQuery, Document.class, MODEL_COLLECTION);
 

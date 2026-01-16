@@ -91,9 +91,9 @@ public class EBlockController extends BaseEditorController {
     private BlockOriginDto toBlockOriginDto(WLayerService.BlockOrigin origin) {
         String groupName = null;
 
-        // Find group name if block is in a group
+        // Find group title if block is in a group
         if (origin.model() != null && origin.layerBlock().getGroup() > 0) {
-            // Search for group name in model's groups map
+            // Search for group title in model's groups map
             for (Map.Entry<String, Integer> entry : origin.model().getGroups().entrySet()) {
                 if (entry.getValue().equals(origin.layerBlock().getGroup())) {
                     groupName = entry.getKey();

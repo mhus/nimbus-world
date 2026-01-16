@@ -204,7 +204,7 @@ public class WChatController extends BaseEditorController {
             return bad("playerId required - not authenticated");
         }
         if (Strings.isBlank(request.name())) {
-            return bad("name required");
+            return bad("title required");
         }
         if (Strings.isBlank(request.type())) {
             return bad("type required");
@@ -258,8 +258,8 @@ public class WChatController extends BaseEditorController {
             WChat chat = chatService.findByWorldIdAndChatId(wId, chatId)
                     .orElseThrow(() -> new IllegalArgumentException("Chat not found: " + chatId));
 
-            // For agent chats, use the chat type as agent name (or you could store agentName in chat)
-            String agentName = chat.getType(); // Assuming type contains agent name like "eliza"
+            // For agent chats, use the chat type as agent title (or you could store agentName in chat)
+            String agentName = chat.getType(); // Assuming type contains agent title like "eliza"
 
             String playerMessageId = UUID.randomUUID().toString();
 
@@ -319,7 +319,7 @@ public class WChatController extends BaseEditorController {
             WChat chat = chatService.findByWorldIdAndChatId(wId, chatId)
                     .orElseThrow(() -> new IllegalArgumentException("Chat not found: " + chatId));
 
-            // For agent chats, use the chat type as agent name
+            // For agent chats, use the chat type as agent title
             String agentName = chat.getType();
 
             // Get sessionId from request attributes (set by AccessFilter)

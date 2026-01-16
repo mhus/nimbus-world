@@ -22,7 +22,7 @@ import java.util.concurrent.CompletableFuture;
 /**
  * Abstract base class for remote chat agent providers.
  * Handles agent discovery caching and remote command execution via WorldClientService.
- * Subclasses specify the target server and provider name.
+ * Subclasses specify the target server and provider title.
  */
 @Slf4j
 public abstract class RemoteWChatAgentProvider implements WChatAgentProvider {
@@ -51,7 +51,7 @@ public abstract class RemoteWChatAgentProvider implements WChatAgentProvider {
      * Subclasses must send the command to their specific target server.
      *
      * @param worldId World ID for context
-     * @param commandName Command name
+     * @param commandName Command title
      * @param args Command arguments
      * @param context Command context
      * @return CompletableFuture with CommandResponse
@@ -126,7 +126,7 @@ public abstract class RemoteWChatAgentProvider implements WChatAgentProvider {
                 );
 
                 for (Map<String, String> agentInfo : agents) {
-                    String name = agentInfo.get("name");
+                    String name = agentInfo.get("title");
                     String title = agentInfo.get("title");
                     newCache.put(name, new RemoteWChatAgentWrapper(name, title, this));
                 }

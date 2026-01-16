@@ -112,11 +112,11 @@ public class DocumentTransformer {
     }
 
     /**
-     * Check if field should be mapped based on field name and context.
+     * Check if field should be mapped based on field title and context.
      * Excludes SAsset.path from mapping.
      *
-     * @param fieldName  Field name to check
-     * @param parentKey  Parent field name (for context)
+     * @param fieldName  Field title to check
+     * @param parentKey  Parent field title (for context)
      * @param entityType Entity type (_class field), null if not in root document
      * @return true if field should be prefix-mapped
      */
@@ -135,7 +135,7 @@ public class DocumentTransformer {
      * Special handling for textures map where keys are numeric strings.
      *
      * @param key       Map key
-     * @param parentKey Parent field name
+     * @param parentKey Parent field title
      * @return true if map entry value should be prefix-mapped
      */
     private boolean shouldMapMapEntry(String key, String parentKey) {

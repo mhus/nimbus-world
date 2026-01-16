@@ -10,19 +10,27 @@
     <div class="flex-1">
       <h1 class="text-xl font-bold px-4">{{ title }}</h1>
     </div>
-    <div class="flex-none">
+    <div class="flex-none gap-2">
+      <!-- Region Selector -->
+      <RegionSelector v-if="showRegionSelector" />
       <!-- World Selector -->
-      <WorldSelector :filter="worldFilter" />
+      <WorldSelector v-if="showWorldSelector" :filter="worldFilter" />
     </div>
   </header>
 </template>
 
 <script setup lang="ts">
 import WorldSelector from '@material/components/WorldSelector.vue';
+import RegionSelector from '@material/components/RegionSelector.vue';
 import type { WorldFilter } from '@/services/WorldService';
 
-defineProps<{
+withDefaults(defineProps<{
   title?: string;
   worldFilter?: WorldFilter;
-}>();
+  showWorldSelector?: boolean;
+  showRegionSelector?: boolean;
+}>(), {
+  showWorldSelector: true,
+  showRegionSelector: false
+});
 </script>

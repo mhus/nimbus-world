@@ -105,7 +105,7 @@ public class RCharacterController extends BaseEditorController {
         }
 
         if (Strings.isBlank(name)) {
-            return bad("name parameter is required");
+            return bad("title parameter is required");
         }
 
         return characterService.getCharacter(userId, regionId, name)
@@ -131,7 +131,7 @@ public class RCharacterController extends BaseEditorController {
         }
 
         if (Strings.isBlank(request.name())) {
-            return bad("name is required");
+            return bad("title is required");
         }
 
         try {
@@ -180,11 +180,11 @@ public class RCharacterController extends BaseEditorController {
         }
 
         if (Strings.isBlank(name)) {
-            return bad("name parameter is required");
+            return bad("title parameter is required");
         }
 
         try {
-            // Update display name
+            // Update display title
             RCharacter updated = characterService.updateDisplay(userId, regionId, name, request.display());
 
             // Update skills if provided
@@ -223,7 +223,7 @@ public class RCharacterController extends BaseEditorController {
         }
 
         if (Strings.isBlank(name)) {
-            return bad("name parameter is required");
+            return bad("title parameter is required");
         }
 
         try {
@@ -254,7 +254,7 @@ public class RCharacterController extends BaseEditorController {
         if (error2 != null) return error2;
 
         if (Strings.isBlank(userId) || Strings.isBlank(name)) {
-            return bad("userId and name parameters are required");
+            return bad("userId and title parameters are required");
         }
 
         if (request.level() == null) {
@@ -289,7 +289,7 @@ public class RCharacterController extends BaseEditorController {
         if (error2 != null) return error2;
 
         if (Strings.isBlank(userId) || Strings.isBlank(name)) {
-            return bad("userId and name parameters are required");
+            return bad("userId and title parameters are required");
         }
 
         try {

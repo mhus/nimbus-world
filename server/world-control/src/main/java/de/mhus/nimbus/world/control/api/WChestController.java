@@ -139,15 +139,15 @@ public class WChestController extends BaseEditorController {
     }
 
     /**
-     * Get chest by name
-     * GET /control/regions/{regionId}/chests/{name}
+     * Get chest by title
+     * GET /control/regions/{regionId}/chests/{title}
      */
     @GetMapping("/{name}")
     public ResponseEntity<?> get(
             @PathVariable String worldId,
             @PathVariable String name) {
 
-        var error2 = validateId(name, "name");
+        var error2 = validateId(name, "title");
         if (error2 != null) return error2;
 
         return chestService.getByWorldIdAndName(worldId, name)
@@ -165,7 +165,7 @@ public class WChestController extends BaseEditorController {
             @RequestBody ChestRequest request) {
 
         if (Strings.isBlank(request.name())) {
-            return bad("name is required");
+            return bad("title is required");
         }
 
         if (request.type() == null) {
@@ -208,7 +208,7 @@ public class WChestController extends BaseEditorController {
 
     /**
      * Update chest
-     * PUT /control/regions/{regionId}/chests/{name}
+     * PUT /control/regions/{regionId}/chests/{title}
      */
     @PutMapping("/{name}")
     public ResponseEntity<?> update(
@@ -219,7 +219,7 @@ public class WChestController extends BaseEditorController {
         var error = validateId(worldId, "regionId");
         if (error != null) return error;
 
-        var error2 = validateId(name, "name");
+        var error2 = validateId(name, "title");
         if (error2 != null) return error2;
 
         WChest existing = chestService.getByWorldIdAndName(worldId, name).orElse(null);
@@ -246,7 +246,7 @@ public class WChestController extends BaseEditorController {
 
     /**
      * Add item reference to chest
-     * POST /control/regions/{regionId}/chests/{name}/items
+     * POST /control/regions/{regionId}/chests/{title}/items
      */
     @PostMapping("/{name}/items")
     public ResponseEntity<?> addItem(
@@ -254,7 +254,7 @@ public class WChestController extends BaseEditorController {
             @PathVariable String name,
             @RequestBody ItemRefRequest request) {
 
-        var error2 = validateId(name, "name");
+        var error2 = validateId(name, "title");
         if (error2 != null) return error2;
 
         if (request.itemRef() == null) {
@@ -277,7 +277,7 @@ public class WChestController extends BaseEditorController {
 
     /**
      * Update item amount in chest
-     * PATCH /control/regions/{regionId}/chests/{name}/items/{itemId}
+     * PATCH /control/regions/{regionId}/chests/{title}/items/{itemId}
      */
     @PatchMapping("/{name}/items/{itemId}")
     public ResponseEntity<?> updateItemAmount(
@@ -286,7 +286,7 @@ public class WChestController extends BaseEditorController {
             @PathVariable String itemId,
             @RequestBody Map<String, Integer> body) {
 
-        var error2 = validateId(name, "name");
+        var error2 = validateId(name, "title");
         if (error2 != null) return error2;
 
         var error3 = validateId(itemId, "itemId");
@@ -315,7 +315,7 @@ public class WChestController extends BaseEditorController {
 
     /**
      * Remove item from chest
-     * DELETE /control/regions/{regionId}/chests/{name}/items/{itemId}
+     * DELETE /control/regions/{regionId}/chests/{title}/items/{itemId}
      */
     @DeleteMapping("/{name}/items/{itemId}")
     public ResponseEntity<?> removeItem(
@@ -323,7 +323,7 @@ public class WChestController extends BaseEditorController {
             @PathVariable String name,
             @PathVariable String itemId) {
 
-        var error2 = validateId(name, "name");
+        var error2 = validateId(name, "title");
         if (error2 != null) return error2;
 
         var error3 = validateId(itemId, "itemId");
@@ -345,14 +345,14 @@ public class WChestController extends BaseEditorController {
 
     /**
      * Delete chest
-     * DELETE /control/regions/{regionId}/chests/{name}
+     * DELETE /control/regions/{regionId}/chests/{title}
      */
     @DeleteMapping("/{name}")
     public ResponseEntity<?> delete(
             @PathVariable String worldId,
             @PathVariable String name) {
 
-        var error2 = validateId(name, "name");
+        var error2 = validateId(name, "title");
         if (error2 != null) return error2;
 
         if (chestService.getByWorldIdAndName(worldId, name).isEmpty()) {

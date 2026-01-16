@@ -31,7 +31,7 @@ import java.util.stream.Stream;
 /**
  * Import/export implementation for WAnything entities.
  * Exports MongoDB documents directly as YAML files (preserves all fields including _schema).
- * WAnything is uniquely identified by worldId + collection + name.
+ * WAnything is uniquely identified by worldId + collection + title.
  * Only exports WAnything entities that match the specified worldId.
  */
 @Service
@@ -64,17 +64,17 @@ public class AnythingResourceSyncType implements ResourceSyncType {
         Query query = new Query(Criteria.where("worldId").is(worldId.getId()));
         List<Document> documents = mongoTemplate.find(query, Document.class, COLLECTION_NAME);
 
-        // Track exported entities by collection+name
+        // Track exported entities by collection+title
         Map<String, Set<String>> dbAnythingIds = new HashMap<>();
         int exported = 0;
 
         for (Document doc : documents) {
             try {
                 String collection = doc.getString("collection");
-                String name = doc.getString("name");
+                String name = doc.getString("title");
 
                 if (collection == null || name == null) {
-                    log.warn("WAnything without collection or name, skipping");
+                    log.warn("WAnything without collection or title, skipping");
                     continue;
                 }
 
@@ -85,12 +85,12 @@ public class AnythingResourceSyncType implements ResourceSyncType {
                 Path collectionDir = anythingDir.resolve(collection);
                 Files.createDirectories(collectionDir);
 
-                // Write to file: anything/{collection}/{name}.yaml
+                // Write to file: anything/{collection}/{title}.yaml
                 Path targetFile = collectionDir.resolve(name + ".yaml");
 
                 // Write MongoDB Document directly as YAML
                 yamlMapper.writeValue(targetFile.toFile(), doc);
-                log.debug("Exported WAnything: collection={}, name={}", collection, name);
+                log.debug("Exported WAnything: collection={}, title={}", collection, name);
                 exported++;
 
             } catch (Exception e) {
@@ -141,7 +141,7 @@ public class AnythingResourceSyncType implements ResourceSyncType {
             return ResourceSyncType.ImportResult.of(0, 0);
         }
 
-        // Track filesystem entities by collection+name
+        // Track filesystem entities by collection+title
         Map<String, Set<String>> filesystemAnythingIds = new HashMap<>();
         int imported = 0;
 
@@ -155,11 +155,11 @@ public class AnythingResourceSyncType implements ResourceSyncType {
                         try {
                             // Read YAML and convert to JSON for migration
                             Document doc = yamlMapper.readValue(file.toFile(), Document.class);
-                            String name = doc.getString("name");
+                            String name = doc.getString("title");
                             String docCollection = doc.getString("collection");
 
                             if (name == null || docCollection == null) {
-                                log.warn("WAnything document missing name or collection in file: {}", file);
+                                log.warn("WAnything document missing title or collection in file: {}", file);
                                 continue;
                             }
 
@@ -179,11 +179,11 @@ public class AnythingResourceSyncType implements ResourceSyncType {
                             // Transform document (worldId replacement + prefix mapping)
                             migratedDoc = documentTransformer.transformForImport(migratedDoc, definition);
 
-                            // Find existing by unique constraint (worldId + collection + name)
+                            // Find existing by unique constraint (worldId + collection + title)
                             Query findQuery = new Query(
                                     Criteria.where("worldId").is(migratedDoc.getString("worldId"))
                                             .and("collection").is(migratedDoc.getString("collection"))
-                                            .and("name").is(migratedDoc.getString("name"))
+                                            .and("title").is(migratedDoc.getString("title"))
                             );
                             Document existing = mongoTemplate.findOne(findQuery, Document.class, COLLECTION_NAME);
 
@@ -210,7 +210,7 @@ public class AnythingResourceSyncType implements ResourceSyncType {
 
                             // Save to MongoDB
                             mongoTemplate.save(migratedDoc, COLLECTION_NAME);
-                            log.debug("Imported WAnything: collection={}, name={}", docCollection, name);
+                            log.debug("Imported WAnything: collection={}, title={}", docCollection, name);
                             imported++;
 
                         } catch (Exception e) {
@@ -230,7 +230,7 @@ public class AnythingResourceSyncType implements ResourceSyncType {
 
             for (Document doc : dbDocuments) {
                 String collection = doc.getString("collection");
-                String name = doc.getString("name");
+                String name = doc.getString("title");
 
                 if (collection == null || name == null) {
                     continue;
@@ -240,7 +240,7 @@ public class AnythingResourceSyncType implements ResourceSyncType {
                 Set<String> filesystemNames = filesystemAnythingIds.getOrDefault(collection, Set.of());
                 if (!filesystemNames.contains(name)) {
                     anythingService.deleteByWorldIdAndCollectionAndName(worldId.getId(), collection, name);
-                    log.info("Deleted WAnything not in filesystem: collection={}, name={}", collection, name);
+                    log.info("Deleted WAnything not in filesystem: collection={}, title={}", collection, name);
                     deleted++;
                 }
             }

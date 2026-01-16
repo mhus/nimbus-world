@@ -143,19 +143,19 @@ public class ELayerController extends BaseEditorController {
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Layer created"),
             @ApiResponse(responseCode = "400", description = "Invalid request"),
-            @ApiResponse(responseCode = "409", description = "Layer name already exists")
+            @ApiResponse(responseCode = "409", description = "Layer title already exists")
     })
     public ResponseEntity<?> create(
             @Parameter(description = "World identifier") @PathVariable String worldId,
             @RequestBody CreateLayerRequest request) {
 
-        log.debug("CREATE layer: worldId={}, name={}", worldId, request.name());
+        log.debug("CREATE layer: worldId={}, title={}", worldId, request.name());
 
         var wid = WorldId.of(worldId).orElseThrow(
                 () -> new IllegalStateException("Invalid worldId: " + worldId)
         );
         if (Strings.isBlank(request.name())) {
-            return bad("name required");
+            return bad("title required");
         }
 
         if (request.layerType() == null) {
@@ -165,9 +165,9 @@ public class ELayerController extends BaseEditorController {
         // IMPORTANT: Filter out instances - layers are per world/zone only
         String lookupWorldId = wid.withoutInstance().getId();
 
-        // Check if Layer with same name already exists
+        // Check if Layer with same title already exists
         if (layerService.findByWorldIdAndName(lookupWorldId, request.name()).isPresent()) {
-            return conflict("layer name already exists");
+            return conflict("layer title already exists");
         }
 
         try {
@@ -194,7 +194,7 @@ public class ELayerController extends BaseEditorController {
                 layer = layerService.save(layer);
             }
 
-            log.info("Created layer: id={}, name={}, type={}, layerDataId={}",
+            log.info("Created layer: id={}, title={}, type={}, layerDataId={}",
                     layer.getId(), layer.getName(), layer.getLayerType(), layer.getLayerDataId());
             return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("id", layer.getId()));
         } catch (IllegalArgumentException e) {
@@ -283,7 +283,7 @@ public class ELayerController extends BaseEditorController {
         layer.touchUpdate();
         WLayer updated = layerService.save(layer);
 
-        log.info("Updated layer: id={}, name={}", id, updated.getName());
+        log.info("Updated layer: id={}, title={}", id, updated.getName());
         return ResponseEntity.ok(toDto(updated));
     }
 
@@ -427,7 +427,7 @@ public class ELayerController extends BaseEditorController {
 
         layerService.delete(id);
 
-        log.info("Deleted layer: id={}, name={}", id, layer.getName());
+        log.info("Deleted layer: id={}, title={}", id, layer.getName());
         return ResponseEntity.noContent().build();
     }
 

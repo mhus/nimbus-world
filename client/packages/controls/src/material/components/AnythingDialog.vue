@@ -130,8 +130,8 @@
                   </label>
                 </div>
 
-                <!-- Scope Info (Edit Mode) -->
-                <div v-if="isEditMode" class="p-4 bg-base-200 rounded">
+                <!-- Scope Info (Always visible) -->
+                <div class="p-4 bg-base-200 rounded">
                   <div class="text-sm font-semibold mb-2">Scope</div>
                   <div class="grid grid-cols-2 gap-2 text-sm">
                     <div>
@@ -140,7 +140,8 @@
                     </div>
                     <div>
                       <span class="text-base-content/60">Region:</span>
-                      <span class="ml-2 font-medium">{{ regionId || '-' }}</span>
+                      <span v-if="regionId" class="ml-2 font-medium">{{ regionId }}</span>
+                      <span v-else class="ml-2 text-warning">Not set</span>
                     </div>
                     <div>
                       <span class="text-base-content/60">World:</span>

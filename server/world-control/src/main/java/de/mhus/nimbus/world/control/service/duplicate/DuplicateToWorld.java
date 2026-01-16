@@ -11,10 +11,10 @@ package de.mhus.nimbus.world.control.service.duplicate;
 public interface DuplicateToWorld {
 
     /**
-     * Returns the name of this duplication service.
+     * Returns the title of this duplication service.
      * Used for logging and identification purposes.
      *
-     * @return The service name (e.g., "assets", "blockTypes", "layers")
+     * @return The service title (e.g., "assets", "blockTypes", "layers")
      */
     String name();
 

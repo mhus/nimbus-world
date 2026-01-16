@@ -50,7 +50,7 @@ class RegionWorldControllerTest {
     void createMainWorldOk() throws Exception {
         String body = "{\"worldId\":\"region:terra\",\"info\":{\"name\":\"Terra\"}}";
         WorldInfo info = new WorldInfo();
-        info.setName("Terra");
+        info.setTitle("Terra");
         WWorld created = WWorld.builder()
             .worldId("region:terra")
             .publicData(info)

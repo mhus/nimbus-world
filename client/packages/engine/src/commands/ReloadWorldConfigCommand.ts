@@ -41,7 +41,7 @@ export class ReloadWorldConfigCommand extends CommandHandler {
 
       logger.debug('WorldInfo reloaded successfully', {
         worldId: worldInfo.worldId,
-        worldName: worldInfo.name,
+        worldTitle: worldInfo.title,
         status: worldInfo.status,
         seasonStatus: worldInfo.seasonStatus,
         seasonProgress: worldInfo.seasonProgress,

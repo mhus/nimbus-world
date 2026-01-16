@@ -78,7 +78,7 @@ public class SharedKeyController {
         e.setAlgorithm(req.getAlgorithm());
         e.setKeyId(req.getName());
         e.setKey(req.getKey());
-        // owner & intent explizit oder aus name parsen
+        // owner & intent explizit oder aus title parsen
         if (req.getOwner() != null && !req.getOwner().isBlank()) e.setOwner(req.getOwner().trim());
         if (req.getIntent() != null && !req.getIntent().isBlank()) e.setIntent(req.getIntent().trim());
         if ((e.getOwner() == null || e.getIntent() == null) && req.getName() != null) {
@@ -86,7 +86,7 @@ public class SharedKeyController {
             if (parts.length == 3) {
                 if (e.getOwner() == null) e.setOwner(parts[0]);
                 if (e.getIntent() == null) e.setIntent(parts[1]);
-                // keyId bleibt voller name; alternativ parts[2] als keyId setzen? Nur ändern falls gewünscht
+                // keyId bleibt voller title; alternativ parts[2] als keyId setzen? Nur ändern falls gewünscht
             }
         }
         SKey saved = repository.save(e);

@@ -193,14 +193,14 @@ public class WWorldInstanceService {
      * - Saves everything in one transaction
      *
      * @param worldId The base worldId this instance is based on
-     * @param worldName The world name (for title generation)
+     * @param worldTitle The world name (for title generation)
      * @param playerId The playerId of the player
      * @param playerDisplayName The display name of the player (for title)
      * @return The created and active instance
      * @throws IllegalArgumentException if world does not exist
      */
     @Transactional
-    public WWorldInstance createInstanceForPlayer(String worldId, String worldName,
+    public WWorldInstance createInstanceForPlayer(String worldId, String worldTitle,
                                                     String playerId, String playerDisplayName) {
         if (worldId == null || worldId.isBlank()) {
             throw new IllegalArgumentException("worldId cannot be null or blank");
@@ -220,7 +220,7 @@ public class WWorldInstanceService {
         String instanceId = baseWorldId.withInstance(uuid).getId();
 
         // Create instance
-        String title = (worldName != null ? worldName : baseWorldId) + " - " +
+        String title = (worldTitle != null ? worldTitle : baseWorldId) + " - " +
                        (playerDisplayName != null ? playerDisplayName : playerId);
         String description = "Auto-created instance for player " + playerId;
 

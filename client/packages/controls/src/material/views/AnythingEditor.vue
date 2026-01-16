@@ -16,7 +16,7 @@
           >
             <option value="">No World Filter</option>
             <option v-for="world in worlds" :key="world.worldId" :value="world.worldId">
-              {{ world.publicData?.name || world.worldId }}
+              {{ world.publicData?.title || world.worldId }}
             </option>
           </select>
         </div>
@@ -354,6 +354,8 @@ const closeCollectionSearchDialog = () => {
  */
 const handleCollectionSelect = (selectedCollection: string) => {
   collection.value = selectedCollection;
+  closeCollectionSearchDialog();
+  handleSearch();
 };
 
 /**

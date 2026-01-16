@@ -5,7 +5,7 @@
 
 export interface WorldInfoDto {
   worldId: string;
-  name: string;
+  title: string;
   description: string;
   regionId: string;
   enabled: boolean;

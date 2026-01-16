@@ -703,7 +703,7 @@ public class ELayerModelController extends BaseEditorController {
             @Parameter(description = "Source layer identifier") @PathVariable String layerId,
             @Parameter(description = "Source model identifier") @PathVariable String id,
             @Parameter(description = "Target layer identifier") @RequestParam String targetLayerId,
-            @Parameter(description = "New name (optional)") @RequestParam(required = false) String newName) {
+            @Parameter(description = "New title (optional)") @RequestParam(required = false) String newName) {
 
         log.debug("COPY layer model: sourceWorldId={}, sourceLayerId={}, sourceId={}, targetLayerId={}, newName={}",
                 worldId, layerId, id, targetLayerId, newName);

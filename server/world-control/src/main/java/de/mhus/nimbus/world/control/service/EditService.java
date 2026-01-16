@@ -581,7 +581,7 @@ public class EditService {
             statistics.add(stat);
         }
 
-        // Sort by layer name
+        // Sort by layer title
         statistics.sort((a, b) -> {
             String nameA = (String) a.get("layerName");
             String nameB = (String) b.get("layerName");
@@ -1025,7 +1025,7 @@ public class EditService {
         if (layer.getLayerType() == de.mhus.nimbus.world.shared.layer.LayerType.MODEL) {
             String selectedModelId = editState.getSelectedModelId();
             if (selectedModelId != null) {
-                // Load model to get name
+                // Load model to get title
                 Optional<de.mhus.nimbus.world.shared.layer.WLayerModel> modelOpt =
                     layerService.loadModelById(selectedModelId);
                 if (modelOpt.isPresent()) {
@@ -1100,7 +1100,7 @@ public class EditService {
         }
 
         // Build ModelSelector
-        // Source format: "layerDataId:layerName" - used as auto select name
+        // Source format: "layerDataId:layerName" - used as auto select title
         String source = layer.getLayerDataId() + ":" + layer.getName();
         ModelSelector modelSelector = ModelSelector.builder()
                 .defaultColor("#dddd00") // for modified blocks

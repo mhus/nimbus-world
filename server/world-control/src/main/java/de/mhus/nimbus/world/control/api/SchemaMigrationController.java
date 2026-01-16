@@ -119,7 +119,7 @@ public class SchemaMigrationController {
             // Validate request
             if (request.collectionName == null || request.collectionName.isBlank()) {
                 return ResponseEntity.badRequest().body(new MigrationResponse(
-                        false, "Collection name is required", 0, 0, 0, 0));
+                        false, "Collection title is required", 0, 0, 0, 0));
             }
 
             if (request.entityType == null || request.entityType.isBlank()) {
@@ -151,7 +151,7 @@ public class SchemaMigrationController {
     /**
      * Get migration statistics for a collection.
      *
-     * @param collectionName the collection name
+     * @param collectionName the collection title
      * @return statistics about schema versions in the collection
      */
     @GetMapping("/stats/{collectionName}")

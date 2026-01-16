@@ -26,7 +26,7 @@ import java.util.Optional;
  * - "validate": Validate Git configuration and connectivity
  *
  * Parameters:
- * - name (required): Name of the ExternalResource in WAnything collection 'externalResource'
+ * - title (required): Name of the ExternalResource in WAnything collection 'externalResource'
  * - force (optional): "true" or "false" (default: "false") - force sync even if timestamps unchanged
  * - remove (optional): "true" or "false" (default: "false") - remove overtaken entities/files
  * - worldId: Provided by job.getWorldId()
@@ -72,7 +72,7 @@ public class ExternalResourceSyncJobExecutor implements JobExecutor {
             Map<String, String> params = job.getParameters();
             String name = params.get("name");
             if (name == null || name.isBlank()) {
-                throw new JobExecutionException("Missing required parameter: name");
+                throw new JobExecutionException("Missing required parameter: title");
             }
 
             boolean force = parseBooleanParameter(params, "force", false);
@@ -80,7 +80,7 @@ public class ExternalResourceSyncJobExecutor implements JobExecutor {
 
             String jobWorldIdStr = job.getWorldId();
 
-            log.info("Starting export job: jobWorldId={} name={} force={} remove={}", jobWorldIdStr, name, force, remove);
+            log.info("Starting export job: jobWorldId={} title={} force={} remove={}", jobWorldIdStr, name, force, remove);
 
             // Load ExternalResource (use job worldId to find it)
             ExternalResourceDTO dto = loadExternalResource(jobWorldIdStr, name);
@@ -109,14 +109,14 @@ public class ExternalResourceSyncJobExecutor implements JobExecutor {
             // Return result
             if (result.success()) {
                 String resultMessage = String.format(
-                        "Export completed successfully: worldId=%s (from DTO) name=%s exported=%d deleted=%d types=%s",
+                        "Export completed successfully: worldId=%s (from DTO) title=%s exported=%d deleted=%d types=%s",
                         worldId, name, result.entityCount(), result.deletedCount(), result.exportedByType()
                 );
                 log.info(resultMessage);
                 return JobResult.ofSuccess(resultMessage);
             } else {
                 String errorMessage = String.format(
-                        "Export failed: worldId=%s name=%s error=%s",
+                        "Export failed: worldId=%s title=%s error=%s",
                         worldId, name, result.errorMessage()
                 );
                 log.error(errorMessage);
@@ -140,7 +140,7 @@ public class ExternalResourceSyncJobExecutor implements JobExecutor {
             Map<String, String> params = job.getParameters();
             String name = params.get("name");
             if (name == null || name.isBlank()) {
-                throw new JobExecutionException("Missing required parameter: name");
+                throw new JobExecutionException("Missing required parameter: title");
             }
 
             boolean force = parseBooleanParameter(params, "force", false);
@@ -148,7 +148,7 @@ public class ExternalResourceSyncJobExecutor implements JobExecutor {
 
             String jobWorldIdStr = job.getWorldId();
 
-            log.info("Starting import job: jobWorldId={} name={} force={} remove={}",
+            log.info("Starting import job: jobWorldId={} title={} force={} remove={}",
                     jobWorldIdStr, name, force, remove);
 
             // Load ExternalResource (use job worldId to find it)
@@ -178,14 +178,14 @@ public class ExternalResourceSyncJobExecutor implements JobExecutor {
             // Return result
             if (result.success()) {
                 String resultMessage = String.format(
-                        "Import completed successfully: worldId=%s name=%s imported=%d deleted=%d types=%s",
+                        "Import completed successfully: worldId=%s title=%s imported=%d deleted=%d types=%s",
                         worldId, name, result.imported(), result.deleted(), result.importedByType()
                 );
                 log.info(resultMessage);
                 return JobResult.ofSuccess(resultMessage);
             } else {
                 String errorMessage = String.format(
-                        "Import failed: worldId=%s name=%s error=%s",
+                        "Import failed: worldId=%s title=%s error=%s",
                         worldId, name, result.errorMessage()
                 );
                 log.error(errorMessage);
@@ -209,7 +209,7 @@ public class ExternalResourceSyncJobExecutor implements JobExecutor {
             Map<String, String> params = job.getParameters();
             String name = params.get("name");
             if (name == null || name.isBlank()) {
-                throw new JobExecutionException("Missing required parameter: name");
+                throw new JobExecutionException("Missing required parameter: title");
             }
 
             String worldIdStr = job.getWorldId();
@@ -217,7 +217,7 @@ public class ExternalResourceSyncJobExecutor implements JobExecutor {
                 throw new JobExecutionException("Missing worldId on job");
             }
 
-            log.info("Starting validate job: worldId={} name={}", worldIdStr, name);
+            log.info("Starting validate job: worldId={} title={}", worldIdStr, name);
 
             // Load ExternalResource
             ExternalResourceDTO dto = loadExternalResource(worldIdStr, name);
@@ -274,7 +274,7 @@ public class ExternalResourceSyncJobExecutor implements JobExecutor {
      * Load ExternalResource from WAnything.
      */
     private ExternalResourceDTO loadExternalResource(String worldIdStr, String name) throws JobExecutionException {
-        log.debug("Searching for ExternalResource: worldId={} collection={} name={}",
+        log.debug("Searching for ExternalResource: worldId={} collection={} title={}",
                 worldIdStr, COLLECTION_NAME, name);
 
         Optional<WAnything> entityOpt = anythingService.findByWorldIdAndCollectionAndName(
@@ -284,12 +284,12 @@ public class ExternalResourceSyncJobExecutor implements JobExecutor {
         );
 
         if (entityOpt.isEmpty()) {
-            log.error("ExternalResource not found: worldId={} collection={} name={}",
+            log.error("ExternalResource not found: worldId={} collection={} title={}",
                     worldIdStr, COLLECTION_NAME, name);
             throw new JobExecutionException("ExternalResource not found: " + name + " for worldId: " + worldIdStr);
         }
 
-        log.info("Found ExternalResource: worldId={} name={}", worldIdStr, name);
+        log.info("Found ExternalResource: worldId={} title={}", worldIdStr, name);
 
         WAnything entity = entityOpt.get();
 

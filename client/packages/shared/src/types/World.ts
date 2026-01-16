@@ -26,7 +26,7 @@ export interface WorldInfo {
   worldId: string;
 
   /** World display name (required) */
-  name: string;
+  title: string;
 
   /** World description */
   description?: string;

@@ -52,7 +52,7 @@ export class PlayerPositionInfoCommand extends CommandHandler {
     if (worldInfo) {
       lines.push('World Info:');
       lines.push(`  World ID     : ${worldInfo.worldId}`);
-      lines.push(`  Name         : ${worldInfo.name}`);
+      lines.push(`  Title        : ${worldInfo.title}`);
       if (worldInfo.description) {
         lines.push(`  Description  : ${worldInfo.description}`);
       }

@@ -756,7 +756,7 @@ public class McpController extends BaseEditorController {
         dto.put("regionId", world.getRegionId());
         dto.put("enabled", world.isEnabled());
         if (world.getPublicData() != null) {
-            dto.put("name", world.getPublicData().getName());
+            dto.put("name", world.getPublicData().getTitle());
             dto.put("description", world.getPublicData().getDescription());
         }
         dto.put("createdAt", world.getCreatedAt());

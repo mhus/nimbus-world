@@ -93,7 +93,7 @@ public class ResourceRepairService {
     }
 
     /**
-     * Find repair type implementation by name.
+     * Find repair type implementation by title.
      */
     private ResourceRepairType findRepairType(String name) {
         return repairTypes.stream()

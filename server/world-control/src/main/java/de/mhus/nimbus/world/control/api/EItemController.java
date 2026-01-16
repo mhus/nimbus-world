@@ -156,7 +156,7 @@ public class EItemController extends BaseEditorController {
                 () -> new IllegalArgumentException("invalid worldId")
         );
         if (Strings.isBlank(request.name())) {
-            return bad("name is required");
+            return bad("title is required");
         }
 
         if (Strings.isBlank(request.itemType())) {

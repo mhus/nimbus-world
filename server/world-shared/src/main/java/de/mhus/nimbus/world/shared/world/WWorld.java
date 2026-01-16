@@ -38,8 +38,6 @@ public class WWorld implements Identifiable {
     @Indexed
     private String regionId; // Zugehörige Region ID
 
-    private String name;
-
     private String description;
 
     /**
@@ -116,11 +114,13 @@ public class WWorld implements Identifiable {
     public void touchForCreate() {
         Instant now = Instant.now();
         createdAt = now;
-        updatedAt = now;
+        touchForUpdate();
     }
 
     public void touchForUpdate() {
         updatedAt = Instant.now();
+        if (publicData != null)
+            publicData.setWorldId(getWorldId());
     }
 
     public int getChunkX(double worldX) {

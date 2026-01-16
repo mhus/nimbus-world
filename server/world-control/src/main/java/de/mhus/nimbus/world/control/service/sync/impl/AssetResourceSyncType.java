@@ -225,8 +225,11 @@ public class AssetResourceSyncType implements ResourceSyncType {
                         if (existingStorageId != null) {
                             migratedDoc.put("storageId", existingStorageId);
                         }
+                    } else {
+                        // New asset - remove storageId so updateContent creates a new storage
+                        migratedDoc.remove("storageId");
                     }
-                    // else: _id is removed, MongoDB will generate a new ObjectId
+                    // _id is removed, MongoDB will generate a new ObjectId for new assets
 
                     // Save metadata
                     mongoTemplate.save(migratedDoc, COLLECTION_NAME);

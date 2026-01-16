@@ -17,7 +17,7 @@ import lombok.NoArgsConstructor;
 public class WorldInfoDto {
 
     private String worldId;
-    private String name;
+    private String title;
     private String description;
     private String regionId;
     private boolean enabled;

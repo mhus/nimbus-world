@@ -36,7 +36,7 @@ public class WWorldController extends BaseEditorController {
     // DTOs
     public record WorldRequest(
             String worldId,
-            String name,
+            String title,
             String description,
             WorldInfo publicData,
             Boolean enabled,
@@ -56,7 +56,7 @@ public class WWorldController extends BaseEditorController {
             String id,
             String worldId,
             String regionId,
-            String name,
+            String title,
             String description,
             WorldInfo publicData,
             Instant createdAt,
@@ -79,7 +79,7 @@ public class WWorldController extends BaseEditorController {
             String id,
             String worldId,
             String regionId,
-            String name,
+            String title,
             String description,
             WorldInfo publicData,
             Instant createdAt,
@@ -100,17 +100,17 @@ public class WWorldController extends BaseEditorController {
     ) {}
 
     private WorldResponse toResponse(WWorld world) {
-        // Build display name: "worldId Title" (title is optional)
-        String displayName = world.getWorldId();
-        if (world.getName() != null && !world.getName().isBlank()) {
-            displayName = world.getWorldId() + " " + world.getName();
+        // Get title from publicData if available
+        String title = null;
+        if (world.getPublicData() != null && world.getPublicData().getTitle() != null) {
+            title = world.getPublicData().getTitle();
         }
 
         return new WorldResponse(
                 world.getId(),
                 world.getWorldId(),
                 world.getRegionId(),
-                displayName,
+                title,
                 world.getDescription(),
                 world.getPublicData(),
                 world.getCreatedAt(),
@@ -133,16 +133,12 @@ public class WWorldController extends BaseEditorController {
     private WorldResponse toResponseFromWorldId(WorldId worldId) {
         // Try to get title from WorldCollectionDto
         String title = worldService.getWorldCollectionTitle(worldId);
-        String displayName = worldId.getId();
-        if (title != null && !title.isBlank()) {
-            displayName = worldId.getId() + " " + title;
-        }
 
         return new WorldResponse(
                 null,  // no database id for collections
                 worldId.getId(),
                 worldId.getRegionId(),
-                displayName,
+                title,
                 "World Collection: " + worldId.getId(),  // generated description
                 null,  // no publicData for collections
                 null,  // no createdAt
@@ -326,12 +322,15 @@ public class WWorldController extends BaseEditorController {
             return bad("worldId is required");
         }
 
-        if (Strings.isBlank(request.name())) {
-            return bad("name is required");
+        if (Strings.isBlank(request.title())) {
+            return bad("title is required");
         }
 
         try {
             WorldInfo info = request.publicData() != null ? request.publicData() : new WorldInfo();
+            // Set title in publicData
+            info.setTitle(request.title());
+
             WorldId worldIdObj = WorldId.of(request.worldId()).orElseThrow(() ->
                 new IllegalArgumentException("Invalid worldId: " + request.worldId()));
 
@@ -345,7 +344,6 @@ public class WWorldController extends BaseEditorController {
             // Set additional fields via update
             worldService.updateWorld(worldIdObj, w -> {
                 w.setRegionId(regionId);
-                w.setName(request.name());
                 w.setDescription(request.description());
                 if (request.groundLevel() != null) w.setGroundLevel(request.groundLevel());
                 if (request.waterLevel() != null) w.setWaterLevel(request.waterLevel());
@@ -372,7 +370,7 @@ public class WWorldController extends BaseEditorController {
                     worldResponse.id(),
                     worldResponse.worldId(),
                     worldResponse.regionId(),
-                    worldResponse.name(),
+                    worldResponse.title(),
                     worldResponse.description(),
                     worldResponse.publicData(),
                     worldResponse.createdAt(),
@@ -425,7 +423,16 @@ public class WWorldController extends BaseEditorController {
         }
 
         try {
-            if (request.name() != null) existing.setName(request.name());
+            // Update title in publicData if provided
+            if (request.title() != null) {
+                WorldInfo publicData = existing.getPublicData();
+                if (publicData == null) {
+                    publicData = new WorldInfo();
+                    existing.setPublicData(publicData);
+                }
+                publicData.setTitle(request.title());
+            }
+
             if (request.description() != null) existing.setDescription(request.description());
             if (request.publicData() != null) existing.setPublicData(request.publicData());
             if (request.enabled() != null) existing.setEnabled(request.enabled());
@@ -450,6 +457,8 @@ public class WWorldController extends BaseEditorController {
     /**
      * Delete world
      * DELETE /control/regions/{regionId}/worlds/{worldId}
+     *
+     * Response: { "jobId": "..." }
      */
     @DeleteMapping("/{worldId}")
     public ResponseEntity<?> delete(
@@ -475,9 +484,27 @@ public class WWorldController extends BaseEditorController {
             WorldId worldIdObj = WorldId.of(worldId).orElseThrow(() ->
                 new IllegalArgumentException("Invalid worldId: " + worldId));
 
+            // Delete the WWorld entity first
             worldService.deleteWorld(worldIdObj);
-            return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+
+            // Create job to delete all associated resources
+            Map<String, String> jobParameters = Map.of("worldId", worldId);
+
+            de.mhus.nimbus.world.shared.job.WJob job = jobService.createJob(
+                    worldId,
+                    "delete-world-resources",
+                    "cleanup",
+                    jobParameters,
+                    5,  // priority
+                    0   // no retries
+            );
+
+            // Return job info
+            Map<String, String> response = Map.of("jobId", job.getId());
+
+            return ResponseEntity.ok(response);
         } catch (Exception e) {
+            log.error("Failed to delete world", e);
             return bad(e.getMessage());
         }
     }
@@ -533,8 +560,8 @@ public class WWorldController extends BaseEditorController {
      * Duplicate world with all its data
      * POST /control/regions/{regionId}/worlds/{worldId}/duplicate
      *
-     * Request body: { "targetWorldId": "new-world", "targetWorldName": "New World" }
-     * Response: { "jobId": "...", "targetWorldId": "...", "targetWorldName": "..." }
+     * Request body: { "targetWorldId": "new-world", "targetWorldTitle": "New World" }
+     * Response: { "jobId": "...", "targetWorldId": "...", "targetWorldTitle": "..." }
      */
     @PostMapping("/{worldId}/duplicate")
     public ResponseEntity<?> duplicate(
@@ -553,9 +580,9 @@ public class WWorldController extends BaseEditorController {
             return bad("targetWorldId is required");
         }
 
-        String targetWorldName = request.get("targetWorldName");
-        if (targetWorldName == null || targetWorldName.isBlank()) {
-            return bad("targetWorldName is required");
+        String targetWorldTitle = request.get("targetWorldTitle");
+        if (targetWorldTitle == null || targetWorldTitle.isBlank()) {
+            return bad("targetWorldTitle is required");
         }
 
         // Validate source world exists
@@ -593,7 +620,13 @@ public class WWorldController extends BaseEditorController {
             // Set additional fields
             worldService.updateWorld(targetWorldIdObj, w -> {
                 w.setRegionId(regionId);
-                w.setName(targetWorldName);
+                // Set title in publicData
+                WorldInfo publicData = w.getPublicData();
+                if (publicData == null) {
+                    publicData = new WorldInfo();
+                    w.setPublicData(publicData);
+                }
+                publicData.setTitle(targetWorldTitle);
                 w.setDescription(source.getDescription());
                 w.setGroundLevel(source.getGroundLevel());
                 w.setWaterLevel(source.getWaterLevel());
@@ -626,7 +659,7 @@ public class WWorldController extends BaseEditorController {
             Map<String, String> response = Map.of(
                     "jobId", job.getId(),
                     "targetWorldId", targetWorldId,
-                    "targetWorldName", targetWorldName
+                    "targetWorldTitle", targetWorldTitle
             );
 
             return ResponseEntity.ok(response);

@@ -131,7 +131,7 @@ public class PlayerTeleportController {
 
                 WWorldInstance instance = worldInstanceService.createInstanceForPlayer(
                         target.worldId,
-                        targetWorld.getName(),
+                        targetWorld.getPublicData() == null ? "" : targetWorld.getPublicData().getTitle(),
                         playerId.getId(),
                         character.getDisplay()
                 );

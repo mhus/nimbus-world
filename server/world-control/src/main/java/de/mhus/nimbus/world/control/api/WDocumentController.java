@@ -126,7 +126,7 @@ public class WDocumentController extends BaseEditorController {
     })
     public ResponseEntity<?> get(
             @Parameter(description = "World identifier") @PathVariable String worldId,
-            @Parameter(description = "Collection name") @PathVariable String collection,
+            @Parameter(description = "Collection title") @PathVariable String collection,
             @Parameter(description = "Document identifier") @PathVariable String documentId) {
 
         log.debug("GET document: worldId={}, collection={}, documentId={}", worldId, collection, documentId);
@@ -161,7 +161,7 @@ public class WDocumentController extends BaseEditorController {
     })
     public ResponseEntity<?> list(
             @Parameter(description = "World identifier") @PathVariable String worldId,
-            @Parameter(description = "Collection name") @RequestParam(required = false) String collection,
+            @Parameter(description = "Collection title") @RequestParam(required = false) String collection,
             @Parameter(description = "Document type") @RequestParam(required = false) String type,
             @Parameter(description = "Pagination offset") @RequestParam(defaultValue = "0") int offset,
             @Parameter(description = "Pagination limit") @RequestParam(defaultValue = "50") int limit) {
@@ -229,7 +229,7 @@ public class WDocumentController extends BaseEditorController {
     })
     public ResponseEntity<?> lookup(
             @Parameter(description = "World identifier") @PathVariable String worldId,
-            @Parameter(description = "Collection name") @PathVariable String collection) {
+            @Parameter(description = "Collection title") @PathVariable String collection) {
 
         log.debug("LOOKUP documents metadata: worldId={}, collection={}", worldId, collection);
 
@@ -322,7 +322,7 @@ public class WDocumentController extends BaseEditorController {
     })
     public ResponseEntity<?> update(
             @Parameter(description = "World identifier") @PathVariable String worldId,
-            @Parameter(description = "Collection name") @PathVariable String collection,
+            @Parameter(description = "Collection title") @PathVariable String collection,
             @Parameter(description = "Document identifier") @PathVariable String documentId,
             @RequestBody UpdateDocumentRequest request) {
 
@@ -373,7 +373,7 @@ public class WDocumentController extends BaseEditorController {
     })
     public ResponseEntity<?> delete(
             @Parameter(description = "World identifier") @PathVariable String worldId,
-            @Parameter(description = "Collection name") @PathVariable String collection,
+            @Parameter(description = "Collection title") @PathVariable String collection,
             @Parameter(description = "Document identifier") @PathVariable String documentId) {
 
         log.debug("DELETE document: worldId={}, collection={}, documentId={}", worldId, collection, documentId);

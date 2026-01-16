@@ -43,7 +43,7 @@ export class InfoCommand extends CommandHandler {
       'Development Mode': clientService?.isDevMode() ? 'Yes' : 'No',
       'Server Connected': networkService?.isConnected() ? 'Yes' : 'No',
       'Server Info': this.appContext.serverInfo?.name || 'Not available',
-      'World': this.appContext.worldInfo?.name || 'Not loaded',
+      'World': this.appContext.worldInfo?.title || 'Not loaded',
     };
 
     // Format output

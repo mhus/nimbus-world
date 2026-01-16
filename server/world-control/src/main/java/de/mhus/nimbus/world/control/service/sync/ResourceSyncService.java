@@ -201,7 +201,7 @@ public class ResourceSyncService {
     }
 
     /**
-     * Find sync type implementation by name.
+     * Find sync type implementation by title.
      */
     private ResourceSyncType findSyncType(String name) {
         return syncTypes.stream()

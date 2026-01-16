@@ -93,7 +93,7 @@ public class AccessService {
     private WorldInfoDto mapToWorldInfoDto(WWorld world) {
         return WorldInfoDto.builder()
                 .worldId(world.getWorldId())
-                .name(world.getName())
+                .title(world.getPublicData() == null ? "" : world.getPublicData().getTitle())
                 .description(world.getDescription())
                 .regionId(world.getRegionId())
                 .enabled(world.isEnabled())
@@ -274,7 +274,7 @@ public class AccessService {
             // do this in the service layer
             WWorldInstance instance = worldInstanceService.createInstanceForPlayer(
                     worldId.getId(),
-                    world.getName(),
+                    world.getPublicData().getTitle(),
                     playerId.getId(),
                     character.getDisplay()
             );

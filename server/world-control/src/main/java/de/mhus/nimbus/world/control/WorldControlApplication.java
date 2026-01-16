@@ -13,6 +13,8 @@ import org.springframework.data.mongodb.config.EnableMongoAuditing;
 import org.springframework.data.mongodb.repository.config.EnableMongoRepositories;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
+import java.io.File;
+
 @EnableMongoAuditing
 @ReflectiveScan(basePackages = {"de.mhus.nimbus.world.control","de.mhus.nimbus.world.editor","de.mhus.nimbus.world.shared","de.mhus.nimbus.shared"})
 @EnableMongoRepositories(basePackages = {"de.mhus.nimbus.world.control","de.mhus.nimbus.world.editor","de.mhus.nimbus.world.shared","de.mhus.nimbus.shared"})
@@ -23,6 +25,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @ComponentScan(basePackages = {"de.mhus.nimbus.world.control","de.mhus.nimbus.world.shared","de.mhus.nimbus.shared"})
 public class WorldControlApplication {
     public static void main(String[] args) {
+        System.out.println("CWD: " + new File(".").getAbsolutePath());
         SpringApplication.run(WorldControlApplication.class, args);
     }
 }

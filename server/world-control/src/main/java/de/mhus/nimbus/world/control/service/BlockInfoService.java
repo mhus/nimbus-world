@@ -101,11 +101,11 @@ public class BlockInfoService {
                     log.debug("Loaded block from layer: layer={} pos=({},{},{})", layerName, x, y, z);
                     readOnly = false;
 
-                    // Get group name from WLayerModel (groups are now in model, not layer)
+                    // Get group title from WLayerModel (groups are now in model, not layer)
                     if (layerOpt.isPresent() && group != null && group > 0) {
                         WLayer layer = layerOpt.get();
                         // For MODEL layers, would need to load WLayerModel to get groups
-                        // For now, skip group name resolution (groups moved to WLayerModel)
+                        // For now, skip group title resolution (groups moved to WLayerModel)
                         // TODO: Load WLayerModel if needed for group resolution
                     }
                 }

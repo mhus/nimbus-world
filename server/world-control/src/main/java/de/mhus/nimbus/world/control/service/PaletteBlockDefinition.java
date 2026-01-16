@@ -22,7 +22,7 @@ public class PaletteBlockDefinition {
     private Block block;
 
     /**
-     * Display name for the palette entry.
+     * Display title for the palette entry.
      */
     private String name;
 

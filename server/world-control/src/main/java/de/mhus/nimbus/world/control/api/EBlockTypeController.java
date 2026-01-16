@@ -165,7 +165,7 @@ public class EBlockTypeController extends BaseEditorController {
     })
     public ResponseEntity<?> getByGroup(
             @Parameter(description = "World identifier") @PathVariable String worldId,
-            @Parameter(description = "BlockType group name") @PathVariable String groupName) {
+            @Parameter(description = "BlockType group title") @PathVariable String groupName) {
 
         log.debug("GET blocktypes by group: worldId={}, groupName={}", worldId, groupName);
 
@@ -176,7 +176,7 @@ public class EBlockTypeController extends BaseEditorController {
             return bad("groupName required");
         }
 
-        // Validate group name format (lowercase alphanumeric, dash, underscore)
+        // Validate group title format (lowercase alphanumeric, dash, underscore)
         if (!groupName.matches("^[a-z0-9_-]+$")) {
             return bad("groupName must be lowercase alphanumeric with dash or underscore");
         }

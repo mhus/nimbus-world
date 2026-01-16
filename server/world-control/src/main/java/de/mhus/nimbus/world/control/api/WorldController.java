@@ -38,7 +38,7 @@ public class WorldController extends BaseEditorController {
     // DTOs
     public record WorldListDto(
             String worldId,
-            String name,
+            String title,
             String description,
             Integer chunkSize,
             String status
@@ -47,7 +47,7 @@ public class WorldController extends BaseEditorController {
 
     public record WorldDetailDto(
             String worldId,
-            String name,
+            String title,
             String description,
             Integer chunkSize,
             String status,
@@ -221,10 +221,10 @@ public class WorldController extends BaseEditorController {
     // Helper methods
 
     private WorldListDto toListDto(WWorld world) {
-        // Build display name: "worldId Title" (title is optional)
+        // Build display title: "worldId Title" (title is optional)
         String displayName = world.getWorldId();
-        if (world.getPublicData() != null && world.getPublicData().getName() != null) {
-            displayName = world.getWorldId() + " " + world.getPublicData().getName();
+        if (world.getPublicData() != null && world.getPublicData().getTitle() != null) {
+            displayName = world.getWorldId() + " " + world.getPublicData().getTitle();
         }
 
         return new WorldListDto(
@@ -239,7 +239,7 @@ public class WorldController extends BaseEditorController {
     private WorldDetailDto toDetailDto(WWorld world) {
         return new WorldDetailDto(
                 world.getWorldId(),
-                world.getPublicData() != null ? world.getPublicData().getName() : null,
+                world.getPublicData() != null ? world.getPublicData().getTitle() : null,
                 world.getPublicData() != null ? world.getPublicData().getDescription() : null,
                 16, // Default chunk size
                 world.isEnabled() ? "active" : "inactive",

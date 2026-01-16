@@ -12,7 +12,7 @@ public interface ResourceRepairType {
     /**
      * Type identifier.
      *
-     * @return Type name: "asset", "backdrop", "blocktype", "model", or "ground"
+     * @return Type title: "asset", "backdrop", "blocktype", "model", or "ground"
      */
     String name();
 

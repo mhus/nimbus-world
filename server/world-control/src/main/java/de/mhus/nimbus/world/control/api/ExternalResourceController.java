@@ -108,7 +108,7 @@ public class ExternalResourceController extends BaseEditorController {
                 request.name()
         );
         if (existing.isPresent()) {
-            return conflict("Resource with name '" + request.name() + "' already exists");
+            return conflict("Resource with title '" + request.name() + "' already exists");
         }
 
         // Create DTO
