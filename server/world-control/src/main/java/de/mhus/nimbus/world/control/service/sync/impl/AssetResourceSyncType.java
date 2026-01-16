@@ -234,12 +234,14 @@ public class AssetResourceSyncType implements ResourceSyncType {
                     // Save metadata
                     mongoTemplate.save(migratedDoc, COLLECTION_NAME);
 
-                    // Update binary content
-                    SAsset asset = assetService.findByPath(worldId, path).orElse(null);
+                    // Update binary content using transformed worldId and path
+                    SAsset asset = assetService.findByPath(WorldId.of(targetWorldId).get(), targetPath).orElse(null);
                     if (asset != null) {
                         try (InputStream stream = Files.newInputStream(binaryFile)) {
                             assetService.updateContent(asset, stream);
                         }
+                    } else {
+                        log.warn("Asset not found after save for binary content update: worldId={}, path={}", targetWorldId, targetPath);
                     }
 
                     log.debug("Imported asset: {}", path);

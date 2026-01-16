@@ -14,11 +14,12 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.InputStream;
+import java.io.*;
 import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
@@ -36,6 +37,14 @@ public class SAssetService {
 
     private final SAssetRepository repository;
     private final StorageService storageService; // optional injected
+
+    // ExecutorService for background compression tasks
+    private final ExecutorService compressionExecutor = Executors.newCachedThreadPool(r -> {
+        Thread t = new Thread(r);
+        t.setDaemon(true);
+        t.setName("asset-compression-" + t.getId());
+        return t;
+    });
 
     @Value("${nimbus.asset.compression.enabled:true}")
     private boolean compressionEnabled;
@@ -251,78 +260,102 @@ public class SAssetService {
             if (!a.isEnabled()) throw new IllegalStateException("Asset disabled: " + a.getId());
 
             // Read first threshold bytes to determine if we should compress
-            byte[] initialBuffer = new byte[compressionThreshold];
+            byte[] initialBuffer = new byte[compressionThreshold + 1];
             int bytesRead;
             try {
-                bytesRead = stream.readNBytes(initialBuffer, 0, compressionThreshold);
+                bytesRead = stream.readNBytes(initialBuffer, 0, initialBuffer.length);
             } catch (Exception e) {
                 log.error("Failed to read asset content: path={}", a.getPath(), e);
                 throw new IllegalStateException("Failed to read asset content", e);
             }
 
-            // Check if there's more data beyond threshold
-            byte[] remainingData;
-            try {
-                remainingData = stream.readAllBytes();
-            } catch (Exception e) {
-                log.error("Failed to read remaining asset content: path={}", a.getPath(), e);
-                throw new IllegalStateException("Failed to read remaining asset content", e);
-            }
-
-            long originalSize = bytesRead + remainingData.length;
-
-            // Compression if enabled and size exceeds threshold
             InputStream finalStream;
-            if (compressionEnabled && originalSize >= compressionThreshold) {
+            final AtomicLong totalBytesCounter = new AtomicLong(0);
+
+            if (bytesRead > compressionThreshold && compressionEnabled) {
+                // Large file with compression enabled - stream compression without loading all into memory
+                // Use PipedInputStream/PipedOutputStream to compress in background thread
                 try {
-                    ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-                    try (GZIPOutputStream gzip = new GZIPOutputStream(buffer)) {
-                        gzip.write(initialBuffer, 0, bytesRead);
-                        if (remainingData.length > 0) {
-                            gzip.write(remainingData);
+                    PipedInputStream pipedInput = new PipedInputStream(64 * 1024); // 64KB buffer
+                    PipedOutputStream pipedOutput = new PipedOutputStream(pipedInput);
+
+                    // Capture bytesRead for lambda
+                    final int initialBytesRead = bytesRead;
+
+                    // Compress in background thread using executor
+                    compressionExecutor.submit(() -> {
+                        try (GZIPOutputStream gzip = new GZIPOutputStream(pipedOutput)) {
+                            gzip.write(initialBuffer, 0, initialBytesRead);
+                            totalBytesCounter.addAndGet(initialBytesRead);
+
+                            // Copy remaining stream in chunks
+                            byte[] chunk = new byte[8192];
+                            int n;
+                            while ((n = stream.read(chunk)) > 0) {
+                                gzip.write(chunk, 0, n);
+                                totalBytesCounter.addAndGet(n);
+                            }
+                            gzip.finish();
+                            log.debug("Asset compression completed: path={} original={}", a.getPath(), totalBytesCounter.get());
+                        } catch (Exception e) {
+                            log.error("Failed to compress asset in background thread: path={}", a.getPath(), e);
+                            try {
+                                pipedOutput.close();
+                            } catch (Exception ignored) {}
                         }
-                        gzip.finish();
-                    }
-                    byte[] compressedData = buffer.toByteArray();
-                    finalStream = new ByteArrayInputStream(compressedData);
+                    });
+
+                    finalStream = pipedInput;
                     a.setCompressed(true);
-                    log.debug("Asset compressed on update: path={} original={} compressed={} ratio={} threshold={}",
-                            a.getPath(), originalSize, compressedData.length,
-                            String.format("%.1f%%", 100.0 * compressedData.length / originalSize), compressionThreshold);
-                } catch (Exception e) {
-                    log.warn("Failed to compress asset on update, storing uncompressed: path={}", a.getPath(), e);
-                    ByteArrayOutputStream fallback = new ByteArrayOutputStream();
-                    fallback.write(initialBuffer, 0, bytesRead);
-                    if (remainingData.length > 0) {
-                        fallback.write(remainingData, 0, remainingData.length);
-                    }
-                    finalStream = new ByteArrayInputStream(fallback.toByteArray());
-                    a.setCompressed(false);
+                    log.debug("Large asset compression started (streaming): path={}", a.getPath());
+                } catch (IOException e) {
+                    log.error("Failed to create piped streams for compression: path={}", a.getPath(), e);
+                    throw new IllegalStateException("Failed to create piped streams", e);
                 }
             } else {
-                // Store uncompressed (below threshold or compression disabled)
-                ByteArrayOutputStream uncompressed = new ByteArrayOutputStream();
-                try {
-                    uncompressed.write(initialBuffer, 0, bytesRead);
-                    if (remainingData.length > 0) {
-                        uncompressed.write(remainingData, 0, remainingData.length);
+                // All other cases: store uncompressed (streaming without full memory load)
+                if (bytesRead > compressionThreshold) {
+                    // Large file uncompressed: combine initialBuffer + remaining stream
+                    // Use SequenceInputStream to avoid loading everything into memory
+                    // Wrap in CountingInputStream to track size
+                    ByteArrayInputStream initialStream = new ByteArrayInputStream(initialBuffer, 0, bytesRead);
+                    InputStream sequenceStream = new java.io.SequenceInputStream(initialStream, stream);
+
+                    // Wrap with CountingInputStream to track bytes
+                    totalBytesCounter.set(0);
+                    finalStream = new FilterInputStream(sequenceStream) {
+                        @Override
+                        public int read() throws IOException {
+                            int b = super.read();
+                            if (b != -1) totalBytesCounter.incrementAndGet();
+                            return b;
+                        }
+
+                        @Override
+                        public int read(byte[] b, int off, int len) throws IOException {
+                            int n = super.read(b, off, len);
+                            if (n > 0) totalBytesCounter.addAndGet(n);
+                            return n;
+                        }
+                    };
+                    a.setCompressed(false);
+                    log.debug("Large asset stored uncompressed (streaming): path={}", a.getPath());
+                } else {
+                    // Small file: all data in initialBuffer
+                    finalStream = new ByteArrayInputStream(initialBuffer, 0, bytesRead);
+                    a.setCompressed(false);
+                    totalBytesCounter.set(bytesRead);
+                    if (compressionEnabled && bytesRead > 0) {
+                        log.debug("Asset below compression threshold: path={} threshold={}",
+                                a.getPath(), compressionThreshold);
                     }
-                } catch (Exception e) {
-                    log.error("Failed to write uncompressed data: path={}", a.getPath(), e);
-                    throw new IllegalStateException("Failed to write uncompressed data", e);
-                }
-                finalStream = new ByteArrayInputStream(uncompressed.toByteArray());
-                a.setCompressed(false);
-                if (compressionEnabled) {
-                    log.debug("Asset below compression threshold on update: path={} size={} threshold={}",
-                            a.getPath(), originalSize, compressionThreshold);
                 }
             }
 
-            if (StringUtils.isNotEmpty(a.getStorageId())) {
+            if (StringUtils.isNotEmpty(a.getStorageId())  && storageService.exists(a.getStorageId()) ) {
                 var storageId = storageService.update(STORAGE_SCHEMA, STORAGE_SCHEMA_VERSION, a.getStorageId(), finalStream);
                 // Always store original uncompressed size
-                a.setSize(originalSize);
+                a.setSize(totalBytesCounter.get());
                 a.setStorageId(storageId.id());
                 log.debug("Updated external content id={} originalSize={} storageSize={} compressed={}",
                         storageId.id(), a.getSize(), storageId.size(), a.isCompressed());
@@ -331,7 +364,7 @@ public class SAssetService {
                 var path = a.getPath();
                 var storageId = storageService.store(STORAGE_SCHEMA, STORAGE_SCHEMA_VERSION, worldId, "assets/" + path, finalStream);
                 // Always store original uncompressed size
-                a.setSize(originalSize);
+                a.setSize(totalBytesCounter.get());
                 a.setStorageId(storageId.id());
                 log.debug("Updated/Created external content id={} originalSize={} storageSize={} compressed={}",
                         storageId.id(), a.getSize(), storageId.size(), a.isCompressed());

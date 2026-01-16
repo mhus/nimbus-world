@@ -64,6 +64,14 @@ public abstract class StorageService {
      */
     public abstract String duplicate(String sourceStorageId, String targetWorldId);
 
+    public boolean exists(String storageId) {
+        try {
+            return info(storageId) != null;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
     public record StorageInfo(String id, long size, Date createdAt, String worldId, String path, String schema, SchemaVersion schemaVersion) { }
 
 }
