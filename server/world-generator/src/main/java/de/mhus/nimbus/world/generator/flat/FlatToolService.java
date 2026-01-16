@@ -270,7 +270,7 @@ public class FlatToolService {
                 .type("export")
                 .title("Flat Exporter")
                 .description("Export a flat terrain to a GROUND layer. " +
-                        "Optionally smooth corners and optimize face visibility.")
+                        "Optionally smooth corners.")
                 .parameters(List.of(
                         ParameterInfo.builder()
                                 .name("export")
@@ -303,13 +303,6 @@ public class FlatToolService {
                                 .required(false)
                                 .defaultValue("false")
                                 .description("Smooth corners of top GROUND blocks")
-                                .build(),
-                        ParameterInfo.builder()
-                                .name("optimizeFaces")
-                                .type("boolean")
-                                .required(false)
-                                .defaultValue("false")
-                                .description("Optimize face visibility to hide non-visible faces")
                                 .build()
                 ))
                 .exampleJson("{\n" +
@@ -318,7 +311,6 @@ public class FlatToolService {
                         "  \"worldId\": \"world-1\",\n" +
                         "  \"layerName\": \"ground\",\n" +
                         "  \"smoothCorners\": true,\n" +
-                        "  \"optimizeFaces\": true\n" +
                         "}")
                 .build());
 
@@ -492,15 +484,14 @@ public class FlatToolService {
 
         // Extract optional parameters
         boolean smoothCorners = params.has("smoothCorners") && params.get("smoothCorners").asBoolean();
-        boolean optimizeFaces = params.has("optimizeFaces") && params.get("optimizeFaces").asBoolean();
 
-        log.info("Exporting flat to layer: flatId={}, worldId={}, layerName={}, smoothCorners={}, optimizeFaces={}",
-                flatId, worldIdParam, layerName, smoothCorners, optimizeFaces);
+        log.info("Exporting flat to layer: flatId={}, worldId={}, layerName={}, smoothCorners={}",
+                flatId, worldIdParam, layerName, smoothCorners);
 
         // Execute export
         try {
             int exportedColumns = flatExportService.exportToLayer(
-                    flatId, worldIdParam, layerName, smoothCorners, optimizeFaces);
+                    flatId, worldIdParam, layerName, smoothCorners);
 
             String message = String.format("Flat '%s' exported successfully to layer '%s': %d columns exported",
                     flatId, layerName, exportedColumns);
@@ -620,16 +611,14 @@ public class FlatToolService {
      * @param worldId World ID
      * @param layerName Layer name (usually "GROUND")
      * @param smoothCorners Whether to smooth corners
-     * @param optimizeFaces Whether to optimize faces
      * @return Execution result
      */
-    @Tool("Export a flat terrain to a world layer to activate it. Provide flatId, worldId, layerName (usually 'GROUND'), smoothCorners (true/false), and optimizeFaces (true/false). This MUST be called after create or manipulate to make changes visible.")
+    @Tool("Export a flat terrain to a world layer to activate it. Provide flatId, worldId, layerName (usually 'GROUND'), smoothCorners (true/false). This MUST be called after create or manipulate to make changes visible.")
     public String executeExport(
             String flatId,
             String worldId,
             String layerName,
-            boolean smoothCorners,
-            boolean optimizeFaces) {
+            boolean smoothCorners) {
 
         log.info("AI Tool: executeExport - flatId={}, worldId={}, layerName={}",
                 flatId, worldId, layerName);
@@ -640,7 +629,6 @@ public class FlatToolService {
         params.put("worldId", worldId);
         params.put("layerName", layerName);
         params.put("smoothCorners", smoothCorners);
-        params.put("optimizeFaces", optimizeFaces);
 
         // Execute
         FlatToolResult result = executeExport(params, worldId);

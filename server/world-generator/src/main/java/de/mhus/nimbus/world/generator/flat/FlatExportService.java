@@ -56,13 +56,12 @@ public class FlatExportService {
      * @param worldId World identifier
      * @param layerName Name of the target GROUND layer
      * @param smoothCorners If true, smooths corners of top GROUND blocks based on neighbors
-     * @param optimizeFaces If true, sets faceVisibility to hide non-visible faces
      * @return Number of exported columns
      * @throws IllegalArgumentException if flat, world, or layer not found, or layer is not GROUND type
      */
-    public int exportToLayer(String flatId, String worldId, String layerName, boolean smoothCorners, boolean optimizeFaces) {
-        log.info("Exporting flat to layer: flatId={}, worldId={}, layerName={}, smoothCorners={}, optimizeFaces={}",
-                flatId, worldId, layerName, smoothCorners, optimizeFaces);
+    public int exportToLayer(String flatId, String worldId, String layerName, boolean smoothCorners) {
+        log.info("Exporting flat to layer: flatId={}, worldId={}, layerName={}, smoothCorners={}",
+                flatId, worldId, layerName, smoothCorners);
 
         // Load flat
         WFlat flat = flatService.findById(flatId)
@@ -152,7 +151,7 @@ public class FlatExportService {
 
                 // Fill column from level down to lowestSiblingLevel
                 fillColumn(chunkData, worldX, worldZ, level, lowestSiblingLevel, columnDef, flat,
-                        smoothCorners, optimizeFaces, blockTypeCache, wid, localX, localZ);
+                        smoothCorners, blockTypeCache, wid, localX, localZ);
 
                 exportedColumns++;
             }
@@ -229,7 +228,6 @@ public class FlatExportService {
         // If neighbors are lower, fill down to avoid gaps
         if (lowestSiblingLevel < existingLevel) {
             // Determine which sides need filling (which neighbors are lowest)
-            int faceVisibilityForFill = calculateNotSetFaceVisibility(flat, localX, localZ, existingLevel);
 
             // Fill down from existingLevel-1 to lowestSiblingLevel
             for (int y = existingLevel - 1; y >= lowestSiblingLevel; y--) {
@@ -244,9 +242,6 @@ public class FlatExportService {
 
                 topBlockDef.fillBlock(block);
 
-                // Set face visibility: only show faces toward the flat (opposite of fill direction)
-                block.setFaceVisibility(faceVisibilityForFill);
-
                 // Add to chunk
                 LayerBlock layerBlock = LayerBlock.builder()
                         .block(block)
@@ -254,8 +249,8 @@ public class FlatExportService {
                 chunkData.getBlocks().add(layerBlock);
             }
 
-            log.trace("Filled NOT_SET column at ({},{}) from {} down to {} with block type {} and faceVisibility={}",
-                     worldX, worldZ, existingLevel - 1, lowestSiblingLevel, topBlockDefString, faceVisibilityForFill);
+            log.trace("Filled NOT_SET column at ({},{}) from {} down to {} with block type {}",
+                     worldX, worldZ, existingLevel - 1, lowestSiblingLevel, topBlockDefString);
         }
     }
 
@@ -488,7 +483,7 @@ public class FlatExportService {
     private void fillColumn(LayerChunkData chunkData, int worldX, int worldZ,
                             int level, int lowestSiblingLevel,
                             WFlat.MaterialDefinition columnDef, WFlat flat,
-                            boolean smoothCorners, boolean optimizeFaces,
+                            boolean smoothCorners,
                             Map<String, WBlockType> blockTypeCache,
                             WorldId wid, int localX, int localZ) {
         // Get extra blocks for this column
@@ -533,8 +528,8 @@ public class FlatExportService {
             blockDefOpt.get().fillBlock(block);
 
             // Apply block optimizations (corner smoothing and/or face visibility) if enabled
-            if ((smoothCorners || optimizeFaces) && y <= level) {
-                boolean shouldExport = applyBlockOptimizations(block, flat, localX, localZ, level, y, blockTypeCache, wid, smoothCorners, optimizeFaces);
+            if ((smoothCorners) && y <= level) {
+                boolean shouldExport = applyBlockOptimizations(block, flat, localX, localZ, level, y, blockTypeCache, wid, smoothCorners);
                 if (!shouldExport) {
                     // Block has no visible faces, skip export
                     continue;
@@ -561,7 +556,7 @@ public class FlatExportService {
     private boolean applyBlockOptimizations(Block block, WFlat flat, int localX, int localZ,
                                         int level, int y,
                                         Map<String, WBlockType> blockTypeCache, WorldId wid,
-                                        boolean smoothCorners, boolean optimizeFaces) {
+                                        boolean smoothCorners) {
         if (block == null || block.getBlockTypeId() == null || wid == null) {
             return true;  // No optimization, export block
         }
@@ -637,66 +632,66 @@ public class FlatExportService {
                     localX, localZ, swOffset, seOffset, nwOffset, neOffset);
         }
 
-        // === FACE VISIBILITY OPTIMIZATION ===
-        if (optimizeFaces) {
-            // Check if already fixed (FIXED bit set = 64)
-            Integer existingFaceVis = block.getFaceVisibility();
-            if (existingFaceVis != null && (existingFaceVis & 64) != 0) {
-                // FIXED bit is set, don't modify
-                return false;
-            }
-
-            // FaceFlag bits (set bit = visible face):
-            // TOP = 1, BOTTOM = 2, LEFT = 4, RIGHT = 8, FRONT = 16, BACK = 32
-            int faceVisibility = 0;
-
-            // TOP: visible if y == level (not visible if below level / nextBlock)
-            if (y == level) {
-                faceVisibility |= 1;  // TOP visible
-            }
-            // BOTTOM never visible (y >= lowestSiblingLevel means block below)
-            // Don't set BOTTOM bit (2)
-
-            // Check neighbors for side visibility
-            // Get neighbor levels
-            int westLevel = getNeighborLevel(flat, localX - 1, localZ, myLevel);
-            int eastLevel = getNeighborLevel(flat, localX + 1, localZ, myLevel);
-            int southLevel = getNeighborLevel(flat, localX, localZ - 1, myLevel);
-            int northLevel = getNeighborLevel(flat, localX, localZ + 1, myLevel);
-
-            // LEFT (West): visible if neighbor is lower
-            if (westLevel < y) {
-                faceVisibility |= 4;  // LEFT visible
-            }
-
-            // RIGHT (East): visible if neighbor is lower
-            if (eastLevel < y) {
-                faceVisibility |= 8;  // RIGHT visible
-            }
-
-            // FRONT (South): visible if neighbor is lower (swapped: uses northLevel)
-            if (northLevel < y) {
-                faceVisibility |= 16;  // FRONT visible
-            }
-
-            // BACK (North): visible if neighbor is lower (swapped: uses southLevel)
-            if (southLevel < y) {
-                faceVisibility |= 32;  // BACK visible
-            }
-
-            // Don't export block if no faces are visible
-            if (faceVisibility == 0) {
-                log.debug("Block at ({},{},{}) has no visible faces (faceVisibility=0), skipping export",
-                        block.getPosition().getX(), y, block.getPosition().getZ());
-                return false;  // Signal to skip this block
-            }
-
-            // Set faceVisibility on block
-            block.setFaceVisibility(faceVisibility);
-
-            log.trace("Applied face visibility to block at ({},{},{}): visibility={} (binary: {})",
-                    localX, y, localZ, faceVisibility, Integer.toBinaryString(faceVisibility));
-        }
+//        // === FACE VISIBILITY OPTIMIZATION ===
+//        if (optimizeFaces) {
+//            // Check if already fixed (FIXED bit set = 64)
+//            Integer existingFaceVis = block.getFaceVisibility();
+//            if (existingFaceVis != null && (existingFaceVis & 64) != 0) {
+//                // FIXED bit is set, don't modify
+//                return false;
+//            }
+//
+//            // FaceFlag bits (set bit = visible face):
+//            // TOP = 1, BOTTOM = 2, LEFT = 4, RIGHT = 8, FRONT = 16, BACK = 32
+//            int faceVisibility = 0;
+//
+//            // TOP: visible if y == level (not visible if below level / nextBlock)
+//            if (y == level) {
+//                faceVisibility |= 1;  // TOP visible
+//            }
+//            // BOTTOM never visible (y >= lowestSiblingLevel means block below)
+//            // Don't set BOTTOM bit (2)
+//
+//            // Check neighbors for side visibility
+//            // Get neighbor levels
+//            int westLevel = getNeighborLevel(flat, localX - 1, localZ, myLevel);
+//            int eastLevel = getNeighborLevel(flat, localX + 1, localZ, myLevel);
+//            int southLevel = getNeighborLevel(flat, localX, localZ - 1, myLevel);
+//            int northLevel = getNeighborLevel(flat, localX, localZ + 1, myLevel);
+//
+//            // LEFT (West): visible if neighbor is lower
+//            if (westLevel < y) {
+//                faceVisibility |= 4;  // LEFT visible
+//            }
+//
+//            // RIGHT (East): visible if neighbor is lower
+//            if (eastLevel < y) {
+//                faceVisibility |= 8;  // RIGHT visible
+//            }
+//
+//            // FRONT (South): visible if neighbor is lower (swapped: uses northLevel)
+//            if (northLevel < y) {
+//                faceVisibility |= 16;  // FRONT visible
+//            }
+//
+//            // BACK (North): visible if neighbor is lower (swapped: uses southLevel)
+//            if (southLevel < y) {
+//                faceVisibility |= 32;  // BACK visible
+//            }
+//
+//            // Don't export block if no faces are visible
+//            if (faceVisibility == 0) {
+//                log.debug("Block at ({},{},{}) has no visible faces (faceVisibility=0), skipping export",
+//                        block.getPosition().getX(), y, block.getPosition().getZ());
+//                return false;  // Signal to skip this block
+//            }
+//
+//            // Set faceVisibility on block
+//            block.setFaceVisibility(faceVisibility);
+//
+//            log.trace("Applied face visibility to block at ({},{},{}): visibility={} (binary: {})",
+//                    localX, y, localZ, faceVisibility, Integer.toBinaryString(faceVisibility));
+//        }
 
         return true;  // Block should be exported
     }
@@ -789,44 +784,44 @@ public class FlatExportService {
         return flat.getLevel(x, z);
     }
 
-    /**
-     * Calculate faceVisibility for NOT_SET column fill blocks.
-     * Shows ONLY ONE face - the one pointing outward from the flat edge.
-     *
-     * Logic: Determine which edge of the flat this block is on and show the outward-facing side:
-     * - West edge (localX = 0) → show LEFT face (4)
-     * - East edge (localX = sizeX-1) → show RIGHT face (8)
-     * - South edge (localZ = 0) → show FRONT face (16)
-     * - North edge (localZ = sizeZ-1) → show BACK face (32)
-     *
-     * @param flat The flat terrain data
-     * @param localX Column X coordinate (within flat)
-     * @param localZ Column Z coordinate (within flat)
-     * @param myLevel This column's level (unused but kept for consistency)
-     * @return Face visibility bitmask (only one bit set)
-     */
-    private int calculateNotSetFaceVisibility(WFlat flat, int localX, int localZ, int myLevel) {
-        int sizeX = flat.getSizeX();
-        int sizeZ = flat.getSizeZ();
-
-        // Determine which edge of the flat this block is on
-        // Priority: West, East, South, North if on multiple edges (corners)
-
-        if (localX == 0) {
-            // West edge → show RIGHT face (outward)
-            return 8;
-        } else if (localX == sizeX - 1) {
-            // East edge → show LEFT face (outward)
-            return 4;
-        } else if (localZ == 0) {
-            // South edge → show FRONT face (outward)
-            return 16;
-        } else if (localZ == sizeZ - 1) {
-            // North edge → show BACK face (outward)
-            return 32;
-        }
-
-        // Not on any edge → show all side faces (LEFT | RIGHT | FRONT | BACK)
-        return 4 | 8 | 16 | 32;  // = 60
-    }
+//    /**
+//     * Calculate faceVisibility for NOT_SET column fill blocks.
+//     * Shows ONLY ONE face - the one pointing outward from the flat edge.
+//     *
+//     * Logic: Determine which edge of the flat this block is on and show the outward-facing side:
+//     * - West edge (localX = 0) → show LEFT face (4)
+//     * - East edge (localX = sizeX-1) → show RIGHT face (8)
+//     * - South edge (localZ = 0) → show FRONT face (16)
+//     * - North edge (localZ = sizeZ-1) → show BACK face (32)
+//     *
+//     * @param flat The flat terrain data
+//     * @param localX Column X coordinate (within flat)
+//     * @param localZ Column Z coordinate (within flat)
+//     * @param myLevel This column's level (unused but kept for consistency)
+//     * @return Face visibility bitmask (only one bit set)
+//     */
+//    private int calculateNotSetFaceVisibility(WFlat flat, int localX, int localZ, int myLevel) {
+//        int sizeX = flat.getSizeX();
+//        int sizeZ = flat.getSizeZ();
+//
+//        // Determine which edge of the flat this block is on
+//        // Priority: West, East, South, North if on multiple edges (corners)
+//
+//        if (localX == 0) {
+//            // West edge → show RIGHT face (outward)
+//            return 8;
+//        } else if (localX == sizeX - 1) {
+//            // East edge → show LEFT face (outward)
+//            return 4;
+//        } else if (localZ == 0) {
+//            // South edge → show FRONT face (outward)
+//            return 16;
+//        } else if (localZ == sizeZ - 1) {
+//            // North edge → show BACK face (outward)
+//            return 32;
+//        }
+//
+//        // Not on any edge → show all side faces (LEFT | RIGHT | FRONT | BACK)
+//        return 4 | 8 | 16 | 32;  // = 60
+//    }
 }
