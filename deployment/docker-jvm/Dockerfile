@@ -11,6 +11,7 @@ COPY server/plugins/ plugins/
 COPY server/generated/ generated/
 COPY server/shared/ shared/
 COPY server/world-shared/ world-shared/
+COPY server/world-shared-ai/ world-shared-ai/
 COPY server/world-player/ world-player/
 COPY server/world-control/ world-control/
 COPY server/world-life/ world-life/
