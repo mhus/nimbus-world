@@ -286,15 +286,13 @@ export function checkUnderwaterState(
   }
 
   // Calculate local coordinates within chunk (handle negative positions correctly)
-  const localX = ((entity.position.x % chunkSize) + chunkSize) % chunkSize;
-  const localZ = ((entity.position.z % chunkSize) + chunkSize) % chunkSize;
-  const heightKey = `${Math.floor(localX)},${Math.floor(localZ)}`;
+  const heightKey = `${Math.floor(entity.position.x)},${Math.floor(entity.position.z)}`;
   const heightData = chunk.data.hightData.get(heightKey);
 
   const wasInWater = entity.inWater;
 
-  if (heightData && heightData[5] !== undefined) {
-    const [x, z, maxHeight, minHeight, groundLevel, waterHeight] = heightData;
+  if (heightData && heightData[3] !== undefined) {
+    const [maxHeight, minHeight, groundLevel, waterHeight] = heightData;
 
     // Player is underwater when eyes are below water surface
     const waterSurfaceY = waterHeight + 1.0; // Water block top face

@@ -22,11 +22,11 @@ import {
     itemToBlock,
     type AudioDefinition, ItemBlockRef,
     normalizeBlockTypeId,
-    getBlockTypeGroup, BlockType, type AreaData,
+    getBlockTypeGroup, BlockType, type AreaData, HeightData,
 } from '@nimbus/shared';
 import type { AppContext } from '../AppContext';
 import type { NetworkService } from './NetworkService';
-import type { ClientChunkData, ClientHeightData } from '../types/ClientChunk';
+import type { ClientChunkData } from '../types/ClientChunk';
 import { ClientChunk } from '../types/ClientChunk';
 import type { ClientBlock } from '../types/ClientBlock';
 import { DisposableResources } from '../rendering/DisposableResources';
@@ -247,7 +247,7 @@ export class ChunkService {
 
             // Extract fields from decompressed ChunkData and map to ChunkDataTransferObject
             chunkData.b = cChunk.blocks || [];
-            chunkData.h = cChunk.heightData || [];
+            chunkData.h = cChunk.heightData || {};
             chunkData.backdrop = cChunk.backdrop;
             chunkData.a = cChunk.a || [];
 
@@ -258,7 +258,7 @@ export class ChunkService {
               cx: chunkData.cx,
               cz: chunkData.cz,
               blocks: chunkData.b.length,
-              heightData: chunkData.h?.length || 0,
+              heightData: chunkData.h ? Object.keys(chunkData.h).length : 0,
             });
           } catch (error) {
             logger.error('Failed to decompress chunk data in ChunkService', {
@@ -438,8 +438,6 @@ export class ChunkService {
     const worldMaxY = this.appContext.worldInfo?.stop?.y ?? 1000;
     const worldMinY = this.appContext.worldInfo?.start?.y ?? -100;
 
-    // Height data structures for single-pass calculation
-    const heightData = new Map<string, ClientHeightData>();
 
     // Track blocks per column for height calculation (localX, localZ -> blocks)
     // Note: maxY is usually worldMaxY, but if blocks exceed it, we add 10 blocks headroom
@@ -452,16 +450,8 @@ export class ChunkService {
     }>();
 
     // STEP 1: Use server-provided height data if available
-    if (chunkData.h) {
-      for (const entry of chunkData.h) {
-        const [x, z, maxHeight, groundLevel, waterLevel] = entry;
-        const heightKey = `${x},${z}`;
-        // Server provides: [x, z, maxHeight, groundLevel, waterLevel]
-        // ClientHeightData format: [x, z, maxHeight, minHeight, groundLevel, waterHeight]
-        // Use worldMinY as minHeight since server doesn't provide it
-        heightData.set(heightKey, [x, z, maxHeight, worldMinY, groundLevel, waterLevel]);
-      }
-    }
+    // Height data structures for single-pass calculation
+    const heightData = chunkData.h ? new Map(Object.entries(chunkData.h)) : new Map<string, HeightData>();
 
     if (!blockTypeService) {
       logger.warn('BlockTypeService not available - cannot process blocks');
@@ -607,10 +597,7 @@ export class ChunkService {
       // This prevents race conditions and reduces redundant function calls
 
       // PERFORMANCE: Calculate height data in same pass
-      // Calculate local x, z coordinates within chunk
-      const localX = ((block.position.x % chunkSize) + chunkSize) % chunkSize;
-      const localZ = ((block.position.z % chunkSize) + chunkSize) % chunkSize;
-      const columnKey = `${Math.floor(localX)},${Math.floor(localZ)}`;
+      const columnKey = `${block.position.x},${block.position.z}`;
 
       // Skip if server already provided height data for this column
       if (heightData.has(columnKey)) {
@@ -686,8 +673,6 @@ export class ChunkService {
       }
 
       heightData.set(columnKey, [
-        x,
-        z,
         maxHeight,
         columnData.minY !== Infinity ? columnData.minY : worldMinY,
         columnData.groundLevel !== null ? columnData.groundLevel : worldMinY,
@@ -826,7 +811,9 @@ export class ChunkService {
     // STEP 4: Fill in empty columns with default values (no blocks in column)
     for (let x = 0; x < chunkSize; x++) {
       for (let z = 0; z < chunkSize; z++) {
-        const heightKey = `${x},${z}`;
+        const worldX = chunkData.cx * chunkSize + x;
+        const worldZ = chunkData.cz * chunkSize + z;
+        const heightKey = `${worldX},${worldZ}`;
 
         // Skip if already have data (from server or calculated)
         if (heightData.has(heightKey)) {
@@ -835,18 +822,16 @@ export class ChunkService {
 
         // Empty column - use world bounds as defaults
         heightData.set(heightKey, [
-          x,
-          z,
-          worldMaxY,  // No blocks, so max is world top
-          worldMinY,  // No blocks, so min is world bottom
-          worldMinY,  // No ground level (no blocks)
-          undefined   // No water
+          worldMaxY,  // maxHeight - No blocks, so max is world top
+          worldMinY,  // minHeight - No blocks
+          worldMinY,  // groundLevel - No ground level (no blocks)
+          undefined
         ]);
       }
     }
 
     // Summary log (only if water found)
-    const waterColumns = Array.from(heightData.values()).filter(h => h[5] !== undefined);
+    const waterColumns = Array.from(heightData.values()).filter(h => h[3] !== undefined);
     if (waterColumns.length > 0) {
       logger.debug('💧 Water found in chunk', {
         chunk: { cx: chunkData.cx, cz: chunkData.cz },

@@ -545,6 +545,7 @@ export class BackdropService {
   ): number {
     try {
       const chunk = this.chunkService.getChunk(cx, cz);
+      const chunkSize = chunk?.chunkSize || 16;
       if (!chunk || !chunk.data.hightData) {
         return 0; // Default if no height data
       }
@@ -563,21 +564,24 @@ export class BackdropService {
           case 'n':
           case 's':
             x = localCoord;
-            z = direction === 'n' ? 0 : 15;
+            z = direction === 'n' ? 0 : chunkSize-1;
             break;
           case 'e':
           case 'w':
-            x = direction === 'w' ? 0 : 15;
+            x = direction === 'w' ? 0 : chunkSize-1;
             z = localCoord;
             break;
           default:
             continue;
         }
+        // Convert local coordinates to world coordinates
+        const worldX = chunk.data.transfer.cx * chunkSize + x;
+        const worldZ = chunk.data.transfer.cz * chunkSize + z;
 
-        const key = `${x},${z}`;
+        const key = `${worldX},${worldZ}`;
         const height = heightData.get(key);
         if (height) {
-          const groundLevel = height[4]; // groundLevel is at index 4
+          const groundLevel = height[2]; // groundLevel is at index 2
           if (groundLevel < minGroundLevel) {
             minGroundLevel = groundLevel;
           }

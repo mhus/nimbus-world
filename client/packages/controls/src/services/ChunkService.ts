@@ -34,7 +34,7 @@ export interface ChunkDataResponse {
   size: number;
   blockCount: number;
   blocks: any[];
-  heightData: number[][];
+  heightData: Record<string, number[]>;
 }
 
 export class ChunkService {

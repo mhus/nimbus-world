@@ -17,7 +17,9 @@ import org.springframework.test.context.TestPropertySource;
 
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -133,9 +135,14 @@ class WChunkCompressionIntegrationTest {
         chunkData.setBlocks(blocks);
 
         // Add height data
-        int[][] heightData = new int[blockCount][4];
+        Map<String, int[]> heightData = new HashMap<>();
         for (int i = 0; i < blockCount; i++) {
-            heightData[i] = new int[]{i % 32, i / 32, 15, 5};
+            int localX = i % 32;
+            int localZ = i / 32;
+            int worldX = cx * 32 + localX;
+            int worldZ = cz * 32 + localZ;
+            String key = worldX + "," + worldZ;
+            heightData.put(key, new int[]{15, 0, 5}); // [maxHeight, minHeight, groundLevel]
         }
         chunkData.setHeightData(heightData);
 

@@ -323,6 +323,8 @@ public class WChunkService {
             Integer waterLevel = world.getWaterLevel();
             String groundBlockType = world.getGroundBlockType();
             String waterBlockType = world.getWaterBlockType();
+            int minHeight = (int) world.getPublicData().getStart().getY();
+            int maxHeight = (int) world.getPublicData().getStop().getY();
 
             var chunkSize = world.getPublicData().getChunkSize();
             // Create chunk data
@@ -332,6 +334,7 @@ public class WChunkService {
             chunkData.setSize((byte)chunkSize);
 
             List<Block> blocks = new ArrayList<>();
+            Map<String, int[]> heightData = new HashMap<>();
 
             // Generate blocks for the chunk (32x32 xz area)
             for (int localX = 0; localX < chunkSize; localX++) {
@@ -345,6 +348,12 @@ public class WChunkService {
                         groundBlock.setFaceVisibility(1); // TOP only
                         blocks.add(groundBlock);
                     }
+                    String heightKey = worldX + "," + worldZ;
+                    heightData.put(heightKey,
+                            waterLevel != null
+                                    ? new int[]{maxHeight, minHeight, groundLevel, waterLevel}
+                                    : new int[]{maxHeight, minHeight, groundLevel}
+                    );
 
                     // Create water blocks from groundLevel+1 to waterLevel
                     if (waterLevel != null && waterLevel > groundLevel && waterBlockType != null) {
@@ -357,6 +366,7 @@ public class WChunkService {
             }
 
             chunkData.setBlocks(blocks);
+            chunkData.setHeightData(heightData);
 
             log.debug("Generated default chunk: cx={}, cz={}, blocks={}, groundLevel={}, waterLevel={}",
                     cx, cz, blocks.size(), groundLevel, waterLevel);
@@ -501,35 +511,39 @@ public class WChunkService {
 
     /**
      * Get height data for a specific column (x, z) in chunk data.
-     * Searches through the heightData array for the matching x,z coordinates
-     * and converts the int[] to HeightDataDto.
+     * Uses the heightData map with key format "worldX,worldZ" (world coordinates) to retrieve column data.
      *
      * @param chunkData Chunk data containing heightData
-     * @param x Local x coordinate within chunk (0 to chunkSize-1)
-     * @param z Local z coordinate within chunk (0 to chunkSize-1)
+     * @param localX Local x coordinate within chunk (0 to chunkSize-1)
+     * @param localZ Local z coordinate within chunk (0 to chunkSize-1)
      * @return HeightDataDto if found, null otherwise
      */
-    public de.mhus.nimbus.world.shared.dto.HeightDataDto getHeightDataForColumn(ChunkData chunkData, int x, int z) {
+    public de.mhus.nimbus.world.shared.dto.HeightDataDto getHeightDataForColumn(ChunkData chunkData, int localX, int localZ) {
         if (chunkData == null || chunkData.getHeightData() == null) {
             return null;
         }
 
-        // Search for matching column in heightData array
-        for (int[] columnData : chunkData.getHeightData()) {
-            if (columnData.length >= 4 && columnData[0] == x && columnData[1] == z) {
-                // Found matching column
-                // Format: [x, z, maxHeight, groundLevel, waterLevel?]
-                int maxHeight = columnData[2];
-                int groundLevel = columnData[3];
-                Integer waterLevel = columnData.length > 4 ? columnData[4] : null;
+        // Convert local coordinates to world coordinates for map lookup
+        int chunkSize = chunkData.getSize();
+        int worldX = chunkData.getCx() * chunkSize + localX;
+        int worldZ = chunkData.getCz() * chunkSize + localZ;
 
-                return new de.mhus.nimbus.world.shared.dto.HeightDataDto(
-                        x, z, maxHeight, groundLevel, waterLevel
-                );
-            }
+        String key = worldX + "," + worldZ;
+        int[] columnData = chunkData.getHeightData().get(key);
+
+        if (columnData == null || columnData.length < 3) {
+            return null;
         }
 
-        return null;
+        // Format: [maxHeight, minHeight, groundLevel, waterLevel?]
+        int maxHeight = columnData[0];
+        int minHeight = columnData[1];
+        int groundLevel = columnData[2];
+        Integer waterLevel = columnData.length > 3 ? columnData[3] : null;
+
+        return new de.mhus.nimbus.world.shared.dto.HeightDataDto(
+                maxHeight, minHeight, groundLevel, waterLevel
+        );
     }
 
     /**

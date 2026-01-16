@@ -2041,11 +2041,11 @@
         "comment" : null
       }, {
         "name" : "heightData",
-        "type" : "HeightData[]",
+        "type" : "Record<string, number[]>",
         "optional" : true,
         "visibility" : null,
-        "javaTypeHint" : "int[][]",
-        "comment" : "// javaType: int[][]"
+        "javaTypeHint" : "java.util.Map<String,int[]>",
+        "comment" : "// javaType: java.util.Map<String,int[]>"
       }, {
         "name" : "status",
         "type" : "Status[]",
@@ -7295,7 +7295,7 @@
     } ]
   }, {
     "path" : "/Users/hummel/sources/mhus/nimbus-wb/repos/nimbus-world/server/generated/../client_shared_src/network/messages/ChunkMessage.ts",
-    "imports" : [ "../BaseMessage", "../../types/Block", "../../types/AreaData", "../../types/ChunkData", "../../types/Backdrop", "../../types" ],
+    "imports" : [ "../BaseMessage", "../../types/Block", "../../types/AreaData", "../../types/Backdrop", "../../types" ],
     "interfaces" : [ {
       "name" : "ChunkCoordinate",
       "extendsList" : [ ],
@@ -7348,11 +7348,11 @@
         "comment" : null
       }, {
         "name" : "h",
-        "type" : "HeightData[]",
+        "type" : "Map<string, HeightData>",
         "optional" : true,
         "visibility" : null,
-        "javaTypeHint" : "int[][]",
-        "comment" : "// javaType: int[][]"
+        "javaTypeHint" : "java.util.Map<String,int[]>",
+        "comment" : "// javaType: java.util.Map<String,int[]>"
       }, {
         "name" : "a",
         "type" : "AreaData[]",

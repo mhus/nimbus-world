@@ -11,17 +11,16 @@ import type { Block } from './Block';
 import type { ItemBlockRef } from './ItemBlockRef';
 import type { Backdrop } from './Backdrop';
 import {AreaData} from "./AreaData";
-
-/**
- * Height data for chunk column
- * Array of 4 values describing height information for a specific XZ position
- */
+//
+// /**
+//  * Height data for chunk column
+//  * Array of 4 values describing height information for a specific XZ position
+//  */
 export type HeightData = readonly [
-  x: number, // javaType: int
-  z: number, // javaType: int
   maxHeight: number, // javaType: int
+  minHeight: number, // javaType: int
   groundLevel: number, // javaType: int
-  waterLevel?: number // javaType: int
+  waterLevel?: number|undefined // javaType: int
 ];
 
 /**
@@ -81,9 +80,9 @@ export interface ChunkData {
 
   /**
    * Height data per XZ position (optional)
-   * Flat array of height values
+   * Flat array of height values key: "x,z" -> [x, z, maxHeight, groundLevel, (optional) waterLevel]
    */
-  heightData?: HeightData[]; // javaType: int[][]
+  heightData?: Record<string, number[]>; // javaType: java.util.Map<String,int[]>
 
   status?: Status[]; // javaType: int[][]
 

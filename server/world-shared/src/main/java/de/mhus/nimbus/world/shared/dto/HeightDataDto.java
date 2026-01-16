@@ -9,9 +9,8 @@ import de.mhus.nimbus.shared.annotations.TypeScript;
  */
 @GenerateTypeScript("dto")
 public record HeightDataDto(
-        int x,
-        int z,
         int maxHeight,
+        int minHeight,
         int groundLevel,
 
         @TypeScript(optional = true)

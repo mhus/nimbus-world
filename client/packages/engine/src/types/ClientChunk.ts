@@ -5,7 +5,7 @@
  * client-side state for rendering and management.
  */
 
-import {ChunkDataTransferObject, Backdrop, Vector3, AreaData} from '@nimbus/shared';
+import {ChunkDataTransferObject, Backdrop, Vector3, AreaData, HeightData} from '@nimbus/shared';
 import type { ClientBlock } from './ClientBlock';
 import type { DisposableResources } from '../rendering/DisposableResources';
 
@@ -24,14 +24,12 @@ import type { DisposableResources } from '../rendering/DisposableResources';
  * @field groundLevel - Y position of lowest solid block (ground surface)
  * @field waterHeight - Y position of highest water block (water surface), undefined if no water
  */
-export type ClientHeightData = readonly [
-  x: number,
-  z: number,
-  maxHeight: number,
-  minHeight: number,
-  groundLevel: number,
-  waterHeight?: number
-];
+// export type ClientHeightData = readonly [
+//   maxHeight: number,
+//   minHeight: number,
+//   groundLevel: number,
+//   waterHeight?: number
+// ];
 
 /**
  * Client-side chunk data with processed blocks
@@ -43,7 +41,7 @@ export interface ClientChunkData {
   /** Map of block position key(x,y,z) -> ClientBlock (with merged modifiers) */
   data: Map<string, ClientBlock>;
   /** Map of height position key(x,z) -> ClientHeightData */
-  hightData: Map<string, ClientHeightData>;
+  hightData: Map<string, HeightData>;
 
   statusData: Map<string, number>;
 
@@ -101,7 +99,7 @@ export class ClientChunk {
    * @param posZ block world z coordinate
    * @returns ClientHeightData or undefined if not found
    */
-  getHeightData(posX: number, posZ: number): ClientHeightData | undefined {
+  getHeightData(posX: number, posZ: number): HeightData | undefined {
     // Convert world coordinates to local chunk coordinates
     const chunkCx = this.data.transfer.cx;
     const chunkCz = this.data.transfer.cz;
@@ -109,10 +107,7 @@ export class ClientChunk {
     const worldX = Math.floor(posX);
     const worldZ = Math.floor(posZ);
 
-    const localX = worldX - (chunkCx * this.chunkSize);
-    const localZ = worldZ - (chunkCz * this.chunkSize);
-
-    return this.data?.hightData?.get(`${localX},${localZ}`);
+    return this.data?.hightData?.get(`${worldX},${worldZ}`);
   }
 
   getHeightDataForPosition(position: Vector3) {

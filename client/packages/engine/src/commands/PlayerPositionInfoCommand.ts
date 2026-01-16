@@ -140,11 +140,11 @@ export class PlayerPositionInfoCommand extends CommandHandler {
 
         lines.push('Height Data (current column):');
         if (heightData) {
-          lines.push(`  Max Height   : ${heightData[2]}`);
-          lines.push(`  Min Height   : ${heightData[3]}`);
-          lines.push(`  Ground Level : ${heightData[4]}`);
-          if (heightData[5] !== undefined) {
-            lines.push(`  Water Height : ${heightData[5]}`);
+          lines.push(`  Max Height   : ${heightData[0]}`);
+          lines.push(`  Min Height   : ${heightData[1]}`);
+          lines.push(`  Ground Level : ${heightData[2]}`);
+          if (heightData[3] !== undefined) {
+            lines.push(`  Water Height : ${heightData[3]}`);
           }
         } else {
           lines.push('  No height data available for this column');

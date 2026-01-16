@@ -532,7 +532,6 @@ const handleRegenerate = async () => {
     await layerService.regenerate(props.worldId, props.layer.id);
     logger.info('Layer regeneration triggered', { layerId: props.layer.id });
 
-    alert('Layer regeneration triggered successfully!');
     emit('saved', formData.value as WLayer);
   } catch (error: any) {
     logger.error('Failed to trigger regeneration', {}, error);

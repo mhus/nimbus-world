@@ -8,9 +8,8 @@
 import type { BaseMessage } from '../BaseMessage';
 import type { Block } from '../../types/Block';
 import type { AreaData } from '../../types/AreaData';
-import type { HeightData } from '../../types/ChunkData';
 import type { Backdrop } from '../../types/Backdrop';
-import {ItemBlockRef} from "../../types";
+import {HeightData, ItemBlockRef} from "../../types";
 
 /**
  * Chunk coordinates (XZ only, Y is complete column)
@@ -36,8 +35,8 @@ export interface ChunkDataTransferObject {
   /** Item data - Item instances with position, itemType reference, and modifiers */
   i?: ItemBlockRef[];
 
-  /** Height data, maximum height */
-  h?: HeightData[]; // javaType: int[][]
+  /** Height data, maximum height. Key world coordinates format: "x,z" -> [maxHeight, groundLevel, waterLevel] */
+  h?: Map<string, HeightData>; // javaType: java.util.Map<String,int[]>
 
   /** Area data with effects */
   a?: AreaData[];

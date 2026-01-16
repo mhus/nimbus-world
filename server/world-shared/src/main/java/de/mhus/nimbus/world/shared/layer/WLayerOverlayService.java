@@ -115,7 +115,7 @@ public class WLayerOverlayService {
         result.setBlocks(new ArrayList<>(blockMap.values()));
 
         // Calculate height data
-        int[][] heightData = calculateHeightData(worldId, chunkSize, blockMap.values(), layers);
+        Map<String, int[]> heightData = calculateHeightData(worldId, chunkSize, blockMap.values(), layers);
         result.setHeightData(heightData);
 
         List<AreaData> areaData = calculateAreaData(world, cx, cz);
@@ -397,10 +397,11 @@ public class WLayerOverlayService {
      * @param layers All layers (to find baseGround layer)
      * @return Height data array
      */
-    private int[][] calculateHeightData(String worldId, int chunkSize, Collection<Block> blocks, List<WLayer> layers) {
+    private Map<String, int[]> calculateHeightData(String worldId, int chunkSize, Collection<Block> blocks, List<WLayer> layers) {
         var worldIdObj = de.mhus.nimbus.shared.types.WorldId.of(worldId).orElseThrow();
         var world = worldService.getByWorldId(worldId).orElseThrow();
         int maxHeight = (int) world.getPublicData().getStop().getY();
+        int minHeight = (int) world.getPublicData().getStart().getY();
 
         // Find base ground layer
         WLayer baseGroundLayer = null;
@@ -446,17 +447,19 @@ public class WLayerOverlayService {
             }
         }
 
-        // Convert to array
-        List<int[]> heightDataList = new ArrayList<>();
+        // Convert to Map with key format "x,z"
+        // Format: [maxHeight, minHeight, groundLevel, waterLevel?]
+        Map<String, int[]> heightDataMap = new HashMap<>();
         for (ColumnData column : columns.values()) {
+            String key = column.x + "," + column.z;
             if (column.waterLevel != null) {
-                heightDataList.add(new int[]{column.x, column.z, column.maxHeight, column.groundLevel != null ? column.groundLevel : -1, column.waterLevel});
+                heightDataMap.put(key, new int[]{column.maxHeight, minHeight, column.groundLevel != null ? column.groundLevel : -1, column.waterLevel});
             } else {
-                heightDataList.add(new int[]{column.x, column.z, column.maxHeight, column.groundLevel != null ? column.groundLevel : -1});
+                heightDataMap.put(key, new int[]{column.maxHeight, minHeight, column.groundLevel != null ? column.groundLevel : -1});
             }
         }
 
-        return heightDataList.toArray(new int[0][]);
+        return heightDataMap;
     }
 
     /**
