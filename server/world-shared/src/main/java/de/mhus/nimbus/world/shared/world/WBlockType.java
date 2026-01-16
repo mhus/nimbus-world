@@ -35,7 +35,7 @@ public class WBlockType implements Identifiable {
     private String id;
 
     /**
-     * External block identifier (e.g., "core:stone", "w:123").
+     * External block identifier (e.g., "stone", "123").
      * Unique across all block types.
      */
     @Indexed(unique = true)
@@ -69,7 +69,7 @@ public class WBlockType implements Identifiable {
     public void touchCreate() {
         Instant now = Instant.now();
         createdAt = now;
-        updatedAt = now;
+        touchUpdate();
     }
 
     /**
@@ -77,6 +77,8 @@ public class WBlockType implements Identifiable {
      */
     public void touchUpdate() {
         updatedAt = Instant.now();
+        if (publicData != null)
+            publicData.setId(getBlockId());
     }
 
     public WBlockType appendWorldPrefix() {
@@ -87,7 +89,9 @@ public class WBlockType implements Identifiable {
 
     public  WBlockType removeWorldPrefix() {
         if (publicData == null) return this;
-        publicData.setId(WorldCollection.removePrefix(publicData.getId()));
+        setBlockId(WorldCollection.removePrefix(getBlockId())); // for secure
+        if (publicData != null)
+            publicData.setId(WorldCollection.removePrefix(publicData.getId()));
         return this;
     }
 

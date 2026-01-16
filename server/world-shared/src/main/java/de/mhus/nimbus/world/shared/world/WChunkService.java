@@ -286,7 +286,9 @@ public class WChunkService {
         } else if (create) {
             // Chunk not found - generate default chunk based on world settings
             log.debug("Chunk not found in DB, generating default: chunkKey={} world={}", chunkKey, lookupWorld.getId());
-            return Optional.ofNullable(generateDefaultChunk(lookupWorld.getId(), chunkKey));
+            var data = generateDefaultChunk(lookupWorld.getId(), chunkKey);
+            saveChunk(lookupWorld, chunkKey, data);
+            return Optional.ofNullable(data);
         } else {
             // Chunk not found and create=false - return empty
             return Optional.empty();
@@ -340,6 +342,7 @@ public class WChunkService {
                     // Create ground block at groundLevel
                     if (groundLevel >= 0 && groundBlockType != null) {
                         Block groundBlock = createBlock(worldX, groundLevel, worldZ, groundBlockType);
+                        groundBlock.setFaceVisibility(1); // TOP only
                         blocks.add(groundBlock);
                     }
 

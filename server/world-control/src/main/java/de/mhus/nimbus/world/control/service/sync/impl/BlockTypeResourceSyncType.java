@@ -140,7 +140,7 @@ public class BlockTypeResourceSyncType implements ResourceSyncType {
                     // Migrate if needed
                     String entityType = doc.getString("_class");
                     if (entityType == null) {
-                        entityType = "de.mhus.nimbus.world.shared.world.WBlockType";
+                        entityType = WBlockType.class.getCanonicalName();
                     }
 
                     String migratedJson = migrationService.migrateToLatest(json, entityType);
@@ -149,12 +149,35 @@ public class BlockTypeResourceSyncType implements ResourceSyncType {
                     // Transform document (worldId replacement + prefix mapping)
                     migratedDoc = documentTransformer.transformForImport(migratedDoc, definition);
 
+                    // Normalize blockId to String (YAML may parse numbers as Integer)
+                    String transformedBlockId = getBlockIdAsString(migratedDoc);
+                    if (transformedBlockId != null) {
+                        migratedDoc.put("blockId", transformedBlockId);
+
+                        // Also normalize publicData._id if present
+                        Object publicDataObj = migratedDoc.get("publicData");
+                        if (publicDataObj instanceof Document publicData) {
+                            Object publicDataId = publicData.get("_id");
+                            if (publicDataId != null) {
+                                String normalizedPublicDataId = publicDataId instanceof String ?
+                                        (String) publicDataId : publicDataId.toString();
+                                publicData.put("_id", normalizedPublicDataId);
+                            }
+                        }
+                    }
+
+                    // Get the transformed worldId for lookup
+                    String transformedWorldId = migratedDoc.getString("worldId");
+
                     // Find existing by unique constraint (worldId + blockId)
                     Query findQuery = new Query(
-                            Criteria.where("worldId").is(migratedDoc.getString("worldId"))
-                                    .and("blockId").is(getBlockIdAsString(migratedDoc))
+                            Criteria.where("worldId").is(transformedWorldId)
+                                    .and("blockId").is(transformedBlockId)
                     );
                     Document existing = mongoTemplate.findOne(findQuery, Document.class, COLLECTION_NAME);
+
+                    log.debug("Checking for existing blocktype: worldId={}, blockId={}, found={}",
+                            transformedWorldId, transformedBlockId, existing != null);
 
                     // Check if should import
                     if (!force && existing != null) {
@@ -162,7 +185,7 @@ public class BlockTypeResourceSyncType implements ResourceSyncType {
                         Object dbUpdatedAt = existing.get("updatedAt");
                         if (fileUpdatedAt != null && dbUpdatedAt != null) {
                             if (dbUpdatedAt.toString().compareTo(fileUpdatedAt.toString()) > 0) {
-                                log.debug("Skipping blocktype {} (DB is newer)", blockId);
+                                log.debug("Skipping blocktype {} (DB is newer)", transformedBlockId);
                                 continue;
                             }
                         }
@@ -174,12 +197,16 @@ public class BlockTypeResourceSyncType implements ResourceSyncType {
                     // If existing, use its ObjectId to update in place
                     if (existing != null) {
                         migratedDoc.put("_id", existing.get("_id"));
+                        log.info("Updating existing blocktype: worldId={}, blockId={}, _id={}",
+                                transformedWorldId, transformedBlockId, existing.get("_id"));
+                    } else {
+                        log.info("Creating new blocktype: worldId={}, blockId={}", transformedWorldId, transformedBlockId);
                     }
                     // else: _id is removed, MongoDB will generate a new ObjectId
 
                     // Save to MongoDB
                     mongoTemplate.save(migratedDoc, COLLECTION_NAME);
-                    log.debug("Imported blocktype: {}", blockId);
+                    log.debug("Imported blocktype: {}", transformedBlockId);
                     imported++;
 
                 } catch (Exception e) {

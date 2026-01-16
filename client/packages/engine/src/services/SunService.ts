@@ -43,7 +43,7 @@ export class SunService {
   private lensFlareEnabled: boolean = true;
   private lensFlareIntensity: number = 1.0;
   private lensFlareColor: Color3 = new Color3(1, 0.9, 0.7); // Warm flare color
-  private lensFlareTexture: string = 'w:textures/sun/flare.png';
+  private lensFlareTexture: string = 'n:textures/environment/sun/flare.png';
 
   // Sun position parameters
   private currentAngleY: number = 90; // Default: East
@@ -271,7 +271,7 @@ export class SunService {
 
     if (this.networkService) {
       try {
-        const texturePath = this.appContext.worldInfo?.settings?.sunTexture || 'w:textures/sun/sun1.png';
+        const texturePath = this.appContext.worldInfo?.settings?.sunTexture || 'n:textures/environment/sun/sun.png';
         // Load texture from asset server with credentials
         const textureUrl = this.networkService.getAssetUrl(texturePath);
         const blobUrl = await loadTextureUrlWithCredentials(textureUrl);

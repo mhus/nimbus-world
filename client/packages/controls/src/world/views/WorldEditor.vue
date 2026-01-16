@@ -225,7 +225,7 @@
               <input
                 v-model="formData.groundBlockType"
                 type="text"
-                placeholder="r/grass"
+                placeholder="n:g"
                 class="input input-bordered w-full"
               />
             </div>
@@ -238,7 +238,7 @@
               <input
                 v-model="formData.waterBlockType"
                 type="text"
-                placeholder="r/ocean"
+                placeholder="n:o"
                 class="input input-bordered w-full"
               />
             </div>
@@ -1459,16 +1459,16 @@ const formData = ref({
   editor: [] as string[],
   supporter: [] as string[],
   player: [] as string[],
-  groundLevel: 0,
-  waterLevel: null as number | null,
-  groundBlockType: 'r/grass',
-  waterBlockType: 'r/ocean',
+  groundLevel: 60,
+  waterLevel: 64,
+  groundBlockType: 'n:g',
+  waterBlockType: 'n:o',
   publicData: {
     worldId: '',
     title: '',
     description: '',
-    chunkSize: 16,
-    hexGridSize: 16,
+    chunkSize: 32,
+    hexGridSize: 400,
     worldIcon: '',
     status: 0,
     seasonStatus: 0,
@@ -1477,19 +1477,19 @@ const formData = ref({
     splashScreen: '',
     splashScreenAudio: '',
     start: {
-      x: -120000,
-      y: -100,
-      z: -128000
+      x: -200,
+      y: 0,
+      z: -200
     },
     stop: {
-      x: 120000,
+      x: 200,
       y: 200,
-      z: 128000
+      z: 200
     },
     entryPoint: {
       area: {
-        position: { x: 0, y: 0, z: 0 },
-        size: { x: 10, y: 10, z: 10 }
+        position: { x: 10, y: 65, z: 10 },
+        size: { x: 1, y: 1, z: 1 }
       },
       grid: { q: 0, r: 0 }
     },
@@ -1567,16 +1567,16 @@ const loadWorld = () => {
       editor: [],
       supporter: [],
       player: [],
-      groundLevel: 0,
-      waterLevel: null,
-      groundBlockType: 'r/grass',
-      waterBlockType: 'r/ocean',
+      groundLevel: 60,
+      waterLevel: 64,
+      groundBlockType: 'n:g',
+      waterBlockType: 'n:o',
       publicData: {
         worldId: '',
         title: '',
         description: '',
-        chunkSize: 16,
-        hexGridSize: 16,
+        chunkSize: 32,
+        hexGridSize: 400,
         worldIcon: '',
         status: 0,
         seasonStatus: 0,
@@ -1585,19 +1585,19 @@ const loadWorld = () => {
         splashScreen: '',
         splashScreenAudio: '',
         start: {
-          x: -120000,
-          y: -100,
-          z: -128000
+          x: -200,
+          y: 0,
+          z: -200
         },
         stop: {
-          x: 120000,
+          x: 200,
           y: 200,
-          z: 128000
+          z: 200
         },
         entryPoint: {
           area: {
-            position: { x: 0, y: 0, z: 0 },
-            size: { x: 10, y: 10, z: 10 }
+            position: { x: 10, y: 65, z: 10 },
+            size: { x: 1, y: 1, z: 1 }
           },
           grid: { q: 0, r: 0 }
         },

@@ -57,7 +57,7 @@ public class BlockTypeController {
 
         List<BlockType> blockTypes = service.findByBlockTypeGroup(worldId, groupName).stream()
         .filter(WBlockType::isEnabled)
-        .map(t -> t.appendWorldPrefix().getPublicData())
+        .map(t -> t.getPublicData())
         .toList();
 
         log.debug("Returning {} BlockTypes for group: {}", blockTypes.size(), groupName);

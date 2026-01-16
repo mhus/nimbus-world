@@ -1,11 +1,13 @@
 package de.mhus.nimbus.world.control.job;
 
+import de.mhus.nimbus.generated.types.Area;
 import de.mhus.nimbus.generated.types.Block;
 import de.mhus.nimbus.generated.types.HexGrid;
 import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.generated.types.Vector3;
 import de.mhus.nimbus.generated.types.Vector3Int;
 import de.mhus.nimbus.generated.types.WorldInfo;
+import de.mhus.nimbus.generated.types.WorldInfoEntryPointDTO;
 import de.mhus.nimbus.world.shared.job.JobExecutionException;
 import de.mhus.nimbus.world.shared.job.JobExecutor;
 import de.mhus.nimbus.world.shared.job.WJob;
@@ -155,8 +157,8 @@ public class CreateWorldDefaultsJobExecutor implements JobExecutor {
                 resultMessage.append("- Chunk 0:0 marked as dirty for regeneration\n");
                 log.debug("Marked chunk 0:0 as dirty for world {}", worldId);
 
-                // 4. Set default entry point to 10,67,10
-                log.info("Setting default entry point to 10,67,10 for world {}", worldId);
+                // 4. Set default world configuration (boundaries, entry point, chunk size, hex grid size)
+                log.info("Setting default world configuration for world {}", worldId);
                 worldService.updateWorld(de.mhus.nimbus.shared.types.WorldId.of(worldId).orElseThrow(), world -> {
                     WorldInfo publicData = world.getPublicData();
                     if (publicData == null) {
@@ -164,16 +166,56 @@ public class CreateWorldDefaultsJobExecutor implements JobExecutor {
                         world.setPublicData(publicData);
                     }
 
-                    Vector3 entryPoint = Vector3.builder()
-                            .x(10.0f)
-                            .y(67.0f)
-                            .z(10.0f)
+                    // Set boundaries (start = min, stop = max)
+                    Vector3 boundariesMin = Vector3.builder()
+                            .x(-200.0f)
+                            .y(0.0f)
+                            .z(-200.0f)
+                            .build();
+                    publicData.setStart(boundariesMin);
+
+                    Vector3 boundariesMax = Vector3.builder()
+                            .x(200.0f)
+                            .y(200.0f)
+                            .z(200.0f)
+                            .build();
+                    publicData.setStop(boundariesMax);
+
+                    // Set chunk size
+                    publicData.setChunkSize(32);
+
+                    // Set hex grid size
+                    publicData.setHexGridSize(400);
+
+                    // Set entry point with area at 10,65,10 and size 1x1x1
+                    Area entryArea = Area.builder()
+                            .position(Vector3Int.builder()
+                                    .x(10)
+                                    .y(65)
+                                    .z(10)
+                                    .build())
+                            .size(Vector3Int.builder()
+                                    .x(1)
+                                    .y(1)
+                                    .z(1)
+                                    .build())
                             .build();
 
-                    publicData.setStart(entryPoint);
+                    WorldInfoEntryPointDTO entryPoint = WorldInfoEntryPointDTO.builder()
+                            .area(entryArea)
+                            .grid(HexVector2.builder()
+                                    .q(0)
+                                    .r(0)
+                                    .build())
+                            .build();
+
+                    publicData.setEntryPoint(entryPoint);
                 });
-                resultMessage.append("- Default entry point set to 10,67,10\n");
-                log.debug("Set default entry point to 10,67,10 for world {}", worldId);
+                resultMessage.append("- World boundaries set to (-200,0,-200) to (200,200,200)\n");
+                resultMessage.append("- Chunk size set to 32\n");
+                resultMessage.append("- Hex grid size set to 400\n");
+                resultMessage.append("- Entry point set to (10,65,10) with size (1,1,1) in hex grid 0:0\n");
+                log.debug("Set default world configuration for world {}", worldId);
 
                 String finalMessage = resultMessage.toString();
                 log.info("Successfully created default entities for world {}:\n{}", worldId, finalMessage);

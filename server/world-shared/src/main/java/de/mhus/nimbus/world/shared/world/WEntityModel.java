@@ -41,6 +41,10 @@ public class WEntityModel implements Identifiable {
     @Indexed(unique = true)
     private String modelId;
 
+    private String title;
+
+    private String description;
+
     /**
      * Public data containing the generated EntityModel DTO.
      * This is what gets serialized and sent to clients.

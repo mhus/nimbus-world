@@ -107,8 +107,8 @@ public class WBlockTypeService {
         publicData.setId(fullBlockId);
 
         entity.setPublicData(publicData);
-        entity.touchUpdate();
         entity.removeWorldPrefix();
+        entity.touchUpdate();
 
         WBlockType saved = repository.save(entity);
         log.debug("Saved WBlockType: {}", blockId);

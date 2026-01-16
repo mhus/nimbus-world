@@ -39,9 +39,15 @@ public class BackdropController {
             @ApiResponse(responseCode = "400", description = "Invalid worldId"),
             @ApiResponse(responseCode = "404", description = "Backdrop not found")
     })
-    public ResponseEntity<?> getBackdrop(
+    public ResponseEntity<Backdrop> getBackdrop(
             HttpServletRequest request,
             @PathVariable String backdropId) {
+
+        if ("none".equals(backdropId)) {
+            return ResponseEntity.ok().body(
+                    Backdrop.builder().type("none").build()
+            );
+        }
 
         var worldId = accessUtil.getWorldId(request).orElseThrow(
                 () -> new IllegalStateException("World ID not found in request")

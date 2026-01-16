@@ -30,8 +30,12 @@ public class WEntityModelService {
      */
     @Transactional(readOnly = true)
     public Optional<WEntityModel> findByModelId(WorldId worldId, String modelId) {
-        var regionWorldId = worldId.toRegionCollection();
-        return repository.findByWorldIdAndModelId(regionWorldId.getId(), modelId);
+        var lookupWorld = worldId.mainWorld();
+        var collection = WorldCollection.of(lookupWorld, modelId);
+        lookupWorld = collection.worldId();
+        if (!lookupWorld.isCollection())
+            lookupWorld = lookupWorld.toRegionCollection(); // if the result is a world id, convert to region collection
+        return repository.findByWorldIdAndModelId(lookupWorld.getId(), collection.path());
     }
 
     /**

@@ -80,13 +80,14 @@ public class WWorld implements Identifiable {
      * Used when no chunk data exists in database.
      */
     @Builder.Default
-    private int groundLevel = 0;
+    private int groundLevel = 60;
 
     /**
      * Water level for ocean generation (Y coordinate).
      * If set, water blocks are generated up to this level.
      */
-    private Integer waterLevel;
+    @Builder.Default
+    private Integer waterLevel = 64;
 
     /**
      * Block type ID for ground blocks (e.g., "r/grass" for grass).

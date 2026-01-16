@@ -303,23 +303,7 @@ public class EBlockTypeController extends BaseEditorController {
         Optional<WBlockType> updated = blockTypeService.update(actualWid, blockId, blockType -> {
             if (request.publicData() != null) {
                 // Ensure publicData.id has full blockId with prefix (e.g., "r:wfr" not just "wfr")
-                BlockType publicData = request.publicData();
-                var collection = WorldCollection.of(actualWid, finalBlockId);
-                String fullBlockId = collection.prefix() + ":" + collection.path();
-
-                // Create a deep copy with corrected ID (important for MongoDB to detect change)
-                try {
-                    BlockType correctedPublicData = engineMapper.readValue(
-                        engineMapper.writeValueAsString(publicData),
-                        BlockType.class
-                    );
-                    correctedPublicData.setId(fullBlockId);
-                    blockType.setPublicData(correctedPublicData);
-                } catch (Exception e) {
-                    log.error("Failed to clone publicData", e);
-                    publicData.setId(fullBlockId);
-                    blockType.setPublicData(publicData);
-                }
+                blockType.appendWorldPrefix();
             }
             if (request.enabled() != null) {
                 blockType.setEnabled(request.enabled());
