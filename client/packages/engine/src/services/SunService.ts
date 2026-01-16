@@ -40,7 +40,7 @@ export class SunService {
 
   // Lens flare system
   private lensFlareSystem?: LensFlareSystem;
-  private lensFlareEnabled: boolean = false;
+  private lensFlareEnabled: boolean = true;
   private lensFlareIntensity: number = 1.0;
   private lensFlareColor: Color3 = new Color3(1, 0.9, 0.7); // Warm flare color
   private lensFlareTexture: string = 'w:textures/sun/flare.png';
@@ -188,19 +188,43 @@ export class SunService {
 
     // Add multiple flares at different positions along the flare axis
     // Position 0 = at emitter, 1 = opposite side, 0.5 = middle
-    // Create flares immediately like in the Babylon.js example
 
     // Main bright flare at sun position (reduced intensity)
-    new LensFlare(0.3, 0, this.lensFlareColor.scale(0.5), flareTextureUrl, this.lensFlareSystem);
+    const flare1 = new LensFlare(0.3, 0, this.lensFlareColor.scale(0.5), flareTextureUrl, this.lensFlareSystem);
 
     // Secondary flares along the axis (reduced intensity)
-    new LensFlare(0.1, 0.2, new Color3(0.5, 0.4, 0.3), flareTextureUrl, this.lensFlareSystem);
-    new LensFlare(0.15, 0.4, new Color3(0.45, 0.35, 0.25), flareTextureUrl, this.lensFlareSystem);
-    new LensFlare(0.08, 0.6, new Color3(0.5, 0.45, 0.35), flareTextureUrl, this.lensFlareSystem);
-    new LensFlare(0.12, 0.8, new Color3(0.4, 0.3, 0.2), flareTextureUrl, this.lensFlareSystem);
-    new LensFlare(0.2, 1.0, new Color3(0.5, 0.425, 0.3), flareTextureUrl, this.lensFlareSystem);
+    const flare2 = new LensFlare(0.1, 0.2, new Color3(0.5, 0.4, 0.3), flareTextureUrl, this.lensFlareSystem);
+    const flare3 = new LensFlare(0.15, 0.4, new Color3(0.45, 0.35, 0.25), flareTextureUrl, this.lensFlareSystem);
+    const flare4 = new LensFlare(0.08, 0.6, new Color3(0.5, 0.45, 0.35), flareTextureUrl, this.lensFlareSystem);
+    const flare5 = new LensFlare(0.12, 0.8, new Color3(0.4, 0.3, 0.2), flareTextureUrl, this.lensFlareSystem);
+    const flare6 = new LensFlare(0.2, 1.0, new Color3(0.5, 0.425, 0.3), flareTextureUrl, this.lensFlareSystem);
 
-    // TODO wait until all LensFlair textures are loaded before enabling or it will crash !!!
+    // Wait for all flare textures to load
+    const flares = [flare1, flare2, flare3, flare4, flare5, flare6];
+    const textureLoadPromises = flares.map((flare) => {
+      return new Promise<void>((resolve) => {
+        if (!flare.texture) {
+          resolve();
+          return;
+        }
+
+        if (flare.texture.isReady()) {
+          resolve();
+        } else {
+          flare.texture.onLoadObservable.addOnce(() => {
+            resolve();
+          });
+          // Add timeout to prevent hanging
+          setTimeout(() => {
+            logger.warn('Lens flare texture loading timeout for individual flare');
+            resolve();
+          }, 5000);
+        }
+      });
+    });
+
+    await Promise.all(textureLoadPromises);
+    logger.debug('All lens flare textures loaded');
 
     // Configure lens flare system
     this.lensFlareSystem.borderLimit = 300; // Distance from screen edge before fading
