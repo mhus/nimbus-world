@@ -21,9 +21,25 @@ import java.util.Map;
  * - Orphaned storage references
  * - Invalid or corrupted entries
  *
+ * Job Type Format:
+ * - "repair-resources" → Repair all resource types
+ * - "repair-resources:asset" → Repair only assets
+ * - "repair-resources:asset,backdrop,storage" → Repair multiple specific types
+ *
+ * Available resource types:
+ * - asset
+ * - backdrop
+ * - blocktype
+ * - item
+ * - itemtype
+ * - itemposition
+ * - entity
+ * - entitymodel
+ * - model
+ * - ground
+ * - storage
+ *
  * Parameters:
- * - types (optional): Comma-separated list of types to repair (default: all types)
- * - dryRun (optional): "true" or "false" (default: "false") - only report issues without fixing
  * - worldId: Provided by job.getWorldId()
  */
 @Component
@@ -35,15 +51,14 @@ public class ResourceRepairJobExecutor implements JobExecutor {
 
     @Override
     public String getExecutorName() {
-        return "resourceRepair";
+        return "repair-resources";
     }
 
     @Override
     public JobResult execute(WJob job) throws JobExecutionException {
         try {
-            // Parse parameters
-            Map<String, String> params = job.getParameters();
-            List<String> types = parseTypesParameter(params);
+            // Parse resource types from job type (format: "repair-resources:asset,storage")
+            List<String> types = parseResourceTypesFromJobType(job.getType());
 
             // Parse worldId
             String worldIdStr = job.getWorldId();
@@ -61,21 +76,35 @@ public class ResourceRepairJobExecutor implements JobExecutor {
                 throw new JobExecutionException("Invalid worldId: " + worldIdStr, e);
             }
 
-            log.info("Starting resource repair job: worldId={} types={}",
-                    worldId, types.isEmpty() ? "all" : types);
+            if (types.isEmpty()) {
+                log.info("Starting resource repair job: worldId={} (all types)", worldId);
+            } else {
+                log.info("Starting resource repair job: worldId={} (types: {})", worldId, types);
+            }
 
             // Execute repair
             var results = repairService.repair(worldId, types);
             StringBuilder report = new StringBuilder();
+            report.append("Resource repair for world ").append(worldId);
+            if (!types.isEmpty()) {
+                report.append(" (types: ").append(types).append(")");
+            }
+            report.append(":\n");
+
             results.forEach(
-                    r -> report.append(r.serviceName())
+                    r -> report.append("- ")
+                            .append(r.serviceName())
                             .append(": ")
                             .append(r.success() ? "SUCCESS" : "FAILED")
                             .append(" - ")
                             .append(r.message())
                             .append("\n")
             );
-            return JobResult.ofSuccess(report.toString());
+
+            String finalMessage = report.toString();
+            log.info("Resource repair completed:\n{}", finalMessage);
+
+            return JobResult.ofSuccess(finalMessage);
         } catch (JobExecutionException e) {
             throw e;
         } catch (Exception e) {
@@ -85,26 +114,32 @@ public class ResourceRepairJobExecutor implements JobExecutor {
     }
 
     /**
-     * Parse boolean parameter with default value.
+     * Parse resource types from job type string.
+     * Format: "resourceRepair" → empty list (all types)
+     *         "resourceRepair:asset,storage" → ["asset", "storage"]
+     *
+     * @param jobType Job type string
+     * @return List of resource types (empty = all types)
      */
-    private boolean parseBooleanParameter(Map<String, String> params, String key, boolean defaultValue) {
-        String value = params.get(key);
-        if (value == null || value.isBlank()) {
-            return defaultValue;
-        }
-        return "true".equalsIgnoreCase(value.trim());
-    }
-
-    /**
-     * Parse types parameter (comma-separated list).
-     */
-    private List<String> parseTypesParameter(Map<String, String> params) {
-        String typesParam = params.get("types");
-        if (typesParam == null || typesParam.isBlank()) {
+    private List<String> parseResourceTypesFromJobType(String jobType) {
+        if (jobType == null || jobType.isBlank()) {
             return Collections.emptyList();
         }
 
-        return Arrays.stream(typesParam.split(","))
+        // Check if types are specified after colon
+        int colonIndex = jobType.indexOf(':');
+        if (colonIndex < 0) {
+            return Collections.emptyList();
+        }
+
+        // Extract types after colon
+        String typesString = jobType.substring(colonIndex + 1).trim();
+        if (typesString.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        // Split by comma and trim
+        return Arrays.stream(typesString.split(","))
                 .map(String::trim)
                 .filter(s -> !s.isEmpty())
                 .toList();

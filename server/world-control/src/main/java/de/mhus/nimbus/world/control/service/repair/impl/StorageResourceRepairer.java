@@ -7,6 +7,7 @@ import de.mhus.nimbus.world.control.service.repair.ResourceRepairService;
 import de.mhus.nimbus.world.control.service.repair.ResourceRepairer;
 import de.mhus.nimbus.world.shared.layer.WLayerService;
 import de.mhus.nimbus.world.shared.world.SAssetService;
+import de.mhus.nimbus.world.shared.world.StorageProvider;
 import de.mhus.nimbus.world.shared.world.WChunkService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -41,9 +42,7 @@ public class StorageResourceRepairer implements ResourceRepairer {
     private final StorageDataRepository storageDataRepository;
 
     // Services with data ownership
-    private final SAssetService assetService;
-    private final WChunkService chunkService;
-    private final WLayerService layerService;
+    private final List<StorageProvider> storageProviders;
 
     @Override
     public String name() {
@@ -145,31 +144,14 @@ public class StorageResourceRepairer implements ResourceRepairer {
         // Get all referenced storage IDs from entities using services
         Set<String> referencedStorageIds = new HashSet<>();
 
-        // From SAsset (via SAssetService)
-        try {
-            List<String> assetStorageIds = assetService.findDistinctStorageIds(worldId);
-            referencedStorageIds.addAll(assetStorageIds);
-            log.debug("Found {} storageIds referenced by assets", assetStorageIds.size());
-        } catch (Exception e) {
-            log.warn("Failed to get asset storageIds: {}", e.getMessage());
-        }
-
-        // From WChunk (via WChunkService)
-        try {
-            List<String> chunkStorageIds = chunkService.findDistinctStorageIds(worldId);
-            referencedStorageIds.addAll(chunkStorageIds);
-            log.debug("Found {} storageIds referenced by chunks", chunkStorageIds.size());
-        } catch (Exception e) {
-            log.warn("Failed to get chunk storageIds: {}", e.getMessage());
-        }
-
-        // From WLayerTerrain (via WLayerService)
-        try {
-            List<String> terrainStorageIds = layerService.findDistinctStorageIds(worldId);
-            referencedStorageIds.addAll(terrainStorageIds);
-            log.debug("Found {} storageIds referenced by terrain layers", terrainStorageIds.size());
-        } catch (Exception e) {
-            log.warn("Failed to get terrain storageIds: {}", e.getMessage());
+        for (StorageProvider provider : storageProviders) {
+            try {
+                List<String> providerStorageIds = provider.findDistinctStorageIds(worldId);
+                referencedStorageIds.addAll(providerStorageIds);
+                log.debug("Found {} storageIds referenced by provider {}", providerStorageIds.size(), provider.getClass().getSimpleName());
+            } catch (Exception e) {
+                log.warn("Failed to get storageIds from {}: {}", provider.getClass().getSimpleName(), e.getMessage());
+            }
         }
 
         // Remove nulls

@@ -32,7 +32,7 @@ import java.util.zip.GZIPOutputStream;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class SAssetService {
+public class SAssetService implements StorageProvider {
 
     public static final String STORAGE_SCHEMA = "SAssetStorage";
     public static final SchemaVersion STORAGE_SCHEMA_VERSION = SchemaVersion.create("1.0.0");
@@ -804,6 +804,7 @@ public class SAssetService {
      * @param worldId World identifier
      * @return List of distinct storageIds (excludes null values)
      */
+    @Override
     public List<String> findDistinctStorageIds(WorldId worldId) {
         var lookupWorld = worldId.mainWorld();
         var query = new org.springframework.data.mongodb.core.query.Query(

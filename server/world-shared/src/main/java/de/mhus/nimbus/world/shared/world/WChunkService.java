@@ -40,7 +40,7 @@ import java.util.zip.GZIPOutputStream;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class WChunkService {
+public class WChunkService implements StorageProvider {
 
     public static final String STORAGE_SCHEMA = "WChunkStorage";
     public static final SchemaVersion STORAGE_SCHEMA_VERSION = SchemaVersion.create("1.0.1");
@@ -661,6 +661,7 @@ public class WChunkService {
      * @param worldId World identifier
      * @return List of distinct storageIds (excludes null values)
      */
+    @Override
     public List<String> findDistinctStorageIds(WorldId worldId) {
         var lookupWorld = worldId.withoutInstance();
         var query = new Query(Criteria.where("worldId").is(lookupWorld.getId()));

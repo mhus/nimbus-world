@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.shared.storage.StorageService;
 import de.mhus.nimbus.shared.types.SchemaVersion;
 import de.mhus.nimbus.shared.types.WorldId;
+import de.mhus.nimbus.world.shared.world.StorageProvider;
 import de.mhus.nimbus.world.shared.world.WWorldService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -40,7 +41,7 @@ import java.util.zip.GZIPOutputStream;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class WLayerService {
+public class WLayerService implements StorageProvider {
 
     public static final String STORAGE_SCHEMA = "WLayerTerrainStorage";
     public static final SchemaVersion STORAGE_SCHEMA_VERSION = SchemaVersion.create("1.0.1");
@@ -1920,6 +1921,7 @@ public class WLayerService {
      * @param worldId World identifier
      * @return List of distinct storageIds (excludes null values)
      */
+    @Override
     public List<String> findDistinctStorageIds(WorldId worldId) {
         var lookupWorld = worldId.withoutInstance();
         var query = new Query(Criteria.where("worldId").is(lookupWorld.getId()));
