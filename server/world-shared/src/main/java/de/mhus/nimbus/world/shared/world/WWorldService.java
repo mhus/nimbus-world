@@ -236,6 +236,20 @@ public class WWorldService {
     }
 
     /**
+     * Checks if any worlds exist in the specified region.
+     *
+     * @param regionId The regionId to check
+     * @return true if at least one world exists in the region, false otherwise
+     */
+    @Transactional(readOnly = true)
+    public boolean existsWorldsInRegion(String regionId) {
+        if (regionId == null || regionId.isBlank()) {
+            return false;
+        }
+        return !repository.findByRegionId(regionId).isEmpty();
+    }
+
+    /**
      * Initializes Era 1 for a new world by setting currentEra to 1
      * and linuxEpocheDeltaMinutes to the current time.
      *
@@ -433,6 +447,58 @@ public class WWorldService {
         }
 
         return worldCollectionRepository.existsByWorldId(worldId.getId());
+    }
+
+    @Transactional(readOnly = true)
+    public boolean existsWorldCollection(String worldId) {
+        if (worldId == null || !worldId.startsWith("@")) {
+            return false;
+        }
+        return worldCollectionRepository.existsByWorldId(worldId);
+    }
+
+    @Transactional(readOnly = true)
+    public boolean existsWorld(String worldId) {
+        if (worldId == null || worldId.startsWith("@")) {
+            return false;
+        }
+        return repository.existsByWorldId(worldId);
+    }
+
+    /**
+     * Deletes world collection entities for a region.
+     * This deletes the WWorldCollection entities (database entries) for:
+     * - @region:<regionName>
+     * - @public:<regionName>
+     *
+     * Note: This only deletes the collection metadata, not the associated resources.
+     * Resources should be deleted separately via delete-world-resources jobs.
+     *
+     * @param regionName The name of the region (not the MongoDB ID)
+     */
+    @Transactional
+    public void deleteRegionCollectionEntities(String regionName) {
+        if (regionName == null || regionName.isBlank()) {
+            log.warn("Cannot delete region collection entities: regionName is null or blank");
+            return;
+        }
+
+        String regionCollectionId = "@region:" + regionName;
+        String publicCollectionId = "@public:" + regionName;
+
+        try {
+            worldCollectionRepository.deleteByWorldId(regionCollectionId);
+            log.info("Deleted collection entity: {}", regionCollectionId);
+        } catch (Exception e) {
+            log.warn("Failed to delete collection entity {}: {}", regionCollectionId, e.getMessage());
+        }
+
+        try {
+            worldCollectionRepository.deleteByWorldId(publicCollectionId);
+            log.info("Deleted collection entity: {}", publicCollectionId);
+        } catch (Exception e) {
+            log.warn("Failed to delete collection entity {}: {}", publicCollectionId, e.getMessage());
+        }
     }
 
     /**

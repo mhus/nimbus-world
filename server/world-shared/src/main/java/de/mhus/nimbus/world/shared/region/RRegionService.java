@@ -30,6 +30,7 @@ public class RRegionService {
     private final JwtService jwtService; // neu
     private final RUniverseClientService universeClientService; // neu
     private final RegionSettings regionProperties;
+    private final de.mhus.nimbus.world.shared.world.WWorldService worldService;
 
     public RRegion create(String name, String maintainers) {
         if (name == null || name.isBlank()) throw new IllegalArgumentException("Name must not be blank");
@@ -83,10 +84,13 @@ public class RRegionService {
     public RRegion update(String id, String name, String maintainers) {
         RRegion existing = repository.findById(id)
             .orElseThrow(() -> new IllegalArgumentException("Region not found: " + id));
+
+        // Check if name is being changed - this is not allowed
         if (name != null && !name.isBlank() && !name.equals(existing.getName())) {
-            if (repository.existsByName(name)) throw new IllegalArgumentException("Region name exists: " + name);
-            existing.setName(name);
+            throw new IllegalArgumentException("Region name cannot be changed after creation. Current name: "
+                + existing.getName() + ", attempted new name: " + name);
         }
+
         if (maintainers != null)
             existing.setMaintainers(new HashSet<>(Arrays.asList(maintainers.trim())));
         return repository.save(existing);
@@ -95,10 +99,13 @@ public class RRegionService {
     public RRegion updateFull(String id, String name, String maintainers, Boolean enabled) {
         RRegion existing = repository.findById(id)
             .orElseThrow(() -> new IllegalArgumentException("Region not found: " + id));
+
+        // Check if name is being changed - this is not allowed
         if (name != null && !name.isBlank() && !name.equals(existing.getName())) {
-            if (repository.existsByName(name)) throw new IllegalArgumentException("Region name exists: " + name);
-            existing.setName(name);
+            throw new IllegalArgumentException("Region name cannot be changed after creation. Current name: "
+                + existing.getName() + ", attempted new name: " + name);
         }
+
         if (maintainers != null)
             existing.setMaintainers(new HashSet<>(Arrays.asList(maintainers.trim())));
         if (enabled != null) existing.setEnabled(enabled);
@@ -118,7 +125,25 @@ public class RRegionService {
     }
 
     public void delete(String id) {
+        // Check if region exists
+        RRegion region = repository.findById(id)
+            .orElseThrow(() -> new IllegalArgumentException("Region not found: " + id));
+
+        // Check if there are any worlds in this region
+        if (worldService.existsWorldsInRegion(region.getName())) {
+            throw new IllegalStateException("Cannot delete region '" + region.getName() +
+                "': There are still worlds in this region. Please delete or move all worlds first.");
+        }
+
+        String regionName = region.getName();
+
+        // Delete the region
         repository.deleteById(id);
+        log.info("Region '{}' deleted", regionName);
+
+        // Delete associated world collection entities (@region:<name> and @public:<name>)
+        // This deletes the WWorldCollection database entries before the resource cleanup jobs run
+        worldService.deleteRegionCollectionEntities(regionName);
     }
 
     public Optional<String>  getRegionNameById(String regionId) {

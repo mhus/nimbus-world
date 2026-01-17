@@ -190,7 +190,7 @@ public class ResourceRepairService {
 
             for (String worldId : mainWorldIds) {
                 try {
-                    if (worldService.getByWorldId(worldId).isEmpty()) {
+                    if (!worldService.existsWorld(worldId) && !worldService.existsWorldCollection(worldId)) {
                         orphanedWorldIds.add(worldId);
                         log.debug("Found orphaned worldId: {}", worldId);
                     }

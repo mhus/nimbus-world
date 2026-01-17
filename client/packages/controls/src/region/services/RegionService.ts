@@ -41,8 +41,8 @@ class RegionService {
     return apiService.put<Region>(url, request);
   }
 
-  async deleteRegion(id: string): Promise<void> {
-    return apiService.delete<void>(`/control/regions/${id}`);
+  async deleteRegion(id: string): Promise<{ jobId: string }> {
+    return apiService.delete<{ jobId: string }>(`/control/regions/${id}`);
   }
 
   async enableRegion(id: string): Promise<Region> {

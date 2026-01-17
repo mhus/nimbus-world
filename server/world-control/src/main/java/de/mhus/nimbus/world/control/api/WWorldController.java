@@ -317,14 +317,15 @@ public class WWorldController extends BaseEditorController {
             return bad("worldId is required");
         }
 
-        if (Strings.isBlank(request.title())) {
-            return bad("title is required");
+        String title = request.title();
+        if (Strings.isBlank(title)) {
+            title = request.worldId();
         }
 
         try {
             WorldInfo info = request.publicData() != null ? request.publicData() : new WorldInfo();
             // Set title in publicData
-            info.setTitle(request.title());
+            info.setTitle(title);
 
             WorldId worldIdObj = WorldId.of(request.worldId()).orElseThrow(() ->
                 new IllegalArgumentException("Invalid worldId: " + request.worldId()));

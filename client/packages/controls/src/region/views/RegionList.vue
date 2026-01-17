@@ -133,12 +133,23 @@
         </div>
       </div>
     </div>
+
+    <!-- Job Watch Modal -->
+    <JobWatch
+      v-if="showJobWatch && jobWatchWorldId && jobWatchJobId"
+      :world-id="jobWatchWorldId"
+      :job-id="jobWatchJobId"
+      @close="handleJobWatchClose"
+      @completed="handleJobCompleted"
+      @failed="handleJobFailed"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { regionService, type Region } from '../services/RegionService';
+import JobWatch from '@/components/JobWatch.vue';
 
 const emit = defineEmits<{
   select: [id: string];
@@ -150,6 +161,11 @@ const loading = ref(false);
 const error = ref<string | null>(null);
 const searchQuery = ref('');
 const filterEnabled = ref(false);
+
+// Job watch for region collection cleanup
+const showJobWatch = ref(false);
+const jobWatchWorldId = ref('');
+const jobWatchJobId = ref('');
 
 // Paging
 const currentPage = ref(1);
@@ -208,16 +224,24 @@ const handleSelect = (id: string) => {
 };
 
 const handleDelete = async (id: string, name: string) => {
-  if (!confirm(`Are you sure you want to delete region "${name}"?`)) {
+  if (!confirm(`Are you sure you want to delete region "${name}"?\n\nThis will delete the region and all associated collections (@region:${name} and @public:${name}).`)) {
     return;
   }
 
   try {
-    await regionService.deleteRegion(id);
-    await loadRegions();
+    loading.value = true;
+    const result = await regionService.deleteRegion(id);
+
+    // Show job watch dialog for collection cleanup
+    // Use the region collection ID as worldId for tracking
+    jobWatchWorldId.value = `@region:${name}`;
+    jobWatchJobId.value = result.jobId;
+    showJobWatch.value = true;
   } catch (e) {
     error.value = e instanceof Error ? e.message : 'Failed to delete region';
-    console.error('Failed to delete region:', e);
+    console.error('[RegionList] Failed to delete region:', e);
+  } finally {
+    loading.value = false;
   }
 };
 
@@ -231,6 +255,25 @@ const handlePreviousPage = () => {
   if (hasPreviousPage.value) {
     currentPage.value--;
   }
+};
+
+const handleJobWatchClose = () => {
+  showJobWatch.value = false;
+  jobWatchWorldId.value = '';
+  jobWatchJobId.value = '';
+};
+
+const handleJobCompleted = async () => {
+  console.log('[RegionList] Collection cleanup job completed successfully');
+  handleJobWatchClose();
+  await loadRegions();
+};
+
+const handleJobFailed = async (errorMessage: string) => {
+  console.error('[RegionList] Collection cleanup job failed:', errorMessage);
+  error.value = `Collection cleanup failed: ${errorMessage}`;
+  handleJobWatchClose();
+  await loadRegions();
 };
 
 onMounted(() => {

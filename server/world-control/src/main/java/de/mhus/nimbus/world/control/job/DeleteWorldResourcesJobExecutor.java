@@ -8,6 +8,7 @@ import de.mhus.nimbus.world.shared.job.WJob;
 import de.mhus.nimbus.world.shared.world.WWorldService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.logging.log4j.util.Strings;
 import org.springframework.stereotype.Component;
 
 import java.util.Arrays;
@@ -64,7 +65,7 @@ public class DeleteWorldResourcesJobExecutor implements JobExecutor {
             Map<String, String> params = job.getParameters();
 
             String worldId = params.get("worldId");
-            if (worldId == null || worldId.isBlank()) {
+            if (Strings.isBlank(worldId)) {
                 throw new JobExecutionException("Missing required parameter: worldId");
             }
 
@@ -79,7 +80,7 @@ public class DeleteWorldResourcesJobExecutor implements JobExecutor {
 
             // CRITICAL: Verify that the WWorld entity no longer exists
             // If it still exists, the world hasn't been properly deleted yet
-            if (worldService.getByWorldId(worldId).isPresent()) {
+            if (worldService.existsWorld(worldId) || worldService.existsWorldCollection(worldId)) {
                 throw new JobExecutionException("Cannot delete world resources: WWorld entity still exists for worldId=" + worldId +
                         ". Please delete the WWorld entity first before cleaning up resources.");
             }

@@ -27,6 +27,7 @@ public class RRegionController extends BaseEditorController {
 
     private final RRegionService regionService;
     private final WWorldCollectionService collectionService;
+    private final de.mhus.nimbus.world.shared.job.WJobService jobService;
 
     // DTOs
     public record RegionRequest(String name, String maintainers) {}
@@ -151,18 +152,63 @@ public class RRegionController extends BaseEditorController {
     /**
      * Delete region
      * DELETE /control/region/{regionId}
+     *
+     * Deletes the region and starts cleanup jobs for associated world collections.
+     * Returns a jobId that can be used to track the cleanup progress.
      */
     @DeleteMapping("/{regionId}")
     public ResponseEntity<?> delete(@PathVariable String regionId) {
         var error = validateId(regionId, "regionId");
         if (error != null) return error;
 
-        if (regionService.getById(regionId).isEmpty()) {
+        var regionOpt = regionService.getById(regionId);
+        if (regionOpt.isEmpty()) {
             return notFound("Region not found: " + regionId);
         }
 
-        regionService.delete(regionId);
-        return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+        try {
+            String regionName = regionOpt.get().getName();
+
+            // Delete the region entity first
+            regionService.delete(regionId);
+
+            // Create cleanup jobs for associated world collections
+            // Collection IDs: @region:<regionName> and @public:<regionName>
+            String regionCollectionId = "@region:" + regionName;
+            String publicCollectionId = "@public:" + regionName;
+
+            // Start job for @region:<regionName> collection
+            Map<String, String> regionJobParams = Map.of("worldId", regionCollectionId);
+            de.mhus.nimbus.world.shared.job.WJob regionJob = jobService.createJob(
+                    regionCollectionId,
+                    "delete-world-resources",
+                    "cleanup",
+                    regionJobParams,
+                    5,  // priority
+                    0   // no retries
+            );
+
+            // Start job for @public:<regionName> collection
+            Map<String, String> publicJobParams = Map.of("worldId", publicCollectionId);
+            jobService.createJob(
+                    publicCollectionId,
+                    "delete-world-resources",
+                    "cleanup",
+                    publicJobParams,
+                    5,  // priority
+                    0   // no retries
+            );
+
+            log.info("Region '{}' deleted, started cleanup jobs for collections {} and {}",
+                    regionName, regionCollectionId, publicCollectionId);
+
+            // Return the jobId of the first job for tracking
+            return ResponseEntity.ok(Map.of("jobId", regionJob.getId()));
+
+        } catch (Exception e) {
+            log.error("Failed to delete region", e);
+            return bad(e.getMessage());
+        }
     }
 
     /**

@@ -42,8 +42,12 @@
               type="text"
               placeholder="Enter region name"
               class="input input-bordered w-full"
+              :disabled="!isNew"
               required
             />
+            <label v-if="!isNew" class="label">
+              <span class="label-text-alt">Region name cannot be changed after creation</span>
+            </label>
           </div>
 
           <!-- Enabled Status -->
