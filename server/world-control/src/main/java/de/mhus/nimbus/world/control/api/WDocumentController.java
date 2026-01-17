@@ -52,6 +52,7 @@ public class WDocumentController extends BaseEditorController {
             Map<String, String> metadata,
             String parentDocumentId,
             boolean isMain,
+            boolean readOnly,
             String hash,
             String type,
             String childType,
@@ -72,6 +73,7 @@ public class WDocumentController extends BaseEditorController {
             Map<String, String> metadata,
             String parentDocumentId,
             boolean isMain,
+            boolean readOnly,
             String hash,
             String type,
             String childType,
@@ -318,6 +320,7 @@ public class WDocumentController extends BaseEditorController {
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Document updated"),
             @ApiResponse(responseCode = "400", description = "Invalid request"),
+            @ApiResponse(responseCode = "403", description = "Document is read-only"),
             @ApiResponse(responseCode = "404", description = "Document not found")
     })
     public ResponseEntity<?> update(
@@ -335,6 +338,18 @@ public class WDocumentController extends BaseEditorController {
         if (validation != null) return validation;
         validation = validateId(documentId, "documentId");
         if (validation != null) return validation;
+
+        // Check if document is read-only
+        Optional<WDocument> existingDoc = documentService.findByDocumentId(wid, collection, documentId);
+        if (existingDoc.isEmpty()) {
+            log.warn("Document not found for update: documentId={}", documentId);
+            return notFound("document not found");
+        }
+        if (existingDoc.get().isReadOnly()) {
+            log.warn("Attempted to update read-only document: documentId={}", documentId);
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Map.of("error", "Cannot update read-only document"));
+        }
 
         Optional<WDocument> updated = documentService.update(wid, collection, documentId, doc -> {
             if (request.name() != null) doc.setName(request.name());
@@ -369,6 +384,7 @@ public class WDocumentController extends BaseEditorController {
     @ApiResponses({
             @ApiResponse(responseCode = "204", description = "Document deleted"),
             @ApiResponse(responseCode = "400", description = "Invalid parameters"),
+            @ApiResponse(responseCode = "403", description = "Document is read-only"),
             @ApiResponse(responseCode = "404", description = "Document not found")
     })
     public ResponseEntity<?> delete(
@@ -385,6 +401,18 @@ public class WDocumentController extends BaseEditorController {
         if (validation != null) return validation;
         validation = validateId(documentId, "documentId");
         if (validation != null) return validation;
+
+        // Check if document is read-only
+        Optional<WDocument> existingDoc = documentService.findByDocumentId(wid, collection, documentId);
+        if (existingDoc.isEmpty()) {
+            log.warn("Document not found for deletion: documentId={}", documentId);
+            return notFound("document not found");
+        }
+        if (existingDoc.get().isReadOnly()) {
+            log.warn("Attempted to delete read-only document: documentId={}", documentId);
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Map.of("error", "Cannot delete read-only document"));
+        }
 
         boolean deleted = documentService.delete(wid, collection, documentId);
         if (!deleted) {
@@ -411,6 +439,7 @@ public class WDocumentController extends BaseEditorController {
                 entity.getMetadata(),
                 entity.getParentDocumentId(),
                 entity.isMain(),
+                entity.isReadOnly(),
                 entity.getHash(),
                 entity.getType(),
                 entity.getChildType(),
@@ -432,6 +461,7 @@ public class WDocumentController extends BaseEditorController {
                 entity.getMetadata(),
                 entity.getParentDocumentId(),
                 entity.isMain(),
+                entity.isReadOnly(),
                 entity.getHash(),
                 entity.getType(),
                 entity.getChildType(),

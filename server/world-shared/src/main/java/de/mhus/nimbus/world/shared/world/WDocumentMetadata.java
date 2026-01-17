@@ -30,6 +30,7 @@ public class WDocumentMetadata {
     private Map<String, String> metadata;
     private String parentDocumentId;
     private boolean isMain;
+    private boolean readOnly;
     private String hash;
     private String type;
     private String childType;
@@ -52,6 +53,7 @@ public class WDocumentMetadata {
                 .metadata(document.getMetadata())
                 .parentDocumentId(document.getParentDocumentId())
                 .isMain(document.isMain())
+                .readOnly(document.isReadOnly())
                 .hash(document.getHash())
                 .type(document.getType())
                 .childType(document.getChildType())

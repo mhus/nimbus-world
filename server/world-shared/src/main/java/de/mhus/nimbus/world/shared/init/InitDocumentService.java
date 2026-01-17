@@ -148,6 +148,7 @@ public class InitDocumentService {
             doc.setContent(content);
             doc.setHash(hash);
             doc.setMain(true);
+            doc.setReadOnly(true);  // Mark imported documents as read-only
         });
 
         log.info("Imported document: collection='{}', name='{}', title='{}'", collection, filename, title);

@@ -72,10 +72,14 @@
             v-for="doc in documents"
             :key="doc.documentId"
             class="cursor-pointer hover:bg-base-200"
-            @click="openEditDialog(doc)"
+            @click="doc.readOnly ? null : openEditDialog(doc)"
+            :class="{ 'opacity-75': doc.readOnly }"
           >
             <td>
-              <div class="font-semibold">{{ doc.title || '(no title)' }}</div>
+              <div class="flex items-center gap-2">
+                <div class="font-semibold">{{ doc.title || '(no title)' }}</div>
+                <span v-if="doc.readOnly" class="badge badge-sm badge-warning">Read-Only</span>
+              </div>
               <div v-if="doc.summary" class="text-xs text-base-content/60 mt-1">{{ doc.summary }}</div>
             </td>
             <td><code class="text-xs">{{ doc.name }}</code></td>
@@ -96,18 +100,29 @@
                 <button
                   class="btn btn-sm btn-ghost tooltip"
                   @click="handleGenerateSummary(doc)"
-                  data-tip="Generate AI Summary"
+                  :disabled="doc.readOnly"
+                  :data-tip="doc.readOnly ? 'Cannot modify read-only document' : 'Generate AI Summary'"
                 >
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                   </svg>
                 </button>
-                <button class="btn btn-sm btn-ghost tooltip" @click="openEditDialog(doc)" data-tip="Edit">
+                <button
+                  class="btn btn-sm btn-ghost tooltip"
+                  @click="openEditDialog(doc)"
+                  :disabled="doc.readOnly"
+                  :data-tip="doc.readOnly ? 'Cannot edit read-only document' : 'Edit'"
+                >
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                   </svg>
                 </button>
-                <button class="btn btn-sm btn-ghost btn-error tooltip" @click="handleDeleteClick(doc)" data-tip="Delete">
+                <button
+                  class="btn btn-sm btn-ghost btn-error tooltip"
+                  @click="handleDeleteClick(doc)"
+                  :disabled="doc.readOnly"
+                  :data-tip="doc.readOnly ? 'Cannot delete read-only document' : 'Delete'"
+                >
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                   </svg>
@@ -122,7 +137,18 @@
     <!-- Editor Dialog -->
     <div v-if="showEditorDialog" class="modal modal-open" @click.self="closeEditorDialog">
       <div class="modal-box max-w-4xl">
-        <h3 class="font-bold text-lg mb-4">{{ editingDocument ? 'Edit Document' : 'New Document' }}</h3>
+        <h3 class="font-bold text-lg mb-4">
+          {{ editingDocument ? 'Edit Document' : 'New Document' }}
+          <span v-if="editingDocument?.readOnly" class="badge badge-warning ml-2">Read-Only</span>
+        </h3>
+
+        <!-- Read-Only Warning -->
+        <div v-if="editingDocument?.readOnly" class="alert alert-warning mb-4">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+          <span>This document is read-only and cannot be modified. It was imported from resources.</span>
+        </div>
 
         <div class="space-y-4">
           <!-- Title -->
@@ -130,7 +156,13 @@
             <label class="label">
               <span class="label-text">Title</span>
             </label>
-            <input v-model="formData.title" type="text" placeholder="Document title" class="input input-bordered" />
+            <input
+              v-model="formData.title"
+              type="text"
+              placeholder="Document title"
+              class="input input-bordered"
+              :disabled="editingDocument?.readOnly"
+            />
           </div>
 
           <!-- Name -->
@@ -138,7 +170,13 @@
             <label class="label">
               <span class="label-text">Name (technical)</span>
             </label>
-            <input v-model="formData.name" type="text" placeholder="Optional technical name" class="input input-bordered" />
+            <input
+              v-model="formData.name"
+              type="text"
+              placeholder="Optional technical name"
+              class="input input-bordered"
+              :disabled="editingDocument?.readOnly"
+            />
           </div>
 
           <!-- Type, Language, Format -->
@@ -147,19 +185,31 @@
               <label class="label">
                 <span class="label-text">Type</span>
               </label>
-              <input v-model="formData.type" type="text" placeholder="e.g., lore, quest" class="input input-bordered" />
+              <input
+                v-model="formData.type"
+                type="text"
+                placeholder="e.g., lore, quest"
+                class="input input-bordered"
+                :disabled="editingDocument?.readOnly"
+              />
             </div>
             <div class="form-control">
               <label class="label">
                 <span class="label-text">Language</span>
               </label>
-              <input v-model="formData.language" type="text" placeholder="e.g., en, de" class="input input-bordered" />
+              <input
+                v-model="formData.language"
+                type="text"
+                placeholder="e.g., en, de"
+                class="input input-bordered"
+                :disabled="editingDocument?.readOnly"
+              />
             </div>
             <div class="form-control">
               <label class="label">
                 <span class="label-text">Format</span>
               </label>
-              <select v-model="formData.format" class="select select-bordered">
+              <select v-model="formData.format" class="select select-bordered" :disabled="editingDocument?.readOnly">
                 <option value="plaintext">Plain Text</option>
                 <option value="markdown">Markdown</option>
               </select>
@@ -171,7 +221,13 @@
             <label class="label">
               <span class="label-text">Summary</span>
             </label>
-            <input v-model="formData.summary" type="text" placeholder="Short summary" class="input input-bordered" />
+            <input
+              v-model="formData.summary"
+              type="text"
+              placeholder="Short summary"
+              class="input input-bordered"
+              :disabled="editingDocument?.readOnly"
+            />
           </div>
 
           <!-- Content -->
@@ -183,21 +239,27 @@
               v-model="formData.content"
               class="textarea textarea-bordered h-64 font-mono"
               placeholder="Document content..."
+              :disabled="editingDocument?.readOnly"
             ></textarea>
           </div>
 
           <!-- IsMain Checkbox -->
           <div class="form-control">
             <label class="label cursor-pointer justify-start gap-2">
-              <input v-model="formData.isMain" type="checkbox" class="checkbox" />
+              <input v-model="formData.isMain" type="checkbox" class="checkbox" :disabled="editingDocument?.readOnly" />
               <span class="label-text">Is Main Document</span>
             </label>
           </div>
         </div>
 
         <div class="modal-action">
-          <button class="btn btn-ghost" @click="closeEditorDialog">Cancel</button>
-          <button class="btn btn-primary" @click="saveDocument" :disabled="saving">
+          <button class="btn btn-ghost" @click="closeEditorDialog">{{ editingDocument?.readOnly ? 'Close' : 'Cancel' }}</button>
+          <button
+            v-if="!editingDocument?.readOnly"
+            class="btn btn-primary"
+            @click="saveDocument"
+            :disabled="saving"
+          >
             <span v-if="saving" class="loading loading-spinner loading-sm"></span>
             {{ saving ? 'Saving...' : 'Save' }}
           </button>

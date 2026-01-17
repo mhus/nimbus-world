@@ -103,6 +103,13 @@ public class WDocument implements Identifiable {
     private boolean isMain = true;
 
     /**
+     * Whether this document is read-only and cannot be edited or deleted.
+     * Read-only documents are typically imported from resources and should not be modified.
+     */
+    @Builder.Default
+    private boolean readOnly = false;
+
+    /**
      * Content hash for change detection.
      */
     private String hash;
