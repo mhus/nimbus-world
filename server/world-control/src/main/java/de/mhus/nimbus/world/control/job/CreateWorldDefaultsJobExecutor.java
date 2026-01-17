@@ -4,6 +4,7 @@ import de.mhus.nimbus.generated.types.Area;
 import de.mhus.nimbus.generated.types.Block;
 import de.mhus.nimbus.generated.types.HexGrid;
 import de.mhus.nimbus.generated.types.HexVector2;
+import de.mhus.nimbus.generated.types.Rotation;
 import de.mhus.nimbus.generated.types.Vector3;
 import de.mhus.nimbus.generated.types.Vector3Int;
 import de.mhus.nimbus.generated.types.WorldInfo;
@@ -203,9 +204,10 @@ public class CreateWorldDefaultsJobExecutor implements JobExecutor {
 
                     WorldInfoEntryPointDTO entryPoint = WorldInfoEntryPointDTO.builder()
                             .area(entryArea)
-                            .grid(HexVector2.builder()
-                                    .q(0)
-                                    .r(0)
+                            .rotation(Rotation.builder()
+                                    .y(0)
+                                    .p(0)
+                                    .r(0d)
                                     .build())
                             .build();
 

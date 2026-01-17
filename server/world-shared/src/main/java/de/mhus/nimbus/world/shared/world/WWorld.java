@@ -52,7 +52,6 @@ public class WWorld implements Identifiable {
 
     @Builder.Default
     private boolean enabled = true; // Standardmäßig aktiviert
-    private String parent; // optionale Referenz auf übergeordnete Welt / Gruppe
 
     // Zugriff / Berechtigungen
     @Builder.Default

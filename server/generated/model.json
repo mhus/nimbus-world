@@ -5158,7 +5158,7 @@
     } ]
   }, {
     "path" : "/Users/hummel/sources/mhus/nimbus-wb/repos/nimbus-world/server/generated/../client_shared_src/types/World.ts",
-    "imports" : [ "./Vector3", "./HexVector2", "./Area" ],
+    "imports" : [ "./Vector3", "./Area", "./Rotation" ],
     "interfaces" : [ {
       "name" : "WorldInfo",
       "extendsList" : [ ],
@@ -6238,8 +6238,8 @@
         "javaTypeHint" : null,
         "comment" : null
       }, {
-        "name" : "grid",
-        "type" : "HexVector2",
+        "name" : "rotation",
+        "type" : "Rotation",
         "optional" : false,
         "visibility" : null,
         "javaTypeHint" : null,

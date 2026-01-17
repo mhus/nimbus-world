@@ -3,8 +3,8 @@
  */
 
 import type { Vector3 } from './Vector3';
-import {HexVector2} from "./HexVector2";
 import {Area} from "./Area";
+import {Rotation} from "./Rotation";
 
 export enum SeasonStatus {
   NONE = 0,
@@ -267,7 +267,7 @@ export interface WorldInfo {
   /** Start area for new players */
   entryPoint?: {
     area: Area;
-    grid: HexVector2;
+    rotation: Rotation;
   };
 
   /** Editor URL for block editing */

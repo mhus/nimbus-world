@@ -287,26 +287,6 @@ public class WWorldService {
         return entity;
     }
 
-    @Transactional
-    public WWorld createWorld(WorldId worldId, WorldInfo info, String parent, Boolean enabled) {
-        if (repository.existsByWorldId(worldId.getId())) {
-            throw new IllegalStateException("WorldId bereits vorhanden: " + worldId);
-        }
-
-        // Initialize Era 1 with current time
-        initializeEra(info);
-
-        WWorld entity = WWorld.builder()
-                .worldId(worldId.getId())
-                .publicData(info)
-                .parent(parent)
-                .enabled(enabled == null ? true : enabled)
-                .build();
-        entity.touchForCreate();
-        repository.save(entity);
-        log.debug("WWorld angelegt (extended): {} (Era 1 started)", worldId);
-        return entity;
-    }
 
     @Transactional
     public Optional<WWorld> updateWorld(WorldId worldId, java.util.function.Consumer<WWorld> updater) {
@@ -385,7 +365,6 @@ public class WWorldService {
                 .description(sourceWorld.getDescription())
                 .publicData(zonePublicData)  // Copy publicData with updated worldId
                 .enabled(sourceWorld.isEnabled())
-                .parent(sourceWorld.getParent())
                 .instanceable(sourceWorld.isInstanceable())
                 .groundLevel(sourceWorld.getGroundLevel())
                 .waterLevel(sourceWorld.getWaterLevel())

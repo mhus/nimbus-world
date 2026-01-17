@@ -12,5 +12,5 @@ package de.mhus.nimbus.generated.types;
 @lombok.AllArgsConstructor(access = lombok.AccessLevel.PROTECTED)
 public class WorldInfoEntryPointDTO {
     private Area area;
-    private HexVector2 grid;
+    private Rotation rotation;
 }

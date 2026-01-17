@@ -40,7 +40,6 @@ public class WWorldController extends BaseEditorController {
             String description,
             WorldInfo publicData,
             Boolean enabled,
-            String parent,
             Boolean instanceable,
             Set<String> owner,
             Set<String> editor,
@@ -62,7 +61,6 @@ public class WWorldController extends BaseEditorController {
             Instant createdAt,
             Instant updatedAt,
             boolean enabled,
-            String parent,
             boolean instanceable,
             int groundLevel,
             Integer waterLevel,
@@ -85,7 +83,6 @@ public class WWorldController extends BaseEditorController {
             Instant createdAt,
             Instant updatedAt,
             boolean enabled,
-            String parent,
             boolean instanceable,
             int groundLevel,
             Integer waterLevel,
@@ -116,7 +113,6 @@ public class WWorldController extends BaseEditorController {
                 world.getCreatedAt(),
                 world.getUpdatedAt(),
                 world.isEnabled(),
-                world.getParent(),
                 world.isInstanceable(),
                 world.getGroundLevel(),
                 world.getWaterLevel(),
@@ -144,7 +140,6 @@ public class WWorldController extends BaseEditorController {
                 null,  // no createdAt
                 null,  // no updatedAt
                 true,  // collections are always enabled
-                null,  // no parent
                 false, // collections are not instanceable
                 0,     // default groundLevel
                 null,  // no waterLevel
@@ -212,7 +207,7 @@ public class WWorldController extends BaseEditorController {
                         .map(this::toResponseFromWorldId)
                         .toList();
 
-                // Get zones (worlds with parent reference)
+                // Get zones
                 List<WorldResponse> zones = worldService.findByRegionId(regionId).stream()
                         .filter(world -> {
                             WorldId worldId = WorldId.unchecked(world.getWorldId());
@@ -334,17 +329,13 @@ public class WWorldController extends BaseEditorController {
             WorldId worldIdObj = WorldId.of(request.worldId()).orElseThrow(() ->
                 new IllegalArgumentException("Invalid worldId: " + request.worldId()));
 
-            WWorld created = worldService.createWorld(
-                    worldIdObj,
-                    info,
-                    request.parent(),
-                    request.enabled()
-            );
+            WWorld created = worldService.createWorld(worldIdObj, info);
 
             // Set additional fields via update
             worldService.updateWorld(worldIdObj, w -> {
                 w.setRegionId(regionId);
                 w.setDescription(request.description());
+                if (request.enabled() != null) w.setEnabled(request.enabled());
                 if (request.groundLevel() != null) w.setGroundLevel(request.groundLevel());
                 if (request.waterLevel() != null) w.setWaterLevel(request.waterLevel());
                 if (request.groundBlockType() != null) w.setGroundBlockType(request.groundBlockType());
@@ -376,7 +367,6 @@ public class WWorldController extends BaseEditorController {
                     worldResponse.createdAt(),
                     worldResponse.updatedAt(),
                     worldResponse.enabled(),
-                    worldResponse.parent(),
                     worldResponse.instanceable(),
                     worldResponse.groundLevel(),
                     worldResponse.waterLevel(),
@@ -456,7 +446,6 @@ public class WWorldController extends BaseEditorController {
             if (request.description() != null) existing.setDescription(request.description());
             if (request.publicData() != null) existing.setPublicData(request.publicData());
             if (request.enabled() != null) existing.setEnabled(request.enabled());
-            if (request.parent() != null) existing.setParent(request.parent());
             if (request.instanceable() != null) existing.setInstanceable(request.instanceable());
             if (request.owner() != null) existing.setOwner(request.owner());
             if (request.editor() != null) existing.setEditor(request.editor());
@@ -630,12 +619,7 @@ public class WWorldController extends BaseEditorController {
 
             WorldInfo targetInfo = source.getPublicData() != null ? source.getPublicData() : new WorldInfo();
 
-            WWorld targetWorld = worldService.createWorld(
-                    targetWorldIdObj,
-                    targetInfo,
-                    source.getParent(),
-                    source.isEnabled()
-            );
+            WWorld targetWorld = worldService.createWorld(targetWorldIdObj, targetInfo);
 
             // Set additional fields
             worldService.updateWorld(targetWorldIdObj, w -> {
@@ -648,6 +632,7 @@ public class WWorldController extends BaseEditorController {
                 }
                 publicData.setTitle(targetWorldTitle);
                 w.setDescription(source.getDescription());
+                w.setEnabled(source.isEnabled());
                 w.setGroundLevel(source.getGroundLevel());
                 w.setWaterLevel(source.getWaterLevel());
                 w.setGroundBlockType(source.getGroundBlockType());

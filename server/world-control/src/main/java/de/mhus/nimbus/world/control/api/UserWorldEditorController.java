@@ -82,7 +82,7 @@ public class UserWorldEditorController {
         if (!main.getOwner().contains(userId)) return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error","not an owner of main world"));
         try {
             worldId = WorldId.of(req.worldId()).get(); // nochmal parsen um sicherzugehen
-            WWorld created = worldService.createWorld(worldId, main.getPublicData(), main.getWorldId(), req.enabled());
+            WWorld created = worldService.createWorld(worldId, main.getPublicData());
             // publicFlag separat updaten falls gesetzt
             if (req.publicFlag() != null || req.enabled() != null) {
                 worldService.updateWorld(worldId, w -> {
@@ -115,8 +115,6 @@ public class UserWorldEditorController {
         Optional<WWorld> opt = worldService.getByWorldId(worldIdStr);
         if (opt.isEmpty()) return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error","world not found"));
         WWorld existing = opt.get();
-        // parent prüfen (sollte worldId des main sein)
-        if (existing.getParent() == null || !existing.getParent().equals(worldId.getId())) return bad("world has invalid parent");
         Optional<WWorld> mainOpt = worldService.getByWorldId(worldId.getId());
         if (mainOpt.isEmpty()) return bad("main world not found: " + worldId);
         if (!mainOpt.get().getOwner().contains(userId)) return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error","not owner of main world"));
@@ -162,7 +160,6 @@ public class UserWorldEditorController {
         return Map.of(
                 "worldId", w.getWorldId(),
                 "enabled", w.isEnabled(),
-                "parent", w.getParent(),
                 "publicFlag", w.isPublicFlag(),
                 "owner", w.getOwner(),
                 "editor", w.getEditor(),

@@ -29,7 +29,7 @@ public class RegionWorldController {
 
     // DTOs
     public static class CreateWorldRequest { public String worldId; public WorldInfo info; public String getWorldId(){return worldId;} public WorldInfo getInfo(){return info;} }
-    public static class WorldResponse { public String worldId; public boolean enabled; public String parent; public WorldInfo info; public WorldResponse(String w, boolean e, String p, WorldInfo i){worldId=w;enabled=e;parent=p;info=i;} }
+    public static class WorldResponse { public String worldId; public boolean enabled; public WorldInfo info; public WorldResponse(String w, boolean e, WorldInfo i){worldId=w;enabled=e;info=i;} }
 
     @GetMapping(produces = "application/json")
     @Operation(summary = "Main World abrufen", description = "Liefert Daten einer Main World per worldId")
@@ -67,5 +67,5 @@ public class RegionWorldController {
         }
     }
 
-    private WorldResponse toResponse(WWorld w) { return new WorldResponse(w.getWorldId(), w.isEnabled(), w.getParent(), w.getPublicData()); }
+    private WorldResponse toResponse(WWorld w) { return new WorldResponse(w.getWorldId(), w.isEnabled(), w.getPublicData()); }
 }

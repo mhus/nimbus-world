@@ -71,7 +71,7 @@
                   placeholder="World name (e.g., main)"
                   class="input input-bordered flex-1"
                   :disabled="!isNew"
-                  pattern="[a-zA-Z0-9_-]+"
+                  pattern="[a-zA-Z0-9_\-]+"
                   @input="handleWorldNameInput"
                   required
                 />
@@ -82,7 +82,7 @@
                   placeholder="Zone (optional)"
                   class="input input-bordered flex-1"
                   :disabled="!isNew"
-                  pattern="[a-zA-Z0-9_-]*"
+                  pattern="[a-zA-Z0-9_\-]*"
                   @input="handleZoneInput"
                 />
               </div>
@@ -118,21 +118,6 @@
               ></textarea>
             </div>
 
-            <!-- Parent World -->
-            <div class="form-control">
-              <label class="label">
-                <span class="label-text font-medium">Parent World</span>
-              </label>
-              <input
-                v-model="formData.parent"
-                type="text"
-                placeholder="Optional parent world reference"
-                class="input input-bordered w-full"
-              />
-              <label class="label">
-                <span class="label-text-alt">Optional reference to parent world/group</span>
-              </label>
-            </div>
 
             <!-- Enabled Status -->
             <div class="form-control">
@@ -185,62 +170,64 @@
         <div class="card-body">
           <h3 class="card-title">World Generation Settings</h3>
           <div class="space-y-4">
-            <!-- Ground Level -->
-            <div class="form-control">
-              <label class="label">
-                <span class="label-text font-medium">Ground Level (Y)</span>
-              </label>
-              <input
-                v-model.number="formData.groundLevel"
-                type="number"
-                placeholder="0"
-                class="input input-bordered w-full"
-              />
-              <label class="label">
-                <span class="label-text-alt">Default Y coordinate for ground generation</span>
-              </label>
+            <!-- Ground Level and Block Type -->
+            <div class="flex gap-4">
+              <div class="form-control flex-1">
+                <label class="label">
+                  <span class="label-text font-medium">Ground Level (Y)</span>
+                </label>
+                <input
+                  v-model.number="formData.groundLevel"
+                  type="number"
+                  placeholder="0"
+                  class="input input-bordered w-full"
+                />
+                <label class="label">
+                  <span class="label-text-alt">Default Y coordinate for ground generation</span>
+                </label>
+              </div>
+
+              <div class="form-control flex-1">
+                <label class="label">
+                  <span class="label-text font-medium">Ground Block Type</span>
+                </label>
+                <input
+                  v-model="formData.groundBlockType"
+                  type="text"
+                  placeholder="n:g"
+                  class="input input-bordered w-full"
+                />
+              </div>
             </div>
 
-            <!-- Water Level -->
-            <div class="form-control">
-              <label class="label">
-                <span class="label-text font-medium">Water Level (Y)</span>
-              </label>
-              <input
-                v-model.number="formData.waterLevel"
-                type="number"
-                placeholder="Optional"
-                class="input input-bordered w-full"
-              />
-              <label class="label">
-                <span class="label-text-alt">Y coordinate for water surface (optional)</span>
-              </label>
-            </div>
+            <!-- Water Level and Block Type -->
+            <div class="flex gap-4">
+              <div class="form-control flex-1">
+                <label class="label">
+                  <span class="label-text font-medium">Water Level (Y)</span>
+                </label>
+                <input
+                  v-model.number="formData.waterLevel"
+                  type="number"
+                  placeholder="Optional"
+                  class="input input-bordered w-full"
+                />
+                <label class="label">
+                  <span class="label-text-alt">Y coordinate for water surface (optional)</span>
+                </label>
+              </div>
 
-            <!-- Ground Block Type -->
-            <div class="form-control">
-              <label class="label">
-                <span class="label-text font-medium">Ground Block Type</span>
-              </label>
-              <input
-                v-model="formData.groundBlockType"
-                type="text"
-                placeholder="n:g"
-                class="input input-bordered w-full"
-              />
-            </div>
-
-            <!-- Water Block Type -->
-            <div class="form-control">
-              <label class="label">
-                <span class="label-text font-medium">Water Block Type</span>
-              </label>
-              <input
-                v-model="formData.waterBlockType"
-                type="text"
-                placeholder="n:o"
-                class="input input-bordered w-full"
-              />
+              <div class="form-control flex-1">
+                <label class="label">
+                  <span class="label-text font-medium">Water Block Type</span>
+                </label>
+                <input
+                  v-model="formData.waterBlockType"
+                  type="text"
+                  placeholder="n:o"
+                  class="input input-bordered w-full"
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -372,21 +359,24 @@
 
           <!-- Tab: Basic -->
           <div v-show="activeWorldInfoTab === 'basic'" class="space-y-4 mt-4">
-            <div class="form-control">
-              <label class="label"><span class="label-text">Chunk Size</span></label>
-              <input v-model.number="formData.publicData.chunkSize" type="number"
-                     class="input input-bordered" :disabled="!isNew" />
-              <label class="label">
-                <span class="label-text-alt">Size of chunks in blocks (default: 16). Cannot be changed after creation.</span>
-              </label>
-            </div>
-            <div class="form-control">
-              <label class="label"><span class="label-text">Hex Grid Size</span></label>
-              <input v-model.number="formData.publicData.hexGridSize" type="number"
-                     class="input input-bordered" :disabled="!isNew" />
-              <label class="label">
-                <span class="label-text-alt">Size of hexagonal grid (default: 16). Cannot be changed after creation.</span>
-              </label>
+            <!-- Chunk Size and Hex Grid Size -->
+            <div class="flex gap-4">
+              <div class="form-control flex-1">
+                <label class="label"><span class="label-text">Chunk Size</span></label>
+                <input v-model.number="formData.publicData.chunkSize" type="number"
+                       class="input input-bordered" :disabled="!isNew" />
+                <label class="label">
+                  <span class="label-text-alt">Size of chunks in blocks (default: 16). Cannot be changed after creation.</span>
+                </label>
+              </div>
+              <div class="form-control flex-1">
+                <label class="label"><span class="label-text">Hex Grid Size</span></label>
+                <input v-model.number="formData.publicData.hexGridSize" type="number"
+                       class="input input-bordered" :disabled="!isNew" />
+                <label class="label">
+                  <span class="label-text-alt">Size of hexagonal grid (default: 16). Cannot be changed after creation.</span>
+                </label>
+              </div>
             </div>
             <div class="form-control">
               <label class="label"><span class="label-text">World Icon</span></label>
@@ -549,23 +539,31 @@
               </div>
             </div>
 
-            <!-- Hex Grid -->
-            <div class="divider">Hex Grid Coordinates</div>
-            <div class="grid grid-cols-2 gap-4">
+            <!-- Rotation -->
+            <div class="divider">Rotation</div>
+            <div class="grid grid-cols-3 gap-4">
               <div class="form-control">
-                <label class="label"><span class="label-text">Grid Q</span></label>
-                <input v-model.number="formData.publicData.entryPoint.grid.q" type="number"
+                <label class="label"><span class="label-text">Yaw (Y)</span></label>
+                <input v-model.number="formData.publicData.entryPoint.rotation.y" type="number"
                        class="input input-bordered" />
                 <label class="label">
-                  <span class="label-text-alt">Hex grid Q coordinate</span>
+                  <span class="label-text-alt">Y-axis rotation (yaw)</span>
                 </label>
               </div>
               <div class="form-control">
-                <label class="label"><span class="label-text">Grid R</span></label>
-                <input v-model.number="formData.publicData.entryPoint.grid.r" type="number"
+                <label class="label"><span class="label-text">Pitch (P)</span></label>
+                <input v-model.number="formData.publicData.entryPoint.rotation.p" type="number"
                        class="input input-bordered" />
                 <label class="label">
-                  <span class="label-text-alt">Hex grid R coordinate</span>
+                  <span class="label-text-alt">Pitch rotation</span>
+                </label>
+              </div>
+              <div class="form-control">
+                <label class="label"><span class="label-text">Roll (R)</span></label>
+                <input v-model.number="formData.publicData.entryPoint.rotation.r" type="number"
+                       class="input input-bordered" />
+                <label class="label">
+                  <span class="label-text-alt">Roll rotation (optional)</span>
                 </label>
               </div>
             </div>
@@ -584,7 +582,7 @@
                   ({{ formData.publicData.entryPoint.area.position.x + formData.publicData.entryPoint.area.size.x }},
                    {{ formData.publicData.entryPoint.area.position.y + formData.publicData.entryPoint.area.size.y }},
                    {{ formData.publicData.entryPoint.area.position.z + formData.publicData.entryPoint.area.size.z }})
-                  on hex grid ({{ formData.publicData.entryPoint.grid.q }}, {{ formData.publicData.entryPoint.grid.r }}).
+                  with rotation (yaw: {{ formData.publicData.entryPoint.rotation.y }}°, pitch: {{ formData.publicData.entryPoint.rotation.p }}°).
                 </div>
               </div>
             </div>
@@ -1486,7 +1484,6 @@ const formData = ref({
   enabled: true,
   publicFlag: false,
   instanceable: false,
-  parent: '',
   owner: [] as string[],
   editor: [] as string[],
   supporter: [] as string[],
@@ -1523,7 +1520,7 @@ const formData = ref({
         position: { x: 10, y: 65, z: 10 },
         size: { x: 1, y: 1, z: 1 }
       },
-      grid: { q: 0, r: 0 }
+      rotation: { y: 0, p: 0, r: 0 }
     },
     owner: {
       user: '',
@@ -1594,7 +1591,6 @@ const loadWorld = () => {
       enabled: true,
       publicFlag: false,
       instanceable: false,
-      parent: '',
       owner: [],
       editor: [],
       supporter: [],
@@ -1631,7 +1627,7 @@ const loadWorld = () => {
             position: { x: 10, y: 65, z: 10 },
             size: { x: 1, y: 1, z: 1 }
           },
-          grid: { q: 0, r: 0 }
+          rotation: { y: 0, p: 0, r: 0 }
         },
         owner: {
           user: '',
@@ -1717,12 +1713,12 @@ const loadWorld = () => {
       splashScreenAudio: worldData?.splashScreenAudio || '',
       start: worldData?.start || { x: -120000, y: -100, z: -128000 },
       stop: worldData?.stop || { x: 120000, y: 200, z: 128000 },
-      entryPoint: worldData?.entryPoint || {
-        area: {
+      entryPoint: {
+        area: worldData?.entryPoint?.area || {
           position: { x: 0, y: 0, z: 0 },
           size: { x: 10, y: 10, z: 10 }
         },
-        grid: { q: 0, r: 0 }
+        rotation: worldData?.entryPoint?.rotation || { y: 0, p: 0, r: 0 }
       },
       owner: worldData?.owner || { user: '', title: '', email: '' },
       settings: {
@@ -1797,7 +1793,6 @@ const loadWorld = () => {
     enabled: world.enabled,
     publicFlag: world.publicFlag,
     instanceable: world.instanceable,
-    parent: world.parent || '',
     owner: world.owner ? [...world.owner] : [],
     editor: world.editor ? [...world.editor] : [],
     supporter: world.supporter ? [...world.supporter] : [],
@@ -1946,7 +1941,6 @@ const performSave = async () => {
       title: formData.value.title,
       description: formData.value.description,
       enabled: formData.value.enabled,
-      parent: formData.value.parent,
       instanceable: formData.value.instanceable,
       owner: formData.value.owner.length > 0 ? formData.value.owner : undefined,
       editor: formData.value.editor.length > 0 ? formData.value.editor : undefined,
