@@ -9,6 +9,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -49,6 +52,7 @@ public class WLayerService {
     private final StorageService storageService;
     private final ObjectMapper objectMapper;
     private final WWorldService worldService;
+    private final MongoTemplate mongoTemplate;
 
     @Value("${nimbus.layer.terrain.compression.enabled:true}")
     private boolean compressionEnabled;
@@ -1907,5 +1911,23 @@ public class WLayerService {
             log.error("Failed to create default layers for world {}: {}", worldId, e.getMessage(), e);
             throw new RuntimeException("Failed to create default layers for world " + worldId, e);
         }
+    }
+
+    /**
+     * Find all distinct storageIds for a given world from WLayerTerrain.
+     * Returns a list of unique storageId values from WLayerTerrain documents.
+     *
+     * @param worldId World identifier
+     * @return List of distinct storageIds (excludes null values)
+     */
+    public List<String> findDistinctStorageIds(WorldId worldId) {
+        var lookupWorld = worldId.withoutInstance();
+        var query = new Query(Criteria.where("worldId").is(lookupWorld.getId()));
+        return mongoTemplate.findDistinct(
+                query,
+                "storageId",
+                WLayerTerrain.class,
+                String.class
+        );
     }
 }

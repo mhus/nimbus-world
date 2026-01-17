@@ -23,11 +23,6 @@ import java.util.Map;
 @Slf4j
 public class ResourceRepairService {
 
-    private static final List<String> ALL_TYPES = Arrays.asList(
-            "asset", "backdrop", "blocktype", "item", "itemtype", "itemposition",
-            "entity", "entitymodel", "model", "ground"
-    );
-
     private final List<ResourceRepairer> repairTypes;
     private final List<DeleteWorldResources> deleteServices;
 
@@ -39,13 +34,14 @@ public class ResourceRepairService {
      * @return Repair result
      */
     public List<ProcessResult> repair(WorldId worldId, List<String> types) {
-        log.info("Starting resource repair for world {} types={}",
-                worldId, types == null || types.isEmpty() ? "all" : types);
 
         // Resolve types (empty list = all types)
         List<String> typesToRepair = types == null || types.isEmpty()
-                ? ALL_TYPES
+                ? repairTypes.stream().map(ResourceRepairer::name).toList()
                 : types;
+
+        log.info("Starting resource repair for world {} types={}",
+                worldId, typesToRepair);
 
         // Repair each type
         List<ProcessResult> results = new ArrayList<>();

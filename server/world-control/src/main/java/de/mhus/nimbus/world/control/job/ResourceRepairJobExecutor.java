@@ -43,7 +43,6 @@ public class ResourceRepairJobExecutor implements JobExecutor {
         try {
             // Parse parameters
             Map<String, String> params = job.getParameters();
-            boolean dryRun = parseBooleanParameter(params, "dryRun", false);
             List<String> types = parseTypesParameter(params);
 
             // Parse worldId
@@ -74,7 +73,6 @@ public class ResourceRepairJobExecutor implements JobExecutor {
                             .append(r.success() ? "SUCCESS" : "FAILED")
                             .append(" - ")
                             .append(r.message())
-                            .append(dryRun ? " [DRY RUN]" : "")
                             .append("\n")
             );
             return JobResult.ofSuccess(report.toString());

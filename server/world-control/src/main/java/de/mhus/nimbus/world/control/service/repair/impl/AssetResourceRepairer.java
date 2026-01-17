@@ -24,7 +24,7 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class AssetResourceRepairType implements ResourceRepairer {
+public class AssetResourceRepairer implements ResourceRepairer {
 
     private static final String COLLECTION_NAME = "s_assets";
 

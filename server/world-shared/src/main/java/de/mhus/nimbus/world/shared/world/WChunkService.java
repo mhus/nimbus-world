@@ -13,6 +13,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -46,6 +49,7 @@ public class WChunkService {
     private final StorageService storageService;
     private final WWorldService worldService;
     private final WItemPositionService itemRegistryService;
+    private final MongoTemplate mongoTemplate;
 
     @Value("${nimbus.chunk.compression.enabled:true}")
     private boolean compressionEnabled;
@@ -648,6 +652,24 @@ public class WChunkService {
         // Get server info for block
         WChunk chunk = chunkOpt.get();
         return chunk.getServerInfoForBlock(x, y, z);
+    }
+
+    /**
+     * Find all distinct storageIds for a given world.
+     * Returns a list of unique storageId values from WChunk documents.
+     *
+     * @param worldId World identifier
+     * @return List of distinct storageIds (excludes null values)
+     */
+    public List<String> findDistinctStorageIds(WorldId worldId) {
+        var lookupWorld = worldId.withoutInstance();
+        var query = new Query(Criteria.where("worldId").is(lookupWorld.getId()));
+        return mongoTemplate.findDistinct(
+                query,
+                "storageId",
+                WChunk.class,
+                String.class
+        );
     }
 
 }

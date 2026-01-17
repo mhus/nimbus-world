@@ -796,4 +796,24 @@ public class SAssetService {
                 String.class
         );
     }
+
+    /**
+     * Find all distinct storageIds for a given world.
+     * Returns a list of unique storageId values from SAsset documents.
+     *
+     * @param worldId World identifier
+     * @return List of distinct storageIds (excludes null values)
+     */
+    public List<String> findDistinctStorageIds(WorldId worldId) {
+        var lookupWorld = worldId.mainWorld();
+        var query = new org.springframework.data.mongodb.core.query.Query(
+                org.springframework.data.mongodb.core.query.Criteria.where("worldId").is(lookupWorld.getId())
+        );
+        return mongoTemplate.findDistinct(
+                query,
+                "storageId",
+                SAsset.class,
+                String.class
+        );
+    }
 }
