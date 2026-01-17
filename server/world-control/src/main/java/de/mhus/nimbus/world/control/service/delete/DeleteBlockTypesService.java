@@ -4,6 +4,8 @@ import de.mhus.nimbus.world.shared.world.WBlockType;
 import de.mhus.nimbus.world.shared.world.WBlockTypeRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -18,6 +20,7 @@ import java.util.List;
 public class DeleteBlockTypesService implements DeleteWorldResources {
 
     private final WBlockTypeRepository blockTypeRepository;
+    private final MongoTemplate mongoTemplate;
 
     @Override
     public String name() {
@@ -34,5 +37,15 @@ public class DeleteBlockTypesService implements DeleteWorldResources {
         blockTypeRepository.deleteAll(blockTypes);
 
         log.info("Deleted {} block types for world {}", blockTypes.size(), worldId);
+    }
+
+    @Override
+    public List<String> getKnownWorldIds() throws Exception {
+        return mongoTemplate.findDistinct(
+                new Query(),
+                "worldId",
+                WBlockType.class,
+                String.class
+        );
     }
 }

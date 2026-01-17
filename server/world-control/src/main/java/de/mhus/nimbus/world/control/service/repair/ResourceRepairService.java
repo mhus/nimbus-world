@@ -1,13 +1,16 @@
 package de.mhus.nimbus.world.control.service.repair;
 
 import de.mhus.nimbus.shared.types.WorldId;
+import de.mhus.nimbus.world.control.service.delete.DeleteWorldResources;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -25,19 +28,19 @@ public class ResourceRepairService {
             "entity", "entitymodel", "model", "ground"
     );
 
-    private final List<ResourceRepairType> repairTypes;
+    private final List<ResourceRepairer> repairTypes;
+    private final List<DeleteWorldResources> deleteServices;
 
     /**
      * Repair resources for given world.
      *
      * @param worldId World to repair
      * @param types   Resource types to repair (empty = all types)
-     * @param dryRun  If true, only report issues without fixing them
      * @return Repair result
      */
-    public RepairResult repair(WorldId worldId, List<String> types, boolean dryRun) {
-        log.info("Starting resource repair for world {} dryRun={} types={}",
-                worldId, dryRun, types == null || types.isEmpty() ? "all" : types);
+    public List<ProcessResult> repair(WorldId worldId, List<String> types) {
+        log.info("Starting resource repair for world {} types={}",
+                worldId, types == null || types.isEmpty() ? "all" : types);
 
         // Resolve types (empty list = all types)
         List<String> typesToRepair = types == null || types.isEmpty()
@@ -45,16 +48,10 @@ public class ResourceRepairService {
                 : types;
 
         // Repair each type
-        int totalDuplicatesFound = 0;
-        int totalDuplicatesRemoved = 0;
-        int totalOrphanedStorageFound = 0;
-        int totalOrphanedStorageRemoved = 0;
-        int totalIssuesFound = 0;
-        int totalIssuesFixed = 0;
-        Map<String, ResourceRepairType.RepairResult> resultsByType = new HashMap<>();
+        List<ProcessResult> results = new ArrayList<>();
 
         for (String typeName : typesToRepair) {
-            ResourceRepairType repairType = findRepairType(typeName);
+            ResourceRepairer repairType = findRepairType(typeName);
             if (repairType == null) {
                 log.warn("No repair type found for: {}", typeName);
                 continue;
@@ -62,85 +59,70 @@ public class ResourceRepairService {
 
             try {
                 log.info("Repairing type: {}", typeName);
-                ResourceRepairType.RepairResult typeResult = repairType.repair(worldId, dryRun);
-                resultsByType.put(typeName, typeResult);
-
-                totalDuplicatesFound += typeResult.duplicatesFound();
-                totalDuplicatesRemoved += typeResult.duplicatesRemoved();
-                totalOrphanedStorageFound += typeResult.orphanedStorageFound();
-                totalOrphanedStorageRemoved += typeResult.orphanedStorageRemoved();
-                totalIssuesFound += typeResult.totalIssuesFound();
-                totalIssuesFixed += typeResult.totalIssuesFixed();
-
-                log.info("Repaired {} type: {} issues found, {} fixed",
-                        typeName, typeResult.totalIssuesFound(), typeResult.totalIssuesFixed());
+                var typeResult = repairType.repair(worldId);
+                results.add(typeResult);
 
             } catch (Exception e) {
                 log.error("Failed to repair type: " + typeName, e);
-                return RepairResult.failure("Failed to repair " + typeName + ": " + e.getMessage());
+                results.add(new ProcessResult(
+                        typeName,
+                        false,
+                        "Repair failed: " + e.getMessage(),
+                        Instant.now().toEpochMilli()
+                ));
             }
         }
 
-        log.info("Repair completed: {} issues found, {} fixed (dryRun={})",
-                totalIssuesFound, totalIssuesFixed, dryRun);
-
-        return RepairResult.success(
-                totalDuplicatesFound, totalDuplicatesRemoved,
-                totalOrphanedStorageFound, totalOrphanedStorageRemoved,
-                totalIssuesFound, totalIssuesFixed,
-                resultsByType
-        );
+        return results;
     }
 
     /**
      * Find repair type implementation by title.
      */
-    private ResourceRepairType findRepairType(String name) {
+    private ResourceRepairer findRepairType(String name) {
         return repairTypes.stream()
                 .filter(type -> type.name().equals(name))
                 .findFirst()
                 .orElse(null);
     }
 
-    /**
-     * Result of repair operation.
-     */
-    public record RepairResult(
-            boolean success,
-            int duplicatesFound,
-            int duplicatesRemoved,
-            int orphanedStorageFound,
-            int orphanedStorageRemoved,
-            int totalIssuesFound,
-            int totalIssuesFixed,
-            Map<String, ResourceRepairType.RepairResult> resultsByType,
-            String errorMessage,
-            Instant timestamp
-    ) {
-        public static RepairResult success(
-                int duplicatesFound, int duplicatesRemoved,
-                int orphanedStorageFound, int orphanedStorageRemoved,
-                int totalIssuesFound, int totalIssuesFixed,
-                Map<String, ResourceRepairType.RepairResult> resultsByType) {
-            return new RepairResult(
-                    true,
-                    duplicatesFound, duplicatesRemoved,
-                    orphanedStorageFound, orphanedStorageRemoved,
-                    totalIssuesFound, totalIssuesFixed,
-                    resultsByType,
-                    null,
-                    Instant.now()
-            );
-        }
+    public List<ProcessResult> deleteWorldResources(String worldId) {
+        List<ProcessResult> processed = new ArrayList<>();
+        for (DeleteWorldResources service : deleteServices) {
+            log.info("Executing deletion service: {}", service.name());
 
-        public static RepairResult failure(String errorMessage) {
-            return new RepairResult(
-                    false,
-                    0, 0, 0, 0, 0, 0,
-                    Map.of(),
-                    errorMessage,
-                    Instant.now()
-            );
+            try {
+                service.deleteWorldResources(worldId);
+                processed.add(new ProcessResult(
+                        service.name(),
+                        true,
+                        "Deleted resources successfully",
+                        System.currentTimeMillis()
+                ));
+
+            } catch (Exception e) {
+                String errorMsg = String.format("Failed to delete %s: %s",
+                        service.name(), e.getMessage());
+                log.error(errorMsg, e);
+                processed.add(new ProcessResult(
+                        service.name(),
+                        false,
+                        errorMsg,
+                        System.currentTimeMillis()
+                ));
+
+                // Continue with other services even if one fails
+                // This allows partial cleanup and better error reporting
+            }
         }
+        return processed;
     }
+
+    public record ProcessResult(
+            String serviceName,
+            boolean success,
+            String message,
+            long timestamp
+    ) {
+    };
 }

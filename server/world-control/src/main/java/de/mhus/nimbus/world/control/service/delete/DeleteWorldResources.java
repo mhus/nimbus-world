@@ -1,5 +1,7 @@
 package de.mhus.nimbus.world.control.service.delete;
 
+import java.util.List;
+
 /**
  * Interface for services that delete world resources.
  *
@@ -30,4 +32,7 @@ public interface DeleteWorldResources {
      * @throws Exception if deletion fails
      */
     void deleteWorldResources(String worldId) throws Exception;
+
+    List<String> getKnownWorldIds() throws Exception;
+
 }

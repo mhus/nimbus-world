@@ -1,6 +1,7 @@
 package de.mhus.nimbus.world.control.job;
 
 import de.mhus.nimbus.world.control.service.delete.DeleteWorldResources;
+import de.mhus.nimbus.world.control.service.repair.ResourceRepairService;
 import de.mhus.nimbus.world.shared.job.JobExecutionException;
 import de.mhus.nimbus.world.shared.job.JobExecutor;
 import de.mhus.nimbus.world.shared.job.WJob;
@@ -38,8 +39,8 @@ import java.util.Map;
 @Slf4j
 public class DeleteWorldResourcesJobExecutor implements JobExecutor {
 
-    private final List<DeleteWorldResources> deleteServices;
     private final WWorldService worldService;
+    private ResourceRepairService repairService;
 
     @Override
     public String getExecutorName() {
@@ -70,24 +71,14 @@ public class DeleteWorldResourcesJobExecutor implements JobExecutor {
             StringBuilder resultMessage = new StringBuilder();
             resultMessage.append("Deleted resources for world ").append(worldId).append(":\n");
 
-            for (DeleteWorldResources service : deleteServices) {
-                log.info("Executing deletion service: {}", service.name());
-
-                try {
-                    service.deleteWorldResources(worldId);
-                    resultMessage.append("- ").append(service.name()).append(": OK\n");
-
-                } catch (Exception e) {
-                    String errorMsg = String.format("Failed to delete %s: %s",
-                            service.name(), e.getMessage());
-                    log.error(errorMsg, e);
-                    resultMessage.append("- ").append(service.name()).append(": FAILED - ")
-                            .append(e.getMessage()).append("\n");
-
-                    // Continue with other services even if one fails
-                    // This allows partial cleanup and better error reporting
-                }
-            }
+            repairService.deleteWorldResources(worldId).forEach(
+                    serviceResult -> resultMessage.append("- ")
+                            .append(serviceResult.serviceName())
+                            .append(": ")
+                            .append(serviceResult.success() ? "SUCCESS" : "FAILED")
+                            .append(" (").append(serviceResult.message()).append(")")
+                            .append("\n")
+            );
 
             String finalMessage = resultMessage.toString();
             log.info("World resources deletion completed:\n{}", finalMessage);

@@ -3,6 +3,7 @@ package de.mhus.nimbus.world.control.service.delete;
 import de.mhus.nimbus.shared.storage.StorageService;
 import de.mhus.nimbus.world.shared.world.SAsset;
 import de.mhus.nimbus.world.shared.world.SAssetRepository;
+import de.mhus.nimbus.world.shared.world.SAssetService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -20,6 +21,7 @@ public class DeleteAssetsService implements DeleteWorldResources {
 
     private final SAssetRepository assetRepository;
     private final StorageService storageService;
+    private final SAssetService sAssetService;
 
     @Override
     public String name() {
@@ -55,4 +57,10 @@ public class DeleteAssetsService implements DeleteWorldResources {
         log.info("Deleted {} assets (including {} storage items) for world {}",
                 deletedCount, storageCount, worldId);
     }
+
+    @Override
+    public List<String> getKnownWorldIds() throws Exception {
+        return sAssetService.findDistinctWorldIds();
+    }
+
 }

@@ -5,6 +5,8 @@ import de.mhus.nimbus.world.shared.world.WChunk;
 import de.mhus.nimbus.world.shared.world.WChunkRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -20,6 +22,7 @@ public class DeleteChunksService implements DeleteWorldResources {
 
     private final WChunkRepository chunkRepository;
     private final StorageService storageService;
+    private final MongoTemplate mongoTemplate;
 
     @Override
     public String name() {
@@ -54,5 +57,15 @@ public class DeleteChunksService implements DeleteWorldResources {
 
         log.info("Deleted {} chunks (including {} storage items) for world {}",
                 deletedCount, storageCount, worldId);
+    }
+
+    @Override
+    public List<String> getKnownWorldIds() throws Exception {
+        return mongoTemplate.findDistinct(
+                new Query(),
+                "worldId",
+                WChunk.class,
+                String.class
+        );
     }
 }

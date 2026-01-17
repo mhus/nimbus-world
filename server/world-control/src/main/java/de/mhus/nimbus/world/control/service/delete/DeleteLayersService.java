@@ -4,6 +4,8 @@ import de.mhus.nimbus.shared.storage.StorageService;
 import de.mhus.nimbus.world.shared.layer.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -22,6 +24,7 @@ public class DeleteLayersService implements DeleteWorldResources {
     private final WLayerModelRepository layerModelRepository;
     private final WLayerTerrainRepository layerTerrainRepository;
     private final StorageService storageService;
+    private final MongoTemplate mongoTemplate;
 
     @Override
     public String name() {
@@ -81,5 +84,15 @@ public class DeleteLayersService implements DeleteWorldResources {
 
         log.info("Deleted {} layers ({} models, {} terrain chunks, {} storage items) for world {}",
                 layerCount, modelCount, terrainCount, storageCount, worldId);
+    }
+
+    @Override
+    public List<String> getKnownWorldIds() throws Exception {
+        return mongoTemplate.findDistinct(
+                new Query(),
+                "worldId",
+                WLayer.class,
+                String.class
+        );
     }
 }

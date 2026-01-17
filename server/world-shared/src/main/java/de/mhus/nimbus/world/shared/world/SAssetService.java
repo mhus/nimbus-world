@@ -11,6 +11,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,6 +39,7 @@ public class SAssetService {
 
     private final SAssetRepository repository;
     private final StorageService storageService; // optional injected
+    private final MongoTemplate mongoTemplate;
 
     // ExecutorService for background compression tasks
     private final ExecutorService compressionExecutor = Executors.newCachedThreadPool(r -> {
@@ -777,5 +780,20 @@ public class SAssetService {
 
         // Should not happen (validated earlier)
         throw new IllegalStateException("Path does not start with prefix: " + originalPath);
+    }
+
+    /**
+     * Find all distinct worldIds in assets.
+     * Returns a list of unique worldId values from all SAsset documents.
+     *
+     * @return List of distinct worldIds (excludes null values)
+     */
+    public List<String> findDistinctWorldIds() {
+        return mongoTemplate.findDistinct(
+                new Query(),
+                "worldId",
+                SAsset.class,
+                String.class
+        );
     }
 }

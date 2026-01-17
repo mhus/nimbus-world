@@ -2,7 +2,8 @@ package de.mhus.nimbus.world.control.service.repair.impl;
 
 import de.mhus.nimbus.shared.storage.StorageService;
 import de.mhus.nimbus.shared.types.WorldId;
-import de.mhus.nimbus.world.control.service.repair.ResourceRepairType;
+import de.mhus.nimbus.world.control.service.repair.ResourceRepairService;
+import de.mhus.nimbus.world.control.service.repair.ResourceRepairer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.bson.Document;
@@ -23,7 +24,7 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class AssetResourceRepairType implements ResourceRepairType {
+public class AssetResourceRepairType implements ResourceRepairer {
 
     private static final String COLLECTION_NAME = "s_assets";
 
@@ -36,8 +37,8 @@ public class AssetResourceRepairType implements ResourceRepairType {
     }
 
     @Override
-    public RepairResult repair(WorldId worldId, boolean dryRun) {
-        log.info("Starting asset repair for world {} (dryRun={})", worldId, dryRun);
+    public ResourceRepairService.ProcessResult repair(WorldId worldId) {
+        log.info("Starting asset repair for world {}", worldId);
 
         int duplicatesFound = 0;
         int duplicatesRemoved = 0;
@@ -85,39 +86,38 @@ public class AssetResourceRepairType implements ResourceRepairType {
                     log.info("Removing duplicate document _id: {} (has _schema: {}, storageId: {})",
                             docId, doc.containsKey("_schema"), storageId);
 
-                    if (!dryRun) {
-                        // Check if storageId is used by the document we're keeping or any other document
-                        boolean storageInUse = false;
-                        if (storageId != null) {
-                            String keptStorageId = toKeep.getString("storageId");
-                            storageInUse = storageId.equals(keptStorageId);
+                    // Check if storageId is used by the document we're keeping or any other document
+                    boolean storageInUse = false;
+                    if (storageId != null) {
+                        String keptStorageId = toKeep.getString("storageId");
+                        storageInUse = storageId.equals(keptStorageId);
 
-                            // Check if any other document uses this storageId
-                            if (!storageInUse) {
-                                Query storageQuery = new Query(
-                                        Criteria.where("storageId").is(storageId)
-                                                .and("_id").ne(docId)
-                                );
-                                storageInUse = mongoTemplate.exists(storageQuery, COLLECTION_NAME);
-                            }
+                        // Check if any other document uses this storageId
+                        if (!storageInUse) {
+                            Query storageQuery = new Query(
+                                    Criteria.where("storageId").is(storageId)
+                                            .and("_id").ne(docId)
+                            );
+                            storageInUse = mongoTemplate.exists(storageQuery, COLLECTION_NAME);
                         }
-
-                        // Delete the storage if not in use
-                        if (storageId != null && !storageInUse) {
-                            log.info("Deleting orphaned storage: {}", storageId);
-                            try {
-                                storageService.delete(storageId);
-                                orphanedStorageRemoved++;
-                            } catch (Exception e) {
-                                log.warn("Failed to delete storage {}: {}", storageId, e.getMessage());
-                            }
-                        }
-
-                        // Delete the duplicate document
-                        Query deleteQuery = new Query(Criteria.where("_id").is(docId));
-                        mongoTemplate.remove(deleteQuery, COLLECTION_NAME);
-                        duplicatesRemoved++;
                     }
+
+                    // Delete the storage if not in use
+                    if (storageId != null && !storageInUse) {
+                        log.info("Deleting orphaned storage: {}", storageId);
+                        try {
+                            storageService.delete(storageId);
+                            orphanedStorageRemoved++;
+                        } catch (Exception e) {
+                            log.warn("Failed to delete storage {}: {}", storageId, e.getMessage());
+                        }
+                    }
+
+                    // Delete the duplicate document
+                    Query deleteQuery = new Query(Criteria.where("_id").is(docId));
+                    mongoTemplate.remove(deleteQuery, COLLECTION_NAME);
+                    duplicatesRemoved++;
+
                 }
             }
         }
@@ -138,14 +138,12 @@ public class AssetResourceRepairType implements ResourceRepairType {
                 orphanedStorageFound++;
                 log.warn("Found orphaned storage (no document references it): {}", storageId);
 
-                if (!dryRun) {
-                    try {
-                        storageService.delete(storageId);
-                        orphanedStorageRemoved++;
-                        log.info("Deleted orphaned storage: {}", storageId);
-                    } catch (Exception e) {
-                        log.warn("Failed to delete orphaned storage {}: {}", storageId, e.getMessage());
-                    }
+                try {
+                    storageService.delete(storageId);
+                    orphanedStorageRemoved++;
+                    log.info("Deleted orphaned storage: {}", storageId);
+                } catch (Exception e) {
+                    log.warn("Failed to delete orphaned storage {}: {}", storageId, e.getMessage());
                 }
             }
         }
@@ -153,8 +151,15 @@ public class AssetResourceRepairType implements ResourceRepairType {
         log.info("Asset repair completed: {} duplicates found, {} removed, {} orphaned storage found, {} removed",
                 duplicatesFound, duplicatesRemoved, orphanedStorageFound, orphanedStorageRemoved);
 
-        return RepairResult.of(duplicatesFound, duplicatesRemoved,
-                orphanedStorageFound, orphanedStorageRemoved);
+        return new ResourceRepairService.ProcessResult(
+                name(),
+                true,
+                String.format("Duplicates found: %d, removed: %d; Orphaned storage found: %d, removed: %d",
+                        duplicatesFound, duplicatesRemoved,
+                        orphanedStorageFound, orphanedStorageRemoved
+                ),
+                System.currentTimeMillis()
+        );
     }
 
     /**

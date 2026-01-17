@@ -62,35 +62,22 @@ public class ResourceRepairJobExecutor implements JobExecutor {
                 throw new JobExecutionException("Invalid worldId: " + worldIdStr, e);
             }
 
-            log.info("Starting resource repair job: worldId={} types={} dryRun={}",
-                    worldId, types.isEmpty() ? "all" : types, dryRun);
+            log.info("Starting resource repair job: worldId={} types={}",
+                    worldId, types.isEmpty() ? "all" : types);
 
             // Execute repair
-            ResourceRepairService.RepairResult result = repairService.repair(worldId, types, dryRun);
-
-            // Return result
-            if (result.success()) {
-                String resultMessage = String.format(
-                        "Resource repair completed %s: worldId=%s types=%s " +
-                        "duplicates=%d/%d orphanedStorage=%d/%d totalIssues=%d/%d",
-                        dryRun ? "(DRY RUN)" : "successfully",
-                        worldId,
-                        types.isEmpty() ? "all" : types,
-                        result.duplicatesRemoved(), result.duplicatesFound(),
-                        result.orphanedStorageRemoved(), result.orphanedStorageFound(),
-                        result.totalIssuesFixed(), result.totalIssuesFound()
-                );
-                log.info(resultMessage);
-                return JobResult.ofSuccess(resultMessage);
-            } else {
-                String errorMessage = String.format(
-                        "Resource repair failed: worldId=%s error=%s",
-                        worldId, result.errorMessage()
-                );
-                log.error(errorMessage);
-                return JobResult.ofFailure(errorMessage);
-            }
-
+            var results = repairService.repair(worldId, types);
+            StringBuilder report = new StringBuilder();
+            results.forEach(
+                    r -> report.append(r.serviceName())
+                            .append(": ")
+                            .append(r.success() ? "SUCCESS" : "FAILED")
+                            .append(" - ")
+                            .append(r.message())
+                            .append(dryRun ? " [DRY RUN]" : "")
+                            .append("\n")
+            );
+            return JobResult.ofSuccess(report.toString());
         } catch (JobExecutionException e) {
             throw e;
         } catch (Exception e) {
