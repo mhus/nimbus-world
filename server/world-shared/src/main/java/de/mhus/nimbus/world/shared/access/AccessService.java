@@ -25,6 +25,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -59,6 +61,10 @@ public class AccessService {
     private final Base64Service base64Service;
     private final de.mhus.nimbus.shared.utils.LocationService locationService;
     private final RegionSettings regionProperties;
+
+    @Autowired
+    @Lazy
+    private de.mhus.nimbus.world.shared.client.WorldClientService worldClientService;
 
     // Cache for world token (server-to-server authentication)
     private volatile String cachedWorldToken;
@@ -263,6 +269,9 @@ public class AccessService {
 
         PlayerId playerId = PlayerId.of(request.getUserId(), request.getCharacterId())
                 .orElseThrow(() -> new IllegalArgumentException("Invalid userId or characterId"));
+
+        // Close any existing session for this player to prevent multiple logins
+        closePlayerSession(world.getRegionId(), playerId.getId());
 
         // Determine effective worldId (might be an instanceId for instanceable worlds)
         String effectiveWorldId = worldId.getId();
@@ -1036,6 +1045,147 @@ public class AccessService {
             log.info("World token generated - serviceName={}, expiresAt={}", serviceName, expiresAt);
 
             return token;
+        }
+    }
+
+    // ===== 10. closePlayerSession / destroyPlayerSession =====
+
+    /**
+     * Closes any existing session for a player gracefully.
+     * Used during login to prevent multiple simultaneous logins.
+     *
+     * Steps:
+     * 1. Check if player has an existing session in Redis (region:<regionId>:player:<playerId>)
+     * 2. If exists, send closeSession command to player pod
+     * 3. Wait with timeout (1s intervals) for Redis entry to be deleted
+     * 4. If timeout, call destroyPlayerSession to force-close
+     *
+     * @param regionId Region ID
+     * @param playerId Player ID
+     */
+    public void closePlayerSession(String regionId, String playerId) {
+        log.debug("Attempting to close existing player session: regionId={}, playerId={}", regionId, playerId);
+
+        // Check if player has an existing session
+        Optional<String> existingSessionIdOpt = sessionService.getPlayerSessionId(regionId, playerId);
+        if (existingSessionIdOpt.isEmpty()) {
+            log.debug("No existing session found for player: regionId={}, playerId={}", regionId, playerId);
+            return;
+        }
+
+        String existingSessionId = existingSessionIdOpt.get();
+        log.info("Found existing session for player, closing: regionId={}, playerId={}, sessionId={}",
+                regionId, playerId, existingSessionId);
+
+        // Get WSession to find playerUrl
+        Optional<de.mhus.nimbus.world.shared.session.WSession> wSessionOpt = sessionService.getWithPlayerUrl(existingSessionId);
+        if (wSessionOpt.isEmpty()) {
+            log.warn("WSession not found for existing session, cannot send close command: sessionId={}", existingSessionId);
+            // Force destroy since we can't reach the player pod
+            destroyPlayerSession(regionId, playerId, existingSessionId);
+            return;
+        }
+
+        String playerUrl = wSessionOpt.get().getPlayerUrl();
+        if (playerUrl == null || playerUrl.isBlank()) {
+            log.warn("PlayerUrl not set for existing session, cannot send close command: sessionId={}", existingSessionId);
+            // Force destroy since we can't reach the player pod
+            destroyPlayerSession(regionId, playerId, existingSessionId);
+            return;
+        }
+
+        // Send closeSession command to player pod
+        try {
+            de.mhus.nimbus.world.shared.commands.CommandContext context = de.mhus.nimbus.world.shared.commands.CommandContext.builder()
+                    .worldId(wSessionOpt.get().getWorldId())
+                    .sessionId(existingSessionId)
+                    .build();
+
+            worldClientService.sendPlayerCommand(
+                    wSessionOpt.get().getWorldId(),
+                    existingSessionId,
+                    playerUrl,
+                    "session.close",
+                    List.of(),
+                    context
+            ).get(5, java.util.concurrent.TimeUnit.SECONDS); // 5s timeout for command execution
+
+            log.debug("Sent closeSession command to player pod: sessionId={}, playerUrl={}", existingSessionId, playerUrl);
+
+        } catch (Exception e) {
+            log.error("Failed to send closeSession command: sessionId={}, playerUrl={}", existingSessionId, playerUrl, e);
+            // Continue with polling - command might have partially succeeded
+        }
+
+        // Wait for Redis entry to be deleted (poll with timeout)
+        int timeoutSeconds = properties.getCloseSessionTimeoutSeconds();
+        long startTime = System.currentTimeMillis();
+        boolean deleted = false;
+
+        while ((System.currentTimeMillis() - startTime) < (timeoutSeconds * 1000L)) {
+            // Check if Redis entry is gone
+            if (sessionService.getPlayerSessionId(regionId, playerId).isEmpty()) {
+                deleted = true;
+                log.info("Player session closed successfully: regionId={}, playerId={}, sessionId={}",
+                        regionId, playerId, existingSessionId);
+                break;
+            }
+
+            // Wait 1 second before next check
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                log.warn("Interrupted while waiting for session close: regionId={}, playerId={}", regionId, playerId);
+                break;
+            }
+        }
+
+        // If timeout, force destroy
+        if (!deleted) {
+            log.warn("Timeout waiting for session to close gracefully, forcing destroy: regionId={}, playerId={}, sessionId={}",
+                    regionId, playerId, existingSessionId);
+            destroyPlayerSession(regionId, playerId, existingSessionId);
+        }
+    }
+
+    /**
+     * Force-closes a player session by directly updating Redis.
+     * Used when graceful close fails or times out.
+     *
+     * Steps:
+     * 1. Update WSession status to CLOSED (this triggers Redis player entry deletion)
+     * 2. Verify Redis entry is deleted
+     *
+     * @param regionId Region ID
+     * @param playerId Player ID
+     * @param sessionId Session ID
+     */
+    private void destroyPlayerSession(String regionId, String playerId, String sessionId) {
+        log.warn("Force-destroying player session: regionId={}, playerId={}, sessionId={}", regionId, playerId, sessionId);
+
+        try {
+            // Update WSession status to CLOSED (this also deletes player session entry)
+            sessionService.updateStatus(sessionId, de.mhus.nimbus.world.shared.session.WSessionStatus.CLOSED);
+            log.info("Force-closed session: sessionId={}", sessionId);
+
+            // Verify Redis entry is deleted
+            if (sessionService.getPlayerSessionId(regionId, playerId).isPresent()) {
+                log.error("Failed to delete player session entry after force-close: regionId={}, playerId={}", regionId, playerId);
+                // Last resort: directly delete Redis entry
+                sessionService.deletePlayerSession(regionId, playerId);
+            }
+
+        } catch (Exception e) {
+            log.error("Failed to force-destroy player session: regionId={}, playerId={}, sessionId={}",
+                    regionId, playerId, sessionId, e);
+            // Last resort: directly delete Redis entry
+            try {
+                sessionService.deletePlayerSession(regionId, playerId);
+            } catch (Exception ex) {
+                log.error("Failed to delete player session entry as last resort: regionId={}, playerId={}",
+                        regionId, playerId, ex);
+            }
         }
     }
 }

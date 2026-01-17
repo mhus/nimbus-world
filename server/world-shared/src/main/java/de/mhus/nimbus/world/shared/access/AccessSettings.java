@@ -26,6 +26,7 @@ public class AccessSettings {
     private SettingInteger sessionTokenTtlSeconds;
     private SettingInteger agentTokenTtlSeconds;
     private SettingBoolean secureCookies;
+    private SettingInteger closeSessionTimeoutSeconds;
 
     @Value( "${nimbus.access.accessUrls:}")
     private String accessUrls;
@@ -63,6 +64,10 @@ public class AccessSettings {
         secureCookies = settingsService.getBoolean(
                 "access.secureCookies",
                 false
+        );
+        closeSessionTimeoutSeconds = settingsService.getInteger(
+                "access.closeSessionTimeoutSeconds",
+                10
         );
     }
 
@@ -180,5 +185,13 @@ public class AccessSettings {
             "http://localhost:3002/controls/teleport-login.html"
                 :
             teleportUrl;
+    }
+
+    /**
+     * Timeout in seconds for waiting for a session to close gracefully.
+     * Default: 10 seconds
+     */
+    public int getCloseSessionTimeoutSeconds() {
+        return closeSessionTimeoutSeconds.get();
     }
 }

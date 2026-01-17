@@ -60,6 +60,11 @@ public class WSessionService {
                 .expireAt(expire)
                 .build();
         write(session, effectiveTtl);
+
+        // Store player session in Redis: region:<regionId>:player:<playerId>
+        String regionId = worldId.getRegionId();
+        storePlayerSession(regionId, playerId.getId(), id);
+
         log.debug("WSession erstellt id={} world={} user={} status=WAITING ttl={}min", id, worldId, playerId, effectiveTtl.toMinutes());
         return session;
     }
@@ -123,6 +128,15 @@ public class WSessionService {
             };
             existing.setExpireAt(Instant.now().plus(newTtl));
             write(existing, newTtl);
+
+            // Delete player session entry when status changes to CLOSED
+            if (newStatus == WSessionStatus.CLOSED) {
+                WorldId worldId = WorldId.unchecked(existing.getWorldId());
+                String regionId = worldId.getRegionId();
+                deletePlayerSession(regionId, existing.getPlayerId());
+                log.debug("Deleted player session entry for regionId={} playerId={}", regionId, existing.getPlayerId());
+            }
+
             log.debug("WSession status aktualisiert id={} status={} ttl={}s", id, newStatus, newTtl.toSeconds());
             return existing;
         });
@@ -589,6 +603,64 @@ public class WSessionService {
     private Boolean parseBoolean(Object value) {
         if (value == null) return false;
         return Boolean.parseBoolean(value.toString());
+    }
+
+    // ========== Player Session Management ==========
+
+    private static final String PLAYER_SESSION_KEY_PREFIX = "region:";
+    private static final Duration PLAYER_SESSION_TTL = Duration.ofHours(24);
+
+    /**
+     * Store player session in Redis: region:<regionId>:player:<playerId>
+     * Contains sessionId and localIp with 24h TTL.
+     *
+     * @param regionId region ID
+     * @param playerId player ID
+     * @param sessionId session ID
+     */
+    private void storePlayerSession(String regionId, String playerId, String sessionId) {
+        String key = playerSessionKey(regionId, playerId);
+        var ops = redis.opsForHash();
+
+        ops.put(key, "sessionId", sessionId);
+        ops.put(key, "localIp", "local"); // TODO: Get actual local IP if needed
+
+        redis.expire(key, PLAYER_SESSION_TTL);
+
+        log.debug("Stored player session: regionId={}, playerId={}, sessionId={}", regionId, playerId, sessionId);
+    }
+
+    /**
+     * Delete player session from Redis.
+     *
+     * @param regionId region ID
+     * @param playerId player ID
+     * @return true if deleted
+     */
+    public boolean deletePlayerSession(String regionId, String playerId) {
+        String key = playerSessionKey(regionId, playerId);
+        Boolean result = redis.delete(key);
+        return Boolean.TRUE.equals(result);
+    }
+
+    /**
+     * Get player session from Redis.
+     *
+     * @param regionId region ID
+     * @param playerId player ID
+     * @return sessionId if found, empty otherwise
+     */
+    public Optional<String> getPlayerSessionId(String regionId, String playerId) {
+        String key = playerSessionKey(regionId, playerId);
+        Object sessionId = redis.opsForHash().get(key, "sessionId");
+        return Optional.ofNullable(sessionId != null ? sessionId.toString() : null);
+    }
+
+    /**
+     * Build Redis key for player session.
+     */
+    private String playerSessionKey(String regionId, String playerId) {
+        return PLAYER_SESSION_KEY_PREFIX + regionId + ":player:" + playerId;
     }
 
     // ========== BlockRegister Management ==========

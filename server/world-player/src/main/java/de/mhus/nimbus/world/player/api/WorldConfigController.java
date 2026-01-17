@@ -15,6 +15,7 @@ import de.mhus.nimbus.world.shared.session.WPlayerSession;
 import de.mhus.nimbus.world.shared.session.WPlayerSessionService;
 import de.mhus.nimbus.world.shared.session.WSession;
 import de.mhus.nimbus.world.shared.session.WSessionService;
+import de.mhus.nimbus.world.shared.world.WHexGridService;
 import de.mhus.nimbus.world.shared.world.WWorld;
 import de.mhus.nimbus.world.shared.world.WWorldService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -46,6 +47,7 @@ public class WorldConfigController {
     private final ServerSettings serverSettings;
     private final WSessionService sessionService;
     private final WPlayerSessionService playerSessionService;
+    private final WHexGridService wHexGridService;
 
     @GetMapping("/config")
     @Operation(summary = "Get complete EngineConfiguration",
@@ -219,13 +221,24 @@ public class WorldConfigController {
                     .q(q)
                     .r(r)
                     .build();
+            var hexGridOpt = wHexGridService.findByWorldIdAndPosition(worldInfo.getWorldId(), hexGrid);
+            if (hexGridOpt.isEmpty()) {
+                log.warn("Hex grid position not found in world: {}, q={}, r={}", worldInfo.getWorldId(), q, r);
+                return;
+            }
+            if (hexGridOpt.get().getPublicData() == null || hexGridOpt.get().getPublicData().getEntryPoint() == null) {
+                log.warn("Hex grid entry point data missing for world: {}, q={}, r={}", worldInfo.getWorldId(), q, r);
+                return;
+            }
+
+            var entryPointArea = hexGridOpt.get().getPublicData().getEntryPoint();
 
             WorldInfoEntryPointDTO entryPointDTO = WorldInfoEntryPointDTO.builder()
-                    .grid(hexGrid)
+                    .area(entryPointArea)
                     .build();
 
             worldInfo.setEntryPoint(entryPointDTO);
-            log.info("Set hex grid entry point: q={}, r={}", q, r);
+            log.info("Set hex grid entry point: q={}, r={}, area={}", q, r, entryPointArea);
 
         } catch (NumberFormatException e) {
             log.warn("Invalid grid coordinates (not numbers): {}", entryPoint, e);
