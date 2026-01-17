@@ -144,6 +144,61 @@ public class HexMathUtil {
     }
 
     /**
+     * Checks if the given chunk (cx, cz) is the dominant chunk for the specified hex coordinate.
+     * A chunk is dominant for a hex if the hex has the largest overlapping area with that chunk
+     * compared to all other hexes that overlap the chunk.
+     *
+     * @param chunkSize The size of chunks in blocks
+     * @param gridSize The diameter of the hexagon in blocks
+     * @param cx Chunk X coordinate
+     * @param cz Chunk Z coordinate
+     * @param hexCoordinate The hex coordinate to test
+     * @return true if this chunk is the dominant chunk for the given hex, false otherwise
+     */
+    public static boolean isDominantChunkForHexGrid(int chunkSize, int gridSize, int cx, int cz, HexVector2 hexCoordinate) {
+        if (hexCoordinate == null) {
+            throw new IllegalArgumentException("hexCoordinate cannot be null");
+        }
+        if (chunkSize <= 0 || gridSize <= 0) {
+            throw new IllegalArgumentException("chunkSize and gridSize must be positive");
+        }
+
+        // Get all hexes overlapping the chunk
+        HexVector2[] hexes = getHexesForChunk(gridSize, chunkSize, cx, cz);
+
+        // Rectangle (chunk) bounds
+        double minX = cx * chunkSize;
+        double minZ = cz * chunkSize;
+        double maxX = (cx + 1) * chunkSize;
+        double maxZ = (cz + 1) * chunkSize;
+
+        // For each hex, estimate overlap area by sampling points in the chunk
+        int sampleStep = Math.max(1, chunkSize / 8); // sample grid granularity
+        HexVector2 bestHex = hexes[0];
+        int maxCount = -1;
+
+        for (HexVector2 hex : hexes) {
+            double[] hexCenter = hexToCartesian(hex, gridSize);
+            int count = 0;
+            for (double x = minX; x < maxX; x += sampleStep) {
+                for (double z = minZ; z < maxZ; z += sampleStep) {
+                    if (isPointInHex(x, z, hexCenter[0], hexCenter[1], gridSize)) {
+                        count++;
+                    }
+                }
+            }
+            if (count > maxCount) {
+                maxCount = count;
+                bestHex = hex;
+            }
+        }
+
+        // Check if the dominant hex matches the provided hex coordinate
+        return bestHex.getQ() == hexCoordinate.getQ() &&
+               bestHex.getR() == hexCoordinate.getR();
+    }
+
+    /**
      * Internal iterator implementation for lazy position generation.
      */
     private static class HexPositionIterator implements Iterator<Vector2Int> {
@@ -443,6 +498,102 @@ public class HexMathUtil {
             }
         }
         return bestHex;
+    }
+
+    /**
+     * Efficiently calculates all chunk keys where the given hex has the dominant (largest) overlap.
+     * This is much more efficient than checking isDominantChunkForHexGrid for each chunk individually.
+     *
+     * @param hexCoord The hex coordinate to find dominant chunks for
+     * @param chunkSize The size of chunks in blocks
+     * @param gridSize The diameter of the hexagon in blocks
+     * @return Set of chunk keys (format: "cx:cz") where this hex is dominant
+     */
+    public static java.util.Set<String> getDominantChunkKeysForHex(HexVector2 hexCoord, int chunkSize, int gridSize) {
+        if (hexCoord == null) {
+            throw new IllegalArgumentException("hexCoord cannot be null");
+        }
+        if (chunkSize <= 0 || gridSize <= 0) {
+            throw new IllegalArgumentException("chunkSize and gridSize must be positive");
+        }
+
+        java.util.Set<String> dominantChunks = new java.util.HashSet<>();
+
+        // Get the hex center in world coordinates
+        double[] hexCenter = hexToCartesian(hexCoord, gridSize);
+        double hexCenterX = hexCenter[0];
+        double hexCenterZ = hexCenter[1];
+
+        // Calculate bounding box for the hex (conservative estimate)
+        int minX = (int) Math.floor(hexCenterX - gridSize);
+        int maxX = (int) Math.ceil(hexCenterX + gridSize);
+        int minZ = (int) Math.floor(hexCenterZ - gridSize);
+        int maxZ = (int) Math.ceil(hexCenterZ + gridSize);
+
+        // Calculate chunk range that could overlap with this hex
+        int minCx = Math.floorDiv(minX, chunkSize);
+        int maxCx = Math.floorDiv(maxX, chunkSize);
+        int minCz = Math.floorDiv(minZ, chunkSize);
+        int maxCz = Math.floorDiv(maxZ, chunkSize);
+
+        // For each potentially overlapping chunk
+        for (int cx = minCx; cx <= maxCx; cx++) {
+            for (int cz = minCz; cz <= maxCz; cz++) {
+                // Get all hexes that overlap with this chunk
+                HexVector2[] overlappingHexes = getHexesForChunk(gridSize, chunkSize, cx, cz);
+
+                if (overlappingHexes.length == 0) {
+                    continue;
+                }
+
+                // If only one hex overlaps, it's automatically dominant
+                if (overlappingHexes.length == 1) {
+                    HexVector2 onlyHex = overlappingHexes[0];
+                    if (onlyHex.getQ() == hexCoord.getQ() && onlyHex.getR() == hexCoord.getR()) {
+                        dominantChunks.add(cx + ":" + cz);
+                    }
+                    continue;
+                }
+
+                // Multiple hexes overlap - need to find which has largest overlap
+                double chunkMinX = cx * chunkSize;
+                double chunkMinZ = cz * chunkSize;
+                double chunkMaxX = (cx + 1) * chunkSize;
+                double chunkMaxZ = (cz + 1) * chunkSize;
+
+                int sampleStep = Math.max(1, chunkSize / 8);
+                int maxOverlap = -1;
+                HexVector2 dominantHex = null;
+
+                // Calculate overlap for each hex
+                for (HexVector2 candidateHex : overlappingHexes) {
+                    double[] candidateCenter = hexToCartesian(candidateHex, gridSize);
+                    int overlap = 0;
+
+                    for (double x = chunkMinX; x < chunkMaxX; x += sampleStep) {
+                        for (double z = chunkMinZ; z < chunkMaxZ; z += sampleStep) {
+                            if (isPointInHex(x, z, candidateCenter[0], candidateCenter[1], gridSize)) {
+                                overlap++;
+                            }
+                        }
+                    }
+
+                    if (overlap > maxOverlap) {
+                        maxOverlap = overlap;
+                        dominantHex = candidateHex;
+                    }
+                }
+
+                // Check if our target hex is the dominant one
+                if (dominantHex != null &&
+                    dominantHex.getQ() == hexCoord.getQ() &&
+                    dominantHex.getR() == hexCoord.getR()) {
+                    dominantChunks.add(cx + ":" + cz);
+                }
+            }
+        }
+
+        return dominantChunks;
     }
 
     /**

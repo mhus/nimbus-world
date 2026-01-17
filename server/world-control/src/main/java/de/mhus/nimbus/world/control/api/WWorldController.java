@@ -423,6 +423,26 @@ public class WWorldController extends BaseEditorController {
         }
 
         try {
+            // Validate immutable fields: chunkSize and hexGridSize cannot be changed after creation
+            if (request.publicData() != null && existing.getPublicData() != null) {
+                int existingChunkSize = existing.getPublicData().getChunkSize();
+                int existingHexGridSize = existing.getPublicData().getHexGridSize();
+                int requestChunkSize = request.publicData().getChunkSize();
+                int requestHexGridSize = request.publicData().getHexGridSize();
+
+                if (existingChunkSize != requestChunkSize) {
+                    return bad(String.format(
+                            "chunkSize cannot be changed after world creation (existing: %d, requested: %d)",
+                            existingChunkSize, requestChunkSize));
+                }
+
+                if (existingHexGridSize != requestHexGridSize) {
+                    return bad(String.format(
+                            "hexGridSize cannot be changed after world creation (existing: %d, requested: %d)",
+                            existingHexGridSize, requestHexGridSize));
+                }
+            }
+
             // Update title in publicData if provided
             if (request.title() != null) {
                 WorldInfo publicData = existing.getPublicData();

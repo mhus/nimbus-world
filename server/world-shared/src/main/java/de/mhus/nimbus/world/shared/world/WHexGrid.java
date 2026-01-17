@@ -203,7 +203,30 @@ public class WHexGrid implements Identifiable {
         return chunkKeys;
     }
 
-    // --- Area methods using TypeUtil for key parsing/formatting ---
+    /**
+     * Get all chunk keys where this hex grid is the dominant hex (has largest overlap).
+     * This is an efficient implementation that calculates dominant chunks directly from the hex coordinate.
+     *
+     * @param worldEntity The world entity containing the hexGridSize and chunkSize configuration
+     * @param hexCoord The hex coordinate (typically from publicData.position)
+     * @return Set of chunk keys (format: "cx:cz") where this hex is dominant
+     */
+    public java.util.Set<String> getDominantAffectedChunkKeys(WWorld worldEntity, HexVector2 hexCoord) {
+        if (worldEntity == null || worldEntity.getPublicData() == null) {
+            throw new IllegalArgumentException("World entity or publicData cannot be null");
+        }
+        if (hexCoord == null) {
+            throw new IllegalArgumentException("hexCoord cannot be null");
+        }
+
+        int chunkSize = worldEntity.getPublicData().getChunkSize();
+        int gridSize = worldEntity.getPublicData().getHexGridSize();
+
+        return HexMathUtil.getDominantChunkKeysForHex(hexCoord, chunkSize, gridSize);
+    }
+
+
+        // --- Area methods using TypeUtil for key parsing/formatting ---
 
     /**
      * Returns the parameter map for the given area, or null if not present.

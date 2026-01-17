@@ -375,17 +375,17 @@
             <div class="form-control">
               <label class="label"><span class="label-text">Chunk Size</span></label>
               <input v-model.number="formData.publicData.chunkSize" type="number"
-                     class="input input-bordered" />
+                     class="input input-bordered" :disabled="!isNew" />
               <label class="label">
-                <span class="label-text-alt">Size of chunks in blocks (default: 16)</span>
+                <span class="label-text-alt">Size of chunks in blocks (default: 16). Cannot be changed after creation.</span>
               </label>
             </div>
             <div class="form-control">
               <label class="label"><span class="label-text">Hex Grid Size</span></label>
               <input v-model.number="formData.publicData.hexGridSize" type="number"
-                     class="input input-bordered" />
+                     class="input input-bordered" :disabled="!isNew" />
               <label class="label">
-                <span class="label-text-alt">Size of hexagonal grid (default: 16)</span>
+                <span class="label-text-alt">Size of hexagonal grid (default: 16). Cannot be changed after creation.</span>
               </label>
             </div>
             <div class="form-control">
@@ -1301,6 +1301,35 @@
       <span>{{ successMessage }}</span>
     </div>
 
+    <!-- Confirmation Dialog for World Creation -->
+    <dialog :open="showConfirmDialog" class="modal">
+      <div class="modal-box">
+        <h3 class="font-bold text-lg mb-4">Confirm World Creation</h3>
+        <p class="mb-4">Please confirm the following values before creating the world. These values cannot be changed after creation:</p>
+
+        <div class="space-y-3 bg-base-200 p-4 rounded-lg">
+          <div class="flex justify-between">
+            <span class="font-semibold">World ID:</span>
+            <span class="font-mono">{{ currentRegionId }}:{{ worldNameInput }}{{ zoneInput ? ':' + zoneInput : '' }}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="font-semibold">Chunk Size:</span>
+            <span class="font-mono">{{ formData.publicData.chunkSize }}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="font-semibold">Hex Grid Size:</span>
+            <span class="font-mono">{{ formData.publicData.hexGridSize }}</span>
+          </div>
+        </div>
+
+        <div class="modal-action">
+          <button class="btn btn-ghost" @click="handleCancelCreate">Cancel</button>
+          <button class="btn btn-primary" @click="handleConfirmCreate">Confirm & Create</button>
+        </div>
+      </div>
+      <div class="modal-backdrop" @click="handleCancelCreate"></div>
+    </dialog>
+
     <!-- Job Watch Modal -->
     <JobWatch
       v-if="showJobWatch && jobWatchWorldId && jobWatchJobId"
@@ -1340,6 +1369,9 @@ const successMessage = ref<string | null>(null);
 const showJobWatch = ref(false);
 const jobWatchWorldId = ref('');
 const jobWatchJobId = ref('');
+
+// Confirmation dialog for world creation
+const showConfirmDialog = ref(false);
 
 // World name input (without regionId prefix)
 const worldNameInput = ref('');
@@ -1873,6 +1905,26 @@ const handleSave = async () => {
     return;
   }
 
+  // Show confirmation dialog when creating a new world
+  if (isNew.value) {
+    showConfirmDialog.value = true;
+    return;
+  }
+
+  // For updates, proceed directly
+  await performSave();
+};
+
+const handleConfirmCreate = async () => {
+  showConfirmDialog.value = false;
+  await performSave();
+};
+
+const handleCancelCreate = () => {
+  showConfirmDialog.value = false;
+};
+
+const performSave = async () => {
   saving.value = true;
   error.value = null;
   successMessage.value = null;

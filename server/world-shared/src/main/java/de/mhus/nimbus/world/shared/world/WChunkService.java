@@ -9,6 +9,7 @@ import de.mhus.nimbus.generated.types.Vector3Int;
 import de.mhus.nimbus.shared.storage.StorageService;
 import de.mhus.nimbus.shared.types.SchemaVersion;
 import de.mhus.nimbus.shared.types.WorldId;
+import de.mhus.nimbus.shared.utils.TypeUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
@@ -98,7 +99,14 @@ public class WChunkService implements StorageProvider {
         WChunk entity = repository.findByWorldIdAndChunk(worldId.getId(), chunkKey)
                 .orElseGet(() -> {
                     WChunk neu = WChunk.builder().worldId(worldId.getId()).chunk(chunkKey).build();
+                    // hello
                     neu.touchCreate();
+                    // set hex coordinate
+                    var chunkCoordinates = TypeUtil.parseChunkCoord(chunkKey);
+                    WWorld world = worldService.getByWorldId(worldId).orElseThrow();
+                    var mainHex = HexMathUtil.getDominantHexForChunk(world, chunkCoordinates[0], chunkCoordinates[1]);
+                    neu.setHex(TypeUtil.toStringHexCoord(mainHex));
+                    // fine
                     return neu;
                 });
 
