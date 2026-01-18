@@ -136,7 +136,7 @@ export class PlayerPositionInfoCommand extends CommandHandler {
         const localX = ((Math.floor(position.x) % chunkSize) + chunkSize) % chunkSize;
         const localZ = ((Math.floor(position.z) % chunkSize) + chunkSize) % chunkSize;
         const heightKey = `${localX},${localZ}`;
-        const heightData = chunk.data.hightData.get(heightKey);
+        const heightData = chunk.data.hightData[heightKey];
 
         lines.push('Height Data (current column):');
         if (heightData) {
