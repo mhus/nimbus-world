@@ -45,35 +45,35 @@ public class AgentConfiguration {
      */
     @Bean
     public ChatModel chatModel(AiModelService aiModelService) {
-        log.info("Configuring ChatModel from AiModelService: model={}, temperature={}, maxTokens={}",
-            agentModelName, temperature, maxTokens);
-
-        // Create AI chat options
-        AiChatOptions options = AiChatOptions.builder()
-            .temperature(temperature)
-            .maxTokens(maxTokens)
-            .build();
-
-        // Get AiChat from service
-        AiChat aiChat = aiModelService.createChat(agentModelName, options)
-            .orElseThrow(() -> new IllegalStateException(
-                "Failed to create AI chat model: " + agentModelName +
-                ". Check if the model is configured and available."));
-
-        log.info("AI chat created successfully: {}", aiChat.getName());
 
         // Return adapter that wraps AiChat as ChatModel
-        return new AiChatModelAdapter(aiChat);
+        // provide chat on demand to avoid early initialization errors if not configured
+        return new AiChatModelAdapter(() -> {
+            log.info("Configuring ChatModel from AiModelService: model={}, temperature={}, maxTokens={}",
+                    agentModelName, temperature, maxTokens);
+
+            // Create AI chat options
+            AiChatOptions options = AiChatOptions.builder()
+                    .temperature(temperature)
+                    .maxTokens(maxTokens)
+                    .build();
+
+            return aiModelService.createChat(agentModelName, options)
+                    .orElseThrow(() -> new IllegalStateException(
+                            "Failed to create AI chat model: " + agentModelName +
+                                    ". Check if the model is configured and available."));
+        } );
     }
 
     /**
      * Adapter that wraps AiChat to implement ChatModel interface.
      */
     private static class AiChatModelAdapter implements ChatModel {
-        private final AiChat aiChat;
+        private final AiChatProvider aiChatProvider;
+        private AiChat aiChat;
 
-        AiChatModelAdapter(AiChat aiChat) {
-            this.aiChat = aiChat;
+        AiChatModelAdapter(AiChatProvider aiChatProvider) {
+            this.aiChatProvider = aiChatProvider;
         }
 
         @Override
@@ -95,13 +95,20 @@ public class AgentConfiguration {
 
             // Ask AI chat
             try {
-                String response = aiChat.ask(prompt);
+                String response = getAiChat().ask(prompt);
                 return ChatResponse.builder()
                     .aiMessage(AiMessage.from(response))
                     .build();
             } catch (Exception e) {
                 throw new RuntimeException("AI chat failed: " + e.getMessage(), e);
             }
+        }
+
+        private synchronized AiChat getAiChat() {
+            if (aiChat != null) return aiChat;
+            aiChat = aiChatProvider.getAiChat();
+            log.info("AI chat created successfully: {}", aiChat.getName());
+            return aiChat;
         }
 
         @Override
