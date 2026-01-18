@@ -124,7 +124,7 @@
     </div>
 
     <!-- Material Form (shown when editing/adding) -->
-    <div v-if="editingMaterialId !== null" class="border-t pt-4 mt-4">
+    <div v-if="editingMaterialId !== null" ref="formContainer" class="border-t pt-4 mt-4">
       <MaterialForm
         :material-id="editingMaterialId"
         :material="editingMaterial"
@@ -155,7 +155,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, nextTick } from 'vue';
 import { flatService } from '../../services/FlatService';
 import type { MaterialDefinition, UpdateMaterialRequest } from '../../services/FlatService';
 import MaterialForm from './MaterialForm.vue';
@@ -191,6 +191,7 @@ const editingMaterialId = ref<number | null>(null);
 const editingMaterial = ref<MaterialDefinition | null>(null);
 const materialToDelete = ref<MaterialDefinition | null>(null);
 const deleteModal = ref<HTMLDialogElement | null>(null);
+const formContainer = ref<HTMLElement | null>(null);
 
 // Load materials
 const loadMaterials = async () => {
@@ -221,7 +222,7 @@ const applyPalette = async (paletteName: string) => {
 };
 
 // Start adding new material
-const startAddMaterial = () => {
+const startAddMaterial = async () => {
   // Find next available material ID (1-254, skip 0 and existing)
   const usedIds = new Set(materials.value.map(m => m.materialId));
   let nextId = 1;
@@ -236,16 +237,24 @@ const startAddMaterial = () => {
 
   editingMaterialId.value = nextId;
   editingMaterial.value = null;
+
+  // Scroll to form after it's rendered
+  await nextTick();
+  formContainer.value?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 };
 
 // Start editing material
-const startEditMaterial = (material: MaterialDefinition) => {
+const startEditMaterial = async (material: MaterialDefinition) => {
   if (material.materialId === 0) {
     error.value = 'Material 0 (UNKNOWN_PROTECTED) cannot be edited';
     return;
   }
   editingMaterialId.value = material.materialId;
   editingMaterial.value = material;
+
+  // Scroll to form after it's rendered
+  await nextTick();
+  formContainer.value?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 };
 
 // Save material (create or update)

@@ -79,13 +79,22 @@ public class FlatController extends BaseEditorController {
             String description
     ) {}
 
+    public record OffsetDefinitionDto(
+            double one,
+            double two,
+            double oneEdge,
+            double twoEdge
+    ) {}
+
     public record MaterialDefinitionDto(
             int materialId,
             String blockDef,
             String nextBlockDef,
             boolean hasOcean,
             boolean isBlockMapDelta,
-            Map<Integer, String> blockAtLevels
+            Map<Integer, String> blockAtLevels,
+            OffsetDefinitionDto higherOffsets,
+            OffsetDefinitionDto lowerOffsets
     ) {}
 
     public record UpdateMaterialRequest(
@@ -93,7 +102,9 @@ public class FlatController extends BaseEditorController {
             String nextBlockDef,
             boolean hasOcean,
             boolean isBlockMapDelta,
-            Map<Integer, String> blockAtLevels
+            Map<Integer, String> blockAtLevels,
+            OffsetDefinitionDto higherOffsets,
+            OffsetDefinitionDto lowerOffsets
     ) {}
 
     public record ApplyPaletteRequest(
@@ -818,7 +829,9 @@ public class FlatController extends BaseEditorController {
                     mat.getNextBlockDef(),
                     mat.isHasOcean(),
                     mat.isBlockMapDelta(),
-                    blockAtLevels
+                    blockAtLevels,
+                    toOffsetDto(mat.getHigherOffsets()),
+                    toOffsetDto(mat.getLowerOffsets())
                 );
                 dtos.add(dto);
             }
@@ -880,7 +893,9 @@ public class FlatController extends BaseEditorController {
             mat.getNextBlockDef(),
             mat.isHasOcean(),
             mat.isBlockMapDelta(),
-            blockAtLevels
+            blockAtLevels,
+            toOffsetDto(mat.getHigherOffsets()),
+            toOffsetDto(mat.getLowerOffsets())
         );
 
         return ResponseEntity.ok(dto);
@@ -954,6 +969,8 @@ public class FlatController extends BaseEditorController {
                 .hasOcean(request.hasOcean())
                 .isBlockMapDelta(request.isBlockMapDelta())
                 .blockAtLevels(request.blockAtLevels() != null ? new HashMap<>(request.blockAtLevels()) : new HashMap<>())
+                .higherOffsets(fromOffsetDto(request.higherOffsets()))
+                .lowerOffsets(fromOffsetDto(request.lowerOffsets()))
                 .build();
 
         // Set material
@@ -977,7 +994,9 @@ public class FlatController extends BaseEditorController {
             savedMat.getNextBlockDef(),
             savedMat.isHasOcean(),
             savedMat.isBlockMapDelta(),
-            blockAtLevels
+            blockAtLevels,
+            toOffsetDto(savedMat.getHigherOffsets()),
+            toOffsetDto(savedMat.getLowerOffsets())
         );
 
         return ResponseEntity.ok(dto);
@@ -1095,7 +1114,9 @@ public class FlatController extends BaseEditorController {
                     mat.getNextBlockDef(),
                     mat.isHasOcean(),
                     mat.isBlockMapDelta(),
-                    blockAtLevels
+                    blockAtLevels,
+                    toOffsetDto(mat.getHigherOffsets()),
+                    toOffsetDto(mat.getLowerOffsets())
                 );
                 dtos.add(dto);
             }
@@ -1147,6 +1168,36 @@ public class FlatController extends BaseEditorController {
                 .isBlockMapDelta(true)
                 .blockAtLevels(new HashMap<>())
                 .build();
+    }
+
+    /**
+     * Convert WFlat.OffsetDefinition to OffsetDefinitionDto
+     */
+    private OffsetDefinitionDto toOffsetDto(WFlat.OffsetDefinition offset) {
+        if (offset == null) {
+            return new OffsetDefinitionDto(0, 0, 0, 0);
+        }
+        return new OffsetDefinitionDto(
+                offset.getOne(),
+                offset.getTwo(),
+                offset.getOneEdge(),
+                offset.getTwoEdge()
+        );
+    }
+
+    /**
+     * Convert OffsetDefinitionDto to WFlat.OffsetDefinition
+     */
+    private WFlat.OffsetDefinition fromOffsetDto(OffsetDefinitionDto dto) {
+        if (dto == null) {
+            return new WFlat.OffsetDefinition(0, 0, 0, 0);
+        }
+        return new WFlat.OffsetDefinition(
+                dto.one(),
+                dto.two(),
+                dto.oneEdge(),
+                dto.twoEdge()
+        );
     }
 
     /**

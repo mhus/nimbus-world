@@ -14,6 +14,7 @@ export interface WDocumentMetadata {
   metadata: Record<string, string>;
   parentDocumentId: string;
   isMain: boolean;
+  readOnly: boolean;
   hash: string;
   type: string;
   childType: string;

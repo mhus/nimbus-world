@@ -529,7 +529,7 @@ public class FlatExportService {
 
             // Apply block optimizations (corner smoothing and/or face visibility) if enabled
             if ((smoothCorners) && y <= level) {
-                boolean shouldExport = applyBlockOptimizations(block, flat, localX, localZ, level, y, blockTypeCache, wid, smoothCorners);
+                boolean shouldExport = applyBlockOptimizations(block, flat, localX, localZ, level, y, blockTypeCache, wid, smoothCorners, columnDef);
                 if (!shouldExport) {
                     // Block has no visible faces, skip export
                     continue;
@@ -556,7 +556,7 @@ public class FlatExportService {
     private boolean applyBlockOptimizations(Block block, WFlat flat, int localX, int localZ,
                                         int level, int y,
                                         Map<String, WBlockType> blockTypeCache, WorldId wid,
-                                        boolean smoothCorners) {
+                                        boolean smoothCorners, WFlat.MaterialDefinition materialDef) {
         if (block == null || block.getBlockTypeId() == null || wid == null) {
             return true;  // No optimization, export block
         }
@@ -608,16 +608,16 @@ public class FlatExportService {
 
             // Calculate all corner offsets
             // Top Front Left (SW) - neighbors: West(-X,0), South(0,-Z), SW(-X,-Z)
-            float swOffset = calculateCornerOffset(flat, localX, localZ, myLevel, -1, 0, 0, -1, -1, -1);
+            float swOffset = calculateCornerOffset(flat, localX, localZ, myLevel, -1, 0, 0, -1, -1, -1, materialDef);
 
             // Top Front Right (SE) - neighbors: East(+X,0), South(0,-Z), SE(+X,-Z)
-            float seOffset = calculateCornerOffset(flat, localX, localZ, myLevel, 1, 0, 0, -1, 1, -1);
+            float seOffset = calculateCornerOffset(flat, localX, localZ, myLevel, 1, 0, 0, -1, 1, -1, materialDef);
 
             // Top Back Left (NW) - neighbors: West(-X,0), North(0,+Z), NW(-X,+Z)
-            float nwOffset = calculateCornerOffset(flat, localX, localZ, myLevel, -1, 0, 0, 1, -1, 1);
+            float nwOffset = calculateCornerOffset(flat, localX, localZ, myLevel, -1, 0, 0, 1, -1, 1, materialDef);
 
             // Top Back Right (NE) - neighbors: East(+X,0), North(0,+Z), NE(+X,+Z)
-            float neOffset = calculateCornerOffset(flat, localX, localZ, myLevel, 1, 0, 0, 1, 1, 1);
+            float neOffset = calculateCornerOffset(flat, localX, localZ, myLevel, 1, 0, 0, 1, 1, 1, materialDef);
 
             // Set offsets (NW and NE are swapped to fix north-facing direction)
             offsets.set(13, swOffset);  // SW - indices 12,13,14
@@ -698,13 +698,17 @@ public class FlatExportService {
 
     /**
      * Calculate Y offset for a corner based on three neighbor heights (2 orthogonal + 1 diagonal).
+     * Uses the MaterialDefinition's higherOffsets and lowerOffsets parameters.
+     *
      * Rules (in priority order):
-     * - All 3 neighbors at least 2 levels higher → +1.0
-     * - All 3 neighbors at least 2 levels lower → -1.0
-     * - Mixed (some higher, some lower) → 0.0
-     * - At least one lower (and none higher) → -0.5
-     * - At least one same (and none lower) → 0.5
-     * - All higher (but not all >= 2) → 0.5
+     * 1. Mixed (at least one higher AND at least one lower) → 0.0
+     * 2. All 3 neighbors at least 2 levels higher → higherOffsets.twoEdge
+     * 3. All 3 neighbors at least 2 levels lower → lowerOffsets.twoEdge
+     * 4. All 3 neighbors exactly 1 level higher → higherOffsets.oneEdge
+     * 5. All 3 neighbors exactly 1 level lower → lowerOffsets.oneEdge
+     * 6. At least one higher (and none lower) → higherOffsets.one or higherOffsets.two (based on minimum difference)
+     * 7. At least one lower (and none higher) → lowerOffsets.one or lowerOffsets.two (based on maximum difference)
+     * 8. All same → 0.0
      *
      * @param flat The flat terrain data
      * @param localX Current column X
@@ -716,10 +720,23 @@ public class FlatExportService {
      * @param dz2 Z offset for second neighbor
      * @param dx3 X offset for third neighbor (diagonal)
      * @param dz3 Z offset for third neighbor (diagonal)
+     * @param materialDef Material definition with offset parameters
      * @return Y offset value
      */
     private float calculateCornerOffset(WFlat flat, int localX, int localZ, int myLevel,
-                                       int dx1, int dz1, int dx2, int dz2, int dx3, int dz3) {
+                                       int dx1, int dz1, int dx2, int dz2, int dx3, int dz3,
+                                       WFlat.MaterialDefinition materialDef) {
+        // Get offset definitions (use defaults if null)
+        WFlat.OffsetDefinition higherOffsets = materialDef != null ? materialDef.getHigherOffsets() : null;
+        WFlat.OffsetDefinition lowerOffsets = materialDef != null ? materialDef.getLowerOffsets() : null;
+
+        if (higherOffsets == null) {
+            higherOffsets = new WFlat.OffsetDefinition(0.2, 0.8, 0.4, 1.0);
+        }
+        if (lowerOffsets == null) {
+            lowerOffsets = new WFlat.OffsetDefinition(-0.1, -0.2, -0.3, -0.4);
+        }
+
         // Get neighbor levels (use myLevel if out of bounds)
         int neighbor1Level = getNeighborLevel(flat, localX + dx1, localZ + dz1, myLevel);
         int neighbor2Level = getNeighborLevel(flat, localX + dx2, localZ + dz2, myLevel);
@@ -741,37 +758,66 @@ public class FlatExportService {
         boolean n3Same = diff3 == 0;
         boolean n3Higher = diff3 > 0;
 
-        // Apply rules (priority order)
-        // All 3 at least 2 levels higher → +1.0
-        if (diff1 >= 2 && diff2 >= 2 && diff3 >= 2) {
-            return 1.0f;
-        }
-
-        // All 3 at least 2 levels lower → -1.0
-        if (diff1 <= -2 && diff2 <= -2 && diff3 <= -2) {
-            return -1.0f;
-        }
-
-        // Mixed: at least one higher AND at least one lower → 0.0
         boolean anyHigher = n1Higher || n2Higher || n3Higher;
         boolean anyLower = n1Lower || n2Lower || n3Lower;
+
+        // Mixed: at least one higher AND at least one lower → 0.0
         if (anyHigher && anyLower) {
             return 0.0f;
         }
 
-        // At least one lower (and none higher) → -0.5
+        // All 3 at least 2 levels higher → higherOffsets.twoEdge
+        if (diff1 >= 2 && diff2 >= 2 && diff3 >= 2) {
+            return (float) higherOffsets.getTwoEdge();
+        }
+
+        // All 3 at least 2 levels lower → lowerOffsets.twoEdge
+        if (diff1 <= -2 && diff2 <= -2 && diff3 <= -2) {
+            return (float) lowerOffsets.getTwoEdge();
+        }
+
+        // All 3 exactly 1 level higher → higherOffsets.oneEdge
+        if (diff1 == 1 && diff2 == 1 && diff3 == 1) {
+            return (float) higherOffsets.getOneEdge();
+        }
+
+        // All 3 exactly 1 level lower → lowerOffsets.oneEdge
+        if (diff1 == -1 && diff2 == -1 && diff3 == -1) {
+            return (float) lowerOffsets.getOneEdge();
+        }
+
+        // At least one higher (and none lower)
+        if (anyHigher && !anyLower) {
+            // Find the minimum positive difference
+            int minHigherDiff = Integer.MAX_VALUE;
+            if (diff1 > 0 && diff1 < minHigherDiff) minHigherDiff = diff1;
+            if (diff2 > 0 && diff2 < minHigherDiff) minHigherDiff = diff2;
+            if (diff3 > 0 && diff3 < minHigherDiff) minHigherDiff = diff3;
+
+            if (minHigherDiff == 1) {
+                return (float) higherOffsets.getOne();
+            } else if (minHigherDiff >= 2) {
+                return (float) higherOffsets.getTwo();
+            }
+        }
+
+        // At least one lower (and none higher)
         if (anyLower && !anyHigher) {
-            return -0.5f;
+            // Find the maximum negative difference (closest to 0, i.e. least negative)
+            int maxLowerDiff = Integer.MIN_VALUE;
+            if (diff1 < 0 && diff1 > maxLowerDiff) maxLowerDiff = diff1;
+            if (diff2 < 0 && diff2 > maxLowerDiff) maxLowerDiff = diff2;
+            if (diff3 < 0 && diff3 > maxLowerDiff) maxLowerDiff = diff3;
+
+            if (maxLowerDiff == -1) {
+                return (float) lowerOffsets.getOne();
+            } else if (maxLowerDiff <= -2) {
+                return (float) lowerOffsets.getTwo();
+            }
         }
 
-        // At least one same (and none lower) → 0.5
-        boolean anySame = n1Same || n2Same || n3Same;
-        if (anySame && !anyLower) {
-            return 0.5f;
-        }
-
-        // All higher (but not all >= 2 higher) → 0.5
-        return 0.5f;
+        // All same → 0.0
+        return 0.0f;
     }
 
     /**

@@ -80,6 +80,122 @@
         <BlockAtLevelsEditor v-model="formData.blockAtLevels" />
       </div>
 
+      <!-- Offset Definitions -->
+      <div class="space-y-4 border-t pt-4">
+        <h4 class="text-md font-medium">Offset Definitions</h4>
+        <p class="text-xs text-gray-500">
+          Control corner smoothing when blocks are higher or lower than neighbors
+        </p>
+
+        <!-- Higher Offsets -->
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text font-medium">Higher Offsets</span>
+          </label>
+          <p class="text-xs text-gray-500 mb-2">Applied when neighbor blocks are higher</p>
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="label">
+                <span class="label-text-alt">One Level (+1)</span>
+              </label>
+              <input
+                v-model.number="formData.higherOffsets.one"
+                type="number"
+                step="0.1"
+                class="input input-sm input-bordered w-full font-mono"
+              />
+            </div>
+            <div>
+              <label class="label">
+                <span class="label-text-alt">Two Levels (+2)</span>
+              </label>
+              <input
+                v-model.number="formData.higherOffsets.two"
+                type="number"
+                step="0.1"
+                class="input input-sm input-bordered w-full font-mono"
+              />
+            </div>
+            <div>
+              <label class="label">
+                <span class="label-text-alt">One Edge (+1 corner)</span>
+              </label>
+              <input
+                v-model.number="formData.higherOffsets.oneEdge"
+                type="number"
+                step="0.1"
+                class="input input-sm input-bordered w-full font-mono"
+              />
+            </div>
+            <div>
+              <label class="label">
+                <span class="label-text-alt">Two Edge (+2 corner)</span>
+              </label>
+              <input
+                v-model.number="formData.higherOffsets.twoEdge"
+                type="number"
+                step="0.1"
+                class="input input-sm input-bordered w-full font-mono"
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- Lower Offsets -->
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text font-medium">Lower Offsets</span>
+          </label>
+          <p class="text-xs text-gray-500 mb-2">Applied when neighbor blocks are lower</p>
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="label">
+                <span class="label-text-alt">One Level (-1)</span>
+              </label>
+              <input
+                v-model.number="formData.lowerOffsets.one"
+                type="number"
+                step="0.1"
+                class="input input-sm input-bordered w-full font-mono"
+              />
+            </div>
+            <div>
+              <label class="label">
+                <span class="label-text-alt">Two Levels (-2)</span>
+              </label>
+              <input
+                v-model.number="formData.lowerOffsets.two"
+                type="number"
+                step="0.1"
+                class="input input-sm input-bordered w-full font-mono"
+              />
+            </div>
+            <div>
+              <label class="label">
+                <span class="label-text-alt">One Edge (-1 corner)</span>
+              </label>
+              <input
+                v-model.number="formData.lowerOffsets.oneEdge"
+                type="number"
+                step="0.1"
+                class="input input-sm input-bordered w-full font-mono"
+              />
+            </div>
+            <div>
+              <label class="label">
+                <span class="label-text-alt">Two Edge (-2 corner)</span>
+              </label>
+              <input
+                v-model.number="formData.lowerOffsets.twoEdge"
+                type="number"
+                step="0.1"
+                class="input input-sm input-bordered w-full font-mono"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Action buttons -->
       <div class="flex gap-2 justify-end pt-4 border-t">
         <button
@@ -142,6 +258,8 @@ const formData = ref<UpdateMaterialRequest>({
   hasOcean: false,
   isBlockMapDelta: true,
   blockAtLevels: {},
+  higherOffsets: { one: 0.2, two: 0.8, oneEdge: 0.4, twoEdge: 1.0 },
+  lowerOffsets: { one: -0.1, two: -0.2, oneEdge: -0.3, twoEdge: -0.4 },
 });
 
 // Initialize form data from material prop
@@ -153,6 +271,12 @@ const initializeForm = () => {
       hasOcean: props.material.hasOcean,
       isBlockMapDelta: props.material.isBlockMapDelta,
       blockAtLevels: { ...props.material.blockAtLevels },
+      higherOffsets: props.material.higherOffsets
+        ? { ...props.material.higherOffsets }
+        : { one: 0.2, two: 0.8, oneEdge: 0.4, twoEdge: 1.0 },
+      lowerOffsets: props.material.lowerOffsets
+        ? { ...props.material.lowerOffsets }
+        : { one: -0.1, two: -0.2, oneEdge: -0.3, twoEdge: -0.4 },
     };
   } else {
     formData.value = {
@@ -161,6 +285,8 @@ const initializeForm = () => {
       hasOcean: false,
       isBlockMapDelta: true,
       blockAtLevels: {},
+      higherOffsets: { one: 0.2, two: 0.8, oneEdge: 0.4, twoEdge: 1.0 },
+      lowerOffsets: { one: -0.1, two: -0.2, oneEdge: -0.3, twoEdge: -0.4 },
     };
   }
 };

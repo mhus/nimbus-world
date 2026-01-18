@@ -34,6 +34,7 @@ import java.util.Map;
 public class WFlat implements Identifiable {
 
     public static final int NOT_SET = 0;
+    public static final int NOT_SET_MUTABLE = 255;
     private static final int MAX_SIZE = 800;
 
     @Id
@@ -252,6 +253,17 @@ public class WFlat implements Identifiable {
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
+    public static class OffsetDefinition {
+        private double one = 0;
+        private double two = 0;
+        private double oneEdge = 0;
+        private double twoEdge = 0;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class MaterialDefinition {
         private String blockDef; // id + "@s:" + state e.g. n:s@s:100, n:s@s:101 - siehe BlockDef
         private String nextBlockDef; // id + "@" + state
@@ -260,6 +272,11 @@ public class WFlat implements Identifiable {
         private boolean isBlockMapDelta = true;
         @Builder.Default
         private Map<Integer, String> blockAtLevels = new HashMap<>(); // y -> block id
+
+        @Builder.Default
+        private OffsetDefinition higherOffsets = new OffsetDefinition(0.2, 0.8, 0.4, 1.0); // offset modifiers for higher neighbors
+        @Builder.Default
+        private OffsetDefinition lowerOffsets = new OffsetDefinition(-0.1, -0.2, -0.3, -0.4); // offset modifiers for lower neighbors
 
         /**
          * Returns the blockId for the y - starts at level

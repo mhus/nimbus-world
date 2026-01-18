@@ -41,6 +41,13 @@ export interface FlatDetail {
   updatedAt: string;
 }
 
+export interface OffsetDefinition {
+  one: number;
+  two: number;
+  oneEdge: number;
+  twoEdge: number;
+}
+
 export interface MaterialDefinition {
   materialId: number;
   blockDef: string;
@@ -48,6 +55,8 @@ export interface MaterialDefinition {
   hasOcean: boolean;
   isBlockMapDelta: boolean;
   blockAtLevels: Record<number, string>;
+  higherOffsets: OffsetDefinition;
+  lowerOffsets: OffsetDefinition;
 }
 
 export interface UpdateMaterialRequest {
@@ -56,6 +65,8 @@ export interface UpdateMaterialRequest {
   hasOcean: boolean;
   isBlockMapDelta: boolean;
   blockAtLevels: Record<number, string>;
+  higherOffsets: OffsetDefinition;
+  lowerOffsets: OffsetDefinition;
 }
 
 export class FlatService {
