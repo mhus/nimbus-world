@@ -1932,4 +1932,22 @@ public class WLayerService implements StorageProvider {
                 String.class
         );
     }
+
+    /**
+     * Find all distinct chunk keys for a given terrain layer.
+     * Uses MongoDB's distinct query to directly retrieve chunkKey values.
+     *
+     * @param layerDataId Layer data ID
+     * @return List of distinct chunk keys (excludes null values)
+     */
+    @Transactional(readOnly = true)
+    public List<String> findChunkKeysByLayerDataId(String layerDataId) {
+        Query query = new Query(Criteria.where("layerDataId").is(layerDataId));
+        return mongoTemplate.findDistinct(
+                query,
+                "chunkKey",
+                WLayerTerrain.class,
+                String.class
+        );
+    }
 }

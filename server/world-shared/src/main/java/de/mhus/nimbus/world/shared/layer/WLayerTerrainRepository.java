@@ -13,13 +13,6 @@ import java.util.Optional;
 public interface WLayerTerrainRepository extends MongoRepository<WLayerTerrain, String> {
 
     /**
-     * Projection interface to return only chunkKey field.
-     */
-    interface ChunkKeyProjection {
-        String getChunkKey();
-    }
-
-    /**
      * Find specific chunk in terrain layer.
      */
     Optional<WLayerTerrain> findByLayerDataIdAndChunkKey(String layerDataId, String chunkKey);
@@ -43,10 +36,4 @@ public interface WLayerTerrainRepository extends MongoRepository<WLayerTerrain, 
      * Delete specific chunk in a terrain layer.
      */
     void deleteByLayerDataIdAndChunkKey(String layerDataId, String chunkKey);
-
-    /**
-     * Find all chunk keys for a given terrain layer.
-     * Returns only the chunkKey field values, not the full entities.
-     */
-    List<ChunkKeyProjection> findChunkKeyProjectionByLayerDataId(String layerDataId);
 }

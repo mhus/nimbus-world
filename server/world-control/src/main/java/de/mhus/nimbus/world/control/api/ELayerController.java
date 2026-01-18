@@ -42,7 +42,6 @@ public class ELayerController extends BaseEditorController {
     private final WLayerService layerService;
     private final de.mhus.nimbus.world.shared.job.WJobService jobService;
     private final de.mhus.nimbus.world.shared.layer.WDirtyChunkService dirtyChunkService;
-    private final de.mhus.nimbus.world.shared.layer.WLayerTerrainRepository layerTerrainRepository;
 
     // DTOs moved to de.mhus.nimbus.world.shared.dto package for TypeScript generation
 
@@ -357,8 +356,7 @@ public class ELayerController extends BaseEditorController {
                 List<String> affectedChunks;
                 if (layer.isAllChunks()) {
                     // Get all existing chunks for this world
-                    affectedChunks = layerTerrainRepository.findChunkKeyProjectionByLayerDataId(layer.getLayerDataId()).stream()
-                    .map(de.mhus.nimbus.world.shared.layer.WLayerTerrainRepository.ChunkKeyProjection::getChunkKey).toList();
+                    affectedChunks = layerService.findChunkKeysByLayerDataId(layer.getLayerDataId());
                     log.info("Regenerating GROUND layer with allChunks=true: layerId={}, chunks={}", id, affectedChunks.size());
                 } else {
                     affectedChunks = layer.getAffectedChunks();
