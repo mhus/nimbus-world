@@ -81,6 +81,8 @@ asset:
     max-size-bytes: 5242880
     # AI model to use for description generation (supports model mappings)
     ai-model: default:generate
+    # NOTE: max-tokens, temperature, timeout-seconds, and max-chars are now
+    # managed via SSettingsService and can be changed at runtime via settings-editor
 
 world:
   redis:

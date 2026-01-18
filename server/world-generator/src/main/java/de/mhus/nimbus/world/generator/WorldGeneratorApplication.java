@@ -28,8 +28,8 @@ import org.springframework.scheduling.annotation.EnableScheduling;
         "de.mhus.nimbus.world.ai",
         "de.mhus.nimbus.shared"
 })
-public class GeneratorApplication {
+public class WorldGeneratorApplication {
     public static void main(String[] args) {
-        SpringApplication.run(GeneratorApplication.class, args);
+        SpringApplication.run(WorldGeneratorApplication.class, args);
     }
 }

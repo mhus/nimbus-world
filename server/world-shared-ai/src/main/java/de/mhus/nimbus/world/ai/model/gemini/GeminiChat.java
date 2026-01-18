@@ -6,6 +6,9 @@ import de.mhus.nimbus.world.ai.model.AiChatOptions;
 import dev.langchain4j.data.message.AiMessage;
 import dev.langchain4j.data.message.SystemMessage;
 import dev.langchain4j.data.message.UserMessage;
+import dev.langchain4j.data.message.ImageContent;
+import dev.langchain4j.data.message.TextContent;
+import dev.langchain4j.data.image.Image;
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.chat.response.ChatResponse;
 import lombok.RequiredArgsConstructor;
@@ -13,6 +16,7 @@ import de.mhus.nimbus.world.ai.model.RateLimiter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 
 /**
@@ -83,6 +87,69 @@ public class GeminiChat implements AiChat {
         } catch (Exception e) {
             log.error("Failed to get Gemini response", e);
             throw new AiChatException("Failed to get AI response: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public String askWithImage(String question, byte[] imageBytes, String mimeType) throws AiChatException {
+        if (question == null || question.isBlank()) {
+            throw new AiChatException("Question cannot be empty");
+        }
+        if (imageBytes == null || imageBytes.length == 0) {
+            throw new AiChatException("Image data cannot be empty");
+        }
+
+        try {
+            // Apply rate limiting if available
+            if (rateLimiter != null) {
+                rateLimiter.waitIfNeeded();
+            }
+
+            List<dev.langchain4j.data.message.ChatMessage> messages = new ArrayList<>();
+
+            // Add system message if configured
+            if (options.getSystemMessage() != null && !options.getSystemMessage().isBlank()) {
+                messages.add(SystemMessage.from(options.getSystemMessage()));
+            }
+
+            // Convert image bytes to base64
+            String base64Image = Base64.getEncoder().encodeToString(imageBytes);
+
+            // Create image from base64 data with proper URI format
+            Image image = Image.builder()
+                    .base64Data(base64Image)
+                    .mimeType(mimeType)
+                    .build();
+
+            // Create user message with text and image content
+            UserMessage userMessage = UserMessage.from(
+                    TextContent.from(question),
+                    ImageContent.from(image)
+            );
+
+            messages.add(userMessage);
+
+            // Generate response
+            ChatResponse response = chatModel.chat(messages);
+
+            // Record request after successful completion
+            if (rateLimiter != null) {
+                rateLimiter.recordRequest();
+            }
+
+            String answer = response.aiMessage().text();
+            log.debug("Gemini vision response for '{}': {}", question.substring(0, Math.min(50, question.length())),
+                    answer.substring(0, Math.min(100, answer.length())));
+
+            return answer;
+
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            log.error("Interrupted while waiting for rate limit", e);
+            throw new AiChatException("Request interrupted: " + e.getMessage(), e);
+        } catch (Exception e) {
+            log.error("Failed to get Gemini vision response", e);
+            throw new AiChatException("Failed to get AI vision response: " + e.getMessage(), e);
         }
     }
 

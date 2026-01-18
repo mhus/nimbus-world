@@ -88,6 +88,17 @@
                     class="textarea textarea-bordered h-24"
                     placeholder="Beschreibung des Assets..."
                   ></textarea>
+                  <button
+                    class="btn btn-sm btn-outline mt-2"
+                    @click="generateDescriptionWithAI"
+                    :disabled="generatingDescription"
+                  >
+                    <svg v-if="!generatingDescription" class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                    </svg>
+                    <span v-if="generatingDescription" class="loading loading-spinner loading-xs"></span>
+                    {{ generatingDescription ? 'Generiere...' : 'Generate Description with AI' }}
+                  </button>
                 </div>
 
                 <!-- Source -->
@@ -226,6 +237,16 @@
       </div>
     </Dialog>
   </TransitionRoot>
+
+  <!-- AI Description Generation Job Watch Modal -->
+  <JobWatch
+    v-if="watchingJob"
+    :worldId="props.worldId"
+    :jobId="jobId"
+    @close="handleJobClose"
+    @completed="handleJobCompleted"
+    @failed="handleJobFailed"
+  />
 </template>
 
 <script setup lang="ts">
@@ -233,6 +254,8 @@ import { ref, reactive, computed, onMounted, onUnmounted } from 'vue';
 import { Dialog, DialogPanel, DialogTitle, TransitionRoot, TransitionChild } from '@headlessui/vue';
 import { assetInfoService, type AssetInfo } from '@/services/AssetInfoService';
 import { assetService } from '@/services/AssetService';
+import { useJobs, type Job } from '@/composables/useJobs';
+import JobWatch from '@/flat/components/JobWatch.vue';
 
 interface Props {
   worldId: string;
@@ -258,6 +281,12 @@ const customFields = reactive<Record<string, string>>({});
 const customFieldKeys = reactive<Record<string, string>>({});
 const loading = ref(false);
 const errorMessage = ref<string | null>(null);
+
+// AI description generation state
+const { createJob } = useJobs(props.worldId);
+const generatingDescription = ref(false);
+const watchingJob = ref(false);
+const jobId = ref('');
 
 // Duplicate functionality removed - use drag & drop in MC Asset Editor instead
 
@@ -414,6 +443,76 @@ onUnmounted(() => {
     audioElement.value = null;
   }
 });
+
+/**
+ * Generate asset description using AI
+ */
+const generateDescriptionWithAI = async () => {
+  generatingDescription.value = true;
+  errorMessage.value = null;
+
+  try {
+    // Create job with asset-description-generator executor
+    const createdJob = await createJob({
+      executor: 'asset-description-generator',
+      type: 'asset-description-generator',
+      parameters: {
+        assetPath: props.assetPath,
+      },
+    });
+
+    console.log('[AssetInfoDialog] AI description generation job created:', createdJob.id);
+
+    // Show job watch dialog
+    jobId.value = createdJob.id;
+    watchingJob.value = true;
+  } catch (error: any) {
+    console.error('[AssetInfoDialog] Failed to create AI description job:', error);
+    errorMessage.value = 'Fehler beim Starten der KI-Beschreibungsgenerierung: ' + (error.message || 'Unbekannter Fehler');
+  } finally {
+    generatingDescription.value = false;
+  }
+};
+
+/**
+ * Handle job watch close
+ */
+const handleJobClose = () => {
+  watchingJob.value = false;
+};
+
+/**
+ * Handle job completed - reload asset info
+ */
+const handleJobCompleted = async (job: Job) => {
+  console.log('[AssetInfoDialog] AI description job completed:', job.id);
+  watchingJob.value = false;
+
+  // Reload asset info to get the newly generated description
+  try {
+    loading.value = true;
+    const info = await assetInfoService.getAssetInfo(props.worldId, props.assetPath);
+
+    // Update description field
+    localInfo.description = info.description || '';
+
+    console.log('[AssetInfoDialog] Asset info reloaded with new description');
+  } catch (error) {
+    console.error('[AssetInfoDialog] Failed to reload asset info:', error);
+    errorMessage.value = 'Beschreibung wurde generiert, aber Neuladen fehlgeschlagen. Bitte Dialog schließen und erneut öffnen.';
+  } finally {
+    loading.value = false;
+  }
+};
+
+/**
+ * Handle job failed
+ */
+const handleJobFailed = (job: Job) => {
+  console.error('[AssetInfoDialog] AI description job failed:', job.id, job.errorMessage);
+  watchingJob.value = false;
+  errorMessage.value = `KI-Beschreibungsgenerierung fehlgeschlagen: ${job.errorMessage || 'Unbekannter Fehler'}`;
+};
 
 const handleSave = async () => {
   if (!localInfo.description.trim()) {

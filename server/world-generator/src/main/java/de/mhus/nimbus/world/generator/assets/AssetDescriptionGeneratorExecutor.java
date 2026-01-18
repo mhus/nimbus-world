@@ -1,5 +1,8 @@
 package de.mhus.nimbus.world.generator.assets;
 
+import de.mhus.nimbus.shared.service.SSettingsService;
+import de.mhus.nimbus.shared.settings.SettingDouble;
+import de.mhus.nimbus.shared.settings.SettingInteger;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.ai.model.AiChat;
 import de.mhus.nimbus.world.ai.model.AiChatException;
@@ -15,6 +18,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+
+import jakarta.annotation.PostConstruct;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
@@ -39,12 +44,30 @@ public class AssetDescriptionGeneratorExecutor implements JobExecutor {
 
     private final SAssetService assetService;
     private final AiModelService aiModelService;
+    private final SSettingsService settingsService;
 
     @Value("${asset.description.max-size-bytes:5242880}")
     private long maxSizeBytes;
 
     @Value("${asset.description.ai-model:default:generate}")
     private String aiModelName;
+
+    // AI description generation settings (loaded dynamically from SSettingsService)
+    private SettingInteger maxTokens;
+    private SettingDouble temperature;
+    private SettingInteger timeoutSeconds;
+    private SettingInteger maxChars;
+
+    @PostConstruct
+    private void initSettings() {
+        maxTokens = settingsService.getInteger("asset.description.max-tokens", 1000);
+        temperature = settingsService.getDouble("asset.description.temperature", 0.7);
+        timeoutSeconds = settingsService.getInteger("asset.description.timeout-seconds", 120);
+        maxChars = settingsService.getInteger("asset.description.max-chars", 1000);
+
+        log.info("Asset description generation settings initialized: maxTokens={}, temperature={}, timeoutSeconds={}, maxChars={}",
+                maxTokens.get(), temperature.get(), timeoutSeconds.get(), maxChars.get());
+    }
 
     @Override
     public String getExecutorName() {
@@ -54,9 +77,10 @@ public class AssetDescriptionGeneratorExecutor implements JobExecutor {
     @Override
     public JobResult execute(WJob job) throws JobExecutionException {
         try {
-            String worldIdStr = job.getParameters().get("worldId");
+            // Get worldId from job (not from parameters)
+            String worldIdStr = job.getWorldId();
             if (worldIdStr == null || worldIdStr.isBlank()) {
-                throw new JobExecutionException("Missing required parameter: worldId");
+                throw new JobExecutionException("Job has no worldId");
             }
 
             WorldId worldId = WorldId.of(worldIdStr)
@@ -252,6 +276,7 @@ public class AssetDescriptionGeneratorExecutor implements JobExecutor {
 
     /**
      * Generate description for an image using AI.
+     * Uses AI vision capabilities to analyze the actual image content.
      */
     private String generateDescription(String path, byte[] imageBytes, AiChat aiChat) throws AiChatException {
         // Extract filename for context
@@ -260,22 +285,23 @@ public class AssetDescriptionGeneratorExecutor implements JobExecutor {
         // Build prompt
         String prompt = buildDescriptionPrompt(filename);
 
-        // Note: Gemini can analyze images directly, but for simplicity we'll use text-based prompts
-        // For actual image analysis, you would need to use Gemini's vision capabilities
-        // For now, we generate descriptions based on filename and context
+        // Determine MIME type from file extension
+        String mimeType = getMimeType(path);
 
-        return aiChat.ask(prompt);
+        // Use AI vision to analyze the actual image
+        return aiChat.askWithImage(prompt, imageBytes, mimeType);
     }
 
     /**
-     * Build prompt for description generation based on filename.
+     * Build prompt for description generation based on filename and image content.
      */
     private String buildDescriptionPrompt(String filename) {
         return String.format(
-                "Generate a concise, single-sentence description (max 100 characters) for a game asset file named '%s'. " +
-                "Focus on what the asset likely represents in a game context. " +
-                "Only return the description, no additional text.",
-                filename
+                "Analyze this game asset image (filename: '%s') and generate a concise, single-sentence description (maximum %d characters). " +
+                "Describe what you see in the image - the visual appearance, colors, shapes, and what game element it represents. " +
+                "Return ONLY the complete description text, no quotes, no additional explanation.",
+                filename,
+                maxChars.get()
         );
     }
 
@@ -289,15 +315,35 @@ public class AssetDescriptionGeneratorExecutor implements JobExecutor {
     }
 
     /**
+     * Get MIME type from file path extension.
+     */
+    private String getMimeType(String path) {
+        if (path == null) return "application/octet-stream";
+        String lowerPath = path.toLowerCase();
+
+        if (lowerPath.endsWith(".png")) return "image/png";
+        if (lowerPath.endsWith(".jpg") || lowerPath.endsWith(".jpeg")) return "image/jpeg";
+        if (lowerPath.endsWith(".gif")) return "image/gif";
+        if (lowerPath.endsWith(".bmp")) return "image/bmp";
+        if (lowerPath.endsWith(".webp")) return "image/webp";
+
+        return "application/octet-stream";
+    }
+
+    /**
      * Create AI chat options for description generation.
+     * Uses settings from SSettingsService for runtime configurability.
      */
     private AiChatOptions createChatOptions() {
         return AiChatOptions.builder()
-                .temperature(0.7)
-                .maxTokens(150)
-                .timeoutSeconds(30)
-                .systemMessage("You are a helpful assistant that generates concise descriptions for game assets. " +
-                              "Keep descriptions under 100 characters and focus on the asset's visual appearance and purpose.")
+                .temperature(temperature.get())
+                .maxTokens(maxTokens.get())
+                .timeoutSeconds(timeoutSeconds.get())
+                .systemMessage(String.format(
+                        "You are a helpful assistant that generates concise descriptions for game assets. " +
+                        "Keep descriptions under %d characters and focus on the asset's visual appearance and purpose. " +
+                        "Always complete your sentences. Return ONLY the description text.",
+                        maxChars.get()))
                 .build();
     }
 }
