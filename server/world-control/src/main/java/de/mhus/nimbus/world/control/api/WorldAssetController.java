@@ -220,7 +220,7 @@ public class WorldAssetController extends BaseEditorController {
 
     /**
      * Update asset content.
-     * PUT /control/worlds/{worldId}/assets/textures/block/stone.png - Update/create binary content
+     * PUT /control/worlds/{worldId}/assets/n:textures/block/stone.png - Update/create binary content
      *
      * For metadata updates (.info), use WorldAssetInfoController
      */

@@ -80,6 +80,19 @@ public abstract class AccessFilterBase extends OncePerRequestFilter {
         return true;
     }
 
+    /**
+     * Validates if the request path is allowed for the authenticated user's role.
+     * Subclasses can override this to implement role-based path restrictions.
+     *
+     * @param requestUri The request URI
+     * @param claims The validated session token claims
+     * @return true if the path is allowed for this role, false if access should be denied
+     */
+    protected boolean isPathAllowedForRole(String requestUri, SessionTokenClaims claims) {
+        // Default: allow all paths for authenticated users
+        return true;
+    }
+
     @Override
     protected void doFilterInternal(HttpServletRequest request,
                                      HttpServletResponse response,
@@ -97,6 +110,7 @@ public abstract class AccessFilterBase extends OncePerRequestFilter {
         }
 
         boolean authenticated = false;
+        SessionTokenClaims validatedClaims = null;
 
         try {
             // 1. Check for Bearer token (server-to-server authentication)
@@ -140,9 +154,11 @@ public abstract class AccessFilterBase extends OncePerRequestFilter {
                                     request.setAttribute(ATTR_IS_AUTHENTICATED, false);
                                 } else {
                                     authenticated = true;
+                                    validatedClaims = claims;
                                 }
                             } else {
                                 authenticated = true;
+                                validatedClaims = claims;
                             }
 
                             if (authenticated) {
@@ -178,6 +194,44 @@ public abstract class AccessFilterBase extends OncePerRequestFilter {
             log.warn("Access denied - authentication required for: {} {}", request.getMethod(), request.getRequestURI());
             handleUnauthorized(request, response);
             return;
+        }
+
+        // Check role-based path restrictions for authenticated users
+        if (authenticated && validatedClaims != null) {
+            if (!isPathAllowedForRole(request.getRequestURI(), validatedClaims)) {
+                log.warn("Access denied - path not allowed for role={}: {} {}",
+                        validatedClaims.role(), request.getMethod(), request.getRequestURI());
+                response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                response.setContentType("text/html; charset=UTF-8");
+                response.getWriter().write("""
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <meta charset="UTF-8">
+                        <title>403 Forbidden</title>
+                        <style>
+                            body {
+                                font-family: Arial, sans-serif;
+                                max-width: 600px;
+                                margin: 100px auto;
+                                padding: 20px;
+                                text-align: center;
+                            }
+                            h1 { color: #d32f2f; }
+                            .info { margin: 20px 0; color: #666; }
+                        </style>
+                    </head>
+                    <body>
+                        <h1>403 - Forbidden</h1>
+                        <div class="info">
+                            <p>You do not have permission to access this resource.</p>
+                            <p><strong>Request:</strong> %s</p>
+                        </div>
+                    </body>
+                    </html>
+                    """.formatted(request.getRequestURI()));
+                return;
+            }
         }
 
         // Continue filter chain
