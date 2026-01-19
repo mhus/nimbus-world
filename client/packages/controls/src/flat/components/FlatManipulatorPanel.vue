@@ -38,6 +38,7 @@
           <option value="shaked-box">Shaked Box - Rectangles with irregular edges</option>
         </optgroup>
         <optgroup label="Special">
+          <option value="hex-grid">Hex Grid - Generate terrain based on hex grid configuration</option>
           <option value="random-pixels">Random Pixels - Random pixel placement</option>
           <option value="composition">Composition - Combine multiple manipulators</option>
         </optgroup>
@@ -395,6 +396,30 @@
         </label>
       </div>
 
+      <!-- Hex Grid -->
+      <div v-if="selectedManipulator === 'hex-grid'" class="space-y-3">
+        <div class="alert alert-info">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+          <div>
+            <div class="font-bold">Hex Grid Configuration Required</div>
+            <div class="text-sm mt-1">This manipulator generates terrain based on the hex grid configuration assigned to this flat.</div>
+            <div class="text-sm mt-2">
+              <strong>Required:</strong> The hex grid must have the parameter <code class="bg-base-300 px-1 rounded">g.type</code> set to a scenario type (ocean, island, coast, heath, hills, mountains, plains, dessert, forest, swamp, city, village).
+            </div>
+            <div class="text-sm mt-2">
+              <strong>Optional:</strong> Additional parameters with prefix <code class="bg-base-300 px-1 rounded">gf.*</code> can be configured in the hex grid for scenario-specific options.
+            </div>
+          </div>
+        </div>
+        <div class="alert alert-warning">
+          <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+          <div>
+            <div class="font-bold">No Parameters Needed</div>
+            <div class="text-sm">All configuration is taken from the hex grid. Configure the hex grid in the hex editor, then run this manipulator.</div>
+          </div>
+        </div>
+      </div>
+
       <!-- Generic fallback for other manipulators -->
       <div v-if="!hasCustomForm" class="form-control">
         <label class="label">
@@ -489,6 +514,7 @@ const manipulatorDescriptions: Record<string, string> = {
   'spider': 'Creates recursive branching patterns radiating from center (rivers, canyons, or ridges)',
   'shaked-box': 'Creates rectangles with randomly removed pixels at borders for natural irregular edges',
   'set-material': 'Sets material for all positions within a specified level range',
+  'hex-grid': 'Generates terrain based on hex grid configuration and scenario type (ocean, island, plains, etc.) with neighbor-aware transitions',
   'random-pixels': 'Places random pixels for texture',
   'composition': 'Combines multiple manipulators sequentially',
 };
@@ -497,7 +523,7 @@ const manipulatorDescriptions: Record<string, string> = {
 const hasCustomForm = computed(() => {
   const customForms = [
     'flat', 'normal', 'hilly', 'soften', 'border-smooth', 'water-soften',
-    'sharpen', 'roughen', 'mountain', 'sharp-peak', 'islands', 'crater', 'spider', 'shaked-box', 'lakes', 'set-material'
+    'sharpen', 'roughen', 'mountain', 'sharp-peak', 'islands', 'crater', 'spider', 'shaked-box', 'lakes', 'set-material', 'hex-grid'
   ];
   return customForms.includes(selectedManipulator.value);
 });
