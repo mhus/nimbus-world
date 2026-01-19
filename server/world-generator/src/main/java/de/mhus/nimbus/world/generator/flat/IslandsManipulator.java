@@ -122,7 +122,7 @@ public class IslandsManipulator implements FlatManipulator {
         painter.fillRectangle(x, z, x + sizeX - 1, z + sizeZ - 1, RANDOM_VARIATION);
 
         // Smooth for natural appearance
-        painter.soften(x, z, x + sizeX - 1, z + sizeZ - 1, 0.4);
+        painter.soften(x, z, x + sizeX - 1, z + sizeZ - 1, 1, 0.4);
 
         // Set materials based on height vs ocean level
         for (int localZ = 0; localZ < sizeZ; localZ++) {

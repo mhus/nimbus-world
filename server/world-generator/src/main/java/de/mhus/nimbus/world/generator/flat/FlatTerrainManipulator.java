@@ -29,7 +29,7 @@ public class FlatTerrainManipulator implements FlatManipulator {
 
     @Override
     public void manipulate(WFlat flat, int x, int z, int sizeX, int sizeZ, Map<String, String> parameters) {
-        log.debug("Manipulating flat terrain: region=({},{},{},{})", x, z, sizeX, sizeZ);
+        log.debug("Manipulating flat terrain: region=({},{},{},{}), parameters={}", x, z, sizeX, sizeZ, parameters);
 
         // Parse parameters
         int groundLevel = parseIntParameter(parameters, PARAM_GROUND_LEVEL, DEFAULT_GROUND_LEVEL);
@@ -37,27 +37,53 @@ public class FlatTerrainManipulator implements FlatManipulator {
         // Clamp ground level to valid range
         groundLevel = Math.max(0, Math.min(255, groundLevel));
 
+        log.info("FlatTerrainManipulator: groundLevel={}, oceanLevel={}, unknownProtected={}, borderProtected={}",
+                groundLevel, flat.getOceanLevel(), flat.isUnknownProtected(), flat.isBorderProtected());
+
         int oceanLevel = flat.getOceanLevel();
 
         // Generate flat terrain
+        int successCount = 0;
+        int failedLevelCount = 0;
+        int failedColumnCount = 0;
+
         for (int localZ = 0; localZ < sizeZ; localZ++) {
             for (int localX = 0; localX < sizeX; localX++) {
                 int flatX = x + localX;
                 int flatZ = z + localZ;
 
-                // Set level (height)
-                flat.setLevel(flatX, flatZ, groundLevel);
+                // Check current state
+                int currentColumn = flat.getColumn(flatX, flatZ);
+                int currentLevel = flat.getLevel(flatX, flatZ);
 
-                // Set column (material based on height vs water level)
+                // Calculate material based on height vs water level
                 int materialId = groundLevel <= oceanLevel
                         ? FlatMaterialService.SAND
                         : FlatMaterialService.GRASS;
-                flat.setColumn(flatX, flatZ, materialId);
+
+                // IMPORTANT: Set column FIRST, then level
+                // This is required for flats with unknownProtected=true (e.g. HexGrid flats)
+                // where setLevel() will fail if column is NOT_SET (0)
+                boolean columnSet = flat.setColumn(flatX, flatZ, materialId);
+                boolean levelSet = flat.setLevel(flatX, flatZ, groundLevel);
+
+                if (columnSet && levelSet) {
+                    successCount++;
+                } else {
+                    if (!columnSet) failedColumnCount++;
+                    if (!levelSet) failedLevelCount++;
+
+                    // Log first few failures for debugging
+                    if (failedLevelCount + failedColumnCount <= 5) {
+                        log.warn("Failed to set position ({},{}): currentColumn={}, currentLevel={}, columnSet={}, levelSet={}",
+                                flatX, flatZ, currentColumn, currentLevel, columnSet, levelSet);
+                    }
+                }
             }
         }
 
-        log.info("Flat terrain manipulated: region=({},{},{},{}), groundLevel={}",
-                x, z, sizeX, sizeZ, groundLevel);
+        log.info("Flat terrain manipulated: region=({},{},{},{}), groundLevel={}, success={}, failedColumn={}, failedLevel={}",
+                x, z, sizeX, sizeZ, groundLevel, successCount, failedColumnCount, failedLevelCount);
     }
 
     private int parseIntParameter(Map<String, String> parameters, String name, int defaultValue) {

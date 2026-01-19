@@ -95,6 +95,10 @@
           <label class="label"><span class="label-text">Factor (0.0-1.0)</span></label>
           <input v-model.number="params.factor" type="number" class="input input-bordered" min="0" max="1" step="0.1" />
         </div>
+        <div class="form-control">
+          <label class="label"><span class="label-text">Radius (1-5)</span></label>
+          <input v-model.number="params.radius" type="number" class="input input-bordered" min="1" max="5" />
+        </div>
       </div>
 
       <!-- Border Smooth -->
@@ -337,7 +341,7 @@ const manipulatorDescriptions: Record<string, string> = {
   'flat': 'Creates simple flat terrain at specified height',
   'normal': 'Generates terrain with medium variation using multi-octave noise',
   'hilly': 'Creates hilly terrain with high variation',
-  'soften': 'Smooths terrain by averaging neighbor heights',
+  'soften': 'Smooths terrain by averaging neighbor heights within specified radius',
   'border-smooth': 'Smooths edges to match border heights',
   'water-soften': 'Special smoothing for water areas and coastlines',
   'soften-raster': 'Performance-optimized smoothing with raster pattern',

@@ -108,7 +108,7 @@ public class MountainManipulator implements FlatManipulator {
                   baseHeight, peakHeight, branches, roughness, 0);
 
         // Apply smoothing to blend with existing terrain
-        painter.soften(x, z, x + sizeX - 1, z + sizeZ - 1, 0.3);
+        painter.soften(x, z, x + sizeX - 1, z + sizeZ - 1, 1, 0.3);
 
         log.info("Mountain manipulation completed: peakHeight={}, baseHeight={}, branches={}, roughness={}, direction={}",
                 peakHeight, baseHeight, branches, roughness, direction);

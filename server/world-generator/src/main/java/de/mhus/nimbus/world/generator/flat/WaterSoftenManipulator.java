@@ -118,7 +118,7 @@ public class WaterSoftenManipulator implements FlatManipulator {
 
         // Final standard smoothing for blend
         FlatPainter painter = new FlatPainter(flat);
-        painter.soften(x, z, x + sizeX - 1, z + sizeZ - 1, 0.3);
+        painter.soften(x, z, x + sizeX - 1, z + sizeZ - 1, 1, 0.3);
 
         log.info("Water soften manipulation completed: passes={}, waterThreshold={}, probability={}",
                 passes, waterThreshold, probability);

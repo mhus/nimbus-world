@@ -188,41 +188,66 @@ public class FlatPainter {
         }
     }
 
-    public void soften(int x1, int z1, int x2, int z2, double factor) {
+    public void soften(int x1, int z1, int x2, int z2, int radius, double factor) {
         if (factor < 0) factor = 0;
         if (factor > 1) factor = 1;
+        int r = Math.max(1, radius);
         int xmin = Math.min(x1, x2);
         int xmax = Math.max(x1, x2);
         int zmin = Math.min(z1, z2);
         int zmax = Math.max(z1, z2);
         int width = xmax - xmin + 1;
         int height = zmax - zmin + 1;
+
+        // Step 1: Calculate new levels based on current flat levels (no side effects)
         int[][] newLevels = new int[width][height];
         for (int dz = 0; dz < height; dz++) {
             for (int dx = 0; dx < width; dx++) {
-                int x = xmin + dx;
-                int z = zmin + dz;
-                int sum = 0;
+                double sum = 0.0;
                 int count = 0;
-                for (int nz = z - 1; nz <= z + 1; nz++) {
-                    for (int nx = x - 1; nx <= x + 1; nx++) {
-                        if (nx >= xmin && nx <= xmax && nz >= zmin && nz <= zmax) {
-                            sum += flat.getLevel(nx, nz);
+
+                // Sum neighbors from flat (originals, not yet modified)
+                for (int ndz = -r; ndz <= r; ndz++) {
+                    for (int ndx = -r; ndx <= r; ndx++) {
+                        int nx = dx + ndx;
+                        int nz = dz + ndz;
+                        if (nx >= 0 && nx < width && nz >= 0 && nz < height) {
+                            sum += flat.getLevel(xmin + nx, zmin + nz);
                             count++;
                         }
                     }
                 }
-                int original = flat.getLevel(x, z);
-                int mean = count > 0 ? sum / count : original;
-                newLevels[dx][dz] = (int) Math.round(factor * mean + (1 - factor) * original);
+
+                int original = flat.getLevel(xmin + dx, zmin + dz);
+                double mean = count > 0 ? sum / count : original;
+                double newLevelDouble = factor * mean + (1.0 - factor) * original;
+                newLevels[dx][dz] = (int) Math.round(newLevelDouble);
             }
         }
+
+        // Step 2: Write all new levels back to flat
+        int changedCount = 0;
+        int attemptedCount = 0;
         for (int dz = 0; dz < height; dz++) {
             for (int dx = 0; dx < width; dx++) {
                 int x = xmin + dx;
                 int z = zmin + dz;
-                flat.setLevel(x, z, newLevels[dx][dz]);
+                int oldLevel = flat.getLevel(x, z);
+                int newLevel = newLevels[dx][dz];
+
+                boolean success = flat.setLevel(x, z, newLevel);
+                attemptedCount++;
+
+                if (success && newLevel != oldLevel) {
+                    changedCount++;
+                }
             }
+        }
+
+        // Log statistics
+        if (attemptedCount > 0) {
+            System.out.println(String.format("[FlatPainter.soften] Attempted: %d, Changed: %d (%.1f%%)",
+                attemptedCount, changedCount, 100.0 * changedCount / attemptedCount));
         }
     }
 
@@ -234,27 +259,34 @@ public class FlatPainter {
         int zmax = Math.max(z1, z2);
         int width = xmax - xmin + 1;
         int height = zmax - zmin + 1;
+
+        // Step 1: Calculate new levels based on current flat levels
         int[][] newLevels = new int[width][height];
         for (int dz = 0; dz < height; dz++) {
             for (int dx = 0; dx < width; dx++) {
-                int x = xmin + dx;
-                int z = zmin + dz;
-                int sum = 0;
+                double sum = 0.0;
                 int count = 0;
-                for (int nz = z - 1; nz <= z + 1; nz++) {
-                    for (int nx = x - 1; nx <= x + 1; nx++) {
-                        if (nx >= xmin && nx <= xmax && nz >= zmin && nz <= zmax) {
-                            sum += flat.getLevel(nx, nz);
+
+                // Sum neighbors from flat
+                for (int ndz = -1; ndz <= 1; ndz++) {
+                    for (int ndx = -1; ndx <= 1; ndx++) {
+                        int nx = dx + ndx;
+                        int nz = dz + ndz;
+                        if (nx >= 0 && nx < width && nz >= 0 && nz < height) {
+                            sum += flat.getLevel(xmin + nx, zmin + nz);
                             count++;
                         }
                     }
                 }
-                int original = flat.getLevel(x, z);
-                int mean = count > 0 ? sum / count : original;
-                int sharpened = (int) Math.round((1 + factor) * original - factor * mean);
-                newLevels[dx][dz] = sharpened;
+
+                int original = flat.getLevel(xmin + dx, zmin + dz);
+                double mean = count > 0 ? sum / count : original;
+                double sharpenedDouble = (1.0 + factor) * original - factor * mean;
+                newLevels[dx][dz] = (int) Math.round(sharpenedDouble);
             }
         }
+
+        // Step 2: Write all new levels back
         for (int dz = 0; dz < height; dz++) {
             for (int dx = 0; dx < width; dx++) {
                 int x = xmin + dx;
@@ -273,26 +305,34 @@ public class FlatPainter {
         int zmax = Math.max(z1, z2);
         int width = xmax - xmin + 1;
         int height = zmax - zmin + 1;
+
+        // Step 1: Calculate new levels based on current flat levels (5x5 kernel)
         int[][] newLevels = new int[width][height];
         for (int dz = 0; dz < height; dz++) {
             for (int dx = 0; dx < width; dx++) {
-                int x = xmin + dx;
-                int z = zmin + dz;
-                int sum = 0;
+                double sum = 0.0;
                 int count = 0;
-                for (int nz = z - 2; nz <= z + 2; nz++) {
-                    for (int nx = x - 2; nx <= x + 2; nx++) {
-                        if (nx >= xmin && nx <= xmax && nz >= zmin && nz <= zmax) {
-                            sum += flat.getLevel(nx, nz);
+
+                // Sum neighbors from flat (5x5 kernel)
+                for (int ndz = -2; ndz <= 2; ndz++) {
+                    for (int ndx = -2; ndx <= 2; ndx++) {
+                        int nx = dx + ndx;
+                        int nz = dz + ndz;
+                        if (nx >= 0 && nx < width && nz >= 0 && nz < height) {
+                            sum += flat.getLevel(xmin + nx, zmin + nz);
                             count++;
                         }
                     }
                 }
-                int original = flat.getLevel(x, z);
-                int mean = count > 0 ? sum / count : original;
-                newLevels[dx][dz] = (int) Math.round(factor * mean + (1 - factor) * original);
+
+                int original = flat.getLevel(xmin + dx, zmin + dz);
+                double mean = count > 0 ? sum / count : original;
+                double newLevelDouble = factor * mean + (1.0 - factor) * original;
+                newLevels[dx][dz] = (int) Math.round(newLevelDouble);
             }
         }
+
+        // Step 2: Write all new levels back
         for (int dz = 0; dz < height; dz++) {
             for (int dx = 0; dx < width; dx++) {
                 int x = xmin + dx;

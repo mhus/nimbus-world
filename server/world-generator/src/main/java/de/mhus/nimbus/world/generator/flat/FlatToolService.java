@@ -392,6 +392,7 @@ public class FlatToolService {
             flatManipulatorService.executeManipulator(manipulatorName, flat, x, z, sizeX, sizeZ, parameters);
 
             // Save updated flat
+            flat.touchUpdate();
             wFlatService.update(flat);
 
             String message = String.format("Manipulator '%s' executed successfully on flat '%s' (region: %dx%d at %d,%d)",

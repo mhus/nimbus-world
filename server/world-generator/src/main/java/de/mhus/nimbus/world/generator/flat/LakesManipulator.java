@@ -106,7 +106,7 @@ public class LakesManipulator implements FlatManipulator {
         }
 
         // Smooth lake edges for natural appearance
-        painter.soften(x, z, x + sizeX - 1, z + sizeZ - 1, 0.5);
+        painter.soften(x, z, x + sizeX - 1, z + sizeZ - 1, 1, 0.5);
 
         // Set water material for areas below ocean level
         for (int localZ = 0; localZ < sizeZ; localZ++) {

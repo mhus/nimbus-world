@@ -104,7 +104,7 @@ public class SharpPeakManipulator implements FlatManipulator {
 
         // Optional: light smoothing at base only for subtle blend
         // Factor 0.1 means very light smoothing
-        painter.soften(x, z, x + sizeX - 1, z + sizeZ - 1, 0.1);
+        painter.soften(x, z, x + sizeX - 1, z + sizeZ - 1, 1, 0.1);
 
         log.info("Sharp peak manipulation completed: centerX={}, centerZ={}, radius={}, height={}, steepness={}",
                 centerX, centerZ, radius, height, steepness);

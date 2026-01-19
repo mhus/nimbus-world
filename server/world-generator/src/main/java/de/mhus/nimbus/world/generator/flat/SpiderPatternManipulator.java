@@ -122,7 +122,7 @@ public class SpiderPatternManipulator implements FlatManipulator {
         }
 
         // Smooth pattern edges for natural appearance
-        painter.soften(x, z, x + sizeX - 1, z + sizeZ - 1, 0.3);
+        painter.soften(x, z, x + sizeX - 1, z + sizeZ - 1, 1, 0.3);
 
         log.info("Spider pattern manipulation completed: branches={}, length={}, heightDelta={}, subBranches={}, depth={}",
                 branches, length, heightDelta, subBranches, depth);

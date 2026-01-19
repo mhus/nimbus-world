@@ -102,6 +102,7 @@ public class FlatMaterialService {
         flat.setMaterial(materialId, materialDef);
 
         // Update flat
+        flat.touchUpdate();
         WFlat updated = flatService.update(flat);
         log.info("Material definition set: flatId={}, materialId={}", flatId, materialId);
 
@@ -186,6 +187,7 @@ public class FlatMaterialService {
         }
 
         // Update flat
+        flat.touchUpdate();
         WFlat result = flatService.update(flat);
         log.info("Material definitions set: flatId={}, updated={}, skipped={}", flatId, updated, skipped);
 
@@ -229,6 +231,7 @@ public class FlatMaterialService {
         }
 
         // Update flat
+        flat.touchUpdate();
         WFlat result = flatService.update(flat);
         log.info("Typed material definitions set: flatId={}, updated={}", flatId, updated);
 
@@ -272,6 +275,7 @@ public class FlatMaterialService {
         flat.setMaterial(materialId, null);
 
         // Update flat
+        flat.touchUpdate();
         WFlat updated = flatService.update(flat);
         log.info("Material definition removed: flatId={}, materialId={}", flatId, materialId);
 

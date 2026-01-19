@@ -576,7 +576,6 @@ public class FlatCreateService {
                 .mountZ(mountZ)
                 .oceanLevel(oceanLevel)
                 .oceanBlockId(oceanBlockId)
-                .unknownProtected(true)  // Set unknownProtected to true for HexGrid flats
                 .hexGrid(HexMathUtil.getDominantHexForArea(
                         world, TypeUtil.area(mountX, mountZ, sizeX, sizeZ)
                 ))
@@ -645,6 +644,7 @@ public class FlatCreateService {
             }
         }
 
+        flat.setUnknownProtected(true);
         // Persist to database
         WFlat saved = flatService.create(flat);
 
@@ -1010,6 +1010,7 @@ public class FlatCreateService {
         }
 
         // Persist changes to database
+        flat.touchUpdate();
         WFlat updated = flatService.update(flat);
 
         log.info("Border update complete: flatId={}, borderCellsUpdated={}", flatId, borderCellsUpdated);

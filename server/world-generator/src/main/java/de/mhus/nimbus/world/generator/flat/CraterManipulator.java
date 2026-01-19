@@ -104,7 +104,7 @@ public class CraterManipulator implements FlatManipulator {
         }
 
         // Smooth edges for natural appearance
-        painter.soften(x, z, x + sizeX - 1, z + sizeZ - 1, 0.2);
+        painter.soften(x, z, x + sizeX - 1, z + sizeZ - 1, 1, 0.2);
 
         log.info("Crater manipulation completed: outerRadius={}, innerRadius={}, rimHeight={}, depth={}, smallCraters={}",
                 outerRadius, innerRadius, rimHeight, depth, smallCraters);

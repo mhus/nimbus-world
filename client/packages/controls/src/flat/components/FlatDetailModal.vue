@@ -227,11 +227,13 @@
           <div class="bg-base-100 p-4 rounded-lg border border-base-300">
             <div class="flex justify-between items-center mb-3">
               <div class="flex-1">
-                <h3 class="text-lg font-semibold">Height Map</h3>
+                <div class="flex items-center gap-3">
+                  <h3 class="text-lg font-semibold">Height Map</h3>
+                  <span v-if="heightMapPosition" class="text-sm font-mono text-primary">
+                    {{ heightMapPosition }}
+                  </span>
+                </div>
                 <p class="text-sm text-base-content/70">Blue (low) → Green (mid) → Red (high)</p>
-                <p v-if="heightMapPosition" class="text-sm font-mono text-primary mt-1">
-                  Position: {{ heightMapPosition }}
-                </p>
               </div>
               <div class="flex gap-2">
                 <button
@@ -284,11 +286,13 @@
           <div class="bg-base-100 p-4 rounded-lg border border-base-300">
             <div class="flex justify-between items-center mb-3">
               <div class="flex-1">
-                <h3 class="text-lg font-semibold">Block Map</h3>
+                <div class="flex items-center gap-3">
+                  <h3 class="text-lg font-semibold">Block Map</h3>
+                  <span v-if="blockMapPosition" class="text-sm font-mono text-primary">
+                    {{ blockMapPosition }}
+                  </span>
+                </div>
                 <p class="text-sm text-base-content/70">Each color represents a different block type</p>
-                <p v-if="blockMapPosition" class="text-sm font-mono text-primary mt-1">
-                  Position: {{ blockMapPosition }}
-                </p>
               </div>
               <div class="flex gap-2">
                 <button
