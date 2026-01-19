@@ -29,7 +29,7 @@ class WSessionServiceTest {
         Mockito.doReturn(hashOps).when(template).opsForHash();
         Mockito.when(hashOps.entries(Mockito.matches("wsession.*"))).thenReturn(Map.of(
                 "status", "WAITING",
-                "world", "w1",
+                "world", "r1:w1",
                 "region", "r1",
                 "user", "u1",
                 "character", "c1",
@@ -45,7 +45,7 @@ class WSessionServiceTest {
         assertTrue(Duration.between(Instant.now(), session.getExpireAt()).toMinutes() <= 5);
         Optional<WSession> loaded = svc.get(session.getId());
         assertTrue(loaded.isPresent());
-        assertEquals("w1", loaded.get().getWorldId());
+        assertEquals("r1:w1", loaded.get().getWorldId());
         Optional<WSession> updated = svc.updateStatus(session.getId(), WSessionStatus.RUNNING);
         assertTrue(updated.isPresent());
         assertEquals(WSessionStatus.RUNNING, updated.get().getStatus());

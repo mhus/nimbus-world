@@ -4,6 +4,7 @@ import de.mhus.nimbus.generated.types.Block;
 import de.mhus.nimbus.generated.types.ChunkData;
 import de.mhus.nimbus.generated.types.Vector3;
 import de.mhus.nimbus.generated.types.Vector3Int;
+import de.mhus.nimbus.generated.types.WorldInfo;
 import de.mhus.nimbus.shared.storage.StorageService;
 import de.mhus.nimbus.shared.types.SchemaVersion;
 import de.mhus.nimbus.shared.types.WorldId;
@@ -13,6 +14,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.test.context.TestPropertySource;
 
 import java.io.InputStream;
@@ -25,6 +27,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
 /**
@@ -54,12 +57,32 @@ class WChunkCompressionIntegrationTest {
     @MockBean
     private WItemPositionService itemRegistryService;
 
+    @MockBean
+    private MongoTemplate mongoTemplate;
+
     @Test
     void testEndToEndCompression() throws Exception {
         if (chunkService == null) {
             // Skip if not running in full Spring context
             return;
         }
+
+        WWorld world = WWorld.builder()
+                .id("test-region:test-world")
+                .regionId("test-region")
+                .publicData(
+                        WorldInfo.builder()
+                                .title("Test World")
+                                .hexGridSize(400)
+                                .chunkSize(32)
+                                .build()
+                )
+                .build();
+        lenient().when(worldService.getByWorldId("test-region:test-world"))
+                .thenReturn(Optional.of(world));
+        lenient().when(worldService.getByWorldId(any(WorldId.class)))
+                .thenReturn(Optional.of(world));
+
 
         // Given: Test chunk data
         WorldId worldId = WorldId.unchecked("test-region:integration-test-world");

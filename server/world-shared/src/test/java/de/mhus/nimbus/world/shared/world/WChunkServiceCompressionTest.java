@@ -5,6 +5,7 @@ import de.mhus.nimbus.generated.types.Block;
 import de.mhus.nimbus.generated.types.ChunkData;
 import de.mhus.nimbus.generated.types.Vector3;
 import de.mhus.nimbus.generated.types.Vector3Int;
+import de.mhus.nimbus.generated.types.WorldInfo;
 import de.mhus.nimbus.shared.storage.StorageService;
 import de.mhus.nimbus.shared.types.SchemaVersion;
 import de.mhus.nimbus.shared.types.WorldId;
@@ -59,6 +60,22 @@ class WChunkServiceCompressionTest {
     void setUp() {
         // Set compression enabled by default
         ReflectionTestUtils.setField(chunkService, "compressionEnabled", true);
+
+        WWorld world = WWorld.builder()
+                .id("test-region:test-world")
+                .regionId("test-region")
+                .publicData(
+                        WorldInfo.builder()
+                                .title("Test World")
+                                .hexGridSize(400)
+                                .chunkSize(32)
+                                .build()
+                )
+                .build();
+        lenient().when(worldService.getByWorldId("test-region:test-world"))
+                .thenReturn(Optional.of(world));
+        lenient().when(worldService.getByWorldId(any(WorldId.class)))
+                .thenReturn(Optional.of(world));
     }
 
     @Test

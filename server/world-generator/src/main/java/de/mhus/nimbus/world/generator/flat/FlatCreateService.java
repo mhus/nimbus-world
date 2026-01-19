@@ -12,6 +12,7 @@ import de.mhus.nimbus.world.shared.layer.LayerChunkData;
 import de.mhus.nimbus.world.shared.layer.LayerType;
 import de.mhus.nimbus.world.shared.layer.WLayer;
 import de.mhus.nimbus.world.shared.layer.WLayerService;
+import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.world.shared.world.BlockUtil;
 import de.mhus.nimbus.world.shared.world.HexMathUtil;
 import de.mhus.nimbus.world.shared.world.WBlockType;
@@ -464,11 +465,73 @@ public class FlatCreateService {
     }
 
     /**
-     * Create a WFlat for a HexGrid area with BEDROCK material inside the hex and layer import outside.
+     * Create a WFlat for a HexGrid area with auto-calculated size and mount positions.
+     * Automatically calculates sizeX, sizeZ, mountX, mountZ from hex grid coordinates.
      * Creates a flat terrain where:
-     * - Positions inside the HexGrid are filled with BEDROCK material at level 0
-     * - Positions outside the HexGrid are imported from the layer
+     * - Positions inside the HexGrid are marked with material 255 (NOT_SET_MUTABLE)
+     * - Positions outside the HexGrid (corners) are marked with material 0 (NOT_SET)
      * - unknownProtected is set to true (only HexGrid positions can be modified)
+     * - The hexGrid coordinate is stored in the WFlat
+     *
+     * @param worldId World identifier
+     * @param layerName Name of the layer to import outside positions from
+     * @param flatId Flat identifier for the new WFlat
+     * @param hexQ HexGrid Q coordinate (axial)
+     * @param hexR HexGrid R coordinate (axial)
+     * @param title Optional title for the flat
+     * @param description Optional description for the flat
+     * @return Created and persisted WFlat instance with HexGrid area
+     * @throws IllegalArgumentException if world or layer not found, or layer is not GROUND type
+     */
+    public WFlat createHexGridFlat(String worldId, String layerName, String flatId,
+                                   int hexQ, int hexR, String title, String description) {
+        log.info("Creating HexGrid flat (auto-size): worldId={}, layerName={}, flatId={}, hex=({},{}), title={}, description={}",
+                worldId, layerName, flatId, hexQ, hexR, title, description);
+
+        // Load world to get hexGridSize
+        WWorld world = worldService.getByWorldId(worldId)
+                .orElseThrow(() -> new IllegalArgumentException("World not found: " + worldId));
+
+        int gridSize = world.getPublicData().getHexGridSize();
+        if (gridSize <= 0) {
+            throw new IllegalArgumentException("Invalid hexGridSize: " + gridSize);
+        }
+
+        log.debug("Loaded hexGridSize={} from world", gridSize);
+
+        // Calculate hexagon center in cartesian coordinates
+        HexVector2 hexVec = HexVector2.builder().q(hexQ).r(hexR).build();
+        double[] center = HexMathUtil.hexToCartesian(hexVec, gridSize);
+        double centerX = center[0];
+        double centerZ = center[1];
+
+        // Calculate bounding box for pointy-top hexagon
+        // Width (flat side): gridSize * sqrt(3)
+        // Height (point to point): gridSize * 2
+        double SQRT_3 = Math.sqrt(3.0);
+        int sizeX = (int) Math.ceil(gridSize * SQRT_3) + 2;  // +2 for safety margin
+        int sizeZ = gridSize * 2 + 2;  // +2 for safety margin
+
+        // Calculate mount position (top-left corner of bounding box)
+        int mountX = (int) Math.floor(centerX - sizeX / 2.0);
+        int mountZ = (int) Math.floor(centerZ - sizeZ / 2.0);
+
+        log.info("Calculated flat parameters: sizeX={}, sizeZ={}, mount=({},{}), hexCenter=({},{})",
+                sizeX, sizeZ, mountX, mountZ, centerX, centerZ);
+
+        // Delegate to existing method with calculated parameters
+        return createHexGridFlat(worldId, layerName, flatId,
+                sizeX, sizeZ, mountX, mountZ,
+                hexQ, hexR, title, description);
+    }
+
+    /**
+     * Create a WFlat for a HexGrid area with NOT_SET_MUTABLE material inside the hex.
+     * Creates a flat terrain where:
+     * - Positions inside the HexGrid are marked with material 255 (NOT_SET_MUTABLE) at level 0
+     * - Positions outside the HexGrid (corners) are marked with material 0 (NOT_SET)
+     * - unknownProtected is set to true (only HexGrid positions can be modified)
+     * - The hexGrid coordinate is stored in the WFlat
      *
      * @param worldId World identifier
      * @param layerName Name of the layer to import outside positions from
@@ -589,31 +652,16 @@ public class FlatCreateService {
                 boolean isInHex = HexMathUtil.isPointInHex(worldX, worldZ, hexCenterX, hexCenterZ, gridSize);
 
                 if (isInHex) {
-                    // Position is inside HexGrid: set BEDROCK material at level 0
+                    // Position is inside HexGrid: mark with NOT_SET_MUTABLE (255) at level 0
                     flat.setLevel(localX, localZ, 0);
-                    flat.setColumn(localX, localZ, FlatMaterialService.BEDROCK);
+                    flat.setColumn(localX, localZ, (byte) WFlat.NOT_SET_MUTABLE);
                     hexCellsSet++;
                 } else {
-                    // Position is outside HexGrid: import from layer
-                    // Calculate chunk coordinates
-                    int chunkX = world.getChunkX(worldX);
-                    int chunkZ = world.getChunkZ(worldZ);
-                    String chunkKey = TypeUtil.toStringChunkCoord(chunkX, chunkZ);
-
-                    // Get chunk from cache
-                    LayerChunkData chunkData = chunkCache.get(chunkKey);
-
-                    if (chunkData != null) {
-                        // Find ground level at this position
-                        int groundLevel = findGroundLevel(worldX, worldZ, chunkData, WorldId.unchecked(worldId));
-
-                        if (groundLevel != -1) {
-                            flat.setLevel(localX, localZ, groundLevel);
-                            outsideCellsImported++;
-                        }
-                        // If groundLevel == -1, keep default level 0
-                    }
-                    // If no chunk data, keep default level 0
+                    // Position is outside HexGrid (corner): mark with NOT_SET (0)
+                    // Keep level at 0 and set material to NOT_SET
+                    flat.setLevel(localX, localZ, 0);
+                    flat.setColumn(localX, localZ, (byte) WFlat.NOT_SET);
+                    outsideCellsImported++;
                 }
             }
         }
@@ -621,7 +669,7 @@ public class FlatCreateService {
         // Persist to database
         WFlat saved = flatService.create(flat);
 
-        log.info("HexGrid flat creation complete: flatId={}, size={}x{}, hexCells={}, outsideCells={}, unknownProtected=true",
+        log.info("HexGrid flat creation complete: flatId={}, size={}x{}, hexCells={} (material=NOT_SET_MUTABLE/255), outsideCorners={} (material=NOT_SET/0), unknownProtected=true",
                 flatId, sizeX, sizeZ, hexCellsSet, outsideCellsImported);
 
         return saved;
