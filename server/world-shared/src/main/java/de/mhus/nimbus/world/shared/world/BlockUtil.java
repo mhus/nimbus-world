@@ -112,4 +112,8 @@ public class BlockUtil {
                 )
                 .build();
     }
+
+    public static String positionKey(int worldX, int worldZ) {
+        return worldX + "," + worldZ;
+    }
 }

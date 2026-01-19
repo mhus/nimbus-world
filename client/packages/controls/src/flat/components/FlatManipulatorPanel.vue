@@ -371,6 +371,30 @@
         </div>
       </div>
 
+      <!-- Set Material -->
+      <div v-if="selectedManipulator === 'set-material'" class="space-y-3">
+        <div class="form-control">
+          <label class="label"><span class="label-text">Material ID (required)</span></label>
+          <input v-model.number="params.material" type="number" class="input input-bordered" min="0" max="255" />
+          <label class="label">
+            <span class="label-text-alt text-base-content/70">Material to set for positions in level range</span>
+          </label>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div class="form-control">
+            <label class="label"><span class="label-text">From Level (required)</span></label>
+            <input v-model.number="params.fromLevel" type="number" class="input input-bordered" min="0" max="255" />
+          </div>
+          <div class="form-control">
+            <label class="label"><span class="label-text">To Level (required)</span></label>
+            <input v-model.number="params.toLevel" type="number" class="input input-bordered" min="0" max="255" />
+          </div>
+        </div>
+        <label class="label">
+          <span class="label-text-alt text-base-content/70">Sets material for all positions with level between fromLevel and toLevel (inclusive)</span>
+        </label>
+      </div>
+
       <!-- Generic fallback for other manipulators -->
       <div v-if="!hasCustomForm" class="form-control">
         <label class="label">
@@ -464,6 +488,7 @@ const manipulatorDescriptions: Record<string, string> = {
   'crater': 'Creates craters with raised rim',
   'spider': 'Creates recursive branching patterns radiating from center (rivers, canyons, or ridges)',
   'shaked-box': 'Creates rectangles with randomly removed pixels at borders for natural irregular edges',
+  'set-material': 'Sets material for all positions within a specified level range',
   'random-pixels': 'Places random pixels for texture',
   'composition': 'Combines multiple manipulators sequentially',
 };
@@ -472,7 +497,7 @@ const manipulatorDescriptions: Record<string, string> = {
 const hasCustomForm = computed(() => {
   const customForms = [
     'flat', 'normal', 'hilly', 'soften', 'border-smooth', 'water-soften',
-    'sharpen', 'roughen', 'mountain', 'sharp-peak', 'islands', 'crater', 'spider', 'shaked-box', 'lakes'
+    'sharpen', 'roughen', 'mountain', 'sharp-peak', 'islands', 'crater', 'spider', 'shaked-box', 'lakes', 'set-material'
   ];
   return customForms.includes(selectedManipulator.value);
 });
