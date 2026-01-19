@@ -506,11 +506,13 @@ public class FlatCreateService {
         double centerZ = center[1];
 
         // Calculate bounding box for pointy-top hexagon
-        // Width (flat side): gridSize * sqrt(3)
-        // Height (point to point): gridSize * 2
+        // gridSize is the diameter (not radius!)
+        // Radius = gridSize / 2
+        // Height (point to point) = 2 * radius = gridSize
+        // Width (flat side to flat side) = sqrt(3) * radius = gridSize * sqrt(3) / 2
         double SQRT_3 = Math.sqrt(3.0);
-        int sizeX = (int) Math.ceil(gridSize * SQRT_3) + 2;  // +2 for safety margin
-        int sizeZ = gridSize * 2 + 2;  // +2 for safety margin
+        int sizeX = (int) Math.ceil(gridSize * SQRT_3 / 2.0) + 10;  // +10 for safety margin
+        int sizeZ = gridSize + 10;  // +10 for safety margin
 
         // Calculate mount position (top-left corner of bounding box)
         int mountX = (int) Math.floor(centerX - sizeX / 2.0);
@@ -676,6 +678,67 @@ public class FlatCreateService {
     }
 
     /**
+     * Import WFlat from layer for a HexGrid area with auto-calculated size and mount positions.
+     * Automatically calculates sizeX, sizeZ, mountX, mountZ from hex grid coordinates.
+     * Imports all columns from the layer, sets them to material 255 (NOT_SET_MUTABLE) if inside hex,
+     * and sets positions outside the HexGrid to material 0 (NOT_SET).
+     * Sets unknownProtected = true (only HexGrid positions can be modified).
+     *
+     * @param worldId World identifier
+     * @param layerName Name of the layer to import from
+     * @param flatId Flat identifier for the new WFlat
+     * @param hexQ HexGrid Q coordinate (axial)
+     * @param hexR HexGrid R coordinate (axial)
+     * @param title Optional title for the flat
+     * @param description Optional description for the flat
+     * @return Created and persisted WFlat instance with HexGrid protection
+     * @throws IllegalArgumentException if world or layer not found, or layer is not GROUND type
+     */
+    public WFlat importHexGridFlat(String worldId, String layerName, String flatId,
+                                   int hexQ, int hexR, String title, String description) {
+        log.info("Importing HexGrid flat (auto-size): worldId={}, layerName={}, flatId={}, hex=({},{}), title={}, description={}",
+                worldId, layerName, flatId, hexQ, hexR, title, description);
+
+        // Load world to get hexGridSize
+        WWorld world = worldService.getByWorldId(worldId)
+                .orElseThrow(() -> new IllegalArgumentException("World not found: " + worldId));
+
+        int gridSize = world.getPublicData().getHexGridSize();
+        if (gridSize <= 0) {
+            throw new IllegalArgumentException("Invalid hexGridSize: " + gridSize);
+        }
+
+        log.debug("Loaded hexGridSize={} from world", gridSize);
+
+        // Calculate hexagon center in cartesian coordinates
+        HexVector2 hexVec = HexVector2.builder().q(hexQ).r(hexR).build();
+        double[] center = HexMathUtil.hexToCartesian(hexVec, gridSize);
+        double centerX = center[0];
+        double centerZ = center[1];
+
+        // Calculate bounding box for pointy-top hexagon
+        // gridSize is the diameter (not radius!)
+        // Radius = gridSize / 2
+        // Height (point to point) = 2 * radius = gridSize
+        // Width (flat side to flat side) = sqrt(3) * radius = gridSize * sqrt(3) / 2
+        double SQRT_3 = Math.sqrt(3.0);
+        int sizeX = (int) Math.ceil(gridSize * SQRT_3 / 2.0) + 10;  // +10 for safety margin
+        int sizeZ = gridSize + 10;  // +10 for safety margin
+
+        // Calculate mount position (top-left corner of bounding box)
+        int mountX = (int) Math.floor(centerX - sizeX / 2.0);
+        int mountZ = (int) Math.floor(centerZ - sizeZ / 2.0);
+
+        log.info("Calculated flat parameters: sizeX={}, sizeZ={}, mount=({},{}), hexCenter=({},{})",
+                sizeX, sizeZ, mountX, mountZ, centerX, centerZ);
+
+        // Delegate to existing method with calculated parameters
+        return importHexGridFlat(worldId, layerName, flatId,
+                sizeX, sizeZ, mountX, mountZ,
+                hexQ, hexR, title, description);
+    }
+
+    /**
      * Import WFlat from layer for a HexGrid area.
      * Imports all columns from the layer, sets them to material 255 (UNKNOWN_NOT_PROTECTED),
      * then sets positions outside the HexGrid to material 0 (UNKNOWN_PROTECTED).
@@ -746,9 +809,8 @@ public class FlatCreateService {
                 .oceanLevel(oceanLevel)
                 .oceanBlockId(oceanBlockId)
                 .unknownProtected(true)  // Set unknownProtected to true for HexGrid flats
-                .hexGrid(HexMathUtil.getDominantHexForArea(
-                        world, TypeUtil.area(mountX, mountZ, sizeX, sizeZ)
-                ))
+                .hexGrid(TypeUtil.hexVector2(hexQ, hexR)
+                )
                 .build();
 
         // Initialize with size

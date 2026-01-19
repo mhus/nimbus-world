@@ -287,10 +287,6 @@ const handleCreate = async () => {
     // Build parameters
     const parameters: Record<string, string> = {
       layerName: layerName.value,
-      sizeX: sizeX.value.toString(),
-      sizeZ: sizeZ.value.toString(),
-      mountX: mountX.value.toString(),
-      mountZ: mountZ.value.toString(),
     };
 
     // Add optional title
@@ -303,20 +299,29 @@ const handleCreate = async () => {
       parameters.description = description.value;
     }
 
-    // Add hexgrid coordinates if needed
-    if (isHexGridType.value) {
-      parameters.hexQ = hexQ.value.toString();
-      parameters.hexR = hexR.value.toString();
-    }
-
     // Add optional palette
     if (paletteName.value) {
       parameters.paletteName = paletteName.value;
     }
 
+    // HexGrid types: send hex coordinates (auto mode by default)
+    // Non-hexgrid types: send size/mount parameters
+    if (isHexGridType.value) {
+      parameters.hexQ = hexQ.value.toString();
+      parameters.hexR = hexR.value.toString();
+    } else {
+      parameters.sizeX = sizeX.value.toString();
+      parameters.sizeZ = sizeZ.value.toString();
+      parameters.mountX = mountX.value.toString();
+      parameters.mountZ = mountZ.value.toString();
+    }
+
     // Create job request
+    // For HexGrid types: use "grid" type (server will auto-calculate size/mount from hex coordinates)
+    // For non-hexgrid types: no type needed (only one mode)
     const jobRequest: JobCreateRequest = {
       executor: jobType.value,
+      type: isHexGridType.value ? 'grid' : undefined,
       parameters: parameters,
       priority: 5,
       maxRetries: 3,

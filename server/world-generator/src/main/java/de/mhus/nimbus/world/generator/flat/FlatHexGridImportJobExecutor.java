@@ -10,22 +10,33 @@ import org.springframework.stereotype.Component;
 
 /**
  * Job executor for importing HexGrid-based WFlat from layer.
- * Imports all columns from the layer and sets them to material 255 (UNKNOWN_NOT_PROTECTED),
- * then sets positions outside the HexGrid to material 0 (UNKNOWN_PROTECTED).
+ * Imports all columns from the layer and sets them to material 255 (NOT_SET_MUTABLE) if inside hex,
+ * then sets positions outside the HexGrid to material 0 (NOT_SET).
  * Sets unknownProtected = true (only HexGrid positions can be modified).
  *
  * WorldId is taken from job.getWorldId()
+ * Job type (job.getType()) determines the coordinate system:
  *
- * Required parameters:
- * - layerName: Name of the GROUND layer to import from
- * - sizeX: Width of the flat (1-800)
- * - sizeZ: Height of the flat (1-800)
- * - mountX: Mount X position (start position in layer)
- * - mountZ: Mount Z position (start position in layer)
- * - hexQ: HexGrid Q coordinate (axial)
- * - hexR: HexGrid R coordinate (axial)
+ * Type "grid" (default if type not set):
+ *   Uses HexGrid coordinates. Size and mount position are auto-calculated from hexGridSize.
+ *   Required parameters:
+ *   - layerName: Name of the GROUND layer to import from
+ *   - hexQ: HexGrid Q coordinate (axial)
+ *   - hexR: HexGrid R coordinate (axial)
+ *   Note: sizeX, sizeZ, mountX, mountZ are auto-calculated from hexGridSize
  *
- * Optional parameters:
+ * Type "rectangular":
+ *   Uses rectangular coordinates. All dimensions must be specified explicitly.
+ *   Required parameters:
+ *   - layerName: Name of the GROUND layer to import from
+ *   - sizeX: Width of the flat (1-800)
+ *   - sizeZ: Height of the flat (1-800)
+ *   - mountX: Mount X position (start position in layer)
+ *   - mountZ: Mount Z position (start position in layer)
+ *   - hexQ: HexGrid Q coordinate (axial)
+ *   - hexR: HexGrid R coordinate (axial)
+ *
+ * Optional parameters (all types):
  * - flatId: Identifier for the new WFlat (if not provided, UUID will be generated)
  * - title: Display title for the flat
  * - description: Description text for the flat
@@ -49,19 +60,13 @@ public class FlatHexGridImportJobExecutor implements JobExecutor {
     @Override
     public JobResult execute(WJob job) throws JobExecutionException {
         try {
-            log.info("Starting flat hexgrid import job: jobId={}", job.getId());
+            log.info("Starting flat hexgrid import job: jobId={}, type={}", job.getId(), job.getType());
 
             // Get worldId from job
             String worldId = job.getWorldId();
 
-            // Extract and validate required parameters
+            // Extract required parameter
             String layerName = getRequiredParameter(job, "layerName");
-            int sizeX = getRequiredIntParameter(job, "sizeX");
-            int sizeZ = getRequiredIntParameter(job, "sizeZ");
-            int mountX = getRequiredIntParameter(job, "mountX");
-            int mountZ = getRequiredIntParameter(job, "mountZ");
-            int hexQ = getRequiredIntParameter(job, "hexQ");
-            int hexR = getRequiredIntParameter(job, "hexR");
 
             // Extract optional parameters
             String flatId = getOptionalParameter(job, "flatId", java.util.UUID.randomUUID().toString());
@@ -69,23 +74,56 @@ public class FlatHexGridImportJobExecutor implements JobExecutor {
             String description = getOptionalParameter(job, "description", null);
             String paletteName = getOptionalParameter(job, "paletteName", null);
 
-            // Validate size parameters
-            if (sizeX <= 0 || sizeX > 800) {
-                throw new JobExecutionException("sizeX must be between 1 and 800, got: " + sizeX);
-            }
-            if (sizeZ <= 0 || sizeZ > 800) {
-                throw new JobExecutionException("sizeZ must be between 1 and 800, got: " + sizeZ);
+            // Get job type to determine coordinate system
+            String jobType = job.getType();
+            if (jobType == null || jobType.isBlank()) {
+                jobType = "grid";  // Default to grid mode
             }
 
-            log.info("Importing HexGrid flat: worldId={}, layerName={}, flatId={}, size={}x{}, mount=({},{}), hex=({},{}), title={}, description={}, palette={}",
-                    worldId, layerName, flatId, sizeX, sizeZ, mountX, mountZ, hexQ, hexR, title, description, paletteName);
+            WFlat flat;
 
-            // Execute import
-            WFlat flat = flatCreateService.importHexGridFlat(
-                    worldId, layerName, flatId,
-                    sizeX, sizeZ, mountX, mountZ,
-                    hexQ, hexR, title, description
-            );
+            if ("grid".equals(jobType)) {
+                // Grid mode: use HexGrid coordinates, calculate size and mount automatically
+                int hexQ = getRequiredIntParameter(job, "hexQ");
+                int hexR = getRequiredIntParameter(job, "hexR");
+
+                log.info("Importing HexGrid flat (grid mode): worldId={}, layerName={}, flatId={}, hex=({},{}), title={}, description={}, palette={}",
+                        worldId, layerName, flatId, hexQ, hexR, title, description, paletteName);
+
+                // Execute import with auto-calculated size/mount
+                flat = flatCreateService.importHexGridFlat(
+                        worldId, layerName, flatId,
+                        hexQ, hexR, title, description
+                );
+            } else if ("rectangular".equals(jobType)) {
+                // Rectangular mode: use explicit rectangular coordinates
+                int sizeX = getRequiredIntParameter(job, "sizeX");
+                int sizeZ = getRequiredIntParameter(job, "sizeZ");
+                int mountX = getRequiredIntParameter(job, "mountX");
+                int mountZ = getRequiredIntParameter(job, "mountZ");
+                int hexQ = getRequiredIntParameter(job, "hexQ");
+                int hexR = getRequiredIntParameter(job, "hexR");
+
+                // Validate size parameters
+                if (sizeX <= 0 || sizeX > 800) {
+                    throw new JobExecutionException("sizeX must be between 1 and 800, got: " + sizeX);
+                }
+                if (sizeZ <= 0 || sizeZ > 800) {
+                    throw new JobExecutionException("sizeZ must be between 1 and 800, got: " + sizeZ);
+                }
+
+                log.info("Importing HexGrid flat (rectangular mode): worldId={}, layerName={}, flatId={}, size={}x{}, mount=({},{}), hex=({},{}), title={}, description={}, palette={}",
+                        worldId, layerName, flatId, sizeX, sizeZ, mountX, mountZ, hexQ, hexR, title, description, paletteName);
+
+                // Execute import with explicit rectangular coordinates
+                flat = flatCreateService.importHexGridFlat(
+                        worldId, layerName, flatId,
+                        sizeX, sizeZ, mountX, mountZ,
+                        hexQ, hexR, title, description
+                );
+            } else {
+                throw new JobExecutionException("Unknown job type: " + jobType + ". Valid types: grid, rectangular");
+            }
 
             // Apply material palette if specified
             if (paletteName != null && !paletteName.isBlank()) {
@@ -100,9 +138,14 @@ public class FlatHexGridImportJobExecutor implements JobExecutor {
             }
 
             // Build success result
+            String hexCoords = flat.getHexGrid() != null
+                ? String.format("(%d,%d)", flat.getHexGrid().getQ(), flat.getHexGrid().getR())
+                : "(unknown)";
+
             String resultData = String.format(
-                    "Successfully imported HexGrid flat: id=%s, flatId=%s, worldId=%s, layerName=%s, size=%dx%d, mount=(%d,%d), hex=(%d,%d), palette=%s, unknownProtected=true",
-                    flat.getId(), flatId, worldId, layerName, sizeX, sizeZ, mountX, mountZ, hexQ, hexR,
+                    "Successfully imported HexGrid flat (type=%s): id=%s, flatId=%s, worldId=%s, layerName=%s, hex=%s, size=%dx%d, mount=(%d,%d), palette=%s, unknownProtected=true",
+                    jobType, flat.getId(), flatId, worldId, layerName, hexCoords,
+                    flat.getSizeX(), flat.getSizeZ(), flat.getMountX(), flat.getMountZ(),
                     paletteName != null ? paletteName : "none"
             );
 

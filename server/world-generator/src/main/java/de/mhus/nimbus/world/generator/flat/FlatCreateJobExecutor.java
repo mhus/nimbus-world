@@ -14,21 +14,14 @@ import org.springframework.stereotype.Component;
  *
  * WorldId is taken from job.getWorldId()
  *
- * Two modes:
- * 1. Manual mode (requires all size/mount parameters):
- *    - layerName: Name of the GROUND layer to import border from
- *    - sizeX: Width of the flat (1-800)
- *    - sizeZ: Height of the flat (1-800)
- *    - mountX: Mount X position (start position in layer)
- *    - mountZ: Mount Z position (start position in layer)
+ * Required parameters:
+ * - layerName: Name of the GROUND layer to import border from
+ * - sizeX: Width of the flat (1-800)
+ * - sizeZ: Height of the flat (1-800)
+ * - mountX: Mount X position (start position in layer)
+ * - mountZ: Mount Z position (start position in layer)
  *
- * 2. HexGrid mode (auto-calculates size/mount from grid coordinates):
- *    - layerName: Name of the GROUND layer to import border from
- *    - hexQ: HexGrid Q coordinate (axial)
- *    - hexR: HexGrid R coordinate (axial)
- *    Note: If hexQ and hexR are provided, sizeX, sizeZ, mountX, mountZ are NOT required and will be ignored.
- *
- * Optional parameters (both modes):
+ * Optional parameters:
  * - flatId: Identifier for the new WFlat (if not provided, UUID will be generated)
  * - title: Display title for the flat
  * - description: Description text for the flat
@@ -57,8 +50,12 @@ public class FlatCreateJobExecutor implements JobExecutor {
             // Get worldId from job
             String worldId = job.getWorldId();
 
-            // Extract required parameter
+            // Extract required parameters
             String layerName = getRequiredParameter(job, "layerName");
+            int sizeX = getRequiredIntParameter(job, "sizeX");
+            int sizeZ = getRequiredIntParameter(job, "sizeZ");
+            int mountX = getRequiredIntParameter(job, "mountX");
+            int mountZ = getRequiredIntParameter(job, "mountZ");
 
             // Extract optional parameters
             String flatId = getOptionalParameter(job, "flatId", java.util.UUID.randomUUID().toString());
@@ -66,56 +63,23 @@ public class FlatCreateJobExecutor implements JobExecutor {
             String description = getOptionalParameter(job, "description", null);
             String paletteName = getOptionalParameter(job, "paletteName", null);
 
-            // Check if HexGrid mode (hexQ and hexR provided)
-            String hexQStr = getOptionalParameter(job, "hexQ", null);
-            String hexRStr = getOptionalParameter(job, "hexR", null);
-
-            WFlat flat;
-
-            if (hexQStr != null && hexRStr != null) {
-                // HexGrid mode: auto-calculate size and mount from hex coordinates
-                int hexQ;
-                int hexR;
-                try {
-                    hexQ = Integer.parseInt(hexQStr);
-                    hexR = Integer.parseInt(hexRStr);
-                } catch (NumberFormatException e) {
-                    throw new JobExecutionException("Invalid hex coordinates: hexQ=" + hexQStr + ", hexR=" + hexRStr);
-                }
-
-                log.info("Creating HexGrid flat (auto-size): worldId={}, layerName={}, flatId={}, hex=({},{}), title={}, description={}, palette={}",
-                        worldId, layerName, flatId, hexQ, hexR, title, description, paletteName);
-
-                // Execute create with auto-calculated size/mount
-                flat = flatCreateService.createHexGridFlat(
-                        worldId, layerName, flatId,
-                        hexQ, hexR, title, description
-                );
-            } else {
-                // Manual mode: require all size/mount parameters
-                int sizeX = getRequiredIntParameter(job, "sizeX");
-                int sizeZ = getRequiredIntParameter(job, "sizeZ");
-                int mountX = getRequiredIntParameter(job, "mountX");
-                int mountZ = getRequiredIntParameter(job, "mountZ");
-
-                // Validate size parameters
-                if (sizeX <= 0 || sizeX > 800) {
-                    throw new JobExecutionException("sizeX must be between 1 and 800, got: " + sizeX);
-                }
-                if (sizeZ <= 0 || sizeZ > 800) {
-                    throw new JobExecutionException("sizeZ must be between 1 and 800, got: " + sizeZ);
-                }
-
-                log.info("Creating empty flat: worldId={}, layerName={}, flatId={}, size={}x{}, mount=({},{}), title={}, description={}, palette={}",
-                        worldId, layerName, flatId, sizeX, sizeZ, mountX, mountZ, title, description, paletteName);
-
-                // Execute create with manual size/mount
-                flat = flatCreateService.createEmptyFlat(
-                        worldId, layerName, flatId,
-                        sizeX, sizeZ, mountX, mountZ,
-                        title, description
-                );
+            // Validate size parameters
+            if (sizeX <= 0 || sizeX > 800) {
+                throw new JobExecutionException("sizeX must be between 1 and 800, got: " + sizeX);
             }
+            if (sizeZ <= 0 || sizeZ > 800) {
+                throw new JobExecutionException("sizeZ must be between 1 and 800, got: " + sizeZ);
+            }
+
+            log.info("Creating empty flat: worldId={}, layerName={}, flatId={}, size={}x{}, mount=({},{}), title={}, description={}, palette={}",
+                    worldId, layerName, flatId, sizeX, sizeZ, mountX, mountZ, title, description, paletteName);
+
+            // Execute create
+            WFlat flat = flatCreateService.createEmptyFlat(
+                    worldId, layerName, flatId,
+                    sizeX, sizeZ, mountX, mountZ,
+                    title, description
+            );
 
             // Apply material palette if specified
             if (paletteName != null && !paletteName.isBlank()) {
@@ -130,21 +94,11 @@ public class FlatCreateJobExecutor implements JobExecutor {
             }
 
             // Build success result
-            String resultData;
-            if (hexQStr != null && hexRStr != null) {
-                resultData = String.format(
-                        "Successfully created HexGrid flat: id=%s, flatId=%s, worldId=%s, layerName=%s, hex=(%s,%s), size=%dx%d, mount=(%d,%d), palette=%s",
-                        flat.getId(), flatId, worldId, layerName, hexQStr, hexRStr,
-                        flat.getSizeX(), flat.getSizeZ(), flat.getMountX(), flat.getMountZ(),
-                        paletteName != null ? paletteName : "none"
-                );
-            } else {
-                resultData = String.format(
-                        "Successfully created empty flat: id=%s, flatId=%s, worldId=%s, layerName=%s, size=%dx%d, mount=(%d,%d), palette=%s",
-                        flat.getId(), flatId, worldId, layerName, flat.getSizeX(), flat.getSizeZ(), flat.getMountX(), flat.getMountZ(),
-                        paletteName != null ? paletteName : "none"
-                );
-            }
+            String resultData = String.format(
+                    "Successfully created empty flat: id=%s, flatId=%s, worldId=%s, layerName=%s, size=%dx%d, mount=(%d,%d), palette=%s",
+                    flat.getId(), flatId, worldId, layerName, flat.getSizeX(), flat.getSizeZ(), flat.getMountX(), flat.getMountZ(),
+                    paletteName != null ? paletteName : "none"
+            );
 
             log.info("Flat create completed successfully: flatId={}, id={}", flatId, flat.getId());
             return JobResult.ofSuccess(resultData);

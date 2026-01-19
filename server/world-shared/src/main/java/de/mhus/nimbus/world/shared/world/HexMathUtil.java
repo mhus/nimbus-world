@@ -222,10 +222,12 @@ public class HexMathUtil {
             this.gridSize = gridSize;
 
             // Calculate bounding box
-            this.minX = (int) Math.floor(hexCenterX - gridSize);
-            this.maxX = (int) Math.ceil(hexCenterX + gridSize);
-            this.minZ = (int) Math.floor(hexCenterZ - gridSize);
-            this.maxZ = (int) Math.ceil(hexCenterZ + gridSize);
+            // gridSize is diameter, so radius = gridSize / 2
+            double radius = gridSize / 2.0;
+            this.minX = (int) Math.floor(hexCenterX - radius);
+            this.maxX = (int) Math.ceil(hexCenterX + radius);
+            this.minZ = (int) Math.floor(hexCenterZ - radius);
+            this.maxZ = (int) Math.ceil(hexCenterZ + radius);
 
             // Start iteration
             this.currentX = minX;
@@ -279,24 +281,25 @@ public class HexMathUtil {
     /**
      * Calculates the world coordinate bounds of all hexagons within a specified range from a center hex.
      *
-     * @param hexSize   The size (radius) of each hexagon in blocks
+     * @param gridSize  The diameter of each hexagon in blocks (consistent with other methods)
      * @param centerHex The center hex coordinates
      * @param range     The range (in hexes) from the center to include
      * @return Array of Vector2Pair representing the world coordinates of the hex corners
      */
-    public static Vector2[] getHexAreaBounds(int hexSize, HexVector2 centerHex, int range) {
+    public static Vector2[] getHexAreaBounds(int gridSize, HexVector2 centerHex, int range) {
         java.util.List<Vector2> bounds = new java.util.ArrayList<>();
+        double radius = gridSize / 2.0;
         for (int dq = -range; dq <= range; dq++) {
             for (int dr = Math.max(-range, -dq - range); dr <= Math.min(range, -dq + range); dr++) {
                 int q = centerHex.getQ() + dq;
                 int r = centerHex.getR() + dr;
                 // Berechne die Weltkoordinaten der Hex-Ecken
-                double centerX = hexSize * (Math.sqrt(3) * q + Math.sqrt(3) / 2 * r);
-                double centerZ = hexSize * (3.0 / 2 * r);
+                double centerX = radius * (Math.sqrt(3) * q + Math.sqrt(3) / 2 * r);
+                double centerZ = radius * (3.0 / 2 * r);
                 for (int i = 0; i < 6; i++) {
                     double angle = Math.PI / 3 * i;
-                    double x = centerX + hexSize * Math.cos(angle);
-                    double z = centerZ + hexSize * Math.sin(angle);
+                    double x = centerX + radius * Math.cos(angle);
+                    double z = centerZ + radius * Math.sin(angle);
                     bounds.add(Vector2.builder().x(x).z(z).build());
                 }
             }
@@ -525,10 +528,12 @@ public class HexMathUtil {
         double hexCenterZ = hexCenter[1];
 
         // Calculate bounding box for the hex (conservative estimate)
-        int minX = (int) Math.floor(hexCenterX - gridSize);
-        int maxX = (int) Math.ceil(hexCenterX + gridSize);
-        int minZ = (int) Math.floor(hexCenterZ - gridSize);
-        int maxZ = (int) Math.ceil(hexCenterZ + gridSize);
+        // gridSize is diameter, so radius = gridSize / 2
+        double radius = gridSize / 2.0;
+        int minX = (int) Math.floor(hexCenterX - radius);
+        int maxX = (int) Math.ceil(hexCenterX + radius);
+        int minZ = (int) Math.floor(hexCenterZ - radius);
+        int maxZ = (int) Math.ceil(hexCenterZ + radius);
 
         // Calculate chunk range that could overlap with this hex
         int minCx = Math.floorDiv(minX, chunkSize);
