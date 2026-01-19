@@ -13,7 +13,7 @@ import java.util.Random;
  * Based on ShapeFactory.cpp Case 2.
  * <p>
  * Parameters:
- * - borderWidth: Width of border area (default: 3, range: 1-10, -1 = entire area)
+ * - borderWidth: Width of border area (default: 3, range: 1-???, -1 = entire area)
  * - probability: Probability that pixel is removed (default: 0.5, range: 0.0-1.0)
  * - targetHeight: Height for non-removed pixels (default: 64, range: 0-255)
  * - seed: Random seed (default: System.currentTimeMillis())
@@ -50,7 +50,7 @@ public class ShakedBoxManipulator implements FlatManipulator {
 
         // Validate and clamp parameters
         if (borderWidth != -1) {
-            borderWidth = Math.max(1, Math.min(10, borderWidth));
+            borderWidth = Math.max(1, borderWidth);
         }
         probability = Math.max(0.0, Math.min(1.0, probability));
         targetHeight = Math.max(0, Math.min(255, targetHeight));
@@ -85,7 +85,7 @@ public class ShakedBoxManipulator implements FlatManipulator {
 
                 if (inBorder) {
                     // Random check: skip pixel with given probability
-                    if (random.nextDouble() < probability) {
+                    if (random.nextDouble() > probability) {
                         // Skip this pixel (don't modify it)
                         pixelsSkipped++;
                         continue;

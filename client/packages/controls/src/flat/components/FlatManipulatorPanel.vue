@@ -261,6 +261,116 @@
         </div>
       </div>
 
+      <!-- Spider Pattern -->
+      <div v-if="selectedManipulator === 'spider'" class="space-y-3">
+        <div class="grid grid-cols-2 gap-3">
+          <div class="form-control">
+            <label class="label"><span class="label-text">Center X (optional)</span></label>
+            <input v-model.number="params.centerX" type="number" class="input input-bordered" min="0" placeholder="Auto-center" />
+          </div>
+          <div class="form-control">
+            <label class="label"><span class="label-text">Center Z (optional)</span></label>
+            <input v-model.number="params.centerZ" type="number" class="input input-bordered" min="0" placeholder="Auto-center" />
+          </div>
+        </div>
+        <div class="form-control">
+          <label class="label"><span class="label-text">Branches (3-12)</span></label>
+          <input v-model.number="params.branches" type="number" class="input input-bordered" min="3" max="12" />
+        </div>
+        <div class="form-control">
+          <label class="label"><span class="label-text">Length (10-200)</span></label>
+          <input v-model.number="params.length" type="number" class="input input-bordered" min="10" max="200" />
+        </div>
+        <div class="form-control">
+          <label class="label"><span class="label-text">Height Delta (-50 to 50)</span></label>
+          <input v-model.number="params.heightDelta" type="number" class="input input-bordered" min="-50" max="50" />
+          <label class="label">
+            <span class="label-text-alt text-base-content/70">Negative = carve (rivers), Positive = raise (ridges)</span>
+          </label>
+        </div>
+        <div class="form-control">
+          <label class="label"><span class="label-text">Sub-Branches (0-5)</span></label>
+          <input v-model.number="params.subBranches" type="number" class="input input-bordered" min="0" max="5" />
+        </div>
+        <div class="form-control">
+          <label class="label"><span class="label-text">Recursion Depth (1-4)</span></label>
+          <input v-model.number="params.recursionDepth" type="number" class="input input-bordered" min="1" max="4" />
+        </div>
+        <div class="form-control">
+          <label class="label"><span class="label-text">Seed (optional)</span></label>
+          <input v-model="params.seed" type="text" class="input input-bordered" placeholder="Leave empty for random" />
+        </div>
+      </div>
+
+      <!-- Shaked Box -->
+      <div v-if="selectedManipulator === 'shaked-box'" class="space-y-3">
+        <div class="form-control">
+          <label class="label"><span class="label-text">Border Width (1-10, -1 for entire area)</span></label>
+          <input v-model.number="params.borderWidth" type="number" class="input input-bordered" min="-1" max="10" />
+          <label class="label">
+            <span class="label-text-alt text-base-content/70">Width of border area where pixels are removed</span>
+          </label>
+        </div>
+        <div class="form-control">
+          <label class="label"><span class="label-text">Probability (0.0-1.0)</span></label>
+          <input v-model.number="params.probability" type="number" class="input input-bordered" min="0" max="1" step="0.1" />
+          <label class="label">
+            <span class="label-text-alt text-base-content/70">Probability that a border pixel is removed</span>
+          </label>
+        </div>
+        <div class="form-control">
+          <label class="label"><span class="label-text">Target Height (0-255)</span></label>
+          <input v-model.number="params.targetHeight" type="number" class="input input-bordered" min="0" max="255" />
+          <label class="label">
+            <span class="label-text-alt text-base-content/70">Height for non-removed pixels</span>
+          </label>
+        </div>
+        <div class="form-control">
+          <label class="label"><span class="label-text">Seed (optional)</span></label>
+          <input v-model="params.seed" type="text" class="input input-bordered" placeholder="Leave empty for random" />
+        </div>
+      </div>
+
+      <!-- Lakes -->
+      <div v-if="selectedManipulator === 'lakes'" class="space-y-3">
+        <div class="form-control">
+          <label class="label"><span class="label-text">Main Lake Radius (10-200)</span></label>
+          <input v-model.number="params.mainLakeRadius" type="number" class="input input-bordered" min="10" max="200" />
+        </div>
+        <div class="form-control">
+          <label class="label"><span class="label-text">Main Lake Depth (5-50)</span></label>
+          <input v-model.number="params.mainLakeDepth" type="number" class="input input-bordered" min="5" max="50" />
+          <label class="label">
+            <span class="label-text-alt text-base-content/70">Depth below ocean level</span>
+          </label>
+        </div>
+        <div class="form-control">
+          <label class="label"><span class="label-text">Small Lakes Count (2-15)</span></label>
+          <input v-model.number="params.smallLakes" type="number" class="input input-bordered" min="2" max="15" />
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div class="form-control">
+            <label class="label"><span class="label-text">Small Min Radius (5-50)</span></label>
+            <input v-model.number="params.smallLakeMinRadius" type="number" class="input input-bordered" min="5" max="50" />
+          </div>
+          <div class="form-control">
+            <label class="label"><span class="label-text">Small Max Radius (5-100)</span></label>
+            <input v-model.number="params.smallLakeMaxRadius" type="number" class="input input-bordered" min="5" max="100" />
+          </div>
+        </div>
+        <div class="form-control">
+          <label class="label"><span class="label-text">Scatter Distance (10-300)</span></label>
+          <input v-model.number="params.scatterDistance" type="number" class="input input-bordered" min="10" max="300" />
+          <label class="label">
+            <span class="label-text-alt text-base-content/70">How far small lakes scatter from main lake</span>
+          </label>
+        </div>
+        <div class="form-control">
+          <label class="label"><span class="label-text">Seed (optional)</span></label>
+          <input v-model="params.seed" type="text" class="input input-bordered" placeholder="Leave empty for random" />
+        </div>
+      </div>
+
       <!-- Generic fallback for other manipulators -->
       <div v-if="!hasCustomForm" class="form-control">
         <label class="label">
@@ -350,10 +460,10 @@ const manipulatorDescriptions: Record<string, string> = {
   'mountain': 'Creates fractal mountain ranges with recursive branching',
   'sharp-peak': 'Generates conical mountains with exponential falloff',
   'islands': 'Creates archipelago with main and small islands',
-  'lakes': 'Generates lake systems with quadratic depression',
+  'lakes': 'Creates a main lake with multiple smaller lakes using quadratic depth falloff',
   'crater': 'Creates craters with raised rim',
-  'spider': 'Generates branching patterns for rivers or canyons',
-  'shaked-box': 'Creates rectangles with natural irregular edges',
+  'spider': 'Creates recursive branching patterns radiating from center (rivers, canyons, or ridges)',
+  'shaked-box': 'Creates rectangles with randomly removed pixels at borders for natural irregular edges',
   'random-pixels': 'Places random pixels for texture',
   'composition': 'Combines multiple manipulators sequentially',
 };
@@ -362,7 +472,7 @@ const manipulatorDescriptions: Record<string, string> = {
 const hasCustomForm = computed(() => {
   const customForms = [
     'flat', 'normal', 'hilly', 'soften', 'border-smooth', 'water-soften',
-    'sharpen', 'roughen', 'mountain', 'sharp-peak', 'islands', 'crater'
+    'sharpen', 'roughen', 'mountain', 'sharp-peak', 'islands', 'crater', 'spider', 'shaked-box', 'lakes'
   ];
   return customForms.includes(selectedManipulator.value);
 });

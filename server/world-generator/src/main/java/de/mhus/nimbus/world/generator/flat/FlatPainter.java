@@ -83,9 +83,12 @@ public class FlatPainter {
         int dz = z2 - z1;
         int steps = Math.max(Math.abs(dx), Math.abs(dz));
         if (steps == 0) {
-            flat.setLevel(x1, z1, painter.getLevel(flat, x1, z1, level));
-            if (definition > DO_NOT_SET) {
-                flat.setColumn(x1, z1, columnPainter.getColumn(flat, x1, z1, level, definition));
+            // Check bounds for single point
+            if (isInBounds(x1, z1)) {
+                flat.setLevel(x1, z1, painter.getLevel(flat, x1, z1, level));
+                if (definition > DO_NOT_SET) {
+                    flat.setColumn(x1, z1, columnPainter.getColumn(flat, x1, z1, level, definition));
+                }
             }
             return;
         }
@@ -96,13 +99,23 @@ public class FlatPainter {
         for (int i = 0; i <= steps; i++) {
             int xi = (int) Math.round(x);
             int zi = (int) Math.round(z);
-            flat.setLevel(xi, zi, painter.getLevel(flat, xi, zi, level));
-            if (definition > DO_NOT_SET) {
-                flat.setColumn(xi, zi, columnPainter.getColumn(flat, xi, zi, level, definition));
+            // Skip points outside bounds
+            if (isInBounds(xi, zi)) {
+                flat.setLevel(xi, zi, painter.getLevel(flat, xi, zi, level));
+                if (definition > DO_NOT_SET) {
+                    flat.setColumn(xi, zi, columnPainter.getColumn(flat, xi, zi, level, definition));
+                }
             }
             x += xInc;
             z += zInc;
         }
+    }
+
+    /**
+     * Check if coordinates are within flat bounds.
+     */
+    private boolean isInBounds(int x, int z) {
+        return x >= 0 && x < flat.getSizeX() && z >= 0 && z < flat.getSizeZ();
     }
 
     public void fillCircle(int x, int z, int radius, int level) {
@@ -116,9 +129,11 @@ public class FlatPainter {
                 if (dx * dx + dz * dz <= r2) {
                     int xi = x + dx;
                     int zi = z + dz;
-                    flat.setLevel(xi, zi, painter.getLevel(flat, xi, zi, level));
-                    if (definition > DO_NOT_SET) {
-                        flat.setColumn(xi, zi, columnPainter.getColumn(flat, xi, zi, level, definition));
+                    if (isInBounds(xi, zi)) {
+                        flat.setLevel(xi, zi, painter.getLevel(flat, xi, zi, level));
+                        if (definition > DO_NOT_SET) {
+                            flat.setColumn(xi, zi, columnPainter.getColumn(flat, xi, zi, level, definition));
+                        }
                     }
                 }
             }
@@ -135,9 +150,11 @@ public class FlatPainter {
             double angle = 2 * Math.PI * i / steps;
             int xi = x + (int) Math.round(Math.cos(angle) * radius);
             int zi = z + (int) Math.round(Math.sin(angle) * radius);
-            flat.setLevel(xi, zi, painter.getLevel(flat, xi, zi, level));
-            if (definition > DO_NOT_SET) {
-                flat.setColumn(xi, zi, columnPainter.getColumn(flat, xi, zi, level, definition));
+            if (isInBounds(xi, zi)) {
+                flat.setLevel(xi, zi, painter.getLevel(flat, xi, zi, level));
+                if (definition > DO_NOT_SET) {
+                    flat.setColumn(xi, zi, columnPainter.getColumn(flat, xi, zi, level, definition));
+                }
             }
         }
     }
@@ -152,9 +169,11 @@ public class FlatPainter {
         int zmax = Math.max(z1, z2);
         for (int z = zmin; z <= zmax; z++) {
             for (int x = xmin; x <= xmax; x++) {
-                flat.setLevel(x, z, painter.getLevel(flat, x, z, level));
-                if (definition > DO_NOT_SET) {
-                    flat.setColumn(x, z, columnPainter.getColumn(flat, x, z, level, definition));
+                if (isInBounds(x, z)) {
+                    flat.setLevel(x, z, painter.getLevel(flat, x, z, level));
+                    if (definition > DO_NOT_SET) {
+                        flat.setColumn(x, z, columnPainter.getColumn(flat, x, z, level, definition));
+                    }
                 }
             }
         }
@@ -170,18 +189,22 @@ public class FlatPainter {
         int zmax = Math.max(z1, z2);
         // obere und untere Kante
         for (int x = xmin; x <= xmax; x++) {
-            flat.setLevel(x, zmin, painter.getLevel(flat, x, zmin, level));
-            if (definition > DO_NOT_SET) flat.setColumn(x, zmin, columnPainter.getColumn(flat, x, zmin, level, definition));
-            if (zmin != zmax) {
+            if (isInBounds(x, zmin)) {
+                flat.setLevel(x, zmin, painter.getLevel(flat, x, zmin, level));
+                if (definition > DO_NOT_SET) flat.setColumn(x, zmin, columnPainter.getColumn(flat, x, zmin, level, definition));
+            }
+            if (zmin != zmax && isInBounds(x, zmax)) {
                 flat.setLevel(x, zmax, painter.getLevel(flat, x, zmax, level));
                 if (definition > DO_NOT_SET) flat.setColumn(x, zmax, columnPainter.getColumn(flat, x, zmax, level, definition));
             }
         }
         // linke und rechte Kante (ohne Ecken, da schon gesetzt)
         for (int z = zmin + 1; z < zmax; z++) {
-            flat.setLevel(xmin, z, painter.getLevel(flat, xmin, z, level));
-            if (definition > DO_NOT_SET) flat.setColumn(xmin, z, columnPainter.getColumn(flat, xmin, z, level, definition));
-            if (xmin != xmax) {
+            if (isInBounds(xmin, z)) {
+                flat.setLevel(xmin, z, painter.getLevel(flat, xmin, z, level));
+                if (definition > DO_NOT_SET) flat.setColumn(xmin, z, columnPainter.getColumn(flat, xmin, z, level, definition));
+            }
+            if (xmin != xmax && isInBounds(xmax, z)) {
                 flat.setLevel(xmax, z, painter.getLevel(flat, xmax, z, level));
                 if (definition > DO_NOT_SET) flat.setColumn(xmax, z, columnPainter.getColumn(flat, xmax, z, level, definition));
             }
@@ -346,9 +369,11 @@ public class FlatPainter {
         paint(x, z, level, painter);
     }
     public void paint(int x, int z, int level, Painter painter) {
-        flat.setLevel(x, z, painter.getLevel(flat, x, z, level));
-        if (definition > DO_NOT_SET) {
-            flat.setColumn(x, z, columnPainter.getColumn(flat, x, z, level, definition));
+        if (isInBounds(x, z)) {
+            flat.setLevel(x, z, painter.getLevel(flat, x, z, level));
+            if (definition > DO_NOT_SET) {
+                flat.setColumn(x, z, columnPainter.getColumn(flat, x, z, level, definition));
+            }
         }
     }
 
@@ -364,11 +389,12 @@ public class FlatPainter {
         java.util.Random rnd = new java.util.Random();
         for (int z = zmin; z <= zmax; z++) {
             for (int x = xmin; x <= xmax; x++) {
-                if (rnd.nextDouble() < factor) {
+                if (isInBounds(x, z) && rnd.nextDouble() < factor) {
                     int n = rnd.nextInt(dx.length);
                     int nx = x + dx[n];
                     int nz = z + dz[n];
-                    if (nx >= xmin && nx <= xmax && nz >= zmin && nz <= zmax) {
+                    // Check both positions are in bounds
+                    if (isInBounds(nx, nz)) {
                         int l1 = flat.getLevel(x, z);
                         int l2 = flat.getLevel(nx, nz);
                         flat.setLevel(x, z, l2);
