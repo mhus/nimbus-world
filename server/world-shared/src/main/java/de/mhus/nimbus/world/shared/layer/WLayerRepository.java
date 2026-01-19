@@ -19,11 +19,6 @@ public interface WLayerRepository extends MongoRepository<WLayer, String> {
     Optional<WLayer> findByWorldIdAndName(String worldId, String name);
 
     /**
-     * Find layer by layer data ID.
-     */
-    Optional<WLayer> findByLayerDataId(String layerDataId);
-
-    /**
      * Find layer by world ID and layer data ID.
      * This is the preferred method as only worldId + layerDataId is guaranteed unique.
      */

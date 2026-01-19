@@ -233,7 +233,7 @@ public class BlockInfoService {
 
         // Load LayerChunkData
         Optional<de.mhus.nimbus.world.shared.layer.LayerChunkData> chunkDataOpt =
-                layerService.loadTerrainChunk(layerDataId, chunkKey);
+                layerService.loadTerrainChunk(worldId, layerDataId, chunkKey);
 
         if (chunkDataOpt.isEmpty()) {
             return null;

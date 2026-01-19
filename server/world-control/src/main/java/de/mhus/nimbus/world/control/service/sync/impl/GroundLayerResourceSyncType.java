@@ -93,10 +93,10 @@ public class GroundLayerResourceSyncType implements ResourceSyncType {
 
                 // Export schema info from first chunk's StorageData
                 Path schemaFile = layerDir.resolve("_schema.yaml");
-                exportSchemaInfo(layerDataId, schemaFile);
+                exportSchemaInfo(worldId.getId(), layerDataId, schemaFile);
 
                 // Export terrain chunks (from StorageService)
-                List<WLayerTerrain> terrains = terrainRepository.findByLayerDataId(layerDataId);
+                List<WLayerTerrain> terrains = terrainRepository.findByWorldIdAndLayerDataId(worldId.getId(), layerDataId);
                 for (WLayerTerrain terrain : terrains) {
                     try {
                         String[] parts = terrain.getChunkKey().split(":");
@@ -320,7 +320,7 @@ public class GroundLayerResourceSyncType implements ResourceSyncType {
                 } else if (filesystemChunks.containsKey(layer.getName())) {
                     // Remove chunks
                     Set<String> fsChunks = filesystemChunks.get(layer.getName());
-                    List<WLayerTerrain> dbChunks = terrainRepository.findByLayerDataId(layer.getLayerDataId());
+                    List<WLayerTerrain> dbChunks = terrainRepository.findByWorldIdAndLayerDataId(layer.getWorldId(), layer.getLayerDataId());
 
                     for (WLayerTerrain chunk : dbChunks) {
                         if (!fsChunks.contains(chunk.getChunkKey())) {
@@ -340,10 +340,10 @@ public class GroundLayerResourceSyncType implements ResourceSyncType {
      * Export schema information from StorageData to _schema.yaml.
      * Reads schema and version from first chunk's StorageData.
      */
-    private void exportSchemaInfo(String layerDataId, Path schemaFile) {
+    private void exportSchemaInfo(String worldId, String layerDataId, Path schemaFile) {
         try {
             // Get first terrain chunk to extract schema info
-            List<WLayerTerrain> terrains = terrainRepository.findByLayerDataId(layerDataId);
+            List<WLayerTerrain> terrains = terrainRepository.findByWorldIdAndLayerDataId(worldId, layerDataId);
             if (terrains.isEmpty()) {
                 log.debug("No terrain chunks found for layer, skipping schema export");
                 return;

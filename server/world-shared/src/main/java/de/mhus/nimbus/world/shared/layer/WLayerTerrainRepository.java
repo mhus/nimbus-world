@@ -13,16 +13,6 @@ import java.util.Optional;
 public interface WLayerTerrainRepository extends MongoRepository<WLayerTerrain, String> {
 
     /**
-     * Find specific chunk in terrain layer.
-     */
-    Optional<WLayerTerrain> findByLayerDataIdAndChunkKey(String layerDataId, String chunkKey);
-
-    /**
-     * Find all chunks in a terrain layer.
-     */
-    List<WLayerTerrain> findByLayerDataId(String layerDataId);
-
-    /**
      * Find all terrain chunks for a world.
      */
     List<WLayerTerrain> findByWorldId(String worldId);
@@ -30,10 +20,9 @@ public interface WLayerTerrainRepository extends MongoRepository<WLayerTerrain, 
     /**
      * Delete all chunks for a terrain layer.
      */
-    void deleteByLayerDataId(String layerDataId);
+    void deleteByWorldIdAndLayerDataId(String worldId, String layerDataId);
 
-    /**
-     * Delete specific chunk in a terrain layer.
-     */
-    void deleteByLayerDataIdAndChunkKey(String layerDataId, String chunkKey);
+    Optional<WLayerTerrain> findByWorldIdAndLayerDataIdAndChunkKey(String worldId, String layerDataId, String chunkKey);
+
+    List<WLayerTerrain> findByWorldIdAndLayerDataId(String worldId, String layerDataId);
 }

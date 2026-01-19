@@ -13,6 +13,7 @@
           <option value="flat-create">Create Empty with BEDROCK</option>
           <option value="flat-create-hexgrid">Create HexGrid (BEDROCK inside)</option>
           <option value="flat-import-hexgrid">Import HexGrid (from Layer)</option>
+          <option value="flat-create-hexgrid-border">Create HexGrid Border</option>
         </select>
         <label class="label">
           <span class="label-text-alt text-base-content/70">{{ getJobTypeDescription(jobType) }}</span>
@@ -71,7 +72,8 @@
           </label>
         </div>
 
-        <div class="grid grid-cols-2 gap-3">
+        <!-- Size/Mount Parameters (not for gridBorder - auto-calculated) -->
+        <div v-if="!isGridBorderType" class="grid grid-cols-2 gap-3">
           <div class="form-control">
             <label class="label">
               <span class="label-text">Size X (50-800) *</span>
@@ -101,7 +103,7 @@
           </div>
         </div>
 
-        <div class="grid grid-cols-2 gap-3">
+        <div v-if="!isGridBorderType" class="grid grid-cols-2 gap-3">
           <div class="form-control">
             <label class="label">
               <span class="label-text">Mount X *</span>
@@ -151,6 +153,45 @@
                 v-model.number="hexR"
                 type="number"
                 class="input input-bordered"
+                required
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- GridBorder Parameters (only for gridBorder type) -->
+        <div v-if="isGridBorderType" class="space-y-3 pt-3 border-t">
+          <div class="text-sm font-semibold">Border Parameters</div>
+          <div class="grid grid-cols-2 gap-3">
+            <div class="form-control">
+              <label class="label">
+                <span class="label-text">Border Direction *</span>
+              </label>
+              <select
+                v-model="borderDirection"
+                class="select select-bordered"
+                required
+              >
+                <option value="" disabled>Select direction...</option>
+                <option value="TOP_RIGHT">Top Right</option>
+                <option value="RIGHT">Right</option>
+                <option value="BOTTOM_RIGHT">Bottom Right</option>
+                <option value="BOTTOM_LEFT">Bottom Left</option>
+                <option value="LEFT">Left</option>
+                <option value="TOP_LEFT">Top Left</option>
+              </select>
+            </div>
+
+            <div class="form-control">
+              <label class="label">
+                <span class="label-text">Border Size (1-200) *</span>
+              </label>
+              <input
+                v-model.number="borderSize"
+                type="number"
+                class="input input-bordered"
+                min="1"
+                max="200"
                 required
               />
             </div>
@@ -236,6 +277,8 @@ const mountX = ref<number>(0);
 const mountZ = ref<number>(0);
 const hexQ = ref<number>(0);
 const hexR = ref<number>(0);
+const borderDirection = ref<string>('');
+const borderSize = ref<number>(10);
 const paletteName = ref('');
 
 const creating = ref(false);
@@ -251,16 +294,35 @@ const groundLayers = computed(() => {
   return availableLayers.value.filter(layer => layer.layerType === 'GROUND');
 });
 
+const isGridBorderType = computed(() => {
+  return jobType.value === 'flat-create-hexgrid-border';
+});
+
 const isHexGridType = computed(() => {
-  return jobType.value === 'flat-create-hexgrid' || jobType.value === 'flat-import-hexgrid';
+  return jobType.value === 'flat-create-hexgrid' || jobType.value === 'flat-import-hexgrid' || isGridBorderType.value;
 });
 
 const isValid = computed(() => {
   if (!layerName.value) return false;
+
+  // GridBorder type: requires hexQ, hexR, border, size
+  if (isGridBorderType.value) {
+    if (hexQ.value === undefined || hexR.value === undefined) return false;
+    if (!borderDirection.value) return false;
+    if (!borderSize.value || borderSize.value < 1 || borderSize.value > 200) return false;
+    return true;
+  }
+
+  // Other HexGrid types: require hexQ, hexR (size/mount auto-calculated)
+  if (isHexGridType.value) {
+    if (hexQ.value === undefined || hexR.value === undefined) return false;
+    return true;
+  }
+
+  // Non-hexgrid types: require size/mount parameters
   if (!sizeX.value || sizeX.value < 50 || sizeX.value > 800) return false;
   if (!sizeZ.value || sizeZ.value < 50 || sizeZ.value > 800) return false;
   if (mountX.value === undefined || mountZ.value === undefined) return false;
-  if (isHexGridType.value && (hexQ.value === undefined || hexR.value === undefined)) return false;
   return true;
 });
 
@@ -274,6 +336,8 @@ const getJobTypeDescription = (type: string): string => {
       return 'Create flat with BEDROCK inside HexGrid area, import outside from layer';
     case 'flat-import-hexgrid':
       return 'Import layer data, protect areas outside HexGrid';
+    case 'flat-create-hexgrid-border':
+      return 'Create border strip between two adjacent HexGrid fields';
     default:
       return '';
   }
@@ -304,12 +368,20 @@ const handleCreate = async () => {
       parameters.paletteName = paletteName.value;
     }
 
-    // HexGrid types: send hex coordinates (auto mode by default)
-    // Non-hexgrid types: send size/mount parameters
-    if (isHexGridType.value) {
+    // GridBorder type: send hexQ, hexR, border, size
+    if (isGridBorderType.value) {
       parameters.hexQ = hexQ.value.toString();
       parameters.hexR = hexR.value.toString();
-    } else {
+      parameters.border = borderDirection.value;
+      parameters.size = borderSize.value.toString();
+    }
+    // Other HexGrid types: send hex coordinates (grid mode by default)
+    else if (isHexGridType.value) {
+      parameters.hexQ = hexQ.value.toString();
+      parameters.hexR = hexR.value.toString();
+    }
+    // Non-hexgrid types: send size/mount parameters
+    else {
       parameters.sizeX = sizeX.value.toString();
       parameters.sizeZ = sizeZ.value.toString();
       parameters.mountX = mountX.value.toString();
@@ -317,11 +389,19 @@ const handleCreate = async () => {
     }
 
     // Create job request
-    // For HexGrid types: use "grid" type (server will auto-calculate size/mount from hex coordinates)
+    // For GridBorder: use "gridBorder" type
+    // For other HexGrid types: use "grid" type (server will auto-calculate size/mount from hex coordinates)
     // For non-hexgrid types: no type needed (only one mode)
+    let jobTypeValue: string | undefined = undefined;
+    if (isGridBorderType.value) {
+      jobTypeValue = 'gridBorder';
+    } else if (isHexGridType.value) {
+      jobTypeValue = 'grid';
+    }
+
     const jobRequest: JobCreateRequest = {
-      executor: jobType.value,
-      type: isHexGridType.value ? 'grid' : undefined,
+      executor: isGridBorderType.value ? 'flat-create-hexgrid' : jobType.value,
+      type: jobTypeValue,
       parameters: parameters,
       priority: 5,
       maxRetries: 3,

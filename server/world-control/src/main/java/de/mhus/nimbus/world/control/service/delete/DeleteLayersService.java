@@ -57,7 +57,7 @@ public class DeleteLayersService implements DeleteWorldResources {
 
             } else if (layer.getLayerType() == LayerType.GROUND) {
                 // Delete WLayerTerrain entities
-                List<WLayerTerrain> terrains = layerTerrainRepository.findByLayerDataId(layerDataId);
+                List<WLayerTerrain> terrains = layerTerrainRepository.findByWorldIdAndLayerDataId(worldId, layerDataId);
                 log.debug("Deleting {} terrain chunks for layer {}", terrains.size(), layer.getName());
 
                 for (WLayerTerrain terrain : terrains) {

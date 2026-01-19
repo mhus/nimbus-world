@@ -136,7 +136,6 @@ const handleDeleteFlat = async (flatId: string) => {
 
   try {
     await flatsComposable.value?.deleteFlat(flatId);
-    alert('Flat deleted successfully!');
   } catch (e: any) {
     console.error('[FlatEditor] Failed to delete flat:', e);
     alert(`Failed to delete flat: ${e.message}`);

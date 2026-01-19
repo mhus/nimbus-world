@@ -226,7 +226,7 @@ public class WLayerOverlayService {
     private void overlayTerrainLayer(WLayer layer, String chunkKey, int cx, int cz, Map<String, Block> blockMap) {
         // Load terrain chunk from storage
         Optional<WLayerTerrain> terrainOpt = terrainRepository
-                .findByLayerDataIdAndChunkKey(layer.getLayerDataId(), chunkKey);
+                .findByWorldIdAndLayerDataIdAndChunkKey(layer.getWorldId(), layer.getLayerDataId(), chunkKey);
 
         if (terrainOpt.isEmpty()) {
             // For MODEL layers, terrain might not exist yet - need to generate from models
@@ -412,17 +412,17 @@ public class WLayerOverlayService {
             }
         }
 
-        // Group blocks by column (x, z)
+        // Group blocks by column (x, z) using world coordinates
         Map<String, ColumnData> columns = new HashMap<>();
 
         for (Block block : blocks) {
             if (block.getPosition() == null) continue;
 
-            int localX = ((int) block.getPosition().getX() % chunkSize + chunkSize) % chunkSize;
-            int localZ = ((int) block.getPosition().getZ() % chunkSize + chunkSize) % chunkSize;
-            String columnKey = localX + "," + localZ;
+            int worldX = (int) block.getPosition().getX();
+            int worldZ = (int) block.getPosition().getZ();
+            String columnKey = worldX + "," + worldZ;
 
-            ColumnData column = columns.computeIfAbsent(columnKey, k -> new ColumnData(localX, localZ, maxHeight));
+            ColumnData column = columns.computeIfAbsent(columnKey, k -> new ColumnData(worldX, worldZ, minHeight, maxHeight));
             column.addBlock(block);
 
             // Check if this block is in baseGround layer and not water
@@ -447,15 +447,15 @@ public class WLayerOverlayService {
             }
         }
 
-        // Convert to Map with key format "x,z"
+        // Convert to Map with key format "worldX,worldZ" (world coordinates)
         // Format: [maxHeight, minHeight, groundLevel, waterLevel?]
         Map<String, int[]> heightDataMap = new HashMap<>();
         for (ColumnData column : columns.values()) {
             String key = column.x + "," + column.z;
             if (column.waterLevel != null) {
-                heightDataMap.put(key, new int[]{column.maxHeight, minHeight, column.groundLevel != null ? column.groundLevel : -1, column.waterLevel});
+                heightDataMap.put(key, new int[]{column.maxHeight, column.minHeight, column.groundLevel != null ? column.groundLevel : -1, column.waterLevel});
             } else {
-                heightDataMap.put(key, new int[]{column.maxHeight, minHeight, column.groundLevel != null ? column.groundLevel : -1});
+                heightDataMap.put(key, new int[]{column.maxHeight, column.minHeight, column.groundLevel != null ? column.groundLevel : -1});
             }
         }
 
@@ -669,12 +669,14 @@ public class WLayerOverlayService {
         final int x;
         final int z;
         final int maxHeight;
+        final int minHeight;
         Integer groundLevel;
         Integer waterLevel;
 
-        ColumnData(int x, int z, int maxHeight) {
+        ColumnData(int x, int z, int minHeight, int maxHeight) {
             this.x = x;
             this.z = z;
+            this.minHeight = minHeight;
             this.maxHeight = maxHeight;
         }
 

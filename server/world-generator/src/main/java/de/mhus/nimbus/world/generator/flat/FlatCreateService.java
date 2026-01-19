@@ -3,6 +3,7 @@ package de.mhus.nimbus.world.generator.flat;
 import de.mhus.nimbus.generated.types.Block;
 import de.mhus.nimbus.generated.types.BlockType;
 import de.mhus.nimbus.generated.types.BlockTypeType;
+import de.mhus.nimbus.generated.types.ChunkData;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.shared.utils.TypeUtil;
 import de.mhus.nimbus.world.shared.generator.WFlat;
@@ -17,6 +18,8 @@ import de.mhus.nimbus.world.shared.world.BlockUtil;
 import de.mhus.nimbus.world.shared.world.HexMathUtil;
 import de.mhus.nimbus.world.shared.world.WBlockType;
 import de.mhus.nimbus.world.shared.world.WBlockTypeService;
+import de.mhus.nimbus.world.shared.world.WChunkService;
+import de.mhus.nimbus.world.shared.world.WHexGrid;
 import de.mhus.nimbus.world.shared.world.WWorld;
 import de.mhus.nimbus.world.shared.world.WWorldService;
 import lombok.RequiredArgsConstructor;
@@ -38,6 +41,7 @@ public class FlatCreateService {
     private final WFlatService flatService;
     private final WLayerService layerService;
     private final WBlockTypeService blockTypeService;
+    private final WChunkService chunkService;
 
     /**
      * Create a new WFlat instance with initialized size.
@@ -138,6 +142,7 @@ public class FlatCreateService {
         log.info("Importing flat from layer: worldId={}, layerName={}, flatId={}, size={}x{}, mount=({},{}), title={}, description={}",
                 worldId, layerName, flatId, sizeX, sizeZ, mountX, mountZ, title, description);
 
+        var worldIdObj = WorldId.of(worldId).orElseThrow();
         // Load world
         WWorld world = worldService.getByWorldId(worldId)
                 .orElseThrow(() -> new IllegalArgumentException("World not found: " + worldId));
@@ -197,12 +202,12 @@ public class FlatCreateService {
             }
         }
 
-        log.debug("Loading {} chunks for import", requiredChunkKeys.size());
+        log.debug("Loading {} chunks for importFromLayer", requiredChunkKeys.size());
 
         // Load all required chunks at once
-        java.util.Map<String, LayerChunkData> chunkCache = new java.util.HashMap<>();
+        java.util.Map<String, ChunkData> chunkCache = new java.util.HashMap<>();
         for (String chunkKey : requiredChunkKeys) {
-            Optional<LayerChunkData> chunkDataOpt = layerService.loadTerrainChunk(layer.getLayerDataId(), chunkKey);
+            Optional<ChunkData> chunkDataOpt = chunkService.loadChunkData(worldIdObj, chunkKey, false);
             chunkDataOpt.ifPresent(data -> chunkCache.put(chunkKey, data));
         }
 
@@ -222,7 +227,7 @@ public class FlatCreateService {
                 String chunkKey = TypeUtil.toStringChunkCoord(chunkX, chunkZ);
 
                 // Get chunk from cache
-                LayerChunkData chunkData = chunkCache.get(chunkKey);
+                ChunkData chunkData = chunkCache.get(chunkKey);
 
                 if (chunkData == null) {
                     // No chunk data, use default level
@@ -232,7 +237,7 @@ public class FlatCreateService {
                 }
 
                 // Find highest ground block at this position
-                int groundLevel = findGroundLevel(worldX, worldZ, chunkData, WorldId.unchecked(worldId));
+                int groundLevel = findGroundLevel(worldX, worldZ, chunkData, chunkSize);
 
                 if (groundLevel == -1) {
                     // No ground block found, use default level
@@ -256,65 +261,36 @@ public class FlatCreateService {
 
     /**
      * Find the ground level (Y coordinate of highest ground block) at a specific world position.
-     * First checks for blocks with BlockType.type == GROUND.
-     * If none found, falls back to legacy method (any solid block).
+     * Uses heightData from chunk for fast lookup.
      *
      * @param worldX World X coordinate
      * @param worldZ World Z coordinate
-     * @param chunkData Chunk data to search
-     * @param worldId World identifier for block type lookup
+     * @param chunkData Chunk data containing heightData
+     * @param chunkSize Size of chunks in this world
      * @return Y coordinate of ground surface, or -1 if not found
      */
-    private int findGroundLevel(int worldX, int worldZ, LayerChunkData chunkData, WorldId worldId) {
-        int highestGroundBlock = -1;
-        int highestSolidBlock = -1;
-
-        // Iterate through all blocks in chunk
-        for (LayerBlock layerBlock : chunkData.getBlocks()) {
-            Block block = layerBlock.getBlock();
-            if (block == null || block.getPosition() == null) {
-                continue;
-            }
-
-            var pos = block.getPosition();
-
-            // Check if block is at our target position
-            if (pos.getX() == worldX && pos.getZ() == worldZ) {
-                int blockY = pos.getY();
-                String blockTypeId = block.getBlockTypeId();
-
-                if (blockTypeId == null || blockTypeId.equals("0") || blockTypeId.isBlank()) {
-                    // Air block, skip
-                    continue;
-                }
-
-                // Track highest solid block (legacy fallback)
-                if (blockY > highestSolidBlock) {
-                    highestSolidBlock = blockY;
-                }
-
-                // Check if this is a ground block
-                Optional<WBlockType> blockTypeOpt = blockTypeService.findByBlockId(worldId, blockTypeId);
-                if (blockTypeOpt.isPresent()) {
-                    WBlockType wBlockType = blockTypeOpt.get();
-                    BlockType blockType = wBlockType.getPublicData();
-
-                    if (blockType != null && blockType.getType() == BlockTypeType.GROUND) {
-                        // This is a ground block
-                        if (blockY > highestGroundBlock) {
-                            highestGroundBlock = blockY;
-                        }
-                    }
-                }
-            }
+    private int findGroundLevel(int worldX, int worldZ, ChunkData chunkData, int chunkSize) {
+        if (chunkData == null) {
+            return -1;
         }
 
-        // Return highest ground block if found, otherwise highest solid block
-        if (highestGroundBlock != -1) {
-            return highestGroundBlock;
+        // Get heightData from chunk
+        var heightData = chunkData.getHeightData();
+        if (heightData == null || heightData.isEmpty()) {
+            return -1;
         }
 
-        return highestSolidBlock;
+        // Build key for heightData map using world coordinates: "worldX,worldZ"
+        String key = worldX + "," + worldZ;
+        int[] heights = heightData.get(key);
+
+        if (heights == null || heights.length < 3) {
+            return -1;
+        }
+
+        // heightData format: [maxHeight, minHeight, groundLevel, waterLevel?]
+        // Return groundLevel (index 2)
+        return heights[2];
     }
 
     /**
@@ -340,6 +316,7 @@ public class FlatCreateService {
         log.info("Creating empty flat with border from layer: worldId={}, layerName={}, flatId={}, size={}x{}, mount=({},{}), title={}, description={}",
                 worldId, layerName, flatId, sizeX, sizeZ, mountX, mountZ, title, description);
 
+        var worldIdObj = WorldId.of(worldId).orElseThrow();
         // Load world
         WWorld world = worldService.getByWorldId(worldId)
                 .orElseThrow(() -> new IllegalArgumentException("World not found: " + worldId));
@@ -408,9 +385,9 @@ public class FlatCreateService {
         log.debug("Loading {} chunks for border import", requiredChunkKeys.size());
 
         // Load all required chunks at once
-        java.util.Map<String, LayerChunkData> chunkCache = new java.util.HashMap<>();
+        java.util.Map<String, ChunkData> chunkCache = new java.util.HashMap<>();
         for (String chunkKey : requiredChunkKeys) {
-            Optional<LayerChunkData> chunkDataOpt = layerService.loadTerrainChunk(layer.getLayerDataId(), chunkKey);
+            Optional<ChunkData> chunkDataOpt = chunkService.loadChunkData(worldIdObj, chunkKey, false);
             chunkDataOpt.ifPresent(data -> chunkCache.put(chunkKey, data));
         }
 
@@ -437,7 +414,7 @@ public class FlatCreateService {
                 String chunkKey = TypeUtil.toStringChunkCoord(chunkX, chunkZ);
 
                 // Get chunk from cache
-                LayerChunkData chunkData = chunkCache.get(chunkKey);
+                ChunkData chunkData = chunkCache.get(chunkKey);
 
                 if (chunkData == null) {
                     // No chunk data, keep default level 0
@@ -445,7 +422,7 @@ public class FlatCreateService {
                 }
 
                 // Find ground level at this position
-                int groundLevel = findGroundLevel(worldX, worldZ, chunkData, WorldId.unchecked(worldId));
+                int groundLevel = findGroundLevel(worldX, worldZ, chunkData, chunkSize);
 
                 if (groundLevel != -1) {
                     // Set level from layer for border cell
@@ -636,7 +613,7 @@ public class FlatCreateService {
         // Load all required chunks at once
         java.util.Map<String, LayerChunkData> chunkCache = new java.util.HashMap<>();
         for (String chunkKey : requiredChunkKeys) {
-            Optional<LayerChunkData> chunkDataOpt = layerService.loadTerrainChunk(layer.getLayerDataId(), chunkKey);
+            Optional<LayerChunkData> chunkDataOpt = layerService.loadTerrainChunk(layer.getWorldId(), layer.getLayerDataId(), chunkKey);
             chunkDataOpt.ifPresent(data -> chunkCache.put(chunkKey, data));
         }
 
@@ -764,6 +741,8 @@ public class FlatCreateService {
         log.info("Importing HexGrid flat: worldId={}, layerName={}, flatId={}, size={}x{}, mount=({},{}), hex=({},{}), title={}, description={}",
                 worldId, layerName, flatId, sizeX, sizeZ, mountX, mountZ, hexQ, hexR, title, description);
 
+        var worldIdObj = WorldId.of(worldId).orElseThrow();
+
         // Load world
         WWorld world = worldService.getByWorldId(worldId)
                 .orElseThrow(() -> new IllegalArgumentException("World not found: " + worldId));
@@ -808,7 +787,6 @@ public class FlatCreateService {
                 .mountZ(mountZ)
                 .oceanLevel(oceanLevel)
                 .oceanBlockId(oceanBlockId)
-                .unknownProtected(true)  // Set unknownProtected to true for HexGrid flats
                 .hexGrid(TypeUtil.hexVector2(hexQ, hexR)
                 )
                 .build();
@@ -840,12 +818,13 @@ public class FlatCreateService {
             }
         }
 
-        log.debug("Loading {} chunks for import", requiredChunkKeys.size());
+        log.debug("Loading {} chunks for importHexGridFlat", requiredChunkKeys.size());
 
         // Load all required chunks at once
-        java.util.Map<String, LayerChunkData> chunkCache = new java.util.HashMap<>();
+//        java.util.Map<String, LayerChunkData> chunkCache = new java.util.HashMap<>();
+        java.util.Map<String, ChunkData> chunkCache = new java.util.HashMap<>();
         for (String chunkKey : requiredChunkKeys) {
-            Optional<LayerChunkData> chunkDataOpt = layerService.loadTerrainChunk(layer.getLayerDataId(), chunkKey);
+            Optional<ChunkData> chunkDataOpt = chunkService.loadChunkData(worldIdObj, chunkKey, false);
             chunkDataOpt.ifPresent(data -> chunkCache.put(chunkKey, data));
         }
 
@@ -853,6 +832,7 @@ public class FlatCreateService {
         int outsideColumns = 0;
         int emptyColumns = 0;
 
+        long pointCnt = sizeX * sizeZ;
         // Step 1: Import ALL columns from layer and set material to 255
         for (int localX = 0; localX < sizeX; localX++) {
             for (int localZ = 0; localZ < sizeZ; localZ++) {
@@ -866,7 +846,7 @@ public class FlatCreateService {
                 String chunkKey = TypeUtil.toStringChunkCoord(chunkX, chunkZ);
 
                 // Get chunk from cache
-                LayerChunkData chunkData = chunkCache.get(chunkKey);
+                ChunkData chunkData = chunkCache.get(chunkKey);
 
                 if (chunkData == null) {
                     // No chunk data, use default level and material 255
@@ -877,7 +857,7 @@ public class FlatCreateService {
                 }
 
                 // Find highest ground block at this position
-                int groundLevel = findGroundLevel(worldX, worldZ, chunkData, WorldId.unchecked(worldId));
+                int groundLevel = findGroundLevel(worldX, worldZ, chunkData, chunkSize);
 
                 if (groundLevel == -1) {
                     // No ground block found, use default level
@@ -910,6 +890,9 @@ public class FlatCreateService {
                 }
             }
         }
+
+        // after import, set protection
+        flat.setUnknownProtected(true);
 
         // Persist to database
         WFlat saved = flatService.create(flat);
@@ -947,9 +930,11 @@ public class FlatCreateService {
         int sizeX = flat.getSizeX();
         int sizeZ = flat.getSizeZ();
 
+        var worldIdObj = WorldId.of(worldId).orElseThrow();
         // Load world
         WWorld world = worldService.getByWorldId(worldId)
                 .orElseThrow(() -> new IllegalArgumentException("World not found: " + worldId));
+        int chunkSize = world.getPublicData().getChunkSize();
 
         // Validate layer type
         if (layer.getLayerType() != LayerType.GROUND) {
@@ -972,9 +957,10 @@ public class FlatCreateService {
         log.debug("Loading {} chunks for border update", requiredChunkKeys.size());
 
         // Load all required chunks at once
-        java.util.Map<String, LayerChunkData> chunkCache = new java.util.HashMap<>();
+        java.util.Map<String, ChunkData> chunkCache = new java.util.HashMap<>();
         for (String chunkKey : requiredChunkKeys) {
-            Optional<LayerChunkData> chunkDataOpt = layerService.loadTerrainChunk(layer.getLayerDataId(), chunkKey);
+//            Optional<LayerChunkData> chunkDataOpt = layerService.loadTerrainChunk(layer.getLayerDataId(), chunkKey);
+            Optional<ChunkData> chunkDataOpt = chunkService.loadChunkData(worldIdObj, chunkKey, false);
             chunkDataOpt.ifPresent(data -> chunkCache.put(chunkKey, data));
         }
 
@@ -1001,7 +987,7 @@ public class FlatCreateService {
                 String chunkKey = TypeUtil.toStringChunkCoord(chunkX, chunkZ);
 
                 // Get chunk from cache
-                LayerChunkData chunkData = chunkCache.get(chunkKey);
+                ChunkData chunkData = chunkCache.get(chunkKey);
 
                 if (chunkData == null) {
                     // No chunk data, skip this cell
@@ -1009,7 +995,7 @@ public class FlatCreateService {
                 }
 
                 // Find ground level at this position
-                int groundLevel = findGroundLevel(worldX, worldZ, chunkData, WorldId.unchecked(worldId));
+                int groundLevel = findGroundLevel(worldX, worldZ, chunkData, chunkSize);
 
                 if (groundLevel != -1) {
                     // Update level from layer for border cell
@@ -1025,5 +1011,221 @@ public class FlatCreateService {
         log.info("Border update complete: flatId={}, borderCellsUpdated={}", flatId, borderCellsUpdated);
 
         return updated;
+    }
+
+    /**
+     * Create a WFlat for a border between two HexGrid fields.
+     * Calculates the border strip location and size automatically.
+     *
+     * @param worldId World identifier
+     * @param layerName Name of the layer to import from
+     * @param flatId Flat identifier
+     * @param hexQ HexGrid Q coordinate
+     * @param hexR HexGrid R coordinate
+     * @param border Neighbor direction for the border
+     * @param borderSize Width of the border strip in blocks
+     * @param title Optional title
+     * @param description Optional description
+     * @return Created WFlat with border
+     */
+    public WFlat createGridBorderFlat(String worldId, String layerName, String flatId,
+                                      int hexQ, int hexR, WHexGrid.NEIGHBOR border, int borderSize,
+                                      String title, String description) {
+        log.info("Creating grid border flat: worldId={}, layerName={}, flatId={}, hex=({},{}), border={}, size={}",
+                worldId, layerName, flatId, hexQ, hexR, border, borderSize);
+
+        var worldIdObj = WorldId.of(worldId).orElseThrow();
+        // Load world to get hexGridSize
+        WWorld world = worldService.getByWorldId(worldId)
+                .orElseThrow(() -> new IllegalArgumentException("World not found: " + worldId));
+
+        int gridSize = world.getPublicData().getHexGridSize();
+        if (gridSize <= 0) {
+            throw new IllegalArgumentException("Invalid hexGridSize: " + gridSize);
+        }
+
+        // Load layer
+        WLayer layer = layerService.findByWorldIdAndName(worldId, layerName)
+                .orElseThrow(() -> new IllegalArgumentException("Layer not found: " + layerName));
+
+        if (layer.getLayerType() != LayerType.GROUND) {
+            throw new IllegalArgumentException("Layer must be of type GROUND, but is: " + layer.getLayerType());
+        }
+
+        // Calculate hex centers
+        HexVector2 hex1 = HexVector2.builder().q(hexQ).r(hexR).build();
+        HexVector2 hex2 = HexMathUtil.getNeighborPosition(hex1, border);
+
+        double[] center1 = HexMathUtil.hexToCartesian(hex1, gridSize);
+        double[] center2 = HexMathUtil.hexToCartesian(hex2, gridSize);
+
+        // Calculate border line endpoints (midpoint between the two hex centers)
+        double midX = (center1[0] + center2[0]) / 2.0;
+        double midZ = (center1[1] + center2[1]) / 2.0;
+
+        // Calculate direction perpendicular to the line connecting the centers
+        double dirX = center2[0] - center1[0];
+        double dirZ = center2[1] - center1[1];
+        double length = Math.sqrt(dirX * dirX + dirZ * dirZ);
+        dirX /= length;
+        dirZ /= length;
+
+        // Perpendicular direction
+        double perpX = -dirZ;
+        double perpZ = dirX;
+
+        // Calculate border line endpoints (extended by borderSize/2 beyond the hex boundary)
+        double radius = gridSize / 2.0;
+        double extension = borderSize / 2.0;
+        double lineLength = radius + extension;
+
+        double line1X = midX - perpX * lineLength;
+        double line1Z = midZ - perpZ * lineLength;
+        double line2X = midX + perpX * lineLength;
+        double line2Z = midZ + perpZ * lineLength;
+
+        log.debug("Border line: ({},{}) to ({},{})", line1X, line1Z, line2X, line2Z);
+
+        // Calculate bounding rectangle with margin
+        double minX = Math.min(line1X, line2X) - borderSize;
+        double maxX = Math.max(line1X, line2X) + borderSize;
+        double minZ = Math.min(line1Z, line2Z) - borderSize;
+        double maxZ = Math.max(line1Z, line2Z) + borderSize;
+
+        int sizeX = (int) Math.ceil(maxX - minX);
+        int sizeZ = (int) Math.ceil(maxZ - minZ);
+        int mountX = (int) Math.floor(minX);
+        int mountZ = (int) Math.floor(minZ);
+
+        log.info("Calculated border rectangle: sizeX={}, sizeZ={}, mount=({},{})", sizeX, sizeZ, mountX, mountZ);
+
+        // Check if flat already exists and delete it
+        Optional<WFlat> existingFlat = flatService.findByWorldIdAndLayerDataIdAndFlatId(
+                worldId, layer.getLayerDataId(), flatId);
+        if (existingFlat.isPresent()) {
+            log.info("Flat already exists, deleting before import: flatId={}", flatId);
+            flatService.deleteById(existingFlat.get().getId());
+        }
+
+        // Get ocean level
+        int oceanLevel = world.getWaterLevel() == null ? 60 : world.getWaterLevel();
+        String oceanBlockId = world.getWaterBlockType() == null ? "n:o" : world.getWaterBlockType();
+
+        // Build WFlat instance
+        WFlat flat = WFlat.builder()
+                .worldId(worldId)
+                .layerDataId(layer.getLayerDataId())
+                .flatId(flatId)
+                .title(title)
+                .description(description)
+                .mountX(mountX)
+                .mountZ(mountZ)
+                .oceanLevel(oceanLevel)
+                .oceanBlockId(oceanBlockId)
+                .unknownProtected(true)
+                .hexGrid(TypeUtil.hexVector2(hexQ, hexR))
+                .build();
+
+        // Initialize with size
+        flat.initWithSize(sizeX, sizeZ);
+        int chunkSize = world.getPublicData().getChunkSize();
+        int defaultLevel = oceanLevel - 10;
+
+        // Import from layer (all positions start with NOT_SET material 0)
+        java.util.Set<String> requiredChunkKeys = new java.util.HashSet<>();
+        int minChunkX = world.getChunkX(mountX);
+        int minChunkZ = world.getChunkZ(mountZ);
+        int maxChunkX = world.getChunkX(mountX + sizeX - 1);
+        int maxChunkZ = world.getChunkZ(mountZ + sizeZ - 1);
+
+        for (int chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
+            for (int chunkZ = minChunkZ; chunkZ <= maxChunkZ; chunkZ++) {
+                requiredChunkKeys.add(TypeUtil.toStringChunkCoord(chunkX, chunkZ));
+            }
+        }
+
+        log.debug("Loading {} chunks for createGridBorderFlat", requiredChunkKeys.size());
+
+        // Load all required chunks
+        java.util.Map<String, ChunkData> chunkCache = new java.util.HashMap<>();
+        for (String chunkKey : requiredChunkKeys) {
+            Optional<ChunkData> chunkDataOpt = chunkService.loadChunkData(worldIdObj, chunkKey, false);
+            chunkDataOpt.ifPresent(data -> chunkCache.put(chunkKey, data));
+        }
+
+        // Import levels from layer
+        for (int x = 0; x < sizeX; x++) {
+            for (int z = 0; z < sizeZ; z++) {
+                int worldX = mountX + x;
+                int worldZ = mountZ + z;
+
+                int chunkX = world.getChunkX(worldX);
+                int chunkZ = world.getChunkZ(worldZ);
+                String chunkKey = TypeUtil.toStringChunkCoord(chunkX, chunkZ);
+
+                ChunkData chunkData = chunkCache.get(chunkKey);
+
+                // Find ground level at this position
+                int groundLevel = findGroundLevel(worldX, worldZ, chunkData, chunkSize);
+
+                if (groundLevel == -1) {
+                    // No ground block found, use default level
+                    flat.setLevel(x, z, defaultLevel);
+                } else {
+                    flat.setLevel(x, z, groundLevel);
+                }
+
+                // Set material to NOT_SET (0) initially
+                flat.setColumn(x, z, WFlat.NOT_SET);
+            }
+        }
+
+        // Fill border strip with NOT_SET_MUTABLE (255)
+        for (int x = 0; x < sizeX; x++) {
+            for (int z = 0; z < sizeZ; z++) {
+                int worldX = mountX + x;
+                int worldZ = mountZ + z;
+
+                // Calculate distance from point to border line
+                // Distance from point (worldX, worldZ) to line from (line1X, line1Z) to (line2X, line2Z)
+                double dx = line2X - line1X;
+                double dz = line2Z - line1Z;
+                double lineLen = Math.sqrt(dx * dx + dz * dz);
+
+                if (lineLen > 0) {
+                    // Normalize direction vector
+                    dx /= lineLen;
+                    dz /= lineLen;
+
+                    // Vector from line1 to point
+                    double px = worldX - line1X;
+                    double pz = worldZ - line1Z;
+
+                    // Project point onto line
+                    double t = px * dx + pz * dz;
+                    t = Math.max(0, Math.min(lineLen, t)); // Clamp to line segment
+
+                    // Closest point on line
+                    double closestX = line1X + t * dx;
+                    double closestZ = line1Z + t * dz;
+
+                    // Distance to line
+                    double dist = Math.sqrt(Math.pow(worldX - closestX, 2) + Math.pow(worldZ - closestZ, 2));
+
+                    // If within border width, set to NOT_SET_MUTABLE
+                    if (dist <= borderSize / 2.0) {
+                        flat.setColumn(x, z, WFlat.NOT_SET_MUTABLE);
+                    }
+                }
+            }
+        }
+
+        // Persist to database
+        WFlat created = flatService.create(flat);
+
+        log.info("Grid border flat created: flatId={}, id={}, size={}x{}, mount=({},{})",
+                flatId, created.getId(), sizeX, sizeZ, mountX, mountZ);
+
+        return created;
     }
 }

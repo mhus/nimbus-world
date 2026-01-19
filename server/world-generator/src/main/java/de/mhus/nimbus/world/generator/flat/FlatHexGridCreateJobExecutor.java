@@ -37,6 +37,16 @@ import org.springframework.stereotype.Component;
  *   - hexQ: HexGrid Q coordinate (axial)
  *   - hexR: HexGrid R coordinate (axial)
  *
+ * Type "gridBorder":
+ *   Creates a border between two HexGrid fields. Calculates rectangle automatically.
+ *   Required parameters:
+ *   - layerName: Name of the GROUND layer to import from
+ *   - hexQ: HexGrid Q coordinate (axial)
+ *   - hexR: HexGrid R coordinate (axial)
+ *   - border: Neighbor direction (TOP_RIGHT, RIGHT, BOTTOM_RIGHT, BOTTOM_LEFT, LEFT, TOP_LEFT)
+ *   - size: Width of the border strip in blocks
+ *   Note: Rectangle size/mount and border strip are auto-calculated
+ *
  * Optional parameters (all types):
  * - flatId: Identifier for the new WFlat (if not provided, UUID will be generated)
  * - title: Display title for the flat
@@ -122,8 +132,36 @@ public class FlatHexGridCreateJobExecutor implements JobExecutor {
                         sizeX, sizeZ, mountX, mountZ,
                         hexQ, hexR, title, description
                 );
+            } else if ("gridBorder".equals(jobType)) {
+                // GridBorder mode: create border between two HexGrid fields
+                int hexQ = getRequiredIntParameter(job, "hexQ");
+                int hexR = getRequiredIntParameter(job, "hexR");
+                String borderStr = getRequiredParameter(job, "border");
+                int size = getRequiredIntParameter(job, "size");
+
+                // Validate size
+                if (size <= 0 || size > 200) {
+                    throw new JobExecutionException("size must be between 1 and 200, got: " + size);
+                }
+
+                // Parse border direction
+                de.mhus.nimbus.world.shared.world.WHexGrid.NEIGHBOR border;
+                try {
+                    border = de.mhus.nimbus.world.shared.world.WHexGrid.NEIGHBOR.valueOf(borderStr.toUpperCase());
+                } catch (IllegalArgumentException e) {
+                    throw new JobExecutionException("Invalid border direction: " + borderStr + ". Valid values: TOP_RIGHT, RIGHT, BOTTOM_RIGHT, BOTTOM_LEFT, LEFT, TOP_LEFT");
+                }
+
+                log.info("Creating HexGrid border flat (gridBorder mode): worldId={}, layerName={}, flatId={}, hex=({},{}), border={}, size={}, title={}, description={}, palette={}",
+                        worldId, layerName, flatId, hexQ, hexR, border, size, title, description, paletteName);
+
+                // Execute create with border calculation
+                flat = flatCreateService.createGridBorderFlat(
+                        worldId, layerName, flatId,
+                        hexQ, hexR, border, size, title, description
+                );
             } else {
-                throw new JobExecutionException("Unknown job type: " + jobType + ". Valid types: grid, rectangular");
+                throw new JobExecutionException("Unknown job type: " + jobType + ". Valid types: grid, rectangular, gridBorder");
             }
 
             // Apply material palette if specified

@@ -456,7 +456,8 @@ public class FlatController extends BaseEditorController {
      * Get RGB color for block type ID.
      */
     private int getBlockColor(int id) {
-        if (id == 0) return 0x000000; // Black for air
+        if (id == 0) return 0x000000; // Black for air (NOT_SET)
+        if (id == 255) return 0x808080; // Medium gray for NOT_SET_MUTABLE
 
         // Predefined colors for common block types
         int[] colors = {

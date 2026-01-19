@@ -99,8 +99,8 @@ public class ELayerBlockGridController {
                 String chunkKey = chunkX + ":" + chunkZ;
 
                 // Load this specific chunk
-                Optional<WLayerTerrain> terrainOpt = terrainRepository.findByLayerDataIdAndChunkKey(
-                        layer.getLayerDataId(), chunkKey);
+                Optional<WLayerTerrain> terrainOpt = terrainRepository.findByWorldIdAndLayerDataIdAndChunkKey(
+                        layer.getWorldId(), layer.getLayerDataId(), chunkKey);
 
                 if (terrainOpt.isEmpty()) {
                     log.trace("Chunk {} not found for layerDataId={}", chunkKey, layer.getLayerDataId());
@@ -175,7 +175,7 @@ public class ELayerBlockGridController {
         // If no blocks found and center is at origin, try to find any chunk as a hint
         String hint = null;
         if (blockCoordinates.isEmpty() && centerX == 0 && centerY == 64 && centerZ == 0) {
-            List<WLayerTerrain> anyChunks = terrainRepository.findByLayerDataId(layer.getLayerDataId());
+            List<WLayerTerrain> anyChunks = terrainRepository.findByWorldIdAndLayerDataId(layer.getWorldId(), layer.getLayerDataId());
             if (!anyChunks.isEmpty()) {
                 hint = "No blocks at default center (0,64,0). Found " + anyChunks.size() + " chunks total. Try navigating to find blocks.";
             } else {
@@ -239,8 +239,8 @@ public class ELayerBlockGridController {
         String chunkKey = chunkX + ":" + chunkZ;
 
         // Load terrain chunk
-        Optional<WLayerTerrain> terrainOpt = terrainRepository.findByLayerDataIdAndChunkKey(
-                layer.getLayerDataId(), chunkKey);
+        Optional<WLayerTerrain> terrainOpt = terrainRepository.findByWorldIdAndLayerDataIdAndChunkKey(
+                layer.getWorldId(), layer.getLayerDataId(), chunkKey);
 
         if (terrainOpt.isEmpty() || terrainOpt.get().getStorageId() == null) {
             return ResponseEntity.notFound().build();

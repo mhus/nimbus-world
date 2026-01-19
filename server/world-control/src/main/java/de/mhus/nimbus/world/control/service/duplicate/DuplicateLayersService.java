@@ -85,7 +85,7 @@ public class DuplicateLayersService implements DuplicateToWorld {
 
             } else if (sourceLayer.getLayerType() == LayerType.GROUND) {
                 // Duplicate WLayerTerrain entities
-                List<WLayerTerrain> sourceTerrains = layerTerrainRepository.findByLayerDataId(oldLayerDataId);
+                List<WLayerTerrain> sourceTerrains = layerTerrainRepository.findByWorldIdAndLayerDataId(sourceWorldId, oldLayerDataId);
                 log.debug("Duplicating {} terrain chunks for layer {}", sourceTerrains.size(), sourceLayer.getName());
 
                 for (WLayerTerrain sourceTerrain : sourceTerrains) {

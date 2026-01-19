@@ -109,7 +109,7 @@ public class FlatExportService {
                 // Get or create chunk data
                 LayerChunkData chunkData = modifiedChunks.computeIfAbsent(chunkKey, key -> {
                     // Try to load existing chunk
-                    Optional<LayerChunkData> existing = layerService.loadTerrainChunk(layerDataId, key);
+                    Optional<LayerChunkData> existing = layerService.loadTerrainChunk(worldId, layerDataId, key);
                     if (existing.isPresent()) {
                         return existing.get();
                     } else {

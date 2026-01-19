@@ -361,7 +361,7 @@ public class WEditCacheDirtyService {
         // Regenerate WLayerTerrain for affected models
         if (!affectedModelIds.isEmpty()) {
             log.info("Regenerating terrain for {} affected models: layerDataId={}", affectedModelIds.size(), layerDataId);
-            int chunksRegenerated = layerService.recreateTerrainForModels(layerDataId, affectedModelIds, true);
+            int chunksRegenerated = layerService.recreateTerrainForModels(worldId, layerDataId, affectedModelIds, true);
             log.info("Terrain regeneration completed: layerDataId={} models={} chunks={}",
                     layerDataId, affectedModelIds.size(), chunksRegenerated);
         }
@@ -557,7 +557,7 @@ public class WEditCacheDirtyService {
             List<WEditCache> chunkBlocks = entry.getValue();
 
             // Load existing terrain chunk data
-            Optional<LayerChunkData> chunkDataOpt = layerService.loadTerrainChunk(layerDataId, chunkKey);
+            Optional<LayerChunkData> chunkDataOpt = layerService.loadTerrainChunk(worldId, layerDataId, chunkKey);
 
             LayerChunkData chunkData;
             if (chunkDataOpt.isPresent()) {

@@ -59,7 +59,7 @@ public class RecreateModelBasedLayerJobExecutor implements JobExecutor {
                     layerDataId, markChunksDirty);
 
             // Execute recreation
-            int chunksProcessed = layerService.recreateModelBasedLayer(layerDataId, markChunksDirty);
+            int chunksProcessed = layerService.recreateModelBasedLayer(job.getWorldId(), layerDataId, markChunksDirty);
 
             if (chunksProcessed < 0) {
                 return JobResult.ofFailure("Layer not found or not a MODEL layer: " + layerDataId);

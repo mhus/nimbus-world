@@ -177,7 +177,7 @@ public class WLayerService implements StorageProvider {
 
         // Delete associated data
         if (layer.getLayerType() == LayerType.GROUND) {
-            deleteTerrainData(layer.getLayerDataId());
+            deleteTerrainData(layer.getWorldId(), layer.getLayerDataId());
         } else if (layer.getLayerType() == LayerType.MODEL) {
             modelRepository.deleteByLayerDataId(layer.getLayerDataId());
         }
@@ -306,7 +306,7 @@ public class WLayerService implements StorageProvider {
 
             // Delete associated data
             if (layer.getLayerType() == LayerType.GROUND) {
-                deleteTerrainData(layer.getLayerDataId());
+                deleteTerrainData(layer.getWorldId(), layer.getLayerDataId());
             } else if (layer.getLayerType() == LayerType.MODEL) {
                 modelRepository.deleteByLayerDataId(layer.getLayerDataId());
             }
@@ -372,7 +372,7 @@ public class WLayerService implements StorageProvider {
 
         // Find or create entity
         WLayerTerrain entity = terrainRepository
-                .findByLayerDataIdAndChunkKey(layerDataId, chunkKey)
+                .findByWorldIdAndLayerDataIdAndChunkKey(worldId, layerDataId, chunkKey)
                 .orElseGet(() -> {
                     WLayerTerrain newEntity = WLayerTerrain.builder()
                             .worldId(worldId)
@@ -435,9 +435,9 @@ public class WLayerService implements StorageProvider {
      * @return Layer chunk data if found
      */
     @Transactional(readOnly = true)
-    public Optional<LayerChunkData> loadTerrainChunk(String layerDataId, String chunkKey) {
+    public Optional<LayerChunkData> loadTerrainChunk(String worldId, String layerDataId, String chunkKey) {
         Optional<WLayerTerrain> terrainOpt = terrainRepository
-                .findByLayerDataIdAndChunkKey(layerDataId, chunkKey);
+                .findByWorldIdAndLayerDataIdAndChunkKey(worldId, layerDataId, chunkKey);
 
         if (terrainOpt.isEmpty()) {
             return Optional.empty();
@@ -472,9 +472,9 @@ public class WLayerService implements StorageProvider {
      * Delete terrain chunk.
      */
     @Transactional
-    public boolean deleteTerrainChunk(String layerDataId, String chunkKey) {
+    public boolean deleteTerrainChunk(String worldId, String layerDataId, String chunkKey) {
         Optional<WLayerTerrain> terrainOpt = terrainRepository
-                .findByLayerDataIdAndChunkKey(layerDataId, chunkKey);
+                .findByWorldIdAndLayerDataIdAndChunkKey(worldId, layerDataId, chunkKey);
 
         if (terrainOpt.isEmpty()) {
             return false;
@@ -504,8 +504,8 @@ public class WLayerService implements StorageProvider {
     /**
      * Delete all terrain data for a layer.
      */
-    private void deleteTerrainData(String layerDataId) {
-        List<WLayerTerrain> terrains = terrainRepository.findByLayerDataId(layerDataId);
+    private void deleteTerrainData(String worldId, String layerDataId) {
+        List<WLayerTerrain> terrains = terrainRepository.findByWorldIdAndLayerDataId(worldId, layerDataId);
         for (WLayerTerrain terrain : terrains) {
             if (terrain.getStorageId() != null) {
                 try {
@@ -515,7 +515,7 @@ public class WLayerService implements StorageProvider {
                 }
             }
         }
-        terrainRepository.deleteByLayerDataId(layerDataId);
+        terrainRepository.deleteByWorldIdAndLayerDataId(worldId, layerDataId);
         log.debug("Deleted terrain data: layerDataId={} count={}", layerDataId, terrains.size());
     }
 
@@ -538,9 +538,9 @@ public class WLayerService implements StorageProvider {
      * @return Number of chunks recreated, or -1 if layer not found
      */
     @Transactional
-    public int recreateModelBasedLayer(String layerDataId, boolean markChunksDirty) {
+    public int recreateModelBasedLayer(String worldId, String layerDataId, boolean markChunksDirty) {
         // Get the layer by layerDataId
-        Optional<WLayer> layerOpt = layerRepository.findByLayerDataId(layerDataId);
+        Optional<WLayer> layerOpt = layerRepository.findByWorldIdAndLayerDataId(worldId, layerDataId);
         if (layerOpt.isEmpty()) {
             log.warn("Layer not found for recreation: layerDataId={}", layerDataId);
             return -1;
@@ -557,7 +557,7 @@ public class WLayerService implements StorageProvider {
         log.info("Starting recreation of MODEL-based layer: layerDataId={} name={}", layerDataId, layer.getName());
 
         // Step 1: Delete all existing WLayerTerrain chunks for this layer
-        deleteTerrainData(layerDataId);
+        deleteTerrainData(layer.getWorldId(), layerDataId);
         log.debug("Deleted existing terrain data for layer: layerDataId={}", layerDataId);
 
         // Step 2: Load all WLayerModel for this layer (sorted by order)
@@ -638,14 +638,14 @@ public class WLayerService implements StorageProvider {
      * @return Number of chunks successfully regenerated
      */
     @Transactional
-    public int recreateTerrainForModels(String layerDataId, Set<String> affectedModelIds, boolean markChunksDirty) {
+    public int recreateTerrainForModels(String worldId, String layerDataId, Set<String> affectedModelIds, boolean markChunksDirty) {
         if (affectedModelIds == null || affectedModelIds.isEmpty()) {
             log.debug("No models to regenerate terrain for: layerDataId={}", layerDataId);
             return 0;
         }
 
         // Get the layer by layerDataId
-        Optional<WLayer> layerOpt = layerRepository.findByLayerDataId(layerDataId);
+        Optional<WLayer> layerOpt = layerRepository.findByWorldIdAndLayerDataId(worldId, layerDataId);
         if (layerOpt.isEmpty()) {
             log.warn("Layer not found for terrain regeneration: layerDataId={}", layerDataId);
             return 0;
@@ -692,7 +692,7 @@ public class WLayerService implements StorageProvider {
         // Delete existing terrain data for affected chunks
         for (String chunkKey : affectedChunks) {
             try {
-                deleteTerrainChunk(layerDataId, chunkKey);
+                deleteTerrainChunk(layer.getWorldId(), layerDataId, chunkKey);
             } catch (Exception e) {
                 log.warn("Failed to delete terrain chunk before regeneration: layerDataId={} chunkKey={}",
                         layerDataId, chunkKey, e);
@@ -976,7 +976,7 @@ public class WLayerService implements StorageProvider {
         WLayerModel model = modelOpt.get();
 
         // Get the layer by layerDataId
-        Optional<WLayer> layerOpt = layerRepository.findByLayerDataId(model.getLayerDataId());
+        Optional<WLayer> layerOpt = layerRepository.findByWorldIdAndLayerDataId(model.getWorldId(), model.getLayerDataId());
         if (layerOpt.isEmpty()) {
             log.warn("Layer not found for model transfer: layerDataId={}", model.getLayerDataId());
             return -1;
@@ -1120,7 +1120,7 @@ public class WLayerService implements StorageProvider {
         int chunkMaxZ = chunkMinZ + chunkSize - 1;
 
         // Load existing terrain chunk or create new one
-        Optional<LayerChunkData> existingDataOpt = loadTerrainChunk(layerDataId, chunkKey);
+        Optional<LayerChunkData> existingDataOpt = loadTerrainChunk(world.getWorldId(), layerDataId, chunkKey);
         Map<String, LayerBlock> blockMap = new HashMap<>();
 
         // Add existing blocks to map
@@ -1702,7 +1702,7 @@ public class WLayerService implements StorageProvider {
 
             // Load terrain chunk
             Optional<WLayerTerrain> terrainOpt = terrainRepository
-                    .findByLayerDataIdAndChunkKey(layer.getLayerDataId(), chunkKey);
+                    .findByWorldIdAndLayerDataIdAndChunkKey(worldId, layer.getLayerDataId(), chunkKey);
 
             if (terrainOpt.isEmpty()) {
                 // For MODEL layers without terrain: Search directly in models
@@ -1726,7 +1726,7 @@ public class WLayerService implements StorageProvider {
             WLayerTerrain terrain = terrainOpt.get();
 
             // Load terrain data from storage
-            Optional<LayerChunkData> chunkDataOpt = loadTerrainChunk(layer.getLayerDataId(), chunkKey);
+            Optional<LayerChunkData> chunkDataOpt = loadTerrainChunk(worldId, layer.getLayerDataId(), chunkKey);
             if (chunkDataOpt.isEmpty()) {
                 continue;
             }
