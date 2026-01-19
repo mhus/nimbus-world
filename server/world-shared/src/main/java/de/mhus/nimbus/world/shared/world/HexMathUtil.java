@@ -48,8 +48,14 @@ public class HexMathUtil {
     }
 
     /**
-     * Tests if a cartesian point is inside a hexagon.
-     * Uses cube coordinate conversion for accurate point-in-hex testing.
+     * Tests if a cartesian point is inside a pointy-top hexagon.
+     * Uses exact geometric calculation based on the 6 edges of the hexagon.
+     *
+     * For a pointy-top hexagon with circumradius R (gridSize/2):
+     * - Height (vertical span) = 2R
+     * - Width (horizontal span) = R * sqrt(3)
+     * - 6 vertices at precise positions
+     * - 6 edges define the boundary
      *
      * @param x The x coordinate of the point to test
      * @param z The z coordinate of the point to test
@@ -69,13 +75,36 @@ public class HexMathUtil {
         double dx = x - hexCenterX;
         double dz = z - hexCenterZ;
 
-        // Convert to cube coordinates (fractional)
-        double q = (SQRT_3 / 3.0 * dx - 1.0 / 3.0 * dz) / radius;
-        double r = (2.0 / 3.0 * dz) / radius;
-        double s = -q - r;
+        // For pointy-top hexagon, we check against 6 edges:
+        // - 2 vertical edges (left and right)
+        // - 4 diagonal edges (top-left, top-right, bottom-left, bottom-right)
 
-        // Point is inside if all cube coordinate magnitudes <= 1
-        return Math.abs(q) <= 1.0 && Math.abs(r) <= 1.0 && Math.abs(s) <= 1.0;
+        // Width from center to vertical edge (inradius/apothem)
+        double halfWidth = radius * SQRT_3 / 2.0;
+
+        // Check vertical edges (simple x-coordinate test)
+        if (Math.abs(dx) > halfWidth) {
+            return false; // Outside left or right edge
+        }
+
+        // Check diagonal edges
+        // For pointy-top hexagon, the 4 diagonal edges have slope ±2/sqrt(3)
+        // Top edges: z < -R/2 region
+        // Bottom edges: z > R/2 region
+
+        double absDz = Math.abs(dz);
+        double absDx = Math.abs(dx);
+
+        // The diagonal constraint is: |z| <= R - (2/sqrt(3)) * |x|
+        // Rearranged: 2 * |z| + (2*sqrt(3)) * |x| / sqrt(3) <= 2 * R
+        // Simplified: 2 * |z| + 2 * |x| <= 2 * R
+        // Or: |z| + |x| / sqrt(3) <= R
+
+        // Using the precise formula for the diagonal edges:
+        // Point is inside if: |dz| <= radius - |dx| * (2.0 / SQRT_3) / 2.0
+        // Simplified: |dz| <= radius - |dx| / SQRT_3
+
+        return absDz <= radius - absDx / SQRT_3;
     }
 
     /**

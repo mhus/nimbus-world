@@ -874,6 +874,7 @@ public class FlatCreateService {
         }
 
         // Step 2: Set positions OUTSIDE HexGrid to material 0 (UNKNOWN_PROTECTED)
+        log.debug("Step 2: Setting outside positions to material 0. HexCenter: ({}, {}), gridSize: {}", hexCenterX, hexCenterZ, gridSize);
         for (int localX = 0; localX < sizeX; localX++) {
             for (int localZ = 0; localZ < sizeZ; localZ++) {
                 // Calculate world coordinates
@@ -890,6 +891,9 @@ public class FlatCreateService {
                 }
             }
         }
+
+        log.info("HexGrid flat import material summary: total={}, inside (255)={}, outside (0)={}",
+                sizeX * sizeZ, (sizeX * sizeZ) - outsideColumns, outsideColumns);
 
         // after import, set protection
         flat.setUnknownProtected(true);
@@ -1122,7 +1126,6 @@ public class FlatCreateService {
                 .mountZ(mountZ)
                 .oceanLevel(oceanLevel)
                 .oceanBlockId(oceanBlockId)
-                .unknownProtected(true)
                 .hexGrid(TypeUtil.hexVector2(hexQ, hexR))
                 .build();
 
@@ -1220,6 +1223,7 @@ public class FlatCreateService {
             }
         }
 
+        flat.setUnknownProtected(true);
         // Persist to database
         WFlat created = flatService.create(flat);
 

@@ -226,20 +226,34 @@
           <!-- Height Map -->
           <div class="bg-base-100 p-4 rounded-lg border border-base-300">
             <div class="flex justify-between items-center mb-3">
-              <div>
+              <div class="flex-1">
                 <h3 class="text-lg font-semibold">Height Map</h3>
                 <p class="text-sm text-base-content/70">Blue (low) → Green (mid) → Red (high)</p>
+                <p v-if="heightMapPosition" class="text-sm font-mono text-primary mt-1">
+                  Position: {{ heightMapPosition }}
+                </p>
               </div>
-              <button
-                @click="heightMapZoom = !heightMapZoom"
-                class="btn btn-sm btn-circle"
-                :class="{ 'btn-primary': heightMapZoom, 'btn-ghost': !heightMapZoom }"
-                title="Toggle zoom"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
-                </svg>
-              </button>
+              <div class="flex gap-2">
+                <button
+                  @click="reloadImages"
+                  class="btn btn-sm btn-circle btn-ghost"
+                  title="Reload images"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                </button>
+                <button
+                  @click="heightMapZoom = !heightMapZoom"
+                  class="btn btn-sm btn-circle"
+                  :class="{ 'btn-primary': heightMapZoom, 'btn-ghost': !heightMapZoom }"
+                  title="Toggle zoom"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
+                  </svg>
+                </button>
+              </div>
             </div>
             <div class="overflow-auto max-h-[600px]">
               <div
@@ -256,8 +270,11 @@
                   :style="{
                     'image-rendering': 'pixelated',
                     width: heightMapZoom ? '100%' : 'auto',
-                    maxWidth: heightMapZoom ? 'none' : '100%'
+                    maxWidth: heightMapZoom ? 'none' : '100%',
+                    cursor: 'crosshair'
                   }"
+                  @mousemove="handleHeightMapMouseMove"
+                  @mouseleave="handleHeightMapMouseLeave"
                 />
               </div>
             </div>
@@ -266,20 +283,34 @@
           <!-- Block Map -->
           <div class="bg-base-100 p-4 rounded-lg border border-base-300">
             <div class="flex justify-between items-center mb-3">
-              <div>
+              <div class="flex-1">
                 <h3 class="text-lg font-semibold">Block Map</h3>
                 <p class="text-sm text-base-content/70">Each color represents a different block type</p>
+                <p v-if="blockMapPosition" class="text-sm font-mono text-primary mt-1">
+                  Position: {{ blockMapPosition }}
+                </p>
               </div>
-              <button
-                @click="blockMapZoom = !blockMapZoom"
-                class="btn btn-sm btn-circle"
-                :class="{ 'btn-primary': blockMapZoom, 'btn-ghost': !blockMapZoom }"
-                title="Toggle zoom"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
-                </svg>
-              </button>
+              <div class="flex gap-2">
+                <button
+                  @click="reloadImages"
+                  class="btn btn-sm btn-circle btn-ghost"
+                  title="Reload images"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                </button>
+                <button
+                  @click="blockMapZoom = !blockMapZoom"
+                  class="btn btn-sm btn-circle"
+                  :class="{ 'btn-primary': blockMapZoom, 'btn-ghost': !blockMapZoom }"
+                  title="Toggle zoom"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
+                  </svg>
+                </button>
+              </div>
             </div>
             <div class="overflow-auto max-h-[600px]">
               <div
@@ -296,8 +327,11 @@
                   :style="{
                     'image-rendering': 'pixelated',
                     width: blockMapZoom ? '100%' : 'auto',
-                    maxWidth: blockMapZoom ? 'none' : '100%'
+                    maxWidth: blockMapZoom ? 'none' : '100%',
+                    cursor: 'crosshair'
                   }"
+                  @mousemove="handleBlockMapMouseMove"
+                  @mouseleave="handleBlockMapMouseLeave"
                 />
               </div>
             </div>
@@ -399,6 +433,13 @@ const activeTab = ref<'details' | 'visualizations' | 'materials'>('details');
 const heightMapZoom = ref(false);
 const blockMapZoom = ref(false);
 
+// Reload trigger for cache busting
+const imageReloadTrigger = ref(0);
+
+// Mouse position tracking for visualizations
+const heightMapPosition = ref<string>('');
+const blockMapPosition = ref<string>('');
+
 // Export state
 const showingExportConfirmation = ref(false);
 const exporting = ref(false);
@@ -406,16 +447,18 @@ const watchingExportJob = ref(false);
 const exportJobId = ref('');
 
 /**
- * Computed URLs for images
+ * Computed URLs for images with cache busting
  */
 const heightMapUrl = computed(() => {
   if (!props.flatId) return '';
-  return `${apiService.getBaseUrl()}/control/flats/${encodeURIComponent(props.flatId)}/height-map`;
+  // Add cache busting parameter to force reload
+  return `${apiService.getBaseUrl()}/control/flats/${encodeURIComponent(props.flatId)}/height-map?t=${imageReloadTrigger.value}`;
 });
 
 const blockMapUrl = computed(() => {
   if (!props.flatId) return '';
-  return `${apiService.getBaseUrl()}/control/flats/${encodeURIComponent(props.flatId)}/block-map`;
+  // Add cache busting parameter to force reload
+  return `${apiService.getBaseUrl()}/control/flats/${encodeURIComponent(props.flatId)}/block-map?t=${imageReloadTrigger.value}`;
 });
 
 const exportUrl = computed(() => {
@@ -533,6 +576,78 @@ const handleManipulatorCompleted = async () => {
   console.log('[FlatDetailModal] Manipulator completed, reloading flat');
   // Reload flat data to show updated terrain
   await loadFlat();
+};
+
+/**
+ * Reload visualization images
+ */
+const reloadImages = () => {
+  console.log('[FlatDetailModal] Reloading visualization images');
+  imageReloadTrigger.value = Date.now();
+};
+
+/**
+ * Handle mouse move on height map to show coordinates
+ */
+const handleHeightMapMouseMove = (event: MouseEvent) => {
+  if (!flat.value) return;
+
+  const img = event.target as HTMLImageElement;
+  const rect = img.getBoundingClientRect();
+
+  // Calculate position relative to image
+  const x = event.clientX - rect.left;
+  const y = event.clientY - rect.top;
+
+  // Calculate image coordinates (0-based)
+  const imageX = Math.floor((x / rect.width) * flat.value.sizeX);
+  const imageY = Math.floor((y / rect.height) * flat.value.sizeZ);
+
+  // Validate bounds
+  if (imageX >= 0 && imageX < flat.value.sizeX && imageY >= 0 && imageY < flat.value.sizeZ) {
+    heightMapPosition.value = `${imageX}/${imageY}`;
+  } else {
+    heightMapPosition.value = '';
+  }
+};
+
+/**
+ * Handle mouse leave on height map
+ */
+const handleHeightMapMouseLeave = () => {
+  heightMapPosition.value = '';
+};
+
+/**
+ * Handle mouse move on block map to show coordinates
+ */
+const handleBlockMapMouseMove = (event: MouseEvent) => {
+  if (!flat.value) return;
+
+  const img = event.target as HTMLImageElement;
+  const rect = img.getBoundingClientRect();
+
+  // Calculate position relative to image
+  const x = event.clientX - rect.left;
+  const y = event.clientY - rect.top;
+
+  // Calculate image coordinates (0-based)
+  const imageX = Math.floor((x / rect.width) * flat.value.sizeX);
+  const imageY = Math.floor((y / rect.height) * flat.value.sizeZ);
+
+  // Validate bounds
+  if (imageX >= 0 && imageX < flat.value.sizeX && imageY >= 0 && imageY < flat.value.sizeZ) {
+    blockMapPosition.value = `${imageX}/${imageY}`;
+  } else {
+    blockMapPosition.value = '';
+  }
+};
+
+/**
+ * Handle mouse leave on block map
+ */
+const handleBlockMapMouseLeave = () => {
+  blockMapPosition.value = '';
 };
 
 /**
