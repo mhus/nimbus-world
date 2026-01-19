@@ -89,6 +89,7 @@ public class FlatExportService {
 
         // Map to store modified chunks: chunkKey -> LayerChunkData
         Map<String, LayerChunkData> modifiedChunks = new HashMap<>();
+        Map<String, Optional<ChunkData>> blockChunks = new HashMap<>();
 
         // BlockType cache for this export (to avoid repeated lookups)
         Map<String, WBlockType> blockTypeCache = new HashMap<>();
@@ -97,10 +98,16 @@ public class FlatExportService {
         int exportedColumns = 0;
         int skippedColumns = 0;
 
+        long pointCount = (long) flat.getSizeX() * (long) flat.getSizeZ();
+
         // Iterate over all columns in the flat
         for (int localX = 0; localX < flat.getSizeX(); localX++) {
             for (int localZ = 0; localZ < flat.getSizeZ(); localZ++) {
 
+                if (pointCount-- % 10000 == 0) {
+                    log.info("Export progress: flatId={}, exported={} columns, skipped={} columns, remaining={} columns",
+                            flatId, exportedColumns, skippedColumns, pointCount);
+                }
                 // Calculate world coordinates
                 int worldX = flat.getMountX() + localX;
                 int worldZ = flat.getMountZ() + localZ;
@@ -125,7 +132,8 @@ public class FlatExportService {
                                 .build();
                     }
                 });
-                Optional<ChunkData> chunkDataOpt = chunkService.loadChunkData(worldIdObj, chunkKey, false);
+                Optional<ChunkData> chunkDataOpt = blockChunks.computeIfAbsent(chunkKey,
+                        key -> chunkService.loadChunkData(worldIdObj, key, false) );
                 ChunkData chunkData = chunkDataOpt.orElseGet(() ->
                         ChunkData.builder()
                                 .blocks(new ArrayList<>())
@@ -135,10 +143,15 @@ public class FlatExportService {
                 // Check if column is set or has material 255 (treated like NOT_SET)
                 int columnMaterial = flat.getColumn(localX, localZ);
                 if (columnMaterial == WFlat.NOT_SET || columnMaterial == WFlat.NOT_SET_MUTABLE) {
-                    // NOT_SET or Material 255: Keep existing blocks, but fill down if neighbors are lower
-                    handleNotSetColumn(chunkData, layerChunkData, worldX, worldZ, flat, localX, localZ, world, worldId);
-                    skippedColumns++;
-                    continue;
+                    if (isOneAroundSet(flat, localX, localZ)) {
+                        // NOT_SET or Material 255: Keep existing blocks, but fill down if neighbors are lower
+                        handleNotSetColumn(chunkData, layerChunkData, worldX, worldZ, flat, localX, localZ, world, worldId);
+                        skippedColumns++;
+                        continue;
+                    } else {
+                        skippedColumns++;
+                        continue;
+                    }
                 }
 
                 // Column is set - process normally
@@ -185,6 +198,24 @@ public class FlatExportService {
                 flatId, exportedColumns, skippedColumns, modifiedChunks.size());
 
         return exportedColumns;
+    }
+
+    private boolean isOneAroundSet(WFlat flat, int localX, int localZ) {
+        for (int i = -1; i <= 1; i++) {
+            int columnMaterial = flat.getColumnRobust(localX + i, localZ-1);
+            if (columnMaterial != WFlat.NOT_SET && columnMaterial != WFlat.NOT_SET_MUTABLE)
+                return true;
+            columnMaterial = flat.getColumnRobust(localX + i, localZ+1);
+            if (columnMaterial != WFlat.NOT_SET && columnMaterial != WFlat.NOT_SET_MUTABLE)
+                return true;
+        }
+        int columnMaterial = flat.getColumnRobust(localX-1, localZ);
+        if (columnMaterial != WFlat.NOT_SET && columnMaterial != WFlat.NOT_SET_MUTABLE)
+            return true;
+        columnMaterial = flat.getColumnRobust(localX+1, localZ);
+        if (columnMaterial != WFlat.NOT_SET && columnMaterial != WFlat.NOT_SET_MUTABLE)
+            return true;
+        return false;
     }
 
     /**

@@ -299,7 +299,6 @@ public class WChunkService implements StorageProvider {
             // Chunk not found - generate default chunk based on world settings
             log.debug("Chunk not found in DB, generating default: chunkKey={} world={}", chunkKey, lookupWorld.getId());
             var data = generateDefaultChunk(lookupWorld.getId(), chunkKey);
-            saveChunk(lookupWorld, chunkKey, data);
             return Optional.ofNullable(data);
         } else {
             // Chunk not found and create=false - return empty
@@ -339,14 +338,26 @@ public class WChunkService implements StorageProvider {
             int maxHeight = (int) world.getPublicData().getStop().getY();
 
             var chunkSize = world.getPublicData().getChunkSize();
+
+            // Calculate total block count for pre-allocation
+            int totalPositions = chunkSize * chunkSize;
+            int waterBlocksPerPosition = (waterLevel != null && waterLevel > groundLevel) ? (waterLevel - groundLevel) : 0;
+            int estimatedBlockCount = totalPositions + (waterBlocksPerPosition * totalPositions);
+
             // Create chunk data
             ChunkData chunkData = new ChunkData();
             chunkData.setCx(cx);
             chunkData.setCz(cz);
             chunkData.setSize((byte)chunkSize);
 
-            List<Block> blocks = new ArrayList<>();
-            Map<String, int[]> heightData = new HashMap<>();
+            // Pre-allocate collections with known capacity
+            List<Block> blocks = new ArrayList<>(estimatedBlockCount);
+            Map<String, int[]> heightData = new HashMap<>(totalPositions);
+
+            // Pre-compute height data array to reuse
+            int[] heightDataArray = waterLevel != null
+                    ? new int[]{maxHeight, minHeight, groundLevel, waterLevel}
+                    : new int[]{maxHeight, minHeight, groundLevel};
 
             // Generate blocks for the chunk (32x32 xz area)
             for (int localX = 0; localX < chunkSize; localX++) {
@@ -356,23 +367,21 @@ public class WChunkService implements StorageProvider {
 
                     // Create ground block at groundLevel
                     if (groundLevel >= 0 && groundBlockType != null) {
-                        Block groundBlock = createBlock(worldX, groundLevel, worldZ, groundBlockType);
+                        Block groundBlock = createBlockFast(worldX, groundLevel, worldZ, groundBlockType);
                         groundBlock.setFaceVisibility(1); // TOP only
                         blocks.add(groundBlock);
                     }
-                    String heightKey = worldX + "," + worldZ;
-                    heightData.put(heightKey,
-                            waterLevel != null
-                                    ? new int[]{maxHeight, minHeight, groundLevel, waterLevel}
-                                    : new int[]{maxHeight, minHeight, groundLevel}
-                    );
 
-                    // Create water blocks from groundLevel+1 to waterLevel
+                    // Use StringBuilder for height key to avoid string concatenation overhead
+                    String heightKey = new StringBuilder(12)
+                            .append(worldX).append(',').append(worldZ)
+                            .toString();
+                    heightData.put(heightKey, heightDataArray);
+
+                    // Create water blocks at waterLevel - only one flat layer
                     if (waterLevel != null && waterLevel > groundLevel && waterBlockType != null) {
-                        for (int y = groundLevel + 1; y <= waterLevel; y++) {
-                            Block waterBlock = createBlock(worldX, y, worldZ, waterBlockType);
-                            blocks.add(waterBlock);
-                        }
+                        Block waterBlock = createBlockFast(worldX, waterLevel, worldZ, waterBlockType);
+                        blocks.add(waterBlock);
                     }
                 }
             }
@@ -389,6 +398,24 @@ public class WChunkService implements StorageProvider {
             log.error("Failed to generate default chunk: chunkKey={}", chunkKey, e);
             return null;
         }
+    }
+
+    /**
+     * Optimized version of createBlock with reduced object allocations.
+     */
+    private Block createBlockFast(int x, int y, int z, String blockTypeId) {
+        Block block = new Block();
+
+        // Create position inline to reduce overhead
+        Vector3Int position = new Vector3Int();
+        position.setX(x);
+        position.setY(y);
+        position.setZ(z);
+        block.setPosition(position);
+
+        block.setBlockTypeId(blockTypeId);
+
+        return block;
     }
 
     /**

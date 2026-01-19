@@ -149,6 +149,13 @@ public class WFlat implements Identifiable {
         return Byte.toUnsignedInt(columns[x + z * sizeX]);
     }
 
+    public int getColumnRobust(int x, int z) {
+        if (x < 0 || z < 0 || x >= sizeX || z >= sizeZ)
+            return 0;
+        return Byte.toUnsignedInt(columns[x + z * sizeX]);
+    }
+
+
     public boolean isColumnSet(int x, int z) {
         if (x < 0 || z < 0 || x >= sizeX || z >= sizeZ)
             throw new IllegalArgumentException("Coordinates out of range");

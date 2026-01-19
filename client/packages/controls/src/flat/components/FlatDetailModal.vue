@@ -726,7 +726,6 @@ const handleExportJobCompleted = async (job: Job) => {
   watchingExportJob.value = false;
 
   // Show success message
-  alert('Flat exported successfully to layer!');
 };
 
 /**
