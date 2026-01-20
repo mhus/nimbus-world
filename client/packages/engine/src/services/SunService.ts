@@ -500,7 +500,7 @@ export class SunService {
       this.updateAutomaticLighting();
     }
 
-    logger.info('Sun position updated', {
+    logger.debug('Sun position updated', {
       angleY: this.currentAngleY,
       elevation: this.currentElevation,
       position: { x, y, z },
