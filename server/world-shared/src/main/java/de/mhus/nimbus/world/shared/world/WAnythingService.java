@@ -304,6 +304,14 @@ public class WAnythingService {
         if (WorldId.of(worldId).orElseThrow().withoutInstance().isInstance()) {
             throw new IllegalArgumentException("worldId must not contain instance part: " + worldId);
         }
+        if (regionId == null && worldId != null) {
+            var worldObj = WorldId.of(worldId).orElseThrow();
+            if (worldObj.isCollection()) {
+                regionId = worldObj.getWorldName(); // collection name
+            } else {
+                regionId = worldObj.getRegionId(); // region id
+            }
+        }
         WAnything entity = WAnything.builder()
                 .regionId(regionId)
                 .worldId(worldId)

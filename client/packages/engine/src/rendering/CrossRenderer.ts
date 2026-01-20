@@ -178,10 +178,10 @@ export class CrossRenderer extends BlockRenderer {
     }
 
     // Get textures for the two diagonal planes
-    // Use texture 0 for first diagonal, texture 1 for second diagonal
+    // Use texture 3 (LEFT) for first diagonal, texture 4 (RIGHT) for second diagonal
     // Fall back to texture 7 (SIDE) or texture 0 (ALL) if not defined
-    const diag1Index = textures[0] ? 0 : (textures[7] ? 7 : 0);
-    const diag2Index = textures[1] ? 1 : (textures[7] ? 7 : (textures[0] ? 0 : 1));
+    const diag1Index = textures[3] ? 3 : (textures[7] ? 7 : 0);
+    const diag2Index = textures[4] ? 4 : (textures[3] ? 3 : (textures[7] ? 7 : 0));
 
     const texture1 = textures[diag1Index] ? this.normalizeTexture(textures[diag1Index]) : null;
     const texture2 = textures[diag2Index] ? this.normalizeTexture(textures[diag2Index]) : null;
