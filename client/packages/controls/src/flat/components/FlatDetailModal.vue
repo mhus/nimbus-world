@@ -133,6 +133,10 @@
             <span class="ml-2">({{ flat.mountX }}, {{ flat.mountZ }})</span>
           </div>
           <div>
+            <span class="font-semibold">HexGrid:</span>
+            <span class="ml-2">{{ flat.hexGrid ? `${flat.hexGrid.q};${flat.hexGrid.r}` : '(none)' }}</span>
+          </div>
+          <div>
             <span class="font-semibold">Ocean Level:</span>
             <span class="ml-2">{{ flat.oceanLevel }}</span>
           </div>

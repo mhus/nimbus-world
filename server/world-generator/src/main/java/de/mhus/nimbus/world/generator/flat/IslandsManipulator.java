@@ -91,6 +91,9 @@ public class IslandsManipulator implements FlatManipulator {
         int baseLevel = underwater ? oceanLevel - mainHeight : oceanLevel;
         int targetHeight = underwater ? oceanLevel - 5 : oceanLevel + mainHeight;
 
+        log.info("Island generation: center=({},{}), size=({},{}), oceanLevel={}, mainHeight={} (relative), baseLevel={}, targetHeight={}, mainSize={}, underwater={}",
+                centerX, centerZ, sizeX, sizeZ, oceanLevel, mainHeight, baseLevel, targetHeight, mainSize, underwater);
+
         // Draw main island
         drawIsland(painter, flat, centerX, centerZ, mainSize, baseLevel, targetHeight);
 
@@ -157,8 +160,12 @@ public class IslandsManipulator implements FlatManipulator {
     private void drawIsland(FlatPainter painter, WFlat flat,
                            int centerX, int centerZ, int radius,
                            int baseLevel, int peakHeight) {
+        log.debug("Drawing island: center=({},{}), radius={}, baseLevel={}, peakHeight={}",
+                centerX, centerZ, radius, baseLevel, peakHeight);
+
         // Exponential falloff from center to edges
         // Formula: height = baseLevel + (peakHeight - baseLevel) * exp(-2.0 * distance / radius)
+        int pixelsDrawn = 0;
         for (int dz = -radius; dz <= radius; dz++) {
             for (int dx = -radius; dx <= radius; dx++) {
                 double distance = Math.sqrt(dx * dx + dz * dz);
@@ -176,9 +183,13 @@ public class IslandsManipulator implements FlatManipulator {
 
                     // Use HIGHER painter to only raise terrain (for islands)
                     painter.paint(xi, zi, height, FlatPainter.HIGHER);
+                    pixelsDrawn++;
                 }
             }
         }
+
+        log.info("Island drawn: center=({},{}), radius={}, baseLevel={}, peakHeight={}, pixelsDrawn={}",
+                centerX, centerZ, radius, baseLevel, peakHeight, pixelsDrawn);
     }
 
     // Parameter parsing helper methods

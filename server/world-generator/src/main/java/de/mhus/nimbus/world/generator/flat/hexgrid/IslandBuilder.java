@@ -56,21 +56,24 @@ public class IslandBuilder extends HexGridBuilder {
         // Step 2: Create islands using IslandsManipulator
         Map<String, String> islandParams = new HashMap<>();
 
-        // Use parameters from IslandsManipulator
+        // Use parameters from IslandsManipulator with proper defaults
         islandParams.put(IslandsManipulator.PARAM_MAIN_ISLAND_SIZE,
-                parameters.getOrDefault("mainIslandSize", "40"));
+                getParameterOrDefault("mainIslandSize", "40"));
+        // mainIslandHeight is HEIGHT ABOVE ocean level, not absolute height!
         islandParams.put(IslandsManipulator.PARAM_MAIN_ISLAND_HEIGHT,
-                parameters.getOrDefault("mainIslandHeight", "30"));
+                getParameterOrDefault("mainIslandHeight", "2"));  // 2 pixels above ocean
         islandParams.put(IslandsManipulator.PARAM_SMALL_ISLANDS,
-                parameters.getOrDefault("smallIslands", "8"));
+                getParameterOrDefault("smallIslands", "8"));
         islandParams.put(IslandsManipulator.PARAM_SMALL_ISLAND_MIN_RADIUS,
-                parameters.getOrDefault("smallIslandMinRadius", "8"));
+                getParameterOrDefault("smallIslandMinRadius", "8"));
         islandParams.put(IslandsManipulator.PARAM_SMALL_ISLAND_MAX_RADIUS,
-                parameters.getOrDefault("smallIslandMaxRadius", "15"));
+                getParameterOrDefault("smallIslandMaxRadius", "15"));
         islandParams.put(IslandsManipulator.PARAM_SCATTER_DISTANCE,
-                parameters.getOrDefault("scatterDistance", "60"));
+                getParameterOrDefault("scatterDistance", "60"));
         islandParams.put(IslandsManipulator.PARAM_SEED, String.valueOf(seed));
         islandParams.put(IslandsManipulator.PARAM_UNDERWATER, "false");
+
+        log.debug("Island parameters: {}", islandParams);
 
         // Use IslandsManipulator to create islands
         context.getManipulatorService().executeManipulator(
@@ -87,6 +90,13 @@ public class IslandBuilder extends HexGridBuilder {
 
         log.info("Island scenario completed: baseHeight={}, hillHeight={}, oceanLevel={}",
                 baseHeight, hillHeight, oceanLevel);
+    }
+
+    private String getParameterOrDefault(String mainIslandSize, String number) {
+        if (parameters != null && parameters.containsKey(mainIslandSize)) {
+            return parameters.get(mainIslandSize);
+        }
+        return number;
     }
 
     @Override

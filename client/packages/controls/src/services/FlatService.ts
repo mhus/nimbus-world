@@ -21,6 +21,11 @@ export interface FlatListItem {
   updatedAt: string;
 }
 
+export interface HexVector2 {
+  q: number;
+  r: number;
+}
+
 export interface FlatDetail {
   id: string;
   worldId: string;
@@ -35,6 +40,7 @@ export interface FlatDetail {
   oceanLevel: number;
   oceanBlockId: string;
   unknownProtected: boolean;
+  hexGrid: HexVector2 | null;
   levels: number[];
   columns: number[];
   createdAt: string;

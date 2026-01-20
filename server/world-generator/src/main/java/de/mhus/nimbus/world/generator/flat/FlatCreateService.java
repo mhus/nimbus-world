@@ -571,9 +571,7 @@ public class FlatCreateService {
                 .mountZ(mountZ)
                 .oceanLevel(oceanLevel)
                 .oceanBlockId(oceanBlockId)
-                .hexGrid(HexMathUtil.getDominantHexForArea(
-                        world, TypeUtil.area(mountX, mountZ, sizeX, sizeZ)
-                ))
+                .hexGrid(TypeUtil.hexVector2(hexQ, hexR))
                 .build();
 
         // Initialize with size (sets all levels to 0)
