@@ -298,8 +298,41 @@ export class RenderService {
         separateMeshBlocks: separateMeshBlocks.length,
       });
 
-      // 1. Render chunk mesh blocks (batched by material at face level)
-      const materialGroups = this.groupFacesByMaterial(clientChunk, chunkMeshBlocks);
+      // Separate chunk mesh blocks into face-level vs block-level rendering
+      const faceLevelBlocks: ClientBlock[] = [];
+      const blockLevelBlocks: ClientBlock[] = [];
+
+      for (const clientBlock of chunkMeshBlocks) {
+        const modifier = clientBlock.currentModifier;
+        if (!modifier || !modifier.visibility) {
+          continue;
+        }
+        const shape = modifier.visibility.shape ?? Shape.CUBE;
+
+        // Check if renderer supports face-level rendering
+        const renderer = this.getRendererForShape(shape);
+        if (renderer && renderer.renderSingleFace) {
+          faceLevelBlocks.push(clientBlock);
+        } else {
+          blockLevelBlocks.push(clientBlock);
+        }
+      }
+
+      logger.debug('Blocks separated by rendering approach', {
+        cx: chunk.cx,
+        cz: chunk.cz,
+        faceLevelBlocks: faceLevelBlocks.length,
+        blockLevelBlocks: blockLevelBlocks.length,
+      });
+
+      // 1a. Render face-level blocks (batched by material at face level)
+      const faceLevelGroups = this.groupFacesByMaterial(clientChunk, faceLevelBlocks);
+
+      // 1b. Render block-level blocks (batched by material at block level)
+      const blockLevelGroups = this.groupBlocksByMaterial(clientChunk, blockLevelBlocks);
+
+      // Combine both material group types
+      const materialGroups = new Map([...faceLevelGroups, ...blockLevelGroups]);
 
       logger.debug('Material groups created', {
         cx: chunk.cx,
@@ -311,10 +344,19 @@ export class RenderService {
       // Create mesh for each material group
       const meshMap = new Map<string, Mesh>();
 
-      for (const [materialKey, faceDescriptors] of materialGroups) {
-        // Check if this material group needs wind attributes (check first face's block modifier)
-        const firstFace = faceDescriptors[0];
-        const needsWind = firstFace?.clientBlock.currentModifier?.visibility?.effect === BlockEffect.WIND;
+      for (const [materialKey, items] of materialGroups) {
+        // Determine if this is a face-level or block-level group
+        const isFaceLevelGroup = items.length > 0 && 'textureKey' in items[0];
+
+        // Check if this material group needs wind attributes
+        let needsWind = false;
+        if (isFaceLevelGroup) {
+          const firstFace = items[0] as FaceDescriptor;
+          needsWind = firstFace?.clientBlock?.currentModifier?.visibility?.effect === BlockEffect.WIND;
+        } else {
+          const firstBlock = items[0] as ClientBlock;
+          needsWind = firstBlock?.currentModifier?.visibility?.effect === BlockEffect.WIND;
+        }
 
         const faceData: FaceData = {
           positions: [],
@@ -338,50 +380,79 @@ export class RenderService {
           resourcesToDispose,
         };
 
-        // Render all faces in this material group
-        // Track blocks already rendered (for renderers without renderSingleFace support)
-        const renderedBlocks = new Set<ClientBlock>();
+        // Render items in this material group
+        if (isFaceLevelGroup) {
+          // Face-level rendering
+          const faceDescriptors = items as FaceDescriptor[];
+          for (const faceDescriptor of faceDescriptors) {
+            const { clientBlock, textureKey } = faceDescriptor;
+            const block = clientBlock.block;
 
-        for (const faceDescriptor of faceDescriptors) {
-          const { clientBlock, textureKey } = faceDescriptor;
-          const block = clientBlock.block;
-
-          // Validate block data
-          if (!block || typeof block.blockTypeId === 'undefined' || !block.position) {
-            logger.warn('Invalid block data in ClientBlock', { block });
-            continue;
-          }
-
-          const modifier = clientBlock.currentModifier;
-          if (!modifier || !modifier.visibility) {
-            continue;
-          }
-
-          const shape = modifier.visibility.shape ?? Shape.CUBE;
-
-          // Skip invisible blocks
-          if (shape === Shape.INVISIBLE) {
-            continue;
-          }
-
-          const renderer = this.getRendererForShape(shape);
-          if (!renderer) {
-            logger.debug('Unsupported shape, skipping', {
-              shape,
-              blockTypeId: block.blockTypeId,
-            });
-            continue;
-          }
-
-          // Use renderSingleFace if available, fallback to render for entire block
-          if (renderer.renderSingleFace) {
-            await renderer.renderSingleFace(renderContext, clientBlock, textureKey);
-          } else {
-            // Fallback: render entire block only ONCE (not per face)
-            if (!renderedBlocks.has(clientBlock)) {
-              await renderer.render(renderContext, clientBlock);
-              renderedBlocks.add(clientBlock);
+            // Validate block data
+            if (!block || typeof block.blockTypeId === 'undefined' || !block.position) {
+              logger.warn('Invalid block data in ClientBlock', { block });
+              continue;
             }
+
+            const modifier = clientBlock.currentModifier;
+            if (!modifier || !modifier.visibility) {
+              continue;
+            }
+
+            const shape = modifier.visibility.shape ?? Shape.CUBE;
+
+            // Skip invisible blocks
+            if (shape === Shape.INVISIBLE) {
+              continue;
+            }
+
+            const renderer = this.getRendererForShape(shape);
+            if (!renderer) {
+              logger.debug('Unsupported shape, skipping', {
+                shape,
+                blockTypeId: block.blockTypeId,
+              });
+              continue;
+            }
+
+            // Render single face
+            await renderer.renderSingleFace!(renderContext, clientBlock, textureKey);
+          }
+        } else {
+          // Block-level rendering (legacy shapes like STAIR, STEPS, etc.)
+          const blocks = items as ClientBlock[];
+          for (const clientBlock of blocks) {
+            const block = clientBlock.block;
+
+            // Validate block data
+            if (!block || typeof block.blockTypeId === 'undefined' || !block.position) {
+              logger.warn('Invalid block data in ClientBlock', { block });
+              continue;
+            }
+
+            const modifier = clientBlock.currentModifier;
+            if (!modifier || !modifier.visibility) {
+              continue;
+            }
+
+            const shape = modifier.visibility.shape ?? Shape.CUBE;
+
+            // Skip invisible blocks
+            if (shape === Shape.INVISIBLE) {
+              continue;
+            }
+
+            const renderer = this.getRendererForShape(shape);
+            if (!renderer) {
+              logger.debug('Unsupported shape, skipping', {
+                shape,
+                blockTypeId: block.blockTypeId,
+              });
+              continue;
+            }
+
+            // Render entire block
+            await renderer.render(renderContext, clientBlock);
           }
         }
 
@@ -406,21 +477,58 @@ export class RenderService {
           const mesh = this.createMesh(meshName, faceData);
 
           // Get and apply material
-          // Resolve texture index for material (first face is representative of this material group)
-          const firstFace = faceDescriptors[0];
-          const firstModifier = firstFace.clientBlock.currentModifier;
-          const firstTextures = firstModifier.visibility?.textures;
-          const firstShape = firstModifier.visibility?.shape ?? Shape.CUBE;
-          const resolvedTextureIndex = this.resolveTextureIndex(
-            firstTextures,
-            firstFace.textureKey,
-            firstShape
-          );
+          let material;
+          let firstModifier;
 
-          const material = await this.materialService.getMaterial(
-            firstModifier,
-            resolvedTextureIndex // Use the RESOLVED texture index for material
-          );
+          if (isFaceLevelGroup) {
+            // Resolve texture index for material (first face is representative of this material group)
+            const faceDescriptors = items as FaceDescriptor[];
+            const firstFace = faceDescriptors[0];
+            firstModifier = firstFace?.clientBlock?.currentModifier;
+
+            // Skip this material group if modifier is undefined
+            if (!firstModifier) {
+              logger.warn('Skipping face-level material group - no modifier', {
+                cx: chunk.cx,
+                cz: chunk.cz,
+                materialKey,
+              });
+              continue;
+            }
+
+            const firstTextures = firstModifier.visibility?.textures;
+            const firstShape = firstModifier.visibility?.shape ?? Shape.CUBE;
+            const resolvedTextureIndex = this.resolveTextureIndex(
+              firstTextures,
+              firstFace.textureKey,
+              firstShape
+            );
+
+            material = await this.materialService.getMaterial(
+              firstModifier,
+              resolvedTextureIndex // Use the RESOLVED texture index for material
+            );
+          } else {
+            // Block-level group: use textureIndex 0 (like original implementation)
+            const blocks = items as ClientBlock[];
+            firstModifier = blocks[0]?.currentModifier;
+
+            // Skip this material group if modifier is undefined
+            if (!firstModifier) {
+              logger.warn('Skipping block-level material group - no modifier', {
+                cx: chunk.cx,
+                cz: chunk.cz,
+                materialKey,
+              });
+              continue;
+            }
+
+            material = await this.materialService.getMaterial(
+              firstModifier,
+              0 // textureIndex - doesn't matter for property-based keys
+            );
+          }
+
           mesh.material = material;
 
           // Note: backFaceCulling is configured in MaterialService based on TextureDefinition.backFaceCulling
@@ -429,8 +537,8 @@ export class RenderService {
 
           // Register mesh for illumination glow if block has illumination modifier
           const illuminationService = this.appContext.services.illumination;
-          if (illuminationService && faceDescriptors[0].clientBlock.currentModifier.illumination?.color) {
-            const { color, strength } = faceDescriptors[0].clientBlock.currentModifier.illumination;
+          if (illuminationService && firstModifier.illumination?.color) {
+            const { color, strength } = firstModifier.illumination;
             illuminationService.registerMesh(mesh, color, strength ?? 1.0);
           }
 
@@ -648,7 +756,9 @@ export class RenderService {
 
       // Get material key (based on properties, not texture)
       // Use textureIndex 0 as placeholder - actual texture determined by UVs
-      const materialKey = this.materialService.getMaterialKey(modifier, 0);
+      // Add BLOCK| prefix to distinguish from face-level groups
+      const baseMaterialKey = this.materialService.getMaterialKey(modifier, 0);
+      const materialKey = `BLOCK|${baseMaterialKey}`;
 
       if (!groups.has(materialKey)) {
         groups.set(materialKey, []);
@@ -768,7 +878,9 @@ export class RenderService {
         const resolvedTextureIndex = this.resolveTextureIndex(textures, textureKey, shape);
 
         // Calculate materialKey using the RESOLVED texture index
-        const materialKey = this.materialService.getMaterialKey(modifier, resolvedTextureIndex);
+        // Add FACE| prefix to distinguish from block-level groups
+        const baseMaterialKey = this.materialService.getMaterialKey(modifier, resolvedTextureIndex);
+        const materialKey = `FACE|${baseMaterialKey}`;
 
         if (!groups.has(materialKey)) {
           groups.set(materialKey, []);
