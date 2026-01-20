@@ -6,7 +6,7 @@
  */
 
 import { Mesh, VertexData, Scene, VertexBuffer } from '@babylonjs/core';
-import { getLogger, ExceptionHandler, Shape, BlockEffect } from '@nimbus/shared';
+import { getLogger, ExceptionHandler, Shape, BlockEffect, FaceFlag, FaceVisibilityHelper } from '@nimbus/shared';
 import type { AppContext } from '../AppContext';
 import type { ClientChunk } from '../types/ClientChunk';
 import type { ClientBlock } from '../types/ClientBlock';
@@ -54,6 +54,15 @@ interface FaceData {
   windStability?: number[];
   windLeverUp?: number[];
   windLeverDown?: number[];
+}
+
+/**
+ * Describes a single face to be rendered
+ */
+interface FaceDescriptor {
+  clientBlock: ClientBlock;
+  textureKey: number;  // 0=ALL, 1=TOP, 2=BOTTOM, 3=LEFT, 4=RIGHT, 5=FRONT, 6=BACK, 7=SIDE
+  isVisible: boolean;
 }
 
 /**
@@ -289,8 +298,8 @@ export class RenderService {
         separateMeshBlocks: separateMeshBlocks.length,
       });
 
-      // 1. Render chunk mesh blocks (batched by material)
-      const materialGroups = this.groupBlocksByMaterial(clientChunk, chunkMeshBlocks);
+      // 1. Render chunk mesh blocks (batched by material at face level)
+      const materialGroups = this.groupFacesByMaterial(clientChunk, chunkMeshBlocks);
 
       logger.debug('Material groups created', {
         cx: chunk.cx,
@@ -302,10 +311,10 @@ export class RenderService {
       // Create mesh for each material group
       const meshMap = new Map<string, Mesh>();
 
-      for (const [materialKey, blocks] of materialGroups) {
-        // Check if this material group needs wind attributes (check first block's modifier)
-        const firstBlock = blocks[0];
-        const needsWind = firstBlock?.currentModifier?.visibility?.effect === BlockEffect.WIND;
+      for (const [materialKey, faceDescriptors] of materialGroups) {
+        // Check if this material group needs wind attributes (check first face's block modifier)
+        const firstFace = faceDescriptors[0];
+        const needsWind = firstFace?.clientBlock.currentModifier?.visibility?.effect === BlockEffect.WIND;
 
         const faceData: FaceData = {
           positions: [],
@@ -329,8 +338,12 @@ export class RenderService {
           resourcesToDispose,
         };
 
-        // Render all blocks in this material group
-        for (const clientBlock of blocks) {
+        // Render all faces in this material group
+        // Track blocks already rendered (for renderers without renderSingleFace support)
+        const renderedBlocks = new Set<ClientBlock>();
+
+        for (const faceDescriptor of faceDescriptors) {
+          const { clientBlock, textureKey } = faceDescriptor;
           const block = clientBlock.block;
 
           // Validate block data
@@ -351,30 +364,24 @@ export class RenderService {
             continue;
           }
 
-          // Render cubes, crosses, hashes, spheres, cylinders, steps, stairs, fog, and walls
-          if (shape === Shape.CUBE) {
-            await this.cubeRenderer.render(renderContext, clientBlock);
-          } else if (shape === Shape.CROSS) {
-            await this.crossRenderer.render(renderContext, clientBlock);
-          } else if (shape === Shape.HASH) {
-            await this.hashRenderer.render(renderContext, clientBlock);
-          } else if (shape === Shape.SPHERE) {
-            await this.sphereRenderer.render(renderContext, clientBlock);
-          } else if (shape === Shape.CYLINDER) {
-            await this.cylinderRenderer.render(renderContext, clientBlock);
-          } else if (shape === Shape.STEPS) {
-            await this.stepsRenderer.render(renderContext, clientBlock);
-          } else if (shape === Shape.STAIR) {
-            await this.stairRenderer.render(renderContext, clientBlock);
-          } else if (shape === Shape.FOG) {
-            await this.fogRenderer.render(renderContext, clientBlock);
-          } else if (shape === Shape.WALL) {
-            await this.wallRenderer.render(renderContext, clientBlock);
-          } else {
+          const renderer = this.getRendererForShape(shape);
+          if (!renderer) {
             logger.debug('Unsupported shape, skipping', {
               shape,
               blockTypeId: block.blockTypeId,
             });
+            continue;
+          }
+
+          // Use renderSingleFace if available, fallback to render for entire block
+          if (renderer.renderSingleFace) {
+            await renderer.renderSingleFace(renderContext, clientBlock, textureKey);
+          } else {
+            // Fallback: render entire block only ONCE (not per face)
+            if (!renderedBlocks.has(clientBlock)) {
+              await renderer.render(renderContext, clientBlock);
+              renderedBlocks.add(clientBlock);
+            }
           }
         }
 
@@ -399,9 +406,20 @@ export class RenderService {
           const mesh = this.createMesh(meshName, faceData);
 
           // Get and apply material
+          // Resolve texture index for material (first face is representative of this material group)
+          const firstFace = faceDescriptors[0];
+          const firstModifier = firstFace.clientBlock.currentModifier;
+          const firstTextures = firstModifier.visibility?.textures;
+          const firstShape = firstModifier.visibility?.shape ?? Shape.CUBE;
+          const resolvedTextureIndex = this.resolveTextureIndex(
+            firstTextures,
+            firstFace.textureKey,
+            firstShape
+          );
+
           const material = await this.materialService.getMaterial(
-            blocks[0].currentModifier, // Use first block's modifier to get material
-            0 // textureIndex - doesn't matter for property-based keys
+            firstModifier,
+            resolvedTextureIndex // Use the RESOLVED texture index for material
           );
           mesh.material = material;
 
@@ -411,8 +429,8 @@ export class RenderService {
 
           // Register mesh for illumination glow if block has illumination modifier
           const illuminationService = this.appContext.services.illumination;
-          if (illuminationService && blocks[0].currentModifier.illumination?.color) {
-            const { color, strength } = blocks[0].currentModifier.illumination;
+          if (illuminationService && faceDescriptors[0].clientBlock.currentModifier.illumination?.color) {
+            const { color, strength } = faceDescriptors[0].clientBlock.currentModifier.illumination;
             illuminationService.registerMesh(mesh, color, strength ?? 1.0);
           }
 
@@ -483,22 +501,14 @@ export class RenderService {
   }
 
   /**
-   * Get appropriate renderer for a block
+   * Get appropriate renderer for a shape
    *
-   * Routes blocks to the correct renderer based on shader or shape.
+   * Routes shapes to the correct renderer.
    *
-   * @param clientBlock Block to get renderer for
+   * @param shape Shape to get renderer for
    * @returns BlockRenderer instance or null if not supported
    */
-  private getRenderer(clientBlock: ClientBlock): BlockRenderer | null {
-    const modifier = clientBlock.currentModifier;
-    if (!modifier || !modifier.visibility) {
-      return null;
-    }
-
-    const shape = modifier.visibility.shape ?? Shape.CUBE;
-
-    // Check shape
+  private getRendererForShape(shape: Shape): BlockRenderer | null {
     switch (shape) {
       case Shape.CUBE:
         return this.cubeRenderer;
@@ -543,6 +553,24 @@ export class RenderService {
       default:
         return null;
     }
+  }
+
+  /**
+   * Get appropriate renderer for a block
+   *
+   * Routes blocks to the correct renderer based on shader or shape.
+   *
+   * @param clientBlock Block to get renderer for
+   * @returns BlockRenderer instance or null if not supported
+   */
+  private getRenderer(clientBlock: ClientBlock): BlockRenderer | null {
+    const modifier = clientBlock.currentModifier;
+    if (!modifier || !modifier.visibility) {
+      return null;
+    }
+
+    const shape = modifier.visibility.shape ?? Shape.CUBE;
+    return this.getRendererForShape(shape);
   }
 
   /**
@@ -627,6 +655,131 @@ export class RenderService {
       }
 
       groups.get(materialKey)!.push(clientBlock);
+    }
+
+    return groups;
+  }
+
+  /**
+   * Get relevant texture keys for a shape
+   * Returns the texture keys that should be checked for this shape type
+   */
+  private getTextureKeysForShape(shape: Shape): number[] {
+    switch (shape) {
+      case Shape.CUBE:
+        return [1, 2, 3, 4, 5, 6]; // TOP, BOTTOM, LEFT, RIGHT, FRONT, BACK
+      case Shape.CROSS:
+        return [3, 4]; // LEFT (diagonal1), RIGHT (diagonal2)
+      case Shape.HASH:
+        return [3, 4, 5, 6]; // 4 vertical faces
+      default:
+        return [0]; // ALL
+    }
+  }
+
+  /**
+   * Resolve texture index with fallback logic
+   * Returns the actual texture index to use after applying fallback rules
+   */
+  private resolveTextureIndex(textures: any, textureKey: number, shape: Shape): number {
+    if (!textures) {
+      return 0;
+    }
+
+    // For CROSS blocks: special fallback logic
+    if (shape === Shape.CROSS) {
+      if (textureKey === 3) {
+        // LEFT diagonal: 3 -> 7 -> 0
+        if (textures[3]) return 3;
+        if (textures[7]) return 7;
+        return 0;
+      } else if (textureKey === 4) {
+        // RIGHT diagonal: 4 -> 3 -> 7 -> 0
+        if (textures[4]) return 4;
+        if (textures[3]) return 3;
+        if (textures[7]) return 7;
+        return 0;
+      }
+    }
+
+    // For CUBE and HASH blocks: standard fallback
+    // textureKey -> 7 (SIDE) -> 0 (ALL)
+    if (textures[textureKey]) {
+      return textureKey;
+    }
+    if (textures[7]) {
+      return 7;
+    }
+    return 0;
+  }
+
+  /**
+   * Convert TextureKey to FaceFlag for visibility check
+   */
+  private textureKeyToFaceFlag(textureKey: number): FaceFlag {
+    const mapping: { [key: number]: FaceFlag } = {
+      1: FaceFlag.TOP,
+      2: FaceFlag.BOTTOM,
+      3: FaceFlag.LEFT,
+      4: FaceFlag.RIGHT,
+      5: FaceFlag.FRONT,
+      6: FaceFlag.BACK
+    };
+    return mapping[textureKey] ?? FaceFlag.ALL;
+  }
+
+  /**
+   * Group faces by material properties
+   * Returns Map<materialKey, FaceDescriptor[]>
+   *
+   * This is the new face-level grouping system that allows different faces
+   * of the same block to have different materials.
+   */
+  private groupFacesByMaterial(
+    clientChunk: ClientChunk,
+    blocksToGroup?: ClientBlock[]
+  ): Map<string, FaceDescriptor[]> {
+    const groups = new Map<string, FaceDescriptor[]>();
+    const blocks = blocksToGroup || Array.from(clientChunk.data.data.values());
+
+    for (const clientBlock of blocks) {
+      const modifier = clientBlock.currentModifier;
+      if (!modifier || !modifier.visibility) {
+        continue;
+      }
+
+      const shape = modifier.visibility.shape ?? Shape.CUBE;
+      const textureKeys = this.getTextureKeysForShape(shape);
+
+      // For each face of this block
+      for (const textureKey of textureKeys) {
+        // Check face visibility
+        const isVisible = FaceVisibilityHelper.isVisible(
+          clientBlock,
+          this.textureKeyToFaceFlag(textureKey)
+        );
+
+        if (!isVisible) {
+          continue;
+        }
+
+        // Resolve texture index with fallback logic FOR MATERIAL GROUPING ONLY
+        const textures = modifier.visibility.textures;
+        const resolvedTextureIndex = this.resolveTextureIndex(textures, textureKey, shape);
+
+        // Calculate materialKey using the RESOLVED texture index
+        const materialKey = this.materialService.getMaterialKey(modifier, resolvedTextureIndex);
+
+        if (!groups.has(materialKey)) {
+          groups.set(materialKey, []);
+        }
+
+        groups.get(materialKey)!.push({
+          clientBlock,
+          textureKey, // Store ORIGINAL textureKey (face ID: 1=TOP, 2=BOTTOM, etc.) for rendering
+          isVisible: true
+        });
+      }
     }
 
     return groups;

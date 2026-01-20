@@ -445,4 +445,296 @@ export class HashRenderer extends BlockRenderer {
 
     renderContext.vertexOffset += 4;
   }
+
+  /**
+   * Render a single face of a hash block
+   */
+  async renderSingleFace(
+    renderContext: RenderContext,
+    block: ClientBlock,
+    textureKey: number
+  ): Promise<void> {
+    const modifier = block.currentModifier;
+    if (!modifier || !modifier.visibility) {
+      return;
+    }
+
+    const textures = modifier.visibility.textures;
+    if (!textures) {
+      return;
+    }
+
+    const worldX = block.block.position.x;
+    const worldY = block.block.position.y;
+    const worldZ = block.block.position.z;
+
+    // Calculate and transform all 24 points
+    const points = this.calculatePoints(worldX, worldY, worldZ);
+    this.applyTransformations(points, block, modifier);
+
+    // Get texture with fallback logic (same as render() method)
+    const textureIndex = this.getTextureIndexForFace(textures, textureKey);
+    const texture = textures[textureIndex] ? this.normalizeTexture(textures[textureIndex]) : null;
+    if (!texture) {
+      return;
+    }
+
+    // Render the requested face
+    switch (textureKey) {
+      case 1: // TOP (points 0-3)
+        await this.addFace(
+          points[0], points[1], points[2], points[3],
+          [0, 1, 0],
+          texture,
+          modifier,
+          block.block,
+          renderContext,
+          false
+        );
+        break;
+      case 2: // BOTTOM (points 4-7)
+        await this.addFace(
+          points[4], points[5], points[6], points[7],
+          [0, -1, 0],
+          texture,
+          modifier,
+          block.block,
+          renderContext,
+          false
+        );
+        break;
+      case 3: // LEFT (points 8-11)
+        await this.addFace(
+          points[8], points[11], points[10], points[9],
+          [-1, 0, 0],
+          texture,
+          modifier,
+          block.block,
+          renderContext,
+          true
+        );
+        break;
+      case 4: // RIGHT (points 12-15)
+        await this.addFace(
+          points[13], points[12], points[15], points[14],
+          [1, 0, 0],
+          texture,
+          modifier,
+          block.block,
+          renderContext,
+          true
+        );
+        break;
+      case 5: // FRONT (points 16-19)
+        await this.addFace(
+          points[16], points[19], points[18], points[17],
+          [0, 0, 1],
+          texture,
+          modifier,
+          block.block,
+          renderContext,
+          true
+        );
+        break;
+      case 6: // BACK (points 20-23)
+        await this.addFace(
+          points[21], points[20], points[23], points[22],
+          [0, 0, -1],
+          texture,
+          modifier,
+          block.block,
+          renderContext,
+          true
+        );
+        break;
+    }
+  }
+
+  /**
+   * Get texture index for a face with fallback logic
+   * Tries textureKey first, then 7 (SIDE), then 0 (ALL)
+   */
+  private getTextureIndexForFace(textures: any, textureKey: number): number {
+    if (textures[textureKey]) {
+      return textureKey;
+    }
+    if (textures[7]) {
+      return 7; // Fallback to SIDE
+    }
+    return 0; // Fallback to ALL
+  }
+
+  /**
+   * Helper: Calculate 24 points (4 per face)
+   */
+  private calculatePoints(worldX: number, worldY: number, worldZ: number): number[][] {
+    const size = 1;
+    const points: number[][] = [];
+
+    // Top face (4 points) - Indices 0-3
+    points.push(
+      [worldX, worldY + size, worldZ],              // 0: left-back
+      [worldX + size, worldY + size, worldZ],       // 1: right-back
+      [worldX + size, worldY + size, worldZ + size], // 2: right-front
+      [worldX, worldY + size, worldZ + size]        // 3: left-front
+    );
+
+    // Bottom face (4 points) - Indices 4-7
+    points.push(
+      [worldX, worldY, worldZ],              // 4: left-back
+      [worldX, worldY, worldZ + size],       // 5: left-front
+      [worldX + size, worldY, worldZ + size], // 6: right-front
+      [worldX + size, worldY, worldZ]        // 7: right-back
+    );
+
+    // Left face (4 points) - Indices 8-11
+    points.push(
+      [worldX, worldY, worldZ],              // 8: back-bottom
+      [worldX, worldY + size, worldZ],       // 9: back-top
+      [worldX, worldY + size, worldZ + size], // 10: front-top
+      [worldX, worldY, worldZ + size]        // 11: front-bottom
+    );
+
+    // Right face (4 points) - Indices 12-15
+    points.push(
+      [worldX + size, worldY, worldZ],       // 12: back-bottom
+      [worldX + size, worldY, worldZ + size], // 13: front-bottom
+      [worldX + size, worldY + size, worldZ + size], // 14: front-top
+      [worldX + size, worldY + size, worldZ] // 15: back-top
+    );
+
+    // Front face (4 points) - Indices 16-19
+    points.push(
+      [worldX, worldY, worldZ + size],       // 16: left-bottom
+      [worldX, worldY + size, worldZ + size], // 17: left-top
+      [worldX + size, worldY + size, worldZ + size], // 18: right-top
+      [worldX + size, worldY, worldZ + size] // 19: right-bottom
+    );
+
+    // Back face (4 points) - Indices 20-23
+    points.push(
+      [worldX, worldY, worldZ],              // 20: left-bottom
+      [worldX + size, worldY, worldZ],       // 21: right-bottom
+      [worldX + size, worldY + size, worldZ], // 22: right-top
+      [worldX, worldY + size, worldZ]        // 23: left-top
+    );
+
+    return points;
+  }
+
+  /**
+   * Helper: Apply offsets, scaling, rotation to points
+   */
+  private applyTransformations(
+    points: number[][],
+    block: ClientBlock,
+    modifier: any
+  ): void {
+    const worldX = block.block.position.x;
+    const worldY = block.block.position.y;
+    const worldZ = block.block.position.z;
+    const size = 1;
+
+    const centerX = worldX + size / 2;
+    const centerY = worldY + size / 2;
+    const centerZ = worldZ + size / 2;
+
+    // Apply offsets with face-specific axis constraints
+    const offsets = block.block.offsets;
+    if (offsets) {
+      // Top face (0-3): Only X and Z offsets (Y fixed at top)
+      for (let i = 0; i < 4 && i * 3 + 2 < offsets.length; i++) {
+        points[i][0] += offsets[i * 3] ?? 0;     // X offset
+        // Y stays at worldY + size
+        points[i][2] += offsets[i * 3 + 2] ?? 0; // Z offset
+      }
+
+      // Bottom face (4-7): Only X and Z offsets (Y fixed at bottom)
+      for (let i = 4; i < 8 && i * 3 + 2 < offsets.length; i++) {
+        points[i][0] += offsets[i * 3] ?? 0;     // X offset
+        // Y stays at worldY
+        points[i][2] += offsets[i * 3 + 2] ?? 0; // Z offset
+      }
+
+      // Left face (8-11): Only Y and Z offsets (X fixed at left)
+      for (let i = 8; i < 12 && i * 3 + 2 < offsets.length; i++) {
+        // X stays at worldX
+        points[i][1] += offsets[i * 3 + 1] ?? 0; // Y offset
+        points[i][2] += offsets[i * 3 + 2] ?? 0; // Z offset
+      }
+
+      // Right face (12-15): Only Y and Z offsets (X fixed at right)
+      for (let i = 12; i < 16 && i * 3 + 2 < offsets.length; i++) {
+        // X stays at worldX + size
+        points[i][1] += offsets[i * 3 + 1] ?? 0; // Y offset
+        points[i][2] += offsets[i * 3 + 2] ?? 0; // Z offset
+      }
+
+      // Front face (16-19): Only X and Y offsets (Z fixed at front)
+      for (let i = 16; i < 20 && i * 3 + 2 < offsets.length; i++) {
+        points[i][0] += offsets[i * 3] ?? 0;     // X offset
+        points[i][1] += offsets[i * 3 + 1] ?? 0; // Y offset
+        // Z stays at worldZ + size
+      }
+
+      // Back face (20-23): Only X and Y offsets (Z fixed at back)
+      for (let i = 20; i < 24 && i * 3 + 2 < offsets.length; i++) {
+        points[i][0] += offsets[i * 3] ?? 0;     // X offset
+        points[i][1] += offsets[i * 3 + 1] ?? 0; // Y offset
+        // Z stays at worldZ
+      }
+    }
+
+    // Apply scaling (after offsets, before rotation)
+    const scalingX = modifier.visibility?.scalingX ?? 1.0;
+    const scalingY = modifier.visibility?.scalingY ?? 1.0;
+    const scalingZ = modifier.visibility?.scalingZ ?? 1.0;
+
+    if (scalingX !== 1.0 || scalingY !== 1.0 || scalingZ !== 1.0) {
+      for (let i = 0; i < 24; i++) {
+        // Translate to origin (relative to center)
+        points[i][0] -= centerX;
+        points[i][1] -= centerY;
+        points[i][2] -= centerZ;
+
+        // Apply scaling
+        points[i][0] *= scalingX;
+        points[i][1] *= scalingY;
+        points[i][2] *= scalingZ;
+
+        // Translate back
+        points[i][0] += centerX;
+        points[i][1] += centerY;
+        points[i][2] += centerZ;
+      }
+    }
+
+    // Apply rotation (after scaling)
+    const rotationX = block.block.rotation?.x ?? 0;
+    const rotationY = block.block.rotation?.y ?? 0;
+
+    if (rotationX !== 0 || rotationY !== 0) {
+      const radX = rotationX * Math.PI / 180;
+      const radY = rotationY * Math.PI / 180;
+
+      const rotationMatrix = Matrix.RotationYawPitchRoll(radY, radX, 0);
+
+      for (let i = 0; i < 24; i++) {
+        // Translate to origin
+        const relativePos = new Vector3(
+          points[i][0] - centerX,
+          points[i][1] - centerY,
+          points[i][2] - centerZ
+        );
+
+        // Apply rotation
+        const rotatedPos = Vector3.TransformCoordinates(relativePos, rotationMatrix);
+
+        // Translate back
+        points[i][0] = rotatedPos.x + centerX;
+        points[i][1] = rotatedPos.y + centerY;
+        points[i][2] = rotatedPos.z + centerZ;
+      }
+    }
+  }
 }

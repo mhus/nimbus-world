@@ -27,6 +27,20 @@ export abstract class BlockRenderer {
 ): void | Promise<void>;
 
   /**
+   * Render a single face of a block
+   * Optional method for renderers that support face-level rendering
+   *
+   * @param renderContext - Render context
+   * @param block - Block to render
+   * @param textureKey - Which face to render (0=ALL, 1=TOP, 2=BOTTOM, 3=LEFT, 4=RIGHT, 5=FRONT, 6=BACK, 7=SIDE)
+   */
+  renderSingleFace?(
+    renderContext: RenderContext,
+    block: ClientBlock,
+    textureKey: number
+  ): void | Promise<void>;
+
+  /**
    * Determine if this renderer requires a separate mesh for each block
    *
    * Most renderers (CUBE) return false - they batch all blocks into a single chunk mesh.

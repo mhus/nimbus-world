@@ -301,4 +301,193 @@ export class CrossRenderer extends BlockRenderer {
 
     renderContext.vertexOffset += 4;  // 4 vertices added
   }
+
+  /**
+   * Render a single diagonal face of a cross block
+   */
+  async renderSingleFace(
+    renderContext: RenderContext,
+    block: ClientBlock,
+    textureKey: number
+  ): Promise<void> {
+    const modifier = block.currentModifier;
+    if (!modifier || !modifier.visibility) {
+      return;
+    }
+
+    const worldX = block.block.position.x;
+    const worldY = block.block.position.y;
+    const worldZ = block.block.position.z;
+
+    // Calculate and transform corners
+    const corners = this.calculateCorners(worldX, worldY, worldZ);
+    this.applyTransformations(corners, block, modifier);
+
+    const textures = modifier.visibility.textures;
+    if (!textures) {
+      return;
+    }
+
+    // Get texture with fallback logic (textureKey -> 7 (SIDE) -> 0 (ALL))
+    const textureIndex = this.getTextureIndexForFace(textures, textureKey);
+    const texture = textures[textureIndex] ? this.normalizeTexture(textures[textureIndex]) : null;
+
+    if (!texture) {
+      return;
+    }
+
+    // Render diagonal face based on textureKey
+    switch (textureKey) {
+      case 3: // LEFT → Diagonal 1
+        await this.addFace(
+          corners[0], corners[2], corners[6], corners[4],
+          [0.707, 0, -0.707],
+          texture,
+          modifier,
+          block.block,
+          renderContext,
+          true
+        );
+        break;
+      case 4: // RIGHT → Diagonal 2
+        await this.addFace(
+          corners[3], corners[1], corners[5], corners[7],
+          [-0.707, 0, -0.707],
+          texture,
+          modifier,
+          block.block,
+          renderContext,
+          true
+        );
+        break;
+    }
+  }
+
+  /**
+   * Get texture index for a face with fallback logic
+   * For cross blocks: textureKey 3 uses texture[3] or texture[7] or texture[0]
+   *                   textureKey 4 uses texture[4] or texture[3] or texture[7] or texture[0]
+   */
+  private getTextureIndexForFace(textures: any, textureKey: number): number {
+    if (textureKey === 3) {
+      // LEFT diagonal: 3 -> 7 -> 0
+      if (textures[3]) return 3;
+      if (textures[7]) return 7;
+      return 0;
+    } else if (textureKey === 4) {
+      // RIGHT diagonal: 4 -> 3 -> 7 -> 0
+      if (textures[4]) return 4;
+      if (textures[3]) return 3;
+      if (textures[7]) return 7;
+      return 0;
+    }
+    return 0;
+  }
+
+  /**
+   * Helper: Calculate 8 corners
+   */
+  private calculateCorners(worldX: number, worldY: number, worldZ: number): number[][] {
+    const size = 1;
+    return [
+      // Bottom corners
+      [worldX, worldY, worldZ],              // 0: left-back-bottom
+      [worldX + size, worldY, worldZ],       // 1: right-back-bottom
+      [worldX + size, worldY, worldZ + size], // 2: right-front-bottom
+      [worldX, worldY, worldZ + size],       // 3: left-front-bottom
+      // Top corners
+      [worldX, worldY + size, worldZ],       // 4: left-back-top
+      [worldX + size, worldY + size, worldZ], // 5: right-back-top
+      [worldX + size, worldY + size, worldZ + size], // 6: right-front-top
+      [worldX, worldY + size, worldZ + size], // 7: left-front-top
+    ];
+  }
+
+  /**
+   * Helper: Apply offsets, scaling, rotation to corners
+   */
+  private applyTransformations(
+    corners: number[][],
+    block: ClientBlock,
+    modifier: any
+  ): void {
+    const worldX = block.block.position.x;
+    const worldY = block.block.position.y;
+    const worldZ = block.block.position.z;
+    const size = 1;
+
+    // Block center for transformations
+    const centerX = worldX + size / 2;
+    const centerY = worldY + size / 2;
+    const centerZ = worldZ + size / 2;
+
+    // Apply edge offsets if available (supports all 8 corners like cube)
+    const offsets = block.block.offsets;
+    if (offsets) {
+      for (let i = 0; i < 8 && i * 3 + 2 < offsets.length; i++) {
+        const offsetX = offsets[i * 3];
+        const offsetY = offsets[i * 3 + 1];
+        const offsetZ = offsets[i * 3 + 2];
+
+        corners[i][0] += offsetX ?? 0;
+        corners[i][1] += offsetY ?? 0;
+        corners[i][2] += offsetZ ?? 0;
+      }
+    }
+
+    // Apply scaling if specified (after offsets, before rotation)
+    const scalingX = modifier.visibility?.scalingX ?? 1.0;
+    const scalingY = modifier.visibility?.scalingY ?? 1.0;
+    const scalingZ = modifier.visibility?.scalingZ ?? 1.0;
+
+    if (scalingX !== 1.0 || scalingY !== 1.0 || scalingZ !== 1.0) {
+      for (let i = 0; i < 8; i++) {
+        // Translate to origin (relative to center)
+        corners[i][0] -= centerX;
+        corners[i][1] -= centerY;
+        corners[i][2] -= centerZ;
+
+        // Apply scaling
+        corners[i][0] *= scalingX;
+        corners[i][1] *= scalingY;
+        corners[i][2] *= scalingZ;
+
+        // Translate back
+        corners[i][0] += centerX;
+        corners[i][1] += centerY;
+        corners[i][2] += centerZ;
+      }
+    }
+
+    // Apply rotation if specified (after scaling)
+    const rotationX = block.block.rotation?.x ?? 0;
+    const rotationY = block.block.rotation?.y ?? 0;
+
+    if (rotationX !== 0 || rotationY !== 0) {
+      // Convert degrees to radians
+      const radX = rotationX * Math.PI / 180;
+      const radY = rotationY * Math.PI / 180;
+
+      // Create rotation matrix
+      const rotationMatrix = Matrix.RotationYawPitchRoll(radY, radX, 0);
+
+      // Apply rotation to each corner around the block center
+      for (let i = 0; i < 8; i++) {
+        // Translate to origin (relative to center)
+        const relativePos = new Vector3(
+          corners[i][0] - centerX,
+          corners[i][1] - centerY,
+          corners[i][2] - centerZ
+        );
+
+        // Apply rotation
+        const rotatedPos = Vector3.TransformCoordinates(relativePos, rotationMatrix);
+
+        // Translate back and update corner
+        corners[i][0] = rotatedPos.x + centerX;
+        corners[i][1] = rotatedPos.y + centerY;
+        corners[i][2] = rotatedPos.z + centerZ;
+      }
+    }
+  }
 }
