@@ -8,6 +8,7 @@
             <span v-if="chunk.compressed" class="badge badge-success badge-sm">Compressed</span>
           </h3>
           <div class="mt-2 space-y-1 text-sm text-base-content/70">
+            <p>Hex: {{ chunk.hex || 'N/A' }}</p>
             <p>Storage ID: {{ chunk.storageId || 'N/A' }}</p>
             <p>Block Count: {{ chunk.blockCount || 0 }}</p>
             <p>Created: {{ formatDate(chunk.createdAt) }}</p>

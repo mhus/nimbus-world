@@ -212,8 +212,10 @@ public class EChunkController extends BaseEditorController {
                 "id", chunk.getId(),
                 "worldId", chunk.getWorldId(),
                 "chunk", chunk.getChunk(),
+                "hex", chunk.getHex() != null ? chunk.getHex() : "",
                 "storageId", chunk.getStorageId() != null ? chunk.getStorageId() : "",
                 "compressed", chunk.isCompressed(),
+                "blockCount", chunk.getBlockCount(),
                 "createdAt", chunk.getCreatedAt() != null ? chunk.getCreatedAt().toString() : "",
                 "updatedAt", chunk.getUpdatedAt() != null ? chunk.getUpdatedAt().toString() : ""
         );

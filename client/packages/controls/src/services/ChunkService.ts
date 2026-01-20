@@ -9,6 +9,7 @@ export interface ChunkMetadata {
   id: string;
   worldId: string;
   chunk: string;
+  hex: string;
   storageId: string;
   compressed: boolean;
   blockCount: number;

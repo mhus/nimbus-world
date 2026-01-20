@@ -72,8 +72,34 @@
           </label>
         </div>
 
-        <!-- Size/Mount Parameters (not for gridBorder - auto-calculated) -->
-        <div v-if="!isGridBorderType" class="grid grid-cols-2 gap-3">
+        <!-- Mount/Size Parameters (only for non-HexGrid types - HexGrid auto-calculates) -->
+        <div v-if="!isHexGridType" class="grid grid-cols-2 gap-3">
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text">Mount X *</span>
+            </label>
+            <input
+              v-model.number="mountX"
+              type="number"
+              class="input input-bordered"
+              required
+            />
+          </div>
+
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text">Mount Z *</span>
+            </label>
+            <input
+              v-model.number="mountZ"
+              type="number"
+              class="input input-bordered"
+              required
+            />
+          </div>
+        </div>
+
+        <div v-if="!isHexGridType" class="grid grid-cols-2 gap-3">
           <div class="form-control">
             <label class="label">
               <span class="label-text">Size X (50-800) *</span>
@@ -98,32 +124,6 @@
               class="input input-bordered"
               min="50"
               max="800"
-              required
-            />
-          </div>
-        </div>
-
-        <div v-if="!isGridBorderType" class="grid grid-cols-2 gap-3">
-          <div class="form-control">
-            <label class="label">
-              <span class="label-text">Mount X *</span>
-            </label>
-            <input
-              v-model.number="mountX"
-              type="number"
-              class="input input-bordered"
-              required
-            />
-          </div>
-
-          <div class="form-control">
-            <label class="label">
-              <span class="label-text">Mount Z *</span>
-            </label>
-            <input
-              v-model.number="mountZ"
-              type="number"
-              class="input input-bordered"
               required
             />
           </div>
