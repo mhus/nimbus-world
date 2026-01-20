@@ -12,25 +12,18 @@ import java.util.Map;
  * Ocean scenario builder.
  * Creates deep ocean with varying depth.
  */
-@Component
 @Slf4j
-public class OceanBuilder implements CompositionBuilder {
-
-    @Override
-    public String getType() {
-        return "ocean";
-    }
+public class OceanBuilder extends HexGridBuilder {
 
     @Override
     public void build(BuilderContext context) {
         WFlat flat = context.getFlat();
-        Map<String, String> parameters = context.getParameters();
 
         log.info("Building ocean scenario for flat: {}, neighbors: {}",
                 flat.getFlatId(), context.getNeighborTypes());
 
         int oceanLevel = flat.getOceanLevel();
-        int oceanDepth = parseIntParameter(parameters, "gf.oceanDepth", 30);
+        int oceanDepth = parseIntParameter(parameters, "g_oceanDepth", 30);
 
         FlatPainter painter = new FlatPainter(flat);
 

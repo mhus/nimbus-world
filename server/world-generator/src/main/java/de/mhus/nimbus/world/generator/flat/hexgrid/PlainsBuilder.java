@@ -12,25 +12,18 @@ import java.util.Map;
  * Plains scenario builder.
  * Creates flat grassland with minor variations.
  */
-@Component
 @Slf4j
-public class PlainsBuilder implements CompositionBuilder {
-
-    @Override
-    public String getType() {
-        return "plains";
-    }
+public class PlainsBuilder extends HexGridBuilder {
 
     @Override
     public void build(BuilderContext context) {
         WFlat flat = context.getFlat();
-        Map<String, String> parameters = context.getParameters();
 
         log.info("Building plains scenario for flat: {}, neighbors: {}",
                 flat.getFlatId(), context.getNeighborTypes());
 
-        int groundLevel = parseIntParameter(parameters, "gf.groundLevel", 64);
-        double variation = parseDoubleParameter(parameters, "gf.variation", 0.1);
+        int groundLevel = parseIntParameter(parameters, "g_groundLevel", 64);
+        double variation = parseDoubleParameter(parameters, "g_variation", 0.1);
 
         FlatPainter painter = new FlatPainter(flat);
 

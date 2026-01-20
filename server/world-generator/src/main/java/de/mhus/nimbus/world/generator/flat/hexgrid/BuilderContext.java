@@ -26,11 +26,6 @@ public class BuilderContext {
     private final WHexGrid hexGrid;
 
     /**
-     * Merged parameters (hex grid gf.* params + manipulator params).
-     */
-    private final Map<String, String> parameters;
-
-    /**
      * Scenario types of neighboring hex grids.
      * Key is the neighbor position (TOP_RIGHT, RIGHT, BOTTOM_RIGHT, BOTTOM_LEFT, LEFT, TOP_LEFT).
      * Value is the scenario type (g.type parameter) or null if neighbor doesn't exist or has no type.

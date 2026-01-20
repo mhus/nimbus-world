@@ -13,28 +13,21 @@ import java.util.Random;
  * Island scenario builder.
  * Creates island(s) surrounded by ocean.
  */
-@Component
 @Slf4j
-public class IslandBuilder implements CompositionBuilder {
-
-    @Override
-    public String getType() {
-        return "island";
-    }
+public class IslandBuilder extends HexGridBuilder {
 
     @Override
     public void build(BuilderContext context) {
         WFlat flat = context.getFlat();
-        Map<String, String> parameters = context.getParameters();
 
         log.info("Building island scenario for flat: {}, neighbors: {}",
                 flat.getFlatId(), context.getNeighborTypes());
 
         int oceanLevel = flat.getOceanLevel();
-        int islandHeight = parseIntParameter(parameters, "gf.islandHeight", 15);
-        int islandRadius = parseIntParameter(parameters, "gf.islandRadius", 40);
-        int smallIslands = parseIntParameter(parameters, "gf.smallIslands", 3);
-        long seed = parseLongParameter(parameters, "gf.seed", System.currentTimeMillis());
+        int islandHeight = parseIntParameter(parameters, "g_islandHeight", 15);
+        int islandRadius = parseIntParameter(parameters, "g_islandRadius", 40);
+        int smallIslands = parseIntParameter(parameters, "g_smallIslands", 3);
+        long seed = parseLongParameter(parameters, "g_seed", System.currentTimeMillis());
 
         Random random = new Random(seed);
         FlatPainter painter = new FlatPainter(flat);

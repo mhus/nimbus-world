@@ -67,14 +67,6 @@
     <!-- Legend -->
     <div class="mt-4 flex gap-4 text-sm">
       <div class="flex items-center gap-2">
-        <div class="w-4 h-4 rounded" style="background-color: #3b82f6;"></div>
-        <span>Existing (enabled)</span>
-      </div>
-      <div class="flex items-center gap-2">
-        <div class="w-4 h-4 rounded" style="background-color: #6b7280;"></div>
-        <span>Existing (disabled)</span>
-      </div>
-      <div class="flex items-center gap-2">
         <div class="w-4 h-4 rounded" style="background-color: #d1d5db;"></div>
         <span>Empty (click to create)</span>
       </div>
@@ -207,6 +199,15 @@ const allHexagons = computed(() => {
     const { x, y } = hexToPixel(q, r);
     const posKey = TypeUtil.toStringHexCoord({ q, r });
 
+    // Get custom color from parameters or use default (dark gray)
+    const customColor = hexGrid.parameters?.['p_color'];
+    const baseColor = customColor || '#4b5563';
+    const strokeColor = customColor || '#374151';
+
+    // If disabled, wrap label in parentheses
+    const name = hexGrid.publicData.name || posKey;
+    const label = hexGrid.enabled ? name : `(${name})`;
+
     hexagons.push({
       key: posKey,
       q,
@@ -214,10 +215,10 @@ const allHexagons = computed(() => {
       centerX: x,
       centerY: y,
       points: getHexPoints(x, y),
-      color: hexGrid.enabled ? '#3b82f6' : '#6b7280',
-      strokeColor: hexGrid.enabled ? '#2563eb' : '#4b5563',
+      color: baseColor,
+      strokeColor: strokeColor,
       textColor: '#ffffff',
-      label: hexGrid.publicData.name || posKey,
+      label: label,
       isExisting: true,
       hexGrid
     });

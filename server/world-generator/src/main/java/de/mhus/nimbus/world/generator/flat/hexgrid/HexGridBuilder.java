@@ -1,19 +1,22 @@
 package de.mhus.nimbus.world.generator.flat.hexgrid;
 
+import java.util.Map;
+
 /**
  * Interface for building terrain compositions in hex grid flats.
  */
-public interface CompositionBuilder {
+public abstract class HexGridBuilder {
+
+    protected Map<String, String> parameters;
 
     /**
      * Build terrain composition for the hex grid flat.
      *
      * @param context BuilderContext containing flat, hex grid, parameters, and neighbor information
      */
-    void build(BuilderContext context);
+    public abstract void build(BuilderContext context);
 
-    /**
-     * Get the type/scenario name this builder handles.
-     */
-    String getType();
+    public void init(Map<String, String> parameters) {
+        this.parameters = parameters;
+    }
 }

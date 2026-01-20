@@ -8,6 +8,7 @@ import de.mhus.nimbus.world.shared.rest.BaseEditorController;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
 import de.mhus.nimbus.world.shared.world.WHexGridService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -25,6 +26,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/control/worlds/{worldId}/hexgrid")
 @RequiredArgsConstructor
+@Slf4j
 public class HexGridController extends BaseEditorController {
 
     private final WHexGridService hexGridService;
@@ -283,8 +285,10 @@ public class HexGridController extends BaseEditorController {
                     .orElseGet(() -> notFound("Hex grid not found at position: " + q + ":" + r));
 
         } catch (IllegalArgumentException e) {
+            log.error("Invalid argument while updating hex grid", e);
             return bad(e.getMessage());
         } catch (Exception e) {
+            log.error("Failed to update hex grid", e);
             return bad("Failed to update hex grid: " + e.getMessage());
         }
     }

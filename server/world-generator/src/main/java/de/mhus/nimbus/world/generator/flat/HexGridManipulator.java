@@ -1,9 +1,8 @@
 package de.mhus.nimbus.world.generator.flat;
 
 import de.mhus.nimbus.generated.types.HexVector2;
-import de.mhus.nimbus.shared.utils.TypeUtil;
 import de.mhus.nimbus.world.generator.flat.hexgrid.BuilderContext;
-import de.mhus.nimbus.world.generator.flat.hexgrid.CompositionBuilder;
+import de.mhus.nimbus.world.generator.flat.hexgrid.HexGridBuilder;
 import de.mhus.nimbus.world.generator.flat.hexgrid.HexGridBuilderService;
 import de.mhus.nimbus.world.shared.generator.WFlat;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
@@ -15,6 +14,7 @@ import org.springframework.stereotype.Component;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * HexGrid manipulator.
@@ -30,7 +30,7 @@ import java.util.Map;
 public class HexGridManipulator implements FlatManipulator {
 
     public static final String NAME = "hex-grid";
-    public static final String PARAM_TYPE = "g.type";
+    public static final String PARAM_TYPE = "g_type";
 
     @Autowired
     private WHexGridService hexGridService;
@@ -57,18 +57,18 @@ public class HexGridManipulator implements FlatManipulator {
         // Extract scenario type
         String type = parameters != null ? parameters.get(PARAM_TYPE) : null;
         if (type == null || type.isBlank()) {
-            throw new IllegalArgumentException("Parameter 'g.type' is required");
+            throw new IllegalArgumentException("Parameter 'g_type' is required");
         }
 
         // Merge hex grid parameters with manipulator parameters
         Map<String, String> mergedParameters = extractHexGridParameters(hexGrid, parameters);
 
         // Get builder for scenario type
-        CompositionBuilder builder = builderService.getBuilder(type);
-        if (builder == null) {
-            throw new IllegalArgumentException("Unknown scenario type: " + type +
-                    ". Available types: " + builderService.getAvailableTypes());
+        Optional<HexGridBuilder> builderOpt = builderService.createBuilder(type, mergedParameters);
+        if (builderOpt.isEmpty()) {
+            throw new IllegalArgumentException("Unknown scenario type: " + type);
         }
+        HexGridBuilder builder = builderOpt.get();
 
         // Load neighbor grids and extract their types
         Map<WHexGrid.NEIGHBOR, WHexGrid> neighborGrids = loadNeighborGrids(hexGrid, flat.getWorldId());
@@ -78,7 +78,6 @@ public class HexGridManipulator implements FlatManipulator {
         BuilderContext context = BuilderContext.builder()
                 .flat(flat)
                 .hexGrid(hexGrid)
-                .parameters(mergedParameters)
                 .neighborGrids(neighborGrids)
                 .neighborTypes(neighborTypes)
                 .build();
@@ -111,10 +110,10 @@ public class HexGridManipulator implements FlatManipulator {
     private Map<String, String> extractHexGridParameters(WHexGrid hexGrid, Map<String, String> manipulatorParams) {
         Map<String, String> merged = new HashMap<>();
 
-        // Add hex grid parameters with 'gf.' prefix
+        // Add hex grid parameters with 'g_' prefix
         if (hexGrid.getParameters() != null) {
             hexGrid.getParameters().forEach((key, value) -> {
-                if (key.startsWith("gf.")) {
+                if (key.startsWith("g_")) {
                     merged.put(key, value);
                 }
             });

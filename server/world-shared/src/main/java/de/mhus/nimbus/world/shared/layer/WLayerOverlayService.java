@@ -155,7 +155,7 @@ public class WLayerOverlayService {
                     var area = TypeUtil.parseArea(areaEntry.getKey());
                     var areaData = deltaArea(area, minX, minZ, maxX, maxZ);
                     if (areaData == null) continue;
-                    HashMap<String,String> p = grid.getParameters().entrySet().stream().filter(e -> e.getKey().startsWith("e."))
+                    HashMap<String,String> p = grid.getParameters().entrySet().stream().filter(e -> e.getKey().startsWith("e_"))
                             .map(e -> new AreaEntry(e.getKey().substring(2), e.getValue()))
                             .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (a,b) -> b, HashMap::new));
                     if (p.isEmpty()) continue;

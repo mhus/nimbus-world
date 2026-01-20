@@ -1,12 +1,11 @@
 package de.mhus.nimbus.world.generator.flat.hexgrid;
 
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -17,25 +16,21 @@ import java.util.Set;
 @Slf4j
 public class HexGridBuilderService {
 
-    private final List<CompositionBuilder> compositionBuilders;
-    private Map<String, CompositionBuilder> builderCache;
+    public Map<String,Class<? extends HexGridBuilder>> registry = new HashMap<>();
 
-    @Autowired
-    public HexGridBuilderService(List<CompositionBuilder> compositionBuilders) {
-        this.compositionBuilders = compositionBuilders;
-        initializeBuilderCache();
-    }
-
-    /**
-     * Initialize builder cache by registering all available builders.
-     */
-    private void initializeBuilderCache() {
-        builderCache = new HashMap<>();
-        for (CompositionBuilder builder : compositionBuilders) {
-            builderCache.put(builder.getType(), builder);
-            log.debug("Registered composition builder: {}", builder.getType());
-        }
-        log.info("Initialized HexGridBuilderService with {} builders", builderCache.size());
+    public HexGridBuilderService() {
+        registry.put("ocean", OceanBuilder.class);
+        registry.put("island", IslandBuilder.class);
+        registry.put("plains", PlainsBuilder.class);
+        registry.put("hills", HillsBuilder.class);
+        registry.put("forest", UforestBuilder.class);
+        registry.put("desert", UdessertBuilder.class);
+        registry.put("heath", UheathBuilder.class);
+        registry.put("mountains", UmountainsBuilder.class);
+        registry.put("coast", UcoastBuilder.class);
+        registry.put("swamp", UswampBuilder.class);
+        registry.put("city", UcityBuilder.class);
+        registry.put("village", UvillageBuilder.class);
     }
 
     /**
@@ -44,39 +39,15 @@ public class HexGridBuilderService {
      * @param type Scenario type (e.g., "ocean", "island", "plains")
      * @return CompositionBuilder for the given type, or null if not found
      */
-    public CompositionBuilder getBuilder(String type) {
-        CompositionBuilder builder = builderCache.get(type);
-        if (builder == null) {
-            log.warn("No builder found for type: {}, available types: {}", type, builderCache.keySet());
+    public Optional<HexGridBuilder> createBuilder(String type, Map<String, String> parameters) {
+        try {
+            HexGridBuilder builder = registry.get(type).getConstructor().newInstance();
+            builder.init(parameters);
+            return Optional.of(builder);
+        } catch (Exception e) {
+            log.error("Error creating builder for type: {}", type, e);
+            return Optional.empty();
         }
-        return builder;
     }
 
-    /**
-     * Check if a builder exists for the given scenario type.
-     *
-     * @param type Scenario type to check
-     * @return true if a builder exists for this type
-     */
-    public boolean hasBuilder(String type) {
-        return builderCache.containsKey(type);
-    }
-
-    /**
-     * Get all registered scenario types.
-     *
-     * @return Set of all available scenario type names
-     */
-    public Set<String> getAvailableTypes() {
-        return builderCache.keySet();
-    }
-
-    /**
-     * Get the number of registered builders.
-     *
-     * @return Count of available builders
-     */
-    public int getBuilderCount() {
-        return builderCache.size();
-    }
 }

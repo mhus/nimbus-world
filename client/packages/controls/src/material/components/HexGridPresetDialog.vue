@@ -302,20 +302,11 @@ const handleCreate = async () => {
     // Entry Point is always "not set" - explicitly set to null
     publicData.entryPoint = null;
 
-    // Transform parameters: replace '-dot-' with '.' in keys
-    const transformedParameters: Record<string, string> = {};
-    if (selectedPreset.value.data.parameters) {
-      Object.entries(selectedPreset.value.data.parameters).forEach(([key, value]) => {
-        const transformedKey = key.replace(/-dot-/g, '.');
-        transformedParameters[transformedKey] = value;
-      });
-    }
-
     // Build request payload
     const payload = {
       publicData: publicData,
       enabled: true,
-      parameters: transformedParameters,
+      parameters: selectedPreset.value.data.parameters || {},
       areas: {}
     };
 

@@ -3,13 +3,8 @@ package de.mhus.nimbus.world.generator.flat.hexgrid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-@Component
 @Slf4j
-public class UswampBuilder implements CompositionBuilder {
-    @Override
-    public String getType() {
-        return "swamp";
-    }
+public class UswampBuilder extends HexGridBuilder {
 
     @Override
     public void build(BuilderContext context) {
