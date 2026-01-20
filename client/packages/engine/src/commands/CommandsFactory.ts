@@ -44,6 +44,7 @@ import {RedirectCommand} from "./RedirectCommand";
 import {BlockInfoCommand} from "./BlockInfoCommand";
 import {BlockTypeInfoCommand} from "./BlockTypeInfoCommand";
 import {TeleportCommand} from "./TeleportCommand";
+import {MoveToCommand} from "./MoveToCommand";
 import {WebGLCheckCommand} from "./WebGLCheckCommand";
 import {ListEntitiesCommand} from "./ListEntitiesCommand";
 import {EntityInfoCommand} from "./EntityInfoCommand";
@@ -212,6 +213,7 @@ export class CommandsFactory {
         commandService.registerHandler(new BlockInfoCommand(appContext));
         commandService.registerHandler(new BlockTypeInfoCommand(appContext));
         commandService.registerHandler(new TeleportCommand(appContext));
+        commandService.registerHandler(new MoveToCommand(appContext));
         commandService.registerHandler(new WebGLCheckCommand(appContext));
 
         // Register entity commands
