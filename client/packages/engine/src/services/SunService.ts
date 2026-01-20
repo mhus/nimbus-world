@@ -218,7 +218,7 @@ export class SunService {
           setTimeout(() => {
             logger.warn('Lens flare texture loading timeout for individual flare');
             resolve();
-          }, 5000);
+          }, 30000);
         }
       });
     });
@@ -228,16 +228,31 @@ export class SunService {
 
     // Configure lens flare system
     this.lensFlareSystem.borderLimit = 300; // Distance from screen edge before fading
-    this.lensFlareSystem.isEnabled = this.lensFlareEnabled;
 
     // Set lens flare rendering group - only occlude by world meshes
     this.lensFlareSystem.meshesSelectionPredicate = (mesh) => {
       return mesh.renderingGroupId === RENDERING_GROUPS.ENVIRONMENT;
     };
 
+    // IMPORTANT: Initially enable the system to ensure shaders/effects are compiled
+    this.lensFlareSystem.isEnabled = true;
+
+    // Wait for next frame to ensure all shaders are compiled
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    // Now set the correct visibility state based on sun position and settings
+    // Horizon is at Y=0
+    const sunY = this.sunRoot?.position.y ?? 0;
+    const isBelowHorizon = sunY < 0;
+    const shouldBeVisible = this.enabled && !isBelowHorizon;
+    this.lensFlareSystem.isEnabled = shouldBeVisible && this.lensFlareEnabled;
+
     logger.debug('Lens flare system created', {
       textureUrl: flareTextureUrl,
-      enabled: this.lensFlareEnabled
+      enabled: this.lensFlareSystem.isEnabled,
+      sunY,
+      belowHorizon: isBelowHorizon,
+      sunEnabled: this.enabled
     });
   }
 
@@ -468,15 +483,30 @@ export class SunService {
 
     this.sunRoot.position.set(x, y, z);
 
+    // Automatically hide sun and lens flare when below horizon or disabled
+    // Horizon is at Y=0, so sun is below horizon when Y < 0
+    const isBelowHorizon = y < 0;
+    const shouldBeVisible = this.enabled && !isBelowHorizon;
+
+    if (this.sunMesh) {
+      this.sunMesh.setEnabled(shouldBeVisible);
+    }
+    if (this.lensFlareSystem) {
+      this.lensFlareSystem.isEnabled = shouldBeVisible && this.lensFlareEnabled;
+    }
+
     // Apply automatic light adjustments if enabled
     if (this.automaticSunAdjustment) {
       this.updateAutomaticLighting();
     }
 
-    logger.debug('Sun position updated', {
+    logger.info('Sun position updated', {
       angleY: this.currentAngleY,
       elevation: this.currentElevation,
       position: { x, y, z },
+      belowHorizon: isBelowHorizon,
+      sunVisible: shouldBeVisible,
+      lensFlareVisible: this.lensFlareSystem?.isEnabled,
       automaticAdjustment: this.automaticSunAdjustment,
     });
   }
@@ -589,16 +619,27 @@ export class SunService {
   setEnabled(enabled: boolean): void {
     this.enabled = enabled;
 
+    // Sun should only be visible if enabled AND above horizon
+    // Horizon is at Y=0
+    const sunY = this.sunRoot?.position.y ?? 0;
+    const isBelowHorizon = sunY < 0;
+    const shouldBeVisible = enabled && !isBelowHorizon;
+
     if (this.sunMesh) {
-      this.sunMesh.setEnabled(enabled);
+      this.sunMesh.setEnabled(shouldBeVisible);
     }
 
-    // Also disable lens flare when sun is disabled
+    // Also disable lens flare when sun is disabled or below horizon
     if (this.lensFlareSystem) {
-      this.lensFlareSystem.isEnabled = enabled && this.lensFlareEnabled;
+      this.lensFlareSystem.isEnabled = shouldBeVisible && this.lensFlareEnabled;
     }
 
-    logger.debug('Sun visibility changed', { enabled });
+    logger.debug('Sun visibility changed', {
+      enabled,
+      sunY,
+      belowHorizon: isBelowHorizon,
+      actuallyVisible: shouldBeVisible
+    });
   }
 
   /**
