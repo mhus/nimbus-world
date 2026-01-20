@@ -404,17 +404,20 @@ export class PhysicsService {
 
     entity.velocity.y = 0; // Reset vertical velocity
 
-    // Clear timer and re-enable physics
-    this.cancelTeleportation();
-    this.physicsEnabled = true;
-    logger.debug('Physics re-enabled after teleportation');
+    // Clear timer and re-enable physics after 1 second delay
+    // This gives the engine time to render the new position
+    setTimeout(() => {
+      this.cancelTeleportation();
+      this.physicsEnabled = true;
+      logger.debug('Physics re-enabled after teleportation (1 second delay)');
 
-    // Remove splash screen after teleportation is complete
-    const notificationService = this.appContext.services.notification;
-    if (notificationService) {
-      notificationService.showSplashScreen('');
-      logger.debug('Splash screen removed after teleportation');
-    }
+      // Remove splash screen after teleportation is complete
+      const notificationService = this.appContext.services.notification;
+      if (notificationService) {
+        notificationService.showSplashScreen('');
+        logger.debug('Splash screen removed after teleportation');
+      }
+    }, 1000);
   }
 
   /**

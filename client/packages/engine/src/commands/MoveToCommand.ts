@@ -1,9 +1,10 @@
 /**
  * MoveToCommand - Move player to specific coordinates
  *
- * Usage: moveTo <x> <y> <z> [splashScreen] [splashAudio]
+ * Usage: moveTo <x> <y> <z> [yRotation] [splashScreen] [splashAudio]
  * Example: moveTo 100 64 200
- * Example: moveTo 100 64 200 images/loading.png audio/teleport.ogg
+ * Example: moveTo 100 64 200 1.57
+ * Example: moveTo 100 64 200 1.57 images/loading.png audio/teleport.ogg
  */
 
 import { CommandHandler } from './CommandHandler';
@@ -29,12 +30,12 @@ export class MoveToCommand extends CommandHandler {
   }
 
   description(): string {
-    return 'Move player to coordinates (moveTo <x> <y> <z> [splashScreen] [splashAudio])';
+    return 'Move player to coordinates (moveTo <x> <y> <z> [yRotation] [splashScreen] [splashAudio])';
   }
 
   execute(parameters: any[]): any {
     if (parameters.length < 3) {
-      logger.error('Not enough parameters. Usage: moveTo <x> <y> <z> [splashScreen] [splashAudio]');
+      logger.error('Not enough parameters. Usage: moveTo <x> <y> <z> [yRotation] [splashScreen] [splashAudio]');
       return { error: 'Not enough parameters' };
     }
 
@@ -48,9 +49,25 @@ export class MoveToCommand extends CommandHandler {
       return { error: 'Invalid coordinates' };
     }
 
-    // Parse optional splash screen and audio
-    const splashScreen = parameters.length > 3 ? toString(parameters[3]) : undefined;
-    const splashAudio = parameters.length > 4 ? toString(parameters[4]) : undefined;
+    // Parse optional yRotation and splash screen/audio
+    // Check if parameter 3 is a number (yRotation) or string (splashScreen)
+    let yRotation: number | undefined = undefined;
+    let splashScreen: string | undefined = undefined;
+    let splashAudio: string | undefined = undefined;
+
+    if (parameters.length > 3) {
+      const param3 = toNumber(parameters[3]);
+      if (param3 !== undefined) {
+        // Parameter 3 is a number -> yRotation
+        yRotation = param3;
+        splashScreen = parameters.length > 4 ? toString(parameters[4]) : undefined;
+        splashAudio = parameters.length > 5 ? toString(parameters[5]) : undefined;
+      } else {
+        // Parameter 3 is not a number -> splashScreen
+        splashScreen = toString(parameters[3]);
+        splashAudio = parameters.length > 4 ? toString(parameters[4]) : undefined;
+      }
+    }
 
     // Get services
     const physicsService = this.appContext.services.physics;
@@ -85,14 +102,29 @@ export class MoveToCommand extends CommandHandler {
     // Create target position
     const targetPosition = new Vector3(x, y, z);
 
+    // Prepare rotation if yRotation is provided
+    let targetRotation: Vector3 | undefined = undefined;
+    if (yRotation !== undefined) {
+      // Get current rotation and only change Y component
+      const currentRotation = playerEntity.rotation;
+      targetRotation = new Vector3(
+        currentRotation.x, // Keep pitch
+        yRotation,         // Set yaw
+        currentRotation.z  // Keep roll
+      );
+    }
+
     // Teleport player
     try {
-      physicsService.teleport(playerEntity, targetPosition);
-      logger.info(`✓ Moving player to (${x}, ${y}, ${z})`);
+      physicsService.teleport(playerEntity, targetPosition, targetRotation);
+
+      const rotationMsg = yRotation !== undefined ? ` with yRotation ${yRotation}` : '';
+      logger.info(`✓ Moving player to (${x}, ${y}, ${z})${rotationMsg}`);
 
       return {
         success: true,
         position: { x, y, z },
+        yRotation,
         splashScreen,
         splashAudio
       };
