@@ -4,6 +4,7 @@ import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.shared.utils.TypeUtil;
 import de.mhus.nimbus.world.generator.flat.hexgrid.BuilderContext;
 import de.mhus.nimbus.world.generator.flat.hexgrid.CompositionBuilder;
+import de.mhus.nimbus.world.generator.flat.hexgrid.HexGridBuilderService;
 import de.mhus.nimbus.world.shared.generator.WFlat;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
 import de.mhus.nimbus.world.shared.world.WHexGridService;
@@ -13,7 +14,6 @@ import org.springframework.stereotype.Component;
 
 import java.util.EnumMap;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -36,9 +36,7 @@ public class HexGridManipulator implements FlatManipulator {
     private WHexGridService hexGridService;
 
     @Autowired
-    private List<CompositionBuilder> compositionBuilders;
-
-    private Map<String, CompositionBuilder> builderCache;
+    private HexGridBuilderService builderService;
 
     @Override
     public String getName() {
@@ -66,9 +64,10 @@ public class HexGridManipulator implements FlatManipulator {
         Map<String, String> mergedParameters = extractHexGridParameters(hexGrid, parameters);
 
         // Get builder for scenario type
-        CompositionBuilder builder = builderFactory(type);
+        CompositionBuilder builder = builderService.getBuilder(type);
         if (builder == null) {
-            throw new IllegalArgumentException("Unknown scenario type: " + type);
+            throw new IllegalArgumentException("Unknown scenario type: " + type +
+                    ". Available types: " + builderService.getAvailableTypes());
         }
 
         // Load neighbor grids and extract their types
@@ -180,26 +179,5 @@ public class HexGridManipulator implements FlatManipulator {
         }
 
         return neighborTypes;
-    }
-
-    /**
-     * Builder factory - returns the appropriate CompositionBuilder for the scenario type.
-     */
-    private CompositionBuilder builderFactory(String type) {
-        // Lazy init cache
-        if (builderCache == null) {
-            builderCache = new HashMap<>();
-            for (CompositionBuilder builder : compositionBuilders) {
-                builderCache.put(builder.getType(), builder);
-                log.debug("Registered composition builder: {}", builder.getType());
-            }
-        }
-
-        CompositionBuilder builder = builderCache.get(type);
-        if (builder == null) {
-            log.warn("No builder found for type: {}, available types: {}", type, builderCache.keySet());
-        }
-
-        return builder;
     }
 }

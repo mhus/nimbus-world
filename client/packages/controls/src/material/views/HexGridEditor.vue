@@ -36,7 +36,7 @@
       <div class="flex gap-2">
         <button
           class="btn btn-primary"
-          @click="openCreateDialog"
+          @click="openPresetDialog"
         >
           <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
@@ -81,6 +81,18 @@
       />
     </div>
 
+    <!-- Preset Dialog -->
+    <HexGridPresetDialog
+      v-if="isPresetDialogOpen"
+      :world-id="currentWorldId!"
+      :presets="presets"
+      :loading="presetsLoading"
+      :initial-position="presetDialogPosition"
+      @close="closePresetDialog"
+      @custom="openCustomCreateDialog"
+      @created="handlePresetCreated"
+    />
+
     <!-- Editor Dialog -->
     <HexGridEditorPanel
       v-if="isEditorOpen"
@@ -96,6 +108,7 @@
 import { ref, computed, watch, onMounted } from 'vue';
 import { useWorld } from '@/composables/useWorld';
 import { useHexGrids, type HexGridWithId } from '@/composables/useHexGrids';
+import { useHexGridPresets } from '@/composables/useHexGridPresets';
 import { apiService } from '@/services/ApiService';
 import { TypeUtil } from '@nimbus/shared';
 import SearchInput from '@components/SearchInput.vue';
@@ -104,8 +117,11 @@ import ErrorAlert from '@components/ErrorAlert.vue';
 import HexGridList from '@material/components/HexGridList.vue';
 import HexGridEditorPanel from '@material/components/HexGridEditorPanel.vue';
 import HexGridVisual from '@material/components/HexGridVisual.vue';
+import HexGridPresetDialog from '@material/components/HexGridPresetDialog.vue';
 
 const { currentWorldId, loadWorlds } = useWorld();
+
+const { presets, loading: presetsLoading, loadPresets } = useHexGridPresets();
 
 const activeTab = ref<'list' | 'grid'>('list');
 
@@ -119,13 +135,16 @@ const loading = computed(() => hexGridsComposable.value?.loading.value || false)
 const error = computed(() => hexGridsComposable.value?.error.value || null);
 const searchQuery = ref('');
 
+const isPresetDialogOpen = ref(false);
 const isEditorOpen = ref(false);
 const selectedHexGrid = ref<HexGridWithId | null>(null);
+const presetDialogPosition = ref<{ q: number; r: number } | null>(null);
 
-// Load hex grids when world changes
+// Load hex grids and presets when world changes
 watch(currentWorldId, () => {
   if (currentWorldId.value && currentWorldId.value !== '?') {
     hexGridsComposable.value?.loadHexGrids();
+    loadPresets(currentWorldId.value);
   }
 }, { immediate: true });
 
@@ -199,31 +218,36 @@ const handleSearch = async (query: string) => {
 };
 
 /**
- * Open create dialog
+ * Open preset dialog
  */
-const openCreateDialog = () => {
+const openPresetDialog = () => {
+  presetDialogPosition.value = null;
+  isPresetDialogOpen.value = true;
+};
+
+/**
+ * Open custom create dialog (from preset dialog)
+ */
+const openCustomCreateDialog = () => {
+  isPresetDialogOpen.value = false;
   selectedHexGrid.value = null;
   isEditorOpen.value = true;
 };
 
 /**
- * Open create dialog with pre-filled position
+ * Close preset dialog
+ */
+const closePresetDialog = () => {
+  isPresetDialogOpen.value = false;
+  presetDialogPosition.value = null;
+};
+
+/**
+ * Open preset dialog with pre-filled position (from grid view)
  */
 const openCreateDialogAtPosition = (q: number, r: number) => {
-  // We'll handle this by passing initial position to the editor
-  // For now, just open the create dialog - position will be set in the form
-  selectedHexGrid.value = {
-    id: '',
-    worldId: currentWorldId.value || '',
-    position: TypeUtil.toStringHexCoord({ q, r }),
-    publicData: {
-      position: { q, r },
-      name: '',
-      description: ''
-    },
-    enabled: true
-  } as HexGridWithId;
-  isEditorOpen.value = true;
+  presetDialogPosition.value = { q, r };
+  isPresetDialogOpen.value = true;
 };
 
 /**
@@ -258,6 +282,15 @@ const openEditDialog = async (hexGrid: HexGridWithId) => {
 const closeEditor = () => {
   isEditorOpen.value = false;
   selectedHexGrid.value = null;
+};
+
+/**
+ * Handle hex grid created from preset dialog
+ */
+const handlePresetCreated = async () => {
+  closePresetDialog();
+  if (!hexGridsComposable.value) return;
+  await hexGridsComposable.value.loadHexGrids();
 };
 
 /**

@@ -26,6 +26,7 @@ public class FlatMaterialService {
     public static final int SNOW = 7;
     public static final int INVISIBLE = 8;
     public static final int INVISIBLE_SOLID = 9;
+    public static final int DESERT_SAND = 10;
 
     public static final int UNKNOWN_PROTECTED = 0;
     public static final int UNKNOWN_NOT_PROTECTED = 255;
@@ -44,7 +45,8 @@ public class FlatMaterialService {
                     BEDROCK, "n:b@s:default||true",
                     SNOW, "n:sn@s:default||true",
                     INVISIBLE, "n:2@s:default||true",
-                    INVISIBLE_SOLID, "n:3@s:default||true"
+                    INVISIBLE_SOLID, "n:3@s:default||true",
+                    DESERT_SAND, "n:ds@s:default||true"
             ),
             PALETTE_LEGACY, Map.of(
                     GRASS, "w:310@s:default||true",        // old world
@@ -55,7 +57,8 @@ public class FlatMaterialService {
                     BEDROCK, "w:127@s:default||true",
                     SNOW, "w:537@s:default||true",
                     INVISIBLE, "w:2@s:default||true",
-                    INVISIBLE_SOLID, "w:3@s:default||true"
+                    INVISIBLE_SOLID, "w:3@s:default||true",
+                    DESERT_SAND, "w:520@s:default||true"
             )
     );
 

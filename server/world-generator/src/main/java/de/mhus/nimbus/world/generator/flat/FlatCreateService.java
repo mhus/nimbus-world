@@ -482,18 +482,19 @@ public class FlatCreateService {
         double centerX = center[0];
         double centerZ = center[1];
 
-        // Calculate bounding box for pointy-top hexagon
+        // Calculate bounding box for pointy-top hexagon with 10-pixel border on each side
         // gridSize is the diameter (not radius!)
         // Radius = gridSize / 2
         // Height (point to point) = 2 * radius = gridSize
         // Width (flat side to flat side) = sqrt(3) * radius = gridSize * sqrt(3) / 2
         double SQRT_3 = Math.sqrt(3.0);
-        int sizeX = (int) Math.ceil(gridSize * SQRT_3 / 2.0) + 10;  // +10 for safety margin
-        int sizeZ = gridSize + 10;  // +10 for safety margin
+        int sizeX = (int) Math.ceil(gridSize * SQRT_3 / 2.0) + 30;  // +30: +10 safety margin + 20 border (10 per side)
+        int sizeZ = gridSize + 30;  // +30: +10 safety margin + 20 border (10 per side)
 
         // Calculate mount position (top-left corner of bounding box)
-        int mountX = (int) Math.floor(centerX - sizeX / 2.0);
-        int mountZ = (int) Math.floor(centerZ - sizeZ / 2.0);
+        // Shift mount position by 10 pixels to the left and up to accommodate border
+        int mountX = (int) Math.floor(centerX - sizeX / 2.0) - 10;
+        int mountZ = (int) Math.floor(centerZ - sizeZ / 2.0) - 10;
 
         log.info("Calculated flat parameters: sizeX={}, sizeZ={}, mount=({},{}), hexCenter=({},{})",
                 sizeX, sizeZ, mountX, mountZ, centerX, centerZ);
@@ -620,14 +621,20 @@ public class FlatCreateService {
         int outsideCellsImported = 0;
 
         // Process each cell in the flat
+        // The hex grid is positioned with a 10-pixel offset to allow for border connections
         for (int localX = 0; localX < sizeX; localX++) {
             for (int localZ = 0; localZ < sizeZ; localZ++) {
                 // Calculate world coordinates
                 int worldX = mountX + localX;
                 int worldZ = mountZ + localZ;
 
+                // Adjust coordinates for hex grid check: hex is positioned 10 pixels into the flat
+                // to allow for a 10-pixel border on each side for connections
+                int hexCheckX = worldX + 10;
+                int hexCheckZ = worldZ + 10;
+
                 // Check if this position is inside the HexGrid
-                boolean isInHex = HexMathUtil.isPointInHex(worldX, worldZ, hexCenterX, hexCenterZ, gridSize);
+                boolean isInHex = HexMathUtil.isPointInHex(hexCheckX, hexCheckZ, hexCenterX, hexCenterZ, gridSize);
 
                 if (isInHex) {
                     // Position is inside HexGrid: mark with NOT_SET_MUTABLE (255) at level 0
@@ -693,18 +700,19 @@ public class FlatCreateService {
         double centerX = center[0];
         double centerZ = center[1];
 
-        // Calculate bounding box for pointy-top hexagon
+        // Calculate bounding box for pointy-top hexagon with 10-pixel border on each side
         // gridSize is the diameter (not radius!)
         // Radius = gridSize / 2
         // Height (point to point) = 2 * radius = gridSize
         // Width (flat side to flat side) = sqrt(3) * radius = gridSize * sqrt(3) / 2
         double SQRT_3 = Math.sqrt(3.0);
-        int sizeX = (int) Math.ceil(gridSize * SQRT_3 / 2.0) + 10;  // +10 for safety margin
-        int sizeZ = gridSize + 10;  // +10 for safety margin
+        int sizeX = (int) Math.ceil(gridSize * SQRT_3 / 2.0) + 30;  // +30: +10 safety margin + 20 border (10 per side)
+        int sizeZ = gridSize + 30;  // +30: +10 safety margin + 20 border (10 per side)
 
         // Calculate mount position (top-left corner of bounding box)
-        int mountX = (int) Math.floor(centerX - sizeX / 2.0);
-        int mountZ = (int) Math.floor(centerZ - sizeZ / 2.0);
+        // Shift mount position by 10 pixels to the left and up to accommodate border
+        int mountX = (int) Math.floor(centerX - sizeX / 2.0) - 10;
+        int mountZ = (int) Math.floor(centerZ - sizeZ / 2.0) - 10;
 
         log.info("Calculated flat parameters: sizeX={}, sizeZ={}, mount=({},{}), hexCenter=({},{})",
                 sizeX, sizeZ, mountX, mountZ, centerX, centerZ);
@@ -874,6 +882,7 @@ public class FlatCreateService {
         }
 
         // Step 2: Set positions OUTSIDE HexGrid to material 0 (UNKNOWN_PROTECTED)
+        // The hex grid is positioned with a 10-pixel offset to allow for border connections
         log.debug("Step 2: Setting outside positions to material 0. HexCenter: ({}, {}), gridSize: {}", hexCenterX, hexCenterZ, gridSize);
         for (int localX = 0; localX < sizeX; localX++) {
             for (int localZ = 0; localZ < sizeZ; localZ++) {
@@ -881,8 +890,13 @@ public class FlatCreateService {
                 int worldX = mountX + localX;
                 int worldZ = mountZ + localZ;
 
+                // Adjust coordinates for hex grid check: hex is positioned 10 pixels into the flat
+                // to allow for a 10-pixel border on each side for connections
+                int hexCheckX = worldX + 10;
+                int hexCheckZ = worldZ + 10;
+
                 // Check if this position is inside the HexGrid
-                boolean isInHex = HexMathUtil.isPointInHex(worldX, worldZ, hexCenterX, hexCenterZ, gridSize);
+                boolean isInHex = HexMathUtil.isPointInHex(hexCheckX, hexCheckZ, hexCenterX, hexCenterZ, gridSize);
 
                 if (!isInHex) {
                     // Position is outside HexGrid: Set material to 0 (UNKNOWN_PROTECTED)

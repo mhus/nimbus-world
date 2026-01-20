@@ -39,6 +39,7 @@
         </optgroup>
         <optgroup label="Special">
           <option value="hex-grid">Hex Grid - Generate terrain based on hex grid configuration</option>
+          <option value="hex-grid-expand">Hex Grid Expand - Expand editable hex grid area</option>
           <option value="random-pixels">Random Pixels - Random pixel placement</option>
           <option value="composition">Composition - Combine multiple manipulators</option>
         </optgroup>
@@ -420,6 +421,26 @@
         </div>
       </div>
 
+      <!-- Hex Grid Expand -->
+      <div v-if="selectedManipulator === 'hex-grid-expand'" class="space-y-3">
+        <div class="form-control">
+          <label class="label"><span class="label-text">Expand By (pixels)</span></label>
+          <input v-model.number="params.expandBy" type="number" class="input input-bordered" min="0" max="50" placeholder="5" />
+          <label class="label">
+            <span class="label-text-alt text-base-content/70">Number of pixels to expand the editable hex grid area (default: 5)</span>
+          </label>
+        </div>
+        <div class="alert alert-info">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+          <div>
+            <div class="font-bold">Expands Editable Area</div>
+            <div class="text-sm mt-1">This manipulator expands the editable area of the hex grid by marking additional positions around the current hex as editable (material 255).</div>
+            <div class="text-sm mt-2">Only positions that are currently protected (material 0) will be changed to editable (material 255).</div>
+            <div class="text-sm mt-2">Note: This does not change the world's hex grid size, only the editable area in this flat.</div>
+          </div>
+        </div>
+      </div>
+
       <!-- Generic fallback for other manipulators -->
       <div v-if="!hasCustomForm" class="form-control">
         <label class="label">
@@ -515,6 +536,7 @@ const manipulatorDescriptions: Record<string, string> = {
   'shaked-box': 'Creates rectangles with randomly removed pixels at borders for natural irregular edges',
   'set-material': 'Sets material for all positions within a specified level range',
   'hex-grid': 'Generates terrain based on hex grid configuration and scenario type (ocean, island, plains, etc.) with neighbor-aware transitions',
+  'hex-grid-expand': 'Expands the editable hex grid area by marking additional positions around the current hex as editable',
   'random-pixels': 'Places random pixels for texture',
   'composition': 'Combines multiple manipulators sequentially',
 };
@@ -523,7 +545,7 @@ const manipulatorDescriptions: Record<string, string> = {
 const hasCustomForm = computed(() => {
   const customForms = [
     'flat', 'normal', 'hilly', 'soften', 'border-smooth', 'water-soften',
-    'sharpen', 'roughen', 'mountain', 'sharp-peak', 'islands', 'crater', 'spider', 'shaked-box', 'lakes', 'set-material', 'hex-grid'
+    'sharpen', 'roughen', 'mountain', 'sharp-peak', 'islands', 'crater', 'spider', 'shaked-box', 'lakes', 'set-material', 'hex-grid', 'hex-grid-expand'
   ];
   return customForms.includes(selectedManipulator.value);
 });

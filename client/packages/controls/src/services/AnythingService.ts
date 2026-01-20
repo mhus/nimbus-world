@@ -6,6 +6,7 @@
 import { apiService } from './ApiService';
 import type { WAnything } from '@nimbus/shared/generated/entities/WAnything';
 import { getLogger } from '@nimbus/shared';
+import { WorldId } from '@nimbus/shared/utils/WorldId';
 
 const logger = getLogger('AnythingService');
 
@@ -142,6 +143,16 @@ export class AnythingService {
    */
   async create(request: CreateAnythingRequest): Promise<WAnything> {
     logger.debug('Creating entity', { request });
+
+    // Extract regionId from worldId if not provided
+    if (request.worldId && !request.regionId) {
+      const worldId = WorldId.unchecked(request.worldId);
+      const regionId = worldId.getRegionId();
+      if (regionId) {
+        request.regionId = regionId;
+        logger.debug('Extracted regionId from worldId', { worldId: request.worldId, regionId });
+      }
+    }
 
     const response = await apiService.post<WAnything>('/control/anything', request);
     logger.info('Created entity', { collection: response.collection, name: response.name });

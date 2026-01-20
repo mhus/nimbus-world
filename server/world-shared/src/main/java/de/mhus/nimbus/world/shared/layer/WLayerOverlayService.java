@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.generated.types.Area;
 import de.mhus.nimbus.generated.types.AreaData;
 import de.mhus.nimbus.generated.types.Block;
+import de.mhus.nimbus.generated.types.BlockTypeType;
 import de.mhus.nimbus.generated.types.ChunkData;
 import de.mhus.nimbus.generated.types.Vector3Int;
 import de.mhus.nimbus.shared.storage.StorageService;
@@ -426,11 +427,12 @@ public class WLayerOverlayService {
             column.addBlock(block);
 
             // Check if this block is in baseGround layer and not water
+            // TODO what when more then one groundLayers ... and check for blockTypeType == GROUND ?! is baseGroundLayer obsolate?
             if (baseGroundLayer != null && block.getBlockTypeId() != null) {
                 var blockType = blockTypeService.findByBlockId(worldIdObj, block.getBlockTypeId());
                 if (blockType.isPresent() && blockType.get().getPublicData() != null) {
                     Integer shapeInt = getShapeFromBlockType(blockType.get().getPublicData());
-                    boolean isWater = isWaterShape(shapeInt);
+                    boolean isWater = isWaterShape(shapeInt, blockType.get().getPublicData().getType());
 
                     if (!isWater) {
                         int y = (int) block.getPosition().getY();
@@ -480,9 +482,11 @@ public class WLayerOverlayService {
     /**
      * Check if shape is a water type.
      */
-    private boolean isWaterShape(Integer shapeInt) {
+    private boolean isWaterShape(Integer shapeInt, BlockTypeType type) {
         if (shapeInt == null) return false;
+        if (type == BlockTypeType.WATER || type == BlockTypeType.LAVA) return true; // lava is water too :)
         // Check against Shape enum values
+        // TODO deprecated
         return shapeInt == de.mhus.nimbus.generated.types.Shape.OCEAN.getTsIndex() ||
                shapeInt == de.mhus.nimbus.generated.types.Shape.WATER.getTsIndex() ||
                shapeInt == de.mhus.nimbus.generated.types.Shape.RIVER.getTsIndex() ||
