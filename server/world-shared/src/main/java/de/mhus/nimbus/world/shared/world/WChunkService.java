@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.generated.network.messages.ChunkDataTransferObject;
 import de.mhus.nimbus.generated.types.Block;
 import de.mhus.nimbus.generated.types.ChunkData;
-import de.mhus.nimbus.generated.types.Vector3;
 import de.mhus.nimbus.generated.types.Vector3Int;
 import de.mhus.nimbus.shared.storage.StorageService;
 import de.mhus.nimbus.shared.types.SchemaVersion;
@@ -331,9 +330,9 @@ public class WChunkService implements StorageProvider {
             }
 
             int groundLevel = world.getGroundLevel();
-            Integer waterLevel = world.getWaterLevel();
+            Integer waterLevel = world.getOceanLevel();
             String groundBlockType = world.getGroundBlockType();
-            String waterBlockType = world.getWaterBlockType();
+            String waterBlockType = world.getOceanBlockType();
             int minHeight = (int) world.getPublicData().getStart().getY();
             int maxHeight = (int) world.getPublicData().getStop().getY();
 

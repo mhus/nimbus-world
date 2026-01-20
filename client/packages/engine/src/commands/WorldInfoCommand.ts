@@ -333,13 +333,6 @@ export class WorldInfoCommand extends CommandHandler {
       lines.push('');
     }
 
-    // Entry Point
-    if (worldInfo.entryPoint) {
-      // entryPoint is now { area: string; grid: HexVector2 }
-      const grid = worldInfo.entryPoint.grid;
-      lines.push(`  Entry Point   : Area=${worldInfo.entryPoint.area}, Grid=(${grid.q}, ${grid.r})`);
-    }
-
     // Editor & Splash
     if (worldInfo.editorUrl) {
       lines.push(`Editor URL        : ${worldInfo.editorUrl}`);

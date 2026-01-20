@@ -46,9 +46,9 @@ public class WWorldController extends BaseEditorController {
             Set<String> supporter,
             Set<String> player,
             Integer groundLevel,
-            Integer waterLevel,
+            Integer oceanLevel,
             String groundBlockType,
-            String waterBlockType
+            String oceanBlockType
     ) {}
 
     public record WorldResponse(
@@ -63,9 +63,9 @@ public class WWorldController extends BaseEditorController {
             boolean enabled,
             boolean instanceable,
             int groundLevel,
-            Integer waterLevel,
+            Integer oceanLevel,
             String groundBlockType,
-            String waterBlockType,
+            String oceanBlockType,
             Set<String> owner,
             Set<String> editor,
             Set<String> supporter,
@@ -85,9 +85,9 @@ public class WWorldController extends BaseEditorController {
             boolean enabled,
             boolean instanceable,
             int groundLevel,
-            Integer waterLevel,
+            Integer oceanLevel,
             String groundBlockType,
-            String waterBlockType,
+            String oceanBlockType,
             Set<String> owner,
             Set<String> editor,
             Set<String> supporter,
@@ -115,9 +115,9 @@ public class WWorldController extends BaseEditorController {
                 world.isEnabled(),
                 world.isInstanceable(),
                 world.getGroundLevel(),
-                world.getWaterLevel(),
+                world.getOceanLevel(),
                 world.getGroundBlockType(),
-                world.getWaterBlockType(),
+                world.getOceanBlockType(),
                 world.getOwner(),
                 world.getEditor(),
                 world.getSupporter(),
@@ -142,9 +142,9 @@ public class WWorldController extends BaseEditorController {
                 true,  // collections are always enabled
                 false, // collections are not instanceable
                 0,     // default groundLevel
-                null,  // no waterLevel
+                null,  // no oceanLevel
                 null,  // no groundBlockType
-                null,  // no waterBlockType
+                null,  // no oceanBlockType
                 Set.of(),  // empty owner set
                 Set.of(),  // empty editor set
                 Set.of(),  // empty supporter set
@@ -338,9 +338,9 @@ public class WWorldController extends BaseEditorController {
                 w.setDescription(request.description());
                 if (request.enabled() != null) w.setEnabled(request.enabled());
                 if (request.groundLevel() != null) w.setGroundLevel(request.groundLevel());
-                if (request.waterLevel() != null) w.setWaterLevel(request.waterLevel());
+                if (request.oceanLevel() != null) w.setOceanLevel(request.oceanLevel());
                 if (request.groundBlockType() != null) w.setGroundBlockType(request.groundBlockType());
-                if (request.waterBlockType() != null) w.setWaterBlockType(request.waterBlockType());
+                if (request.oceanBlockType() != null) w.setOceanBlockType(request.oceanBlockType());
             });
 
             // Create job to initialize world defaults
@@ -370,9 +370,9 @@ public class WWorldController extends BaseEditorController {
                     worldResponse.enabled(),
                     worldResponse.instanceable(),
                     worldResponse.groundLevel(),
-                    worldResponse.waterLevel(),
+                    worldResponse.oceanLevel(),
                     worldResponse.groundBlockType(),
-                    worldResponse.waterBlockType(),
+                    worldResponse.oceanBlockType(),
                     worldResponse.owner(),
                     worldResponse.editor(),
                     worldResponse.supporter(),
@@ -453,9 +453,9 @@ public class WWorldController extends BaseEditorController {
             if (request.supporter() != null) existing.setSupporter(request.supporter());
             if (request.player() != null) existing.setPlayer(request.player());
             if (request.groundLevel() != null) existing.setGroundLevel(request.groundLevel());
-            if (request.waterLevel() != null) existing.setWaterLevel(request.waterLevel());
+            if (request.oceanLevel() != null) existing.setOceanLevel(request.oceanLevel());
             if (request.groundBlockType() != null) existing.setGroundBlockType(request.groundBlockType());
-            if (request.waterBlockType() != null) existing.setWaterBlockType(request.waterBlockType());
+            if (request.oceanBlockType() != null) existing.setOceanBlockType(request.oceanBlockType());
 
             WWorld updated = worldService.save(existing);
             return ResponseEntity.ok(toResponse(updated));
@@ -635,9 +635,9 @@ public class WWorldController extends BaseEditorController {
                 w.setDescription(source.getDescription());
                 w.setEnabled(source.isEnabled());
                 w.setGroundLevel(source.getGroundLevel());
-                w.setWaterLevel(source.getWaterLevel());
+                w.setOceanLevel(source.getOceanLevel());
                 w.setGroundBlockType(source.getGroundBlockType());
-                w.setWaterBlockType(source.getWaterBlockType());
+                w.setOceanBlockType(source.getOceanBlockType());
                 w.setInstanceable(source.isInstanceable());
                 w.setOwner(source.getOwner());
                 w.setEditor(source.getEditor());

@@ -65,11 +65,6 @@ export class PlayerPositionInfoCommand extends CommandHandler {
       if (worldInfo.stop) {
         lines.push(`  Stop Pos     : (${worldInfo.stop.x}, ${worldInfo.stop.y}, ${worldInfo.stop.z})`);
       }
-      if (worldInfo.entryPoint) {
-        // area is always set and is a string
-        const grid = worldInfo.entryPoint.grid;
-        lines.push(`  Entry Point   : Area=${worldInfo.entryPoint.area}, Grid=(${grid.q}, ${grid.r})`);
-      }
       if (worldInfo.settings) {
         lines.push(`  Max Players  : ${worldInfo.settings.maxPlayers}`);
         lines.push(`  PvP Enabled  : ${worldInfo.settings.pvpEnabled}`);

@@ -200,14 +200,14 @@
               </div>
             </div>
 
-            <!-- Water Level and Block Type -->
+            <!-- Ocean Level and Block Type -->
             <div class="flex gap-4">
               <div class="form-control flex-1">
                 <label class="label">
-                  <span class="label-text font-medium">Water Level (Y)</span>
+                  <span class="label-text font-medium">Ocean Level (Y)</span>
                 </label>
                 <input
-                  v-model.number="formData.waterLevel"
+                  v-model.number="formData.oceanLevel"
                   type="number"
                   placeholder="Optional"
                   class="input input-bordered w-full"
@@ -219,10 +219,10 @@
 
               <div class="form-control flex-1">
                 <label class="label">
-                  <span class="label-text font-medium">Water Block Type</span>
+                  <span class="label-text font-medium">Ocean Block Type</span>
                 </label>
                 <input
-                  v-model="formData.waterBlockType"
+                  v-model="formData.oceanBlockType"
                   type="text"
                   placeholder="n:o"
                   class="input input-bordered w-full"
@@ -1488,10 +1488,10 @@ const formData = ref({
   editor: [] as string[],
   supporter: [] as string[],
   player: [] as string[],
-  groundLevel: 60,
-  waterLevel: 64,
+  groundLevel: 45,
+  oceanLevel: 50,
   groundBlockType: 'n:g',
-  waterBlockType: 'n:o',
+  oceanBlockType: 'n:o',
   publicData: {
     worldId: '',
     title: '',
@@ -1596,9 +1596,9 @@ const loadWorld = () => {
       supporter: [],
       player: [],
       groundLevel: 60,
-      waterLevel: 64,
+      oceanLevel: 64,
       groundBlockType: 'n:g',
-      waterBlockType: 'n:o',
+      oceanBlockType: 'n:o',
       publicData: {
         worldId: '',
         title: '',
@@ -1798,9 +1798,9 @@ const loadWorld = () => {
     supporter: world.supporter ? [...world.supporter] : [],
     player: world.player ? [...world.player] : [],
     groundLevel: world.groundLevel,
-    waterLevel: world.waterLevel,
+    oceanLevel: world.oceanLevel,
     groundBlockType: world.groundBlockType,
-    waterBlockType: world.waterBlockType,
+    oceanBlockType: world.oceanBlockType,
     publicData: mergePublicData(world.publicData)
   };
 };
@@ -1948,9 +1948,9 @@ const performSave = async () => {
       player: formData.value.player.length > 0 ? formData.value.player : undefined,
       publicData: formData.value.publicData,
       groundLevel: formData.value.groundLevel,
-      waterLevel: formData.value.waterLevel ?? undefined,
+      oceanLevel: formData.value.oceanLevel ?? undefined,
       groundBlockType: formData.value.groundBlockType,
-      waterBlockType: formData.value.waterBlockType,
+      oceanBlockType: formData.value.oceanBlockType,
     };
 
     if (isNew.value) {

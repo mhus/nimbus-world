@@ -1,7 +1,6 @@
 package de.mhus.nimbus.world.shared.world;
 
 import de.mhus.nimbus.generated.types.WorldInfo;
-import de.mhus.nimbus.shared.annotations.GenerateTypeScript;
 import de.mhus.nimbus.shared.annotations.TypeScript;
 import de.mhus.nimbus.shared.persistence.ActualSchemaVersion;
 import de.mhus.nimbus.shared.types.Identifiable;
@@ -79,14 +78,14 @@ public class WWorld implements Identifiable {
      * Used when no chunk data exists in database.
      */
     @Builder.Default
-    private int groundLevel = 60;
+    private int groundLevel = 45;
 
     /**
-     * Water level for ocean generation (Y coordinate).
-     * If set, water blocks are generated up to this level.
+     * Ocean level for ocean generation (Y coordinate).
+     * If set, ocean blocks are generated up to this level.
      */
     @Builder.Default
-    private Integer waterLevel = 64;
+    private Integer oceanLevel = 50;
 
     /**
      * Block type ID for ground blocks (e.g., "r/grass" for grass).
@@ -96,11 +95,11 @@ public class WWorld implements Identifiable {
     private String groundBlockType = "n:g";
 
     /**
-     * Block type ID for water blocks (e.g., "core:water").
+     * Block type ID for ocean blocks (e.g., "n:o").
      * Used when generating ocean in default chunks.
      */
     @Builder.Default
-    private String waterBlockType = "n:o";
+    private String oceanBlockType = "n:o";
 
     /**
      * History of era durations in minutes.

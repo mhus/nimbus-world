@@ -98,9 +98,9 @@ export interface World {
   parent: string;
   instanceable: boolean;
   groundLevel: number;
-  waterLevel: number | null;
+  oceanLevel: number | null;
   groundBlockType: string;
-  waterBlockType: string;
+  oceanBlockType: string;
   owner: string[];
   editor: string[];
   supporter: string[];
@@ -121,9 +121,9 @@ export interface WorldRequest {
   supporter?: string[];
   player?: string[];
   groundLevel?: number;
-  waterLevel?: number;
+  oceanLevel?: number;
   groundBlockType?: string;
-  waterBlockType?: string;
+  oceanBlockType?: string;
 }
 
 export interface WorldCreateResponse extends World {

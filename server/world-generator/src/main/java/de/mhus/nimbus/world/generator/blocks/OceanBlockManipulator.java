@@ -116,7 +116,7 @@ public class OceanBlockManipulator implements BlockManipulator {
             }
 
             WWorld world = worldOpt.get();
-            level = world.getWaterLevel();
+            level = world.getOceanLevel();
 
             if (level == null) {
                 return ManipulatorResult.error("No level specified and world has no waterLevel configured");

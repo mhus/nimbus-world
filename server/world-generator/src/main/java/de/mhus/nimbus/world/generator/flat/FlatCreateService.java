@@ -1,22 +1,16 @@
 package de.mhus.nimbus.world.generator.flat;
 
-import de.mhus.nimbus.generated.types.Block;
-import de.mhus.nimbus.generated.types.BlockType;
-import de.mhus.nimbus.generated.types.BlockTypeType;
 import de.mhus.nimbus.generated.types.ChunkData;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.shared.utils.TypeUtil;
 import de.mhus.nimbus.world.shared.generator.WFlat;
 import de.mhus.nimbus.world.shared.generator.WFlatService;
-import de.mhus.nimbus.world.shared.layer.LayerBlock;
 import de.mhus.nimbus.world.shared.layer.LayerChunkData;
 import de.mhus.nimbus.world.shared.layer.LayerType;
 import de.mhus.nimbus.world.shared.layer.WLayer;
 import de.mhus.nimbus.world.shared.layer.WLayerService;
 import de.mhus.nimbus.generated.types.HexVector2;
-import de.mhus.nimbus.world.shared.world.BlockUtil;
 import de.mhus.nimbus.world.shared.world.HexMathUtil;
-import de.mhus.nimbus.world.shared.world.WBlockType;
 import de.mhus.nimbus.world.shared.world.WBlockTypeService;
 import de.mhus.nimbus.world.shared.world.WChunkService;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
@@ -72,8 +66,8 @@ public class FlatCreateService {
         }
 
         WWorld world = worldOpt.get();
-        int oceanLevel = world.getWaterLevel() != null ? world.getWaterLevel() : 0;
-        String oceanBlockId = world.getWaterBlockType();
+        int oceanLevel = world.getOceanLevel() != null ? world.getOceanLevel() : 0;
+        String oceanBlockId = world.getOceanBlockType();
 
         log.debug("Loaded world settings: oceanLevel={}, oceanBlockId={}", oceanLevel, oceanBlockId);
 
@@ -165,8 +159,8 @@ public class FlatCreateService {
         }
 
         // Get ocean level and block from world
-        int oceanLevel = world.getWaterLevel() == null ? 60 : world.getWaterLevel();
-        String oceanBlockId = world.getWaterBlockType() == null ? "n:o" : world.getWaterBlockType();
+        int oceanLevel = world.getOceanLevel() == null ? 60 : world.getOceanLevel();
+        String oceanBlockId = world.getOceanBlockType() == null ? "n:o" : world.getOceanBlockType();
 
         // Build WFlat instance (without persisting yet)
         WFlat flat = WFlat.builder()
@@ -339,8 +333,8 @@ public class FlatCreateService {
         }
 
         // Get ocean level and block from world
-        int oceanLevel = world.getWaterLevel() == null ? 60 : world.getWaterLevel();
-        String oceanBlockId = world.getWaterBlockType() == null ? "n:o" : world.getWaterBlockType();
+        int oceanLevel = world.getOceanLevel() == null ? 60 : world.getOceanLevel();
+        String oceanBlockId = world.getOceanBlockType() == null ? "n:o" : world.getOceanBlockType();
 
         // Build WFlat instance (without persisting yet)
         WFlat flat = WFlat.builder()
@@ -563,8 +557,8 @@ public class FlatCreateService {
         }
 
         // Get ocean level and block from world
-        int oceanLevel = world.getWaterLevel() == null ? 60 : world.getWaterLevel();
-        String oceanBlockId = world.getWaterBlockType() == null ? "n:o" : world.getWaterBlockType();
+        int oceanLevel = world.getOceanLevel() == null ? 60 : world.getOceanLevel();
+        String oceanBlockId = world.getOceanBlockType() == null ? "n:o" : world.getOceanBlockType();
 
         // Build WFlat instance (without persisting yet)
         WFlat flat = WFlat.builder()
@@ -781,8 +775,8 @@ public class FlatCreateService {
         }
 
         // Get ocean level and block from world
-        int oceanLevel = world.getWaterLevel() == null ? 60 : world.getWaterLevel();
-        String oceanBlockId = world.getWaterBlockType() == null ? "n:o" : world.getWaterBlockType();
+        int oceanLevel = world.getOceanLevel() == null ? 60 : world.getOceanLevel();
+        String oceanBlockId = world.getOceanBlockType() == null ? "n:o" : world.getOceanBlockType();
 
         // Build WFlat instance (without persisting yet)
         WFlat flat = WFlat.builder()
@@ -1127,8 +1121,8 @@ public class FlatCreateService {
         }
 
         // Get ocean level
-        int oceanLevel = world.getWaterLevel() == null ? 60 : world.getWaterLevel();
-        String oceanBlockId = world.getWaterBlockType() == null ? "n:o" : world.getWaterBlockType();
+        int oceanLevel = world.getOceanLevel() == null ? 60 : world.getOceanLevel();
+        String oceanBlockId = world.getOceanBlockType() == null ? "n:o" : world.getOceanBlockType();
 
         // Build WFlat instance
         WFlat flat = WFlat.builder()
