@@ -90,7 +90,7 @@ public class FlatMaterialService {
             throw new IllegalArgumentException("Material ID must be between 0 and 255, got: " + materialId);
         }
 
-        if (materialId == WFlat.NOT_SET) {
+        if (materialId == WFlat.MATERIAL_NOT_SET) {
             log.warn("Cannot set material definition for NOT_SET (0), skipping");
             return flat;
         }
@@ -149,7 +149,7 @@ public class FlatMaterialService {
                     continue;
                 }
 
-                if (materialId == WFlat.NOT_SET) {
+                if (materialId == WFlat.MATERIAL_NOT_SET) {
                     log.debug("Skipping NOT_SET (0) material");
                     skipped++;
                     continue;
@@ -224,7 +224,7 @@ public class FlatMaterialService {
                 continue;
             }
 
-            if (materialId == WFlat.NOT_SET) {
+            if (materialId == WFlat.MATERIAL_NOT_SET) {
                 log.debug("Skipping NOT_SET (0) material");
                 continue;
             }

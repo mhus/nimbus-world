@@ -1,12 +1,12 @@
 package de.mhus.nimbus.world.generator.flat.hexgrid;
 
+import de.mhus.nimbus.world.shared.world.WHexGrid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 
 /**
  * Service for managing hex grid composition builders.
@@ -21,16 +21,16 @@ public class HexGridBuilderService {
     public HexGridBuilderService() {
         registry.put("ocean", OceanBuilder.class);
         registry.put("island", IslandBuilder.class);
-        registry.put("plains", PlainsBuilder.class);
-        registry.put("hills", HillsBuilder.class);
-        registry.put("forest", UforestBuilder.class);
-        registry.put("desert", UdessertBuilder.class);
-        registry.put("heath", UheathBuilder.class);
-        registry.put("mountains", UmountainsBuilder.class);
-        registry.put("coast", UcoastBuilder.class);
-        registry.put("swamp", UswampBuilder.class);
-        registry.put("city", UcityBuilder.class);
-        registry.put("village", UvillageBuilder.class);
+        registry.put("coast", CoastBuilder.class);
+//        registry.put("plains", PlainsBuilder.class);
+//        registry.put("hills", HillsBuilder.class);
+//        registry.put("forest", ForestBuilder.class);
+//        registry.put("desert", DessertBuilder.class);
+//        registry.put("heath", HeathBuilder.class);
+//        registry.put("mountains", MountainsBuilder.class);
+//        registry.put("swamp", SwampBuilder.class);
+//        registry.put("city", CityBuilder.class);
+//        registry.put("village", VillageBuilder.class);
     }
 
     /**
@@ -50,4 +50,12 @@ public class HexGridBuilderService {
         }
     }
 
+    public Optional<HexGridBuilder> createBuilder(WHexGrid grid) {
+        String type = grid.getParameters().get("g_type");
+        if (type == null) return Optional.empty();
+        return createBuilder(type, grid.getParameters().
+                entrySet().stream().filter(p -> p.getKey().startsWith("g_"))
+                        .collect(HashMap::new, (m, e) -> m.put(e.getKey().substring(2), e.getValue()), Map::putAll)
+                );
+    }
 }

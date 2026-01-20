@@ -1,11 +1,14 @@
 package de.mhus.nimbus.world.generator.flat.hexgrid;
 
+import de.mhus.nimbus.world.generator.flat.FlatManipulatorService;
 import de.mhus.nimbus.world.shared.generator.WFlat;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
+import de.mhus.nimbus.world.shared.world.WWorld;
 import lombok.Builder;
 import lombok.Getter;
 
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Context object containing all information needed for terrain generation.
@@ -14,6 +17,8 @@ import java.util.Map;
 @Builder
 @Getter
 public class BuilderContext {
+
+    private final WWorld world;
 
     /**
      * The flat terrain to manipulate.
@@ -26,16 +31,25 @@ public class BuilderContext {
     private final WHexGrid hexGrid;
 
     /**
-     * Scenario types of neighboring hex grids.
-     * Key is the neighbor position (TOP_RIGHT, RIGHT, BOTTOM_RIGHT, BOTTOM_LEFT, LEFT, TOP_LEFT).
-     * Value is the scenario type (g.type parameter) or null if neighbor doesn't exist or has no type.
-     */
-    private final Map<WHexGrid.NEIGHBOR, String> neighborTypes;
-
-    /**
      * Neighboring hex grids (loaded if they exist).
      * Key is the neighbor position.
      * Value is the loaded WHexGrid or null if neighbor doesn't exist.
      */
     private final Map<WHexGrid.NEIGHBOR, WHexGrid> neighborGrids;
+
+    private HexGridBuilderService builderService;
+
+    /**
+     * Service for accessing flat manipulators.
+     */
+    private final FlatManipulatorService manipulatorService;
+
+    public Optional<HexGridBuilder> getBuilderFor(WHexGrid.NEIGHBOR neighbor) {
+        WHexGrid grid = neighborGrids.get(neighbor);
+        if (grid == null) return Optional.empty();
+        var ret = builderService.createBuilder(grid);
+        ret.ifPresent(b -> b.setContext(this));
+        return ret;
+    }
+
 }

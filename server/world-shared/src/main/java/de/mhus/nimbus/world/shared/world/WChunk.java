@@ -52,6 +52,10 @@ public class WChunk implements Identifiable {
     @Builder.Default
     private boolean compressed = false;
 
+    private int blockCount;
+
+    private int chunkSize;
+
     /**
      * Server-side metadata for blocks in this chunk.
      * Key: Block coordinate "x,y,z"

@@ -633,13 +633,13 @@ public class FlatCreateService {
                 if (isInHex) {
                     // Position is inside HexGrid: mark with NOT_SET_MUTABLE (255) at level 0
                     flat.setLevel(localX, localZ, 0);
-                    flat.setColumn(localX, localZ, (byte) WFlat.NOT_SET_MUTABLE);
+                    flat.setColumn(localX, localZ, WFlat.MATERIAL_NOT_SET_MUTABLE);
                     hexCellsSet++;
                 } else {
                     // Position is outside HexGrid (corner): mark with NOT_SET (0)
                     // Keep level at 0 and set material to NOT_SET
                     flat.setLevel(localX, localZ, 0);
-                    flat.setColumn(localX, localZ, (byte) WFlat.NOT_SET);
+                    flat.setColumn(localX, localZ, WFlat.MATERIAL_NOT_SET);
                     outsideCellsImported++;
                 }
             }
@@ -1188,7 +1188,7 @@ public class FlatCreateService {
                 }
 
                 // Set material to NOT_SET (0) initially
-                flat.setColumn(x, z, WFlat.NOT_SET);
+                flat.setColumn(x, z, WFlat.MATERIAL_NOT_SET);
             }
         }
 
@@ -1226,7 +1226,7 @@ public class FlatCreateService {
 
                     // If within border width, set to NOT_SET_MUTABLE
                     if (dist <= borderSize / 2.0) {
-                        flat.setColumn(x, z, WFlat.NOT_SET_MUTABLE);
+                        flat.setColumn(x, z, WFlat.MATERIAL_NOT_SET_MUTABLE);
                     }
                 }
             }

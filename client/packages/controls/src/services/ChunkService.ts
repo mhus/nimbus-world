@@ -11,6 +11,7 @@ export interface ChunkMetadata {
   chunk: string;
   storageId: string;
   compressed: boolean;
+  blockCount: number;
   createdAt: string;
   updatedAt: string;
 }

@@ -33,9 +33,10 @@ import java.util.Map;
 @AllArgsConstructor
 public class WFlat implements Identifiable {
 
-    public static final int NOT_SET = 0;
-    public static final int NOT_SET_MUTABLE = 255;
-    private static final int MAX_SIZE = 800;
+    public static final int MATERIAL_NOT_SET = 0;
+    public static final int MATERIAL_NOT_SET_MUTABLE = 255;
+    public static final int LEVEL_NOT_SET = 0;
+    private static final int MAX_SIZE = 650; // 600 + borders
 
     @Id
     @Getter
@@ -159,7 +160,7 @@ public class WFlat implements Identifiable {
     public boolean isColumnSet(int x, int z) {
         if (x < 0 || z < 0 || x >= sizeX || z >= sizeZ)
             throw new IllegalArgumentException("Coordinates out of range");
-        return columns[x + z * sizeX] == NOT_SET ? false : true;
+        return columns[x + z * sizeX] == MATERIAL_NOT_SET ? false : true;
     }
 
     public MaterialDefinition getColumnMaterial(int x, int z) {
@@ -197,7 +198,7 @@ public class WFlat implements Identifiable {
     public void setMaterial(int id, MaterialDefinition definition) {
         if (id < 1 || id > 254) // 0 = UNKNOWN_PROTECTED, 255 = UNKNOWN_NOT_PROTECTED
             throw new IllegalArgumentException("Definition id out of range");
-        if (id == NOT_SET)
+        if (id == MATERIAL_NOT_SET)
             return;
         materials.put((byte)id, definition);
     }
@@ -205,7 +206,7 @@ public class WFlat implements Identifiable {
     public MaterialDefinition getMaterial(int id) {
         if (id < 0 || id > 255)
             throw new IllegalArgumentException("Definition id out of range");
-        if (id == NOT_SET)
+        if (id == MATERIAL_NOT_SET)
             return null;
         return materials.get((byte)id);
     }

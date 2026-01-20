@@ -9,6 +9,7 @@
           </h3>
           <div class="mt-2 space-y-1 text-sm text-base-content/70">
             <p>Storage ID: {{ chunk.storageId || 'N/A' }}</p>
+            <p>Block Count: {{ chunk.blockCount || 0 }}</p>
             <p>Created: {{ formatDate(chunk.createdAt) }}</p>
             <p>Updated: {{ formatDate(chunk.updatedAt) }}</p>
           </div>

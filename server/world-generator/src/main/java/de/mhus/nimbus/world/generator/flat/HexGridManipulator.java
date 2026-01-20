@@ -7,8 +7,11 @@ import de.mhus.nimbus.world.generator.flat.hexgrid.HexGridBuilderService;
 import de.mhus.nimbus.world.shared.generator.WFlat;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
 import de.mhus.nimbus.world.shared.world.WHexGridService;
+import de.mhus.nimbus.world.shared.world.WWorld;
+import de.mhus.nimbus.world.shared.world.WWorldService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
 import java.util.EnumMap;
@@ -30,13 +33,20 @@ import java.util.Optional;
 public class HexGridManipulator implements FlatManipulator {
 
     public static final String NAME = "hex-grid";
-    public static final String PARAM_TYPE = "g_type";
+    public static final String PARAM_TYPE = "type";
 
     @Autowired
     private WHexGridService hexGridService;
 
     @Autowired
     private HexGridBuilderService builderService;
+
+    @Autowired
+    private WWorldService worldService;
+
+    @Autowired
+    @Lazy
+    private FlatManipulatorService manipulatorService;
 
     @Override
     public String getName() {
@@ -48,20 +58,22 @@ public class HexGridManipulator implements FlatManipulator {
                           Map<String, String> parameters) {
         log.info("Starting hex-grid manipulation: flat={}, parameters={}", flat.getFlatId(), parameters);
 
+        WWorld world = worldService.getByWorldId(flat.getWorldId()).orElseThrow();
+
         // Load hex grid configuration
         WHexGrid hexGrid = loadHexGrid(flat);
         if (hexGrid == null) {
             throw new IllegalStateException("No hex grid found for flat: " + flat.getFlatId());
         }
 
+        // Merge hex grid parameters with manipulator parameters
+        Map<String, String> mergedParameters = extractHexGridParameters(hexGrid, parameters);
+
         // Extract scenario type
-        String type = parameters != null ? parameters.get(PARAM_TYPE) : null;
+        String type = mergedParameters != null ? mergedParameters.get(PARAM_TYPE) : null;
         if (type == null || type.isBlank()) {
             throw new IllegalArgumentException("Parameter 'g_type' is required");
         }
-
-        // Merge hex grid parameters with manipulator parameters
-        Map<String, String> mergedParameters = extractHexGridParameters(hexGrid, parameters);
 
         // Get builder for scenario type
         Optional<HexGridBuilder> builderOpt = builderService.createBuilder(type, mergedParameters);
@@ -72,20 +84,22 @@ public class HexGridManipulator implements FlatManipulator {
 
         // Load neighbor grids and extract their types
         Map<WHexGrid.NEIGHBOR, WHexGrid> neighborGrids = loadNeighborGrids(hexGrid, flat.getWorldId());
-        Map<WHexGrid.NEIGHBOR, String> neighborTypes = extractNeighborTypes(neighborGrids);
 
         // Build context
         BuilderContext context = BuilderContext.builder()
+                .world(world)
                 .flat(flat)
+                .builderService(builderService)
                 .hexGrid(hexGrid)
                 .neighborGrids(neighborGrids)
-                .neighborTypes(neighborTypes)
+                .manipulatorService(manipulatorService)
                 .build();
 
         // Build the scenario
-        log.info("Building scenario '{}' for hex grid: {}, neighbors: {}",
-                type, hexGrid.getPosition(), neighborTypes);
-        builder.build(context);
+        log.info("Building scenario '{}' for hex grid: {}",
+                type, hexGrid.getPosition());
+        builder.setContext(context);
+        builder.buildFlat();
 
         log.info("Hex-grid manipulation completed: scenario={}, hexGrid={}", type, hexGrid.getPosition());
     }
@@ -104,17 +118,17 @@ public class HexGridManipulator implements FlatManipulator {
 
     /**
      * Extract parameters from hex grid and merge with manipulator parameters.
-     * Parameters from hex grid with 'gf.' prefix are included.
+     * Parameters from hex grid with 'g_' prefix are included.
      * Manipulator parameters override hex grid parameters.
      */
     private Map<String, String> extractHexGridParameters(WHexGrid hexGrid, Map<String, String> manipulatorParams) {
         Map<String, String> merged = new HashMap<>();
 
-        // Add hex grid parameters with 'g_' prefix
+        // Add hex grid parameters with 'g_' prefix, remove prefix
         if (hexGrid.getParameters() != null) {
             hexGrid.getParameters().forEach((key, value) -> {
                 if (key.startsWith("g_")) {
-                    merged.put(key, value);
+                    merged.put(key.substring(2), value);
                 }
             });
         }
@@ -158,25 +172,4 @@ public class HexGridManipulator implements FlatManipulator {
         return neighborGrids;
     }
 
-    /**
-     * Extract scenario types from neighbor grids.
-     * Returns a map with neighbor position as key and scenario type (g.type parameter) as value.
-     */
-    private Map<WHexGrid.NEIGHBOR, String> extractNeighborTypes(Map<WHexGrid.NEIGHBOR, WHexGrid> neighborGrids) {
-        Map<WHexGrid.NEIGHBOR, String> neighborTypes = new EnumMap<>(WHexGrid.NEIGHBOR.class);
-
-        for (Map.Entry<WHexGrid.NEIGHBOR, WHexGrid> entry : neighborGrids.entrySet()) {
-            WHexGrid.NEIGHBOR direction = entry.getKey();
-            WHexGrid neighbor = entry.getValue();
-
-            String type = null;
-            if (neighbor != null && neighbor.getParameters() != null) {
-                type = neighbor.getParameters().get(PARAM_TYPE);
-            }
-
-            neighborTypes.put(direction, type);
-        }
-
-        return neighborTypes;
-    }
 }

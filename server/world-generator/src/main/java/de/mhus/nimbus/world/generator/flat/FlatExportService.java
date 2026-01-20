@@ -142,7 +142,7 @@ public class FlatExportService {
 
                 // Check if column is set or has material 255 (treated like NOT_SET)
                 int columnMaterial = flat.getColumn(localX, localZ);
-                if (columnMaterial == WFlat.NOT_SET || columnMaterial == WFlat.NOT_SET_MUTABLE) {
+                if (columnMaterial == WFlat.MATERIAL_NOT_SET || columnMaterial == WFlat.MATERIAL_NOT_SET_MUTABLE) {
                     if (isOneAroundSet(flat, localX, localZ)) {
                         // NOT_SET or Material 255: Keep existing blocks, but fill down if neighbors are lower
                         handleNotSetColumn(chunkData, layerChunkData, worldX, worldZ, flat, localX, localZ, world, worldId);
@@ -172,11 +172,14 @@ public class FlatExportService {
                 // Find lowest sibling level to avoid holes
                 int lowestSiblingLevel = findLowestSiblingLevel(flat, localX, localZ, chunkData, world);
 
-                // Fill column from level down to lowestSiblingLevel
-                fillColumn(layerChunkData, worldX, worldZ, level, lowestSiblingLevel, columnDef, flat,
-                        smoothCorners, blockTypeCache, wid, localX, localZ);
-
-                exportedColumns++;
+                if (lowestSiblingLevel != WFlat.LEVEL_NOT_SET) {
+                    // Fill column from level down to lowestSiblingLevel
+                    fillColumn(layerChunkData, worldX, worldZ, level, lowestSiblingLevel, columnDef, flat,
+                            smoothCorners, blockTypeCache, wid, localX, localZ);
+                    exportedColumns++;
+                } else {
+                    skippedColumns++;
+                }
             }
         }
 
@@ -203,17 +206,17 @@ public class FlatExportService {
     private boolean isOneAroundSet(WFlat flat, int localX, int localZ) {
         for (int i = -1; i <= 1; i++) {
             int columnMaterial = flat.getColumnRobust(localX + i, localZ-1);
-            if (columnMaterial != WFlat.NOT_SET && columnMaterial != WFlat.NOT_SET_MUTABLE)
+            if (columnMaterial != WFlat.MATERIAL_NOT_SET && columnMaterial != WFlat.MATERIAL_NOT_SET_MUTABLE)
                 return true;
             columnMaterial = flat.getColumnRobust(localX + i, localZ+1);
-            if (columnMaterial != WFlat.NOT_SET && columnMaterial != WFlat.NOT_SET_MUTABLE)
+            if (columnMaterial != WFlat.MATERIAL_NOT_SET && columnMaterial != WFlat.MATERIAL_NOT_SET_MUTABLE)
                 return true;
         }
         int columnMaterial = flat.getColumnRobust(localX-1, localZ);
-        if (columnMaterial != WFlat.NOT_SET && columnMaterial != WFlat.NOT_SET_MUTABLE)
+        if (columnMaterial != WFlat.MATERIAL_NOT_SET && columnMaterial != WFlat.MATERIAL_NOT_SET_MUTABLE)
             return true;
         columnMaterial = flat.getColumnRobust(localX+1, localZ);
-        if (columnMaterial != WFlat.NOT_SET && columnMaterial != WFlat.NOT_SET_MUTABLE)
+        if (columnMaterial != WFlat.MATERIAL_NOT_SET && columnMaterial != WFlat.MATERIAL_NOT_SET_MUTABLE)
             return true;
         return false;
     }
@@ -265,6 +268,8 @@ public class FlatExportService {
 
         // Find lowest sibling level (from neighbors)
         int lowestSiblingLevel = findLowestSiblingLevel(flat, localX, localZ, chunkData, world);
+        if (lowestSiblingLevel == WFlat.LEVEL_NOT_SET)
+            return; // do not fill down if no siblings
 
         // If neighbors are lower, fill down to avoid gaps
         if (lowestSiblingLevel < existingLevel) {

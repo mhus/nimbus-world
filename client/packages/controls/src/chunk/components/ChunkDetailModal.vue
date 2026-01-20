@@ -21,6 +21,7 @@
               <div><span class="font-medium">CX:</span> {{ chunkData.cx }}</div>
               <div><span class="font-medium">CZ:</span> {{ chunkData.cz }}</div>
               <div><span class="font-medium">Size:</span> {{ chunkData.size }}</div>
+              <div><span class="font-medium">Start Coordinate:</span> X={{ chunkData.cx * chunkData.size }}, Z={{ chunkData.cz * chunkData.size }}</div>
               <div><span class="font-medium">Block Count:</span> {{ chunkData.blockCount }}</div>
               <div>
                 <span class="font-medium">Compressed:</span>

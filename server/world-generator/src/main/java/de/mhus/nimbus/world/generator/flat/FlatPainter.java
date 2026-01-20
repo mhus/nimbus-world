@@ -59,10 +59,10 @@ public class FlatPainter {
     }
 
     public interface ColumnPainter {
-        byte getColumn(WFlat flat, int x, int z, int level, int definition);
+        int getColumn(WFlat flat, int x, int z, int level, int definition);
     }
 
-    public static final ColumnPainter DEFAULT_COLUMN_PAINTER = (flat, x, z, level, definition) -> (byte)definition;
+    public static final ColumnPainter DEFAULT_COLUMN_PAINTER = (flat, x, z, level, definition) -> definition;
 
     private ColumnPainter columnPainter = DEFAULT_COLUMN_PAINTER;
 
@@ -402,8 +402,8 @@ public class FlatPainter {
                         if (definition > DO_NOT_SET) {
                             int c1 = flat.getColumn(x, z);
                             int c2 = flat.getColumn(nx, nz);
-                            flat.setColumn(x, z, (byte)c2);
-                            flat.setColumn(nx, nz, (byte)c1);
+                            flat.setColumn(x, z, c2);
+                            flat.setColumn(nx, nz, c1);
                         }
                     }
                 }

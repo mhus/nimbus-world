@@ -147,6 +147,7 @@ public class WChunkService implements StorageProvider {
         }
 
         entity.setInfoServer(infoServer.isEmpty() ? null : infoServer);
+        entity.setBlockCount(data.getBlocks().size());
         entity.touchUpdate();
         return repository.save(entity);
     }

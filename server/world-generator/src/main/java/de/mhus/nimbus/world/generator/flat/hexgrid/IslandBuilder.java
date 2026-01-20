@@ -1,108 +1,102 @@
 package de.mhus.nimbus.world.generator.flat.hexgrid;
 
-import de.mhus.nimbus.world.generator.flat.FlatMaterialService;
-import de.mhus.nimbus.world.generator.flat.FlatPainter;
+import de.mhus.nimbus.world.generator.flat.HillyTerrainManipulator;
+import de.mhus.nimbus.world.generator.flat.IslandsManipulator;
 import de.mhus.nimbus.world.shared.generator.WFlat;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import java.util.HashMap;
 import java.util.Map;
-import java.util.Random;
 
 /**
  * Island scenario builder.
- * Creates island(s) surrounded by ocean.
+ * Creates island(s) surrounded by ocean with hilly ocean floor.
+ * First uses HillyTerrainManipulator to create ocean floor terrain,
+ * then uses IslandsManipulator to create islands.
  */
 @Slf4j
 public class IslandBuilder extends HexGridBuilder {
 
     @Override
-    public void build(BuilderContext context) {
+    public void buildFlat() {
         WFlat flat = context.getFlat();
 
-        log.info("Building island scenario for flat: {}, neighbors: {}",
-                flat.getFlatId(), context.getNeighborTypes());
+        log.info("Building island scenario for flat: {}",
+                flat.getFlatId());
 
         int oceanLevel = flat.getOceanLevel();
-        int islandHeight = parseIntParameter(parameters, "g_islandHeight", 15);
-        int islandRadius = parseIntParameter(parameters, "g_islandRadius", 40);
-        int smallIslands = parseIntParameter(parameters, "g_smallIslands", 3);
-        long seed = parseLongParameter(parameters, "g_seed", System.currentTimeMillis());
 
-        Random random = new Random(seed);
-        FlatPainter painter = new FlatPainter(flat);
+        // Step 1: Create hilly ocean floor using HillyTerrainManipulator (like OceanBuilder)
+        int hillHeight = getLandOffset();
+        int baseHeight = Math.min(getHexGridLevel(), oceanLevel - hillHeight + 2); // Ensure ocean floor is below ocean level
 
-        // Start with ocean floor
-        int oceanFloor = oceanLevel - 20;
-        painter.fillRectangle(0, 0, flat.getSizeX() - 1, flat.getSizeZ() - 1, oceanFloor, FlatPainter.DEFAULT_PAINTER);
+        long seed = parseLongParameter(parameters, "seed", System.currentTimeMillis());
 
-        // Create main island in center
-        int centerX = flat.getSizeX() / 2;
-        int centerZ = flat.getSizeZ() / 2;
-        int targetLevel = oceanLevel + islandHeight;
+        log.debug("Ocean floor generation: baseHeight={}, hillHeight={}, oceanLevel={}, seed={}",
+                baseHeight, hillHeight, oceanLevel, seed);
 
-        drawIsland(painter, flat, centerX, centerZ, islandRadius, targetLevel, oceanLevel);
+        // Build parameters for HillyTerrainManipulator
+        Map<String, String> hillyParams = new HashMap<>();
+        hillyParams.put(HillyTerrainManipulator.PARAM_BASE_HEIGHT, String.valueOf(baseHeight));
+        hillyParams.put(HillyTerrainManipulator.PARAM_HILL_HEIGHT, String.valueOf(hillHeight));
+        hillyParams.put(HillyTerrainManipulator.PARAM_SEED, String.valueOf(seed));
 
-        // Create small islands scattered around
-        for (int i = 0; i < smallIslands; i++) {
-            double angle = random.nextDouble() * 2 * Math.PI;
-            int distance = islandRadius + 20 + random.nextInt(30);
-            int islandX = centerX + (int) (Math.cos(angle) * distance);
-            int islandZ = centerZ + (int) (Math.sin(angle) * distance);
-            int smallRadius = 10 + random.nextInt(15);
-            int smallHeight = 5 + random.nextInt(10);
+        // Use HillyTerrainManipulator to generate ocean floor terrain
+        context.getManipulatorService().executeManipulator(
+                HillyTerrainManipulator.NAME,
+                flat,
+                0, 0,
+                flat.getSizeX(), flat.getSizeZ(),
+                hillyParams
+        );
 
-            drawIsland(painter, flat, islandX, islandZ, smallRadius, oceanLevel + smallHeight, oceanLevel);
-        }
+        log.debug("Ocean floor created, now creating islands");
 
-        // Set materials based on height
-        for (int z = 0; z < flat.getSizeZ(); z++) {
-            for (int x = 0; x < flat.getSizeX(); x++) {
-                int level = flat.getLevel(x, z);
-                if (level <= oceanLevel) {
-                    flat.setColumn(x, z, FlatMaterialService.SAND);
-                } else {
-                    flat.setColumn(x, z, FlatMaterialService.GRASS);
-                }
-            }
-        }
+        // Step 2: Create islands using IslandsManipulator
+        Map<String, String> islandParams = new HashMap<>();
 
-        // Soften for natural look
-        painter.soften(0, 0, flat.getSizeX() - 1, flat.getSizeZ() - 1, 1, 0.4);
+        // Use parameters from IslandsManipulator
+        islandParams.put(IslandsManipulator.PARAM_MAIN_ISLAND_SIZE,
+                parameters.getOrDefault("mainIslandSize", "40"));
+        islandParams.put(IslandsManipulator.PARAM_MAIN_ISLAND_HEIGHT,
+                parameters.getOrDefault("mainIslandHeight", "30"));
+        islandParams.put(IslandsManipulator.PARAM_SMALL_ISLANDS,
+                parameters.getOrDefault("smallIslands", "8"));
+        islandParams.put(IslandsManipulator.PARAM_SMALL_ISLAND_MIN_RADIUS,
+                parameters.getOrDefault("smallIslandMinRadius", "8"));
+        islandParams.put(IslandsManipulator.PARAM_SMALL_ISLAND_MAX_RADIUS,
+                parameters.getOrDefault("smallIslandMaxRadius", "15"));
+        islandParams.put(IslandsManipulator.PARAM_SCATTER_DISTANCE,
+                parameters.getOrDefault("scatterDistance", "60"));
+        islandParams.put(IslandsManipulator.PARAM_SEED, String.valueOf(seed));
+        islandParams.put(IslandsManipulator.PARAM_UNDERWATER, "false");
 
-        log.info("Island scenario completed: mainIsland={}, smallIslands={}", islandRadius, smallIslands);
+        // Use IslandsManipulator to create islands
+        context.getManipulatorService().executeManipulator(
+                IslandsManipulator.NAME,
+                flat,
+                0, 0,
+                flat.getSizeX(), flat.getSizeZ(),
+                islandParams
+        );
+
+        // Blend edges with neighbors for smooth transitions
+        HexGridEdgeBlender edgeBlender = new HexGridEdgeBlender(flat, context);
+        edgeBlender.blendAllEdges();
+
+        log.info("Island scenario completed: baseHeight={}, hillHeight={}, oceanLevel={}",
+                baseHeight, hillHeight, oceanLevel);
     }
 
-    private void drawIsland(FlatPainter painter, WFlat flat, int centerX, int centerZ,
-                           int radius, int peakHeight, int oceanLevel) {
-        // Create island with radial falloff
-        for (int dz = -radius; dz <= radius; dz++) {
-            for (int dx = -radius; dx <= radius; dx++) {
-                double distance = Math.sqrt(dx * dx + dz * dz);
-                if (distance <= radius) {
-                    int x = centerX + dx;
-                    int z = centerZ + dz;
-
-                    // Smooth falloff from peak to ocean
-                    double heightFactor = 1.0 - (distance / radius);
-                    int height = oceanLevel + (int) (heightFactor * (peakHeight - oceanLevel));
-
-                    painter.paint(x, z, height, FlatPainter.HIGHER);
-                }
-            }
-        }
+    @Override
+    protected int getDefaultLandOffset() {
+        return 5;  // LAND: normal variation
     }
 
-    private int parseIntParameter(Map<String, String> parameters, String name, int defaultValue) {
-        if (parameters == null || !parameters.containsKey(name)) {
-            return defaultValue;
-        }
-        try {
-            return Integer.parseInt(parameters.get(name));
-        } catch (NumberFormatException e) {
-            log.warn("Invalid integer parameter '{}': {}, using default: {}", name, parameters.get(name), defaultValue);
-            return defaultValue;
-        }
+    @Override
+    protected int getDefaultLandLevel() {
+        return 15;  // LAND: above ocean level
     }
 
     private long parseLongParameter(Map<String, String> parameters, String name, long defaultValue) {

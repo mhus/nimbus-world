@@ -106,8 +106,8 @@ public class HexGridExpandManipulator implements FlatManipulator {
                 int currentMaterial = flat.getColumn(localX, localZ);
 
                 // Only process positions that are currently NOT_SET (0)
-                if (currentMaterial != WFlat.NOT_SET) {
-                    if (currentMaterial == WFlat.NOT_SET_MUTABLE) {
+                if (currentMaterial != WFlat.MATERIAL_NOT_SET) {
+                    if (currentMaterial == WFlat.MATERIAL_NOT_SET_MUTABLE) {
                         alreadyEditableCount++;
                     }
                     continue;
@@ -126,7 +126,7 @@ public class HexGridExpandManipulator implements FlatManipulator {
 
                 if (isInExpandedHex) {
                     // Position is inside expanded hex: change from NOT_SET (0) to NOT_SET_MUTABLE (255)
-                    flat.setColumn(localX, localZ, WFlat.NOT_SET_MUTABLE);
+                    flat.setColumn(localX, localZ, WFlat.MATERIAL_NOT_SET_MUTABLE);
                     expandedCount++;
                 } else {
                     outsideCount++;
