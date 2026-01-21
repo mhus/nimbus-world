@@ -128,7 +128,7 @@ export class NotificationService {
           // Only show if title has changed
           if (title !== this.currentLocationTitle) {
             this.currentLocationTitle = title;
-            this.newNotification(21, null, title);
+            this.newNotification(21, null, '🧭 ' + title);
             logger.debug('Location title changed', { title });
           }
 

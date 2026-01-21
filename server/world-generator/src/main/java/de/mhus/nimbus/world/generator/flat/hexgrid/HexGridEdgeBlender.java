@@ -168,17 +168,17 @@ public class HexGridEdgeBlender {
         public WHexGrid.NEIGHBOR[] getAdjacentNeighbors() {
             switch (this) {
                 case TOP:
-                    return new WHexGrid.NEIGHBOR[]{WHexGrid.NEIGHBOR.TOP_LEFT, WHexGrid.NEIGHBOR.TOP_RIGHT};
+                    return new WHexGrid.NEIGHBOR[]{WHexGrid.NEIGHBOR.NORTH_WEST, WHexGrid.NEIGHBOR.NORTH_EAST};
                 case TOP_RIGHT:
-                    return new WHexGrid.NEIGHBOR[]{WHexGrid.NEIGHBOR.TOP_RIGHT, WHexGrid.NEIGHBOR.RIGHT};
+                    return new WHexGrid.NEIGHBOR[]{WHexGrid.NEIGHBOR.NORTH_EAST, WHexGrid.NEIGHBOR.EAST};
                 case BOTTOM_RIGHT:
-                    return new WHexGrid.NEIGHBOR[]{WHexGrid.NEIGHBOR.RIGHT, WHexGrid.NEIGHBOR.BOTTOM_RIGHT};
+                    return new WHexGrid.NEIGHBOR[]{WHexGrid.NEIGHBOR.EAST, WHexGrid.NEIGHBOR.SOUTH_EAST};
                 case BOTTOM:
-                    return new WHexGrid.NEIGHBOR[]{WHexGrid.NEIGHBOR.BOTTOM_RIGHT, WHexGrid.NEIGHBOR.BOTTOM_LEFT};
+                    return new WHexGrid.NEIGHBOR[]{WHexGrid.NEIGHBOR.SOUTH_EAST, WHexGrid.NEIGHBOR.SOUTH_WEST};
                 case BOTTOM_LEFT:
-                    return new WHexGrid.NEIGHBOR[]{WHexGrid.NEIGHBOR.BOTTOM_LEFT, WHexGrid.NEIGHBOR.LEFT};
+                    return new WHexGrid.NEIGHBOR[]{WHexGrid.NEIGHBOR.SOUTH_WEST, WHexGrid.NEIGHBOR.WEST};
                 case TOP_LEFT:
-                    return new WHexGrid.NEIGHBOR[]{WHexGrid.NEIGHBOR.LEFT, WHexGrid.NEIGHBOR.TOP_LEFT};
+                    return new WHexGrid.NEIGHBOR[]{WHexGrid.NEIGHBOR.WEST, WHexGrid.NEIGHBOR.NORTH_WEST};
                 default:
                     return new WHexGrid.NEIGHBOR[]{};
             }
@@ -190,15 +190,15 @@ public class HexGridEdgeBlender {
         public Corner getMirroredCorner(WHexGrid.NEIGHBOR direction) {
             // This is simplified - would need proper hex geometry mapping
             switch (direction) {
-                case TOP_LEFT:
-                case TOP_RIGHT:
+                case NORTH_WEST:
+                case NORTH_EAST:
                     return this == TOP ? BOTTOM : this;
-                case BOTTOM_LEFT:
-                case BOTTOM_RIGHT:
+                case SOUTH_WEST:
+                case SOUTH_EAST:
                     return this == BOTTOM ? TOP : this;
-                case LEFT:
+                case WEST:
                     return this == TOP_LEFT ? TOP_RIGHT : (this == BOTTOM_LEFT ? BOTTOM_RIGHT : this);
-                case RIGHT:
+                case EAST:
                     return this == TOP_RIGHT ? TOP_LEFT : (this == BOTTOM_RIGHT ? BOTTOM_LEFT : this);
                 default:
                     return this;
@@ -257,17 +257,17 @@ public class HexGridEdgeBlender {
          */
         private Corner[] getEdgeCorners(WHexGrid.NEIGHBOR direction) {
             switch (direction) {
-                case TOP_LEFT:
+                case NORTH_WEST:
                     return new Corner[]{Corner.TOP_LEFT, Corner.TOP};
-                case TOP_RIGHT:
+                case NORTH_EAST:
                     return new Corner[]{Corner.TOP, Corner.TOP_RIGHT};
-                case RIGHT:
+                case EAST:
                     return new Corner[]{Corner.TOP_RIGHT, Corner.BOTTOM_RIGHT};
-                case BOTTOM_RIGHT:
+                case SOUTH_EAST:
                     return new Corner[]{Corner.BOTTOM_RIGHT, Corner.BOTTOM};
-                case BOTTOM_LEFT:
+                case SOUTH_WEST:
                     return new Corner[]{Corner.BOTTOM, Corner.BOTTOM_LEFT};
-                case LEFT:
+                case WEST:
                     return new Corner[]{Corner.BOTTOM_LEFT, Corner.TOP_LEFT};
                 default:
                     return new Corner[]{Corner.TOP, Corner.BOTTOM};

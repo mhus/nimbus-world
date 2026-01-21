@@ -132,18 +132,18 @@ public class CoastBuilder extends HexGridBuilder {
      */
     private double calculateDistanceToSide(int x, int z, int sizeX, int sizeZ, WHexGrid.NEIGHBOR side) {
         switch (side) {
-            case TOP_LEFT:
-            case TOP_RIGHT:
+            case NORTH_WEST:
+            case NORTH_EAST:
                 // Top sides - distance to top edge
                 return z;
-            case BOTTOM_LEFT:
-            case BOTTOM_RIGHT:
+            case SOUTH_WEST:
+            case SOUTH_EAST:
                 // Bottom sides - distance to bottom edge
                 return sizeZ - z - 1;
-            case LEFT:
+            case WEST:
                 // Left side - distance to left edge
                 return x;
-            case RIGHT:
+            case EAST:
                 // Right side - distance to right edge
                 return sizeX - x - 1;
             default:

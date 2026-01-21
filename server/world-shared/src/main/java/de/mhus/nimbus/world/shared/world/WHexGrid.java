@@ -38,12 +38,12 @@ import java.util.Map;
 public class WHexGrid implements Identifiable {
 
     public enum NEIGHBOR {
-        TOP_RIGHT,
-        RIGHT,
-        BOTTOM_RIGHT,
-        BOTTOM_LEFT,
-        LEFT,
-        TOP_LEFT
+        NORTH_EAST, // TOP_RIGHT
+        EAST, // RIGHT
+        SOUTH_EAST, // BOTTOM_RIGHT
+        SOUTH_WEST, // BOTTOM_LEFT
+        WEST, // LEFT
+        NORTH_WEST // TOP_LEFT
     }
 
     @Id

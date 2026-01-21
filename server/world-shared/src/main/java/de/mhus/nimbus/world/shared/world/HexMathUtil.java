@@ -130,17 +130,17 @@ public class HexMathUtil {
         int q = position.getQ();
         int r = position.getR();
         switch (nabor) {
-            case TOP_RIGHT:
+            case NORTH_EAST:
                 return HexVector2.builder().q(q + 1).r(r - 1).build();
-            case RIGHT:
+            case EAST:
                 return HexVector2.builder().q(q + 1).r(r).build();
-            case BOTTOM_RIGHT:
+            case SOUTH_EAST:
                 return HexVector2.builder().q(q).r(r + 1).build();
-            case BOTTOM_LEFT:
+            case SOUTH_WEST:
                 return HexVector2.builder().q(q - 1).r(r + 1).build();
-            case LEFT:
+            case WEST:
                 return HexVector2.builder().q(q - 1).r(r).build();
-            case TOP_LEFT:
+            case NORTH_WEST:
                 return HexVector2.builder().q(q).r(r - 1).build();
             default:
                 throw new IllegalArgumentException("Unknown nabor direction: " + nabor);
