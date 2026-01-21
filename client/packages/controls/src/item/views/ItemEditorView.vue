@@ -1,5 +1,20 @@
 <template>
-  <div class="p-6 space-y-6">
+  <div class="space-y-6">
+    <!-- Header -->
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <button class="btn btn-ghost gap-2" @click="$emit('close')">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+          </svg>
+          Back to List
+        </button>
+      </div>
+      <h2 class="text-2xl font-bold">
+        {{ isNew ? 'Create New Item' : 'Edit Item' }}
+      </h2>
+    </div>
+
     <!-- Loading State -->
     <div v-if="loading" class="flex justify-center py-8">
       <span class="loading loading-spinner loading-lg"></span>
@@ -12,150 +27,153 @@
 
     <!-- Editor Form -->
     <div v-else-if="localItem" class="space-y-6">
-      <!-- Item ID -->
-      <div class="form-control">
-        <label class="label">
-          <span class="label-text font-semibold">Item ID</span>
-          <span v-if="!isNew" class="label-text-alt text-xs opacity-50">Read-only</span>
-        </label>
-        <input
-          v-model="localItem.id"
-          type="text"
-          class="input input-bordered"
-          :disabled="!isNew"
-          placeholder="item_id"
-        />
-      </div>
+      <div class="card bg-base-100 shadow-xl">
+        <div class="card-body">
+          <h3 class="card-title">Item Details</h3>
 
-      <!-- Item Type ID -->
-      <div class="form-control">
-        <label class="label">
-          <span class="label-text font-semibold">Item Type</span>
-        </label>
-        <input
-          v-model="localItem.itemType"
-          type="text"
-          class="input input-bordered"
-          placeholder="e.g., sword, wand, potion"
-          :disabled="!isNew"
-        />
-        <label class="label">
-          <span class="label-text-alt text-xs">{{ isNew ? 'References ItemType definition' : 'Cannot be changed' }}</span>
-        </label>
-      </div>
-
-      <!-- Display Name -->
-      <div class="form-control">
-        <label class="label">
-          <span class="label-text font-semibold">Display Name</span>
-        </label>
-        <input
-          v-model="localItem.name"
-          type="text"
-          class="input input-bordered"
-          placeholder="Item name (optional, uses ItemType.name if empty)"
-        />
-      </div>
-
-      <!-- Description -->
-      <div class="form-control">
-        <label class="label">
-          <span class="label-text font-semibold">Description</span>
-        </label>
-        <textarea
-          v-model="localItem.description"
-          class="textarea textarea-bordered"
-          rows="2"
-          placeholder="Item description (optional)"
-        ></textarea>
-      </div>
-
-      <!-- Modifier Overrides -->
-      <div class="divider">Visual Modifier (Overrides)</div>
-      <div class="space-y-4">
-        <div class="form-control">
-          <label class="label">
-            <span class="label-text font-semibold">Texture Override</span>
-          </label>
-          <input
-            v-model="modifierTexture"
-            type="text"
-            class="input input-bordered"
-            placeholder="Optional texture override (uses ItemType default if empty)"
-          />
-        </div>
-
-        <div class="grid grid-cols-2 gap-4">
+          <!-- Item ID -->
           <div class="form-control">
             <label class="label">
-              <span class="label-text">Scale X</span>
+              <span class="label-text font-semibold">Item ID</span>
+              <span v-if="!isNew" class="label-text-alt text-xs opacity-50">Read-only</span>
             </label>
             <input
-              v-model.number="modifierScaleX"
-              type="number"
-              step="0.1"
+              v-model="localItem.id"
+              type="text"
               class="input input-bordered"
-              placeholder="ItemType default"
+              :disabled="!isNew"
+              placeholder="item_id"
             />
           </div>
 
+          <!-- Item Type ID -->
           <div class="form-control">
             <label class="label">
-              <span class="label-text">Scale Y</span>
+              <span class="label-text font-semibold">Item Type</span>
             </label>
             <input
-              v-model.number="modifierScaleY"
-              type="number"
-              step="0.1"
+              v-model="localItem.itemType"
+              type="text"
               class="input input-bordered"
-              placeholder="ItemType default"
+              placeholder="e.g., sword, wand, potion"
+              :disabled="!isNew"
+            />
+            <label class="label">
+              <span class="label-text-alt text-xs">{{ isNew ? 'References ItemType definition' : 'Cannot be changed' }}</span>
+            </label>
+          </div>
+
+          <!-- Display Name -->
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text font-semibold">Display Name</span>
+            </label>
+            <input
+              v-model="localItem.name"
+              type="text"
+              class="input input-bordered"
+              placeholder="Item name (optional, uses ItemType.name if empty)"
             />
           </div>
-        </div>
 
-        <div class="form-control">
-          <label class="label">
-            <span class="label-text">Pose Override</span>
-          </label>
-          <input
-            v-model="modifierPose"
-            type="text"
-            class="input input-bordered"
-            placeholder="e.g., attack, use, drink"
+          <!-- Description -->
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text font-semibold">Description</span>
+            </label>
+            <textarea
+              v-model="localItem.description"
+              class="textarea textarea-bordered"
+              rows="2"
+              placeholder="Item description (optional)"
+            ></textarea>
+          </div>
+
+          <!-- Modifier Overrides -->
+          <div class="divider">Visual Modifier (Overrides)</div>
+          <div class="space-y-4">
+            <div class="form-control">
+              <label class="label">
+                <span class="label-text font-semibold">Texture Override</span>
+              </label>
+              <input
+                v-model="modifierTexture"
+                type="text"
+                class="input input-bordered"
+                placeholder="Optional texture override (uses ItemType default if empty)"
+              />
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+              <div class="form-control">
+                <label class="label">
+                  <span class="label-text">Scale X</span>
+                </label>
+                <input
+                  v-model.number="modifierScaleX"
+                  type="number"
+                  step="0.1"
+                  class="input input-bordered"
+                  placeholder="ItemType default"
+                />
+              </div>
+
+              <div class="form-control">
+                <label class="label">
+                  <span class="label-text">Scale Y</span>
+                </label>
+                <input
+                  v-model.number="modifierScaleY"
+                  type="number"
+                  step="0.1"
+                  class="input input-bordered"
+                  placeholder="ItemType default"
+                />
+              </div>
+            </div>
+
+            <div class="form-control">
+              <label class="label">
+                <span class="label-text">Pose Override</span>
+              </label>
+              <input
+                v-model="modifierPose"
+                type="text"
+                class="input input-bordered"
+                placeholder="e.g., attack, use, drink"
+              />
+            </div>
+          </div>
+
+          <!-- OnUseEffect -->
+          <div class="divider">Scrawl Effect (onUseEffect)</div>
+          <ScriptActionEditor
+            v-model="modifierOnUseEffect"
           />
+
+          <!-- Actions -->
+          <div class="flex gap-2 pt-4">
+            <button class="btn btn-primary" @click="save">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+              </svg>
+              Save
+            </button>
+            <button class="btn btn-outline btn-sm" @click="showJsonEditor = true">
+              <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+              </svg>
+              Source
+            </button>
+            <div class="flex-1"></div>
+            <button v-if="!isNew" class="btn btn-error" @click="confirmDelete">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+              Delete
+            </button>
+          </div>
         </div>
-      </div>
-
-      <!-- OnUseEffect -->
-      <div class="divider">Scrawl Effect (onUseEffect)</div>
-      <ScriptActionEditor
-        v-model="modifierOnUseEffect"
-      />
-
-      <!-- Actions -->
-      <div class="flex gap-2 pt-4">
-        <button class="btn btn-primary" @click="save">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-          </svg>
-          Save
-        </button>
-        <button class="btn btn-outline btn-sm" @click="showJsonEditor = true">
-          <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
-          </svg>
-          Source
-        </button>
-        <button class="btn btn-ghost" @click="$emit('close')">
-          Cancel
-        </button>
-        <div class="flex-1"></div>
-        <button v-if="!isNew" class="btn btn-error" @click="confirmDelete">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-          </svg>
-          Delete
-        </button>
       </div>
     </div>
 
@@ -283,9 +301,9 @@ async function loadItem() {
       return;
     }
 
-    // Extract Item from ServerItem
-    // ServerItem has structure: { item: Item, itemBlockRef?: ItemBlockRef }
-    const itemData = (serverItem as any).item || serverItem;
+    // Extract Item from WItem wrapper
+    // WItem has structure: { id: mongoId, itemId: string, publicData: Item }
+    const itemData = (serverItem as any).publicData || serverItem;
     localItem.value = itemData;
 
     console.log('Item loaded:', itemData);
@@ -307,7 +325,8 @@ async function save() {
     if (props.isNew) {
       await ItemApiService.createItem(localItem.value, currentWorldId.value);
     } else {
-      await ItemApiService.updateItem(localItem.value.id, localItem.value, currentWorldId.value);
+      // Use props.itemId (from WItem.itemId) instead of localItem.id
+      await ItemApiService.updateItem(props.itemId, localItem.value, currentWorldId.value);
     }
     emit('save');
   } catch (e: any) {

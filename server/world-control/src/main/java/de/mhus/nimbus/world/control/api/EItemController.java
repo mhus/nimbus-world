@@ -163,22 +163,9 @@ public class EItemController extends BaseEditorController {
             return bad("itemType is required");
         }
 
-        // Generate ID if not provided
-        String itemId = request.id();
-        if (Strings.isBlank(itemId)) {
-            itemId = "item_" + System.currentTimeMillis() + "_" +
-                    Long.toHexString(Double.doubleToLongBits(Math.random())).substring(0, 7);
-        }
-
-        // Check if already exists
-        if (itemService.findByItemId(wid, itemId).isPresent()) {
-            return conflict("item already exists");
-        }
-
         try {
             // Build Item DTO
             Item item = Item.builder()
-                    .id(itemId)
                     .itemType(request.itemType())
                     .name(request.name())
                     .description(request.description())
@@ -186,8 +173,8 @@ public class EItemController extends BaseEditorController {
                     .parameters(request.parameters())
                     .build();
 
-            WItem saved = itemService.save(wid, itemId, item);
-            log.info("Created item: itemId={}", itemId);
+            WItem saved = itemService.create(wid, item);
+            log.info("Created item: itemId={}", saved.getItemId());
 
             // Return full WItem entity with metadata
             return ResponseEntity.status(HttpStatus.CREATED).body(saved);
@@ -306,8 +293,8 @@ public class EItemController extends BaseEditorController {
         String texture = publicData.getModifier() != null ? publicData.getModifier().getTexture() : null;
 
         return new ItemSearchResult(
-                publicData.getId(),
-                publicData.getName() != null ? publicData.getName() : publicData.getId(),
+                item.getItemId(),
+                publicData.getName() != null ? publicData.getName() : item.getItemId(),
                 texture
         );
     }

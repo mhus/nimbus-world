@@ -117,6 +117,7 @@ public class WItemTypeService {
             updater.accept(entity);
             entity.touchUpdate();
             entity.removeWorldPrefix();
+            entity.setWorldId(regionWorldId.getId()); // Ensure worldId is correct
             WItemType saved = repository.save(entity);
             log.debug("Updated WItemType: {}", itemType);
             return saved;

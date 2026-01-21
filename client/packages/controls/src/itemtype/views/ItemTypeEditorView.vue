@@ -1,5 +1,5 @@
 <template>
-  <div class="p-6 max-w-4xl mx-auto">
+  <div class="space-y-6">
     <!-- Loading State -->
     <div v-if="loading" class="flex justify-center py-8">
       <span class="loading loading-spinner loading-lg"></span>
@@ -30,7 +30,7 @@
       </div>
 
       <!-- Basic Properties -->
-      <div class="card bg-base-200">
+      <div class="card bg-base-100">
         <div class="card-body">
           <h3 class="card-title text-lg">Basic Properties</h3>
 
@@ -83,7 +83,7 @@
       </div>
 
       <!-- Modifier Properties -->
-      <div class="card bg-base-200">
+      <div class="card bg-base-100">
         <div class="card-body">
           <h3 class="card-title text-lg">Visual Modifier</h3>
 
@@ -92,12 +92,19 @@
             <label class="label">
               <span class="label-text">Texture Path</span>
             </label>
-            <input
-              v-model="itemType.modifier.texture"
-              type="text"
-              placeholder="e.g., textures/items/sword.png"
-              class="input input-bordered"
-            />
+            <div class="flex gap-1">
+              <input
+                v-model="itemType.modifier.texture"
+                type="text"
+                placeholder="e.g., textures/items/sword.png"
+                class="input input-bordered flex-1"
+              />
+              <button type="button" class="btn btn-square btn-outline" @click="openAssetPicker" title="Browse assets">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </button>
+            </div>
           </div>
 
           <!-- Scaling -->
@@ -196,49 +203,41 @@
               />
             </label>
           </div>
+
+          <!-- Action Buttons -->
+          <div class="flex gap-2 justify-end pt-4">
+            <button
+              v-if="!isNew"
+              class="btn btn-error"
+              @click="handleDelete"
+              :disabled="saving"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+              Delete
+            </button>
+
+            <button class="btn btn-outline btn-sm" @click="showJsonEditor = true" :disabled="saving">
+              <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+              </svg>
+              Source
+            </button>
+
+            <button
+              class="btn btn-primary"
+              @click="handleSave"
+              :disabled="saving || !isValid"
+            >
+              <span v-if="saving" class="loading loading-spinner"></span>
+              <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+              </svg>
+              Save
+            </button>
+          </div>
         </div>
-      </div>
-
-      <!-- Action Buttons -->
-      <div class="flex gap-2 justify-end">
-        <button
-          v-if="!isNew"
-          class="btn btn-error"
-          @click="handleDelete"
-          :disabled="saving"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-          </svg>
-          Delete
-        </button>
-
-        <button class="btn btn-outline btn-sm" @click="showJsonEditor = true" :disabled="saving">
-          <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
-          </svg>
-          Source
-        </button>
-
-        <button
-          class="btn btn-ghost"
-          @click="handleCancel"
-          :disabled="saving"
-        >
-          Cancel
-        </button>
-
-        <button
-          class="btn btn-primary"
-          @click="handleSave"
-          :disabled="saving || !isValid"
-        >
-          <span v-if="saving" class="loading loading-spinner"></span>
-          <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-          </svg>
-          Save
-        </button>
       </div>
     </div>
 
@@ -247,6 +246,15 @@
       v-model:is-open="showJsonEditor"
       :model-value="itemType"
       @apply="handleJsonApply"
+    />
+
+    <!-- Asset Picker Dialog -->
+    <AssetPickerDialog
+      v-if="isAssetPickerOpen && currentWorldId"
+      :world-id="currentWorldId"
+      :current-path="itemType.modifier?.texture"
+      @close="closeAssetPicker"
+      @select="handleAssetSelected"
     />
   </div>
 </template>
@@ -261,6 +269,7 @@ import {
   deleteItemType,
 } from '../services/itemTypeApiService';
 import JsonEditorDialog from '@components/JsonEditorDialog.vue';
+import AssetPickerDialog from '@components/AssetPickerDialog.vue';
 import { useWorld } from '@/composables/useWorld';
 
 const props = defineProps<{
@@ -296,6 +305,7 @@ const loading = ref(false);
 const saving = ref(false);
 const error = ref<string | null>(null);
 const showJsonEditor = ref(false);
+const isAssetPickerOpen = ref(false);
 
 const isValid = computed(() => {
   return (
@@ -414,6 +424,22 @@ function handleCancel() {
 function handleJsonApply(updatedItemType: ItemType) {
   itemType.value = updatedItemType;
   showJsonEditor.value = false;
+}
+
+function openAssetPicker() {
+  isAssetPickerOpen.value = true;
+}
+
+function closeAssetPicker() {
+  isAssetPickerOpen.value = false;
+}
+
+function handleAssetSelected(path: string) {
+  if (!itemType.value.modifier) {
+    itemType.value.modifier = {};
+  }
+  itemType.value.modifier.texture = path;
+  closeAssetPicker();
 }
 
 // Watch for itemTypeId changes

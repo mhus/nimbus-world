@@ -1,7 +1,7 @@
 <template>
-  <div class="min-h-screen flex flex-col bg-base-100">
+  <div class="min-h-screen flex flex-col bg-base-200">
     <!-- Header -->
-    <header class="navbar bg-base-300 shadow-lg">
+    <header class="navbar bg-base-200 shadow-lg">
       <div class="flex-none">
         <a href="/controls/index.html" class="btn btn-ghost btn-square">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -14,7 +14,7 @@
       </div>
       <div class="flex-none gap-2 mr-4">
         <!-- World Selector -->
-        <WorldSelector />
+        <WorldSelector filter="withCollections" />
         <button
           v-if="!selectedItemTypeId"
           class="btn btn-sm btn-primary"
@@ -25,38 +25,23 @@
           </svg>
           Add
         </button>
-        <button
-          v-if="selectedItemTypeId"
-          class="btn btn-sm btn-ghost"
-          @click="closeEditor"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-          </svg>
-          Close
-        </button>
       </div>
     </header>
 
     <!-- Main Content -->
-    <main class="flex-1 flex overflow-hidden">
-      <!-- ItemType List (Left Panel) -->
-      <div v-if="!selectedItemTypeId" class="flex-1 p-6 overflow-auto">
-        <ItemTypeListView
-          @select="openItemType"
-        />
-      </div>
-
-      <!-- ItemType Editor (Right Panel) -->
-      <div v-else class="flex-1 overflow-auto">
-        <ItemTypeEditorView
-          :item-type-id="selectedItemTypeId"
-          :is-new="isNewItemType"
-          @save="saveItemType"
-          @close="closeEditor"
-          @delete="deleteCurrentItemType"
-        />
-      </div>
+    <main class="flex-1 container mx-auto px-4 py-6">
+      <ItemTypeListView
+        v-if="!selectedItemTypeId"
+        @select="openItemType"
+      />
+      <ItemTypeEditorView
+        v-else
+        :item-type-id="selectedItemTypeId"
+        :is-new="isNewItemType"
+        @save="saveItemType"
+        @close="closeEditor"
+        @delete="deleteCurrentItemType"
+      />
     </main>
   </div>
 </template>

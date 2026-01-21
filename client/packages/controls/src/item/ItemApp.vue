@@ -1,7 +1,7 @@
 <template>
-  <div class="min-h-screen flex flex-col bg-base-100">
+  <div class="min-h-screen flex flex-col bg-base-200">
     <!-- Header -->
-    <header class="navbar bg-base-300 shadow-lg">
+    <header class="navbar bg-base-200 shadow-lg">
       <div class="flex-none">
         <a href="/controls/index.html" class="btn btn-ghost btn-square">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -39,26 +39,21 @@
     </header>
 
     <!-- Main Content -->
-    <main class="flex-1 flex overflow-hidden">
-      <!-- Item List (Left Panel) -->
-      <div v-if="!selectedItemId" class="flex-1 p-6 overflow-auto">
-        <ItemListView
-          @select="openItem"
-          @duplicate="duplicateItem"
-          @delete="deleteItem"
-        />
-      </div>
-
-      <!-- Item Editor (Right Panel) -->
-      <div v-else class="flex-1 overflow-auto">
-        <ItemEditorView
-          :item-id="selectedItemId"
-          :is-new="isNewItem"
-          @save="saveItem"
-          @close="closeEditor"
-          @delete="deleteCurrentItem"
-        />
-      </div>
+    <main class="flex-1 container mx-auto px-4 py-6">
+      <ItemListView
+        v-if="!selectedItemId"
+        @select="openItem"
+        @duplicate="duplicateItem"
+        @delete="deleteItem"
+      />
+      <ItemEditorView
+        v-else
+        :item-id="selectedItemId"
+        :is-new="isNewItem"
+        @save="saveItem"
+        @close="closeEditor"
+        @delete="deleteCurrentItem"
+      />
     </main>
   </div>
 </template>

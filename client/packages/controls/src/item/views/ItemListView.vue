@@ -29,7 +29,7 @@
       <div
         v-for="item in items"
         :key="item.itemId"
-        class="card bg-base-200 shadow-md hover:shadow-lg transition-shadow cursor-pointer"
+        class="card bg-base-100 shadow-md hover:shadow-lg transition-shadow cursor-pointer"
         @click="$emit('select', item.itemId)"
       >
         <div class="card-body p-4">

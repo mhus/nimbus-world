@@ -16,7 +16,7 @@ export enum WEARABLE_SLOT {
 }
 
 export interface PlayerBackpack {
-    itemIds: Record<string, string>;
+    itemIds: Record<string, number>; // javaType: java.util.Map<String,Integer>
     wearingItemIds: Record<WEARABLE_SLOT, string>;
 }
 

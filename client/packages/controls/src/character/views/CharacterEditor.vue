@@ -251,6 +251,76 @@
           <div v-else class="text-center py-4">
             <p class="text-base-content/50 text-sm">No third person model configured</p>
           </div>
+
+          <!-- Model Modifiers -->
+          <div v-if="thirdPersonModelId" class="mt-6">
+            <h4 class="font-semibold mb-3">Model Modifiers</h4>
+
+            <!-- Add New Modifier -->
+            <div class="flex gap-2 mb-4">
+              <input
+                v-model="newModifierKey"
+                type="text"
+                placeholder="Modifier key (e.g., color, texture)"
+                class="input input-bordered flex-1"
+              />
+              <input
+                v-model="newModifierValue"
+                type="text"
+                placeholder="Modifier value"
+                class="input input-bordered flex-1"
+              />
+              <button
+                type="button"
+                class="btn btn-secondary"
+                @click="handleAddModifier"
+                :disabled="!newModifierKey || !newModifierValue"
+              >
+                Add Modifier
+              </button>
+            </div>
+
+            <!-- Existing Modifiers -->
+            <div v-if="thirdPersonModelModifiers && Object.keys(thirdPersonModelModifiers).length > 0" class="overflow-x-auto">
+              <table class="table table-zebra">
+                <thead>
+                  <tr>
+                    <th>Key</th>
+                    <th>Value</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="(value, key) in thirdPersonModelModifiers" :key="key">
+                    <td class="font-mono">{{ key }}</td>
+                    <td>
+                      <input
+                        type="text"
+                        :value="value"
+                        @input="handleModifierChange(key, $event)"
+                        class="input input-bordered input-sm w-full"
+                      />
+                    </td>
+                    <td>
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-error"
+                        @click="handleRemoveModifier(key)"
+                      >
+                        Remove
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Empty State -->
+            <div v-else class="text-center py-4">
+              <p class="text-base-content/70 text-sm">No model modifiers configured</p>
+              <p class="text-base-content/50 text-xs mt-1">Add modifiers to customize the model appearance</p>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -401,6 +471,303 @@
           </div>
         </div>
       </div>
+
+      <!-- Movement State Values Card (only for existing characters) -->
+      <div v-if="!isNew" class="card bg-base-100 shadow-xl">
+        <div class="card-body">
+          <h3 class="card-title">Movement State Values</h3>
+          <p class="text-sm text-base-content/70 mb-4">Configure physics and movement properties for each movement state</p>
+
+          <!-- Empty State Warning -->
+          <div v-if="!stateValues || Object.keys(stateValues).length === 0" class="alert alert-warning mb-4">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <span>No movement state values configured. These are initialized when a character is created.</span>
+          </div>
+
+          <!-- State Editors (Accordion) -->
+          <div v-else class="space-y-2">
+            <div
+              v-for="stateKey in movementStateKeys"
+              :key="stateKey"
+              class="collapse collapse-arrow border border-base-300 bg-base-200"
+            >
+              <input type="checkbox" />
+              <div class="collapse-title text-lg font-medium capitalize">
+                {{ stateKey.replace('_', ' ') }}
+              </div>
+              <div class="collapse-content">
+                <div v-if="stateValues[stateKey]" class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
+                  <!-- Movement Speeds -->
+                  <div class="form-control">
+                    <label class="label py-1">
+                      <span class="label-text text-xs">Base Move Speed</span>
+                    </label>
+                    <input
+                      v-model.number="stateValues[stateKey].baseMoveSpeed"
+                      type="number"
+                      step="0.1"
+                      class="input input-bordered input-sm"
+                    />
+                  </div>
+                  <div class="form-control">
+                    <label class="label py-1">
+                      <span class="label-text text-xs">Effective Move Speed</span>
+                    </label>
+                    <input
+                      v-model.number="stateValues[stateKey].effectiveMoveSpeed"
+                      type="number"
+                      step="0.1"
+                      class="input input-bordered input-sm"
+                    />
+                  </div>
+
+                  <!-- Jump Speeds -->
+                  <div class="form-control">
+                    <label class="label py-1">
+                      <span class="label-text text-xs">Base Jump Speed</span>
+                    </label>
+                    <input
+                      v-model.number="stateValues[stateKey].baseJumpSpeed"
+                      type="number"
+                      step="0.1"
+                      class="input input-bordered input-sm"
+                    />
+                  </div>
+                  <div class="form-control">
+                    <label class="label py-1">
+                      <span class="label-text text-xs">Effective Jump Speed</span>
+                    </label>
+                    <input
+                      v-model.number="stateValues[stateKey].effectiveJumpSpeed"
+                      type="number"
+                      step="0.1"
+                      class="input input-bordered input-sm"
+                    />
+                  </div>
+
+                  <!-- Camera & View -->
+                  <div class="form-control">
+                    <label class="label py-1">
+                      <span class="label-text text-xs">Eye Height</span>
+                    </label>
+                    <input
+                      v-model.number="stateValues[stateKey].eyeHeight"
+                      type="number"
+                      step="0.1"
+                      class="input input-bordered input-sm"
+                    />
+                  </div>
+                  <div class="form-control">
+                    <label class="label py-1">
+                      <span class="label-text text-xs">Selection Radius</span>
+                    </label>
+                    <input
+                      v-model.number="stateValues[stateKey].selectionRadius"
+                      type="number"
+                      step="0.1"
+                      class="input input-bordered input-sm"
+                    />
+                  </div>
+
+                  <!-- Turn Speeds -->
+                  <div class="form-control">
+                    <label class="label py-1">
+                      <span class="label-text text-xs">Base Turn Speed</span>
+                    </label>
+                    <input
+                      v-model.number="stateValues[stateKey].baseTurnSpeed"
+                      type="number"
+                      step="0.001"
+                      class="input input-bordered input-sm"
+                    />
+                  </div>
+                  <div class="form-control">
+                    <label class="label py-1">
+                      <span class="label-text text-xs">Effective Turn Speed</span>
+                    </label>
+                    <input
+                      v-model.number="stateValues[stateKey].effectiveTurnSpeed"
+                      type="number"
+                      step="0.001"
+                      class="input input-bordered input-sm"
+                    />
+                  </div>
+
+                  <!-- Stealth & Detection -->
+                  <div class="form-control">
+                    <label class="label py-1">
+                      <span class="label-text text-xs">Stealth Range</span>
+                    </label>
+                    <input
+                      v-model.number="stateValues[stateKey].stealthRange"
+                      type="number"
+                      step="0.1"
+                      class="input input-bordered input-sm"
+                    />
+                  </div>
+                  <div class="form-control">
+                    <label class="label py-1">
+                      <span class="label-text text-xs">Distance Notify Reduction</span>
+                    </label>
+                    <input
+                      v-model.number="stateValues[stateKey].distanceNotifyReduction"
+                      type="number"
+                      step="0.1"
+                      min="0"
+                      max="1"
+                      class="input input-bordered input-sm"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Backpack Items Card (only for existing characters) -->
+      <div v-if="!isNew" class="card bg-base-100 shadow-xl">
+        <div class="card-body">
+          <h3 class="card-title">Backpack - Items</h3>
+
+          <!-- Add New Item -->
+          <div class="flex gap-2 mb-4">
+            <div class="flex gap-1 flex-1">
+              <input
+                v-model="newItemId"
+                type="text"
+                placeholder="Item ID (e.g., apple, sword)"
+                class="input input-bordered flex-1"
+              />
+              <button
+                type="button"
+                class="btn btn-square btn-outline"
+                @click="openItemSelectorForNew"
+                title="Search items"
+              >
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </button>
+            </div>
+            <input
+              v-model.number="newItemCount"
+              type="number"
+              min="1"
+              placeholder="Count"
+              class="input input-bordered w-32"
+            />
+            <button
+              type="button"
+              class="btn btn-secondary"
+              @click="handleAddItem"
+              :disabled="!newItemId || !newItemCount || newItemCount <= 0"
+            >
+              Add Item
+            </button>
+          </div>
+
+          <!-- Existing Items -->
+          <div v-if="backpackItems && Object.keys(backpackItems).length > 0" class="overflow-x-auto">
+            <table class="table table-zebra">
+              <thead>
+                <tr>
+                  <th>Item ID</th>
+                  <th>Count</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="(count, itemId) in backpackItems" :key="itemId">
+                  <td class="font-mono">{{ itemId }}</td>
+                  <td>
+                    <input
+                      type="number"
+                      :value="count"
+                      @input="handleItemCountChange(itemId, $event)"
+                      min="0"
+                      class="input input-bordered input-sm w-24"
+                    />
+                  </td>
+                  <td>
+                    <button
+                      type="button"
+                      class="btn btn-sm btn-error"
+                      @click="handleRemoveItem(itemId)"
+                    >
+                      Remove
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Empty State -->
+          <div v-else class="text-center py-8">
+            <p class="text-base-content/70">No items in backpack</p>
+            <p class="text-base-content/50 text-sm mt-2">Add items using the form above</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Backpack Wearing Items Card (only for existing characters) -->
+      <div v-if="!isNew" class="card bg-base-100 shadow-xl">
+        <div class="card-body">
+          <h3 class="card-title">Backpack - Wearing Items</h3>
+          <p class="text-sm text-base-content/70 mb-4">Configure items worn in specific equipment slots</p>
+
+          <!-- Wearing Slots Table -->
+          <div class="overflow-x-auto">
+            <table class="table table-zebra">
+              <thead>
+                <tr>
+                  <th>Slot</th>
+                  <th>Item ID</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="slot in wearableSlots" :key="slot">
+                  <td class="font-medium">{{ formatSlotName(slot) }}</td>
+                  <td>
+                    <div class="flex gap-1">
+                      <input
+                        v-model="wearingItems[slot]"
+                        type="text"
+                        :placeholder="`Item ID for ${formatSlotName(slot).toLowerCase()}`"
+                        class="input input-bordered input-sm flex-1"
+                      />
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-square btn-outline"
+                        @click="openItemSelectorForSlot(slot)"
+                        title="Search items"
+                      >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                      </button>
+                    </div>
+                  </td>
+                  <td>
+                    <button
+                      v-if="wearingItems[slot]"
+                      type="button"
+                      class="btn btn-sm btn-ghost"
+                      @click="wearingItems[slot] = ''"
+                    >
+                      Clear
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Success Message -->
@@ -420,6 +787,15 @@
     @close="closeModelSelector"
     @select="handleModelSelected"
   />
+
+  <!-- Item Selector Dialog for Backpack Items -->
+  <ItemSelectorDialog
+    v-if="isItemSelectorOpen && assetWorldId"
+    :world-id="assetWorldId"
+    :current-item-id="itemSelectorContext === 'new' ? newItemId : (itemSelectorContext ? wearingItems[itemSelectorContext] : '')"
+    @close="closeItemSelector"
+    @select="handleItemSelected"
+  />
 </template>
 
 <script setup lang="ts">
@@ -428,6 +804,7 @@ import { useRegion } from '@/composables/useRegion';
 import { characterService, type RCharacter } from '../services/CharacterService';
 import { userService, type RUser } from '../../user/services/UserService';
 import EntityModelSelectorDialog from '@components/EntityModelSelectorDialog.vue';
+import ItemSelectorDialog from '@components/ItemSelectorDialog.vue';
 
 const props = defineProps<{
   character: RCharacter | 'new';
@@ -475,7 +852,50 @@ const editorShortcutsError = ref<string | null>(null);
 
 // Third person model
 const thirdPersonModelId = ref('');
+const thirdPersonModelModifiers = ref<Record<string, string>>({});
+const newModifierKey = ref('');
+const newModifierValue = ref('');
 const isModelSelectorOpen = ref(false);
+
+// Movement State Values
+const movementStateKeys = ['default', 'walk', 'sprint', 'crouch', 'swim', 'climb', 'free_fly', 'fly', 'teleport', 'riding'] as const;
+type MovementStateKey = typeof movementStateKeys[number];
+
+interface MovementStateValues {
+  baseMoveSpeed: number;
+  effectiveMoveSpeed: number;
+  baseJumpSpeed: number;
+  effectiveJumpSpeed: number;
+  eyeHeight: number;
+  baseTurnSpeed: number;
+  effectiveTurnSpeed: number;
+  selectionRadius: number;
+  stealthRange: number;
+  distanceNotifyReduction: number;
+}
+
+const stateValues = ref<Record<MovementStateKey, MovementStateValues>>({} as any);
+
+// Backpack Items
+const backpackItems = ref<Record<string, number>>({});
+const newItemId = ref('');
+const newItemCount = ref(1);
+
+// Backpack Wearing Items
+const wearableSlots = ['HEAD', 'BODY', 'LEGS', 'FEET', 'HANDS', 'NECK', 'LEFT_RING', 'RIGHT_RING', 'LEFT_WEAPON_1', 'RIGHT_WEAPON_1', 'LEFT_WEAPON_2', 'RIGHT_WEAPON_2'] as const;
+type WearableSlot = typeof wearableSlots[number];
+const wearingItems = ref<Record<WearableSlot, string>>({} as any);
+
+const formatSlotName = (slot: string): string => {
+  return slot
+    .split('_')
+    .map(word => word.charAt(0) + word.slice(1).toLowerCase())
+    .join(' ');
+};
+
+// Item Selector Dialog
+const isItemSelectorOpen = ref(false);
+const itemSelectorContext = ref<'new' | WearableSlot | null>(null);
 
 const loadUsers = async () => {
   loadingUsers.value = true;
@@ -500,6 +920,10 @@ const loadCharacter = () => {
     shortcutsJson.value = '';
     editorShortcutsJson.value = '';
     thirdPersonModelId.value = '';
+    thirdPersonModelModifiers.value = {};
+    stateValues.value = {} as any;
+    backpackItems.value = {};
+    wearingItems.value = {} as any;
     return;
   }
 
@@ -517,6 +941,16 @@ const loadCharacter = () => {
 
   // Initialize third person model
   thirdPersonModelId.value = character.value.publicData?.thirdPersonModelId || '';
+  thirdPersonModelModifiers.value = character.value.publicData?.thirdPersonModelModifiers || {};
+
+  // Initialize movement state values
+  stateValues.value = character.value.publicData?.stateValues || {} as any;
+
+  // Initialize backpack items
+  backpackItems.value = character.value.backpack?.itemIds || {};
+
+  // Initialize wearing items
+  wearingItems.value = character.value.backpack?.wearingItemIds || {} as any;
 };
 
 const handleSave = async () => {
@@ -538,10 +972,25 @@ const handleSave = async () => {
       });
       successMessage.value = 'Character created successfully';
     } else if (character.value) {
-      // Update publicData with current thirdPersonModelId
+      // Update publicData with current thirdPersonModelId, modifiers, and stateValues
       const updatedPublicData = {
         ...character.value.publicData,
         thirdPersonModelId: thirdPersonModelId.value || undefined,
+        thirdPersonModelModifiers: Object.keys(thirdPersonModelModifiers.value).length > 0
+          ? thirdPersonModelModifiers.value
+          : undefined,
+        stateValues: stateValues.value,
+      };
+
+      // Update backpack with current items (filter out count=0 and empty strings)
+      const updatedBackpack = {
+        ...character.value.backpack,
+        itemIds: Object.fromEntries(
+          Object.entries(backpackItems.value).filter(([_, count]) => count > 0)
+        ),
+        wearingItemIds: Object.fromEntries(
+          Object.entries(wearingItems.value).filter(([_, itemId]) => itemId && itemId.trim() !== '')
+        ),
       };
 
       // Update existing character with full DTO
@@ -555,7 +1004,7 @@ const handleSave = async () => {
           name: character.value.name,
           display: formData.value.display,
           publicData: updatedPublicData,
-          backpack: character.value.backpack,
+          backpack: updatedBackpack,
           skills: character.value.skills,
           attributes: character.value.attributes,
         }
@@ -824,6 +1273,114 @@ const handleModelSelected = (modelId: string) => {
   thirdPersonModelId.value = modelId;
   handleModelIdChange();
   closeModelSelector();
+};
+
+const handleAddModifier = () => {
+  if (!newModifierKey.value.trim() || !newModifierValue.value.trim()) {
+    return;
+  }
+
+  // Update local modifiers object
+  thirdPersonModelModifiers.value = {
+    ...thirdPersonModelModifiers.value,
+    [newModifierKey.value]: newModifierValue.value,
+  };
+
+  newModifierKey.value = '';
+  newModifierValue.value = '';
+};
+
+const handleModifierChange = (key: string, event: Event) => {
+  const target = event.target as HTMLInputElement;
+
+  // Update local modifiers object
+  thirdPersonModelModifiers.value = {
+    ...thirdPersonModelModifiers.value,
+    [key]: target.value,
+  };
+};
+
+const handleRemoveModifier = (key: string) => {
+  // Update local modifiers object
+  const { [key]: removed, ...remainingModifiers } = thirdPersonModelModifiers.value;
+  thirdPersonModelModifiers.value = remainingModifiers;
+};
+
+const handleAddItem = () => {
+  if (!newItemId.value.trim() || newItemCount.value <= 0) {
+    return;
+  }
+
+  // Check for duplicate itemId
+  if (backpackItems.value[newItemId.value]) {
+    error.value = `Item "${newItemId.value}" already exists in backpack`;
+    setTimeout(() => {
+      error.value = null;
+    }, 3000);
+    return;
+  }
+
+  // Add item to backpack
+  backpackItems.value = {
+    ...backpackItems.value,
+    [newItemId.value]: newItemCount.value,
+  };
+
+  newItemId.value = '';
+  newItemCount.value = 1;
+};
+
+const handleItemCountChange = (itemId: string, event: Event) => {
+  const target = event.target as HTMLInputElement;
+  const newCount = parseInt(target.value, 10);
+
+  if (isNaN(newCount)) {
+    return;
+  }
+
+  if (newCount === 0) {
+    // Remove item if count is 0
+    const { [itemId]: removed, ...remainingItems } = backpackItems.value;
+    backpackItems.value = remainingItems;
+  } else {
+    // Update count
+    backpackItems.value = {
+      ...backpackItems.value,
+      [itemId]: newCount,
+    };
+  }
+};
+
+const handleRemoveItem = (itemId: string) => {
+  // Remove item from backpack
+  const { [itemId]: removed, ...remainingItems } = backpackItems.value;
+  backpackItems.value = remainingItems;
+};
+
+const openItemSelectorForNew = () => {
+  itemSelectorContext.value = 'new';
+  isItemSelectorOpen.value = true;
+};
+
+const openItemSelectorForSlot = (slot: WearableSlot) => {
+  itemSelectorContext.value = slot;
+  isItemSelectorOpen.value = true;
+};
+
+const closeItemSelector = () => {
+  isItemSelectorOpen.value = false;
+  itemSelectorContext.value = null;
+};
+
+const handleItemSelected = (itemId: string) => {
+  if (itemSelectorContext.value === 'new') {
+    // Set itemId for new item
+    newItemId.value = itemId;
+  } else if (itemSelectorContext.value) {
+    // Set itemId for wearing slot
+    wearingItems.value[itemSelectorContext.value] = itemId;
+  }
+  closeItemSelector();
 };
 
 const handleBack = () => {

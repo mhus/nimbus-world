@@ -30,7 +30,12 @@ export async function getItemType(itemTypeId: string, worldId: string): Promise<
  * Create new ItemType
  */
 export async function createItemType(itemType: ItemType, worldId: string): Promise<ItemType> {
-  return apiService.post<ItemType>(`/control/worlds/${worldId}/itemtypes`, itemType);
+  // Backend expects: { itemType: string, publicData: ItemType }
+  const requestBody = {
+    itemType: itemType.type,
+    publicData: itemType
+  };
+  return apiService.post<ItemType>(`/control/worlds/${worldId}/itemtypes`, requestBody);
 }
 
 /**
@@ -41,7 +46,12 @@ export async function updateItemType(
   updates: Partial<ItemType>,
   worldId: string
 ): Promise<ItemType> {
-  return apiService.put<ItemType>(`/control/worlds/${worldId}/itemtypes/${itemTypeId}`, updates);
+  // Backend expects: { publicData: ItemType, enabled?: boolean }
+  const requestBody = {
+    publicData: updates,
+    enabled: undefined // Could be extended in the future if needed
+  };
+  return apiService.put<ItemType>(`/control/worlds/${worldId}/itemtypes/${itemTypeId}`, requestBody);
 }
 
 /**

@@ -62,6 +62,14 @@ public class WItemService {
         return repository.findByWorldIdAndItemId(regionWorldId.getId(), itemId);
     }
 
+    public WItem create(WorldId worldId, Item publicData) {
+        var itemId = "item_" + worldId + "_" + System.currentTimeMillis() + "_" +
+                Long.toHexString(Double.doubleToLongBits(Math.random())).substring(0, 7);
+
+        publicData.setId(itemId);
+        return save(worldId, itemId, publicData);
+    }
+
     /**
      * Save a new item or update existing.
      * Always saves to region collection (shared across entire region).

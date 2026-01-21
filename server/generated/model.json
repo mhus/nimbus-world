@@ -8071,11 +8071,11 @@
       "extendsList" : [ ],
       "properties" : [ {
         "name" : "itemIds",
-        "type" : "Record<string, string>",
+        "type" : "Record<string, number>",
         "optional" : false,
         "visibility" : null,
-        "javaTypeHint" : null,
-        "comment" : null
+        "javaTypeHint" : "java.util.Map<String,Integer>",
+        "comment" : "// javaType: java.util.Map<String,Integer>"
       }, {
         "name" : "wearingItemIds",
         "type" : "Record<WEARABLE_SLOT, string>",

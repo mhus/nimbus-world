@@ -23,17 +23,24 @@ public record WorldCollection(TYPE type, WorldId worldId, String path) {
             };
             int pos = path.indexOf(':');
             if (pos >= 0) {
+                var group = path.substring(0, pos).toLowerCase();
+                path = path.substring(pos + 1);
                 if (type == TYPE.REGION) {
                     // could switch if needed
-                    var group = path.substring(0, pos).toLowerCase();
                     if (group.equals("rp")) {
                         type = TYPE.PUBLIC;
+                        worldId = WorldId.of(WorldId.COLLECTION_PUBLIC, worldId.getRegionId()).get();
                     } else if (!group.equals("r")) {
                         type = TYPE.SHARED;
                         worldId = WorldId.of(WorldId.COLLECTION_SHARED, group).get();
                     }
+                } else if (group.equals("rp")) {
+                    type = TYPE.PUBLIC;
+                    worldId = WorldId.of(WorldId.COLLECTION_PUBLIC, worldId.getRegionId()).get();
+                } else {
+                    type = TYPE.SHARED;
+                    worldId = WorldId.of(WorldId.COLLECTION_SHARED, group).get();
                 }
-                path = path.substring(pos + 1);
             }
             return new WorldCollection(type, worldId, path);
         }
