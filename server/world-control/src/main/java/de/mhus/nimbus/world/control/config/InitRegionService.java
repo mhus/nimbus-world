@@ -1,4 +1,4 @@
-package de.mhus.nimbus.world.control;
+package de.mhus.nimbus.world.control.config;
 
 import de.mhus.nimbus.world.shared.region.RRegionService;
 import de.mhus.nimbus.shared.security.KeyId;
@@ -11,6 +11,11 @@ import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+
+/**
+ * This will setup region keys if needed.
+ * TODO should be a Sector key. Region keys are not needed anymore.
+ */
 
 @Service
 @RequiredArgsConstructor

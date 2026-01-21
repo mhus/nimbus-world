@@ -1,12 +1,12 @@
 {
   "user": {
-    "userId": "ecb",
-    "title": "Eric Cross Brooks"
+    "userId": "aw",
+    "title": "Abraham Whistler"
   },
   "character": {
     "publicData": {
-      "playerId": "ecb:blade",
-      "displayName": "Blade",
+      "playerId": "aw:abraham",
+      "title": "Abraham",
       "baseWalkSpeed": 5.0,
       "baseRunSpeed": 7.0,
       "baseUnderwaterSpeed": 3.0,
@@ -28,7 +28,7 @@
       "effectiveTurnSpeed": 0.003,
       "baseUnderwaterTurnSpeed": 0.002,
       "effectiveUnderwaterTurnSpeed": 0.002,
-      "thirdPersonModelId": "wizard1",
+      "thirdPersonModelId": "n:farmer",
       "stateValues": {
         "default": {
           "dimensions": { "height": 2.0, "width": 0.6, "footprint": 0.3 },
@@ -168,7 +168,7 @@
     }
   },
   "settings": {
-    "name": "ecb_blade_web_settings"
+    "name": "aw_abraham_web_settings"
   }
 }
 

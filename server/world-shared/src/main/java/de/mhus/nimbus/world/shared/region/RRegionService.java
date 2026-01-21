@@ -37,7 +37,7 @@ public class RRegionService {
         if (repository.existsByName(name)) throw new IllegalArgumentException("Region name exists: " + name);
         RRegion q = new RRegion(name);
         if (maintainers != null)
-            q.setMaintainers(new HashSet<>(Arrays.asList(maintainers.trim())));
+            q.setMaintainers(new HashSet<>(Arrays.asList(maintainers.trim().split(","))));
         RRegion saved = repository.save(q);
         // KeyPair für Region erzeugen (Intent main-jwt-token, Owner = Regionsname)
         try {
@@ -155,5 +155,9 @@ public class RRegionService {
             .orElseThrow(() -> new IllegalArgumentException("Region not found: " + id));
         existing.setEnabled(enabled);
         return repository.save(existing);
+    }
+
+    public long getRegionsCount() {
+        return repository.count();
     }
 }

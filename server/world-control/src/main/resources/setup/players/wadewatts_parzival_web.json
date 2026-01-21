@@ -1,12 +1,12 @@
 {
   "user": {
-    "userId": "aw",
-    "title": "Abraham Whistler"
+    "userId": "wadewatts",
+    "title": "Wade Watts"
   },
   "character": {
     "publicData": {
-      "playerId": "aw:abraham",
-      "displayName": "Abraham",
+      "playerId": "wadewatts:parzival",
+      "title": "Parzival",
       "baseWalkSpeed": 5.0,
       "baseRunSpeed": 7.0,
       "baseUnderwaterSpeed": 3.0,
@@ -28,7 +28,7 @@
       "effectiveTurnSpeed": 0.003,
       "baseUnderwaterTurnSpeed": 0.002,
       "effectiveUnderwaterTurnSpeed": 0.002,
-      "thirdPersonModelId": "farmer1",
+      "thirdPersonModelId": "n:wizard",
       "stateValues": {
         "default": {
           "dimensions": { "height": 2.0, "width": 0.6, "footprint": 0.3 },
@@ -168,7 +168,7 @@
     }
   },
   "settings": {
-    "name": "aw_abraham_web_settings"
+    "name": "wadewatts_parzival_web_settings"
   }
 }
 

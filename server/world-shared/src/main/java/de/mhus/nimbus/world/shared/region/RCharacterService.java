@@ -244,4 +244,7 @@ public class RCharacterService {
         playerInfo.setStateValues(stateValues);
     }
 
+    public long getCharacterCount() {
+        return repository.count();
+    }
 }

@@ -238,4 +238,7 @@ public class RUserService {
         repository.save(user);
     }
 
+    public long getUserCount() {
+        return repository.count();
+    }
 }
