@@ -369,7 +369,7 @@ public abstract class AccessFilterBase extends OncePerRequestFilter {
             Optional<Jws<Claims>> jwsOpt = jwtService.validateTokenWithPublicKey(
                     token,
                     KeyType.SECTOR,
-                    KeyIntent.of(regionId, KeyIntent.SECTOR_SERVER_JWT_TOKEN)
+                    KeyIntent.of(regionProperties.getSectorServerId(), KeyIntent.SECTOR_SERVER_JWT_TOKEN)
             );
 
             if (jwsOpt.isEmpty()) {
@@ -485,13 +485,13 @@ public abstract class AccessFilterBase extends OncePerRequestFilter {
     private boolean validateBearerToken(String token, HttpServletRequest request) {
         try {
             // Decode JWT payload to extract regionId
-            String[] parts = token.split("\\.");
-            if (parts.length != 3) {
-                log.warn("Invalid bearer token format");
-                return false;
-            }
-
-            String payloadJson = new String(java.util.Base64.getUrlDecoder().decode(parts[1]));
+//            String[] parts = token.split("\\.");
+//            if (parts.length != 3) {
+//                log.warn("Invalid bearer token format");
+//                return false;
+//            }
+//
+//            String payloadJson = new String(java.util.Base64.getUrlDecoder().decode(parts[1]));
 
             // Validate token with JWT service
             var intent = KeyIntent.of(regionProperties.getSectorServerId(), KeyIntent.SECTOR_SERVER_JWT_TOKEN);

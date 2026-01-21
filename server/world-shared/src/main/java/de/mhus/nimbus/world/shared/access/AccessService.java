@@ -376,7 +376,7 @@ public class AccessService {
         // Create token using JwtService
         return jwtService.createTokenWithPrivateKey(
                 KeyType.SECTOR,
-                KeyIntent.of(regionId, KeyIntent.SECTOR_SERVER_JWT_TOKEN),
+                KeyIntent.of(regionProperties.getSectorServerId(), KeyIntent.SECTOR_SERVER_JWT_TOKEN),
                 userId,
                 claims,
                 expiresAt
@@ -435,7 +435,7 @@ public class AccessService {
         // Create token using JwtService
         return jwtService.createTokenWithPrivateKey(
                 KeyType.SECTOR,
-                KeyIntent.of(regionId, KeyIntent.SECTOR_SERVER_JWT_TOKEN),
+                KeyIntent.of(regionProperties.getSectorServerId(), KeyIntent.SECTOR_SERVER_JWT_TOKEN),
                 userId,
                 claims,
                 expiresAt
@@ -515,7 +515,7 @@ public class AccessService {
         Optional<Jws<Claims>> jwsOpt = jwtService.validateTokenWithPublicKey(
                 token,
                 KeyType.SECTOR,
-                KeyIntent.of(regionId, KeyIntent.SECTOR_SERVER_JWT_TOKEN)
+                KeyIntent.of(regionProperties.getSectorServerId(), KeyIntent.SECTOR_SERVER_JWT_TOKEN)
         );
 
         if (jwsOpt.isEmpty()) {
@@ -653,7 +653,7 @@ public class AccessService {
 
         String token = jwtService.createTokenWithPrivateKey(
                 KeyType.SECTOR,
-                KeyIntent.of(regionId, KeyIntent.SECTOR_SERVER_JWT_TOKEN),
+                KeyIntent.of(regionProperties.getSectorServerId(), KeyIntent.SECTOR_SERVER_JWT_TOKEN),
                 claims.userId(),
                 tokenClaims,
                 expiresAt
@@ -784,19 +784,19 @@ public class AccessService {
         // Parse and validate token
         try {
             // Decode JWT payload to extract regionId
-            String[] parts = sessionToken.split("\\.");
-            if (parts.length != 3) {
-                throw new IllegalArgumentException("Invalid token format");
-            }
-
-            String payloadJson = new String(Base64.getUrlDecoder().decode(parts[1]));
-            String regionId = extractJsonField(payloadJson, "regionId");
+//            String[] parts = sessionToken.split("\\.");
+//            if (parts.length != 3) {
+//                throw new IllegalArgumentException("Invalid token format");
+//            }
+//
+//            String payloadJson = new String(Base64.getUrlDecoder().decode(parts[1]));
+//            String regionId = extractJsonField(payloadJson, "regionId");
 
             // Validate token with JWT service
             var jwsOpt = jwtService.validateTokenWithPublicKey(
                     sessionToken,
                     KeyType.SECTOR,
-                    KeyIntent.of(regionId, KeyIntent.SECTOR_SERVER_JWT_TOKEN)
+                    KeyIntent.of(regionProperties.getSectorServerId(), KeyIntent.SECTOR_SERVER_JWT_TOKEN)
             );
 
             if (jwsOpt.isEmpty()) {
@@ -843,20 +843,20 @@ public class AccessService {
      */
     private SessionStatusResponse getStatusFromBearerToken(String bearerToken) {
         try {
-            // Decode JWT payload to extract regionId
-            String[] parts = bearerToken.split("\\.");
-            if (parts.length != 3) {
-                throw new IllegalArgumentException("Invalid bearer token format");
-            }
-
-            String payloadJson = new String(Base64.getUrlDecoder().decode(parts[1]));
-            String regionId = extractJsonField(payloadJson, "regionId");
+//            // Decode JWT payload to extract regionId
+//            String[] parts = bearerToken.split("\\.");
+//            if (parts.length != 3) {
+//                throw new IllegalArgumentException("Invalid bearer token format");
+//            }
+//
+//            String payloadJson = new String(Base64.getUrlDecoder().decode(parts[1]));
+//            String regionId = extractJsonField(payloadJson, "regionId");
 
             // Validate token with JWT service
             var jwsOpt = jwtService.validateTokenWithPublicKey(
                     bearerToken,
                     KeyType.SECTOR,
-                    KeyIntent.of(regionId, KeyIntent.SECTOR_SERVER_JWT_TOKEN)
+                    KeyIntent.of(regionProperties.getSectorServerId(), KeyIntent.SECTOR_SERVER_JWT_TOKEN)
             );
 
             if (jwsOpt.isEmpty()) {
