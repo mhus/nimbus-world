@@ -3,6 +3,7 @@ package de.mhus.nimbus.world.generator.flat.hexgrid;
 import de.mhus.nimbus.world.generator.flat.FlatMaterialService;
 import de.mhus.nimbus.world.generator.flat.HillyTerrainManipulator;
 import de.mhus.nimbus.world.shared.generator.WFlat;
+import de.mhus.nimbus.world.shared.world.WHexGrid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -57,10 +58,6 @@ public class OceanBuilder extends HexGridBuilder {
             }
         }
 
-        // Blend edges with neighbors for smooth transitions
-        HexGridEdgeBlender edgeBlender = new HexGridEdgeBlender(flat, context);
-        edgeBlender.blendAllEdges();
-
         log.info("Ocean scenario completed: baseHeight={}, hillHeight={}, oceanLevel={}",
                 baseHeight, hillHeight, oceanLevel);
     }
@@ -86,4 +83,9 @@ public class OceanBuilder extends HexGridBuilder {
             return defaultValue;
         }
     }
+
+    public int getLandSideLevel(WHexGrid.SIDE side) {
+        return getLandCenterLevel();
+    }
+
 }

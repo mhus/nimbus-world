@@ -1040,7 +1040,7 @@ public class FlatCreateService {
      * @return Created WFlat with border
      */
     public WFlat createGridBorderFlat(String worldId, String layerName, String flatId,
-                                      int hexQ, int hexR, WHexGrid.NEIGHBOR border, int borderSize,
+                                      int hexQ, int hexR, WHexGrid.SIDE border, int borderSize,
                                       String title, String description) {
         log.info("Creating grid border flat: worldId={}, layerName={}, flatId={}, hex=({},{}), border={}, size={}",
                 worldId, layerName, flatId, hexQ, hexR, border, borderSize);

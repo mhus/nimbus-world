@@ -1,6 +1,7 @@
 package de.mhus.nimbus.world.generator.flat.hexgrid;
 
 import de.mhus.nimbus.shared.utils.CastUtil;
+import de.mhus.nimbus.world.shared.world.WHexGrid;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -31,7 +32,9 @@ public abstract class HexGridBuilder {
     protected abstract int getDefaultLandOffset();
     protected abstract int getDefaultLandLevel();
 
-    public int getLandLevel() {
+    public abstract int getLandSideLevel(WHexGrid.SIDE side);
+
+    public int getLandCenterLevel() {
         return landLevel;
     }
 

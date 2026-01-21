@@ -72,7 +72,7 @@ public class HexGridManipulator implements FlatManipulator {
         // Extract scenario type
         String type = mergedParameters != null ? mergedParameters.get(PARAM_TYPE) : null;
         if (type == null || type.isBlank()) {
-            throw new IllegalArgumentException("Parameter 'g_type' is required");
+            throw new IllegalArgumentException("Parameter 'g_builder' is required");
         }
 
         // Get builder for scenario type
@@ -83,7 +83,7 @@ public class HexGridManipulator implements FlatManipulator {
         HexGridBuilder builder = builderOpt.get();
 
         // Load neighbor grids and extract their types
-        Map<WHexGrid.NEIGHBOR, WHexGrid> neighborGrids = loadNeighborGrids(hexGrid, flat.getWorldId());
+        Map<WHexGrid.SIDE, WHexGrid> neighborGrids = loadNeighborGrids(hexGrid, flat.getWorldId());
 
         // Build context
         BuilderContext context = BuilderContext.builder()
@@ -150,15 +150,15 @@ public class HexGridManipulator implements FlatManipulator {
      * Load neighboring hex grids.
      * Returns a map with neighbor position as key and loaded hex grid (or null) as value.
      */
-    private Map<WHexGrid.NEIGHBOR, WHexGrid> loadNeighborGrids(WHexGrid hexGrid, String worldId) {
-        Map<WHexGrid.NEIGHBOR, WHexGrid> neighborGrids = new EnumMap<>(WHexGrid.NEIGHBOR.class);
+    private Map<WHexGrid.SIDE, WHexGrid> loadNeighborGrids(WHexGrid hexGrid, String worldId) {
+        Map<WHexGrid.SIDE, WHexGrid> neighborGrids = new EnumMap<>(WHexGrid.SIDE.class);
 
         // Get all neighbor positions
-        Map<WHexGrid.NEIGHBOR, HexVector2> neighborPositions = hexGrid.getAllNeighborPositions();
+        Map<WHexGrid.SIDE, HexVector2> neighborPositions = hexGrid.getAllNeighborPositions();
 
         // Load each neighbor grid if it exists
-        for (Map.Entry<WHexGrid.NEIGHBOR, HexVector2> entry : neighborPositions.entrySet()) {
-            WHexGrid.NEIGHBOR direction = entry.getKey();
+        for (Map.Entry<WHexGrid.SIDE, HexVector2> entry : neighborPositions.entrySet()) {
+            WHexGrid.SIDE direction = entry.getKey();
             HexVector2 position = entry.getValue();
 
             WHexGrid neighbor = hexGridService.findByWorldIdAndPosition(worldId, position).orElse(null);

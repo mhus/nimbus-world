@@ -1,5 +1,6 @@
 package de.mhus.nimbus.world.generator.flat;
 
+import de.mhus.nimbus.shared.utils.CastUtil;
 import de.mhus.nimbus.world.shared.generator.WFlat;
 import de.mhus.nimbus.world.shared.generator.WFlatService;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +29,18 @@ public class FlatMaterialService {
     public static final int INVISIBLE_SOLID = 9;
     public static final int DESERT_SAND = 10;
 
+    public static final int STREET = 20;
+    public static final int STREET2GRASS_NORTH = 21;
+    public static final int STREET2GRASS_EAST = 22;
+    public static final int STREET2GRASS_SOUTH = 23;
+    public static final int STREET2GRASS_WEST = 24;
+    public static final int TRACK = 25;
+    public static final int TRACK2GRASS_NORTH = 26;
+    public static final int TRACK2GRASS_EAST = 27;
+    public static final int TRACK2GRASS_SOUTH = 28;
+    public static final int TRACK2GRASS_WEST = 29;
+
+
     public static final int UNKNOWN_PROTECTED = 0;
     public static final int UNKNOWN_NOT_PROTECTED = 255;
 
@@ -36,7 +49,7 @@ public class FlatMaterialService {
 
     // Preset material palettes with format: "blockDef|nextBlockDef|hasOcean"
     private static final Map<String,Map<Integer,String>> PRESET_MATERIALS = Map.of(
-            PALETTE_MIMBUS, Map.of(
+            PALETTE_MIMBUS, CastUtil.mapOf(
                     GRASS, "n:g@s:default||true",
                     DIRT, "n:d@s:default||true",
                     STONE, "n:s@s:default||true",
@@ -46,9 +59,19 @@ public class FlatMaterialService {
                     SNOW, "n:sn@s:default||true",
                     INVISIBLE, "n:2@s:default||true",
                     INVISIBLE_SOLID, "n:3@s:default||true",
-                    DESERT_SAND, "n:ds@s:default||true"
+                    DESERT_SAND, "n:ds@s:default||true",
+                    STREET, "n:s@s:default||false",
+                    STREET2GRASS_NORTH, "n:s@s:default||false",
+                    STREET2GRASS_EAST, "n:s@s:default||false",
+                    STREET2GRASS_SOUTH, "n:s@s:default||false",
+                    STREET2GRASS_WEST, "n:s@s:default||false",
+                    TRACK, "n:s@s:default||false",
+                    TRACK2GRASS_NORTH, "n:s@s:default||false",
+                    TRACK2GRASS_EAST, "n:s@s:default||false",
+                    TRACK2GRASS_SOUTH, "n:s@s:default||false",
+                    TRACK2GRASS_WEST, "n:s@s:default||false"
             ),
-            PALETTE_LEGACY, Map.of(
+            PALETTE_LEGACY, CastUtil.mapOf(
                     GRASS, "w:310@s:default||true",        // old world
                     DIRT, "w:279@s:default||true",         // old world
                     STONE, "w:553@s:default||true",
@@ -58,7 +81,17 @@ public class FlatMaterialService {
                     SNOW, "w:537@s:default||true",
                     INVISIBLE, "w:2@s:default||true",
                     INVISIBLE_SOLID, "w:3@s:default||true",
-                    DESERT_SAND, "w:520@s:default||true"
+                    DESERT_SAND, "w:520@s:default||true",
+                    STREET, "n:s@s:default||false",
+                    STREET2GRASS_NORTH, "w:553@s:default||false",
+                    STREET2GRASS_EAST, "w:553@s:default||false",
+                    STREET2GRASS_SOUTH, "w:553@s:default||false",
+                    STREET2GRASS_WEST, "w:553@s:default||false",
+                    TRACK, "w:553@s:default||false",
+                    TRACK2GRASS_NORTH, "w:553@s:default||false",
+                    TRACK2GRASS_EAST, "w:553@s:default||false",
+                    TRACK2GRASS_SOUTH, "w:553@s:default||false",
+                    TRACK2GRASS_WEST, "w:553@s:default||false"
             )
     );
 

@@ -37,7 +37,7 @@ import java.util.Map;
 @AllArgsConstructor
 public class WHexGrid implements Identifiable {
 
-    public enum NEIGHBOR {
+    public enum SIDE {
         NORTH_EAST, // TOP_RIGHT
         EAST, // RIGHT
         SOUTH_EAST, // BOTTOM_RIGHT
@@ -154,19 +154,19 @@ public class WHexGrid implements Identifiable {
         return () -> HexMathUtil.createFlatPositionIterator(publicData.getPosition(), gridSize);
     }
 
-    public HexVector2 getNeighborPosition(NEIGHBOR nabor) {
+    public HexVector2 getNeighborPosition(SIDE nabor) {
         if (publicData == null || publicData.getPosition() == null) {
             throw new IllegalStateException("Cannot calculate neighbor position: publicData or position is null");
         }
         return HexMathUtil.getNeighborPosition(publicData.getPosition(), nabor);
     }
 
-    public Map<NEIGHBOR, HexVector2> getAllNeighborPositions() {
+    public Map<SIDE, HexVector2> getAllNeighborPositions() {
         if (publicData == null || publicData.getPosition() == null) {
             throw new IllegalStateException("Cannot calculate neighbor positions: publicData or position is null");
         }
-        Map<NEIGHBOR, HexVector2> naborMap = new HashMap<>();
-        for (NEIGHBOR neighbor : NEIGHBOR.values()) {
+        Map<SIDE, HexVector2> naborMap = new HashMap<>();
+        for (SIDE neighbor : SIDE.values()) {
             naborMap.put(neighbor, HexMathUtil.getNeighborPosition(publicData.getPosition(), neighbor));
         }
         return naborMap;

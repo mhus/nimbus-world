@@ -34,7 +34,7 @@ public class HexGridEdgeBlender {
         Map<Corner, Integer> cornerHeights = calculateCornerHeights();
 
         // Blend each edge
-        for (WHexGrid.NEIGHBOR direction : WHexGrid.NEIGHBOR.values()) {
+        for (WHexGrid.SIDE direction : WHexGrid.SIDE.values()) {
             WHexGrid neighbor = context.getNeighborGrids().get(direction);
             if (neighbor != null) {
                 blendEdge(direction, cornerHeights);
@@ -64,7 +64,7 @@ public class HexGridEdgeBlender {
      */
     private int calculateCornerHeight(Corner corner) {
         // Get neighbors that share this corner
-        WHexGrid.NEIGHBOR[] adjacentNeighbors = corner.getAdjacentNeighbors();
+        WHexGrid.SIDE[] adjacentNeighbors = corner.getAdjacentNeighbors();
 
         int sum = 0;
         int count = 0;
@@ -75,7 +75,7 @@ public class HexGridEdgeBlender {
         count++;
 
         // Add neighbor corner heights
-        for (WHexGrid.NEIGHBOR direction : adjacentNeighbors) {
+        for (WHexGrid.SIDE direction : adjacentNeighbors) {
             WHexGrid neighbor = context.getNeighborGrids().get(direction);
             if (neighbor != null) {
                 int neighborHeight = getNeighborCornerHeight(neighbor, corner, direction);
@@ -105,7 +105,7 @@ public class HexGridEdgeBlender {
     /**
      * Get height at corresponding corner of a neighbor grid.
      */
-    private int getNeighborCornerHeight(WHexGrid neighbor, Corner corner, WHexGrid.NEIGHBOR direction) {
+    private int getNeighborCornerHeight(WHexGrid neighbor, Corner corner, WHexGrid.SIDE direction) {
         // Get the builder for the neighbor to access its flat
         return context.getBuilderFor(direction)
                 .map(builder -> {
@@ -122,7 +122,7 @@ public class HexGridEdgeBlender {
     /**
      * Blend a single edge with its neighbor.
      */
-    private void blendEdge(WHexGrid.NEIGHBOR direction, Map<Corner, Integer> cornerHeights) {
+    private void blendEdge(WHexGrid.SIDE direction, Map<Corner, Integer> cornerHeights) {
         log.trace("Blending edge: {}", direction);
 
         EdgeBlender edgeBlender = new EdgeBlender(flat, context, direction, cornerHeights);
@@ -165,29 +165,29 @@ public class HexGridEdgeBlender {
         /**
          * Get neighbors that share this corner.
          */
-        public WHexGrid.NEIGHBOR[] getAdjacentNeighbors() {
+        public WHexGrid.SIDE[] getAdjacentNeighbors() {
             switch (this) {
                 case TOP:
-                    return new WHexGrid.NEIGHBOR[]{WHexGrid.NEIGHBOR.NORTH_WEST, WHexGrid.NEIGHBOR.NORTH_EAST};
+                    return new WHexGrid.SIDE[]{WHexGrid.SIDE.NORTH_WEST, WHexGrid.SIDE.NORTH_EAST};
                 case TOP_RIGHT:
-                    return new WHexGrid.NEIGHBOR[]{WHexGrid.NEIGHBOR.NORTH_EAST, WHexGrid.NEIGHBOR.EAST};
+                    return new WHexGrid.SIDE[]{WHexGrid.SIDE.NORTH_EAST, WHexGrid.SIDE.EAST};
                 case BOTTOM_RIGHT:
-                    return new WHexGrid.NEIGHBOR[]{WHexGrid.NEIGHBOR.EAST, WHexGrid.NEIGHBOR.SOUTH_EAST};
+                    return new WHexGrid.SIDE[]{WHexGrid.SIDE.EAST, WHexGrid.SIDE.SOUTH_EAST};
                 case BOTTOM:
-                    return new WHexGrid.NEIGHBOR[]{WHexGrid.NEIGHBOR.SOUTH_EAST, WHexGrid.NEIGHBOR.SOUTH_WEST};
+                    return new WHexGrid.SIDE[]{WHexGrid.SIDE.SOUTH_EAST, WHexGrid.SIDE.SOUTH_WEST};
                 case BOTTOM_LEFT:
-                    return new WHexGrid.NEIGHBOR[]{WHexGrid.NEIGHBOR.SOUTH_WEST, WHexGrid.NEIGHBOR.WEST};
+                    return new WHexGrid.SIDE[]{WHexGrid.SIDE.SOUTH_WEST, WHexGrid.SIDE.WEST};
                 case TOP_LEFT:
-                    return new WHexGrid.NEIGHBOR[]{WHexGrid.NEIGHBOR.WEST, WHexGrid.NEIGHBOR.NORTH_WEST};
+                    return new WHexGrid.SIDE[]{WHexGrid.SIDE.WEST, WHexGrid.SIDE.NORTH_WEST};
                 default:
-                    return new WHexGrid.NEIGHBOR[]{};
+                    return new WHexGrid.SIDE[]{};
             }
         }
 
         /**
          * Get the mirrored corner on the neighbor grid.
          */
-        public Corner getMirroredCorner(WHexGrid.NEIGHBOR direction) {
+        public Corner getMirroredCorner(WHexGrid.SIDE direction) {
             // This is simplified - would need proper hex geometry mapping
             switch (direction) {
                 case NORTH_WEST:
@@ -213,10 +213,10 @@ public class HexGridEdgeBlender {
     private static class EdgeBlender {
         private final WFlat flat;
         private final BuilderContext context;
-        private final WHexGrid.NEIGHBOR direction;
+        private final WHexGrid.SIDE direction;
         private final Map<Corner, Integer> cornerHeights;
 
-        public EdgeBlender(WFlat flat, BuilderContext context, WHexGrid.NEIGHBOR direction,
+        public EdgeBlender(WFlat flat, BuilderContext context, WHexGrid.SIDE direction,
                           Map<Corner, Integer> cornerHeights) {
             this.flat = flat;
             this.context = context;
@@ -255,7 +255,7 @@ public class HexGridEdgeBlender {
         /**
          * Get the two corners that define this edge.
          */
-        private Corner[] getEdgeCorners(WHexGrid.NEIGHBOR direction) {
+        private Corner[] getEdgeCorners(WHexGrid.SIDE direction) {
             switch (direction) {
                 case NORTH_WEST:
                     return new Corner[]{Corner.TOP_LEFT, Corner.TOP};
@@ -276,40 +276,51 @@ public class HexGridEdgeBlender {
 
         /**
          * Get average height along the neighbor's corresponding edge.
+         * Uses the neighbor's getLandSideLevel() to get the desired height for that edge.
          */
-        private int getNeighborEdgeHeight(WHexGrid.NEIGHBOR direction) {
+        private int getNeighborEdgeHeight(WHexGrid.SIDE direction) {
             return context.getBuilderFor(direction)
                     .map(builder -> {
-                        WFlat neighborFlat = builder.getContext().getFlat();
-                        // Sample a few points along the neighbor edge
-                        int sum = 0;
-                        int count = 0;
+                        // Get the mirrored side (the neighbor's side facing us)
+                        WHexGrid.SIDE mirroredSide = getMirroredSide(direction);
 
-                        // Get neighbor edge corners
-                        Corner[] neighborEdgeCorners = getMirroredEdgeCorners(direction);
-                        int[] coordsA = neighborEdgeCorners[0].getLocalCoordinates(neighborFlat.getSizeX(), neighborFlat.getSizeZ());
-                        int[] coordsB = neighborEdgeCorners[1].getLocalCoordinates(neighborFlat.getSizeX(), neighborFlat.getSizeZ());
+                        // Get the neighbor's desired land level for this side
+                        int neighborSideLevel = builder.getLandSideLevel(mirroredSide);
 
-                        // Sample 5 points along the edge
-                        for (int i = 0; i <= 4; i++) {
-                            double t = i / 4.0;
-                            int x = (int) (coordsA[0] + t * (coordsB[0] - coordsA[0]));
-                            int z = (int) (coordsA[1] + t * (coordsB[1] - coordsA[1]));
-                            x = Math.max(0, Math.min(neighborFlat.getSizeX() - 1, x));
-                            z = Math.max(0, Math.min(neighborFlat.getSizeZ() - 1, z));
-                            sum += neighborFlat.getLevel(x, z);
-                            count++;
-                        }
+                        log.trace("Neighbor edge height: direction={}, mirroredSide={}, sideLevel={}",
+                                direction, mirroredSide, neighborSideLevel);
 
-                        return count > 0 ? sum / count : 64;
+                        return neighborSideLevel;
                     })
-                    .orElse(64);  // Default height if no neighbor
+                    .orElse(context.getFlat().getOceanLevel());  // Default to ocean level if no neighbor
+        }
+
+        /**
+         * Get the mirrored side (opposite side on neighbor).
+         */
+        private WHexGrid.SIDE getMirroredSide(WHexGrid.SIDE direction) {
+            switch (direction) {
+                case NORTH_WEST:
+                    return WHexGrid.SIDE.SOUTH_EAST;
+                case NORTH_EAST:
+                    return WHexGrid.SIDE.SOUTH_WEST;
+                case EAST:
+                    return WHexGrid.SIDE.WEST;
+                case SOUTH_EAST:
+                    return WHexGrid.SIDE.NORTH_WEST;
+                case SOUTH_WEST:
+                    return WHexGrid.SIDE.NORTH_EAST;
+                case WEST:
+                    return WHexGrid.SIDE.EAST;
+                default:
+                    return direction;
+            }
         }
 
         /**
          * Get the mirrored edge corners on the neighbor.
          */
-        private Corner[] getMirroredEdgeCorners(WHexGrid.NEIGHBOR direction) {
+        private Corner[] getMirroredEdgeCorners(WHexGrid.SIDE direction) {
             Corner[] ownCorners = getEdgeCorners(direction);
             return new Corner[]{
                     ownCorners[0].getMirroredCorner(direction),

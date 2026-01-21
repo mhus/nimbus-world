@@ -1,0 +1,315 @@
+package de.mhus.nimbus.world.generator.flat.hexgrid;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import de.mhus.nimbus.world.generator.flat.FlatMaterialService;
+import de.mhus.nimbus.world.shared.generator.WFlat;
+import de.mhus.nimbus.world.shared.world.WHexGrid;
+import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
+
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * WallBuilder manipulator builder.
+ * Creates walls along specified sides of hex grids.
+ * Walls are built at a specified distance from the edge with configurable height and width.
+ * <p>
+ * Parameter format in HexGrid:
+ * wall={
+ *   sides: ["NE","E", "SE"],
+ *   height: 5,
+ *   level: 50,
+ *   width: 3,
+ *   distance: 5,
+ *   minimum: 3,
+ *   type: 3
+ * }
+ */
+@Slf4j
+public class WallBuilder extends HexGridBuilder {
+
+    private static final ObjectMapper objectMapper = new ObjectMapper();
+    private static final int DEFAULT_WIDTH = 3;
+    private static final int DEFAULT_DISTANCE = 5;
+    private static final int DEFAULT_TYPE = FlatMaterialService.STONE;
+
+    @Override
+    public void buildFlat() {
+        WFlat flat = context.getFlat();
+        WHexGrid hexGrid = context.getHexGrid();
+
+        log.info("Building walls for flat: {}", flat.getFlatId());
+
+        // Get wall parameter from hex grid
+        String wallParam = hexGrid.getParameters() != null ? hexGrid.getParameters().get("wall") : null;
+        if (wallParam == null || wallParam.isBlank()) {
+            log.debug("No wall parameter found, skipping");
+            return;
+        }
+
+        try {
+            // Parse wall definition
+            WallDefinition wallDef = parseWallDefinition(wallParam);
+            log.debug("Parsed wall definition: sides={}, height={}, level={}, width={}, distance={}, minimum={}, type={}",
+                    wallDef.getSides(), wallDef.getHeight(), wallDef.getLevel(), wallDef.getWidth(),
+                    wallDef.getDistance(), wallDef.getMinimum(), wallDef.getType());
+
+            // Build wall for each specified side
+            for (WHexGrid.SIDE side : wallDef.getSides()) {
+                buildWall(flat, side, wallDef);
+            }
+
+            log.info("Walls completed for flat: {}", flat.getFlatId());
+        } catch (Exception e) {
+            log.error("Failed to build walls for flat: {}", flat.getFlatId(), e);
+        }
+    }
+
+    /**
+     * Parse wall definition from JSON-like string.
+     */
+    private WallDefinition parseWallDefinition(String wallParam) throws Exception {
+        JsonNode root = objectMapper.readTree(wallParam);
+
+        WallDefinition wallDef = new WallDefinition();
+
+        // Parse sides array
+        List<WHexGrid.SIDE> sides = new ArrayList<>();
+        if (root.has("sides") && root.get("sides").isArray()) {
+            for (JsonNode sideNode : root.get("sides")) {
+                sides.add(parseSide(sideNode.asText()));
+            }
+        }
+        wallDef.setSides(sides);
+
+        // Parse other parameters
+        wallDef.setHeight(root.get("height").asInt());
+        wallDef.setLevel(root.get("level").asInt());
+        wallDef.setWidth(root.has("width") ? root.get("width").asInt() : DEFAULT_WIDTH);
+        wallDef.setDistance(root.has("distance") ? root.get("distance").asInt() : DEFAULT_DISTANCE);
+        wallDef.setMinimum(root.has("minimum") ? root.get("minimum").asInt() : 0);
+        wallDef.setType(root.has("type") ? root.get("type").asInt() : DEFAULT_TYPE);
+
+        return wallDef;
+    }
+
+    /**
+     * Parse side string to SIDE enum.
+     */
+    private WHexGrid.SIDE parseSide(String sideStr) {
+        switch (sideStr.toUpperCase()) {
+            case "NW":
+            case "NORTH_WEST":
+                return WHexGrid.SIDE.NORTH_WEST;
+            case "NE":
+            case "NORTH_EAST":
+                return WHexGrid.SIDE.NORTH_EAST;
+            case "E":
+            case "EAST":
+                return WHexGrid.SIDE.EAST;
+            case "SE":
+            case "SOUTH_EAST":
+                return WHexGrid.SIDE.SOUTH_EAST;
+            case "SW":
+            case "SOUTH_WEST":
+                return WHexGrid.SIDE.SOUTH_WEST;
+            case "W":
+            case "WEST":
+                return WHexGrid.SIDE.WEST;
+            default:
+                throw new IllegalArgumentException("Unknown side: " + sideStr);
+        }
+    }
+
+    /**
+     * Build a wall along a specified side.
+     */
+    private void buildWall(WFlat flat, WHexGrid.SIDE side, WallDefinition wallDef) {
+        log.debug("Building wall on side: {}", side);
+
+        int sizeX = flat.getSizeX();
+        int sizeZ = flat.getSizeZ();
+        int distance = wallDef.getDistance();
+        int width = wallDef.getWidth();
+
+        // Get corner coordinates for this side
+        int[][] sideCoords = getSideCorners(side, sizeX, sizeZ);
+        int[] startCorner = sideCoords[0];
+        int[] endCorner = sideCoords[1];
+
+        // Calculate direction vector along the side
+        int dx = endCorner[0] - startCorner[0];
+        int dz = endCorner[1] - startCorner[1];
+        double sideLength = Math.sqrt(dx * dx + dz * dz);
+        int steps = (int) Math.ceil(sideLength);
+
+        // Calculate perpendicular direction (inward from edge)
+        int[] inwardDir = getInwardDirection(side);
+
+        // Build wall along the side at specified distance from edge
+        for (int step = 0; step <= steps; step++) {
+            double t = steps > 0 ? (double) step / steps : 0.0;
+
+            // Position along the edge
+            int edgeX = (int) (startCorner[0] + t * dx);
+            int edgeZ = (int) (startCorner[1] + t * dz);
+
+            // Position at wall distance from edge
+            int wallX = edgeX + inwardDir[0] * distance;
+            int wallZ = edgeZ + inwardDir[1] * distance;
+
+            // Build wall segment with width
+            buildWallSegment(flat, wallX, wallZ, width, wallDef, inwardDir);
+        }
+    }
+
+    /**
+     * Get the two corners that define a side.
+     */
+    private int[][] getSideCorners(WHexGrid.SIDE side, int sizeX, int sizeZ) {
+        switch (side) {
+            case NORTH_WEST:
+                return new int[][]{{0, 0}, {sizeX / 2, 0}};
+            case NORTH_EAST:
+                return new int[][]{{sizeX / 2, 0}, {sizeX - 1, 0}};
+            case EAST:
+                return new int[][]{{sizeX - 1, 0}, {sizeX - 1, sizeZ - 1}};
+            case SOUTH_EAST:
+                return new int[][]{{sizeX - 1, sizeZ - 1}, {sizeX / 2, sizeZ - 1}};
+            case SOUTH_WEST:
+                return new int[][]{{sizeX / 2, sizeZ - 1}, {0, sizeZ - 1}};
+            case WEST:
+                return new int[][]{{0, sizeZ - 1}, {0, 0}};
+            default:
+                return new int[][]{{0, 0}, {sizeX - 1, sizeZ - 1}};
+        }
+    }
+
+    /**
+     * Get the inward direction (perpendicular to side, pointing into the hex).
+     */
+    private int[] getInwardDirection(WHexGrid.SIDE side) {
+        switch (side) {
+            case NORTH_WEST:
+            case NORTH_EAST:
+                return new int[]{0, 1};  // Inward is south
+            case SOUTH_EAST:
+            case SOUTH_WEST:
+                return new int[]{0, -1}; // Inward is north
+            case EAST:
+                return new int[]{-1, 0}; // Inward is west
+            case WEST:
+                return new int[]{1, 0};  // Inward is east
+            default:
+                return new int[]{0, 0};
+        }
+    }
+
+    /**
+     * Build a wall segment at the given position with the given width.
+     * Builds perpendicular to the wall direction.
+     */
+    private void buildWallSegment(WFlat flat, int centerX, int centerZ, int width,
+                                   WallDefinition wallDef, int[] inwardDir) {
+        int halfWidth = width / 2;
+
+        // Calculate perpendicular direction for width
+        // If wall goes north-south, width is east-west, and vice versa
+        int widthDx = Math.abs(inwardDir[1]); // If inward is Z, width is X
+        int widthDz = Math.abs(inwardDir[0]); // If inward is X, width is Z
+
+        for (int offset = -halfWidth; offset <= halfWidth; offset++) {
+            int x = centerX + offset * widthDx;
+            int z = centerZ + offset * widthDz;
+
+            // Check bounds
+            if (x < 0 || x >= flat.getSizeX() || z < 0 || z >= flat.getSizeZ()) {
+                continue;
+            }
+
+            // Get current terrain level
+            int currentLevel = flat.getLevel(x, z);
+
+            // Calculate wall base level
+            int wallBaseLevel = wallDef.getLevel();
+
+            // Apply minimum height constraint
+            // Wall should be at least 'minimum' blocks above surrounding terrain
+            if (wallDef.getMinimum() > 0) {
+                // Check surrounding non-wall terrain
+                int surroundingLevel = getSurroundingTerrainLevel(flat, x, z, 3);
+                int minimumWallBase = surroundingLevel + wallDef.getMinimum();
+                wallBaseLevel = Math.max(wallBaseLevel, minimumWallBase);
+            }
+
+            // Build wall from base to height
+            // Set the level to wall top
+            int wallTopLevel = wallBaseLevel + wallDef.getHeight();
+            flat.setLevel(x, z, wallTopLevel);
+
+            // Set wall material
+            flat.setColumn(x, z, wallDef.getType());
+        }
+    }
+
+    /**
+     * Get average level of surrounding terrain (excluding current position).
+     */
+    private int getSurroundingTerrainLevel(WFlat flat, int x, int z, int radius) {
+        int sum = 0;
+        int count = 0;
+
+        for (int dx = -radius; dx <= radius; dx++) {
+            for (int dz = -radius; dz <= radius; dz++) {
+                // Skip center
+                if (dx == 0 && dz == 0) {
+                    continue;
+                }
+
+                int checkX = x + dx;
+                int checkZ = z + dz;
+
+                // Check bounds
+                if (checkX < 0 || checkX >= flat.getSizeX() || checkZ < 0 || checkZ >= flat.getSizeZ()) {
+                    continue;
+                }
+
+                sum += flat.getLevel(checkX, checkZ);
+                count++;
+            }
+        }
+
+        return count > 0 ? sum / count : flat.getLevel(x, z);
+    }
+
+    @Override
+    protected int getDefaultLandOffset() {
+        return 0;
+    }
+
+    @Override
+    protected int getDefaultLandLevel() {
+        return 0;
+    }
+
+    @Override
+    public int getLandSideLevel(WHexGrid.SIDE side) {
+        return getLandCenterLevel();
+    }
+
+    /**
+     * Wall definition parsed from parameters.
+     */
+    @Data
+    private static class WallDefinition {
+        private List<WHexGrid.SIDE> sides;
+        private int height;
+        private int level;
+        private int width;
+        private int distance;
+        private int minimum;
+        private int type;
+    }
+}

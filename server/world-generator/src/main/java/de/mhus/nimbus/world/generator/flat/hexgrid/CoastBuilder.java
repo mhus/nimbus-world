@@ -51,7 +51,7 @@ public class CoastBuilder extends HexGridBuilder {
         );
 
         // Step 2: Determine which sides have ocean neighbors
-        Set<WHexGrid.NEIGHBOR> oceanSides = determineOceanSides();
+        Set<WHexGrid.SIDE> oceanSides = determineOceanSides();
 
         log.debug("Ocean sides detected: {}", oceanSides);
 
@@ -63,10 +63,6 @@ public class CoastBuilder extends HexGridBuilder {
         // Step 4: Set materials (SAND at coastline, GRASS inland)
         setCoastMaterials(flat, oceanSides, oceanLevel);
 
-        // Step 5: Blend edges with neighbors for smooth transitions
-        HexGridEdgeBlender edgeBlender = new HexGridEdgeBlender(flat, context);
-        edgeBlender.blendAllEdges();
-
         log.info("Coast scenario completed: oceanSides={}, baseHeight={}, hillHeight={}",
                 oceanSides, baseHeight, hillHeight);
     }
@@ -74,10 +70,10 @@ public class CoastBuilder extends HexGridBuilder {
     /**
      * Determine which neighboring grids are ocean.
      */
-    private Set<WHexGrid.NEIGHBOR> determineOceanSides() {
-        Set<WHexGrid.NEIGHBOR> oceanSides = new HashSet<>();
+    private Set<WHexGrid.SIDE> determineOceanSides() {
+        Set<WHexGrid.SIDE> oceanSides = new HashSet<>();
 
-        for (WHexGrid.NEIGHBOR direction : WHexGrid.NEIGHBOR.values()) {
+        for (WHexGrid.SIDE direction : WHexGrid.SIDE.values()) {
             // Check if neighbor has an OceanBuilder
             context.getBuilderFor(direction).ifPresent(builder -> {
                 if (builder instanceof OceanBuilder || builder instanceof IslandBuilder) {
@@ -92,7 +88,7 @@ public class CoastBuilder extends HexGridBuilder {
     /**
      * Create coastline that slopes down to ocean level towards ocean sides.
      */
-    private void createCoastline(WFlat flat, Set<WHexGrid.NEIGHBOR> oceanSides, int oceanLevel) {
+    private void createCoastline(WFlat flat, Set<WHexGrid.SIDE> oceanSides, int oceanLevel) {
         int sizeX = flat.getSizeX();
         int sizeZ = flat.getSizeZ();
 
@@ -101,7 +97,7 @@ public class CoastBuilder extends HexGridBuilder {
                 // Calculate distance to each ocean side
                 double minDistance = Double.MAX_VALUE;
 
-                for (WHexGrid.NEIGHBOR oceanSide : oceanSides) {
+                for (WHexGrid.SIDE oceanSide : oceanSides) {
                     double distance = calculateDistanceToSide(x, z, sizeX, sizeZ, oceanSide);
                     minDistance = Math.min(minDistance, distance);
                 }
@@ -130,7 +126,7 @@ public class CoastBuilder extends HexGridBuilder {
     /**
      * Calculate distance from a point to a specific side of the hex grid.
      */
-    private double calculateDistanceToSide(int x, int z, int sizeX, int sizeZ, WHexGrid.NEIGHBOR side) {
+    private double calculateDistanceToSide(int x, int z, int sizeX, int sizeZ, WHexGrid.SIDE side) {
         switch (side) {
             case NORTH_WEST:
             case NORTH_EAST:
@@ -154,7 +150,7 @@ public class CoastBuilder extends HexGridBuilder {
     /**
      * Set materials: SAND near coastline, GRASS inland.
      */
-    private void setCoastMaterials(WFlat flat, Set<WHexGrid.NEIGHBOR> oceanSides, int oceanLevel) {
+    private void setCoastMaterials(WFlat flat, Set<WHexGrid.SIDE> oceanSides, int oceanLevel) {
         int sizeX = flat.getSizeX();
         int sizeZ = flat.getSizeZ();
 
@@ -164,7 +160,7 @@ public class CoastBuilder extends HexGridBuilder {
 
                 // Calculate distance to nearest ocean side
                 double minDistance = Double.MAX_VALUE;
-                for (WHexGrid.NEIGHBOR oceanSide : oceanSides) {
+                for (WHexGrid.SIDE oceanSide : oceanSides) {
                     double distance = calculateDistanceToSide(x, z, sizeX, sizeZ, oceanSide);
                     minDistance = Math.min(minDistance, distance);
                 }
@@ -200,4 +196,9 @@ public class CoastBuilder extends HexGridBuilder {
             return defaultValue;
         }
     }
+
+    public int getLandSideLevel(WHexGrid.SIDE side) {
+        return getLandCenterLevel();
+    }
+
 }

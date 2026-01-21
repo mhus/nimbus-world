@@ -4,6 +4,7 @@ import de.mhus.nimbus.world.shared.generator.WFlat;
 import de.mhus.nimbus.world.shared.job.JobExecutionException;
 import de.mhus.nimbus.world.shared.job.JobExecutor;
 import de.mhus.nimbus.world.shared.job.WJob;
+import de.mhus.nimbus.world.shared.world.WHexGrid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -145,9 +146,9 @@ public class FlatHexGridCreateJobExecutor implements JobExecutor {
                 }
 
                 // Parse border direction
-                de.mhus.nimbus.world.shared.world.WHexGrid.NEIGHBOR border;
+                WHexGrid.SIDE border;
                 try {
-                    border = de.mhus.nimbus.world.shared.world.WHexGrid.NEIGHBOR.valueOf(borderStr.toUpperCase());
+                    border = WHexGrid.SIDE.valueOf(borderStr.toUpperCase());
                 } catch (IllegalArgumentException e) {
                     throw new JobExecutionException("Invalid border direction: " + borderStr + ". Valid values: TOP_RIGHT, RIGHT, BOTTOM_RIGHT, BOTTOM_LEFT, LEFT, TOP_LEFT");
                 }

@@ -126,7 +126,7 @@ public class HexMathUtil {
         return new HexPositionIterator(hex, gridSize);
     }
 
-    public static HexVector2 getNeighborPosition(HexVector2 position, WHexGrid.NEIGHBOR nabor) {
+    public static HexVector2 getNeighborPosition(HexVector2 position, WHexGrid.SIDE nabor) {
         int q = position.getQ();
         int r = position.getR();
         switch (nabor) {
