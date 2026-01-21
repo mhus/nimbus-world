@@ -375,8 +375,8 @@ public class AccessService {
 
         // Create token using JwtService
         return jwtService.createTokenWithPrivateKey(
-                KeyType.REGION,
-                KeyIntent.of(regionId, KeyIntent.REGION_JWT_TOKEN),
+                KeyType.SECTOR,
+                KeyIntent.of(regionId, KeyIntent.SECTOR_SERVER_JWT_TOKEN),
                 userId,
                 claims,
                 expiresAt
@@ -434,8 +434,8 @@ public class AccessService {
 
         // Create token using JwtService
         return jwtService.createTokenWithPrivateKey(
-                KeyType.REGION,
-                KeyIntent.of(regionId, KeyIntent.REGION_JWT_TOKEN),
+                KeyType.SECTOR,
+                KeyIntent.of(regionId, KeyIntent.SECTOR_SERVER_JWT_TOKEN),
                 userId,
                 claims,
                 expiresAt
@@ -514,8 +514,8 @@ public class AccessService {
         // Now validate token with correct regionId
         Optional<Jws<Claims>> jwsOpt = jwtService.validateTokenWithPublicKey(
                 token,
-                KeyType.REGION,
-                KeyIntent.of(regionId, KeyIntent.REGION_JWT_TOKEN)
+                KeyType.SECTOR,
+                KeyIntent.of(regionId, KeyIntent.SECTOR_SERVER_JWT_TOKEN)
         );
 
         if (jwsOpt.isEmpty()) {
@@ -652,8 +652,8 @@ public class AccessService {
         Instant expiresAt = Instant.now().plusSeconds(ttlSeconds);
 
         String token = jwtService.createTokenWithPrivateKey(
-                KeyType.REGION,
-                KeyIntent.of(regionId, KeyIntent.REGION_JWT_TOKEN),
+                KeyType.SECTOR,
+                KeyIntent.of(regionId, KeyIntent.SECTOR_SERVER_JWT_TOKEN),
                 claims.userId(),
                 tokenClaims,
                 expiresAt
@@ -795,8 +795,8 @@ public class AccessService {
             // Validate token with JWT service
             var jwsOpt = jwtService.validateTokenWithPublicKey(
                     sessionToken,
-                    KeyType.REGION,
-                    KeyIntent.of(regionId, KeyIntent.REGION_JWT_TOKEN)
+                    KeyType.SECTOR,
+                    KeyIntent.of(regionId, KeyIntent.SECTOR_SERVER_JWT_TOKEN)
             );
 
             if (jwsOpt.isEmpty()) {
@@ -855,8 +855,8 @@ public class AccessService {
             // Validate token with JWT service
             var jwsOpt = jwtService.validateTokenWithPublicKey(
                     bearerToken,
-                    KeyType.REGION,
-                    KeyIntent.of(regionId, KeyIntent.REGION_JWT_TOKEN)
+                    KeyType.SECTOR,
+                    KeyIntent.of(regionId, KeyIntent.SECTOR_SERVER_JWT_TOKEN)
             );
 
             if (jwsOpt.isEmpty()) {
@@ -1029,9 +1029,9 @@ public class AccessService {
             Instant expiresAt = Instant.now().plusSeconds(properties.getAgentTokenTtlSeconds());
 
             // Create token
-            var intent = KeyIntent.of(regionProperties.getSectorServerId(), KeyIntent.REGION_SERVER_JWT_TOKEN);
+            var intent = KeyIntent.of(regionProperties.getSectorServerId(), KeyIntent.SECTOR_SERVER_JWT_TOKEN);
             String token = jwtService.createTokenWithPrivateKey(
-                    KeyType.REGION,
+                    KeyType.SECTOR,
                     intent,
                     "service:" + serviceName,
                     claims,

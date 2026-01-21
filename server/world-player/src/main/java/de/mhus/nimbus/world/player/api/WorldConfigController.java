@@ -383,30 +383,6 @@ public class WorldConfigController {
             playerInfo.setThirdPersonModelId("wizard1");
         }
 
-        // Set movement speeds
-        if (playerInfo.getBaseWalkSpeed() == 0.0) playerInfo.setBaseWalkSpeed(5.0);
-        if (playerInfo.getBaseRunSpeed() == 0.0) playerInfo.setBaseRunSpeed(7.0);
-        if (playerInfo.getBaseUnderwaterSpeed() == 0.0) playerInfo.setBaseUnderwaterSpeed(3.0);
-        if (playerInfo.getBaseCrawlSpeed() == 0.0) playerInfo.setBaseCrawlSpeed(1.5);
-        if (playerInfo.getBaseRidingSpeed() == 0.0) playerInfo.setBaseRidingSpeed(8.0);
-        if (playerInfo.getBaseJumpSpeed() == 0.0) playerInfo.setBaseJumpSpeed(8.0);
-
-        if (playerInfo.getEffectiveWalkSpeed() == 0.0) playerInfo.setEffectiveWalkSpeed(5.0);
-        if (playerInfo.getEffectiveRunSpeed() == 0.0) playerInfo.setEffectiveRunSpeed(7.0);
-        if (playerInfo.getEffectiveUnderwaterSpeed() == 0.0) playerInfo.setEffectiveUnderwaterSpeed(3.0);
-        if (playerInfo.getEffectiveCrawlSpeed() == 0.0) playerInfo.setEffectiveCrawlSpeed(1.5);
-        if (playerInfo.getEffectiveRidingSpeed() == 0.0) playerInfo.setEffectiveRidingSpeed(8.0);
-        if (playerInfo.getEffectiveJumpSpeed() == 0.0) playerInfo.setEffectiveJumpSpeed(8.0);
-
-        // Set other properties
-        if (playerInfo.getEyeHeight() == 0.0) playerInfo.setEyeHeight(1.6);
-        if (playerInfo.getStealthRange() == 0.0) playerInfo.setStealthRange(8.0);
-        if (playerInfo.getSelectionRadius() == 0.0) playerInfo.setSelectionRadius(5.0);
-        if (playerInfo.getBaseTurnSpeed() == 0.0) playerInfo.setBaseTurnSpeed(0.003);
-        if (playerInfo.getEffectiveTurnSpeed() == 0.0) playerInfo.setEffectiveTurnSpeed(0.003);
-        if (playerInfo.getBaseUnderwaterTurnSpeed() == 0.0) playerInfo.setBaseUnderwaterTurnSpeed(0.002);
-        if (playerInfo.getEffectiveUnderwaterTurnSpeed() == 0.0) playerInfo.setEffectiveUnderwaterTurnSpeed(0.002);
-
         // Ensure stateValues exists and has 'default' state as fallback
         if (playerInfo.getStateValues() == null) {
             playerInfo.setStateValues(new HashMap<>());

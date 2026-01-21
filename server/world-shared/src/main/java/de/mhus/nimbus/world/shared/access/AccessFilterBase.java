@@ -368,8 +368,8 @@ public abstract class AccessFilterBase extends OncePerRequestFilter {
             // Validate token with regionId
             Optional<Jws<Claims>> jwsOpt = jwtService.validateTokenWithPublicKey(
                     token,
-                    KeyType.REGION,
-                    KeyIntent.of(regionId, KeyIntent.REGION_JWT_TOKEN)
+                    KeyType.SECTOR,
+                    KeyIntent.of(regionId, KeyIntent.SECTOR_SERVER_JWT_TOKEN)
             );
 
             if (jwsOpt.isEmpty()) {
@@ -494,10 +494,10 @@ public abstract class AccessFilterBase extends OncePerRequestFilter {
             String payloadJson = new String(java.util.Base64.getUrlDecoder().decode(parts[1]));
 
             // Validate token with JWT service
-            var intent = KeyIntent.of(regionProperties.getSectorServerId(), KeyIntent.REGION_SERVER_JWT_TOKEN);
+            var intent = KeyIntent.of(regionProperties.getSectorServerId(), KeyIntent.SECTOR_SERVER_JWT_TOKEN);
             Optional<Jws<Claims>> jwsOpt = jwtService.validateTokenWithPublicKey(
                     token,
-                    de.mhus.nimbus.shared.security.KeyType.REGION,
+                    KeyType.SECTOR,
                     intent
             );
 

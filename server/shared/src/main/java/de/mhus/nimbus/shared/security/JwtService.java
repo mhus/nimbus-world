@@ -158,22 +158,22 @@ public class JwtService {
         }
     }
 
-    public String createTokenForRegion(String regionId) {
+    public String createTokenForSector(String sectorServerId) {
         return createTokenWithPrivateKey(
-                KeyType.REGION,
-                KeyIntent.of(regionId, KeyIntent.REGION_JWT_TOKEN),
-                "region:" + regionId,
-                java.util.Map.of("region", regionId ),
+                KeyType.SECTOR,
+                KeyIntent.of(sectorServerId, KeyIntent.SECTOR_SERVER_JWT_TOKEN),
+                "sector:" + sectorServerId,
+                java.util.Map.of("sector", sectorServerId ),
                 java.time.Instant.now().plusSeconds(300)
             );
     }
 
-    public String createTokenForRegionServer(String regionServerId) {
+    public String createTokenForSectorServer(String sectorServerId) {
         return createTokenWithPrivateKey(
-                KeyType.REGION,
-                KeyIntent.of(regionServerId, KeyIntent.REGION_SERVER_JWT_TOKEN),
-                "regionServer:" + regionServerId,
-                java.util.Map.of("regionServer", regionServerId ),
+                KeyType.SECTOR,
+                KeyIntent.of(sectorServerId, KeyIntent.SECTOR_SERVER_JWT_TOKEN),
+                "sectorServer:" + sectorServerId,
+                java.util.Map.of("sectorServer", sectorServerId ),
                 java.time.Instant.now().plusSeconds(300)
         );
     }

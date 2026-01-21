@@ -39,7 +39,7 @@ public class RUniverseClientService {
     public Optional<UniverseWorldDto> fetch(String regionId, String worldId) {
         String url = regionProperties.getUniverseBaseUrl() + "/universe/region/" + encode(regionId) + "/world/" + encode(worldId);
         try {
-            var restTemplate = RestTemplateUtil.create(jwtService.createTokenForRegion(regionId));
+            var restTemplate = RestTemplateUtil.create(jwtService.createTokenForSector(regionProperties.getSectorServerId()));
             @SuppressWarnings("unchecked") ResponseEntity<Map<String,Object>> resp = (ResponseEntity) restTemplate.getForEntity(URI.create(url), Map.class);
             if (resp.getStatusCode() == HttpStatus.OK && resp.getBody() != null) {
                 Map<String,Object> b = resp.getBody();
@@ -68,7 +68,7 @@ public class RUniverseClientService {
         if (coordinates != null) body.put("coordinates", coordinates);
         try {
             var request = new org.springframework.http.HttpEntity<>(body, buildHeaders(null));
-            var restTemplate = RestTemplateUtil.create(jwtService.createTokenForRegion(regionId));
+            var restTemplate = RestTemplateUtil.create(jwtService.createTokenForSector(regionProperties.getSectorServerId()));
             @SuppressWarnings("unchecked") ResponseEntity<UniverseWorldDto> resp = restTemplate.postForEntity(url, request, UniverseWorldDto.class);
             if (resp.getStatusCode() == HttpStatus.CREATED && resp.getBody() != null) {
                 return resp.getBody();
@@ -86,7 +86,7 @@ public class RUniverseClientService {
             log.debug("Sending region request: {}", body);
             var request = new org.springframework.http.HttpEntity<>(body, buildHeaders(token));
             log.debug("POST to URL: {} with headers: {}", url, request.getHeaders());
-            var restTemplate = RestTemplateUtil.create(jwtService.createTokenForRegionServer(regionProperties.getSectorServerId()));
+            var restTemplate = RestTemplateUtil.create(jwtService.createTokenForSectorServer(regionProperties.getSectorServerId()));
             ResponseEntity<URegionResponse> resp = restTemplate.postForEntity(url, request, URegionResponse.class);
             if (resp.getStatusCode() == HttpStatus.CREATED || resp.getStatusCode() == HttpStatus.OK) {
                 log.info("Universe Region Registrierung erfolgreich: name={} status={}", name, resp.getStatusCode());

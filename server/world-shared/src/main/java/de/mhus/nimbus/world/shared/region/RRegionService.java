@@ -42,14 +42,14 @@ public class RRegionService {
         // KeyPair für Region erzeugen (Intent main-jwt-token, Owner = Regionsname)
         try {
             var keys = keyService.createECCKeys();
-            KeyId keyId = KeyId.of(saved.getName(), KeyIntent.REGION_JWT_TOKEN, UUID.randomUUID().toString());
+            KeyId keyId = KeyId.of(saved.getName(), KeyIntent.SECTOR_SERVER_JWT_TOKEN, UUID.randomUUID().toString());
             keyService.storeKeyPair(
-                KeyType.REGION,
+                KeyType.SECTOR,
                 keyId,
                 keys
             );
             // Register to the Universe with region server key
-            String token = jwtService.createTokenForRegionServer(regionProperties.getSectorServerId());
+            String token = jwtService.createTokenForSectorServer(regionProperties.getSectorServerId());
              var publicKey = keys.getPublic();
             String publicBase64 = Base64.getEncoder().encodeToString(publicKey.getEncoded());
             boolean registered = universeClientService.createRegion(token, saved.getName(), regionProperties.getSectorServerUrl(),

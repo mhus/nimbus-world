@@ -110,12 +110,21 @@ public class PlayerService implements SessionPingConsumer {
                 .interactive(true)
                 .movementType("dynamic")
                 .physics(false)
-                .notifyOnAttentionRange(player.character().getPublicData().getStealthRange())
+                .notifyOnAttentionRange(getStealthRange(player))
                 .notifyOnCollision(true)
 //                .healthMax(500)
 //                .health(400)
                 .build();
         return Optional.of(result);
+    }
+
+    private Double getStealthRange(PlayerData player) {
+        try {
+            return player.character().getPublicData().getStateValues().get("default").getStealthRange();
+        } catch (Exception e) {
+            log.warn("Cannot get stealth range for player: {}", player, e);
+            return 3.0;
+        }
     }
 
     /**

@@ -15,7 +15,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -41,7 +40,7 @@ public class InitSetupProvider {
     private final RUserService userService;
     private final RCharacterService characterService;
     private final RRegionService regionService;
-    private final InitRegionService initRegionService; // be sure InitRegionService is initialized first
+    private final InitSectorService initRegionService; // be sure InitRegionService is initialized first
 
     @PostConstruct
     public void init() {
