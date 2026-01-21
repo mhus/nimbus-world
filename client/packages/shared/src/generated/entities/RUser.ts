@@ -14,10 +14,12 @@ export interface RUser {
   username: string;
   email: string;
   createdAt: Date;
+  modifiedAt: Date;
   publicData: PlayerUser;
   enabled: boolean;
   sectorRoles: SectorRoles[];
   regionRoles: Record<string, RegionRoles>;
   characterLimits: Record<string, number>;
   userSettings: Record<string, Settings>;
+  attributes: Record<string, string>;
 }

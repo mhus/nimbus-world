@@ -35,6 +35,7 @@ public class RUserService {
                 .enabled(true)
                 .build();
         user.addSectorRole(SectorRoles.USER); // Standardrolle global
+        user.touchCreate();
         return repository.save(user);
     }
 
@@ -54,9 +55,12 @@ public class RUserService {
             existing.setRegionRoles(user.getRegionRoles());
             existing.setCharacterLimits(user.getCharacterLimits());
             existing.setUserSettings(user.getUserSettings());
+            existing.setAttributes(user.getAttributes());
+            existing.touchUpdate();
             return repository.save(existing);
         } else {
             // Create new user
+            user.touchCreate();
             return repository.save(user);
         }
     }
@@ -65,6 +69,7 @@ public class RUserService {
         RUser existing = repository.findByUsername(username)
             .orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
         existing.disable();
+        existing.touchUpdate();
         repository.save(existing);
     }
 
@@ -72,6 +77,7 @@ public class RUserService {
     public RUser addSectorRoles(String username, SectorRoles role) {
         RUser existing = repository.findByUsername(username)
             .orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
+        existing.touchUpdate();
         if (existing.addSectorRole(role)) existing = repository.save(existing);
         return existing;
     }
@@ -79,6 +85,7 @@ public class RUserService {
     public RUser removeSectorRole(String username, SectorRoles role) {
         RUser existing = repository.findByUsername(username)
             .orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
+        existing.touchUpdate();
         if (existing.removeSectorRole(role)) existing = repository.save(existing);
         return existing;
     }
@@ -95,6 +102,7 @@ public class RUserService {
             .orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
         boolean changed = user.addSectorRole(role);
         if (changed) {
+            user.touchUpdate();
             repository.save(user);
         }
         return changed;
@@ -105,6 +113,7 @@ public class RUserService {
             .orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
         boolean changed = user.removeSectorRole(role);
         if (changed) {
+            user.touchUpdate();
             repository.save(user);
         }
         return changed;
@@ -126,6 +135,7 @@ public class RUserService {
         RUser user = repository.findByUsername(username)
             .orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
         user.setSectorRolesRaw(raw);
+        user.touchUpdate();
         repository.save(user);
     }
 
@@ -140,6 +150,7 @@ public class RUserService {
         RUser user = repository.findByUsername(username)
             .orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
         user.setRegionRoles(roles);
+        user.touchUpdate();
         repository.save(user);
     }
 
@@ -154,6 +165,7 @@ public class RUserService {
             .orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
         boolean changed = user.setRegionRole(regionId, role);
         if (changed) {
+            user.touchUpdate();
             repository.save(user);
         }
         return changed;
@@ -170,6 +182,7 @@ public class RUserService {
             .orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
         boolean changed = user.removeRegionRole(regionId);
         if (changed) {
+            user.touchUpdate();
             repository.save(user);
         }
         return changed;
@@ -205,6 +218,7 @@ public class RUserService {
         RUser user = repository.findByUsername(username)
             .orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
         user.setSettingsForClientType(clientType, settings);
+        user.touchUpdate();
         repository.save(user);
     }
 
@@ -218,6 +232,7 @@ public class RUserService {
         RUser user = repository.findByUsername(username)
             .orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
         user.setUserSettings(settings);
+        user.touchUpdate();
         repository.save(user);
     }
 

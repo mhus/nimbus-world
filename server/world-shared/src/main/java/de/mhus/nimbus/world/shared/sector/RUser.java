@@ -3,6 +3,7 @@ package de.mhus.nimbus.world.shared.sector;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -52,6 +53,8 @@ public class RUser implements Identifiable {
 
     @CreatedDate
     private Instant createdAt;
+    @CreatedDate
+    private Instant modifiedAt;
 
     @TypeScript(import_ = "PlayerUser", importPath = "./PlayerUser")
     private PlayerUser publicData;
@@ -71,6 +74,9 @@ public class RUser implements Identifiable {
     // User Settings per ClientType: clientType (as String) -> Settings
     @TypeScript(import_ = "Settings", importPath = "../../configs")
     private Map<String, Settings> userSettings;
+
+    @Builder.Default
+    private Map<String,String> attributes = new HashMap<>(); // Zusätzliche Attribute
 
     public RUser() { this.enabled = true; }
 
@@ -213,6 +219,23 @@ public class RUser implements Identifiable {
     public boolean isRegionAdmin(WorldId worldId) {
         if (worldId.isCollection()) return false;
         return hasRegionRole(worldId.getRegionId(), RegionRoles.ADMIN);
+    }
+
+    /**
+     * Initialize timestamps for new chat.
+     */
+    public void touchCreate() {
+        createdAt = Instant.now();
+        touchUpdate();
+    }
+
+    /**
+     * Update modification timestamp.
+     */
+    public void touchUpdate() {
+        if (publicData != null)
+            publicData.setUserId(getUsername());
+        modifiedAt = Instant.now();
     }
 
 }

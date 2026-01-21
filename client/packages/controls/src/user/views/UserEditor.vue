@@ -324,6 +324,78 @@
         </div>
       </div>
 
+      <!-- Attributes Card -->
+      <div class="card bg-base-100 shadow-xl">
+        <div class="card-body">
+          <h3 class="card-title">Attributes</h3>
+
+          <!-- Add New Attribute -->
+          <div class="flex gap-2 mb-4">
+            <input
+              v-model="newAttributeKey"
+              type="text"
+              placeholder="Attribute key"
+              class="input input-bordered flex-1"
+            />
+            <input
+              v-model="newAttributeValue"
+              type="text"
+              placeholder="Attribute value"
+              class="input input-bordered flex-1"
+            />
+            <button
+              type="button"
+              class="btn btn-secondary"
+              @click="handleAddAttribute"
+              :disabled="!newAttributeKey || !newAttributeValue"
+            >
+              Add Attribute
+            </button>
+          </div>
+
+          <!-- Existing Attributes -->
+          <div v-if="user?.attributes && Object.keys(user.attributes).length > 0" class="overflow-x-auto">
+            <table class="table table-zebra">
+              <thead>
+                <tr>
+                  <th>Key</th>
+                  <th>Value</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="(value, key) in user.attributes" :key="key">
+                  <td class="font-mono">{{ key }}</td>
+                  <td>
+                    <input
+                      type="text"
+                      :value="value"
+                      @input="handleAttributeChange(key, $event)"
+                      class="input input-bordered input-sm w-full"
+                    />
+                  </td>
+                  <td>
+                    <button
+                      type="button"
+                      class="btn btn-sm btn-error"
+                      @click="handleRemoveAttribute(key)"
+                    >
+                      Remove
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Empty State -->
+          <div v-else class="text-center py-8">
+            <p class="text-base-content/70">No attributes configured</p>
+            <p class="text-base-content/50 text-sm mt-2">Add an attribute by entering a key and value above</p>
+          </div>
+        </div>
+      </div>
+
       <!-- User Settings Card -->
       <div class="card bg-base-100 shadow-xl">
         <div class="card-body">
@@ -509,6 +581,8 @@ const newMappingValue = reactive<Record<string, string>>({});
 const newRegionId = ref('');
 const newCharLimitRegionId = ref('');
 const newCharLimit = ref<number | null>(null);
+const newAttributeKey = ref('');
+const newAttributeValue = ref('');
 
 const formatDate = (date: Date | string): string => {
   const d = typeof date === 'string' ? new Date(date) : date;
@@ -569,6 +643,7 @@ const handleSave = async () => {
       regionRoles: user.value.regionRoles || {},
       characterLimits: user.value.characterLimits || {},
       userSettings: user.value.userSettings || {},
+      attributes: user.value.attributes || {},
     };
 
     await userService.updateUser(props.username, updatedUser);
@@ -792,6 +867,50 @@ const handleRemoveCharacterLimit = (regionId: string) => {
   user.value = {
     ...user.value,
     characterLimits: remainingLimits,
+  };
+};
+
+const handleAddAttribute = () => {
+  if (!user.value || !newAttributeKey.value.trim() || !newAttributeValue.value.trim()) {
+    return;
+  }
+
+  // Update local user object
+  user.value = {
+    ...user.value,
+    attributes: {
+      ...user.value.attributes,
+      [newAttributeKey.value]: newAttributeValue.value,
+    },
+  };
+
+  newAttributeKey.value = '';
+  newAttributeValue.value = '';
+};
+
+const handleAttributeChange = (key: string, event: Event) => {
+  if (!user.value) return;
+
+  const target = event.target as HTMLInputElement;
+
+  // Update local user object
+  user.value = {
+    ...user.value,
+    attributes: {
+      ...user.value.attributes,
+      [key]: target.value,
+    },
+  };
+};
+
+const handleRemoveAttribute = (key: string) => {
+  if (!user.value) return;
+
+  // Update local user object
+  const { [key]: removed, ...remainingAttributes } = user.value.attributes || {};
+  user.value = {
+    ...user.value,
+    attributes: remainingAttributes,
   };
 };
 
