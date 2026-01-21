@@ -5,6 +5,7 @@ import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.shared.rest.BaseEditorController;
 import de.mhus.nimbus.world.shared.world.WEntityModel;
 import de.mhus.nimbus.world.shared.world.WEntityModelService;
+import de.mhus.nimbus.world.shared.world.WorldCollection;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -113,6 +114,14 @@ public class EEntityModelController extends BaseEditorController {
         var validation = validatePagination(offset, limit);
         if (validation != null) return validation;
 
+        var pos = query == null ? -1 : query.indexOf(':');
+        if (pos > 0) {
+            var group = query.substring(0, pos).trim();
+            var wcol = WorldCollection.of(wid, group + ":dummy");
+            wid = wcol == null ? wid : wcol.worldId();
+            query = query.substring(pos + 1).trim();
+        }
+
         // Get all EntityModels for this world with query filter
         List<WEntityModel> all = entityModelService.findByWorldIdAndQuery(wid, query);
 
@@ -122,7 +131,10 @@ public class EEntityModelController extends BaseEditorController {
         List<EntityModel> publicDataList = all.stream()
                 .skip(offset)
                 .limit(limit)
-                .map(WEntityModel::getPublicData)
+                .map(e -> {
+                    e.appendWorldPrefix();
+                    return e.getPublicData();
+                })
                 .collect(Collectors.toList());
 
         log.debug("Returning {} entitymodels (total: {})", publicDataList.size(), totalCount);

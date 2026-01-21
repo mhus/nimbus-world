@@ -60,8 +60,8 @@
               {{ character.name }}
             </h3>
             <div class="space-y-2">
-              <div class="text-sm text-base-content/70 truncate" :title="character.display">
-                {{ character.display }}
+              <div class="text-sm text-base-content/70 truncate" :title="character.publicData?.title">
+                {{ character.publicData?.title || character.name }}
               </div>
               <div class="flex items-center gap-2">
                 <span class="badge badge-outline badge-sm">
@@ -136,16 +136,16 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
 import { useRegion } from '@/composables/useRegion';
-import { characterService, type Character } from '../services/CharacterService';
+import { characterService, type RCharacter } from '../services/CharacterService';
 
 const emit = defineEmits<{
-  select: [character: Character];
+  select: [character: RCharacter];
   create: [];
 }>();
 
 const { currentRegionId } = useRegion();
 
-const characters = ref<Character[]>([]);
+const characters = ref<RCharacter[]>([]);
 const loading = ref(false);
 const error = ref<string | null>(null);
 const searchQuery = ref('');
@@ -162,7 +162,7 @@ const filteredCharacters = computed(() => {
     const query = searchQuery.value.toLowerCase();
     result = result.filter(c =>
       c.name.toLowerCase().includes(query) ||
-      c.display.toLowerCase().includes(query) ||
+      (c.publicData?.title || '').toLowerCase().includes(query) ||
       c.userId.toLowerCase().includes(query)
     );
   }

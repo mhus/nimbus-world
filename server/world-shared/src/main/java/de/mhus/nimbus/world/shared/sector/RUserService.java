@@ -1,5 +1,6 @@
 package de.mhus.nimbus.world.shared.sector;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -33,6 +34,7 @@ public class RUserService {
                 .publicData(publicData)
                 .email(email)
                 .enabled(true)
+                .attributes(new HashMap<>())
                 .build();
         user.addSectorRole(SectorRoles.USER); // Standardrolle global
         user.touchCreate();

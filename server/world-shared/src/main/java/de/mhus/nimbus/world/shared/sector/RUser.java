@@ -53,7 +53,6 @@ public class RUser implements Identifiable {
 
     @CreatedDate
     private Instant createdAt;
-    @CreatedDate
     private Instant modifiedAt;
 
     @TypeScript(import_ = "PlayerUser", importPath = "./PlayerUser")
@@ -75,8 +74,7 @@ public class RUser implements Identifiable {
     @TypeScript(import_ = "Settings", importPath = "../../configs")
     private Map<String, Settings> userSettings;
 
-    @Builder.Default
-    private Map<String,String> attributes = new HashMap<>(); // Zusätzliche Attribute
+    private Map<String,String> attributes; // Zusätzliche Attribute
 
     public RUser() { this.enabled = true; }
 
@@ -222,7 +220,7 @@ public class RUser implements Identifiable {
     }
 
     /**
-     * Initialize timestamps for new chat.
+     * Initialize timestamps.
      */
     public void touchCreate() {
         createdAt = Instant.now();

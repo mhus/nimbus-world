@@ -1,5 +1,7 @@
 package de.mhus.nimbus.world.control.api;
 
+import de.mhus.nimbus.generated.configs.PlayerBackpack;
+import de.mhus.nimbus.generated.types.PlayerInfo;
 import de.mhus.nimbus.world.shared.region.RCharacter;
 import de.mhus.nimbus.world.shared.region.RCharacterService;
 import de.mhus.nimbus.world.shared.rest.BaseEditorController;
@@ -26,15 +28,26 @@ public class RCharacterController extends BaseEditorController {
     private final RCharacterService characterService;
 
     // DTOs
-    public record CharacterRequest(String userId, String name, String display, Map<String, Integer> skills) {}
+    public record CharacterRequest(
+            String userId,
+            String name,
+            String display,
+            Map<String, Integer> skills,
+            PlayerInfo publicData,
+            PlayerBackpack backpack,
+            Map<String, String> attributes
+    ) {}
     public record CharacterResponse(
             String id,
             String userId,
             String regionId,
             String name,
-            String display,
             Instant createdAt,
-            Map<String, Integer> skills
+            Instant modifiedAt,
+            PlayerInfo publicData,
+            PlayerBackpack backpack,
+            Map<String, Integer> skills,
+            Map<String, String> attributes
     ) {}
     public record SkillRequest(String skill, Integer level) {}
 
@@ -44,9 +57,12 @@ public class RCharacterController extends BaseEditorController {
                 character.getUserId(),
                 character.getRegionId(),
                 character.getName(),
-                character.getDisplay(),
                 character.getCreatedAt(),
-                character.getSkills()
+                character.getModifiedAt(),
+                character.getPublicData(),
+                character.getBackpack(),
+                character.getSkills(),
+                character.getAttributes()
         );
     }
 
@@ -142,13 +158,27 @@ public class RCharacterController extends BaseEditorController {
                     request.display()
             );
 
+            // Update publicData if provided (merge with defaults)
+            if (request.publicData() != null) {
+                created.setPublicData(request.publicData());
+            }
+
+            // Update backpack if provided (merge with defaults)
+            if (request.backpack() != null) {
+                created.setBackpack(request.backpack());
+            }
+
+            // Set attributes if provided
+            if (request.attributes() != null && !request.attributes().isEmpty()) {
+                created.setAttributes(request.attributes());
+            }
+
             // Set skills if provided
             if (request.skills() != null && !request.skills().isEmpty()) {
-                for (Map.Entry<String, Integer> entry : request.skills().entrySet()) {
-                    created.setSkill(entry.getKey(), entry.getValue());
-                }
-                characterService.updateCharater(created);
+                created.setSkills(request.skills());
             }
+
+            characterService.updateCharater(created);
 
             return ResponseEntity.created(URI.create("/control/regions/" + regionId + "/character/" + created.getId()))
                     .body(toResponse(created));
@@ -184,17 +214,32 @@ public class RCharacterController extends BaseEditorController {
         }
 
         try {
-            // Update display title
-            RCharacter updated = characterService.updateDisplay(userId, regionId, name, request.display());
+            // Load existing character
+            RCharacter updated = characterService.getCharacter(userId, regionId, name)
+                    .orElseThrow(() -> new IllegalArgumentException("Character not found"));
+
+            // Update publicData if provided
+            if (request.publicData() != null) {
+                updated.setPublicData(request.publicData());
+            }
+
+            // Update backpack if provided
+            if (request.backpack() != null) {
+                updated.setBackpack(request.backpack());
+            }
+
+            // Update attributes if provided
+            if (request.attributes() != null) {
+                updated.setAttributes(request.attributes());
+            }
 
             // Update skills if provided
             if (request.skills() != null) {
-                for (Map.Entry<String, Integer> entry : request.skills().entrySet()) {
-                    updated.setSkill(entry.getKey(), entry.getValue());
-                }
-                characterService.updateCharater(updated);
+                updated.setSkills(request.skills());
             }
 
+            // Save and return
+            characterService.updateCharater(updated);
             return ResponseEntity.ok(toResponse(updated));
         } catch (IllegalArgumentException e) {
             return notFound(e.getMessage());

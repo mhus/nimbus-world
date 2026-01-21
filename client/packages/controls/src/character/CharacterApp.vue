@@ -52,7 +52,7 @@ import { useRegion } from '@/composables/useRegion';
 import RegionSelector from './components/RegionSelector.vue';
 import CharacterList from './views/CharacterList.vue';
 import CharacterEditor from './views/CharacterEditor.vue';
-import { characterService, type Character } from './services/CharacterService';
+import { characterService, type RCharacter } from './services/CharacterService';
 
 const { currentRegionId } = useRegion();
 
@@ -65,7 +65,7 @@ const getUrlParams = () => {
   };
 };
 
-const selectedCharacter = ref<Character | 'new' | null>(null);
+const selectedCharacter = ref<RCharacter | 'new' | null>(null);
 const urlParams = getUrlParams();
 
 // Load character from URL if provided
@@ -85,7 +85,7 @@ const loadCharacterFromUrl = async () => {
   }
 };
 
-const handleCharacterSelect = (character: Character) => {
+const handleCharacterSelect = (character: RCharacter) => {
   selectedCharacter.value = character;
 };
 

@@ -74,7 +74,7 @@ export interface PlayerInfo {
   editorShortcuts?: Record<string, ShortcutDefinition>; // javaType: Map<String,ShortcutDefinition>
 
   // ============================================
-  // State-Based Values (NEW UNIFIED STRUCTURE)
+  // State-Based Values (UNIFIED STRUCTURE)
   // ============================================
 
   /**
@@ -83,97 +83,6 @@ export interface PlayerInfo {
    * (speeds, dimensions, eyeHeight, selectionRadius, etc.)
    */
   stateValues: Record<MovementStateKey, MovementStateValues>; // javaType: Map<String,MovementStateValues>
-
-  // ============================================
-  // Base Movement Speeds (blocks per second)
-  // DEPRECATED: Use stateValues instead
-  // Original unmodified values
-  // ============================================
-
-  /** Base normal walking speed */
-  baseWalkSpeed: number;
-
-  /** Base sprint/running speed */
-  baseRunSpeed: number;
-
-  /** Base swimming/underwater movement speed */
-  baseUnderwaterSpeed: number;
-
-  /** Base sneaking/crouching speed */
-  baseCrawlSpeed: number;
-
-  /** Base speed when riding a mount or vehicle */
-  baseRidingSpeed: number;
-
-  /** Base jump vertical velocity */
-  baseJumpSpeed: number;
-
-  // ============================================
-  // Effective Movement Speeds (blocks per second)
-  // Base + modifiers (power-ups, equipment, status effects)
-  // These values are used by PhysicsService
-  // ============================================
-
-  /** Effective walking speed (base + modifiers) */
-  effectiveWalkSpeed: number;
-
-  /** Effective sprint/running speed (base + modifiers) */
-  effectiveRunSpeed: number;
-
-  /** Effective swimming/underwater speed (base + modifiers) */
-  effectiveUnderwaterSpeed: number;
-
-  /** Effective sneaking/crouching speed (base + modifiers) */
-  effectiveCrawlSpeed: number;
-
-  /** Effective riding speed (base + modifiers) */
-  effectiveRidingSpeed: number;
-
-  /** Effective jump vertical velocity (base + modifiers) */
-  effectiveJumpSpeed: number;
-
-  // ============================================
-  // Player Dimensions
-  // ============================================
-
-  /** Player eye height in blocks (for camera position and raycast origin) */
-  eyeHeight: number;
-
-  // ============================================
-  // Stealth & Detection
-  // ============================================
-
-  /** Detection range for mobs when sneaking (in blocks) */
-  stealthRange: number;
-
-  /** Distance reduction for entity attention range when walking (in blocks, default: 0) */
-  distanceNotifyReductionWalk: number;
-
-  /** Distance reduction for entity attention range when crouching (in blocks, default: 0) */
-  distanceNotifyReductionCrouch: number;
-
-  // ============================================
-  // Selection & Interaction
-  // ============================================
-
-  /** Maximum selection/targeting range in blocks (for auto-select and shortcuts) */
-  selectionRadius: number;
-
-  // ============================================
-  // Camera Control
-  // ============================================
-
-  /** Base mouse sensitivity for camera rotation (on land) */
-  baseTurnSpeed: number;
-
-  /** Effective mouse sensitivity (base + modifiers, e.g., dizzy effects) */
-  effectiveTurnSpeed: number;
-
-  /** Base mouse sensitivity for camera rotation (underwater) */
-  baseUnderwaterTurnSpeed: number;
-
-  /** Effective underwater mouse sensitivity (base + modifiers) */
-  effectiveUnderwaterTurnSpeed: number;
 
   // ============================================
   // Third-Person View

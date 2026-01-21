@@ -3,6 +3,8 @@ package de.mhus.nimbus.world.shared.region;
 import de.mhus.nimbus.generated.configs.PlayerBackpack;
 import de.mhus.nimbus.generated.types.PlayerInfo;
 import de.mhus.nimbus.generated.types.RegionItemInfo; // geändert
+import de.mhus.nimbus.shared.annotations.GenerateTypeScript;
+import de.mhus.nimbus.shared.annotations.TypeScript;
 import de.mhus.nimbus.shared.persistence.ActualSchemaVersion;
 import de.mhus.nimbus.shared.types.PlayerCharacter;
 import lombok.AllArgsConstructor;
@@ -25,6 +27,7 @@ import java.util.Map;
 @Data
 @Builder
 @AllArgsConstructor
+@GenerateTypeScript("entities")
 public class RCharacter {
 
     @Id
@@ -34,26 +37,29 @@ public class RCharacter {
     private String userId;
 
     private String name;      // eindeutiger Name pro userId
-    private String display;   // Anzeige-Name
 
     @CreatedDate
     private Instant createdAt;
+    private Instant modifiedAt;
 
+    @TypeScript(import_ = "PlayerInfo", importPath = "../../types/PlayerInfo")
     private PlayerInfo publicData;
+    @TypeScript(import_ = "PlayerBackpack", importPath = "../../configs/EngineConfiguration")
     private PlayerBackpack backpack;
 
     // Skills (Skill-Name -> Level)
     private Map<String, Integer> skills;
 
+    private Map<String, String> attributes; // neu: Attribute
+
     @Indexed
     private String regionId; // neu: Region-Zuordnung
 
     public RCharacter() { }
-    public RCharacter(String userId, String regionId, String name, String display) {
+    public RCharacter(String userId, String regionId, String name) {
         this.userId = userId;
         this.regionId = regionId;
         this.name = name;
-        this.display = display;
     }
 
     public Map<String, Integer> getSkills() { if (skills == null) skills = new HashMap<>(); return skills; }
@@ -68,4 +74,23 @@ public class RCharacter {
         getSkills().put(skill, next);
         return next;
     }
+
+    /**
+     * Initialize timestamps.
+     */
+    public void touchCreate() {
+        createdAt = Instant.now();
+        touchUpdate();
+    }
+
+    /**
+     * Update modification timestamp.
+     */
+    public void touchUpdate() {
+        if (publicData != null) {
+            publicData.setPlayerId(getUserId() + ":" + getName());
+        }
+        modifiedAt = Instant.now();
+    }
+
 }

@@ -133,7 +133,7 @@ public class PlayerTeleportController {
                         target.worldId,
                         targetWorld.getPublicData() == null ? "" : targetWorld.getPublicData().getTitle(),
                         playerId.getId(),
-                        character.getDisplay()
+                        character.getPublicData().getTitle()
                 );
 
                 effectiveWorldId = instance.getWorldWithInstanceId();

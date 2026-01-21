@@ -192,7 +192,7 @@ public class AccessService {
         return CharacterInfoDto.builder()
                 .id(character.getName())
                 .name(character.getName())
-                .display(character.getDisplay())
+                .display(character.getPublicData().getTitle())
                 .userId(character.getUserId())
                 .regionId(character.getRegionId())
                 .build();
@@ -285,7 +285,7 @@ public class AccessService {
                     worldId.getId(),
                     world.getPublicData().getTitle(),
                     playerId.getId(),
-                    character.getDisplay()
+                    character.getPublicData().getTitle()
             );
 
             effectiveWorldId = instance.getWorldWithInstanceId();

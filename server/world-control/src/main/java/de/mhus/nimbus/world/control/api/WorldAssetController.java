@@ -6,6 +6,7 @@ import de.mhus.nimbus.world.shared.world.SAssetService;
 import de.mhus.nimbus.world.shared.world.SAsset;
 import de.mhus.nimbus.world.shared.world.AssetMetadata;
 import de.mhus.nimbus.world.shared.world.FolderInfo;
+import de.mhus.nimbus.world.shared.world.WorldCollection;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -76,6 +77,13 @@ public class WorldAssetController extends BaseEditorController {
         WorldId wid = WorldId.of(worldId).orElseThrow(
                 () -> new IllegalArgumentException("invalid worldId")
         );
+        var pos = query == null ? -1 : query.indexOf(':');
+        if (pos > 0) {
+            String group = query.substring(0, pos).trim();
+            WorldCollection wcol = WorldCollection.of(wid, group + ":dummy");
+            wid = wcol != null ? wcol.worldId() : wid;
+            query = query.substring(pos+1).trim();
+        }
 
         var validation = validatePagination(offset, limit);
         if (validation != null) return validation;

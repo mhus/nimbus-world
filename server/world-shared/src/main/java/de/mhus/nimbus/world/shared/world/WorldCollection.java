@@ -22,7 +22,19 @@ public record WorldCollection(TYPE type, WorldId worldId, String path) {
                 default -> TYPE.SHARED;
             };
             int pos = path.indexOf(':');
-            if (pos >= 0) path = path.substring(pos + 1);
+            if (pos >= 0) {
+                if (type == TYPE.REGION) {
+                    // could switch if needed
+                    var group = path.substring(0, pos).toLowerCase();
+                    if (group.equals("rp")) {
+                        type = TYPE.PUBLIC;
+                    } else if (!group.equals("r")) {
+                        type = TYPE.SHARED;
+                        worldId = WorldId.of(WorldId.COLLECTION_SHARED, group).get();
+                    }
+                }
+                path = path.substring(pos + 1);
+            }
             return new WorldCollection(type, worldId, path);
         }
         int pos = path.indexOf(':');
@@ -89,7 +101,7 @@ public record WorldCollection(TYPE type, WorldId worldId, String path) {
         if (worldId.startsWith("@")) {
             var parts = worldId.split(":");
             if (parts.length > 1) {
-                switch (parts[1]) {
+                switch (parts[0]) {
                     case WorldId.COLLECTION_REGION -> {
                         return "r";
                     }

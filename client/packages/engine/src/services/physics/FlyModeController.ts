@@ -12,6 +12,7 @@ import { getLogger } from '@nimbus/shared';
 import type { PhysicsEntity } from './types';
 import type { AppContext } from '../../AppContext';
 import * as PhysicsUtils from './PhysicsUtils';
+import { getStateValues } from '@nimbus/shared/types/PlayerInfo';
 
 const logger = getLogger('FlyModeController');
 
@@ -47,7 +48,9 @@ export class FlyModeController {
     // Check if player entity
     if ('playerInfo' in entity) {
       const playerInfo = (entity as any).playerInfo;
-      return playerInfo.effectiveWalkSpeed * 2.0; // Fly is faster
+      // Use fly state values
+      const flyState = getStateValues(playerInfo, 'fly');
+      return flyState.effectiveMoveSpeed;
     }
     return this.flySpeed;
   }

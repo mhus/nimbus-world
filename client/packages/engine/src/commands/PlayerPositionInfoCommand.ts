@@ -13,6 +13,7 @@ import { getLogger } from '@nimbus/shared';
 const logger = getLogger('PlayerPositionInfoCommand');
 import type { AppContext } from '../AppContext';
 import { worldToChunk } from '../utils/ChunkUtils';
+import { getStateValues } from '@nimbus/shared/types/PlayerInfo';
 
 /**
  * PlayerPositionInfo command - Shows player position and environment info
@@ -101,12 +102,19 @@ export class PlayerPositionInfoCommand extends CommandHandler {
       lines.push('Player Info:');
       lines.push(`  Player ID    : ${playerInfo.playerId}`);
       lines.push(`  Display Name : ${playerInfo.title}`);
-      lines.push(`  Walk Speed   : ${playerInfo.effectiveWalkSpeed.toFixed(2)} (base: ${playerInfo.baseWalkSpeed})`);
-      lines.push(`  Run Speed    : ${playerInfo.effectiveRunSpeed.toFixed(2)} (base: ${playerInfo.baseRunSpeed})`);
-      lines.push(`  Jump Speed   : ${playerInfo.effectiveJumpSpeed.toFixed(2)} (base: ${playerInfo.baseJumpSpeed})`);
-      lines.push(`  Eye Height   : ${playerInfo.eyeHeight.toFixed(2)}`);
-      lines.push(`  Turn Speed   : ${playerInfo.effectiveTurnSpeed.toFixed(2)} (base: ${playerInfo.baseTurnSpeed})`);
-      lines.push(`  Stealth Range: ${playerInfo.stealthRange.toFixed(2)}`);
+
+      // Show state values for common movement modes
+      const walkState = getStateValues(playerInfo, 'walk');
+      const sprintState = getStateValues(playerInfo, 'sprint');
+      const flyState = getStateValues(playerInfo, 'fly');
+
+      lines.push('  Movement States:');
+      lines.push(`    Walk   : ${walkState.effectiveMoveSpeed.toFixed(2)} m/s (jump: ${walkState.effectiveJumpSpeed.toFixed(2)})`);
+      lines.push(`    Sprint : ${sprintState.effectiveMoveSpeed.toFixed(2)} m/s (jump: ${sprintState.effectiveJumpSpeed.toFixed(2)})`);
+      lines.push(`    Fly    : ${flyState.effectiveMoveSpeed.toFixed(2)} m/s`);
+      lines.push(`  Eye Height   : ${walkState.eyeHeight.toFixed(2)}`);
+      lines.push(`  Turn Speed   : ${walkState.effectiveTurnSpeed.toFixed(4)}`);
+      lines.push(`  Selection    : ${walkState.selectionRadius.toFixed(1)} blocks`);
       lines.push('');
     }
 

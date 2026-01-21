@@ -52,7 +52,8 @@ export class ReloadConfigCommand extends CommandHandler {
       });
       logger.debug('PlayerInfo:', {
         displayName: config.playerInfo?.title,
-        baseWalkSpeed: config.playerInfo?.baseWalkSpeed,
+        walkSpeed: config.playerInfo?.stateValues?.walk?.effectiveMoveSpeed,
+        sprintSpeed: config.playerInfo?.stateValues?.sprint?.effectiveMoveSpeed,
       });
       logger.debug('Settings:', {
         name: config.settings?.name,
