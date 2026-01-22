@@ -14,9 +14,10 @@ import java.util.Map;
 
 /**
  * RoadBuilder manipulator builder.
- * Creates roads from hex grid sides to the center where they all meet.
+ * Creates roads from hex grid sides or positions to the center where they all meet.
  * Roads can be streets or trails with transitions to grass.
  * Uses sinusoidal curves for natural, slightly curved roads.
+ * Builds bridges when crossing rivers.
  * <p>
  * Parameter format in HexGrid:
  * road={
@@ -35,10 +36,10 @@ import java.util.Map;
  *       type: "street"
  *     },
  *     {
- *       side: "SW",
- *       width: 5,
+ *       position: { lx: 80, lz: 40 },
+ *       width: 4,
  *       level: 55,
- *       type: "trail"
+ *       type: "street"
  *     }
  *   ]
  * }
@@ -133,7 +134,18 @@ public class RoadBuilder extends HexGridBuilder {
         if (root.has("route") && root.get("route").isArray()) {
             for (JsonNode roadNode : root.get("route")) {
                 Road road = new Road();
-                road.setSide(parseSide(roadNode.get("side").asText()));
+
+                // Check if road has 'side' or 'position'
+                if (roadNode.has("side")) {
+                    // Start from hex grid side
+                    road.setSide(parseSide(roadNode.get("side").asText()));
+                } else if (roadNode.has("position") && roadNode.get("position").isObject()) {
+                    // Start from absolute position
+                    JsonNode posNode = roadNode.get("position");
+                    road.setPositionX(posNode.get("lx").asInt());
+                    road.setPositionZ(posNode.get("lz").asInt());
+                }
+
                 road.setWidth(roadNode.get("width").asInt());
                 road.setLevel(roadNode.get("level").asInt());
                 road.setType(roadNode.has("type") ? roadNode.get("type").asText() : "street");
@@ -174,19 +186,29 @@ public class RoadBuilder extends HexGridBuilder {
     }
 
     /**
-     * Build a road from a side to the center of the hex grid with slight curves.
+     * Build a road from a side or position to the center of the hex grid with slight curves.
      */
     private void buildRoadToCenter(WFlat flat, Road road, int centerX, int centerZ, int centerLevel) {
-        log.debug("Building road from {} to center", road.getSide());
-
         // Get curvature parameters
         int curvature = parseIntParameter(parameters, "roadCurvature", DEFAULT_CURVATURE);
         double waves = parseDoubleParameter(parameters, "roadWaves", DEFAULT_WAVES);
 
-        // Get start coordinates at the edge
-        int[] startCoords = getSideCoordinate(road.getSide(), flat.getSizeX(), flat.getSizeZ());
+        // Get start coordinates (either from side or position)
+        int[] startCoords;
+        if (road.getSide() != null) {
+            // Start from hex grid side
+            startCoords = getSideCoordinate(road.getSide(), flat.getSizeX(), flat.getSizeZ());
+            log.debug("Building road from side {} to center", road.getSide());
+        } else if (road.getPositionX() != null && road.getPositionZ() != null) {
+            // Start from absolute position
+            startCoords = new int[]{road.getPositionX(), road.getPositionZ()};
+            log.debug("Building road from position ({}, {}) to center", road.getPositionX(), road.getPositionZ());
+        } else {
+            log.warn("Road has neither side nor position defined, skipping");
+            return;
+        }
 
-        // Calculate road path from edge to center
+        // Calculate road path from start to center
         int dx = centerX - startCoords[0];
         int dz = centerZ - startCoords[1];
         double distance = Math.sqrt(dx * dx + dz * dz);
@@ -532,11 +554,14 @@ public class RoadBuilder extends HexGridBuilder {
     }
 
     /**
-     * Road definition from a side to the center.
+     * Road definition from a side or position to the center.
+     * Either side OR position (lx, lz) must be set.
      */
     @Data
     private static class Road {
-        private WHexGrid.SIDE side;
+        private WHexGrid.SIDE side;  // Optional: start from hex grid side
+        private Integer positionX;   // Optional: start from absolute position
+        private Integer positionZ;   // Optional: start from absolute position
         private int width;
         private int level;
         private String type;
