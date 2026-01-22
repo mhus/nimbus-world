@@ -68,7 +68,7 @@ public class WallBuilder extends HexGridBuilder {
     }
 
     /**
-     * Parse wall definition from JSON-like string.
+     * Parse wall definition from JSON string.
      */
     private WallDefinition parseWallDefinition(String wallParam) throws Exception {
         JsonNode root = objectMapper.readTree(wallParam);

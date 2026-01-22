@@ -72,7 +72,7 @@ public class RiverBuilder extends HexGridBuilder {
     }
 
     /**
-     * Parse river definition from JSON-like string.
+     * Parse river definition from JSON string.
      */
     private RiverDefinition parseRiverDefinition(String riverParam) throws Exception {
         JsonNode root = objectMapper.readTree(riverParam);

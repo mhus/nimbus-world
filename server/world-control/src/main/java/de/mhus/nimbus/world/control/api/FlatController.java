@@ -368,50 +368,59 @@ public class FlatController extends BaseEditorController {
 
     /**
      * Generate height map image from flat data.
-     * Blue (low) -> Green (mid) -> Red (high)
+     * Fixed palette based on oceanLevel:
+     * - Below oceanLevel: dark blue to light blue
+     * - Above oceanLevel: yellow -> green -> red
      */
     private byte[] generateHeightMapImage(WFlat flat) throws java.io.IOException {
         int width = flat.getSizeX();
         int height = flat.getSizeZ();
         byte[] levels = flat.getLevels();
+        int oceanLevel = flat.getOceanLevel();
 
-        // Find min/max for color mapping
-        int minLevel = Integer.MAX_VALUE;
-        int maxLevel = Integer.MIN_VALUE;
-        for (int i = 0; i < levels.length; i++) {
-            int level = levels[i] & 0xFF; // Convert to unsigned
-            if (level < minLevel) minLevel = level;
-            if (level > maxLevel) maxLevel = level;
-        }
-
-        int range = maxLevel - minLevel;
-        if (range == 0) range = 1;
+        // Fixed range for above ocean levels (oceanLevel to oceanLevel + 100)
+        // This ensures consistent coloring across different flats
+        int maxHeightRange = 100;
 
         // Create image
         java.awt.image.BufferedImage image = new java.awt.image.BufferedImage(
                 width, height, java.awt.image.BufferedImage.TYPE_INT_RGB);
 
-        // Draw height map
+        // Draw height map with fixed palette
         for (int z = 0; z < height; z++) {
             for (int x = 0; x < width; x++) {
                 int index = z * width + x;
                 int level = levels[index] & 0xFF;
-                float normalized = (float)(level - minLevel) / range;
 
-                // Color gradient: blue (low) -> green (mid) -> red (high)
                 int r, g, b;
-                if (normalized < 0.5f) {
-                    // Blue to green
-                    float t = normalized * 2;
-                    r = 0;
-                    g = (int)(t * 255);
-                    b = (int)((1 - t) * 255);
+
+                if (level < oceanLevel) {
+                    // Below ocean: dark blue (deep) to light blue (near ocean)
+                    // Fixed palette from 0 to oceanLevel
+                    float t = oceanLevel > 0 ? (float) level / oceanLevel : 0;
+                    // Dark blue (0, 0, 100) to light cyan (50, 150, 255)
+                    r = (int)(t * 50);
+                    g = (int)(t * 150);
+                    b = (int)(100 + t * 155);
                 } else {
-                    // Green to red
-                    float t = (normalized - 0.5f) * 2;
-                    r = (int)(t * 255);
-                    g = (int)((1 - t) * 255);
-                    b = 0;
+                    // At or above ocean: yellow -> green -> red
+                    // Fixed palette from oceanLevel to oceanLevel + maxHeightRange
+                    int heightAboveOcean = level - oceanLevel;
+                    float t = Math.min(1.0f, (float) heightAboveOcean / maxHeightRange);
+
+                    if (t < 0.5f) {
+                        // Yellow to green
+                        float tt = t * 2;
+                        r = (int)(255 - tt * 255);
+                        g = 255;
+                        b = 0;
+                    } else {
+                        // Green to red
+                        float tt = (t - 0.5f) * 2;
+                        r = (int)(tt * 255);
+                        g = (int)((1 - tt) * 255);
+                        b = 0;
+                    }
                 }
 
                 int rgb = (r << 16) | (g << 8) | b;

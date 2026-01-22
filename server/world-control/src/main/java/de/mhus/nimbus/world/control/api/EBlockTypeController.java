@@ -75,30 +75,22 @@ public class EBlockTypeController extends BaseEditorController {
             @Parameter(description = "World identifier") @PathVariable String worldId,
             @Parameter(description = "Block identifier") @PathVariable String blockId) {
 
-        // Extract ID from format "w:310" -> "310" or "310" -> "310"
-        // In DB: blockId stores only the number, blockTypeGroup stores "w"
-        if (blockId != null && blockId.contains(":")) {
-            String[] parts = blockId.split(":", 2);
-            if (parts.length == 2) {
-                blockId = parts[1];  // Use the ID part after the slash
-            }
-        }
-
         log.debug("GET blocktype: worldId={}, blockId={}", worldId, blockId);
 
         var wid = WorldId.of(worldId).orElseThrow(
                 () -> new IllegalStateException("Invalid worldId: " + worldId)
         );
+
         var validation = validateId(blockId, "blockId");
         if (validation != null) return validation;
 
         Optional<WBlockType> opt = blockTypeService.findByBlockId(wid, blockId);
         if (opt.isEmpty()) {
-            log.warn("BlockType not found: blockId={}", blockId);
+            log.warn("BlockType not found: worldId={}, blockId={}", wid, blockId);
             return notFound("blocktype not found");
         }
 
-        log.debug("Returning blocktype: blockId={}", blockId);
+        log.debug("Returning blocktype: worldId={}, blockId={}", wid, blockId);
         // Return publicData with full ID (e.g., "r:wfr" not just "wfr")
         return ResponseEntity.ok(opt.get().appendWorldPrefix().getPublicData());
     }
@@ -266,14 +258,6 @@ public class EBlockTypeController extends BaseEditorController {
             @Parameter(description = "Block identifier") @PathVariable String blockId,
             @RequestBody UpdateBlockTypeRequest request) {
 
-        // Extract ID from format "w:310" -> "310" or "310" -> "310"
-        if (blockId != null && blockId.contains(":")) {
-            String[] parts = blockId.split(":", 2);
-            if (parts.length == 2) {
-                blockId = parts[1];
-            }
-        }
-
         log.debug("UPDATE blocktype: worldId={}, blockId={}", worldId, blockId);
 
         var wid = WorldId.of(worldId).orElseThrow(
@@ -335,14 +319,6 @@ public class EBlockTypeController extends BaseEditorController {
             @Parameter(description = "World identifier") @PathVariable String worldId,
             @Parameter(description = "Block identifier") @PathVariable String blockId) {
 
-        // Extract ID from format "w:310" -> "310" or "310" -> "310"
-        if (blockId != null && blockId.contains(":")) {
-            String[] parts = blockId.split(":", 2);
-            if (parts.length == 2) {
-                blockId = parts[1];
-            }
-        }
-
         log.debug("DELETE blocktype: worldId={}, blockId={}", worldId, blockId);
 
         var wid = WorldId.of(worldId).orElseThrow(
@@ -383,20 +359,6 @@ public class EBlockTypeController extends BaseEditorController {
             @RequestBody Map<String, String> body) {
 
         String newBlockId = body.get("newBlockId");
-
-        // Extract ID from format "w:310" -> "310" or "310" -> "310"
-        if (sourceBlockId != null && sourceBlockId.contains(":")) {
-            String[] parts = sourceBlockId.split(":", 2);
-            if (parts.length == 2) {
-                sourceBlockId = parts[1];
-            }
-        }
-        if (newBlockId != null && newBlockId.contains(":")) {
-            String[] parts = newBlockId.split(":", 2);
-            if (parts.length == 2) {
-                newBlockId = parts[1];
-            }
-        }
 
         log.debug("DUPLICATE blocktype: worldId={}, sourceBlockId={}, newBlockId={}",
                   worldId, sourceBlockId, newBlockId);

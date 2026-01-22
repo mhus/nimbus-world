@@ -237,7 +237,7 @@
                     {{ heightMapPosition }}
                   </span>
                 </div>
-                <p class="text-sm text-base-content/70">Blue (low) → Green (mid) → Red (high)</p>
+                <p class="text-sm text-base-content/70">Below ocean: dark blue → light blue | Above ocean: yellow → green → red</p>
               </div>
               <div class="flex gap-2">
                 <button

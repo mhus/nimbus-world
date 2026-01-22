@@ -1025,6 +1025,146 @@ public class FlatCreateService {
     }
 
     /**
+     * Create an empty HexGrid flat without any terrain initialization.
+     * Creates a flat with all levels set to 0 (default) and no materials set.
+     * This is a completely blank HexGrid ready for terrain generation.
+     * - Positions inside the HexGrid: level 0, material 255 (NOT_SET_MUTABLE)
+     * - Positions outside the HexGrid (corners): level 0, material 0 (NOT_SET)
+     * - unknownProtected = true
+     *
+     * @param worldId World identifier
+     * @param layerName Name of the layer (for layerDataId)
+     * @param flatId Flat identifier for the new WFlat
+     * @param hexQ HexGrid Q coordinate (axial)
+     * @param hexR HexGrid R coordinate (axial)
+     * @param title Optional title for the flat
+     * @param description Optional description for the flat
+     * @return Created and persisted WFlat instance with empty HexGrid
+     * @throws IllegalArgumentException if world or layer not found
+     */
+    public WFlat createEmptyHexGridFlat(String worldId, String layerName, String flatId,
+                                        int hexQ, int hexR, String title, String description) {
+        log.info("Creating empty HexGrid flat: worldId={}, layerName={}, flatId={}, hex=({},{}), title={}, description={}",
+                worldId, layerName, flatId, hexQ, hexR, title, description);
+
+        // Load world to get hexGridSize
+        WWorld world = worldService.getByWorldId(worldId)
+                .orElseThrow(() -> new IllegalArgumentException("World not found: " + worldId));
+
+        int gridSize = world.getPublicData().getHexGridSize();
+        if (gridSize <= 0) {
+            throw new IllegalArgumentException("Invalid hexGridSize: " + gridSize);
+        }
+
+        // Load layer to get layerDataId
+        WLayer layer = layerService.findByWorldIdAndName(worldId, layerName)
+                .orElseThrow(() -> new IllegalArgumentException("Layer not found: " + layerName));
+
+        // Validate layer type
+        if (layer.getLayerType() != LayerType.GROUND) {
+            throw new IllegalArgumentException("Layer must be of type GROUND, but is: " + layer.getLayerType());
+        }
+
+        log.debug("Loaded hexGridSize={} from world", gridSize);
+
+        // Calculate hexagon center in cartesian coordinates
+        HexVector2 hexVec = HexVector2.builder().q(hexQ).r(hexR).build();
+        double[] center = HexMathUtil.hexToCartesian(hexVec, gridSize);
+        double centerX = center[0];
+        double centerZ = center[1];
+
+        // Calculate bounding box for pointy-top hexagon with 10-pixel border on each side
+        double SQRT_3 = Math.sqrt(3.0);
+        int sizeX = (int) Math.ceil(gridSize * SQRT_3 / 2.0) + 30;  // +30: +10 safety margin + 20 border (10 per side)
+        int sizeZ = gridSize + 30;  // +30: +10 safety margin + 20 border (10 per side)
+
+        // Calculate mount position (top-left corner of bounding box)
+        // Shift mount position by 10 pixels to the left and up to accommodate border
+        int mountX = (int) Math.floor(centerX - sizeX / 2.0) - 10;
+        int mountZ = (int) Math.floor(centerZ - sizeZ / 2.0) - 10;
+
+        log.info("Calculated flat parameters: sizeX={}, sizeZ={}, mount=({},{}), hexCenter=({},{})",
+                sizeX, sizeZ, mountX, mountZ, centerX, centerZ);
+
+        // Check if flat already exists and delete it (in case of retry)
+        Optional<WFlat> existingFlat = flatService.findByWorldIdAndLayerDataIdAndFlatId(
+                worldId, layer.getLayerDataId(), flatId);
+        if (existingFlat.isPresent()) {
+            log.info("Flat already exists, deleting before creation: flatId={}", flatId);
+            flatService.deleteById(existingFlat.get().getId());
+        }
+
+        // Get ocean level and block from world
+        int oceanLevel = world.getOceanLevel() == null ? 60 : world.getOceanLevel();
+        String oceanBlockId = world.getOceanBlockType() == null ? "n:o" : world.getOceanBlockType();
+
+        // Build WFlat instance
+        WFlat flat = WFlat.builder()
+                .worldId(worldId)
+                .layerDataId(layer.getLayerDataId())
+                .flatId(flatId)
+                .title(title)
+                .description(description)
+                .mountX(mountX)
+                .mountZ(mountZ)
+                .oceanLevel(oceanLevel)
+                .oceanBlockId(oceanBlockId)
+                .hexGrid(TypeUtil.hexVector2(hexQ, hexR))
+                .build();
+
+        // Initialize with size (sets all levels to 0 by default)
+        flat.initWithSize(sizeX, sizeZ);
+
+        // Calculate hex center coordinates
+        double hexCenterX = centerX;
+        double hexCenterZ = centerZ;
+
+        log.debug("Hex center in cartesian: ({}, {})", hexCenterX, hexCenterZ);
+
+        int hexCellsSet = 0;
+        int outsideCellsSet = 0;
+
+        // Process each cell in the flat
+        // Set materials: 255 (NOT_SET_MUTABLE) inside hex, 0 (NOT_SET) outside
+        for (int localX = 0; localX < sizeX; localX++) {
+            for (int localZ = 0; localZ < sizeZ; localZ++) {
+                // Calculate world coordinates
+                int worldX = mountX + localX;
+                int worldZ = mountZ + localZ;
+
+                // Adjust coordinates for hex grid check: hex is positioned 10 pixels into the flat
+                int hexCheckX = worldX + 10;
+                int hexCheckZ = worldZ + 10;
+
+                // Check if this position is inside the HexGrid
+                boolean isInHex = HexMathUtil.isPointInHex(hexCheckX, hexCheckZ, hexCenterX, hexCenterZ, gridSize);
+
+                if (isInHex) {
+                    // Position is inside HexGrid: mark with NOT_SET_MUTABLE (255) at level 0
+                    // Level is already 0 from initWithSize
+                    flat.setColumn(localX, localZ, WFlat.MATERIAL_NOT_SET_MUTABLE);
+                    hexCellsSet++;
+                } else {
+                    // Position is outside HexGrid (corner): mark with NOT_SET (0)
+                    // Level is already 0 from initWithSize
+                    flat.setColumn(localX, localZ, WFlat.MATERIAL_NOT_SET);
+                    outsideCellsSet++;
+                }
+            }
+        }
+
+        flat.setUnknownProtected(true);
+
+        // Persist to database
+        WFlat saved = flatService.create(flat);
+
+        log.info("Empty HexGrid flat creation complete: flatId={}, size={}x{}, hexCells={} (material=NOT_SET_MUTABLE/255), outsideCorners={} (material=NOT_SET/0), all levels=0, unknownProtected=true",
+                flatId, sizeX, sizeZ, hexCellsSet, outsideCellsSet);
+
+        return saved;
+    }
+
+    /**
      * Create a WFlat for a border between two HexGrid fields.
      * Calculates the border strip location and size automatically.
      *

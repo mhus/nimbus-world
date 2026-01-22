@@ -12,6 +12,7 @@
           <option value="flat-import">Import from Layer</option>
           <option value="flat-create">Create Empty with BEDROCK</option>
           <option value="flat-create-hexgrid">Create HexGrid (BEDROCK inside)</option>
+          <option value="flat-create-hexgrid-empty">Create HexGrid (Empty)</option>
           <option value="flat-import-hexgrid">Import HexGrid (from Layer)</option>
           <option value="flat-create-hexgrid-border">Create HexGrid Border</option>
         </select>
@@ -299,7 +300,7 @@ const isGridBorderType = computed(() => {
 });
 
 const isHexGridType = computed(() => {
-  return jobType.value === 'flat-create-hexgrid' || jobType.value === 'flat-import-hexgrid' || isGridBorderType.value;
+  return jobType.value === 'flat-create-hexgrid' || jobType.value === 'flat-create-hexgrid-empty' || jobType.value === 'flat-import-hexgrid' || isGridBorderType.value;
 });
 
 const isValid = computed(() => {
@@ -334,6 +335,8 @@ const getJobTypeDescription = (type: string): string => {
       return 'Create empty flat filled with BEDROCK, import border from layer';
     case 'flat-create-hexgrid':
       return 'Create flat with BEDROCK inside HexGrid area, import outside from layer';
+    case 'flat-create-hexgrid-empty':
+      return 'Create completely empty HexGrid with all levels at 0, ready for terrain generation';
     case 'flat-import-hexgrid':
       return 'Import layer data, protect areas outside HexGrid';
     case 'flat-create-hexgrid-border':

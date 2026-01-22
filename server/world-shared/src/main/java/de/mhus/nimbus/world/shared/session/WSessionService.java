@@ -246,7 +246,7 @@ public class WSessionService {
         redis.expire(k, ttl);
     }
 
-    private String key(String id) { return KEY_PREFIX + id; }
+    private String key(String id) { return KEY_PREFIX + "session:" + id; }
 
     private String randomId() {
         StringBuilder sb = new StringBuilder(ID_LENGTH);
@@ -266,7 +266,7 @@ public class WSessionService {
         if (!props.isCleanupEnabled()) return new CleanupResult("0",0);
         int deleted = 0;
         var scanOptions = org.springframework.data.redis.core.ScanOptions.scanOptions()
-            .match("wsession:*")
+            .match("wsession:session:*")
             .count(props.getCleanupScanCount())
             .build();
         boolean usedFallback = false;
@@ -285,7 +285,7 @@ public class WSessionService {
             usedFallback = true; // auf Fallback wechseln
         }
         if (usedFallback) {
-            var keys = redis.keys("wsession:*");
+            var keys = redis.keys("wsession:session:*");
             if (keys != null) {
                 for (String key : keys) {
                     if (deleted >= props.getCleanupMaxDeletes()) break;

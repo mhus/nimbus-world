@@ -72,7 +72,7 @@ public class RoadBuilder extends HexGridBuilder {
     }
 
     /**
-     * Parse road definition from JSON-like string.
+     * Parse road definition from JSON string.
      */
     private RoadDefinition parseRoadDefinition(String roadParam) throws Exception {
         JsonNode root = objectMapper.readTree(roadParam);

@@ -388,30 +388,6 @@ public class EditService {
         }
     }
 
-    /**
-     * Get marked block info (complete block data with metadata) from Redis.
-     * Returns empty if not found or parse error.
-     */
-    @Transactional(readOnly = true)
-    public Optional<Map<String, Object>> getBlockDataRegister(String worldId, String sessionId) {
-        try {
-            String key = editStateKey(sessionId);
-            Optional<String> blockInfoJsonOpt = redisService.getValue(worldId, key + "registerBlockInfo");
-
-            if (blockInfoJsonOpt.isEmpty()) {
-                return Optional.empty();
-            }
-
-            @SuppressWarnings("unchecked")
-            Map<String, Object> blockInfo = objectMapper.readValue(blockInfoJsonOpt.get(), Map.class);
-            log.debug("Register block info loaded: session={}", sessionId);
-            return Optional.of(blockInfo);
-
-        } catch (Exception e) {
-            log.warn("Failed to load register block info: session={}", sessionId, e);
-            return Optional.empty();
-        }
-    }
 
     /**
      * Get selected block coordinates (if set).
@@ -852,35 +828,25 @@ public class EditService {
     /**
      * Get marked block as Block object from Redis.
      * Returns the complete Block that was stored when the block was marked.
-     * Uses the stored markedBlockInfo, not the overlay.
+     * Uses WSessionService to retrieve BlockRegister data.
      */
     @Transactional(readOnly = true)
     public Optional<Block> getRegisterBlockData(String worldId, String sessionId) {
-        // Get marked block info from Redis (stored when block was marked)
-        Optional<Map<String, Object>> blockInfoOpt = getBlockDataRegister(worldId, sessionId);
-        if (blockInfoOpt.isEmpty()) {
+        // Get block register from WSessionService
+        Optional<BlockRegister> blockRegisterOpt = wSessionService.getBlockRegister(sessionId);
+        if (blockRegisterOpt.isEmpty()) {
             log.debug("No registered block data found: sessionId={}", sessionId);
             return Optional.empty();
         }
 
-        Map<String, Object> blockInfo = blockInfoOpt.get();
-
-        // Extract block from blockInfo
-        Object blockObj = blockInfo.get("block");
-        if (blockObj == null) {
-            log.warn("No block data in marked block info: sessionId={}", sessionId);
+        Block block = blockRegisterOpt.get().getBlock();
+        if (block == null) {
+            log.warn("No block data in block register: sessionId={}", sessionId);
             return Optional.empty();
         }
 
-        try {
-            // Convert block object to Block
-            Block block = objectMapper.convertValue(blockObj, Block.class);
-            log.debug("Retrieved marked block: blockTypeId={}", block.getBlockTypeId());
-            return Optional.of(block);
-        } catch (Exception e) {
-            log.warn("Failed to convert marked block data: sessionId={}, error={}", sessionId, e.getMessage());
-            return Optional.empty();
-        }
+        log.debug("Retrieved marked block: blockTypeId={}", block.getBlockTypeId());
+        return Optional.of(block);
     }
 
     /**

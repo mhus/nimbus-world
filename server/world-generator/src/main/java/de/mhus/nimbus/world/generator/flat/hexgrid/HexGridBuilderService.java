@@ -4,7 +4,9 @@ import de.mhus.nimbus.world.shared.world.WHexGrid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -81,6 +83,87 @@ public class HexGridBuilderService {
             log.error("Error creating builder for type: {}", manipulatorType, e);
             return Optional.empty();
         }
+    }
+
+    /**
+     * Create a pipeline of builders for a hex grid.
+     * The pipeline consists of:
+     * 1. Main builder (from g_builder parameter)
+     * 2. EdgeBlenderBuilder (always)
+     * 3. RiverBuilder (if river parameter exists)
+     * 4. RoadBuilder (if road parameter exists)
+     * 5. WallBuilder (if wall parameter exists)
+     *
+     * @param grid The hex grid to build pipeline for
+     * @return List of builders to execute in order
+     */
+    public List<HexGridBuilder> createBuilderPipeline(WHexGrid grid) {
+        List<HexGridBuilder> pipeline = new ArrayList<>();
+
+        Map<String, String> gridParams = grid.getParameters();
+        if (gridParams == null) {
+            log.warn("No parameters found on hex grid: {}", grid.getPosition());
+            return pipeline;
+        }
+
+        // Extract parameters with 'g_' prefix
+        Map<String, String> builderParams = new HashMap<>();
+        gridParams.entrySet().stream()
+                .filter(p -> p.getKey().startsWith("g_"))
+                .forEach(e -> builderParams.put(e.getKey().substring(2), e.getValue()));
+
+        // 1. Main builder (g_builder)
+        String mainBuilderType = gridParams.get("g_builder");
+        if (mainBuilderType != null && !mainBuilderType.isBlank()) {
+            Optional<HexGridBuilder> mainBuilder = createBuilder(mainBuilderType, builderParams);
+            if (mainBuilder.isPresent()) {
+                pipeline.add(mainBuilder.get());
+                log.debug("Added main builder to pipeline: {}", mainBuilderType);
+            } else {
+                log.warn("Failed to create main builder: {}", mainBuilderType);
+            }
+        } else {
+            log.warn("No g_builder parameter found on hex grid: {}", grid.getPosition());
+        }
+
+        // 2. EdgeBlenderBuilder (always, expect edge-blender: false to skip)
+        if (!gridParams.containsKey("edge-blender") || !"false".equals(gridParams.get("edge-blender"))) {
+            Optional<HexGridBuilder> edgeBlender = createManipulator("edge-blender", builderParams);
+            if (edgeBlender.isPresent()) {
+                pipeline.add(edgeBlender.get());
+                log.debug("Added EdgeBlenderBuilder to pipeline");
+            }
+        }
+
+        // 3. RiverBuilder (if river parameter exists)
+        if (gridParams.containsKey("river") && !gridParams.get("river").isBlank()) {
+            Optional<HexGridBuilder> riverBuilder = createManipulator("river", builderParams);
+            if (riverBuilder.isPresent()) {
+                pipeline.add(riverBuilder.get());
+                log.debug("Added RiverBuilder to pipeline");
+            }
+        }
+
+        // 4. RoadBuilder (if road parameter exists)
+        if (gridParams.containsKey("road") && !gridParams.get("road").isBlank()) {
+            Optional<HexGridBuilder> roadBuilder = createManipulator("road", builderParams);
+            if (roadBuilder.isPresent()) {
+                pipeline.add(roadBuilder.get());
+                log.debug("Added RoadBuilder to pipeline");
+            }
+        }
+
+        // 5. WallBuilder (if wall parameter exists)
+        if (gridParams.containsKey("wall") && !gridParams.get("wall").isBlank()) {
+            Optional<HexGridBuilder> wallBuilder = createManipulator("wall", builderParams);
+            if (wallBuilder.isPresent()) {
+                pipeline.add(wallBuilder.get());
+                log.debug("Added WallBuilder to pipeline");
+            }
+        }
+
+        log.info("Created builder pipeline with {} builders for hex grid: {}", pipeline.size(), grid.getPosition());
+        return pipeline;
     }
 
 }
