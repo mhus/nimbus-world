@@ -37,9 +37,11 @@ public class HexGridBuilderService {
 
         // Manipulator builders
         manipulatorRegistry.put("edge-blender", EdgeBlenderBuilder.class);
-        manipulatorRegistry.put("road", RoadBuilder.class);
         manipulatorRegistry.put("river", RiverBuilder.class);
+        manipulatorRegistry.put("road", RoadBuilder.class);
         manipulatorRegistry.put("wall", WallBuilder.class);
+        manipulatorRegistry.put("sidewall", SideWallBuilder.class);
+        manipulatorRegistry.put("plot", PlotBuilder.class);
     }
 
     /**
@@ -93,6 +95,8 @@ public class HexGridBuilderService {
      * 3. RiverBuilder (if river parameter exists)
      * 4. RoadBuilder (if road parameter exists)
      * 5. WallBuilder (if wall parameter exists)
+     * 6. SideWallBuilder (if sidewall parameter exists)
+     * 7. PlotBuilder (if plot parameter exists)
      *
      * @param grid The hex grid to build pipeline for
      * @return List of builders to execute in order
@@ -159,6 +163,24 @@ public class HexGridBuilderService {
             if (wallBuilder.isPresent()) {
                 pipeline.add(wallBuilder.get());
                 log.debug("Added WallBuilder to pipeline");
+            }
+        }
+
+        // 6. SideWallBuilder (if sidewall parameter exists)
+        if (gridParams.containsKey("sidewall") && !gridParams.get("sidewall").isBlank()) {
+            Optional<HexGridBuilder> sideWallBuilder = createManipulator("sidewall", builderParams);
+            if (sideWallBuilder.isPresent()) {
+                pipeline.add(sideWallBuilder.get());
+                log.debug("Added SideWallBuilder to pipeline");
+            }
+        }
+
+        // 7. PlotBuilder (if plot parameter exists)
+        if (gridParams.containsKey("plot") && !gridParams.get("plot").isBlank()) {
+            Optional<HexGridBuilder> plotBuilder = createManipulator("plot", builderParams);
+            if (plotBuilder.isPresent()) {
+                pipeline.add(plotBuilder.get());
+                log.debug("Added PlotBuilder to pipeline");
             }
         }
 

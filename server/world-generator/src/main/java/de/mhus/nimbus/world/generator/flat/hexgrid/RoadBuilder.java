@@ -21,9 +21,11 @@ import java.util.Map;
  * Parameter format in HexGrid:
  * road={
  *   center: {
- *     "dx": -40,
- *     "dz": -40,
- *     "level": 95
+ *     "lx": 130,
+ *     "lz": 130,
+ *     "level": 95,
+ *     "plazaSize": 30,
+ *     "plazaMaterial": "street"
  *   },
  *   route: [
  *     {
@@ -44,6 +46,8 @@ import java.util.Map;
  * Optional parameters:
  * - roadCurvature: Maximum lateral offset for road curves in pixels (default: 10)
  * - roadWaves: Number of sine wave cycles along the road (default: 1.5)
+ * - plazaSize: Size of plaza at center (default: 0 = no plaza)
+ * - plazaMaterial: Material for plaza (default: best material from routes, street > trail)
  */
 @Slf4j
 public class RoadBuilder extends HexGridBuilder {
@@ -59,6 +63,9 @@ public class RoadBuilder extends HexGridBuilder {
 
         log.info("Building roads for flat: {}", flat.getFlatId());
 
+        // Clear all existing bridge extra blocks before building roads
+        clearBridgeExtraBlocks(flat);
+
         // Get road parameter from hex grid
         String roadParam = hexGrid.getParameters() != null ? hexGrid.getParameters().get("road") : null;
         if (roadParam == null || roadParam.isBlank()) {
@@ -69,17 +76,24 @@ public class RoadBuilder extends HexGridBuilder {
         try {
             // Parse road configuration
             RoadConfiguration config = parseRoadConfiguration(roadParam);
-            log.debug("Parsed {} roads with center offset ({}, {})",
-                    config.getRoute().size(), config.getCenter().getDx(), config.getCenter().getDz());
 
-            // Calculate center of the flat with offset
-            int centerX = flat.getSizeX() / 2 + config.getCenter().getDx();
-            int centerZ = flat.getSizeZ() / 2 + config.getCenter().getDz();
+            // Determine center position (use absolute position or default to flat center)
+            int centerX = config.getCenter().getLx() >= 0 ? config.getCenter().getLx() : flat.getSizeX() / 2;
+            int centerZ = config.getCenter().getLz() >= 0 ? config.getCenter().getLz() : flat.getSizeZ() / 2;
             int centerLevel = config.getCenter().getLevel();
+
+            log.debug("Parsed {} roads with center at ({}, {})",
+                    config.getRoute().size(), centerX, centerZ);
 
             // Build each road from its side to the center
             for (Road road : config.getRoute()) {
                 buildRoadToCenter(flat, road, centerX, centerZ, centerLevel);
+            }
+
+            // Build plaza at center if configured
+            if (config.getCenter().getPlazaSize() > 0) {
+                String plazaMaterial = determinePlazaMaterial(config);
+                buildPlaza(flat, centerX, centerZ, centerLevel, config.getCenter().getPlazaSize(), plazaMaterial);
             }
 
             log.info("Roads completed for flat: {} roads built", config.getRoute().size());
@@ -96,17 +110,21 @@ public class RoadBuilder extends HexGridBuilder {
 
         RoadConfiguration config = new RoadConfiguration();
 
-        // Parse center (optional, defaults to 0, 0, 0)
+        // Parse center (optional, defaults to flat center)
         CenterDefinition center = new CenterDefinition();
         if (root.has("center") && root.get("center").isObject()) {
             JsonNode centerNode = root.get("center");
-            center.setDx(centerNode.has("dx") ? centerNode.get("dx").asInt() : 0);
-            center.setDz(centerNode.has("dz") ? centerNode.get("dz").asInt() : 0);
+            center.setLx(centerNode.has("lx") ? centerNode.get("lx").asInt() : -1);
+            center.setLz(centerNode.has("lz") ? centerNode.get("lz").asInt() : -1);
             center.setLevel(centerNode.has("level") ? centerNode.get("level").asInt() : 0);
+            center.setPlazaSize(centerNode.has("plazaSize") ? centerNode.get("plazaSize").asInt() : 0);
+            center.setPlazaMaterial(centerNode.has("plazaMaterial") ? centerNode.get("plazaMaterial").asText() : null);
         } else {
-            center.setDx(0);
-            center.setDz(0);
+            center.setLx(-1);  // -1 means use flat center
+            center.setLz(-1);
             center.setLevel(0);
+            center.setPlazaSize(0);
+            center.setPlazaMaterial(null);
         }
         config.setCenter(center);
 
@@ -280,6 +298,10 @@ public class RoadBuilder extends HexGridBuilder {
         // Determine material based on type
         int centerMaterial = type.equalsIgnoreCase("track") ? FlatMaterialService.TRACK : FlatMaterialService.STREET;
         int borderMaterial = type.equalsIgnoreCase("track") ? FlatMaterialService.TRACK_BORDER : FlatMaterialService.STREET_BORDER;
+        int bridgeMaterial = type.equalsIgnoreCase("track") ? FlatMaterialService.TRACK_BRIDGE : FlatMaterialService.STREET_BRIDGE;
+
+        // Get water block definition
+        String waterBlockDef = getWaterBlockDef(flat);
 
         // Draw center and edges
         int halfWidth = width / 2;
@@ -293,14 +315,173 @@ public class RoadBuilder extends HexGridBuilder {
                     continue;
                 }
 
-                // Determine material based on position relative to center
-                int material;
-                if (Math.abs(dx) <= 1 && Math.abs(dz) <= 1) {
-                    // Center of road
-                    material = centerMaterial;
+                // Check if there's water at this position
+                boolean hasWater = hasWaterAtPosition(flat, x, z, waterBlockDef);
+
+                if (hasWater) {
+                    // Build bridge: extraBlock at least 3 blocks above water level
+                    int waterLevel = getWaterLevel(flat, x, z);
+                    int bridgeLevel = Math.max(level, waterLevel + 3);
+
+                    // Set bridge as extra block
+                    String bridgeBlockDef = getBridgeBlockDef(flat, bridgeMaterial);
+                    flat.setExtraBlock(x, bridgeLevel, z, bridgeBlockDef);
                 } else {
-                    // Border/edge of road
-                    material = borderMaterial;
+                    // Normal road: set level and material
+                    // Determine material based on position relative to center
+                    int material;
+                    if (Math.abs(dx) <= 1 && Math.abs(dz) <= 1) {
+                        // Center of road
+                        material = centerMaterial;
+                    } else {
+                        // Border/edge of road
+                        material = borderMaterial;
+                    }
+
+                    // Set level and material
+                    flat.setLevel(x, z, level);
+                    flat.setColumn(x, z, material);
+                }
+            }
+        }
+    }
+
+    /**
+     * Check if there's water at the given position.
+     */
+    private boolean hasWaterAtPosition(WFlat flat, int x, int z, String waterBlockDef) {
+        if (waterBlockDef == null) {
+            return false;
+        }
+
+        // Get all extra blocks for this column
+        String[] extraBlocks = flat.getExtraBlocksForColumn(x, z);
+        if (extraBlocks == null || extraBlocks.length == 0) {
+            return false;
+        }
+
+        // Check if any extra block is water
+        for (String blockDef : extraBlocks) {
+            if (waterBlockDef.equals(blockDef)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Get the water level at the given position.
+     * Returns the highest Y coordinate where water exists.
+     */
+    private int getWaterLevel(WFlat flat, int x, int z) {
+        String waterBlockDef = getWaterBlockDef(flat);
+        if (waterBlockDef == null) {
+            return flat.getLevel(x, z);
+        }
+
+        // Search for water blocks from top to bottom
+        for (int y = 255; y >= 0; y--) {
+            String blockDef = flat.getExtraBlock(x, y, z);
+            if (waterBlockDef.equals(blockDef)) {
+                return y;
+            }
+        }
+
+        // No water found, return terrain level
+        return flat.getLevel(x, z);
+    }
+
+    /**
+     * Get water block definition from material palette.
+     * Returns the blockDef for WATER material (5).
+     */
+    private String getWaterBlockDef(WFlat flat) {
+        WFlat.MaterialDefinition waterMaterial = flat.getMaterial((byte) FlatMaterialService.WATER);
+        if (waterMaterial != null) {
+            return waterMaterial.getBlockDef();
+        }
+        // Fallback to nimbus default if no material definition found
+        return "n:w";
+    }
+
+    /**
+     * Get bridge block definition from material palette.
+     * Returns the blockDef for the specified bridge material.
+     */
+    private String getBridgeBlockDef(WFlat flat, int bridgeMaterial) {
+        WFlat.MaterialDefinition material = flat.getMaterial((byte) bridgeMaterial);
+        if (material != null) {
+            return material.getBlockDef();
+        }
+        // Fallback to stone if no material definition found
+        return "n:s";
+    }
+
+    /**
+     * Determine the material for the plaza.
+     * If plazaMaterial is specified, use it. Otherwise, use the best material from routes.
+     * street is better than trail/track.
+     */
+    private String determinePlazaMaterial(RoadConfiguration config) {
+        // If explicitly specified, use that
+        if (config.getCenter().getPlazaMaterial() != null && !config.getCenter().getPlazaMaterial().isBlank()) {
+            return config.getCenter().getPlazaMaterial();
+        }
+
+        // Otherwise, find the best material from routes
+        // street is better than trail/track
+        boolean hasStreet = false;
+        for (Road road : config.getRoute()) {
+            if ("street".equalsIgnoreCase(road.getType())) {
+                hasStreet = true;
+                break;
+            }
+        }
+
+        return hasStreet ? "street" : "track";
+    }
+
+    /**
+     * Build a plaza at the center point.
+     * Plaza is a circular area with the specified material.
+     * If water is present, the plaza is not drawn at that position.
+     */
+    private void buildPlaza(WFlat flat, int centerX, int centerZ, int level, int plazaSize, String plazaMaterial) {
+        log.debug("Building plaza at ({}, {}) with size {} and material {}", centerX, centerZ, plazaSize, plazaMaterial);
+
+        // Determine material based on type
+        int material = plazaMaterial.equalsIgnoreCase("track") ? FlatMaterialService.TRACK : FlatMaterialService.STREET;
+
+        // Get water block definition
+        String waterBlockDef = getWaterBlockDef(flat);
+
+        // Draw plaza as circle centered at centerX, centerZ
+        int radius = plazaSize / 2;
+        double radiusSquared = radius * radius;
+
+        for (int dx = -radius; dx <= radius; dx++) {
+            for (int dz = -radius; dz <= radius; dz++) {
+                // Check if point is within circle
+                double distanceSquared = dx * dx + dz * dz;
+                if (distanceSquared > radiusSquared) {
+                    continue;
+                }
+
+                int x = centerX + dx;
+                int z = centerZ + dz;
+
+                // Check bounds
+                if (x < 0 || x >= flat.getSizeX() || z < 0 || z >= flat.getSizeZ()) {
+                    continue;
+                }
+
+                // Check if there's water at this position
+                boolean hasWater = hasWaterAtPosition(flat, x, z, waterBlockDef);
+
+                // Don't draw plaza where water is present
+                if (hasWater) {
+                    continue;
                 }
 
                 // Set level and material
@@ -308,6 +489,31 @@ public class RoadBuilder extends HexGridBuilder {
                 flat.setColumn(x, z, material);
             }
         }
+
+        log.debug("Plaza completed at ({}, {})", centerX, centerZ);
+    }
+
+    /**
+     * Clear all STREET_BRIDGE and TRACK_BRIDGE extra blocks from the flat.
+     * This removes previous bridges before building new roads.
+     */
+    private void clearBridgeExtraBlocks(WFlat flat) {
+        // Get bridge block definitions from material palette
+        String streetBridgeDef = getBridgeBlockDef(flat, FlatMaterialService.STREET_BRIDGE);
+        String trackBridgeDef = getBridgeBlockDef(flat, FlatMaterialService.TRACK_BRIDGE);
+
+        if (streetBridgeDef == null && trackBridgeDef == null) {
+            log.warn("No bridge block definitions found in material palette, skipping clear");
+            return;
+        }
+
+        // Iterate through all extra blocks and remove bridge blocks
+        flat.getExtraBlocks().entrySet().removeIf(entry -> {
+            String blockDef = entry.getValue();
+            return streetBridgeDef.equals(blockDef) || trackBridgeDef.equals(blockDef);
+        });
+
+        log.debug("Cleared all bridge extra blocks");
     }
 
     @Override
@@ -337,13 +543,15 @@ public class RoadBuilder extends HexGridBuilder {
     }
 
     /**
-     * Center definition with offset and level.
+     * Center definition with absolute local position, level and optional plaza.
      */
     @Data
     private static class CenterDefinition {
-        private int dx;
-        private int dz;
+        private int lx;
+        private int lz;
         private int level;
+        private int plazaSize;
+        private String plazaMaterial;
     }
 
     /**
