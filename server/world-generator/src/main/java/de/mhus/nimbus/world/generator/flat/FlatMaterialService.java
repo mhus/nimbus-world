@@ -30,16 +30,11 @@ public class FlatMaterialService {
     public static final int DESERT_SAND = 10;
 
     public static final int STREET = 20;
-    public static final int STREET2GRASS_NORTH = 21;
-    public static final int STREET2GRASS_EAST = 22;
-    public static final int STREET2GRASS_SOUTH = 23;
-    public static final int STREET2GRASS_WEST = 24;
-    public static final int TRACK = 25;
-    public static final int TRACK2GRASS_NORTH = 26;
-    public static final int TRACK2GRASS_EAST = 27;
-    public static final int TRACK2GRASS_SOUTH = 28;
-    public static final int TRACK2GRASS_WEST = 29;
-
+    public static final int STREET_BORDER = 21;
+    public static final int STREET_BRIDGE = 22;
+    public static final int TRACK = 23;
+    public static final int TRACK_BORDER = 24;
+    public static final int TRACK_BRIDGE = 25;
 
     public static final int UNKNOWN_PROTECTED = 0;
     public static final int UNKNOWN_NOT_PROTECTED = 255;
@@ -61,15 +56,11 @@ public class FlatMaterialService {
                     INVISIBLE_SOLID, "n:3@s:default||true",
                     DESERT_SAND, "n:ds@s:default||true",
                     STREET, "n:s@s:default||false",
-                    STREET2GRASS_NORTH, "n:s@s:default||false",
-                    STREET2GRASS_EAST, "n:s@s:default||false",
-                    STREET2GRASS_SOUTH, "n:s@s:default||false",
-                    STREET2GRASS_WEST, "n:s@s:default||false",
+                    STREET_BORDER, "n:s@s:default||false",
+                    STREET_BRIDGE, "n:s@s:default||false",
                     TRACK, "n:s@s:default||false",
-                    TRACK2GRASS_NORTH, "n:s@s:default||false",
-                    TRACK2GRASS_EAST, "n:s@s:default||false",
-                    TRACK2GRASS_SOUTH, "n:s@s:default||false",
-                    TRACK2GRASS_WEST, "n:s@s:default||false"
+                    TRACK_BORDER, "n:s@s:default||false",
+                    TRACK_BRIDGE, "n:s@s:default||false"
             ),
             PALETTE_LEGACY, CastUtil.mapOf(
                     GRASS, "w:310@s:default||true",        // old world
@@ -83,15 +74,11 @@ public class FlatMaterialService {
                     INVISIBLE_SOLID, "w:3@s:default||true",
                     DESERT_SAND, "w:520@s:default||true",
                     STREET, "n:s@s:default||false",
-                    STREET2GRASS_NORTH, "w:553@s:default||false",
-                    STREET2GRASS_EAST, "w:553@s:default||false",
-                    STREET2GRASS_SOUTH, "w:553@s:default||false",
-                    STREET2GRASS_WEST, "w:553@s:default||false",
+                    STREET_BORDER, "w:553@s:default||false",
+                    STREET_BRIDGE, "w:553@s:default||false",
                     TRACK, "w:553@s:default||false",
-                    TRACK2GRASS_NORTH, "w:553@s:default||false",
-                    TRACK2GRASS_EAST, "w:553@s:default||false",
-                    TRACK2GRASS_SOUTH, "w:553@s:default||false",
-                    TRACK2GRASS_WEST, "w:553@s:default||false"
+                    TRACK_BORDER, "w:553@s:default||false",
+                    TRACK_BRIDGE, "w:553@s:default||false"
             )
     );
 

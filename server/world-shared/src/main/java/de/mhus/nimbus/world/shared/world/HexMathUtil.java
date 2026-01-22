@@ -508,8 +508,8 @@ public class HexMathUtil {
         // Rectangle (chunk) bounds
         double minX = cx * chunkSize;
         double minZ = cz * chunkSize;
-        double maxX = (cx + 1) * chunkSize;
-        double maxZ = (cz + 1) * chunkSize;
+        double maxX = (cx + 1) * chunkSize-1;
+        double maxZ = (cz + 1) * chunkSize-1;
         // For each hex, estimate overlap area by sampling points in the chunk
         int sampleStep = Math.max(1, chunkSize / 8); // sample grid granularity
         HexVector2 bestHex = hexes[0];

@@ -10,32 +10,47 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * RoadBuilder manipulator builder.
  * Creates roads from hex grid sides to the center where they all meet.
  * Roads can be streets or trails with transitions to grass.
+ * Uses sinusoidal curves for natural, slightly curved roads.
  * <p>
  * Parameter format in HexGrid:
- * road=[
- *   {
- *     side: "NE",
- *     width: 3,
- *     level: 50,
- *     type: "street"
+ * road={
+ *   center: {
+ *     "dx": -40,
+ *     "dz": -40,
+ *     "level": 95
  *   },
- *   {
- *     side: "SW",
- *     width: 5,
- *     level: 55,
- *     type: "trail"
- *   }
- * ]
+ *   route: [
+ *     {
+ *       side: "NE",
+ *       width: 3,
+ *       level: 50,
+ *       type: "street"
+ *     },
+ *     {
+ *       side: "SW",
+ *       width: 5,
+ *       level: 55,
+ *       type: "trail"
+ *     }
+ *   ]
+ * }
+ * <p>
+ * Optional parameters:
+ * - roadCurvature: Maximum lateral offset for road curves in pixels (default: 10)
+ * - roadWaves: Number of sine wave cycles along the road (default: 1.5)
  */
 @Slf4j
 public class RoadBuilder extends HexGridBuilder {
 
     private static final ObjectMapper objectMapper = new ObjectMapper();
+    private static final int DEFAULT_CURVATURE = 10;  // Default maximum lateral offset for curves
+    private static final double DEFAULT_WAVES = 1.5;  // Default number of sine wave cycles
 
     @Override
     public void buildFlat() {
@@ -52,34 +67,53 @@ public class RoadBuilder extends HexGridBuilder {
         }
 
         try {
-            // Parse road definitions
-            List<Road> roads = parseRoads(roadParam);
-            log.debug("Parsed {} roads", roads.size());
+            // Parse road configuration
+            RoadConfiguration config = parseRoadConfiguration(roadParam);
+            log.debug("Parsed {} roads with center offset ({}, {})",
+                    config.getRoute().size(), config.getCenter().getDx(), config.getCenter().getDz());
 
-            // Calculate center of the flat
-            int centerX = flat.getSizeX() / 2;
-            int centerZ = flat.getSizeZ() / 2;
+            // Calculate center of the flat with offset
+            int centerX = flat.getSizeX() / 2 + config.getCenter().getDx();
+            int centerZ = flat.getSizeZ() / 2 + config.getCenter().getDz();
+            int centerLevel = config.getCenter().getLevel();
 
             // Build each road from its side to the center
-            for (Road road : roads) {
-                buildRoadToCenter(flat, road, centerX, centerZ);
+            for (Road road : config.getRoute()) {
+                buildRoadToCenter(flat, road, centerX, centerZ, centerLevel);
             }
 
-            log.info("Roads completed for flat: {} roads built", roads.size());
+            log.info("Roads completed for flat: {} roads built", config.getRoute().size());
         } catch (Exception e) {
             log.error("Failed to build roads for flat: {}", flat.getFlatId(), e);
         }
     }
 
     /**
-     * Parse road definitions from JSON string.
+     * Parse road configuration from JSON string.
      */
-    private List<Road> parseRoads(String roadParam) throws Exception {
+    private RoadConfiguration parseRoadConfiguration(String roadParam) throws Exception {
         JsonNode root = objectMapper.readTree(roadParam);
-        List<Road> roads = new ArrayList<>();
 
-        if (root.isArray()) {
-            for (JsonNode roadNode : root) {
+        RoadConfiguration config = new RoadConfiguration();
+
+        // Parse center (optional, defaults to 0, 0, 0)
+        CenterDefinition center = new CenterDefinition();
+        if (root.has("center") && root.get("center").isObject()) {
+            JsonNode centerNode = root.get("center");
+            center.setDx(centerNode.has("dx") ? centerNode.get("dx").asInt() : 0);
+            center.setDz(centerNode.has("dz") ? centerNode.get("dz").asInt() : 0);
+            center.setLevel(centerNode.has("level") ? centerNode.get("level").asInt() : 0);
+        } else {
+            center.setDx(0);
+            center.setDz(0);
+            center.setLevel(0);
+        }
+        config.setCenter(center);
+
+        // Parse route array
+        List<Road> roads = new ArrayList<>();
+        if (root.has("route") && root.get("route").isArray()) {
+            for (JsonNode roadNode : root.get("route")) {
                 Road road = new Road();
                 road.setSide(parseSide(roadNode.get("side").asText()));
                 road.setWidth(roadNode.get("width").asInt());
@@ -88,8 +122,9 @@ public class RoadBuilder extends HexGridBuilder {
                 roads.add(road);
             }
         }
+        config.setRoute(roads);
 
-        return roads;
+        return config;
     }
 
     /**
@@ -121,10 +156,14 @@ public class RoadBuilder extends HexGridBuilder {
     }
 
     /**
-     * Build a road from a side to the center of the hex grid.
+     * Build a road from a side to the center of the hex grid with slight curves.
      */
-    private void buildRoadToCenter(WFlat flat, Road road, int centerX, int centerZ) {
+    private void buildRoadToCenter(WFlat flat, Road road, int centerX, int centerZ, int centerLevel) {
         log.debug("Building road from {} to center", road.getSide());
+
+        // Get curvature parameters
+        int curvature = parseIntParameter(parameters, "roadCurvature", DEFAULT_CURVATURE);
+        double waves = parseDoubleParameter(parameters, "roadWaves", DEFAULT_WAVES);
 
         // Get start coordinates at the edge
         int[] startCoords = getSideCoordinate(road.getSide(), flat.getSizeX(), flat.getSizeZ());
@@ -135,20 +174,79 @@ public class RoadBuilder extends HexGridBuilder {
         double distance = Math.sqrt(dx * dx + dz * dz);
         int steps = (int) Math.ceil(distance);
 
-        // Draw road along the path from edge to center
+        // Calculate perpendicular direction for lateral offset
+        double[] perpDir = calculatePerpendicularDirection(dx, dz);
+
+        // Determine start and end levels
+        int startLevel = road.getLevel();
+        int endLevel = centerLevel > 0 ? centerLevel : startLevel;
+
+        // Draw road along the curved path from edge to center
         for (int step = 0; step <= steps; step++) {
             double t = steps > 0 ? (double) step / steps : 0.0;
 
-            // Interpolate position
-            int x = (int) (startCoords[0] + t * dx);
-            int z = (int) (startCoords[1] + t * dz);
+            // Base position (straight line)
+            double baseX = startCoords[0] + t * dx;
+            double baseZ = startCoords[1] + t * dz;
 
-            // Width stays constant (no interpolation needed)
+            // Calculate lateral offset using sine wave
+            // Sine creates smooth, natural curves
+            double sineValue = Math.sin(t * Math.PI * 2.0 * waves);
+            double lateralOffset = sineValue * curvature;
+
+            // Apply lateral offset perpendicular to road direction
+            int x = (int) (baseX + lateralOffset * perpDir[0]);
+            int z = (int) (baseZ + lateralOffset * perpDir[1]);
+
+            // Interpolate width and level from start to center
             int width = road.getWidth();
-            int level = road.getLevel();
+            int level = (int) (startLevel + t * (endLevel - startLevel));
 
             // Draw road segment
             drawRoadSegment(flat, x, z, width, level, road.getType());
+        }
+    }
+
+    /**
+     * Calculate perpendicular direction vector (normalized).
+     * Returns a unit vector perpendicular to the direction (dx, dz).
+     */
+    private double[] calculatePerpendicularDirection(int dx, int dz) {
+        // Perpendicular vector is (-dz, dx)
+        double length = Math.sqrt(dx * dx + dz * dz);
+        if (length == 0) {
+            return new double[]{0, 0};
+        }
+        return new double[]{-dz / length, dx / length};
+    }
+
+    /**
+     * Parse integer parameter with default value.
+     */
+    private int parseIntParameter(Map<String, String> parameters, String name, int defaultValue) {
+        if (parameters == null || !parameters.containsKey(name)) {
+            return defaultValue;
+        }
+        try {
+            return Integer.parseInt(parameters.get(name));
+        } catch (NumberFormatException e) {
+            log.warn("Invalid int parameter '{}': {}, using default: {}", name, parameters.get(name), defaultValue);
+            return defaultValue;
+        }
+    }
+
+    /**
+     * Parse double parameter with default value.
+     */
+    private double parseDoubleParameter(Map<String, String> parameters, String name, double defaultValue) {
+        if (parameters == null || !parameters.containsKey(name)) {
+            return defaultValue;
+        }
+        try {
+            return Double.parseDouble(parameters.get(name));
+        } catch (NumberFormatException e) {
+            log.warn("Invalid double parameter '{}': {}, using default: {}", name, parameters.get(name), defaultValue);
+            return defaultValue;
         }
     }
 
@@ -181,12 +279,9 @@ public class RoadBuilder extends HexGridBuilder {
                                   String type) {
         // Determine material based on type
         int centerMaterial = type.equalsIgnoreCase("track") ? FlatMaterialService.TRACK : FlatMaterialService.STREET;
-        int transitionNorth = type.equalsIgnoreCase("track") ? FlatMaterialService.TRACK2GRASS_NORTH : FlatMaterialService.STREET2GRASS_NORTH;
-        int transitionEast = type.equalsIgnoreCase("track") ? FlatMaterialService.TRACK2GRASS_EAST : FlatMaterialService.STREET2GRASS_EAST;
-        int transitionSouth = type.equalsIgnoreCase("track") ? FlatMaterialService.TRACK2GRASS_SOUTH : FlatMaterialService.STREET2GRASS_SOUTH;
-        int transitionWest = type.equalsIgnoreCase("track") ? FlatMaterialService.TRACK2GRASS_WEST : FlatMaterialService.STREET2GRASS_WEST;
+        int borderMaterial = type.equalsIgnoreCase("track") ? FlatMaterialService.TRACK_BORDER : FlatMaterialService.STREET_BORDER;
 
-        // Draw center and edges with transitions
+        // Draw center and edges
         int halfWidth = width / 2;
         for (int dx = -halfWidth; dx <= halfWidth; dx++) {
             for (int dz = -halfWidth; dz <= halfWidth; dz++) {
@@ -203,12 +298,9 @@ public class RoadBuilder extends HexGridBuilder {
                 if (Math.abs(dx) <= 1 && Math.abs(dz) <= 1) {
                     // Center of road
                     material = centerMaterial;
-                } else if (Math.abs(dx) > Math.abs(dz)) {
-                    // Transition east/west
-                    material = dx > 0 ? transitionEast : transitionWest;
                 } else {
-                    // Transition north/south
-                    material = dz > 0 ? transitionSouth : transitionNorth;
+                    // Border/edge of road
+                    material = borderMaterial;
                 }
 
                 // Set level and material
@@ -242,5 +334,24 @@ public class RoadBuilder extends HexGridBuilder {
         private int width;
         private int level;
         private String type;
+    }
+
+    /**
+     * Center definition with offset and level.
+     */
+    @Data
+    private static class CenterDefinition {
+        private int dx;
+        private int dz;
+        private int level;
+    }
+
+    /**
+     * Road configuration with center and routes.
+     */
+    @Data
+    private static class RoadConfiguration {
+        private CenterDefinition center;
+        private List<Road> route;
     }
 }
