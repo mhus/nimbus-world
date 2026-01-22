@@ -751,10 +751,10 @@ public class FlatExportService {
             lowerOffsets = new WFlat.OffsetDefinition(-0.1, -0.2, -0.3, -0.4);
         }
 
-        // Get neighbor levels (use myLevel if out of bounds)
-        int neighbor1Level = getNeighborLevel(flat, localX + dx1, localZ + dz1, myLevel);
-        int neighbor2Level = getNeighborLevel(flat, localX + dx2, localZ + dz2, myLevel);
-        int neighbor3Level = getNeighborLevel(flat, localX + dx3, localZ + dz3, myLevel);
+        // Get effective neighbor levels (including extraBlocks)
+        int neighbor1Level = getEffectiveNeighborLevel(flat, localX + dx1, localZ + dz1, myLevel);
+        int neighbor2Level = getEffectiveNeighborLevel(flat, localX + dx2, localZ + dz2, myLevel);
+        int neighbor3Level = getEffectiveNeighborLevel(flat, localX + dx3, localZ + dz3, myLevel);
 
         int diff1 = neighbor1Level - myLevel;
         int diff2 = neighbor2Level - myLevel;
@@ -842,6 +842,44 @@ public class FlatExportService {
             return myLevel;
         }
         return flat.getLevel(x, z);
+    }
+
+    /**
+     * Get effective neighbor level from flat, considering both base level and extraBlocks.
+     * Only considers extraBlocks in the range of myLevel-1 to myLevel+1.
+     * ExtraBlocks outside this range are not relevant for offset calculation.
+     *
+     * @param flat The flat terrain data
+     * @param x Column X coordinate
+     * @param z Column Z coordinate
+     * @param myLevel Current block's level (used to determine relevant range)
+     * @return Effective highest level within relevant range (myLevel-1 to myLevel+1)
+     */
+    private int getEffectiveNeighborLevel(WFlat flat, int x, int z, int myLevel) {
+        if (x < 0 || z < 0 || x >= flat.getSizeX() || z >= flat.getSizeZ()) {
+            return myLevel;
+        }
+
+        int baseLevel = flat.getLevel(x, z);
+
+        // Check if there are extraBlocks in the relevant range (myLevel-1 to myLevel+1)
+        String[] extraBlocks = flat.getExtraBlocksForColumn(x, z);
+        if (extraBlocks == null) {
+            return baseLevel;
+        }
+
+        // Find highest Y where an extraBlock is defined within the relevant range
+        int highestRelevantY = baseLevel;
+        int minY = Math.max(0, myLevel - 1);
+        int maxY = Math.min(255, myLevel + 1);
+
+        for (int y = maxY; y >= minY; y--) {
+            if (extraBlocks[y] != null && y > highestRelevantY) {
+                highestRelevantY = y;
+            }
+        }
+
+        return highestRelevantY;
     }
 
 //    /**
