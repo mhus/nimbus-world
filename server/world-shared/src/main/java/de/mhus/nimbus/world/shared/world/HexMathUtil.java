@@ -147,6 +147,14 @@ public class HexMathUtil {
         }
     }
 
+    /**
+     * Converts world/flat coordinates to hex axial coordinates (q, r).
+     * Uses proper hex coordinate conversion with rounding.
+     *
+     * @param flatPos The world position (x, z)
+     * @param hexGridSize The diameter of the hexagon in blocks (size, not radius)
+     * @return HexVector2 with q and r coordinates
+     */
     public static HexVector2 flatToHex(Vector2Int flatPos, int hexGridSize) {
         int x = flatPos.getX();
         int z = flatPos.getZ();
@@ -310,7 +318,7 @@ public class HexMathUtil {
     /**
      * Calculates the world coordinate bounds of all hexagons within a specified range from a center hex.
      *
-     * @param gridSize  The diameter of each hexagon in blocks (consistent with other methods)
+     * @param gridSize  The diameter of each hexagon in blocks (size, not radius)
      * @param centerHex The center hex coordinates
      * @param range     The range (in hexes) from the center to include
      * @return Array of Vector2Pair representing the world coordinates of the hex corners
@@ -352,15 +360,17 @@ public class HexMathUtil {
     }
 
     public static HexVector2 getHexForChunk(int hexSize, int chunkSize, int cx, int cz) {
-        // Berechne Weltkoordinaten des Chunk-Ursprungs
-        int worldX = cx * chunkSize;
-        int worldZ = cz * chunkSize;
-        // Umrechnung in Hex-Koordinaten (axial)
-        // Annahme: HexMathUtil bietet eine Methode worldToHex(int x, int z, int hexSize)
-        // Falls nicht, einfache Umrechnung: q = worldX / hexSize, r = worldZ / hexSize
-        int q = worldX / hexSize;
-        int r = worldZ / hexSize;
-        return HexVector2.builder().q(q).r(r).build();
+        // Berechne Weltkoordinaten des Chunk-Zentrums für genauere Hex-Zuordnung
+        int worldX = cx * chunkSize + chunkSize / 2;
+        int worldZ = cz * chunkSize + chunkSize / 2;
+        // Use flatToHex for proper axial coordinate conversion
+        return flatToHex(
+                de.mhus.nimbus.generated.types.Vector2Int.builder()
+                        .x(worldX)
+                        .z(worldZ)
+                        .build(),
+                hexSize
+        );
     }
 
     public static HexVector2[] getHexesForChunk(WWorld world, int cx, int cz) {
@@ -380,12 +390,18 @@ public class HexMathUtil {
         java.util.Set<String> uniqueHexes = new java.util.HashSet<>();
         java.util.List<HexVector2> result = new java.util.ArrayList<>();
         for (int[] ecke : ecken) {
-            int q = ecke[0] / hexSize;
-            int r = ecke[1] / hexSize;
-            String key = q + "," + r;
+            // Use flatToHex for proper axial coordinate conversion
+            HexVector2 hex = flatToHex(
+                    de.mhus.nimbus.generated.types.Vector2Int.builder()
+                            .x(ecke[0])
+                            .z(ecke[1])
+                            .build(),
+                    hexSize
+            );
+            String key = hex.getQ() + "," + hex.getR();
             if (!uniqueHexes.contains(key)) {
                 uniqueHexes.add(key);
-                result.add(HexVector2.builder().q(q).r(r).build());
+                result.add(hex);
                 if (result.size() == 3) break; // maximal 3 Hexfelder
             }
         }
@@ -407,12 +423,18 @@ public class HexMathUtil {
         java.util.Set<String> uniqueHexes = new java.util.HashSet<>();
         java.util.List<HexVector2> result = new java.util.ArrayList<>();
         for (int[] ecke : ecken) {
-            int q = ecke[0] / hexSize;
-            int r = ecke[1] / hexSize;
-            String key = q + "," + r;
+            // Use flatToHex for proper axial coordinate conversion
+            HexVector2 hex = flatToHex(
+                    de.mhus.nimbus.generated.types.Vector2Int.builder()
+                            .x(ecke[0])
+                            .z(ecke[1])
+                            .build(),
+                    hexSize
+            );
+            String key = hex.getQ() + "," + hex.getR();
             if (!uniqueHexes.contains(key)) {
                 uniqueHexes.add(key);
-                result.add(HexVector2.builder().q(q).r(r).build());
+                result.add(hex);
                 if (result.size() == 3) break; // maximal 3 Hexfelder
             }
         }
@@ -442,7 +464,8 @@ public class HexMathUtil {
             {maxX, maxZ},
             {minX, maxZ}
         };
-        HexVector2 hex = HexVector2.builder().q((int)(minX / hexSize)).r((int)(minZ / hexSize)).build();
+        // Use getDominantHexForChunk for correct hex coordinate calculation
+        HexVector2 hex = getDominantHexForChunk(world, cx, cz);
         double[] hexCenter = hexToCartesian(hex, hexSize);
         double radius = hexSize / 2.0;
         double[][] hexCorners = new double[6][2];

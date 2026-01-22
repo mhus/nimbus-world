@@ -25,7 +25,9 @@ import java.util.List;
  *   distance: 5,
  *   minimum: 3,
  *   type: 3,
- *   material: 3
+ *   material: 3,
+ *   respectRoad: false,
+ *   respectRiver: false
  * }
  */
 @Slf4j
@@ -53,9 +55,10 @@ public class SideWallBuilder extends HexGridBuilder {
         try {
             // Parse wall definition
             WallDefinition wallDef = parseWallDefinition(wallParam);
-            log.debug("Parsed sidewall definition: sides={}, height={}, level={}, width={}, distance={}, minimum={}, type={}, material={}",
+            log.debug("Parsed sidewall definition: sides={}, height={}, level={}, width={}, distance={}, minimum={}, type={}, material={}, respectRoad={}, respectRiver={}",
                     wallDef.getSides(), wallDef.getHeight(), wallDef.getLevel(), wallDef.getWidth(),
-                    wallDef.getDistance(), wallDef.getMinimum(), wallDef.getType(), wallDef.getMaterial());
+                    wallDef.getDistance(), wallDef.getMinimum(), wallDef.getType(), wallDef.getMaterial(),
+                    wallDef.isRespectRoad(), wallDef.isRespectRiver());
 
             // Build wall for each specified side
             for (WHexGrid.SIDE side : wallDef.getSides()) {
@@ -93,6 +96,8 @@ public class SideWallBuilder extends HexGridBuilder {
         wallDef.setMinimum(root.has("minimum") ? root.get("minimum").asInt() : 0);
         wallDef.setType(root.has("type") ? root.get("type").asInt() : DEFAULT_TYPE);
         wallDef.setMaterial(root.has("material") ? root.get("material").asInt() : DEFAULT_TYPE);
+        wallDef.setRespectRoad(root.has("respectRoad") && root.get("respectRoad").asBoolean());
+        wallDef.setRespectRiver(root.has("respectRiver") && root.get("respectRiver").asBoolean());
 
         return wallDef;
     }
@@ -212,14 +217,14 @@ public class SideWallBuilder extends HexGridBuilder {
     /**
      * Build a wall segment at the given position with the given width.
      * Builds perpendicular to the wall direction.
-     * Wall is interrupted when it hits a street/trail or river.
+     * Wall is interrupted when it hits a street/trail or river (if respectRoad/respectRiver is true).
      */
     private void buildWallSegment(WFlat flat, int centerX, int centerZ, int width,
                                    WallDefinition wallDef, int[] inwardDir) {
         int halfWidth = width / 2;
 
-        // Get water block definition
-        String waterBlockDef = getWaterBlockDef(flat);
+        // Get water block definition if needed
+        String waterBlockDef = wallDef.isRespectRiver() ? getWaterBlockDef(flat) : null;
 
         // Calculate perpendicular direction for width
         // If wall goes north-south, width is east-west, and vice versa
@@ -235,17 +240,21 @@ public class SideWallBuilder extends HexGridBuilder {
                 continue;
             }
 
-            // Check if wall hits a street or trail - if so, interrupt wall
-            int currentMaterial = flat.getColumn(x, z);
-            if (isStreetOrTrailMaterial(currentMaterial)) {
-                log.debug("Wall interrupted at ({}, {}) - street/trail present", x, z);
-                continue;
+            // Check if wall should respect roads and hits a street or trail
+            if (wallDef.isRespectRoad()) {
+                int currentMaterial = flat.getColumn(x, z);
+                if (isStreetOrTrailMaterial(currentMaterial)) {
+                    log.debug("Wall interrupted at ({}, {}) - street/trail present", x, z);
+                    continue;
+                }
             }
 
-            // Check if wall hits a river - if so, interrupt wall
-            if (hasWaterAtPosition(flat, x, z, waterBlockDef)) {
-                log.debug("Wall interrupted at ({}, {}) - river present", x, z);
-                continue;
+            // Check if wall should respect rivers and hits a river
+            if (wallDef.isRespectRiver()) {
+                if (hasWaterAtPosition(flat, x, z, waterBlockDef)) {
+                    log.debug("Wall interrupted at ({}, {}) - river present", x, z);
+                    continue;
+                }
             }
 
             // Get current terrain level
@@ -255,11 +264,9 @@ public class SideWallBuilder extends HexGridBuilder {
             int wallBaseLevel = wallDef.getLevel();
 
             // Apply minimum height constraint
-            // Wall should be at least 'minimum' blocks above surrounding terrain
+            // Wall should be at least 'minimum' blocks above current terrain
             if (wallDef.getMinimum() > 0) {
-                // Check surrounding non-wall terrain
-                int surroundingLevel = getSurroundingTerrainLevel(flat, x, z, 3);
-                int minimumWallBase = surroundingLevel + wallDef.getMinimum();
+                int minimumWallBase = currentLevel + wallDef.getMinimum();
                 wallBaseLevel = Math.max(wallBaseLevel, minimumWallBase);
             }
 
@@ -324,36 +331,6 @@ public class SideWallBuilder extends HexGridBuilder {
         return "n:w";
     }
 
-    /**
-     * Get average level of surrounding terrain (excluding current position).
-     */
-    private int getSurroundingTerrainLevel(WFlat flat, int x, int z, int radius) {
-        int sum = 0;
-        int count = 0;
-
-        for (int dx = -radius; dx <= radius; dx++) {
-            for (int dz = -radius; dz <= radius; dz++) {
-                // Skip center
-                if (dx == 0 && dz == 0) {
-                    continue;
-                }
-
-                int checkX = x + dx;
-                int checkZ = z + dz;
-
-                // Check bounds
-                if (checkX < 0 || checkX >= flat.getSizeX() || checkZ < 0 || checkZ >= flat.getSizeZ()) {
-                    continue;
-                }
-
-                sum += flat.getLevel(checkX, checkZ);
-                count++;
-            }
-        }
-
-        return count > 0 ? sum / count : flat.getLevel(x, z);
-    }
-
     @Override
     protected int getDefaultLandOffset() {
         return 0;
@@ -382,5 +359,7 @@ public class SideWallBuilder extends HexGridBuilder {
         private int minimum;
         private int type;
         private int material;
+        private boolean respectRoad;
+        private boolean respectRiver;
     }
 }

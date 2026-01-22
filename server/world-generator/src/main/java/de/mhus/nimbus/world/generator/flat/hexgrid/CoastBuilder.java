@@ -1,22 +1,24 @@
 package de.mhus.nimbus.world.generator.flat.hexgrid;
 
+import de.mhus.nimbus.shared.utils.FastNoiseLite;
 import de.mhus.nimbus.world.generator.flat.FlatMaterialService;
-import de.mhus.nimbus.world.generator.flat.HillyTerrainManipulator;
 import de.mhus.nimbus.world.shared.generator.WFlat;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * Coast scenario builder.
+ * Creates flat ocean floor (1 below oceanLevel) and coastlines with sand/grass.
+ * Coastlines are irregular using noise for natural appearance.
+ */
 @Slf4j
 public class CoastBuilder extends HexGridBuilder {
 
-    // Coast transition parameters
-    private static final int COAST_WIDTH = 15;  // Width of coastal transition zone
-    private static final int SAND_WIDTH = 5;    // Width of sand beach
+    private static final int COAST_WIDTH = 20;  // Width of coastal zone
 
     @Override
     public void buildFlat() {
@@ -25,102 +27,118 @@ public class CoastBuilder extends HexGridBuilder {
         log.info("Building coast scenario for flat: {}", flat.getFlatId());
 
         int oceanLevel = flat.getOceanLevel();
-
-        // Step 1: Create hilly terrain base using HillyTerrainManipulator
-        int hillHeight = getLandOffset();
-        int baseHeight = getHexGridLevel();
-
         long seed = parseLongParameter(parameters, "seed", System.currentTimeMillis());
 
-        log.debug("Coast terrain generation: baseHeight={}, hillHeight={}, oceanLevel={}, seed={}",
-                baseHeight, hillHeight, oceanLevel, seed);
+        log.debug("Coast generation: oceanLevel={}, seed={}", oceanLevel, seed);
 
-        // Build parameters for HillyTerrainManipulator
-        Map<String, String> hillyParams = new HashMap<>();
-        hillyParams.put(HillyTerrainManipulator.PARAM_BASE_HEIGHT, String.valueOf(baseHeight));
-        hillyParams.put(HillyTerrainManipulator.PARAM_HILL_HEIGHT, String.valueOf(hillHeight));
-        hillyParams.put(HillyTerrainManipulator.PARAM_SEED, String.valueOf(seed));
+        // Step 1: Fill entire flat with flat ocean (1 below oceanLevel)
+        fillWithOcean(flat, oceanLevel);
 
-        // Use HillyTerrainManipulator to generate base terrain
-        context.getManipulatorService().executeManipulator(
-                HillyTerrainManipulator.NAME,
-                flat,
-                0, 0,
-                flat.getSizeX(), flat.getSizeZ(),
-                hillyParams
-        );
+        // Step 2: Determine which sides are NOT ocean/islands (these are land sides)
+        Set<WHexGrid.SIDE> landSides = determineLandSides();
 
-        // Step 2: Determine which sides have ocean neighbors
-        Set<WHexGrid.SIDE> oceanSides = determineOceanSides();
+        log.debug("Land sides detected: {}", landSides);
 
-        log.debug("Ocean sides detected: {}", oceanSides);
-
-        // Step 3: Create coastline towards ocean sides
-        if (!oceanSides.isEmpty()) {
-            createCoastline(flat, oceanSides, oceanLevel);
+        // Step 3: Create coastlines along land sides with noise
+        if (!landSides.isEmpty()) {
+            createCoastlines(flat, landSides, oceanLevel, seed);
         }
 
-        // Step 4: Set materials (SAND at coastline, GRASS inland)
-        setCoastMaterials(flat, oceanSides, oceanLevel);
-
-        log.info("Coast scenario completed: oceanSides={}, baseHeight={}, hillHeight={}",
-                oceanSides, baseHeight, hillHeight);
+        log.info("Coast scenario completed: landSides={}", landSides);
     }
 
     /**
-     * Determine which neighboring grids are ocean.
+     * Fill entire flat with flat ocean floor (1 below oceanLevel).
      */
-    private Set<WHexGrid.SIDE> determineOceanSides() {
-        Set<WHexGrid.SIDE> oceanSides = new HashSet<>();
-
-        for (WHexGrid.SIDE direction : WHexGrid.SIDE.values()) {
-            // Check if neighbor has an OceanBuilder
-            context.getBuilderFor(direction).ifPresent(builder -> {
-                if (builder instanceof OceanBuilder || builder instanceof IslandBuilder) {
-                    oceanSides.add(direction);
-                }
-            });
-        }
-
-        return oceanSides;
-    }
-
-    /**
-     * Create coastline that slopes down to ocean level towards ocean sides.
-     */
-    private void createCoastline(WFlat flat, Set<WHexGrid.SIDE> oceanSides, int oceanLevel) {
+    private void fillWithOcean(WFlat flat, int oceanLevel) {
+        int oceanFloorLevel = oceanLevel - 1;
         int sizeX = flat.getSizeX();
         int sizeZ = flat.getSizeZ();
 
         for (int z = 0; z < sizeZ; z++) {
             for (int x = 0; x < sizeX; x++) {
-                // Calculate distance to each ocean side
+                flat.setLevel(x, z, oceanFloorLevel);
+                flat.setColumn(x, z, FlatMaterialService.SAND);
+            }
+        }
+
+        log.debug("Filled flat with ocean floor at level {}", oceanFloorLevel);
+    }
+
+    /**
+     * Determine which sides are NOT ocean or islands (= land sides).
+     * These are the sides where we create coastlines.
+     */
+    private Set<WHexGrid.SIDE> determineLandSides() {
+        Set<WHexGrid.SIDE> landSides = new HashSet<>();
+
+        for (WHexGrid.SIDE direction : WHexGrid.SIDE.values()) {
+            // Check if neighbor is NOT ocean or island
+            boolean isLand = context.getBuilderFor(direction)
+                    .map(builder -> !(builder instanceof OceanBuilder) && !(builder instanceof IslandBuilder))
+                    .orElse(false);
+
+            if (isLand) {
+                landSides.add(direction);
+            }
+        }
+
+        return landSides;
+    }
+
+    /**
+     * Create irregular coastlines with sand and grass along land sides.
+     * Uses noise for natural, wavy coastline.
+     */
+    private void createCoastlines(WFlat flat, Set<WHexGrid.SIDE> landSides, int oceanLevel, long seed) {
+        int sizeX = flat.getSizeX();
+        int sizeZ = flat.getSizeZ();
+
+        // Initialize noise generator for irregular coastline
+        FastNoiseLite noise = new FastNoiseLite((int) seed);
+        noise.SetNoiseType(FastNoiseLite.NoiseType.OpenSimplex2);
+        noise.SetFrequency(0.1f);  // Frequency for coastline variation
+
+        for (int z = 0; z < sizeZ; z++) {
+            for (int x = 0; x < sizeX; x++) {
+                // Calculate distance to nearest land side
                 double minDistance = Double.MAX_VALUE;
 
-                for (WHexGrid.SIDE oceanSide : oceanSides) {
-                    double distance = calculateDistanceToSide(x, z, sizeX, sizeZ, oceanSide);
+                for (WHexGrid.SIDE landSide : landSides) {
+                    double distance = calculateDistanceToSide(x, z, sizeX, sizeZ, landSide);
                     minDistance = Math.min(minDistance, distance);
                 }
 
-                // If within coast transition zone, slope down to ocean level
+                // If within coast zone, create coastline
                 if (minDistance < COAST_WIDTH) {
-                    int currentLevel = flat.getLevel(x, z);
+                    // Add noise to distance for irregular coastline
+                    float noiseValue = noise.GetNoise((float) x, (float) z);
+                    double noisyDistance = minDistance + noiseValue * 5;  // ±5 pixels variation
 
-                    // Calculate slope factor (1.0 at land edge, 0.0 at ocean edge)
-                    double slopeFactor = minDistance / COAST_WIDTH;
+                    // Determine height and material based on noisy distance
+                    if (noisyDistance < COAST_WIDTH * 0.3) {
+                        // Close to land: oceanLevel or oceanLevel+1
+                        int height = oceanLevel + (noisyDistance < COAST_WIDTH * 0.15 ? 1 : 0);
+                        flat.setLevel(x, z, height);
 
-                    // Target height: ocean level at coast, current height inland
-                    int targetHeight = (int) (oceanLevel + (currentLevel - oceanLevel) * slopeFactor);
-
-                    // Ensure coastal area dips below ocean level
-                    if (minDistance < 3) {
-                        targetHeight = oceanLevel - 2;
+                        // Mix of sand and grass (grass appears occasionally)
+                        float grassChance = noise.GetNoise((float) x * 2, (float) z * 2);
+                        if (grassChance > 0.3) {
+                            flat.setColumn(x, z, FlatMaterialService.GRASS);
+                        } else {
+                            flat.setColumn(x, z, FlatMaterialService.SAND);
+                        }
+                    } else if (noisyDistance < COAST_WIDTH * 0.6) {
+                        // Mid coast: mainly sand at oceanLevel
+                        flat.setLevel(x, z, oceanLevel);
+                        flat.setColumn(x, z, FlatMaterialService.SAND);
                     }
-
-                    flat.setLevel(x, z, Math.max(0, Math.min(255, targetHeight)));
+                    // Else: keep ocean floor (already set in fillWithOcean)
                 }
             }
         }
+
+        log.debug("Coastlines created with irregular edges");
     }
 
     /**
@@ -147,42 +165,19 @@ public class CoastBuilder extends HexGridBuilder {
         }
     }
 
-    /**
-     * Set materials: SAND near coastline, GRASS inland.
-     */
-    private void setCoastMaterials(WFlat flat, Set<WHexGrid.SIDE> oceanSides, int oceanLevel) {
-        int sizeX = flat.getSizeX();
-        int sizeZ = flat.getSizeZ();
-
-        for (int z = 0; z < sizeZ; z++) {
-            for (int x = 0; x < sizeX; x++) {
-                int level = flat.getLevel(x, z);
-
-                // Calculate distance to nearest ocean side
-                double minDistance = Double.MAX_VALUE;
-                for (WHexGrid.SIDE oceanSide : oceanSides) {
-                    double distance = calculateDistanceToSide(x, z, sizeX, sizeZ, oceanSide);
-                    minDistance = Math.min(minDistance, distance);
-                }
-
-                // Set material based on distance and height
-                if (level <= oceanLevel || minDistance < SAND_WIDTH) {
-                    flat.setColumn(x, z, FlatMaterialService.SAND);
-                } else {
-                    flat.setColumn(x, z, FlatMaterialService.GRASS);
-                }
-            }
-        }
-    }
-
     @Override
     protected int getDefaultLandOffset() {
-        return 5;  // COAST: normal variation for coastal area
+        return 0;  // COAST: flat
     }
 
     @Override
     protected int getDefaultLandLevel() {
-        return 5;  // COAST: at ocean level
+        return -1;  // COAST: 1 below ocean level
+    }
+
+    @Override
+    public int getLandSideLevel(WHexGrid.SIDE side) {
+        return getLandCenterLevel();
     }
 
     private long parseLongParameter(Map<String, String> parameters, String name, long defaultValue) {
@@ -196,9 +191,4 @@ public class CoastBuilder extends HexGridBuilder {
             return defaultValue;
         }
     }
-
-    public int getLandSideLevel(WHexGrid.SIDE side) {
-        return getLandCenterLevel();
-    }
-
 }

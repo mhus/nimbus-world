@@ -21,13 +21,11 @@ import java.util.Map;
  * <p>
  * Parameter format in HexGrid:
  * road={
- *   center: {
- *     "lx": 130,
- *     "lz": 130,
- *     "level": 95,
- *     "plazaSize": 30,
- *     "plazaMaterial": "street"
- *   },
+ *   lx: 130,
+ *   lz: 130,
+ *   level: 95,
+ *   plazaSize: 30,
+ *   plazaMaterial: "street",
  *   route: [
  *     {
  *       side: "NE",
@@ -36,7 +34,8 @@ import java.util.Map;
  *       type: "street"
  *     },
  *     {
- *       position: { lx: 80, lz: 40 },
+ *       lx: 80,
+ *       lz: 40,
  *       width: 4,
  *       level: 55,
  *       type: "street"
@@ -45,6 +44,8 @@ import java.util.Map;
  * }
  * <p>
  * Optional parameters:
+ * - lx, lz: Center position (default: flat center)
+ * - level: Center level (default: 0)
  * - roadCurvature: Maximum lateral offset for road curves in pixels (default: 10)
  * - roadWaves: Number of sine wave cycles along the road (default: 1.5)
  * - plazaSize: Size of plaza at center (default: 0 = no plaza)
@@ -111,22 +112,13 @@ public class RoadBuilder extends HexGridBuilder {
 
         RoadConfiguration config = new RoadConfiguration();
 
-        // Parse center (optional, defaults to flat center)
+        // Parse center properties (optional, defaults to flat center)
         CenterDefinition center = new CenterDefinition();
-        if (root.has("center") && root.get("center").isObject()) {
-            JsonNode centerNode = root.get("center");
-            center.setLx(centerNode.has("lx") ? centerNode.get("lx").asInt() : -1);
-            center.setLz(centerNode.has("lz") ? centerNode.get("lz").asInt() : -1);
-            center.setLevel(centerNode.has("level") ? centerNode.get("level").asInt() : 0);
-            center.setPlazaSize(centerNode.has("plazaSize") ? centerNode.get("plazaSize").asInt() : 0);
-            center.setPlazaMaterial(centerNode.has("plazaMaterial") ? centerNode.get("plazaMaterial").asText() : null);
-        } else {
-            center.setLx(-1);  // -1 means use flat center
-            center.setLz(-1);
-            center.setLevel(0);
-            center.setPlazaSize(0);
-            center.setPlazaMaterial(null);
-        }
+        center.setLx(root.has("lx") ? root.get("lx").asInt() : -1);  // -1 means use flat center
+        center.setLz(root.has("lz") ? root.get("lz").asInt() : -1);
+        center.setLevel(root.has("level") ? root.get("level").asInt() : 0);
+        center.setPlazaSize(root.has("plazaSize") ? root.get("plazaSize").asInt() : 0);
+        center.setPlazaMaterial(root.has("plazaMaterial") ? root.get("plazaMaterial").asText() : null);
         config.setCenter(center);
 
         // Parse route array
@@ -135,15 +127,14 @@ public class RoadBuilder extends HexGridBuilder {
             for (JsonNode roadNode : root.get("route")) {
                 Road road = new Road();
 
-                // Check if road has 'side' or 'position'
+                // Check if road has 'side' or 'lx'/'lz'
                 if (roadNode.has("side")) {
                     // Start from hex grid side
                     road.setSide(parseSide(roadNode.get("side").asText()));
-                } else if (roadNode.has("position") && roadNode.get("position").isObject()) {
+                } else if (roadNode.has("lx") && roadNode.has("lz")) {
                     // Start from absolute position
-                    JsonNode posNode = roadNode.get("position");
-                    road.setPositionX(posNode.get("lx").asInt());
-                    road.setPositionZ(posNode.get("lz").asInt());
+                    road.setPositionX(roadNode.get("lx").asInt());
+                    road.setPositionZ(roadNode.get("lz").asInt());
                 }
 
                 road.setWidth(roadNode.get("width").asInt());

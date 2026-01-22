@@ -42,6 +42,7 @@ public class HexGridBuilderService {
         manipulatorRegistry.put("wall", WallBuilder.class);
         manipulatorRegistry.put("sidewall", SideWallBuilder.class);
         manipulatorRegistry.put("plot", PlotBuilder.class);
+        manipulatorRegistry.put("village", VillageBuilder.class);
     }
 
     /**
@@ -97,6 +98,7 @@ public class HexGridBuilderService {
      * 5. WallBuilder (if wall parameter exists)
      * 6. SideWallBuilder (if sidewall parameter exists)
      * 7. PlotBuilder (if plot parameter exists)
+     * 8. VillageBuilder (if village parameter exists)
      *
      * @param grid The hex grid to build pipeline for
      * @return List of builders to execute in order
@@ -181,6 +183,15 @@ public class HexGridBuilderService {
             if (plotBuilder.isPresent()) {
                 pipeline.add(plotBuilder.get());
                 log.debug("Added PlotBuilder to pipeline");
+            }
+        }
+
+        // 8. VillageBuilder (if village parameter exists)
+        if (gridParams.containsKey("village") && !gridParams.get("village").isBlank()) {
+            Optional<HexGridBuilder> villageBuilder = createManipulator("village", builderParams);
+            if (villageBuilder.isPresent()) {
+                pipeline.add(villageBuilder.get());
+                log.debug("Added VillageBuilder to pipeline");
             }
         }
 

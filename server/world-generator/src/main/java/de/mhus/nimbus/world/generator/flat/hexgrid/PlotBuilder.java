@@ -17,7 +17,8 @@ import java.util.List;
  * <p>
  * Parameter format in HexGrid:
  * plot=[{
- *   position: { lx: 50, lz: 50 },
+ *   lx: 50,
+ *   lz: 50,
  *   sizeX: 20,
  *   sizeZ: 20,
  *   level: 95,
@@ -25,7 +26,8 @@ import java.util.List;
  *   groupId: "plot-1234"
  * },
  * {
- *   center: { lx: 50, lz: 50 },
+ *   lx: 50,
+ *   lz: 50,
  *   size: 15,
  *   level: 96,
  *   material: 2,
@@ -82,23 +84,19 @@ public class PlotBuilder extends HexGridBuilder {
             for (JsonNode plotNode : root) {
                 PlotDefinition plot = new PlotDefinition();
 
-                // Check if circular (has center and size) or rectangular (has position and sizeX/sizeZ)
-                boolean isCircular = plotNode.has("center") && plotNode.has("size");
+                // Position (required for all plots)
+                plot.setLx(plotNode.get("lx").asInt());
+                plot.setLz(plotNode.get("lz").asInt());
+
+                // Check if circular (has size) or rectangular (has sizeX and sizeZ)
+                boolean isCircular = plotNode.has("size");
                 plot.setCircular(isCircular);
 
                 if (isCircular) {
                     // Parse circular plot
-                    JsonNode centerNode = plotNode.get("center");
-                    plot.setCenterX(centerNode.get("lx").asInt());
-                    plot.setCenterZ(centerNode.get("lz").asInt());
                     plot.setSize(plotNode.get("size").asInt());
                 } else {
                     // Parse rectangular plot
-                    if (plotNode.has("position")) {
-                        JsonNode posNode = plotNode.get("position");
-                        plot.setPositionX(posNode.get("lx").asInt());
-                        plot.setPositionZ(posNode.get("lz").asInt());
-                    }
                     plot.setSizeX(plotNode.has("sizeX") ? plotNode.get("sizeX").asInt() : 0);
                     plot.setSizeZ(plotNode.has("sizeZ") ? plotNode.get("sizeZ").asInt() : 0);
                 }
@@ -120,10 +118,10 @@ public class PlotBuilder extends HexGridBuilder {
      */
     private void buildRectangularPlot(WFlat flat, PlotDefinition plot) {
         log.debug("Building rectangular plot at ({}, {}) with size {}x{}",
-                plot.getPositionX(), plot.getPositionZ(), plot.getSizeX(), plot.getSizeZ());
+                plot.getLx(), plot.getLz(), plot.getSizeX(), plot.getSizeZ());
 
-        int startX = plot.getPositionX();
-        int startZ = plot.getPositionZ();
+        int startX = plot.getLx();
+        int startZ = plot.getLz();
         int endX = startX + plot.getSizeX();
         int endZ = startZ + plot.getSizeZ();
 
@@ -140,7 +138,7 @@ public class PlotBuilder extends HexGridBuilder {
             }
         }
 
-        log.debug("Rectangular plot completed at ({}, {})", plot.getPositionX(), plot.getPositionZ());
+        log.debug("Rectangular plot completed at ({}, {})", plot.getLx(), plot.getLz());
     }
 
     /**
@@ -148,10 +146,10 @@ public class PlotBuilder extends HexGridBuilder {
      */
     private void buildCircularPlot(WFlat flat, PlotDefinition plot) {
         log.debug("Building circular plot at ({}, {}) with size {}",
-                plot.getCenterX(), plot.getCenterZ(), plot.getSize());
+                plot.getLx(), plot.getLz(), plot.getSize());
 
-        int centerX = plot.getCenterX();
-        int centerZ = plot.getCenterZ();
+        int centerX = plot.getLx();
+        int centerZ = plot.getLz();
         int radius = plot.getSize() / 2;
         double radiusSquared = radius * radius;
 
@@ -177,7 +175,7 @@ public class PlotBuilder extends HexGridBuilder {
             }
         }
 
-        log.debug("Circular plot completed at ({}, {})", plot.getCenterX(), plot.getCenterZ());
+        log.debug("Circular plot completed at ({}, {})", plot.getLx(), plot.getLz());
     }
 
     @Override
@@ -200,21 +198,21 @@ public class PlotBuilder extends HexGridBuilder {
      */
     @Data
     private static class PlotDefinition {
-        // Common
+        // Position (common for all plots)
+        private int lx;
+        private int lz;
+
+        // Common properties
         private int level;
         private int material;
         private String groupId;
         private boolean circular;
 
-        // Rectangular plot
-        private int positionX;
-        private int positionZ;
+        // Rectangular plot (sizeX and sizeZ)
         private int sizeX;
         private int sizeZ;
 
-        // Circular plot
-        private int centerX;
-        private int centerZ;
+        // Circular plot (size)
         private int size;
     }
 }

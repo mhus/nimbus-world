@@ -13,18 +13,32 @@ import java.util.List;
 
 /**
  * WallBuilder manipulator builder.
- * Creates walls along specified sides of hex grids.
- * Walls are built at a specified distance from the edge with configurable height and width.
+ * Creates straight walls from a center point to various destinations (sides or positions).
+ * Unlike RoadBuilder, walls are straight lines without curves.
  * <p>
  * Parameter format in HexGrid:
  * wall={
- *   sides: ["NE","E", "SE"],
- *   height: 5,
- *   level: 50,
- *   width: 3,
- *   distance: 5,
- *   minimum: 3,
- *   type: 3
+ *   lx: 130,
+ *   lz: 130,
+ *   route: [
+ *     {
+ *       side: "NE",
+ *       height: 5,
+ *       level: 50,
+ *       type: 3,
+ *       width: 3,
+ *       minimum: 3,
+ *       respectRoad: false,
+ *       respectRiver: false
+ *     },
+ *     {
+ *       lx: 80,
+ *       lz: 40,
+ *       height: 4,
+ *       level: 55,
+ *       type: 3
+ *     }
+ *   ]
  * }
  */
 @Slf4j
@@ -32,7 +46,7 @@ public class WallBuilder extends HexGridBuilder {
 
     private static final ObjectMapper objectMapper = new ObjectMapper();
     private static final int DEFAULT_WIDTH = 3;
-    private static final int DEFAULT_DISTANCE = 5;
+    private static final int DEFAULT_HEIGHT = 5;
     private static final int DEFAULT_TYPE = FlatMaterialService.STONE;
 
     @Override
@@ -50,49 +64,144 @@ public class WallBuilder extends HexGridBuilder {
         }
 
         try {
-            // Parse wall definition
-            WallDefinition wallDef = parseWallDefinition(wallParam);
-            log.debug("Parsed wall definition: sides={}, height={}, level={}, width={}, distance={}, minimum={}, type={}",
-                    wallDef.getSides(), wallDef.getHeight(), wallDef.getLevel(), wallDef.getWidth(),
-                    wallDef.getDistance(), wallDef.getMinimum(), wallDef.getType());
+            // Parse wall configuration
+            WallConfig config = parseWallConfig(wallParam);
+            log.debug("Parsed wall config: center=({}, {}), routes={}",
+                    config.getCenter().getLx(), config.getCenter().getLz(), config.getRoute().size());
 
-            // Build wall for each specified side
-            for (WHexGrid.SIDE side : wallDef.getSides()) {
-                buildWall(flat, side, wallDef);
+            // Determine center position (use specified or default to flat center)
+            int centerX = config.getCenter().getLx() >= 0 ? config.getCenter().getLx() : flat.getSizeX() / 2;
+            int centerZ = config.getCenter().getLz() >= 0 ? config.getCenter().getLz() : flat.getSizeZ() / 2;
+
+            log.debug("Center position: ({}, {})", centerX, centerZ);
+
+            // Build walls from center to each destination
+            for (WallRoute route : config.getRoute()) {
+                buildWallToDestination(flat, centerX, centerZ, route);
             }
 
-            log.info("Walls completed for flat: {}", flat.getFlatId());
+            log.info("Walls completed for flat: {} routes built", config.getRoute().size());
         } catch (Exception e) {
             log.error("Failed to build walls for flat: {}", flat.getFlatId(), e);
         }
     }
 
     /**
-     * Parse wall definition from JSON string.
+     * Parse wall configuration from JSON string.
      */
-    private WallDefinition parseWallDefinition(String wallParam) throws Exception {
+    private WallConfig parseWallConfig(String wallParam) throws Exception {
         JsonNode root = objectMapper.readTree(wallParam);
 
-        WallDefinition wallDef = new WallDefinition();
+        WallConfig config = new WallConfig();
 
-        // Parse sides array
-        List<WHexGrid.SIDE> sides = new ArrayList<>();
-        if (root.has("sides") && root.get("sides").isArray()) {
-            for (JsonNode sideNode : root.get("sides")) {
-                sides.add(parseSide(sideNode.asText()));
+        // Parse center position (optional, defaults to -1 which means flat center)
+        CenterDefinition center = new CenterDefinition();
+        center.setLx(root.has("lx") ? root.get("lx").asInt() : -1);
+        center.setLz(root.has("lz") ? root.get("lz").asInt() : -1);
+        config.setCenter(center);
+
+        // Parse route array
+        List<WallRoute> routes = new ArrayList<>();
+        if (root.has("route") && root.get("route").isArray()) {
+            for (JsonNode routeNode : root.get("route")) {
+                WallRoute route = new WallRoute();
+
+                // Parse destination (either side or lx/lz position)
+                if (routeNode.has("side")) {
+                    route.setSide(parseSide(routeNode.get("side").asText()));
+                } else if (routeNode.has("lx") && routeNode.has("lz")) {
+                    route.setPositionX(routeNode.get("lx").asInt());
+                    route.setPositionZ(routeNode.get("lz").asInt());
+                }
+
+                // Parse wall properties
+                route.setHeight(routeNode.has("height") ? routeNode.get("height").asInt() : DEFAULT_HEIGHT);
+                route.setLevel(routeNode.get("level").asInt());
+                route.setWidth(routeNode.has("width") ? routeNode.get("width").asInt() : DEFAULT_WIDTH);
+                route.setMinimum(routeNode.has("minimum") ? routeNode.get("minimum").asInt() : 0);
+                route.setType(routeNode.has("type") ? routeNode.get("type").asInt() : DEFAULT_TYPE);
+                route.setRespectRoad(routeNode.has("respectRoad") && routeNode.get("respectRoad").asBoolean());
+                route.setRespectRiver(routeNode.has("respectRiver") && routeNode.get("respectRiver").asBoolean());
+
+                routes.add(route);
             }
         }
-        wallDef.setSides(sides);
+        config.setRoute(routes);
 
-        // Parse other parameters
-        wallDef.setHeight(root.get("height").asInt());
-        wallDef.setLevel(root.get("level").asInt());
-        wallDef.setWidth(root.has("width") ? root.get("width").asInt() : DEFAULT_WIDTH);
-        wallDef.setDistance(root.has("distance") ? root.get("distance").asInt() : DEFAULT_DISTANCE);
-        wallDef.setMinimum(root.has("minimum") ? root.get("minimum").asInt() : 0);
-        wallDef.setType(root.has("type") ? root.get("type").asInt() : DEFAULT_TYPE);
+        return config;
+    }
 
-        return wallDef;
+    /**
+     * Build a straight wall from center to destination.
+     */
+    private void buildWallToDestination(WFlat flat, int centerX, int centerZ, WallRoute route) {
+        // Determine destination coordinates
+        int[] destCoords;
+        if (route.getSide() != null) {
+            // Destination is a hex grid side
+            destCoords = getSideCoordinate(route.getSide(), flat.getSizeX(), flat.getSizeZ());
+        } else if (route.getPositionX() != null && route.getPositionZ() != null) {
+            // Destination is an absolute position
+            destCoords = new int[]{route.getPositionX(), route.getPositionZ()};
+        } else {
+            log.warn("Wall route has neither side nor position, skipping");
+            return;
+        }
+
+        int destX = destCoords[0];
+        int destZ = destCoords[1];
+
+        log.debug("Building wall from center ({}, {}) to destination ({}, {})",
+                centerX, centerZ, destX, destZ);
+
+        // Get water block definition if needed
+        String waterBlockDef = route.isRespectRiver() ? getWaterBlockDef(flat) : null;
+
+        // Calculate total distance
+        int dx = destX - centerX;
+        int dz = destZ - centerZ;
+        double distance = Math.sqrt(dx * dx + dz * dz);
+        int steps = (int) Math.ceil(distance);
+
+        // Build straight line from center to destination
+        for (int step = 0; step <= steps; step++) {
+            double t = steps > 0 ? (double) step / steps : 0.0;
+
+            // Linear interpolation
+            int x = (int) Math.round(centerX + t * dx);
+            int z = (int) Math.round(centerZ + t * dz);
+
+            // Check bounds
+            if (x < 0 || x >= flat.getSizeX() || z < 0 || z >= flat.getSizeZ()) {
+                continue;
+            }
+
+            // Build wall segment with width
+            buildWallSegment(flat, x, z, route, waterBlockDef);
+        }
+    }
+
+    /**
+     * Get coordinate on a specific side of the hex grid.
+     * Returns the midpoint of that side.
+     */
+    private int[] getSideCoordinate(WHexGrid.SIDE side, int sizeX, int sizeZ) {
+        switch (side) {
+            case NORTH_WEST:
+                return new int[]{sizeX / 4, 0};
+            case NORTH_EAST:
+                return new int[]{3 * sizeX / 4, 0};
+            case EAST:
+                return new int[]{sizeX - 1, sizeZ / 2};
+            case SOUTH_EAST:
+                return new int[]{3 * sizeX / 4, sizeZ - 1};
+            case SOUTH_WEST:
+                return new int[]{sizeX / 4, sizeZ - 1};
+            case WEST:
+                return new int[]{0, sizeZ / 2};
+            default:
+                return new int[]{sizeX / 2, sizeZ / 2};
+        }
     }
 
     /**
@@ -124,164 +233,112 @@ public class WallBuilder extends HexGridBuilder {
     }
 
     /**
-     * Build a wall along a specified side.
+     * Build a wall segment at the given position with width.
+     * Width is distributed in all directions around the center point.
      */
-    private void buildWall(WFlat flat, WHexGrid.SIDE side, WallDefinition wallDef) {
-        log.debug("Building wall on side: {}", side);
+    private void buildWallSegment(WFlat flat, int centerX, int centerZ, WallRoute route, String waterBlockDef) {
+        int halfWidth = route.getWidth() / 2;
 
-        int sizeX = flat.getSizeX();
-        int sizeZ = flat.getSizeZ();
-        int distance = wallDef.getDistance();
-        int width = wallDef.getWidth();
-
-        // Get corner coordinates for this side
-        int[][] sideCoords = getSideCorners(side, sizeX, sizeZ);
-        int[] startCorner = sideCoords[0];
-        int[] endCorner = sideCoords[1];
-
-        // Calculate direction vector along the side
-        int dx = endCorner[0] - startCorner[0];
-        int dz = endCorner[1] - startCorner[1];
-        double sideLength = Math.sqrt(dx * dx + dz * dz);
-        int steps = (int) Math.ceil(sideLength);
-
-        // Calculate perpendicular direction (inward from edge)
-        int[] inwardDir = getInwardDirection(side);
-
-        // Build wall along the side at specified distance from edge
-        for (int step = 0; step <= steps; step++) {
-            double t = steps > 0 ? (double) step / steps : 0.0;
-
-            // Position along the edge
-            int edgeX = (int) (startCorner[0] + t * dx);
-            int edgeZ = (int) (startCorner[1] + t * dz);
-
-            // Position at wall distance from edge
-            int wallX = edgeX + inwardDir[0] * distance;
-            int wallZ = edgeZ + inwardDir[1] * distance;
-
-            // Build wall segment with width
-            buildWallSegment(flat, wallX, wallZ, width, wallDef, inwardDir);
-        }
-    }
-
-    /**
-     * Get the two corners that define a side.
-     */
-    private int[][] getSideCorners(WHexGrid.SIDE side, int sizeX, int sizeZ) {
-        switch (side) {
-            case NORTH_WEST:
-                return new int[][]{{0, 0}, {sizeX / 2, 0}};
-            case NORTH_EAST:
-                return new int[][]{{sizeX / 2, 0}, {sizeX - 1, 0}};
-            case EAST:
-                return new int[][]{{sizeX - 1, 0}, {sizeX - 1, sizeZ - 1}};
-            case SOUTH_EAST:
-                return new int[][]{{sizeX - 1, sizeZ - 1}, {sizeX / 2, sizeZ - 1}};
-            case SOUTH_WEST:
-                return new int[][]{{sizeX / 2, sizeZ - 1}, {0, sizeZ - 1}};
-            case WEST:
-                return new int[][]{{0, sizeZ - 1}, {0, 0}};
-            default:
-                return new int[][]{{0, 0}, {sizeX - 1, sizeZ - 1}};
-        }
-    }
-
-    /**
-     * Get the inward direction (perpendicular to side, pointing into the hex).
-     */
-    private int[] getInwardDirection(WHexGrid.SIDE side) {
-        switch (side) {
-            case NORTH_WEST:
-            case NORTH_EAST:
-                return new int[]{0, 1};  // Inward is south
-            case SOUTH_EAST:
-            case SOUTH_WEST:
-                return new int[]{0, -1}; // Inward is north
-            case EAST:
-                return new int[]{-1, 0}; // Inward is west
-            case WEST:
-                return new int[]{1, 0};  // Inward is east
-            default:
-                return new int[]{0, 0};
-        }
-    }
-
-    /**
-     * Build a wall segment at the given position with the given width.
-     * Builds perpendicular to the wall direction.
-     */
-    private void buildWallSegment(WFlat flat, int centerX, int centerZ, int width,
-                                   WallDefinition wallDef, int[] inwardDir) {
-        int halfWidth = width / 2;
-
-        // Calculate perpendicular direction for width
-        // If wall goes north-south, width is east-west, and vice versa
-        int widthDx = Math.abs(inwardDir[1]); // If inward is Z, width is X
-        int widthDz = Math.abs(inwardDir[0]); // If inward is X, width is Z
-
-        for (int offset = -halfWidth; offset <= halfWidth; offset++) {
-            int x = centerX + offset * widthDx;
-            int z = centerZ + offset * widthDz;
-
-            // Check bounds
-            if (x < 0 || x >= flat.getSizeX() || z < 0 || z >= flat.getSizeZ()) {
-                continue;
-            }
-
-            // Get current terrain level
-            int currentLevel = flat.getLevel(x, z);
-
-            // Calculate wall base level
-            int wallBaseLevel = wallDef.getLevel();
-
-            // Apply minimum height constraint
-            // Wall should be at least 'minimum' blocks above surrounding terrain
-            if (wallDef.getMinimum() > 0) {
-                // Check surrounding non-wall terrain
-                int surroundingLevel = getSurroundingTerrainLevel(flat, x, z, 3);
-                int minimumWallBase = surroundingLevel + wallDef.getMinimum();
-                wallBaseLevel = Math.max(wallBaseLevel, minimumWallBase);
-            }
-
-            // Build wall from base to height
-            // Set the level to wall top
-            int wallTopLevel = wallBaseLevel + wallDef.getHeight();
-            flat.setLevel(x, z, wallTopLevel);
-
-            // Set wall material
-            flat.setColumn(x, z, wallDef.getType());
-        }
-    }
-
-    /**
-     * Get average level of surrounding terrain (excluding current position).
-     */
-    private int getSurroundingTerrainLevel(WFlat flat, int x, int z, int radius) {
-        int sum = 0;
-        int count = 0;
-
-        for (int dx = -radius; dx <= radius; dx++) {
-            for (int dz = -radius; dz <= radius; dz++) {
-                // Skip center
-                if (dx == 0 && dz == 0) {
-                    continue;
-                }
-
-                int checkX = x + dx;
-                int checkZ = z + dz;
+        // Build wall in square pattern around center point
+        for (int dx = -halfWidth; dx <= halfWidth; dx++) {
+            for (int dz = -halfWidth; dz <= halfWidth; dz++) {
+                int x = centerX + dx;
+                int z = centerZ + dz;
 
                 // Check bounds
-                if (checkX < 0 || checkX >= flat.getSizeX() || checkZ < 0 || checkZ >= flat.getSizeZ()) {
+                if (x < 0 || x >= flat.getSizeX() || z < 0 || z >= flat.getSizeZ()) {
                     continue;
                 }
 
-                sum += flat.getLevel(checkX, checkZ);
-                count++;
+                // Check if wall should respect roads and hits a street or trail
+                if (route.isRespectRoad()) {
+                    int currentMaterial = flat.getColumn(x, z);
+                    if (isStreetOrTrailMaterial(currentMaterial)) {
+                        log.debug("Wall interrupted at ({}, {}) - street/trail present", x, z);
+                        continue;
+                    }
+                }
+
+                // Check if wall should respect rivers and hits a river
+                if (route.isRespectRiver()) {
+                    if (hasWaterAtPosition(flat, x, z, waterBlockDef)) {
+                        log.debug("Wall interrupted at ({}, {}) - river present", x, z);
+                        continue;
+                    }
+                }
+
+                // Get current terrain level
+                int currentLevel = flat.getLevel(x, z);
+
+                // Calculate wall base level
+                int wallBaseLevel = route.getLevel();
+
+                // Apply minimum height constraint
+                // Wall should be at least 'minimum' blocks above current terrain
+                if (route.getMinimum() > 0) {
+                    int minimumWallBase = currentLevel + route.getMinimum();
+                    wallBaseLevel = Math.max(wallBaseLevel, minimumWallBase);
+                }
+
+                // Build wall from base to height
+                // Set the level to wall top
+                int wallTopLevel = wallBaseLevel + route.getHeight();
+                flat.setLevel(x, z, wallTopLevel);
+
+                // Set wall material
+                flat.setColumn(x, z, route.getType());
+            }
+        }
+    }
+
+    /**
+     * Check if material is a street or trail material.
+     * Checks for STREET, STREET_BORDER, STREET_BRIDGE, TRACK, TRACK_BORDER, TRACK_BRIDGE.
+     */
+    private boolean isStreetOrTrailMaterial(int material) {
+        return material == FlatMaterialService.STREET
+                || material == FlatMaterialService.STREET_BORDER
+                || material == FlatMaterialService.STREET_BRIDGE
+                || material == FlatMaterialService.TRACK
+                || material == FlatMaterialService.TRACK_BORDER
+                || material == FlatMaterialService.TRACK_BRIDGE;
+    }
+
+    /**
+     * Check if there's water at the given position.
+     */
+    private boolean hasWaterAtPosition(WFlat flat, int x, int z, String waterBlockDef) {
+        if (waterBlockDef == null) {
+            return false;
+        }
+
+        // Get all extra blocks for this column
+        String[] extraBlocks = flat.getExtraBlocksForColumn(x, z);
+        if (extraBlocks == null || extraBlocks.length == 0) {
+            return false;
+        }
+
+        // Check if any extra block is water
+        for (String blockDef : extraBlocks) {
+            if (waterBlockDef.equals(blockDef)) {
+                return true;
             }
         }
 
-        return count > 0 ? sum / count : flat.getLevel(x, z);
+        return false;
+    }
+
+    /**
+     * Get water block definition from material palette.
+     * Returns the blockDef for WATER material (5).
+     */
+    private String getWaterBlockDef(WFlat flat) {
+        WFlat.MaterialDefinition waterMaterial = flat.getMaterial((byte) FlatMaterialService.WATER);
+        if (waterMaterial != null) {
+            return waterMaterial.getBlockDef();
+        }
+        // Fallback to nimbus default if no material definition found
+        return "n:w";
     }
 
     @Override
@@ -300,16 +357,37 @@ public class WallBuilder extends HexGridBuilder {
     }
 
     /**
-     * Wall definition parsed from parameters.
+     * Wall configuration parsed from parameters.
      */
     @Data
-    private static class WallDefinition {
-        private List<WHexGrid.SIDE> sides;
+    private static class WallConfig {
+        private CenterDefinition center;
+        private List<WallRoute> route;
+    }
+
+    /**
+     * Center point definition.
+     */
+    @Data
+    private static class CenterDefinition {
+        private int lx;  // Absolute local X position (-1 = use flat center)
+        private int lz;  // Absolute local Z position (-1 = use flat center)
+    }
+
+    /**
+     * Wall route definition.
+     */
+    @Data
+    private static class WallRoute {
+        private WHexGrid.SIDE side;      // Optional: destination side
+        private Integer positionX;       // Optional: destination X position
+        private Integer positionZ;       // Optional: destination Z position
         private int height;
         private int level;
         private int width;
-        private int distance;
         private int minimum;
         private int type;
+        private boolean respectRoad;
+        private boolean respectRiver;
     }
 }
