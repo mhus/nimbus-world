@@ -93,6 +93,14 @@ export class WaterRenderer extends BlockRenderer {
     // Check face visibility - only render top face
     const isTopVisible = FaceVisibilityHelper.isVisible(block, FaceFlag.TOP);
 
+    // Get material for top face (only if visible)
+    const topMaterial = isTopVisible && topIndex ? await renderService.materialService.getMaterial(modifier, topIndex) : null;
+
+    logger.debug('Face visibility and material', {
+      top: { visible: isTopVisible, hasMaterial: !!topMaterial }
+    });
+
+    // Only render if top face is visible
     if (!isTopVisible) {
       logger.debug('Top face not visible, skipping water block', {
         blockTypeId: block.blockType.id,
@@ -100,13 +108,6 @@ export class WaterRenderer extends BlockRenderer {
       });
       return;
     }
-
-    // Get material for top face
-    const topMaterial = topIndex ? await renderService.materialService.getMaterial(modifier, topIndex) : null;
-
-    logger.debug('Face visibility and material', {
-      top: { visible: isTopVisible, hasMaterial: !!topMaterial }
-    });
 
     const size = 1;
 
@@ -200,10 +201,10 @@ export class WaterRenderer extends BlockRenderer {
     // Extract water color and transparency from offsets
     // offsets[24], offsets[25], offsets[26] = RGB color tint (0-1)
     // offsets[27] = transparency (0-1, where 0=fully transparent, 1=fully opaque)
-    let waterColorR = 1.0;
-    let waterColorG = 1.0;
+    let waterColorR = 0.6;
+    let waterColorG = 0.6;
     let waterColorB = 1.0;
-    let waterAlpha = 0.5; // Default: half transparent
+    let waterAlpha = 0.8; // Default:  transparent
 
     if (offsets && offsets.length > 27) {
       if (offsets[24] !== undefined) waterColorR = Math.max(0, Math.min(1, offsets[24]));

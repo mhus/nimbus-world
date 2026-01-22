@@ -204,6 +204,25 @@ export class PlayerService {
       }
     }
 
+    // Override to FREE_FLY in EDITOR mode
+    if (__EDITOR__) {
+      this.currentMovementState = PlayerMovementState.FREE_FLY;
+      this.playerEntity.movementMode = 'free_fly';
+
+      // Update cached state-dependent values for FREE_FLY mode
+      const freeFlyStateValues = getStateValues(appContext.playerInfo, 'free_fly');
+      this.playerEntity.effectiveSpeed = freeFlyStateValues.effectiveMoveSpeed;
+      this.playerEntity.effectiveJumpSpeed = freeFlyStateValues.effectiveJumpSpeed;
+      this.playerEntity.effectiveTurnSpeed = freeFlyStateValues.effectiveTurnSpeed;
+      this.playerEntity.cachedEyeHeight = freeFlyStateValues.eyeHeight;
+      this.playerEntity.cachedSelectionRadius = freeFlyStateValues.selectionRadius;
+
+      logger.debug('Movement mode set to FREE_FLY for EDITOR mode', {
+        speed: this.playerEntity.effectiveSpeed,
+        eyeHeight: this.playerEntity.cachedEyeHeight,
+      });
+    }
+
     // Initialize player position and sync camera
     this.syncCameraToPlayer();
 

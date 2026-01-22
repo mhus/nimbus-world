@@ -321,6 +321,13 @@ export class MaterialService {
       if (material && props.effect !== BlockEffect.NONE) {
         material.backFaceCulling = props.backFaceCulling;
         material.alpha = props.opacity;
+        // Enable vertex colors only for smooth alpha blending (not for ALPHA_TEST)
+        if (props.transparencyMode === TransparencyMode.ALPHA_BLEND ||
+            props.transparencyMode === TransparencyMode.ALPHA_TESTANDBLEND ||
+            props.transparencyMode === TransparencyMode.ALPHA_BLEND_FROM_RGB ||
+            props.transparencyMode === TransparencyMode.ALPHA_TESTANDBLEND_FROM_RGB) {
+          (material as any).useVertexColors = true;
+        }
         // Note: ShaderMaterial doesn't have transparencyMode, alpha test is handled in shader
         logger.debug('Applied material properties to shader material', {
           backFaceCulling: props.backFaceCulling,
@@ -414,6 +421,14 @@ export class MaterialService {
     }
 
     material.alpha = props.opacity;
+
+    // Enable vertex colors only for smooth alpha blending (not for ALPHA_TEST which uses texture alpha)
+    if (props.transparencyMode === TransparencyMode.ALPHA_BLEND ||
+        props.transparencyMode === TransparencyMode.ALPHA_TESTANDBLEND ||
+        props.transparencyMode === TransparencyMode.ALPHA_BLEND_FROM_RGB ||
+        props.transparencyMode === TransparencyMode.ALPHA_TESTANDBLEND_FROM_RGB) {
+      material.useVertexColors = true;
+    }
 
     // Disable specular highlights for blocks
     if (props.color) {

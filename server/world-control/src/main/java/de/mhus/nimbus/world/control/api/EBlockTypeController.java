@@ -286,8 +286,8 @@ public class EBlockTypeController extends BaseEditorController {
         final String finalBlockId = blockId;
         Optional<WBlockType> updated = blockTypeService.update(actualWid, blockId, blockType -> {
             if (request.publicData() != null) {
-                // Ensure publicData.id has full blockId with prefix (e.g., "r:wfr" not just "wfr")
-                blockType.appendWorldPrefix();
+                blockType.setPublicData(request.publicData());
+                blockType.removeWorldPrefix();
             }
             if (request.enabled() != null) {
                 blockType.setEnabled(request.enabled());

@@ -257,6 +257,10 @@ public class WFlat implements Identifiable {
         updatedAt = Instant.now();
     }
 
+    public Map<String, String> getExtraBlocks() {
+        return extraBlocks;
+    }
+
     @Data
     @Builder
     @NoArgsConstructor

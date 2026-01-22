@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * RiverBuilder manipulator builder.
@@ -44,6 +45,9 @@ public class RiverBuilder extends HexGridBuilder {
         WHexGrid hexGrid = context.getHexGrid();
 
         log.info("Building rivers for flat: {}", flat.getFlatId());
+
+        // Clear all existing WATER extra blocks before building rivers
+        clearWaterExtraBlocks(flat);
 
         // Get river parameter from hex grid
         String riverParam = hexGrid.getParameters() != null ? hexGrid.getParameters().get("river") : null;
@@ -199,13 +203,18 @@ public class RiverBuilder extends HexGridBuilder {
 
     /**
      * Draw a river segment at the given position with the given width and depth.
-     * Creates a river bed by lowering the terrain and filling with water.
+     * Creates a river bed by lowering the terrain and sets water surface as extra blocks.
+     * - River bed: lowered terrain with SAND material
+     * - Water surface: extra blocks at water level with WATER material
      */
     private void drawRiverSegment(WFlat flat, int centerX, int centerZ, int width, int depth,
                                    int level, String groupId) {
         int halfWidth = width / 2;
 
-        // Draw river bed
+        // Get water block definition from material palette
+        String waterBlockDef = getWaterBlockDef(flat);
+
+        // Draw river bed and water surface
         for (int dx = -halfWidth; dx <= halfWidth; dx++) {
             for (int dz = -halfWidth; dz <= halfWidth; dz++) {
                 int x = centerX + dx;
@@ -238,10 +247,13 @@ public class RiverBuilder extends HexGridBuilder {
                 // This creates the river bed
                 if (bedLevel < currentLevel) {
                     flat.setLevel(x, z, bedLevel);
+                    // Set river bed material to SAND
+                    flat.setColumn(x, z, FlatMaterialService.SAND);
                 }
 
-                // Set water material
-                flat.setColumn(x, z, FlatMaterialService.WATER);
+                // Set water surface as extra block at water level
+                // Water level is the original level parameter (not the lowered bed level)
+                flat.setExtraBlock(x, level, z, waterBlockDef);
 
                 // Store metadata for river groupId
                 if (groupId != null) {
@@ -289,6 +301,35 @@ public class RiverBuilder extends HexGridBuilder {
                 }
             }
         }
+    }
+
+    /**
+     * Clear all WATER extra blocks from the flat.
+     * This removes previous water surfaces before building new rivers.
+     */
+    private void clearWaterExtraBlocks(WFlat flat) {
+        // Get water block definition from material palette
+        String waterBlockDef = getWaterBlockDef(flat);
+        if (waterBlockDef == null) {
+            log.warn("No water block definition found in material palette, skipping clear");
+            return;
+        }
+
+        // Iterate through all extra blocks and remove WATER blocks
+        flat.getExtraBlocks().entrySet().removeIf(entry -> waterBlockDef.equals(entry.getValue()));
+    }
+
+    /**
+     * Get water block definition from material palette.
+     * Returns the blockDef for WATER material (5).
+     */
+    private String getWaterBlockDef(WFlat flat) {
+        WFlat.MaterialDefinition waterMaterial = flat.getMaterial((byte) FlatMaterialService.WATER);
+        if (waterMaterial != null) {
+            return waterMaterial.getBlockDef();
+        }
+        // Fallback to nimbus default if no material definition found
+        return "n:w";
     }
 
     @Override
