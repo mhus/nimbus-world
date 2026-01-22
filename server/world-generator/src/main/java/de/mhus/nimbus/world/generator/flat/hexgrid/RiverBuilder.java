@@ -2,6 +2,7 @@ package de.mhus.nimbus.world.generator.flat.hexgrid;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import de.mhus.nimbus.shared.utils.FastNoiseLite;
 import de.mhus.nimbus.world.generator.flat.FlatMaterialService;
 import de.mhus.nimbus.world.shared.generator.WFlat;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
@@ -16,6 +17,7 @@ import java.util.Map;
  * RiverBuilder manipulator builder.
  * Creates rivers through hex grids from one side to another.
  * Rivers carve through the terrain with configurable width and depth.
+ * Uses FastNoiseLite to create natural, curved river paths.
  * <p>
  * Parameter format in HexGrid:
  * river={
@@ -33,11 +35,16 @@ import java.util.Map;
  *   }],
  *   groupId: "river-1234"
  * }
+ * <p>
+ * Optional parameters:
+ * - riverCurvature: Maximum lateral offset for river curves in pixels (default: 30)
+ * - riverSeed: Seed for river curve generation (default: based on groupId hash)
  */
 @Slf4j
 public class RiverBuilder extends HexGridBuilder {
 
     private static final ObjectMapper objectMapper = new ObjectMapper();
+    private static final int DEFAULT_CURVATURE = 30;  // Default maximum lateral offset for curves
 
     @Override
     public void buildFlat() {
@@ -146,10 +153,23 @@ public class RiverBuilder extends HexGridBuilder {
     }
 
     /**
-     * Build a river from one endpoint to another.
+     * Build a river from one endpoint to another with natural curves.
      */
     private void buildRiver(WFlat flat, RiverEndpoint from, RiverEndpoint to, String groupId) {
         log.debug("Building river from {} to {}", from.getSide(), to.getSide());
+
+        // Get curvature parameter
+        int curvature = parseIntParameter(parameters, "riverCurvature", DEFAULT_CURVATURE);
+
+        // Get or generate seed for noise
+        long seed;
+        if (parameters != null && parameters.containsKey("riverSeed")) {
+            seed = Long.parseLong(parameters.get("riverSeed"));
+        } else if (groupId != null) {
+            seed = groupId.hashCode();
+        } else {
+            seed = System.currentTimeMillis();
+        }
 
         // Get start and end coordinates on the edges
         int[] startCoords = getSideCoordinate(from.getSide(), flat.getSizeX(), flat.getSizeZ());
@@ -161,13 +181,31 @@ public class RiverBuilder extends HexGridBuilder {
         double distance = Math.sqrt(dx * dx + dz * dz);
         int steps = (int) Math.ceil(distance);
 
-        // Draw river along the path
+        // Initialize noise generator for river curves
+        FastNoiseLite noise = new FastNoiseLite((int) seed);
+        noise.SetNoiseType(FastNoiseLite.NoiseType.OpenSimplex2);
+        noise.SetFrequency(0.05f);  // Lower frequency = smoother, wider curves
+
+        // Calculate perpendicular direction for lateral offset
+        double[] perpDir = calculatePerpendicularDirection(dx, dz);
+
+        // Draw river along the curved path
         for (int step = 0; step <= steps; step++) {
             double t = steps > 0 ? (double) step / steps : 0.0;
 
-            // Interpolate position
-            int x = (int) (startCoords[0] + t * dx);
-            int z = (int) (startCoords[1] + t * dz);
+            // Base position (straight line)
+            double baseX = startCoords[0] + t * dx;
+            double baseZ = startCoords[1] + t * dz;
+
+            // Calculate lateral offset using noise
+            // Offset is 0 at start and end, maximum in the middle
+            double curveWeight = Math.sin(t * Math.PI); // 0 at ends, 1 in middle
+            float noiseValue = noise.GetNoise((float) baseX, (float) baseZ);
+            double lateralOffset = noiseValue * curvature * curveWeight;
+
+            // Apply lateral offset perpendicular to river direction
+            int x = (int) (baseX + lateralOffset * perpDir[0]);
+            int z = (int) (baseZ + lateralOffset * perpDir[1]);
 
             // Interpolate width, depth and level
             int width = (int) (from.getWidth() + t * (to.getWidth() - from.getWidth()));
@@ -176,6 +214,35 @@ public class RiverBuilder extends HexGridBuilder {
 
             // Draw river segment with width and depth
             drawRiverSegment(flat, x, z, width, depth, level, groupId);
+        }
+    }
+
+    /**
+     * Calculate perpendicular direction vector (normalized).
+     * Returns a unit vector perpendicular to the direction (dx, dz).
+     */
+    private double[] calculatePerpendicularDirection(int dx, int dz) {
+        // Perpendicular vector is (-dz, dx) or (dz, -dx)
+        // We choose (-dz, dx) for consistent direction
+        double length = Math.sqrt(dx * dx + dz * dz);
+        if (length == 0) {
+            return new double[]{0, 0};
+        }
+        return new double[]{-dz / length, dx / length};
+    }
+
+    /**
+     * Parse integer parameter with default value.
+     */
+    private int parseIntParameter(Map<String, String> parameters, String name, int defaultValue) {
+        if (parameters == null || !parameters.containsKey(name)) {
+            return defaultValue;
+        }
+        try {
+            return Integer.parseInt(parameters.get(name));
+        } catch (NumberFormatException e) {
+            log.warn("Invalid int parameter '{}': {}, using default: {}", name, parameters.get(name), defaultValue);
+            return defaultValue;
         }
     }
 

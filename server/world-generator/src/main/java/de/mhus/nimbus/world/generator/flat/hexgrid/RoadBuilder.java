@@ -13,25 +13,24 @@ import java.util.List;
 
 /**
  * RoadBuilder manipulator builder.
- * Creates roads through hex grids from one side to another.
- * Roads can be streets or tracks with transitions to grass.
+ * Creates roads from hex grid sides to the center where they all meet.
+ * Roads can be streets or trails with transitions to grass.
  * <p>
  * Parameter format in HexGrid:
- * road={
- *   from: [{
+ * road=[
+ *   {
  *     side: "NE",
  *     width: 3,
  *     level: 50,
  *     type: "street"
- *   }],
- *   to: [{
+ *   },
+ *   {
  *     side: "SW",
  *     width: 5,
  *     level: 55,
- *     type: "street"
- *   }],
- *   groupId: "road-1234"
- * }
+ *     type: "trail"
+ *   }
+ * ]
  */
 @Slf4j
 public class RoadBuilder extends HexGridBuilder {
@@ -53,64 +52,44 @@ public class RoadBuilder extends HexGridBuilder {
         }
 
         try {
-            // Parse road definition
-            RoadDefinition roadDef = parseRoadDefinition(roadParam);
-            log.debug("Parsed road definition: from={}, to={}, groupId={}",
-                    roadDef.getFrom(), roadDef.getTo(), roadDef.getGroupId());
+            // Parse road definitions
+            List<Road> roads = parseRoads(roadParam);
+            log.debug("Parsed {} roads", roads.size());
 
-            // Build road for each from-to pair
-            for (RoadEndpoint fromEndpoint : roadDef.getFrom()) {
-                for (RoadEndpoint toEndpoint : roadDef.getTo()) {
-                    buildRoad(flat, fromEndpoint, toEndpoint, roadDef.getGroupId());
-                }
+            // Calculate center of the flat
+            int centerX = flat.getSizeX() / 2;
+            int centerZ = flat.getSizeZ() / 2;
+
+            // Build each road from its side to the center
+            for (Road road : roads) {
+                buildRoadToCenter(flat, road, centerX, centerZ);
             }
 
-            log.info("Roads completed for flat: {}", flat.getFlatId());
+            log.info("Roads completed for flat: {} roads built", roads.size());
         } catch (Exception e) {
             log.error("Failed to build roads for flat: {}", flat.getFlatId(), e);
         }
     }
 
     /**
-     * Parse road definition from JSON string.
+     * Parse road definitions from JSON string.
      */
-    private RoadDefinition parseRoadDefinition(String roadParam) throws Exception {
+    private List<Road> parseRoads(String roadParam) throws Exception {
         JsonNode root = objectMapper.readTree(roadParam);
+        List<Road> roads = new ArrayList<>();
 
-        RoadDefinition roadDef = new RoadDefinition();
-        roadDef.setGroupId(root.has("groupId") ? root.get("groupId").asText() : null);
-
-        // Parse from endpoints
-        List<RoadEndpoint> fromList = new ArrayList<>();
-        if (root.has("from") && root.get("from").isArray()) {
-            for (JsonNode fromNode : root.get("from")) {
-                fromList.add(parseEndpoint(fromNode));
+        if (root.isArray()) {
+            for (JsonNode roadNode : root) {
+                Road road = new Road();
+                road.setSide(parseSide(roadNode.get("side").asText()));
+                road.setWidth(roadNode.get("width").asInt());
+                road.setLevel(roadNode.get("level").asInt());
+                road.setType(roadNode.has("type") ? roadNode.get("type").asText() : "street");
+                roads.add(road);
             }
         }
-        roadDef.setFrom(fromList);
 
-        // Parse to endpoints
-        List<RoadEndpoint> toList = new ArrayList<>();
-        if (root.has("to") && root.get("to").isArray()) {
-            for (JsonNode toNode : root.get("to")) {
-                toList.add(parseEndpoint(toNode));
-            }
-        }
-        roadDef.setTo(toList);
-
-        return roadDef;
-    }
-
-    /**
-     * Parse a single endpoint from JSON node.
-     */
-    private RoadEndpoint parseEndpoint(JsonNode node) {
-        RoadEndpoint endpoint = new RoadEndpoint();
-        endpoint.setSide(parseSide(node.get("side").asText()));
-        endpoint.setWidth(node.get("width").asInt());
-        endpoint.setLevel(node.get("level").asInt());
-        endpoint.setType(node.has("type") ? node.get("type").asText() : "street");
-        return endpoint;
+        return roads;
     }
 
     /**
@@ -142,26 +121,21 @@ public class RoadBuilder extends HexGridBuilder {
     }
 
     /**
-     * Build a road from one endpoint to another.
+     * Build a road from a side to the center of the hex grid.
      */
-    private void buildRoad(WFlat flat, RoadEndpoint from, RoadEndpoint to, String groupId) {
-        log.debug("Building road from {} to {}", from.getSide(), to.getSide());
+    private void buildRoadToCenter(WFlat flat, Road road, int centerX, int centerZ) {
+        log.debug("Building road from {} to center", road.getSide());
 
-        // Get center coordinates of the flat
-        int centerX = flat.getSizeX() / 2;
-        int centerZ = flat.getSizeZ() / 2;
+        // Get start coordinates at the edge
+        int[] startCoords = getSideCoordinate(road.getSide(), flat.getSizeX(), flat.getSizeZ());
 
-        // Get start and end coordinates on the edges
-        int[] startCoords = getSideCoordinate(from.getSide(), flat.getSizeX(), flat.getSizeZ());
-        int[] endCoords = getSideCoordinate(to.getSide(), flat.getSizeX(), flat.getSizeZ());
-
-        // Calculate road path length
-        int dx = endCoords[0] - startCoords[0];
-        int dz = endCoords[1] - startCoords[1];
+        // Calculate road path from edge to center
+        int dx = centerX - startCoords[0];
+        int dz = centerZ - startCoords[1];
         double distance = Math.sqrt(dx * dx + dz * dz);
         int steps = (int) Math.ceil(distance);
 
-        // Draw road along the path
+        // Draw road along the path from edge to center
         for (int step = 0; step <= steps; step++) {
             double t = steps > 0 ? (double) step / steps : 0.0;
 
@@ -169,12 +143,12 @@ public class RoadBuilder extends HexGridBuilder {
             int x = (int) (startCoords[0] + t * dx);
             int z = (int) (startCoords[1] + t * dz);
 
-            // Interpolate width and level
-            int width = (int) (from.getWidth() + t * (to.getWidth() - from.getWidth()));
-            int level = (int) (from.getLevel() + t * (to.getLevel() - from.getLevel()));
+            // Width stays constant (no interpolation needed)
+            int width = road.getWidth();
+            int level = road.getLevel();
 
-            // Draw road segment with width
-            drawRoadSegment(flat, x, z, width, level, from.getType(), groupId);
+            // Draw road segment
+            drawRoadSegment(flat, x, z, width, level, road.getType());
         }
     }
 
@@ -204,7 +178,7 @@ public class RoadBuilder extends HexGridBuilder {
      * Draw a road segment at the given position with the given width.
      */
     private void drawRoadSegment(WFlat flat, int centerX, int centerZ, int width, int level,
-                                  String type, String groupId) {
+                                  String type) {
         // Determine material based on type
         int centerMaterial = type.equalsIgnoreCase("track") ? FlatMaterialService.TRACK : FlatMaterialService.STREET;
         int transitionNorth = type.equalsIgnoreCase("track") ? FlatMaterialService.TRACK2GRASS_NORTH : FlatMaterialService.STREET2GRASS_NORTH;
@@ -240,11 +214,6 @@ public class RoadBuilder extends HexGridBuilder {
                 // Set level and material
                 flat.setLevel(x, z, level);
                 flat.setColumn(x, z, material);
-
-                // Store metadata for road groupId
-                if (groupId != null) {
-                    // TODO: Store groupId in metadata when available
-                }
             }
         }
     }
@@ -265,20 +234,10 @@ public class RoadBuilder extends HexGridBuilder {
     }
 
     /**
-     * Road definition parsed from parameters.
+     * Road definition from a side to the center.
      */
     @Data
-    private static class RoadDefinition {
-        private List<RoadEndpoint> from;
-        private List<RoadEndpoint> to;
-        private String groupId;
-    }
-
-    /**
-     * Road endpoint definition.
-     */
-    @Data
-    private static class RoadEndpoint {
+    private static class Road {
         private WHexGrid.SIDE side;
         private int width;
         private int level;
