@@ -169,7 +169,7 @@ public class WFlat implements Identifiable {
     }
 
     public void setExtraBlock(int x, int y, int z, String blockId) {
-        String name = x + ":" + z + ":" + y;
+        String name = x + "/" + z + "/" + y; // use local coordinates format
         if (blockId == null)
             extraBlocks.remove(name);
         else
@@ -177,12 +177,12 @@ public class WFlat implements Identifiable {
     }
 
     public String getExtraBlock(int x, int y, int z) {
-        String name = x + ":" + z + ":" + y;
+        String name = x + "/" + z + "/" + y; // use local coordinates format
         return extraBlocks.get(name);
     }
 
     public String[] getExtraBlocksForColumn(int x, int z) {
-        String prefix = x + ":" + z + ":";
+        String prefix = x + "/" + z + "/"; // use local coordinates format
         String[] res = new String[256];
         for (String key : extraBlocks.keySet()) {
             if (key.startsWith(prefix)) {

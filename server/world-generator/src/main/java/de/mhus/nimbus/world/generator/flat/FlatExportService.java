@@ -95,6 +95,10 @@ public class FlatExportService {
         Map<String, WBlockType> blockTypeCache = new HashMap<>();
         WorldId wid = WorldId.of(worldId).orElse(null);
 
+        // Pre-build extraBlocks cache: "x/z" -> String[] (indexed by Y)
+        // This avoids repeated iteration through all extraBlocks for each column
+        Map<String, String[]> extraBlocksCache = buildExtraBlocksCache(flat);
+
         int exportedColumns = 0;
         int skippedColumns = 0;
 
@@ -175,7 +179,7 @@ public class FlatExportService {
                 if (lowestSiblingLevel != WFlat.LEVEL_NOT_SET) {
                     // Fill column from level down to lowestSiblingLevel
                     fillColumn(layerChunkData, worldX, worldZ, level, lowestSiblingLevel, columnDef, flat,
-                            smoothCorners, blockTypeCache, wid, localX, localZ);
+                            smoothCorners, blockTypeCache, wid, localX, localZ, extraBlocksCache);
                     exportedColumns++;
                 } else {
                     skippedColumns++;
@@ -499,7 +503,8 @@ public class FlatExportService {
                             WFlat.MaterialDefinition columnDef, WFlat flat,
                             boolean smoothCorners,
                             Map<String, WBlockType> blockTypeCache,
-                            WorldId wid, int localX, int localZ) {
+                            WorldId wid, int localX, int localZ,
+                            Map<String, String[]> extraBlocksCache) {
         // Get extra blocks for this column
         String[] extraBlocks = flat.getExtraBlocksForColumn(
                 worldX - flat.getMountX(),
@@ -543,7 +548,7 @@ public class FlatExportService {
 
             // Apply block optimizations (corner smoothing and/or face visibility) if enabled
             if ((smoothCorners) && y <= level) {
-                boolean shouldExport = applyBlockOptimizations(block, flat, localX, localZ, level, y, blockTypeCache, wid, smoothCorners, columnDef);
+                boolean shouldExport = applyBlockOptimizations(block, flat, localX, localZ, level, y, blockTypeCache, wid, smoothCorners, columnDef, extraBlocksCache);
                 if (!shouldExport) {
                     // Block has no visible faces, skip export
                     continue;
@@ -570,7 +575,8 @@ public class FlatExportService {
     private boolean applyBlockOptimizations(Block block, WFlat flat, int localX, int localZ,
                                         int level, int y,
                                         Map<String, WBlockType> blockTypeCache, WorldId wid,
-                                        boolean smoothCorners, WFlat.MaterialDefinition materialDef) {
+                                        boolean smoothCorners, WFlat.MaterialDefinition materialDef,
+                                        Map<String, String[]> extraBlocksCache) {
         if (block == null || block.getBlockTypeId() == null || wid == null) {
             return true;  // No optimization, export block
         }
@@ -622,16 +628,16 @@ public class FlatExportService {
 
             // Calculate all corner offsets
             // Top Front Left (SW) - neighbors: West(-X,0), South(0,-Z), SW(-X,-Z)
-            float swOffset = calculateCornerOffset(flat, localX, localZ, myLevel, -1, 0, 0, -1, -1, -1, materialDef);
+            float swOffset = calculateCornerOffset(flat, localX, localZ, myLevel, -1, 0, 0, -1, -1, -1, materialDef, extraBlocksCache);
 
             // Top Front Right (SE) - neighbors: East(+X,0), South(0,-Z), SE(+X,-Z)
-            float seOffset = calculateCornerOffset(flat, localX, localZ, myLevel, 1, 0, 0, -1, 1, -1, materialDef);
+            float seOffset = calculateCornerOffset(flat, localX, localZ, myLevel, 1, 0, 0, -1, 1, -1, materialDef, extraBlocksCache);
 
             // Top Back Left (NW) - neighbors: West(-X,0), North(0,+Z), NW(-X,+Z)
-            float nwOffset = calculateCornerOffset(flat, localX, localZ, myLevel, -1, 0, 0, 1, -1, 1, materialDef);
+            float nwOffset = calculateCornerOffset(flat, localX, localZ, myLevel, -1, 0, 0, 1, -1, 1, materialDef, extraBlocksCache);
 
             // Top Back Right (NE) - neighbors: East(+X,0), North(0,+Z), NE(+X,+Z)
-            float neOffset = calculateCornerOffset(flat, localX, localZ, myLevel, 1, 0, 0, 1, 1, 1, materialDef);
+            float neOffset = calculateCornerOffset(flat, localX, localZ, myLevel, 1, 0, 0, 1, 1, 1, materialDef, extraBlocksCache);
 
             // Set offsets (NW and NE are swapped to fix north-facing direction)
             offsets.set(13, swOffset);  // SW - indices 12,13,14
@@ -735,11 +741,13 @@ public class FlatExportService {
      * @param dx3 X offset for third neighbor (diagonal)
      * @param dz3 Z offset for third neighbor (diagonal)
      * @param materialDef Material definition with offset parameters
+     * @param extraBlocksCache Pre-built cache of extraBlocks by column
      * @return Y offset value
      */
     private float calculateCornerOffset(WFlat flat, int localX, int localZ, int myLevel,
                                        int dx1, int dz1, int dx2, int dz2, int dx3, int dz3,
-                                       WFlat.MaterialDefinition materialDef) {
+                                       WFlat.MaterialDefinition materialDef,
+                                       Map<String, String[]> extraBlocksCache) {
         // Get offset definitions (use defaults if null)
         WFlat.OffsetDefinition higherOffsets = materialDef != null ? materialDef.getHigherOffsets() : null;
         WFlat.OffsetDefinition lowerOffsets = materialDef != null ? materialDef.getLowerOffsets() : null;
@@ -752,9 +760,9 @@ public class FlatExportService {
         }
 
         // Get effective neighbor levels (including extraBlocks)
-        int neighbor1Level = getEffectiveNeighborLevel(flat, localX + dx1, localZ + dz1, myLevel);
-        int neighbor2Level = getEffectiveNeighborLevel(flat, localX + dx2, localZ + dz2, myLevel);
-        int neighbor3Level = getEffectiveNeighborLevel(flat, localX + dx3, localZ + dz3, myLevel);
+        int neighbor1Level = getEffectiveNeighborLevel(flat, localX + dx1, localZ + dz1, myLevel, extraBlocksCache);
+        int neighbor2Level = getEffectiveNeighborLevel(flat, localX + dx2, localZ + dz2, myLevel, extraBlocksCache);
+        int neighbor3Level = getEffectiveNeighborLevel(flat, localX + dx3, localZ + dz3, myLevel, extraBlocksCache);
 
         int diff1 = neighbor1Level - myLevel;
         int diff2 = neighbor2Level - myLevel;
@@ -853,17 +861,19 @@ public class FlatExportService {
      * @param x Column X coordinate
      * @param z Column Z coordinate
      * @param myLevel Current block's level (used to determine relevant range)
+     * @param extraBlocksCache Pre-built cache of extraBlocks by column
      * @return Effective highest level within relevant range (myLevel-1 to myLevel+1)
      */
-    private int getEffectiveNeighborLevel(WFlat flat, int x, int z, int myLevel) {
+    private int getEffectiveNeighborLevel(WFlat flat, int x, int z, int myLevel, Map<String, String[]> extraBlocksCache) {
         if (x < 0 || z < 0 || x >= flat.getSizeX() || z >= flat.getSizeZ()) {
             return myLevel;
         }
 
         int baseLevel = flat.getLevel(x, z);
 
-        // Check if there are extraBlocks in the relevant range (myLevel-1 to myLevel+1)
-        String[] extraBlocks = flat.getExtraBlocksForColumn(x, z);
+        // Get extraBlocks from cache
+        String cacheKey = x + "/" + z;
+        String[] extraBlocks = extraBlocksCache.get(cacheKey);
         if (extraBlocks == null) {
             return baseLevel;
         }
@@ -880,6 +890,57 @@ public class FlatExportService {
         }
 
         return highestRelevantY;
+    }
+
+    /**
+     * Build a cache of extraBlocks grouped by column (x:z).
+     * Pre-processes the flat's extraBlocks HashMap to avoid repeated iteration.
+     *
+     * @param flat The flat terrain data
+     * @return Map with key "x/z" and value String[] indexed by Y coordinate
+     */
+    private Map<String, String[]> buildExtraBlocksCache(WFlat flat) {
+        Map<String, String[]> cache = new HashMap<>();
+        Map<String, String> extraBlocks = flat.getExtraBlocks();
+
+        if (extraBlocks == null || extraBlocks.isEmpty()) {
+            return cache;
+        }
+
+        // Iterate through all extraBlocks and group by column
+        for (Map.Entry<String, String> entry : extraBlocks.entrySet()) {
+            String key = entry.getKey(); // Format - local coordinates with slash: "x/z/y"
+            String blockId = entry.getValue();
+
+            // Parse key
+            String[] parts = key.split("/");
+            if (parts.length != 3) {
+                log.warn("Invalid extraBlock key format: {}", key);
+                continue;
+            }
+
+            try {
+                int x = Integer.parseInt(parts[0]);
+                int z = Integer.parseInt(parts[1]);
+                int y = Integer.parseInt(parts[2]);
+
+                if (y < 0 || y > 255) {
+                    log.warn("Invalid Y coordinate in extraBlock key: {}", key);
+                    continue;
+                }
+
+                // Create cache entry for this column
+                String columnKey = x + "/" + z;
+                String[] columnExtraBlocks = cache.computeIfAbsent(columnKey, k -> new String[256]);
+                columnExtraBlocks[y] = blockId;
+
+            } catch (NumberFormatException e) {
+                log.warn("Failed to parse extraBlock key: {}", key, e);
+            }
+        }
+
+        log.debug("Built extraBlocks cache with {} columns", cache.size());
+        return cache;
     }
 
 //    /**
