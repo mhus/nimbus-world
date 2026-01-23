@@ -328,11 +328,11 @@
                   <span class="label-text-alt text-xs">Group</span>
                 </label>
                 <select
-                  v-model.number="editState.selectedGroup"
+                  v-model="editState.selectedGroup"
                   class="select select-bordered select-sm w-full text-xs"
                   :disabled="saving || editState.editMode"
                 >
-                  <option :value="0">No Group (0)</option>
+                  <option :value="null">No Group</option>
                   <option v-for="group in availableGroups" :key="group.id" :value="group.id">
                     {{ group.name }} ({{ group.id }})
                   </option>
@@ -463,7 +463,7 @@ const editState = ref({
   mountX: 0,
   mountY: 0,
   mountZ: 0,
-  selectedGroup: 0,
+  selectedGroup: null as string | null,
 });
 
 // Available layers
@@ -475,7 +475,7 @@ const availableLayers = ref<Array<{
   mountX: number;
   mountY: number;
   mountZ: number;
-  groups: Record<string, number>;
+  groups: Record<string, string>;
   id: string;
   layerDataId: string;
 }>>([]);
@@ -489,13 +489,13 @@ const availableModels = ref<Array<{
   mountY: number;
   mountZ: number;
   order: number;
-  groups: Record<string, number>;
+  groups: Record<string, string>;
 }>>([]);
 
 // Available groups from selected model
 const availableGroups = ref<Array<{
   name: string;
-  id: number;
+  id: string;
 }>>([]);
 
 // Legacy state refs
@@ -667,7 +667,7 @@ async function fetchEditState() {
       mountX: data.mountX || 0,
       mountY: data.mountY || 0,
       mountZ: data.mountZ || 0,
-      selectedGroup: data.selectedGroup || 0,
+      selectedGroup: data.selectedGroup || null,
     };
 
     // Only update if state actually changed
@@ -791,16 +791,17 @@ watch(() => editState.value.selectedLayer, async (newLayer) => {
 watch(() => editState.value.selectedModelId, (newModelId) => {
   if (!newModelId) {
     availableGroups.value = [];
-    editState.value.selectedGroup = 0;
+    editState.value.selectedGroup = null;
     return;
   }
 
   // Find selected model and extract groups
   const model = availableModels.value.find(m => m.id === newModelId);
   if (model && model.groups) {
-    // Convert Record<string, number> to Array<{name, id}>
-    availableGroups.value = Object.entries(model.groups).map(([name, id]) => ({
-      name,
+    // Convert Record<string, string> (groupId -> title) to Array<{name, id}>
+    // Mapping is now: groupId -> title (optional)
+    availableGroups.value = Object.entries(model.groups).map(([id, title]) => ({
+      name: title || id,  // Use title if available, otherwise use ID
       id
     }));
     console.log('[Groups] Loaded', availableGroups.value.length, 'groups from model');
@@ -809,7 +810,7 @@ watch(() => editState.value.selectedModelId, (newModelId) => {
   }
 
   // Reset selected group when model changes
-  editState.value.selectedGroup = 0;
+  editState.value.selectedGroup = null;
 });
 
 // Watch selectedLayer and load groups for GROUND layers from WLayer
@@ -818,9 +819,10 @@ watch(() => editState.value.selectedLayer, (newLayer) => {
 
   // If it's a GROUND layer, load groups from WLayer
   if (layerInfo && layerInfo.layerType === 'GROUND' && layerInfo.groups) {
-    // Convert Record<string, number> to Array<{name, id}>
-    availableGroups.value = Object.entries(layerInfo.groups).map(([name, id]) => ({
-      name,
+    // Convert Record<string, string> (groupId -> title) to Array<{name, id}>
+    // Mapping is now: groupId -> title (optional)
+    availableGroups.value = Object.entries(layerInfo.groups).map(([id, title]) => ({
+      name: title || id,  // Use title if available, otherwise use ID
       id
     }));
     console.log('[Groups] Loaded', availableGroups.value.length, 'groups from GROUND layer');
@@ -834,7 +836,7 @@ watch(() => editState.value.selectedLayer, (newLayer) => {
   }
 
   // Reset selected group when layer changes
-  editState.value.selectedGroup = 0;
+  editState.value.selectedGroup = null;
 });
 
 // Lifecycle hooks

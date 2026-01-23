@@ -110,12 +110,13 @@ public class WLayerModel implements Identifiable {
     private List<LayerBlock> content = new ArrayList<>();
 
     /**
-     * Group mapping: group name -> group ID.
-     * Allows named access to groups defined in the layer.
-     * Example: {"walls": 1, "roof": 2, "floor": 3}
+     * Group mapping: group ID -> group title (optional).
+     * Provides display titles for groups defined in the model.
+     * If a group has no title mapping, the frontend displays the group ID itself.
+     * Example: {"1": "Walls", "2": "Roof", "3": "Floor"} or {"wall-123": "Main Wall"}
      */
     @Builder.Default
-    private Map<String, Integer> groups = new HashMap<>();
+    private Map<String, String> groups = new HashMap<>();
 
     private Instant createdAt;
     private Instant updatedAt;
@@ -141,7 +142,7 @@ public class WLayerModel implements Identifiable {
      * Returns world coordinates (mount point + relative position).
      * Streams directly from block data without creating intermediate collections.
      *
-     * @return Stream of block positions as int arrays [x, y, z, groupId, x-org, y-org, z-org]
+     * @return Stream of block positions as int arrays [x, y, z, groupIdHash, x-org, y-org, z-org]
      */
     public Stream<int[]> getBlockPositions() {
         if (content == null || content.isEmpty()) {
@@ -153,11 +154,13 @@ public class WLayerModel implements Identifiable {
                 .filter(layerBlock -> layerBlock.getBlock().getPosition() != null)
                 .map(layerBlock -> {
                     de.mhus.nimbus.generated.types.Vector3Int relativePos = layerBlock.getBlock().getPosition();
+                    // Convert groupId String to int (use hashCode, or 0 if null)
+                    int groupIdHash = layerBlock.getGroup() != null ? layerBlock.getGroup().hashCode() : 0;
                     return new int[]{
                             mountX + relativePos.getX(),
                             mountY + relativePos.getY(),
                             mountZ + relativePos.getZ(),
-                            layerBlock.getGroup(),
+                            groupIdHash,
                             relativePos.getX(),
                             relativePos.getY(),
                             relativePos.getZ(),

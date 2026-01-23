@@ -29,9 +29,9 @@ class EditCachePainterTest {
             Object block = invocation.getArgument(3);
             if (block instanceof Block) paintedBlocks.add(block.toString());
             return null;
-        }).when(editService).doSetAndSendBlock(any(), any(), any(), any(Block.class), anyInt());
+        }).when(editService).doSetAndSendBlock(any(), any(), any(), any(Block.class), nullable(String.class));
         painter = new EditCachePainter(editService);
-        painter.setContext(world, "layer", "model", 0, blockDef);
+        painter.setContext(world, "layer", "model", null, blockDef);
     }
 
     @Test

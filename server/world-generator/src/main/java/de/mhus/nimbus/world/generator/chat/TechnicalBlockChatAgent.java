@@ -136,7 +136,7 @@ public class TechnicalBlockChatAgent implements WChatAgent {
         String layerDataId = params.has("layerDataId") ? params.get("layerDataId").asText() : null;
         String layerName = params.has("layerName") ? params.get("layerName").asText() : null;
         String modelName = params.has("modelName") ? params.get("modelName").asText() : null;
-        int groupId = params.has("groupId") ? params.get("groupId").asInt() : 0;
+        String groupId = params.has("groupId") ? params.get("groupId").asText() : null;
 
         // Load missing context fields from EditState if sessionId is available
         if (contextSessionId != null && !contextSessionId.isBlank()) {
@@ -167,8 +167,8 @@ public class TechnicalBlockChatAgent implements WChatAgent {
                         log.info("📥 Loaded modelName from EditState: {}", modelName);
                     }
 
-                    // Load groupId if not provided (0 is default)
-                    if (groupId == 0) {
+                    // Load groupId if not provided (null is default)
+                    if (groupId == null || groupId.isBlank()) {
                         groupId = editState.getSelectedGroup();
                         log.info("📥 Loaded groupId from EditState: {}", groupId);
                     }

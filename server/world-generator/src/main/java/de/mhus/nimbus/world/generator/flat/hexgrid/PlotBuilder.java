@@ -135,6 +135,11 @@ public class PlotBuilder extends HexGridBuilder {
                 // Set level and material
                 flat.setLevel(x, z, plot.getLevel());
                 flat.setColumn(x, z, plot.getMaterial());
+
+                // Store groupId for level
+                if (plot.getGroupId() != null) {
+                    flat.setGroup(x, z, plot.getGroupId());
+                }
             }
         }
 
@@ -172,6 +177,11 @@ public class PlotBuilder extends HexGridBuilder {
                 // Set level and material
                 flat.setLevel(x, z, plot.getLevel());
                 flat.setColumn(x, z, plot.getMaterial());
+
+                // Store groupId for level
+                if (plot.getGroupId() != null) {
+                    flat.setGroup(x, z, plot.getGroupId());
+                }
             }
         }
 

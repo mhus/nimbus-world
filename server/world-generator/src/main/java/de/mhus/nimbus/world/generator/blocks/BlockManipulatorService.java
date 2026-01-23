@@ -557,7 +557,7 @@ public class BlockManipulatorService {
         String worldId = context.getWorldId();
         String layerDataId = context.getLayerDataId();
         String modelName = context.getModelName();
-        int groupId = context.getGroupId();
+        String groupId = context.getGroupId();
 
         if (worldId == null || worldId.isBlank()) {
             throw new BlockManipulatorException("WorldId required for creating BlockPainter");

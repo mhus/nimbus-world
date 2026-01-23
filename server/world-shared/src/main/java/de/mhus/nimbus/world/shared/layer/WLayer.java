@@ -86,13 +86,14 @@ public class WLayer implements Identifiable {
     private boolean enabled = true;
 
     /**
-     * Group mapping: group name -> group ID.
-     * Allows named access to groups defined in the layer.
+     * Group mapping: group ID -> group title (optional).
+     * Provides display titles for groups defined in the layer.
+     * If a group has no title mapping, the frontend displays the group ID itself.
      * This is for Ground Layers, Model Layers use a mapping in WLayerModel.
-     * Example: {"blackRiver": 1}
+     * Example: {"1": "Black River", "river-123": "Main River"}
      */
     @Builder.Default
-    private Map<String, Integer> groups = new HashMap<>();
+    private Map<String, String> groups = new HashMap<>();
 
     /**
      * Base ground layer flag.

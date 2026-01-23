@@ -49,10 +49,10 @@ public record BlockOriginDto(
         Integer mountZ,
 
         @TypeScript(optional = true)
-        Integer group,
+        String group,
 
         @TypeScript(optional = true)
-        String groupName,  // Name of the group if block is in a group
+        String groupName,  // Title of the group if block is in a group (optional)
 
         @TypeScript(optional = true)
         String metadata

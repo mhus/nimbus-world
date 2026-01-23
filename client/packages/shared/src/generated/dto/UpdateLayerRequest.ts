@@ -14,5 +14,5 @@ export interface UpdateLayerRequest {
   order?: number;
   enabled?: boolean;
   baseGround?: boolean;
-  groups?: Record<string, number>;
+  groups?: Record<string, string>;
 }

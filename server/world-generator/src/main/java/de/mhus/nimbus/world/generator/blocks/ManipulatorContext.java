@@ -52,7 +52,7 @@ public class ManipulatorContext {
      * Group ID for block grouping.
      */
     @Builder.Default
-    private int groupId = 0;
+    private String groupId = null;
 
     /**
      * Original parameter string as provided by the user/chat.

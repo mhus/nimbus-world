@@ -74,10 +74,10 @@ public class EditState {
     private Integer mountZ;
 
     /**
-     * Selected group number (default: 0 = no group).
+     * Selected group ID (default: null = no group).
+     * Can be a numeric string like "1", "2" or a descriptive string like "river-1234".
      */
-    @Builder.Default
-    private int selectedGroup = 0;
+    private String selectedGroup;
 
     /**
      * Last update timestamp.

@@ -15,7 +15,7 @@ export interface WLayerModel {
   referenceModelId?: string;
   order: number;
   content: any[];
-  groups: Record<string, number>;
+  groups: Record<string, string>;
   createdAt: Date;
   updatedAt: Date;
 }

@@ -96,13 +96,13 @@ public class EditCachePainter {
     @Getter @Setter
     private BlockPainter painter = DEFAULT_PAINTER;
     @Getter @Setter
-    private int groupId;
+    private String groupId;
     @Getter
     private ManipulatorContext context;
 
 
 
-    public void setContext(WWorld world, String layerDataId, String modelName, int groupId, BlockDef blockDef) {
+    public void setContext(WWorld world, String layerDataId, String modelName, String groupId, BlockDef blockDef) {
         this.world = world;
         this.layerDataId = layerDataId;
         this.modelName = modelName;

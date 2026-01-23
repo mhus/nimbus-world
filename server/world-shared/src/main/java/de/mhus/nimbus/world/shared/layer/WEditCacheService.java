@@ -103,7 +103,7 @@ public class WEditCacheService {
         return repository.findByWorldIdAndLayerDataIdAndChunk(worldId, layerDataId, chunk);
     }
 
-    public void doSetAndSendBlock(WWorld world, String layerDataId, String modelName, Block block, int group) {
+    public void doSetAndSendBlock(WWorld world, String layerDataId, String modelName, Block block, String group) {
 
         setBlock(world, layerDataId, modelName, block, group);
 
@@ -119,7 +119,7 @@ public class WEditCacheService {
 
     }
 
-    public WEditCache setBlock(WWorld world, String layerDataId, String modelName, Block block, int group) {
+    public WEditCache setBlock(WWorld world, String layerDataId, String modelName, Block block, String group) {
         LayerBlock layerBlock = LayerBlock.builder()
                 .block(block)
                 .group(group)

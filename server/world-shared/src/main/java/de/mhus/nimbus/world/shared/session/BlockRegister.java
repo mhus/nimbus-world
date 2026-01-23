@@ -36,8 +36,9 @@ public class BlockRegister {
 
     /**
      * Group ID where the block was marked (optional).
+     * Can be a numeric string like "1", "2" or a descriptive string like "river-1234".
      */
-    private Integer group;
+    private String group;
 
     /**
      * Group name where the block was marked (optional).

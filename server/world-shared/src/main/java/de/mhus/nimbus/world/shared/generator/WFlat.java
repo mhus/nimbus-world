@@ -9,6 +9,7 @@ import lombok.Data;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.apache.logging.log4j.util.Strings;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.index.CompoundIndexes;
@@ -18,6 +19,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * MongoDB Entity for flat terrain data used in world generation.
@@ -94,6 +96,11 @@ public class WFlat implements Identifiable {
 
     @Builder.Default
     private HashMap<Byte, MaterialDefinition> materials = new HashMap<>();
+
+    // List of groupIds and their associated local block ids x/z (level) or x/y/z (extraBlocks)
+    @Builder.Default
+    @Getter
+    private Map<String, Set<String>> groups = new HashMap<>();
 
     public void initWithSize(int sizeX, int sizeZ) {
         if (sizeX <= 0 || sizeZ <= 0 || sizeX > MAX_SIZE || sizeZ > MAX_SIZE)
@@ -324,5 +331,78 @@ public class WFlat implements Identifiable {
             // or air
             return null;
         }
+
+        /**
+         * Returns the blockId for the y - starts at level
+         * @param level - value from levels or ocean level
+         * @param y - y coordinate
+         * @return null or block id
+         */
+        public boolean isExtraBlock(WFlat flat, int level, int y, String[] extraBlocks) {
+            if (y < 0 || y > 255)
+                return false;
+            // first: my own block
+            if (y == level)
+                return false;
+            // second: extra block
+            if (extraBlocks != null && extraBlocks[y] != null)
+                return extraBlocks[y] != null;
+            return false;
+        }
+
     }
+
+    public void setGroup(int x, int z, String groupId) {
+        String localId = x + "/" + z;
+        setGroup(localId, groupId);
+    }
+
+    public void setGroup(int x, int y, int z, String groupId) {
+        String localId = x + "/" + y + "/" + z;
+        setGroup(localId, groupId);
+    }
+
+    public String getGroup(int x, int z) {
+        String localId = x + "/" + z;
+        for (Map.Entry<String, Set<String>> entry : groups.entrySet()) {
+            if (entry.getValue().contains(localId))
+                return entry.getKey();
+        }
+        return null;
+    }
+
+    public String getGroup(int x, int y, int z) {
+        String localId = x + "/" + y + "/" + z;
+        for (Map.Entry<String, Set<String>> entry : groups.entrySet()) {
+            if (entry.getValue().contains(localId))
+                return entry.getKey();
+        }
+        return null;
+    }
+
+    public void removeGroup(String groupId) {
+        setGroup(null, groupId);
+    }
+
+    private synchronized void setGroup(String localId, String groupId) {
+        if (Strings.isBlank(groupId) && Strings.isBlank(localId)) {
+            // nothing to do
+            return;
+        }
+        if (Strings.isBlank(groupId)) {
+            // remove from all groups
+            for (Map.Entry<String, Set<String>> entry : groups.entrySet()) {
+                entry.getValue().remove(localId);
+            }
+            return;
+        }
+        if (Strings.isBlank(localId)) {
+            // remove all entries for this group
+            groups.remove(groupId);
+            return;
+        }
+        groups.computeIfAbsent(groupId, k -> new java.util.HashSet<>()).add(localId);
+    }
+
+
 }

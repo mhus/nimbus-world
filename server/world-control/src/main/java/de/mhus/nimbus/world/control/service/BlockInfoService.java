@@ -63,7 +63,7 @@ public class BlockInfoService {
         // Check edit mode and layer selection
         boolean editMode = false;
         String layerName = null;
-        Integer group = null;
+        String group = null;
 
         if (sessionId != null && !sessionId.isBlank()) {
             EditState state = editService.getEditState(worldId, sessionId);
@@ -102,7 +102,7 @@ public class BlockInfoService {
                     readOnly = false;
 
                     // Get group title from WLayerModel (groups are now in model, not layer)
-                    if (layerOpt.isPresent() && group != null && group > 0) {
+                    if (layerOpt.isPresent() && group != null && !group.isEmpty()) {
                         WLayer layer = layerOpt.get();
                         // For MODEL layers, would need to load WLayerModel to get groups
                         // For now, skip group title resolution (groups moved to WLayerModel)

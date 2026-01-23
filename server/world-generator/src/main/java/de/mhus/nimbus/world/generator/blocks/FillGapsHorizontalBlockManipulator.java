@@ -144,7 +144,7 @@ public class FillGapsHorizontalBlockManipulator implements BlockManipulator {
 
         String layerDataId = context.getLayerDataId();
         String modelName = context.getModelName();
-        int groupId = context.getGroupId();
+        String groupId = context.getGroupId();
 
         // Initialize ModelSelector
         if (context.getModelSelector() == null) {

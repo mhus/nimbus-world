@@ -156,8 +156,9 @@ public class ELayerBlockGridController {
                             coord.put("z", worldZ);
 
                             // Optional: Add color based on group
-                            if (layerBlock.getGroup() > 0) {
-                                coord.put("color", getGroupColor(layerBlock.getGroup()));
+                            String groupId = layerBlock.getGroup();
+                            if (groupId != null && !groupId.isEmpty()) {
+                                coord.put("color", getGroupColor(groupId));
                             }
 
                             blockCoordinates.add(coord);
@@ -345,8 +346,9 @@ public class ELayerBlockGridController {
                 coord.put("z", (int) position.getZ());
 
                 // Optional: Add color based on group
-                if (layerBlock.getGroup() > 0) {
-                    coord.put("color", getGroupColor(layerBlock.getGroup()));
+                String groupId = layerBlock.getGroup();
+                if (groupId != null && !groupId.isEmpty()) {
+                    coord.put("color", getGroupColor(groupId));
                 }
 
                 blockCoordinates.add(coord);
@@ -434,8 +436,8 @@ public class ELayerBlockGridController {
     /**
      * Get color for group ID (simple mapping for visualization).
      */
-    private String getGroupColor(int groupId) {
-        // Simple color mapping based on group ID
+    private String getGroupColor(String groupId) {
+        // Simple color mapping based on group ID hash
         String[] colors = {
                 "#3b82f6", // blue
                 "#ef4444", // red
@@ -446,6 +448,8 @@ public class ELayerBlockGridController {
                 "#06b6d4", // cyan
                 "#f97316"  // orange
         };
-        return colors[groupId % colors.length];
+        // Use hashCode for consistent color assignment
+        int hash = Math.abs(groupId.hashCode());
+        return colors[hash % colors.length];
     }
 }

@@ -38,6 +38,6 @@ public record UpdateLayerModelRequest(
         Integer order,
 
         @TypeScript(optional = true)
-        Map<String, Integer> groups
+        Map<String, String> groups
 ) {
 }

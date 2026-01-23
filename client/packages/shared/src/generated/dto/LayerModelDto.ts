@@ -15,7 +15,7 @@ export interface LayerModelDto {
   rotation: number;
   referenceModelId?: string;
   order: number;
-  groups: Record<string, number>;
+  groups: Record<string, string>;
   createdAt?: Date;
   updatedAt?: Date;
 }

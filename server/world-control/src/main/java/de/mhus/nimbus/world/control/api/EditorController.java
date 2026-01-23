@@ -355,7 +355,7 @@ public class EditorController extends BaseEditorController {
         private Integer mountX;
         private Integer mountY;
         private Integer mountZ;
-        private Integer selectedGroup;
+        private String selectedGroup;
     }
 
     /**

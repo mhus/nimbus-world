@@ -73,7 +73,7 @@ public class EditService {
                         .worldId(worldId)
                         .editMode(false)
                         .editAction(EditAction.OPEN_CONFIG_DIALOG)
-                        .selectedGroup(0)
+                        .selectedGroup(null)
                         .lastUpdated(Instant.now())
                         .build()
         );
@@ -373,10 +373,14 @@ public class EditService {
             // Convert Map to BlockRegister
             Block block = objectMapper.convertValue(blockInfo.get("block"), Block.class);
 
+            // Convert group to String (handle both Integer and String from frontend)
+            Object groupObj = blockInfo.get("group");
+            String group = groupObj != null ? String.valueOf(groupObj) : null;
+
             BlockRegister blockRegister = BlockRegister.builder()
                     .block(block)
                     .layer((String) blockInfo.get("layer"))
-                    .group((Integer) blockInfo.get("group"))
+                    .group(group)
                     .groupName((String) blockInfo.get("groupName"))
                     .readOnly((Boolean) blockInfo.get("readOnly"))
                     .build();
@@ -1042,7 +1046,7 @@ public class EditService {
      * @param sessionId Session identifier
      * @param layer     Layer with MODEL type
      */
-    private void displayModelInClient(String worldId, String sessionId, WLayer layer, int selectedGroupId) {
+    private void displayModelInClient(String worldId, String sessionId, WLayer layer, String selectedGroupId) {
         // Get WSession
         Optional<WSession> wSessionOpt = wSessionService.getWithPlayerUrl(sessionId);
         if (wSessionOpt.isEmpty() || Strings.isBlank(wSessionOpt.get().getPlayerUrl())) {
@@ -1079,8 +1083,8 @@ public class EditService {
             String color;
             if (pos[4] == 0 && pos[5] == 0 && pos[6] == 0) {
                 color = "#ff0000"; // the root block
-            } else if (pos[3] == selectedGroupId) {
-                color = "#ffff00"; // selected group
+            } else if (selectedGroupId != null && pos[3] == selectedGroupId.hashCode()) {
+                color = "#ffff00"; // selected group (compare with hashCode from WLayerModel.getBlockPositions)
             } else {
                 color = "#00ff00"; // for existing blocks
             }

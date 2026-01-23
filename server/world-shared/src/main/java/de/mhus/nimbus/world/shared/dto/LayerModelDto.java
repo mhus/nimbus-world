@@ -38,7 +38,7 @@ public record LayerModelDto(
 
         int order,
 
-        Map<String, Integer> groups,
+        Map<String, String> groups,
 
         @TypeScript(optional = true)
         Instant createdAt,

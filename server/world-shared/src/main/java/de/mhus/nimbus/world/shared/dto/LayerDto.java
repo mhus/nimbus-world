@@ -42,7 +42,7 @@ public record LayerDto(
         boolean baseGround,
 
         @TypeScript(optional = true)
-        Map<String, Integer> groups,
+        Map<String, String> groups,
 
         @TypeScript(optional = true)
         Instant createdAt,

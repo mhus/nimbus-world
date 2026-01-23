@@ -52,6 +52,6 @@ public record UpdateLayerRequest(
         Boolean baseGround,
 
         @TypeScript(optional = true)
-        Map<String, Integer> groups
+        Map<String, String> groups
 ) {
 }

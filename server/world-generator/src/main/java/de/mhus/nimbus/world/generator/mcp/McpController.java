@@ -687,7 +687,7 @@ public class McpController extends BaseEditorController {
 
                         return LayerBlock.builder()
                                 .block(block)
-                                .group(b.group() != null ? b.group() : 0)
+                                .group(b.group())
                                 .build();
                     })
                     .collect(Collectors.toList());
@@ -816,6 +816,6 @@ public class McpController extends BaseEditorController {
     public record AddBlocksRequest(List<BlockRequest> blocks) {
     }
 
-    public record BlockRequest(int x, int y, int z, String blockId, Integer group) {
+    public record BlockRequest(int x, int y, int z, String blockId, String group) {
     }
 }

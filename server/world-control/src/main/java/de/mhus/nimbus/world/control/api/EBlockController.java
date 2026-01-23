@@ -92,17 +92,13 @@ public class EBlockController extends BaseEditorController {
         String groupName = null;
 
         // Find group title if block is in a group
-        if (origin.model() != null && origin.layerBlock().getGroup() > 0) {
-            // Search for group title in model's groups map
-            for (Map.Entry<String, Integer> entry : origin.model().getGroups().entrySet()) {
-                if (entry.getValue().equals(origin.layerBlock().getGroup())) {
-                    groupName = entry.getKey();
-                    break;
-                }
-            }
+        String groupId = origin.layerBlock().getGroup();
+        if (origin.model() != null && groupId != null && !groupId.isEmpty()) {
+            // Get group title from model's groups map (groupId -> title)
+            groupName = origin.model().getGroups().get(groupId);
         }
 
-        Integer groupValue = origin.layerBlock().getGroup() > 0 ? Integer.valueOf(origin.layerBlock().getGroup()) : null;
+        String groupValue = (groupId != null && !groupId.isEmpty()) ? groupId : null;
 
         return new BlockOriginDto(
                 origin.layer().getId(),

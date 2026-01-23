@@ -519,8 +519,7 @@ public class WSessionService {
                     .layerDataId((String) map.get("layerDataId"))
                     .selectedModelId((String) map.get("selectedModelId"))
                     .modelName((String) map.get("modelName"))
-                    .selectedGroup(parseInteger(map.get("selectedGroup")) != null ?
-                            parseInteger(map.get("selectedGroup")) : 0)
+                    .selectedGroup((String) map.get("selectedGroup"))
                     .lastUpdated(map.get("lastUpdated") != null ?
                             Instant.parse((String) map.get("lastUpdated")) : null)
                     .worldId((String) map.get("worldId"))
@@ -719,7 +718,7 @@ public class WSessionService {
             BlockRegister blockRegister = BlockRegister.builder()
                     .block(block)
                     .layer((String) map.get("layer"))
-                    .group(parseInteger(map.get("group")))
+                    .group((String) map.get("group"))
                     .groupName((String) map.get("groupName"))
                     .readOnly(parseBoolean(map.get("readOnly")))
                     .build();

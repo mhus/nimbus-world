@@ -15,10 +15,8 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
 import java.util.EnumMap;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 /**
  * HexGrid manipulator.
@@ -97,6 +95,9 @@ public class HexGridManipulator implements FlatManipulator {
 
         log.info("Executing builder pipeline with {} builders for hex grid: {}",
                 builderPipeline.size(), hexGrid.getPosition());
+
+        // Clear all groupIds before executing builders
+        flat.getGroups().clear();
 
         // Execute all builders in pipeline
         for (int i = 0; i < builderPipeline.size(); i++) {

@@ -90,7 +90,7 @@ public class RotateSelectedBlockManipulator implements BlockManipulator {
         }
 
         String modelName = context.getModelName();
-        int groupId = context.getGroupId();
+        String groupId = context.getGroupId();
 
         // Load WWorld
         Optional<WWorld> worldOpt = worldService.getByWorldId(worldId);

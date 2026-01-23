@@ -31,9 +31,8 @@ public class LayerBlock {
 
     /**
      * Group identifier for this block.
-     * Default is 0 (no group).
+     * Default is null (no group).
      * Can be used to organize and manage blocks in groups.
      */
-    @Builder.Default
-    private int group = 0;
+    private String group;
 }

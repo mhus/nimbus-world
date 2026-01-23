@@ -66,15 +66,18 @@ class WSessionServiceTest {
         Mockito.when(props.getDeprecatedMinutes()).thenReturn(30L);
         @SuppressWarnings("unchecked") HashOperations hashOps = Mockito.mock(HashOperations.class);
         Mockito.doReturn(hashOps).when(template).opsForHash();
-        Mockito.when(hashOps.get("wsession:expiredKey", "expire")).thenReturn(Instant.now().minusSeconds(10).toString());
-        Mockito.when(hashOps.get("wsession:validKey", "expire")).thenReturn(Instant.now().plusSeconds(600).toString());
-        Mockito.when(template.delete("wsession:expiredKey")).thenReturn(true);
-        Mockito.when(template.delete("wsession:validKey")).thenReturn(true);
-        Mockito.when(template.keys("wsession:*")).thenReturn(java.util.Set.of("wsession:expiredKey","wsession:validKey"));
+        Mockito.when(hashOps.get("wsession:session:expiredKey", "expire")).thenReturn(Instant.now().minusSeconds(10).toString());
+        Mockito.when(hashOps.get("wsession:session:validKey", "expire")).thenReturn(Instant.now().plusSeconds(600).toString());
+        Mockito.when(template.delete("wsession:session:expiredKey")).thenReturn(true);
+        Mockito.when(template.delete("wsession:session:validKey")).thenReturn(true);
+        // Mock keys with correct pattern that matches cleanup logic
+        Mockito.when(template.keys("wsession:session:*")).thenReturn(java.util.Set.of("wsession:session:expiredKey","wsession:session:validKey"));
+        // Mock getConnectionFactory to return null, so fallback logic is used
+        Mockito.when(template.getConnectionFactory()).thenReturn(null);
         WSessionService svc = new WSessionService(template, props, new EngineMapper());
         var result = svc.cleanupExpired("0");
         assertEquals(1, result.deleted());
-        Mockito.verify(template).delete("wsession:expiredKey");
-        Mockito.verify(template, Mockito.never()).delete("wsession:validKey");
+        Mockito.verify(template).delete("wsession:session:expiredKey");
+        Mockito.verify(template, Mockito.never()).delete("wsession:session:validKey");
     }
 }

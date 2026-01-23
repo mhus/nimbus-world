@@ -354,7 +354,7 @@ public class BlockToolService {
                 .layerDataId(layerDataId != null && !layerDataId.isBlank() ? layerDataId : null)
                 .layerName(layerName != null && !layerName.isBlank() ? layerName : null)
                 .modelName(modelName != null && !modelName.isBlank() ? modelName : null)
-                .groupId(0)
+                .groupId(null)
                 .params(params)
                 .build();
 

@@ -316,15 +316,20 @@ public class RiverBuilder extends HexGridBuilder {
                     flat.setLevel(x, z, bedLevel);
                     // Set river bed material to SAND
                     flat.setColumn(x, z, FlatMaterialService.SAND);
+
+                    // Store groupId for level
+                    if (groupId != null) {
+                        flat.setGroup(x, z, groupId);
+                    }
                 }
 
                 // Set water surface as extra block at water level
                 // Water level is the original level parameter (not the lowered bed level)
                 flat.setExtraBlock(x, level, z, waterBlockDef);
 
-                // Store metadata for river groupId
+                // Store groupId for extra block (water surface)
                 if (groupId != null) {
-                    // TODO: Store groupId in metadata when available
+                    flat.setGroup(x, level, z, groupId);
                 }
             }
         }

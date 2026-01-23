@@ -12,5 +12,5 @@ export interface UpdateLayerModelRequest {
   rotation?: number;
   referenceModelId?: string;
   order?: number;
-  groups?: Record<string, number>;
+  groups?: Record<string, string>;
 }

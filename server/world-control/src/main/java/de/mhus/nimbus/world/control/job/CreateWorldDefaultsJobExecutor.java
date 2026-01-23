@@ -136,7 +136,7 @@ public class CreateWorldDefaultsJobExecutor implements JobExecutor {
 
                         LayerBlock layerBlock = LayerBlock.builder()
                                 .block(block)
-                                .group(0)
+                                .group(null)
                                 .build();
 
                         blocks.add(layerBlock);
