@@ -44,9 +44,10 @@ public class VillageDesigner {
         }
 
         // 3. Plaza platzieren (in Center-Grid)
+        GridLocalCoordinate plazaCoord = null;
         if (template.getPlaza() != null) {
             PlazaDefinition plaza = template.getPlaza();
-            GridLocalCoordinate plazaCoord = layout.toAbsolute(
+            plazaCoord = layout.toAbsolute(
                 plaza.getLocalX(), plaza.getLocalZ(), FLAT_SIZE);
 
             HexGridConfig centerConfig = gridConfigs.get(plazaCoord.getGridPosition());
@@ -55,7 +56,30 @@ public class VillageDesigner {
             }
         }
 
-        // 4. Gebäude platzieren
+        // 4. Gebäude platzieren und Road-Centers pro Grid sammeln
+        Map<HexVector2, GridLocalCoordinate> gridRoadCenters = new HashMap<>();
+
+        // Bestimme Road-Center für jedes Grid
+        for (HexVector2 gridPos : layout.getGridPositions()) {
+            GridLocalCoordinate roadCenter;
+
+            // Wenn Plaza in diesem Grid ist, nutze Plaza-Position
+            if (plazaCoord != null &&
+                plazaCoord.getGridPosition().getQ() == gridPos.getQ() &&
+                plazaCoord.getGridPosition().getR() == gridPos.getR()) {
+                roadCenter = plazaCoord;
+            } else {
+                // Sonst nutze Grid-Center als Road-Center
+                roadCenter = GridLocalCoordinate.builder()
+                    .gridPosition(gridPos)
+                    .localX(FLAT_SIZE / 2)
+                    .localZ(FLAT_SIZE / 2)
+                    .build();
+            }
+
+            gridRoadCenters.put(gridPos, roadCenter);
+        }
+
         if (template.getBuildings() != null) {
             for (TemplateBuildingDefinition building : template.getBuildings()) {
                 GridLocalCoordinate coord = layout.toAbsolute(
@@ -66,9 +90,12 @@ public class VillageDesigner {
                     VillagePlotDefinition plot = createPlot(building, coord, baseLevel);
                     gridConfig.addPlot(plot);
 
-                    // Optional: Straße zum Plaza
-                    if (building.isConnectToPlaza() && template.getPlaza() != null) {
-                        addPlotToPlazaConnection(gridConfig, plot, template.getPlaza(), layout);
+                    // Optional: Straße zum Road-Center des Grids
+                    if (building.isConnectToPlaza()) {
+                        GridLocalCoordinate roadCenter = gridRoadCenters.get(coord.getGridPosition());
+                        if (roadCenter != null) {
+                            addPlotToPlazaConnection(gridConfig, plot, coord, roadCenter, baseLevel);
+                        }
                     }
                 }
             }
@@ -178,15 +205,43 @@ public class VillageDesigner {
     }
 
     /**
-     * Adds connection from plot to plaza (optional)
+     * Adds connection from plot to plaza by creating an actual road
      */
     private void addPlotToPlazaConnection(HexGridConfig gridConfig,
                                           VillagePlotDefinition plot,
-                                          PlazaDefinition plaza,
-                                          VillageGridLayout layout) {
-        // This is handled by the VillageBuilder's plot.road parameter
-        // We just set the road index to 0 (plaza road)
-        plot.setRoad(0);
+                                          GridLocalCoordinate buildingCoord,
+                                          GridLocalCoordinate plazaCoord,
+                                          int baseLevel) {
+        // Check if building and plaza are in the same grid
+        if (buildingCoord.getGridPosition().getQ() != plazaCoord.getGridPosition().getQ() ||
+            buildingCoord.getGridPosition().getR() != plazaCoord.getGridPosition().getR()) {
+            // Different grids - would need boundary road, skip for now
+            log.debug("Building and plaza in different grids, skipping direct connection");
+            return;
+        }
+
+        // Create a road from plaza center to building
+        VillageRoadDefinition road = VillageRoadDefinition.builder()
+            .fromX(plazaCoord.getLocalX())
+            .fromZ(plazaCoord.getLocalZ())
+            .toX(buildingCoord.getLocalX())
+            .toZ(buildingCoord.getLocalZ())
+            .width(3)
+            .type("street")
+            .level(baseLevel)
+            .build();
+
+        // Add road to grid config
+        int roadIndex = gridConfig.getInternalRoads().size();
+        gridConfig.addInternalRoad(road);
+
+        // Connect plot to this road
+        plot.setRoad(roadIndex);
+
+        log.debug("Created road from plaza [{},{}] to building [{},{}], road index: {}",
+            plazaCoord.getLocalX(), plazaCoord.getLocalZ(),
+            buildingCoord.getLocalX(), buildingCoord.getLocalZ(),
+            roadIndex);
     }
 
     /**
