@@ -184,7 +184,12 @@ public class JobProcessingScheduler {
                     completedJob.getWorldId(),
                     nextJobConfig.getExecutor(),
                     nextJobConfig.getType() != null ? nextJobConfig.getType() : nextJobConfig.getExecutor(),
-                    parameters
+                    parameters,
+                    nextJobConfig.getServer(),
+                    5,
+                    0,
+                    null,
+                    null
             );
 
             log.info("Scheduled follow-up job: nextJobId={} previousJobId={} executor={}",

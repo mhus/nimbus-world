@@ -38,12 +38,18 @@ public class WJobService {
     @Transactional
     public WJob createJob(String worldId, String executor, String type,
                           Map<String, String> parameters) {
-        return createJob(worldId, executor, type, parameters, 5, 0);
+        return createJob(worldId, executor, type, parameters, null, 5, 0, null, null);
+    }
+
+    public WJob createJob(String worldId, String executor, String type,
+                          Map<String, String> parameters, int priority, int maxRetries) {
+        return createJob(worldId, executor, type, parameters, null, priority, maxRetries, null, null);
     }
 
     @Transactional
     public WJob createJob(String worldId, String executor, String type,
-                          Map<String, String> parameters, int priority, int maxRetries) {
+                          Map<String, String> parameters, String server, int priority, int maxRetries,
+                          NextJob onSuccess, NextJob onError) {
 
         // IMPORTANT: Filter out instances - jobs are per world only
         WorldId parsedWorldId = de.mhus.nimbus.shared.types.WorldId.unchecked(worldId);
@@ -53,10 +59,13 @@ public class WJobService {
                 .worldId(lookupWorldId)
                 .executor(executor)
                 .type(type)
+                .server(server)
                 .status(JobStatus.PENDING.name())
                 .parameters(parameters != null ? parameters : Map.of())
                 .priority(priority)
                 .maxRetries(maxRetries)
+                .onSuccess(onSuccess)
+                .onError(onError)
                 .build();
 
         job.touchCreate();

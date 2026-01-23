@@ -31,6 +31,12 @@ public class NextJob {
     private String type;
 
     /**
+     * Server name to execute the next job on (optional).
+     * If empty/blank, job can run on any server.
+     */
+    private String server;
+
+    /**
      * Additional parameters for the next job.
      * Will be merged with automatic parameters (previousJobId, previousJobResult, previousJobErrorMessage).
      */

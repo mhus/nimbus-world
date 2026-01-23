@@ -14,6 +14,7 @@ nimbus:
     chunk-update: true
     job-cleanup: true
     job-service: true
+    workflows: true
   encryption:
     password: ${NIMBUS_ENCRYPTION_PASSWORD}
   chunk:

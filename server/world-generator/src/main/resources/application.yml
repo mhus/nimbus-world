@@ -13,6 +13,7 @@ nimbus:
     job-processing: true
     job-service: true
     edit-cache-processing: true
+    workflows: true
   encryption:
     password: ${NIMBUS_ENCRYPTION_PASSWORD}
   schema:
