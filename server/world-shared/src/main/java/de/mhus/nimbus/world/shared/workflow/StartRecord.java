@@ -5,8 +5,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.Map;
-
 /**
  * Workflow status stored in journal.
  * The last journal entry of type "status" represents the current workflow status.
@@ -15,7 +13,7 @@ import java.util.Map;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class WorkflowStart implements JournalStringEntry {
+public class StartRecord implements JournalStringRecord {
 
     private String workflow;
 
@@ -25,7 +23,7 @@ public class WorkflowStart implements JournalStringEntry {
     }
 
     @Override
-    public void stringToEntry(String data) {
+    public void stringToRecord(String data) {
         workflow = data;
     }
 

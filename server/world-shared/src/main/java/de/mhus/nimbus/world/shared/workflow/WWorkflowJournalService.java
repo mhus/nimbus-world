@@ -26,7 +26,7 @@ import java.util.List;
 )
 public class WWorkflowJournalService {
 
-    private final WWorkflowJournalRepository repository;
+    private final WWorkflowRecordRepository repository;
     @Getter
     private final ObjectMapper objectMapper;
 
@@ -37,7 +37,7 @@ public class WWorkflowJournalService {
      * @param workflowId Workflow identifier
      * @return List of journal entries ordered by createdAt ascending
      */
-    public List<WWorkflowJournalEntry> getWorkflowJournalEntries(String worldId, String workflowId) {
+    public List<WWorkflowJournalRecord> getWorkflowJournalRecords(String worldId, String workflowId) {
         log.debug("Getting workflow journal entries: worldId={}, workflowId={}", worldId, workflowId);
         return repository.findByWorldIdAndWorkflowIdOrderByCreatedAtAsc(worldId, workflowId);
     }
@@ -50,7 +50,7 @@ public class WWorkflowJournalService {
      * @param type Entry type filter
      * @return List of journal entries ordered by createdAt ascending
      */
-    public List<WWorkflowJournalEntry> getWorkflowJournalEntriesForType(String worldId, String workflowId, String type) {
+    public List<WWorkflowJournalRecord> getWorkflowJournalRecordsForType(String worldId, String workflowId, String type) {
         log.debug("Getting workflow journal entries: worldId={}, workflowId={}, type={}", worldId, workflowId, type);
         return repository.findByWorldIdAndWorkflowIdAndTypeOrderByCreatedAtAsc(worldId, workflowId, type);
     }
@@ -62,20 +62,20 @@ public class WWorkflowJournalService {
      * @param type Entry type filter
      * @return List of journal entries ordered by createdAt ascending
      */
-    public List<WWorkflowJournalEntry> getWorkflowJournalEntriesForType(String worldId, String type) {
+    public List<WWorkflowJournalRecord> getWorkflowJournalRecordsForType(String worldId, String type) {
         log.debug("Getting workflow journal entries by type: worldId={}, type={}", worldId, type);
         return repository.findByWorldIdAndTypeOrderByCreatedAtAsc(worldId, type);
     }
 
-    public WWorkflowJournalEntry addWorkflowJournalEntry(String worldId, String workflowId, JournalEntry entry) {
+    public WWorkflowJournalRecord addWorkflowJournalRecord(String worldId, String workflowId, JournalRecord entry) {
         if (entry == null) {
             throw new IllegalArgumentException("Journal entry cannot be null");
         }
-        if (entry instanceof JournalStringEntry journalStringEntry) {
+        if (entry instanceof JournalStringRecord journalStringEntry) {
             String data = journalStringEntry.entryToString();
-            return addWorkflowJournalEntry(worldId, workflowId, entry.getClass().getCanonicalName(), data);
+            return addWorkflowJournalRecord(worldId, workflowId, entry.getClass().getCanonicalName(), data);
         } else {
-            return addWorkflowJournalEntry(worldId, workflowId, entry.getClass().getCanonicalName(), toJson(entry));
+            return addWorkflowJournalRecord(worldId, workflowId, entry.getClass().getCanonicalName(), toJson(entry));
         }
     }
 
@@ -104,10 +104,10 @@ public class WWorkflowJournalService {
      * @param data Entry data (JSON, text, or any relevant information)
      * @return The created journal entry
      */
-    public WWorkflowJournalEntry addWorkflowJournalEntry(String worldId, String workflowId, String type, String data) {
+    public WWorkflowJournalRecord addWorkflowJournalRecord(String worldId, String workflowId, String type, String data) {
         log.debug("Adding workflow journal entry: worldId={}, workflowId={}, type={}", worldId, workflowId, type);
 
-        WWorkflowJournalEntry entry = WWorkflowJournalEntry.builder()
+        WWorkflowJournalRecord entry = WWorkflowJournalRecord.builder()
                 .worldId(worldId)
                 .workflowId(workflowId)
                 .type(type)
@@ -116,7 +116,7 @@ public class WWorkflowJournalService {
 
         entry.touchCreate();
 
-        WWorkflowJournalEntry saved = repository.save(entry);
+        WWorkflowJournalRecord saved = repository.save(entry);
         log.info("Created workflow journal entry: id={}, worldId={}, workflowId={}, type={}",
                 saved.getId(), worldId, workflowId, type);
 

@@ -34,7 +34,7 @@ public class NextJob {
      * Server name to execute the next job on (optional).
      * If empty/blank, job can run on any server.
      */
-    private String server;
+    private String location;
 
     /**
      * Additional parameters for the next job.

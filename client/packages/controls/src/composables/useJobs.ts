@@ -14,6 +14,7 @@ export type JobStatus = 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED';
 export interface NextJob {
   executor: string;
   type?: string;
+  location?: string;
   parameters?: Record<string, string>;
 }
 
@@ -22,7 +23,7 @@ export interface Job {
   worldId: string;
   executor: string;
   type: string;
-  server?: string;
+  location?: string;
   parameters: Record<string, string>;
   status: JobStatus;
   priority: number;
@@ -49,7 +50,7 @@ export interface JobSummary {
 export interface JobCreateRequest {
   executor: string;
   type?: string;
-  server?: string;
+  location?: string;
   parameters: Record<string, string>;
   priority?: number;
   maxRetries?: number;

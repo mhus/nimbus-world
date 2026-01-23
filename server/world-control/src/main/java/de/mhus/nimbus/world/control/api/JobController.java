@@ -34,9 +34,12 @@ public class JobController extends BaseEditorController {
     public record JobRequest(
             String executor,
             String type,
+            String location,
             Map<String, String> parameters,
             Integer priority,
-            Integer maxRetries
+            Integer maxRetries,
+            de.mhus.nimbus.world.shared.job.NextJob onSuccess,
+            de.mhus.nimbus.world.shared.job.NextJob onError
     ) {}
 
     /**
@@ -47,6 +50,7 @@ public class JobController extends BaseEditorController {
             String worldId,
             String executor,
             String type,
+            String location,
             String status,
             Map<String, String> parameters,
             String result,
@@ -54,6 +58,8 @@ public class JobController extends BaseEditorController {
             int priority,
             int maxRetries,
             int retryCount,
+            de.mhus.nimbus.world.shared.job.NextJob onSuccess,
+            de.mhus.nimbus.world.shared.job.NextJob onError,
             Instant createdAt,
             Instant startedAt,
             Instant completedAt,
@@ -78,6 +84,7 @@ public class JobController extends BaseEditorController {
                 job.getWorldId(),
                 job.getExecutor(),
                 job.getType(),
+                job.getLocation(),
                 job.getStatus(),
                 job.getParameters(),
                 job.getResult(),
@@ -85,6 +92,8 @@ public class JobController extends BaseEditorController {
                 job.getPriority(),
                 job.getMaxRetries(),
                 job.getRetryCount(),
+                job.getOnSuccess(),
+                job.getOnError(),
                 job.getCreatedAt(),
                 job.getStartedAt(),
                 job.getCompletedAt(),
@@ -207,14 +216,18 @@ public class JobController extends BaseEditorController {
             int priority = request.priority() != null ? request.priority() : 5;
             int maxRetries = request.maxRetries() != null ? request.maxRetries() : 0;
             String type = Strings.isBlank(request.type()) ? "" : request.type();
+            String location = Strings.isBlank(request.location()) ? "" : request.location();
 
             WJob created = jobService.createJob(
                     worldId,
                     request.executor(),
                     type,
                     request.parameters(),
+                    location,
                     priority,
-                    maxRetries
+                    maxRetries,
+                    request.onSuccess(),
+                    request.onError()
             );
 
             return ResponseEntity.created(

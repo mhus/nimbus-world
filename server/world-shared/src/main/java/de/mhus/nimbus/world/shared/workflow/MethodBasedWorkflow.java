@@ -20,7 +20,7 @@ public abstract class MethodBasedWorkflow implements Workflow {
                 onFailure(context, status, event.getData());
             } else {
                 log.warn("Unknown event type '{}' for workflow '{}'", eventType, context.getWorkflowName());
-                context.updateWorkflowStatus(WorkflowStatus.TERMINATED);
+                context.updateWorkflowStatus(StatusRecord.TERMINATED);
             }
     }
 
@@ -31,7 +31,7 @@ public abstract class MethodBasedWorkflow implements Workflow {
                 Arrays.stream(ReflectionUtils.getAllDeclaredMethods(getClass()))
                         .filter(
                                 method -> {
-                                    final var anno = method.getAnnotation(WorkflowSuccess.class);
+                                    final var anno = method.getAnnotation(OnSuccess.class);
                                     if (anno == null) {
                                         return false;
                                     }
@@ -57,7 +57,7 @@ public abstract class MethodBasedWorkflow implements Workflow {
                         handler,
                         status,
                         e);
-                context.updateWorkflowStatus(WorkflowStatus.FAILED);
+                context.updateWorkflowStatus(StatusRecord.FAILED);
             }
         } else {
             log.warn(
@@ -70,7 +70,7 @@ public abstract class MethodBasedWorkflow implements Workflow {
     }
 
     protected void onUnhandledEvent(WorkflowContext context, String status, Map<String, String> data) {
-        context.updateWorkflowStatus(WorkflowStatus.TERMINATED);
+        context.updateWorkflowStatus(StatusRecord.TERMINATED);
     }
 
     private Object[] findArgsForMethod(Method method, Object... args) {

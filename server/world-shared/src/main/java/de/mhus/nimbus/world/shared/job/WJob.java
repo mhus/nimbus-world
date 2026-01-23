@@ -57,7 +57,7 @@ public class WJob implements Identifiable {
      * Checked against LocationService.getApplicationServiceName().
      */
     @Indexed
-    private String server;
+    private String location;
 
     /**
      * Job type (for monitoring/debugging).

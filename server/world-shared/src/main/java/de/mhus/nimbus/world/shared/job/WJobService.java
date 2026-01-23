@@ -3,7 +3,6 @@ package de.mhus.nimbus.world.shared.job;
 import de.mhus.nimbus.shared.types.WorldId;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -48,7 +47,7 @@ public class WJobService {
 
     @Transactional
     public WJob createJob(String worldId, String executor, String type,
-                          Map<String, String> parameters, String server, int priority, int maxRetries,
+                          Map<String, String> parameters, String location, int priority, int maxRetries,
                           NextJob onSuccess, NextJob onError) {
 
         // IMPORTANT: Filter out instances - jobs are per world only
@@ -59,7 +58,7 @@ public class WJobService {
                 .worldId(lookupWorldId)
                 .executor(executor)
                 .type(type)
-                .server(server)
+                .location(location)
                 .status(JobStatus.PENDING.name())
                 .parameters(parameters != null ? parameters : Map.of())
                 .priority(priority)

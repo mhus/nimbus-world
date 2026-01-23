@@ -15,7 +15,7 @@ import java.util.Map;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class WorkflowEvent implements  JournalEntry {
+public class WorkflowEvent implements JournalRecord {
 
     public static final String START = "START";
     public static final String SUCCESS = "SUCCESS";

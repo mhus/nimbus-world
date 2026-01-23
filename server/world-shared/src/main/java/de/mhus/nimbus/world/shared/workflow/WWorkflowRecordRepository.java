@@ -9,7 +9,7 @@ import java.util.List;
  * Repository for workflow journal entries.
  */
 @Repository
-public interface WWorkflowJournalRepository extends MongoRepository<WWorkflowJournalEntry, String> {
+public interface WWorkflowRecordRepository extends MongoRepository<WWorkflowJournalRecord, String> {
 
     /**
      * Find all journal entries for a specific workflow, ordered by creation time ascending.
@@ -18,7 +18,7 @@ public interface WWorkflowJournalRepository extends MongoRepository<WWorkflowJou
      * @param workflowId Workflow identifier
      * @return List of journal entries ordered by createdAt ascending
      */
-    List<WWorkflowJournalEntry> findByWorldIdAndWorkflowIdOrderByCreatedAtAsc(String worldId, String workflowId);
+    List<WWorkflowJournalRecord> findByWorldIdAndWorkflowIdOrderByCreatedAtAsc(String worldId, String workflowId);
 
     /**
      * Find all journal entries for a specific workflow and type, ordered by creation time ascending.
@@ -28,7 +28,7 @@ public interface WWorkflowJournalRepository extends MongoRepository<WWorkflowJou
      * @param type Entry type
      * @return List of journal entries ordered by createdAt ascending
      */
-    List<WWorkflowJournalEntry> findByWorldIdAndWorkflowIdAndTypeOrderByCreatedAtAsc(String worldId, String workflowId, String type);
+    List<WWorkflowJournalRecord> findByWorldIdAndWorkflowIdAndTypeOrderByCreatedAtAsc(String worldId, String workflowId, String type);
 
     /**
      * Find all journal entries for a world and type, ordered by creation time ascending.
@@ -37,7 +37,7 @@ public interface WWorkflowJournalRepository extends MongoRepository<WWorkflowJou
      * @param type Entry type
      * @return List of journal entries ordered by createdAt ascending
      */
-    List<WWorkflowJournalEntry> findByWorldIdAndTypeOrderByCreatedAtAsc(String worldId, String type);
+    List<WWorkflowJournalRecord> findByWorldIdAndTypeOrderByCreatedAtAsc(String worldId, String type);
 
     /**
      * Delete all journal entries for a specific workflow.

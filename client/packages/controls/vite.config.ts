@@ -54,6 +54,7 @@ export default defineConfig({
         'settings-editor': resolve(__dirname, 'settings-editor.html'),
         'storage-editor': resolve(__dirname, 'storage-editor.html'),
         'job-editor': resolve(__dirname, 'job-editor.html'),
+        'workflow-editor': resolve(__dirname, 'workflow-editor.html'),
         'flat-editor': resolve(__dirname, 'flat-editor.html'),
         'chest-editor': resolve(__dirname, 'chest-editor.html'),
         'chunk-editor': resolve(__dirname, 'chunk-editor.html'),

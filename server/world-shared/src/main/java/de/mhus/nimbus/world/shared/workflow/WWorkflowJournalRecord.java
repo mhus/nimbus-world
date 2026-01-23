@@ -20,7 +20,7 @@ import java.time.Instant;
  * Journal entries are immutable records of workflow execution steps.
  * A workflow consists of a list of journal entries that document its progression.
  */
-@Document(collection = "w_workflow_journal")
+@Document(collection = "w_workflow_record")
 @ActualSchemaVersion("1.0.0")
 @CompoundIndexes({
         @CompoundIndex(name = "world_workflow_created_idx",
@@ -34,7 +34,7 @@ import java.time.Instant;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class WWorkflowJournalEntry implements Identifiable {
+public class WWorkflowJournalRecord implements Identifiable {
 
     @Id
     private String id;
@@ -52,56 +52,56 @@ public class WWorkflowJournalEntry implements Identifiable {
     private String workflowId;
 
     /**
-     * Entry type (e.g., "started", "progress", "completed", "error").
+     * Record type (e.g., "started", "progress", "completed", "error").
      * Used to categorize and filter journal entries.
      */
     @Indexed
     private String type;
 
     /**
-     * Journal entry data (JSON, text, or any relevant information).
-     * Content depends on the type of journal entry.
+     * Journal Record data (JSON, text, or any relevant information).
+     * Content depends on the type of journal Record.
      */
     private String data;
 
     /**
-     * Creation timestamp of this journal entry.
+     * Creation timestamp of this journal Record.
      * Journal entries are immutable and ordered by creation time.
      */
     @Indexed
     private Instant createdAt;
 
     /**
-     * Transient field for caching deserialized journal entry.
+     * Transient field for caching deserialized journal Record.
      * Not stored in MongoDB.
      */
     @Transient
-    private JournalEntry journalEntry;
+    private JournalRecord journalRecord;
 
     /**
-     * Initialize creation timestamp for new journal entry.
+     * Initialize creation timestamp for new journal Record.
      */
     public void touchCreate() {
         createdAt = Instant.now();
     }
 
-    public JournalEntry toJournalEntry(WorkflowContext context) {
-        if (journalEntry == null) {
+    public JournalRecord toJournalRecord(WorkflowContext context) {
+        if (journalRecord == null) {
             try {
-                Class<?> clazz = context.createJournalEntity(type);
-                if (JournalStringEntry.class.isAssignableFrom(clazz)) {
-                    JournalStringEntry entry = (JournalStringEntry) clazz.getDeclaredConstructor().newInstance();
-                    entry.stringToEntry(data);
-                    return entry;
+                Class<?> clazz = context.createJournalRecordClass(type);
+                if (JournalStringRecord.class.isAssignableFrom(clazz)) {
+                    JournalStringRecord record = (JournalStringRecord) clazz.getDeclaredConstructor().newInstance();
+                    record.stringToRecord(data);
+                    return record;
                 } else {
-                    return context.fromJson(data, (Class<? extends JournalEntry>) clazz);
+                    return context.fromJson(data, (Class<? extends JournalRecord>) clazz);
                 }
             } catch (WorkflowException e) {
                 throw e;
             } catch (Exception e) {
-                throw new WorkflowException(workflowId, "Cannot convert journal entry to object: " + data, e);
+                throw new WorkflowException(workflowId, "Cannot convert journal record to object: " + data, e);
             }
         }
-        return journalEntry;
+        return journalRecord;
     }
 }

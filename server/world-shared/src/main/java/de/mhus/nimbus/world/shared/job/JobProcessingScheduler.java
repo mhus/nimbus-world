@@ -4,7 +4,6 @@ import de.mhus.nimbus.shared.utils.LocationService;
 import de.mhus.nimbus.world.shared.redis.WorldRedisLockService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -71,11 +70,11 @@ public class JobProcessingScheduler {
                     continue;
                 }
 
-                if (job.getServer() != null && !job.getServer().isBlank()) {
+                if (job.getLocation() != null && !job.getLocation().isBlank()) {
                     String currentServerName = locationService.getApplicationServiceName();
-                    if (!job.getServer().equals(currentServerName)) {
-                        log.debug("Job {} is for server '{}', but this is '{}', skipping",
-                                job.getId(), job.getServer(), currentServerName);
+                    if (!job.getLocation().equals(currentServerName)) {
+                        log.debug("Job {} is for location '{}', but this is '{}', skipping",
+                                job.getId(), job.getLocation(), currentServerName);
                         skipped++;
                         continue;
                     }
@@ -185,7 +184,7 @@ public class JobProcessingScheduler {
                     nextJobConfig.getExecutor(),
                     nextJobConfig.getType() != null ? nextJobConfig.getType() : nextJobConfig.getExecutor(),
                     parameters,
-                    nextJobConfig.getServer(),
+                    nextJobConfig.getLocation(),
                     5,
                     0,
                     null,

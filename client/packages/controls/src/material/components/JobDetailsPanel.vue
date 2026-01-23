@@ -32,9 +32,9 @@
             <div class="text-sm mt-1">{{ job.type }}</div>
           </div>
           <div>
-            <label class="text-sm font-semibold text-base-content/70">Server</label>
+            <label class="text-sm font-semibold text-base-content/70">Location</label>
             <div class="text-sm mt-1">
-              <span v-if="job.server" class="badge badge-sm badge-outline">{{ job.server }}</span>
+              <span v-if="job.location" class="badge badge-sm badge-outline">{{ job.location }}</span>
               <span v-else class="text-base-content/50">Any server</span>
             </div>
           </div>

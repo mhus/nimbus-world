@@ -13,7 +13,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class WorkflowStatus implements JournalStringEntry {
+public class StatusRecord implements JournalStringRecord {
 
     public static final String COMPLETED = "COMPLETED";
     public static final String FAILED = "FAILED";
@@ -33,7 +33,7 @@ public class WorkflowStatus implements JournalStringEntry {
     }
 
     @Override
-    public void stringToEntry(String data) {
+    public void stringToRecord(String data) {
         this.status = data;
     }
 }

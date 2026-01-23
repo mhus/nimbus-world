@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -19,7 +20,7 @@ import java.util.Optional;
 @AllArgsConstructor
 public class WorkflowContext {
 
-    WWorkflowJournalService journalService;
+    WWorkflowJournalService  journalService;
 
     WorkflowService workflowService;
     /**
@@ -41,9 +42,12 @@ public class WorkflowContext {
      * Journal entries for this workflow.
      * Ordered by creation time ascending.
      */
-    private List<WWorkflowJournalEntry> journal;
+    private List<WWorkflowJournalRecord> journal;
 
-    public Class<?> createJournalEntity(String type) {
+    @Builder.Default
+    private List<Job> jobQueue = new ArrayList<>();
+
+    public Class<?> createJournalRecordClass(String type) {
         try {
             return Class.forName(type);
         } catch (ClassNotFoundException e) {
@@ -51,7 +55,7 @@ public class WorkflowContext {
         }
     }
 
-    public JournalEntry fromJson(String data, Class<? extends JournalEntry> clazz) {
+    public JournalRecord fromJson(String data, Class<? extends JournalRecord> clazz) {
         try {
             return journalService.getObjectMapper().readValue(data, clazz);
         } catch (Exception e) {
@@ -60,30 +64,30 @@ public class WorkflowContext {
     }
 
     public String getStatus() {
-        return getLastJournalEntry(WorkflowStatus.class)
-                .map(entry -> ((WorkflowStatus) entry).getStatus())
+        return getLastJournalRecord(StatusRecord.class)
+                .map(entry -> ((StatusRecord) entry).getStatus())
                 .orElse("unknown"); // sould not happen
     }
 
     public Map<String, String> getParameters() {
-        return getLastJournalEntry(WorkflowParameters.class)
+        return getLastJournalRecord(WorkflowParameters.class)
                 .map(entry -> ((WorkflowParameters) entry).getParameters())
                 .orElse(Map.of());
     }
 
-    public Optional<JournalEntry> getLastJournalEntry(Class<? extends JournalEntry> type) {
-        return getLastJournalEntry(type.getCanonicalName()).map(
-                entry -> entry.toJournalEntry(this));
+    public Optional<JournalRecord> getLastJournalRecord(Class<? extends JournalRecord> type) {
+        return getLastJournalRecord(type.getCanonicalName()).map(
+                entry -> entry.toJournalRecord(this));
     }
 
-    public Optional<WWorkflowJournalEntry> getLastJournalEntry(String type) {
+    public Optional<WWorkflowJournalRecord> getLastJournalRecord(String type) {
         return journal.stream().filter(
                 entry -> entry.getType().equals(type)
         ).reduce((first, second) -> second);
     }
 
     public void reloadJournal() {
-        this.journal = journalService.getWorkflowJournalEntries(worldId, workflowId);
+        this.journal = journalService.getWorkflowJournalRecords(worldId, workflowId);
     }
 
     /**
@@ -99,4 +103,23 @@ public class WorkflowContext {
         );
     }
 
+    public void enqueueJob(String executor, String type, Map<String, String> parameters) {
+        jobQueue.add(new Job(executor, type, null, parameters));
+    }
+
+    public void enqueueJob(String executor, String type, String location, Map<String, String> parameters) {
+        jobQueue.add(new Job(executor, type, location, parameters));
+    }
+
+    public void addRecord(JournalRecord record) {
+        journalService.addWorkflowJournalRecord(
+                worldId,
+                workflowId,
+                record
+        );
+    }
+
+
+    public record Job(String executor, String type, String location, Map<String, String> parameters) {
+    }
 }

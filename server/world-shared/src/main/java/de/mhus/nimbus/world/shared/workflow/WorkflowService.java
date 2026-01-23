@@ -30,8 +30,8 @@ public class WorkflowService {
 
     private final WWorkflowJournalService journalService;
     private final List<Workflow> workflows;
-    private WJobService jobService;
-    private LocationService locationService;
+    private final WJobService jobService;
+    private final LocationService locationService;
 
     /**
      * Create and initialize a workflow.
@@ -44,7 +44,7 @@ public class WorkflowService {
      * @return Workflow identifier for the created workflow instance
      * @throws WorkflowException If workflow not found or initialization fails
      */
-    public String createWorkflow(String workflowName, String worldId, Map<String, String> params) throws WorkflowException {
+    public String createWorkflow(String worldId, String workflowName, Map<String, String> params) throws WorkflowException {
         log.info("Creating workflow: name={}, worldId={}", workflowName, worldId);
 
         Workflow workflow = findWorkflow(workflowName)
@@ -57,20 +57,20 @@ public class WorkflowService {
             Map<String,String> parameters = workflow.initialize(worldId, params != null ? params : new HashMap<>());
 
             // Create initial status entry
-            WorkflowStart start = WorkflowStart.builder()
+            StartRecord start = StartRecord.builder()
                     .workflow(workflowName)
                     .build();
-            journalService.addWorkflowJournalEntry(worldId, workflowId, start);
+            journalService.addWorkflowJournalRecord(worldId, workflowId, start);
             WorkflowParameters workflowParameters = WorkflowParameters.builder()
                     .parameters(parameters)
                     .build();
-            journalService.addWorkflowJournalEntry(worldId, workflowId, workflowParameters);
+            journalService.addWorkflowJournalRecord(worldId, workflowId, workflowParameters);
 
             // Create initial status entry
-            WorkflowStatus status = WorkflowStatus.builder()
-                    .status(WorkflowStatus.CREATED)
+            StatusRecord status = StatusRecord.builder()
+                    .status(StatusRecord.CREATED)
                     .build();
-            journalService.addWorkflowJournalEntry(worldId, workflowId, status);
+            journalService.addWorkflowJournalRecord(worldId, workflowId, status);
 
             log.info("Workflow created: workflowId={}, name={}, worldId={}", workflowId, workflowName, worldId);
 
@@ -87,18 +87,18 @@ public class WorkflowService {
         }
     }
 
-    public void fireJob(WorkflowContext context, String executor, String type, String server, Map<String,String > parameters) {
+    private void fireJob(WorkflowContext context, String executor, String type, String location, Map<String,String > parameters) {
 
         var onSuccess = NextJob.builder()
                 .executor(WorkflowEventJobExecutor.NAME)
                 .type(WorkflowEvent.SUCCESS + ":" + context.getWorkflowName() + ":" + context.getWorkflowId())
-                .server(locationService.getApplicationServiceName())
+                .location(locationService.getApplicationServiceName())
                 .parameters(Map.of())
                 .build();
         var onError = NextJob.builder()
                 .executor(WorkflowEventJobExecutor.NAME)
                 .type(WorkflowEvent.FAILURE + ":" + context.getWorkflowName() + ":" + context.getWorkflowId())
-                .server(locationService.getApplicationServiceName())
+                .location(locationService.getApplicationServiceName())
                 .parameters(Map.of())
                 .build();
 
@@ -107,7 +107,7 @@ public class WorkflowService {
                 executor,
                 type,
                 parameters,
-                server,
+                location,
                 5,
                 0,
                 onSuccess,
@@ -146,19 +146,13 @@ public class WorkflowService {
         // Reload context with new status
         WorkflowContext context = loadWorkflowContext(worldId, workflowId, workflowName);
         try {
-            // Update status to RUNNING
-            WorkflowStatus status = WorkflowStatus.builder()
-                    .status("RUNNING")
-                    .build();
-            journalService.addWorkflowJournalEntry(worldId, workflowId, status);
-
             workflow.start(context);
             log.info("Workflow started successfully: workflowId={}", workflowId);
         } catch (Exception e) {
             log.error("Unexpected error starting workflow: workflowId={}", workflowId, e);
             updateWorkflowStatus(worldId, workflowId, "FAILED");
         }
-        checkForFinalize(workflow, context);
+        checkAfterRunTask(workflow, context);
         return context.getStatus();
     }
 
@@ -188,7 +182,7 @@ public class WorkflowService {
 
         try {
             // Log event to journal
-            journalService.addWorkflowJournalEntry(worldId, workflowId, event);
+            journalService.addWorkflowJournalRecord(worldId, workflowId, event);
 
             // Reload context with new event
             context = loadWorkflowContext(worldId, workflowId, workflowName);
@@ -198,11 +192,11 @@ public class WorkflowService {
         } catch (Exception e) {
             log.error("Unexpected error handling event: workflowId={}, event={}", workflowId, event.getEvent(), e);
         }
-        checkForFinalize(workflow, context);
+        checkAfterRunTask(workflow, context);
         return context.getStatus();
     }
 
-    private void checkForFinalize(Workflow workflow, WorkflowContext context) {
+    private void checkAfterRunTask(Workflow workflow, WorkflowContext context) {
         context.reloadJournal();
         String status = context.getStatus();
         if (isStatusFinal(status)) {
@@ -213,7 +207,14 @@ public class WorkflowService {
             }
             log.info("Workflow finalized: workflowId={}, status={}", context.getWorkflowId(), status);
             // journalService.clearWorkflowJournal(context.getWorldId(), context.getWorkflowId());
+            return;
         }
+
+        for (WorkflowContext.Job job : context.getJobQueue()) {
+            fireJob(context, job.executor(), job.type(), job.location(), job.parameters());
+        }
+
+
     }
 
     private boolean isStatusFinal(String status) {
@@ -228,9 +229,11 @@ public class WorkflowService {
      * @return Workflow context
      */
     public WorkflowContext loadWorkflowContext(String worldId, String workflowId, String workflowName) {
-        List<WWorkflowJournalEntry> journal = journalService.getWorkflowJournalEntries(worldId, workflowId);
+        List<WWorkflowJournalRecord> journal = journalService.getWorkflowJournalRecords(worldId, workflowId);
 
         return WorkflowContext.builder()
+                .journalService(journalService)
+                .workflowService(this)
                 .worldId(worldId)
                 .workflowId(workflowId)
                 .workflowName(workflowName)
@@ -246,10 +249,13 @@ public class WorkflowService {
      * @param status New status
      */
     public void updateWorkflowStatus(String worldId, String workflowId, String status) {
-        WorkflowStatus workflowStatus = WorkflowStatus.builder()
+        StatusRecord workflowStatus = StatusRecord.builder()
                 .status(status)
                 .build();
-        journalService.addWorkflowJournalEntry(worldId, workflowId, workflowStatus);
+        try {
+            Thread.sleep(1);  // Ensure different timestamp
+        } catch (InterruptedException e) {}
+        journalService.addWorkflowJournalRecord(worldId, workflowId, workflowStatus);
         log.debug("Updated workflow status: workflowId={}, status={}", workflowId, status);
     }
 
@@ -263,6 +269,10 @@ public class WorkflowService {
         return workflows.stream()
                 .filter(w -> w.name().equals(name))
                 .findFirst();
+    }
+
+    public boolean existsWorkflow(String worldId, String workflowId) {
+        return journalService.getWorkflowJournalRecordsForType(worldId, workflowId, StartRecord.class.getCanonicalName() ).size() > 0;
     }
 
 }
