@@ -58,6 +58,23 @@
                   />
                 </div>
 
+                <!-- Server -->
+                <div class="form-control">
+                  <label class="label">
+                    <span class="label-text">Server (Optional)</span>
+                    <span class="label-text-alt">Leave empty for any server</span>
+                  </label>
+                  <input
+                    v-model="formData.server"
+                    type="text"
+                    class="input input-bordered"
+                    placeholder="e.g., world-player, world-life"
+                  />
+                  <label class="label">
+                    <span class="label-text-alt">Restrict execution to specific server</span>
+                  </label>
+                </div>
+
                 <!-- Priority and Retries -->
                 <div class="grid grid-cols-2 gap-4">
                   <div class="form-control">
@@ -402,6 +419,7 @@ const { createJob } = useJobs(props.worldId);
 const formData = ref({
   executor: '',
   type: '',
+  server: '',
   priority: 5,
   maxRetries: 2,
 });
@@ -435,6 +453,7 @@ const loadFromJob = (job: Job) => {
   // Set basic form data
   formData.value.executor = job.executor;
   formData.value.type = job.type;
+  formData.value.server = job.server || '';
   formData.value.priority = job.priority;
   formData.value.maxRetries = job.maxRetries;
 
@@ -480,6 +499,7 @@ const loadFromPreset = (data: any) => {
   // Set basic form data from preset
   if (data.executor) formData.value.executor = data.executor;
   if (data.type) formData.value.type = data.type;
+  if (data.server) formData.value.server = data.server;
   if (data.priority !== undefined) formData.value.priority = data.priority;
   if (data.maxRetries !== undefined) formData.value.maxRetries = data.maxRetries;
 
@@ -661,6 +681,7 @@ const handleCreate = async () => {
     const request: JobCreateRequest = {
       executor: formData.value.executor,
       type: formData.value.type.trim() || undefined,
+      server: formData.value.server.trim() || undefined,
       parameters: buildParameters(),
       priority: formData.value.priority,
       maxRetries: formData.value.maxRetries,

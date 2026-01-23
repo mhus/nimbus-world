@@ -6,6 +6,7 @@
           <th>ID</th>
           <th>Executor</th>
           <th>Type</th>
+          <th>Server</th>
           <th>Status</th>
           <th>Priority</th>
           <th>Retries</th>
@@ -29,6 +30,12 @@
           <!-- Type -->
           <td>
             <div class="text-sm text-base-content/70">{{ job.type }}</div>
+          </td>
+
+          <!-- Server -->
+          <td>
+            <div v-if="job.server" class="badge badge-sm badge-outline">{{ job.server }}</div>
+            <div v-else class="text-xs text-base-content/50">any</div>
           </td>
 
           <!-- Status -->

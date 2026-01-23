@@ -51,6 +51,15 @@ public class WJob implements Identifiable {
     private String executor;
 
     /**
+     * Server name to execute this job on (optional).
+     * If empty/blank, job can run on any server.
+     * If set, only the specified server will process this job.
+     * Checked against LocationService.getApplicationServiceName().
+     */
+    @Indexed
+    private String server;
+
+    /**
      * Job type (for monitoring/debugging).
      * Could be same as executor or more specific.
      */

@@ -1,5 +1,6 @@
 package de.mhus.nimbus.world.shared.job;
 
+import de.mhus.nimbus.shared.utils.LocationService;
 import de.mhus.nimbus.world.shared.redis.WorldRedisLockService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,6 +25,7 @@ public class JobProcessingScheduler {
     private final JobExecutorRegistry executorRegistry;
     private final WorldRedisLockService lockService;
     private final JobSettings properties;
+    private final LocationService locationService;
 
     private static final Duration JOB_LOCK_TTL = Duration.ofMinutes(5);
 
@@ -62,6 +64,16 @@ public class JobProcessingScheduler {
                             job.getId(), job.getExecutor());
                     skipped++;
                     continue;
+                }
+
+                if (job.getServer() != null && !job.getServer().isBlank()) {
+                    String currentServerName = locationService.getApplicationServiceName();
+                    if (!job.getServer().equals(currentServerName)) {
+                        log.debug("Job {} is for server '{}', but this is '{}', skipping",
+                                job.getId(), job.getServer(), currentServerName);
+                        skipped++;
+                        continue;
+                    }
                 }
 
                 String lockToken = lockService.acquireGenericLock(

@@ -32,6 +32,13 @@
             <div class="text-sm mt-1">{{ job.type }}</div>
           </div>
           <div>
+            <label class="text-sm font-semibold text-base-content/70">Server</label>
+            <div class="text-sm mt-1">
+              <span v-if="job.server" class="badge badge-sm badge-outline">{{ job.server }}</span>
+              <span v-else class="text-base-content/50">Any server</span>
+            </div>
+          </div>
+          <div>
             <label class="text-sm font-semibold text-base-content/70">Priority</label>
             <div class="text-sm mt-1">{{ job.priority }}</div>
           </div>

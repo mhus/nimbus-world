@@ -22,6 +22,7 @@ export interface Job {
   worldId: string;
   executor: string;
   type: string;
+  server?: string;
   parameters: Record<string, string>;
   status: JobStatus;
   priority: number;
@@ -48,6 +49,7 @@ export interface JobSummary {
 export interface JobCreateRequest {
   executor: string;
   type?: string;
+  server?: string;
   parameters: Record<string, string>;
   priority?: number;
   maxRetries?: number;
