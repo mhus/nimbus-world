@@ -9,6 +9,8 @@ import de.mhus.nimbus.shared.storage.StorageService;
 import de.mhus.nimbus.shared.types.SchemaVersion;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.shared.utils.TypeUtil;
+import de.mhus.nimbus.world.shared.util.FastNoiseLite;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
@@ -55,6 +57,16 @@ public class WChunkService implements StorageProvider {
     private boolean compressionEnabled;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
+
+    // Noise generator for terrain generation (amplitude fixed at 5)
+    private FastNoiseLite noise;
+    private static final int TERRAIN_AMPLITUDE = 5;
+
+    @PostConstruct
+    private void initNoise() {
+        noise = new FastNoiseLite(1337);
+        noise.SetFrequency(0.02f); // Controls terrain smoothness
+    }
 
     /**
      * Find chunk by chunkKey.
@@ -307,8 +319,25 @@ public class WChunkService implements StorageProvider {
     }
 
     /**
+     * Calculate noise-based height for terrain generation.
+     * This method is public so it can be used externally (e.g., from OceanBuilder).
+     *
+     * @param worldX World X coordinate
+     * @param worldZ World Z coordinate
+     * @param groundLevel Base ground level
+     * @return Height value (groundLevel + noise offset with amplitude)
+     */
+    public int getNoiseHeight(int worldX, int worldZ, int groundLevel) {
+        float noiseValue = noise.GetNoise(worldX, worldZ);
+        // noiseValue is between -1.0 and 1.0
+        // Scale by amplitude and add to groundLevel
+        int heightOffset = Math.round(noiseValue * TERRAIN_AMPLITUDE);
+        return groundLevel + heightOffset;
+    }
+
+    /**
      * Generate default chunk based on world configuration.
-     * Creates ground blocks up to groundLevel and water blocks up to waterLevel.
+     * Creates ground blocks with noise-based height variation and water blocks up to waterLevel.
      */
     private ChunkData generateDefaultChunk(String worldId, String chunkKey) {
         try {
@@ -339,7 +368,7 @@ public class WChunkService implements StorageProvider {
 
             var chunkSize = world.getPublicData().getChunkSize();
 
-            // Calculate total block count for pre-allocation
+            // Calculate total block count for pre-allocation (estimated)
             int totalPositions = chunkSize * chunkSize;
             int waterBlocksPerPosition = (waterLevel != null && waterLevel > groundLevel) ? (waterLevel - groundLevel) : 0;
             int estimatedBlockCount = totalPositions + (waterBlocksPerPosition * totalPositions);
@@ -350,14 +379,9 @@ public class WChunkService implements StorageProvider {
             chunkData.setCz(cz);
             chunkData.setSize((byte)chunkSize);
 
-            // Pre-allocate collections with known capacity
+            // Pre-allocate collections with estimated capacity
             List<Block> blocks = new ArrayList<>(estimatedBlockCount);
             Map<String, int[]> heightData = new HashMap<>(totalPositions);
-
-            // Pre-compute height data array to reuse
-            int[] heightDataArray = waterLevel != null
-                    ? new int[]{maxHeight, minHeight, groundLevel, waterLevel}
-                    : new int[]{maxHeight, minHeight, groundLevel};
 
             // Generate blocks for the chunk (32x32 xz area)
             for (int localX = 0; localX < chunkSize; localX++) {
@@ -365,9 +389,12 @@ public class WChunkService implements StorageProvider {
                     int worldX = cx * chunkSize + localX;
                     int worldZ = cz * chunkSize + localZ;
 
-                    // Create ground block at groundLevel
-                    if (groundLevel >= 0 && groundBlockType != null) {
-                        Block groundBlock = createBlockFast(worldX, groundLevel, worldZ, groundBlockType);
+                    // Calculate noise-based height for this position
+                    int noiseHeight = getNoiseHeight(worldX, worldZ, groundLevel);
+
+                    // Create ground block at noise-based height
+                    if (noiseHeight >= 0 && groundBlockType != null) {
+                        Block groundBlock = createBlockFast(worldX, noiseHeight, worldZ, groundBlockType);
                         groundBlock.setFaceVisibility(1); // TOP only
                         blocks.add(groundBlock);
                     }
@@ -376,10 +403,15 @@ public class WChunkService implements StorageProvider {
                     String heightKey = new StringBuilder(12)
                             .append(worldX).append(',').append(worldZ)
                             .toString();
-                    heightData.put(heightKey, heightDataArray);
+
+                    // Update height data to use noise-based height
+                    int[] columnHeightData = waterLevel != null
+                            ? new int[]{maxHeight, minHeight, noiseHeight, waterLevel}
+                            : new int[]{maxHeight, minHeight, noiseHeight};
+                    heightData.put(heightKey, columnHeightData);
 
                     // Create water blocks at waterLevel - only one flat layer
-                    if (waterLevel != null && waterLevel > groundLevel && waterBlockType != null) {
+                    if (waterLevel != null && waterLevel > noiseHeight && waterBlockType != null) {
                         Block waterBlock = createBlockFast(worldX, waterLevel, worldZ, waterBlockType);
                         blocks.add(waterBlock);
                     }
@@ -389,8 +421,8 @@ public class WChunkService implements StorageProvider {
             chunkData.setBlocks(blocks);
             chunkData.setHeightData(heightData);
 
-            log.debug("Generated default chunk: cx={}, cz={}, blocks={}, groundLevel={}, waterLevel={}",
-                    cx, cz, blocks.size(), groundLevel, waterLevel);
+            log.debug("Generated default chunk with noise: cx={}, cz={}, blocks={}, baseGroundLevel={}, amplitude={}, waterLevel={}",
+                    cx, cz, blocks.size(), groundLevel, TERRAIN_AMPLITUDE, waterLevel);
 
             return chunkData;
 

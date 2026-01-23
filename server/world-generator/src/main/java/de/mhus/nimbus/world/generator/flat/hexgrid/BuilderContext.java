@@ -4,6 +4,7 @@ import de.mhus.nimbus.world.generator.flat.FlatManipulatorService;
 import de.mhus.nimbus.world.shared.generator.WFlat;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
 import de.mhus.nimbus.world.shared.world.WWorld;
+import de.mhus.nimbus.world.shared.world.WChunkService;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -43,6 +44,11 @@ public class BuilderContext {
      * Service for accessing flat manipulators.
      */
     private final FlatManipulatorService manipulatorService;
+
+    /**
+     * Service for accessing chunk operations (e.g., noise-based height generation).
+     */
+    private final WChunkService chunkService;
 
     public Optional<HexGridBuilder> getBuilderFor(WHexGrid.SIDE neighbor) {
         WHexGrid grid = neighborGrids.get(neighbor);

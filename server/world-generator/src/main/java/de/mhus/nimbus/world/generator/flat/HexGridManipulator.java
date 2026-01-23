@@ -9,6 +9,7 @@ import de.mhus.nimbus.world.shared.world.WHexGrid;
 import de.mhus.nimbus.world.shared.world.WHexGridService;
 import de.mhus.nimbus.world.shared.world.WWorld;
 import de.mhus.nimbus.world.shared.world.WWorldService;
+import de.mhus.nimbus.world.shared.world.WChunkService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -56,6 +57,9 @@ public class HexGridManipulator implements FlatManipulator {
     @Lazy
     private FlatManipulatorService manipulatorService;
 
+    @Autowired
+    private WChunkService chunkService;
+
     @Override
     public String getName() {
         return NAME;
@@ -85,6 +89,7 @@ public class HexGridManipulator implements FlatManipulator {
                 .hexGrid(hexGrid)
                 .neighborGrids(neighborGrids)
                 .manipulatorService(manipulatorService)
+                .chunkService(chunkService)
                 .build();
 
         // Create builder pipeline
