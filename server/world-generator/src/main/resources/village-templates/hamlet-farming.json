@@ -1,0 +1,70 @@
+{
+  "name": "hamlet-farming",
+  "size": "HAMLET",
+  "style": "FARMING",
+  "layout": null,
+  "plaza": {
+    "localX": 256,
+    "localZ": 256,
+    "size": 15,
+    "level": 95,
+    "material": "street"
+  },
+  "buildings": [
+    {
+      "id": "farm-1",
+      "type": "FARM",
+      "localX": 180,
+      "localZ": 180,
+      "rotation": 0,
+      "size": "large",
+      "connectToPlaza": true
+    },
+    {
+      "id": "barn-1",
+      "type": "BARN",
+      "localX": 320,
+      "localZ": 180,
+      "rotation": 0,
+      "size": "large",
+      "connectToPlaza": true
+    },
+    {
+      "id": "house-1",
+      "type": "HOUSE",
+      "localX": 200,
+      "localZ": 280,
+      "rotation": 0,
+      "size": "small",
+      "connectToPlaza": true
+    },
+    {
+      "id": "house-2",
+      "type": "HOUSE",
+      "localX": 300,
+      "localZ": 280,
+      "rotation": 0,
+      "size": "small",
+      "connectToPlaza": true
+    },
+    {
+      "id": "mill-1",
+      "type": "MILL",
+      "localX": 256,
+      "localZ": 350,
+      "rotation": 0,
+      "size": "medium",
+      "connectToPlaza": true
+    },
+    {
+      "id": "stable-1",
+      "type": "STABLE",
+      "localX": 180,
+      "localZ": 320,
+      "rotation": 0,
+      "size": "medium",
+      "connectToPlaza": false
+    }
+  ],
+  "streets": []
+}

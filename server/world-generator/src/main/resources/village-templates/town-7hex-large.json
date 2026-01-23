@@ -1,0 +1,287 @@
+{
+  "name": "town-7hex-large",
+  "size": "LARGE_TOWN",
+  "style": "MEDIEVAL",
+  "layout": null,
+  "plaza": {
+    "localX": 768,
+    "localZ": 768,
+    "size": 50,
+    "level": 95,
+    "material": "street"
+  },
+  "buildings": [
+    {
+      "id": "town-hall-1",
+      "type": "TOWN_HALL",
+      "localX": 768,
+      "localZ": 640,
+      "rotation": 0,
+      "size": "large",
+      "connectToPlaza": true
+    },
+    {
+      "id": "church-1",
+      "type": "CHURCH",
+      "localX": 640,
+      "localZ": 768,
+      "rotation": 3,
+      "size": "large",
+      "connectToPlaza": true
+    },
+    {
+      "id": "chapel-1",
+      "type": "CHAPEL",
+      "localX": 896,
+      "localZ": 768,
+      "rotation": 1,
+      "size": "medium",
+      "connectToPlaza": true
+    },
+    {
+      "id": "market-1",
+      "type": "MARKET",
+      "localX": 640,
+      "localZ": 640,
+      "rotation": 0,
+      "size": "medium",
+      "connectToPlaza": true
+    },
+    {
+      "id": "market-2",
+      "type": "MARKET",
+      "localX": 896,
+      "localZ": 640,
+      "rotation": 0,
+      "size": "medium",
+      "connectToPlaza": true
+    },
+    {
+      "id": "market-3",
+      "type": "MARKET",
+      "localX": 640,
+      "localZ": 896,
+      "rotation": 0,
+      "size": "medium",
+      "connectToPlaza": true
+    },
+    {
+      "id": "inn-1",
+      "type": "INN",
+      "localX": 896,
+      "localZ": 896,
+      "rotation": 0,
+      "size": "large",
+      "connectToPlaza": true
+    },
+    {
+      "id": "tavern-1",
+      "type": "TAVERN",
+      "localX": 768,
+      "localZ": 896,
+      "rotation": 2,
+      "size": "medium",
+      "connectToPlaza": true
+    },
+    {
+      "id": "blacksmith-1",
+      "type": "BLACKSMITH",
+      "localX": 560,
+      "localZ": 560,
+      "rotation": 0,
+      "size": "medium",
+      "connectToPlaza": true
+    },
+    {
+      "id": "blacksmith-2",
+      "type": "BLACKSMITH",
+      "localX": 976,
+      "localZ": 560,
+      "rotation": 0,
+      "size": "medium",
+      "connectToPlaza": true
+    },
+    {
+      "id": "warehouse-1",
+      "type": "WAREHOUSE",
+      "localX": 560,
+      "localZ": 896,
+      "rotation": 0,
+      "size": "large",
+      "connectToPlaza": false
+    },
+    {
+      "id": "warehouse-2",
+      "type": "WAREHOUSE",
+      "localX": 976,
+      "localZ": 896,
+      "rotation": 0,
+      "size": "large",
+      "connectToPlaza": false
+    },
+    {
+      "id": "guardhouse-1",
+      "type": "GUARDHOUSE",
+      "localX": 768,
+      "localZ": 560,
+      "rotation": 0,
+      "size": "medium",
+      "connectToPlaza": true
+    },
+    {
+      "id": "house-1",
+      "type": "HOUSE",
+      "localX": 256,
+      "localZ": 230,
+      "rotation": 0,
+      "size": "small",
+      "connectToPlaza": false
+    },
+    {
+      "id": "house-2",
+      "type": "HOUSE",
+      "localX": 320,
+      "localZ": 230,
+      "rotation": 0,
+      "size": "small",
+      "connectToPlaza": false
+    },
+    {
+      "id": "house-3",
+      "type": "HOUSE",
+      "localX": 1216,
+      "localZ": 230,
+      "rotation": 0,
+      "size": "small",
+      "connectToPlaza": false
+    },
+    {
+      "id": "house-4",
+      "type": "HOUSE",
+      "localX": 1280,
+      "localZ": 230,
+      "rotation": 0,
+      "size": "small",
+      "connectToPlaza": false
+    },
+    {
+      "id": "house-5",
+      "type": "HOUSE",
+      "localX": 180,
+      "localZ": 768,
+      "rotation": 0,
+      "size": "small",
+      "connectToPlaza": false
+    },
+    {
+      "id": "house-6",
+      "type": "HOUSE",
+      "localX": 240,
+      "localZ": 768,
+      "rotation": 0,
+      "size": "small",
+      "connectToPlaza": false
+    },
+    {
+      "id": "house-7",
+      "type": "HOUSE",
+      "localX": 1296,
+      "localZ": 768,
+      "rotation": 0,
+      "size": "small",
+      "connectToPlaza": false
+    },
+    {
+      "id": "house-8",
+      "type": "HOUSE",
+      "localX": 1356,
+      "localZ": 768,
+      "rotation": 0,
+      "size": "small",
+      "connectToPlaza": false
+    },
+    {
+      "id": "house-9",
+      "type": "HOUSE",
+      "localX": 768,
+      "localZ": 1200,
+      "rotation": 0,
+      "size": "small",
+      "connectToPlaza": false
+    },
+    {
+      "id": "house-10",
+      "type": "HOUSE",
+      "localX": 768,
+      "localZ": 1264,
+      "rotation": 0,
+      "size": "small",
+      "connectToPlaza": false
+    },
+    {
+      "id": "house-11",
+      "type": "HOUSE",
+      "localX": 180,
+      "localZ": 1200,
+      "rotation": 0,
+      "size": "small",
+      "connectToPlaza": false
+    },
+    {
+      "id": "house-12",
+      "type": "HOUSE",
+      "localX": 240,
+      "localZ": 1200,
+      "rotation": 0,
+      "size": "small",
+      "connectToPlaza": false
+    }
+  ],
+  "streets": [
+    {
+      "id": "main-street-north",
+      "path": [
+        {"localX": 768, "localZ": 768},
+        {"localX": 768, "localZ": 256}
+      ],
+      "width": 6,
+      "type": "street"
+    },
+    {
+      "id": "main-street-west",
+      "path": [
+        {"localX": 768, "localZ": 768},
+        {"localX": 256, "localZ": 768}
+      ],
+      "width": 6,
+      "type": "street"
+    },
+    {
+      "id": "main-street-east",
+      "path": [
+        {"localX": 768, "localZ": 768},
+        {"localX": 1280, "localZ": 768}
+      ],
+      "width": 6,
+      "type": "street"
+    },
+    {
+      "id": "main-street-south",
+      "path": [
+        {"localX": 768, "localZ": 768},
+        {"localX": 768, "localZ": 1280}
+      ],
+      "width": 6,
+      "type": "street"
+    },
+    {
+      "id": "main-street-south-west",
+      "path": [
+        {"localX": 768, "localZ": 768},
+        {"localX": 256, "localZ": 1280}
+      ],
+      "width": 5,
+      "type": "street"
+    }
+  ]
+}

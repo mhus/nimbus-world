@@ -1,0 +1,79 @@
+{
+  "name": "hamlet-medieval",
+  "size": "HAMLET",
+  "style": "MEDIEVAL",
+  "layout": null,
+  "plaza": {
+    "localX": 256,
+    "localZ": 256,
+    "size": 20,
+    "level": 95,
+    "material": "street"
+  },
+  "buildings": [
+    {
+      "id": "church-1",
+      "type": "CHURCH",
+      "localX": 256,
+      "localZ": 180,
+      "rotation": 0,
+      "size": "medium",
+      "connectToPlaza": true
+    },
+    {
+      "id": "house-1",
+      "type": "HOUSE",
+      "localX": 200,
+      "localZ": 220,
+      "rotation": 1,
+      "size": "small",
+      "connectToPlaza": true
+    },
+    {
+      "id": "house-2",
+      "type": "HOUSE",
+      "localX": 312,
+      "localZ": 220,
+      "rotation": 3,
+      "size": "small",
+      "connectToPlaza": true
+    },
+    {
+      "id": "tavern-1",
+      "type": "TAVERN",
+      "localX": 256,
+      "localZ": 320,
+      "rotation": 2,
+      "size": "medium",
+      "connectToPlaza": true
+    },
+    {
+      "id": "house-3",
+      "type": "HOUSE",
+      "localX": 180,
+      "localZ": 280,
+      "rotation": 0,
+      "size": "small",
+      "connectToPlaza": true
+    },
+    {
+      "id": "house-4",
+      "type": "HOUSE",
+      "localX": 332,
+      "localZ": 280,
+      "rotation": 0,
+      "size": "small",
+      "connectToPlaza": true
+    },
+    {
+      "id": "farm-1",
+      "type": "FARM",
+      "localX": 150,
+      "localZ": 350,
+      "rotation": 0,
+      "size": "large",
+      "connectToPlaza": false
+    }
+  ],
+  "streets": []
+}

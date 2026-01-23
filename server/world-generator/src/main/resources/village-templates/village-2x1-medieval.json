@@ -1,0 +1,116 @@
+{
+  "name": "village-2x1-medieval",
+  "size": "SMALL_VILLAGE",
+  "style": "MEDIEVAL",
+  "layout": null,
+  "plaza": {
+    "localX": 256,
+    "localZ": 256,
+    "size": 25,
+    "level": 95,
+    "material": "street"
+  },
+  "buildings": [
+    {
+      "id": "church-1",
+      "type": "CHURCH",
+      "localX": 256,
+      "localZ": 170,
+      "rotation": 0,
+      "size": "large",
+      "connectToPlaza": true
+    },
+    {
+      "id": "house-1",
+      "type": "HOUSE",
+      "localX": 180,
+      "localZ": 200,
+      "rotation": 0,
+      "size": "small",
+      "connectToPlaza": true
+    },
+    {
+      "id": "house-2",
+      "type": "HOUSE",
+      "localX": 332,
+      "localZ": 200,
+      "rotation": 0,
+      "size": "small",
+      "connectToPlaza": true
+    },
+    {
+      "id": "tavern-1",
+      "type": "TAVERN",
+      "localX": 256,
+      "localZ": 340,
+      "rotation": 2,
+      "size": "medium",
+      "connectToPlaza": true
+    },
+    {
+      "id": "house-3",
+      "type": "HOUSE",
+      "localX": 180,
+      "localZ": 320,
+      "rotation": 0,
+      "size": "small",
+      "connectToPlaza": true
+    },
+    {
+      "id": "house-4",
+      "type": "HOUSE",
+      "localX": 332,
+      "localZ": 320,
+      "rotation": 0,
+      "size": "small",
+      "connectToPlaza": true
+    },
+    {
+      "id": "blacksmith-1",
+      "type": "BLACKSMITH",
+      "localX": 580,
+      "localZ": 230,
+      "rotation": 3,
+      "size": "medium",
+      "connectToPlaza": true
+    },
+    {
+      "id": "house-5",
+      "type": "HOUSE",
+      "localX": 580,
+      "localZ": 290,
+      "rotation": 0,
+      "size": "small",
+      "connectToPlaza": true
+    },
+    {
+      "id": "house-6",
+      "type": "HOUSE",
+      "localX": 640,
+      "localZ": 230,
+      "rotation": 0,
+      "size": "small",
+      "connectToPlaza": true
+    },
+    {
+      "id": "house-7",
+      "type": "HOUSE",
+      "localX": 640,
+      "localZ": 290,
+      "rotation": 0,
+      "size": "small",
+      "connectToPlaza": true
+    }
+  ],
+  "streets": [
+    {
+      "id": "main-street-east",
+      "path": [
+        {"localX": 256, "localZ": 256},
+        {"localX": 600, "localZ": 256}
+      ],
+      "width": 4,
+      "type": "street"
+    }
+  ]
+}

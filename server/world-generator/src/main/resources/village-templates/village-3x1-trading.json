@@ -1,0 +1,125 @@
+{
+  "name": "village-3x1-trading",
+  "size": "VILLAGE",
+  "style": "TRADING",
+  "layout": null,
+  "plaza": {
+    "localX": 768,
+    "localZ": 256,
+    "size": 30,
+    "level": 95,
+    "material": "street"
+  },
+  "buildings": [
+    {
+      "id": "market-1",
+      "type": "MARKET",
+      "localX": 768,
+      "localZ": 170,
+      "rotation": 0,
+      "size": "medium",
+      "connectToPlaza": true
+    },
+    {
+      "id": "market-2",
+      "type": "MARKET",
+      "localX": 768,
+      "localZ": 340,
+      "rotation": 2,
+      "size": "medium",
+      "connectToPlaza": true
+    },
+    {
+      "id": "warehouse-1",
+      "type": "WAREHOUSE",
+      "localX": 200,
+      "localZ": 230,
+      "rotation": 0,
+      "size": "large",
+      "connectToPlaza": true
+    },
+    {
+      "id": "warehouse-2",
+      "type": "WAREHOUSE",
+      "localX": 1336,
+      "localZ": 230,
+      "rotation": 0,
+      "size": "large",
+      "connectToPlaza": true
+    },
+    {
+      "id": "shop-1",
+      "type": "SHOP",
+      "localX": 650,
+      "localZ": 230,
+      "rotation": 0,
+      "size": "small",
+      "connectToPlaza": true
+    },
+    {
+      "id": "shop-2",
+      "type": "SHOP",
+      "localX": 886,
+      "localZ": 230,
+      "rotation": 0,
+      "size": "small",
+      "connectToPlaza": true
+    },
+    {
+      "id": "inn-1",
+      "type": "INN",
+      "localX": 650,
+      "localZ": 300,
+      "rotation": 0,
+      "size": "large",
+      "connectToPlaza": true
+    },
+    {
+      "id": "house-1",
+      "type": "HOUSE",
+      "localX": 886,
+      "localZ": 300,
+      "rotation": 0,
+      "size": "small",
+      "connectToPlaza": true
+    },
+    {
+      "id": "house-2",
+      "type": "HOUSE",
+      "localX": 180,
+      "localZ": 300,
+      "rotation": 0,
+      "size": "small",
+      "connectToPlaza": false
+    },
+    {
+      "id": "house-3",
+      "type": "HOUSE",
+      "localX": 1336,
+      "localZ": 300,
+      "rotation": 0,
+      "size": "small",
+      "connectToPlaza": false
+    }
+  ],
+  "streets": [
+    {
+      "id": "main-street-west",
+      "path": [
+        {"localX": 256, "localZ": 256},
+        {"localX": 768, "localZ": 256}
+      ],
+      "width": 5,
+      "type": "street"
+    },
+    {
+      "id": "main-street-east",
+      "path": [
+        {"localX": 768, "localZ": 256},
+        {"localX": 1280, "localZ": 256}
+      ],
+      "width": 5,
+      "type": "street"
+    }
+  ]
+}
