@@ -99,6 +99,10 @@ public class FlatExportService {
         // This avoids repeated iteration through all extraBlocks for each column
         Map<String, String[]> extraBlocksCache = buildExtraBlocksCache(flat);
 
+        // Pre-build groupId cache: "x/z" or "x/y/z" -> groupId
+        // This avoids repeated iteration through groups for each block
+        Map<String, String> groupIdCache = buildGroupIdCache(flat);
+
         int exportedColumns = 0;
         int skippedColumns = 0;
 
@@ -149,7 +153,7 @@ public class FlatExportService {
                 if (columnMaterial == WFlat.MATERIAL_NOT_SET || columnMaterial == WFlat.MATERIAL_NOT_SET_MUTABLE) {
                     if (isOneAroundSet(flat, localX, localZ)) {
                         // NOT_SET or Material 255: Keep existing blocks, but fill down if neighbors are lower
-                        handleNotSetColumn(chunkData, layerChunkData, worldX, worldZ, flat, localX, localZ, world, worldId);
+                        handleNotSetColumn(chunkData, layerChunkData, worldX, worldZ, flat, localX, localZ, world, worldId, groupIdCache);
                         skippedColumns++;
                         continue;
                     } else {
@@ -179,7 +183,7 @@ public class FlatExportService {
                 if (lowestSiblingLevel != WFlat.LEVEL_NOT_SET) {
                     // Fill column from level down to lowestSiblingLevel
                     fillColumn(layerChunkData, worldX, worldZ, level, lowestSiblingLevel, columnDef, flat,
-                            smoothCorners, blockTypeCache, wid, localX, localZ, extraBlocksCache);
+                            smoothCorners, blockTypeCache, wid, localX, localZ, extraBlocksCache, groupIdCache);
                     exportedColumns++;
                 } else {
                     skippedColumns++;
@@ -232,7 +236,8 @@ public class FlatExportService {
      * Material 255 is treated the same as NOT_SET (material 0).
      */
     private void handleNotSetColumn(ChunkData chunkData, LayerChunkData layerChunkData, int worldX, int worldZ,
-                                    WFlat flat, int localX, int localZ, WWorld world, String worldId) {
+                                    WFlat flat, int localX, int localZ, WWorld world, String worldId,
+                                    Map<String, String> groupIdCache) {
         // Find highest existing GROUND type block at this position
         String topBlockDefString = null;
         int existingLevel = findHighestGroundBlockAtPosition(chunkData, worldX, worldZ, worldId);
@@ -292,9 +297,13 @@ public class FlatExportService {
 
                 topBlockDef.fillBlock(block);
 
+                // Determine groupId (fill blocks are not top blocks, so groupId is null)
+                String groupId = null;
+
                 // Add to chunk
                 LayerBlock layerBlock = LayerBlock.builder()
                         .block(block)
+                        .group(groupId)
                         .build();
                 layerChunkData.getBlocks().add(layerBlock);
             }
@@ -504,7 +513,8 @@ public class FlatExportService {
                             boolean smoothCorners,
                             Map<String, WBlockType> blockTypeCache,
                             WorldId wid, int localX, int localZ,
-                            Map<String, String[]> extraBlocksCache) {
+                            Map<String, String[]> extraBlocksCache,
+                            Map<String, String> groupIdCache) {
         // Get extra blocks for this column
         String[] extraBlocks = flat.getExtraBlocksForColumn(
                 worldX - flat.getMountX(),
@@ -555,9 +565,26 @@ public class FlatExportService {
                 }
             }
 
+            // Determine groupId based on position and block type
+            String groupId = null;
+
+            // Check if this is an extraBlock
+            boolean isExtra = columnDef.isExtraBlock(flat, level, y, extraBlocks);
+            if (isExtra) {
+                // ExtraBlock: lookup groupId with x/y/z
+                String key = localX + "/" + y + "/" + localZ;
+                groupId = groupIdCache.get(key);
+            } else if (y == level) {
+                // Top block (y == level): lookup groupId with x/z
+                String key = localX + "/" + localZ;
+                groupId = groupIdCache.get(key);
+            }
+            // Otherwise: groupId remains null
+
             // Wrap in LayerBlock and add to chunk
             LayerBlock layerBlock = LayerBlock.builder()
                     .block(block)
+                    .group(groupId)
                     .build();
 
             chunkData.getBlocks().add(layerBlock);
@@ -940,6 +967,40 @@ public class FlatExportService {
         }
 
         log.debug("Built extraBlocks cache with {} columns", cache.size());
+        return cache;
+    }
+
+    /**
+     * Build a cache of groupIds for quick position lookup.
+     * Reverses the WFlat groups structure from groupId -> Set<positions> to position -> groupId.
+     *
+     * @param flat The flat terrain data
+     * @return Map with key "x/z" or "x/y/z" (local coordinates) and value groupId
+     */
+    private Map<String, String> buildGroupIdCache(WFlat flat) {
+        Map<String, String> cache = new HashMap<>();
+        Map<String, java.util.Set<String>> groups = flat.getGroups();
+
+        if (groups == null || groups.isEmpty()) {
+            return cache;
+        }
+
+        // Iterate through all groups and reverse the mapping
+        for (Map.Entry<String, java.util.Set<String>> entry : groups.entrySet()) {
+            String groupId = entry.getKey();
+            java.util.Set<String> positions = entry.getValue();
+
+            if (positions == null) {
+                continue;
+            }
+
+            // Add each position to the cache with this groupId
+            for (String position : positions) {
+                cache.put(position, groupId);
+            }
+        }
+
+        log.debug("Built groupId cache with {} positions from {} groups", cache.size(), groups.size());
         return cache;
     }
 
