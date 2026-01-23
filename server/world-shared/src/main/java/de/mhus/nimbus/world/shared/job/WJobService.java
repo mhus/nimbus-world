@@ -4,6 +4,7 @@ import de.mhus.nimbus.shared.types.WorldId;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,7 +23,11 @@ import java.util.function.Consumer;
  * No COW for branches - jobs are independent per world/branch.
  */
 @Service
-@ConditionalOnExpression("!'WorldPlayer'.equals('${spring.application.name}')")
+@ConditionalOnProperty(
+        value = "nimbus.services.job-service",
+        havingValue = "true",
+        matchIfMissing = false
+)
 @RequiredArgsConstructor
 @Slf4j
 public class WJobService {

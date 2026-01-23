@@ -4,6 +4,7 @@ import de.mhus.nimbus.world.shared.redis.WorldRedisLockService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -109,7 +110,12 @@ public class WEditCacheDirtyService {
      * Uses Redis locks to prevent concurrent processing across pods.
      */
     @Scheduled(fixedDelayString = "#{${world.edit-cache.processing-interval-ms:10000}}")
-    @ConditionalOnExpression("'${world.edit-cache.processing-enabled:true}' == 'true'")
+    @ConditionalOnProperty(
+            value = "nimbus.services.edit-cache-processing",
+            havingValue = "true",
+            matchIfMissing = false
+    )
+
     public void processEditCacheDirty() {
         try {
             List<WEditCacheDirty> dirtyEntries = dirtyRepository.findAllByOrderByCreatedAtAsc();

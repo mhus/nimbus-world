@@ -8,6 +8,12 @@ spring:
       database: world
 
 nimbus:
+  services:
+    job-processing: true
+    storage-cleanup: true
+    chunk-update: true
+    job-cleanup: true
+    job-service: true
   encryption:
     password: ${NIMBUS_ENCRYPTION_PASSWORD}
   chunk:

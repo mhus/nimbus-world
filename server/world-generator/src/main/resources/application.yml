@@ -9,6 +9,10 @@ spring:
 #      auto-index-creation: true
 
 nimbus:
+  services:
+    job-processing: true
+    job-service: true
+    edit-cache-processing: true
   encryption:
     password: ${NIMBUS_ENCRYPTION_PASSWORD}
   schema:
@@ -92,7 +96,6 @@ world:
     password: ${REDIS_PASSWORD:}
     ssl: ${REDIS_SSL:false}
   job:
-    processing-enabled: true
     processing-interval-ms: 5000
     max-jobs-per-cycle: 10
     cleanup-enabled: true

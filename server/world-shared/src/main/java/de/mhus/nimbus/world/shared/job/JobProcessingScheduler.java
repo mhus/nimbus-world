@@ -5,6 +5,7 @@ import de.mhus.nimbus.world.shared.redis.WorldRedisLockService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -16,7 +17,11 @@ import java.util.List;
  * Uses Redis locks to prevent concurrent execution across pods.
  */
 @Component
-@ConditionalOnExpression("'WorldEditor'.equals('${spring.application.name}') || 'WorldGenerator'.equals('${spring.application.name}')")
+@ConditionalOnProperty(
+        value = "nimbus.services.job-processing",
+        havingValue = "true",
+        matchIfMissing = false
+)
 @RequiredArgsConstructor
 @Slf4j
 public class JobProcessingScheduler {
