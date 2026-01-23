@@ -191,6 +191,18 @@
             {{ exporting ? 'Exporting...' : 'Export to Layer' }}
           </button>
 
+          <button
+            class="btn btn-info"
+            @click="showExportImagesConfirmation"
+            :disabled="exportingImages"
+          >
+            <svg v-if="!exportingImages" class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            <span v-if="exportingImages" class="loading loading-spinner loading-sm"></span>
+            {{ exportingImages ? 'Exporting...' : 'Export Images' }}
+          </button>
+
           <input
             ref="fileInput"
             type="file"
@@ -403,6 +415,58 @@
     @completed="handleExportJobCompleted"
     @failed="handleExportJobFailed"
   />
+
+  <!-- Export Images Confirmation Dialog -->
+  <div v-if="showingExportImagesConfirmation" class="modal modal-open">
+    <div class="modal-box">
+      <h3 class="font-bold text-lg mb-4">Export Images to Assets</h3>
+
+      <p class="mb-4">
+        This will generate height map and material map images and save them as assets.
+      </p>
+
+      <div class="mb-4 p-3 bg-base-200 rounded-lg font-mono text-sm space-y-1">
+        <div><strong>Level Path:</strong> map/levels/{{ flat?.hexGrid ? `${flat.hexGrid.q}_${flat.hexGrid.r}` : 'unknown' }}.png</div>
+        <div><strong>Material Path:</strong> map/materials/{{ flat?.hexGrid ? `${flat.hexGrid.q}_${flat.hexGrid.r}` : 'unknown' }}.png</div>
+      </div>
+
+      <div class="alert alert-info mb-4">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <span>Images will be stored in the asset storage and can be accessed by the world client.</span>
+      </div>
+
+      <div class="modal-action">
+        <button
+          class="btn"
+          @click="cancelExportImagesConfirmation"
+          :disabled="exportingImages"
+        >
+          Cancel
+        </button>
+        <button
+          class="btn btn-info"
+          @click="startExportImages"
+          :disabled="exportingImages"
+        >
+          <span v-if="exportingImages" class="loading loading-spinner loading-sm"></span>
+          {{ exportingImages ? 'Starting Export...' : 'Export Now' }}
+        </button>
+      </div>
+    </div>
+    <div class="modal-backdrop" @click="cancelExportImagesConfirmation"></div>
+  </div>
+
+  <!-- Export Images Job Watch Modal -->
+  <JobWatch
+    v-if="watchingExportImagesJob"
+    :worldId="flat?.worldId || ''"
+    :jobId="exportImagesJobId"
+    @close="handleExportImagesJobClose"
+    @completed="handleExportImagesJobCompleted"
+    @failed="handleExportImagesJobFailed"
+  />
 </template>
 
 <script setup lang="ts">
@@ -453,6 +517,12 @@ const showingExportConfirmation = ref(false);
 const exporting = ref(false);
 const watchingExportJob = ref(false);
 const exportJobId = ref('');
+
+// Export Images state
+const showingExportImagesConfirmation = ref(false);
+const exportingImages = ref(false);
+const watchingExportImagesJob = ref(false);
+const exportImagesJobId = ref('');
 
 /**
  * Computed URLs for images with cache busting
@@ -739,6 +809,103 @@ const handleExportJobFailed = (job: Job) => {
   console.error('[FlatDetailModal] Export job failed:', job.id, job.errorMessage);
   watchingExportJob.value = false;
   alert(`Export failed: ${job.errorMessage || 'Unknown error'}`);
+};
+
+/**
+ * Show export images confirmation dialog
+ */
+const showExportImagesConfirmation = () => {
+  showingExportImagesConfirmation.value = true;
+};
+
+/**
+ * Cancel export images confirmation
+ */
+const cancelExportImagesConfirmation = () => {
+  showingExportImagesConfirmation.value = false;
+};
+
+/**
+ * Start export images job
+ */
+const startExportImages = async () => {
+  if (!flat.value) return;
+
+  exportingImages.value = true;
+
+  try {
+    // Initialize jobs composable
+    const { createJob } = useJobs(flat.value.worldId);
+
+    // Generate paths from hexGrid
+    const hexGrid = flat.value.hexGrid;
+    if (!hexGrid) {
+      throw new Error('HexGrid is not defined for this flat');
+    }
+
+    const hexGridStr = `${hexGrid.q}_${hexGrid.r}`;
+    const levelPath = `map/levels/${hexGridStr}.png`;
+    const materialPath = `map/materials/${hexGridStr}.png`;
+
+    // Build job parameters
+    const parameters: Record<string, string> = {
+      flatId: flat.value.id, // Use database ID
+      levelPath: levelPath,
+      materialPath: materialPath,
+      ignoreEmptyMaterial: 'true', // Render black pixels where material == 0
+    };
+
+    // Create export images job
+    const jobRequest: JobCreateRequest = {
+      executor: 'flat-export-images',
+      parameters: parameters,
+      priority: 5,
+      maxRetries: 1,
+    };
+
+    console.log('[FlatDetailModal] Creating export images job:', jobRequest);
+    const createdJob = await createJob(jobRequest);
+
+    console.log('[FlatDetailModal] Export images job created:', createdJob.id);
+
+    // Hide confirmation, show job watch
+    showingExportImagesConfirmation.value = false;
+    exportImagesJobId.value = createdJob.id;
+    watchingExportImagesJob.value = true;
+  } catch (e: any) {
+    console.error('[FlatDetailModal] Failed to create export images job:', e);
+    alert('Failed to start export images: ' + (e.message || 'Unknown error'));
+    showingExportImagesConfirmation.value = false;
+  } finally {
+    exportingImages.value = false;
+  }
+};
+
+/**
+ * Handle export images job watch close
+ */
+const handleExportImagesJobClose = () => {
+  watchingExportImagesJob.value = false;
+};
+
+/**
+ * Handle export images job completed
+ */
+const handleExportImagesJobCompleted = async (job: Job) => {
+  console.log('[FlatDetailModal] Export images job completed:', job.id);
+  watchingExportImagesJob.value = false;
+
+  // Show success message and reload images
+  reloadImages();
+};
+
+/**
+ * Handle export images job failed
+ */
+const handleExportImagesJobFailed = (job: Job) => {
+  console.error('[FlatDetailModal] Export images job failed:', job.id, job.errorMessage);
+  watchingExportImagesJob.value = false;
+  alert(`Export images failed: ${job.errorMessage || 'Unknown error'}`);
 };
 
 // Watch for flatId changes

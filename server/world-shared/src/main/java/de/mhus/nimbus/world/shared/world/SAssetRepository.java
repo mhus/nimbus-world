@@ -16,6 +16,8 @@ public interface SAssetRepository extends MongoRepository<SAsset, String> {
 
     Optional<SAsset> findByWorldIdAndPath(String worldId, String path);
 
+    List<SAsset> findAllByWorldIdAndPath(String worldId, String path);
+
     void deleteByWorldIdAndPath(String worldId, String path);
 
     /**

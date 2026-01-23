@@ -78,7 +78,7 @@ public class WWorld implements Identifiable {
      * Used when no chunk data exists in database.
      */
     @Builder.Default
-    private int groundLevel = 45;
+    private int groundLevel = 20;
 
     /**
      * Ocean level for ocean generation (Y coordinate).

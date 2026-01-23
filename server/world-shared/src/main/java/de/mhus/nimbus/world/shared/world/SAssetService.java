@@ -177,6 +177,9 @@ public class SAssetService implements StorageProvider {
     }
 
     /**
+     * Findet ein Asset by worldId and path.
+     * Wenn mehrere Assets mit dem gleichen Pfad existieren, werden alte gelöscht
+     * und nur das neueste (basierend auf createdAt) zurückgegeben.
      * World instances and branches never own Assets.
      * Assets are only stored in main worlds.
      *
@@ -189,7 +192,48 @@ public class SAssetService implements StorageProvider {
         // world lookup - always use main world (no branches, no instances, no zones)
         var lookupWorld = worldId.mainWorld();
         var collection = WorldCollection.of(lookupWorld, path);
-        return repository.findByWorldIdAndPath(collection.worldId().getId(), collection.path());
+
+        // Find all assets with this path
+        List<SAsset> assets = repository.findAllByWorldIdAndPath(collection.worldId().getId(), collection.path());
+
+        if (assets.isEmpty()) {
+            return Optional.empty();
+        }
+
+        // If only one, return it
+        if (assets.size() == 1) {
+            return Optional.of(assets.get(0));
+        }
+
+        // Multiple assets found - sort by createdAt descending (newest first)
+        log.warn("Found {} assets with same path, cleaning up old ones: worldId={}, path={}",
+                assets.size(), worldId, path);
+
+        assets.sort((a, b) -> {
+            Instant aCreated = a.getCreatedAt();
+            Instant bCreated = b.getCreatedAt();
+            if (aCreated == null && bCreated == null) return 0;
+            if (aCreated == null) return 1;  // null is oldest
+            if (bCreated == null) return -1;
+            return bCreated.compareTo(aCreated);  // descending (newest first)
+        });
+
+        // Keep the newest (first in sorted list)
+        SAsset newest = assets.get(0);
+
+        // Delete all old ones
+        for (int i = 1; i < assets.size(); i++) {
+            SAsset old = assets.get(i);
+            log.info("Deleting old duplicate asset: id={}, path={}, createdAt={}",
+                    old.getId(), old.getPath(), old.getCreatedAt());
+            try {
+                delete(old);
+            } catch (Exception e) {
+                log.error("Failed to delete old duplicate asset: id={}", old.getId(), e);
+            }
+        }
+
+        return Optional.of(newest);
     }
 
     /** Lädt den Inhalt des Assets. */
