@@ -102,6 +102,17 @@ public class WWorld implements Identifiable {
     private String oceanBlockType = "n:o";
 
     /**
+     * Seed for the world generator.
+     * Used to initialize random generation of terrain and features.
+     * Do not change after world creation to ensure consistent generation.
+     */
+    @Builder.Default
+    private long noiseSeed = 1337; // Seed für Weltgenerator
+
+    @Builder.Default
+    private double noiseFrequency = 0.02; // Frequenz für Rauschfunktion
+
+    /**
      * History of era durations in minutes.
      * Each entry represents the duration of a completed era.
      * Index 0 = Era 1, Index 1 = Era 2, etc.

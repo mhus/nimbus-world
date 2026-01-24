@@ -216,7 +216,8 @@ export class SunService {
           });
           // Add timeout to prevent hanging
           setTimeout(() => {
-            logger.warn('Lens flare texture loading timeout for individual flare');
+            logger.warn('Lens flare texture loading timeout for individual flare - disable flare', { flare });
+            this.setEnabled(false);
             resolve();
           }, 30000);
         }

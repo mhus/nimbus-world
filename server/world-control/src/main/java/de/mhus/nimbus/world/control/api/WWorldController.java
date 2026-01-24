@@ -48,7 +48,9 @@ public class WWorldController extends BaseEditorController {
             Integer groundLevel,
             Integer oceanLevel,
             String groundBlockType,
-            String oceanBlockType
+            String oceanBlockType,
+            Long noiseSeed,
+            Double noiseFrequency
     ) {}
 
     public record WorldResponse(
@@ -66,6 +68,8 @@ public class WWorldController extends BaseEditorController {
             Integer oceanLevel,
             String groundBlockType,
             String oceanBlockType,
+            long noiseSeed,
+            double noiseFrequency,
             Set<String> owner,
             Set<String> editor,
             Set<String> supporter,
@@ -88,6 +92,8 @@ public class WWorldController extends BaseEditorController {
             Integer oceanLevel,
             String groundBlockType,
             String oceanBlockType,
+            long noiseSeed,
+            double noiseFrequency,
             Set<String> owner,
             Set<String> editor,
             Set<String> supporter,
@@ -118,6 +124,8 @@ public class WWorldController extends BaseEditorController {
                 world.getOceanLevel(),
                 world.getGroundBlockType(),
                 world.getOceanBlockType(),
+                world.getNoiseSeed(),
+                world.getNoiseFrequency(),
                 world.getOwner(),
                 world.getEditor(),
                 world.getSupporter(),
@@ -145,6 +153,8 @@ public class WWorldController extends BaseEditorController {
                 null,  // no oceanLevel
                 null,  // no groundBlockType
                 null,  // no oceanBlockType
+                1337,  // default noiseSeed
+                0.02,  // default noiseFrequency
                 Set.of(),  // empty owner set
                 Set.of(),  // empty editor set
                 Set.of(),  // empty supporter set
@@ -341,6 +351,8 @@ public class WWorldController extends BaseEditorController {
                 if (request.oceanLevel() != null) w.setOceanLevel(request.oceanLevel());
                 if (request.groundBlockType() != null) w.setGroundBlockType(request.groundBlockType());
                 if (request.oceanBlockType() != null) w.setOceanBlockType(request.oceanBlockType());
+                if (request.noiseSeed() != null) w.setNoiseSeed(request.noiseSeed());
+                if (request.noiseFrequency() != null) w.setNoiseFrequency(request.noiseFrequency());
             });
 
             // Create job to initialize world defaults
@@ -373,6 +385,8 @@ public class WWorldController extends BaseEditorController {
                     worldResponse.oceanLevel(),
                     worldResponse.groundBlockType(),
                     worldResponse.oceanBlockType(),
+                    worldResponse.noiseSeed(),
+                    worldResponse.noiseFrequency(),
                     worldResponse.owner(),
                     worldResponse.editor(),
                     worldResponse.supporter(),
@@ -456,6 +470,8 @@ public class WWorldController extends BaseEditorController {
             if (request.oceanLevel() != null) existing.setOceanLevel(request.oceanLevel());
             if (request.groundBlockType() != null) existing.setGroundBlockType(request.groundBlockType());
             if (request.oceanBlockType() != null) existing.setOceanBlockType(request.oceanBlockType());
+            if (request.noiseSeed() != null) existing.setNoiseSeed(request.noiseSeed());
+            if (request.noiseFrequency() != null) existing.setNoiseFrequency(request.noiseFrequency());
 
             WWorld updated = worldService.save(existing);
             return ResponseEntity.ok(toResponse(updated));
@@ -638,6 +654,8 @@ public class WWorldController extends BaseEditorController {
                 w.setOceanLevel(source.getOceanLevel());
                 w.setGroundBlockType(source.getGroundBlockType());
                 w.setOceanBlockType(source.getOceanBlockType());
+                w.setNoiseSeed(source.getNoiseSeed());
+                w.setNoiseFrequency(source.getNoiseFrequency());
                 w.setInstanceable(source.isInstanceable());
                 w.setOwner(source.getOwner());
                 w.setEditor(source.getEditor());

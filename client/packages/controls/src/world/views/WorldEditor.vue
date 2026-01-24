@@ -355,6 +355,8 @@
                @click="activeWorldInfoTab = 'environment'">Environment</a>
             <a class="tab" :class="{'tab-active': activeWorldInfoTab === 'time'}"
                @click="activeWorldInfoTab = 'time'">Time System</a>
+            <a class="tab" :class="{'tab-active': activeWorldInfoTab === 'generator'}"
+               @click="activeWorldInfoTab = 'generator'">Generator</a>
           </div>
 
           <!-- Tab: Basic -->
@@ -1276,6 +1278,46 @@
             </div>
           </div>
 
+          <!-- Tab: Generator -->
+          <div v-show="activeWorldInfoTab === 'generator'" class="space-y-4 mt-4">
+            <p class="text-sm text-base-content/70">Configure the noise parameters for terrain generation.</p>
+
+            <!-- Noise Seed -->
+            <div class="form-control">
+              <label class="label">
+                <span class="label-text font-medium">Noise Seed</span>
+              </label>
+              <input
+                v-model.number="formData.noiseSeed"
+                type="number"
+                placeholder="Random seed value"
+                class="input input-bordered w-full"
+                :disabled="!isNew"
+              />
+              <label class="label">
+                <span class="label-text-alt">Seed for world generator. Cannot be changed after creation to ensure consistent terrain generation.</span>
+              </label>
+            </div>
+
+            <!-- Noise Frequency -->
+            <div class="form-control">
+              <label class="label">
+                <span class="label-text font-medium">Noise Frequency</span>
+              </label>
+              <input
+                v-model.number="formData.noiseFrequency"
+                type="number"
+                step="0.001"
+                min="0.001"
+                placeholder="0.02"
+                class="input input-bordered w-full"
+              />
+              <label class="label">
+                <span class="label-text-alt">Frequency for noise function. Lower values = smoother terrain, higher values = more detail (default: 0.02).</span>
+              </label>
+            </div>
+          </div>
+
         </div>
       </div>
 
@@ -1475,7 +1517,7 @@ const newSupporter = ref('');
 const newPlayer = ref('');
 
 // Tab navigation for WorldInfo
-const activeWorldInfoTab = ref<'basic' | 'boundaries' | 'entryPoint' | 'visual' | 'gameplay' | 'environment' | 'time'>('basic');
+const activeWorldInfoTab = ref<'basic' | 'boundaries' | 'entryPoint' | 'visual' | 'gameplay' | 'environment' | 'time' | 'generator'>('basic');
 
 const formData = ref({
   worldId: '',
@@ -1492,6 +1534,8 @@ const formData = ref({
   oceanLevel: 50,
   groundBlockType: 'n:g',
   oceanBlockType: 'n:o',
+  noiseSeed: Math.floor(Math.random() * 1000000000),
+  noiseFrequency: 0.02,
   publicData: {
     worldId: '',
     title: '',
@@ -1599,6 +1643,8 @@ const loadWorld = () => {
       oceanLevel: 64,
       groundBlockType: 'n:g',
       oceanBlockType: 'n:o',
+      noiseSeed: Math.floor(Math.random() * 1000000000),
+      noiseFrequency: 0.02,
       publicData: {
         worldId: '',
         title: '',
@@ -1801,6 +1847,8 @@ const loadWorld = () => {
     oceanLevel: world.oceanLevel,
     groundBlockType: world.groundBlockType,
     oceanBlockType: world.oceanBlockType,
+    noiseSeed: world.noiseSeed,
+    noiseFrequency: world.noiseFrequency,
     publicData: mergePublicData(world.publicData)
   };
 };
@@ -1951,6 +1999,8 @@ const performSave = async () => {
       oceanLevel: formData.value.oceanLevel ?? undefined,
       groundBlockType: formData.value.groundBlockType,
       oceanBlockType: formData.value.oceanBlockType,
+      noiseSeed: formData.value.noiseSeed,
+      noiseFrequency: formData.value.noiseFrequency,
     };
 
     if (isNew.value) {

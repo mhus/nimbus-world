@@ -395,7 +395,7 @@ public class WChunkService implements StorageProvider {
                     // Create ground block at noise-based height
                     if (noiseHeight >= 0 && groundBlockType != null) {
                         Block groundBlock = createBlockFast(worldX, noiseHeight, worldZ, groundBlockType);
-                        groundBlock.setFaceVisibility(1); // TOP only
+                        // groundBlock.setFaceVisibility(1); // should be without bottom
                         blocks.add(groundBlock);
                     }
 

@@ -101,6 +101,8 @@ export interface World {
   oceanLevel: number | null;
   groundBlockType: string;
   oceanBlockType: string;
+  noiseSeed: number;
+  noiseFrequency: number;
   owner: string[];
   editor: string[];
   supporter: string[];
@@ -124,6 +126,8 @@ export interface WorldRequest {
   oceanLevel?: number;
   groundBlockType?: string;
   oceanBlockType?: string;
+  noiseSeed?: number;
+  noiseFrequency?: number;
 }
 
 export interface WorldCreateResponse extends World {
