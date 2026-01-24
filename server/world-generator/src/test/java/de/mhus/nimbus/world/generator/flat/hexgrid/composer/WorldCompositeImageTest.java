@@ -115,43 +115,20 @@ public class WorldCompositeImageTest {
             }
         }
 
-        // Step 4: Add roads and rivers
-        List<RoadConnection> roadConnections = createRoadConnections();
-        List<RiverConnection> riverConnections = createRiverConnections();
+        // Step 4: Compose flows (roads and rivers)
+        FlowComposer flowComposer = new FlowComposer();
+        FlowComposer.FlowCompositionResult flowResult = flowComposer.composeFlows(
+            composition, placementResult);
 
-        RoadAndRiverConnector connector = new RoadAndRiverConnector();
-        ConnectionResult connectionResult = connector.connect(fillResult, roadConnections, riverConnections);
+        assertTrue(flowResult.isSuccess(), "Flow composition should succeed");
+        log.info("Composed {} flows with {} total segments",
+            flowResult.getComposedFlows(),
+            flowResult.getTotalSegments());
 
-        assertTrue(connectionResult.isSuccess());
-        log.info("Applied {} roads and {} rivers",
-            connectionResult.getRoadsApplied(),
-            connectionResult.getRiversApplied());
-
-        // Update fillResult with connected grids
-        List<FilledHexGrid> updatedGrids = new ArrayList<>();
-        for (FilledHexGrid filled : fillResult.getAllGrids()) {
-            WHexGrid updatedGrid = connectionResult.getHexGrids().stream()
-                .filter(g -> g.getPosition().equals(filled.getHexGrid().getPosition()))
-                .findFirst()
-                .orElse(filled.getHexGrid());
-
-            updatedGrids.add(FilledHexGrid.builder()
-                .coordinate(filled.getCoordinate())
-                .hexGrid(updatedGrid)
-                .biome(filled.getBiome())
-                .isFiller(filled.isFiller())
-                .fillerType(filled.getFillerType())
-                .build());
-        }
-
-        fillResult = HexGridFillResult.builder()
-            .allGrids(updatedGrids)
-            .placementResult(fillResult.getPlacementResult())
-            .oceanFillCount(fillResult.getOceanFillCount())
-            .landFillCount(fillResult.getLandFillCount())
-            .coastFillCount(fillResult.getCoastFillCount())
-            .success(true)
-            .build();
+        // Step 4b: Sync flow parameters from FeatureHexGrids to WHexGrids
+        HexGridParameterSync parameterSync = new HexGridParameterSync();
+        int syncedCount = parameterSync.syncParametersToWHexGrids(composition, placementResult.getHexGrids());
+        log.info("Synced parameters to {} WHexGrids", syncedCount);
 
         // Step 5: Build terrain for all grids
         Map<HexVector2, WFlat> flats = new HashMap<>();
@@ -169,7 +146,7 @@ public class WorldCompositeImageTest {
         createCompositeImage(flats, fillResult, "complete-world-all-components");
 
         // Step 8: Export final generated model
-        exportGeneratedModel(fillResult, connectionResult, roadConnections, riverConnections);
+        exportGeneratedModel(fillResult, flowResult);
 
         log.info("=== Complete World with All Components Test Completed ===");
     }
@@ -231,8 +208,8 @@ public class WorldCompositeImageTest {
     public void testCompleteWorldComposite() throws Exception {
         log.info("=== Testing Complete World Composite Image Generation ===");
 
-        // Step 1: Create composition
-        HexComposition composition = createComposition();
+        // Step 1: Create composition with villages and roads
+        HexComposition composition = createCompositionWithVillages();
 
         // Step 2: Prepare composition
         HexCompositionPreparer preparer = new HexCompositionPreparer();
@@ -247,7 +224,21 @@ public class WorldCompositeImageTest {
             placementResult.getPlacedBiomes().size(),
             placementResult.getHexGrids().size());
 
-        // Step 3: Fill gaps
+        // Step 3b: Compose flows (roads, rivers)
+        FlowComposer flowComposer = new FlowComposer();
+        FlowComposer.FlowCompositionResult flowResult = flowComposer.composeFlows(composition, placementResult);
+        assertTrue(flowResult.isSuccess());
+        log.info("Composed {} flows: {} successful, {} failed",
+            flowResult.getTotalFlows(),
+            flowResult.getComposedFlows(),
+            flowResult.getFailedFlows());
+
+        // Step 3c: Sync parameters from FeatureHexGrids to WHexGrids
+        HexGridParameterSync paramSync = new HexGridParameterSync();
+        int syncedCount = paramSync.syncParametersToWHexGrids(composition, placementResult.getHexGrids());
+        log.info("Synced parameters to {} WHexGrids", syncedCount);
+
+        // Step 4: Fill gaps
         HexGridFiller filler = new HexGridFiller();
         HexGridFillResult fillResult = filler.fill(placementResult, "composite-world", 2);
 
@@ -333,61 +324,45 @@ public class WorldCompositeImageTest {
 
         composition.getFeatures().add(village);
 
-        return composition;
-    }
-
-    /**
-     * Creates road connections between grids
-     */
-    private List<RoadConnection> createRoadConnections() {
-        List<RoadConnection> roads = new ArrayList<>();
-
-        // Main road from [0,0] to [1,0] (East)
-        roads.add(RoadConnection.builder()
-            .fromGrid(HexVector2.builder().q(0).r(0).build())
-            .toGrid(HexVector2.builder().q(1).r(0).build())
-            .fromSide(WHexGrid.SIDE.EAST)
-            .toSide(WHexGrid.SIDE.WEST)
-            .width(5)
+        // Add Roads as Flow features
+        Road mainRoad = Road.builder()
+            .roadType("street")
             .level(95)
-            .type("street")
-            .groupId("main-road")
-            .build());
+            .build();
+        mainRoad.setName("Main Road");
+        mainRoad.setFeatureId("main-road");
+        mainRoad.setWidthBlocks(5);
+        mainRoad.setStartPoint(HexVector2.builder().q(0).r(0).build());
+        mainRoad.setEndPoint(HexVector2.builder().q(1).r(0).build());
+        mainRoad.setType(FlowType.ROAD);
+        composition.getFeatures().add(mainRoad);
 
-        // Road from [0,0] to [0,-1] (North-West)
-        roads.add(RoadConnection.builder()
-            .fromGrid(HexVector2.builder().q(0).r(0).build())
-            .toGrid(HexVector2.builder().q(0).r(-1).build())
-            .fromSide(WHexGrid.SIDE.NORTH_WEST)
-            .toSide(WHexGrid.SIDE.SOUTH_EAST)
-            .width(4)
+        Road northRoad = Road.builder()
+            .roadType("street")
             .level(95)
-            .type("street")
-            .groupId("north-road")
-            .build());
+            .build();
+        northRoad.setName("North Road");
+        northRoad.setFeatureId("north-road");
+        northRoad.setWidthBlocks(4);
+        northRoad.setStartPoint(HexVector2.builder().q(0).r(0).build());
+        northRoad.setEndPoint(HexVector2.builder().q(0).r(-1).build());
+        northRoad.setType(FlowType.ROAD);
+        composition.getFeatures().add(northRoad);
 
-        return roads;
-    }
-
-    /**
-     * Creates river connections between grids
-     */
-    private List<RiverConnection> createRiverConnections() {
-        List<RiverConnection> rivers = new ArrayList<>();
-
-        // River from mountains [0,-2] to plains [0,-1]
-        rivers.add(RiverConnection.builder()
-            .fromGrid(HexVector2.builder().q(0).r(-2).build())
-            .toGrid(HexVector2.builder().q(0).r(-1).build())
-            .fromSide(WHexGrid.SIDE.SOUTH_EAST)
-            .toSide(WHexGrid.SIDE.NORTH_WEST)
-            .width(3)
+        // Add River as Flow feature
+        River mountainRiver = River.builder()
             .depth(2)
             .level(45)
-            .groupId("mountain-river")
-            .build());
+            .build();
+        mountainRiver.setName("Mountain River");
+        mountainRiver.setFeatureId("mountain-river");
+        mountainRiver.setWidthBlocks(3);
+        mountainRiver.setStartPoint(HexVector2.builder().q(0).r(-2).build());
+        mountainRiver.setEndPoint(HexVector2.builder().q(0).r(-1).build());
+        mountainRiver.setType(FlowType.RIVER);
+        composition.getFeatures().add(mountainRiver);
 
-        return rivers;
+        return composition;
     }
 
     /**
@@ -876,9 +851,7 @@ public class WorldCompositeImageTest {
      * Exports generated model as JSON
      */
     private void exportGeneratedModel(HexGridFillResult fillResult,
-                                      ConnectionResult connectionResult,
-                                      List<RoadConnection> roadConnections,
-                                      List<RiverConnection> riverConnections) throws Exception {
+                                      FlowComposer.FlowCompositionResult flowResult) throws Exception {
 
         // Create output model
         Map<String, Object> outputModel = new HashMap<>();
@@ -890,8 +863,8 @@ public class WorldCompositeImageTest {
         summary.put("oceanFiller", fillResult.getOceanFillCount());
         summary.put("landFiller", fillResult.getLandFillCount());
         summary.put("coastFiller", fillResult.getCoastFillCount());
-        summary.put("roadsApplied", connectionResult.getRoadsApplied());
-        summary.put("riversApplied", connectionResult.getRiversApplied());
+        summary.put("flowsComposed", flowResult.getComposedFlows());
+        summary.put("flowSegments", flowResult.getTotalSegments());
         outputModel.put("summary", summary);
 
         // Placed biomes
@@ -929,65 +902,23 @@ public class WorldCompositeImageTest {
                 gridInfo.put("biomeType", filled.getBiome().getBiome().getType());
             }
 
-            // Parameters
+            // Parameters - export exactly as they are in WHexGrid
             if (filled.getHexGrid().getParameters() != null && !filled.getHexGrid().getParameters().isEmpty()) {
-                Map<String, String> params = new HashMap<>(filled.getHexGrid().getParameters());
-
-                // Only include non-sensitive parameter keys
-                Map<String, Object> paramInfo = new HashMap<>();
-                paramInfo.put("g_builder", params.get("g_builder"));
-
-                if (params.containsKey("village")) {
-                    paramInfo.put("hasVillage", true);
-                    paramInfo.put("villageConfig", params.get("village"));
-                }
-
-                if (params.containsKey("road")) {
-                    paramInfo.put("hasRoad", true);
-                    paramInfo.put("roadConfig", params.get("road"));
-                }
-
-                if (params.containsKey("river")) {
-                    paramInfo.put("hasRiver", true);
-                    paramInfo.put("riverConfig", params.get("river"));
-                }
-
-                gridInfo.put("parameters", paramInfo);
+                gridInfo.put("parameters", filled.getHexGrid().getParameters());
             }
 
             hexGrids.add(gridInfo);
         }
         outputModel.put("hexGrids", hexGrids);
 
-        // Road connections
-        List<Map<String, Object>> roads = new ArrayList<>();
-        for (RoadConnection road : roadConnections) {
-            Map<String, Object> roadInfo = new HashMap<>();
-            roadInfo.put("from", coordinateToString(road.getFromGrid()));
-            roadInfo.put("to", coordinateToString(road.getToGrid()));
-            roadInfo.put("fromSide", road.getFromSide().name());
-            roadInfo.put("toSide", road.getToSide().name());
-            roadInfo.put("width", road.getWidth());
-            roadInfo.put("level", road.getLevel());
-            roadInfo.put("type", road.getType());
-            roads.add(roadInfo);
-        }
-        outputModel.put("roadConnections", roads);
-
-        // River connections
-        List<Map<String, Object>> rivers = new ArrayList<>();
-        for (RiverConnection river : riverConnections) {
-            Map<String, Object> riverInfo = new HashMap<>();
-            riverInfo.put("from", coordinateToString(river.getFromGrid()));
-            riverInfo.put("to", coordinateToString(river.getToGrid()));
-            riverInfo.put("fromSide", river.getFromSide().name());
-            riverInfo.put("toSide", river.getToSide().name());
-            riverInfo.put("width", river.getWidth());
-            riverInfo.put("depth", river.getDepth());
-            riverInfo.put("level", river.getLevel());
-            rivers.add(riverInfo);
-        }
-        outputModel.put("riverConnections", rivers);
+        // Flow composition details (Roads and Rivers are now Features)
+        Map<String, Object> flowInfo = new HashMap<>();
+        flowInfo.put("totalFlows", flowResult.getTotalFlows());
+        flowInfo.put("composedFlows", flowResult.getComposedFlows());
+        flowInfo.put("failedFlows", flowResult.getFailedFlows());
+        flowInfo.put("totalSegments", flowResult.getTotalSegments());
+        flowInfo.put("errors", flowResult.getErrors());
+        outputModel.put("flows", flowInfo);
 
         // Write to file
         File outputFile = outputDir.resolve("generated-model.json").toFile();

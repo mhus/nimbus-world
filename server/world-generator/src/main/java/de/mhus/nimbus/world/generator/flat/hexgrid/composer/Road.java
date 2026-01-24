@@ -1,6 +1,7 @@
 package de.mhus.nimbus.world.generator.flat.hexgrid.composer;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import de.mhus.nimbus.generated.types.HexVector2;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -40,5 +41,16 @@ public class Road extends Flow {
         if (getWidthBlocks() == null && defaults.containsKey("default_width")) {
             setWidthBlocks(Integer.parseInt(defaults.get("default_width")));
         }
+    }
+
+    /**
+     * Configures HexGrids with road-specific parameters.
+     * Road-specific parameters are added by HexGridRoadConfigurator
+     * after all flows have been composed.
+     */
+    @Override
+    public void configureHexGrids(List<HexVector2> coordinates) {
+        // Call parent to create basic FeatureHexGrids
+        super.configureHexGrids(coordinates);
     }
 }

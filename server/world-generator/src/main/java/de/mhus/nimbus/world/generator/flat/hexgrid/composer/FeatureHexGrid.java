@@ -43,6 +43,30 @@ public class FeatureHexGrid {
     private List<FlowSegment> flowSegments = new ArrayList<>();
 
     /**
+     * Road configuration parts that will be assembled into final road={} JSON.
+     * Phase 1: Different sources (Villages, Flows) add parts
+     * Phase 2: HexGridRoadConfigurator assembles all parts into road={}
+     */
+    @Builder.Default
+    private List<RoadConfigPart> roadConfigParts = new ArrayList<>();
+
+    /**
+     * River configuration parts that will be assembled into final river={} JSON.
+     * Phase 1: Different sources (Flows) add parts
+     * Phase 2: HexGridRoadConfigurator assembles all parts into river={}
+     */
+    @Builder.Default
+    private List<RiverConfigPart> riverConfigParts = new ArrayList<>();
+
+    /**
+     * Wall configuration parts that will be assembled into final wall={} JSON.
+     * Phase 1: Different sources (Flows, Structures) add parts
+     * Phase 2: HexGridRoadConfigurator assembles all parts into wall={}
+     */
+    @Builder.Default
+    private List<WallConfigPart> wallConfigParts = new ArrayList<>();
+
+    /**
      * Optional name for this HexGrid
      */
     private String name;
@@ -70,6 +94,57 @@ public class FeatureHexGrid {
             areas = new HashMap<>();
         }
         areas.put(areaKey, data);
+    }
+
+    /**
+     * Adds a road configuration part to this HexGrid
+     */
+    public void addRoadConfigPart(RoadConfigPart part) {
+        if (roadConfigParts == null) {
+            roadConfigParts = new ArrayList<>();
+        }
+        roadConfigParts.add(part);
+    }
+
+    /**
+     * Checks if this HexGrid has any road configuration parts
+     */
+    public boolean hasRoadConfigParts() {
+        return roadConfigParts != null && !roadConfigParts.isEmpty();
+    }
+
+    /**
+     * Adds a river configuration part to this HexGrid
+     */
+    public void addRiverConfigPart(RiverConfigPart part) {
+        if (riverConfigParts == null) {
+            riverConfigParts = new ArrayList<>();
+        }
+        riverConfigParts.add(part);
+    }
+
+    /**
+     * Checks if this HexGrid has any river configuration parts
+     */
+    public boolean hasRiverConfigParts() {
+        return riverConfigParts != null && !riverConfigParts.isEmpty();
+    }
+
+    /**
+     * Adds a wall configuration part to this HexGrid
+     */
+    public void addWallConfigPart(WallConfigPart part) {
+        if (wallConfigParts == null) {
+            wallConfigParts = new ArrayList<>();
+        }
+        wallConfigParts.add(part);
+    }
+
+    /**
+     * Checks if this HexGrid has any wall configuration parts
+     */
+    public boolean hasWallConfigParts() {
+        return wallConfigParts != null && !wallConfigParts.isEmpty();
     }
 
     /**

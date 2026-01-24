@@ -76,6 +76,19 @@ public class FlowComposer {
 
             // No need to copy back - Flows now store their data directly
 
+            // After all flows are composed, configure road={} JSON
+            HexGridRoadConfigurator roadConfigurator = new HexGridRoadConfigurator();
+            HexGridRoadConfigurator.RoadConfigurationResult roadResult =
+                roadConfigurator.configureRoads(prepared);
+
+            log.info("Road configuration: configured={}/{}, segments={}",
+                roadResult.getConfiguredGrids(), roadResult.getTotalGrids(),
+                roadResult.getTotalSegments());
+
+            if (!roadResult.isSuccess()) {
+                log.warn("Road configuration had errors: {}", roadResult.getErrors());
+            }
+
             log.info("Flow composition complete: composed={}/{}, segments={}, failed={}",
                 composedFlows, totalFlows, totalSegments, failedFlows);
 
@@ -125,8 +138,22 @@ public class FlowComposer {
 
         flow.setRoute(route);
 
-        // Create flow segments
+        // Configure HexGrids for this flow (creates FeatureHexGrids with parameters)
+        flow.configureHexGrids(route);
+
+        // Create flow segments and add them to the configured HexGrids
         int segments = createFlowSegments(flow, route, gridMap, prepared);
+
+        // Phase 1: Convert FlowSegments to ConfigParts and add to Area grids
+        if (segments > 0) {
+            if (flow instanceof Road) {
+                convertFlowSegmentsToRoadConfigParts(flow, prepared);
+            } else if (flow instanceof River) {
+                convertFlowSegmentsToRiverConfigParts(flow, prepared);
+            } else if (flow instanceof Wall) {
+                convertFlowSegmentsToWallConfigParts(flow, prepared);
+            }
+        }
 
         // Update feature status to COMPOSED
         if (segments > 0) {
@@ -345,20 +372,19 @@ public class FlowComposer {
             // Create flow segment
             FlowSegment segment = createFlowSegment(flow, fromSide, toSide);
 
-            // Add segment to biome's FeatureHexGrid (if exists)
-            FeatureHexGrid biomeHexGrid = findOrCreateFeatureHexGrid(coord, gridMap, prepared);
+            // Add segment to flow's own FeatureHexGrid (already configured by flow.configureHexGrids())
+            FeatureHexGrid flowHexGrid = flow.findHexGrid(coord);
+            if (flowHexGrid != null) {
+                flowHexGrid.addFlowSegment(segment);
+            } else {
+                log.warn("No FeatureHexGrid found for flow {} at coordinate {}", flow.getName(), coord);
+            }
+
+            // Also add segment to biome's FeatureHexGrid (if flow crosses a biome)
+            FeatureHexGrid biomeHexGrid = findFeatureHexGridInBiome(coord, gridMap);
             if (biomeHexGrid != null) {
                 biomeHexGrid.addFlowSegment(segment);
             }
-
-            // Also add as standalone FeatureHexGrid to the flow itself
-            FeatureHexGrid flowHexGrid = FeatureHexGrid.builder()
-                .coordinate(coord)
-                .name(flow.getName() + " [" + coord.getQ() + "," + coord.getR() + "]")
-                .description("Flow segment for " + flow.getName())
-                .build();
-            flowHexGrid.addFlowSegment(segment);
-            flow.addHexGrid(flowHexGrid);
 
             segmentCount++;
         }
@@ -393,18 +419,15 @@ public class FlowComposer {
     }
 
     /**
-     * Finds or creates a FeatureHexGrid for a coordinate
+     * Finds a FeatureHexGrid in a biome at the given coordinate.
+     * Returns null if no biome exists at that coordinate or if the biome has no FeatureHexGrid there.
      */
-    private FeatureHexGrid findOrCreateFeatureHexGrid(HexVector2 coord,
-                                                      Map<String, Biome> gridMap,
-                                                      HexComposition prepared) {
+    private FeatureHexGrid findFeatureHexGridInBiome(HexVector2 coord, Map<String, Biome> gridMap) {
         // Find the biome at this coordinate
         Biome biome = gridMap.get(coordKey(coord));
 
         if (biome == null) {
-            log.debug("No biome at coordinate {}, creating standalone grid", coord);
-            // Create a standalone FeatureHexGrid (for flows crossing empty space)
-            // This would need to be stored somewhere - for now, skip
+            // No biome at this coordinate (flow crosses empty space or filler)
             return null;
         }
 
@@ -416,13 +439,12 @@ public class FlowComposer {
             .findFirst()
             .orElse(null);
 
-        if (existing != null) {
-            return existing;
+        if (existing == null) {
+            // Should not happen - biomes should already have FeatureHexGrids from BiomeComposer
+            log.warn("Biome {} has no FeatureHexGrid at {}", biome.getName(), coord);
         }
 
-        // Should not happen - biomes should already have FeatureHexGrids from BiomeComposer
-        log.warn("Biome {} has no FeatureHexGrid at {}", biome.getName(), coord);
-        return null;
+        return existing;
     }
 
     /**
@@ -457,6 +479,276 @@ public class FlowComposer {
         return flows;
     }
 
+
+    /**
+     * Phase 1: Converts FlowSegments to RoadConfigParts and adds them to Area grids.
+     * This is called after flow segments have been created and added to FeatureHexGrids.
+     *
+     * Important: Flow FeatureHexGrids contain metadata (coordinates + FlowSegments).
+     * We need to add RoadConfigParts to the Area FeatureHexGrids at the same coordinates.
+     *
+     * @param flow The flow whose segments should be converted to RoadConfigParts
+     * @param composition The composition with all features to find Area grids
+     */
+    private void convertFlowSegmentsToRoadConfigParts(Flow flow, HexComposition composition) {
+        if (!(flow instanceof Road)) {
+            return; // Only roads use RoadConfigParts
+        }
+
+        // Build a map of Area grids by coordinate for fast lookup
+        Map<String, FeatureHexGrid> areaGridMap = new HashMap<>();
+
+        // Collect Area grids from all features
+        if (composition.getFeatures() != null) {
+            for (Feature feature : composition.getFeatures()) {
+                if (feature instanceof Area) {
+                    collectAreaGrids((Area) feature, areaGridMap);
+                }
+            }
+        }
+
+        // Collect Area grids from composites
+        if (composition.getComposites() != null) {
+            for (Composite composite : composition.getComposites()) {
+                for (Feature nestedFeature : composite.getFeatures()) {
+                    if (nestedFeature instanceof Area) {
+                        collectAreaGrids((Area) nestedFeature, areaGridMap);
+                    }
+                }
+            }
+        }
+
+        // Now convert FlowSegments to RoadConfigParts and add to Area grids
+        for (FeatureHexGrid flowGrid : flow.getHexGrids()) {
+            String coordKey = flowGrid.getPositionKey();
+            if (coordKey == null) {
+                continue;
+            }
+
+            // Find the Area grid at this coordinate
+            FeatureHexGrid areaGrid = areaGridMap.get(coordKey);
+            if (areaGrid == null) {
+                log.debug("No Area grid found at {}, flow crosses empty space", coordKey);
+                continue;
+            }
+
+            // Get flow segments for this grid
+            List<FlowSegment> roadSegments = flowGrid.getFlowSegmentsByType(FlowType.ROAD);
+
+            if (roadSegments.isEmpty()) {
+                continue;
+            }
+
+            // Convert each FlowSegment to RoadConfigPart
+            for (FlowSegment segment : roadSegments) {
+                // Create ROUTE parts for fromSide
+                if (segment.getFromSide() != null) {
+                    RoadConfigPart part = RoadConfigPart.createRouteSidePart(
+                        segment.getFromSide(),
+                        segment.getWidth(),
+                        segment.getLevel(),
+                        segment.getType()
+                    );
+                    areaGrid.addRoadConfigPart(part);
+                }
+
+                // Create ROUTE parts for toSide (if different from fromSide)
+                if (segment.getToSide() != null && !segment.getToSide().equals(segment.getFromSide())) {
+                    RoadConfigPart part = RoadConfigPart.createRouteSidePart(
+                        segment.getToSide(),
+                        segment.getWidth(),
+                        segment.getLevel(),
+                        segment.getType()
+                    );
+                    areaGrid.addRoadConfigPart(part);
+                }
+            }
+
+            log.debug("Converted {} road segments to {} config parts for Area grid {}",
+                roadSegments.size(), areaGrid.getRoadConfigParts().size(), coordKey);
+        }
+    }
+
+    /**
+     * Phase 1: Converts FlowSegments to RiverConfigParts and adds them to Area grids.
+     *
+     * @param flow The river flow whose segments should be converted
+     * @param composition The composition with all features to find Area grids
+     */
+    private void convertFlowSegmentsToRiverConfigParts(Flow flow, HexComposition composition) {
+        if (!(flow instanceof River)) {
+            return;
+        }
+
+        River river = (River) flow;
+
+        // Build a map of Area grids by coordinate for fast lookup
+        Map<String, FeatureHexGrid> areaGridMap = new HashMap<>();
+        collectAllAreaGrids(composition, areaGridMap);
+
+        // Convert FlowSegments to RiverConfigParts and add to Area grids
+        for (FeatureHexGrid flowGrid : flow.getHexGrids()) {
+            String coordKey = flowGrid.getPositionKey();
+            if (coordKey == null) {
+                continue;
+            }
+
+            // Find the Area grid at this coordinate
+            FeatureHexGrid areaGrid = areaGridMap.get(coordKey);
+            if (areaGrid == null) {
+                log.debug("No Area grid found at {}, river crosses empty space", coordKey);
+                continue;
+            }
+
+            // Get river segments for this grid
+            List<FlowSegment> riverSegments = flowGrid.getFlowSegmentsByType(FlowType.RIVER);
+            if (riverSegments.isEmpty()) {
+                continue;
+            }
+
+            // Convert each FlowSegment to RiverConfigPart
+            for (FlowSegment segment : riverSegments) {
+                String groupId = segment.getFlowFeatureId() != null ? segment.getFlowFeatureId() : river.getFeatureId();
+
+                // Create FROM parts
+                if (segment.getFromSide() != null) {
+                    RiverConfigPart part = RiverConfigPart.createFromPart(
+                        segment.getFromSide(),
+                        segment.getWidth(),
+                        segment.getDepth(),
+                        segment.getLevel(),
+                        groupId
+                    );
+                    areaGrid.addRiverConfigPart(part);
+                }
+
+                // Create TO parts
+                if (segment.getToSide() != null) {
+                    RiverConfigPart part = RiverConfigPart.createToPart(
+                        segment.getToSide(),
+                        segment.getWidth(),
+                        segment.getDepth(),
+                        segment.getLevel(),
+                        groupId
+                    );
+                    areaGrid.addRiverConfigPart(part);
+                }
+            }
+
+            log.debug("Converted {} river segments to {} config parts for Area grid {}",
+                riverSegments.size(), areaGrid.getRiverConfigParts().size(), coordKey);
+        }
+    }
+
+    /**
+     * Phase 1: Converts FlowSegments to WallConfigParts and adds them to Area grids.
+     *
+     * @param flow The wall flow whose segments should be converted
+     * @param composition The composition with all features to find Area grids
+     */
+    private void convertFlowSegmentsToWallConfigParts(Flow flow, HexComposition composition) {
+        if (!(flow instanceof Wall)) {
+            return;
+        }
+
+        Wall wall = (Wall) flow;
+
+        // Build a map of Area grids by coordinate for fast lookup
+        Map<String, FeatureHexGrid> areaGridMap = new HashMap<>();
+        collectAllAreaGrids(composition, areaGridMap);
+
+        // Convert FlowSegments to WallConfigParts and add to Area grids
+        for (FeatureHexGrid flowGrid : flow.getHexGrids()) {
+            String coordKey = flowGrid.getPositionKey();
+            if (coordKey == null) {
+                continue;
+            }
+
+            // Find the Area grid at this coordinate
+            FeatureHexGrid areaGrid = areaGridMap.get(coordKey);
+            if (areaGrid == null) {
+                log.debug("No Area grid found at {}, wall crosses empty space", coordKey);
+                continue;
+            }
+
+            // Get wall segments for this grid
+            List<FlowSegment> wallSegments = flowGrid.getFlowSegmentsByType(FlowType.WALL);
+            if (wallSegments.isEmpty()) {
+                continue;
+            }
+
+            // Convert each FlowSegment to WallConfigPart
+            for (FlowSegment segment : wallSegments) {
+                // Create SIDE parts for fromSide
+                if (segment.getFromSide() != null) {
+                    WallConfigPart part = WallConfigPart.createSidePart(
+                        segment.getFromSide(),
+                        segment.getHeight(),
+                        segment.getWidth(),
+                        segment.getLevel(),
+                        segment.getMaterial()
+                    );
+                    areaGrid.addWallConfigPart(part);
+                }
+
+                // Create SIDE parts for toSide (if different)
+                if (segment.getToSide() != null && !segment.getToSide().equals(segment.getFromSide())) {
+                    WallConfigPart part = WallConfigPart.createSidePart(
+                        segment.getToSide(),
+                        segment.getHeight(),
+                        segment.getWidth(),
+                        segment.getLevel(),
+                        segment.getMaterial()
+                    );
+                    areaGrid.addWallConfigPart(part);
+                }
+            }
+
+            log.debug("Converted {} wall segments to {} config parts for Area grid {}",
+                wallSegments.size(), areaGrid.getWallConfigParts().size(), coordKey);
+        }
+    }
+
+    /**
+     * Collects Area grids from composition into a map by coordinate key
+     */
+    private void collectAllAreaGrids(HexComposition composition, Map<String, FeatureHexGrid> areaGridMap) {
+        // Collect Area grids from all features
+        if (composition.getFeatures() != null) {
+            for (Feature feature : composition.getFeatures()) {
+                if (feature instanceof Area) {
+                    collectAreaGrids((Area) feature, areaGridMap);
+                }
+            }
+        }
+
+        // Collect Area grids from composites
+        if (composition.getComposites() != null) {
+            for (Composite composite : composition.getComposites()) {
+                for (Feature nestedFeature : composite.getFeatures()) {
+                    if (nestedFeature instanceof Area) {
+                        collectAreaGrids((Area) nestedFeature, areaGridMap);
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Collects Area grids into a map by coordinate key
+     */
+    private void collectAreaGrids(Area area, Map<String, FeatureHexGrid> areaGridMap) {
+        if (area.getHexGrids() == null) {
+            return;
+        }
+
+        for (FeatureHexGrid hexGrid : area.getHexGrids()) {
+            String coordKey = hexGrid.getPositionKey();
+            if (coordKey != null) {
+                areaGridMap.put(coordKey, hexGrid);
+            }
+        }
+    }
 
     /**
      * Creates coordinate key

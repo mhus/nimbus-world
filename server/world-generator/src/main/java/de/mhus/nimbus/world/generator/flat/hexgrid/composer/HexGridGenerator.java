@@ -232,9 +232,17 @@ public class HexGridGenerator {
         hexGrid.touchCreate();
         hexGrid.syncPositionKey();
 
-        // Apply flow segments if present
+        // Apply flow segments if present AND not already configured
+        // HexGridRoadConfigurator sets road/river/wall parameters, so only fallback if missing
         if (config.hasFlowSegments()) {
-            applyFlowSegments(hexGrid, config);
+            boolean hasRoadParam = parameters.containsKey("road");
+            boolean hasRiverParam = parameters.containsKey("river");
+            boolean hasWallParam = parameters.containsKey("wall");
+
+            // Only apply if not already configured by HexGridRoadConfigurator
+            if (!hasRoadParam && !hasRiverParam && !hasWallParam) {
+                applyFlowSegments(hexGrid, config);
+            }
         }
 
         return hexGrid;

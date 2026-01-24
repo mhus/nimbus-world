@@ -76,6 +76,19 @@ public class HexCompositionPreparer {
             log.debug("Prepared area feature '{}' (type: {})",
                 area.getName(), area.getClass().getSimpleName());
         } else if (feature instanceof Flow flow) {
+            // Set FlowType automatically based on class if not already set
+            if (flow.getType() == null) {
+                if (flow instanceof Road) {
+                    flow.setType(FlowType.ROAD);
+                } else if (flow instanceof River) {
+                    flow.setType(FlowType.RIVER);
+                } else if (flow instanceof Wall) {
+                    flow.setType(FlowType.WALL);
+                }
+                log.debug("Auto-set flow type: {} for feature '{}'",
+                    flow.getType(), flow.getName());
+            }
+
             flow.prepareForComposition();
             log.debug("Prepared flow feature '{}' (type: {})",
                 flow.getName(), flow.getClass().getSimpleName());
