@@ -3,7 +3,6 @@ package de.mhus.nimbus.world.generator.flat.hexgrid.composer;
 import de.mhus.nimbus.shared.annotations.GenerateTypeScript;
 import de.mhus.nimbus.types.TsEnum;
 
-@GenerateTypeScript("enums")
 public enum VillageSize implements TsEnum {
     HAMLET(1, 5, 10),           // 1 Grid, 5-10 buildings
     SMALL_VILLAGE(2, 10, 15),   // 2 Grids, 10-15 buildings

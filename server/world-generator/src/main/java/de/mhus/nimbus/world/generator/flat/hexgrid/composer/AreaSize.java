@@ -1,10 +1,10 @@
 package de.mhus.nimbus.world.generator.flat.hexgrid.composer;
 
-import de.mhus.nimbus.shared.annotations.GenerateTypeScript;
-import de.mhus.nimbus.types.TsEnum;
-
-@GenerateTypeScript("enums")
-public enum BiomeSize implements TsEnum {
+/**
+ * Size categories for area features.
+ * This enum is server-side only and not exposed to TypeScript.
+ */
+public enum AreaSize {
     SMALL(1, 3),
     MEDIUM(3, 7),
     LARGE(7, 15),
@@ -13,7 +13,7 @@ public enum BiomeSize implements TsEnum {
     private final int from;
     private final int to;
 
-    BiomeSize(int from, int to) {
+    AreaSize(int from, int to) {
         this.from = from;
         this.to = to;
     }
@@ -26,19 +26,14 @@ public enum BiomeSize implements TsEnum {
         return to;
     }
 
-    @Override
-    public String tsString() {
-        return name().toLowerCase();
-    }
-
-    public static BiomeSize fromString(String value) {
+    public static AreaSize fromString(String value) {
         if (value == null) {
             return null;
         }
         try {
-            return BiomeSize.valueOf(value.toUpperCase());
+            return AreaSize.valueOf(value.toUpperCase());
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Invalid BiomeSize value: " + value);
+            throw new IllegalArgumentException("Invalid AreaSize value: " + value);
         }
     }
 }

@@ -80,8 +80,8 @@ public class WorldCompositeImageTest {
             fillResult.getCoastFillCount());
 
         // Step 3b: Apply village parameters to center grid AFTER filling
-        if (!composition.getVillages().isEmpty()) {
-            PreparedVillage village = composition.getVillages().get(0);
+        if (!composition.getPreparedVillages().isEmpty()) {
+            PreparedVillage village = composition.getPreparedVillages().get(0);
             if (village.getParameters() != null) {
                 // Find center plains grid [0,0] and add village parameters
                 for (FilledHexGrid filled : fillResult.getAllGrids()) {
@@ -181,16 +181,16 @@ public class WorldCompositeImageTest {
         grids.add(createFilledGridWithBuilder(0, 0, "island", BiomeType.PLAINS));
 
         // North: Mountains
-        grids.add(createFilledGridWithBuilder(0, -1, "mountains", BiomeType.MOUNTAINS));
+        grids.add(createFilledGridWithBuilder(0, -1, BiomeType.MOUNTAINS.getBuilderName(), BiomeType.MOUNTAINS));
 
         // East: Coast
-        grids.add(createFilledGridWithBuilder(1, 0, "coast", BiomeType.COAST));
+        grids.add(createFilledGridWithBuilder(1, 0, BiomeType.COAST.getBuilderName(), BiomeType.COAST));
 
         // South: Ocean
-        grids.add(createFilledGridWithBuilder(0, 1, "ocean", BiomeType.OCEAN));
+        grids.add(createFilledGridWithBuilder(0, 1, BiomeType.OCEAN.getBuilderName(), BiomeType.OCEAN));
 
         // West: Mountains
-        grids.add(createFilledGridWithBuilder(-1, 0, "mountains", BiomeType.MOUNTAINS));
+        grids.add(createFilledGridWithBuilder(-1, 0, BiomeType.MOUNTAINS.getBuilderName(), BiomeType.MOUNTAINS));
 
         // Create empty placement result
         BiomePlacementResult placementResult = BiomePlacementResult.builder()
@@ -277,19 +277,17 @@ public class WorldCompositeImageTest {
         List<PreparedBiome> biomes = new ArrayList<>();
 
         // Center: Plains with Village
-        PreparedBiome plains = createBiome("Central Plains", BiomeType.PLAINS, BiomeShape.CIRCLE,
+        PreparedBiome plains = createBiome("Central Plains", BiomeType.PLAINS, AreaShape.CIRCLE,
             3, 4, Direction.N, 0, 0, 0, "origin", 10);
         biomes.add(plains);
 
         // North: Mountains
-        biomes.add(createBiome("Northern Mountains", BiomeType.MOUNTAINS, BiomeShape.LINE,
+        biomes.add(createBiome("Northern Mountains", BiomeType.MOUNTAINS, AreaShape.LINE,
             3, 4, Direction.N, 0, 5, 8, "origin", 9));
 
         // East: Forest
-        biomes.add(createBiome("Eastern Forest", BiomeType.FOREST, BiomeShape.CIRCLE,
+        biomes.add(createBiome("Eastern Forest", BiomeType.FOREST, AreaShape.CIRCLE,
             2, 3, Direction.E, 90, 5, 8, "origin", 8));
-
-        composition.setBiomes(biomes);
 
         // Add villages
         List<PreparedVillage> villages = new ArrayList<>();
@@ -297,7 +295,6 @@ public class WorldCompositeImageTest {
         // Village in center plains
         PreparedVillage village = new PreparedVillage();
         village.setName("Central Village");
-        village.setType(BiomeType.VILLAGE);
 
         PreparedPosition villagePos = new PreparedPosition();
         villagePos.setDirection(Direction.N);
@@ -326,7 +323,12 @@ public class WorldCompositeImageTest {
         village.setParameters(params);
 
         villages.add(village);
-        composition.setVillages(villages);
+
+        // Combine biomes and villages into preparedFeatures
+        List<PreparedFeature> features = new ArrayList<>();
+        features.addAll(biomes);
+        features.addAll(villages);
+        composition.setPreparedFeatures(features);
 
         return composition;
     }
@@ -393,27 +395,26 @@ public class WorldCompositeImageTest {
         List<PreparedBiome> biomes = new ArrayList<>();
 
         // Center: Plains
-        biomes.add(createBiome("Central Plains", BiomeType.PLAINS, BiomeShape.CIRCLE,
+        biomes.add(createBiome("Central Plains", BiomeType.PLAINS, AreaShape.CIRCLE,
             4, 6, Direction.N, 0, 0, 0, "origin", 10));
 
         // North: Mountains
-        biomes.add(createBiome("Northern Mountains", BiomeType.MOUNTAINS, BiomeShape.LINE,
+        biomes.add(createBiome("Northern Mountains", BiomeType.MOUNTAINS, AreaShape.LINE,
             5, 7, Direction.N, 0, 8, 12, "origin", 9));
 
         // East: Forest
-        biomes.add(createBiome("Eastern Forest", BiomeType.FOREST, BiomeShape.CIRCLE,
+        biomes.add(createBiome("Eastern Forest", BiomeType.FOREST, AreaShape.CIRCLE,
             4, 6, Direction.E, 90, 8, 12, "origin", 8));
 
         // South: Swamp
-        biomes.add(createBiome("Southern Swamp", BiomeType.SWAMP, BiomeShape.CIRCLE,
+        biomes.add(createBiome("Southern Swamp", BiomeType.SWAMP, AreaShape.CIRCLE,
             3, 5, Direction.S, 180, 8, 12, "origin", 7));
 
         // West: Desert
-        biomes.add(createBiome("Western Desert", BiomeType.DESERT, BiomeShape.CIRCLE,
+        biomes.add(createBiome("Western Desert", BiomeType.DESERT, AreaShape.CIRCLE,
             4, 5, Direction.W, 270, 8, 12, "origin", 6));
 
-        composition.setBiomes(biomes);
-        composition.setVillages(new ArrayList<>());
+        composition.setPreparedFeatures(new ArrayList<>(biomes));
 
         return composition;
     }
@@ -435,23 +436,25 @@ public class WorldCompositeImageTest {
         if (builderType == null || builderType.isEmpty()) {
             if (filled.isFiller()) {
                 builderType = switch (filled.getFillerType()) {
-                    case OCEAN -> "ocean";
-                    case LAND -> "coast";  // Use coast for land filler
-                    case COAST -> "coast";
+                    case OCEAN -> BiomeType.OCEAN.getBuilderName();
+                    case LAND -> BiomeType.COAST.getBuilderName();  // Use coast for land filler
+                    case COAST -> BiomeType.COAST.getBuilderName();
                 };
             } else if (filled.getBiome() != null && filled.getBiome().getBiome() != null) {
                 builderType = switch (filled.getBiome().getBiome().getType()) {
-                    case MOUNTAINS -> "mountains";
-                    case FOREST -> "coast";     // Forest builder not registered yet
-                    case DESERT -> "coast";     // Desert builder not registered yet
-                    case SWAMP -> "coast";      // Swamp builder not registered yet
-                    case PLAINS -> "island";    // Use island for plains
-                    case OCEAN -> "ocean";
-                    case COAST -> "coast";
-                    default -> "coast";
+                    case MOUNTAINS -> BiomeType.MOUNTAINS.getBuilderName();
+                    case FOREST -> BiomeType.COAST.getBuilderName();     // Forest builder not registered yet
+                    case DESERT -> BiomeType.COAST.getBuilderName();     // Desert builder not registered yet
+                    case SWAMP -> BiomeType.COAST.getBuilderName();      // Swamp builder not registered yet
+                    case PLAINS -> BiomeType.ISLAND.getBuilderName();    // Use island for plains
+                    case OCEAN -> BiomeType.OCEAN.getBuilderName();
+                    case COAST -> BiomeType.COAST.getBuilderName();
+                    case ISLAND -> BiomeType.ISLAND.getBuilderName();
+                    case VILLAGE -> BiomeType.VILLAGE.getBuilderName();
+                    case TOWN -> BiomeType.TOWN.getBuilderName();
                 };
             } else {
-                builderType = "coast";  // Default fallback
+                builderType = BiomeType.COAST.getBuilderName();  // Default fallback
             }
 
             // Set g_builder parameter on hexGrid
@@ -829,7 +832,7 @@ public class WorldCompositeImageTest {
         PreparedBiome preparedBiome = new PreparedBiome();
         preparedBiome.setName(builderType + "-" + q + "-" + r);
         preparedBiome.setType(biomeType);
-        preparedBiome.setShape(BiomeShape.CIRCLE);
+        preparedBiome.setShape(AreaShape.CIRCLE);
         preparedBiome.setSizeFrom(1);
         preparedBiome.setSizeTo(1);
         preparedBiome.setPositions(new ArrayList<>());
@@ -998,7 +1001,7 @@ public class WorldCompositeImageTest {
     /**
      * Helper to create biome
      */
-    private PreparedBiome createBiome(String name, BiomeType type, BiomeShape shape,
+    private PreparedBiome createBiome(String name, BiomeType type, AreaShape shape,
                                       int sizeFrom, int sizeTo,
                                       Direction direction, int angle,
                                       int distFrom, int distTo,

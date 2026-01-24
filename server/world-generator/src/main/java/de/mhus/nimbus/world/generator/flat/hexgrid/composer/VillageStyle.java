@@ -6,7 +6,6 @@ import de.mhus.nimbus.types.TsEnum;
 import java.util.HashMap;
 import java.util.Map;
 
-@GenerateTypeScript("enums")
 public enum VillageStyle implements TsEnum {
     MEDIEVAL("medieval"),     // Klassisches mittelalterliches Dorf
     FARMING("farming"),       // Landwirtschaftlich geprägt

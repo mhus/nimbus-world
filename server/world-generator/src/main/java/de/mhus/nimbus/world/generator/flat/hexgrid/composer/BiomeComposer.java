@@ -76,6 +76,12 @@ public class BiomeComposer {
         // Generate WHexGrids for all placed biomes
         List<WHexGrid> hexGrids = generateHexGrids(context.getPlacedBiomes(), worldId);
 
+        // NEW: Store FeatureHexGrid configurations in PreparedBiomes
+        storeHexGridConfigurations(context.getPlacedBiomes(), prepared.getBiomes());
+
+        // NEW: Copy HexGrid configurations to original Features
+        copyHexGridConfigsToOriginalFeatures(context.getPlacedBiomes());
+
         return BiomePlacementResult.builder()
             .composition(prepared)
             .placedBiomes(context.getPlacedBiomes())
@@ -215,8 +221,13 @@ public class BiomeComposer {
      * Generates coordinates for a biome based on shape and size
      */
     private List<HexVector2> generateBiomeCoordinates(HexVector2 center, int size,
-                                                      BiomeShape shape, CompositionContext context) {
+                                                      AreaShape shape, CompositionContext context) {
         List<HexVector2> coordinates = new ArrayList<>();
+
+        if (shape == null) {
+            coordinates.add(center); // Single hex
+            return coordinates;
+        }
 
         switch (shape) {
             case CIRCLE:
@@ -224,6 +235,10 @@ public class BiomeComposer {
                 break;
             case LINE:
                 coordinates = generateLineCoordinates(center, size, context.getRandom());
+                break;
+            case RECTANGLE:
+                // For now, treat RECTANGLE like CIRCLE (can be improved later)
+                coordinates = generateCircularCoordinates(center, size);
                 break;
             default:
                 coordinates.add(center); // Single hex
@@ -397,8 +412,8 @@ public class BiomeComposer {
             parameters.putAll(biome.getParameters());
         }
 
-        // Add biome type as parameter
-        parameters.put("biome", biome.getType().name().toLowerCase());
+        // Add biome type as parameter (use builderName for consistency with HexGridBuilderService)
+        parameters.put("biome", biome.getType().getBuilderName());
         parameters.put("biomeName", biome.getName());
 
         return WHexGrid.builder()
@@ -416,6 +431,32 @@ public class BiomeComposer {
     private int randomInRange(int from, int to, Random random) {
         if (from >= to) return from;
         return from + random.nextInt(to - from + 1);
+    }
+
+    /**
+     * Stores HexGrid configurations in PreparedBiomes
+     */
+    /**
+     * Stores HexGrid configurations by calling configureHexGrids() on each biome.
+     * This allows each biome to configure its own grids polymorphically.
+     */
+    private void storeHexGridConfigurations(List<PlacedBiome> placedBiomes,
+                                            List<PreparedBiome> preparedBiomes) {
+        for (PlacedBiome placed : placedBiomes) {
+            PreparedBiome preparedBiome = placed.getBiome();
+
+            // Let the biome configure its own HexGrids
+            preparedBiome.configureHexGrids(placed.getCoordinates());
+        }
+    }
+
+    /**
+     * Copies HexGrid configurations back to original Features
+     */
+    private void copyHexGridConfigsToOriginalFeatures(List<PlacedBiome> placedBiomes) {
+        for (PlacedBiome placed : placedBiomes) {
+            placed.getBiome().copyHexGridsToOriginal();
+        }
     }
 
     /**

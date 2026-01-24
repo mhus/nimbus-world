@@ -1,24 +1,27 @@
 package de.mhus.nimbus.world.generator.flat.hexgrid.composer;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import de.mhus.nimbus.shared.annotations.GenerateTypeScript;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
 import java.util.Map;
 
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@EqualsAndHashCode(callSuper = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class VillageBuildingDefinition {
-
-    private VillagePosition position;
-    private String buildingType;
-    private String id;
-    private String size;
+public class Village extends Structure {
+    private List<VillageBuildingDefinition> buildings;
+    private List<VillageStreetDefinition> streets;
     private Map<String, String> parameters;
+
+    public static VillageBuilder builder() {
+        return new VillageBuilder();
+    }
 }

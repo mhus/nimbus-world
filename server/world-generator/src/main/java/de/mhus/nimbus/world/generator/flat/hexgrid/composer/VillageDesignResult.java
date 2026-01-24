@@ -28,9 +28,9 @@ public class VillageDesignResult {
     private Map<HexVector2, HexGridConfig> gridConfigs;
 
     /**
-     * Converts to VillageDefinition for Composer
+     * Converts to Village feature for Composer
      */
-    public VillageDefinition toVillageDefinition(String name) {
+    public Village toVillage(String name) {
         // Collect all buildings
         List<VillageBuildingDefinition> buildings = new ArrayList<>();
         for (Map.Entry<HexVector2, HexGridConfig> entry : gridConfigs.entrySet()) {
@@ -95,16 +95,17 @@ public class VillageDesignResult {
         int height = layout.getGridPositions().stream()
             .mapToInt(v -> v.getR()).max().orElse(0) + 1;
 
-        return VillageDefinition.builder()
-            .name(name)
-            .type(template.getSize() == VillageSize.HAMLET ||
-                  template.getSize() == VillageSize.SMALL_VILLAGE ?
-                  BiomeType.VILLAGE : BiomeType.TOWN)
+        // Build Village feature
+        Village village = Village.builder()
             .buildings(buildings)
             .streets(streets)
-            .calculatedHexGridWidth(width)
-            .calculatedHexGridHeight(height)
             .build();
+        village.setName(name);
+        village.setCalculatedHexGridWidth(width);
+        village.setCalculatedHexGridHeight(height);
+        village.initialize();
+
+        return village;
     }
 
     /**

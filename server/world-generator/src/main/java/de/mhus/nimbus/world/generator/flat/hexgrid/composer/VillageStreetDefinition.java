@@ -15,7 +15,6 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@GenerateTypeScript("dto")
 public class VillageStreetDefinition {
 
     private List<HexVector2> path;

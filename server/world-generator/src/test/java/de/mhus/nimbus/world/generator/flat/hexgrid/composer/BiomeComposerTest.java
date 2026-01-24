@@ -110,7 +110,7 @@ public class BiomeComposerTest {
         PreparedBiome forest = new PreparedBiome();
         forest.setName("Central Forest");
         forest.setType(BiomeType.FOREST);
-        forest.setShape(BiomeShape.CIRCLE);
+        forest.setShape(AreaShape.CIRCLE);
         forest.setSizeFrom(3);
         forest.setSizeTo(5);
 
@@ -130,7 +130,7 @@ public class BiomeComposerTest {
         PreparedBiome mountains = new PreparedBiome();
         mountains.setName("Northern Mountains");
         mountains.setType(BiomeType.MOUNTAINS);
-        mountains.setShape(BiomeShape.LINE);
+        mountains.setShape(AreaShape.LINE);
         mountains.setSizeFrom(4);
         mountains.setSizeTo(6);
 
@@ -146,8 +146,7 @@ public class BiomeComposerTest {
         mountains.setParameters(new HashMap<>());
         biomes.add(mountains);
 
-        composition.setBiomes(biomes);
-        composition.setVillages(new ArrayList<>());
+        composition.setPreparedFeatures(new ArrayList<>(biomes));
         return composition;
     }
 
@@ -159,27 +158,26 @@ public class BiomeComposerTest {
         List<PreparedBiome> biomes = new ArrayList<>();
 
         // Center: Plains
-        biomes.add(createBiome("Central Plains", BiomeType.PLAINS, BiomeShape.CIRCLE,
+        biomes.add(createBiome("Central Plains", BiomeType.PLAINS, AreaShape.CIRCLE,
             3, 5, Direction.N, 0, 0, 0, "origin", 10));
 
         // North: Mountains
-        biomes.add(createBiome("North Mountains", BiomeType.MOUNTAINS, BiomeShape.LINE,
+        biomes.add(createBiome("North Mountains", BiomeType.MOUNTAINS, AreaShape.LINE,
             5, 7, Direction.N, 0, 6, 8, "origin", 9));
 
         // East: Forest
-        biomes.add(createBiome("East Forest", BiomeType.FOREST, BiomeShape.CIRCLE,
+        biomes.add(createBiome("East Forest", BiomeType.FOREST, AreaShape.CIRCLE,
             4, 6, Direction.E, 120, 6, 8, "origin", 8));
 
         // South: Swamp
-        biomes.add(createBiome("South Swamp", BiomeType.SWAMP, BiomeShape.CIRCLE,
+        biomes.add(createBiome("South Swamp", BiomeType.SWAMP, AreaShape.CIRCLE,
             3, 5, Direction.S, 180, 6, 8, "origin", 7));
 
         // West: Desert
-        biomes.add(createBiome("West Desert", BiomeType.DESERT, BiomeShape.CIRCLE,
+        biomes.add(createBiome("West Desert", BiomeType.DESERT, AreaShape.CIRCLE,
             4, 5, Direction.W, 300, 6, 8, "origin", 6));
 
-        composition.setBiomes(biomes);
-        composition.setVillages(new ArrayList<>());
+        composition.setPreparedFeatures(new ArrayList<>(biomes));
         return composition;
     }
 
@@ -191,24 +189,23 @@ public class BiomeComposerTest {
         List<PreparedBiome> biomes = new ArrayList<>();
 
         // Three biomes with overlapping ranges
-        biomes.add(createBiome("Center", BiomeType.PLAINS, BiomeShape.CIRCLE,
+        biomes.add(createBiome("Center", BiomeType.PLAINS, AreaShape.CIRCLE,
             5, 7, Direction.N, 0, 0, 0, "origin", 10));
 
-        biomes.add(createBiome("Near 1", BiomeType.FOREST, BiomeShape.CIRCLE,
+        biomes.add(createBiome("Near 1", BiomeType.FOREST, AreaShape.CIRCLE,
             4, 6, Direction.NE, 60, 3, 5, "origin", 9));
 
-        biomes.add(createBiome("Near 2", BiomeType.MOUNTAINS, BiomeShape.CIRCLE,
+        biomes.add(createBiome("Near 2", BiomeType.MOUNTAINS, AreaShape.CIRCLE,
             4, 6, Direction.E, 120, 3, 5, "origin", 8));
 
-        composition.setBiomes(biomes);
-        composition.setVillages(new ArrayList<>());
+        composition.setPreparedFeatures(new ArrayList<>(biomes));
         return composition;
     }
 
     /**
      * Helper to create a prepared biome
      */
-    private PreparedBiome createBiome(String name, BiomeType type, BiomeShape shape,
+    private PreparedBiome createBiome(String name, BiomeType type, AreaShape shape,
                                       int sizeFrom, int sizeTo,
                                       Direction direction, int angle,
                                       int distFrom, int distTo,

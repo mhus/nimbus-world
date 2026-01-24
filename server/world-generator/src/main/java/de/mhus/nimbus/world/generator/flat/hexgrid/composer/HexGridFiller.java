@@ -211,10 +211,11 @@ public class HexGridFiller {
             case COAST -> "Coast";
         };
 
+        // Map FillerType to BiomeType and use builderName for consistency
         String biomeParam = switch (fillerType) {
-            case OCEAN -> "ocean";
-            case LAND -> "plains";
-            case COAST -> "coast";
+            case OCEAN -> BiomeType.OCEAN.getBuilderName();
+            case LAND -> BiomeType.PLAINS.getBuilderName();
+            case COAST -> BiomeType.COAST.getBuilderName();
         };
 
         // Create public HexGrid data

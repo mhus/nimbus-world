@@ -22,18 +22,17 @@ public class HexGridBuilderService {
     public Map<String,Class<? extends HexGridBuilder>> manipulatorRegistry = new HashMap<>();
 
     public HexGridBuilderService() {
+        // Main builders (use singular names matching BiomeType.getBuilderName())
         builderRegistry.put("ocean", OceanBuilder.class);
         builderRegistry.put("island", IslandBuilder.class);
         builderRegistry.put("coast", CoastBuilder.class);
-        builderRegistry.put("mountains", MountainBuilder.class);
-//        registry.put("plains", PlainsBuilder.class);
-//        registry.put("hills", HillsBuilder.class);
-//        registry.put("forest", ForestBuilder.class);
-//        registry.put("desert", DessertBuilder.class);
-//        registry.put("heath", HeathBuilder.class);
-//        registry.put("swamp", SwampBuilder.class);
-//        registry.put("city", CityBuilder.class);
-//        registry.put("village", VillageBuilder.class);
+        builderRegistry.put("mountain", MountainBuilder.class);
+//        builderRegistry.put("plains", PlainsBuilder.class);
+//        builderRegistry.put("desert", DesertBuilder.class);
+//        builderRegistry.put("forest", ForestBuilder.class);
+//        builderRegistry.put("swamp", SwampBuilder.class);
+//        builderRegistry.put("village", VillageBuilder.class);
+//        builderRegistry.put("town", TownBuilder.class);
 
         // Manipulator builders
         manipulatorRegistry.put("edge-blender", EdgeBlenderBuilder.class);

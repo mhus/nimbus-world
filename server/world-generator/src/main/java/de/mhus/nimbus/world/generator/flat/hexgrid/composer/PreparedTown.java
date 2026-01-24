@@ -7,11 +7,11 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Prepared village with concrete positions and internal structure.
+ * Prepared town with concrete positions and internal structure.
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-public class PreparedVillage extends PreparedStructure {
+public class PreparedTown extends PreparedStructure {
     private List<VillageBuildingDefinition> buildings;
     private List<VillageStreetDefinition> streets;
     private Map<String, String> parameters;

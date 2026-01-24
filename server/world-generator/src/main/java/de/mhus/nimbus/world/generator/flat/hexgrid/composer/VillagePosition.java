@@ -13,7 +13,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@GenerateTypeScript("dto")
 public class VillagePosition {
 
     private HexVector2 coordinate;

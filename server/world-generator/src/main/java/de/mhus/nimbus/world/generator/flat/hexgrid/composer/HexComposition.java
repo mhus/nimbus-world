@@ -1,30 +1,32 @@
 package de.mhus.nimbus.world.generator.flat.hexgrid.composer;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import de.mhus.nimbus.shared.annotations.GenerateTypeScript;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@GenerateTypeScript("dto")
 public class HexComposition {
 
+    private String compositionId;
     private String name;
     private String title;
     private String worldId;
-    private List<BiomeDefinition> biomes;
-    private List<VillageDefinition> villages;
+
+    // NEW: Feature-based list (replaces biomes + villages)
+    private List<Feature> features;
     @Builder.Default
     private String version = "1.0.0";
     private Instant createdAt;
@@ -32,10 +34,13 @@ public class HexComposition {
     private String createdBy;
     private String description;
     private Map<String, String> metadata;
-    private String status;
+    private FeatureStatus status;
     private String errorMessage;
 
     public void initialize() {
+        if (compositionId == null || compositionId.isBlank()) {
+            compositionId = UUID.randomUUID().toString();
+        }
         if (name == null || name.isBlank()) {
             name = UUID.randomUUID().toString();
         }
@@ -44,6 +49,11 @@ public class HexComposition {
             createdAt = now;
         }
         updatedAt = now;
+
+        // Initialize all features
+        if (features != null) {
+            features.forEach(Feature::initialize);
+        }
     }
 
     public void touch() {
@@ -51,17 +61,92 @@ public class HexComposition {
     }
 
     public int getTotalBiomeCount() {
-        int count = 0;
-        if (biomes != null) {
-            count += biomes.size();
-        }
-        if (villages != null) {
-            count += villages.size();
-        }
-        return count;
+        return features != null ? features.size() : 0;
     }
 
     public String getDisplayTitle() {
         return title != null ? title : name;
+    }
+
+    // Helper methods to access features by type
+
+    public List<Biome> getBiomes() {
+        if (features == null) {
+            return new ArrayList<>();
+        }
+        return features.stream()
+            .filter(f -> f instanceof Biome)
+            .map(f -> (Biome) f)
+            .collect(Collectors.toList());
+    }
+
+    public List<Village> getVillages() {
+        if (features == null) {
+            return new ArrayList<>();
+        }
+        return features.stream()
+            .filter(f -> f instanceof Village)
+            .map(f -> (Village) f)
+            .collect(Collectors.toList());
+    }
+
+    public List<Town> getTowns() {
+        if (features == null) {
+            return new ArrayList<>();
+        }
+        return features.stream()
+            .filter(f -> f instanceof Town)
+            .map(f -> (Town) f)
+            .collect(Collectors.toList());
+    }
+
+    public List<Composite> getComposites() {
+        if (features == null) {
+            return new ArrayList<>();
+        }
+        return features.stream()
+            .filter(f -> f instanceof Composite)
+            .map(f -> (Composite) f)
+            .collect(Collectors.toList());
+    }
+
+    public List<Flow> getFlows() {
+        if (features == null) {
+            return new ArrayList<>();
+        }
+        return features.stream()
+            .filter(f -> f instanceof Flow)
+            .map(f -> (Flow) f)
+            .collect(Collectors.toList());
+    }
+
+    public List<Road> getRoads() {
+        if (features == null) {
+            return new ArrayList<>();
+        }
+        return features.stream()
+            .filter(f -> f instanceof Road)
+            .map(f -> (Road) f)
+            .collect(Collectors.toList());
+    }
+
+    public List<River> getRivers() {
+        if (features == null) {
+            return new ArrayList<>();
+        }
+        return features.stream()
+            .filter(f -> f instanceof River)
+            .map(f -> (River) f)
+            .collect(Collectors.toList());
+    }
+
+    public List<Wall> getWalls() {
+        if (features == null) {
+            return new ArrayList<>();
+        }
+        return features.stream()
+            .filter(f -> f instanceof Wall)
+            .map(f -> (Wall) f)
+            .collect(Collectors.toList());
     }
 }

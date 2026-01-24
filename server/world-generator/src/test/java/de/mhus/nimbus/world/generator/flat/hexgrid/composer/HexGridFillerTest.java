@@ -125,15 +125,14 @@ public class HexGridFillerTest {
         List<PreparedBiome> biomes = new ArrayList<>();
 
         // Forest at origin
-        biomes.add(createBiome("Forest", BiomeType.FOREST, BiomeShape.CIRCLE,
+        biomes.add(createBiome("Forest", BiomeType.FOREST, AreaShape.CIRCLE,
             3, 5, Direction.N, 0, 0, 0, "origin", 10));
 
         // Mountains to north
-        biomes.add(createBiome("Mountains", BiomeType.MOUNTAINS, BiomeShape.LINE,
+        biomes.add(createBiome("Mountains", BiomeType.MOUNTAINS, AreaShape.LINE,
             4, 6, Direction.N, 0, 5, 7, "origin", 9));
 
-        composition.setBiomes(biomes);
-        composition.setVillages(new ArrayList<>());
+        composition.setPreparedFeatures(new ArrayList<>(biomes));
         return composition;
     }
 
@@ -145,27 +144,26 @@ public class HexGridFillerTest {
         List<PreparedBiome> biomes = new ArrayList<>();
 
         // Center: Plains
-        biomes.add(createBiome("Central Plains", BiomeType.PLAINS, BiomeShape.CIRCLE,
+        biomes.add(createBiome("Central Plains", BiomeType.PLAINS, AreaShape.CIRCLE,
             3, 5, Direction.N, 0, 0, 0, "origin", 10));
 
         // North: Mountains
-        biomes.add(createBiome("North Mountains", BiomeType.MOUNTAINS, BiomeShape.LINE,
+        biomes.add(createBiome("North Mountains", BiomeType.MOUNTAINS, AreaShape.LINE,
             5, 7, Direction.N, 0, 6, 8, "origin", 9));
 
         // East: Forest
-        biomes.add(createBiome("East Forest", BiomeType.FOREST, BiomeShape.CIRCLE,
+        biomes.add(createBiome("East Forest", BiomeType.FOREST, AreaShape.CIRCLE,
             4, 6, Direction.E, 120, 6, 8, "origin", 8));
 
         // South: Swamp
-        biomes.add(createBiome("South Swamp", BiomeType.SWAMP, BiomeShape.CIRCLE,
+        biomes.add(createBiome("South Swamp", BiomeType.SWAMP, AreaShape.CIRCLE,
             3, 5, Direction.S, 180, 6, 8, "origin", 7));
 
         // West: Desert
-        biomes.add(createBiome("West Desert", BiomeType.DESERT, BiomeShape.CIRCLE,
+        biomes.add(createBiome("West Desert", BiomeType.DESERT, AreaShape.CIRCLE,
             4, 5, Direction.W, 300, 6, 8, "origin", 6));
 
-        composition.setBiomes(biomes);
-        composition.setVillages(new ArrayList<>());
+        composition.setPreparedFeatures(new ArrayList<>(biomes));
         return composition;
     }
 
@@ -177,26 +175,25 @@ public class HexGridFillerTest {
         List<PreparedBiome> biomes = new ArrayList<>();
 
         // Center: Plains
-        biomes.add(createBiome("Plains", BiomeType.PLAINS, BiomeShape.CIRCLE,
+        biomes.add(createBiome("Plains", BiomeType.PLAINS, AreaShape.CIRCLE,
             4, 6, Direction.N, 0, 0, 0, "origin", 10));
 
         // East: Forest
-        biomes.add(createBiome("Forest", BiomeType.FOREST, BiomeShape.CIRCLE,
+        biomes.add(createBiome("Forest", BiomeType.FOREST, AreaShape.CIRCLE,
             3, 5, Direction.E, 120, 4, 6, "origin", 9));
 
         // West: Ocean
-        biomes.add(createBiome("Ocean", BiomeType.OCEAN, BiomeShape.CIRCLE,
+        biomes.add(createBiome("Ocean", BiomeType.OCEAN, AreaShape.CIRCLE,
             4, 6, Direction.W, 300, 4, 6, "origin", 8));
 
-        composition.setBiomes(biomes);
-        composition.setVillages(new ArrayList<>());
+        composition.setPreparedFeatures(new ArrayList<>(biomes));
         return composition;
     }
 
     /**
      * Helper to create a prepared biome
      */
-    private PreparedBiome createBiome(String name, BiomeType type, BiomeShape shape,
+    private PreparedBiome createBiome(String name, BiomeType type, AreaShape shape,
                                       int sizeFrom, int sizeTo,
                                       Direction direction, int angle,
                                       int distFrom, int distTo,

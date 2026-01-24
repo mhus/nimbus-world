@@ -102,22 +102,21 @@ public class VillageDesignerTest {
     }
 
     @Test
-    public void testConvertToVillageDefinition() {
+    public void testConvertToVillage() {
         VillageTemplate template = VillageTemplateLoader.load("hamlet-medieval");
         VillageDesigner designer = new VillageDesigner();
         VillageDesignResult result = designer.design(template, 95);
 
-        VillageDefinition villageDef = result.toVillageDefinition("test-hamlet");
+        Village village = result.toVillage("test-hamlet");
 
-        assertNotNull(villageDef);
-        assertEquals("test-hamlet", villageDef.getName());
-        assertEquals(BiomeType.VILLAGE, villageDef.getType());
-        assertNotNull(villageDef.getBuildings());
-        assertTrue(villageDef.getBuildings().size() > 0);
+        assertNotNull(village);
+        assertEquals("test-hamlet", village.getName());
+        assertNotNull(village.getBuildings());
+        assertTrue(village.getBuildings().size() > 0);
 
-        log.info("VillageDefinition: {} buildings, {} streets",
-            villageDef.getBuildings().size(),
-            villageDef.getStreets() != null ? villageDef.getStreets().size() : 0);
+        log.info("Village: {} buildings, {} streets",
+            village.getBuildings().size(),
+            village.getStreets() != null ? village.getStreets().size() : 0);
     }
 
     @Test

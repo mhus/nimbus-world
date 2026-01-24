@@ -3,7 +3,6 @@ package de.mhus.nimbus.world.generator.flat.hexgrid.composer;
 import de.mhus.nimbus.shared.annotations.GenerateTypeScript;
 import de.mhus.nimbus.types.TsEnum;
 
-@GenerateTypeScript("enums")
 public enum DistanceRange implements TsEnum {
     DIRECT_BEHIND(1, 1),
     NEAR(1, 10),
