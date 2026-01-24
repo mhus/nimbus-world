@@ -9,7 +9,7 @@ import java.util.*;
 
 /**
  * Composes biomes on a hex grid by placing them step by step
- * Uses PreparedHexComposition and creates actual WHexGrid instances
+ * Uses HexComposition and creates actual WHexGrid instances
  */
 @Slf4j
 public class BiomeComposer {
@@ -24,7 +24,7 @@ public class BiomeComposer {
      * @param seed Random seed for reproducible generation
      * @return Result with placed biomes and generated HexGrids
      */
-    public BiomePlacementResult compose(PreparedHexComposition prepared, String worldId, long seed) {
+    public BiomePlacementResult compose(HexComposition prepared, String worldId, long seed) {
         log.info("Starting biome composition with seed: {}", seed);
 
         CompositionContext context = new CompositionContext(seed);
@@ -38,7 +38,7 @@ public class BiomeComposer {
 
             try {
                 // Place each biome
-                for (PreparedBiome biome : prepared.getBiomes()) {
+                for (Biome biome : prepared.getBiomes()) {
                     boolean placed = placeBiome(biome, context);
 
                     if (!placed) {
@@ -76,11 +76,8 @@ public class BiomeComposer {
         // Generate WHexGrids for all placed biomes
         List<WHexGrid> hexGrids = generateHexGrids(context.getPlacedBiomes(), worldId);
 
-        // NEW: Store FeatureHexGrid configurations in PreparedBiomes
-        storeHexGridConfigurations(context.getPlacedBiomes(), prepared.getBiomes());
-
-        // NEW: Copy HexGrid configurations to original Features
-        copyHexGridConfigsToOriginalFeatures(context.getPlacedBiomes());
+        // Configure HexGrids for all placed biomes
+        configureHexGridsForPlacedBiomes(context.getPlacedBiomes());
 
         return BiomePlacementResult.builder()
             .composition(prepared)
@@ -98,12 +95,12 @@ public class BiomeComposer {
      * @param context The composition context
      * @return true if successfully placed
      */
-    private boolean placeBiome(PreparedBiome biome, CompositionContext context) {
+    private boolean placeBiome(Biome biome, CompositionContext context) {
         log.debug("Attempting to place biome: {} (type: {}, shape: {})",
             biome.getName(), biome.getType(), biome.getShape());
 
-        // Sort positions by priority
-        List<PreparedPosition> sortedPositions = new ArrayList<>(biome.getPositions());
+        // Sort positions by priority (use preparedPositions from Area)
+        List<PreparedPosition> sortedPositions = new ArrayList<>(biome.getPreparedPositions());
         sortedPositions.sort(Comparator.comparingInt(PreparedPosition::getPriority).reversed());
 
         for (PreparedPosition position : sortedPositions) {
@@ -122,8 +119,8 @@ public class BiomeComposer {
                 // Calculate target position with randomization
                 HexVector2 targetCenter = calculateTargetPosition(position, anchor, context.getRandom());
 
-                // Generate coordinates for this biome
-                int size = randomInRange(biome.getSizeFrom(), biome.getSizeTo(), context.getRandom());
+                // Generate coordinates for this biome (use calculated values)
+                int size = randomInRange(biome.getCalculatedSizeFrom(), biome.getCalculatedSizeTo(), context.getRandom());
                 List<HexVector2> coordinates = generateBiomeCoordinates(
                     targetCenter, size, biome.getShape(), context);
 
@@ -133,6 +130,10 @@ public class BiomeComposer {
                     for (HexVector2 coord : coordinates) {
                         context.occupy(coord);
                     }
+
+                    // Store placement results directly in the biome
+                    biome.setPlacedCenter(targetCenter);
+                    biome.setAssignedCoordinates(coordinates);
 
                     PlacedBiome placed = PlacedBiome.builder()
                         .biome(biome)
@@ -398,7 +399,7 @@ public class BiomeComposer {
      * Creates a single WHexGrid for a coordinate
      */
     private WHexGrid createHexGrid(HexVector2 coord, PlacedBiome placed, String worldId) {
-        PreparedBiome biome = placed.getBiome();
+        Biome biome = placed.getBiome();
 
         // Create public HexGrid data
         HexGrid publicData = new HexGrid();
@@ -437,25 +438,13 @@ public class BiomeComposer {
      * Stores HexGrid configurations in PreparedBiomes
      */
     /**
-     * Stores HexGrid configurations by calling configureHexGrids() on each biome.
-     * This allows each biome to configure its own grids polymorphically.
+     * Configures HexGrids for all placed biomes by calling each biome's configureHexGrids method.
+     * Each biome configures its own grids polymorphically.
      */
-    private void storeHexGridConfigurations(List<PlacedBiome> placedBiomes,
-                                            List<PreparedBiome> preparedBiomes) {
+    private void configureHexGridsForPlacedBiomes(List<PlacedBiome> placedBiomes) {
         for (PlacedBiome placed : placedBiomes) {
-            PreparedBiome preparedBiome = placed.getBiome();
-
-            // Let the biome configure its own HexGrids
-            preparedBiome.configureHexGrids(placed.getCoordinates());
-        }
-    }
-
-    /**
-     * Copies HexGrid configurations back to original Features
-     */
-    private void copyHexGridConfigsToOriginalFeatures(List<PlacedBiome> placedBiomes) {
-        for (PlacedBiome placed : placedBiomes) {
-            placed.getBiome().copyHexGridsToOriginal();
+            // Let the biome configure its own HexGrids with the assigned coordinates
+            placed.getBiome().configureHexGrids(placed.getCoordinates());
         }
     }
 

@@ -37,7 +37,7 @@ public class HexGridFillerTest {
         log.info("=== Testing Simple Hex Grid Filling ===");
 
         // Create and place biomes
-        PreparedHexComposition composition = createSimpleComposition();
+        HexComposition composition = createSimpleComposition();
         BiomeComposer composer = new BiomeComposer();
         BiomePlacementResult placementResult = composer.compose(composition, "test-world", 12345L);
 
@@ -67,7 +67,7 @@ public class HexGridFillerTest {
         log.info("=== Testing Complex Filling with Ocean Ring ===");
 
         // Create complex composition
-        PreparedHexComposition composition = createComplexComposition();
+        HexComposition composition = createComplexComposition();
         BiomeComposer composer = new BiomeComposer();
         BiomePlacementResult placementResult = composer.compose(composition, "test-world", 54321L);
 
@@ -93,7 +93,7 @@ public class HexGridFillerTest {
         log.info("=== Testing Filling with Land and Ocean Biomes ===");
 
         // Create composition with ocean biomes
-        PreparedHexComposition composition = createMixedComposition();
+        HexComposition composition = createMixedComposition();
         BiomeComposer composer = new BiomeComposer();
         BiomePlacementResult placementResult = composer.compose(composition, "test-world", 99999L);
 
@@ -120,9 +120,9 @@ public class HexGridFillerTest {
     /**
      * Creates a simple composition
      */
-    private PreparedHexComposition createSimpleComposition() {
-        PreparedHexComposition composition = new PreparedHexComposition();
-        List<PreparedBiome> biomes = new ArrayList<>();
+    private HexComposition createSimpleComposition() {
+        HexComposition composition = new HexComposition();
+        List<Biome> biomes = new ArrayList<>();
 
         // Forest at origin
         biomes.add(createBiome("Forest", BiomeType.FOREST, AreaShape.CIRCLE,
@@ -132,16 +132,16 @@ public class HexGridFillerTest {
         biomes.add(createBiome("Mountains", BiomeType.MOUNTAINS, AreaShape.LINE,
             4, 6, Direction.N, 0, 5, 7, "origin", 9));
 
-        composition.setPreparedFeatures(new ArrayList<>(biomes));
+        composition.setFeatures(new ArrayList<>(biomes));
         return composition;
     }
 
     /**
      * Creates a complex composition with 5 biomes
      */
-    private PreparedHexComposition createComplexComposition() {
-        PreparedHexComposition composition = new PreparedHexComposition();
-        List<PreparedBiome> biomes = new ArrayList<>();
+    private HexComposition createComplexComposition() {
+        HexComposition composition = new HexComposition();
+        List<Biome> biomes = new ArrayList<>();
 
         // Center: Plains
         biomes.add(createBiome("Central Plains", BiomeType.PLAINS, AreaShape.CIRCLE,
@@ -163,16 +163,16 @@ public class HexGridFillerTest {
         biomes.add(createBiome("West Desert", BiomeType.DESERT, AreaShape.CIRCLE,
             4, 5, Direction.W, 300, 6, 8, "origin", 6));
 
-        composition.setPreparedFeatures(new ArrayList<>(biomes));
+        composition.setFeatures(new ArrayList<>(biomes));
         return composition;
     }
 
     /**
      * Creates composition with ocean biomes
      */
-    private PreparedHexComposition createMixedComposition() {
-        PreparedHexComposition composition = new PreparedHexComposition();
-        List<PreparedBiome> biomes = new ArrayList<>();
+    private HexComposition createMixedComposition() {
+        HexComposition composition = new HexComposition();
+        List<Biome> biomes = new ArrayList<>();
 
         // Center: Plains
         biomes.add(createBiome("Plains", BiomeType.PLAINS, AreaShape.CIRCLE,
@@ -186,35 +186,39 @@ public class HexGridFillerTest {
         biomes.add(createBiome("Ocean", BiomeType.OCEAN, AreaShape.CIRCLE,
             4, 6, Direction.W, 300, 4, 6, "origin", 8));
 
-        composition.setPreparedFeatures(new ArrayList<>(biomes));
+        composition.setFeatures(new ArrayList<>(biomes));
         return composition;
     }
 
     /**
-     * Helper to create a prepared biome
+     * Helper to create a biome and prepare it for composition
      */
-    private PreparedBiome createBiome(String name, BiomeType type, AreaShape shape,
-                                      int sizeFrom, int sizeTo,
-                                      Direction direction, int angle,
-                                      int distFrom, int distTo,
-                                      String anchor, int priority) {
-        PreparedBiome biome = new PreparedBiome();
+    private Biome createBiome(String name, BiomeType type, AreaShape shape,
+                              int sizeFrom, int sizeTo,
+                              Direction direction, int angle,
+                              int distFrom, int distTo,
+                              String anchor, int priority) {
+        Biome biome = Biome.builder()
+            .type(type)
+            .parameters(new HashMap<>())
+            .build();
         biome.setName(name);
-        biome.setType(type);
         biome.setShape(shape);
         biome.setSizeFrom(sizeFrom);
         biome.setSizeTo(sizeTo);
 
-        PreparedPosition pos = new PreparedPosition();
-        pos.setDirection(direction);
-        pos.setDirectionAngle(angle);
-        pos.setDistanceFrom(distFrom);
-        pos.setDistanceTo(distTo);
-        pos.setAnchor(anchor);
-        pos.setPriority(priority);
+        RelativePosition pos = RelativePosition.builder()
+            .direction(direction)
+            .distanceFrom(distFrom)
+            .distanceTo(distTo)
+            .anchor(anchor)
+            .priority(priority)
+            .build();
 
         biome.setPositions(Arrays.asList(pos));
-        biome.setParameters(new HashMap<>());
+
+        // Prepare biome for composition
+        biome.prepareForComposition();
 
         return biome;
     }

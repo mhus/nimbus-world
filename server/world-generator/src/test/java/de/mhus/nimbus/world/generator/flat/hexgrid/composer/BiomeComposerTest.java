@@ -38,7 +38,7 @@ public class BiomeComposerTest {
         log.info("=== Testing Simple Biome Composition ===");
 
         // Create a simple prepared composition
-        PreparedHexComposition composition = createSimpleComposition();
+        HexComposition composition = createSimpleComposition();
 
         // Compose biomes
         BiomeComposer composer = new BiomeComposer();
@@ -69,7 +69,7 @@ public class BiomeComposerTest {
     public void testMultipleBiomesWithDifferentShapes() {
         log.info("=== Testing Multiple Biomes with Different Shapes ===");
 
-        PreparedHexComposition composition = createComplexComposition();
+        HexComposition composition = createComplexComposition();
 
         BiomeComposer composer = new BiomeComposer();
         BiomePlacementResult result = composer.compose(composition, "test-world", 54321L);
@@ -88,7 +88,7 @@ public class BiomeComposerTest {
         log.info("=== Testing Collision Detection ===");
 
         // Create composition where biomes might collide
-        PreparedHexComposition composition = createCollisionTestComposition();
+        HexComposition composition = createCollisionTestComposition();
 
         BiomeComposer composer = new BiomeComposer();
         BiomePlacementResult result = composer.compose(composition, "test-world", 99999L);
@@ -102,17 +102,23 @@ public class BiomeComposerTest {
     /**
      * Creates a simple composition with 2 biomes
      */
-    private PreparedHexComposition createSimpleComposition() {
-        PreparedHexComposition composition = new PreparedHexComposition();
-        List<PreparedBiome> biomes = new ArrayList<>();
+    private HexComposition createSimpleComposition() {
+        HexComposition composition = new HexComposition();
+        List<Biome> biomes = new ArrayList<>();
 
         // Biome 1: Forest at origin
-        PreparedBiome forest = new PreparedBiome();
+        Biome forest = Biome.builder()
+            .type(BiomeType.FOREST)
+            .parameters(new HashMap<>())
+            .build();
         forest.setName("Central Forest");
-        forest.setType(BiomeType.FOREST);
         forest.setShape(AreaShape.CIRCLE);
         forest.setSizeFrom(3);
         forest.setSizeTo(5);
+
+        // Manually set calculated values for test
+        forest.setCalculatedSizeFrom(3);
+        forest.setCalculatedSizeTo(5);
 
         PreparedPosition forestPos = new PreparedPosition();
         forestPos.setDirection(Direction.N);
@@ -122,17 +128,22 @@ public class BiomeComposerTest {
         forestPos.setAnchor("origin");
         forestPos.setPriority(10);
 
-        forest.setPositions(Arrays.asList(forestPos));
-        forest.setParameters(new HashMap<>());
+        forest.setPreparedPositions(Arrays.asList(forestPos));
         biomes.add(forest);
 
         // Biome 2: Mountains to the north
-        PreparedBiome mountains = new PreparedBiome();
+        Biome mountains = Biome.builder()
+            .type(BiomeType.MOUNTAINS)
+            .parameters(new HashMap<>())
+            .build();
         mountains.setName("Northern Mountains");
-        mountains.setType(BiomeType.MOUNTAINS);
         mountains.setShape(AreaShape.LINE);
         mountains.setSizeFrom(4);
         mountains.setSizeTo(6);
+
+        // Manually set calculated values for test
+        mountains.setCalculatedSizeFrom(4);
+        mountains.setCalculatedSizeTo(6);
 
         PreparedPosition mountainPos = new PreparedPosition();
         mountainPos.setDirection(Direction.N);
@@ -142,20 +153,19 @@ public class BiomeComposerTest {
         mountainPos.setAnchor("origin");
         mountainPos.setPriority(8);
 
-        mountains.setPositions(Arrays.asList(mountainPos));
-        mountains.setParameters(new HashMap<>());
+        mountains.setPreparedPositions(Arrays.asList(mountainPos));
         biomes.add(mountains);
 
-        composition.setPreparedFeatures(new ArrayList<>(biomes));
+        composition.setFeatures(new ArrayList<>(biomes));
         return composition;
     }
 
     /**
      * Creates a complex composition with 5 biomes in different directions
      */
-    private PreparedHexComposition createComplexComposition() {
-        PreparedHexComposition composition = new PreparedHexComposition();
-        List<PreparedBiome> biomes = new ArrayList<>();
+    private HexComposition createComplexComposition() {
+        HexComposition composition = new HexComposition();
+        List<Biome> biomes = new ArrayList<>();
 
         // Center: Plains
         biomes.add(createBiome("Central Plains", BiomeType.PLAINS, AreaShape.CIRCLE,
@@ -177,16 +187,16 @@ public class BiomeComposerTest {
         biomes.add(createBiome("West Desert", BiomeType.DESERT, AreaShape.CIRCLE,
             4, 5, Direction.W, 300, 6, 8, "origin", 6));
 
-        composition.setPreparedFeatures(new ArrayList<>(biomes));
+        composition.setFeatures(new ArrayList<>(biomes));
         return composition;
     }
 
     /**
      * Creates composition with potential collisions
      */
-    private PreparedHexComposition createCollisionTestComposition() {
-        PreparedHexComposition composition = new PreparedHexComposition();
-        List<PreparedBiome> biomes = new ArrayList<>();
+    private HexComposition createCollisionTestComposition() {
+        HexComposition composition = new HexComposition();
+        List<Biome> biomes = new ArrayList<>();
 
         // Three biomes with overlapping ranges
         biomes.add(createBiome("Center", BiomeType.PLAINS, AreaShape.CIRCLE,
@@ -198,35 +208,40 @@ public class BiomeComposerTest {
         biomes.add(createBiome("Near 2", BiomeType.MOUNTAINS, AreaShape.CIRCLE,
             4, 6, Direction.E, 120, 3, 5, "origin", 8));
 
-        composition.setPreparedFeatures(new ArrayList<>(biomes));
+        composition.setFeatures(new ArrayList<>(biomes));
         return composition;
     }
 
     /**
-     * Helper to create a prepared biome
+     * Helper to create a biome and prepare it for composition
      */
-    private PreparedBiome createBiome(String name, BiomeType type, AreaShape shape,
-                                      int sizeFrom, int sizeTo,
-                                      Direction direction, int angle,
-                                      int distFrom, int distTo,
-                                      String anchor, int priority) {
-        PreparedBiome biome = new PreparedBiome();
+    private Biome createBiome(String name, BiomeType type, AreaShape shape,
+                              int sizeFrom, int sizeTo,
+                              Direction direction, int angle,
+                              int distFrom, int distTo,
+                              String anchor, int priority) {
+        Biome biome = Biome.builder()
+            .type(type)
+            .parameters(new HashMap<>())
+            .build();
         biome.setName(name);
-        biome.setType(type);
         biome.setShape(shape);
         biome.setSizeFrom(sizeFrom);
         biome.setSizeTo(sizeTo);
 
-        PreparedPosition pos = new PreparedPosition();
-        pos.setDirection(direction);
-        pos.setDirectionAngle(angle);
-        pos.setDistanceFrom(distFrom);
-        pos.setDistanceTo(distTo);
-        pos.setAnchor(anchor);
-        pos.setPriority(priority);
+        // Create RelativePosition (not PreparedPosition - that's calculated)
+        RelativePosition pos = RelativePosition.builder()
+            .direction(direction)
+            .distanceFrom(distFrom)
+            .distanceTo(distTo)
+            .anchor(anchor)
+            .priority(priority)
+            .build();
 
         biome.setPositions(Arrays.asList(pos));
-        biome.setParameters(new HashMap<>());
+
+        // Prepare biome for tests that bypass HexCompositionPreparer
+        biome.prepareForComposition();
 
         return biome;
     }

@@ -17,9 +17,9 @@ import java.util.List;
 @AllArgsConstructor
 public class PlacedBiome {
     /**
-     * The prepared biome definition
+     * The biome that was placed (now stores calculated values directly)
      */
-    private PreparedBiome biome;
+    private Biome biome;
 
     /**
      * All HexGrid coordinates occupied by this biome

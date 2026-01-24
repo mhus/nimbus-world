@@ -53,13 +53,17 @@ public class WorldCompositeImageTest {
     public void testCompleteWorldWithAllComponents() throws Exception {
         log.info("=== Testing Complete World with All Components ===");
 
-        // Step 1: Create composition with biomes AND villages
-        PreparedHexComposition composition = createCompositionWithVillages();
+        // Step 1: Create HexComposition with Features (biomes AND villages)
+        HexComposition composition = createCompositionWithVillages();
+
+        // Step 2: Prepare composition in-place
+        HexCompositionPreparer preparer = new HexCompositionPreparer();
+        assertTrue(preparer.prepare(composition), "Preparation should succeed");
 
         // Export input model
         exportInputModel(composition);
 
-        // Step 2: Place biomes
+        // Step 3: Place biomes
         BiomeComposer biomeComposer = new BiomeComposer();
         BiomePlacementResult placementResult = biomeComposer.compose(composition, "full-world", 99999L);
 
@@ -80,8 +84,8 @@ public class WorldCompositeImageTest {
             fillResult.getCoastFillCount());
 
         // Step 3b: Apply village parameters to center grid AFTER filling
-        if (!composition.getPreparedVillages().isEmpty()) {
-            PreparedVillage village = composition.getPreparedVillages().get(0);
+        if (!composition.getVillages().isEmpty()) {
+            Village village = composition.getVillages().get(0);
             if (village.getParameters() != null) {
                 // Find center plains grid [0,0] and add village parameters
                 for (FilledHexGrid filled : fillResult.getAllGrids()) {
@@ -228,9 +232,13 @@ public class WorldCompositeImageTest {
         log.info("=== Testing Complete World Composite Image Generation ===");
 
         // Step 1: Create composition
-        PreparedHexComposition composition = createComposition();
+        HexComposition composition = createComposition();
 
-        // Step 2: Place biomes
+        // Step 2: Prepare composition
+        HexCompositionPreparer preparer = new HexCompositionPreparer();
+        assertTrue(preparer.prepare(composition), "Preparation should succeed");
+
+        // Step 3: Place biomes
         BiomeComposer biomeComposer = new BiomeComposer();
         BiomePlacementResult placementResult = biomeComposer.compose(composition, "composite-world", 54321L);
 
@@ -270,65 +278,60 @@ public class WorldCompositeImageTest {
     }
 
     /**
-     * Creates composition with biomes AND villages
+     * Creates HexComposition with biomes AND villages (unprepared)
      */
-    private PreparedHexComposition createCompositionWithVillages() {
-        PreparedHexComposition composition = new PreparedHexComposition();
-        List<PreparedBiome> biomes = new ArrayList<>();
+    private HexComposition createCompositionWithVillages() {
+        HexComposition composition = HexComposition.builder()
+            .name("Test World with Villages")
+            .worldId("test-world")
+            .features(new ArrayList<>())
+            .build();
 
         // Center: Plains with Village
-        PreparedBiome plains = createBiome("Central Plains", BiomeType.PLAINS, AreaShape.CIRCLE,
+        Biome plains = createBiome("Central Plains", BiomeType.PLAINS, AreaShape.CIRCLE,
             3, 4, Direction.N, 0, 0, 0, "origin", 10);
-        biomes.add(plains);
+        composition.getFeatures().add(plains);
 
         // North: Mountains
-        biomes.add(createBiome("Northern Mountains", BiomeType.MOUNTAINS, AreaShape.LINE,
+        composition.getFeatures().add(createBiome("Northern Mountains", BiomeType.MOUNTAINS, AreaShape.LINE,
             3, 4, Direction.N, 0, 5, 8, "origin", 9));
 
         // East: Forest
-        biomes.add(createBiome("Eastern Forest", BiomeType.FOREST, AreaShape.CIRCLE,
+        composition.getFeatures().add(createBiome("Eastern Forest", BiomeType.FOREST, AreaShape.CIRCLE,
             2, 3, Direction.E, 90, 5, 8, "origin", 8));
 
-        // Add villages
-        List<PreparedVillage> villages = new ArrayList<>();
-
         // Village in center plains
-        PreparedVillage village = new PreparedVillage();
+        Village village = Village.builder()
+            .buildings(new ArrayList<>())
+            .streets(new ArrayList<>())
+            .parameters(new HashMap<>())
+            .build();
         village.setName("Central Village");
+        village.setType(StructureType.HAMLET);
 
-        PreparedPosition villagePos = new PreparedPosition();
-        villagePos.setDirection(Direction.N);
-        villagePos.setDirectionAngle(0);
-        villagePos.setDistanceFrom(0);
-        villagePos.setDistanceTo(2);
-        villagePos.setAnchor("origin");
-        villagePos.setPriority(5);
+        RelativePosition villagePos = RelativePosition.builder()
+            .direction(Direction.N)
+            .distanceFrom(0)
+            .distanceTo(2)
+            .anchor("origin")
+            .priority(5)
+            .build();
 
         village.setPositions(Arrays.asList(villagePos));
-        village.setBuildings(new ArrayList<>());
-        village.setStreets(new ArrayList<>());
 
         // Use VillageDesigner to create village buildings
         VillageTemplate template = VillageTemplateLoader.load("hamlet-medieval");
         VillageDesigner designer = new VillageDesigner();
         VillageDesignResult designResult = designer.design(template, 95);
 
-        // Add village parameters to PreparedVillage
-        Map<String, String> params = new HashMap<>();
+        // Add village parameters
         HexGridConfig centerGridConfig = designResult.getGridConfigs().get(HexVector2.builder().q(0).r(0).build());
         if (centerGridConfig != null) {
-            params.put("village", centerGridConfig.toVillageParameter());
-            params.put("road", centerGridConfig.toRoadParameter());
+            village.getParameters().put("village", centerGridConfig.toVillageParameter());
+            village.getParameters().put("road", centerGridConfig.toRoadParameter());
         }
-        village.setParameters(params);
 
-        villages.add(village);
-
-        // Combine biomes and villages into preparedFeatures
-        List<PreparedFeature> features = new ArrayList<>();
-        features.addAll(biomes);
-        features.addAll(villages);
-        composition.setPreparedFeatures(features);
+        composition.getFeatures().add(village);
 
         return composition;
     }
@@ -390,9 +393,9 @@ public class WorldCompositeImageTest {
     /**
      * Creates a complete composition
      */
-    private PreparedHexComposition createComposition() {
-        PreparedHexComposition composition = new PreparedHexComposition();
-        List<PreparedBiome> biomes = new ArrayList<>();
+    private HexComposition createComposition() {
+        HexComposition composition = new HexComposition();
+        List<Biome> biomes = new ArrayList<>();
 
         // Center: Plains
         biomes.add(createBiome("Central Plains", BiomeType.PLAINS, AreaShape.CIRCLE,
@@ -414,7 +417,7 @@ public class WorldCompositeImageTest {
         biomes.add(createBiome("Western Desert", BiomeType.DESERT, AreaShape.CIRCLE,
             4, 5, Direction.W, 270, 8, 12, "origin", 6));
 
-        composition.setPreparedFeatures(new ArrayList<>(biomes));
+        composition.setFeatures(new ArrayList<>(biomes));
 
         return composition;
     }
@@ -828,19 +831,22 @@ public class WorldCompositeImageTest {
 
         hexGrid.getParameters().put("g_builder", builderType);
 
-        // Create PreparedBiome
-        PreparedBiome preparedBiome = new PreparedBiome();
-        preparedBiome.setName(builderType + "-" + q + "-" + r);
-        preparedBiome.setType(biomeType);
-        preparedBiome.setShape(AreaShape.CIRCLE);
-        preparedBiome.setSizeFrom(1);
-        preparedBiome.setSizeTo(1);
-        preparedBiome.setPositions(new ArrayList<>());
-        preparedBiome.setParameters(new HashMap<>());
+        // Create Biome
+        Biome biome = Biome.builder()
+            .type(biomeType)
+            .parameters(new HashMap<>())
+            .build();
+        biome.setName(builderType + "-" + q + "-" + r);
+        biome.setShape(AreaShape.CIRCLE);
+        biome.setSizeFrom(1);
+        biome.setSizeTo(1);
+        biome.setCalculatedSizeFrom(1);
+        biome.setCalculatedSizeTo(1);
+        biome.setPreparedPositions(new ArrayList<>());
 
         // Wrap in PlacedBiome
         PlacedBiome placedBiome = new PlacedBiome();
-        placedBiome.setBiome(preparedBiome);
+        placedBiome.setBiome(biome);
         placedBiome.setCenter(coord);
         placedBiome.setCoordinates(List.of(coord));
         placedBiome.setActualSize(1);
@@ -856,10 +862,11 @@ public class WorldCompositeImageTest {
     /**
      * Exports input model as JSON
      */
-    private void exportInputModel(PreparedHexComposition composition) throws Exception {
+    private void exportInputModel(HexComposition composition) throws Exception {
         File inputFile = outputDir.resolve("input-model.json").toFile();
 
         ObjectMapper mapper = new ObjectMapper();
+        mapper.findAndRegisterModules();  // Register JavaTimeModule for Instant serialization
         mapper.writerWithDefaultPrettyPrinter().writeValue(inputFile, composition);
 
         log.info("Exported input model to: {}", inputFile.getAbsolutePath());
@@ -985,6 +992,7 @@ public class WorldCompositeImageTest {
         // Write to file
         File outputFile = outputDir.resolve("generated-model.json").toFile();
         ObjectMapper mapper = new ObjectMapper();
+        mapper.findAndRegisterModules();  // Register JavaTimeModule for Instant serialization
         mapper.writerWithDefaultPrettyPrinter().writeValue(outputFile, outputModel);
 
         log.info("Exported generated model to: {}", outputFile.getAbsolutePath());
@@ -999,30 +1007,34 @@ public class WorldCompositeImageTest {
     }
 
     /**
-     * Helper to create biome
+     * Helper to create biome and prepare it for composition
      */
-    private PreparedBiome createBiome(String name, BiomeType type, AreaShape shape,
-                                      int sizeFrom, int sizeTo,
-                                      Direction direction, int angle,
-                                      int distFrom, int distTo,
-                                      String anchor, int priority) {
-        PreparedBiome biome = new PreparedBiome();
+    private Biome createBiome(String name, BiomeType type, AreaShape shape,
+                              int sizeFrom, int sizeTo,
+                              Direction direction, int angle,
+                              int distFrom, int distTo,
+                              String anchor, int priority) {
+        Biome biome = Biome.builder()
+            .type(type)
+            .parameters(new HashMap<>())
+            .build();
         biome.setName(name);
-        biome.setType(type);
         biome.setShape(shape);
         biome.setSizeFrom(sizeFrom);
         biome.setSizeTo(sizeTo);
 
-        PreparedPosition pos = new PreparedPosition();
-        pos.setDirection(direction);
-        pos.setDirectionAngle(angle);
-        pos.setDistanceFrom(distFrom);
-        pos.setDistanceTo(distTo);
-        pos.setAnchor(anchor);
-        pos.setPriority(priority);
+        RelativePosition pos = RelativePosition.builder()
+            .direction(direction)
+            .distanceFrom(distFrom)
+            .distanceTo(distTo)
+            .anchor(anchor)
+            .priority(priority)
+            .build();
 
         biome.setPositions(Arrays.asList(pos));
-        biome.setParameters(new HashMap<>());
+
+        // Prepare biome for tests that bypass HexCompositionPreparer
+        biome.prepareForComposition();
 
         return biome;
     }

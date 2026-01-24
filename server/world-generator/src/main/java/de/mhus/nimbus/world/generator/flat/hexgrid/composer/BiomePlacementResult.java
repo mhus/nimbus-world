@@ -19,7 +19,7 @@ public class BiomePlacementResult {
     /**
      * The original prepared composition
      */
-    private PreparedHexComposition composition;
+    private HexComposition composition;
 
     /**
      * Successfully placed biomes

@@ -59,14 +59,14 @@ public class FlowComposerTest {
 
         // 2. Prepare composition
         HexCompositionPreparer preparer = new HexCompositionPreparer();
-        PreparedHexComposition prepared = preparer.prepare(composition);
+        assertTrue(preparer.prepare(composition), "Preparation should succeed");
 
         log.info("Prepared composition with {} biomes and {} roads",
-            prepared.getBiomes().size(), prepared.getRoads().size());
+            composition.getBiomes().size(), composition.getRoads().size());
 
         // 3. Compose biomes
         BiomePlacementResult biomeResult = biomeComposer.compose(
-            prepared, "test-world", 12345L);
+            composition, "test-world", 12345L);
 
         assertTrue(biomeResult.isSuccess(), "Biome composition should succeed");
         assertEquals(2, biomeResult.getPlacedBiomes().size());
@@ -77,7 +77,7 @@ public class FlowComposerTest {
 
         // 4. Compose flows (roads)
         FlowComposer.FlowCompositionResult flowResult = flowComposer.composeFlows(
-            prepared, biomeResult);
+            composition, biomeResult);
 
         log.info("Flow composition result: success={}, composed={}/{}, segments={}",
             flowResult.isSuccess(),
@@ -139,16 +139,16 @@ public class FlowComposerTest {
 
         // Prepare
         HexCompositionPreparer preparer = new HexCompositionPreparer();
-        PreparedHexComposition prepared = preparer.prepare(composition);
+        assertTrue(preparer.prepare(composition), "Preparation should succeed");
 
         // Compose biomes
         BiomePlacementResult biomeResult = biomeComposer.compose(
-            prepared, "test-world", 54321L);
+            composition, "test-world", 54321L);
         assertTrue(biomeResult.isSuccess());
 
         // Compose flows
         FlowComposer.FlowCompositionResult flowResult = flowComposer.composeFlows(
-            prepared, biomeResult);
+            composition, biomeResult);
 
         log.info("River composition: success={}, segments={}",
             flowResult.isSuccess(), flowResult.getTotalSegments());

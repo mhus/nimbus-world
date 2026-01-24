@@ -82,25 +82,26 @@ class ConfigureHexGridsTest {
     }
 
     @Test
-    void testPreparedBiomeConfiguresOwnGrids() {
-        PreparedBiome preparedBiome = new PreparedBiome();
-        preparedBiome.setName("test-biome");
-        preparedBiome.setType(BiomeType.DESERT);
-        preparedBiome.setParameters(new java.util.HashMap<>());
-        preparedBiome.getParameters().put("g_builder", "mountain");  // Explicitly set builder
-        preparedBiome.getParameters().put("g_offset", "5");
-        preparedBiome.getParameters().put("g_flora", "desert");
+    void testBiomeWithCustomParametersConfiguresOwnGrids() {
+        Biome biome = Biome.builder()
+            .type(BiomeType.DESERT)
+            .parameters(new java.util.HashMap<>())
+            .build();
+        biome.setName("test-biome");
+        biome.getParameters().put("g_builder", "mountain");  // Explicitly set builder
+        biome.getParameters().put("g_offset", "5");
+        biome.getParameters().put("g_flora", "desert");
 
         List<HexVector2> coordinates = Arrays.asList(
             hex(10, 10),
             hex(11, 10)
         );
 
-        preparedBiome.configureHexGrids(coordinates);
+        biome.configureHexGrids(coordinates);
 
-        assertEquals(2, preparedBiome.getHexGrids().size());
+        assertEquals(2, biome.getHexGrids().size());
 
-        FeatureHexGrid grid = preparedBiome.getHexGrids().get(0);
+        FeatureHexGrid grid = biome.getHexGrids().get(0);
         assertEquals("mountain", grid.getParameters().get("g_builder"));  // Builder from parameters
         assertEquals("5", grid.getParameters().get("g_offset"));
         assertEquals("desert", grid.getParameters().get("g_flora"));

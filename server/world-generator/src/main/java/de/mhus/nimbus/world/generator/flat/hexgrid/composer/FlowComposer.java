@@ -35,7 +35,7 @@ public class FlowComposer {
      * @param placementResult Result from BiomeComposer with placed biomes
      * @return Composition result with statistics
      */
-    public FlowCompositionResult composeFlows(PreparedHexComposition prepared,
+    public FlowCompositionResult composeFlows(HexComposition prepared,
                                                BiomePlacementResult placementResult) {
         log.info("Starting flow composition");
 
@@ -47,15 +47,15 @@ public class FlowComposer {
 
         try {
             // Build grid map from placement result
-            Map<String, PreparedBiome> gridMap = buildGridMap(placementResult);
+            Map<String, Biome> gridMap = buildGridMap(placementResult);
 
             // Get all flows to process
-            List<PreparedFlow> flows = collectFlows(prepared);
+            List<Flow> flows = collectFlows(prepared);
             totalFlows = flows.size();
 
             log.info("Found {} flows to compose", totalFlows);
 
-            for (PreparedFlow flow : flows) {
+            for (Flow flow : flows) {
                 try {
                     int segments = composeFlow(flow, gridMap, prepared, placementResult);
                     if (segments > 0) {
@@ -74,8 +74,7 @@ public class FlowComposer {
                 }
             }
 
-            // Copy flow segments back to original features
-            copyFlowSegmentsToOriginalFeatures(prepared);
+            // No need to copy back - Flows now store their data directly
 
             log.info("Flow composition complete: composed={}/{}, segments={}, failed={}",
                 composedFlows, totalFlows, totalSegments, failedFlows);
@@ -106,10 +105,10 @@ public class FlowComposer {
     /**
      * Composes a single flow feature
      */
-    private int composeFlow(PreparedFlow flow, Map<String, PreparedBiome> gridMap,
-                            PreparedHexComposition prepared,
+    private int composeFlow(Flow flow, Map<String, Biome> gridMap,
+                            HexComposition prepared,
                             BiomePlacementResult placementResult) {
-        log.debug("Composing flow: {} (type: {})", flow.getName(), flow.getFlowType());
+        log.debug("Composing flow: {} (type: {})", flow.getName(), flow.getType());
 
         // Resolve start/end points
         if (!resolveFlowEndpoints(flow, prepared, placementResult)) {
@@ -126,12 +125,12 @@ public class FlowComposer {
 
         flow.setRoute(route);
 
-        // Create flow segments and add to PreparedBiomes
+        // Create flow segments
         int segments = createFlowSegments(flow, route, gridMap, prepared);
 
-        // Update original feature status to COMPOSED
-        if (flow.getOriginal() != null && segments > 0) {
-            flow.getOriginal().setStatus(FeatureStatus.COMPOSED);
+        // Update feature status to COMPOSED
+        if (segments > 0) {
+            flow.setStatus(FeatureStatus.COMPOSED);
         }
 
         return segments;
@@ -140,7 +139,7 @@ public class FlowComposer {
     /**
      * Resolves start/end points from feature IDs to coordinates
      */
-    private boolean resolveFlowEndpoints(PreparedFlow flow, PreparedHexComposition prepared,
+    private boolean resolveFlowEndpoints(Flow flow, HexComposition prepared,
                                          BiomePlacementResult placementResult) {
         // Find start point
         if (flow.getStartPointId() != null) {
@@ -154,7 +153,7 @@ public class FlowComposer {
         }
 
         // Find end point (for roads/walls)
-        if (flow instanceof PreparedRoad road) {
+        if (flow instanceof Road road) {
             if (road.getEndPointId() != null) {
                 HexVector2 endCoord = findFeatureCoordinate(road.getEndPointId(),
                     placementResult, prepared);
@@ -164,7 +163,7 @@ public class FlowComposer {
                 }
                 flow.setEndPoint(endCoord);
             }
-        } else if (flow instanceof PreparedWall wall) {
+        } else if (flow instanceof Wall wall) {
             if (wall.getEndPointId() != null) {
                 HexVector2 endCoord = findFeatureCoordinate(wall.getEndPointId(),
                     placementResult, prepared);
@@ -174,7 +173,7 @@ public class FlowComposer {
                 }
                 flow.setEndPoint(endCoord);
             }
-        } else if (flow instanceof PreparedRiver river) {
+        } else if (flow instanceof River river) {
             if (river.getMergeToId() != null) {
                 HexVector2 mergeCoord = findFeatureCoordinate(river.getMergeToId(),
                     placementResult, prepared);
@@ -196,10 +195,10 @@ public class FlowComposer {
      */
     private HexVector2 findFeatureCoordinate(String featureId,
                                              BiomePlacementResult placementResult,
-                                             PreparedHexComposition prepared) {
+                                             HexComposition prepared) {
         // Search in placed biomes (has actual coordinates)
         for (PlacedBiome placed : placementResult.getPlacedBiomes()) {
-            PreparedBiome biome = placed.getBiome();
+            Biome biome = placed.getBiome();
 
             // Match by feature ID
             if (biome.getFeatureId() != null && biome.getFeatureId().equals(featureId)) {
@@ -223,7 +222,7 @@ public class FlowComposer {
     /**
      * Plans a route between flow waypoints using simple pathfinding
      */
-    private List<HexVector2> planFlowRoute(PreparedFlow flow, Map<String, PreparedBiome> gridMap) {
+    private List<HexVector2> planFlowRoute(Flow flow, Map<String, Biome> gridMap) {
         List<HexVector2> route = new ArrayList<>();
 
         HexVector2 start = flow.getStartPoint();
@@ -253,7 +252,7 @@ public class FlowComposer {
      * Simple A* pathfinding between two hex coordinates
      */
     private List<HexVector2> findPath(HexVector2 start, HexVector2 goal,
-                                      Map<String, PreparedBiome> gridMap) {
+                                      Map<String, Biome> gridMap) {
         // Simple straight-line path for now
         List<HexVector2> path = new ArrayList<>();
         path.add(start);
@@ -321,9 +320,9 @@ public class FlowComposer {
     /**
      * Creates flow segments for a route and adds them to FeatureHexGrids
      */
-    private int createFlowSegments(PreparedFlow flow, List<HexVector2> route,
-                                   Map<String, PreparedBiome> gridMap,
-                                   PreparedHexComposition prepared) {
+    private int createFlowSegments(Flow flow, List<HexVector2> route,
+                                   Map<String, Biome> gridMap,
+                                   HexComposition prepared) {
         int segmentCount = 0;
 
         for (int i = 0; i < route.size(); i++) {
@@ -370,21 +369,22 @@ public class FlowComposer {
     /**
      * Creates a FlowSegment from PreparedFlow
      */
-    private FlowSegment createFlowSegment(PreparedFlow flow, SIDE fromSide, SIDE toSide) {
+    private FlowSegment createFlowSegment(Flow flow, SIDE fromSide, SIDE toSide) {
         FlowSegment.FlowSegmentBuilder builder = FlowSegment.builder()
-            .flowType(flow.getFlowType())
+            .flowType(flow.getType())
             .fromSide(fromSide)
             .toSide(toSide)
-            .width(flow.getWidthBlocks())
-            .level(flow.getLevel())
+            .width(flow.getCalculatedWidthBlocks())
             .flowFeatureId(flow.getFeatureId());
 
         // Type-specific attributes
-        if (flow instanceof PreparedRoad road) {
+        if (flow instanceof Road road) {
             builder.type(road.getRoadType());
-        } else if (flow instanceof PreparedRiver river) {
+            builder.level(road.getLevel());
+        } else if (flow instanceof River river) {
             builder.depth(river.getDepth());
-        } else if (flow instanceof PreparedWall wall) {
+            builder.level(river.getLevel());
+        } else if (flow instanceof Wall wall) {
             builder.height(wall.getHeight());
             builder.material(wall.getMaterial());
         }
@@ -396,10 +396,10 @@ public class FlowComposer {
      * Finds or creates a FeatureHexGrid for a coordinate
      */
     private FeatureHexGrid findOrCreateFeatureHexGrid(HexVector2 coord,
-                                                      Map<String, PreparedBiome> gridMap,
-                                                      PreparedHexComposition prepared) {
+                                                      Map<String, Biome> gridMap,
+                                                      HexComposition prepared) {
         // Find the biome at this coordinate
-        PreparedBiome biome = gridMap.get(coordKey(coord));
+        Biome biome = gridMap.get(coordKey(coord));
 
         if (biome == null) {
             log.debug("No biome at coordinate {}, creating standalone grid", coord);
@@ -428,11 +428,11 @@ public class FlowComposer {
     /**
      * Builds a grid map from placement result
      */
-    private Map<String, PreparedBiome> buildGridMap(BiomePlacementResult placementResult) {
-        Map<String, PreparedBiome> gridMap = new HashMap<>();
+    private Map<String, Biome> buildGridMap(BiomePlacementResult placementResult) {
+        Map<String, Biome> gridMap = new HashMap<>();
 
         for (PlacedBiome placed : placementResult.getPlacedBiomes()) {
-            PreparedBiome biome = placed.getBiome();
+            Biome biome = placed.getBiome();
             for (HexVector2 coord : placed.getCoordinates()) {
                 gridMap.put(coordKey(coord), biome);
             }
@@ -444,35 +444,19 @@ public class FlowComposer {
     /**
      * Collects all flows from prepared composition
      */
-    private List<PreparedFlow> collectFlows(PreparedHexComposition prepared) {
-        List<PreparedFlow> flows = new ArrayList<>();
+    private List<Flow> collectFlows(HexComposition prepared) {
+        List<Flow> flows = new ArrayList<>();
 
-        // Direct flows
-        flows.addAll(prepared.getRoads());
-        flows.addAll(prepared.getRivers());
-        flows.addAll(prepared.getWalls());
+        // Direct flows - cast to Flow interface
+        flows.addAll((List<? extends Flow>) prepared.getRoads());
+        flows.addAll((List<? extends Flow>) prepared.getRivers());
+        flows.addAll((List<? extends Flow>) prepared.getWalls());
 
         // TODO: Flows from composites
 
         return flows;
     }
 
-    /**
-     * Copies flow segments back to original features
-     */
-    private void copyFlowSegmentsToOriginalFeatures(PreparedHexComposition prepared) {
-        // Biomes already copy their hexGrids back in BiomeComposer
-        // Flows copy their hexGrids back here
-        for (PreparedRoad road : prepared.getRoads()) {
-            road.copyHexGridsToOriginal();
-        }
-        for (PreparedRiver river : prepared.getRivers()) {
-            river.copyHexGridsToOriginal();
-        }
-        for (PreparedWall wall : prepared.getWalls()) {
-            wall.copyHexGridsToOriginal();
-        }
-    }
 
     /**
      * Creates coordinate key
