@@ -357,13 +357,16 @@ public class FlowComposer {
             SIDE fromSide = null;
             SIDE toSide = null;
 
-            // Determine entry side
+            // Determine entry side (from where the flow enters THIS grid)
             if (i > 0) {
                 HexVector2 prev = route.get(i - 1);
-                fromSide = RoadAndRiverConnector.determineSide(prev, coord);
+                // Direction from prev to coord gives us the exit side of prev
+                // But we need the ENTRY side of THIS grid, which is the opposite!
+                SIDE directionFromPrev = RoadAndRiverConnector.determineSide(prev, coord);
+                fromSide = RoadAndRiverConnector.getOppositeSide(directionFromPrev);
             }
 
-            // Determine exit side
+            // Determine exit side (to where the flow exits THIS grid)
             if (i < route.size() - 1) {
                 HexVector2 next = route.get(i + 1);
                 toSide = RoadAndRiverConnector.determineSide(coord, next);
