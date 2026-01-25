@@ -54,6 +54,13 @@ export interface ChunkDataTransferObject {
   };
 
   c?: Uint8Array; // javaType: byte[]
+
+  /**
+   * Indicates that the chunk is denied access
+   * default is false
+   * */
+  deny?: boolean;
+
 }
 
 /**

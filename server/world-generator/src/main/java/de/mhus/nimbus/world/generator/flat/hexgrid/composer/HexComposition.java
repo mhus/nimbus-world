@@ -18,7 +18,7 @@ import java.util.stream.Collectors;
 @NoArgsConstructor
 @AllArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class HexComposition {
+public class HexComposition implements BuildFeature {
 
     private String compositionId;
     private String name;
@@ -148,5 +148,26 @@ public class HexComposition {
             .filter(f -> f instanceof Wall)
             .map(f -> (Wall) f)
             .collect(Collectors.toList());
+    }
+
+    /**
+     * Builds this composition using the HexCompositeBuilder.
+     * Implements BuildFeature interface.
+     *
+     * @param context Build context with parameters (worldId, seed, repository, etc.)
+     * @return CompositionResult with all build results and statistics
+     */
+    @Override
+    public CompositionResult build(BuildContext context) {
+        return HexCompositeBuilder.builder()
+            .composition(this)
+            .worldId(context.getWorldId())
+            .seed(context.getSeed())
+            .fillGaps(context.isFillGaps())
+            .oceanBorderRings(context.getOceanBorderRings())
+            .repository(context.getRepository())
+            .generateWHexGrids(context.isGenerateWHexGrids())
+            .build()
+            .compose();
     }
 }

@@ -53,84 +53,44 @@ public class WorldCompositeImageTest {
     public void testCompleteWorldWithAllComponents() throws Exception {
         log.info("=== Testing Complete World with All Components ===");
 
-        // Step 1: Create HexComposition with Features (biomes AND villages)
+        // Create HexComposition with Features (biomes AND villages)
         HexComposition composition = createCompositionWithVillages();
 
-        // Step 2: Prepare composition in-place
-        HexCompositionPreparer preparer = new HexCompositionPreparer();
-        assertTrue(preparer.prepare(composition), "Preparation should succeed");
-
         // Export input model
-        exportInputModel(composition);
+        exportInputModel(composition, "complete-world-all-components");
 
-        // Step 3: Place biomes
-        BiomeComposer biomeComposer = new BiomeComposer();
-        BiomePlacementResult placementResult = biomeComposer.compose(composition, "full-world", 99999L);
+        // Use HexCompositeBuilder for the complete pipeline
+        CompositionResult result = HexCompositeBuilder.builder()
+            .composition(composition)
+            .worldId("full-world")
+            .seed(99999L)
+            .fillGaps(true)
+            .oceanBorderRings(1)
+            .generateWHexGrids(false)  // We don't need WHexGrid generation for this test
+            .build()
+            .compose();
 
-        assertTrue(placementResult.isSuccess());
+        assertTrue(result.isSuccess(), "Composition should succeed");
+        assertNotNull(result.getFillResult(), "Should have fill result");
+        assertNotNull(result.getFlowCompositionResult(), "Should have flow result");
+
+        HexGridFillResult fillResult = result.getFillResult();
+
         log.info("Placed {} biomes creating {} hex grids",
-            placementResult.getPlacedBiomes().size(),
-            placementResult.getHexGrids().size());
+            result.getTotalBiomes(),
+            result.getTotalGrids());
 
-        // Step 3: Fill gaps
-        HexGridFiller filler = new HexGridFiller();
-        HexGridFillResult fillResult = filler.fill(placementResult, "full-world", 1);
-
-        assertTrue(fillResult.isSuccess());
         log.info("Total grids after filling: {} (Ocean: {}, Land: {}, Coast: {})",
             fillResult.getTotalGridCount(),
             fillResult.getOceanFillCount(),
             fillResult.getLandFillCount(),
             fillResult.getCoastFillCount());
 
-        // Step 3b: Apply village parameters to center grid AFTER filling
-        if (!composition.getVillages().isEmpty()) {
-            Village village = composition.getVillages().get(0);
-            if (village.getParameters() != null) {
-                // Find center plains grid [0,0] and add village parameters
-                for (FilledHexGrid filled : fillResult.getAllGrids()) {
-                    if (filled.getCoordinate().getQ() == 0 && filled.getCoordinate().getR() == 0) {
-                        WHexGrid grid = filled.getHexGrid();
-                        log.info("Adding village parameters to grid [0,0] AFTER filling");
-
-                        if (grid.getParameters() == null) {
-                            grid.setParameters(new HashMap<>());
-                        }
-
-                        // Set g_builder first (required for pipeline)
-                        if (!grid.getParameters().containsKey("g_builder")) {
-                            grid.getParameters().put("g_builder", "island");
-                        }
-
-                        // Then add village parameters
-                        grid.getParameters().putAll(village.getParameters());
-
-                        log.info("Village & road parameters added: g_builder={}, village={}, road={}",
-                            grid.getParameters().get("g_builder"),
-                            grid.getParameters().containsKey("village"),
-                            grid.getParameters().containsKey("road"));
-                        break;
-                    }
-                }
-            }
-        }
-
-        // Step 4: Compose flows (roads and rivers)
-        FlowComposer flowComposer = new FlowComposer();
-        FlowComposer.FlowCompositionResult flowResult = flowComposer.composeFlows(
-            composition, placementResult);
-
-        assertTrue(flowResult.isSuccess(), "Flow composition should succeed");
         log.info("Composed {} flows with {} total segments",
-            flowResult.getComposedFlows(),
-            flowResult.getTotalSegments());
+            result.getFlowCompositionResult().getComposedFlows(),
+            result.getFlowCompositionResult().getTotalSegments());
 
-        // Step 4b: Sync flow parameters from FeatureHexGrids to WHexGrids
-        HexGridParameterSync parameterSync = new HexGridParameterSync();
-        int syncedCount = parameterSync.syncParametersToWHexGrids(composition, placementResult.getHexGrids());
-        log.info("Synced parameters to {} WHexGrids", syncedCount);
-
-        // Step 5: Build terrain for all grids
+        // Build terrain for all grids
         Map<HexVector2, WFlat> flats = new HashMap<>();
         for (FilledHexGrid filled : fillResult.getAllGrids()) {
             WFlat flat = buildGridTerrain(filled);
@@ -139,14 +99,14 @@ public class WorldCompositeImageTest {
 
         log.info("Built terrain for {} grids", flats.size());
 
-        // Step 6: Save individual grid images
+        // Save individual grid images
         saveIndividualGridImages(flats, fillResult);
 
-        // Step 7: Create composite image
+        // Create composite image
         createCompositeImage(flats, fillResult, "complete-world-all-components");
 
-        // Step 8: Export final generated model
-        exportGeneratedModel(fillResult, flowResult);
+        // Export final generated model
+        exportGeneratedModel(fillResult, result.getFlowCompositionResult(), "complete-world-all-components");
 
         log.info("=== Complete World with All Components Test Completed ===");
     }
@@ -208,50 +168,42 @@ public class WorldCompositeImageTest {
     public void testCompleteWorldComposite() throws Exception {
         log.info("=== Testing Complete World Composite Image Generation ===");
 
-        // Step 1: Create composition with villages and roads
+        // Create composition with villages and roads
         HexComposition composition = createCompositionWithVillages();
 
-        // Step 2: Prepare composition
-        HexCompositionPreparer preparer = new HexCompositionPreparer();
-        assertTrue(preparer.prepare(composition), "Preparation should succeed");
+        // Use HexCompositeBuilder for the complete pipeline
+        CompositionResult result = HexCompositeBuilder.builder()
+            .composition(composition)
+            .worldId("composite-world")
+            .seed(54321L)
+            .fillGaps(true)
+            .oceanBorderRings(2)
+            .generateWHexGrids(false)
+            .build()
+            .compose();
 
-        // Step 3: Place biomes
-        BiomeComposer biomeComposer = new BiomeComposer();
-        BiomePlacementResult placementResult = biomeComposer.compose(composition, "composite-world", 54321L);
+        assertTrue(result.isSuccess(), "Composition should succeed");
+        assertNotNull(result.getFillResult(), "Should have fill result");
 
-        assertTrue(placementResult.isSuccess());
+        HexGridFillResult fillResult = result.getFillResult();
+
         log.info("Placed {} biomes creating {} hex grids",
-            placementResult.getPlacedBiomes().size(),
-            placementResult.getHexGrids().size());
+            result.getTotalBiomes(),
+            result.getTotalGrids());
 
-        // Step 3b: Compose flows (roads, rivers)
-        FlowComposer flowComposer = new FlowComposer();
-        FlowComposer.FlowCompositionResult flowResult = flowComposer.composeFlows(composition, placementResult);
-        assertTrue(flowResult.isSuccess());
         log.info("Composed {} flows: {} successful, {} failed",
-            flowResult.getTotalFlows(),
-            flowResult.getComposedFlows(),
-            flowResult.getFailedFlows());
+            result.getFlowCompositionResult().getTotalFlows(),
+            result.getFlowCompositionResult().getComposedFlows(),
+            result.getFlowCompositionResult().getFailedFlows());
 
-        // Step 3c: Sync parameters from FeatureHexGrids to WHexGrids
-        HexGridParameterSync paramSync = new HexGridParameterSync();
-        int syncedCount = paramSync.syncParametersToWHexGrids(composition, placementResult.getHexGrids());
-        log.info("Synced parameters to {} WHexGrids", syncedCount);
-
-        // Step 4: Fill gaps
-        HexGridFiller filler = new HexGridFiller();
-        HexGridFillResult fillResult = filler.fill(placementResult, "composite-world", 2);
-
-        assertTrue(fillResult.isSuccess());
         log.info("Total grids after filling: {} (Ocean: {}, Land: {}, Coast: {})",
             fillResult.getTotalGridCount(),
             fillResult.getOceanFillCount(),
             fillResult.getLandFillCount(),
             fillResult.getCoastFillCount());
 
-        // Step 4: Build terrain for all grids
+        // Build terrain for all grids
         Map<HexVector2, WFlat> flats = new HashMap<>();
-
         for (FilledHexGrid filled : fillResult.getAllGrids()) {
             WFlat flat = buildGridTerrain(filled);
             flats.put(filled.getCoordinate(), flat);
@@ -259,13 +211,341 @@ public class WorldCompositeImageTest {
 
         log.info("Built terrain for {} grids", flats.size());
 
-        // Step 5: Save individual grid images
+        // Save individual grid images
         saveIndividualGridImages(flats, fillResult);
 
-        // Step 6: Create composite image
+        // Create composite image
         createCompositeImage(flats, fillResult, "complete-world-composite");
 
         log.info("=== Composite Image Test Completed ===");
+    }
+
+    @Test
+    public void testWorldWithVariousMountainBiomes() throws Exception {
+        log.info("=== Testing World with Various Mountain Biome Heights ===");
+
+        // Create composition with different mountain heights
+        HexComposition composition = createCompositionWithMountains();
+
+        // Export input model
+        exportInputModel(composition, "mountain-world-various-heights");
+
+        // Use HexCompositeBuilder for the complete pipeline
+        CompositionResult result = HexCompositeBuilder.builder()
+            .composition(composition)
+            .worldId("mountain-world")
+            .seed(77777L)
+            .fillGaps(true)
+            .oceanBorderRings(1)
+            .generateWHexGrids(false)
+            .build()
+            .compose();
+
+        assertTrue(result.isSuccess(), "Composition should succeed");
+        assertNotNull(result.getFillResult(), "Should have fill result");
+
+        HexGridFillResult fillResult = result.getFillResult();
+
+        log.info("Placed {} biomes creating {} hex grids",
+            result.getTotalBiomes(),
+            result.getTotalGrids());
+
+        log.info("Total grids after filling: {} (Ocean: {}, Land: {}, Coast: {})",
+            fillResult.getTotalGridCount(),
+            fillResult.getOceanFillCount(),
+            fillResult.getLandFillCount(),
+            fillResult.getCoastFillCount());
+
+        // Verify mountain biomes are present
+        long mountainBiomes = fillResult.getPlacementResult().getPlacedBiomes().stream()
+            .filter(pb -> pb.getBiome().getType() == BiomeType.MOUNTAINS)
+            .count();
+
+        log.info("Found {} mountain biomes", mountainBiomes);
+        assertTrue(mountainBiomes >= 4, "Should have at least 4 mountain biomes with different heights");
+
+        // Build terrain for all grids
+        Map<HexVector2, WFlat> flats = new HashMap<>();
+        for (FilledHexGrid filled : fillResult.getAllGrids()) {
+            WFlat flat = buildGridTerrain(filled);
+            flats.put(filled.getCoordinate(), flat);
+        }
+
+        log.info("Built terrain for {} grids", flats.size());
+
+        // Save individual grid images
+        saveIndividualGridImages(flats, fillResult);
+
+        // Create composite image
+        createCompositeImage(flats, fillResult, "mountain-world-various-heights");
+
+        // Export final generated model
+        exportGeneratedModel(fillResult, result.getFlowCompositionResult(), "mountain-world-various-heights");
+
+        log.info("=== Mountain Biomes Test Completed ===");
+    }
+
+    @Test
+    public void testWorldWithOrganicMountainShapes() throws Exception {
+        log.info("=== Testing World with Organic Mountain Shapes (Direction Deviation) ===");
+
+        // Create composition with mountains using different direction deviations
+        HexComposition composition = createCompositionWithOrganicMountains();
+
+        // Export input model
+        exportInputModel(composition, "mountain-world-organic-shapes");
+
+        // Use HexCompositeBuilder for the complete pipeline
+        CompositionResult result = HexCompositeBuilder.builder()
+            .composition(composition)
+            .worldId("organic-mountain-world")
+            .seed(88888L)
+            .fillGaps(true)
+            .oceanBorderRings(1)
+            .generateWHexGrids(false)
+            .build()
+            .compose();
+
+        assertTrue(result.isSuccess(), "Composition should succeed");
+        assertNotNull(result.getFillResult(), "Should have fill result");
+
+        HexGridFillResult fillResult = result.getFillResult();
+
+        log.info("Placed {} biomes creating {} hex grids",
+            result.getTotalBiomes(),
+            result.getTotalGrids());
+
+        log.info("Total grids after filling: {} (Ocean: {}, Land: {}, Coast: {})",
+            fillResult.getTotalGridCount(),
+            fillResult.getOceanFillCount(),
+            fillResult.getLandFillCount(),
+            fillResult.getCoastFillCount());
+
+        // Build terrain for all grids
+        Map<HexVector2, WFlat> flats = new HashMap<>();
+        for (FilledHexGrid filled : fillResult.getAllGrids()) {
+            WFlat flat = buildGridTerrain(filled);
+            flats.put(filled.getCoordinate(), flat);
+        }
+
+        log.info("Built terrain for {} grids", flats.size());
+
+        // Save individual grid images
+        saveIndividualGridImages(flats, fillResult);
+
+        // Create composite image
+        createCompositeImage(flats, fillResult, "mountain-world-organic-shapes");
+
+        // Export final generated model
+        exportGeneratedModel(fillResult, result.getFlowCompositionResult(), "mountain-world-organic-shapes");
+
+        log.info("=== Organic Mountain Shapes Test Completed ===");
+    }
+
+    /**
+     * Creates HexComposition with organic mountain shapes using direction deviation
+     */
+    private HexComposition createCompositionWithOrganicMountains() {
+        HexComposition composition = HexComposition.builder()
+            .name("Organic Mountain World")
+            .worldId("organic-mountain-world")
+            .features(new ArrayList<>())
+            .build();
+
+        // Center: Plains (for reference)
+        Biome plains = createBiome("Central Plains", BiomeType.PLAINS, AreaShape.CIRCLE,
+            2, 3, Direction.N, 0, 0, 0, "origin", 10);
+        composition.getFeatures().add(plains);
+
+        // North: Straight Mountains (no deviation)
+        MountainBiome straightMountains = new MountainBiome();
+        straightMountains.setName("Straight Mountains");
+        straightMountains.setType(BiomeType.MOUNTAINS);
+        straightMountains.setHeight(MountainBiome.MountainHeight.HIGH_PEAKS);
+        straightMountains.setShape(AreaShape.LINE);
+        straightMountains.setSizeFrom(8);
+        straightMountains.setSizeTo(10);
+        straightMountains.setDirectionDeviation(0.0);  // No deviation
+
+        RelativePosition northPos = RelativePosition.builder()
+            .direction(Direction.N)
+            .distanceFrom(5)
+            .distanceTo(8)
+            .anchor("origin")
+            .priority(9)
+            .build();
+        straightMountains.setPositions(Arrays.asList(northPos));
+        straightMountains.prepareForComposition();
+        composition.getFeatures().add(straightMountains);
+
+        // East: Organic Mountains (moderate deviation)
+        MountainBiome organicMountains = new MountainBiome();
+        organicMountains.setName("Organic Mountains");
+        organicMountains.setType(BiomeType.MOUNTAINS);
+        organicMountains.setHeight(MountainBiome.MountainHeight.MEDIUM_PEAKS);
+        organicMountains.setShape(AreaShape.LINE);
+        organicMountains.setSizeFrom(10);
+        organicMountains.setSizeTo(12);
+        organicMountains.setDirectionDeviation(0.4);  // 40% deviation
+
+        RelativePosition eastPos = RelativePosition.builder()
+            .direction(Direction.E)
+            .distanceFrom(6)
+            .distanceTo(9)
+            .anchor("origin")
+            .priority(8)
+            .build();
+        organicMountains.setPositions(Arrays.asList(eastPos));
+        organicMountains.prepareForComposition();
+        composition.getFeatures().add(organicMountains);
+
+        // South: Wiggly Mountains (high deviation)
+        MountainBiome wigglyMountains = new MountainBiome();
+        wigglyMountains.setName("Wiggly Mountains");
+        wigglyMountains.setType(BiomeType.MOUNTAINS);
+        wigglyMountains.setHeight(MountainBiome.MountainHeight.LOW_PEAKS);
+        wigglyMountains.setShape(AreaShape.LINE);
+        wigglyMountains.setSizeFrom(12);
+        wigglyMountains.setSizeTo(15);
+        wigglyMountains.setDirectionDeviation(0.8);  // 80% deviation
+
+        RelativePosition southPos = RelativePosition.builder()
+            .direction(Direction.S)
+            .distanceFrom(6)
+            .distanceTo(9)
+            .anchor("origin")
+            .priority(7)
+            .build();
+        wigglyMountains.setPositions(Arrays.asList(southPos));
+        wigglyMountains.prepareForComposition();
+        composition.getFeatures().add(wigglyMountains);
+
+        // West: Left-turning Mountains (asymmetric deviation)
+        MountainBiome leftTurningMountains = new MountainBiome();
+        leftTurningMountains.setName("Left-turning Mountains");
+        leftTurningMountains.setType(BiomeType.MOUNTAINS);
+        leftTurningMountains.setHeight(MountainBiome.MountainHeight.MEADOW);
+        leftTurningMountains.setShape(AreaShape.LINE);
+        leftTurningMountains.setSizeFrom(10);
+        leftTurningMountains.setSizeTo(12);
+        leftTurningMountains.setDeviationLeft(0.5);   // 50% left
+        leftTurningMountains.setDeviationRight(0.1);  // 10% right
+
+        RelativePosition westPos = RelativePosition.builder()
+            .direction(Direction.W)
+            .distanceFrom(6)
+            .distanceTo(9)
+            .anchor("origin")
+            .priority(6)
+            .build();
+        leftTurningMountains.setPositions(Arrays.asList(westPos));
+        leftTurningMountains.prepareForComposition();
+        composition.getFeatures().add(leftTurningMountains);
+
+        return composition;
+    }
+
+    /**
+     * Creates HexComposition with various mountain biome heights
+     */
+    private HexComposition createCompositionWithMountains() {
+        HexComposition composition = HexComposition.builder()
+            .name("Mountain World")
+            .worldId("mountain-world")
+            .features(new ArrayList<>())
+            .build();
+
+        // Center: Plains (for reference and variety)
+        Biome plains = createBiome("Central Plains", BiomeType.PLAINS, AreaShape.CIRCLE,
+            2, 3, Direction.N, 0, 0, 0, "origin", 10);
+        composition.getFeatures().add(plains);
+
+        // North: HIGH_PEAKS Mountains (tallest - max ~240 blocks)
+        MountainBiome highPeaks = new MountainBiome();
+        highPeaks.setName("High Peaks Mountains");
+        highPeaks.setType(BiomeType.MOUNTAINS);
+        highPeaks.setHeight(MountainBiome.MountainHeight.HIGH_PEAKS);
+        highPeaks.setShape(AreaShape.LINE);
+        highPeaks.setSizeFrom(4);
+        highPeaks.setSizeTo(5);
+
+        RelativePosition highPeaksPos = RelativePosition.builder()
+            .direction(Direction.N)
+            .distanceFrom(5)
+            .distanceTo(8)
+            .anchor("origin")
+            .priority(9)
+            .build();
+        highPeaks.setPositions(Arrays.asList(highPeaksPos));
+        highPeaks.prepareForComposition();
+        composition.getFeatures().add(highPeaks);
+
+        // East: MEDIUM_PEAKS Mountains (medium - max ~200 blocks)
+        MountainBiome mediumPeaks = new MountainBiome();
+        mediumPeaks.setName("Medium Peaks Mountains");
+        mediumPeaks.setType(BiomeType.MOUNTAINS);
+        mediumPeaks.setHeight(MountainBiome.MountainHeight.MEDIUM_PEAKS);
+        mediumPeaks.setShape(AreaShape.CIRCLE);
+        mediumPeaks.setSizeFrom(3);
+        mediumPeaks.setSizeTo(4);
+
+        RelativePosition mediumPeaksPos = RelativePosition.builder()
+            .direction(Direction.E)
+            .distanceFrom(6)
+            .distanceTo(9)
+            .anchor("origin")
+            .priority(8)
+            .build();
+        mediumPeaks.setPositions(Arrays.asList(mediumPeaksPos));
+        mediumPeaks.prepareForComposition();
+        composition.getFeatures().add(mediumPeaks);
+
+        // South: LOW_PEAKS Mountains (low - max ~170 blocks)
+        MountainBiome lowPeaks = new MountainBiome();
+        lowPeaks.setName("Low Peaks Mountains");
+        lowPeaks.setType(BiomeType.MOUNTAINS);
+        lowPeaks.setHeight(MountainBiome.MountainHeight.LOW_PEAKS);
+        lowPeaks.setShape(AreaShape.CIRCLE);
+        lowPeaks.setSizeFrom(3);
+        lowPeaks.setSizeTo(4);
+
+        RelativePosition lowPeaksPos = RelativePosition.builder()
+            .direction(Direction.S)
+            .distanceFrom(6)
+            .distanceTo(9)
+            .anchor("origin")
+            .priority(7)
+            .build();
+        lowPeaks.setPositions(Arrays.asList(lowPeaksPos));
+        lowPeaks.prepareForComposition();
+        composition.getFeatures().add(lowPeaks);
+
+        // West: MEADOW Mountains (gentle hills - max ~140 blocks)
+        MountainBiome meadow = new MountainBiome();
+        meadow.setName("Meadow Mountains");
+        meadow.setType(BiomeType.MOUNTAINS);
+        meadow.setHeight(MountainBiome.MountainHeight.MEADOW);
+        meadow.setShape(AreaShape.CIRCLE);
+        meadow.setSizeFrom(3);
+        meadow.setSizeTo(4);
+
+        RelativePosition meadowPos = RelativePosition.builder()
+            .direction(Direction.W)
+            .distanceFrom(6)
+            .distanceTo(9)
+            .anchor("origin")
+            .priority(6)
+            .build();
+        meadow.setPositions(Arrays.asList(meadowPos));
+        meadow.prepareForComposition();
+        composition.getFeatures().add(meadow);
+
+        // Northeast: Forest (for variety)
+        Biome forest = createBiome("Northeast Forest", BiomeType.FOREST, AreaShape.CIRCLE,
+            2, 3, Direction.NE, 45, 10, 12, "origin", 5);
+        composition.getFeatures().add(forest);
+
+        return composition;
     }
 
     /**
@@ -837,8 +1117,8 @@ public class WorldCompositeImageTest {
     /**
      * Exports input model as JSON
      */
-    private void exportInputModel(HexComposition composition) throws Exception {
-        File inputFile = outputDir.resolve("input-model.json").toFile();
+    private void exportInputModel(HexComposition composition, String name) throws Exception {
+        File inputFile = outputDir.resolve(name + "-input-model.json").toFile();
 
         ObjectMapper mapper = new ObjectMapper();
         mapper.findAndRegisterModules();  // Register JavaTimeModule for Instant serialization
@@ -851,7 +1131,8 @@ public class WorldCompositeImageTest {
      * Exports generated model as JSON
      */
     private void exportGeneratedModel(HexGridFillResult fillResult,
-                                      FlowComposer.FlowCompositionResult flowResult) throws Exception {
+                                      FlowComposer.FlowCompositionResult flowResult,
+                                      String name) throws Exception {
 
         // Create output model
         Map<String, Object> outputModel = new HashMap<>();
@@ -921,7 +1202,7 @@ public class WorldCompositeImageTest {
         outputModel.put("flows", flowInfo);
 
         // Write to file
-        File outputFile = outputDir.resolve("generated-model.json").toFile();
+        File outputFile = outputDir.resolve(name + "-generated-model.json").toFile();
         ObjectMapper mapper = new ObjectMapper();
         mapper.findAndRegisterModules();  // Register JavaTimeModule for Instant serialization
         mapper.writerWithDefaultPrettyPrinter().writeValue(outputFile, outputModel);

@@ -17,6 +17,50 @@ public abstract class Area extends Feature {
     private Integer sizeTo;
     private List<RelativePosition> positions;
 
+    /**
+     * Direction deviation for LINE-shaped areas (0.0 = never deviate, 1.0 = always deviate).
+     * When placing LINE-shaped areas, this determines the probability of changing direction
+     * at each step, creating more organic/natural shapes instead of perfectly straight lines.
+     *
+     * @deprecated Use tendLeft and tendRight instead for better readability
+     */
+    @Deprecated
+    private Double directionDeviation;
+
+    /**
+     * Deviation probability to the left (overrides directionDeviation if set).
+     * Allows asymmetric deviation patterns.
+     *
+     * @deprecated Use tendLeft instead for better readability
+     */
+    @Deprecated
+    private Double deviationLeft;
+
+    /**
+     * Deviation probability to the right (overrides directionDeviation if set).
+     * Allows asymmetric deviation patterns.
+     *
+     * @deprecated Use tendRight instead for better readability
+     */
+    @Deprecated
+    private Double deviationRight;
+
+    /**
+     * Tendency to deviate left for LINE-shaped areas.
+     * Creates more organic/natural shapes instead of perfectly straight lines.
+     * Use NONE for straight lines, SLIGHT for subtle curves, MODERATE for natural curves,
+     * STRONG for pronounced curves.
+     */
+    private DeviationTendency tendLeft;
+
+    /**
+     * Tendency to deviate right for LINE-shaped areas.
+     * Creates more organic/natural shapes instead of perfectly straight lines.
+     * Use NONE for straight lines, SLIGHT for subtle curves, MODERATE for natural curves,
+     * STRONG for pronounced curves.
+     */
+    private DeviationTendency tendRight;
+
     // Calculated values (runtime, set during composition)
     private Integer calculatedSizeFrom;  // Resolved from size enum
     private Integer calculatedSizeTo;    // Resolved from size enum
@@ -80,6 +124,56 @@ public abstract class Area extends Feature {
             case W -> 360;  // 360 == 0
             case NW -> 300;  // NW same as SW in hex
         };
+    }
+
+    /**
+     * Gets the effective left deviation probability.
+     * Prefers tendLeft enum over deprecated deviationLeft/directionDeviation.
+     *
+     * @return Probability value (0.0 - 1.0)
+     */
+    public double getEffectiveDeviationLeft() {
+        // Priority 1: tendLeft enum (preferred)
+        if (tendLeft != null) {
+            return tendLeft.getProbability();
+        }
+
+        // Priority 2: deprecated deviationLeft
+        if (deviationLeft != null) {
+            return Math.max(0.0, Math.min(1.0, deviationLeft));
+        }
+
+        // Priority 3: deprecated directionDeviation (split 50/50)
+        if (directionDeviation != null) {
+            return Math.max(0.0, Math.min(1.0, directionDeviation)) / 2.0;
+        }
+
+        return 0.0;
+    }
+
+    /**
+     * Gets the effective right deviation probability.
+     * Prefers tendRight enum over deprecated deviationRight/directionDeviation.
+     *
+     * @return Probability value (0.0 - 1.0)
+     */
+    public double getEffectiveDeviationRight() {
+        // Priority 1: tendRight enum (preferred)
+        if (tendRight != null) {
+            return tendRight.getProbability();
+        }
+
+        // Priority 2: deprecated deviationRight
+        if (deviationRight != null) {
+            return Math.max(0.0, Math.min(1.0, deviationRight));
+        }
+
+        // Priority 3: deprecated directionDeviation (split 50/50)
+        if (directionDeviation != null) {
+            return Math.max(0.0, Math.min(1.0, directionDeviation)) / 2.0;
+        }
+
+        return 0.0;
     }
 
     /**

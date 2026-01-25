@@ -122,7 +122,7 @@ public class BiomeComposer {
                 // Generate coordinates for this biome (use calculated values)
                 int size = randomInRange(biome.getCalculatedSizeFrom(), biome.getCalculatedSizeTo(), context.getRandom());
                 List<HexVector2> coordinates = generateBiomeCoordinates(
-                    targetCenter, size, biome.getShape(), context);
+                    targetCenter, size, biome.getShape(), context, biome);
 
                 // Check if all coordinates are available
                 if (areCoordinatesAvailable(coordinates, context)) {
@@ -222,7 +222,8 @@ public class BiomeComposer {
      * Generates coordinates for a biome based on shape and size
      */
     private List<HexVector2> generateBiomeCoordinates(HexVector2 center, int size,
-                                                      AreaShape shape, CompositionContext context) {
+                                                      AreaShape shape, CompositionContext context,
+                                                      Biome biome) {
         List<HexVector2> coordinates = new ArrayList<>();
 
         if (shape == null) {
@@ -235,7 +236,7 @@ public class BiomeComposer {
                 coordinates = generateCircularCoordinates(center, size);
                 break;
             case LINE:
-                coordinates = generateLineCoordinates(center, size, context.getRandom());
+                coordinates = generateLineCoordinates(center, size, context.getRandom(), biome);
                 break;
             case RECTANGLE:
                 // For now, treat RECTANGLE like CIRCLE (can be improved later)
@@ -271,36 +272,80 @@ public class BiomeComposer {
     }
 
     /**
-     * Generates line of hexes
+     * Generates line of hexes with optional direction deviation for organic shapes.
+     *
+     * @param startCenter Starting center coordinate
+     * @param size Number of hexes to generate
+     * @param random Random generator
+     * @param area Area containing deviation parameters
+     * @return List of coordinates forming a line (possibly with deviations)
      */
-    private List<HexVector2> generateLineCoordinates(HexVector2 center, int size, Random random) {
+    private List<HexVector2> generateLineCoordinates(HexVector2 startCenter, int size, Random random, Area area) {
         List<HexVector2> coords = new ArrayList<>();
-        coords.add(center);
+        coords.add(startCenter);
 
         if (size <= 1) return coords;
 
-        // Random direction for line
-        int direction = random.nextInt(6); // 0-5 for 6 hex directions
-        int dq = 0, dr = 0;
+        // Get deviation parameters from area
+        double deviationLeft = 0.0;
+        double deviationRight = 0.0;
 
-        switch (direction) {
-            case 0: dq = 0;  dr = -1; break; // N
-            case 1: dq = 1;  dr = -1; break; // NE
-            case 2: dq = 1;  dr = 0;  break; // E
-            case 3: dq = 0;  dr = 1;  break; // S
-            case 4: dq = -1; dr = 1;  break; // SW
-            case 5: dq = -1; dr = 0;  break; // W
+        if (area != null) {
+            deviationLeft = area.getEffectiveDeviationLeft();
+            deviationRight = area.getEffectiveDeviationRight();
         }
 
-        // Add hexes in line
+        // Random initial direction for line
+        int direction = random.nextInt(6); // 0-5 for 6 hex directions
+
+        // Current position
+        HexVector2 current = startCenter;
+
+        // Add hexes in line with possible deviations
         for (int i = 1; i < size; i++) {
-            coords.add(HexVector2.builder()
-                .q(center.getQ() + dq * i)
-                .r(center.getR() + dr * i)
-                .build());
+            // Check if we should deviate
+            double rand = random.nextDouble();
+
+            if (rand < deviationLeft) {
+                // Deviate left
+                direction = (direction - 1 + 6) % 6;
+            } else if (rand < deviationLeft + deviationRight) {
+                // Deviate right
+                direction = (direction + 1) % 6;
+            }
+            // else: continue straight
+
+            // Calculate direction delta
+            int[] delta = getHexDirectionDelta(direction);
+            int dq = delta[0];
+            int dr = delta[1];
+
+            // Add next hex
+            current = HexVector2.builder()
+                .q(current.getQ() + dq)
+                .r(current.getR() + dr)
+                .build();
+
+            coords.add(current);
         }
 
         return coords;
+    }
+
+    /**
+     * Gets the q,r delta for a given hex direction (0-5).
+     * 0=N, 1=NE, 2=E, 3=S, 4=SW, 5=W
+     */
+    private int[] getHexDirectionDelta(int direction) {
+        return switch (direction % 6) {
+            case 0 -> new int[]{0, -1};   // N
+            case 1 -> new int[]{1, -1};   // NE
+            case 2 -> new int[]{1, 0};    // E
+            case 3 -> new int[]{0, 1};    // S
+            case 4 -> new int[]{-1, 1};   // SW
+            case 5 -> new int[]{-1, 0};   // W
+            default -> new int[]{0, 0};
+        };
     }
 
     /**

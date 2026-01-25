@@ -1,9 +1,7 @@
 package de.mhus.nimbus.world.generator.flat.hexgrid.composer;
 
-import de.mhus.nimbus.world.shared.world.WHexGrid;
 import de.mhus.nimbus.world.shared.world.WHexGridRepository;
 import lombok.Builder;
-import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
@@ -15,7 +13,7 @@ import java.util.List;
  *
  * Usage:
  * <pre>
- * HexCompositeBuilder.CompositionResult result = HexCompositeBuilder.builder()
+ * CompositionResult result = HexCompositeBuilder.builder()
  *     .composition(hexComposition)
  *     .worldId("test-world")
  *     .seed(12345L)
@@ -68,51 +66,6 @@ public class HexCompositeBuilder {
      */
     @Builder.Default
     private final boolean generateWHexGrids = false;
-
-    /**
-     * Result of the complete composition pipeline
-     */
-    @Data
-    @Builder
-    public static class CompositionResult {
-        private boolean success;
-        private String errorMessage;
-        private List<String> warnings;
-
-        // Step results
-        private BiomePlacementResult biomePlacementResult;
-        private HexGridFillResult fillResult;
-        private FlowComposer.FlowCompositionResult flowCompositionResult;
-        private HexGridGenerator.GenerationResult generationResult;
-
-        // Summary statistics
-        private int totalBiomes;
-        private int totalStructures;
-        private int totalFlows;
-        private int totalGrids;
-        private int filledGrids;
-        private int generatedWHexGrids;
-
-        /**
-         * Returns all FilledHexGrids from the fill result (if filling was enabled)
-         */
-        public List<FilledHexGrid> getAllGrids() {
-            if (fillResult != null) {
-                return fillResult.getAllGrids();
-            }
-            return new ArrayList<>();
-        }
-
-        /**
-         * Returns all WHexGrids from placement result
-         */
-        public List<WHexGrid> getWHexGrids() {
-            if (biomePlacementResult != null) {
-                return biomePlacementResult.getHexGrids();
-            }
-            return new ArrayList<>();
-        }
-    }
 
     /**
      * Executes the complete composition pipeline.

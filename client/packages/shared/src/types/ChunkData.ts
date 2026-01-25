@@ -110,4 +110,11 @@ export interface ChunkData {
    * The format and compression method are implementation-specific
    */
   c?: Uint8Array; // javaType: byte[]
+
+  /**
+   * Indicates that the chunk is denied access
+   * default is false
+   * */
+  deny?: boolean;
+
 }

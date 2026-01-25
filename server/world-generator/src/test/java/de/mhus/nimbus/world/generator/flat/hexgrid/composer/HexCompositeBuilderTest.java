@@ -50,7 +50,7 @@ public class HexCompositeBuilderTest {
         HexComposition composition = createCompositionWithRoad();
 
         // Use builder to orchestrate entire pipeline
-        HexCompositeBuilder.CompositionResult result = HexCompositeBuilder.builder()
+        CompositionResult result = HexCompositeBuilder.builder()
             .composition(composition)
             .worldId("test-world")
             .seed(12345L)
@@ -101,7 +101,7 @@ public class HexCompositeBuilderTest {
         HexComposition composition = createCompositionWithRiver();
 
         // Use builder with filling enabled
-        HexCompositeBuilder.CompositionResult result = HexCompositeBuilder.builder()
+        CompositionResult result = HexCompositeBuilder.builder()
             .composition(composition)
             .worldId("river-world")
             .seed(54321L)
@@ -138,7 +138,7 @@ public class HexCompositeBuilderTest {
         HexComposition composition = createCompositionWithRoad();
 
         // Disable filling
-        HexCompositeBuilder.CompositionResult result = HexCompositeBuilder.builder()
+        CompositionResult result = HexCompositeBuilder.builder()
             .composition(composition)
             .worldId("no-fill-world")
             .seed(99999L)
@@ -164,7 +164,7 @@ public class HexCompositeBuilderTest {
         log.info("=== Testing Composition Validation ===");
 
         // Test null composition
-        HexCompositeBuilder.CompositionResult result1 = HexCompositeBuilder.builder()
+        CompositionResult result1 = HexCompositeBuilder.builder()
             .composition(null)
             .worldId("test-world")
             .build()
@@ -175,7 +175,7 @@ public class HexCompositeBuilderTest {
 
         // Test null worldId
         HexComposition composition = createCompositionWithRoad();
-        HexCompositeBuilder.CompositionResult result2 = HexCompositeBuilder.builder()
+        CompositionResult result2 = HexCompositeBuilder.builder()
             .composition(composition)
             .worldId(null)
             .build()
@@ -185,7 +185,7 @@ public class HexCompositeBuilderTest {
         assertEquals("WorldId is required", result2.getErrorMessage());
 
         // Test blank worldId
-        HexCompositeBuilder.CompositionResult result3 = HexCompositeBuilder.builder()
+        CompositionResult result3 = HexCompositeBuilder.builder()
             .composition(composition)
             .worldId("")
             .build()
@@ -193,6 +193,48 @@ public class HexCompositeBuilderTest {
 
         assertFalse(result3.isSuccess(), "Blank worldId should fail");
         assertEquals("WorldId is required", result3.getErrorMessage());
+
+        log.info("=== Test completed successfully ===");
+    }
+
+    @Test
+    public void testCompositionBuildFeatureInterface() {
+        log.info("=== Testing BuildFeature Interface on HexComposition ===");
+
+        // Create composition
+        HexComposition composition = createCompositionWithRoad();
+
+        // Use the new BuildFeature interface: composition.build(context)
+        BuildContext context = BuildContext.builder()
+            .worldId("build-feature-test")
+            .seed(777L)
+            .fillGaps(true)
+            .oceanBorderRings(1)
+            .generateWHexGrids(false)
+            .build();
+
+        // Call build() on the composition (implements BuildFeature)
+        CompositionResult result = composition.build(context);
+
+        // Verify success
+        assertTrue(result.isSuccess(), "Build should succeed");
+        assertNull(result.getErrorMessage(), "Should have no error");
+
+        // Verify results
+        assertEquals(2, result.getTotalBiomes(), "Should have 2 biomes");
+        assertEquals(1, result.getTotalFlows(), "Should have 1 flow");
+        assertTrue(result.getFilledGrids() > 0, "Should have filled grids");
+
+        log.info("Built composition with {} biomes, {} flows, {} total grids",
+            result.getTotalBiomes(),
+            result.getTotalFlows(),
+            result.getFilledGrids());
+
+        // Test simplified BuildContext.of() factory
+        BuildContext simpleContext = BuildContext.of("simple-world", 999L);
+        CompositionResult result2 = composition.build(simpleContext);
+
+        assertTrue(result2.isSuccess(), "Build with simple context should succeed");
 
         log.info("=== Test completed successfully ===");
     }

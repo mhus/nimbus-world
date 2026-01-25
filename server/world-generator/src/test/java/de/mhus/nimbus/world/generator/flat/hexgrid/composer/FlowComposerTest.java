@@ -24,9 +24,6 @@ import static org.mockito.Mockito.when;
 public class FlowComposerTest {
 
     private WHexGridRepository mockRepository;
-    private HexGridGenerator hexGridGenerator;
-    private FlowComposer flowComposer;
-    private BiomeComposer biomeComposer;
 
     @BeforeEach
     public void setup() {
@@ -43,53 +40,46 @@ public class FlowComposerTest {
             log.info("Mock repository saved {} grids", grids.size());
             return grids;
         });
-
-        hexGridGenerator = new HexGridGenerator(mockRepository);
-        flowComposer = new FlowComposer();
-        biomeComposer = new BiomeComposer();
     }
 
     @Test
     public void testSimpleRoadBetweenBiomes() {
         log.info("=== Testing Simple Road Between Biomes ===");
 
-        // 1. Create HexComposition with two biomes and a road
+        // Create HexComposition with two biomes and a road
         HexComposition composition = createCompositionWithRoad();
-        composition.initialize();
 
-        // 2. Prepare composition
-        HexCompositionPreparer preparer = new HexCompositionPreparer();
-        assertTrue(preparer.prepare(composition), "Preparation should succeed");
+        // Use HexCompositeBuilder to orchestrate the complete pipeline
+        CompositionResult result = HexCompositeBuilder.builder()
+            .composition(composition)
+            .worldId("test-world")
+            .seed(12345L)
+            .fillGaps(false)  // No gap filling for this test
+            .repository(mockRepository)
+            .generateWHexGrids(true)  // Generate WHexGrids in this test
+            .build()
+            .compose();
 
-        log.info("Prepared composition with {} biomes and {} roads",
-            composition.getBiomes().size(), composition.getRoads().size());
+        // Verify composition success
+        assertTrue(result.isSuccess(), "Composition should succeed");
+        assertNull(result.getErrorMessage(), "Should have no error message");
 
-        // 3. Compose biomes
-        BiomePlacementResult biomeResult = biomeComposer.compose(
-            composition, "test-world", 12345L);
-
-        assertTrue(biomeResult.isSuccess(), "Biome composition should succeed");
-        assertEquals(2, biomeResult.getPlacedBiomes().size());
-
-        log.info("Placed {} biomes with {} total hexGrids",
-            biomeResult.getPlacedBiomes().size(),
-            biomeResult.getHexGrids().size());
-
-        // 4. Compose flows (roads)
-        FlowComposer.FlowCompositionResult flowResult = flowComposer.composeFlows(
-            composition, biomeResult);
-
-        log.info("Flow composition result: success={}, composed={}/{}, segments={}",
-            flowResult.isSuccess(),
-            flowResult.getComposedFlows(),
-            flowResult.getTotalFlows(),
-            flowResult.getTotalSegments());
+        // Verify biome placement
+        assertEquals(2, result.getTotalBiomes(), "Should have 2 biomes");
+        assertEquals(4, result.getTotalGrids(), "Should have 4 grids");
 
         // Verify flow composition
-        assertEquals(1, flowResult.getTotalFlows(), "Should have 1 flow");
-        assertTrue(flowResult.getTotalSegments() > 0, "Should have created segments");
+        assertEquals(1, result.getTotalFlows(), "Should have 1 flow");
+        assertTrue(result.getFlowCompositionResult().getTotalSegments() > 0,
+            "Should have created segments");
 
-        // 5. Check that FeatureHexGrids have flow segments
+        log.info("Flow composition result: success={}, composed={}/{}, segments={}",
+            result.getFlowCompositionResult().isSuccess(),
+            result.getFlowCompositionResult().getComposedFlows(),
+            result.getFlowCompositionResult().getTotalFlows(),
+            result.getFlowCompositionResult().getTotalSegments());
+
+        // Check that FeatureHexGrids have flow segments
         Road road = composition.getRoads().get(0);
         List<FeatureHexGrid> roadHexGrids = road.getHexGrids();
 
@@ -112,15 +102,14 @@ public class FlowComposerTest {
 
         assertTrue(totalSegments > 0, "Should have flow segments in hexGrids");
 
-        // 6. Generate WHexGrids
-        HexGridGenerator.GenerationResult genResult = hexGridGenerator.generateHexGrids(composition);
-
-        assertTrue(genResult.isSuccess(), "HexGrid generation should succeed");
-        assertTrue(genResult.getCreatedGrids() > 0, "Should have created grids");
+        // Verify WHexGrid generation
+        assertNotNull(result.getGenerationResult(), "Should have generation result");
+        assertTrue(result.getGenerationResult().isSuccess(), "HexGrid generation should succeed");
+        assertTrue(result.getGeneratedWHexGrids() > 0, "Should have created grids");
 
         log.info("Generated {} WHexGrids from {} features",
-            genResult.getCreatedGrids(),
-            genResult.getTotalFeatures());
+            result.getGeneratedWHexGrids(),
+            result.getGenerationResult().getTotalFeatures());
 
         // Verify feature status
         assertEquals(FeatureStatus.CREATED, road.getStatus(),
@@ -135,23 +124,24 @@ public class FlowComposerTest {
 
         // Create composition with river
         HexComposition composition = createCompositionWithRiver();
-        composition.initialize();
 
-        // Prepare
-        HexCompositionPreparer preparer = new HexCompositionPreparer();
-        assertTrue(preparer.prepare(composition), "Preparation should succeed");
+        // Use HexCompositeBuilder to orchestrate the complete pipeline
+        CompositionResult result = HexCompositeBuilder.builder()
+            .composition(composition)
+            .worldId("test-world")
+            .seed(54321L)
+            .fillGaps(false)  // No gap filling for this test
+            .repository(mockRepository)
+            .generateWHexGrids(true)  // Generate WHexGrids in this test
+            .build()
+            .compose();
 
-        // Compose biomes
-        BiomePlacementResult biomeResult = biomeComposer.compose(
-            composition, "test-world", 54321L);
-        assertTrue(biomeResult.isSuccess());
-
-        // Compose flows
-        FlowComposer.FlowCompositionResult flowResult = flowComposer.composeFlows(
-            composition, biomeResult);
+        // Verify composition success
+        assertTrue(result.isSuccess(), "Composition should succeed");
 
         log.info("River composition: success={}, segments={}",
-            flowResult.isSuccess(), flowResult.getTotalSegments());
+            result.getFlowCompositionResult().isSuccess(),
+            result.getFlowCompositionResult().getTotalSegments());
 
         // Verify river has flow segments
         River river = composition.getRivers().get(0);
@@ -160,9 +150,8 @@ public class FlowComposerTest {
 
         log.info("River '{}' has {} hexGrids", river.getName(), river.getHexGrids().size());
 
-        // Generate WHexGrids
-        HexGridGenerator.GenerationResult genResult = hexGridGenerator.generateHexGrids(composition);
-        assertTrue(genResult.isSuccess());
+        // Verify WHexGrid generation
+        assertTrue(result.getGenerationResult().isSuccess(), "HexGrid generation should succeed");
 
         log.info("=== River test completed successfully ===");
     }

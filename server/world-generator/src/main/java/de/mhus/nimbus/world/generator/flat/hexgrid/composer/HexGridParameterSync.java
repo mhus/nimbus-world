@@ -95,17 +95,19 @@ public class HexGridParameterSync {
     }
 
     /**
-     * Syncs flow-related parameters (road, river, wall) from FeatureHexGrid to WHexGrid.
+     * Syncs ALL parameters from FeatureHexGrid to WHexGrid.
      *
-     * For road parameters: if WHexGrid already has a road parameter (e.g., from Village),
-     * merge the route arrays instead of overwriting.
+     * FeatureHexGrids prepare all parameters exactly as needed for WHexGrids
+     * (g_builder, village, road, river, wall, structure, etc.).
+     * This method copies them 1:1 to the WHexGrid.
+     *
+     * Special handling for road parameters: if WHexGrid already has a road parameter
+     * (e.g., from another source), merge the route arrays instead of overwriting.
      *
      * @return true if any parameters were synced
      */
     private boolean syncFlowParameters(FeatureHexGrid featureHexGrid, WHexGrid wHexGrid, String areaName) {
-        boolean synced = false;
-
-        if (featureHexGrid.getParameters() == null) {
+        if (featureHexGrid.getParameters() == null || featureHexGrid.getParameters().isEmpty()) {
             return false;
         }
 
@@ -114,37 +116,44 @@ public class HexGridParameterSync {
             wHexGrid.setParameters(new HashMap<>());
         }
 
-        // Sync road parameter - merge routes if existing road parameter
-        String flowRoad = featureHexGrid.getParameters().get("road");
-        if (flowRoad != null) {
-            String existingRoad = wHexGrid.getParameters().get("road");
-            if (existingRoad != null) {
-                // Merge road parameters (existing road from Village + flow routes)
-                String mergedRoad = mergeRoadParameters(existingRoad, flowRoad, wHexGrid.getPosition());
-                wHexGrid.getParameters().put("road", mergedRoad);
-                log.info("Merged road parameter to WHexGrid {} (Area: {})", wHexGrid.getPosition(), areaName);
-            } else {
-                // No existing road, just set it
-                wHexGrid.getParameters().put("road", flowRoad);
-                log.info("Synced road parameter to WHexGrid {} (Area: {})", wHexGrid.getPosition(), areaName);
+        boolean synced = false;
+        int parameterCount = 0;
+
+        // Copy ALL parameters from FeatureHexGrid to WHexGrid
+        for (Map.Entry<String, String> entry : featureHexGrid.getParameters().entrySet()) {
+            String key = entry.getKey();
+            String value = entry.getValue();
+
+            if (value == null) {
+                continue;
             }
-            synced = true;
+
+            // Special handling for "road" parameter - merge if existing
+            if ("road".equals(key)) {
+                String existingRoad = wHexGrid.getParameters().get("road");
+                if (existingRoad != null) {
+                    // Merge road parameters (existing + new routes)
+                    String mergedRoad = mergeRoadParameters(existingRoad, value, wHexGrid.getPosition());
+                    wHexGrid.getParameters().put("road", mergedRoad);
+                    log.debug("Merged road parameter to WHexGrid {} (Area: {})", wHexGrid.getPosition(), areaName);
+                } else {
+                    // No existing road, just set it
+                    wHexGrid.getParameters().put("road", value);
+                    log.debug("Synced road parameter to WHexGrid {} (Area: {})", wHexGrid.getPosition(), areaName);
+                }
+                parameterCount++;
+                synced = true;
+            } else {
+                // All other parameters: copy 1:1
+                wHexGrid.getParameters().put(key, value);
+                parameterCount++;
+                synced = true;
+            }
         }
 
-        // Sync river parameter
-        String river = featureHexGrid.getParameters().get("river");
-        if (river != null) {
-            wHexGrid.getParameters().put("river", river);
-            log.debug("Synced river parameter to WHexGrid {} (Area: {})", wHexGrid.getPosition(), areaName);
-            synced = true;
-        }
-
-        // Sync wall parameter
-        String wall = featureHexGrid.getParameters().get("wall");
-        if (wall != null) {
-            wHexGrid.getParameters().put("wall", wall);
-            log.debug("Synced wall parameter to WHexGrid {} (Area: {})", wHexGrid.getPosition(), areaName);
-            synced = true;
+        if (synced) {
+            log.debug("Synced {} parameters to WHexGrid {} (Area: {})",
+                parameterCount, wHexGrid.getPosition(), areaName);
         }
 
         return synced;
