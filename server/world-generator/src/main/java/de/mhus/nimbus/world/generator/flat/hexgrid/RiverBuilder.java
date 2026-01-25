@@ -114,13 +114,29 @@ public class RiverBuilder extends HexGridBuilder {
 
     /**
      * Parse a single endpoint from JSON node.
+     * Supports either side-based (side) or position-based (lx/lz) endpoints.
      */
     private RiverEndpoint parseEndpoint(JsonNode node) {
         RiverEndpoint endpoint = new RiverEndpoint();
-        endpoint.setSide(parseSide(node.get("side").asText()));
+
+        // Parse side-based endpoint
+        if (node.has("side")) {
+            endpoint.setSide(parseSide(node.get("side").asText()));
+        }
+
+        // Parse position-based endpoint
+        if (node.has("lx")) {
+            endpoint.setLx(node.get("lx").asInt());
+        }
+        if (node.has("lz")) {
+            endpoint.setLz(node.get("lz").asInt());
+        }
+
+        // Parse common fields
         endpoint.setWidth(node.get("width").asInt());
         endpoint.setDepth(node.get("depth").asInt());
         endpoint.setLevel(node.get("level").asInt());
+
         return endpoint;
     }
 
@@ -156,7 +172,14 @@ public class RiverBuilder extends HexGridBuilder {
      * Build a river from one endpoint to another with natural curves.
      */
     private void buildRiver(WFlat flat, RiverEndpoint from, RiverEndpoint to, String groupId) {
-        log.debug("Building river from {} to {}", from.getSide(), to.getSide());
+        // Log endpoint info
+        String fromDesc = from.hasCoordinates() ?
+            String.format("lx=%d,lz=%d", from.getLx(), from.getLz()) :
+            String.format("side=%s", from.getSide());
+        String toDesc = to.hasCoordinates() ?
+            String.format("lx=%d,lz=%d", to.getLx(), to.getLz()) :
+            String.format("side=%s", to.getSide());
+        log.debug("Building river from {} to {}", fromDesc, toDesc);
 
         // Get curvature parameter
         int curvature = parseIntParameter(parameters, "riverCurvature", DEFAULT_CURVATURE);
@@ -171,9 +194,9 @@ public class RiverBuilder extends HexGridBuilder {
             seed = System.currentTimeMillis();
         }
 
-        // Get start and end coordinates on the edges
-        int[] startCoords = getSideCoordinate(from.getSide(), flat.getSizeX(), flat.getSizeZ());
-        int[] endCoords = getSideCoordinate(to.getSide(), flat.getSizeX(), flat.getSizeZ());
+        // Get start and end coordinates (from side or from lx/lz)
+        int[] startCoords = getEndpointCoordinate(from, flat.getSizeX(), flat.getSizeZ());
+        int[] endCoords = getEndpointCoordinate(to, flat.getSizeX(), flat.getSizeZ());
 
         // Calculate river path length
         int dx = endCoords[0] - startCoords[0];
@@ -243,6 +266,19 @@ public class RiverBuilder extends HexGridBuilder {
         } catch (NumberFormatException e) {
             log.warn("Invalid int parameter '{}': {}, using default: {}", name, parameters.get(name), defaultValue);
             return defaultValue;
+        }
+    }
+
+    /**
+     * Get endpoint coordinate - either from side or from lx/lz.
+     */
+    private int[] getEndpointCoordinate(RiverEndpoint endpoint, int sizeX, int sizeZ) {
+        if (endpoint.hasCoordinates()) {
+            // Use exact lx/lz coordinates
+            return new int[]{endpoint.getLx(), endpoint.getLz()};
+        } else {
+            // Use side-based coordinate
+            return getSideCoordinate(endpoint.getSide(), sizeX, sizeZ);
         }
     }
 
@@ -431,12 +467,22 @@ public class RiverBuilder extends HexGridBuilder {
 
     /**
      * River endpoint definition.
+     * Can use either SIDE (edge of hex) or lx/lz (exact position).
      */
     @Data
     private static class RiverEndpoint {
-        private WHexGrid.SIDE side;
+        private WHexGrid.SIDE side;  // Side-based endpoint (NE, NW, etc.)
+        private Integer lx;           // Position-based endpoint x (alternative to side)
+        private Integer lz;           // Position-based endpoint z (alternative to side)
         private int width;
         private int depth;
         private int level;
+
+        /**
+         * Returns true if this endpoint uses position coordinates instead of side
+         */
+        public boolean hasCoordinates() {
+            return lx != null && lz != null;
+        }
     }
 }

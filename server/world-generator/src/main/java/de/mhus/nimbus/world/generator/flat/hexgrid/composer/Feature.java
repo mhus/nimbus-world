@@ -29,7 +29,8 @@ import java.util.UUID;
     @JsonSubTypes.Type(value = Composite.class, name = "composite"),
     @JsonSubTypes.Type(value = Road.class, name = "road"),
     @JsonSubTypes.Type(value = River.class, name = "river"),
-    @JsonSubTypes.Type(value = Wall.class, name = "wall")
+    @JsonSubTypes.Type(value = Wall.class, name = "wall"),
+    @JsonSubTypes.Type(value = Point.class, name = "point")
 })
 public abstract class Feature {
     private String featureId;

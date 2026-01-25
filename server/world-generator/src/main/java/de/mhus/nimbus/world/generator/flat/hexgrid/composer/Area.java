@@ -18,6 +18,21 @@ public abstract class Area extends Feature {
     private List<RelativePosition> positions;
 
     /**
+     * Shape hint for CUSTOM shapes (e.g., "RECTANGLE", "OVAL", "IRREGULAR").
+     * Used by BiomeComposer to understand the intended form of custom-shaped areas.
+     * Only relevant when shape = CUSTOM.
+     */
+    private String customShapeHint;
+
+    /**
+     * List of feature names that enclose this area (for CUSTOM shapes).
+     * Example: Mordor plateau enclosed by mountain ranges.
+     * BiomeComposer uses this to place the area within the boundaries of the enclosing features.
+     * Only relevant when shape = CUSTOM.
+     */
+    private List<String> enclosedBy;
+
+    /**
      * Direction deviation for LINE-shaped areas (0.0 = never deviate, 1.0 = always deviate).
      * When placing LINE-shaped areas, this determines the probability of changing direction
      * at each step, creating more organic/natural shapes instead of perfectly straight lines.
@@ -91,6 +106,17 @@ public abstract class Area extends Feature {
             for (RelativePosition pos : positions) {
                 preparedPositions.add(preparePosition(pos));
             }
+        } else {
+            // No positions specified - create default position at origin
+            preparedPositions = new java.util.ArrayList<>();
+            PreparedPosition defaultPosition = new PreparedPosition();
+            defaultPosition.setAnchor("origin");
+            defaultPosition.setDirection(Direction.N);
+            defaultPosition.setDirectionAngle(0);
+            defaultPosition.setDistanceFrom(0);
+            defaultPosition.setDistanceTo(0);
+            defaultPosition.setPriority(5);
+            preparedPositions.add(defaultPosition);
         }
     }
 

@@ -493,13 +493,29 @@ public class HexGridRoadConfigurator {
             String groupId = null;
 
             for (RiverConfigPart part : fromParts) {
-                if (part.getSide() == null) continue;
-
-                String sideKey = part.getSide().name();
-                if (addedFromSides.contains(sideKey)) continue;
-
                 Map<String, Object> entry = new HashMap<>();
-                entry.put("side", sideKey);
+
+                // Side-based routing
+                if (part.getSide() != null) {
+                    String sideKey = part.getSide().name();
+                    // Skip duplicates
+                    if (addedFromSides.contains(sideKey)) {
+                        continue;
+                    }
+                    entry.put("side", sideKey);
+                    addedFromSides.add(sideKey);
+                }
+                // Position-based routing
+                else if (part.getLx() != null && part.getLz() != null) {
+                    entry.put("lx", part.getLx());
+                    entry.put("lz", part.getLz());
+                }
+                else {
+                    log.warn("RiverConfigPart (FROM) has neither side nor lx/lz at grid {}", grid.getPositionKey());
+                    continue;
+                }
+
+                // Add common fields
                 if (part.getWidth() != null) {
                     entry.put("width", part.getWidth());
                 }
@@ -511,7 +527,6 @@ public class HexGridRoadConfigurator {
                 }
 
                 fromArray.add(entry);
-                addedFromSides.add(sideKey);
 
                 // Capture groupId from first part
                 if (groupId == null && part.getGroupId() != null) {
@@ -524,13 +539,29 @@ public class HexGridRoadConfigurator {
             Set<String> addedToSides = new HashSet<>();
 
             for (RiverConfigPart part : toParts) {
-                if (part.getSide() == null) continue;
-
-                String sideKey = part.getSide().name();
-                if (addedToSides.contains(sideKey)) continue;
-
                 Map<String, Object> entry = new HashMap<>();
-                entry.put("side", sideKey);
+
+                // Side-based routing
+                if (part.getSide() != null) {
+                    String sideKey = part.getSide().name();
+                    // Skip duplicates
+                    if (addedToSides.contains(sideKey)) {
+                        continue;
+                    }
+                    entry.put("side", sideKey);
+                    addedToSides.add(sideKey);
+                }
+                // Position-based routing
+                else if (part.getLx() != null && part.getLz() != null) {
+                    entry.put("lx", part.getLx());
+                    entry.put("lz", part.getLz());
+                }
+                else {
+                    log.warn("RiverConfigPart (TO) has neither side nor lx/lz at grid {}", grid.getPositionKey());
+                    continue;
+                }
+
+                // Add common fields
                 if (part.getWidth() != null) {
                     entry.put("width", part.getWidth());
                 }
@@ -542,7 +573,6 @@ public class HexGridRoadConfigurator {
                 }
 
                 toArray.add(entry);
-                addedToSides.add(sideKey);
 
                 // Capture groupId if not yet set
                 if (groupId == null && part.getGroupId() != null) {
@@ -605,13 +635,29 @@ public class HexGridRoadConfigurator {
             Set<String> addedSides = new HashSet<>();
 
             for (WallConfigPart part : sideParts) {
-                if (part.getSide() == null) continue;
-
-                String sideKey = part.getSide().name();
-                if (addedSides.contains(sideKey)) continue;
-
                 Map<String, Object> entry = new HashMap<>();
-                entry.put("side", sideKey);
+
+                // Side-based wall segment
+                if (part.getSide() != null) {
+                    String sideKey = part.getSide().name();
+                    // Skip duplicates
+                    if (addedSides.contains(sideKey)) {
+                        continue;
+                    }
+                    entry.put("side", sideKey);
+                    addedSides.add(sideKey);
+                }
+                // Position-based wall segment
+                else if (part.getLx() != null && part.getLz() != null) {
+                    entry.put("lx", part.getLx());
+                    entry.put("lz", part.getLz());
+                }
+                else {
+                    log.warn("WallConfigPart has neither side nor lx/lz at grid {}", grid.getPositionKey());
+                    continue;
+                }
+
+                // Add common fields
                 if (part.getHeight() != null) {
                     entry.put("height", part.getHeight());
                 }
@@ -626,7 +672,6 @@ public class HexGridRoadConfigurator {
                 }
 
                 segments.add(entry);
-                addedSides.add(sideKey);
             }
 
             // Build gates array

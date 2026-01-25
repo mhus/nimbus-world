@@ -22,8 +22,10 @@ public class RiverConfigPart {
 
     private PartType partType;
 
-    // Common fields
-    private SIDE side;
+    // Common fields - either side-based OR position-based
+    private SIDE side;           // Side-based routing (NE, NW, etc.)
+    private Integer lx;          // Position-based routing x
+    private Integer lz;          // Position-based routing z
     private Integer width;
     private Integer depth;
     private Integer level;
@@ -54,6 +56,38 @@ public class RiverConfigPart {
         return RiverConfigPart.builder()
             .partType(PartType.TO)
             .side(side)
+            .width(width)
+            .depth(depth)
+            .level(level)
+            .groupId(groupId)
+            .build();
+    }
+
+    /**
+     * Creates a FROM part for river entry with position coordinates
+     */
+    public static RiverConfigPart createFromPositionPart(Integer lx, Integer lz, Integer width,
+                                                          Integer depth, Integer level, String groupId) {
+        return RiverConfigPart.builder()
+            .partType(PartType.FROM)
+            .lx(lx)
+            .lz(lz)
+            .width(width)
+            .depth(depth)
+            .level(level)
+            .groupId(groupId)
+            .build();
+    }
+
+    /**
+     * Creates a TO part for river exit with position coordinates
+     */
+    public static RiverConfigPart createToPositionPart(Integer lx, Integer lz, Integer width,
+                                                        Integer depth, Integer level, String groupId) {
+        return RiverConfigPart.builder()
+            .partType(PartType.TO)
+            .lx(lx)
+            .lz(lz)
             .width(width)
             .depth(depth)
             .level(level)

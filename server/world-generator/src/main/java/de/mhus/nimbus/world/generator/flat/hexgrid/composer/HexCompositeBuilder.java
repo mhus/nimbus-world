@@ -78,9 +78,10 @@ public class HexCompositeBuilder {
      * 2. Prepare composition (HexCompositionPreparer)
      * 3. Compose biomes (BiomeComposer)
      * 4. Fill gaps with ocean/land/coast (HexGridFiller) - optional
-     * 5. Compose flows - roads/rivers/walls (FlowComposer)
-     * 6. Sync parameters from FeatureHexGrids to WHexGrids (HexGridParameterSync)
-     * 7. Generate WHexGrids (HexGridGenerator) - optional, only if repository provided
+     * 5. Compose points - precise locations within biomes (PointComposer)
+     * 6. Compose flows - roads/rivers/walls (FlowComposer)
+     * 7. Sync parameters from FeatureHexGrids to WHexGrids (HexGridParameterSync)
+     * 8. Generate WHexGrids (HexGridGenerator) - optional, only if repository provided
      *
      * @return CompositionResult with all intermediate results and statistics
      */
@@ -200,6 +201,23 @@ public class HexCompositeBuilder {
                 log.info("Step 4: Skipping gap filling (disabled)");
             }
 
+            // Step 5: Compose points (place Points within biomes)
+            log.info("Step 5: Composing points");
+            PointComposer pointComposer = new PointComposer();
+            PointComposer.PointCompositionResult pointResult = pointComposer.composePoints(
+                composition, placementResult);
+
+            if (!pointResult.isSuccess()) {
+                warnings.add("Point composition had issues: errors=" + pointResult.getErrors());
+            } else {
+                log.info("Composed {} points ({} failed)",
+                    pointResult.getComposedPoints(),
+                    pointResult.getFailedPoints());
+            }
+
+            resultBuilder.pointCompositionResult(pointResult);
+            resultBuilder.totalPoints(pointResult.getComposedPoints());
+
             // Step 4b: Convert all PlacedBiomes to WHexGrids
             log.info("Step 4b: Converting {} PlacedBiomes to WHexGrids", placementResult.getPlacedBiomes().size());
             for (PlacedBiome placed : placementResult.getPlacedBiomes()) {
@@ -274,8 +292,8 @@ public class HexCompositeBuilder {
                 resultBuilder.filledGrids(fillerGridCount);
             }
 
-            // Step 5: Compose flows (roads, rivers, walls)
-            log.info("Step 5: Composing flows");
+            // Step 6: Compose flows (roads, rivers, walls)
+            log.info("Step 6: Composing flows");
             FlowComposer flowComposer = new FlowComposer();
             FlowComposer.FlowCompositionResult flowResult = flowComposer.composeFlows(
                 composition, placementResult);
@@ -291,9 +309,9 @@ public class HexCompositeBuilder {
             resultBuilder.flowCompositionResult(flowResult);
             resultBuilder.totalFlows(flowResult.getComposedFlows());
 
-            // Step 5b: Fill ocean gaps where flows cross empty space
+            // Step 6b: Fill ocean gaps where flows cross empty space
             if (fillGaps && flowResult.getComposedFlows() > 0) {
-                log.info("Step 5b: Filling ocean gaps where flows cross empty space");
+                log.info("Step 6b: Filling ocean gaps where flows cross empty space");
 
                 // Rebuild grid index (includes all grids added so far)
                 Set<String> gridIndex = new java.util.HashSet<>();
@@ -326,16 +344,16 @@ public class HexCompositeBuilder {
                 }
             }
 
-            // Step 6: Sync parameters from FeatureHexGrids to WHexGrids
-            log.info("Step 6: Syncing parameters from FeatureHexGrids to WHexGrids");
+            // Step 7: Sync parameters from FeatureHexGrids to WHexGrids
+            log.info("Step 7: Syncing parameters from FeatureHexGrids to WHexGrids");
             HexGridParameterSync parameterSync = new HexGridParameterSync();
             int syncedCount = parameterSync.syncParametersToWHexGrids(
                 composition, placementResult, placementResult.getHexGrids());
             log.info("Synced parameters to {} WHexGrids", syncedCount);
 
-            // Step 7: Generate WHexGrids (optional, only if repository provided)
+            // Step 8: Generate WHexGrids (optional, only if repository provided)
             if (generateWHexGrids && repository != null) {
-                log.info("Step 7: Generating WHexGrids");
+                log.info("Step 8: Generating WHexGrids");
                 HexGridGenerator generator = new HexGridGenerator(repository);
                 HexGridGenerator.GenerationResult genResult = generator.generateHexGrids(composition);
 
@@ -351,13 +369,14 @@ public class HexCompositeBuilder {
                 if (generateWHexGrids && repository == null) {
                     warnings.add("WHexGrid generation requested but no repository provided");
                 }
-                log.info("Step 7: Skipping WHexGrid generation (disabled or no repository)");
+                log.info("Step 8: Skipping WHexGrid generation (disabled or no repository)");
             }
 
             // Success!
             log.info("=== HexComposite Pipeline Complete ===");
-            log.info("Summary: biomes={}, flows={}, grids={}, filled={}, warnings={}",
+            log.info("Summary: biomes={}, points={}, flows={}, grids={}, filled={}, warnings={}",
                 placementResult.getPlacedBiomes().size(),
+                pointResult.getComposedPoints(),
                 flowResult.getComposedFlows(),
                 placementResult.getHexGrids().size(),
                 fillResult != null ? fillResult.getTotalGridCount() : 0,

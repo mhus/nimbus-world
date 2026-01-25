@@ -170,45 +170,106 @@ public class FlowComposer {
                                          BiomePlacementResult placementResult) {
         // Find start point
         if (flow.getStartPointId() != null) {
-            HexVector2 startCoord = findFeatureCoordinate(flow.getStartPointId(),
-                placementResult, prepared);
-            if (startCoord == null) {
-                log.warn("Could not find start point: {}", flow.getStartPointId());
-                return false;
+            // First try to find a Point
+            Point startPoint = findPoint(flow.getStartPointId(), prepared);
+            if (startPoint != null) {
+                flow.setStartPoint(startPoint.getPlacedCoordinate());
+                flow.setStartPointFeature(startPoint);
+                log.debug("Flow '{}' starts at Point '{}' with lx={}, lz={}",
+                    flow.getName(), startPoint.getName(),
+                    startPoint.getPlacedLx(), startPoint.getPlacedLz());
+            } else {
+                // Fall back to Biome
+                HexVector2 startCoord = findFeatureCoordinate(flow.getStartPointId(),
+                    placementResult, prepared);
+                if (startCoord == null) {
+                    log.warn("Could not find start point: {}", flow.getStartPointId());
+                    return false;
+                }
+                flow.setStartPoint(startCoord);
+                flow.setStartPointFeature(null);
             }
-            flow.setStartPoint(startCoord);
         }
 
         // Find end point (for roads/walls)
         if (flow instanceof Road road) {
             if (road.getEndPointId() != null) {
-                HexVector2 endCoord = findFeatureCoordinate(road.getEndPointId(),
-                    placementResult, prepared);
-                if (endCoord == null) {
-                    log.warn("Could not find end point: {}", road.getEndPointId());
-                    return false;
+                // First try to find a Point
+                Point endPoint = findPoint(road.getEndPointId(), prepared);
+                if (endPoint != null) {
+                    flow.setEndPoint(endPoint.getPlacedCoordinate());
+                    flow.setEndPointFeature(endPoint);
+                    log.debug("Flow '{}' ends at Point '{}' with lx={}, lz={}",
+                        flow.getName(), endPoint.getName(),
+                        endPoint.getPlacedLx(), endPoint.getPlacedLz());
+                } else {
+                    // Fall back to Biome
+                    HexVector2 endCoord = findFeatureCoordinate(road.getEndPointId(),
+                        placementResult, prepared);
+                    if (endCoord == null) {
+                        log.warn("Could not find end point: {}", road.getEndPointId());
+                        return false;
+                    }
+                    flow.setEndPoint(endCoord);
+                    flow.setEndPointFeature(null);
                 }
-                flow.setEndPoint(endCoord);
             }
         } else if (flow instanceof Wall wall) {
             if (wall.getEndPointId() != null) {
-                HexVector2 endCoord = findFeatureCoordinate(wall.getEndPointId(),
-                    placementResult, prepared);
-                if (endCoord == null) {
-                    log.warn("Could not find end point: {}", wall.getEndPointId());
-                    return false;
+                // First try to find a Point
+                Point endPoint = findPoint(wall.getEndPointId(), prepared);
+                if (endPoint != null) {
+                    flow.setEndPoint(endPoint.getPlacedCoordinate());
+                    flow.setEndPointFeature(endPoint);
+                    log.debug("Flow '{}' ends at Point '{}' with lx={}, lz={}",
+                        flow.getName(), endPoint.getName(),
+                        endPoint.getPlacedLx(), endPoint.getPlacedLz());
+                } else {
+                    // Fall back to Biome
+                    HexVector2 endCoord = findFeatureCoordinate(wall.getEndPointId(),
+                        placementResult, prepared);
+                    if (endCoord == null) {
+                        log.warn("Could not find end point: {}", wall.getEndPointId());
+                        return false;
+                    }
+                    flow.setEndPoint(endCoord);
+                    flow.setEndPointFeature(null);
                 }
-                flow.setEndPoint(endCoord);
             }
         } else if (flow instanceof River river) {
             if (river.getMergeToId() != null) {
-                HexVector2 mergeCoord = findFeatureCoordinate(river.getMergeToId(),
-                    placementResult, prepared);
-                if (mergeCoord == null) {
-                    log.warn("Could not find merge point: {}", river.getMergeToId());
-                    return false;
+                // Rivers can also use Points as merge targets
+                Point mergePoint = findPoint(river.getMergeToId(), prepared);
+                if (mergePoint != null) {
+                    flow.setEndPoint(mergePoint.getPlacedCoordinate());
+                    flow.setEndPointFeature(mergePoint);
+                    log.debug("Flow '{}' merges at Point '{}' with lx={}, lz={}",
+                        flow.getName(), mergePoint.getName(),
+                        mergePoint.getPlacedLx(), mergePoint.getPlacedLz());
+                } else {
+                    // Fall back to Biome
+                    HexVector2 mergeCoord = findFeatureCoordinate(river.getMergeToId(),
+                        placementResult, prepared);
+                    if (mergeCoord == null) {
+                        log.warn("Could not find merge point: {}", river.getMergeToId());
+                        return false;
+                    }
+                    flow.setEndPoint(mergeCoord);
+                    flow.setEndPointFeature(null);
                 }
-                flow.setEndPoint(mergeCoord);
+            }
+        }
+
+        // Check for closed loop: startPointId == endPointId
+        if (flow instanceof Road road) {
+            if (road.getEndPointId() != null && road.getEndPointId().equals(flow.getStartPointId())) {
+                flow.setClosedLoop(true);
+                log.info("Flow '{}' is a closed loop (start == end)", flow.getName());
+            }
+        } else if (flow instanceof Wall wall) {
+            if (wall.getEndPointId() != null && wall.getEndPointId().equals(flow.getStartPointId())) {
+                flow.setClosedLoop(true);
+                log.info("Flow '{}' is a closed loop (start == end)", flow.getName());
             }
         }
 
@@ -218,11 +279,57 @@ public class FlowComposer {
     }
 
     /**
+     * Finds a Point feature by its ID or name.
+     * Returns null if not found or if feature is not a Point.
+     */
+    private Point findPoint(String featureId, HexComposition prepared) {
+        if (prepared.getFeatures() == null) {
+            return null;
+        }
+
+        for (Feature feature : prepared.getFeatures()) {
+            if (!(feature instanceof Point point)) {
+                continue;
+            }
+
+            // Match by feature ID
+            if (point.getFeatureId() != null && point.getFeatureId().equals(featureId)) {
+                if (point.isPlaced()) {
+                    log.debug("Found Point '{}' at {}", featureId, point.getPlacedPositionString());
+                    return point;
+                } else {
+                    log.warn("Point '{}' found but not placed yet", featureId);
+                    return null;
+                }
+            }
+
+            // Match by name
+            if (point.getName() != null && point.getName().equals(featureId)) {
+                if (point.isPlaced()) {
+                    log.debug("Found Point '{}' by name at {}", featureId, point.getPlacedPositionString());
+                    return point;
+                } else {
+                    log.warn("Point '{}' found by name but not placed yet", featureId);
+                    return null;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * Finds a coordinate for a feature by its ID or name
      */
     private HexVector2 findFeatureCoordinate(String featureId,
                                              BiomePlacementResult placementResult,
                                              HexComposition prepared) {
+        // First, try to find a Point (Points have priority)
+        Point point = findPoint(featureId, prepared);
+        if (point != null) {
+            return point.getPlacedCoordinate();
+        }
+
         // Search in placed biomes (has actual coordinates)
         for (PlacedBiome placed : placementResult.getPlacedBiomes()) {
             Biome biome = placed.getBiome();
@@ -242,7 +349,7 @@ public class FlowComposer {
 
         // TODO: Search in other features (villages, towns, composites)
 
-        log.warn("Feature '{}' not found in placed biomes", featureId);
+        log.warn("Feature '{}' not found in placed biomes or points", featureId);
         return null;
     }
 
@@ -260,6 +367,13 @@ public class FlowComposer {
             return route;
         }
 
+        // Check for closed loop
+        if (flow.isClosedLoop()) {
+            log.info("Planning closed loop route for flow '{}' around point {},{} with radius {}",
+                flow.getName(), start.getQ(), start.getR(), flow.getEffectiveSizeFrom());
+            return planClosedLoopRoute(flow, start);
+        }
+
         // Simple case: just start point (area-internal flow)
         if (end == null) {
             route.add(start);
@@ -273,6 +387,92 @@ public class FlowComposer {
         }
 
         return route;
+    }
+
+    /**
+     * Plans a closed loop route (ring/circle) around a center point.
+     * Creates a hexagonal ring with the given radius.
+     * Minimum 3 segments, typically 6*radius segments for a full hex ring.
+     *
+     * @param flow The flow to plan the route for
+     * @param center The center point to create the ring around
+     * @return List of coordinates forming a closed ring
+     */
+    private List<HexVector2> planClosedLoopRoute(Flow flow, HexVector2 center) {
+        List<HexVector2> route = new ArrayList<>();
+
+        // Get radius from flow configuration
+        int radius = flow.getEffectiveSizeFrom();
+        if (radius < 1) {
+            log.warn("Closed loop radius < 1, using minimum radius of 1");
+            radius = 1;
+        }
+
+        // Get shape hint (default: RING for hexagonal ring)
+        String shapeHint = flow.getShapeHint();
+        if (shapeHint == null || shapeHint.isEmpty()) {
+            shapeHint = "RING";
+        }
+
+        log.debug("Creating closed loop with shape '{}' and radius {}", shapeHint, radius);
+
+        // Create hexagonal ring around center
+        // A hex ring of radius r has 6*r hexagons
+        // We walk around the ring using the 6 hex directions
+        route.addAll(createHexRing(center, radius));
+
+        // Ensure minimum 3 segments
+        if (route.size() < 3) {
+            log.warn("Closed loop has only {} segments, minimum is 3. Increasing radius.", route.size());
+            route.clear();
+            route.addAll(createHexRing(center, radius + 1));
+        }
+
+        log.debug("Created closed loop with {} segments", route.size());
+        return route;
+    }
+
+    /**
+     * Creates a hexagonal ring around a center point at the given radius.
+     * Uses pointy-top hex coordinate system.
+     *
+     * @param center Center coordinate
+     * @param radius Ring radius (distance from center)
+     * @return List of coordinates forming the ring
+     */
+    private List<HexVector2> createHexRing(HexVector2 center, int radius) {
+        List<HexVector2> ring = new ArrayList<>();
+
+        // Hex direction vectors (pointy-top)
+        int[][] directions = {
+            {1, -1},  // NE
+            {1, 0},   // E
+            {0, 1},   // SE
+            {-1, 1},  // SW
+            {-1, 0},  // W
+            {0, -1}   // NW
+        };
+
+        // Start at a point 'radius' steps away in direction 4 (W)
+        int q = center.getQ() - radius;
+        int r = center.getR();
+
+        // Walk around the ring
+        for (int i = 0; i < 6; i++) {
+            // Walk 'radius' steps in direction i
+            for (int j = 0; j < radius; j++) {
+                ring.add(HexVector2.builder()
+                    .q(q)
+                    .r(r)
+                    .build());
+
+                // Move in direction i
+                q += directions[i][0];
+                r += directions[i][1];
+            }
+        }
+
+        return ring;
     }
 
     /**
@@ -671,6 +871,10 @@ public class FlowComposer {
             HexVector2 coord = route.get(i);
             SIDE fromSide = null;
             SIDE toSide = null;
+            Integer fromLx = null;
+            Integer fromLz = null;
+            Integer toLx = null;
+            Integer toLz = null;
 
             // Determine entry side (from where the flow enters THIS grid)
             if (i > 0) {
@@ -679,16 +883,49 @@ public class FlowComposer {
                 // But we need the ENTRY side of THIS grid, which is the opposite!
                 SIDE directionFromPrev = RoadAndRiverConnector.determineSide(prev, coord);
                 fromSide = RoadAndRiverConnector.getOppositeSide(directionFromPrev);
+            } else if (i == 0) {
+                // First segment
+                if (flow.isClosedLoop() && route.size() > 1) {
+                    // Closed loop: first segment comes from last
+                    HexVector2 last = route.get(route.size() - 1);
+                    SIDE directionFromLast = RoadAndRiverConnector.determineSide(last, coord);
+                    fromSide = RoadAndRiverConnector.getOppositeSide(directionFromLast);
+                    log.debug("Closed loop: first segment comes from last ({})", fromSide);
+                } else if (flow.getStartPointFeature() != null) {
+                    // Start is a Point - use Point's lx/lz instead of SIDE
+                    Point startPoint = flow.getStartPointFeature();
+                    fromLx = startPoint.getPlacedLx();
+                    fromLz = startPoint.getPlacedLz();
+                    fromSide = null; // Don't use SIDE when using lx/lz
+                    log.debug("First segment uses Point '{}' coordinates: lx={}, lz={}",
+                        startPoint.getName(), fromLx, fromLz);
+                }
             }
 
             // Determine exit side (to where the flow exits THIS grid)
             if (i < route.size() - 1) {
                 HexVector2 next = route.get(i + 1);
                 toSide = RoadAndRiverConnector.determineSide(coord, next);
+            } else if (i == route.size() - 1) {
+                // Last segment
+                if (flow.isClosedLoop() && route.size() > 1) {
+                    // Closed loop: connect last segment back to first
+                    HexVector2 first = route.get(0);
+                    toSide = RoadAndRiverConnector.determineSide(coord, first);
+                    log.debug("Closed loop: last segment connects to first ({})", toSide);
+                } else if (flow.getEndPointFeature() != null) {
+                    // End is a Point - use Point's lx/lz instead of SIDE
+                    Point endPoint = flow.getEndPointFeature();
+                    toLx = endPoint.getPlacedLx();
+                    toLz = endPoint.getPlacedLz();
+                    toSide = null; // Don't use SIDE when using lx/lz
+                    log.debug("Last segment uses Point '{}' coordinates: lx={}, lz={}",
+                        endPoint.getName(), toLx, toLz);
+                }
             }
 
-            // Create flow segment
-            FlowSegment segment = createFlowSegment(flow, fromSide, toSide);
+            // Create flow segment with both SIDE and lx/lz coordinates
+            FlowSegment segment = createFlowSegment(flow, fromSide, toSide, fromLx, fromLz, toLx, toLz);
 
             // Add segment to flow's own FeatureHexGrid (already configured by flow.configureHexGrids())
             FeatureHexGrid flowHexGrid = flow.findHexGrid(coord);
@@ -713,11 +950,17 @@ public class FlowComposer {
     /**
      * Creates a FlowSegment from PreparedFlow
      */
-    private FlowSegment createFlowSegment(Flow flow, SIDE fromSide, SIDE toSide) {
+    private FlowSegment createFlowSegment(Flow flow, SIDE fromSide, SIDE toSide,
+                                          Integer fromLx, Integer fromLz,
+                                          Integer toLx, Integer toLz) {
         FlowSegment.FlowSegmentBuilder builder = FlowSegment.builder()
             .flowType(flow.getType())
             .fromSide(fromSide)
             .toSide(toSide)
+            .fromLx(fromLx)
+            .fromLz(fromLz)
+            .toLx(toLx)
+            .toLz(toLz)
             .width(flow.getCalculatedWidthBlocks())
             .flowFeatureId(flow.getFeatureId());
 
@@ -869,8 +1112,21 @@ public class FlowComposer {
 
             // Convert each FlowSegment to RoadConfigPart
             for (FlowSegment segment : roadSegments) {
-                // Create ROUTE parts for fromSide
-                if (segment.getFromSide() != null) {
+                // Create ROUTE parts for entry point (fromSide or fromLx/fromLz)
+                if (segment.hasFromCoordinates()) {
+                    // Use lx/lz coordinates (Point endpoint)
+                    RoadConfigPart part = RoadConfigPart.createRoutePositionPart(
+                        segment.getFromLx(),
+                        segment.getFromLz(),
+                        segment.getWidth(),
+                        segment.getLevel(),
+                        segment.getType()
+                    );
+                    areaGrid.addRoadConfigPart(part);
+                    log.debug("Added position-based route part (from) at lx={}, lz={}",
+                        segment.getFromLx(), segment.getFromLz());
+                } else if (segment.getFromSide() != null) {
+                    // Use SIDE (Biome endpoint)
                     RoadConfigPart part = RoadConfigPart.createRouteSidePart(
                         segment.getFromSide(),
                         segment.getWidth(),
@@ -880,8 +1136,21 @@ public class FlowComposer {
                     areaGrid.addRoadConfigPart(part);
                 }
 
-                // Create ROUTE parts for toSide (if different from fromSide)
-                if (segment.getToSide() != null && !segment.getToSide().equals(segment.getFromSide())) {
+                // Create ROUTE parts for exit point (toSide or toLx/toLz)
+                if (segment.hasToCoordinates()) {
+                    // Use lx/lz coordinates (Point endpoint)
+                    RoadConfigPart part = RoadConfigPart.createRoutePositionPart(
+                        segment.getToLx(),
+                        segment.getToLz(),
+                        segment.getWidth(),
+                        segment.getLevel(),
+                        segment.getType()
+                    );
+                    areaGrid.addRoadConfigPart(part);
+                    log.debug("Added position-based route part (to) at lx={}, lz={}",
+                        segment.getToLx(), segment.getToLz());
+                } else if (segment.getToSide() != null && !segment.getToSide().equals(segment.getFromSide())) {
+                    // Use SIDE (Biome endpoint)
                     RoadConfigPart part = RoadConfigPart.createRouteSidePart(
                         segment.getToSide(),
                         segment.getWidth(),
@@ -943,8 +1212,22 @@ public class FlowComposer {
             for (FlowSegment segment : riverSegments) {
                 String groupId = segment.getFlowFeatureId() != null ? segment.getFlowFeatureId() : river.getFeatureId();
 
-                // Create FROM parts
-                if (segment.getFromSide() != null) {
+                // Create FROM parts (from lx/lz or from SIDE)
+                if (segment.hasFromCoordinates()) {
+                    // Use lx/lz coordinates (Point endpoint)
+                    RiverConfigPart part = RiverConfigPart.createFromPositionPart(
+                        segment.getFromLx(),
+                        segment.getFromLz(),
+                        segment.getWidth(),
+                        segment.getDepth(),
+                        segment.getLevel(),
+                        groupId
+                    );
+                    areaGrid.addRiverConfigPart(part);
+                    log.debug("Added position-based river FROM part at lx={}, lz={}",
+                        segment.getFromLx(), segment.getFromLz());
+                } else if (segment.getFromSide() != null) {
+                    // Use SIDE (Biome endpoint)
                     RiverConfigPart part = RiverConfigPart.createFromPart(
                         segment.getFromSide(),
                         segment.getWidth(),
@@ -955,8 +1238,22 @@ public class FlowComposer {
                     areaGrid.addRiverConfigPart(part);
                 }
 
-                // Create TO parts
-                if (segment.getToSide() != null) {
+                // Create TO parts (to lx/lz or to SIDE)
+                if (segment.hasToCoordinates()) {
+                    // Use lx/lz coordinates (Point endpoint)
+                    RiverConfigPart part = RiverConfigPart.createToPositionPart(
+                        segment.getToLx(),
+                        segment.getToLz(),
+                        segment.getWidth(),
+                        segment.getDepth(),
+                        segment.getLevel(),
+                        groupId
+                    );
+                    areaGrid.addRiverConfigPart(part);
+                    log.debug("Added position-based river TO part at lx={}, lz={}",
+                        segment.getToLx(), segment.getToLz());
+                } else if (segment.getToSide() != null) {
+                    // Use SIDE (Biome endpoint)
                     RiverConfigPart part = RiverConfigPart.createToPart(
                         segment.getToSide(),
                         segment.getWidth(),
@@ -1017,8 +1314,22 @@ public class FlowComposer {
 
             // Convert each FlowSegment to WallConfigPart
             for (FlowSegment segment : wallSegments) {
-                // Create SIDE parts for fromSide
-                if (segment.getFromSide() != null) {
+                // Create parts for entry point (fromSide or fromLx/fromLz)
+                if (segment.hasFromCoordinates()) {
+                    // Use lx/lz coordinates (Point endpoint)
+                    WallConfigPart part = WallConfigPart.createPositionPart(
+                        segment.getFromLx(),
+                        segment.getFromLz(),
+                        segment.getHeight(),
+                        segment.getWidth(),
+                        segment.getLevel(),
+                        segment.getMaterial()
+                    );
+                    areaGrid.addWallConfigPart(part);
+                    log.debug("Added position-based wall part (from) at lx={}, lz={}",
+                        segment.getFromLx(), segment.getFromLz());
+                } else if (segment.getFromSide() != null) {
+                    // Use SIDE (Biome endpoint)
                     WallConfigPart part = WallConfigPart.createSidePart(
                         segment.getFromSide(),
                         segment.getHeight(),
@@ -1029,8 +1340,22 @@ public class FlowComposer {
                     areaGrid.addWallConfigPart(part);
                 }
 
-                // Create SIDE parts for toSide (if different)
-                if (segment.getToSide() != null && !segment.getToSide().equals(segment.getFromSide())) {
+                // Create parts for exit point (toSide or toLx/toLz)
+                if (segment.hasToCoordinates()) {
+                    // Use lx/lz coordinates (Point endpoint)
+                    WallConfigPart part = WallConfigPart.createPositionPart(
+                        segment.getToLx(),
+                        segment.getToLz(),
+                        segment.getHeight(),
+                        segment.getWidth(),
+                        segment.getLevel(),
+                        segment.getMaterial()
+                    );
+                    areaGrid.addWallConfigPart(part);
+                    log.debug("Added position-based wall part (to) at lx={}, lz={}",
+                        segment.getToLx(), segment.getToLz());
+                } else if (segment.getToSide() != null && !segment.getToSide().equals(segment.getFromSide())) {
+                    // Use SIDE (Biome endpoint)
                     WallConfigPart part = WallConfigPart.createSidePart(
                         segment.getToSide(),
                         segment.getHeight(),

@@ -22,6 +22,13 @@ public abstract class Flow extends Feature {
     private DeviationTendency tendLeft;
     private DeviationTendency tendRight;
 
+    // Closed loop configuration (when startPointId == endPointId)
+    private Boolean closedLoop;      // If true, creates a closed ring/loop around the point
+    private String shapeHint;        // Shape hint for closed loops: "RING", "CIRCLE", "SQUARE", etc.
+    private AreaSize size;           // Size of the closed loop (radius) - uses same enum as Biome
+    private Integer sizeFrom;        // Explicit radius min (overrides size enum)
+    private Integer sizeTo;          // Explicit radius max (overrides size enum)
+
     // Calculated values (runtime, set during composition)
     private Integer calculatedWidthBlocks;  // Resolved from width enum
     private HexVector2 startPoint;          // Resolved coordinate
@@ -29,8 +36,45 @@ public abstract class Flow extends Feature {
     private List<HexVector2> waypoints;     // Resolved waypoints
     private List<HexVector2> route;         // Calculated route from start to end
 
+    /**
+     * Reference to actual Point feature if startPointId refers to a Point (not a Biome).
+     * Used to extract lx/lz coordinates for flow connection.
+     */
+    private Point startPointFeature;
+
+    /**
+     * Reference to actual Point feature if endPointId refers to a Point (not a Biome).
+     * Used to extract lx/lz coordinates for flow connection.
+     * Note: endPointId is defined in subclasses (Road, Wall) not in Flow base class.
+     */
+    private Point endPointFeature;
+
     public int getEffectiveWidthBlocks() {
         return widthBlocks != null ? widthBlocks : (width != null ? width.getFrom() : 2);
+    }
+
+    /**
+     * Gets the effective radius for closed loops.
+     * Priority: sizeFrom/sizeTo > size enum > default (3)
+     */
+    public int getEffectiveSizeFrom() {
+        return sizeFrom != null ? sizeFrom : (size != null ? size.getFrom() : 3);
+    }
+
+    /**
+     * Gets the effective maximum radius for closed loops.
+     * Priority: sizeFrom/sizeTo > size enum > default (3)
+     */
+    public int getEffectiveSizeTo() {
+        return sizeTo != null ? sizeTo : (size != null ? size.getTo() : 3);
+    }
+
+    /**
+     * Returns true if this flow is configured as a closed loop.
+     * A closed loop is when startPointId == endPointId OR closedLoop == true.
+     */
+    public boolean isClosedLoop() {
+        return closedLoop != null && closedLoop;
     }
 
     /**

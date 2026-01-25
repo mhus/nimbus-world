@@ -22,8 +22,10 @@ public class WallConfigPart {
 
     private PartType partType;
 
-    // SIDE fields
-    private SIDE side;
+    // SIDE fields - either side-based OR position-based
+    private SIDE side;           // Side-based wall (NE, NW, etc.)
+    private Integer lx;          // Position-based wall x
+    private Integer lz;          // Position-based wall z
     private Integer height;
     private Integer width;
     private Integer level;
@@ -42,6 +44,22 @@ public class WallConfigPart {
         return WallConfigPart.builder()
             .partType(PartType.SIDE)
             .side(side)
+            .height(height)
+            .width(width)
+            .level(level)
+            .material(material)
+            .build();
+    }
+
+    /**
+     * Creates a position-based wall segment part
+     */
+    public static WallConfigPart createPositionPart(Integer lx, Integer lz, Integer height,
+                                                     Integer width, Integer level, String material) {
+        return WallConfigPart.builder()
+            .partType(PartType.SIDE)
+            .lx(lx)
+            .lz(lz)
             .height(height)
             .width(width)
             .level(level)

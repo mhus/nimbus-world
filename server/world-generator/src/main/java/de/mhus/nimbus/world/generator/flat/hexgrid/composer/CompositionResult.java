@@ -21,12 +21,14 @@ public class CompositionResult {
     // Step results
     private BiomePlacementResult biomePlacementResult;
     private HexGridFillResult fillResult;
+    private PointComposer.PointCompositionResult pointCompositionResult;
     private FlowComposer.FlowCompositionResult flowCompositionResult;
     private HexGridGenerator.GenerationResult generationResult;
 
     // Summary statistics
     private int totalBiomes;
     private int totalStructures;
+    private int totalPoints;
     private int totalFlows;
     private int totalGrids;
     private int filledGrids;
