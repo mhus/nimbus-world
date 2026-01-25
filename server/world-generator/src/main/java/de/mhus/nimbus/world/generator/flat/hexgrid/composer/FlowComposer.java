@@ -79,7 +79,7 @@ public class FlowComposer {
             // After all flows are composed, configure road={} JSON
             HexGridRoadConfigurator roadConfigurator = new HexGridRoadConfigurator();
             HexGridRoadConfigurator.RoadConfigurationResult roadResult =
-                roadConfigurator.configureRoads(prepared);
+                roadConfigurator.configureRoads(prepared, placementResult);
 
             log.info("Road configuration: configured={}/{}, segments={}",
                 roadResult.getConfiguredGrids(), roadResult.getTotalGrids(),
@@ -147,11 +147,11 @@ public class FlowComposer {
         // Phase 1: Convert FlowSegments to ConfigParts and add to Area grids
         if (segments > 0) {
             if (flow instanceof Road) {
-                convertFlowSegmentsToRoadConfigParts(flow, prepared);
+                convertFlowSegmentsToRoadConfigParts(flow, prepared, placementResult);
             } else if (flow instanceof River) {
-                convertFlowSegmentsToRiverConfigParts(flow, prepared);
+                convertFlowSegmentsToRiverConfigParts(flow, prepared, placementResult);
             } else if (flow instanceof Wall) {
-                convertFlowSegmentsToWallConfigParts(flow, prepared);
+                convertFlowSegmentsToWallConfigParts(flow, prepared, placementResult);
             }
         }
 
@@ -487,10 +487,14 @@ public class FlowComposer {
      * Important: Flow FeatureHexGrids contain metadata (coordinates + FlowSegments).
      * We need to add RoadConfigParts to the Area FeatureHexGrids at the same coordinates.
      *
+     * CRITICAL: Must include Filler-Biomes! They were added to placementResult by Fillers.
+     *
      * @param flow The flow whose segments should be converted to RoadConfigParts
      * @param composition The composition with all features to find Area grids
+     * @param placementResult The placement result with all PlacedBiomes (incl. Filler)
      */
-    private void convertFlowSegmentsToRoadConfigParts(Flow flow, HexComposition composition) {
+    private void convertFlowSegmentsToRoadConfigParts(Flow flow, HexComposition composition,
+                                                       BiomePlacementResult placementResult) {
         if (!(flow instanceof Road)) {
             return; // Only roads use RoadConfigParts
         }
@@ -498,7 +502,7 @@ public class FlowComposer {
         // Build a map of Area grids by coordinate for fast lookup
         Map<String, FeatureHexGrid> areaGridMap = new HashMap<>();
 
-        // Collect Area grids from all features
+        // Collect Area grids from all features in composition
         if (composition.getFeatures() != null) {
             for (Feature feature : composition.getFeatures()) {
                 if (feature instanceof Area) {
@@ -517,6 +521,11 @@ public class FlowComposer {
                 }
             }
         }
+
+        // IMPORTANT: Also collect from PlacedBiomes (includes Filler-Biomes!)
+        collectAreaGridsFromPlacedBiomes(placementResult, areaGridMap);
+
+        log.debug("Collected {} Area grids (incl. Filler) for road config conversion", areaGridMap.size());
 
         // Now convert FlowSegments to RoadConfigParts and add to Area grids
         for (FeatureHexGrid flowGrid : flow.getHexGrids()) {
@@ -574,8 +583,10 @@ public class FlowComposer {
      *
      * @param flow The river flow whose segments should be converted
      * @param composition The composition with all features to find Area grids
+     * @param placementResult The placement result with all PlacedBiomes (incl. Filler)
      */
-    private void convertFlowSegmentsToRiverConfigParts(Flow flow, HexComposition composition) {
+    private void convertFlowSegmentsToRiverConfigParts(Flow flow, HexComposition composition,
+                                                        BiomePlacementResult placementResult) {
         if (!(flow instanceof River)) {
             return;
         }
@@ -585,6 +596,9 @@ public class FlowComposer {
         // Build a map of Area grids by coordinate for fast lookup
         Map<String, FeatureHexGrid> areaGridMap = new HashMap<>();
         collectAllAreaGrids(composition, areaGridMap);
+
+        // Also collect from PlacedBiomes (includes Filler-Biomes!)
+        collectAreaGridsFromPlacedBiomes(placementResult, areaGridMap);
 
         // Convert FlowSegments to RiverConfigParts and add to Area grids
         for (FeatureHexGrid flowGrid : flow.getHexGrids()) {
@@ -645,8 +659,10 @@ public class FlowComposer {
      *
      * @param flow The wall flow whose segments should be converted
      * @param composition The composition with all features to find Area grids
+     * @param placementResult The placement result with all PlacedBiomes (incl. Filler)
      */
-    private void convertFlowSegmentsToWallConfigParts(Flow flow, HexComposition composition) {
+    private void convertFlowSegmentsToWallConfigParts(Flow flow, HexComposition composition,
+                                                       BiomePlacementResult placementResult) {
         if (!(flow instanceof Wall)) {
             return;
         }
@@ -656,6 +672,9 @@ public class FlowComposer {
         // Build a map of Area grids by coordinate for fast lookup
         Map<String, FeatureHexGrid> areaGridMap = new HashMap<>();
         collectAllAreaGrids(composition, areaGridMap);
+
+        // Also collect from PlacedBiomes (includes Filler-Biomes!)
+        collectAreaGridsFromPlacedBiomes(placementResult, areaGridMap);
 
         // Convert FlowSegments to WallConfigParts and add to Area grids
         for (FeatureHexGrid flowGrid : flow.getHexGrids()) {
@@ -748,6 +767,49 @@ public class FlowComposer {
                 areaGridMap.put(coordKey, hexGrid);
             }
         }
+    }
+
+    /**
+     * Collects Area grids from all PlacedBiomes (including Filler-Biomes!)
+     * This is CRITICAL for flows that cross Filler grids (CoastFiller, OceanFiller, etc.)
+     *
+     * @param placementResult The placement result with all PlacedBiomes
+     * @param areaGridMap Map to add grids to
+     */
+    private void collectAreaGridsFromPlacedBiomes(BiomePlacementResult placementResult,
+                                                   Map<String, FeatureHexGrid> areaGridMap) {
+        if (placementResult == null || placementResult.getPlacedBiomes() == null) {
+            log.warn("placementResult or PlacedBiomes is null!");
+            return;
+        }
+
+        int collectedCount = 0;
+        int biomesWithGrids = 0;
+        int biomesWithoutGrids = 0;
+
+        for (PlacedBiome placedBiome : placementResult.getPlacedBiomes()) {
+            Biome biome = placedBiome.getBiome();
+            if (biome != null && biome.getHexGrids() != null && !biome.getHexGrids().isEmpty()) {
+                biomesWithGrids++;
+                for (FeatureHexGrid hexGrid : biome.getHexGrids()) {
+                    String coordKey = hexGrid.getPositionKey();
+                    if (coordKey != null) {
+                        // Add to map (may overwrite, but that's OK - same coordinate)
+                        areaGridMap.put(coordKey, hexGrid);
+                        collectedCount++;
+                    }
+                }
+            } else {
+                biomesWithoutGrids++;
+                if (biome != null) {
+                    log.warn("PlacedBiome has no FeatureHexGrids: {} (type: {})",
+                        biome.getName(), biome.getType());
+                }
+            }
+        }
+
+        log.info("Collected {} FeatureHexGrids from {} PlacedBiomes ({} with grids, {} without)",
+            collectedCount, placementResult.getPlacedBiomes().size(), biomesWithGrids, biomesWithoutGrids);
     }
 
     /**

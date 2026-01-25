@@ -111,7 +111,6 @@ public class CoastFiller {
                 placedCoast.setActualSize(coastCoords.size());
 
                 placementResult.getPlacedBiomes().add(placedCoast);
-
                 biomesAdded++;
 
                 log.debug("Coast ring {}: created PlacedBiome with {} coords", ring, coastCoords.size());

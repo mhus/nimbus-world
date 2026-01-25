@@ -295,7 +295,7 @@ public class HexCompositeBuilder {
             log.info("Step 6: Syncing parameters from FeatureHexGrids to WHexGrids");
             HexGridParameterSync parameterSync = new HexGridParameterSync();
             int syncedCount = parameterSync.syncParametersToWHexGrids(
-                composition, placementResult.getHexGrids());
+                composition, placementResult, placementResult.getHexGrids());
             log.info("Synced parameters to {} WHexGrids", syncedCount);
 
             // Step 7: Generate WHexGrids (optional, only if repository provided)

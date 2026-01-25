@@ -43,12 +43,12 @@ public class HexGridRoadConfigurator {
         /**
          * Creates a GridIndex from a composition by collecting all Area FeatureHexGrids.
          */
-        public static GridIndex build(HexComposition composition) {
+        public static GridIndex build(HexComposition composition, BiomePlacementResult placementResult) {
             Map<String, GridEntry> index = new HashMap<>();
             int overlappingCount = 0;
             List<String> overlapping = new ArrayList<>();
 
-            // Collect from all features
+            // Collect from all features in composition
             if (composition.getFeatures() != null) {
                 for (Feature feature : composition.getFeatures()) {
                     if (feature instanceof Area area) {
@@ -66,6 +66,17 @@ public class HexGridRoadConfigurator {
                             int overlaps = indexAreaGrids(area, index, overlapping);
                             overlappingCount += overlaps;
                         }
+                    }
+                }
+            }
+
+            // CRITICAL: Also collect from PlacedBiomes (includes Filler-Biomes!)
+            if (placementResult != null && placementResult.getPlacedBiomes() != null) {
+                for (PlacedBiome placedBiome : placementResult.getPlacedBiomes()) {
+                    Biome biome = placedBiome.getBiome();
+                    if (biome != null && biome instanceof Area area) {
+                        int overlaps = indexAreaGrids(area, index, overlapping);
+                        overlappingCount += overlaps;
                     }
                 }
             }
@@ -178,7 +189,7 @@ public class HexGridRoadConfigurator {
      * @param composition The composition with all features and their FeatureHexGrids
      * @return Result with statistics (for logging only)
      */
-    public RoadConfigurationResult configureRoads(HexComposition composition) {
+    public RoadConfigurationResult configureRoads(HexComposition composition, BiomePlacementResult placementResult) {
         log.info("Starting Phase 2: road configuration from RoadConfigParts");
 
         List<String> errors = new ArrayList<>();
@@ -188,11 +199,11 @@ public class HexGridRoadConfigurator {
         int totalParts = 0;
 
         try {
-            // Build GridIndex for fast Area grid lookup
-            GridIndex gridIndex = GridIndex.build(composition);
+            // Build GridIndex for fast Area grid lookup (includes Filler-Biomes from placementResult)
+            GridIndex gridIndex = GridIndex.build(composition, placementResult);
             totalGrids = gridIndex.size();
 
-            log.info("Built GridIndex with {} Area grids", totalGrids);
+            log.info("Built GridIndex with {} Area grids (including Filler-Biomes)", totalGrids);
 
             // Iterate over all Area grids and assemble RoadConfigParts
             for (String coordKey : gridIndex.keySet()) {

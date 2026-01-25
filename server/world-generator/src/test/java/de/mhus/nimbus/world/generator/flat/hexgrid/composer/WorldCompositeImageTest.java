@@ -604,41 +604,41 @@ public class WorldCompositeImageTest {
 
         composition.getFeatures().add(village);
 
-        // Add Roads as Flow features
+        // Add Roads as Flow features connecting biomes
         Road mainRoad = Road.builder()
             .roadType("street")
             .level(95)
+            .endPointId("Eastern Forest")
             .build();
         mainRoad.setName("Main Road");
         mainRoad.setFeatureId("main-road");
+        mainRoad.setStartPointId("Central Plains");
         mainRoad.setWidthBlocks(5);
-        mainRoad.setStartPoint(HexVector2.builder().q(0).r(0).build());
-        mainRoad.setEndPoint(HexVector2.builder().q(1).r(0).build());
         mainRoad.setType(FlowType.ROAD);
         composition.getFeatures().add(mainRoad);
 
         Road northRoad = Road.builder()
             .roadType("street")
             .level(95)
+            .endPointId("Northern Mountains")
             .build();
         northRoad.setName("North Road");
         northRoad.setFeatureId("north-road");
+        northRoad.setStartPointId("Central Plains");
         northRoad.setWidthBlocks(4);
-        northRoad.setStartPoint(HexVector2.builder().q(0).r(0).build());
-        northRoad.setEndPoint(HexVector2.builder().q(0).r(-1).build());
         northRoad.setType(FlowType.ROAD);
         composition.getFeatures().add(northRoad);
 
-        // Add River as Flow feature
+        // Add River as Flow feature from Mountains to Plains
         River mountainRiver = River.builder()
             .depth(2)
             .level(45)
+            .mergeToId("Central Plains")
             .build();
         mountainRiver.setName("Mountain River");
         mountainRiver.setFeatureId("mountain-river");
+        mountainRiver.setStartPointId("Northern Mountains");
         mountainRiver.setWidthBlocks(3);
-        mountainRiver.setStartPoint(HexVector2.builder().q(0).r(-2).build());
-        mountainRiver.setEndPoint(HexVector2.builder().q(0).r(-1).build());
         mountainRiver.setType(FlowType.RIVER);
         composition.getFeatures().add(mountainRiver);
 
@@ -1249,6 +1249,112 @@ public class WorldCompositeImageTest {
         biome.prepareForComposition();
 
         return biome;
+    }
+
+    @Test
+    public void testBiomeWithLongRoad() throws Exception {
+        log.info("=== Testing Single Biome with Long Road ===");
+
+        // Create composition with one biome and a long road
+        HexComposition composition = createCompositionWithLongRoad();
+
+        // Export input model
+        exportInputModel(composition, "biome-with-long-road");
+
+        // Use HexCompositeBuilder for the complete pipeline
+        CompositionResult result = HexCompositeBuilder.builder()
+            .composition(composition)
+            .worldId("road-test-world")
+            .seed(11111L)
+            .fillGaps(true)
+            .oceanBorderRings(1)
+            .generateWHexGrids(false)
+            .build()
+            .compose();
+
+        assertTrue(result.isSuccess(), "Composition should succeed");
+        assertNotNull(result.getFillResult(), "Should have fill result");
+        assertNotNull(result.getFlowCompositionResult(), "Should have flow result");
+
+        // Verify road was composed
+        assertEquals(1, result.getFlowCompositionResult().getComposedFlows(),
+            "Should have composed 1 road");
+        assertTrue(result.getFlowCompositionResult().getTotalSegments() >= 4,
+            "Road should have at least 4 segments");
+
+        HexGridFillResult fillResult = result.getFillResult();
+
+        log.info("Placed {} biomes creating {} hex grids",
+            result.getTotalBiomes(),
+            result.getTotalGrids());
+
+        log.info("Road: {} segments across {} grids",
+            result.getFlowCompositionResult().getTotalSegments(),
+            result.getFlowCompositionResult().getComposedFlows());
+
+        log.info("Total grids after filling: {} (Ocean: {}, Land: {}, Coast: {})",
+            fillResult.getTotalGridCount(),
+            fillResult.getOceanFillCount(),
+            fillResult.getLandFillCount(),
+            fillResult.getCoastFillCount());
+
+        // Build terrain for all grids
+        Map<HexVector2, WFlat> flats = new HashMap<>();
+        for (FilledHexGrid filled : fillResult.getAllGrids()) {
+            WFlat flat = buildGridTerrain(filled);
+            flats.put(filled.getCoordinate(), flat);
+        }
+
+        log.info("Built terrain for {} grids", flats.size());
+
+        // Save individual grid images
+        saveIndividualGridImages(flats, fillResult);
+
+        // Create composite image
+        createCompositeImage(flats, fillResult, "biome-with-long-road");
+
+        // Export final generated model
+        exportGeneratedModel(fillResult, result.getFlowCompositionResult(), "biome-with-long-road");
+
+        log.info("=== Biome with Long Road Test Completed ===");
+    }
+
+    /**
+     * Creates HexComposition with a single biome and a long road crossing multiple grids
+     */
+    private HexComposition createCompositionWithLongRoad() {
+        HexComposition composition = HexComposition.builder()
+            .name("Road Test World")
+            .worldId("road-test-world")
+            .features(new ArrayList<>())
+            .build();
+
+        // Center: Large Plains biome
+        Biome plains = createBiome("Central Plains", BiomeType.PLAINS, AreaShape.CIRCLE,
+            5, 7, Direction.N, 0, 0, 0, "origin", 10);
+        composition.getFeatures().add(plains);
+
+        // East: Forest (road destination)
+        Biome forest = createBiome("Eastern Forest", BiomeType.FOREST, AreaShape.CIRCLE,
+            2, 3, Direction.E, 90, 6, 8, "origin", 9);
+        composition.getFeatures().add(forest);
+
+        // Long Road from Plains to Forest (crossing at least 4-5 grids)
+        Road longRoad = Road.builder()
+            .roadType("cobblestone")
+            .level(95)
+            .waypointIds(new ArrayList<>())
+            .endPointId("Eastern Forest")
+            .build();
+        longRoad.setName("Main Highway");
+        longRoad.setFeatureId("main-highway");
+        longRoad.setStartPointId("Central Plains");
+        longRoad.setWidthBlocks(5);
+        longRoad.setWidth(FlowWidth.MEDIUM);
+        longRoad.setType(FlowType.ROAD);
+        composition.getFeatures().add(longRoad);
+
+        return composition;
     }
 
     /**

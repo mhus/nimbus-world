@@ -23,10 +23,13 @@ public class HexGridParameterSync {
      * Copies road, river, wall parameters from FeatureHexGrids to matching WHexGrids.
      *
      * @param composition The composition with Area features containing FeatureHexGrids
+     * @param placementResult The placement result with all placed biomes (including Fillers)
      * @param wHexGrids List of WHexGrids to update
      * @return Number of grids updated
      */
-    public int syncParametersToWHexGrids(HexComposition composition, List<WHexGrid> wHexGrids) {
+    public int syncParametersToWHexGrids(HexComposition composition,
+                                         BiomePlacementResult placementResult,
+                                         List<WHexGrid> wHexGrids) {
         log.info("Starting parameter sync from FeatureHexGrids to WHexGrids");
 
         // Build index of WHexGrids by coordinate for fast lookup
@@ -38,6 +41,8 @@ public class HexGridParameterSync {
         int updatedCount = 0;
 
         // Iterate all Area features and sync their FeatureHexGrid parameters
+        // Note: Flow parameters (road, river, wall) were already added to Area grids
+        // by FlowComposer.convertFlowSegmentsToConfigParts(), so we only need to sync Areas
         if (composition.getFeatures() != null) {
             for (Feature feature : composition.getFeatures()) {
                 if (feature instanceof Area area) {
@@ -53,6 +58,16 @@ public class HexGridParameterSync {
                     if (nestedFeature instanceof Area area) {
                         updatedCount += syncFeatureHexGrids(area, wHexGridIndex);
                     }
+                }
+            }
+        }
+
+        // CRITICAL: Also sync from PlacedBiomes (includes Filler-Biomes!)
+        if (placementResult != null && placementResult.getPlacedBiomes() != null) {
+            for (PlacedBiome placedBiome : placementResult.getPlacedBiomes()) {
+                Biome biome = placedBiome.getBiome();
+                if (biome != null && biome instanceof Area area) {
+                    updatedCount += syncFeatureHexGrids(area, wHexGridIndex);
                 }
             }
         }

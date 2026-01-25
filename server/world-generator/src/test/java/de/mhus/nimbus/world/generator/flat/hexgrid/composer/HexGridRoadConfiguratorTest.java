@@ -103,7 +103,7 @@ public class HexGridRoadConfiguratorTest {
 
         // Configure roads using HexGridRoadConfigurator
         HexGridRoadConfigurator configurator = new HexGridRoadConfigurator();
-        HexGridRoadConfigurator.RoadConfigurationResult result = configurator.configureRoads(composition);
+        HexGridRoadConfigurator.RoadConfigurationResult result = configurator.configureRoads(composition, null);
 
         log.info("Configuration result: configured={}/{}, segments={}",
             result.getConfiguredGrids(), result.getTotalGrids(), result.getTotalSegments());
@@ -226,7 +226,7 @@ public class HexGridRoadConfiguratorTest {
 
         // Configure rivers using HexGridRoadConfigurator
         HexGridRoadConfigurator configurator = new HexGridRoadConfigurator();
-        HexGridRoadConfigurator.RoadConfigurationResult result = configurator.configureRoads(composition);
+        HexGridRoadConfigurator.RoadConfigurationResult result = configurator.configureRoads(composition, null);
 
         log.info("Configuration result: configured={}/{}, segments={}",
             result.getConfiguredGrids(), result.getTotalGrids(), result.getTotalSegments());
