@@ -37,8 +37,23 @@ public class BiomeComposer {
             context.reset();
 
             try {
-                // Place each biome
+                // Separate normal and enclosed biomes
+                List<Biome> normalBiomes = new ArrayList<>();
+                List<Biome> enclosedBiomes = new ArrayList<>();
+
                 for (Biome biome : prepared.getBiomes()) {
+                    if (biome.getEnclosedBy() != null && !biome.getEnclosedBy().isEmpty()) {
+                        enclosedBiomes.add(biome);
+                    } else {
+                        normalBiomes.add(biome);
+                    }
+                }
+
+                log.info("Placing {} normal biomes and {} enclosed biomes",
+                    normalBiomes.size(), enclosedBiomes.size());
+
+                // Phase 1: Place normal biomes
+                for (Biome biome : normalBiomes) {
                     boolean placed = placeBiome(biome, context);
 
                     if (!placed) {
@@ -54,8 +69,26 @@ public class BiomeComposer {
                     }
                 }
 
+                // Phase 2: Place enclosed biomes (after their enclosing biomes are placed)
+                for (Biome biome : enclosedBiomes) {
+                    boolean placed = placeEnclosedBiome(biome, context);
+
+                    if (!placed) {
+                        log.warn("Failed to place enclosed biome: {} after {} attempts, retrying composition",
+                            biome.getName(), context.getMaxRetriesPerBiome());
+                        throw new BiomePlacementException("Could not place enclosed biome: " + biome.getName());
+                    }
+
+                    // Add biome name as anchor for other biomes to reference
+                    if (biome.getName() != null && !context.getPlacedBiomes().isEmpty()) {
+                        PlacedBiome lastPlaced = context.getPlacedBiomes().get(context.getPlacedBiomes().size() - 1);
+                        context.addAnchor(biome.getName(), lastPlaced.getCenter());
+                    }
+                }
+
                 success = true;
-                log.info("Successfully placed all {} biomes", prepared.getBiomes().size());
+                log.info("Successfully placed all {} biomes ({} normal, {} enclosed)",
+                    prepared.getBiomes().size(), normalBiomes.size(), enclosedBiomes.size());
 
             } catch (BiomePlacementException e) {
                 totalRetries++;
@@ -158,6 +191,128 @@ public class BiomeComposer {
         }
 
         return false;
+    }
+
+    /**
+     * Attempts to place an enclosed biome (surrounded by other biomes).
+     * Uses the centroid of enclosing biomes as the target position.
+     *
+     * @param biome The enclosed biome to place
+     * @param context The composition context
+     * @return true if successfully placed
+     */
+    private boolean placeEnclosedBiome(Biome biome, CompositionContext context) {
+        log.debug("Attempting to place enclosed biome: {} (enclosed by: {})",
+            biome.getName(), biome.getEnclosedBy());
+
+        // Find enclosing biomes
+        List<PlacedBiome> enclosingBiomes = new ArrayList<>();
+        for (String enclosingName : biome.getEnclosedBy()) {
+            PlacedBiome enclosing = findPlacedBiome(enclosingName, context);
+            if (enclosing != null) {
+                enclosingBiomes.add(enclosing);
+            } else {
+                log.warn("Enclosing biome not found: {} (required by {})",
+                    enclosingName, biome.getName());
+            }
+        }
+
+        if (enclosingBiomes.isEmpty()) {
+            log.error("No enclosing biomes found for: {}", biome.getName());
+            return false;
+        }
+
+        // Calculate centroid of enclosing biomes
+        HexVector2 centroid = calculateCentroid(enclosingBiomes);
+        log.debug("Calculated centroid for enclosed biome '{}': {}", biome.getName(), centroid);
+
+        // Try to place at centroid with multiple attempts
+        int attempts = 0;
+        while (attempts < context.getMaxRetriesPerBiome()) {
+            attempts++;
+
+            // Add some randomization to avoid exact center
+            int offsetQ = context.getRandom().nextInt(5) - 2; // -2 to +2
+            int offsetR = context.getRandom().nextInt(5) - 2;
+            HexVector2 targetCenter = HexVector2.builder()
+                .q(centroid.getQ() + offsetQ)
+                .r(centroid.getR() + offsetR)
+                .build();
+
+            // Generate coordinates for this biome
+            int size = randomInRange(biome.getCalculatedSizeFrom(), biome.getCalculatedSizeTo(), context.getRandom());
+            List<HexVector2> coordinates = generateBiomeCoordinates(
+                targetCenter, size, biome.getShape(), context, biome);
+
+            // Check if all coordinates are available
+            if (areCoordinatesAvailable(coordinates, context)) {
+                // Place the biome
+                for (HexVector2 coord : coordinates) {
+                    context.occupy(coord);
+                }
+
+                // Store placement results
+                biome.setPlacedCenter(targetCenter);
+                biome.setAssignedCoordinates(coordinates);
+
+                PlacedBiome placed = PlacedBiome.builder()
+                    .biome(biome)
+                    .coordinates(coordinates)
+                    .center(targetCenter)
+                    .actualSize(size)
+                    .build();
+
+                context.getPlacedBiomes().add(placed);
+
+                log.info("Placed enclosed biome '{}' at {} with {} hexes (attempt {})",
+                    biome.getName(), targetCenter, coordinates.size(), attempts);
+
+                return true;
+            }
+        }
+
+        log.warn("Failed to place enclosed biome '{}' after {} attempts", biome.getName(), attempts);
+        return false;
+    }
+
+    /**
+     * Calculates the centroid (center point) of a list of placed biomes.
+     *
+     * @param biomes List of placed biomes
+     * @return The centroid coordinate
+     */
+    private HexVector2 calculateCentroid(List<PlacedBiome> biomes) {
+        if (biomes.isEmpty()) {
+            return HexVector2.builder().q(0).r(0).build();
+        }
+
+        int sumQ = 0;
+        int sumR = 0;
+        for (PlacedBiome biome : biomes) {
+            sumQ += biome.getCenter().getQ();
+            sumR += biome.getCenter().getR();
+        }
+
+        return HexVector2.builder()
+            .q(sumQ / biomes.size())
+            .r(sumR / biomes.size())
+            .build();
+    }
+
+    /**
+     * Finds a placed biome by its name.
+     *
+     * @param name The biome name to search for
+     * @param context The composition context
+     * @return The placed biome or null if not found
+     */
+    private PlacedBiome findPlacedBiome(String name, CompositionContext context) {
+        for (PlacedBiome placed : context.getPlacedBiomes()) {
+            if (name.equals(placed.getBiome().getName())) {
+                return placed;
+            }
+        }
+        return null;
     }
 
     /**

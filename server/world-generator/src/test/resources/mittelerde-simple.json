@@ -1,0 +1,195 @@
+{
+  "name": "Middle-earth (Simplified)",
+  "worldId": "me-simple-001",
+  "features": [
+    {
+      "featureType": "biome",
+      "name": "gondor-heartlands",
+      "title": "Gondor",
+      "type": "PLAINS",
+      "shape": "CIRCLE",
+      "size": "WIDE",
+      "positions": [
+        {"direction": "N", "distanceFrom": 0, "anchor": "origin", "priority": 10}
+      ],
+      "parameters": {
+        "g_builder": "island",
+        "landLevel": "90",
+        "landOffset": "8",
+        "g_offset": "2"
+      }
+    },
+    {
+      "featureType": "mountain-biome",
+      "name": "white-mountains",
+      "title": "White Mountains",
+      "type": "MOUNTAINS",
+      "height": "MEDIUM_PEAKS",
+      "shape": "LINE",
+      "sizeFrom": 30,
+      "sizeTo": 42,
+      "tendLeft": "NONE",
+      "tendRight": "NONE",
+      "positions": [
+        {"direction": "N", "distanceFrom": 6, "distanceTo": 10, "anchor": "gondor-heartlands", "priority": 10}
+      ],
+      "parameters": {
+        "g_builder": "mountain",
+        "landLevel": "120",
+        "landOffset": "30"
+      }
+    },
+    {
+      "featureType": "biome",
+      "name": "rohan-plains",
+      "title": "Rohan",
+      "type": "PLAINS",
+      "shape": "CIRCLE",
+      "size": "WIDE",
+      "positions": [
+        {"direction": "N", "distanceFrom": 2, "distanceTo": 6, "anchor": "white-mountains", "priority": 9}
+      ],
+      "parameters": {
+        "g_builder": "island",
+        "landLevel": "85",
+        "landOffset": "10"
+      }
+    },
+    {
+      "featureType": "biome",
+      "name": "ithilien",
+      "title": "Ithilien",
+      "type": "FOREST",
+      "shape": "CIRCLE",
+      "size": "LARGE",
+      "positions": [
+        {"direction": "E", "distanceFrom": 4, "distanceTo": 8, "anchor": "gondor-heartlands", "priority": 9}
+      ],
+      "parameters": {
+        "g_builder": "island",
+        "landLevel": "88",
+        "landOffset": "7"
+      }
+    },
+    {
+      "featureType": "mountain-biome",
+      "name": "north-mordor-mountains",
+      "title": "Ered Lithui (Ash Mountains)",
+      "type": "MOUNTAINS",
+      "height": "MEDIUM_PEAKS",
+      "shape": "LINE",
+      "sizeFrom": 20,
+      "sizeTo": 28,
+      "tendLeft": "NONE",
+      "tendRight": "NONE",
+      "positions": [
+        {"direction": "NE", "distanceFrom": 10, "distanceTo": 16, "anchor": "ithilien", "priority": 10}
+      ],
+      "parameters": {
+        "g_builder": "mountain",
+        "landLevel": "125",
+        "landOffset": "28"
+      }
+    },
+    {
+      "featureType": "mountain-biome",
+      "name": "west-mordor-mountains",
+      "title": "Ephel Dúath (Mountains of Shadow)",
+      "type": "MOUNTAINS",
+      "height": "MEDIUM_PEAKS",
+      "shape": "LINE",
+      "sizeFrom": 24,
+      "sizeTo": 32,
+      "tendLeft": "SLIGHT",
+      "tendRight": "SLIGHT",
+      "positions": [
+        {"direction": "E", "distanceFrom": 6, "distanceTo": 10, "anchor": "ithilien", "priority": 10}
+      ],
+      "parameters": {
+        "g_builder": "mountain",
+        "landLevel": "130",
+        "landOffset": "30"
+      }
+    },
+    {
+      "featureType": "mountain-biome",
+      "name": "south-mordor-mountains",
+      "title": "Southern Mordor Ranges",
+      "type": "MOUNTAINS",
+      "height": "LOW_PEAKS",
+      "shape": "LINE",
+      "sizeFrom": 18,
+      "sizeTo": 26,
+      "tendLeft": "SLIGHT",
+      "tendRight": "NONE",
+      "positions": [
+        {"direction": "SE", "distanceFrom": 14, "distanceTo": 22, "anchor": "ithilien", "priority": 8}
+      ],
+      "parameters": {
+        "g_builder": "mountain",
+        "landLevel": "110",
+        "landOffset": "20"
+      }
+    },
+    {
+      "featureType": "mountain-biome",
+      "name": "east-mordor-mountains",
+      "title": "Eastern Mordor Ranges",
+      "type": "MOUNTAINS",
+      "height": "LOW_PEAKS",
+      "shape": "LINE",
+      "sizeFrom": 16,
+      "sizeTo": 24,
+      "tendLeft": "NONE",
+      "tendRight": "SLIGHT",
+      "positions": [
+        {"direction": "E", "distanceFrom": 14, "distanceTo": 22, "anchor": "ithilien", "priority": 7}
+      ],
+      "parameters": {
+        "g_builder": "mountain",
+        "landLevel": "105",
+        "landOffset": "18"
+      }
+    },
+    {
+      "featureType": "biome",
+      "name": "mordor-plateau",
+      "title": "Mordor (enclosed plateau)",
+      "type": "DESERT",
+      "shape": "RECTANGLE",
+      "enclosedBy": [
+        "north-mordor-mountains",
+        "west-mordor-mountains",
+        "south-mordor-mountains",
+        "east-mordor-mountains"
+      ],
+      "sizeFrom": 35,
+      "sizeTo": 45,
+      "positions": [
+        {"direction": "E", "distanceFrom": 10, "distanceTo": 16, "anchor": "ithilien", "priority": 9}
+      ],
+      "parameters": {
+        "g_builder": "mountain",
+        "landLevel": "90",
+        "landOffset": "12"
+      }
+    },
+    {
+      "featureType": "mountain-biome",
+      "name": "orodruin",
+      "title": "Mount Doom",
+      "type": "MOUNTAINS",
+      "height": "HIGH_PEAKS",
+      "shape": "CIRCLE",
+      "size": "SMALL",
+      "positions": [
+        {"direction": "E", "distanceFrom": 12, "distanceTo": 18, "anchor": "ithilien", "priority": 10}
+      ],
+      "parameters": {
+        "g_builder": "mountain",
+        "landLevel": "160",
+        "landOffset": "45"
+      }
+    }
+  ]
+}

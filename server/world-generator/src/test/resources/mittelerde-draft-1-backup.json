@@ -243,7 +243,7 @@
       "shape": "CIRCLE",
       "size": "SMALL",
       "positions": [
-        {"direction": "E", "distanceFrom": 12, "distanceTo": 18, "anchor": "ithilien", "priority": 10}
+        {"direction": "E", "distanceFrom": 6, "distanceTo": 12, "anchor": "mordor-plateau", "priority": 10}
       ],
       "parameters": {
         "g_builder": "mountain",

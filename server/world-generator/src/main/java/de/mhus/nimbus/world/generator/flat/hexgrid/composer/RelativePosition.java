@@ -23,10 +23,14 @@ public class RelativePosition {
     private Integer distanceTo;
 
     public int getEffectiveDistanceFrom() {
-        return distanceFrom != null ? distanceFrom : distance.getFrom();
+        if (distanceFrom != null) return distanceFrom;
+        if (distance != null) return distance.getFrom();
+        return 0; // Default if both are null
     }
 
     public int getEffectiveDistanceTo() {
-        return distanceTo != null ? distanceTo : distance.getTo();
+        if (distanceTo != null) return distanceTo;
+        if (distance != null) return distance.getTo();
+        return 0; // Default if both are null
     }
 }
