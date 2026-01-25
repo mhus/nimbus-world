@@ -1,6 +1,20 @@
 {
   "name": "Middle-earth (Simplified)",
   "worldId": "me-simple-001",
+  "continents": [
+    {
+      "continentId": "middle-earth-mainland",
+      "name": "Middle-earth Mainland",
+      "biomeType": "MOUNTAINS",
+      "parameters": {
+        "g_builder": "mountain",
+        "landLevel": "80",
+        "landOffset": "10",
+        "g_offset": "30",
+        "g_roughness": "0.8"
+      }
+    }
+  ],
   "features": [
     {
       "featureType": "biome",
@@ -9,8 +23,14 @@
       "type": "PLAINS",
       "shape": "CIRCLE",
       "size": "WIDE",
+      "continentId": "middle-earth-mainland",
       "positions": [
-        {"direction": "N", "distanceFrom": 0, "anchor": "origin", "priority": 10}
+        {
+          "direction": "N",
+          "distanceFrom": 0,
+          "anchor": "origin",
+          "priority": 10
+        }
       ],
       "parameters": {
         "g_builder": "island",
@@ -31,13 +51,20 @@
       "tendLeft": "NONE",
       "tendRight": "NONE",
       "positions": [
-        {"direction": "N", "distanceFrom": 6, "distanceTo": 10, "anchor": "gondor-heartlands", "priority": 10}
+        {
+          "direction": "N",
+          "distanceFrom": 6,
+          "distanceTo": 10,
+          "anchor": "gondor-heartlands",
+          "priority": 10
+        }
       ],
       "parameters": {
         "g_builder": "mountain",
         "landLevel": "120",
         "landOffset": "30"
-      }
+      },
+      "continentId": "middle-earth-mainland"
     },
     {
       "featureType": "biome",
@@ -47,13 +74,20 @@
       "shape": "CIRCLE",
       "size": "WIDE",
       "positions": [
-        {"direction": "N", "distanceFrom": 2, "distanceTo": 6, "anchor": "white-mountains", "priority": 9}
+        {
+          "direction": "N",
+          "distanceFrom": 2,
+          "distanceTo": 6,
+          "anchor": "white-mountains",
+          "priority": 9
+        }
       ],
       "parameters": {
         "g_builder": "island",
         "landLevel": "85",
         "landOffset": "10"
-      }
+      },
+      "continentId": "middle-earth-mainland"
     },
     {
       "featureType": "biome",
@@ -63,13 +97,20 @@
       "shape": "CIRCLE",
       "size": "LARGE",
       "positions": [
-        {"direction": "E", "distanceFrom": 4, "distanceTo": 8, "anchor": "gondor-heartlands", "priority": 9}
+        {
+          "direction": "E",
+          "distanceFrom": 4,
+          "distanceTo": 8,
+          "anchor": "gondor-heartlands",
+          "priority": 9
+        }
       ],
       "parameters": {
         "g_builder": "island",
         "landLevel": "88",
         "landOffset": "7"
-      }
+      },
+      "continentId": "middle-earth-mainland"
     },
     {
       "featureType": "mountain-biome",
@@ -83,18 +124,25 @@
       "tendLeft": "NONE",
       "tendRight": "NONE",
       "positions": [
-        {"direction": "NE", "distanceFrom": 10, "distanceTo": 16, "anchor": "ithilien", "priority": 10}
+        {
+          "direction": "NE",
+          "distanceFrom": 10,
+          "distanceTo": 16,
+          "anchor": "ithilien",
+          "priority": 10
+        }
       ],
       "parameters": {
         "g_builder": "mountain",
         "landLevel": "125",
         "landOffset": "28"
-      }
+      },
+      "continentId": "middle-earth-mainland"
     },
     {
       "featureType": "mountain-biome",
       "name": "west-mordor-mountains",
-      "title": "Ephel Dúath (Mountains of Shadow)",
+      "title": "Ephel D\u00faath (Mountains of Shadow)",
       "type": "MOUNTAINS",
       "height": "MEDIUM_PEAKS",
       "shape": "LINE",
@@ -103,13 +151,20 @@
       "tendLeft": "SLIGHT",
       "tendRight": "SLIGHT",
       "positions": [
-        {"direction": "E", "distanceFrom": 6, "distanceTo": 10, "anchor": "ithilien", "priority": 10}
+        {
+          "direction": "E",
+          "distanceFrom": 6,
+          "distanceTo": 10,
+          "anchor": "ithilien",
+          "priority": 10
+        }
       ],
       "parameters": {
         "g_builder": "mountain",
         "landLevel": "130",
         "landOffset": "30"
-      }
+      },
+      "continentId": "middle-earth-mainland"
     },
     {
       "featureType": "mountain-biome",
@@ -123,13 +178,20 @@
       "tendLeft": "SLIGHT",
       "tendRight": "NONE",
       "positions": [
-        {"direction": "SE", "distanceFrom": 14, "distanceTo": 22, "anchor": "ithilien", "priority": 8}
+        {
+          "direction": "SE",
+          "distanceFrom": 14,
+          "distanceTo": 22,
+          "anchor": "ithilien",
+          "priority": 8
+        }
       ],
       "parameters": {
         "g_builder": "mountain",
         "landLevel": "110",
         "landOffset": "20"
-      }
+      },
+      "continentId": "middle-earth-mainland"
     },
     {
       "featureType": "mountain-biome",
@@ -143,13 +205,20 @@
       "tendLeft": "NONE",
       "tendRight": "SLIGHT",
       "positions": [
-        {"direction": "E", "distanceFrom": 14, "distanceTo": 22, "anchor": "ithilien", "priority": 7}
+        {
+          "direction": "E",
+          "distanceFrom": 14,
+          "distanceTo": 22,
+          "anchor": "ithilien",
+          "priority": 7
+        }
       ],
       "parameters": {
         "g_builder": "mountain",
         "landLevel": "105",
         "landOffset": "18"
-      }
+      },
+      "continentId": "middle-earth-mainland"
     },
     {
       "featureType": "biome",
@@ -166,7 +235,13 @@
       "sizeFrom": 35,
       "sizeTo": 45,
       "positions": [
-        {"direction": "E", "distanceFrom": 10, "distanceTo": 16, "anchor": "ithilien", "priority": 9}
+        {
+          "direction": "E",
+          "distanceFrom": 10,
+          "distanceTo": 16,
+          "anchor": "ithilien",
+          "priority": 9
+        }
       ],
       "parameters": {
         "g_builder": "mountain",
@@ -183,7 +258,13 @@
       "shape": "CIRCLE",
       "size": "SMALL",
       "positions": [
-        {"direction": "E", "distanceFrom": 12, "distanceTo": 18, "anchor": "ithilien", "priority": 10}
+        {
+          "direction": "E",
+          "distanceFrom": 12,
+          "distanceTo": 18,
+          "anchor": "ithilien",
+          "priority": 10
+        }
       ],
       "parameters": {
         "g_builder": "mountain",

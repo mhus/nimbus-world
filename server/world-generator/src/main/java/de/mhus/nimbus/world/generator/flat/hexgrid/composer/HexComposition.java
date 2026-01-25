@@ -27,6 +27,10 @@ public class HexComposition implements BuildFeature {
 
     // NEW: Feature-based list (replaces biomes + villages)
     private List<Feature> features;
+
+    // Continent definitions for filling gaps between biomes
+    private List<Continent> continents;
+
     @Builder.Default
     private String version = "1.0.0";
     private Instant createdAt;

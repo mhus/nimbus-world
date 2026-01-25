@@ -33,6 +33,14 @@ public abstract class Area extends Feature {
     private List<String> enclosedBy;
 
     /**
+     * Continent ID - groups biomes into continents.
+     * When set, gaps between biomes with the same continentId will be filled
+     * with the continent's filler biome type instead of ocean.
+     * This creates cohesive landmasses instead of isolated islands.
+     */
+    private String continentId;
+
+    /**
      * Direction deviation for LINE-shaped areas (0.0 = never deviate, 1.0 = always deviate).
      * When placing LINE-shaped areas, this determines the probability of changing direction
      * at each step, creating more organic/natural shapes instead of perfectly straight lines.

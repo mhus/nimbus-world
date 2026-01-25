@@ -1,0 +1,73 @@
+{
+  "name": "Continent Test World",
+  "worldId": "continent-test-001",
+  "continents": [
+    {
+      "continentId": "main-continent",
+      "name": "Main Continent",
+      "biomeType": "MOUNTAINS",
+      "minNeighbors": 2,
+      "parameters": {
+        "g_builder": "mountain",
+        "landLevel": "80",
+        "landOffset": "10",
+        "g_offset": "30",
+        "g_roughness": "0.8"
+      }
+    }
+  ],
+  "features": [
+    {
+      "featureType": "biome",
+      "name": "west-region",
+      "title": "Western Plains",
+      "type": "PLAINS",
+      "shape": "CIRCLE",
+      "size": "LARGE",
+      "continentId": "main-continent",
+      "positions": [
+        {"direction": "W", "distanceFrom": 0, "anchor": "origin", "priority": 10}
+      ],
+      "parameters": {
+        "g_builder": "island",
+        "landLevel": "90",
+        "landOffset": "8"
+      }
+    },
+    {
+      "featureType": "biome",
+      "name": "east-region",
+      "title": "Eastern Forest",
+      "type": "FOREST",
+      "shape": "CIRCLE",
+      "size": "LARGE",
+      "continentId": "main-continent",
+      "positions": [
+        {"direction": "E", "distanceFrom": 20, "distanceTo": 30, "anchor": "west-region", "priority": 10}
+      ],
+      "parameters": {
+        "g_builder": "island",
+        "landLevel": "88",
+        "landOffset": "7"
+      }
+    },
+    {
+      "featureType": "mountain-biome",
+      "name": "central-mountains",
+      "title": "Central Mountains",
+      "type": "MOUNTAINS",
+      "height": "MEDIUM_PEAKS",
+      "shape": "CIRCLE",
+      "size": "MEDIUM",
+      "continentId": "main-continent",
+      "positions": [
+        {"direction": "E", "distanceFrom": 10, "distanceTo": 15, "anchor": "west-region", "priority": 10}
+      ],
+      "parameters": {
+        "g_builder": "mountain",
+        "landLevel": "120",
+        "landOffset": "30"
+      }
+    }
+  ]
+}

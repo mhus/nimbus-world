@@ -42,6 +42,21 @@ public class HexGridFillResult {
     private int coastFillCount;
 
     /**
+     * Count of mountain filler grids
+     */
+    private int mountainFillCount;
+
+    /**
+     * Count of lowland filler grids
+     */
+    private int lowlandFillCount;
+
+    /**
+     * Count of continent filler grids
+     */
+    private int continentFillCount;
+
+    /**
      * Total number of grids
      */
     private int totalGridCount;

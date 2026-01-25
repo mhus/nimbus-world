@@ -151,7 +151,7 @@ public class HexCompositeBuilder {
 
             // Step 4: Fill gaps with specialized fillers (optional)
             HexGridFillResult fillResult = null;
-            int mountainAdded = 0, lowlandAdded = 0, coastAdded = 0, oceanAdded = 0;
+            int mountainAdded = 0, lowlandAdded = 0, continentAdded = 0, coastAdded = 0, oceanAdded = 0;
 
             if (fillGaps) {
                 log.info("Step 4: Filling gaps with MountainFiller, LowlandFiller, CoastFiller (coastRings={})", oceanBorderRings);
@@ -181,6 +181,12 @@ public class HexCompositeBuilder {
                 lowlandAdded = lowlandFiller.fill(composition, gridIndex, placementResult);
                 log.info("LowlandFiller: added {} PlacedBiomes", lowlandAdded);
 
+                // 2.5. ContinentFiller (fills gaps between biomes on same continent)
+                gridIndex = buildGridIndex.get();
+                ContinentFiller continentFiller = new ContinentFiller();
+                continentAdded = continentFiller.fill(composition, gridIndex, placementResult);
+                log.info("ContinentFiller: added {} grids", continentAdded);
+
                 // 3. CoastFiller
                 gridIndex = buildGridIndex.get();
                 CoastFiller coastFiller = new CoastFiller(oceanBorderRings);
@@ -193,10 +199,10 @@ public class HexCompositeBuilder {
                 oceanAdded = oceanFiller.fill(composition, gridIndex, placementResult);
                 log.info("OceanFiller: added {} PlacedBiomes", oceanAdded);
 
-                int totalFillerBiomes = mountainAdded + lowlandAdded + coastAdded + oceanAdded;
+                int totalFillerBiomes = mountainAdded + lowlandAdded + continentAdded + coastAdded + oceanAdded;
 
-                log.info("Filling complete: added {} filler PlacedBiomes (Mountain: {}, Lowland: {}, Coast: {}, Ocean: {})",
-                    totalFillerBiomes, mountainAdded, lowlandAdded, coastAdded, oceanAdded);
+                log.info("Filling complete: added {} filler grids (Mountain: {}, Lowland: {}, Continent: {}, Coast: {}, Ocean: {})",
+                    totalFillerBiomes, mountainAdded, lowlandAdded, continentAdded, coastAdded, oceanAdded);
             } else {
                 log.info("Step 4: Skipping gap filling (disabled)");
             }
@@ -285,6 +291,9 @@ public class HexCompositeBuilder {
                     .oceanFillCount(oceanAdded)
                     .landFillCount(mountainAdded + lowlandAdded)
                     .coastFillCount(coastAdded)
+                    .mountainFillCount(mountainAdded)
+                    .lowlandFillCount(lowlandAdded)
+                    .continentFillCount(continentAdded)
                     .success(true)
                     .build();
 

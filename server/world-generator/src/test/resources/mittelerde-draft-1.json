@@ -1,6 +1,22 @@
 {
   "name": "Middle-earth (Spec-aligned)",
   "worldId": "me-spec-003",
+  "continents": [
+    {
+      "continentId": "middle-earth-mainland",
+      "name": "Middle-earth Mainland",
+      "description": "The main landmass of Middle-earth, connecting all major regions",
+      "biomeType": "MOUNTAINS",
+      "minNeighbors": 2,
+      "parameters": {
+        "g_builder": "mountain",
+        "landLevel": "80",
+        "landOffset": "10",
+        "g_offset": "30",
+        "g_roughness": "0.8"
+      }
+    }
+  ],
   "features": [
     {
       "featureType": "biome",
@@ -9,8 +25,14 @@
       "type": "PLAINS",
       "shape": "CIRCLE",
       "size": "WIDE",
+      "continentId": "middle-earth-mainland",
       "positions": [
-        {"direction": "N", "distanceFrom": 0, "anchor": "origin", "priority": 10}
+        {
+          "direction": "N",
+          "distanceFrom": 0,
+          "anchor": "origin",
+          "priority": 10
+        }
       ],
       "parameters": {
         "g_builder": "island",
@@ -31,7 +53,13 @@
       "tendLeft": "NONE",
       "tendRight": "NONE",
       "positions": [
-        {"direction": "N", "distanceFrom": 6, "distanceTo": 10, "anchor": "gondor-heartlands", "priority": 10}
+        {
+          "direction": "N",
+          "distanceFrom": 6,
+          "distanceTo": 10,
+          "anchor": "gondor-heartlands",
+          "priority": 10
+        }
       ],
       "parameters": {
         "g_builder": "mountain",
@@ -39,7 +67,8 @@
         "landOffset": "30",
         "g_offset": "30",
         "g_roughness": "0.75"
-      }
+      },
+      "continentId": "middle-earth-mainland"
     },
     {
       "featureType": "biome",
@@ -49,14 +78,21 @@
       "shape": "CIRCLE",
       "size": "WIDE",
       "positions": [
-        {"direction": "N", "distanceFrom": 2, "distanceTo": 6, "anchor": "white-mountains", "priority": 9}
+        {
+          "direction": "N",
+          "distanceFrom": 2,
+          "distanceTo": 6,
+          "anchor": "white-mountains",
+          "priority": 9
+        }
       ],
       "parameters": {
         "g_builder": "island",
         "landLevel": "85",
         "landOffset": "10",
         "g_offset": "1"
-      }
+      },
+      "continentId": "middle-earth-mainland"
     },
     {
       "featureType": "forest-biome",
@@ -66,7 +102,13 @@
       "shape": "CIRCLE",
       "size": "LARGE",
       "positions": [
-        {"direction": "NE", "distanceFrom": 6, "distanceTo": 12, "anchor": "rohan-plains", "priority": 7}
+        {
+          "direction": "NE",
+          "distanceFrom": 6,
+          "distanceTo": 12,
+          "anchor": "rohan-plains",
+          "priority": 7
+        }
       ],
       "parameters": {
         "g_builder": "mountain",
@@ -75,7 +117,8 @@
         "g_flora": "forest",
         "flora_density": "0.95",
         "g_offset": "2"
-      }
+      },
+      "continentId": "middle-earth-mainland"
     },
     {
       "featureType": "mountain-biome",
@@ -89,7 +132,13 @@
       "tendLeft": "NONE",
       "tendRight": "NONE",
       "positions": [
-        {"direction": "NW", "distanceFrom": 22, "distanceTo": 35, "anchor": "gondor-heartlands", "priority": 6}
+        {
+          "direction": "NW",
+          "distanceFrom": 22,
+          "distanceTo": 35,
+          "anchor": "gondor-heartlands",
+          "priority": 6
+        }
       ],
       "parameters": {
         "g_builder": "mountain",
@@ -97,7 +146,8 @@
         "landOffset": "40",
         "g_offset": "40",
         "g_roughness": "0.85"
-      }
+      },
+      "continentId": "middle-earth-mainland"
     },
     {
       "featureType": "forest-biome",
@@ -107,7 +157,13 @@
       "shape": "CIRCLE",
       "size": "LARGE",
       "positions": [
-        {"direction": "E", "distanceFrom": 4, "distanceTo": 8, "anchor": "gondor-heartlands", "priority": 9}
+        {
+          "direction": "E",
+          "distanceFrom": 4,
+          "distanceTo": 8,
+          "anchor": "gondor-heartlands",
+          "priority": 9
+        }
       ],
       "parameters": {
         "g_builder": "island",
@@ -116,9 +172,9 @@
         "g_flora": "forest",
         "flora_density": "0.75",
         "g_offset": "1"
-      }
+      },
+      "continentId": "middle-earth-mainland"
     },
-
     {
       "featureType": "mountain-biome",
       "name": "north-mordor-mountains",
@@ -131,7 +187,13 @@
       "tendLeft": "NONE",
       "tendRight": "NONE",
       "positions": [
-        {"direction": "NE", "distanceFrom": 10, "distanceTo": 16, "anchor": "ithilien", "priority": 10}
+        {
+          "direction": "NE",
+          "distanceFrom": 10,
+          "distanceTo": 16,
+          "anchor": "ithilien",
+          "priority": 10
+        }
       ],
       "parameters": {
         "g_builder": "mountain",
@@ -139,12 +201,13 @@
         "landOffset": "28",
         "g_offset": "33",
         "g_roughness": "0.78"
-      }
+      },
+      "continentId": "middle-earth-mainland"
     },
     {
       "featureType": "mountain-biome",
       "name": "west-mordor-mountains",
-      "title": "Ephel Dúath (Mountains of Shadow)",
+      "title": "Ephel D\u00faath (Mountains of Shadow)",
       "type": "MOUNTAINS",
       "height": "MEDIUM_PEAKS",
       "shape": "LINE",
@@ -153,7 +216,13 @@
       "tendLeft": "SLIGHT",
       "tendRight": "SLIGHT",
       "positions": [
-        {"direction": "E", "distanceFrom": 6, "distanceTo": 10, "anchor": "ithilien", "priority": 10}
+        {
+          "direction": "E",
+          "distanceFrom": 6,
+          "distanceTo": 10,
+          "anchor": "ithilien",
+          "priority": 10
+        }
       ],
       "parameters": {
         "g_builder": "mountain",
@@ -161,7 +230,8 @@
         "landOffset": "30",
         "g_offset": "35",
         "g_roughness": "0.8"
-      }
+      },
+      "continentId": "middle-earth-mainland"
     },
     {
       "featureType": "mountain-biome",
@@ -175,7 +245,13 @@
       "tendLeft": "SLIGHT",
       "tendRight": "NONE",
       "positions": [
-        {"direction": "SE", "distanceFrom": 14, "distanceTo": 22, "anchor": "ithilien", "priority": 8}
+        {
+          "direction": "SE",
+          "distanceFrom": 14,
+          "distanceTo": 22,
+          "anchor": "ithilien",
+          "priority": 8
+        }
       ],
       "parameters": {
         "g_builder": "mountain",
@@ -183,7 +259,8 @@
         "landOffset": "20",
         "g_offset": "25",
         "g_roughness": "0.7"
-      }
+      },
+      "continentId": "middle-earth-mainland"
     },
     {
       "featureType": "mountain-biome",
@@ -197,7 +274,13 @@
       "tendLeft": "NONE",
       "tendRight": "SLIGHT",
       "positions": [
-        {"direction": "E", "distanceFrom": 14, "distanceTo": 22, "anchor": "ithilien", "priority": 7}
+        {
+          "direction": "E",
+          "distanceFrom": 14,
+          "distanceTo": 22,
+          "anchor": "ithilien",
+          "priority": 7
+        }
       ],
       "parameters": {
         "g_builder": "mountain",
@@ -205,7 +288,8 @@
         "landOffset": "18",
         "g_offset": "22",
         "g_roughness": "0.65"
-      }
+      },
+      "continentId": "middle-earth-mainland"
     },
     {
       "featureType": "biome",
@@ -222,7 +306,13 @@
       "sizeFrom": 35,
       "sizeTo": 45,
       "positions": [
-        {"direction": "E", "distanceFrom": 10, "distanceTo": 16, "anchor": "ithilien", "priority": 9}
+        {
+          "direction": "E",
+          "distanceFrom": 10,
+          "distanceTo": 16,
+          "anchor": "ithilien",
+          "priority": 9
+        }
       ],
       "parameters": {
         "g_builder": "mountain",
@@ -232,7 +322,8 @@
         "cactus_density": "0.05",
         "g_offset": "6",
         "g_roughness": "0.3"
-      }
+      },
+      "continentId": "middle-earth-mainland"
     },
     {
       "featureType": "mountain-biome",
@@ -243,7 +334,13 @@
       "shape": "CIRCLE",
       "size": "SMALL",
       "positions": [
-        {"direction": "E", "distanceFrom": 12, "distanceTo": 18, "anchor": "ithilien", "priority": 10}
+        {
+          "direction": "E",
+          "distanceFrom": 12,
+          "distanceTo": 18,
+          "anchor": "ithilien",
+          "priority": 10
+        }
       ],
       "parameters": {
         "g_builder": "mountain",
@@ -251,9 +348,9 @@
         "landOffset": "45",
         "g_offset": "55",
         "g_roughness": "0.9"
-      }
+      },
+      "continentId": "middle-earth-mainland"
     },
-
     {
       "featureType": "coast-biome",
       "name": "gondor-coast",
@@ -265,11 +362,18 @@
       "tendLeft": "MODERATE",
       "tendRight": "SLIGHT",
       "positions": [
-        {"direction": "SW", "distanceFrom": 10, "distanceTo": 20, "anchor": "gondor-heartlands", "priority": 6}
+        {
+          "direction": "SW",
+          "distanceFrom": 10,
+          "distanceTo": 20,
+          "anchor": "gondor-heartlands",
+          "priority": 6
+        }
       ],
       "parameters": {
         "g_builder": "coast"
-      }
+      },
+      "continentId": "middle-earth-mainland"
     },
     {
       "featureType": "biome",
@@ -279,25 +383,40 @@
       "shape": "CIRCLE",
       "size": "WIDE",
       "positions": [
-        {"direction": "W", "distanceFrom": 6, "distanceTo": 12, "anchor": "gondor-coast", "priority": 5}
+        {
+          "direction": "W",
+          "distanceFrom": 15,
+          "distanceTo": 25,
+          "anchor": "gondor-heartlands",
+          "priority": 5
+        }
       ],
       "parameters": {
         "g_builder": "ocean"
       }
     },
-
     {
       "featureType": "point",
       "name": "minas-tirith",
       "title": "Minas Tirith",
       "positions": [
-        {"direction": "N", "distanceFrom": 2, "distanceTo": 6, "anchor": "gondor-heartlands", "priority": 10}
+        {
+          "direction": "N",
+          "distanceFrom": 2,
+          "distanceTo": 6,
+          "anchor": "gondor-heartlands",
+          "priority": 10
+        }
       ],
       "snap": {
         "mode": "INSIDE",
         "target": "gondor-heartlands",
-        "avoid": ["anduin-great-river"],
-        "preferNear": ["white-mountains"],
+        "avoid": [
+          "anduin-great-river"
+        ],
+        "preferNear": [
+          "white-mountains"
+        ],
         "minDistanceFromAvoid": 2,
         "maxDistanceFromPrefer": 4
       },
@@ -311,13 +430,21 @@
       "name": "osgiliath",
       "title": "Osgiliath (River Crossing)",
       "positions": [
-        {"direction": "E", "distanceFrom": 3, "distanceTo": 8, "anchor": "minas-tirith", "priority": 9}
+        {
+          "direction": "E",
+          "distanceFrom": 3,
+          "distanceTo": 8,
+          "anchor": "minas-tirith",
+          "priority": 9
+        }
       ],
       "snap": {
         "mode": "INSIDE",
         "target": "gondor-heartlands",
         "avoid": [],
-        "preferNear": ["ithilien"],
+        "preferNear": [
+          "ithilien"
+        ],
         "minDistanceFromAvoid": 1,
         "maxDistanceFromPrefer": 3
       },
@@ -331,7 +458,13 @@
       "name": "anduin-source",
       "title": "Source of Anduin",
       "positions": [
-        {"direction": "N", "distanceFrom": 6, "distanceTo": 18, "anchor": "misty-mountains", "priority": 10}
+        {
+          "direction": "N",
+          "distanceFrom": 6,
+          "distanceTo": 18,
+          "anchor": "misty-mountains",
+          "priority": 10
+        }
       ],
       "snap": {
         "mode": "INSIDE",
@@ -351,13 +484,22 @@
       "name": "morannon",
       "title": "Morannon (Black Gate)",
       "positions": [
-        {"direction": "E", "distanceFrom": 2, "distanceTo": 6, "anchor": "ithilien", "priority": 10}
+        {
+          "direction": "E",
+          "distanceFrom": 2,
+          "distanceTo": 6,
+          "anchor": "ithilien",
+          "priority": 10
+        }
       ],
       "snap": {
         "mode": "EDGE",
         "target": "mordor-plateau",
         "avoid": [],
-        "preferNear": ["north-mordor-mountains", "west-mordor-mountains"],
+        "preferNear": [
+          "north-mordor-mountains",
+          "west-mordor-mountains"
+        ],
         "minDistanceFromAvoid": 1,
         "maxDistanceFromPrefer": 2
       },
@@ -368,15 +510,23 @@
     {
       "featureType": "point",
       "name": "barad-dur",
-      "title": "Barad-dûr",
+      "title": "Barad-d\u00fbr",
       "positions": [
-        {"direction": "E", "distanceFrom": 2, "distanceTo": 6, "anchor": "mordor-plateau", "priority": 9}
+        {
+          "direction": "E",
+          "distanceFrom": 2,
+          "distanceTo": 6,
+          "anchor": "mordor-plateau",
+          "priority": 9
+        }
       ],
       "snap": {
         "mode": "INSIDE",
         "target": "mordor-plateau",
         "avoid": [],
-        "preferNear": ["orodruin"],
+        "preferNear": [
+          "orodruin"
+        ],
         "minDistanceFromAvoid": 1,
         "maxDistanceFromPrefer": 4
       },
@@ -384,7 +534,6 @@
         "type": "fortress"
       }
     },
-
     {
       "featureType": "biome",
       "name": "minas-tirith-city",
@@ -393,14 +542,21 @@
       "shape": "CIRCLE",
       "size": "MEDIUM",
       "positions": [
-        {"direction": "N", "distanceFrom": 0, "distanceTo": 0, "anchor": "minas-tirith", "priority": 10}
+        {
+          "direction": "N",
+          "distanceFrom": 2,
+          "distanceTo": 6,
+          "anchor": "gondor-heartlands",
+          "priority": 10
+        }
       ],
       "parameters": {
         "g_builder": "island",
         "landLevel": "100",
         "landOffset": "2",
         "g_offset": "0"
-      }
+      },
+      "continentId": "middle-earth-mainland"
     },
     {
       "featureType": "sidewall",
@@ -416,13 +572,15 @@
       "respectRoad": true,
       "respectRiver": true
     },
-
     {
       "featureType": "river",
       "name": "anduin-great-river",
       "type": "RIVER",
       "startPointId": "anduin-source",
-      "waypointIds": ["rohan-plains", "osgiliath"],
+      "waypointIds": [
+        "rohan-plains",
+        "osgiliath"
+      ],
       "mergeToId": "great-sea",
       "depth": 4,
       "level": 60,
@@ -439,7 +597,10 @@
       "name": "gondor-to-mordor-road",
       "type": "ROAD",
       "startPointId": "minas-tirith",
-      "waypointIds": ["osgiliath", "ithilien"],
+      "waypointIds": [
+        "osgiliath",
+        "ithilien"
+      ],
       "endPointId": "morannon",
       "roadType": "paved",
       "level": 95,
