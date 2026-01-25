@@ -14,7 +14,7 @@ import java.util.*;
 @Slf4j
 public class BiomeComposer {
 
-    private static final int[] DIRECTION_ANGLES = {0, 60, 120, 180, 240, 300}; // N, NE, E, SE, S, SW
+    private static final int[] DIRECTION_ANGLES = {0, 60, 120, 180, 240, 300}; // NE, E, SE, SW, W, NW (pointy-top hex)
 
     /**
      * Composes biomes from a prepared composition
@@ -185,9 +185,9 @@ public class BiomeComposer {
      * Calculates hex coordinate offset for given angle and distance
      */
     private HexVector2 calculateHexOffset(int angle, int distance) {
-        // Hex directions (axial coordinates)
-        // 0° (N): (0, -1), 60° (NE): (1, -1), 120° (E): (1, 0)
-        // 180° (S): (0, 1), 240° (SW): (-1, 1), 300° (W): (-1, 0)
+        // Pointy-top hex directions (axial coordinates, spike points up)
+        // 0° (NE): (1, -1), 60° (E): (1, 0), 120° (SE): (0, 1)
+        // 180° (SW): (-1, 1), 240° (W): (-1, 0), 300° (NW): (0, -1)
 
         // Find closest hex direction
         int closestAngle = 0;
@@ -201,15 +201,15 @@ public class BiomeComposer {
             }
         }
 
-        // Get direction unit vector
+        // Get direction unit vector for pointy-top hex
         int dq = 0, dr = 0;
         switch (closestAngle) {
-            case 0:   dq = 0;  dr = -1; break; // N
-            case 60:  dq = 1;  dr = -1; break; // NE
-            case 120: dq = 1;  dr = 0;  break; // E
-            case 180: dq = 0;  dr = 1;  break; // S
-            case 240: dq = -1; dr = 1;  break; // SW
-            case 300: dq = -1; dr = 0;  break; // W
+            case 0:   dq = 1;  dr = -1; break; // NE (top-right)
+            case 60:  dq = 1;  dr = 0;  break; // E (right)
+            case 120: dq = 0;  dr = 1;  break; // SE (bottom-right)
+            case 180: dq = -1; dr = 1;  break; // SW (bottom-left)
+            case 240: dq = -1; dr = 0;  break; // W (left)
+            case 300: dq = 0;  dr = -1; break; // NW (top-left)
         }
 
         return HexVector2.builder()

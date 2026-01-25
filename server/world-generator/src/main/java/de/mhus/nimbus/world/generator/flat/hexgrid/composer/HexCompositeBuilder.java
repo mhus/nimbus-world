@@ -291,6 +291,41 @@ public class HexCompositeBuilder {
             resultBuilder.flowCompositionResult(flowResult);
             resultBuilder.totalFlows(flowResult.getComposedFlows());
 
+            // Step 5b: Fill ocean gaps where flows cross empty space
+            if (fillGaps && flowResult.getComposedFlows() > 0) {
+                log.info("Step 5b: Filling ocean gaps where flows cross empty space");
+
+                // Rebuild grid index (includes all grids added so far)
+                Set<String> gridIndex = new java.util.HashSet<>();
+                for (PlacedBiome placed : placementResult.getPlacedBiomes()) {
+                    for (de.mhus.nimbus.generated.types.HexVector2 coord : placed.getCoordinates()) {
+                        gridIndex.add(coord.getQ() + ":" + coord.getR());
+                    }
+                }
+
+                OceanFiller oceanFlowFiller = new OceanFiller();
+                int flowGapsFilled = oceanFlowFiller.fillFlowGaps(composition, gridIndex, placementResult);
+
+                if (flowGapsFilled > 0) {
+                    log.info("OceanFiller.fillFlowGaps: added {} ocean biomes", flowGapsFilled);
+
+                    // Generate WHexGrids for new ocean-flow-gap grids
+                    int newGridsCount = 0;
+                    for (PlacedBiome placed : placementResult.getPlacedBiomes()) {
+                        if (placed.getBiome().getParameters() != null &&
+                            "true".equals(placed.getBiome().getParameters().get("flowGap"))) {
+                            List<de.mhus.nimbus.world.shared.world.WHexGrid> wHexGrids =
+                                biomeComposer.createWHexGridsForBiome(placed.getBiome(), placed.getCoordinates(), worldId);
+                            placementResult.getHexGrids().addAll(wHexGrids);
+                            newGridsCount += wHexGrids.size();
+                        }
+                    }
+                    log.info("Generated {} WHexGrids for flow-gap ocean grids", newGridsCount);
+                } else {
+                    log.info("No flow gaps to fill - all flow grids already exist");
+                }
+            }
+
             // Step 6: Sync parameters from FeatureHexGrids to WHexGrids
             log.info("Step 6: Syncing parameters from FeatureHexGrids to WHexGrids");
             HexGridParameterSync parameterSync = new HexGridParameterSync();

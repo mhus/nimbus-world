@@ -1221,6 +1221,18 @@ public class WorldCompositeImageTest {
     /**
      * Helper to create biome and prepare it for composition
      */
+    private RelativePosition createPosition(Direction direction, int angle,
+                                            int distFrom, int distTo,
+                                            String anchor, int priority) {
+        return RelativePosition.builder()
+            .direction(direction)
+            .distanceFrom(distFrom)
+            .distanceTo(distTo)
+            .anchor(anchor)
+            .priority(priority)
+            .build();
+    }
+
     private Biome createBiome(String name, BiomeType type, AreaShape shape,
                               int sizeFrom, int sizeTo,
                               Direction direction, int angle,
@@ -1235,13 +1247,7 @@ public class WorldCompositeImageTest {
         biome.setSizeFrom(sizeFrom);
         biome.setSizeTo(sizeTo);
 
-        RelativePosition pos = RelativePosition.builder()
-            .direction(direction)
-            .distanceFrom(distFrom)
-            .distanceTo(distTo)
-            .anchor(anchor)
-            .priority(priority)
-            .build();
+        RelativePosition pos = createPosition(direction, angle, distFrom, distTo, anchor, priority);
 
         biome.setPositions(Arrays.asList(pos));
 
@@ -1353,6 +1359,257 @@ public class WorldCompositeImageTest {
         longRoad.setWidth(FlowWidth.MEDIUM);
         longRoad.setType(FlowType.ROAD);
         composition.getFeatures().add(longRoad);
+
+        return composition;
+    }
+
+    /**
+     * Tests road through empty space (edge case - ocean should be auto-filled).
+     * Creates two distant biomes with a road between them crossing empty space.
+     */
+    @Test
+    public void testRoadThroughEmptySpace() throws Exception {
+        log.info("=== Testing Road Through Empty Space (Edge Case) ===");
+
+        HexComposition composition = createCompositionWithDistantBiomes();
+        exportInputModel(composition, "road-through-empty-space");
+
+        CompositionResult result = HexCompositeBuilder.builder()
+            .composition(composition)
+            .worldId("empty-space-test-world")
+            .seed(99999L)
+            .fillGaps(true)
+            .oceanBorderRings(0) // No coast rings to force the flow-gap scenario
+            .generateWHexGrids(false)
+            .build()
+            .compose();
+
+        assertTrue(result.isSuccess(), "Composition should succeed");
+        assertNotNull(result.getBiomePlacementResult(), "Should have placement result");
+        assertNotNull(result.getFlowCompositionResult(), "Should have flow result");
+        assertNotNull(result.getFillResult(), "Should have fill result");
+
+        HexGridFillResult fillResult = result.getFillResult();
+
+        log.info("Composition successful:");
+        log.info("- Total biomes: {}", result.getTotalBiomes());
+        log.info("- Total flows: {}", result.getTotalFlows());
+        log.info("- Flow segments: {}", result.getFlowCompositionResult().getTotalSegments());
+        log.info("- Total grids: {}", fillResult.getTotalGridCount());
+
+        // Build terrain for all grids
+        Map<HexVector2, WFlat> flats = new HashMap<>();
+        for (FilledHexGrid filled : fillResult.getAllGrids()) {
+            WFlat flat = buildGridTerrain(filled);
+            flats.put(filled.getCoordinate(), flat);
+        }
+        log.info("Built terrain for {} grids", flats.size());
+
+        // Save individual grid images
+        saveIndividualGridImages(flats, fillResult);
+
+        // Create composite image
+        createCompositeImage(flats, fillResult, "road-through-empty-space");
+
+        // Export generated model
+        exportGeneratedModel(fillResult, result.getFlowCompositionResult(), "road-through-empty-space");
+
+        log.info("=== Road Through Empty Space Test Completed ===");
+    }
+
+    /**
+     * Tests walls crossing between four biomes (N, S, E, W).
+     * Creates two walls: one from N to S, one from E to W.
+     */
+    @Test
+    public void testCrossingWalls() throws Exception {
+        log.info("=== Testing Crossing Walls (N-S and E-W) ===");
+
+        HexComposition composition = createCompositionWithCrossingWalls();
+        exportInputModel(composition, "crossing-walls");
+
+        CompositionResult result = HexCompositeBuilder.builder()
+            .composition(composition)
+            .worldId("crossing-walls-world")
+            .seed(77777L)
+            .fillGaps(true)
+            .oceanBorderRings(0)
+            .generateWHexGrids(false)
+            .build()
+            .compose();
+
+        assertTrue(result.isSuccess(), "Composition should succeed");
+        assertNotNull(result.getBiomePlacementResult(), "Should have placement result");
+        assertNotNull(result.getFlowCompositionResult(), "Should have flow result");
+        assertNotNull(result.getFillResult(), "Should have fill result");
+
+        HexGridFillResult fillResult = result.getFillResult();
+
+        log.info("Composition successful:");
+        log.info("- Total biomes: {}", result.getTotalBiomes());
+        log.info("- Total flows: {}", result.getTotalFlows());
+        log.info("- Flow segments: {}", result.getFlowCompositionResult().getTotalSegments());
+        log.info("- Total grids: {}", fillResult.getTotalGridCount());
+
+        // Verify walls were composed
+        assertEquals(2, result.getFlowCompositionResult().getComposedFlows(),
+            "Should have composed 2 walls");
+
+        // Build terrain for all grids
+        Map<HexVector2, WFlat> flats = new HashMap<>();
+        for (FilledHexGrid filled : fillResult.getAllGrids()) {
+            WFlat flat = buildGridTerrain(filled);
+            flats.put(filled.getCoordinate(), flat);
+        }
+        log.info("Built terrain for {} grids", flats.size());
+
+        // Save individual grid images
+        saveIndividualGridImages(flats, fillResult);
+
+        // Create composite image
+        createCompositeImage(flats, fillResult, "crossing-walls");
+
+        // Export generated model
+        exportGeneratedModel(fillResult, result.getFlowCompositionResult(), "crossing-walls");
+
+        log.info("=== Crossing Walls Test Completed ===");
+    }
+
+    /**
+     * Creates composition with 4 biomes in corners and 2 crossing diagonal walls.
+     *
+     * Biome layout (with different heights for visual distinction):
+     * - NW (links oben): HIGH_PEAKS (landLevel=150, landOffset=40, max ~240) - dunkel
+     * - NE (rechts oben): MEDIUM_PEAKS (landLevel=120, landOffset=30, max ~200)
+     * - SW (links unten): LOW_PEAKS (landLevel=100, landOffset=20, max ~170)
+     * - SE (rechts unten): MEADOW (landLevel=80, landOffset=10, max ~140) - hell
+     *
+     * Walls (diagonal, crossing in the middle forming an X):
+     * - Diagonal 1: NW → SE (links oben → rechts unten, stone, height 6)
+     * - Diagonal 2: NE → SW (rechts oben → links unten, brick, height 5)
+     */
+    private HexComposition createCompositionWithCrossingWalls() {
+        HexComposition composition = HexComposition.builder()
+            .name("Crossing Walls Test")
+            .worldId("crossing-walls-test")
+            .features(new ArrayList<>())
+            .build();
+
+        // NW biome (links oben) - High Mountains (landLevel=150, landOffset=40)
+        MountainBiome nwBiome = new MountainBiome();
+        nwBiome.setName("Northwest Tower");
+        nwBiome.setType(BiomeType.MOUNTAINS);
+        nwBiome.setHeight(MountainBiome.MountainHeight.HIGH_PEAKS);
+        nwBiome.setShape(AreaShape.CIRCLE);
+        nwBiome.setSizeFrom(2);
+        nwBiome.setSizeTo(3);
+        nwBiome.setPositions(List.of(createPosition(Direction.NW, 315, 6, 6, "origin", 8)));
+        composition.getFeatures().add(nwBiome);
+
+        // NE biome (rechts oben) - Medium Mountains (landLevel=120, landOffset=30)
+        MountainBiome neBiome = new MountainBiome();
+        neBiome.setName("Northeast Tower");
+        neBiome.setType(BiomeType.MOUNTAINS);
+        neBiome.setHeight(MountainBiome.MountainHeight.MEDIUM_PEAKS);
+        neBiome.setShape(AreaShape.CIRCLE);
+        neBiome.setSizeFrom(2);
+        neBiome.setSizeTo(3);
+        neBiome.setPositions(List.of(createPosition(Direction.NE, 45, 6, 6, "origin", 7)));
+        composition.getFeatures().add(neBiome);
+
+        // SW biome (links unten) - Low Mountains (landLevel=100, landOffset=20)
+        MountainBiome swBiome = new MountainBiome();
+        swBiome.setName("Southwest Tower");
+        swBiome.setType(BiomeType.MOUNTAINS);
+        swBiome.setHeight(MountainBiome.MountainHeight.LOW_PEAKS);
+        swBiome.setShape(AreaShape.CIRCLE);
+        swBiome.setSizeFrom(2);
+        swBiome.setSizeTo(3);
+        swBiome.setPositions(List.of(createPosition(Direction.SW, 225, 6, 6, "origin", 6)));
+        composition.getFeatures().add(swBiome);
+
+        // SE biome (rechts unten) - Meadow (landLevel=80, landOffset=10)
+        MountainBiome seBiome = new MountainBiome();
+        seBiome.setName("Southeast Tower");
+        seBiome.setType(BiomeType.MOUNTAINS);
+        seBiome.setHeight(MountainBiome.MountainHeight.MEADOW);
+        seBiome.setShape(AreaShape.CIRCLE);
+        seBiome.setSizeFrom(2);
+        seBiome.setSizeTo(3);
+        seBiome.setPositions(List.of(createPosition(Direction.SE, 135, 6, 6, "origin", 5)));
+        composition.getFeatures().add(seBiome);
+
+        // Wall from NW to SE (diagonal: links oben → rechts unten)
+        Wall diagonal1Wall = Wall.builder()
+            .height(6)
+            .level(50)
+            .material("stone")
+            .waypointIds(new ArrayList<>())
+            .endPointId("Southeast Tower")
+            .build();
+        diagonal1Wall.setName("NW-SE Diagonal Wall");
+        diagonal1Wall.setFeatureId("diagonal1-wall");
+        diagonal1Wall.setStartPointId("Northwest Tower");
+        diagonal1Wall.setWidthBlocks(2);
+        diagonal1Wall.setWidth(FlowWidth.MEDIUM);
+        diagonal1Wall.setType(FlowType.WALL);
+        composition.getFeatures().add(diagonal1Wall);
+
+        // Wall from NE to SW (diagonal: rechts oben → links unten, kreuzt diagonal1)
+        Wall diagonal2Wall = Wall.builder()
+            .height(5)
+            .level(50)
+            .material("brick")
+            .waypointIds(new ArrayList<>())
+            .endPointId("Southwest Tower")
+            .build();
+        diagonal2Wall.setName("NE-SW Diagonal Wall");
+        diagonal2Wall.setFeatureId("diagonal2-wall");
+        diagonal2Wall.setStartPointId("Northeast Tower");
+        diagonal2Wall.setWidthBlocks(2);
+        diagonal2Wall.setWidth(FlowWidth.MEDIUM);
+        diagonal2Wall.setType(FlowType.WALL);
+        composition.getFeatures().add(diagonal2Wall);
+
+        return composition;
+    }
+
+    /**
+     * Creates composition with two distant biomes (forcing empty space between them).
+     */
+    private HexComposition createCompositionWithDistantBiomes() {
+        HexComposition composition = HexComposition.builder()
+            .name("Distant Biomes Test")
+            .worldId("empty-space-test")
+            .features(new ArrayList<>())
+            .build();
+
+        // West biome: Small island
+        Biome westIsland = createBiome("West Island", BiomeType.PLAINS, AreaShape.CIRCLE,
+            2, 3, Direction.N, 0, 0, 0, "origin", 8);
+        westIsland.getParameters().put("decoupled", "true"); // Prevent auto-ocean-connection
+        composition.getFeatures().add(westIsland);
+
+        // East biome: Small island (far away)
+        Biome eastIsland = createBiome("East Island", BiomeType.FOREST, AreaShape.CIRCLE,
+            2, 3, Direction.E, 0, 20, 0, "origin", 7);
+        eastIsland.getParameters().put("decoupled", "true"); // Prevent auto-ocean-connection
+        composition.getFeatures().add(eastIsland);
+
+        // Road connecting the islands (will cross empty space)
+        Road bridgeRoad = Road.builder()
+            .roadType("bridge")
+            .level(95)
+            .waypointIds(new ArrayList<>())
+            .endPointId("East Island")
+            .build();
+        bridgeRoad.setName("Bridge Road");
+        bridgeRoad.setFeatureId("bridge-road");
+        bridgeRoad.setStartPointId("West Island");
+        bridgeRoad.setWidthBlocks(3);
+        bridgeRoad.setWidth(FlowWidth.MEDIUM);
+        bridgeRoad.setType(FlowType.ROAD);
+        composition.getFeatures().add(bridgeRoad);
 
         return composition;
     }

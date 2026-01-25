@@ -648,8 +648,9 @@ public class HexGridRoadConfigurator {
             }
 
             // Add arrays to config
+            // IMPORTANT: WallBuilder expects "route", not "segments"!
             if (!segments.isEmpty()) {
-                wallConfig.put("segments", segments);
+                wallConfig.put("route", segments);
             }
             if (!gates.isEmpty()) {
                 wallConfig.put("gates", gates);

@@ -114,15 +114,18 @@ public abstract class Area extends Feature {
      */
     private int convertDirectionToAngle(Direction direction) {
         if (direction == null) return 0;
+        // Pointy-top hex has 6 sides at 60° intervals (no N/S, starts with NE):
+        // NE(0°), E(60°), SE(120°), SW(180°), W(240°), NW(300°)
+        // N and S are mapped to nearest hex directions
         return switch (direction) {
-            case N -> 0;
-            case NE -> 60;
-            case E -> 120;
-            case SE -> 180;
-            case S -> 240;
-            case SW -> 300;
-            case W -> 360;  // 360 == 0
-            case NW -> 300;  // NW same as SW in hex
+            case N -> 330;    // North (top spike) → rounds to NW/NE
+            case NE -> 0;     // Northeast: top-right side
+            case E -> 60;     // East: right side
+            case SE -> 120;   // Southeast: bottom-right side
+            case S -> 150;    // South (bottom spike) → rounds to SE/SW
+            case SW -> 180;   // Southwest: bottom-left side
+            case W -> 240;    // West: left side
+            case NW -> 300;   // Northwest: top-left side
         };
     }
 

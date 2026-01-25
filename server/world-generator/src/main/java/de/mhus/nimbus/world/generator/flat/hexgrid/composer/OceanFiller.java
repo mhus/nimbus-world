@@ -14,6 +14,8 @@ import java.util.*;
  * 3. Connect all group centers with straight lines
  * 4. Only place ocean where no grid exists yet
  * 5. Skip biomes marked as 'decoupled'
+ *
+ * Also provides fillFlowGaps() to fill ocean where flows cross empty space.
  */
 @Slf4j
 public class OceanFiller {
@@ -345,6 +347,111 @@ public class OceanFiller {
             .q(Integer.parseInt(parts[0]))
             .r(Integer.parseInt(parts[1]))
             .build();
+    }
+
+    /**
+     * Fills ocean grids where flows cross empty space.
+     * This is called AFTER FlowComposer, so we know which grids flows pass through.
+     * For any flow grid that doesn't exist yet, we create an ocean filler grid.
+     *
+     * @param composition The composition with all flows
+     * @param existingCoords Set of existing coordinate keys (q:r)
+     * @param placementResult Placement result to add new ocean PlacedBiomes
+     * @return Number of ocean grids added
+     */
+    public int fillFlowGaps(HexComposition composition,
+                            Set<String> existingCoords,
+                            BiomePlacementResult placementResult) {
+        log.info("Starting OceanFiller.fillFlowGaps to fill grids crossed by flows");
+
+        // Collect all coordinates that flows pass through
+        Set<String> flowCoords = new HashSet<>();
+
+        // Collect from direct flows
+        if (composition.getRoads() != null) {
+            for (Road road : composition.getRoads()) {
+                collectFlowCoordinates(road, flowCoords);
+            }
+        }
+        if (composition.getRivers() != null) {
+            for (River river : composition.getRivers()) {
+                collectFlowCoordinates(river, flowCoords);
+            }
+        }
+        if (composition.getWalls() != null) {
+            for (Wall wall : composition.getWalls()) {
+                collectFlowCoordinates(wall, flowCoords);
+            }
+        }
+
+        // TODO: Also collect from composites if needed
+
+        log.info("Found {} grids crossed by flows", flowCoords.size());
+
+        // Find flow coordinates that are NOT yet filled
+        List<HexVector2> unfilledCoords = new ArrayList<>();
+        for (String coordKey : flowCoords) {
+            if (!existingCoords.contains(coordKey)) {
+                HexVector2 coord = parseCoordKey(coordKey);
+                unfilledCoords.add(coord);
+                existingCoords.add(coordKey); // Mark as occupied
+            }
+        }
+
+        log.info("Found {} unfilled grids that need ocean filler", unfilledCoords.size());
+
+        if (unfilledCoords.isEmpty()) {
+            log.info("All flow grids are already filled");
+            return 0;
+        }
+
+        // Create ocean biome for unfilled flow grids
+        Biome oceanBiome = new Biome();
+        oceanBiome.setName("ocean-flow-gaps");
+        oceanBiome.setType(BiomeType.OCEAN);
+
+        // Mark as filler
+        if (oceanBiome.getParameters() == null) {
+            oceanBiome.setParameters(new HashMap<>());
+        }
+        oceanBiome.getParameters().put("filler", "true");
+        oceanBiome.getParameters().put("fillerType", "ocean");
+        oceanBiome.getParameters().put("flowGap", "true");
+
+        // Apply defaults
+        oceanBiome.applyDefaults();
+
+        // Configure with coordinates
+        oceanBiome.configureHexGrids(unfilledCoords);
+
+        // Create PlacedBiome
+        PlacedBiome placedOcean = new PlacedBiome();
+        placedOcean.setBiome(oceanBiome);
+        placedOcean.setCenter(unfilledCoords.get(0)); // First coord as center
+        placedOcean.setCoordinates(new ArrayList<>(unfilledCoords));
+        placedOcean.setActualSize(unfilledCoords.size());
+
+        placementResult.getPlacedBiomes().add(placedOcean);
+
+        log.info("OceanFiller.fillFlowGaps added 1 ocean biome with {} grids", unfilledCoords.size());
+
+        return 1;
+    }
+
+    /**
+     * Collects all coordinates from a flow's FeatureHexGrids.
+     */
+    private void collectFlowCoordinates(Flow flow, Set<String> flowCoords) {
+        if (flow.getHexGrids() == null) {
+            return;
+        }
+
+        for (FeatureHexGrid hexGrid : flow.getHexGrids()) {
+            String coordKey = hexGrid.getPositionKey();
+            if (coordKey != null) {
+                flowCoords.add(coordKey);
+            }
+        }
     }
 }
 

@@ -21,6 +21,7 @@ public class Wall extends Flow {
     private List<String> waypointIds;
     private String endPointId;
     private Integer height;
+    private Integer level;
     private String material;
 
     public static WallBuilder builder() {
@@ -34,6 +35,9 @@ public class Wall extends Flow {
     protected void applyFlowDefaults(Map<String, String> defaults) {
         if (height == null && defaults.containsKey("default_height")) {
             height = Integer.parseInt(defaults.get("default_height"));
+        }
+        if (level == null && defaults.containsKey("default_level")) {
+            level = Integer.parseInt(defaults.get("default_level"));
         }
         if (material == null && defaults.containsKey("default_material")) {
             material = defaults.get("default_material");

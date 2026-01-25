@@ -415,6 +415,7 @@ public class FlowComposer {
             builder.level(river.getLevel());
         } else if (flow instanceof Wall wall) {
             builder.height(wall.getHeight());
+            builder.level(wall.getLevel());
             builder.material(wall.getMaterial());
         }
 
