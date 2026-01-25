@@ -678,4 +678,84 @@ public class MountainBiomeTest {
 
         log.info("=== Mountain Ridge Configuration Test Completed ===");
     }
+
+    @Test
+    public void testMountainFillerSystem() throws Exception {
+        log.info("=== Testing Mountain Filler System ===");
+
+        // Create a HIGH_PEAKS mountain
+        MountainBiome mountain = new MountainBiome();
+        mountain.setName("filler-test-mountain");
+        mountain.setType(BiomeType.MOUNTAINS);
+        mountain.setHeight(MountainBiome.MountainHeight.HIGH_PEAKS);
+        mountain.setShape(AreaShape.CIRCLE);
+        mountain.setSize(AreaSize.SMALL);
+        mountain.setPositions(java.util.List.of(createOriginPosition()));
+
+        // Create composition
+        HexComposition composition = HexComposition.builder()
+            .worldId("test-world")
+            .name("filler-test")
+            .features(new ArrayList<>())
+            .build();
+        composition.getFeatures().add(mountain);
+
+        // Compose with HexCompositeBuilder WITH fillGaps enabled
+        CompositionResult result = HexCompositeBuilder.builder()
+            .composition(composition)
+            .worldId("test-world")
+            .seed(12345L)
+            .fillGaps(true)  // Enable fillers!
+            .oceanBorderRings(1)
+            .generateWHexGrids(false)
+            .build()
+            .compose();
+
+        assertTrue(result.isSuccess(), "Composition should succeed");
+
+        // Check fill result
+        HexGridFillResult fillResult = result.getFillResult();
+        assertNotNull(fillResult, "Fill result should exist");
+        assertTrue(fillResult.isSuccess(), "Filling should succeed");
+
+        log.info("Filling stats: total={}, land={}, coast={}",
+            fillResult.getTotalGridCount(),
+            fillResult.getLandFillCount(),
+            fillResult.getCoastFillCount());
+
+        // Should have added mountain slopes (MEDIUM_PEAKS around HIGH_PEAKS)
+        assertTrue(fillResult.getLandFillCount() > 0,
+            "Should have added mountain slope grids");
+
+        // Should have added coast grids
+        assertTrue(fillResult.getCoastFillCount() > 0,
+            "Should have added coast grids");
+
+        // Check for filler grids in placement result
+        BiomePlacementResult placementResult = result.getBiomePlacementResult();
+        long fillerCount = placementResult.getHexGrids().stream()
+            .filter(g -> "true".equals(g.getParameters().get("filler")))
+            .count();
+
+        log.info("Found {} filler grids", fillerCount);
+        assertTrue(fillerCount > 0, "Should have filler grids");
+
+        // Check for mountain filler grids
+        long mountainFillerCount = placementResult.getHexGrids().stream()
+            .filter(g -> "mountain".equals(g.getParameters().get("fillerType")))
+            .count();
+
+        log.info("Found {} mountain filler grids", mountainFillerCount);
+        assertTrue(mountainFillerCount > 0, "Should have mountain slope grids");
+
+        // Check for coast filler grids
+        long coastFillerCount = placementResult.getHexGrids().stream()
+            .filter(g -> "coast".equals(g.getParameters().get("fillerType")))
+            .count();
+
+        log.info("Found {} coast filler grids", coastFillerCount);
+        assertTrue(coastFillerCount > 0, "Should have coast grids");
+
+        log.info("=== Mountain Filler System Test Completed ===");
+    }
 }

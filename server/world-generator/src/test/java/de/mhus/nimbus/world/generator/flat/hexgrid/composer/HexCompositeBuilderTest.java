@@ -117,10 +117,11 @@ public class HexCompositeBuilderTest {
         assertEquals(1, result.getTotalFlows(), "Should have 1 flow (river)");
         assertNotNull(result.getFlowCompositionResult(), "Should have flow result");
 
-        // Verify filling with ocean border
+        // Verify filling with coast border and ocean connections
         assertNotNull(result.getFillResult(), "Should have fill result");
         HexGridFillResult fillResult = result.getFillResult();
-        assertTrue(fillResult.getOceanFillCount() > 0, "Should have ocean grids");
+        // Ocean grids may or may not exist (depends on if regions need connecting)
+        assertTrue(fillResult.getCoastFillCount() > 0, "Should have coast grids");
         assertTrue(fillResult.getTotalGridCount() > result.getTotalGrids(),
             "Total grids should increase after filling");
 

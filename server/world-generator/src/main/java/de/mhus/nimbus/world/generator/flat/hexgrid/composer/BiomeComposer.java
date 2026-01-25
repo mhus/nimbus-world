@@ -441,6 +441,49 @@ public class BiomeComposer {
     }
 
     /**
+     * Creates WHexGrids for a biome with given coordinates.
+     * Used by fillers to create WHexGrids for filler biomes.
+     *
+     * @param biome The biome
+     * @param coordinates List of coordinates
+     * @param worldId World ID
+     * @return List of WHexGrids
+     */
+    public List<WHexGrid> createWHexGridsForBiome(Biome biome, List<HexVector2> coordinates, String worldId) {
+        List<WHexGrid> hexGrids = new ArrayList<>();
+
+        for (HexVector2 coord : coordinates) {
+            // Create public HexGrid data
+            HexGrid publicData = new HexGrid();
+            publicData.setPosition(coord);
+            publicData.setName(biome.getName() + " [" + coord.getQ() + "," + coord.getR() + "]");
+            publicData.setDescription("Part of " + biome.getType() + " biome");
+
+            // Copy parameters from biome
+            Map<String, String> parameters = new HashMap<>();
+            if (biome.getParameters() != null) {
+                parameters.putAll(biome.getParameters());
+            }
+
+            // Add biome type as parameter
+            parameters.put("biome", biome.getType().getBuilderName());
+            parameters.put("biomeName", biome.getName());
+
+            WHexGrid hexGrid = WHexGrid.builder()
+                .worldId(worldId)
+                .position(coord.getQ() + ":" + coord.getR())
+                .publicData(publicData)
+                .parameters(parameters)
+                .enabled(true)
+                .build();
+
+            hexGrids.add(hexGrid);
+        }
+
+        return hexGrids;
+    }
+
+    /**
      * Creates a single WHexGrid for a coordinate
      */
     private WHexGrid createHexGrid(HexVector2 coord, PlacedBiome placed, String worldId) {
