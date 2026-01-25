@@ -274,15 +274,15 @@ public class HexCompositeBuilderTest {
         log.info("=== Testing Middle-earth Composition ===");
 
         // Load composition from JSON file
-        File jsonFile = new File("src/test/resources/mittelerde-simple.json");
+        File jsonFile = new File("src/test/resources/mittelerde-draft-1.json");
         assertTrue(jsonFile.exists(), "Middle-earth JSON file should exist");
 
         ObjectMapper mapper = new ObjectMapper();
         HexComposition composition = mapper.readValue(jsonFile, HexComposition.class);
 
         assertNotNull(composition, "Composition should be loaded");
-        assertEquals("Middle-earth (Simplified)", composition.getName());
-        assertEquals("me-simple-001", composition.getWorldId());
+        assertEquals("Middle-earth (Spec-aligned)", composition.getName());
+        assertEquals("me-spec-003", composition.getWorldId());
         log.info("Loaded Middle-earth composition with {} features", composition.getFeatures().size());
 
         // Use HexCompositeBuilder for the complete pipeline
@@ -355,6 +355,9 @@ public class HexCompositeBuilderTest {
             // Export generated model
             exportGeneratedModel(fillResult, result.getFlowCompositionResult(), "middle-earth");
         }
+
+        // Export the processed input composition model
+        exportInputComposition(composition, "middle-earth");
 
         log.info("=== Middle-earth Composition Test Completed ===");
         log.info("Images saved to: {}", outputDir.toAbsolutePath());
@@ -699,6 +702,16 @@ public class HexCompositeBuilderTest {
         mapper.writerWithDefaultPrettyPrinter().writeValue(outputFile, model);
 
         log.info("Exported generated model to: {}", outputFile.getAbsolutePath());
+    }
+
+    private void exportInputComposition(HexComposition composition, String name) throws Exception {
+        File outputFile = outputDir.resolve(name + "-input-composition.json").toFile();
+
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.registerModule(new com.fasterxml.jackson.datatype.jsr310.JavaTimeModule());
+        mapper.writerWithDefaultPrettyPrinter().writeValue(outputFile, composition);
+
+        log.info("Exported input composition to: {}", outputFile.getAbsolutePath());
     }
 
     private HexComposition createCompositionWithRoad() {
