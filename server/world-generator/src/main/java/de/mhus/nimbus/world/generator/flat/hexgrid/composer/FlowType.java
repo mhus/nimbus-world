@@ -29,6 +29,17 @@ public enum FlowType {
         "default_height", "10",
         "default_material", "stone",
         "default_width", "2"
+    )),
+
+    SIDEWALL(SideWall.class, Map.of(
+        "default_height", "10",
+        "default_material", "stone",
+        "default_type", "3",
+        "default_width", "3",
+        "default_distance", "5",
+        "default_minimum", "0",
+        "default_respectRoad", "false",
+        "default_respectRiver", "false"
     ));
 
     private final Class<? extends Flow> flowClass;

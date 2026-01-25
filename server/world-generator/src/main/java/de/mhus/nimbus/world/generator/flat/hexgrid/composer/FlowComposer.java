@@ -123,6 +123,12 @@ public class FlowComposer {
                             BiomePlacementResult placementResult) {
         log.debug("Composing flow: {} (type: {})", flow.getName(), flow.getType());
 
+        // SideWalls are handled differently - they don't route from A to B
+        // but instead decorate the edges of a target biome
+        if (flow instanceof SideWall) {
+            return composeSideWall((SideWall) flow, prepared, placementResult);
+        }
+
         // Resolve start/end points
         if (!resolveFlowEndpoints(flow, prepared, placementResult)) {
             log.warn("Could not resolve endpoints for flow: {}", flow.getName());
@@ -1031,10 +1037,14 @@ public class FlowComposer {
     private List<Flow> collectFlows(HexComposition prepared) {
         List<Flow> flows = new ArrayList<>();
 
-        // Direct flows - cast to Flow interface
-        flows.addAll((List<? extends Flow>) prepared.getRoads());
-        flows.addAll((List<? extends Flow>) prepared.getRivers());
-        flows.addAll((List<? extends Flow>) prepared.getWalls());
+        // Collect all Flow subclasses from features
+        if (prepared.getFeatures() != null) {
+            for (Feature feature : prepared.getFeatures()) {
+                if (feature instanceof Flow) {
+                    flows.add((Flow) feature);
+                }
+            }
+        }
 
         // TODO: Flows from composites
 
@@ -1461,5 +1471,226 @@ public class FlowComposer {
      */
     private String coordKey(HexVector2 coord) {
         return coord.getQ() + "," + coord.getR();
+    }
+
+    /**
+     * Composes a SideWall by finding edge grids of the target biome
+     * and adding sidewall parameters to them.
+     *
+     * @param sideWall The SideWall feature to compose
+     * @param prepared The prepared composition
+     * @param placementResult Result from BiomeComposer
+     * @return Number of grids configured with sidewall
+     */
+    private int composeSideWall(SideWall sideWall, HexComposition prepared,
+                                BiomePlacementResult placementResult) {
+        log.info("Composing SideWall '{}' for target '{}'", sideWall.getName(), sideWall.getTargetBiomeId());
+
+        if (sideWall.getTargetBiomeId() == null) {
+            log.warn("SideWall '{}' has no targetBiomeId", sideWall.getName());
+            return 0;
+        }
+
+        // Find target biome
+        Biome targetBiome = findBiomeByFeatureId(sideWall.getTargetBiomeId(), prepared, placementResult);
+        if (targetBiome == null) {
+            log.warn("Could not find target biome '{}' for SideWall '{}'",
+                sideWall.getTargetBiomeId(), sideWall.getName());
+            return 0;
+        }
+
+        if (targetBiome.getHexGrids() == null || targetBiome.getHexGrids().isEmpty()) {
+            log.warn("Target biome '{}' has no HexGrids", targetBiome.getName());
+            return 0;
+        }
+
+        // Find edge grids of the target biome
+        List<FeatureHexGrid> edgeGrids = findBiomeEdgeGrids(targetBiome, placementResult);
+        if (edgeGrids.isEmpty()) {
+            log.warn("Target biome '{}' has no edge grids", targetBiome.getName());
+            return 0;
+        }
+
+        log.debug("Found {} edge grids for target biome '{}'", edgeGrids.size(), targetBiome.getName());
+
+        // Build sidewall JSON configuration
+        String sidewallJson = buildSideWallJson(sideWall);
+
+        // Add sidewall parameter to edge grids
+        int configuredCount = 0;
+        for (FeatureHexGrid edgeGrid : edgeGrids) {
+            // Filter by sides if specified
+            if (sideWall.getSides() != null && !sideWall.getSides().isEmpty()) {
+                // Only add sidewall to grids that have the requested sides exposed
+                List<SIDE> exposedSides = getExposedSides(edgeGrid, targetBiome, placementResult);
+                boolean hasRequestedSide = false;
+                for (SIDE side : sideWall.getSides()) {
+                    if (exposedSides.contains(side)) {
+                        hasRequestedSide = true;
+                        break;
+                    }
+                }
+                if (!hasRequestedSide) {
+                    continue;
+                }
+            }
+
+            edgeGrid.addParameter("sidewall", sidewallJson);
+            configuredCount++;
+        }
+
+        log.info("Configured {} edge grids with sidewall for '{}'", configuredCount, sideWall.getName());
+
+        // Update feature status
+        if (configuredCount > 0) {
+            sideWall.setStatus(FeatureStatus.COMPOSED);
+        }
+
+        return configuredCount;
+    }
+
+    /**
+     * Finds edge grids of a biome (grids that have at least one side not connected to another biome grid).
+     */
+    private List<FeatureHexGrid> findBiomeEdgeGrids(Biome biome, BiomePlacementResult placementResult) {
+        List<FeatureHexGrid> edgeGrids = new ArrayList<>();
+
+        // Build set of all biome coordinates for quick lookup
+        Set<String> biomeCoords = new HashSet<>();
+        for (FeatureHexGrid grid : biome.getHexGrids()) {
+            biomeCoords.add(coordKey(grid.getCoordinate()));
+        }
+
+        // Find edge grids (grids with at least one neighbor not in biome)
+        for (FeatureHexGrid grid : biome.getHexGrids()) {
+            List<HexVector2> neighbors = getHexNeighbors(grid.getCoordinate());
+            boolean isEdge = false;
+            for (HexVector2 neighbor : neighbors) {
+                if (!biomeCoords.contains(coordKey(neighbor))) {
+                    isEdge = true;
+                    break;
+                }
+            }
+            if (isEdge) {
+                edgeGrids.add(grid);
+            }
+        }
+
+        return edgeGrids;
+    }
+
+    /**
+     * Gets which sides of a grid are exposed (facing outside the biome).
+     */
+    private List<SIDE> getExposedSides(FeatureHexGrid grid, Biome biome,
+                                        BiomePlacementResult placementResult) {
+        List<SIDE> exposedSides = new ArrayList<>();
+
+        // Build set of biome coordinates
+        Set<String> biomeCoords = new HashSet<>();
+        for (FeatureHexGrid g : biome.getHexGrids()) {
+            biomeCoords.add(coordKey(g.getCoordinate()));
+        }
+
+        // Check each direction
+        SIDE[] sides = {
+            SIDE.NORTH_EAST,
+            SIDE.EAST,
+            SIDE.SOUTH_EAST,
+            SIDE.SOUTH_WEST,
+            SIDE.WEST,
+            SIDE.NORTH_WEST
+        };
+
+        int[][] directions = {
+            {1, -1},  // NE
+            {1, 0},   // E
+            {0, 1},   // SE
+            {-1, 1},  // SW
+            {-1, 0},  // W
+            {0, -1}   // NW
+        };
+
+        for (int i = 0; i < sides.length; i++) {
+            HexVector2 neighbor = HexVector2.builder()
+                .q(grid.getCoordinate().getQ() + directions[i][0])
+                .r(grid.getCoordinate().getR() + directions[i][1])
+                .build();
+
+            // Side is exposed if neighbor is not in biome
+            if (!biomeCoords.contains(coordKey(neighbor))) {
+                exposedSides.add(sides[i]);
+            }
+        }
+
+        return exposedSides;
+    }
+
+    /**
+     * Builds sidewall JSON configuration from SideWall feature.
+     * Format: {"sides": ["NE","E","SE"], "height": 5, "level": 50, "width": 3, "distance": 5, "minimum": 3, "type": 3}
+     */
+    private String buildSideWallJson(SideWall sideWall) {
+        try {
+            Map<String, Object> config = new HashMap<>();
+
+            // Sides (if specified, otherwise all sides)
+            if (sideWall.getSides() != null && !sideWall.getSides().isEmpty()) {
+                List<String> sideNames = new ArrayList<>();
+                for (SIDE side : sideWall.getSides()) {
+                    sideNames.add(side.name());
+                }
+                config.put("sides", sideNames);
+            } else {
+                // All sides
+                config.put("sides", List.of("NE", "E", "SE", "SW", "W", "NW"));
+            }
+
+            config.put("height", sideWall.getEffectiveHeight());
+            config.put("level", sideWall.getEffectiveLevel());
+            config.put("width", sideWall.getEffectiveWidthBlocks());
+            config.put("distance", sideWall.getEffectiveDistance());
+            config.put("minimum", sideWall.getEffectiveMinimum());
+            config.put("type", sideWall.getEffectiveMaterialType());
+            config.put("material", sideWall.getEffectiveMaterialType()); // Use same as type
+            config.put("respectRoad", sideWall.isEffectiveRespectRoad());
+            config.put("respectRiver", sideWall.isEffectiveRespectRiver());
+
+            return new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(config);
+        } catch (Exception e) {
+            log.error("Failed to build sidewall JSON", e);
+            return "{}";
+        }
+    }
+
+    /**
+     * Finds a biome by featureId.
+     */
+    private Biome findBiomeByFeatureId(String featureId, HexComposition prepared,
+                                       BiomePlacementResult placementResult) {
+        // First try placed biomes
+        for (PlacedBiome placedBiome : placementResult.getPlacedBiomes()) {
+            Biome biome = placedBiome.getBiome();
+            if (biome != null && featureId.equals(biome.getFeatureId())) {
+                return biome;
+            }
+            if (biome != null && featureId.equals(biome.getName())) {
+                return biome;
+            }
+        }
+
+        // Try features in composition
+        if (prepared.getFeatures() != null) {
+            for (Feature feature : prepared.getFeatures()) {
+                if (feature instanceof Biome) {
+                    Biome biome = (Biome) feature;
+                    if (featureId.equals(biome.getFeatureId()) || featureId.equals(biome.getName())) {
+                        return biome;
+                    }
+                }
+            }
+        }
+
+        return null;
     }
 }
