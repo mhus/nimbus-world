@@ -266,8 +266,8 @@ public class FlowComposer {
             return route;
         }
 
-        // Use A* pathfinding to find route
-        List<HexVector2> path = findPath(start, end, gridMap);
+        // Use pathfinding to find route (with deviation support)
+        List<HexVector2> path = findPath(flow, start, end, gridMap);
         if (path != null && !path.isEmpty()) {
             route.addAll(path);
         }
@@ -276,35 +276,78 @@ public class FlowComposer {
     }
 
     /**
-     * Simple A* pathfinding between two hex coordinates
+     * Pathfinding between two hex coordinates with deviation support.
+     * Supports tendLeft/tendRight for curved routes.
      */
-    private List<HexVector2> findPath(HexVector2 start, HexVector2 goal,
+    private List<HexVector2> findPath(Flow flow, HexVector2 start, HexVector2 goal,
                                       Map<String, Biome> gridMap) {
-        // Simple straight-line path for now
         List<HexVector2> path = new ArrayList<>();
         path.add(start);
 
-        // Get direction vector
-        int dq = goal.getQ() - start.getQ();
-        int dr = goal.getR() - start.getR();
-
         HexVector2 current = start;
+        Random random = new Random(flow.getName().hashCode()); // Deterministic based on flow name
+
+        // Get deviation tendencies
+        DeviationTendency tendLeft = flow.getTendLeft();
+        DeviationTendency tendRight = flow.getTendRight();
+        boolean hasDeviation = (tendLeft != null && tendLeft != DeviationTendency.NONE) ||
+                               (tendRight != null && tendRight != DeviationTendency.NONE);
 
         // Move step by step towards goal
         while (!current.equals(goal)) {
-            // Determine next step
-            HexVector2 next = getNextStepTowards(current, goal);
+            HexVector2 next;
+
+            if (hasDeviation) {
+                // Apply deviation logic (with downhill constraint for rivers)
+                next = getNextStepWithDeviation(current, goal, tendLeft, tendRight, flow, gridMap, random);
+            } else {
+                // Simple straight path (with downhill constraint for rivers)
+                next = getNextStepTowards(current, goal, flow, gridMap);
+            }
+
             if (next == null || next.equals(current)) {
-                // Stuck, return what we have
-                break;
+                // Stuck - check if this is acceptable
+                if (flow instanceof River river) {
+                    // Check if river reached ocean (no more downhill path)
+                    if (isAtOceanLevel(current, gridMap)) {
+                        log.info("River '{}' reached ocean at {},{}", flow.getName(), current.getQ(), current.getR());
+                        break;
+                    }
+
+                    // River is stuck but not at ocean
+                    boolean forceFlag = river.getForce() != null && river.getForce();
+                    if (forceFlag) {
+                        throw new FlowRoutingException("River '" + flow.getName() +
+                            "' cannot reach destination - stuck at " + current.getQ() + "," + current.getR() +
+                            " (no downhill path available)");
+                    } else {
+                        log.warn("River '{}' stopped at {},{} - no downhill path (force=false)",
+                            flow.getName(), current.getQ(), current.getR());
+                        break;
+                    }
+                } else {
+                    // Non-river flow stuck
+                    log.warn("Flow '{}' pathfinding stuck at {},{}", flow.getName(), current.getQ(), current.getR());
+                    break;
+                }
             }
             path.add(next);
             current = next;
 
-            // Safety: max 100 steps
-            if (path.size() > 100) {
-                log.warn("Path too long, stopping at 100 steps");
+            // Safety: max 200 steps (increased for curved paths)
+            if (path.size() > 200) {
+                log.warn("Path too long, stopping at 200 steps");
                 break;
+            }
+        }
+
+        // Check if goal was reached (for rivers with force=true)
+        if (flow instanceof River river && !current.equals(goal)) {
+            boolean forceFlag = river.getForce() != null && river.getForce();
+            if (forceFlag) {
+                throw new FlowRoutingException("River '" + flow.getName() +
+                    "' cannot reach destination " + goal.getQ() + "," + goal.getR() +
+                    " - stopped at " + current.getQ() + "," + current.getR());
             }
         }
 
@@ -312,9 +355,12 @@ public class FlowComposer {
     }
 
     /**
-     * Gets next hex step towards goal
+     * Gets next hex step towards goal.
+     * Returns a valid hex neighbor (one of 6 directions) that brings us closer to goal.
+     * For rivers, enforces downhill flow constraint.
      */
-    private HexVector2 getNextStepTowards(HexVector2 current, HexVector2 goal) {
+    private HexVector2 getNextStepTowards(HexVector2 current, HexVector2 goal,
+                                          Flow flow, Map<String, Biome> gridMap) {
         int dq = goal.getQ() - current.getQ();
         int dr = goal.getR() - current.getR();
 
@@ -322,25 +368,294 @@ public class FlowComposer {
             return current; // Already at goal
         }
 
-        // Prefer moving in the larger delta direction
-        if (Math.abs(dq) > Math.abs(dr)) {
-            // Move in Q direction
-            return HexVector2.builder()
-                .q(current.getQ() + Integer.signum(dq))
-                .r(current.getR())
-                .build();
-        } else if (Math.abs(dr) > Math.abs(dq)) {
-            // Move in R direction
-            return HexVector2.builder()
-                .q(current.getQ())
-                .r(current.getR() + Integer.signum(dr))
-                .build();
+        // Get all 6 valid hex neighbors
+        List<HexVector2> neighbors = getHexNeighbors(current);
+
+        // For rivers, filter neighbors to enforce downhill flow
+        if (flow instanceof River river) {
+            neighbors = filterNeighborsForRiver(current, neighbors, river, gridMap);
+            if (neighbors.isEmpty()) {
+                // No valid downhill neighbors - stuck
+                log.warn("River '{}' stuck at {},{} - no downhill path",
+                    river.getName(), current.getQ(), current.getR());
+                return current;
+            }
+        }
+
+        // Find neighbor that gets us closest to goal
+        HexVector2 best = null;
+        int bestDistance = Integer.MAX_VALUE;
+
+        for (HexVector2 neighbor : neighbors) {
+            int distance = hexDistance(neighbor, goal);
+            if (distance < bestDistance) {
+                bestDistance = distance;
+                best = neighbor;
+            }
+        }
+
+        return best != null ? best : current;
+    }
+
+    /**
+     * Gets next hex step with deviation support (for curved routes).
+     * Randomly deviates left or right based on tendLeft/tendRight probabilities.
+     * Always makes progress towards goal to avoid infinite loops.
+     * For rivers, enforces downhill flow constraint.
+     */
+    private HexVector2 getNextStepWithDeviation(HexVector2 current, HexVector2 goal,
+                                                DeviationTendency tendLeft,
+                                                DeviationTendency tendRight,
+                                                Flow flow,
+                                                Map<String, Biome> gridMap,
+                                                Random random) {
+        // Calculate best direction towards goal (with downhill constraint for rivers)
+        HexVector2 bestStep = getNextStepTowards(current, goal, flow, gridMap);
+
+        // Determine if we should deviate
+        double leftProb = tendLeft != null ? tendLeft.getProbability() : 0.0;
+        double rightProb = tendRight != null ? tendRight.getProbability() : 0.0;
+        double totalProb = leftProb + rightProb;
+
+        if (totalProb == 0.0) {
+            return bestStep; // No deviation
+        }
+
+        // Roll for deviation
+        double roll = random.nextDouble();
+        if (roll > totalProb) {
+            return bestStep; // No deviation this step
+        }
+
+        // Determine deviation direction (left or right)
+        boolean deviateLeft = roll < leftProb;
+
+        // Get all 6 neighbors
+        List<HexVector2> neighbors = getHexNeighbors(current);
+
+        // For rivers, filter neighbors to enforce downhill flow
+        if (flow instanceof River river) {
+            neighbors = filterNeighborsForRiver(current, neighbors, river, gridMap);
+            if (neighbors.isEmpty()) {
+                // No valid downhill neighbors - use bestStep
+                return bestStep;
+            }
+        }
+
+        // Find the neighbor that represents deviation
+        HexVector2 deviatedStep = findDeviatedNeighbor(current, bestStep, neighbors, deviateLeft);
+
+        // If deviated step would take us further from goal than we already are, use best step instead
+        int currentDistance = hexDistance(current, goal);
+        int deviatedDistance = hexDistance(deviatedStep, goal);
+
+        if (deviatedDistance > currentDistance + 1) {
+            // Deviation would take us too far off course
+            return bestStep;
+        }
+
+        return deviatedStep;
+    }
+
+    /**
+     * Finds a neighbor that deviates left or right from the best step.
+     */
+    private HexVector2 findDeviatedNeighbor(HexVector2 current, HexVector2 bestStep,
+                                            List<HexVector2> neighbors, boolean deviateLeft) {
+        // Find the direction of bestStep relative to current
+        int bestDq = bestStep.getQ() - current.getQ();
+        int bestDr = bestStep.getR() - current.getR();
+
+        // Hex directions in order (pointy-top): NE, E, SE, SW, W, NW
+        int[][] directions = {
+            {1, -1},  // NE
+            {1, 0},   // E
+            {0, 1},   // SE
+            {-1, 1},  // SW
+            {-1, 0},  // W
+            {0, -1}   // NW
+        };
+
+        // Find current direction index
+        int currentDirIndex = -1;
+        for (int i = 0; i < directions.length; i++) {
+            if (directions[i][0] == bestDq && directions[i][1] == bestDr) {
+                currentDirIndex = i;
+                break;
+            }
+        }
+
+        if (currentDirIndex == -1) {
+            // Couldn't find direction, return best step
+            return bestStep;
+        }
+
+        // Rotate left (counter-clockwise) or right (clockwise)
+        int deviatedIndex;
+        if (deviateLeft) {
+            deviatedIndex = (currentDirIndex - 1 + directions.length) % directions.length;
         } else {
-            // Move diagonally
-            return HexVector2.builder()
-                .q(current.getQ() + Integer.signum(dq))
-                .r(current.getR() + Integer.signum(dr))
-                .build();
+            deviatedIndex = (currentDirIndex + 1) % directions.length;
+        }
+
+        int[] deviatedDir = directions[deviatedIndex];
+        return HexVector2.builder()
+            .q(current.getQ() + deviatedDir[0])
+            .r(current.getR() + deviatedDir[1])
+            .build();
+    }
+
+    /**
+     * Calculates hex distance between two coordinates.
+     */
+    private int hexDistance(HexVector2 a, HexVector2 b) {
+        int dq = Math.abs(a.getQ() - b.getQ());
+        int dr = Math.abs(a.getR() - b.getR());
+        int ds = Math.abs((a.getQ() + a.getR()) - (b.getQ() + b.getR()));
+        return (dq + dr + ds) / 2;
+    }
+
+    /**
+     * Gets all 6 hex neighbors for a coordinate.
+     */
+    private List<HexVector2> getHexNeighbors(HexVector2 coord) {
+        int[][] directions = {
+            {1, -1},  // NE
+            {1, 0},   // E
+            {0, 1},   // SE
+            {-1, 1},  // SW
+            {-1, 0},  // W
+            {0, -1}   // NW
+        };
+
+        List<HexVector2> neighbors = new ArrayList<>();
+        for (int[] dir : directions) {
+            neighbors.add(HexVector2.builder()
+                .q(coord.getQ() + dir[0])
+                .r(coord.getR() + dir[1])
+                .build());
+        }
+        return neighbors;
+    }
+
+    /**
+     * Filters neighbors for river flow to enforce downhill constraint.
+     * Rivers can only flow to neighbors that:
+     * - Have terrain level <= current level (downhill or level) - always enforced
+     * - Have terrain level >= ocean level (don't flow through deep ocean) - always enforced
+     *
+     * Note: Rivers can flow through terrain between ocean and river level.
+     * This allows rivers to "cut through" coastal terrain and reach the ocean.
+     *
+     * @param current Current coordinate
+     * @param neighbors All possible neighbors
+     * @param river The river being routed
+     * @param gridMap Map of biomes by coordinate
+     * @return Filtered list of valid neighbors
+     */
+    private List<HexVector2> filterNeighborsForRiver(HexVector2 current,
+                                                     List<HexVector2> neighbors,
+                                                     River river,
+                                                     Map<String, Biome> gridMap) {
+        // Get current terrain level
+        int currentLevel = getTerrainLevel(current, gridMap);
+
+        // Ocean level (typically 50) - rivers can flow to this level
+        int oceanLevel = 50; // TODO: Get from composition settings
+
+        List<HexVector2> validNeighbors = new ArrayList<>();
+
+        for (HexVector2 neighbor : neighbors) {
+            int neighborLevel = getTerrainLevel(neighbor, gridMap);
+
+            // Check downhill constraint: neighbor level must be <= current level
+            // Rivers always flow downhill, never uphill
+            if (neighborLevel > currentLevel) {
+                log.debug("River '{}': rejecting neighbor {},{} (uphill: {} > {})",
+                    river.getName(), neighbor.getQ(), neighbor.getR(), neighborLevel, currentLevel);
+                continue;
+            }
+
+            // Check minimum level: don't flow into deep ocean (below ocean level)
+            // Rivers can flow to ocean level and merge with the sea
+            if (neighborLevel < oceanLevel) {
+                log.debug("River '{}': rejecting neighbor {},{} (below ocean level: {} < {})",
+                    river.getName(), neighbor.getQ(), neighbor.getR(), neighborLevel, oceanLevel);
+                continue;
+            }
+
+            validNeighbors.add(neighbor);
+        }
+
+        return validNeighbors;
+    }
+
+    /**
+     * Gets the terrain level at a coordinate from the biome gridMap.
+     * For mountains, uses landLevel parameter.
+     * For other biomes, uses default landLevel or fallback.
+     *
+     * @param coord The coordinate to check
+     * @param gridMap Map of biomes by coordinate
+     * @return Terrain level (typically 50-200)
+     */
+    private int getTerrainLevel(HexVector2 coord, Map<String, Biome> gridMap) {
+        Biome biome = gridMap.get(coordKey(coord));
+
+        if (biome == null) {
+            // No biome at this coordinate - assume ocean level
+            return 50;
+        }
+
+        // Check if biome has landLevel parameter
+        if (biome.getParameters() != null && biome.getParameters().containsKey("landLevel")) {
+            try {
+                return Integer.parseInt(biome.getParameters().get("landLevel"));
+            } catch (NumberFormatException e) {
+                log.warn("Invalid landLevel for biome at {},{}: {}",
+                    coord.getQ(), coord.getR(), biome.getParameters().get("landLevel"));
+            }
+        }
+
+        // Default landLevel based on biome type
+        if (biome.getType() != null) {
+            return switch (biome.getType()) {
+                case MOUNTAINS -> 120;  // Default mountain level
+                case PLAINS, FOREST -> 80;
+                case DESERT -> 75;
+                case SWAMP -> 60;
+                case COAST -> 55;
+                case ISLAND -> 70;
+                case OCEAN -> 45;
+                default -> 70;  // Default fallback
+            };
+        }
+
+        return 70; // Ultimate fallback
+    }
+
+    /**
+     * Checks if a coordinate is at ocean level (no more valid downhill flow possible).
+     * Returns true if the terrain is at or very close to ocean level.
+     *
+     * @param coord The coordinate to check
+     * @param gridMap Map of biomes by coordinate
+     * @return true if at ocean level
+     */
+    private boolean isAtOceanLevel(HexVector2 coord, Map<String, Biome> gridMap) {
+        int terrainLevel = getTerrainLevel(coord, gridMap);
+        int oceanLevel = 50; // TODO: Get from composition settings
+
+        // Consider it "at ocean" if within 5 levels of ocean level
+        return terrainLevel <= (oceanLevel + 5);
+    }
+
+    /**
+     * Exception thrown when river routing fails with force=true.
+     */
+    public static class FlowRoutingException extends RuntimeException {
+        public FlowRoutingException(String message) {
+            super(message);
         }
     }
 

@@ -18,6 +18,10 @@ public abstract class Flow extends Feature {
     private Integer widthBlocks;
     private Map<String, String> parameters;
 
+    // Route deviation control (for curves)
+    private DeviationTendency tendLeft;
+    private DeviationTendency tendRight;
+
     // Calculated values (runtime, set during composition)
     private Integer calculatedWidthBlocks;  // Resolved from width enum
     private HexVector2 startPoint;          // Resolved coordinate

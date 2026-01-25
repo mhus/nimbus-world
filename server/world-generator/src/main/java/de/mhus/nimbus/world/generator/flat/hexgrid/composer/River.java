@@ -23,6 +23,13 @@ public class River extends Flow {
     private Integer depth;
     private Integer level;
 
+    /**
+     * Force flag: Controls error handling when river cannot reach destination.
+     * - true: Throw error if river gets stuck or cannot reach goal
+     * - false: Silently stop routing, use partial route (default)
+     */
+    private Boolean force;
+
     public static RiverBuilder builder() {
         return new RiverBuilder();
     }

@@ -925,144 +925,22 @@ public class WorldCompositeImageTest {
     private void createCompositeImage(Map<HexVector2, WFlat> flats,
                                      HexGridFillResult fillResult,
                                      String name) throws Exception {
-        // Calculate bounds and find cartesian extents
-        int minQ = Integer.MAX_VALUE, maxQ = Integer.MIN_VALUE;
-        int minR = Integer.MAX_VALUE, maxR = Integer.MIN_VALUE;
+        // Use the new HexGridCompositeImageCreator helper class
+        HexGridCompositeImageCreator creator = HexGridCompositeImageCreator.builder()
+            .flats(flats)
+            .flatSize(FLAT_SIZE)
+            .outputDirectory(outputDir.toString())
+            .imageName(name)
+            .drawGridLines(true)
+            .build();
 
-        for (HexVector2 coord : flats.keySet()) {
-            minQ = Math.min(minQ, coord.getQ());
-            maxQ = Math.max(maxQ, coord.getQ());
-            minR = Math.min(minR, coord.getR());
-            maxR = Math.max(maxR, coord.getR());
+        HexGridCompositeImageCreator.CompositeImageResult result = creator.createCompositeImages();
+
+        if (!result.isSuccess()) {
+            throw new RuntimeException("Failed to create composite image: " + result.getErrorMessage());
         }
 
-        int gridWidth = maxQ - minQ + 1;
-        int gridHeight = maxR - minR + 1;
-
-        log.info("Creating HEX composite: {}x{} grids, bounds q=[{},{}] r=[{},{}]",
-            gridWidth, gridHeight, minQ, maxQ, minR, maxR);
-
-        // Calculate cartesian bounds using HexMathUtil
-        double cartMinX = Double.MAX_VALUE, cartMaxX = Double.MIN_VALUE;
-        double cartMinZ = Double.MAX_VALUE, cartMaxZ = Double.MIN_VALUE;
-
-        for (HexVector2 coord : flats.keySet()) {
-            double[] cartesian = HexMathUtil.hexToCartesian(coord, FLAT_SIZE);
-            double halfSize = FLAT_SIZE / 2.0;
-
-            cartMinX = Math.min(cartMinX, cartesian[0] - halfSize);
-            cartMaxX = Math.max(cartMaxX, cartesian[0] + halfSize);
-            cartMinZ = Math.min(cartMinZ, cartesian[1] - halfSize);
-            cartMaxZ = Math.max(cartMaxZ, cartesian[1] + halfSize);
-        }
-
-        int imageWidth = (int) Math.ceil(cartMaxX - cartMinX);
-        int imageHeight = (int) Math.ceil(cartMaxZ - cartMinZ);
-
-        log.info("HEX composite cartesian bounds: x=[{},{}] z=[{},{}], image size={}x{}",
-            (int)cartMinX, (int)cartMaxX, (int)cartMinZ, (int)cartMaxZ, imageWidth, imageHeight);
-
-        BufferedImage levelImage = new BufferedImage(imageWidth, imageHeight, BufferedImage.TYPE_INT_RGB);
-        BufferedImage materialImage = new BufferedImage(imageWidth, imageHeight, BufferedImage.TYPE_INT_RGB);
-
-        Graphics2D levelG = levelImage.createGraphics();
-        Graphics2D materialG = materialImage.createGraphics();
-
-        // Black background
-        levelG.setColor(Color.BLACK);
-        levelG.fillRect(0, 0, imageWidth, imageHeight);
-        materialG.setColor(Color.BLACK);
-        materialG.fillRect(0, 0, imageWidth, imageHeight);
-
-        // Render each flat with HEX geometry
-        int renderedCount = 0;
-        for (Map.Entry<HexVector2, WFlat> entry : flats.entrySet()) {
-            HexVector2 coord = entry.getKey();
-            WFlat flat = entry.getValue();
-
-            // Calculate cartesian center position
-            double[] cartesian = HexMathUtil.hexToCartesian(coord, FLAT_SIZE);
-            double hexCenterX = cartesian[0] - cartMinX;
-            double hexCenterZ = cartesian[1] - cartMinZ;
-
-            try {
-                // Create flat images
-                FlatLevelImageCreator levelCreator = new FlatLevelImageCreator(flat);
-                byte[] levelBytes = levelCreator.create(false);
-                BufferedImage flatLevelImage = ImageIO.read(new ByteArrayInputStream(levelBytes));
-
-                FlatMaterialImageCreator materialCreator = new FlatMaterialImageCreator(flat);
-                byte[] materialBytes = materialCreator.create(false);
-                BufferedImage flatMaterialImage = ImageIO.read(new ByteArrayInputStream(materialBytes));
-
-                // Render only pixels that are inside the hexagon
-                int halfSize = FLAT_SIZE / 2;
-                int startX = Math.max(0, (int)(hexCenterX - halfSize));
-                int endX = Math.min(imageWidth, (int)(hexCenterX + halfSize));
-                int startZ = Math.max(0, (int)(hexCenterZ - halfSize));
-                int endZ = Math.min(imageHeight, (int)(hexCenterZ + halfSize));
-
-                for (int z = startZ; z < endZ; z++) {
-                    for (int x = startX; x < endX; x++) {
-                        // Check if this pixel is inside the hexagon
-                        if (HexMathUtil.isPointInHex(x, z, hexCenterX, hexCenterZ, FLAT_SIZE)) {
-                            // Calculate source pixel coordinates in flat image
-                            int flatX = (int)(x - hexCenterX + halfSize);
-                            int flatZ = (int)(z - hexCenterZ + halfSize);
-
-                            if (flatX >= 0 && flatX < FLAT_SIZE && flatZ >= 0 && flatZ < FLAT_SIZE) {
-                                // Copy pixel from flat image to composite
-                                int levelPixel = flatLevelImage.getRGB(flatX, flatZ);
-                                int materialPixel = flatMaterialImage.getRGB(flatX, flatZ);
-
-                                levelImage.setRGB(x, z, levelPixel);
-                                materialImage.setRGB(x, z, materialPixel);
-                            }
-                        }
-                    }
-                }
-
-                renderedCount++;
-            } catch (Exception e) {
-                log.warn("Failed to render grid [{},{}]: {}", coord.getQ(), coord.getR(), e.getMessage());
-            }
-        }
-
-        log.info("Rendered {} of {} grids with HEX geometry", renderedCount, flats.size());
-
-        // Draw hexagon grid lines
-        levelG.setColor(new Color(255, 255, 255, 60));
-        materialG.setColor(new Color(255, 255, 255, 60));
-        levelG.setStroke(new BasicStroke(2));
-        materialG.setStroke(new BasicStroke(2));
-
-        for (HexVector2 coord : flats.keySet()) {
-            double[] cartesian = HexMathUtil.hexToCartesian(coord, FLAT_SIZE);
-            double hexCenterX = cartesian[0] - cartMinX;
-            double hexCenterZ = cartesian[1] - cartMinZ;
-
-            // Draw hexagon outline
-            Polygon hexagon = createHexagonPolygon(hexCenterX, hexCenterZ, FLAT_SIZE);
-            levelG.draw(hexagon);
-            materialG.draw(hexagon);
-        }
-
-        levelG.dispose();
-        materialG.dispose();
-
-        // Save images
-        File levelFile = outputDir.resolve(name + "-level.png").toFile();
-        File materialFile = outputDir.resolve(name + "-material.png").toFile();
-
-        ImageIO.write(levelImage, "PNG", levelFile);
-        ImageIO.write(materialImage, "PNG", materialFile);
-
-        log.info("Saved composite level image: {} ({}x{} pixels)",
-            levelFile.getAbsolutePath(), imageWidth, imageHeight);
-        log.info("Saved composite material image: {} ({}x{} pixels)",
-            materialFile.getAbsolutePath(), imageWidth, imageHeight);
-
-        // Also save individual grid info
+        // Log grid breakdown
         log.info("Grids breakdown:");
         log.info("- Biome grids: {}", fillResult.getPlacementResult().getPlacedBiomes().size());
         log.info("- Ocean filler: {}", fillResult.getOceanFillCount());
@@ -1575,6 +1453,132 @@ public class WorldCompositeImageTest {
     }
 
     /**
+     * Tests a river flowing from mountain to coast with curves.
+     */
+    @Test
+    public void testRiverWithCurves() throws Exception {
+        log.info("=== Testing River with Curves ===");
+
+        HexComposition composition = createCompositionWithRiver();
+        exportInputModel(composition, "river-curved");
+
+        CompositionResult result = HexCompositeBuilder.builder()
+            .composition(composition)
+            .worldId("river-test-world")
+            .seed(88888L)
+            .fillGaps(true)
+            .oceanBorderRings(2)
+            .generateWHexGrids(false)
+            .build()
+            .compose();
+
+        assertTrue(result.isSuccess(), "Composition should succeed");
+        assertNotNull(result.getBiomePlacementResult(), "Should have placement result");
+        assertNotNull(result.getFlowCompositionResult(), "Should have flow result");
+        assertNotNull(result.getFillResult(), "Should have fill result");
+
+        HexGridFillResult fillResult = result.getFillResult();
+
+        log.info("Composition successful:");
+        log.info("- Total biomes: {}", result.getTotalBiomes());
+        log.info("- Total flows: {}", result.getTotalFlows());
+        log.info("- Flow segments: {}", result.getFlowCompositionResult().getTotalSegments());
+        log.info("- Total grids: {}", fillResult.getTotalGridCount());
+
+        // Verify river was composed
+        assertEquals(1, result.getFlowCompositionResult().getComposedFlows(),
+            "Should have composed 1 river");
+
+        // Build terrain for all grids
+        Map<HexVector2, WFlat> flats = new HashMap<>();
+        for (FilledHexGrid filled : fillResult.getAllGrids()) {
+            WFlat flat = buildGridTerrain(filled);
+            flats.put(filled.getCoordinate(), flat);
+        }
+        log.info("Built terrain for {} grids", flats.size());
+
+        // Save individual grid images
+        saveIndividualGridImages(flats, fillResult);
+
+        // Create composite image
+        createCompositeImage(flats, fillResult, "river-curved");
+
+        // Export generated model
+        exportGeneratedModel(fillResult, result.getFlowCompositionResult(), "river-curved");
+
+        log.info("=== River with Curves Test Completed ===");
+    }
+
+    /**
+     * Creates composition with mountain biome, coast biome, and a curved river.
+     * River flows downhill from mountain to coast, then into ocean.
+     */
+    private HexComposition createCompositionWithRiver() {
+        HexComposition composition = HexComposition.builder()
+            .name("River Test - Large Landmass")
+            .worldId("river-test")
+            .features(new ArrayList<>())
+            .build();
+
+        // Create a large continuous landmass with overlapping biomes
+        // River flows: Mountain (NW) → Plains (Center) → Forest (SE) → Ocean
+        // Strategy: Make biomes large and overlapping to ensure connectivity
+
+        // 1. Very large central plains biome (covers most of the area)
+        Biome plains = createBiome("Central Plains", BiomeType.PLAINS, AreaShape.CIRCLE,
+            15, 18, Direction.N, 0, 0, 0, "origin", 5);
+        plains.getParameters().put("landLevel", "75");  // Medium height
+        composition.getFeatures().add(plains);
+
+        // 2. Mountain source (NW, overlapping with plains)
+        MountainBiome mountain = new MountainBiome();
+        mountain.setName("Mountain Source");
+        mountain.setType(BiomeType.MOUNTAINS);
+        mountain.setHeight(MountainBiome.MountainHeight.HIGH_PEAKS);  // landLevel=150
+        mountain.setShape(AreaShape.CIRCLE);
+        mountain.setSizeFrom(6);
+        mountain.setSizeTo(7);
+        // Distance 4 from origin (NW) - overlaps with plains
+        mountain.setPositions(List.of(createPosition(Direction.NW, 300, 4, 5, "origin", 10)));
+        composition.getFeatures().add(mountain);
+
+        // 3. Forest biome (E/SE of center, overlapping with plains)
+        Biome forest = createBiome("Eastern Forest", BiomeType.FOREST, AreaShape.CIRCLE,
+            8, 10, Direction.SE, 120, 4, 5, "origin", 8);
+        forest.getParameters().put("landLevel", "65");  // Lower than plains, higher than coast
+        composition.getFeatures().add(forest);
+
+        // 4. Coast/lowlands at the SE edge (overlapping with forest)
+        Biome coast = createBiome("Coastal Lowlands", BiomeType.COAST, AreaShape.CIRCLE,
+            5, 6, Direction.SE, 120, 10, 11, "origin", 7);
+        coast.getParameters().put("landLevel", "55");  // Just above ocean level
+        composition.getFeatures().add(coast);
+
+        // 5. River from mountain to SE (flowing through multiple biomes)
+        // River flows downhill: 150 (mountain) → 75 (plains) → 65 (forest) → ocean
+        // Note: mergeToId points to Coastal Lowlands, but river will naturally flow to ocean
+        // With force=false, river stops when reaching ocean without error
+        River river = River.builder()
+            .depth(3)
+            .level(60)  // Water level - can flow through terrain >= 50 (ocean level)
+            .waypointIds(new ArrayList<>())
+            .mergeToId("Coastal Lowlands")  // Intended destination (may not reach if ocean comes first)
+            .force(false)  // false: stop gracefully at ocean, true: throw error if destination not reached
+            .build();
+        river.setName("Great River");
+        river.setFeatureId("great-river");
+        river.setStartPointId("Mountain Source");
+        river.setWidthBlocks(20);  // Wide river: 20 blocks
+        river.setWidth(FlowWidth.LARGE);
+        river.setType(FlowType.RIVER);
+        river.setTendRight(DeviationTendency.MODERATE);  // Natural meandering curves
+        river.setTendLeft(DeviationTendency.SLIGHT);     // Asymmetric curves
+        composition.getFeatures().add(river);
+
+        return composition;
+    }
+
+    /**
      * Creates composition with two distant biomes (forcing empty space between them).
      */
     private HexComposition createCompositionWithDistantBiomes() {
@@ -1624,19 +1628,4 @@ public class WorldCompositeImageTest {
      * @param gridSize The diameter of the hexagon in blocks
      * @return Polygon with 6 vertices representing the hexagon outline
      */
-    private Polygon createHexagonPolygon(double centerX, double centerZ, int gridSize) {
-        double radius = gridSize / 2.0;
-        int[] xPoints = new int[6];
-        int[] zPoints = new int[6];
-
-        // Create 6 vertices at 60-degree intervals, starting at -30 degrees
-        // This creates a pointy-top hexagon (point facing up)
-        for (int i = 0; i < 6; i++) {
-            double angle = Math.PI / 180.0 * (60 * i - 30);
-            xPoints[i] = (int) Math.round(centerX + radius * Math.cos(angle));
-            zPoints[i] = (int) Math.round(centerZ + radius * Math.sin(angle));
-        }
-
-        return new Polygon(xPoints, zPoints, 6);
-    }
 }
