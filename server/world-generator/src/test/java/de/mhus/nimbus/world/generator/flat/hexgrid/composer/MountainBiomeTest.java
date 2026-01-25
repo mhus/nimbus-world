@@ -1,5 +1,6 @@
 package de.mhus.nimbus.world.generator.flat.hexgrid.composer;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.world.generator.flat.*;
 import de.mhus.nimbus.world.generator.flat.hexgrid.*;
 import de.mhus.nimbus.world.shared.generator.WFlat;
@@ -562,5 +563,119 @@ public class MountainBiomeTest {
         }
 
         return flat;
+    }
+
+    @Test
+    public void testMountainRidgeConfiguration() throws Exception {
+        log.info("=== Testing Mountain Ridge Configuration ===");
+
+        // Create a LINE-shaped mountain to ensure connected grids
+        MountainBiome mountain = new MountainBiome();
+        mountain.setName("ridge-test-mountain");
+        mountain.setType(BiomeType.MOUNTAINS);
+        mountain.setHeight(MountainBiome.MountainHeight.HIGH_PEAKS);
+        mountain.setShape(AreaShape.LINE);
+        mountain.setSizeFrom(5);
+        mountain.setSizeTo(5);
+        mountain.setPositions(java.util.List.of(createOriginPosition()));
+
+        // Create composition
+        HexComposition composition = HexComposition.builder()
+            .worldId("test-world")
+            .name("ridge-test")
+            .features(new ArrayList<>())
+            .build();
+        composition.getFeatures().add(mountain);
+
+        // Compose with HexCompositeBuilder
+        CompositionResult result = HexCompositeBuilder.builder()
+            .composition(composition)
+            .worldId("test-world")
+            .seed(12345L)
+            .fillGaps(false)
+            .generateWHexGrids(false)
+            .build()
+            .compose();
+
+        assertTrue(result.isSuccess(), "Composition should succeed");
+
+        // Find the mountain biome in the result
+        PlacedBiome placedMountain = result.getBiomePlacementResult().getPlacedBiomes().stream()
+            .filter(pb -> pb.getBiome().getName().equals("ridge-test-mountain"))
+            .findFirst()
+            .orElseThrow();
+
+        // Get the MountainBiome instance
+        MountainBiome placedMountainBiome = (MountainBiome) placedMountain.getBiome();
+
+        // Verify ridge configuration was applied
+        List<FeatureHexGrid> hexGrids = placedMountainBiome.getHexGrids();
+        assertNotNull(hexGrids, "HexGrids should be configured");
+        assertTrue(hexGrids.size() >= 3, "Should have at least 3 grids for LINE shape");
+
+        log.info("Mountain has {} grids", hexGrids.size());
+
+        // Expected ridge level: landLevel + landOffset + ridgeOffset
+        // HIGH_PEAKS: 150 + 40 + 20 = 210 (relative level, without oceanLevel)
+        int expectedRidgeLevel = 150 + 40 + 20;
+
+        // Count grids with ridge configuration
+        int gridsWithRidge = 0;
+        int totalRidgeEntries = 0;
+
+        for (FeatureHexGrid hexGrid : hexGrids) {
+            String ridgeParam = hexGrid.getParameters().get("ridge");
+
+            if (ridgeParam != null && !ridgeParam.isEmpty()) {
+                gridsWithRidge++;
+
+                // Parse ridge JSON
+                ObjectMapper mapper = new ObjectMapper();
+                @SuppressWarnings("unchecked")
+                List<java.util.Map<String, Object>> ridgeEntries =
+                    mapper.readValue(ridgeParam, List.class);
+
+                assertNotNull(ridgeEntries, "Ridge should be a list");
+                assertFalse(ridgeEntries.isEmpty(), "Ridge list should not be empty");
+
+                totalRidgeEntries += ridgeEntries.size();
+
+                log.info("Grid {} has {} ridge entries: {}",
+                    hexGrid.getCoordinate().getQ() + ":" + hexGrid.getCoordinate().getR(),
+                    ridgeEntries.size(),
+                    ridgeParam);
+
+                // Verify each ridge entry has side and level
+                for (java.util.Map<String, Object> entry : ridgeEntries) {
+                    assertTrue(entry.containsKey("side"), "Ridge entry should have 'side'");
+                    assertTrue(entry.containsKey("level"), "Ridge entry should have 'level'");
+
+                    String side = (String) entry.get("side");
+                    int level = ((Number) entry.get("level")).intValue();
+
+                    assertNotNull(side, "Side should not be null");
+                    assertEquals(expectedRidgeLevel, level,
+                        "Ridge level should be " + expectedRidgeLevel);
+
+                    // Verify side is a valid SIDE value
+                    assertTrue(
+                        side.equals("NORTH_EAST") || side.equals("EAST") ||
+                        side.equals("SOUTH_EAST") || side.equals("SOUTH_WEST") ||
+                        side.equals("WEST") || side.equals("NORTH_WEST"),
+                        "Side should be a valid SIDE enum value: " + side);
+                }
+            }
+        }
+
+        log.info("Grids with ridge configuration: {}/{}", gridsWithRidge, hexGrids.size());
+        log.info("Total ridge entries: {}", totalRidgeEntries);
+
+        // For a LINE of 5 grids, most should have ridge configuration (except possibly end grids)
+        assertTrue(gridsWithRidge >= 3,
+            "At least 3 grids should have ridge configuration in a LINE of 5");
+        assertTrue(totalRidgeEntries >= 6,
+            "Should have at least 6 total ridge entries (2 per middle grid)");
+
+        log.info("=== Mountain Ridge Configuration Test Completed ===");
     }
 }
