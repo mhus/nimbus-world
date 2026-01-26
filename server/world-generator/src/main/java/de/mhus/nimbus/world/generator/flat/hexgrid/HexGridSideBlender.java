@@ -18,11 +18,13 @@ public class HexGridSideBlender {
     private final WFlat flat;
     private final BuilderContext context;
     private final int width;
+    private final double randomness;
 
-    public HexGridSideBlender(WFlat flat, int width, BuilderContext context) {
+    public HexGridSideBlender(WFlat flat, int width, BuilderContext context, double randomness) {
         this.flat = flat;
         this.context = context;
         this.width = width;
+        this.randomness = randomness;
     }
 
     /**
@@ -50,7 +52,7 @@ public class HexGridSideBlender {
     private void blendSide(WHexGrid.SIDE direction, WFlat neighborFlat) {
         log.trace("Blending side: {}", direction);
 
-        SideBlender sideBlender = new SideBlender(flat, context, direction, neighborFlat, width);
+        SideBlender sideBlender = new SideBlender(flat, context, direction, neighborFlat, width, randomness);
         sideBlender.blend();
     }
 
@@ -64,72 +66,309 @@ public class HexGridSideBlender {
         private final WHexGrid.SIDE direction;
         private final WFlat neighborFlat;
         private final int width;
+        private final double randomness;
         private final Random random;
 
         public SideBlender(WFlat flat, BuilderContext context, WHexGrid.SIDE direction,
-                           WFlat neighborFlat, int width) {
+                           WFlat neighborFlat, int width, double randomness) {
             this.flat = flat;
             this.context = context;
             this.direction = direction;
             this.neighborFlat = neighborFlat;
             this.width = width;
+            this.randomness = randomness;
             // Use flat position for reproducible random, but add direction for variation
             this.random = new Random(flat.getFlatId().hashCode() + direction.ordinal());
         }
 
         /**
-         * Blend the entire neighbor side into our flat.
-         * Scans the neighbor's matching side, copies data into our border,
-         * and blends inward for smooth transitions.
+         * Blend the entire side with the neighbor.
+         * Algorithm:
+         * 1. Calculate the two corner points of the hex side
+         * 2. Walk along the edge between corners
+         * 3. For each point on the edge:
+         *    - Sample outward (perpendicular away from hex center) to get average neighbor height
+         *    - Blend inward (toward hex center) with decreasing influence
          */
         public void blend() {
-            log.debug("Blending side {} with neighbor flat {}, width={}",
+            log.info("Blending side {} with neighbor flat {}, width={}",
                     direction, neighborFlat.getFlatId(), width);
 
-            // Get the mirrored side on the neighbor (e.g., if we're on EAST, neighbor's WEST faces us)
-            WHexGrid.SIDE mirroredSide = getMirroredSide(direction);
+            // Calculate the two corners of this hex side
+            int[] corner1 = getCorner1ForSide(direction);
+            int[] corner2 = getCorner2ForSide(direction);
+
+            log.info("Side {} corners: ({},{}) to ({},{})",
+                    direction, corner1[0], corner1[1], corner2[0], corner2[1]);
+
+            // Calculate direction vectors
+            double[] centerPos = getCenterPosition();
+            double[] outwardDir = getOutwardDirection(corner1, corner2, centerPos);
+
+            log.debug("Hex center: ({},{}), outward direction: ({},{})",
+                    centerPos[0], centerPos[1], outwardDir[0], outwardDir[1]);
 
             int blendedCount = 0;
 
-            // Scan all points in the neighbor flat
-            for (int nz = 0; nz < neighborFlat.getSizeZ(); nz++) {
-                for (int nx = 0; nx < neighborFlat.getSizeX(); nx++) {
-                    // Check if this point is on the neighbor's side that faces us
-                    if (!isOnNeighborSide(nx, nz, mirroredSide)) {
+            // Walk along the edge from corner1 to corner2 using Bresenham-like line algorithm
+            // This ensures every pixel along the edge is covered
+            int dx = Math.abs(corner2[0] - corner1[0]);
+            int dz = Math.abs(corner2[1] - corner1[1]);
+            int steps = Math.max(dx, dz);
+
+            // Calculate perpendicular direction to edge (for thick line)
+            double edgeDx = corner2[0] - corner1[0];
+            double edgeDz = corner2[1] - corner1[1];
+            double edgeLen = Math.sqrt(edgeDx * edgeDx + edgeDz * edgeDz);
+            double perpDx = edgeLen > 0 ? -edgeDz / edgeLen : 0;
+            double perpDz = edgeLen > 0 ? edgeDx / edgeLen : 0;
+
+            // Use thick line to fill gaps (process 3 pixels across)
+            final int LINE_THICKNESS = 2; // ±2 pixels = 5 pixels wide
+
+            for (int step = 0; step <= steps; step++) {
+                // Interpolate position along edge
+                double t = steps > 0 ? step / (double) steps : 0.5;
+                int centerX = (int) Math.round(corner1[0] * (1 - t) + corner2[0] * t);
+                int centerZ = (int) Math.round(corner1[1] * (1 - t) + corner2[1] * t);
+
+                // Process center line and parallel offset lines
+                for (int offset = -LINE_THICKNESS; offset <= LINE_THICKNESS; offset++) {
+                    int edgeX = centerX + (int) Math.round(perpDx * offset);
+                    int edgeZ = centerZ + (int) Math.round(perpDz * offset);
+
+                    // Check bounds
+                    if (edgeX < 0 || edgeX >= flat.getSizeX() ||
+                        edgeZ < 0 || edgeZ >= flat.getSizeZ()) {
                         continue;
                     }
 
-                    // Get height and material from neighbor
-                    int neighborHeight = neighborFlat.getLevel(nx, nz);
-                    int neighborMaterial = neighborFlat.getColumn(nx, nz);
+                    // Sample outward to get average neighbor height
+                    double avgOutwardHeight = sampleOutward(edgeX, edgeZ, outwardDir);
 
-                    // Skip empty/unset points in neighbor
-                    if (neighborMaterial == WFlat.MATERIAL_NOT_SET ||
-                        neighborMaterial == WFlat.MATERIAL_NOT_SET_MUTABLE) {
+                    if (avgOutwardHeight < 0) {
+                        // No valid samples found
                         continue;
                     }
 
-                    // Convert neighbor local coordinates to world coordinates
-                    int worldX = neighborFlat.getMountX() + nx;
-                    int worldZ = neighborFlat.getMountZ() + nz;
-
-                    // Convert to our local coordinates
-                    int localX = worldX - flat.getMountX();
-                    int localZ = worldZ - flat.getMountZ();
-
-                    // Check if point is within our bounds
-                    if (localX < 0 || localX >= flat.getSizeX() ||
-                        localZ < 0 || localZ >= flat.getSizeZ()) {
-                        continue;
-                    }
-
-                    // Transfer the neighbor's data to our border and blend inward
-                    blendPoint(localX, localZ, neighborHeight, neighborMaterial);
+                    // Blend inward from this edge point
+                    blendInward(edgeX, edgeZ, outwardDir, avgOutwardHeight);
                     blendedCount++;
                 }
             }
 
-            log.debug("Blended {} points from neighbor side {}", blendedCount, direction);
+            log.info("Side {} blending completed: {} edge points processed (corner distance: dx={}, dz={}, steps={}, thickness={})",
+                    direction, blendedCount, dx, dz, steps, LINE_THICKNESS * 2 + 1);
+        }
+
+        /**
+         * Get first corner of the hex side (in local flat coordinates).
+         */
+        private int[] getCorner1ForSide(WHexGrid.SIDE side) {
+            int sizeX = flat.getSizeX();
+            int sizeZ = flat.getSizeZ();
+            int centerX = sizeX / 2;
+            int centerZ = sizeZ / 2;
+
+            switch (side) {
+                case NORTH_EAST:
+                    return new int[]{centerX, 0};  // Top center
+                case EAST:
+                    return new int[]{sizeX - 1, centerZ / 2};  // Right upper
+                case SOUTH_EAST:
+                    return new int[]{sizeX - 1, centerZ + centerZ / 2};  // Right lower
+                case SOUTH_WEST:
+                    return new int[]{centerX, sizeZ - 1};  // Bottom center
+                case WEST:
+                    return new int[]{0, centerZ + centerZ / 2};  // Left lower
+                case NORTH_WEST:
+                    return new int[]{0, centerZ / 2};  // Left upper
+                default:
+                    return new int[]{0, 0};
+            }
+        }
+
+        /**
+         * Get second corner of the hex side (in local flat coordinates).
+         */
+        private int[] getCorner2ForSide(WHexGrid.SIDE side) {
+            int sizeX = flat.getSizeX();
+            int sizeZ = flat.getSizeZ();
+            int centerX = sizeX / 2;
+            int centerZ = sizeZ / 2;
+
+            switch (side) {
+                case NORTH_EAST:
+                    return new int[]{sizeX - 1, centerZ / 2};  // Right upper
+                case EAST:
+                    return new int[]{sizeX - 1, centerZ + centerZ / 2};  // Right lower
+                case SOUTH_EAST:
+                    return new int[]{centerX, sizeZ - 1};  // Bottom center
+                case SOUTH_WEST:
+                    return new int[]{0, centerZ + centerZ / 2};  // Left lower
+                case WEST:
+                    return new int[]{0, centerZ / 2};  // Left upper
+                case NORTH_WEST:
+                    return new int[]{centerX, 0};  // Top center
+                default:
+                    return new int[]{0, 0};
+            }
+        }
+
+        /**
+         * Get center position of the hex in local flat coordinates.
+         */
+        private double[] getCenterPosition() {
+            return new double[]{flat.getSizeX() / 2.0, flat.getSizeZ() / 2.0};
+        }
+
+        /**
+         * Calculate the outward direction (perpendicular to edge, away from center).
+         */
+        private double[] getOutwardDirection(int[] corner1, int[] corner2, double[] center) {
+            // Edge direction vector
+            double edgeDx = corner2[0] - corner1[0];
+            double edgeDz = corner2[1] - corner1[1];
+
+            // Perpendicular to edge (rotate 90 degrees)
+            double perpDx = -edgeDz;
+            double perpDz = edgeDx;
+
+            // Normalize
+            double length = Math.sqrt(perpDx * perpDx + perpDz * perpDz);
+            if (length > 0) {
+                perpDx /= length;
+                perpDz /= length;
+            }
+
+            // Edge midpoint
+            double midX = (corner1[0] + corner2[0]) / 2.0;
+            double midZ = (corner1[1] + corner2[1]) / 2.0;
+
+            // Vector from center to edge midpoint
+            double toCenterDx = midX - center[0];
+            double toCenterDz = midZ - center[1];
+
+            // Check if perpendicular points away from center (dot product)
+            double dot = perpDx * toCenterDx + perpDz * toCenterDz;
+
+            // If pointing inward, flip direction
+            if (dot < 0) {
+                perpDx = -perpDx;
+                perpDz = -perpDz;
+            }
+
+            return new double[]{perpDx, perpDz};
+        }
+
+        /**
+         * Sample outward from edge point to get average height from neighbor.
+         * Uses multiple sample points with slight random offsets for more natural results.
+         * Returns -1 if no valid samples found.
+         */
+        private double sampleOutward(int edgeX, int edgeZ, double[] outwardDir) {
+            double sumHeight = 0;
+            int validSamples = 0;
+
+            // Sample at multiple distances outward with slight variations
+            for (int dist = 1; dist <= width; dist++) {
+                // Add slight random offset to sample position for more natural sampling
+                // Scaled by randomness parameter (0.0 = no variation, 1.0 = full ±15 degrees)
+                double randomAngle = (random.nextDouble() - 0.5) * 0.3 * randomness;
+                double cosAngle = Math.cos(randomAngle);
+                double sinAngle = Math.sin(randomAngle);
+
+                double rotatedDx = outwardDir[0] * cosAngle - outwardDir[1] * sinAngle;
+                double rotatedDz = outwardDir[0] * sinAngle + outwardDir[1] * cosAngle;
+
+                int sampleX = edgeX + (int) Math.round(rotatedDx * dist);
+                int sampleZ = edgeZ + (int) Math.round(rotatedDz * dist);
+
+                // Check bounds in our flat
+                if (sampleX < 0 || sampleX >= flat.getSizeX() ||
+                    sampleZ < 0 || sampleZ >= flat.getSizeZ()) {
+                    continue;
+                }
+
+                // Convert to world coordinates
+                int worldX = flat.getMountX() + sampleX;
+                int worldZ = flat.getMountZ() + sampleZ;
+
+                // Convert to neighbor coordinates
+                int neighborX = worldX - neighborFlat.getMountX();
+                int neighborZ = worldZ - neighborFlat.getMountZ();
+
+                // Check bounds in neighbor flat
+                if (neighborX < 0 || neighborX >= neighborFlat.getSizeX() ||
+                    neighborZ < 0 || neighborZ >= neighborFlat.getSizeZ()) {
+                    continue;
+                }
+
+                // Get height from neighbor
+                int height = neighborFlat.getLevel(neighborX, neighborZ);
+                sumHeight += height;
+                validSamples++;
+            }
+
+            return validSamples > 0 ? sumHeight / validSamples : -1;
+        }
+
+        /**
+         * Blend inward from edge point toward hex center with dynamic variations.
+         */
+        private void blendInward(int edgeX, int edgeZ, double[] outwardDir, double avgOutwardHeight) {
+            // Inward direction is opposite of outward
+            double inwardDx = -outwardDir[0];
+            double inwardDz = -outwardDir[1];
+
+            // Random curve variation for this blend line (makes some areas blend faster/slower)
+            // Scaled by randomness: 1.0 + [-0.5 to +0.5] * randomness
+            double curveVariation = 1.0 + (random.nextDouble() - 0.5) * randomness;
+
+            // Blend from edge (depth=0) to center (depth=width)
+            for (int depth = 0; depth <= width; depth++) {
+                // Add slight random lateral offset for more organic transitions
+                // Scaled by randomness (0.0 = no offset, 1.0 = full ±1 pixel)
+                double lateralOffset = (random.nextDouble() - 0.5) * 2.0 * randomness;
+                double perpDx = -inwardDz; // Perpendicular to inward direction
+                double perpDz = inwardDx;
+
+                int x = edgeX + (int) Math.round(inwardDx * depth + perpDx * lateralOffset);
+                int z = edgeZ + (int) Math.round(inwardDz * depth + perpDz * lateralOffset);
+
+                // Check bounds
+                if (x < 0 || x >= flat.getSizeX() || z < 0 || z >= flat.getSizeZ()) {
+                    break;
+                }
+
+                // Get current height
+                int currentHeight = flat.getLevel(x, z);
+
+                // Calculate base blend factor (1.0 at edge, 0.0 at full depth)
+                double normalizedDepth = depth / (double) width;
+
+                // Apply curve variation (non-linear falloff for more natural transitions)
+                double curvedDepth = Math.pow(normalizedDepth, curveVariation);
+                float blendFactor = 1.0f - (float) curvedDepth;
+
+                // Add per-pixel random variation (±10% for micro-variations)
+                // Scaled by randomness (0.0 = no variation, 1.0 = full ±10%)
+                float randomVariation = (random.nextFloat() - 0.5f) * 0.2f * (float) randomness;
+                blendFactor = Math.max(0.0f, Math.min(1.0f, blendFactor + randomVariation));
+
+                // Interpolate height with slight noise
+                float interpolated = (float) (avgOutwardHeight * blendFactor + currentHeight * (1.0f - blendFactor));
+
+                // Add subtle height variation (±1 block) for texture
+                // Scaled by randomness (0.0 = no noise, 1.0 = full ±1 block)
+                int heightNoise = randomness > 0 ? (int) Math.round((random.nextInt(3) - 1) * randomness) : 0;
+
+                int blendedHeight = Math.round(interpolated) + heightNoise;
+                blendedHeight = Math.max(0, Math.min(255, blendedHeight));
+
+                // Set the blended height
+                flat.setLevel(x, z, blendedHeight);
+            }
         }
 
         /**

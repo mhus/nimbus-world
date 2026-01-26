@@ -254,6 +254,21 @@ public class HexCompositeBuilderSimpleTest {
             (filled.getCoordinate().getQ() + ":" + filled.getCoordinate().getR()).getBytes()
         );
 
+        // Calculate mount position from hex coordinates
+        // The flat should be positioned in world coordinates matching the hex position
+        // Use FlatCreateService logic: calculate hex center and then top-left corner of bounding box
+        // For FLAT_SIZE=400, we use a hex gridSize that fits well
+        int gridSize = 370; // Hex grid size that fits with FLAT_SIZE=400 and 15px borders
+        double[] hexCenter = HexMathUtil.hexToCartesian(filled.getCoordinate(), gridSize);
+
+        // Calculate mount as top-left corner of the FLAT_SIZE bounding box
+        int mountX = (int) Math.floor(hexCenter[0] - FLAT_SIZE / 2.0);
+        int mountZ = (int) Math.floor(hexCenter[1] - FLAT_SIZE / 2.0);
+
+        log.debug("Hex [{},{}] center=({},{}) -> mount=({},{}) with FLAT_SIZE={}",
+            filled.getCoordinate().getQ(), filled.getCoordinate().getR(),
+            hexCenter[0], hexCenter[1], mountX, mountZ, FLAT_SIZE);
+
         WFlat flat = WFlat.builder()
             .flatId(flatId)
             .worldId("middle-earth")
@@ -262,8 +277,8 @@ public class HexCompositeBuilderSimpleTest {
             .sizeX(FLAT_SIZE)
             .sizeZ(FLAT_SIZE)
             .seaLevel(OCEAN_LEVEL)
-            .mountX(FLAT_SIZE / 2)
-            .mountZ(FLAT_SIZE / 2)
+            .mountX(mountX)
+            .mountZ(mountZ)
             .levels(levels)
             .columns(columns)
             .extraBlocks(new HashMap<>())
@@ -332,8 +347,9 @@ public class HexCompositeBuilderSimpleTest {
             }
         }
 
-        // Set blend width (optional, default is 20)
+        // Set blend width and randomness (optional, defaults are width=20, randomness=0.5)
         hexGrid.getParameters().put("g_edge_blend_width", "15");
+        hexGrid.getParameters().put("g_edge_blend_randomness", "0");  // Reduced randomness: 0.0=none, 1.0=full
 
         // Apply blender pipeline
         try {
@@ -435,6 +451,9 @@ public class HexCompositeBuilderSimpleTest {
             });
         }
 
+        // Create HexGridBuilderService
+        HexGridBuilderService builderService = new HexGridBuilderService();
+
         return BuilderContext.builder()
             .flat(flat)
             .hexGrid(hexGrid)
@@ -443,6 +462,7 @@ public class HexCompositeBuilderSimpleTest {
             .manipulatorService(manipulatorService)
             .chunkService(chunkService)
             .flatService(flatService)
+            .builderService(builderService)
             .build();
     }
 
