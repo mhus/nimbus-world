@@ -26,8 +26,9 @@ public enum BiomeType implements TsEnum {
         "flora_density", "0.8"
     )),
 
-    PLAINS(PlainsBiome.class, "island", Map.of(
+    PLAINS(PlainsBiome.class, "mountain", Map.of(
         "g_offset", "1"
+
     )),
 
     DESERT(DesertBiome.class, "mountain", Map.of(
