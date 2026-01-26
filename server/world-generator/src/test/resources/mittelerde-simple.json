@@ -8,8 +8,8 @@
       "biomeType": "MOUNTAINS",
       "parameters": {
         "g_builder": "mountain",
-        "landLevel": "80",
-        "landOffset": "10",
+        "g_asl": "80",
+        "g_offset": "10",
         "g_offset": "30",
         "g_roughness": "0.8"
       }
@@ -34,8 +34,8 @@
       ],
       "parameters": {
         "g_builder": "island",
-        "landLevel": "90",
-        "landOffset": "8",
+        "g_asl": "90",
+        "g_offset": "8",
         "g_offset": "2"
       }
     },
@@ -61,8 +61,8 @@
       ],
       "parameters": {
         "g_builder": "mountain",
-        "landLevel": "120",
-        "landOffset": "30"
+        "g_asl": "120",
+        "g_offset": "30"
       },
       "continentId": "middle-earth-mainland"
     },
@@ -84,8 +84,8 @@
       ],
       "parameters": {
         "g_builder": "island",
-        "landLevel": "85",
-        "landOffset": "10"
+        "g_asl": "85",
+        "g_offset": "10"
       },
       "continentId": "middle-earth-mainland"
     },
@@ -107,8 +107,8 @@
       ],
       "parameters": {
         "g_builder": "island",
-        "landLevel": "88",
-        "landOffset": "7"
+        "g_asl": "88",
+        "g_offset": "7"
       },
       "continentId": "middle-earth-mainland"
     },
@@ -134,8 +134,8 @@
       ],
       "parameters": {
         "g_builder": "mountain",
-        "landLevel": "125",
-        "landOffset": "28"
+        "g_asl": "125",
+        "g_offset": "28"
       },
       "continentId": "middle-earth-mainland"
     },
@@ -161,8 +161,8 @@
       ],
       "parameters": {
         "g_builder": "mountain",
-        "landLevel": "130",
-        "landOffset": "30"
+        "g_asl": "130",
+        "g_offset": "30"
       },
       "continentId": "middle-earth-mainland"
     },
@@ -188,8 +188,8 @@
       ],
       "parameters": {
         "g_builder": "mountain",
-        "landLevel": "110",
-        "landOffset": "20"
+        "g_asl": "110",
+        "g_offset": "20"
       },
       "continentId": "middle-earth-mainland"
     },
@@ -215,8 +215,8 @@
       ],
       "parameters": {
         "g_builder": "mountain",
-        "landLevel": "105",
-        "landOffset": "18"
+        "g_asl": "105",
+        "g_offset": "18"
       },
       "continentId": "middle-earth-mainland"
     },
@@ -245,8 +245,8 @@
       ],
       "parameters": {
         "g_builder": "mountain",
-        "landLevel": "90",
-        "landOffset": "12"
+        "g_asl": "90",
+        "g_offset": "12"
       }
     },
     {
@@ -268,8 +268,8 @@
       ],
       "parameters": {
         "g_builder": "mountain",
-        "landLevel": "160",
-        "landOffset": "45"
+        "g_asl": "160",
+        "g_offset": "45"
       }
     }
   ]

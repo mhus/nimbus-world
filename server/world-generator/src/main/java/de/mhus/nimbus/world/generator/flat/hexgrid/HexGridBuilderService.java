@@ -118,11 +118,11 @@ public class HexGridBuilderService {
                 .forEach(e -> builderParams.put(e.getKey().substring(2), e.getValue()));
 
         // Also add landLevel and landOffset parameters (used by MountainBuilder and other terrain builders)
-        if (gridParams.containsKey("landLevel")) {
-            builderParams.put("landLevel", gridParams.get("landLevel"));
+        if (gridParams.containsKey("g_asl")) {
+            builderParams.put("g_asl", gridParams.get("g_asl"));
         }
-        if (gridParams.containsKey("landOffset")) {
-            builderParams.put("landOffset", gridParams.get("landOffset"));
+        if (gridParams.containsKey("g_offset")) {
+            builderParams.put("g_offset", gridParams.get("g_offset"));
         }
 
         // 1. Main builder (g_builder)

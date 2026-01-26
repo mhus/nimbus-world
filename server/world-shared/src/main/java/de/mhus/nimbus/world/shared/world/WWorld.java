@@ -99,7 +99,7 @@ public class WWorld implements Identifiable {
      * Used when generating ocean in default chunks.
      */
     @Builder.Default
-    private String oceanBlockType = "n:o";
+    private String seaBlockType = "n:o";
 
     /**
      * Seed for the world generator.

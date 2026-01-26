@@ -102,8 +102,8 @@ public class HexCompositeBuilderSimpleTest {
         Continent mainContinent = composition.getContinents().get(0);
         log.info("Continent: {} (type={}, landLevel={}, landOffset={})",
             mainContinent.getName(), mainContinent.getBiomeType(),
-            mainContinent.getParameters().get("landLevel"),
-            mainContinent.getParameters().get("landOffset"));
+            mainContinent.getParameters().get("g_asl"),
+            mainContinent.getParameters().get("g_offset"));
 
         // Use HexCompositeBuilder for the complete pipeline
         log.info("Starting composition pipeline...");

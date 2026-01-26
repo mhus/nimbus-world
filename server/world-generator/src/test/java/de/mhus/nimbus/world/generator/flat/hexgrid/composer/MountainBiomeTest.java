@@ -32,9 +32,9 @@ public class MountainBiomeTest {
         mountain.applyDefaults();
 
         assertNotNull(mountain.getParameters(), "Parameters should be set");
-        assertEquals("150", mountain.getParameters().get("landLevel"),
+        assertEquals("150", mountain.getParameters().get("g_asl"),
             "HIGH_PEAKS should have landLevel=150");
-        assertEquals("40", mountain.getParameters().get("landOffset"),
+        assertEquals("40", mountain.getParameters().get("g_offset"),
             "HIGH_PEAKS should have landOffset=40");
 
         // Should also have base parameters from BiomeType
@@ -44,8 +44,8 @@ public class MountainBiomeTest {
             "Should have g_roughness from BiomeType");
 
         log.info("HIGH_PEAKS: landLevel={}, landOffset={}, max height=~240",
-            mountain.getParameters().get("landLevel"),
-            mountain.getParameters().get("landOffset"));
+            mountain.getParameters().get("g_asl"),
+            mountain.getParameters().get("g_offset"));
 
         log.info("=== Test completed successfully ===");
     }
@@ -61,14 +61,14 @@ public class MountainBiomeTest {
 
         mountain.applyDefaults();
 
-        assertEquals("120", mountain.getParameters().get("landLevel"),
+        assertEquals("120", mountain.getParameters().get("g_asl"),
             "MEDIUM_PEAKS should have landLevel=120");
-        assertEquals("30", mountain.getParameters().get("landOffset"),
+        assertEquals("30", mountain.getParameters().get("g_offset"),
             "MEDIUM_PEAKS should have landOffset=30");
 
         log.info("MEDIUM_PEAKS: landLevel={}, landOffset={}, max height=~200",
-            mountain.getParameters().get("landLevel"),
-            mountain.getParameters().get("landOffset"));
+            mountain.getParameters().get("g_asl"),
+            mountain.getParameters().get("g_offset"));
 
         log.info("=== Test completed successfully ===");
     }
@@ -84,14 +84,14 @@ public class MountainBiomeTest {
 
         mountain.applyDefaults();
 
-        assertEquals("100", mountain.getParameters().get("landLevel"),
+        assertEquals("100", mountain.getParameters().get("g_asl"),
             "LOW_PEAKS should have landLevel=100");
-        assertEquals("20", mountain.getParameters().get("landOffset"),
+        assertEquals("20", mountain.getParameters().get("g_offset"),
             "LOW_PEAKS should have landOffset=20");
 
         log.info("LOW_PEAKS: landLevel={}, landOffset={}, max height=~170",
-            mountain.getParameters().get("landLevel"),
-            mountain.getParameters().get("landOffset"));
+            mountain.getParameters().get("g_asl"),
+            mountain.getParameters().get("g_offset"));
 
         log.info("=== Test completed successfully ===");
     }
@@ -107,14 +107,14 @@ public class MountainBiomeTest {
 
         mountain.applyDefaults();
 
-        assertEquals("80", mountain.getParameters().get("landLevel"),
+        assertEquals("80", mountain.getParameters().get("g_asl"),
             "MEADOW should have landLevel=80");
-        assertEquals("10", mountain.getParameters().get("landOffset"),
+        assertEquals("10", mountain.getParameters().get("g_offset"),
             "MEADOW should have landOffset=10");
 
         log.info("MEADOW: landLevel={}, landOffset={}, max height=~140",
-            mountain.getParameters().get("landLevel"),
-            mountain.getParameters().get("landOffset"));
+            mountain.getParameters().get("g_asl"),
+            mountain.getParameters().get("g_offset"));
 
         log.info("=== Test completed successfully ===");
     }
@@ -134,9 +134,9 @@ public class MountainBiomeTest {
         assertEquals(MountainBiome.MountainHeight.MEDIUM_PEAKS, mountain.getHeight(),
             "Should default to MEDIUM_PEAKS");
 
-        assertEquals("120", mountain.getParameters().get("landLevel"),
+        assertEquals("120", mountain.getParameters().get("g_asl"),
             "Default should have MEDIUM_PEAKS landLevel=120");
-        assertEquals("30", mountain.getParameters().get("landOffset"),
+        assertEquals("30", mountain.getParameters().get("g_offset"),
             "Default should have MEDIUM_PEAKS landOffset=30");
 
         log.info("Default mountain uses MEDIUM_PEAKS");
@@ -169,11 +169,11 @@ public class MountainBiomeTest {
 
         // Verify parameters were applied
         assertNotNull(highPeaks.getParameters(), "Parameters should be set after initialize");
-        assertEquals("150", highPeaks.getParameters().get("landLevel"),
+        assertEquals("150", highPeaks.getParameters().get("g_asl"),
             "HIGH_PEAKS should have landLevel=150 after initialize");
 
         log.info("Mountain in composition initialized correctly with landLevel={}",
-            highPeaks.getParameters().get("landLevel"));
+            highPeaks.getParameters().get("g_asl"));
 
         log.info("=== Test completed successfully ===");
     }

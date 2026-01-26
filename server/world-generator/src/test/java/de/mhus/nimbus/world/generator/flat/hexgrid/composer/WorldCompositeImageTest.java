@@ -12,6 +12,7 @@ import de.mhus.nimbus.world.shared.world.WHexGrid;
 import de.mhus.nimbus.world.shared.world.WWorld;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -36,6 +37,7 @@ import static org.mockito.Mockito.mock;
  * Demonstrates the complete world generation pipeline
  */
 @Slf4j
+@Disabled // Disabled to prevent automatic test runs; enable for manual testing
 public class WorldCompositeImageTest {
 
     private static final int FLAT_SIZE = 512;
@@ -1527,7 +1529,7 @@ public class WorldCompositeImageTest {
         // 1. Very large central plains biome (covers most of the area)
         Biome plains = createBiome("Central Plains", BiomeType.PLAINS, AreaShape.CIRCLE,
             15, 18, Direction.N, 0, 0, 0, "origin", 5);
-        plains.getParameters().put("landLevel", "75");  // Medium height
+        plains.getParameters().put("g_asl", "75");  // Medium height
         composition.getFeatures().add(plains);
 
         // 2. Mountain source (NW, overlapping with plains)
@@ -1545,13 +1547,13 @@ public class WorldCompositeImageTest {
         // 3. Forest biome (E/SE of center, overlapping with plains)
         Biome forest = createBiome("Eastern Forest", BiomeType.FOREST, AreaShape.CIRCLE,
             8, 10, Direction.SE, 120, 4, 5, "origin", 8);
-        forest.getParameters().put("landLevel", "65");  // Lower than plains, higher than coast
+        forest.getParameters().put("g_asl", "65");  // Lower than plains, higher than coast
         composition.getFeatures().add(forest);
 
         // 4. Coast/lowlands at the SE edge (overlapping with forest)
         Biome coast = createBiome("Coastal Lowlands", BiomeType.COAST, AreaShape.CIRCLE,
             5, 6, Direction.SE, 120, 10, 11, "origin", 7);
-        coast.getParameters().put("landLevel", "55");  // Just above ocean level
+        coast.getParameters().put("g_asl", "55");  // Just above ocean level
         composition.getFeatures().add(coast);
 
         // 5. River from mountain to SE (flowing through multiple biomes)

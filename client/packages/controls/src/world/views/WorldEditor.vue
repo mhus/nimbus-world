@@ -222,7 +222,7 @@
                   <span class="label-text font-medium">Ocean Block Type</span>
                 </label>
                 <input
-                  v-model="formData.oceanBlockType"
+                  v-model="formData.seaBlockType"
                   type="text"
                   placeholder="n:o"
                   class="input input-bordered w-full"
@@ -1533,7 +1533,7 @@ const formData = ref({
   groundLevel: 20,
   oceanLevel: 50,
   groundBlockType: 'n:g',
-  oceanBlockType: 'n:o',
+  seaBlockType: 'n:o',
   noiseSeed: Math.floor(Math.random() * 1000000000),
   noiseFrequency: 0.02,
   publicData: {
@@ -1642,7 +1642,7 @@ const loadWorld = () => {
       groundLevel: 20,
       oceanLevel: 64,
       groundBlockType: 'n:g',
-      oceanBlockType: 'n:o',
+      seaBlockType: 'n:o',
       noiseSeed: Math.floor(Math.random() * 1000000000),
       noiseFrequency: 0.02,
       publicData: {
@@ -1846,7 +1846,7 @@ const loadWorld = () => {
     groundLevel: world.groundLevel,
     oceanLevel: world.oceanLevel,
     groundBlockType: world.groundBlockType,
-    oceanBlockType: world.oceanBlockType,
+    seaBlockType: world.seaBlockType,
     noiseSeed: world.noiseSeed,
     noiseFrequency: world.noiseFrequency,
     publicData: mergePublicData(world.publicData)
@@ -1998,7 +1998,7 @@ const performSave = async () => {
       groundLevel: formData.value.groundLevel,
       oceanLevel: formData.value.oceanLevel ?? undefined,
       groundBlockType: formData.value.groundBlockType,
-      oceanBlockType: formData.value.oceanBlockType,
+      seaBlockType: formData.value.seaBlockType,
       noiseSeed: formData.value.noiseSeed,
       noiseFrequency: formData.value.noiseFrequency,
     };

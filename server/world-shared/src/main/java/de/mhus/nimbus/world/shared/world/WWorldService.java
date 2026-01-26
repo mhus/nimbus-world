@@ -383,7 +383,7 @@ public class WWorldService {
                 .groundLevel(sourceWorld.getGroundLevel())
                 .oceanLevel(sourceWorld.getOceanLevel())
                 .groundBlockType(sourceWorld.getGroundBlockType())
-                .oceanBlockType(sourceWorld.getOceanBlockType())
+                .seaBlockType(sourceWorld.getSeaBlockType())
                 .owner(sourceWorld.getOwner())
                 .editor(sourceWorld.getEditor())
                 .supporter(sourceWorld.getSupporter())

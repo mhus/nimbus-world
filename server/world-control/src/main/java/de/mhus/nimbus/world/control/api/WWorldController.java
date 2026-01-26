@@ -48,7 +48,7 @@ public class WWorldController extends BaseEditorController {
             Integer groundLevel,
             Integer oceanLevel,
             String groundBlockType,
-            String oceanBlockType,
+            String seaBlockType,
             Long noiseSeed,
             Double noiseFrequency
     ) {}
@@ -67,7 +67,7 @@ public class WWorldController extends BaseEditorController {
             int groundLevel,
             Integer oceanLevel,
             String groundBlockType,
-            String oceanBlockType,
+            String seaBlockType,
             long noiseSeed,
             double noiseFrequency,
             Set<String> owner,
@@ -91,7 +91,7 @@ public class WWorldController extends BaseEditorController {
             int groundLevel,
             Integer oceanLevel,
             String groundBlockType,
-            String oceanBlockType,
+            String seaBlockType,
             long noiseSeed,
             double noiseFrequency,
             Set<String> owner,
@@ -123,7 +123,7 @@ public class WWorldController extends BaseEditorController {
                 world.getGroundLevel(),
                 world.getOceanLevel(),
                 world.getGroundBlockType(),
-                world.getOceanBlockType(),
+                world.getSeaBlockType(),
                 world.getNoiseSeed(),
                 world.getNoiseFrequency(),
                 world.getOwner(),
@@ -152,7 +152,7 @@ public class WWorldController extends BaseEditorController {
                 0,     // default groundLevel
                 null,  // no oceanLevel
                 null,  // no groundBlockType
-                null,  // no oceanBlockType
+                null,  // no seaBlockType
                 1337,  // default noiseSeed
                 0.02,  // default noiseFrequency
                 Set.of(),  // empty owner set
@@ -350,7 +350,7 @@ public class WWorldController extends BaseEditorController {
                 if (request.groundLevel() != null) w.setGroundLevel(request.groundLevel());
                 if (request.oceanLevel() != null) w.setOceanLevel(request.oceanLevel());
                 if (request.groundBlockType() != null) w.setGroundBlockType(request.groundBlockType());
-                if (request.oceanBlockType() != null) w.setOceanBlockType(request.oceanBlockType());
+                if (request.seaBlockType() != null) w.setSeaBlockType(request.seaBlockType());
                 if (request.noiseSeed() != null) w.setNoiseSeed(request.noiseSeed());
                 if (request.noiseFrequency() != null) w.setNoiseFrequency(request.noiseFrequency());
             });
@@ -384,7 +384,7 @@ public class WWorldController extends BaseEditorController {
                     worldResponse.groundLevel(),
                     worldResponse.oceanLevel(),
                     worldResponse.groundBlockType(),
-                    worldResponse.oceanBlockType(),
+                    worldResponse.seaBlockType(),
                     worldResponse.noiseSeed(),
                     worldResponse.noiseFrequency(),
                     worldResponse.owner(),
@@ -469,7 +469,7 @@ public class WWorldController extends BaseEditorController {
             if (request.groundLevel() != null) existing.setGroundLevel(request.groundLevel());
             if (request.oceanLevel() != null) existing.setOceanLevel(request.oceanLevel());
             if (request.groundBlockType() != null) existing.setGroundBlockType(request.groundBlockType());
-            if (request.oceanBlockType() != null) existing.setOceanBlockType(request.oceanBlockType());
+            if (request.seaBlockType() != null) existing.setSeaBlockType(request.seaBlockType());
             if (request.noiseSeed() != null) existing.setNoiseSeed(request.noiseSeed());
             if (request.noiseFrequency() != null) existing.setNoiseFrequency(request.noiseFrequency());
 
@@ -653,7 +653,7 @@ public class WWorldController extends BaseEditorController {
                 w.setGroundLevel(source.getGroundLevel());
                 w.setOceanLevel(source.getOceanLevel());
                 w.setGroundBlockType(source.getGroundBlockType());
-                w.setOceanBlockType(source.getOceanBlockType());
+                w.setSeaBlockType(source.getSeaBlockType());
                 w.setNoiseSeed(source.getNoiseSeed());
                 w.setNoiseFrequency(source.getNoiseFrequency());
                 w.setInstanceable(source.isInstanceable());

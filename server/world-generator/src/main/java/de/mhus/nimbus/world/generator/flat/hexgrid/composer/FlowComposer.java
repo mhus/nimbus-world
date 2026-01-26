@@ -814,12 +814,12 @@ public class FlowComposer {
         }
 
         // Check if biome has landLevel parameter
-        if (biome.getParameters() != null && biome.getParameters().containsKey("landLevel")) {
+        if (biome.getParameters() != null && biome.getParameters().containsKey("g_asl")) {
             try {
-                return Integer.parseInt(biome.getParameters().get("landLevel"));
+                return Integer.parseInt(biome.getParameters().get("g_asl"));
             } catch (NumberFormatException e) {
                 log.warn("Invalid landLevel for biome at {},{}: {}",
-                    coord.getQ(), coord.getR(), biome.getParameters().get("landLevel"));
+                    coord.getQ(), coord.getR(), biome.getParameters().get("g_asl"));
             }
         }
 

@@ -103,8 +103,8 @@ public class MountainBiome extends Biome {
         }
 
         // Set landLevel and landOffset based on height
-        getParameters().put("landLevel", String.valueOf(height.getLandLevel()));
-        getParameters().put("landOffset", String.valueOf(height.getLandOffset()));
+        getParameters().put("g_asl", String.valueOf(height.getLandLevel()));
+        getParameters().put("g_offset", String.valueOf(height.getLandOffset()));
 
         log.info("Applied MountainBiome defaults for '{}': height={}, landLevel={}, landOffset={}",
             getName(), height, height.getLandLevel(), height.getLandOffset());

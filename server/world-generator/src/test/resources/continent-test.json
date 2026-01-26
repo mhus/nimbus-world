@@ -9,8 +9,8 @@
       "minNeighbors": 2,
       "parameters": {
         "g_builder": "mountain",
-        "landLevel": "80",
-        "landOffset": "10",
+        "g_asl": "80",
+        "g_offset": "10",
         "g_offset": "30",
         "g_roughness": "0.8"
       }
@@ -30,8 +30,8 @@
       ],
       "parameters": {
         "g_builder": "island",
-        "landLevel": "90",
-        "landOffset": "8"
+        "g_asl": "90",
+        "g_offset": "8"
       }
     },
     {
@@ -47,8 +47,8 @@
       ],
       "parameters": {
         "g_builder": "island",
-        "landLevel": "88",
-        "landOffset": "7"
+        "g_asl": "88",
+        "g_offset": "7"
       }
     },
     {
@@ -65,8 +65,8 @@
       ],
       "parameters": {
         "g_builder": "mountain",
-        "landLevel": "120",
-        "landOffset": "30"
+        "g_asl": "120",
+        "g_offset": "30"
       }
     }
   ]

@@ -25,8 +25,8 @@ public abstract class HexGridBuilder {
 
     public void init(Map<String, String> parameters) {
         this.parameters = parameters;
-        this.landLevel = CastUtil.toint(parameters.get("landLevel"), getDefaultLandLevel());
-        this.landOffset = CastUtil.toint(parameters.get("landOffset"), getDefaultLandOffset());
+        this.landLevel = CastUtil.toint(parameters.get("g_asl"), getDefaultLandLevel());
+        this.landOffset = CastUtil.toint(parameters.get("g_offset"), getDefaultLandOffset());
     }
 
     protected abstract int getDefaultLandOffset();
