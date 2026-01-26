@@ -213,7 +213,7 @@ public class HexGridBuilderService {
             }
         }
 
-        log.info("Created builder pipeline with {} builders for hex grid: {}", pipeline.size(), grid.getPosition());
+        log.info("Created builder {} pipeline with {} builders for hex grid: {}", step, pipeline.size(), grid.getPosition());
         return pipeline;
     }
 

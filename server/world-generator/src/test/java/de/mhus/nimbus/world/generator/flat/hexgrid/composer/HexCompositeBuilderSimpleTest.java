@@ -40,6 +40,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * Tests for HexCompositeBuilder - orchestrates complete composition pipeline
@@ -133,23 +134,52 @@ public class HexCompositeBuilderSimpleTest {
             }
         }
 
-        // Build terrain for all grids
-        log.info("Building terrain for all grids...");
+        // Build terrain for all grids in 3 phases
+        log.info("Building terrain for all grids in 3 phases...");
         Map<HexVector2, WFlat> flats = new HashMap<>();
         HexGridFillResult fillResult = result.getFillResult();
 
         if (fillResult != null) {
             var allGrids = fillResult.getAllGrids();
             var index = new HexGridIndex(allGrids.stream().map(g -> g.getHexGrid()).toList());
+
+            // ===== PHASE 1: GROUND - Create all basic terrains =====
+            log.info("Phase 1 (GROUND): Creating basic terrain for {} grids", allGrids.size());
             for (FilledHexGrid filled : allGrids) {
                 try {
                     WFlat flat = buildGridTerrain(filled, index);
                     flats.put(filled.getCoordinate(), flat);
                 } catch (Exception e) {
-                    log.warn("Failed to build terrain for grid {}: {}", filled.getCoordinate(), e.getMessage(), e);
+                    log.warn("Phase 1 failed for grid {}: {}", filled.getCoordinate(), e.getMessage(), e);
                 }
             }
-            log.info("Built terrain for {}/{} grids", flats.size(), fillResult.getAllGrids().size());
+            log.info("Phase 1 completed: {}/{} grids created", flats.size(), allGrids.size());
+
+            // ===== PHASE 2: BLENDER - Blend all sides with neighbors =====
+            log.info("Phase 2 (BLENDER): Blending sides for {} grids", allGrids.size());
+            int blendedCount = 0;
+            for (FilledHexGrid filled : allGrids) {
+                try {
+                    blendGridSides(filled, index, flats);
+                    blendedCount++;
+                } catch (Exception e) {
+                    log.warn("Phase 2 failed for grid {}: {}", filled.getCoordinate(), e.getMessage(), e);
+                }
+            }
+            log.info("Phase 2 completed: {}/{} grids blended", blendedCount, allGrids.size());
+
+            // ===== PHASE 3: TERRAIN - Apply terrain features =====
+            log.info("Phase 3 (TERRAIN): Applying terrain features for {} grids", allGrids.size());
+            int terrainCount = 0;
+            for (FilledHexGrid filled : allGrids) {
+                try {
+                    applyTerrainFeatures(filled, index, flats);
+                    terrainCount++;
+                } catch (Exception e) {
+                    log.warn("Phase 3 failed for grid {}: {}", filled.getCoordinate(), e.getMessage(), e);
+                }
+            }
+            log.info("Phase 3 completed: {}/{} grids processed", terrainCount, allGrids.size());
 
             // Create composite image
             log.info("Creating %s composite image...".formatted(name));
@@ -219,8 +249,13 @@ public class HexCompositeBuilderSimpleTest {
             columns[i] = 0;
         }
 
+        // Generate unique flatId using UUID based on coordinate
+        String flatId = "flat-" + java.util.UUID.nameUUIDFromBytes(
+            (filled.getCoordinate().getQ() + ":" + filled.getCoordinate().getR()).getBytes()
+        );
+
         WFlat flat = WFlat.builder()
-            .flatId("flat-" + filled.getCoordinate().getQ() + "-" + filled.getCoordinate().getR())
+            .flatId(flatId)
             .worldId("middle-earth")
             .layerDataId("test-layer")
             .hexGrid(filled.getCoordinate())
@@ -237,30 +272,121 @@ public class HexCompositeBuilderSimpleTest {
             .borderProtected(false)
             .build();
 
-        // Apply builder pipeline
+        // ===== PHASE 1: GROUND - Create basic terrain =====
+        log.debug("Phase 1 (GROUND): Building basic terrain for grid [{},{}]",
+            filled.getCoordinate().getQ(), filled.getCoordinate().getR());
+
         try {
             HexGridBuilderService builderService = new HexGridBuilderService();
-            List<HexGridBuilder> pipeline = builderService.createBuilderPipeline(filled.getHexGrid(), HexGridBuilderService.STEP.ALL);
+            List<HexGridBuilder> groundPipeline = builderService.createBuilderPipeline(
+                filled.getHexGrid(), HexGridBuilderService.STEP.GROUND);
 
-            if (pipeline.isEmpty()) {
-                log.warn("No builders in pipeline for grid [{},{}]",
-                    filled.getCoordinate().getQ(), filled.getCoordinate().getR());
-                return flat;
-            }
-
-            BuilderContext context = createContext(flat, filled.getHexGrid(), gridIndex);
-
-            for (HexGridBuilder builder : pipeline) {
-                builder.setContext(context);
-                builder.buildFlat();
+            if (!groundPipeline.isEmpty()) {
+                BuilderContext context = createContext(flat, filled.getHexGrid(), gridIndex, null);
+                for (HexGridBuilder builder : groundPipeline) {
+                    builder.setContext(context);
+                    builder.buildFlat();
+                }
             }
         } catch (Exception e) {
-            log.warn("Failed to build terrain for grid [{},{}]: {}",
+            log.warn("Phase 1 (GROUND) failed for grid [{},{}]: {}",
                 filled.getCoordinate().getQ(), filled.getCoordinate().getR(),
                 e.getMessage(), e);
         }
 
         return flat;
+    }
+
+    /**
+     * Phase 2: BLENDER - Blend sides with neighbors
+     * Must be called after all flats are created in Phase 1
+     */
+    private void blendGridSides(FilledHexGrid filled, HexGridIndex gridIndex,
+                                Map<HexVector2, WFlat> allFlats) {
+        WFlat flat = allFlats.get(filled.getCoordinate());
+        if (flat == null) {
+            log.warn("Flat not found for grid [{},{}] in Phase 2",
+                filled.getCoordinate().getQ(), filled.getCoordinate().getR());
+            return;
+        }
+
+        log.debug("Phase 2 (BLENDER): Blending sides for grid [{},{}]",
+            filled.getCoordinate().getQ(), filled.getCoordinate().getR());
+
+        // Set neighbor flat IDs as parameters
+        WHexGrid hexGrid = filled.getHexGrid();
+        if (hexGrid.getParameters() == null) {
+            hexGrid.setParameters(new HashMap<>());
+        }
+
+        for (WHexGrid.SIDE side : WHexGrid.SIDE.values()) {
+            HexVector2 neighborPos = HexMathUtil.getNeighborPosition(filled.getCoordinate(), side);
+            WFlat neighborFlat = allFlats.get(neighborPos);
+            if (neighborFlat != null) {
+                // Set parameter for SideBlenderBuilder
+                String paramKey = "g_side_flat_" + side.name().toLowerCase();
+                hexGrid.getParameters().put(paramKey, neighborFlat.getFlatId());
+                log.trace("Set {} = {} for grid [{},{}]",
+                    paramKey, neighborFlat.getFlatId(),
+                    filled.getCoordinate().getQ(), filled.getCoordinate().getR());
+            }
+        }
+
+        // Set blend width (optional, default is 20)
+        hexGrid.getParameters().put("g_edge_blend_width", "15");
+
+        // Apply blender pipeline
+        try {
+            HexGridBuilderService builderService = new HexGridBuilderService();
+            List<HexGridBuilder> blenderPipeline = builderService.createBuilderPipeline(
+                hexGrid, HexGridBuilderService.STEP.BLENDER);
+
+            if (!blenderPipeline.isEmpty()) {
+                BuilderContext context = createContext(flat, hexGrid, gridIndex, allFlats);
+                for (HexGridBuilder builder : blenderPipeline) {
+                    builder.setContext(context);
+                    builder.buildFlat();
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Phase 2 (BLENDER) failed for grid [{},{}]: {}",
+                filled.getCoordinate().getQ(), filled.getCoordinate().getR(),
+                e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Phase 3: TERRAIN - Apply terrain features (rivers, roads, etc.)
+     */
+    private void applyTerrainFeatures(FilledHexGrid filled, HexGridIndex gridIndex,
+                                     Map<HexVector2, WFlat> allFlats) {
+        WFlat flat = allFlats.get(filled.getCoordinate());
+        if (flat == null) {
+            log.warn("Flat not found for grid [{},{}] in Phase 3",
+                filled.getCoordinate().getQ(), filled.getCoordinate().getR());
+            return;
+        }
+
+        log.debug("Phase 3 (TERRAIN): Applying terrain features for grid [{},{}]",
+            filled.getCoordinate().getQ(), filled.getCoordinate().getR());
+
+        try {
+            HexGridBuilderService builderService = new HexGridBuilderService();
+            List<HexGridBuilder> terrainPipeline = builderService.createBuilderPipeline(
+                filled.getHexGrid(), HexGridBuilderService.STEP.TERRAIN);
+
+            if (!terrainPipeline.isEmpty()) {
+                BuilderContext context = createContext(flat, filled.getHexGrid(), gridIndex, allFlats);
+                for (HexGridBuilder builder : terrainPipeline) {
+                    builder.setContext(context);
+                    builder.buildFlat();
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Phase 3 (TERRAIN) failed for grid [{},{}]: {}",
+                filled.getCoordinate().getQ(), filled.getCoordinate().getR(),
+                e.getMessage(), e);
+        }
     }
 
     private int getBuilderBaseLevel(String builderType) {
@@ -274,7 +400,8 @@ public class HexCompositeBuilderSimpleTest {
         };
     }
 
-    private BuilderContext createContext(WFlat flat, WHexGrid hexGrid, HexGridIndex gridIndex) {
+    private BuilderContext createContext(WFlat flat, WHexGrid hexGrid, HexGridIndex gridIndex,
+                                        Map<HexVector2, WFlat> allFlats) {
         // WHexGrid is already properly configured from FilledHexGrid
 
         List<FlatManipulator> manipulators = List.of(
@@ -294,6 +421,20 @@ public class HexCompositeBuilderSimpleTest {
 
         Map<WHexGrid.SIDE, WHexGrid> neighbors = collectNeighbors(hexGrid.getPosition(), gridIndex);
 
+        // Mock WFlatService for Phase 2 (BLENDER)
+        de.mhus.nimbus.world.shared.generator.WFlatService flatService = null;
+        if (allFlats != null) {
+            flatService = mock(de.mhus.nimbus.world.shared.generator.WFlatService.class);
+            // Setup mock to return flats by flatId
+            when(flatService.findByWorldAndFlatId(any(), any())).thenAnswer(invocation -> {
+                String flatId = invocation.getArgument(1);
+                return allFlats.values().stream()
+                    .filter(f -> f.getFlatId().equals(flatId))
+                    .findFirst()
+                    .orElse(null);
+            });
+        }
+
         return BuilderContext.builder()
             .flat(flat)
             .hexGrid(hexGrid)
@@ -301,6 +442,7 @@ public class HexCompositeBuilderSimpleTest {
             .neighborGrids(neighbors)
             .manipulatorService(manipulatorService)
             .chunkService(chunkService)
+            .flatService(flatService)
             .build();
     }
 

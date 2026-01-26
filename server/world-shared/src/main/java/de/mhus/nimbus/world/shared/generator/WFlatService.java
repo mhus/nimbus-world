@@ -54,15 +54,16 @@ public class WFlatService {
         return saved;
     }
 
-//    /**
-//     * Find flat by database ID.
-//     * @param id Database ID
-//     * @return Optional containing the flat if found
-//     */
-//    public Optional<WFlat> findById(String id) {
-//        log.debug("Finding flat by id={}", id);
-//        return wFlatRepository.findById(id);
-//    }
+    /**
+     * Find flat by database ID.
+     * @param id Database ID
+     * @return Optional containing the flat if found
+     */
+    @Deprecated
+    public Optional<WFlat> findById(String id) {
+        log.debug("Finding flat by id={}", id);
+        return wFlatRepository.findById(id);
+    }
 
     /**
      * Find flat by world ID, layer data ID, and flat ID.
