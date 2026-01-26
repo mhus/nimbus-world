@@ -2,6 +2,7 @@ package de.mhus.nimbus.world.generator.flat.hexgrid.composer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.shared.utils.TypeUtil;
+import de.mhus.nimbus.world.generator.flat.hexgrid.HexGridBuilderService;
 import de.mhus.nimbus.world.shared.generator.WFlat;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
@@ -477,7 +478,7 @@ public class MountainBiomeTest {
                 new de.mhus.nimbus.world.generator.flat.hexgrid.HexGridBuilderService();
 
             java.util.List<de.mhus.nimbus.world.generator.flat.hexgrid.HexGridBuilder> pipeline =
-                builderService.createBuilderPipeline(filled.getHexGrid());
+                builderService.createBuilderPipeline(filled.getHexGrid(), HexGridBuilderService.STEP.ALL);
 
             de.mhus.nimbus.world.generator.flat.FlatManipulatorService manipulatorService =
                 new de.mhus.nimbus.world.generator.flat.FlatManipulatorService(

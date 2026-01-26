@@ -4,6 +4,8 @@ import de.mhus.nimbus.world.shared.generator.WFlat;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.HashMap;
+
 /**
  * EdgeBlender manipulator builder.
  * Blends edges of hex grids with their neighbors, using per-side land levels.
@@ -18,9 +20,23 @@ public class EdgeBlenderBuilder extends HexGridBuilder {
 
         log.info("Blending edges for flat: {}", flat.getFlatId());
 
+        HashMap<WHexGrid.SIDE, String> edgeFlats = new HashMap<>();
+        for (var edge : WHexGrid.SIDE.values()) {
+            String key = "g_edge_flat_" + edge.name().toLowerCase();
+            String flatName = parameters.get(key);
+            if (flatName != null) {
+                edgeFlats.put(edge, flatName);
+            }
+        }
+        if (edgeFlats.isEmpty()) {
+            log.info("No edge flats defined for edge blending in flat: {}", flat.getFlatId());
+            return;
+        }
+        log.info("Edge flats for blending: {}", edgeFlats);
+
         // Blend edges with neighbors using the edge blender
         HexGridEdgeBlender edgeBlender = new HexGridEdgeBlender(flat, context);
-        edgeBlender.blendAllEdges();
+        edgeBlender.blendAllEdges(edgeFlats);
 
         log.info("Edge blending completed for flat: {}", flat.getFlatId());
     }

@@ -18,6 +18,13 @@ import java.util.Optional;
 @Slf4j
 public class HexGridBuilderService {
 
+    public enum STEP {
+        ALL,
+        GROUND,
+        BLENDER,
+        TERRAIN // flows, structures
+    }
+
     public Map<String,Class<? extends HexGridBuilder>> builderRegistry = new HashMap<>();
     public Map<String,Class<? extends HexGridBuilder>> manipulatorRegistry = new HashMap<>();
 
@@ -102,7 +109,7 @@ public class HexGridBuilderService {
      * @param grid The hex grid to build pipeline for
      * @return List of builders to execute in order
      */
-    public List<HexGridBuilder> createBuilderPipeline(WHexGrid grid) {
+    public List<HexGridBuilder> createBuilderPipeline(WHexGrid grid, STEP step) {
         List<HexGridBuilder> pipeline = new ArrayList<>();
 
         Map<String, String> gridParams = grid.getParameters();
@@ -126,21 +133,23 @@ public class HexGridBuilderService {
         }
 
         // 1. Main builder (g_builder)
-        String mainBuilderType = gridParams.get("g_builder");
-        if (mainBuilderType != null && !mainBuilderType.isBlank()) {
-            Optional<HexGridBuilder> mainBuilder = createBuilder(mainBuilderType, builderParams);
-            if (mainBuilder.isPresent()) {
-                pipeline.add(mainBuilder.get());
-                log.debug("Added main builder to pipeline: {}", mainBuilderType);
+        if (step == STEP.ALL || step == STEP.GROUND) {
+            String mainBuilderType = gridParams.get("g_builder");
+            if (mainBuilderType != null && !mainBuilderType.isBlank()) {
+                Optional<HexGridBuilder> mainBuilder = createBuilder(mainBuilderType, builderParams);
+                if (mainBuilder.isPresent()) {
+                    pipeline.add(mainBuilder.get());
+                    log.debug("Added main builder to pipeline: {}", mainBuilderType);
+                } else {
+                    log.warn("Failed to create main builder: {}", mainBuilderType);
+                }
             } else {
-                log.warn("Failed to create main builder: {}", mainBuilderType);
+                log.warn("No g_builder parameter found on hex grid: {}", grid.getPosition());
             }
-        } else {
-            log.warn("No g_builder parameter found on hex grid: {}", grid.getPosition());
         }
 
         // 2. EdgeBlenderBuilder (always, expect edge-blender: false to skip)
-        if (!gridParams.containsKey("g_edge-blender") || !"false".equals(gridParams.get("g_edge-blender"))) {
+        if (step == STEP.ALL || step == STEP.BLENDER) {
             Optional<HexGridBuilder> edgeBlender = createManipulator("g_edge-blender", builderParams);
             if (edgeBlender.isPresent()) {
                 pipeline.add(edgeBlender.get());
@@ -149,56 +158,58 @@ public class HexGridBuilderService {
         }
 
         // 3. RiverBuilder (if river parameter exists)
-        if (gridParams.containsKey("g_river") && !gridParams.get("g_river").isBlank()) {
-            Optional<HexGridBuilder> riverBuilder = createManipulator("g_river", builderParams);
-            if (riverBuilder.isPresent()) {
-                pipeline.add(riverBuilder.get());
-                log.debug("Added RiverBuilder to pipeline");
+        if (step == STEP.ALL || step == STEP.TERRAIN) {
+            if (gridParams.containsKey("g_river") && !gridParams.get("g_river").isBlank()) {
+                Optional<HexGridBuilder> riverBuilder = createManipulator("g_river", builderParams);
+                if (riverBuilder.isPresent()) {
+                    pipeline.add(riverBuilder.get());
+                    log.debug("Added RiverBuilder to pipeline");
+                }
             }
-        }
 
-        // 4. RoadBuilder (if road parameter exists)
-        if (gridParams.containsKey("g_road") && !gridParams.get("g_road").isBlank()) {
-            Optional<HexGridBuilder> roadBuilder = createManipulator("g_road", builderParams);
-            if (roadBuilder.isPresent()) {
-                pipeline.add(roadBuilder.get());
-                log.debug("Added RoadBuilder to pipeline");
+            // 4. RoadBuilder (if road parameter exists)
+            if (gridParams.containsKey("g_road") && !gridParams.get("g_road").isBlank()) {
+                Optional<HexGridBuilder> roadBuilder = createManipulator("g_road", builderParams);
+                if (roadBuilder.isPresent()) {
+                    pipeline.add(roadBuilder.get());
+                    log.debug("Added RoadBuilder to pipeline");
+                }
             }
-        }
 
-        // 5. WallBuilder (if wall parameter exists)
-        if (gridParams.containsKey("g_wall") && !gridParams.get("g_wall").isBlank()) {
-            Optional<HexGridBuilder> wallBuilder = createManipulator("g_wall", builderParams);
-            if (wallBuilder.isPresent()) {
-                pipeline.add(wallBuilder.get());
-                log.debug("Added WallBuilder to pipeline");
+            // 5. WallBuilder (if wall parameter exists)
+            if (gridParams.containsKey("g_wall") && !gridParams.get("g_wall").isBlank()) {
+                Optional<HexGridBuilder> wallBuilder = createManipulator("g_wall", builderParams);
+                if (wallBuilder.isPresent()) {
+                    pipeline.add(wallBuilder.get());
+                    log.debug("Added WallBuilder to pipeline");
+                }
             }
-        }
 
-        // 6. SideWallBuilder (if sidewall parameter exists)
-        if (gridParams.containsKey("g_sidewall") && !gridParams.get("g_sidewall").isBlank()) {
-            Optional<HexGridBuilder> sideWallBuilder = createManipulator("g_sidewall", builderParams);
-            if (sideWallBuilder.isPresent()) {
-                pipeline.add(sideWallBuilder.get());
-                log.debug("Added SideWallBuilder to pipeline");
+            // 6. SideWallBuilder (if sidewall parameter exists)
+            if (gridParams.containsKey("g_sidewall") && !gridParams.get("g_sidewall").isBlank()) {
+                Optional<HexGridBuilder> sideWallBuilder = createManipulator("g_sidewall", builderParams);
+                if (sideWallBuilder.isPresent()) {
+                    pipeline.add(sideWallBuilder.get());
+                    log.debug("Added SideWallBuilder to pipeline");
+                }
             }
-        }
 
-        // 7. PlotBuilder (if plot parameter exists)
-        if (gridParams.containsKey("g_plot") && !gridParams.get("g_plot").isBlank()) {
-            Optional<HexGridBuilder> plotBuilder = createManipulator("g_plot", builderParams);
-            if (plotBuilder.isPresent()) {
-                pipeline.add(plotBuilder.get());
-                log.debug("Added PlotBuilder to pipeline");
+            // 7. PlotBuilder (if plot parameter exists)
+            if (gridParams.containsKey("g_plot") && !gridParams.get("g_plot").isBlank()) {
+                Optional<HexGridBuilder> plotBuilder = createManipulator("g_plot", builderParams);
+                if (plotBuilder.isPresent()) {
+                    pipeline.add(plotBuilder.get());
+                    log.debug("Added PlotBuilder to pipeline");
+                }
             }
-        }
 
-        // 8. VillageBuilder (if village parameter exists)
-        if (gridParams.containsKey("g_village") && !gridParams.get("g_village").isBlank()) {
-            Optional<HexGridBuilder> villageBuilder = createManipulator("g_village", builderParams);
-            if (villageBuilder.isPresent()) {
-                pipeline.add(villageBuilder.get());
-                log.debug("Added VillageBuilder to pipeline");
+            // 8. VillageBuilder (if village parameter exists)
+            if (gridParams.containsKey("g_village") && !gridParams.get("g_village").isBlank()) {
+                Optional<HexGridBuilder> villageBuilder = createManipulator("g_village", builderParams);
+                if (villageBuilder.isPresent()) {
+                    pipeline.add(villageBuilder.get());
+                    log.debug("Added VillageBuilder to pipeline");
+                }
             }
         }
 

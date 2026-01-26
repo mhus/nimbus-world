@@ -572,7 +572,7 @@ public class HexCompositeBuilderTest {
         // Apply builder pipeline
         try {
             HexGridBuilderService builderService = new HexGridBuilderService();
-            List<HexGridBuilder> pipeline = builderService.createBuilderPipeline(filled.getHexGrid());
+            List<HexGridBuilder> pipeline = builderService.createBuilderPipeline(filled.getHexGrid(), HexGridBuilderService.STEP.ALL);
 
             if (pipeline.isEmpty()) {
                 log.warn("No builders in pipeline for grid [{},{}]",

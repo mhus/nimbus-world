@@ -60,4 +60,6 @@ public interface WFlatRepository extends MongoRepository<WFlat, String> {
      * @return true if exists, false otherwise
      */
     boolean existsByWorldIdAndLayerDataIdAndFlatId(String worldId, String layerDataId, String flatId);
+
+    WFlat findByWorldAndFlatId(String worldId, String flatId);
 }

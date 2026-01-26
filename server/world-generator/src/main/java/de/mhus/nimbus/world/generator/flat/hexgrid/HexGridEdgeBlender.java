@@ -4,6 +4,7 @@ import de.mhus.nimbus.world.shared.generator.WFlat;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -27,18 +28,17 @@ public class HexGridEdgeBlender {
     /**
      * Blend all edges of this hex grid with its neighbors.
      */
-    public void blendAllEdges() {
+    public void blendAllEdges(HashMap<WHexGrid.SIDE, String> edgeFlats) {
         log.debug("Starting edge blending for flat: {}", flat.getFlatId());
 
-        // Calculate corner heights first (needed for edge blending)
-        Map<Corner, Integer> cornerHeights = calculateCornerHeights();
-
         // Blend each edge
-        for (WHexGrid.SIDE direction : WHexGrid.SIDE.values()) {
-            WHexGrid neighbor = context.getNeighborGrids().get(direction);
-            if (neighbor != null) {
-                blendEdge(direction, cornerHeights);
+        for (var edge : edgeFlats.entrySet()) {
+            var flat = context.getFlatService().findByWorldAndFlatId(context.getWorld().getWorldId(), edge.getValue());
+            if (flat == null) {
+                log.warn("Edge flat not found: {} for edge {}", edge.getValue(), edge.getKey());
+                continue;
             }
+            blendEdge(edge, flat);
         }
 
         log.info("Edge blending completed for flat: {}", flat.getFlatId());
@@ -122,10 +122,10 @@ public class HexGridEdgeBlender {
     /**
      * Blend a single edge with its neighbor.
      */
-    private void blendEdge(WHexGrid.SIDE direction, Map<Corner, Integer> cornerHeights) {
+    private void blendEdge(WHexGrid.SIDE direction, WFlat neighborFlat) {
         log.trace("Blending edge: {}", direction);
 
-        EdgeBlender edgeBlender = new EdgeBlender(flat, context, direction, cornerHeights);
+        EdgeBlender edgeBlender = new EdgeBlender(flat, context, direction, neighborFlat);
         edgeBlender.blend();
     }
 
@@ -214,14 +214,14 @@ public class HexGridEdgeBlender {
         private final WFlat flat;
         private final BuilderContext context;
         private final WHexGrid.SIDE direction;
-        private final Map<Corner, Integer> cornerHeights;
+        private final WFlat neighborFlat;
 
         public EdgeBlender(WFlat flat, BuilderContext context, WHexGrid.SIDE direction,
-                          Map<Corner, Integer> cornerHeights) {
+                          WFlat neighborFlat) {
             this.flat = flat;
             this.context = context;
             this.direction = direction;
-            this.cornerHeights = cornerHeights;
+            this.neighborFlat = neighborFlat;
         }
 
         /**

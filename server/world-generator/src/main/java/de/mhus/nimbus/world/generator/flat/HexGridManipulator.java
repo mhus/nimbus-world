@@ -17,6 +17,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.EnumMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -72,6 +73,9 @@ public class HexGridManipulator implements FlatManipulator {
 
         WWorld world = worldService.getByWorldId(flat.getWorldId()).orElseThrow();
 
+        String stepStr = parameters.getOrDefault("step", "ALL").toUpperCase().trim();
+        HexGridBuilderService.STEP step = HexGridBuilderService.STEP.valueOf(stepStr);
+
         // Load hex grid configuration
         WHexGrid hexGrid = loadHexGrid(flat);
         if (hexGrid == null) {
@@ -93,7 +97,7 @@ public class HexGridManipulator implements FlatManipulator {
                 .build();
 
         // Create builder pipeline
-        List<HexGridBuilder> builderPipeline = builderService.createBuilderPipeline(hexGrid);
+        List<HexGridBuilder> builderPipeline = builderService.createBuilderPipeline(hexGrid, step);
         if (builderPipeline.isEmpty()) {
             throw new IllegalStateException("No builders in pipeline for hex grid: " + hexGrid.getPosition());
         }

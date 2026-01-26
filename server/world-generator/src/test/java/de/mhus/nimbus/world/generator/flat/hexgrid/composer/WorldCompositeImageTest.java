@@ -752,7 +752,7 @@ public class WorldCompositeImageTest {
             HexGridBuilderService builderService = new HexGridBuilderService();
 
             // Create builder pipeline based on hexGrid parameters
-            List<HexGridBuilder> pipeline = builderService.createBuilderPipeline(filled.getHexGrid());
+            List<HexGridBuilder> pipeline = builderService.createBuilderPipeline(filled.getHexGrid(), HexGridBuilderService.STEP.ALL);
 
             if (pipeline.isEmpty()) {
                 log.warn("No builders in pipeline for grid [{},{}]",

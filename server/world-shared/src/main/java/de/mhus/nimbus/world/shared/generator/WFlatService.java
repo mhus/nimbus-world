@@ -1,5 +1,6 @@
 package de.mhus.nimbus.world.shared.generator;
 
+import de.mhus.nimbus.world.shared.world.WWorld;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -53,15 +54,15 @@ public class WFlatService {
         return saved;
     }
 
-    /**
-     * Find flat by database ID.
-     * @param id Database ID
-     * @return Optional containing the flat if found
-     */
-    public Optional<WFlat> findById(String id) {
-        log.debug("Finding flat by id={}", id);
-        return wFlatRepository.findById(id);
-    }
+//    /**
+//     * Find flat by database ID.
+//     * @param id Database ID
+//     * @return Optional containing the flat if found
+//     */
+//    public Optional<WFlat> findById(String id) {
+//        log.debug("Finding flat by id={}", id);
+//        return wFlatRepository.findById(id);
+//    }
 
     /**
      * Find flat by world ID, layer data ID, and flat ID.
@@ -165,5 +166,9 @@ public class WFlatService {
         } else {
             return update(flat);
         }
+    }
+
+    public WFlat findByWorldAndFlatId(String worldId, String flatId) {
+        return wFlatRepository.findByWorldAndFlatId(worldId, flatId);
     }
 }

@@ -2,6 +2,7 @@ package de.mhus.nimbus.world.generator.flat.hexgrid;
 
 import de.mhus.nimbus.world.generator.flat.FlatManipulatorService;
 import de.mhus.nimbus.world.shared.generator.WFlat;
+import de.mhus.nimbus.world.shared.generator.WFlatService;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
 import de.mhus.nimbus.world.shared.world.WWorld;
 import de.mhus.nimbus.world.shared.world.WChunkService;
@@ -44,6 +45,8 @@ public class BuilderContext {
      * Service for accessing flat manipulators.
      */
     private final FlatManipulatorService manipulatorService;
+
+    private final WFlatService flatService;
 
     /**
      * Service for accessing chunk operations (e.g., noise-based height generation).
