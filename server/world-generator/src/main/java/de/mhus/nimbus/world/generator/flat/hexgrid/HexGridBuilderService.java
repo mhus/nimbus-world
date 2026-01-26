@@ -42,7 +42,7 @@ public class HexGridBuilderService {
 //        builderRegistry.put("town", TownBuilder.class);
 
         // Manipulator builders
-        manipulatorRegistry.put("g_edge-blender", EdgeBlenderBuilder.class);
+        manipulatorRegistry.put("g_sideblender", SideBlenderBuilder.class);
         manipulatorRegistry.put("g_river", RiverBuilder.class);
         manipulatorRegistry.put("g_road", RoadBuilder.class);
         manipulatorRegistry.put("g_wall", WallBuilder.class);
@@ -148,12 +148,12 @@ public class HexGridBuilderService {
             }
         }
 
-        // 2. EdgeBlenderBuilder (always, expect edge-blender: false to skip)
+        // 2. SideBlenderBuilder
         if (step == STEP.ALL || step == STEP.BLENDER) {
-            Optional<HexGridBuilder> edgeBlender = createManipulator("g_edge-blender", builderParams);
-            if (edgeBlender.isPresent()) {
-                pipeline.add(edgeBlender.get());
-                log.debug("Added EdgeBlenderBuilder to pipeline");
+            Optional<HexGridBuilder> sideBlender = createManipulator("g_sideblender", builderParams);
+            if (sideBlender.isPresent()) {
+                pipeline.add(sideBlender.get());
+                log.debug("Added SideBlenderBuilder to pipeline");
             }
         }
 

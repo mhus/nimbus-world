@@ -46,6 +46,9 @@ public class BuilderContext {
      */
     private final FlatManipulatorService manipulatorService;
 
+    /**
+     * Service for accessing flat operations (e.g., saving flats).
+     */
     private final WFlatService flatService;
 
     /**

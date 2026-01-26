@@ -1,5 +1,6 @@
 package de.mhus.nimbus.world.generator.flat.hexgrid;
 
+import de.mhus.nimbus.shared.utils.CastUtil;
 import de.mhus.nimbus.world.shared.generator.WFlat;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
 import lombok.extern.slf4j.Slf4j;
@@ -7,27 +8,32 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.HashMap;
 
 /**
- * EdgeBlender manipulator builder.
- * Blends edges of hex grids with their neighbors, using per-side land levels.
+ * SideBlender manipulator builder.
+ * Blends sides of hex grids with their neighbors, using side flats.
  * This is a manipulator builder that can be applied after the main terrain generation.
+ * Set g_side_flat_north_east, g_side_flat_east, g_side_flat_south_east,
+ * g_side_flat_south_west, g_side_flat_west, g_side_flat_north_west to define side flat ids.
+ * The flats will be loaded from WFlatService.
+ * Set g_edge_blend_width to define the width of the blending area (default 20).
  */
 @Slf4j
-public class EdgeBlenderBuilder extends HexGridBuilder {
+public class SideBlenderBuilder extends HexGridBuilder {
 
     @Override
     public void buildFlat() {
         WFlat flat = context.getFlat();
 
-        log.info("Blending edges for flat: {}", flat.getFlatId());
+        log.info("Blending sides for flat: {}", flat.getFlatId());
 
         HashMap<WHexGrid.SIDE, String> edgeFlats = new HashMap<>();
         for (var edge : WHexGrid.SIDE.values()) {
-            String key = "g_edge_flat_" + edge.name().toLowerCase();
+            String key = "g_side_flat_" + edge.name().toLowerCase();
             String flatName = parameters.get(key);
             if (flatName != null) {
                 edgeFlats.put(edge, flatName);
             }
         }
+        int width = CastUtil.toint(parameters.get("g_edge_blend_width"), 20);
         if (edgeFlats.isEmpty()) {
             log.info("No edge flats defined for edge blending in flat: {}", flat.getFlatId());
             return;
@@ -35,8 +41,8 @@ public class EdgeBlenderBuilder extends HexGridBuilder {
         log.info("Edge flats for blending: {}", edgeFlats);
 
         // Blend edges with neighbors using the edge blender
-        HexGridEdgeBlender edgeBlender = new HexGridEdgeBlender(flat, context);
-        edgeBlender.blendAllEdges(edgeFlats);
+        HexGridSideBlender sideBlender = new HexGridSideBlender(flat, width, context);
+        sideBlender.blendAllSides(edgeFlats);
 
         log.info("Edge blending completed for flat: {}", flat.getFlatId());
     }

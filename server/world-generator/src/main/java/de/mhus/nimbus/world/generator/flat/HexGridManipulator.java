@@ -5,6 +5,7 @@ import de.mhus.nimbus.world.generator.flat.hexgrid.BuilderContext;
 import de.mhus.nimbus.world.generator.flat.hexgrid.HexGridBuilder;
 import de.mhus.nimbus.world.generator.flat.hexgrid.HexGridBuilderService;
 import de.mhus.nimbus.world.shared.generator.WFlat;
+import de.mhus.nimbus.world.shared.generator.WFlatService;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
 import de.mhus.nimbus.world.shared.world.WHexGridService;
 import de.mhus.nimbus.world.shared.world.WWorld;
@@ -52,6 +53,9 @@ public class HexGridManipulator implements FlatManipulator {
     private HexGridBuilderService builderService;
 
     @Autowired
+    private WFlatService flatService;
+
+    @Autowired
     private WWorldService worldService;
 
     @Autowired
@@ -90,6 +94,7 @@ public class HexGridManipulator implements FlatManipulator {
                 .world(world)
                 .flat(flat)
                 .builderService(builderService)
+                .flatService(flatService)
                 .hexGrid(hexGrid)
                 .neighborGrids(neighborGrids)
                 .manipulatorService(manipulatorService)
