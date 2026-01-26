@@ -40,7 +40,7 @@ public class HexGridBuilderService {
         manipulatorRegistry.put("g_road", RoadBuilder.class);
         manipulatorRegistry.put("g_wall", WallBuilder.class);
         manipulatorRegistry.put("g_sidewall", SideWallBuilder.class);
-        manipulatorRegistry.put("plot", PlotBuilder.class);
+        manipulatorRegistry.put("g_plot", PlotBuilder.class);
         manipulatorRegistry.put("g_village", VillageBuilder.class);
     }
 
@@ -185,8 +185,8 @@ public class HexGridBuilderService {
         }
 
         // 7. PlotBuilder (if plot parameter exists)
-        if (gridParams.containsKey("plot") && !gridParams.get("plot").isBlank()) {
-            Optional<HexGridBuilder> plotBuilder = createManipulator("plot", builderParams);
+        if (gridParams.containsKey("g_plot") && !gridParams.get("g_plot").isBlank()) {
+            Optional<HexGridBuilder> plotBuilder = createManipulator("g_plot", builderParams);
             if (plotBuilder.isPresent()) {
                 pipeline.add(plotBuilder.get());
                 log.debug("Added PlotBuilder to pipeline");

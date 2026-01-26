@@ -47,7 +47,7 @@ public class PlotBuilder extends HexGridBuilder {
         log.info("Building plots for flat: {}", flat.getFlatId());
 
         // Get plot parameter from hex grid
-        String plotParam = hexGrid.getParameters() != null ? hexGrid.getParameters().get("plot") : null;
+        String plotParam = hexGrid.getParameters() != null ? hexGrid.getParameters().get("g_plot") : null;
         if (plotParam == null || plotParam.isBlank()) {
             log.debug("No plot parameter found, skipping");
             return;

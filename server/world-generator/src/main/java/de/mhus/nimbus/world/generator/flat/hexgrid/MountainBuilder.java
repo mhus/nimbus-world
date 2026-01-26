@@ -2,6 +2,7 @@ package de.mhus.nimbus.world.generator.flat.hexgrid;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import de.mhus.nimbus.shared.utils.CastUtil;
 import de.mhus.nimbus.world.generator.flat.FlatMaterialService;
 import de.mhus.nimbus.world.generator.flat.HillyTerrainManipulator;
 import de.mhus.nimbus.world.shared.generator.WFlat;
@@ -47,22 +48,24 @@ public class MountainBuilder extends HexGridBuilder {
 
         log.info("Building mountain scenario for flat: {}", flat.getFlatId());
 
-        int oceanLevel = flat.getOceanLevel();
+        int seaLevel = flat.getSeaLevel();
 
         // Use getHexGridLevel() as baseHeight and getLandOffset() as hillHeight
         int hillHeight = getLandOffset();
         int baseHeight = getHexGridLevel();
 
-        long seed = parseLongParameter(parameters, "seed", System.currentTimeMillis());
+        long seed = context.getWorld().getNoiseSeed();
+        double frequency = CastUtil.todouble(parameters.getOrDefault(HillyTerrainManipulator.PARAM_FREQUENCY, "1.0"), 1d);
 
-        log.debug("Mountain terrain generation: baseHeight={}, hillHeight={}, oceanLevel={}, seed={}",
-                baseHeight, hillHeight, oceanLevel, seed);
+        log.debug("Mountain terrain generation: baseHeight={}, hillHeight={}, seaLevel={}, seed={}, frequency={}",
+                baseHeight, hillHeight, seaLevel, seed, frequency);
 
         // Build parameters for HillyTerrainManipulator
         Map<String, String> hillyParams = new HashMap<>();
         hillyParams.put(HillyTerrainManipulator.PARAM_BASE_HEIGHT, String.valueOf(baseHeight));
         hillyParams.put(HillyTerrainManipulator.PARAM_HILL_HEIGHT, String.valueOf(hillHeight));
         hillyParams.put(HillyTerrainManipulator.PARAM_SEED, String.valueOf(seed));
+        hillyParams.put(HillyTerrainManipulator.PARAM_FREQUENCY, String.valueOf(frequency));
 
         // Use HillyTerrainManipulator to generate base mountain terrain
         context.getManipulatorService().executeManipulator(
@@ -81,10 +84,10 @@ public class MountainBuilder extends HexGridBuilder {
         applyRidgeTransformations(flat, baseHeight, hillHeight, ridgeWidth);
 
         // Set materials based on height
-        setMountainMaterials(flat, oceanLevel);
+        setMountainMaterials(flat, seaLevel);
 
         log.info("Mountain scenario completed: baseHeight={}, hillHeight={}, oceanLevel={}",
-                baseHeight, hillHeight, oceanLevel);
+                baseHeight, hillHeight, seaLevel);
     }
 
     /**
@@ -323,7 +326,7 @@ public class MountainBuilder extends HexGridBuilder {
                 for (RidgeDefinition ridge : ridges) {
                     if (ridge.getSide() == side) {
                         // This side has a ridge, return the ridge level
-                        return ridge.getLevel() - context.getWorld().getOceanLevel();
+                        return ridge.getLevel() - context.getWorld().getSeaLevel();
                     }
                 }
             } catch (Exception e) {

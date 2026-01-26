@@ -1,6 +1,7 @@
 package de.mhus.nimbus.world.generator.flat.hexgrid.composer;
 
 import de.mhus.nimbus.generated.types.HexVector2;
+import de.mhus.nimbus.shared.utils.TypeUtil;
 import de.mhus.nimbus.world.generator.flat.FlatManipulatorService;
 import de.mhus.nimbus.world.generator.flat.hexgrid.BuilderContext;
 import de.mhus.nimbus.world.generator.flat.hexgrid.RoadBuilder;
@@ -213,7 +214,7 @@ public class VillageDesignerIntegrationTest {
             .hexGrid(gridPos)
             .sizeX(FLAT_SIZE)
             .sizeZ(FLAT_SIZE)
-            .oceanLevel(OCEAN_LEVEL)
+            .seaLevel(OCEAN_LEVEL)
             .mountX(FLAT_SIZE / 2)
             .mountZ(FLAT_SIZE / 2)
             .levels(levels)
@@ -250,7 +251,7 @@ public class VillageDesignerIntegrationTest {
 
         return WHexGrid.builder()
             .publicData(publicData)
-            .position(gridPos.getQ() + ":" + gridPos.getR())
+            .position(TypeUtil.toStringHexCoord(gridPos.getQ(), gridPos.getR()))
             .worldId("test-world")
             .parameters(parameters)
             .build();

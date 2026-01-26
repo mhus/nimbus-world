@@ -66,7 +66,7 @@ public class FlatCreateService {
         }
 
         WWorld world = worldOpt.get();
-        int oceanLevel = world.getOceanLevel() != null ? world.getOceanLevel() : 0;
+        int oceanLevel = world.getSeaLevel() != null ? world.getSeaLevel() : 0;
         String oceanBlockId = world.getSeaBlockType();
 
         log.debug("Loaded world settings: oceanLevel={}, oceanBlockId={}", oceanLevel, oceanBlockId);
@@ -80,7 +80,7 @@ public class FlatCreateService {
                 .description(description)
                 .mountX(mountX)
                 .mountZ(mountZ)
-                .oceanLevel(oceanLevel)
+                .seaLevel(oceanLevel)
                 .oceanBlockId(oceanBlockId)
                 .hexGrid(HexMathUtil.getDominantHexForArea(
                         world, TypeUtil.area(mountX, mountZ, sizeX, sizeZ)
@@ -159,7 +159,7 @@ public class FlatCreateService {
         }
 
         // Get ocean level and block from world
-        int oceanLevel = world.getOceanLevel() == null ? 60 : world.getOceanLevel();
+        int oceanLevel = world.getSeaLevel() == null ? 60 : world.getSeaLevel();
         String oceanBlockId = world.getSeaBlockType() == null ? "n:o" : world.getSeaBlockType();
 
         // Build WFlat instance (without persisting yet)
@@ -171,7 +171,7 @@ public class FlatCreateService {
                 .description(description)
                 .mountX(mountX)
                 .mountZ(mountZ)
-                .oceanLevel(oceanLevel)
+                .seaLevel(oceanLevel)
                 .oceanBlockId(oceanBlockId)
                 .hexGrid(HexMathUtil.getDominantHexForArea(
                         world, TypeUtil.area(mountX, mountZ, sizeX, sizeZ)
@@ -333,7 +333,7 @@ public class FlatCreateService {
         }
 
         // Get ocean level and block from world
-        int oceanLevel = world.getOceanLevel() == null ? 60 : world.getOceanLevel();
+        int oceanLevel = world.getSeaLevel() == null ? 60 : world.getSeaLevel();
         String oceanBlockId = world.getSeaBlockType() == null ? "n:o" : world.getSeaBlockType();
 
         // Build WFlat instance (without persisting yet)
@@ -345,7 +345,7 @@ public class FlatCreateService {
                 .description(description)
                 .mountX(mountX)
                 .mountZ(mountZ)
-                .oceanLevel(oceanLevel)
+                .seaLevel(oceanLevel)
                 .oceanBlockId(oceanBlockId)
                 .hexGrid(HexMathUtil.getDominantHexForArea(
                         world, TypeUtil.area(mountX, mountZ, sizeX, sizeZ)
@@ -557,7 +557,7 @@ public class FlatCreateService {
         }
 
         // Get ocean level and block from world
-        int oceanLevel = world.getOceanLevel() == null ? 60 : world.getOceanLevel();
+        int oceanLevel = world.getSeaLevel() == null ? 60 : world.getSeaLevel();
         String oceanBlockId = world.getSeaBlockType() == null ? "n:o" : world.getSeaBlockType();
 
         // Build WFlat instance (without persisting yet)
@@ -569,7 +569,7 @@ public class FlatCreateService {
                 .description(description)
                 .mountX(mountX)
                 .mountZ(mountZ)
-                .oceanLevel(oceanLevel)
+                .seaLevel(oceanLevel)
                 .oceanBlockId(oceanBlockId)
                 .hexGrid(TypeUtil.hexVector2(hexQ, hexR))
                 .build();
@@ -773,7 +773,7 @@ public class FlatCreateService {
         }
 
         // Get ocean level and block from world
-        int oceanLevel = world.getOceanLevel() == null ? 60 : world.getOceanLevel();
+        int oceanLevel = world.getSeaLevel() == null ? 60 : world.getSeaLevel();
         String oceanBlockId = world.getSeaBlockType() == null ? "n:o" : world.getSeaBlockType();
 
         // Build WFlat instance (without persisting yet)
@@ -785,7 +785,7 @@ public class FlatCreateService {
                 .description(description)
                 .mountX(mountX)
                 .mountZ(mountZ)
-                .oceanLevel(oceanLevel)
+                .seaLevel(oceanLevel)
                 .oceanBlockId(oceanBlockId)
                 .hexGrid(TypeUtil.hexVector2(hexQ, hexR)
                 )
@@ -1095,7 +1095,7 @@ public class FlatCreateService {
         }
 
         // Get ocean level and block from world
-        int oceanLevel = world.getOceanLevel() == null ? 60 : world.getOceanLevel();
+        int oceanLevel = world.getSeaLevel() == null ? 60 : world.getSeaLevel();
         String oceanBlockId = world.getSeaBlockType() == null ? "n:o" : world.getSeaBlockType();
 
         // Build WFlat instance
@@ -1107,7 +1107,7 @@ public class FlatCreateService {
                 .description(description)
                 .mountX(mountX)
                 .mountZ(mountZ)
-                .oceanLevel(oceanLevel)
+                .seaLevel(oceanLevel)
                 .oceanBlockId(oceanBlockId)
                 .hexGrid(TypeUtil.hexVector2(hexQ, hexR))
                 .build();
@@ -1259,7 +1259,7 @@ public class FlatCreateService {
         }
 
         // Get ocean level
-        int oceanLevel = world.getOceanLevel() == null ? 60 : world.getOceanLevel();
+        int oceanLevel = world.getSeaLevel() == null ? 60 : world.getSeaLevel();
         String oceanBlockId = world.getSeaBlockType() == null ? "n:o" : world.getSeaBlockType();
 
         // Build WFlat instance
@@ -1271,7 +1271,7 @@ public class FlatCreateService {
                 .description(description)
                 .mountX(mountX)
                 .mountZ(mountZ)
-                .oceanLevel(oceanLevel)
+                .seaLevel(oceanLevel)
                 .oceanBlockId(oceanBlockId)
                 .hexGrid(TypeUtil.hexVector2(hexQ, hexR))
                 .build();

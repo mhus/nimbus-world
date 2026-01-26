@@ -19,6 +19,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.Instant;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -56,7 +57,7 @@ public class WHexGrid implements Identifiable {
     private String worldId;
 
     /**
-     * Position key in format "q:r" (e.g., "0:0", "-1:2").
+     * Position key in format "q:r" (e.g., "0;0", "-1;2").
      * Derived from publicData.position and indexed for efficient queries.
      */
     @Indexed

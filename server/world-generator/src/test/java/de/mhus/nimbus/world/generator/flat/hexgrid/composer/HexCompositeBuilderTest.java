@@ -4,10 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.world.generator.flat.*;
 import de.mhus.nimbus.world.generator.flat.hexgrid.*;
-import de.mhus.nimbus.world.shared.generator.FlatLevelImageCreator;
-import de.mhus.nimbus.world.shared.generator.FlatMaterialImageCreator;
 import de.mhus.nimbus.world.shared.generator.WFlat;
-import de.mhus.nimbus.world.shared.world.HexMathUtil;
 import de.mhus.nimbus.world.shared.world.WChunkService;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
 import de.mhus.nimbus.world.shared.world.WHexGridRepository;
@@ -18,10 +15,6 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
-import javax.imageio.ImageIO;
-import java.awt.*;
-import java.awt.image.BufferedImage;
-import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -565,7 +558,7 @@ public class HexCompositeBuilderTest {
             .hexGrid(filled.getCoordinate())
             .sizeX(FLAT_SIZE)
             .sizeZ(FLAT_SIZE)
-            .oceanLevel(OCEAN_LEVEL)
+            .seaLevel(OCEAN_LEVEL)
             .mountX(FLAT_SIZE / 2)
             .mountZ(FLAT_SIZE / 2)
             .levels(levels)

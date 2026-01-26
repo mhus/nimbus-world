@@ -381,7 +381,7 @@ public class WWorldService {
                 .enabled(sourceWorld.isEnabled())
                 .instanceable(sourceWorld.isInstanceable())
                 .groundLevel(sourceWorld.getGroundLevel())
-                .oceanLevel(sourceWorld.getOceanLevel())
+                .seaLevel(sourceWorld.getSeaLevel())
                 .groundBlockType(sourceWorld.getGroundBlockType())
                 .seaBlockType(sourceWorld.getSeaBlockType())
                 .owner(sourceWorld.getOwner())

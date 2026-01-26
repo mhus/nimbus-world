@@ -292,7 +292,7 @@ public class HexGridEdgeBlender {
 
                         return neighborSideLevel;
                     })
-                    .orElse(context.getFlat().getOceanLevel());  // Default to ocean level if no neighbor
+                    .orElse(context.getFlat().getSeaLevel());  // Default to ocean level if no neighbor
         }
 
         /**

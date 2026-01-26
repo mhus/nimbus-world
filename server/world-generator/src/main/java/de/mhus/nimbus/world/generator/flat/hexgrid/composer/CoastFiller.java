@@ -1,6 +1,7 @@
 package de.mhus.nimbus.world.generator.flat.hexgrid.composer;
 
 import de.mhus.nimbus.generated.types.HexVector2;
+import de.mhus.nimbus.shared.utils.TypeUtil;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.*;
@@ -62,11 +63,11 @@ public class CoastFiller {
 
             // For each existing grid, check neighbors
             for (String coordKey : currentCoords) {
-                HexVector2 coord = parseCoordKey(coordKey);
+                HexVector2 coord = TypeUtil.parseHexCoord(coordKey);
                 List<HexVector2> neighbors = getNeighbors(coord);
 
                 for (HexVector2 neighbor : neighbors) {
-                    String neighborKey = coordKey(neighbor);
+                    String neighborKey = TypeUtil.toStringHexCoord(neighbor);
 
                     // Skip if neighbor already exists
                     if (existingCoords.contains(neighborKey)) {
@@ -74,7 +75,7 @@ public class CoastFiller {
                     }
 
                     // Skip if we already added this neighbor in this iteration
-                    if (coastCoords.stream().anyMatch(c -> coordKey(c).equals(neighborKey))) {
+                    if (coastCoords.stream().anyMatch(c -> TypeUtil.toStringHexCoord(c).equals(neighborKey))) {
                         continue;
                     }
 
@@ -149,21 +150,4 @@ public class CoastFiller {
         return neighbors;
     }
 
-    /**
-     * Creates a string key for a coordinate.
-     */
-    private String coordKey(HexVector2 coord) {
-        return coord.getQ() + ":" + coord.getR();
-    }
-
-    /**
-     * Parses a coordinate key back to HexVector2.
-     */
-    private HexVector2 parseCoordKey(String key) {
-        String[] parts = key.split(":");
-        return HexVector2.builder()
-            .q(Integer.parseInt(parts[0]))
-            .r(Integer.parseInt(parts[1]))
-            .build();
-    }
 }

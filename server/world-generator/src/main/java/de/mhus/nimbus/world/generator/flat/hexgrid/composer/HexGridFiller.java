@@ -2,6 +2,7 @@ package de.mhus.nimbus.world.generator.flat.hexgrid.composer;
 
 import de.mhus.nimbus.generated.types.HexGrid;
 import de.mhus.nimbus.generated.types.HexVector2;
+import de.mhus.nimbus.shared.utils.TypeUtil;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
 import lombok.extern.slf4j.Slf4j;
 
@@ -232,7 +233,7 @@ public class HexGridFiller {
 
         return WHexGrid.builder()
             .worldId(worldId)
-            .position(coord.getQ() + ":" + coord.getR())
+            .position(TypeUtil.toStringHexCoord(coord.getQ(), coord.getR()))
             .publicData(publicData)
             .parameters(parameters)
             .enabled(true)

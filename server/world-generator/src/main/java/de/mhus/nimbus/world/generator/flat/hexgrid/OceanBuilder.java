@@ -5,7 +5,6 @@ import de.mhus.nimbus.world.generator.flat.HillyTerrainManipulator;
 import de.mhus.nimbus.world.shared.generator.WFlat;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -24,7 +23,7 @@ public class OceanBuilder extends HexGridBuilder {
         log.info("Building ocean scenario for flat: {}",
                 flat.getFlatId());
 
-        int oceanLevel = flat.getOceanLevel();
+        int oceanLevel = flat.getSeaLevel();
 
         // Use getHexGridLevel() as baseHeight (PARAM_BASE_HEIGHT in HillyTerrainManipulator)
         // Use getLandOffset() as hillHeight (PARAM_HILL_HEIGHT in HillyTerrainManipulator)

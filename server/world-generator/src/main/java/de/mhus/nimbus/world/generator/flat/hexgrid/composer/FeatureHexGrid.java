@@ -2,6 +2,7 @@ package de.mhus.nimbus.world.generator.flat.hexgrid.composer;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import de.mhus.nimbus.generated.types.HexVector2;
+import de.mhus.nimbus.shared.utils.TypeUtil;
 import lombok.*;
 
 import java.util.*;
@@ -181,11 +182,7 @@ public class FeatureHexGrid {
         return flowSegments != null && !flowSegments.isEmpty();
     }
 
-    /**
-     * Returns position key in format "q:r" for database lookup
-     */
     public String getPositionKey() {
-        if (coordinate == null) return null;
-        return coordinate.getQ() + ":" + coordinate.getR();
+        return TypeUtil.toStringHexCoord(coordinate);
     }
 }

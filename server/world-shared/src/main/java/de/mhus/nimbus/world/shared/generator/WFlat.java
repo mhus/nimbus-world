@@ -66,7 +66,7 @@ public class WFlat implements Identifiable {
     @Getter
     private int mountZ;
     @Getter
-    private int oceanLevel;
+    private int seaLevel;
     @Getter @Setter
     private String oceanBlockId;
     /**
@@ -326,7 +326,7 @@ public class WFlat implements Identifiable {
                 return nextBlockDef != null ? nextBlockDef : blockDef;
             }
             // finally: ocean block (only above terrain level!)
-            if (hasOcean && y > level && y == flat.getOceanLevel())
+            if (hasOcean && y > level && y == flat.getSeaLevel())
                 return flat.getOceanBlockId();
             // or air
             return null;

@@ -81,7 +81,7 @@ public class IslandsManipulator implements FlatManipulator {
         FlatPainter painter = new FlatPainter(flat);
 
         // Get ocean level
-        int oceanLevel = flat.getOceanLevel();
+        int oceanLevel = flat.getSeaLevel();
 
         // Calculate center coordinates
         int centerX = x + sizeX / 2;

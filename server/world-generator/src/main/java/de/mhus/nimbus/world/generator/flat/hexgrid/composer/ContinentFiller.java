@@ -1,6 +1,7 @@
 package de.mhus.nimbus.world.generator.flat.hexgrid.composer;
 
 import de.mhus.nimbus.generated.types.HexVector2;
+import de.mhus.nimbus.shared.utils.TypeUtil;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.*;
@@ -139,7 +140,7 @@ public class ContinentFiller {
             for (int q = minQ; q <= maxQ; q++) {
                 for (int r = minR; r <= maxR; r++) {
                     HexVector2 coord = HexVector2.builder().q(q).r(r).build();
-                    String key = coordKey(coord);
+                    String key = TypeUtil.toStringHexCoord(coord);
 
                     // Skip if already filled
                     if (existingCoords.contains(key)) {
@@ -315,10 +316,4 @@ public class ContinentFiller {
         );
     }
 
-    /**
-     * Creates coordinate key for map lookup
-     */
-    private String coordKey(HexVector2 coord) {
-        return coord.getQ() + ":" + coord.getR();
-    }
 }

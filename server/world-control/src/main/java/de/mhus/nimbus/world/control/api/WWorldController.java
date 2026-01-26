@@ -121,7 +121,7 @@ public class WWorldController extends BaseEditorController {
                 world.isEnabled(),
                 world.isInstanceable(),
                 world.getGroundLevel(),
-                world.getOceanLevel(),
+                world.getSeaLevel(),
                 world.getGroundBlockType(),
                 world.getSeaBlockType(),
                 world.getNoiseSeed(),
@@ -348,7 +348,7 @@ public class WWorldController extends BaseEditorController {
                 w.setDescription(request.description());
                 if (request.enabled() != null) w.setEnabled(request.enabled());
                 if (request.groundLevel() != null) w.setGroundLevel(request.groundLevel());
-                if (request.oceanLevel() != null) w.setOceanLevel(request.oceanLevel());
+                if (request.oceanLevel() != null) w.setSeaLevel(request.oceanLevel());
                 if (request.groundBlockType() != null) w.setGroundBlockType(request.groundBlockType());
                 if (request.seaBlockType() != null) w.setSeaBlockType(request.seaBlockType());
                 if (request.noiseSeed() != null) w.setNoiseSeed(request.noiseSeed());
@@ -467,7 +467,7 @@ public class WWorldController extends BaseEditorController {
             if (request.supporter() != null) existing.setSupporter(request.supporter());
             if (request.player() != null) existing.setPlayer(request.player());
             if (request.groundLevel() != null) existing.setGroundLevel(request.groundLevel());
-            if (request.oceanLevel() != null) existing.setOceanLevel(request.oceanLevel());
+            if (request.oceanLevel() != null) existing.setSeaLevel(request.oceanLevel());
             if (request.groundBlockType() != null) existing.setGroundBlockType(request.groundBlockType());
             if (request.seaBlockType() != null) existing.setSeaBlockType(request.seaBlockType());
             if (request.noiseSeed() != null) existing.setNoiseSeed(request.noiseSeed());
@@ -651,7 +651,7 @@ public class WWorldController extends BaseEditorController {
                 w.setDescription(source.getDescription());
                 w.setEnabled(source.isEnabled());
                 w.setGroundLevel(source.getGroundLevel());
-                w.setOceanLevel(source.getOceanLevel());
+                w.setSeaLevel(source.getSeaLevel());
                 w.setGroundBlockType(source.getGroundBlockType());
                 w.setSeaBlockType(source.getSeaBlockType());
                 w.setNoiseSeed(source.getNoiseSeed());

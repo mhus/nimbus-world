@@ -43,11 +43,11 @@ public abstract class HexGridBuilder {
     }
 
     public int getHexGridLevel() {
-        return landLevel + context.getWorld().getOceanLevel();
+        return landLevel + context.getWorld().getSeaLevel();
     }
 
     public int getOceanLevel() {
-        return context.getWorld().getOceanLevel();
+        return context.getWorld().getSeaLevel();
     }
 
 }

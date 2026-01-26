@@ -26,7 +26,7 @@ public class CoastBuilder extends HexGridBuilder {
 
         log.info("Building coast scenario for flat: {}", flat.getFlatId());
 
-        int oceanLevel = flat.getOceanLevel();
+        int oceanLevel = flat.getSeaLevel();
         long seed = parseLongParameter(parameters, "seed", System.currentTimeMillis());
 
         log.debug("Coast generation: oceanLevel={}, seed={}", oceanLevel, seed);

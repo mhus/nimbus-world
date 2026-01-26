@@ -215,4 +215,8 @@ public class TypeUtil {
                 .z(z)
                 .build();
     }
+
+    public static String toStringHexCoord(int q, int r) {
+        return q + ";" + r;
+    }
 }

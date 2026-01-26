@@ -1,5 +1,6 @@
 package de.mhus.nimbus.world.generator.flat;
 
+import de.mhus.nimbus.shared.utils.CastUtil;
 import de.mhus.nimbus.shared.utils.FastNoiseLite;
 import de.mhus.nimbus.world.shared.generator.WFlat;
 import lombok.extern.slf4j.Slf4j;
@@ -25,6 +26,7 @@ public class HillyTerrainManipulator implements FlatManipulator {
     public static final String PARAM_BASE_HEIGHT = "baseHeight";
     public static final String PARAM_HILL_HEIGHT = "hillHeight";
     public static final String PARAM_SEED = "seed";
+    public static final String PARAM_FREQUENCY = "frequency";
 
     private static final int DEFAULT_BASE_HEIGHT = 64;
     private static final int DEFAULT_HILL_HEIGHT = 64;
@@ -50,17 +52,18 @@ public class HillyTerrainManipulator implements FlatManipulator {
         int baseHeight = parseIntParameter(parameters, PARAM_BASE_HEIGHT, DEFAULT_BASE_HEIGHT);
         int hillHeight = parseIntParameter(parameters, PARAM_HILL_HEIGHT, DEFAULT_HILL_HEIGHT);
         long seed = parseLongParameter(parameters, PARAM_SEED, System.currentTimeMillis());
+        double frequency =  CastUtil.todouble(parameters.get(PARAM_FREQUENCY), 1.0);
 
         // Clamp values to valid ranges
         baseHeight = Math.max(0, Math.min(255, baseHeight));
         hillHeight = Math.max(0, Math.min(128, hillHeight));
 
-        int oceanLevel = flat.getOceanLevel();
+        int oceanLevel = flat.getSeaLevel();
 
         // Initialize noise generator
         FastNoiseLite noise = new FastNoiseLite((int) seed);
+        noise.SetFrequency((float)frequency);
         noise.SetNoiseType(FastNoiseLite.NoiseType.OpenSimplex2);
-        noise.SetFrequency(1.0f);
 
         // Generate terrain with noise
         for (int localZ = 0; localZ < sizeZ; localZ++) {
@@ -129,4 +132,18 @@ public class HillyTerrainManipulator implements FlatManipulator {
             return defaultValue;
         }
     }
+
+    private double parseDoubleParameter(Map<String, String> parameters, String name, double defaultValue) {
+        if (parameters == null || !parameters.containsKey(name)) {
+            return defaultValue;
+        }
+
+        try {
+            return Double.parseDouble(parameters.get(name));
+        } catch (NumberFormatException e) {
+            log.warn("Invalid double parameter '{}': {}, using default: {}", name, parameters.get(name), defaultValue);
+            return defaultValue;
+        }
+    }
+
 }

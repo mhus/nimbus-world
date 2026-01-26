@@ -54,7 +54,7 @@ public class NormalTerrainManipulator implements FlatManipulator {
         baseHeight = Math.max(0, Math.min(255, baseHeight));
         heightVariation = Math.max(0, Math.min(128, heightVariation));
 
-        int oceanLevel = flat.getOceanLevel();
+        int oceanLevel = flat.getSeaLevel();
 
         // Initialize noise generator
         FastNoiseLite noise = new FastNoiseLite((int) seed);

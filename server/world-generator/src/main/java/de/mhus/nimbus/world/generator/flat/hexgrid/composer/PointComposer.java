@@ -1,6 +1,7 @@
 package de.mhus.nimbus.world.generator.flat.hexgrid.composer;
 
 import de.mhus.nimbus.generated.types.HexVector2;
+import de.mhus.nimbus.shared.utils.TypeUtil;
 import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -291,7 +292,7 @@ public class PointComposer {
                                                    PlacedBiome targetBiome) {
         Set<String> coordSet = new HashSet<>();
         for (HexVector2 coord : coordinates) {
-            coordSet.add(coordKey(coord));
+            coordSet.add(TypeUtil.toStringHexCoord(coord));
         }
 
         List<HexVector2> edgeCoords = new ArrayList<>();
@@ -300,7 +301,7 @@ public class PointComposer {
             // Check if at least one neighbor is NOT in the biome
             boolean isEdge = false;
             for (HexVector2 neighbor : getHexNeighbors(coord)) {
-                if (!coordSet.contains(coordKey(neighbor))) {
+                if (!coordSet.contains(TypeUtil.toStringHexCoord(neighbor))) {
                     isEdge = true;
                     break;
                 }
@@ -327,10 +328,10 @@ public class PointComposer {
             PlacedBiome avoidBiome = biomeMap.get(avoidName);
             if (avoidBiome != null) {
                 for (HexVector2 coord : avoidBiome.getCoordinates()) {
-                    avoidCoords.add(coordKey(coord));
+                    avoidCoords.add(TypeUtil.toStringHexCoord(coord));
                     // Also add neighbors (minDistance = 1)
                     for (HexVector2 neighbor : getHexNeighbors(coord)) {
-                        avoidCoords.add(coordKey(neighbor));
+                        avoidCoords.add(TypeUtil.toStringHexCoord(neighbor));
                     }
                 }
             }
@@ -339,7 +340,7 @@ public class PointComposer {
         // Filter out avoided coordinates
         List<HexVector2> filtered = new ArrayList<>();
         for (HexVector2 coord : coordinates) {
-            if (!avoidCoords.contains(coordKey(coord))) {
+            if (!avoidCoords.contains(TypeUtil.toStringHexCoord(coord))) {
                 filtered.add(coord);
             }
         }
@@ -412,10 +413,4 @@ public class PointComposer {
         return (dq + dr + ds) / 2;
     }
 
-    /**
-     * Creates a coordinate key string.
-     */
-    private String coordKey(HexVector2 coord) {
-        return coord.getQ() + ":" + coord.getR();
-    }
 }

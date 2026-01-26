@@ -1,6 +1,7 @@
 package de.mhus.nimbus.world.generator.flat.hexgrid.composer;
 
 import de.mhus.nimbus.generated.types.HexVector2;
+import de.mhus.nimbus.shared.utils.TypeUtil;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
 import de.mhus.nimbus.world.shared.world.WHexGrid.SIDE;
 import lombok.extern.slf4j.Slf4j;
@@ -345,7 +346,7 @@ public class RoadAndRiverConnectorTest {
 
         WHexGrid hexGrid = WHexGrid.builder()
             .worldId("test-world")
-            .position(q + ":" + r)
+            .position(TypeUtil.toStringHexCoord(q, r))
             .parameters(new HashMap<>())
             .enabled(true)
             .build();

@@ -3,6 +3,7 @@ package de.mhus.nimbus.world.generator.flat.hexgrid.composer;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.generated.types.HexVector2;
+import de.mhus.nimbus.shared.utils.TypeUtil;
 import de.mhus.nimbus.world.shared.world.WHexGrid.SIDE;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -55,19 +56,21 @@ public class MountainBiome extends Biome {
      * (with oceanLevel typically = 50)
      */
     public enum MountainHeight {
-        HIGH_PEAKS(150, 40, 20),    // max level: 150+50+40 = 240, ridge: 260
-        MEDIUM_PEAKS(120, 30, 15),  // max level: 120+50+30 = 200, ridge: 215
-        LOW_PEAKS(100, 20, 10),     // max level: 100+50+20 = 170, ridge: 180
-        MEADOW(80, 10, 5);          // max level: 80+50+10 = 140, ridge: 145
+        HIGH_PEAKS(120, 40, 20, 0.8),    // max level: 150+50+40 = 240, ridge: 260
+        MEDIUM_PEAKS(100, 30, 15, 0.8),  // max level: 120+50+30 = 200, ridge: 215
+        LOW_PEAKS(80, 20, 10, 0.7),     // max level: 100+50+20 = 170, ridge: 180
+        MEADOW(60, 10, 5, 0.6);          // max level: 80+50+10 = 140, ridge: 145
 
         private final int landLevel;
         private final int landOffset;
         private final int ridgeOffset;
+        private final double frequency;
 
-        MountainHeight(int landLevel, int landOffset, int ridgeOffset) {
+        MountainHeight(int landLevel, int landOffset, int ridgeOffset, double frequency) {
             this.landLevel = landLevel;
             this.landOffset = landOffset;
             this.ridgeOffset = ridgeOffset;
+            this.frequency = frequency;
         }
 
         public int getAboveSeaLevel() {
@@ -80,6 +83,10 @@ public class MountainBiome extends Biome {
 
         public int getRidgeOffset() {
             return ridgeOffset;
+        }
+
+        public double getFrequency() {
+            return frequency;
         }
     }
 
@@ -105,6 +112,7 @@ public class MountainBiome extends Biome {
         // Set landLevel and landOffset based on height
         getParameters().put("g_asl", String.valueOf(height.getAboveSeaLevel()));
         getParameters().put("g_offset", String.valueOf(height.getLandOffset()));
+        getParameters().put("g_frequency", String.valueOf(height.getFrequency()));
 
         log.info("Applied MountainBiome defaults for '{}': height={}, landLevel={}, landOffset={}",
             getName(), height, height.getAboveSeaLevel(), height.getLandOffset());
@@ -121,7 +129,7 @@ public class MountainBiome extends Biome {
 
         // Build coordinate set for fast neighbor lookups
         Set<String> coordSet = coordinates.stream()
-            .map(c -> c.getQ() + ":" + c.getR())
+            .map(c -> TypeUtil.toStringHexCoord(c.getQ(), c.getR()))
             .collect(Collectors.toSet());
 
         // Calculate ridge level: landLevel + landOffset + ridgeOffset (+ oceanLevel in builder)
@@ -139,7 +147,7 @@ public class MountainBiome extends Biome {
             // Check all 6 hex neighbors
             for (int dir = 0; dir < 6; dir++) {
                 HexVector2 neighbor = getHexNeighbor(coord, dir);
-                String neighborKey = neighbor.getQ() + ":" + neighbor.getR();
+                String neighborKey = TypeUtil.toStringHexCoord(neighbor.getQ(), neighbor.getR());
 
                 // If neighbor is part of this mountain, add ridge entry
                 if (coordSet.contains(neighborKey)) {
@@ -157,10 +165,10 @@ public class MountainBiome extends Biome {
                     String ridgeJson = mapper.writeValueAsString(ridgeEntries);
                     hexGrid.addParameter("g_ridge", ridgeJson);
                     log.debug("Added ridge config to grid {}: {} neighbors",
-                        coord.getQ() + ":" + coord.getR(), ridgeEntries.size());
+                        coord.getQ() + ";" + coord.getR(), ridgeEntries.size());
                 } catch (Exception e) {
                     log.error("Failed to create ridge JSON for grid {}: {}",
-                        coord.getQ() + ":" + coord.getR(), e.getMessage());
+                        coord.getQ() + ";" + coord.getR(), e.getMessage());
                 }
             }
         }

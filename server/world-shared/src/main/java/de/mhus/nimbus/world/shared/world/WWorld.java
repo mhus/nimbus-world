@@ -81,11 +81,11 @@ public class WWorld implements Identifiable {
     private int groundLevel = 20;
 
     /**
-     * Ocean level for ocean generation (Y coordinate).
+     * Sea level for ocean/sea generation (Y coordinate).
      * If set, ocean blocks are generated up to this level.
      */
     @Builder.Default
-    private Integer oceanLevel = 50;
+    private Integer seaLevel = 50;
 
     /**
      * Block type ID for ground blocks (e.g., "r/grass" for grass).

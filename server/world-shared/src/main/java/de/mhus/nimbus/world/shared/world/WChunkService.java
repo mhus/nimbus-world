@@ -360,7 +360,7 @@ public class WChunkService implements StorageProvider {
             }
 
             int groundLevel = world.getGroundLevel();
-            Integer waterLevel = world.getOceanLevel();
+            Integer waterLevel = world.getSeaLevel();
             String groundBlockType = world.getGroundBlockType();
             String waterBlockType = world.getSeaBlockType();
             int minHeight = (int) world.getPublicData().getStart().getY();

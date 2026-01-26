@@ -41,7 +41,7 @@ public class WaterSoftenManipulator implements FlatManipulator {
 
         // Parse parameters
         int passes = parseIntParameter(parameters, PARAM_PASSES, DEFAULT_PASSES);
-        int waterThreshold = parseIntParameter(parameters, PARAM_WATER_THRESHOLD, flat.getOceanLevel());
+        int waterThreshold = parseIntParameter(parameters, PARAM_WATER_THRESHOLD, flat.getSeaLevel());
         int probability = parseIntParameter(parameters, PARAM_PROBABILITY, DEFAULT_PROBABILITY);
 
         // Validate and clamp parameters

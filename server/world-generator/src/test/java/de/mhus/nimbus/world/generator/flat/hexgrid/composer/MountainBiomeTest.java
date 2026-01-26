@@ -1,6 +1,7 @@
 package de.mhus.nimbus.world.generator.flat.hexgrid.composer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import de.mhus.nimbus.shared.utils.TypeUtil;
 import de.mhus.nimbus.world.shared.generator.WFlat;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
@@ -28,7 +29,7 @@ public class MountainBiomeTest {
         mountain.applyDefaults();
 
         assertNotNull(mountain.getParameters(), "Parameters should be set");
-        assertEquals("150", mountain.getParameters().get("g_asl"),
+        assertEquals("120", mountain.getParameters().get("g_asl"),
             "HIGH_PEAKS should have landLevel=150");
         assertEquals("40", mountain.getParameters().get("g_offset"),
             "HIGH_PEAKS should have landOffset=40");
@@ -55,7 +56,7 @@ public class MountainBiomeTest {
 
         mountain.applyDefaults();
 
-        assertEquals("120", mountain.getParameters().get("g_asl"),
+        assertEquals("100", mountain.getParameters().get("g_asl"),
             "MEDIUM_PEAKS should have landLevel=120");
         assertEquals("30", mountain.getParameters().get("g_offset"),
             "MEDIUM_PEAKS should have landOffset=30");
@@ -78,7 +79,7 @@ public class MountainBiomeTest {
 
         mountain.applyDefaults();
 
-        assertEquals("100", mountain.getParameters().get("g_asl"),
+        assertEquals("80", mountain.getParameters().get("g_asl"),
             "LOW_PEAKS should have landLevel=100");
         assertEquals("20", mountain.getParameters().get("g_offset"),
             "LOW_PEAKS should have landOffset=20");
@@ -101,7 +102,7 @@ public class MountainBiomeTest {
 
         mountain.applyDefaults();
 
-        assertEquals("80", mountain.getParameters().get("g_asl"),
+        assertEquals("60", mountain.getParameters().get("g_asl"),
             "MEADOW should have landLevel=80");
         assertEquals("10", mountain.getParameters().get("g_offset"),
             "MEADOW should have landOffset=10");
@@ -128,7 +129,7 @@ public class MountainBiomeTest {
         assertEquals(MountainBiome.MountainHeight.MEDIUM_PEAKS, mountain.getHeight(),
             "Should default to MEDIUM_PEAKS");
 
-        assertEquals("120", mountain.getParameters().get("g_asl"),
+        assertEquals("100", mountain.getParameters().get("g_asl"),
             "Default should have MEDIUM_PEAKS landLevel=120");
         assertEquals("30", mountain.getParameters().get("g_offset"),
             "Default should have MEDIUM_PEAKS landOffset=30");
@@ -163,7 +164,7 @@ public class MountainBiomeTest {
 
         // Verify parameters were applied
         assertNotNull(highPeaks.getParameters(), "Parameters should be set after initialize");
-        assertEquals("150", highPeaks.getParameters().get("g_asl"),
+        assertEquals("120", highPeaks.getParameters().get("g_asl"),
             "HIGH_PEAKS should have landLevel=150 after initialize");
 
         log.info("Mountain in composition initialized correctly with landLevel={}",
@@ -229,7 +230,7 @@ public class MountainBiomeTest {
 
         // Find the WHexGrid for center
         de.mhus.nimbus.world.shared.world.WHexGrid hexGrid = placementResult.getHexGrids().stream()
-            .filter(g -> g.getPosition().equals(center.getQ() + ":" + center.getR()))
+            .filter(g -> g.getPosition().equals(TypeUtil.toStringHexCoord(center.getQ(), center.getR())))
             .findFirst()
             .orElseThrow();
 
@@ -290,7 +291,7 @@ public class MountainBiomeTest {
 
         de.mhus.nimbus.generated.types.HexVector2 center = placedMountain.getCenter();
         de.mhus.nimbus.world.shared.world.WHexGrid hexGrid = placementResult.getHexGrids().stream()
-            .filter(g -> g.getPosition().equals(center.getQ() + ":" + center.getR()))
+            .filter(g -> g.getPosition().equals(TypeUtil.toStringHexCoord(center.getQ(),center.getR())))
             .findFirst()
             .orElseThrow();
 
@@ -344,7 +345,7 @@ public class MountainBiomeTest {
 
         de.mhus.nimbus.generated.types.HexVector2 center = placedMountain.getCenter();
         de.mhus.nimbus.world.shared.world.WHexGrid hexGrid = placementResult.getHexGrids().stream()
-            .filter(g -> g.getPosition().equals(center.getQ() + ":" + center.getR()))
+            .filter(g -> g.getPosition().equals(TypeUtil.toStringHexCoord(center.getQ(), center.getR())))
             .findFirst()
             .orElseThrow();
 
@@ -398,7 +399,7 @@ public class MountainBiomeTest {
 
         de.mhus.nimbus.generated.types.HexVector2 center = placedMountain.getCenter();
         de.mhus.nimbus.world.shared.world.WHexGrid hexGrid = placementResult.getHexGrids().stream()
-            .filter(g -> g.getPosition().equals(center.getQ() + ":" + center.getR()))
+            .filter(g -> g.getPosition().equals(TypeUtil.toStringHexCoord(center.getQ(),center.getR())))
             .findFirst()
             .orElseThrow();
 
@@ -459,7 +460,7 @@ public class MountainBiomeTest {
             .hexGrid(filled.getCoordinate())
             .sizeX(flatSize)
             .sizeZ(flatSize)
-            .oceanLevel(oceanLevel)
+            .seaLevel(oceanLevel)
             .mountX(flatSize / 2)
             .mountZ(flatSize / 2)
             .levels(levels)
@@ -491,7 +492,7 @@ public class MountainBiomeTest {
                 );
 
             de.mhus.nimbus.world.shared.world.WWorld world = new de.mhus.nimbus.world.shared.world.WWorld();
-            world.setOceanLevel(oceanLevel);
+            world.setSeaLevel(oceanLevel);
 
             de.mhus.nimbus.world.generator.flat.hexgrid.BuilderContext context =
                 de.mhus.nimbus.world.generator.flat.hexgrid.BuilderContext.builder()
@@ -611,7 +612,7 @@ public class MountainBiomeTest {
 
         // Expected ridge level: landLevel + landOffset + ridgeOffset
         // HIGH_PEAKS: 150 + 40 + 20 = 210 (relative level, without oceanLevel)
-        int expectedRidgeLevel = 150 + 40 + 20;
+        int expectedRidgeLevel = 120 + 40 + 20;
 
         // Count grids with ridge configuration
         int gridsWithRidge = 0;

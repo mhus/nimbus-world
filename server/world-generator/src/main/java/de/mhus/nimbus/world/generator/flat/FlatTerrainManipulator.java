@@ -38,9 +38,9 @@ public class FlatTerrainManipulator implements FlatManipulator {
         groundLevel = Math.max(0, Math.min(255, groundLevel));
 
         log.info("FlatTerrainManipulator: groundLevel={}, oceanLevel={}, unknownProtected={}, borderProtected={}",
-                groundLevel, flat.getOceanLevel(), flat.isUnknownProtected(), flat.isBorderProtected());
+                groundLevel, flat.getSeaLevel(), flat.isUnknownProtected(), flat.isBorderProtected());
 
-        int oceanLevel = flat.getOceanLevel();
+        int oceanLevel = flat.getSeaLevel();
 
         // Generate flat terrain
         int successCount = 0;

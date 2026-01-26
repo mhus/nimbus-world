@@ -1,7 +1,9 @@
 package de.mhus.nimbus.world.generator.flat.hexgrid.composer;
 
 import de.mhus.nimbus.generated.types.HexVector2;
+import de.mhus.nimbus.shared.utils.TypeUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.expression.spel.ast.TypeCode;
 
 import java.util.*;
 
@@ -44,7 +46,7 @@ public class OceanFiller {
 
             if (!isDecoupled) {
                 for (HexVector2 coord : placed.getCoordinates()) {
-                    connectedCoords.add(coordKey(coord));
+                    connectedCoords.add(TypeUtil.toStringHexCoord(coord));
                 }
             }
         }
@@ -72,7 +74,7 @@ public class OceanFiller {
             Set<String> group = groups.get(i);
             HexVector2 center = findGroupCenter(group);
             groupCenters.add(center);
-            log.info("Group {} has {} grids, center: {}", i + 1, group.size(), coordKey(center));
+            log.info("Group {} has {} grids, center: {}", i + 1, group.size(), TypeUtil.toStringHexCoord(center));
         }
 
         // Step 4: Connect all groups with each other (fully meshed topology)
@@ -85,7 +87,7 @@ public class OceanFiller {
                 HexVector2 centerB = groupCenters.get(j);
 
                 log.info("Creating ocean line from group {} ({}) to group {} ({})",
-                    i + 1, coordKey(centerA), j + 1, coordKey(centerB));
+                    i + 1, TypeUtil.toStringHexCoord(centerA), j + 1, TypeUtil.toStringHexCoord(centerB));
 
                 // Create straight line between centers
                 List<HexVector2> linePath = createStraightLine(centerA, centerB, existingCoords);
@@ -123,7 +125,7 @@ public class OceanFiller {
 
                     // Add to existingCoords
                     for (HexVector2 coord : linePath) {
-                        existingCoords.add(coordKey(coord));
+                        existingCoords.add(TypeUtil.toStringHexCoord(coord));
                     }
 
                     biomesAdded++;
@@ -167,11 +169,11 @@ public class OceanFiller {
 
             while (!queue.isEmpty()) {
                 String current = queue.poll();
-                HexVector2 coord = parseCoordKey(current);
+                HexVector2 coord = TypeUtil.parseHexCoord(current);
 
                 // Check all 6 neighbors
                 for (HexVector2 neighbor : getNeighbors(coord)) {
-                    String neighborKey = coordKey(neighbor);
+                    String neighborKey = TypeUtil.toStringHexCoord(neighbor);
 
                     if (unmarked.contains(neighborKey)) {
                         queue.add(neighborKey);
@@ -203,7 +205,7 @@ public class OceanFiller {
         int sumR = 0;
 
         for (String coordKey : group) {
-            HexVector2 coord = parseCoordKey(coordKey);
+            HexVector2 coord = TypeUtil.parseHexCoord(coordKey);
             sumQ += coord.getQ();
             sumR += coord.getR();
         }
@@ -257,7 +259,7 @@ public class OceanFiller {
 
             // Round to nearest hex coordinate
             HexVector2 coord = cubeRound(x, y, z);
-            String key = coordKey(coord);
+            String key = TypeUtil.toStringHexCoord(coord);
 
             // Only add if not already existing
             if (!existingCoords.contains(key)) {
@@ -332,24 +334,6 @@ public class OceanFiller {
     }
 
     /**
-     * Creates a string key for a coordinate.
-     */
-    private String coordKey(HexVector2 coord) {
-        return coord.getQ() + ":" + coord.getR();
-    }
-
-    /**
-     * Parses a coordinate key back to HexVector2.
-     */
-    private HexVector2 parseCoordKey(String key) {
-        String[] parts = key.split(":");
-        return HexVector2.builder()
-            .q(Integer.parseInt(parts[0]))
-            .r(Integer.parseInt(parts[1]))
-            .build();
-    }
-
-    /**
      * Fills ocean grids where flows cross empty space.
      * This is called AFTER FlowComposer, so we know which grids flows pass through.
      * For any flow grid that doesn't exist yet, we create an ocean filler grid.
@@ -392,7 +376,7 @@ public class OceanFiller {
         List<HexVector2> unfilledCoords = new ArrayList<>();
         for (String coordKey : flowCoords) {
             if (!existingCoords.contains(coordKey)) {
-                HexVector2 coord = parseCoordKey(coordKey);
+                HexVector2 coord = TypeUtil.parseHexCoord(coordKey);
                 unfilledCoords.add(coord);
                 existingCoords.add(coordKey); // Mark as occupied
             }

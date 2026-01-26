@@ -1,12 +1,12 @@
 package de.mhus.nimbus.world.generator.flat.hexgrid.composer;
 
 import de.mhus.nimbus.generated.types.HexVector2;
+import de.mhus.nimbus.shared.utils.TypeUtil;
 import de.mhus.nimbus.world.generator.flat.*;
 import de.mhus.nimbus.world.generator.flat.hexgrid.*;
 import de.mhus.nimbus.world.shared.generator.FlatLevelImageCreator;
 import de.mhus.nimbus.world.shared.generator.FlatMaterialImageCreator;
 import de.mhus.nimbus.world.shared.generator.WFlat;
-import de.mhus.nimbus.world.shared.world.HexMathUtil;
 import de.mhus.nimbus.world.shared.world.WChunkService;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
 import de.mhus.nimbus.world.shared.world.WWorld;
@@ -18,7 +18,6 @@ import org.junit.jupiter.api.Test;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import javax.imageio.ImageIO;
-import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -27,7 +26,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.List;
-import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
@@ -738,7 +736,7 @@ public class WorldCompositeImageTest {
             .hexGrid(filled.getCoordinate())
             .sizeX(FLAT_SIZE)
             .sizeZ(FLAT_SIZE)
-            .oceanLevel(OCEAN_LEVEL)
+            .seaLevel(OCEAN_LEVEL)
             .mountX(FLAT_SIZE / 2)
             .mountZ(FLAT_SIZE / 2)
             .levels(levels)
@@ -959,7 +957,7 @@ public class WorldCompositeImageTest {
 
         WHexGrid hexGrid = WHexGrid.builder()
             .worldId("test-world")
-            .position(q + ":" + r)
+            .position(TypeUtil.toStringHexCoord(q, r))
             .parameters(new HashMap<>())
             .enabled(true)
             .build();

@@ -32,7 +32,7 @@ public class FlatLevelImageCreator {
         int height = flat.getSizeZ();
         byte[] levels = flat.getLevels();
         byte[] columns = flat.getColumns();
-        int oceanLevel = flat.getOceanLevel();
+        int oceanLevel = flat.getSeaLevel();
 
         // Fixed range for above ocean levels (oceanLevel to oceanLevel + 100)
         // This ensures consistent coloring across different flats

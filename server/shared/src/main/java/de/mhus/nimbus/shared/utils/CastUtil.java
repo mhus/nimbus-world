@@ -12,6 +12,22 @@ public class CastUtil {
         }
     }
 
+    public static long tolong(String value, long defaultValue) {
+        try {
+            return Long.parseLong(value);
+        } catch (Exception e) {
+            return defaultValue;
+        }
+    }
+
+    public static double todouble(String value, double defaultValue) {
+        try {
+            return Double.parseDouble(value);
+        } catch (Exception e) {
+            return defaultValue;
+        }
+    }
+
     public static Map<Integer, String> mapOf(Object ... keyValues) {
         Map<Integer, String> map = new java.util.HashMap<>();
         for (int i = 0; i < keyValues.length; i += 2) {

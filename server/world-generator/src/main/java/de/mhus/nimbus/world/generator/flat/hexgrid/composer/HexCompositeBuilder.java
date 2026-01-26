@@ -1,5 +1,6 @@
 package de.mhus.nimbus.world.generator.flat.hexgrid.composer;
 
+import de.mhus.nimbus.shared.utils.TypeUtil;
 import de.mhus.nimbus.world.shared.world.WHexGridRepository;
 import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
@@ -161,7 +162,7 @@ public class HexCompositeBuilder {
                     Set<String> coords = new java.util.HashSet<>();
                     for (PlacedBiome placed : placementResult.getPlacedBiomes()) {
                         for (de.mhus.nimbus.generated.types.HexVector2 coord : placed.getCoordinates()) {
-                            coords.add(coord.getQ() + ":" + coord.getR());
+                            coords.add(TypeUtil.toStringHexCoord(coord.getQ(), coord.getR()));
                         }
                     }
                     return coords;
@@ -253,7 +254,7 @@ public class HexCompositeBuilder {
                 // Add all biome grids (from placed biomes, including filler biomes)
                 for (PlacedBiome placed : placementResult.getPlacedBiomes()) {
                     for (de.mhus.nimbus.generated.types.HexVector2 coord : placed.getCoordinates()) {
-                        String key = coord.getQ() + ":" + coord.getR();
+                        String key = TypeUtil.toStringHexCoord(coord.getQ(), coord.getR());
                         de.mhus.nimbus.world.shared.world.WHexGrid grid = gridMap.get(key);
                         if (grid != null) {
                             boolean isFiller = "true".equals(grid.getParameters().get("filler"));
@@ -326,7 +327,7 @@ public class HexCompositeBuilder {
                 Set<String> gridIndex = new java.util.HashSet<>();
                 for (PlacedBiome placed : placementResult.getPlacedBiomes()) {
                     for (de.mhus.nimbus.generated.types.HexVector2 coord : placed.getCoordinates()) {
-                        gridIndex.add(coord.getQ() + ":" + coord.getR());
+                        gridIndex.add(TypeUtil.toStringHexCoord(coord.getQ(), coord.getR()));
                     }
                 }
 

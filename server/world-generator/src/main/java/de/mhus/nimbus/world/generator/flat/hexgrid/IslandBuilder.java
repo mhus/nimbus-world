@@ -5,7 +5,6 @@ import de.mhus.nimbus.world.generator.flat.IslandsManipulator;
 import de.mhus.nimbus.world.shared.generator.WFlat;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -26,7 +25,7 @@ public class IslandBuilder extends HexGridBuilder {
         log.info("Building island scenario for flat: {}",
                 flat.getFlatId());
 
-        int oceanLevel = flat.getOceanLevel();
+        int oceanLevel = flat.getSeaLevel();
 
         // Step 1: Create hilly ocean floor using HillyTerrainManipulator (like OceanBuilder)
         int hillHeight = getLandOffset();

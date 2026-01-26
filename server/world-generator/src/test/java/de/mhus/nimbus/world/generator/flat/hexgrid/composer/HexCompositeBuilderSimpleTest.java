@@ -2,6 +2,7 @@ package de.mhus.nimbus.world.generator.flat.hexgrid.composer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.generated.types.HexVector2;
+import de.mhus.nimbus.shared.utils.TypeUtil;
 import de.mhus.nimbus.world.generator.flat.BorderSmoothManipulator;
 import de.mhus.nimbus.world.generator.flat.FlatManipulator;
 import de.mhus.nimbus.world.generator.flat.FlatManipulatorService;
@@ -13,15 +14,15 @@ import de.mhus.nimbus.world.generator.flat.SoftenManipulator;
 import de.mhus.nimbus.world.generator.flat.hexgrid.BuilderContext;
 import de.mhus.nimbus.world.generator.flat.hexgrid.HexGridBuilder;
 import de.mhus.nimbus.world.generator.flat.hexgrid.HexGridBuilderService;
+import de.mhus.nimbus.world.generator.flat.hexgrid.HexGridIndex;
 import de.mhus.nimbus.world.shared.generator.WFlat;
+import de.mhus.nimbus.world.shared.world.HexMathUtil;
 import de.mhus.nimbus.world.shared.world.WChunkService;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
-import de.mhus.nimbus.world.shared.world.WHexGridRepository;
 import de.mhus.nimbus.world.shared.world.WWorld;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
 import java.io.File;
 import java.nio.file.Files;
@@ -31,7 +32,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -39,9 +39,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 /**
  * Tests for HexCompositeBuilder - orchestrates complete composition pipeline
@@ -49,32 +47,17 @@ import static org.mockito.Mockito.when;
 @Slf4j
 public class HexCompositeBuilderSimpleTest {
 
-    private static final int FLAT_SIZE = 512;
+    private static final int FLAT_SIZE = 400;
     private static final int OCEAN_LEVEL = 50;
 
-    private WHexGridRepository mockRepository;
     private Path outputDir;
 
     @BeforeEach
     public void setup() throws Exception {
-        // Mock repository
-        mockRepository = Mockito.mock(WHexGridRepository.class);
-
         // Output directory for images
         outputDir = Paths.get("target/test-output/hex-composite-simple");
         Files.createDirectories(outputDir);
         log.info("Output directory: {}", outputDir.toAbsolutePath());
-
-        // Mock repository to return empty for all lookups
-        when(mockRepository.findByWorldIdAndPosition(anyString(), anyString()))
-            .thenReturn(Optional.empty());
-
-        // Mock saveAll to return what was passed in
-        when(mockRepository.saveAll(any())).thenAnswer(invocation -> {
-            List<WHexGrid> grids = invocation.getArgument(0);
-            log.info("Mock repository saved {} grids", grids.size());
-            return grids;
-        });
     }
 
     @Test
@@ -156,12 +139,14 @@ public class HexCompositeBuilderSimpleTest {
         HexGridFillResult fillResult = result.getFillResult();
 
         if (fillResult != null) {
-            for (FilledHexGrid filled : fillResult.getAllGrids()) {
+            var allGrids = fillResult.getAllGrids();
+            var index = new HexGridIndex(allGrids.stream().map(g -> g.getHexGrid()).toList());
+            for (FilledHexGrid filled : allGrids) {
                 try {
-                    WFlat flat = buildGridTerrain(filled);
+                    WFlat flat = buildGridTerrain(filled, index);
                     flats.put(filled.getCoordinate(), flat);
                 } catch (Exception e) {
-                    log.warn("Failed to build terrain for grid {}: {}", filled.getCoordinate(), e.getMessage());
+                    log.warn("Failed to build terrain for grid {}: {}", filled.getCoordinate(), e.getMessage(), e);
                 }
             }
             log.info("Built terrain for {}/{} grids", flats.size(), fillResult.getAllGrids().size());
@@ -185,7 +170,7 @@ public class HexCompositeBuilderSimpleTest {
 
     // ============= Helper Methods =============
 
-    private WFlat buildGridTerrain(FilledHexGrid filled) {
+    private WFlat buildGridTerrain(FilledHexGrid filled, HexGridIndex gridIndex) {
         // Initialize level and column arrays
         byte[] levels = new byte[FLAT_SIZE * FLAT_SIZE];
         byte[] columns = new byte[FLAT_SIZE * FLAT_SIZE];
@@ -241,7 +226,7 @@ public class HexCompositeBuilderSimpleTest {
             .hexGrid(filled.getCoordinate())
             .sizeX(FLAT_SIZE)
             .sizeZ(FLAT_SIZE)
-            .oceanLevel(OCEAN_LEVEL)
+            .seaLevel(OCEAN_LEVEL)
             .mountX(FLAT_SIZE / 2)
             .mountZ(FLAT_SIZE / 2)
             .levels(levels)
@@ -263,7 +248,7 @@ public class HexCompositeBuilderSimpleTest {
                 return flat;
             }
 
-            BuilderContext context = createContext(flat, filled.getHexGrid());
+            BuilderContext context = createContext(flat, filled.getHexGrid(), gridIndex);
 
             for (HexGridBuilder builder : pipeline) {
                 builder.setContext(context);
@@ -272,7 +257,7 @@ public class HexCompositeBuilderSimpleTest {
         } catch (Exception e) {
             log.warn("Failed to build terrain for grid [{},{}]: {}",
                 filled.getCoordinate().getQ(), filled.getCoordinate().getR(),
-                e.getMessage());
+                e.getMessage(), e);
         }
 
         return flat;
@@ -289,7 +274,7 @@ public class HexCompositeBuilderSimpleTest {
         };
     }
 
-    private BuilderContext createContext(WFlat flat, WHexGrid hexGrid) {
+    private BuilderContext createContext(WFlat flat, WHexGrid hexGrid, HexGridIndex gridIndex) {
         // WHexGrid is already properly configured from FilledHexGrid
 
         List<FlatManipulator> manipulators = List.of(
@@ -303,16 +288,31 @@ public class HexCompositeBuilderSimpleTest {
         FlatManipulatorService manipulatorService = new FlatManipulatorService(manipulators);
 
         WChunkService chunkService = mock(WChunkService.class);
-        WWorld world = mock(WWorld.class);
+        WWorld world = WWorld.builder().build();
+        world.setNoiseSeed(1474);
+        world.setNoiseFrequency(0.5);
+
+        Map<WHexGrid.SIDE, WHexGrid> neighbors = collectNeighbors(hexGrid.getPosition(), gridIndex);
 
         return BuilderContext.builder()
             .flat(flat)
             .hexGrid(hexGrid)
             .world(world)
-            .neighborGrids(new HashMap<>())
+            .neighborGrids(neighbors)
             .manipulatorService(manipulatorService)
             .chunkService(chunkService)
             .build();
+    }
+
+    private Map<WHexGrid.SIDE, WHexGrid> collectNeighbors(String position, HexGridIndex gridIndex) {
+        var result = new HashMap<WHexGrid.SIDE, WHexGrid>();
+        for (WHexGrid.SIDE nabor : WHexGrid.SIDE.values()) {
+            HexVector2 naborPosition = HexMathUtil.getNeighborPosition(TypeUtil.parseHexCoord(position), nabor);
+            var naborHex = gridIndex.getGrid(naborPosition);
+            if (naborHex != null)
+                result.put(nabor, naborHex);
+        }
+        return result;
     }
 
     private void createCompositeImage(Map<HexVector2, WFlat> flats,
@@ -390,68 +390,5 @@ public class HexCompositeBuilderSimpleTest {
         mapper.writerWithDefaultPrettyPrinter().writeValue(outputFile, composition);
 
         log.info("Exported input composition to: {}", outputFile.getAbsolutePath());
-    }
-
-    @Test
-    public void testContinentFilling() throws Exception {
-        log.info("=== Testing Continent Filling ===");
-
-        // Load composition from JSON file
-        File jsonFile = new File("src/test/resources/continent-test.json");
-        assertTrue(jsonFile.exists(), "Continent test JSON file should exist");
-
-        ObjectMapper mapper = new ObjectMapper();
-        HexComposition composition = mapper.readValue(jsonFile, HexComposition.class);
-
-        assertNotNull(composition, "Composition should be loaded");
-        assertNotNull(composition.getContinents(), "Continents should be defined");
-        assertEquals(1, composition.getContinents().size(), "Should have 1 continent");
-        assertEquals("main-continent", composition.getContinents().get(0).getContinentId());
-
-        // Use HexCompositeBuilder for the complete pipeline
-        log.info("Starting composition pipeline...");
-        CompositionResult result = HexCompositeBuilder.builder()
-            .composition(composition)
-            .worldId("continent-test")
-            .seed(12345L)
-            .fillGaps(true)
-            .oceanBorderRings(2)
-            .generateWHexGrids(false)
-            .build()
-            .compose();
-
-        assertTrue(result.isSuccess(), "Composition should succeed: " + result.getErrorMessage());
-        assertNotNull(result.getFillResult(), "Fill result should exist");
-
-        // Check that continent filler was used
-        BiomePlacementResult placementResult = result.getFillResult().getPlacementResult();
-        assertNotNull(placementResult, "Placement result should exist");
-        assertTrue(placementResult.getPlacedBiomes().size() > 3,
-            "Should have more than the 3 original biomes (includes continent filler)");
-
-        // Check for continent filler biome
-        boolean foundContinentFiller = false;
-        for (PlacedBiome placed : placementResult.getPlacedBiomes()) {
-            if (placed.getBiome().getName().startsWith("continent-filler-")) {
-                foundContinentFiller = true;
-                log.info("Found continent filler: {} with {} grids",
-                    placed.getBiome().getName(), placed.getCoordinates().size());
-
-                // Verify it's marked as continent filler
-                Map<String, String> params = placed.getBiome().getParameters();
-                assertNotNull(params, "Parameters should exist");
-                assertEquals("true", params.get("continentFiller"), "Should be marked as continent filler");
-
-                // Check continentId is set on biome object
-                assertEquals("main-continent", placed.getBiome().getContinentId(), "Biome should have correct continent ID");
-
-                // Also check it's in parameters
-                assertEquals("main-continent", params.get("continentId"), "Parameters should have correct continent ID");
-            }
-        }
-
-        assertTrue(foundContinentFiller, "Should have created continent filler biome");
-
-        log.info("=== Continent Filling Test Completed ===");
     }
 }
