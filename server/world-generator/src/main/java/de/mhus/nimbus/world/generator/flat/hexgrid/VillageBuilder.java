@@ -65,7 +65,7 @@ public class VillageBuilder extends HexGridBuilder {
         log.info("Building village for flat: {}", flat.getFlatId());
 
         // Get village parameter from hex grid
-        String villageParam = hexGrid.getParameters() != null ? hexGrid.getParameters().get("village") : null;
+        String villageParam = hexGrid.getParameters() != null ? hexGrid.getParameters().get("g_village") : null;
         if (villageParam == null || villageParam.isBlank()) {
             log.debug("No village parameter found, skipping");
             return;
@@ -146,7 +146,7 @@ public class VillageBuilder extends HexGridBuilder {
                 plot.setGroupId(plotNode.has("groupId") ? plotNode.get("groupId").asText() : null);
 
                 // Optional road connection
-                plot.setRoad(plotNode.has("road") ? plotNode.get("road").asInt() : -1);
+                plot.setRoad(plotNode.has("g_road") ? plotNode.get("g_road").asInt() : -1);
 
                 plots.add(plot);
             }

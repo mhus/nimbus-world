@@ -57,7 +57,7 @@ public class WallBuilder extends HexGridBuilder {
         log.info("Building walls for flat: {}", flat.getFlatId());
 
         // Get wall parameter from hex grid
-        String wallParam = hexGrid.getParameters() != null ? hexGrid.getParameters().get("wall") : null;
+        String wallParam = hexGrid.getParameters() != null ? hexGrid.getParameters().get("g_wall") : null;
         if (wallParam == null || wallParam.isBlank()) {
             log.debug("No wall parameter found, skipping");
             return;

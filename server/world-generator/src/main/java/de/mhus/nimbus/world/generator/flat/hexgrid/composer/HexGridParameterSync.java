@@ -143,17 +143,17 @@ public class HexGridParameterSync {
                 continue;
             }
 
-            // Special handling for "road" parameter - merge if existing
-            if ("road".equals(key)) {
-                String existingRoad = wHexGrid.getParameters().get("road");
+            // Special handling for "g_road" parameter - merge if existing
+            if ("g_road".equals(key)) {
+                String existingRoad = wHexGrid.getParameters().get("g_road");
                 if (existingRoad != null) {
                     // Merge road parameters (existing + new routes)
                     String mergedRoad = mergeRoadParameters(existingRoad, value, wHexGrid.getPosition());
-                    wHexGrid.getParameters().put("road", mergedRoad);
+                    wHexGrid.getParameters().put("g_road", mergedRoad);
                     log.debug("Merged road parameter to WHexGrid {} (Area: {})", wHexGrid.getPosition(), areaName);
                 } else {
                     // No existing road, just set it
-                    wHexGrid.getParameters().put("road", value);
+                    wHexGrid.getParameters().put("g_road", value);
                     log.debug("Synced road parameter to WHexGrid {} (Area: {})", wHexGrid.getPosition(), areaName);
                 }
                 parameterCount++;

@@ -57,7 +57,7 @@ public class RiverBuilder extends HexGridBuilder {
         clearWaterExtraBlocks(flat);
 
         // Get river parameter from hex grid
-        String riverParam = hexGrid.getParameters() != null ? hexGrid.getParameters().get("river") : null;
+        String riverParam = hexGrid.getParameters() != null ? hexGrid.getParameters().get("g_river") : null;
         if (riverParam == null || riverParam.isBlank()) {
             log.debug("No river parameter found, skipping");
             return;

@@ -135,7 +135,7 @@ public class RoadAndRiverConnector {
         }
 
         // Get existing road configuration or create new one
-        String roadJson = params.get("road");
+        String roadJson = params.get("g_road");
         RoadConfig config;
 
         if (roadJson != null && !roadJson.isEmpty()) {
@@ -158,7 +158,7 @@ public class RoadAndRiverConnector {
         config.getRoutes().add(route);
 
         // Write back
-        params.put("road", serializeRoadConfig(config));
+        params.put("g_road", serializeRoadConfig(config));
     }
 
     /**
@@ -172,7 +172,7 @@ public class RoadAndRiverConnector {
         }
 
         // Get existing river configuration or create new one
-        String riverJson = params.get("river");
+        String riverJson = params.get("g_river");
         RiverConfig config;
 
         if (riverJson != null && !riverJson.isEmpty()) {
@@ -195,7 +195,7 @@ public class RoadAndRiverConnector {
         config.getFrom().add(endpoint);
 
         // Write back
-        params.put("river", serializeRiverConfig(config));
+        params.put("g_river", serializeRiverConfig(config));
     }
 
     /**

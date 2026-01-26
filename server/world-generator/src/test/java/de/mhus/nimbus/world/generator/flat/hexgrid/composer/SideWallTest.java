@@ -53,7 +53,7 @@ public class SideWallTest {
 
         int gridsWithSidewall = 0;
         for (FeatureHexGrid grid : city.getHexGrids()) {
-            String sidewallParam = grid.getParameters().get("sidewall");
+            String sidewallParam = grid.getParameters().get("g_sidewall");
             if (sidewallParam != null && !sidewallParam.isBlank()) {
                 gridsWithSidewall++;
                 log.debug("Grid {} has sidewall: {}", grid.getPositionKey(), sidewallParam);
@@ -129,7 +129,7 @@ public class SideWallTest {
         Biome plainsB = findBiome(composition, "plains");
         int gridsWithSidewall = 0;
         for (FeatureHexGrid grid : plainsB.getHexGrids()) {
-            String sidewallParam = grid.getParameters().get("sidewall");
+            String sidewallParam = grid.getParameters().get("g_sidewall");
             if (sidewallParam != null && !sidewallParam.isBlank()) {
                 gridsWithSidewall++;
 

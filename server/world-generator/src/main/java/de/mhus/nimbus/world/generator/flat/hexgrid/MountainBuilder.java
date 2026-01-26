@@ -92,7 +92,7 @@ public class MountainBuilder extends HexGridBuilder {
      */
     private void applyRidgeTransformations(WFlat flat, int baseHeight, int hillHeight, int ridgeWidth) {
         WHexGrid hexGrid = context.getHexGrid();
-        String ridgeParam = hexGrid.getParameters() != null ? hexGrid.getParameters().get("ridge") : null;
+        String ridgeParam = hexGrid.getParameters() != null ? hexGrid.getParameters().get("g_ridge") : null;
 
         if (ridgeParam == null || ridgeParam.isBlank()) {
             log.debug("No ridge parameter found, skipping ridge transformations");
@@ -315,7 +315,7 @@ public class MountainBuilder extends HexGridBuilder {
     public int getLandSideLevel(WHexGrid.SIDE side) {
         // Check if this side has a ridge defined
         WHexGrid hexGrid = context.getHexGrid();
-        String ridgeParam = hexGrid.getParameters() != null ? hexGrid.getParameters().get("ridge") : null;
+        String ridgeParam = hexGrid.getParameters() != null ? hexGrid.getParameters().get("g_ridge") : null;
 
         if (ridgeParam != null && !ridgeParam.isBlank()) {
             try {

@@ -600,8 +600,8 @@ public class WorldCompositeImageTest {
         // Add village parameters
         HexGridConfig centerGridConfig = designResult.getGridConfigs().get(HexVector2.builder().q(0).r(0).build());
         if (centerGridConfig != null) {
-            village.getParameters().put("village", centerGridConfig.toVillageParameter());
-            village.getParameters().put("road", centerGridConfig.toRoadParameter());
+            village.getParameters().put("g_village", centerGridConfig.toVillageParameter());
+            village.getParameters().put("g_road", centerGridConfig.toRoadParameter());
         }
 
         composition.getFeatures().add(village);

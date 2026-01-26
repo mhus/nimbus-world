@@ -31,17 +31,17 @@ public class HexGridBuilderService {
 //        builderRegistry.put("desert", DesertBuilder.class);
 //        builderRegistry.put("forest", ForestBuilder.class);
 //        builderRegistry.put("swamp", SwampBuilder.class);
-//        builderRegistry.put("village", VillageBuilder.class);
+//        builderRegistry.put("g_village", VillageBuilder.class);
 //        builderRegistry.put("town", TownBuilder.class);
 
         // Manipulator builders
-        manipulatorRegistry.put("edge-blender", EdgeBlenderBuilder.class);
-        manipulatorRegistry.put("river", RiverBuilder.class);
-        manipulatorRegistry.put("road", RoadBuilder.class);
-        manipulatorRegistry.put("wall", WallBuilder.class);
-        manipulatorRegistry.put("sidewall", SideWallBuilder.class);
+        manipulatorRegistry.put("g_edge-blender", EdgeBlenderBuilder.class);
+        manipulatorRegistry.put("g_river", RiverBuilder.class);
+        manipulatorRegistry.put("g_road", RoadBuilder.class);
+        manipulatorRegistry.put("g_wall", WallBuilder.class);
+        manipulatorRegistry.put("g_sidewall", SideWallBuilder.class);
         manipulatorRegistry.put("plot", PlotBuilder.class);
-        manipulatorRegistry.put("village", VillageBuilder.class);
+        manipulatorRegistry.put("g_village", VillageBuilder.class);
     }
 
     /**
@@ -140,8 +140,8 @@ public class HexGridBuilderService {
         }
 
         // 2. EdgeBlenderBuilder (always, expect edge-blender: false to skip)
-        if (!gridParams.containsKey("edge-blender") || !"false".equals(gridParams.get("edge-blender"))) {
-            Optional<HexGridBuilder> edgeBlender = createManipulator("edge-blender", builderParams);
+        if (!gridParams.containsKey("g_edge-blender") || !"false".equals(gridParams.get("g_edge-blender"))) {
+            Optional<HexGridBuilder> edgeBlender = createManipulator("g_edge-blender", builderParams);
             if (edgeBlender.isPresent()) {
                 pipeline.add(edgeBlender.get());
                 log.debug("Added EdgeBlenderBuilder to pipeline");
@@ -149,8 +149,8 @@ public class HexGridBuilderService {
         }
 
         // 3. RiverBuilder (if river parameter exists)
-        if (gridParams.containsKey("river") && !gridParams.get("river").isBlank()) {
-            Optional<HexGridBuilder> riverBuilder = createManipulator("river", builderParams);
+        if (gridParams.containsKey("g_river") && !gridParams.get("g_river").isBlank()) {
+            Optional<HexGridBuilder> riverBuilder = createManipulator("g_river", builderParams);
             if (riverBuilder.isPresent()) {
                 pipeline.add(riverBuilder.get());
                 log.debug("Added RiverBuilder to pipeline");
@@ -158,8 +158,8 @@ public class HexGridBuilderService {
         }
 
         // 4. RoadBuilder (if road parameter exists)
-        if (gridParams.containsKey("road") && !gridParams.get("road").isBlank()) {
-            Optional<HexGridBuilder> roadBuilder = createManipulator("road", builderParams);
+        if (gridParams.containsKey("g_road") && !gridParams.get("g_road").isBlank()) {
+            Optional<HexGridBuilder> roadBuilder = createManipulator("g_road", builderParams);
             if (roadBuilder.isPresent()) {
                 pipeline.add(roadBuilder.get());
                 log.debug("Added RoadBuilder to pipeline");
@@ -167,8 +167,8 @@ public class HexGridBuilderService {
         }
 
         // 5. WallBuilder (if wall parameter exists)
-        if (gridParams.containsKey("wall") && !gridParams.get("wall").isBlank()) {
-            Optional<HexGridBuilder> wallBuilder = createManipulator("wall", builderParams);
+        if (gridParams.containsKey("g_wall") && !gridParams.get("g_wall").isBlank()) {
+            Optional<HexGridBuilder> wallBuilder = createManipulator("g_wall", builderParams);
             if (wallBuilder.isPresent()) {
                 pipeline.add(wallBuilder.get());
                 log.debug("Added WallBuilder to pipeline");
@@ -176,8 +176,8 @@ public class HexGridBuilderService {
         }
 
         // 6. SideWallBuilder (if sidewall parameter exists)
-        if (gridParams.containsKey("sidewall") && !gridParams.get("sidewall").isBlank()) {
-            Optional<HexGridBuilder> sideWallBuilder = createManipulator("sidewall", builderParams);
+        if (gridParams.containsKey("g_sidewall") && !gridParams.get("g_sidewall").isBlank()) {
+            Optional<HexGridBuilder> sideWallBuilder = createManipulator("g_sidewall", builderParams);
             if (sideWallBuilder.isPresent()) {
                 pipeline.add(sideWallBuilder.get());
                 log.debug("Added SideWallBuilder to pipeline");
@@ -194,8 +194,8 @@ public class HexGridBuilderService {
         }
 
         // 8. VillageBuilder (if village parameter exists)
-        if (gridParams.containsKey("village") && !gridParams.get("village").isBlank()) {
-            Optional<HexGridBuilder> villageBuilder = createManipulator("village", builderParams);
+        if (gridParams.containsKey("g_village") && !gridParams.get("g_village").isBlank()) {
+            Optional<HexGridBuilder> villageBuilder = createManipulator("g_village", builderParams);
             if (villageBuilder.isPresent()) {
                 pipeline.add(villageBuilder.get());
                 log.debug("Added VillageBuilder to pipeline");

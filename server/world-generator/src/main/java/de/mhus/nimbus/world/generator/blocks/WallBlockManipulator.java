@@ -27,7 +27,7 @@ import org.springframework.stereotype.Component;
  * Example:
  * <pre>
  * {
- *   "wall": {
+ *   "g_wall": {
  *     "width": 10,
  *     "height": 5,
  *     "direction": "N",
@@ -40,7 +40,7 @@ import org.springframework.stereotype.Component;
  * With transformations:
  * <pre>
  * {
- *   "wall": {
+ *   "g_wall": {
  *     "transform": "position,forward",
  *     "width": 10,
  *     "height": 5,
@@ -55,7 +55,7 @@ public class WallBlockManipulator implements BlockManipulator {
 
     @Override
     public String getName() {
-        return "wall";
+        return "g_wall";
     }
 
     @Override

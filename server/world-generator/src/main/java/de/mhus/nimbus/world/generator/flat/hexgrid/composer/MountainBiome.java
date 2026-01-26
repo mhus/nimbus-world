@@ -70,7 +70,7 @@ public class MountainBiome extends Biome {
             this.ridgeOffset = ridgeOffset;
         }
 
-        public int getLandLevel() {
+        public int getAboveSeaLevel() {
             return landLevel;
         }
 
@@ -103,11 +103,11 @@ public class MountainBiome extends Biome {
         }
 
         // Set landLevel and landOffset based on height
-        getParameters().put("g_asl", String.valueOf(height.getLandLevel()));
+        getParameters().put("g_asl", String.valueOf(height.getAboveSeaLevel()));
         getParameters().put("g_offset", String.valueOf(height.getLandOffset()));
 
         log.info("Applied MountainBiome defaults for '{}': height={}, landLevel={}, landOffset={}",
-            getName(), height, height.getLandLevel(), height.getLandOffset());
+            getName(), height, height.getAboveSeaLevel(), height.getLandOffset());
     }
 
     /**
@@ -125,7 +125,7 @@ public class MountainBiome extends Biome {
             .collect(Collectors.toSet());
 
         // Calculate ridge level: landLevel + landOffset + ridgeOffset (+ oceanLevel in builder)
-        int ridgeLevel = height.getLandLevel() + height.getLandOffset() + height.getRidgeOffset();
+        int ridgeLevel = height.getAboveSeaLevel() + height.getLandOffset() + height.getRidgeOffset();
 
         // For each grid, check neighbors and create ridge configuration
         for (FeatureHexGrid hexGrid : getHexGrids()) {
@@ -155,7 +155,7 @@ public class MountainBiome extends Biome {
                 try {
                     ObjectMapper mapper = new ObjectMapper();
                     String ridgeJson = mapper.writeValueAsString(ridgeEntries);
-                    hexGrid.addParameter("ridge", ridgeJson);
+                    hexGrid.addParameter("g_ridge", ridgeJson);
                     log.debug("Added ridge config to grid {}: {} neighbors",
                         coord.getQ() + ":" + coord.getR(), ridgeEntries.size());
                 } catch (Exception e) {

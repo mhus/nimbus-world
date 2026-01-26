@@ -219,13 +219,13 @@ public class HexGridRoadConfigurator {
                     boolean configured = false;
 
                     // Check if there's already a road parameter (from Village)
-                    String existingRoad = areaGrid.getParameters().get("road");
+                    String existingRoad = areaGrid.getParameters().get("g_road");
 
                     // Assemble road={} from RoadConfigParts (if any) OR existing road parameter
                     if (areaGrid.hasRoadConfigParts() || existingRoad != null) {
                         int partCount = areaGrid.hasRoadConfigParts() ? areaGrid.getRoadConfigParts().size() : 0;
                         String roadJson = buildRoadJsonFromParts(areaGrid.getRoadConfigParts(), areaGrid, existingRoad);
-                        areaGrid.addParameter("road", roadJson);
+                        areaGrid.addParameter("g_road", roadJson);
                         configured = true;
                         totalParts += partCount;
                         log.info("Assembled road={} from {} parts + existing={} at {} (area: {})",
@@ -240,7 +240,7 @@ public class HexGridRoadConfigurator {
                     if (areaGrid.hasRiverConfigParts()) {
                         int riverPartCount = areaGrid.getRiverConfigParts().size();
                         String riverJson = buildRiverJsonFromParts(areaGrid.getRiverConfigParts(), areaGrid);
-                        areaGrid.addParameter("river", riverJson);
+                        areaGrid.addParameter("g_river", riverJson);
                         configured = true;
                         totalParts += riverPartCount;
                         log.debug("Assembled river={} from {} parts at {} (area: {})",
@@ -251,7 +251,7 @@ public class HexGridRoadConfigurator {
                     if (areaGrid.hasWallConfigParts()) {
                         int wallPartCount = areaGrid.getWallConfigParts().size();
                         String wallJson = buildWallJsonFromParts(areaGrid.getWallConfigParts(), areaGrid);
-                        areaGrid.addParameter("wall", wallJson);
+                        areaGrid.addParameter("g_wall", wallJson);
                         configured = true;
                         totalParts += wallPartCount;
                         log.debug("Assembled wall={} from {} parts at {} (area: {})",

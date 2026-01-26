@@ -69,7 +69,7 @@ public class RoadBuilder extends HexGridBuilder {
         clearBridgeExtraBlocks(flat);
 
         // Get road parameter from hex grid
-        String roadParam = hexGrid.getParameters() != null ? hexGrid.getParameters().get("road") : null;
+        String roadParam = hexGrid.getParameters() != null ? hexGrid.getParameters().get("g_road") : null;
         if (roadParam == null || roadParam.isBlank()) {
             log.debug("No road parameter found, skipping");
             return;

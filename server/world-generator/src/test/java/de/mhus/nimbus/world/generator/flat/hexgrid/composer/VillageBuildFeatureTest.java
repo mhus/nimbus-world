@@ -42,7 +42,7 @@ public class VillageBuildFeatureTest {
         assertNotNull(village.getParameters(), "Parameters should be populated");
 
         assertFalse(village.getBuildings().isEmpty(), "Should have buildings");
-        assertTrue(village.getParameters().containsKey("village"),
+        assertTrue(village.getParameters().containsKey("g_village"),
             "Should have village parameter");
 
         log.info("Village built successfully: {} buildings, {} parameters",

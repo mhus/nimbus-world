@@ -1535,7 +1535,7 @@ public class FlowComposer {
                 }
             }
 
-            edgeGrid.addParameter("sidewall", sidewallJson);
+            edgeGrid.addParameter("g_sidewall", sidewallJson);
             configuredCount++;
         }
 

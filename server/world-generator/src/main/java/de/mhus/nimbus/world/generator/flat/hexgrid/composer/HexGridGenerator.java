@@ -235,9 +235,9 @@ public class HexGridGenerator {
         // Apply flow segments if present AND not already configured
         // HexGridRoadConfigurator sets road/river/wall parameters, so only fallback if missing
         if (config.hasFlowSegments()) {
-            boolean hasRoadParam = parameters.containsKey("road");
-            boolean hasRiverParam = parameters.containsKey("river");
-            boolean hasWallParam = parameters.containsKey("wall");
+            boolean hasRoadParam = parameters.containsKey("g_road");
+            boolean hasRiverParam = parameters.containsKey("g_river");
+            boolean hasWallParam = parameters.containsKey("g_wall");
 
             // Only apply if not already configured by HexGridRoadConfigurator
             if (!hasRoadParam && !hasRiverParam && !hasWallParam) {
@@ -370,7 +370,7 @@ public class HexGridGenerator {
         }
 
         json.append("]}");
-        params.put("road", json.toString());
+        params.put("g_road", json.toString());
 
         log.debug("Applied {} road segments to grid {}", roadSegments.size(), hexGrid.getPosition());
     }
@@ -422,7 +422,7 @@ public class HexGridGenerator {
         }
 
         json.append("]}");
-        params.put("river", json.toString());
+        params.put("g_river", json.toString());
 
         log.debug("Applied {} river segments to grid {}", riverSegments.size(), hexGrid.getPosition());
     }
@@ -462,7 +462,7 @@ public class HexGridGenerator {
         }
 
         json.append("]}");
-        params.put("wall", json.toString());
+        params.put("g_wall", json.toString());
 
         log.debug("Applied {} wall segments to grid {}", wallSegments.size(), hexGrid.getPosition());
     }

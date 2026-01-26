@@ -105,7 +105,7 @@ public class HexGridConfig {
                 }
 
                 if (plot.getRoad() != null) {
-                    plotNode.put("road", plot.getRoad());
+                    plotNode.put("g_road", plot.getRoad());
                 }
 
                 plotsArray.add(plotNode);

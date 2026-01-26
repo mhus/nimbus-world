@@ -77,7 +77,7 @@ public class RoadAndRiverConnectorTest {
         // Check grid [0,0] has road parameter with EAST side
         WHexGrid grid00 = findGrid(result.getHexGrids(), 0, 0);
         assertNotNull(grid00);
-        String roadParam = grid00.getParameters().get("road");
+        String roadParam = grid00.getParameters().get("g_road");
         assertNotNull(roadParam);
         assertTrue(roadParam.contains("EAST"), "Grid [0,0] should have EAST road");
         log.info("Grid [0,0] road: {}", roadParam);
@@ -85,7 +85,7 @@ public class RoadAndRiverConnectorTest {
         // Check grid [1,0] has road parameters with WEST and EAST sides
         WHexGrid grid10 = findGrid(result.getHexGrids(), 1, 0);
         assertNotNull(grid10, "Grid [1,0] should exist");
-        roadParam = grid10.getParameters() != null ? grid10.getParameters().get("road") : null;
+        roadParam = grid10.getParameters() != null ? grid10.getParameters().get("g_road") : null;
         assertNotNull(roadParam, "Grid [1,0] should have road parameters");
         assertTrue(roadParam.contains("WEST"), "Grid [1,0] should have WEST road");
         assertTrue(roadParam.contains("EAST"), "Grid [1,0] should have EAST road");
@@ -94,7 +94,7 @@ public class RoadAndRiverConnectorTest {
         // Check grid [2,0] has road parameter with WEST side
         WHexGrid grid20 = findGrid(result.getHexGrids(), 2, 0);
         assertNotNull(grid20);
-        roadParam = grid20.getParameters().get("road");
+        roadParam = grid20.getParameters().get("g_road");
         assertNotNull(roadParam);
         assertTrue(roadParam.contains("WEST"), "Grid [2,0] should have WEST road");
         log.info("Grid [2,0] road: {}", roadParam);
@@ -132,14 +132,14 @@ public class RoadAndRiverConnectorTest {
         // Check grids have river parameters
         WHexGrid grid00 = findGrid(result.getHexGrids(), 0, 0);
         assertNotNull(grid00);
-        String riverParam = grid00.getParameters().get("river");
+        String riverParam = grid00.getParameters().get("g_river");
         assertNotNull(riverParam);
         assertTrue(riverParam.contains("SOUTH_EAST"));
         log.info("Grid [0,0] river: {}", riverParam);
 
         WHexGrid grid01 = findGrid(result.getHexGrids(), 0, 1);
         assertNotNull(grid01);
-        riverParam = grid01.getParameters().get("river");
+        riverParam = grid01.getParameters().get("g_river");
         assertNotNull(riverParam);
         assertTrue(riverParam.contains("NORTH_WEST"));
         log.info("Grid [0,1] river: {}", riverParam);
@@ -258,7 +258,7 @@ public class RoadAndRiverConnectorTest {
         // Check center grid has 4 road routes
         WHexGrid centerGrid = findGrid(result.getHexGrids(), 0, 0);
         assertNotNull(centerGrid);
-        String roadParam = centerGrid.getParameters().get("road");
+        String roadParam = centerGrid.getParameters().get("g_road");
         assertNotNull(roadParam);
         assertTrue(roadParam.contains("NORTH_WEST"));
         assertTrue(roadParam.contains("WEST"));
@@ -269,19 +269,19 @@ public class RoadAndRiverConnectorTest {
         // Check all outer grids have one road each
         WHexGrid nw = findGrid(result.getHexGrids(), 0, -1);
         assertNotNull(nw);
-        assertTrue(nw.getParameters().get("road").contains("SOUTH_EAST"));
+        assertTrue(nw.getParameters().get("g_road").contains("SOUTH_EAST"));
 
         WHexGrid w = findGrid(result.getHexGrids(), -1, 0);
         assertNotNull(w);
-        assertTrue(w.getParameters().get("road").contains("EAST"));
+        assertTrue(w.getParameters().get("g_road").contains("EAST"));
 
         WHexGrid e = findGrid(result.getHexGrids(), 1, 0);
         assertNotNull(e);
-        assertTrue(e.getParameters().get("road").contains("WEST"));
+        assertTrue(e.getParameters().get("g_road").contains("WEST"));
 
         WHexGrid se = findGrid(result.getHexGrids(), 0, 1);
         assertNotNull(se);
-        assertTrue(se.getParameters().get("road").contains("NORTH_WEST"));
+        assertTrue(se.getParameters().get("g_road").contains("NORTH_WEST"));
 
         log.info("Complex road network validated successfully");
     }

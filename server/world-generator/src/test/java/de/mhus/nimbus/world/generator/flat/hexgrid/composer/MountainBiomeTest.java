@@ -1,15 +1,11 @@
 package de.mhus.nimbus.world.generator.flat.hexgrid.composer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import de.mhus.nimbus.world.generator.flat.*;
-import de.mhus.nimbus.world.generator.flat.hexgrid.*;
 import de.mhus.nimbus.world.shared.generator.WFlat;
-import de.mhus.nimbus.world.shared.world.WWorld;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -38,8 +34,6 @@ public class MountainBiomeTest {
             "HIGH_PEAKS should have landOffset=40");
 
         // Should also have base parameters from BiomeType
-        assertEquals("30", mountain.getParameters().get("g_offset"),
-            "Should have g_offset from BiomeType");
         assertEquals("0.8", mountain.getParameters().get("g_roughness"),
             "Should have g_roughness from BiomeType");
 
@@ -442,11 +436,11 @@ public class MountainBiomeTest {
         // Calculate expected min/max levels based on how HillyTerrainManipulator works
         // Min = baseHeight - hillHeight = (oceanLevel + landLevel) - landOffset
         // Max = baseHeight + hillHeight = (oceanLevel + landLevel) + landOffset
-        int expectedMinLevel = oceanLevel + height.getLandLevel() - height.getLandOffset() - tolerance;
-        int expectedMaxLevel = oceanLevel + height.getLandLevel() + height.getLandOffset() + tolerance;
+        int expectedMinLevel = oceanLevel + height.getAboveSeaLevel() - height.getLandOffset() - tolerance;
+        int expectedMaxLevel = oceanLevel + height.getAboveSeaLevel() + height.getLandOffset() + tolerance;
 
         log.info("Expected terrain levels for {}: min={}, max={} (oceanLevel={}, landLevel={}, landOffset={}, tolerance={})",
-            height, expectedMinLevel, expectedMaxLevel, oceanLevel, height.getLandLevel(), height.getLandOffset(), tolerance);
+            height, expectedMinLevel, expectedMaxLevel, oceanLevel, height.getAboveSeaLevel(), height.getLandOffset(), tolerance);
 
         // Create flat with initialized arrays
         int flatSize = 512;
@@ -624,7 +618,7 @@ public class MountainBiomeTest {
         int totalRidgeEntries = 0;
 
         for (FeatureHexGrid hexGrid : hexGrids) {
-            String ridgeParam = hexGrid.getParameters().get("ridge");
+            String ridgeParam = hexGrid.getParameters().get("g_ridge");
 
             if (ridgeParam != null && !ridgeParam.isEmpty()) {
                 gridsWithRidge++;

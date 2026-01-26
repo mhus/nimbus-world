@@ -200,7 +200,7 @@ class StructureTypeTest {
 
         assertEquals(1, village.getHexGrids().size());
         FeatureHexGrid grid = village.getHexGrids().get(0);
-        assertEquals("village", grid.getParameters().get("structure"));  // Falls back to class name
+        assertEquals("g_village", grid.getParameters().get("structure"));  // Falls back to class name
     }
 
     @Test

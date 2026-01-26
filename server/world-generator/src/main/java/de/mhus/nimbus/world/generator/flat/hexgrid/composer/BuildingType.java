@@ -28,7 +28,7 @@ public enum BuildingType implements TsEnum {
     MILL("mill", BuildingSize.MEDIUM, 1),
 
     // Defensive
-    WALL("wall", BuildingSize.SMALL, 2),
+    WALL("g_wall", BuildingSize.SMALL, 2),
     TOWER("tower", BuildingSize.MEDIUM, 2),
     GATE("gate", BuildingSize.MEDIUM, 2),
     GUARDHOUSE("guardhouse", BuildingSize.MEDIUM, 2),

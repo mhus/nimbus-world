@@ -31,7 +31,7 @@ public interface BlockTypeSearchAgent {
         2. **Search for block types using BlockTypeToolService:**
            - Use lookupBlockTypesByQuery() to find blocks
            - Search for material keywords (e.g., "stone", "wood", "metal")
-           - Search for functional keywords (e.g., "wall", "floor", "roof")
+           - Search for functional keywords (e.g., "g_wall", "floor", "roof")
            - Use lookupAllBlockTypes() if you need an overview
 
         3. **Select appropriate blocks:**

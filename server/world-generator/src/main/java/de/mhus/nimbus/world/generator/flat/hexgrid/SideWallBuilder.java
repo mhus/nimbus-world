@@ -46,7 +46,7 @@ public class SideWallBuilder extends HexGridBuilder {
         log.info("Building side walls for flat: {}", flat.getFlatId());
 
         // Get sidewall parameter from hex grid
-        String wallParam = hexGrid.getParameters() != null ? hexGrid.getParameters().get("sidewall") : null;
+        String wallParam = hexGrid.getParameters() != null ? hexGrid.getParameters().get("g_sidewall") : null;
         if (wallParam == null || wallParam.isBlank()) {
             log.debug("No sidewall parameter found, skipping");
             return;

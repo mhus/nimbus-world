@@ -233,13 +233,13 @@ public class VillageDesignerIntegrationTest {
 
         // Add village parameter
         String villageParam = gridConfig.toVillageParameter();
-        parameters.put("village", villageParam);
+        parameters.put("g_village", villageParam);
         log.debug("Village parameter: {}", villageParam);
 
         // Add road parameter
         String roadParam = gridConfig.toRoadParameter();
         if (!roadParam.equals("{}")) {
-            parameters.put("road", roadParam);
+            parameters.put("g_road", roadParam);
             log.debug("Road parameter: {}", roadParam);
         }
 

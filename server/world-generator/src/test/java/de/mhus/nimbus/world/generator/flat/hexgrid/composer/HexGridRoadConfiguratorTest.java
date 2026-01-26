@@ -115,7 +115,7 @@ public class HexGridRoadConfiguratorTest {
         assertEquals(2, result.getTotalSegments(), "Should have 2 RoadConfigParts (WEST + EAST)");
 
         // Check that road parameter was added to biome grid
-        String roadParam = biomeGrid.getParameters().get("road");
+        String roadParam = biomeGrid.getParameters().get("g_road");
         assertNotNull(roadParam, "Biome grid should have road parameter");
         log.info("Road parameter: {}", roadParam);
 
@@ -237,7 +237,7 @@ public class HexGridRoadConfiguratorTest {
         assertEquals(1, result.getConfiguredGrids(), "Should configure 1 grid");
 
         // Check that river parameter was added to biome grid
-        String riverParam = biomeGrid.getParameters().get("river");
+        String riverParam = biomeGrid.getParameters().get("g_river");
         assertNotNull(riverParam, "Biome grid should have river parameter");
         log.info("River parameter: {}", riverParam);
 

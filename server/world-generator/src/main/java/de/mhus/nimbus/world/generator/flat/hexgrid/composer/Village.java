@@ -113,13 +113,13 @@ public class Village extends Structure implements BuildFeature {
                 // Generate and add village parameter from this grid's config
                 String villageParam = config.toVillageParameter();
                 if (villageParam != null) {
-                    featureHexGrid.addParameter("village", villageParam);
+                    featureHexGrid.addParameter("g_village", villageParam);
                 }
 
                 // Generate and add road parameter from this grid's config
                 String roadParam = config.toRoadParameter();
                 if (roadParam != null) {
-                    featureHexGrid.addParameter("road", roadParam);
+                    featureHexGrid.addParameter("g_road", roadParam);
                 }
 
                 // Add structure type and name
@@ -127,7 +127,7 @@ public class Village extends Structure implements BuildFeature {
                     featureHexGrid.addParameter("structure", getType().name().toLowerCase());
                     featureHexGrid.addParameter("structureName", getName());
                 } else {
-                    featureHexGrid.addParameter("structure", "village");
+                    featureHexGrid.addParameter("structure", "g_village");
                     featureHexGrid.addParameter("structureName", getName());
                 }
 
@@ -196,7 +196,7 @@ public class Village extends Structure implements BuildFeature {
                 featureHexGrid.addParameter("structure", getType().name().toLowerCase());
                 featureHexGrid.addParameter("structureName", getName());
             } else {
-                featureHexGrid.addParameter("structure", "village");
+                featureHexGrid.addParameter("structure", "g_village");
                 featureHexGrid.addParameter("structureName", getName());
             }
 
