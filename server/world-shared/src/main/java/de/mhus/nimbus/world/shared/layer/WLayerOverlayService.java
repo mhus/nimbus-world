@@ -431,7 +431,7 @@ public class WLayerOverlayService {
             if (baseGroundLayer != null && block.getBlockTypeId() != null) {
                 var blockType = blockTypeService.findByBlockId(worldIdObj, block.getBlockTypeId());
                 if (blockType.isPresent() && blockType.get().getPublicData() != null) {
-                    Integer shapeInt = getShapeFromBlockType(blockType.get().getPublicData());
+                    Integer shapeInt = getShapeFromBlockType(blockType.get().getPublicData()); // TODO deprecated !!!! use blockTypeType == GROUND
                     boolean isWater = isWaterShape(shapeInt, blockType.get().getPublicData().getType());
 
                     if (!isWater) {

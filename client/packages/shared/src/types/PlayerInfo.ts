@@ -94,6 +94,9 @@ export interface PlayerInfo {
   /** Modifiers for third-person model appearance (e.g., colors, accessories) */
   thirdPersonModelModifiers?: Map<string, string>;
 
+    // for internal use
+    selectionRadius?: number;
+
 }
 
 /**

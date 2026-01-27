@@ -1,0 +1,76 @@
+{
+  "name": "Simple Test World First",
+  "worldId": "simple-test-first",
+  "continents": [
+    {
+      "continentId": "main-continent",
+      "name": "Main Continent",
+      "biomeType": "MOUNTAINS",
+      "minNeighbors": 2,
+      "parameters": {
+        "g_offset": "10",
+        "g_roughness": "0.8"
+      }
+    }
+  ],
+  "features": [
+    {
+      "featureType": "biome",
+      "name": "west-region",
+      "title": "Western Plains",
+      "type": "PLAINS",
+      "shape": "CIRCLE",
+      "size": "LARGE",
+      "continentId": "main-continent",
+      "positions": [
+        {"direction": "W", "distanceFrom": 0, "anchor": "origin", "priority": 10}
+      ],
+      "parameters": {
+      }
+    },
+    {
+      "featureType": "biome",
+      "name": "east-region",
+      "title": "Eastern Forest",
+      "type": "FOREST",
+      "shape": "CIRCLE",
+      "size": "LARGE",
+      "continentId": "main-continent",
+      "positions": [
+        {"direction": "E", "distanceFrom": 3, "distanceTo": 3, "anchor": "central-mountains", "priority": 10}
+      ],
+      "parameters": {
+      }
+    },
+    {
+      "featureType": "mountain-biome",
+      "name": "central-mountains",
+      "title": "Central Mountains",
+      "type": "MOUNTAINS",
+      "height": "MEDIUM_PEAKS",
+      "shape": "CIRCLE",
+      "size": "MEDIUM",
+      "continentId": "main-continent",
+      "positions": [
+        {"direction": "E", "distanceFrom": 3, "distanceTo": 3, "anchor": "west-region", "priority": 10}
+      ],
+      "parameters": {
+      }
+    },
+    {
+      "featureType": "river",
+      "name": "anduin-great-river",
+      "type": "RIVER",
+      "startPointId": "central-mountains",
+      "mergeToId": "west-region",
+      "depth": 4,
+      "level": 60,
+      "widthBlocks": 10,
+      "tendLeft": "SLIGHT",
+      "tendRight": "MODERATE",
+      "force": false,
+      "parameters": {
+      }
+    }
+  ]
+}

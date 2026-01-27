@@ -25,7 +25,7 @@ public class LocationService {
         CONTROL,
         GENERATOR,
         UNIVERSE,
-        REGION
+        MINISTRY
     }
 
 
@@ -194,9 +194,9 @@ public class LocationService {
             case "universe":
             case "nimbus-universe":
                 return SERVER.UNIVERSE;
-            case "region":
-            case "nimbus-region":
-                return SERVER.REGION;
+            case "ministry":
+            case "nimbus-ministry":
+                return SERVER.MINISTRY;
             default:
                 return SERVER.UNKNOWN;
         }
@@ -239,12 +239,12 @@ public class LocationService {
     }
 
     /**
-     * Check if this service is running as region.
+     * Check if this service is running as ministry.
      *
-     * @return true if running as region, false otherwise
+     * @return true if running as ministry, false otherwise
      */
-    public boolean isRegion() {
-        return getMeServer() == SERVER.REGION;
+    public boolean isMinistry() {
+        return getMeServer() == SERVER.MINISTRY;
     }
 
 }

@@ -63,8 +63,18 @@ public class HexCompositeBuilderSimpleTest {
     }
 
     @Test
-    public void testSimpleContinent() throws Exception {
-        simpleContinentTest("first");
+    public void testSimpleRegions() throws Exception {
+        simpleContinentTest("regions");
+    }
+
+    @Test
+    public void testSimpleRiver() throws Exception {
+        simpleContinentTest("river");
+    }
+
+    @Test
+    public void testSimpleRoad() throws Exception {
+        simpleContinentTest("road");
     }
 
     public CompositionResult simpleContinentTest(String name) throws Exception {
