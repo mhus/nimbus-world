@@ -326,16 +326,11 @@ public class HexGridSideBlender {
 
         /**
          * Get height from neighbor at our local coordinates.
-         * Returns -1 if not available.
+         * The local coordinates can be outside our flat bounds (this is normal for sampling the neighbor).
+         * Returns -1 if not available in neighbor flat.
          */
         private double getNeighborHeight(int localX, int localZ) {
-            // Check bounds in our flat
-            if (localX < 0 || localX >= flat.getSizeX() ||
-                localZ < 0 || localZ >= flat.getSizeZ()) {
-                return -1;
-            }
-
-            // Convert to world coordinates
+            // Convert to world coordinates (can be outside our flat bounds)
             int worldX = flat.getMountX() + localX;
             int worldZ = flat.getMountZ() + localZ;
 
@@ -407,11 +402,26 @@ public class HexGridSideBlender {
             double lineLength = Math.sqrt(dx * dx + dz * dz);
 
             if (lineLength == 0) {
+                log.warn("Line length is 0 for outer({},{}) to inner({},{})",
+                        String.format("%.1f", outerX), String.format("%.1f", outerZ),
+                        String.format("%.1f", innerX), String.format("%.1f", innerZ));
                 return false;
             }
 
             // Number of steps along the line (at least 1 step per pixel)
             int steps = (int) Math.ceil(lineLength);
+
+            boolean isVertical = Math.abs(dx) < 1.0;
+            boolean isHorizontal = Math.abs(dz) < 1.0;
+
+            if (isVertical || isHorizontal) {
+                log.debug("Blending {} line: outer({},{}) to inner({},{}), dx={}, dz={}, lineLength={}, steps={}",
+                        isVertical ? "VERTICAL" : "HORIZONTAL",
+                        String.format("%.1f", outerX), String.format("%.1f", outerZ),
+                        String.format("%.1f", innerX), String.format("%.1f", innerZ),
+                        String.format("%.2f", dx), String.format("%.2f", dz),
+                        String.format("%.1f", lineLength), steps);
+            }
 
             // Walk the line from outer to inner
             for (int step = 0; step <= steps; step++) {
@@ -463,6 +473,12 @@ public class HexGridSideBlender {
 
                 // Set the blended height
                 flat.setLevel(xi, zi, blendedHeight);
+
+                if ((isVertical || isHorizontal) && step % 5 == 0) {
+                    log.trace("Blended at ({},{}) step {}/{}, t={}, blendFactor={}, neighborHeight={}, currentHeight={}, blendedHeight={}",
+                            xi, zi, step, steps, String.format("%.2f", t), String.format("%.2f", blendFactor),
+                            String.format("%.1f", neighborHeight), currentHeight, blendedHeight);
+                }
             }
 
             return true;
