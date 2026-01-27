@@ -427,7 +427,8 @@ export class MaterialService {
         props.transparencyMode === TransparencyMode.ALPHA_TESTANDBLEND ||
         props.transparencyMode === TransparencyMode.ALPHA_BLEND_FROM_RGB ||
         props.transparencyMode === TransparencyMode.ALPHA_TESTANDBLEND_FROM_RGB) {
-      material.useVertexColors = true;
+      // Enable vertex alpha (Babylon.js property)
+      (material as any).hasVertexAlpha = true;
     }
 
     // Disable specular highlights for blocks

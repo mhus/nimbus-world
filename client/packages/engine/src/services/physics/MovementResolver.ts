@@ -223,11 +223,8 @@ export class MovementResolver {
    * @param deltaTime Frame time
    */
   applyAutoOrientation(entity: PhysicsEntity, targetYaw: number, deltaTime: number): void {
-    // Get turn speed
-    let turnSpeed = 2.0; // default radians/s
-    if (isPlayerEntity(entity)) {
-      turnSpeed = entity.playerInfo.effectiveTurnSpeed;
-    }
+    // Get turn speed from cached value on entity
+    const turnSpeed = entity.effectiveTurnSpeed;
 
     // Lerp towards target
     const diff = targetYaw - entity.rotation.y;

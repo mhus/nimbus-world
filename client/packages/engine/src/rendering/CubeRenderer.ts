@@ -178,9 +178,9 @@ export class CubeRenderer extends BlockRenderer {
     }
 
     // Apply scaling if specified (after offsets, before rotation)
-    const scalingX = modifier.visibility.scalingX ?? 1.0;
-    const scalingY = modifier.visibility.scalingY ?? 1.0;
-    const scalingZ = modifier.visibility.scalingZ ?? 1.0;
+    const scalingX = modifier.visibility?.scalingX ?? 1.0;
+    const scalingY = modifier.visibility?.scalingY ?? 1.0;
+    const scalingZ = modifier.visibility?.scalingZ ?? 1.0;
 
     if (scalingX !== 1.0 || scalingY !== 1.0 || scalingZ !== 1.0) {
       for (let i = 0; i < 8; i++) {
@@ -597,9 +597,9 @@ export class CubeRenderer extends BlockRenderer {
     }
 
     // Apply scaling if specified (after offsets, before rotation)
-    const scalingX = modifier.visibility.scalingX ?? 1.0;
-    const scalingY = modifier.visibility.scalingY ?? 1.0;
-    const scalingZ = modifier.visibility.scalingZ ?? 1.0;
+    const scalingX = modifier.visibility?.scalingX ?? 1.0;
+    const scalingY = modifier.visibility?.scalingY ?? 1.0;
+    const scalingZ = modifier.visibility?.scalingZ ?? 1.0;
 
     if (scalingX !== 1.0 || scalingY !== 1.0 || scalingZ !== 1.0) {
       for (let i = 0; i < 8; i++) {

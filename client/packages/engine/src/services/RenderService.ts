@@ -332,7 +332,10 @@ export class RenderService {
       const blockLevelGroups = this.groupBlocksByMaterial(clientChunk, blockLevelBlocks);
 
       // Combine both material group types
-      const materialGroups = new Map([...faceLevelGroups, ...blockLevelGroups]);
+      const materialGroups = new Map<string, (FaceDescriptor | ClientBlock)[]>([
+        ...faceLevelGroups,
+        ...blockLevelGroups
+      ]);
 
       logger.debug('Material groups created', {
         cx: chunk.cx,
@@ -351,10 +354,10 @@ export class RenderService {
         // Check if this material group needs wind attributes
         let needsWind = false;
         if (isFaceLevelGroup) {
-          const firstFace = items[0] as FaceDescriptor;
+          const firstFace = items[0] as unknown as FaceDescriptor;
           needsWind = firstFace?.clientBlock?.currentModifier?.visibility?.effect === BlockEffect.WIND;
         } else {
-          const firstBlock = items[0] as ClientBlock;
+          const firstBlock = items[0] as unknown as ClientBlock;
           needsWind = firstBlock?.currentModifier?.visibility?.effect === BlockEffect.WIND;
         }
 
@@ -420,7 +423,7 @@ export class RenderService {
           }
         } else {
           // Block-level rendering (legacy shapes like STAIR, STEPS, etc.)
-          const blocks = items as ClientBlock[];
+          const blocks = items as unknown as ClientBlock[];
           for (const clientBlock of blocks) {
             const block = clientBlock.block;
 
@@ -510,7 +513,7 @@ export class RenderService {
             );
           } else {
             // Block-level group: use textureIndex 0 (like original implementation)
-            const blocks = items as ClientBlock[];
+            const blocks = items as unknown as ClientBlock[];
             firstModifier = blocks[0]?.currentModifier;
 
             // Skip this material group if modifier is undefined
@@ -835,7 +838,9 @@ export class RenderService {
       5: FaceFlag.FRONT,
       6: FaceFlag.BACK
     };
-    return mapping[textureKey] ?? FaceFlag.ALL;
+    // Default to ALL (combination of all faces: 63)
+    const ALL_FACES = FaceFlag.TOP | FaceFlag.BOTTOM | FaceFlag.LEFT | FaceFlag.RIGHT | FaceFlag.FRONT | FaceFlag.BACK;
+    return mapping[textureKey] ?? ALL_FACES;
   }
 
   /**

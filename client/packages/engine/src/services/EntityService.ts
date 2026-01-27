@@ -19,6 +19,8 @@ import {
   ENTITY_POSES,
   MessageType,
   isAirBlockTypeId,
+  getStateValues,
+  movementModeToKey,
 } from '@nimbus/shared';
 import type { Rotation } from '@nimbus/shared';
 import { Vector3 } from '@babylonjs/core';
@@ -1103,12 +1105,10 @@ export class EntityService {
 
     // Calculate effective range based on player movement mode
     const movementMode = playerService.getMovementMode();
-    const isCrouching = movementMode === 'crouch';
+    const stateKey = movementModeToKey(movementMode);
+    const stateValues = getStateValues(playerInfo, stateKey);
 
-    const distanceReduction = isCrouching
-      ? playerInfo.distanceNotifyReductionCrouch
-      : playerInfo.distanceNotifyReductionWalk;
-
+    const distanceReduction = stateValues.distanceNotifyReduction;
     const effectiveRange = notifyRange + distanceReduction;
 
     // Get current proximity state

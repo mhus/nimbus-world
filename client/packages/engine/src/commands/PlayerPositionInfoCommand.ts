@@ -8,12 +8,11 @@
  */
 
 import { CommandHandler } from './CommandHandler';
-import { getLogger } from '@nimbus/shared';
+import { getLogger, getStateValues } from '@nimbus/shared';
 
 const logger = getLogger('PlayerPositionInfoCommand');
 import type { AppContext } from '../AppContext';
 import { worldToChunk } from '../utils/ChunkUtils';
-import { getStateValues } from '@nimbus/shared/types/PlayerInfo';
 
 /**
  * PlayerPositionInfo command - Shows player position and environment info

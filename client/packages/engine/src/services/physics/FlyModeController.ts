@@ -8,11 +8,10 @@
  */
 
 import { Vector3 } from '@babylonjs/core';
-import { getLogger } from '@nimbus/shared';
+import { getLogger, getStateValues } from '@nimbus/shared';
 import type { PhysicsEntity } from './types';
 import type { AppContext } from '../../AppContext';
 import * as PhysicsUtils from './PhysicsUtils';
-import { getStateValues } from '@nimbus/shared/types/PlayerInfo';
 
 const logger = getLogger('FlyModeController');
 
