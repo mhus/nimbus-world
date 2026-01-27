@@ -79,15 +79,25 @@ public class ChunkSenderService {
                 // First find WChunk entity
                 var chunkOpt = chunkService.find(session.getWorldId(), chunkKey);
                 if (chunkOpt.isEmpty()) {
-                    // Generate default chunk if not found
-                    var chunkData = chunkService.loadChunkData(session.getWorldId(), chunkKey, true);
-                    if (chunkData.isEmpty()) {
+                    // Generate default chunk if not found (but don't save it)
+                    var chunkDataOpt = chunkService.loadChunkData(session.getWorldId(), chunkKey, true);
+                    if (chunkDataOpt.isEmpty()) {
                         log.debug("Chunk not found and could not generate: cx={}, cz={}", coord.cx(), coord.cz());
                         continue;
                     }
-                    // Save generated chunk
-                    var saved = chunkService.saveChunk(session.getWorldId(), chunkKey, chunkData.get());
-                    chunkOpt = java.util.Optional.of(saved);
+
+                    // Convert generated ChunkData directly to transfer object (without saving)
+                    ChunkDataTransferObject dto = chunkService.chunkDataToTransferObject(session.getWorldId(), chunkDataOpt.get());
+                    if (dto == null) {
+                        log.warn("Failed to convert generated chunk to transfer object: chunkKey={}", chunkKey);
+                        continue;
+                    }
+
+                    // Send the generated chunk directly (uncompressed, not saved to DB)
+                    responseChunks.add(objectMapper.valueToTree(dto));
+                    log.debug("Sent generated chunk (not saved): cx={}, cz={}, blocks={}",
+                            coord.cx(), coord.cz(), dto.getB() != null ? dto.getB().size() : 0);
+                    continue;
                 }
 
                 var chunk = chunkOpt.get();

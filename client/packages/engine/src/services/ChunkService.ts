@@ -735,6 +735,7 @@ export class ChunkService {
       statusData: statusData,
       backdrop,
       areaData,
+      deny,
     };
   }
 

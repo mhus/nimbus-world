@@ -1,6 +1,5 @@
 package de.mhus.nimbus.world.shared.generator;
 
-import de.mhus.nimbus.world.shared.world.WWorld;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -170,6 +169,6 @@ public class WFlatService {
     }
 
     public WFlat findByWorldAndFlatId(String worldId, String flatId) {
-        return wFlatRepository.findByWorldAndFlatId(worldId, flatId);
+        return wFlatRepository.findByWorldIdAndFlatId(worldId, flatId);
     }
 }

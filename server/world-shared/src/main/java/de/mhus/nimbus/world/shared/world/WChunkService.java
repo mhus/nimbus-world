@@ -493,6 +493,35 @@ public class WChunkService implements StorageProvider {
     }
 
     /**
+     * Convert ChunkData to ChunkDataTransferObject for network transmission.
+     * Used for generated chunks that are not yet saved to database.
+     *
+     * @param worldId World identifier
+     * @param chunkData Generated chunk data
+     * @return Transfer object for network transmission
+     */
+    public ChunkDataTransferObject chunkDataToTransferObject(WorldId worldId, ChunkData chunkData) {
+        if (chunkData == null) return null;
+        if (worldId.isCollection()) {
+            throw new IllegalArgumentException("Chunks can't be in Collections");
+        }
+
+        // Load items for this chunk from registry
+        var items = itemRegistryService.getItemsInChunk(worldId, chunkData.getCx(), chunkData.getCz());
+
+        return ChunkDataTransferObject.builder()
+                .cx(chunkData.getCx())
+                .cz(chunkData.getCz())
+                .b(chunkData.getBlocks())
+                .i(items.isEmpty() ? null : items)
+                .h(chunkData.getHeightData())
+                .deny(chunkData.getDeny())
+                .backdrop(convertBackdrop(chunkData.getBackdrop()))
+                .a(chunkData.getA())
+                .build();
+    }
+
+    /**
      * Convert WChunk to ChunkDataTransferObject for network transmission.
      * If chunk is compressed in storage, directly uses compressed storage data.
      * If not compressed, loads and converts ChunkData normally.

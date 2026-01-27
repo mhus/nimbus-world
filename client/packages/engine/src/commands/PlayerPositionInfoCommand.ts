@@ -129,11 +129,18 @@ export class PlayerPositionInfoCommand extends CommandHandler {
       // Calculate chunk coordinates
       const chunkSize = this.appContext.worldInfo?.chunkSize || 16;
       const { cx, cz } = worldToChunk(Math.floor(position.x), Math.floor(position.z), chunkSize);
-      lines.push(`  Chunk: (${cx}, ${cz})`);
+
+      // Chunk Info
+      const chunk = chunkService.getChunk(cx, cz);
+      lines.push('Chunk Info:');
+      lines.push(`  Coordinates  : (${cx}, ${cz})`);
+      lines.push(`  Loaded       : ${chunk ? 'Yes' : 'No'}`);
+      if (chunk) {
+        lines.push(`  Deny Access  : ${chunk.data.deny === true ? 'Yes' : 'No'}`);
+      }
       lines.push('');
 
       // 2. Height Data for current column
-      const chunk = chunkService.getChunk(cx, cz);
       if (chunk) {
         const localX = ((Math.floor(position.x) % chunkSize) + chunkSize) % chunkSize;
         const localZ = ((Math.floor(position.z) % chunkSize) + chunkSize) % chunkSize;
@@ -165,7 +172,7 @@ export class PlayerPositionInfoCommand extends CommandHandler {
     lines.push('============================');
 
     const output = lines.join('\n');
-    logger.debug(output);
+    logger.info(output);
 
     // Return structured data
     return {

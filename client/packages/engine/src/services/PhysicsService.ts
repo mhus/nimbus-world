@@ -457,6 +457,10 @@ export class PhysicsService {
     // Get entity dimensions from state values
     const dimensions = getStateValuesForEntity(entity).dimensions;
 
+    // Store previous position for chunk boundary check
+    const oldX = entity.position.x;
+    const oldZ = entity.position.z;
+
     // Store previous block position for area detection
     const prevBlockX = Math.floor(entity.position.x);
     const prevBlockY = Math.floor(entity.position.y);
@@ -503,6 +507,9 @@ export class PhysicsService {
       }
       entity.jumpRequested = false;
     }
+
+    // Clamp entity to loaded and accessible chunks (prevents movement into denied chunks)
+    this.clampToLoadedChunks(entity, oldX, oldZ);
 
     // Check for block position change and detect areas
     const newBlockX = Math.floor(entity.position.x);
@@ -829,12 +836,6 @@ export class PhysicsService {
       entity.position.z = oldZ;
       entity.velocity.x = 0;
       entity.velocity.z = 0;
-
-      logger.debug('Movement blocked - chunk not loaded or access denied', {
-        entityId: entity.entityId,
-        attemptedX: entity.position.x,
-        attemptedZ: entity.position.z,
-      });
     }
   }
 
