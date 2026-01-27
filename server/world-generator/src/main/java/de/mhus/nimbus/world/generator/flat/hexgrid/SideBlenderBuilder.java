@@ -19,6 +19,14 @@ import java.util.HashMap;
  *   - 0.0 = no random variation (smooth, uniform blending)
  *   - 0.5 = moderate variation (default, balanced)
  *   - 1.0 = full random variation (very organic, rough transitions)
+ * Set g_edge_shake_strength to add pixel swapping for more organic look (default 0.0, range 0.0-1.0).
+ *   - 0.0 = no shake effect
+ *   - 0.5 = moderate shake
+ *   - 1.0 = strong shake
+ * Set g_edge_blur_radius to apply blur/smoothing after blending (default 0, range 0-5).
+ *   - 0 = no blur
+ *   - 1-2 = light blur
+ *   - 3-5 = stronger blur
  */
 @Slf4j
 public class SideBlenderBuilder extends HexGridBuilder {
@@ -42,13 +50,16 @@ public class SideBlenderBuilder extends HexGridBuilder {
 
         int width = CastUtil.toint(parameters.get("edge_blend_width"), 20);
         double randomness = CastUtil.todouble(parameters.get("edge_blend_randomness"), 0.5);
+        double shakeStrength = CastUtil.todouble(parameters.get("edge_shake_strength"), 0.0);
+        int blurRadius = CastUtil.toint(parameters.get("edge_blur_radius"), 0);
 
         if (sideFlats.isEmpty()) {
             log.info("No side flats defined for blending in flat: {}", flat.getFlatId());
             return;
         }
 
-        log.info("Side flats for blending: {}, width={}, randomness={}", sideFlats, width, randomness);
+        log.info("Side flats for blending: {}, width={}, randomness={}, shake={}, blur={}",
+                sideFlats, width, randomness, shakeStrength, blurRadius);
 
         // Check if flatService is available
         if (context.getFlatService() == null) {
@@ -57,7 +68,7 @@ public class SideBlenderBuilder extends HexGridBuilder {
         }
 
         // Blend sides with neighbors using the side blender
-        HexGridSideBlender sideBlender = new HexGridSideBlender(flat, width, context, randomness);
+        HexGridSideBlender sideBlender = new HexGridSideBlender(flat, width, context, randomness, shakeStrength, blurRadius);
         sideBlender.blendAllSides(sideFlats);
 
         log.info("Side blending completed for flat: {}", flat.getFlatId());

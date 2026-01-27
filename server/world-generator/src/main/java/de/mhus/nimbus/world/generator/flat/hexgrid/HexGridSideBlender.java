@@ -19,12 +19,17 @@ public class HexGridSideBlender {
     private final BuilderContext context;
     private final int width;
     private final double randomness;
+    private final double shakeStrength;
+    private final int blurRadius;
 
-    public HexGridSideBlender(WFlat flat, int width, BuilderContext context, double randomness) {
+    public HexGridSideBlender(WFlat flat, int width, BuilderContext context, double randomness,
+                              double shakeStrength, int blurRadius) {
         this.flat = flat;
         this.context = context;
         this.width = width;
         this.randomness = randomness;
+        this.shakeStrength = shakeStrength;
+        this.blurRadius = blurRadius;
     }
 
     /**
@@ -52,7 +57,8 @@ public class HexGridSideBlender {
     private void blendSide(WHexGrid.SIDE direction, WFlat neighborFlat) {
         log.trace("Blending side: {}", direction);
 
-        SideBlender sideBlender = new SideBlender(flat, context, direction, neighborFlat, width, randomness);
+        SideBlender sideBlender = new SideBlender(flat, context, direction, neighborFlat, width, randomness,
+                shakeStrength, blurRadius);
         sideBlender.blend();
     }
 
@@ -67,18 +73,26 @@ public class HexGridSideBlender {
         private final WFlat neighborFlat;
         private final int width;
         private final double randomness;
+        private final double shakeStrength;
+        private final int blurRadius;
         private final Random random;
+        private final long noiseSeed;
 
         public SideBlender(WFlat flat, BuilderContext context, WHexGrid.SIDE direction,
-                           WFlat neighborFlat, int width, double randomness) {
+                           WFlat neighborFlat, int width, double randomness,
+                           double shakeStrength, int blurRadius) {
             this.flat = flat;
             this.context = context;
             this.direction = direction;
             this.neighborFlat = neighborFlat;
             this.width = width;
             this.randomness = randomness;
+            this.shakeStrength = shakeStrength;
+            this.blurRadius = blurRadius;
             // Use flat position for reproducible random, but add direction for variation
             this.random = new Random(flat.getFlatId().hashCode() + direction.ordinal());
+            // Create noise seed based on flat position for consistent noise
+            this.noiseSeed = (long) flat.getMountX() * 31 + (long) flat.getMountZ() * 37 + direction.ordinal();
         }
 
         /**
@@ -100,9 +114,6 @@ public class HexGridSideBlender {
             int[] corner1 = getCorner1ForSide(direction);
             int[] corner2 = getCorner2ForSide(direction);
 
-            log.info("Side {} corners: ({},{}) to ({},{})",
-                    direction, corner1[0], corner1[1], corner2[0], corner2[1]);
-
             // Get hex center
             double[] centerPos = getCenterPosition();
             double centerX = centerPos[0];
@@ -112,8 +123,6 @@ public class HexGridSideBlender {
             double dist1 = Math.sqrt(Math.pow(corner1[0] - centerX, 2) + Math.pow(corner1[1] - centerZ, 2));
             double dist2 = Math.sqrt(Math.pow(corner2[0] - centerX, 2) + Math.pow(corner2[1] - centerZ, 2));
             double radius = (dist1 + dist2) / 2.0;
-
-            log.info("Hex center: ({},{}), radius: {}", centerX, centerZ, String.format("%.1f", radius));
 
             // Extend corner1 along ray from center
             double[] outerCorner1 = extendPointAlongRay(centerX, centerZ, corner1[0], corner1[1], radius, width);
@@ -125,13 +134,6 @@ public class HexGridSideBlender {
             // Inner line extends further inward (1.5x width) for softer fade-out
             double[] innerCorner2 = extendPointAlongRay(centerX, centerZ, corner2[0], corner2[1], radius, -width * 1.5);
 
-            log.info("Outer line: ({},{}) to ({},{})",
-                    String.format("%.1f", outerCorner1[0]), String.format("%.1f", outerCorner1[1]),
-                    String.format("%.1f", outerCorner2[0]), String.format("%.1f", outerCorner2[1]));
-            log.info("Inner line: ({},{}) to ({},{})",
-                    String.format("%.1f", innerCorner1[0]), String.format("%.1f", innerCorner1[1]),
-                    String.format("%.1f", innerCorner2[0]), String.format("%.1f", innerCorner2[1]));
-
             // Calculate length of outer line
             double dx = outerCorner2[0] - outerCorner1[0];
             double dz = outerCorner2[1] - outerCorner1[1];
@@ -142,8 +144,6 @@ public class HexGridSideBlender {
                 log.warn("Outer line length is 0 for side {}", direction);
                 return;
             }
-
-            log.info("Walking outer line with {} steps", steps);
 
             int blendedCount = 0;
 
@@ -158,14 +158,199 @@ public class HexGridSideBlender {
                 double innerX = innerCorner1[0] * (1 - t) + innerCorner2[0] * t;
                 double innerZ = innerCorner1[1] * (1 - t) + innerCorner2[1] * t;
 
+                // Apply organic noise to make edges less straight and more natural
+                if (randomness > 0.1) {
+                    double[] noise = calculateOrganicNoise(outerX, outerZ, t, direction);
+                    outerX += noise[0];
+                    outerZ += noise[1];
+                    innerX += noise[0] * 0.6; // Less variation on inner line
+                    innerZ += noise[1] * 0.6;
+                }
+
                 // Blend from outer to inner
                 if (blendLineInward(outerX, outerZ, innerX, innerZ)) {
                     blendedCount++;
                 }
             }
 
-            log.info("Side {} blending completed: {} lines processed (steps={})",
-                    direction, blendedCount, steps + 1);
+            // Post-processing: Apply shake effect to make transitions more organic
+            if (shakeStrength > 0.01) {
+                applyShakeEffect(outerCorner1, outerCorner2, innerCorner1, innerCorner2);
+            }
+
+            // Post-processing: Apply blur for smoother transitions
+            if (blurRadius > 0) {
+                applyBlurEffect(outerCorner1, outerCorner2, innerCorner1, innerCorner2);
+            }
+        }
+
+        /**
+         * Calculate organic noise offset for edge positions.
+         * Combines multiple sine waves and position-based randomness for natural-looking irregular edges.
+         *
+         * @param x X position
+         * @param z Z position
+         * @param t Progress along edge (0.0 to 1.0)
+         * @param side Which side we're blending
+         * @return [offsetX, offsetZ] noise values
+         */
+        private double[] calculateOrganicNoise(double x, double z, double t, WHexGrid.SIDE side) {
+            // Base frequency for wave patterns
+            double freq1 = 0.15; // Large waves
+            double freq2 = 0.4;  // Medium waves
+            double freq3 = 0.8;  // Small details
+
+            // Combine multiple sine waves for organic feel
+            double wave1 = Math.sin(t * Math.PI * 2 * freq1 + noiseSeed * 0.001);
+            double wave2 = Math.sin(t * Math.PI * 2 * freq2 + noiseSeed * 0.002);
+            double wave3 = Math.sin(t * Math.PI * 2 * freq3 + noiseSeed * 0.003);
+
+            // Position-based noise (pseudo-random but consistent per position)
+            long posHash = (long) (x * 73856093) ^ (long) (z * 19349663) ^ (long) (t * 83492791);
+            Random posRandom = new Random(noiseSeed + posHash);
+            double posNoise = (posRandom.nextDouble() - 0.5) * 2.0;
+
+            // Combine waves with different amplitudes (octaves)
+            double combinedNoise = wave1 * 0.5 + wave2 * 0.3 + wave3 * 0.15 + posNoise * 0.05;
+
+            // Scale by randomness parameter (0.0 = no noise, 1.0 = full noise)
+            // Use stronger scale for more visible organic edges
+            double scale = randomness * width * 0.8; // Max offset is 80% of blend width
+
+            // Perpendicular direction to edge (for offsetting the line)
+            // This depends on which side we're on
+            double perpX = 0, perpZ = 0;
+            switch (side) {
+                case EAST:
+                case WEST:
+                    perpZ = 1.0; // Vertical sides get horizontal noise
+                    break;
+                case NORTH_EAST:
+                case SOUTH_WEST:
+                    perpX = 0.707;
+                    perpZ = 0.707;
+                    break;
+                case NORTH_WEST:
+                case SOUTH_EAST:
+                    perpX = -0.707;
+                    perpZ = 0.707;
+                    break;
+            }
+
+            // Apply noise perpendicular to edge direction
+            double offsetX = combinedNoise * scale * perpX;
+            double offsetZ = combinedNoise * scale * perpZ;
+
+            return new double[]{offsetX, offsetZ};
+        }
+
+        /**
+         * Apply shake effect: randomly swap pixels within the blending region.
+         * Creates a more organic, less uniform look by disturbing the blend pattern.
+         *
+         * @param outerCorner1 First corner of outer line
+         * @param outerCorner2 Second corner of outer line
+         * @param innerCorner1 First corner of inner line
+         * @param innerCorner2 Second corner of inner line
+         */
+        private void applyShakeEffect(double[] outerCorner1, double[] outerCorner2,
+                                      double[] innerCorner1, double[] innerCorner2) {
+            // Calculate bounding box for the blend region
+            double minX = Math.min(Math.min(outerCorner1[0], outerCorner2[0]),
+                                  Math.min(innerCorner1[0], innerCorner2[0]));
+            double maxX = Math.max(Math.max(outerCorner1[0], outerCorner2[0]),
+                                  Math.max(innerCorner1[0], innerCorner2[0]));
+            double minZ = Math.min(Math.min(outerCorner1[1], outerCorner2[1]),
+                                  Math.min(innerCorner1[1], innerCorner2[1]));
+            double maxZ = Math.max(Math.max(outerCorner1[1], outerCorner2[1]),
+                                  Math.max(innerCorner1[1], innerCorner2[1]));
+
+            // Clamp to flat bounds
+            int startX = Math.max(0, (int) Math.floor(minX));
+            int endX = Math.min(flat.getSizeX() - 1, (int) Math.ceil(maxX));
+            int startZ = Math.max(0, (int) Math.floor(minZ));
+            int endZ = Math.min(flat.getSizeZ() - 1, (int) Math.ceil(maxZ));
+
+            // Calculate number of swaps based on shake strength
+            int area = (endX - startX + 1) * (endZ - startZ + 1);
+            int numSwaps = (int) (area * shakeStrength * 0.3); // 30% of pixels at max strength
+
+            // Perform random pixel swaps
+            for (int i = 0; i < numSwaps; i++) {
+                // Pick two random points in the region
+                int x1 = startX + random.nextInt(endX - startX + 1);
+                int z1 = startZ + random.nextInt(endZ - startZ + 1);
+                int x2 = startX + random.nextInt(endX - startX + 1);
+                int z2 = startZ + random.nextInt(endZ - startZ + 1);
+
+                // Swap their heights
+                int height1 = flat.getLevel(x1, z1);
+                int height2 = flat.getLevel(x2, z2);
+                flat.setLevel(x1, z1, height2);
+                flat.setLevel(x2, z2, height1);
+            }
+        }
+
+        /**
+         * Apply blur/smoothing effect to the blending region.
+         * Uses a simple box blur for smooth transitions.
+         *
+         * @param outerCorner1 First corner of outer line
+         * @param outerCorner2 Second corner of outer line
+         * @param innerCorner1 First corner of inner line
+         * @param innerCorner2 Second corner of inner line
+         */
+        private void applyBlurEffect(double[] outerCorner1, double[] outerCorner2,
+                                     double[] innerCorner1, double[] innerCorner2) {
+            // Calculate bounding box for the blend region
+            double minX = Math.min(Math.min(outerCorner1[0], outerCorner2[0]),
+                                  Math.min(innerCorner1[0], innerCorner2[0]));
+            double maxX = Math.max(Math.max(outerCorner1[0], outerCorner2[0]),
+                                  Math.max(innerCorner1[0], innerCorner2[0]));
+            double minZ = Math.min(Math.min(outerCorner1[1], outerCorner2[1]),
+                                  Math.min(innerCorner1[1], innerCorner2[1]));
+            double maxZ = Math.max(Math.max(outerCorner1[1], outerCorner2[1]),
+                                  Math.max(innerCorner1[1], innerCorner2[1]));
+
+            // Expand region by blur radius
+            int startX = Math.max(0, (int) Math.floor(minX) - blurRadius);
+            int endX = Math.min(flat.getSizeX() - 1, (int) Math.ceil(maxX) + blurRadius);
+            int startZ = Math.max(0, (int) Math.floor(minZ) - blurRadius);
+            int endZ = Math.min(flat.getSizeZ() - 1, (int) Math.ceil(maxZ) + blurRadius);
+
+            // Create temporary buffer for blur result
+            int[][] blurred = new int[endX - startX + 1][endZ - startZ + 1];
+
+            // Apply box blur
+            for (int x = startX; x <= endX; x++) {
+                for (int z = startZ; z <= endZ; z++) {
+                    int sum = 0;
+                    int count = 0;
+
+                    // Sample neighbors within blur radius
+                    for (int dx = -blurRadius; dx <= blurRadius; dx++) {
+                        for (int dz = -blurRadius; dz <= blurRadius; dz++) {
+                            int nx = x + dx;
+                            int nz = z + dz;
+
+                            if (nx >= 0 && nx < flat.getSizeX() &&
+                                nz >= 0 && nz < flat.getSizeZ()) {
+                                sum += flat.getLevel(nx, nz);
+                                count++;
+                            }
+                        }
+                    }
+
+                    blurred[x - startX][z - startZ] = count > 0 ? sum / count : flat.getLevel(x, z);
+                }
+            }
+
+            // Write blurred values back to flat
+            for (int x = startX; x <= endX; x++) {
+                for (int z = startZ; z <= endZ; z++) {
+                    flat.setLevel(x, z, blurred[x - startX][z - startZ]);
+                }
+            }
         }
 
         /**
@@ -454,19 +639,6 @@ public class HexGridSideBlender {
             // Number of steps along the line (at least 1 step per pixel)
             int steps = (int) Math.ceil(lineLength);
 
-            boolean isVertical = Math.abs(dx) < 1.0;
-            boolean isHorizontal = Math.abs(dz) < 1.0;
-
-            if (isVertical || isHorizontal) {
-                log.debug("Blending {} line: outer({},{}) clamped to ({},{}) -> inner({},{}), dx={}, dz={}, lineLength={}, steps={}",
-                        isVertical ? "VERTICAL" : "HORIZONTAL",
-                        String.format("%.1f", outerX), String.format("%.1f", outerZ),
-                        String.format("%.1f", clampedOuterX), String.format("%.1f", clampedOuterZ),
-                        String.format("%.1f", innerX), String.format("%.1f", innerZ),
-                        String.format("%.2f", dx), String.format("%.2f", dz),
-                        String.format("%.1f", lineLength), steps);
-            }
-
             int pixelsWritten = 0;
 
             // Walk the line from clamped outer to inner
@@ -529,12 +701,6 @@ public class HexGridSideBlender {
 
                 // Set the blended height
                 flat.setLevel(xi, zi, blendedHeight);
-
-                if ((isVertical || isHorizontal) && step % 5 == 0) {
-                    log.trace("Blended at ({},{}) step {}/{}, t={}, blendFactor={}, neighborHeight={}, currentHeight={}, blendedHeight={}",
-                            xi, zi, step, steps, String.format("%.2f", t), String.format("%.2f", blendFactor),
-                            String.format("%.1f", neighborHeight), currentHeight, blendedHeight);
-                }
             }
 
             return pixelsWritten > 0;

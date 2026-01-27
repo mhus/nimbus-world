@@ -349,8 +349,10 @@ public class HexCompositeBuilderSimpleTest {
         }
 
         // Set blend width and randomness (optional, defaults are width=20, randomness=0.5)
-        hexGrid.getParameters().put("g_edge_blend_width", "35");
-        hexGrid.getParameters().put("g_edge_blend_randomness", "0.4");  // Reduced randomness: 0.0=none, 1.0=full
+        hexGrid.getParameters().put("g_edge_blend_width", "25");
+        hexGrid.getParameters().put("g_edge_blend_randomness", "0.6");  // Higher randomness for organic edges: 0.0=none, 1.0=full
+        hexGrid.getParameters().put("g_edge_shake_strength", "0.3");    // Shake effect for organic look: 0.0=none, 1.0=full
+        hexGrid.getParameters().put("g_edge_blur_radius", "2");         // Blur radius for smooth transitions: 0=none, 1-5=blur
 
         // Apply blender pipeline
         try {
@@ -655,11 +657,11 @@ public class HexCompositeBuilderSimpleTest {
             .flatSize(FLAT_SIZE)
             .outputDirectory(outputDir.toString())
             .imageName(name)
-            .drawGridLines(true)
+            .drawGridLines(false)  // Disable grid lines to see organic blending better
             .build();
 
         // Add debug overlays for grid 0;0
-        addDebugOverlaysForGrid00(creator, flats);
+        // addDebugOverlaysForGrid00(creator, flats);
 
         HexGridCompositeImageCreator.CompositeImageResult result = creator.createCompositeImages();
 
