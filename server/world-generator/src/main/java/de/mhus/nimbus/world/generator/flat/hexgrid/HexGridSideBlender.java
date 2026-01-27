@@ -110,55 +110,31 @@ public class HexGridSideBlender {
 
             int blendedCount = 0;
 
-            // Walk along the edge from corner1 to corner2 using Bresenham-like line algorithm
-            // This ensures every pixel along the edge is covered
+            // Walk along the edge from corner1 to corner2
             int dx = Math.abs(corner2[0] - corner1[0]);
             int dz = Math.abs(corner2[1] - corner1[1]);
             int steps = Math.max(dx, dz);
 
-            // Calculate perpendicular direction to edge (for thick line)
-            double edgeDx = corner2[0] - corner1[0];
-            double edgeDz = corner2[1] - corner1[1];
-            double edgeLen = Math.sqrt(edgeDx * edgeDx + edgeDz * edgeDz);
-            double perpDx = edgeLen > 0 ? -edgeDz / edgeLen : 0;
-            double perpDz = edgeLen > 0 ? edgeDx / edgeLen : 0;
-
-            // Use thick line to fill gaps (process 3 pixels across)
-            final int LINE_THICKNESS = 2; // ±2 pixels = 5 pixels wide
-
             for (int step = 0; step <= steps; step++) {
                 // Interpolate position along edge
                 double t = steps > 0 ? step / (double) steps : 0.5;
-                int centerX = (int) Math.round(corner1[0] * (1 - t) + corner2[0] * t);
-                int centerZ = (int) Math.round(corner1[1] * (1 - t) + corner2[1] * t);
+                int edgeX = (int) Math.round(corner1[0] * (1 - t) + corner2[0] * t);
+                int edgeZ = (int) Math.round(corner1[1] * (1 - t) + corner2[1] * t);
 
-                // Process center line and parallel offset lines
-                for (int offset = -LINE_THICKNESS; offset <= LINE_THICKNESS; offset++) {
-                    int edgeX = centerX + (int) Math.round(perpDx * offset);
-                    int edgeZ = centerZ + (int) Math.round(perpDz * offset);
+                // Sample outward to get average neighbor height
+                double avgOutwardHeight = sampleOutward(edgeX, edgeZ, outwardDir);
 
-                    // Check bounds
-                    if (edgeX < 0 || edgeX >= flat.getSizeX() ||
-                        edgeZ < 0 || edgeZ >= flat.getSizeZ()) {
-                        continue;
-                    }
-
-                    // Sample outward to get average neighbor height
-                    double avgOutwardHeight = sampleOutward(edgeX, edgeZ, outwardDir);
-
-                    if (avgOutwardHeight < 0) {
-                        // No valid samples found
-                        continue;
-                    }
-
-                    // Blend inward from this edge point
-                    blendInward(edgeX, edgeZ, outwardDir, avgOutwardHeight);
-                    blendedCount++;
+                if (avgOutwardHeight < 0) {
+                    // No valid samples found
+                    continue;
                 }
+
+                // Blend inward from this edge point
+                blendInward(edgeX, edgeZ, outwardDir, avgOutwardHeight);
+                blendedCount++;
             }
 
-            log.info("Side {} blending completed: {} edge points processed (corner distance: dx={}, dz={}, steps={}, thickness={})",
-                    direction, blendedCount, dx, dz, steps, LINE_THICKNESS * 2 + 1);
+            log.info("Side {} blending completed: {} edge points processed", direction, blendedCount);
         }
 
         /**

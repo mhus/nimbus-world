@@ -349,7 +349,7 @@ public class HexCompositeBuilderSimpleTest {
 
         // Set blend width and randomness (optional, defaults are width=20, randomness=0.5)
         hexGrid.getParameters().put("g_edge_blend_width", "15");
-        hexGrid.getParameters().put("g_edge_blend_randomness", "0");  // Reduced randomness: 0.0=none, 1.0=full
+        hexGrid.getParameters().put("g_edge_blend_randomness", "0.3");  // Reduced randomness: 0.0=none, 1.0=full
 
         // Apply blender pipeline
         try {
