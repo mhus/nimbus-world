@@ -786,7 +786,8 @@ export class PhysicsService {
   }
 
   /**
-   * Check if chunk at position is loaded
+   * Check if chunk at position is loaded and accessible
+   * Returns false if chunk is not loaded or if deny flag is set
    */
   private isChunkLoaded(worldX: number, worldZ: number): boolean {
     if (!this.chunkService) {
@@ -798,27 +799,38 @@ export class PhysicsService {
     const chunkZ = Math.floor(worldZ / chunkSize);
 
     const chunk = this.chunkService.getChunk(chunkX, chunkZ);
-    return chunk !== undefined;
+
+    // Check if chunk exists and is not denied
+    if (!chunk) {
+      return false;
+    }
+
+    // Check deny flag (default is false if not set)
+    if (chunk.data.deny === true) {
+      return false;
+    }
+
+    return true;
   }
 
   /**
    * Clamp entity to loaded chunk boundaries
-   * Prevents player from moving into unloaded chunks
+   * Prevents player from moving into unloaded or denied chunks
    */
   private clampToLoadedChunks(entity: PhysicsEntity, oldX: number, oldZ: number): void {
     if (!this.chunkService) {
       return;
     }
 
-    // Check if new position is in a loaded chunk
+    // Check if new position is in a loaded and accessible chunk
     if (!this.isChunkLoaded(entity.position.x, entity.position.z)) {
-      // Not loaded - revert position
+      // Not loaded or denied - revert position
       entity.position.x = oldX;
       entity.position.z = oldZ;
       entity.velocity.x = 0;
       entity.velocity.z = 0;
 
-      logger.debug('Movement blocked - chunk not loaded', {
+      logger.debug('Movement blocked - chunk not loaded or access denied', {
         entityId: entity.entityId,
         attemptedX: entity.position.x,
         attemptedZ: entity.position.z,

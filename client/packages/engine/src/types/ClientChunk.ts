@@ -62,6 +62,9 @@ export interface ClientChunkData {
   /** Area data with parameters */
   areaData?: Array<AreaData>;
 
+  /** Indicates that the chunk is denied access */
+  deny?: boolean;
+
 }
 
 /**

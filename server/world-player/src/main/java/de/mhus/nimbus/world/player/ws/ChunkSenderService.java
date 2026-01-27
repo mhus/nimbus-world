@@ -110,6 +110,7 @@ public class ChunkSenderService {
                         dto.setBackdrop(chunkService.convertBackdrop(chunkData.getBackdrop()));
                         dto.setB(chunkData.getBlocks());
                         dto.setH(chunkData.getHeightData());
+                        dto.setDeny(chunkData.getDeny());
                         dto.setC(null);
                         responseChunks.add(objectMapper.valueToTree(dto));
                         continue;

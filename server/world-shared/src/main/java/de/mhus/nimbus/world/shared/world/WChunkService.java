@@ -420,6 +420,7 @@ public class WChunkService implements StorageProvider {
 
             chunkData.setBlocks(blocks);
             chunkData.setHeightData(heightData);
+            chunkData.setDeny(true);
 
             log.debug("Generated default chunk with noise: cx={}, cz={}, blocks={}, baseGroundLevel={}, amplitude={}, waterLevel={}",
                     cx, cz, blocks.size(), groundLevel, TERRAIN_AMPLITUDE, waterLevel);
@@ -558,6 +559,7 @@ public class WChunkService implements StorageProvider {
                 .b(chunkData.getBlocks())        // blocks → b
                 .i(items.isEmpty() ? null : items)  // items from registry → i
                 .h(chunkData.getHeightData())
+                .deny(chunkData.getDeny())
                 .backdrop(convertBackdrop(chunkData.getBackdrop()))
                 .a(chunkData.getA())
                 .build();

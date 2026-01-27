@@ -250,6 +250,7 @@ export class ChunkService {
             chunkData.h = cChunk.heightData || {};
             chunkData.backdrop = cChunk.backdrop;
             chunkData.a = cChunk.a || [];
+            chunkData.deny = cChunk.deny || false;
 
             // Important: free memory
             chunkData.c = undefined as any;
@@ -413,6 +414,7 @@ export class ChunkService {
     const blockTypeService = this.appContext.services.blockType;
     const statusData = this.processStatusData(chunkData);
     const chunkSize = this.appContext.worldInfo?.chunkSize || 16;
+    const deny = chunkData.deny ?? false;
 
     // Pre-load all BlockType groups needed for this chunk
     if (blockTypeService && chunkData.b) {
@@ -443,7 +445,8 @@ export class ChunkService {
         transfer: chunkData,
         data: clientBlocksMap,
         hightData: heightData,
-        statusData: statusData
+        statusData: statusData,
+        deny: deny
       };
     }
 
