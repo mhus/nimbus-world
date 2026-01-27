@@ -116,14 +116,12 @@ public class HexGridSideBlender {
             log.info("Hex center: ({},{}), radius: {}", centerX, centerZ, String.format("%.1f", radius));
 
             // Extend corner1 along ray from center
-            double[] ray1 = extendPointAlongRay(centerX, centerZ, corner1[0], corner1[1], radius, width);
-            double[] outerCorner1 = ray1; // radius + width
-            double[] innerCorner1 = extendPointAlongRay(centerX, centerZ, corner1[0], corner1[1], radius, -width); // radius - width
+            double[] outerCorner1 = extendPointAlongRay(centerX, centerZ, corner1[0], corner1[1], radius, width);
+            double[] innerCorner1 = extendPointAlongRay(centerX, centerZ, corner1[0], corner1[1], radius, -width);
 
             // Extend corner2 along ray from center
-            double[] ray2 = extendPointAlongRay(centerX, centerZ, corner2[0], corner2[1], radius, width);
-            double[] outerCorner2 = ray2; // radius + width
-            double[] innerCorner2 = extendPointAlongRay(centerX, centerZ, corner2[0], corner2[1], radius, -width); // radius - width
+            double[] outerCorner2 = extendPointAlongRay(centerX, centerZ, corner2[0], corner2[1], radius, width);
+            double[] innerCorner2 = extendPointAlongRay(centerX, centerZ, corner2[0], corner2[1], radius, -width);
 
             log.info("Outer line: ({},{}) to ({},{})",
                     String.format("%.1f", outerCorner1[0]), String.format("%.1f", outerCorner1[1]),
@@ -147,7 +145,7 @@ public class HexGridSideBlender {
 
             int blendedCount = 0;
 
-            // Walk along the outer straight line
+            // Walk along the outer line
             for (int step = 0; step <= steps; step++) {
                 // Interpolate position along outer line
                 double t = steps > 0 ? step / (double) steps : 0.5;
@@ -158,7 +156,7 @@ public class HexGridSideBlender {
                 double innerX = innerCorner1[0] * (1 - t) + innerCorner2[0] * t;
                 double innerZ = innerCorner1[1] * (1 - t) + innerCorner2[1] * t;
 
-                // Interpolate from outer point to inner point
+                // Blend from outer to inner
                 if (blendLineInward(outerX, outerZ, innerX, innerZ)) {
                     blendedCount++;
                 }
@@ -170,26 +168,43 @@ public class HexGridSideBlender {
 
         /**
          * Get first corner of the hex side (in local flat coordinates).
+         * Uses actual hexagon geometry based on radius.
+         * Flat-top hexagon: EAST/WEST are vertical sides at ±30° angles.
          */
         private int[] getCorner1ForSide(WHexGrid.SIDE side) {
             int sizeX = flat.getSizeX();
             int sizeZ = flat.getSizeZ();
-            int centerX = sizeX / 2;
-            int centerZ = sizeZ / 2;
+            double centerX = sizeX / 2.0;
+            double centerZ = sizeZ / 2.0;
+            double radius = sizeX / 2.0;  // Hexagon radius
 
+            // Pointy-top hexagon with hybrid approach:
+            // - EAST/WEST sides extend to flat boundaries (x=0 or x=max) for full coverage
+            // - Diagonal sides use trigonometry for proper hexagon corners
+            // - Z-coordinates use trigonometry for all sides
             switch (side) {
                 case NORTH_EAST:
-                    return new int[]{centerX, 0};  // Top center
+                    // Top corner at 90°
+                    return new int[]{(int) Math.round(centerX), 0};
                 case EAST:
-                    return new int[]{sizeX - 1, centerZ / 2};  // Right upper
+                    // Right boundary, upper z at 30°
+                    int upperZ = (int) Math.round(centerZ - radius * Math.sin(Math.toRadians(30)));
+                    return new int[]{sizeX - 1, upperZ};
                 case SOUTH_EAST:
-                    return new int[]{sizeX - 1, centerZ + centerZ / 2};  // Right lower
+                    // Right boundary, lower z at 330°
+                    int lowerZ = (int) Math.round(centerZ - radius * Math.sin(Math.toRadians(330)));
+                    return new int[]{sizeX - 1, lowerZ};
                 case SOUTH_WEST:
-                    return new int[]{centerX, sizeZ - 1};  // Bottom center
+                    // Bottom corner at 270°
+                    return new int[]{(int) Math.round(centerX), sizeZ - 1};
                 case WEST:
-                    return new int[]{0, centerZ + centerZ / 2};  // Left lower
+                    // Left boundary, lower z at 210°
+                    int westLowerZ = (int) Math.round(centerZ - radius * Math.sin(Math.toRadians(210)));
+                    return new int[]{0, westLowerZ};
                 case NORTH_WEST:
-                    return new int[]{0, centerZ / 2};  // Left upper
+                    // Left boundary, upper z at 150°
+                    int westUpperZ = (int) Math.round(centerZ - radius * Math.sin(Math.toRadians(150)));
+                    return new int[]{0, westUpperZ};
                 default:
                     return new int[]{0, 0};
             }
@@ -197,26 +212,44 @@ public class HexGridSideBlender {
 
         /**
          * Get second corner of the hex side (in local flat coordinates).
+         * Uses actual hexagon geometry based on radius.
+         * Flat-top hexagon: EAST/WEST are vertical sides at ±30° angles.
          */
         private int[] getCorner2ForSide(WHexGrid.SIDE side) {
             int sizeX = flat.getSizeX();
             int sizeZ = flat.getSizeZ();
-            int centerX = sizeX / 2;
-            int centerZ = sizeZ / 2;
+            double centerX = sizeX / 2.0;
+            double centerZ = sizeZ / 2.0;
+            double radius = sizeX / 2.0;  // Hexagon radius
 
+            // Second corner for each side (matching hybrid approach from getCorner1)
             switch (side) {
                 case NORTH_EAST:
-                    return new int[]{sizeX - 1, centerZ / 2};  // Right upper
+                    // Corner at 30° (upper-right)
+                    int ux = (int) Math.round(centerX + radius * Math.cos(Math.toRadians(30)));
+                    int uz = (int) Math.round(centerZ - radius * Math.sin(Math.toRadians(30)));
+                    // Use flat boundary for x
+                    return new int[]{sizeX - 1, uz};
                 case EAST:
-                    return new int[]{sizeX - 1, centerZ + centerZ / 2};  // Right lower
+                    // Right boundary, lower z at 330°
+                    int lowerZ = (int) Math.round(centerZ - radius * Math.sin(Math.toRadians(330)));
+                    return new int[]{sizeX - 1, lowerZ};
                 case SOUTH_EAST:
-                    return new int[]{centerX, sizeZ - 1};  // Bottom center
+                    // Bottom corner at 270°
+                    return new int[]{(int) Math.round(centerX), sizeZ - 1};
                 case SOUTH_WEST:
-                    return new int[]{0, centerZ + centerZ / 2};  // Left lower
+                    // Corner at 210° (lower-left)
+                    int lx = (int) Math.round(centerX + radius * Math.cos(Math.toRadians(210)));
+                    int lz = (int) Math.round(centerZ - radius * Math.sin(Math.toRadians(210)));
+                    // Use flat boundary for x
+                    return new int[]{0, lz};
                 case WEST:
-                    return new int[]{0, centerZ / 2};  // Left upper
+                    // Left boundary, upper z at 150°
+                    int westUpperZ = (int) Math.round(centerZ - radius * Math.sin(Math.toRadians(150)));
+                    return new int[]{0, westUpperZ};
                 case NORTH_WEST:
-                    return new int[]{centerX, 0};  // Top center
+                    // Top corner at 90°
+                    return new int[]{(int) Math.round(centerX), 0};
                 default:
                     return new int[]{0, 0};
             }
@@ -355,7 +388,8 @@ public class HexGridSideBlender {
 
         /**
          * Extend a point along a ray from center.
-         * Returns new position at distance (radius + extension) from center.
+         * Returns new position at distance (currentDist + extension) from center.
+         * The radius parameter is not used (was a bug) - we use the actual distance instead.
          */
         private double[] extendPointAlongRay(double centerX, double centerZ, double pointX, double pointZ,
                                               double radius, double extension) {
@@ -372,8 +406,8 @@ public class HexGridSideBlender {
             double dirX = dx / currentDist;
             double dirZ = dz / currentDist;
 
-            // New distance from center
-            double newDist = radius + extension;
+            // New distance from center: use ACTUAL distance, not average radius
+            double newDist = currentDist + extension;
 
             // Calculate new position
             double newX = centerX + dirX * newDist;
@@ -383,12 +417,13 @@ public class HexGridSideBlender {
         }
 
         /**
-         * Blend along a straight line from outer point to inner point.
-         * Samples neighbor height at outer point and blends toward current terrain at inner point.
-         * Returns true if blending was performed.
+         * Blend along a straight line from outer to inner point.
+         * Samples neighbor height at outer point (may be outside our flat).
+         * Clamps the blending line to stay within flat bounds.
+         * Returns true if any blending was performed.
          */
         private boolean blendLineInward(double outerX, double outerZ, double innerX, double innerZ) {
-            // Sample neighbor height at outer position
+            // Sample neighbor height at outer position (can be outside our flat)
             double neighborHeight = getNeighborHeight((int) Math.round(outerX), (int) Math.round(outerZ));
 
             if (neighborHeight < 0) {
@@ -396,15 +431,23 @@ public class HexGridSideBlender {
                 return false;
             }
 
-            // Calculate line length and direction
-            double dx = innerX - outerX;
-            double dz = innerZ - outerZ;
+            // Clamp outer position to flat bounds (so blending starts at the boundary, not outside)
+            double clampedOuterX = Math.max(0, Math.min(flat.getSizeX() - 1, outerX));
+            double clampedOuterZ = Math.max(0, Math.min(flat.getSizeZ() - 1, outerZ));
+
+            // Calculate line length and direction (from clamped outer to inner)
+            double dx = innerX - clampedOuterX;
+            double dz = innerZ - clampedOuterZ;
             double lineLength = Math.sqrt(dx * dx + dz * dz);
 
             if (lineLength == 0) {
-                log.warn("Line length is 0 for outer({},{}) to inner({},{})",
-                        String.format("%.1f", outerX), String.format("%.1f", outerZ),
-                        String.format("%.1f", innerX), String.format("%.1f", innerZ));
+                // If clamped outer == inner, just set the single pixel
+                int xi = (int) Math.round(clampedOuterX);
+                int zi = (int) Math.round(clampedOuterZ);
+                if (xi >= 0 && xi < flat.getSizeX() && zi >= 0 && zi < flat.getSizeZ()) {
+                    flat.setLevel(xi, zi, (int) Math.round(neighborHeight));
+                    return true;
+                }
                 return false;
             }
 
@@ -415,25 +458,28 @@ public class HexGridSideBlender {
             boolean isHorizontal = Math.abs(dz) < 1.0;
 
             if (isVertical || isHorizontal) {
-                log.debug("Blending {} line: outer({},{}) to inner({},{}), dx={}, dz={}, lineLength={}, steps={}",
+                log.debug("Blending {} line: outer({},{}) clamped to ({},{}) -> inner({},{}), dx={}, dz={}, lineLength={}, steps={}",
                         isVertical ? "VERTICAL" : "HORIZONTAL",
                         String.format("%.1f", outerX), String.format("%.1f", outerZ),
+                        String.format("%.1f", clampedOuterX), String.format("%.1f", clampedOuterZ),
                         String.format("%.1f", innerX), String.format("%.1f", innerZ),
                         String.format("%.2f", dx), String.format("%.2f", dz),
                         String.format("%.1f", lineLength), steps);
             }
 
-            // Walk the line from outer to inner
+            int pixelsWritten = 0;
+
+            // Walk the line from clamped outer to inner
             for (int step = 0; step <= steps; step++) {
-                // Interpolate position along line
+                // Interpolate position along line (from clamped outer to inner)
                 double t = steps > 0 ? step / (double) steps : 0.5;
-                double x = outerX * (1 - t) + innerX * t;
-                double z = outerZ * (1 - t) + innerZ * t;
+                double x = clampedOuterX * (1 - t) + innerX * t;
+                double z = clampedOuterZ * (1 - t) + innerZ * t;
 
                 int xi = (int) Math.round(x);
                 int zi = (int) Math.round(z);
 
-                // Check bounds
+                // Check bounds (should always be in bounds now, but double-check)
                 if (xi < 0 || xi >= flat.getSizeX() || zi < 0 || zi >= flat.getSizeZ()) {
                     continue;
                 }
@@ -441,9 +487,11 @@ public class HexGridSideBlender {
                 // Get current height at this position
                 int currentHeight = flat.getLevel(xi, zi);
 
-                // Calculate blend factor: 1.0 at outer (step=0), 0.0 at inner (step=steps)
+                // Calculate blend factor: 1.0 at clamped outer (step=0, t=0), 0.0 at inner (step=steps, t=1)
                 // Use smoothstep for smooth transition
                 double smoothT = t * t * (3.0 - 2.0 * t);
+
+                pixelsWritten++;
 
                 // Apply curve variation for organic feel (if randomness enabled)
                 if (randomness > 0) {
@@ -481,7 +529,7 @@ public class HexGridSideBlender {
                 }
             }
 
-            return true;
+            return pixelsWritten > 0;
         }
 
         /**

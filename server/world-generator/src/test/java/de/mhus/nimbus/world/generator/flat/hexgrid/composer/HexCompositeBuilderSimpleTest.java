@@ -24,6 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.awt.*;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -348,7 +349,7 @@ public class HexCompositeBuilderSimpleTest {
         }
 
         // Set blend width and randomness (optional, defaults are width=20, randomness=0.5)
-        hexGrid.getParameters().put("g_edge_blend_width", "15");
+        hexGrid.getParameters().put("g_edge_blend_width", "35");
         hexGrid.getParameters().put("g_edge_blend_randomness", "0.2");  // Reduced randomness: 0.0=none, 1.0=full
 
         // Apply blender pipeline
@@ -477,6 +478,160 @@ public class HexCompositeBuilderSimpleTest {
         return result;
     }
 
+    /**
+     * Adds debug overlays for grid 0;0 showing blending coordinates.
+     */
+    private void addDebugOverlaysForGrid00(HexGridCompositeImageCreator creator, Map<HexVector2, WFlat> flats) {
+        HexVector2 grid00 = TypeUtil.hexVector2(0, 0);
+        WFlat flat = flats.get(grid00);
+        if (flat == null) {
+            log.warn("Grid 0;0 not found, cannot add debug overlays");
+            return;
+        }
+
+        // Get world position of grid 0;0
+        double[] hexCenter = HexMathUtil.hexToCartesian(grid00, FLAT_SIZE);
+        int mountX = (int) Math.floor(hexCenter[0] - FLAT_SIZE / 2.0);
+        int mountZ = (int) Math.floor(hexCenter[1] - FLAT_SIZE / 2.0);
+
+        int flatSizeX = flat.getSizeX();
+        int flatSizeZ = flat.getSizeZ();
+        double centerX = flatSizeX / 2.0;
+        double centerZ = flatSizeZ / 2.0;
+
+        // For each side, calculate and draw the blending coordinates
+        for (WHexGrid.SIDE side : new WHexGrid.SIDE[]{WHexGrid.SIDE.EAST, WHexGrid.SIDE.WEST}) {
+            // Get corner positions
+            int[] corner1 = getCorner1ForSide(side, flatSizeX, flatSizeZ);
+            int[] corner2 = getCorner2ForSide(side, flatSizeX, flatSizeZ);
+
+            // Calculate world coordinates
+            int worldC1X = mountX + corner1[0];
+            int worldC1Z = mountZ + corner1[1];
+            int worldC2X = mountX + corner2[0];
+            int worldC2Z = mountZ + corner2[1];
+
+            // Draw corner points as crosses
+            creator.addOverlay(new CrossOverlay(worldC1X, worldC1Z, 15, Color.RED, 3.0f));
+            creator.addOverlay(new CrossOverlay(worldC2X, worldC2Z, 15, Color.RED, 3.0f));
+
+            // Draw edge line
+            creator.addOverlay(new LineOverlay(worldC1X, worldC1Z, worldC2X, worldC2Z, Color.YELLOW, 3.0f));
+
+            // Calculate extended outer and inner lines (like in SideBlender)
+            double dist1 = Math.sqrt(Math.pow(corner1[0] - centerX, 2) + Math.pow(corner1[1] - centerZ, 2));
+            double dist2 = Math.sqrt(Math.pow(corner2[0] - centerX, 2) + Math.pow(corner2[1] - centerZ, 2));
+
+            double[] outerCorner1 = extendPointAlongRay(centerX, centerZ, corner1[0], corner1[1], dist1, 15);
+            double[] outerCorner2 = extendPointAlongRay(centerX, centerZ, corner2[0], corner2[1], dist2, 15);
+            double[] innerCorner1 = extendPointAlongRay(centerX, centerZ, corner1[0], corner1[1], dist1, -15);
+            double[] innerCorner2 = extendPointAlongRay(centerX, centerZ, corner2[0], corner2[1], dist2, -15);
+
+            // Convert to world coordinates
+            int worldOut1X = mountX + (int)outerCorner1[0];
+            int worldOut1Z = mountZ + (int)outerCorner1[1];
+            int worldOut2X = mountX + (int)outerCorner2[0];
+            int worldOut2Z = mountZ + (int)outerCorner2[1];
+            int worldIn1X = mountX + (int)innerCorner1[0];
+            int worldIn1Z = mountZ + (int)innerCorner1[1];
+            int worldIn2X = mountX + (int)innerCorner2[0];
+            int worldIn2Z = mountZ + (int)innerCorner2[1];
+
+            // Draw outer line (for sampling neighbor)
+            creator.addOverlay(new LineOverlay(worldOut1X, worldOut1Z, worldOut2X, worldOut2Z, Color.CYAN, 2.0f));
+
+            // Draw inner line (end of blending)
+            creator.addOverlay(new LineOverlay(worldIn1X, worldIn1Z, worldIn2X, worldIn2Z, Color.GREEN, 2.0f));
+
+            // Draw clamped outer line (actual start of blending)
+            double clampedOut1X = Math.max(0, Math.min(flatSizeX - 1, outerCorner1[0]));
+            double clampedOut1Z = Math.max(0, Math.min(flatSizeZ - 1, outerCorner1[1]));
+            double clampedOut2X = Math.max(0, Math.min(flatSizeX - 1, outerCorner2[0]));
+            double clampedOut2Z = Math.max(0, Math.min(flatSizeZ - 1, outerCorner2[1]));
+
+            int worldClamp1X = mountX + (int)clampedOut1X;
+            int worldClamp1Z = mountZ + (int)clampedOut1Z;
+            int worldClamp2X = mountX + (int)clampedOut2X;
+            int worldClamp2Z = mountZ + (int)clampedOut2Z;
+
+            creator.addOverlay(new LineOverlay(worldClamp1X, worldClamp1Z, worldClamp2X, worldClamp2Z, Color.MAGENTA, 4.0f));
+        }
+
+        log.info("Added debug overlays for grid 0;0 (EAST and WEST sides)");
+    }
+
+    private int[] getCorner1ForSide(WHexGrid.SIDE side, int sizeX, int sizeZ) {
+        double centerX = sizeX / 2.0;
+        double centerZ = sizeZ / 2.0;
+        double radius = sizeX / 2.0;
+
+        // Same hybrid approach as HexGridSideBlender:
+        // EAST/WEST extend to flat boundaries, diagonal sides use trigonometry
+        switch (side) {
+            case NORTH_EAST:
+                return new int[]{(int) Math.round(centerX), 0};
+            case EAST:
+                int upperZ = (int) Math.round(centerZ - radius * Math.sin(Math.toRadians(30)));
+                return new int[]{sizeX - 1, upperZ};
+            case SOUTH_EAST:
+                int lowerZ = (int) Math.round(centerZ - radius * Math.sin(Math.toRadians(330)));
+                return new int[]{sizeX - 1, lowerZ};
+            case SOUTH_WEST:
+                return new int[]{(int) Math.round(centerX), sizeZ - 1};
+            case WEST:
+                int westLowerZ = (int) Math.round(centerZ - radius * Math.sin(Math.toRadians(210)));
+                return new int[]{0, westLowerZ};
+            case NORTH_WEST:
+                int westUpperZ = (int) Math.round(centerZ - radius * Math.sin(Math.toRadians(150)));
+                return new int[]{0, westUpperZ};
+            default:
+                return new int[]{0, 0};
+        }
+    }
+
+    private int[] getCorner2ForSide(WHexGrid.SIDE side, int sizeX, int sizeZ) {
+        double centerX = sizeX / 2.0;
+        double centerZ = sizeZ / 2.0;
+        double radius = sizeX / 2.0;
+
+        // Same hybrid approach as HexGridSideBlender
+        switch (side) {
+            case NORTH_EAST:
+                int uz = (int) Math.round(centerZ - radius * Math.sin(Math.toRadians(30)));
+                return new int[]{sizeX - 1, uz};
+            case EAST:
+                int lowerZ = (int) Math.round(centerZ - radius * Math.sin(Math.toRadians(330)));
+                return new int[]{sizeX - 1, lowerZ};
+            case SOUTH_EAST:
+                return new int[]{(int) Math.round(centerX), sizeZ - 1};
+            case SOUTH_WEST:
+                int lz = (int) Math.round(centerZ - radius * Math.sin(Math.toRadians(210)));
+                return new int[]{0, lz};
+            case WEST:
+                int westUpperZ = (int) Math.round(centerZ - radius * Math.sin(Math.toRadians(150)));
+                return new int[]{0, westUpperZ};
+            case NORTH_WEST:
+                return new int[]{(int) Math.round(centerX), 0};
+            default:
+                return new int[]{0, 0};
+        }
+    }
+
+    private double[] extendPointAlongRay(double centerX, double centerZ, double pointX, double pointZ,
+                                         double currentDist, double extension) {
+        double dx = pointX - centerX;
+        double dz = pointZ - centerZ;
+        if (currentDist == 0) {
+            return new double[]{pointX, pointZ};
+        }
+        double dirX = dx / currentDist;
+        double dirZ = dz / currentDist;
+        double newDist = currentDist + extension;
+        double newX = centerX + dirX * newDist;
+        double newZ = centerZ + dirZ * newDist;
+        return new double[]{newX, newZ};
+    }
+
     private void createCompositeImage(Map<HexVector2, WFlat> flats,
                                      HexGridFillResult fillResult,
                                      String name) throws Exception {
@@ -488,6 +643,9 @@ public class HexCompositeBuilderSimpleTest {
             .imageName(name)
             .drawGridLines(true)
             .build();
+
+        // Add debug overlays for grid 0;0
+        addDebugOverlaysForGrid00(creator, flats);
 
         HexGridCompositeImageCreator.CompositeImageResult result = creator.createCompositeImages();
 

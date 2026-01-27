@@ -5,6 +5,7 @@ import de.mhus.nimbus.world.shared.generator.FlatLevelImageCreator;
 import de.mhus.nimbus.world.shared.generator.FlatMaterialImageCreator;
 import de.mhus.nimbus.world.shared.generator.WFlat;
 import de.mhus.nimbus.world.shared.world.HexMathUtil;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -15,6 +16,8 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -82,6 +85,12 @@ public class HexGridCompositeImageCreator {
     private final float gridLineWidth = 2.0f;
 
     /**
+     * List of overlays to draw on top of the composite image.
+     */
+    @Builder.Default
+    private final List<ImageOverlay> overlays = new ArrayList<>();
+
+    /**
      * Result of composite image creation.
      */
     @Data
@@ -147,6 +156,10 @@ public class HexGridCompositeImageCreator {
                 drawHexagonGridLines(levelImage, cartBounds);
                 drawHexagonGridLines(materialImage, cartBounds);
             }
+
+            // Draw overlays
+            paintOverlays(levelImage, cartBounds);
+            paintOverlays(materialImage, cartBounds);
 
             // Save to disk if output directory specified
             File levelFile = null;
@@ -362,6 +375,37 @@ public class HexGridCompositeImageCreator {
         return outputFile;
     }
 
+    /**
+     * Adds an overlay to be drawn on top of the composite image.
+     *
+     * @param overlay The overlay to add
+     */
+    public void addOverlay(ImageOverlay overlay) {
+        overlays.add(overlay);
+    }
+
+    /**
+     * Paints all overlays onto the image.
+     */
+    private void paintOverlays(BufferedImage image, CartesianBounds bounds) {
+        if (overlays.isEmpty()) {
+            return;
+        }
+
+        Graphics2D g = image.createGraphics();
+        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+        for (ImageOverlay overlay : overlays) {
+            try {
+                overlay.paint(g, bounds);
+            } catch (Exception e) {
+                log.warn("Failed to paint overlay {}: {}", overlay.getClass().getSimpleName(), e.getMessage());
+            }
+        }
+
+        g.dispose();
+    }
+
     // Helper classes for bounds
 
     private static class HexBounds {
@@ -378,14 +422,12 @@ public class HexGridCompositeImageCreator {
         }
     }
 
-    private static class CartesianBounds {
-        final double minX, maxX, minZ, maxZ;
-
-        CartesianBounds(double minX, double maxX, double minZ, double maxZ) {
-            this.minX = minX;
-            this.maxX = maxX;
-            this.minZ = minZ;
-            this.maxZ = maxZ;
-        }
+    @Data
+    @AllArgsConstructor
+    public static class CartesianBounds {
+        private final double minX;
+        private final double maxX;
+        private final double minZ;
+        private final double maxZ;
     }
 }
