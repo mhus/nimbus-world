@@ -111,15 +111,25 @@ public class HexGridSideBlender {
             int blendedCount = 0;
 
             // Walk along the edge from corner1 to corner2
+            // Use more steps for smoother coverage (at least every 0.5 pixels)
             int dx = Math.abs(corner2[0] - corner1[0]);
             int dz = Math.abs(corner2[1] - corner1[1]);
-            int steps = Math.max(dx, dz);
+            int edgeLength = Math.max(dx, dz);
+            int steps = Math.max(edgeLength * 2, edgeLength + 10); // Denser sampling for smoothness
 
             for (int step = 0; step <= steps; step++) {
                 // Interpolate position along edge
                 double t = steps > 0 ? step / (double) steps : 0.5;
-                int edgeX = (int) Math.round(corner1[0] * (1 - t) + corner2[0] * t);
-                int edgeZ = (int) Math.round(corner1[1] * (1 - t) + corner2[1] * t);
+                double edgeXd = corner1[0] * (1 - t) + corner2[0] * t;
+                double edgeZd = corner1[1] * (1 - t) + corner2[1] * t;
+                int edgeX = (int) Math.round(edgeXd);
+                int edgeZ = (int) Math.round(edgeZd);
+
+                // Check bounds
+                if (edgeX < 0 || edgeX >= flat.getSizeX() ||
+                    edgeZ < 0 || edgeZ >= flat.getSizeZ()) {
+                    continue;
+                }
 
                 // Sample outward to get average neighbor height
                 double avgOutwardHeight = sampleOutward(edgeX, edgeZ, outwardDir);
@@ -134,7 +144,8 @@ public class HexGridSideBlender {
                 blendedCount++;
             }
 
-            log.info("Side {} blending completed: {} edge points processed", direction, blendedCount);
+            log.info("Side {} blending completed: {} edge points processed (steps={})",
+                    direction, blendedCount, steps);
         }
 
         /**
@@ -247,103 +258,145 @@ public class HexGridSideBlender {
             int validSamples = 0;
 
             // Sample at multiple distances outward with slight variations
-            for (int dist = 1; dist <= width; dist++) {
-                // Add slight random offset to sample position for more natural sampling
-                // Scaled by randomness parameter (0.0 = no variation, 1.0 = full ±15 degrees)
-                double randomAngle = (random.nextDouble() - 0.5) * 0.3 * randomness;
-                double cosAngle = Math.cos(randomAngle);
-                double sinAngle = Math.sin(randomAngle);
+            // Use more samples for better averaging and smoothness
+            int maxSampleDist = Math.min(width, 15);
 
-                double rotatedDx = outwardDir[0] * cosAngle - outwardDir[1] * sinAngle;
-                double rotatedDz = outwardDir[0] * sinAngle + outwardDir[1] * cosAngle;
+            for (int dist = 1; dist <= maxSampleDist; dist++) {
+                // Sample main direction
+                int sampleX = edgeX + (int) Math.round(outwardDir[0] * dist);
+                int sampleZ = edgeZ + (int) Math.round(outwardDir[1] * dist);
 
-                int sampleX = edgeX + (int) Math.round(rotatedDx * dist);
-                int sampleZ = edgeZ + (int) Math.round(rotatedDz * dist);
-
-                // Check bounds in our flat
-                if (sampleX < 0 || sampleX >= flat.getSizeX() ||
-                    sampleZ < 0 || sampleZ >= flat.getSizeZ()) {
-                    continue;
+                // Get height at this sample point
+                double height = getNeighborHeight(sampleX, sampleZ);
+                if (height >= 0) {
+                    sumHeight += height;
+                    validSamples++;
                 }
 
-                // Convert to world coordinates
-                int worldX = flat.getMountX() + sampleX;
-                int worldZ = flat.getMountZ() + sampleZ;
+                // Add lateral samples for better smoothing (±1 pixel perpendicular)
+                if (randomness > 0.3) { // Only if we want some variation
+                    double perpDx = -outwardDir[1];
+                    double perpDz = outwardDir[0];
 
-                // Convert to neighbor coordinates
-                int neighborX = worldX - neighborFlat.getMountX();
-                int neighborZ = worldZ - neighborFlat.getMountZ();
+                    for (int lateral = -1; lateral <= 1; lateral += 2) {
+                        int lateralX = sampleX + (int) Math.round(perpDx * lateral);
+                        int lateralZ = sampleZ + (int) Math.round(perpDz * lateral);
 
-                // Check bounds in neighbor flat
-                if (neighborX < 0 || neighborX >= neighborFlat.getSizeX() ||
-                    neighborZ < 0 || neighborZ >= neighborFlat.getSizeZ()) {
-                    continue;
+                        double lateralHeight = getNeighborHeight(lateralX, lateralZ);
+                        if (lateralHeight >= 0) {
+                            sumHeight += lateralHeight * 0.5; // Lower weight for lateral samples
+                            validSamples += 0.5;
+                        }
+                    }
                 }
-
-                // Get height from neighbor
-                int height = neighborFlat.getLevel(neighborX, neighborZ);
-                sumHeight += height;
-                validSamples++;
             }
 
             return validSamples > 0 ? sumHeight / validSamples : -1;
         }
 
         /**
-         * Blend inward from edge point toward hex center with dynamic variations.
+         * Get height from neighbor at our local coordinates.
+         * Returns -1 if not available.
+         */
+        private double getNeighborHeight(int localX, int localZ) {
+            // Check bounds in our flat
+            if (localX < 0 || localX >= flat.getSizeX() ||
+                localZ < 0 || localZ >= flat.getSizeZ()) {
+                return -1;
+            }
+
+            // Convert to world coordinates
+            int worldX = flat.getMountX() + localX;
+            int worldZ = flat.getMountZ() + localZ;
+
+            // Convert to neighbor coordinates
+            int neighborX = worldX - neighborFlat.getMountX();
+            int neighborZ = worldZ - neighborFlat.getMountZ();
+
+            // Check bounds in neighbor flat
+            if (neighborX < 0 || neighborX >= neighborFlat.getSizeX() ||
+                neighborZ < 0 || neighborZ >= neighborFlat.getSizeZ()) {
+                return -1;
+            }
+
+            // Get height from neighbor
+            int material = neighborFlat.getColumn(neighborX, neighborZ);
+            if (material == WFlat.MATERIAL_NOT_SET || material == WFlat.MATERIAL_NOT_SET_MUTABLE) {
+                return -1;
+            }
+
+            return neighborFlat.getLevel(neighborX, neighborZ);
+        }
+
+        /**
+         * Blend inward from edge point toward hex center with smooth transitions.
          */
         private void blendInward(int edgeX, int edgeZ, double[] outwardDir, double avgOutwardHeight) {
             // Inward direction is opposite of outward
             double inwardDx = -outwardDir[0];
             double inwardDz = -outwardDir[1];
 
-            // Random curve variation for this blend line (makes some areas blend faster/slower)
-            // Scaled by randomness: 1.0 + [-0.5 to +0.5] * randomness
-            double curveVariation = 1.0 + (random.nextDouble() - 0.5) * randomness;
-
             // Blend from edge (depth=0) to center (depth=width)
             for (int depth = 0; depth <= width; depth++) {
-                // Add slight random lateral offset for more organic transitions
-                // Scaled by randomness (0.0 = no offset, 1.0 = full ±1 pixel)
-                double lateralOffset = (random.nextDouble() - 0.5) * 2.0 * randomness;
-                double perpDx = -inwardDz; // Perpendicular to inward direction
-                double perpDz = inwardDx;
+                // Calculate position
+                double x = edgeX + inwardDx * depth;
+                double z = edgeZ + inwardDz * depth;
 
-                int x = edgeX + (int) Math.round(inwardDx * depth + perpDx * lateralOffset);
-                int z = edgeZ + (int) Math.round(inwardDz * depth + perpDz * lateralOffset);
+                // Add very slight lateral offset for organic feel (scaled by randomness)
+                if (randomness > 0.2) {
+                    double perpDx = -inwardDz;
+                    double perpDz = inwardDx;
+                    double lateralOffset = (random.nextDouble() - 0.5) * randomness * 0.5;
+                    x += perpDx * lateralOffset;
+                    z += perpDz * lateralOffset;
+                }
+
+                int xi = (int) Math.round(x);
+                int zi = (int) Math.round(z);
 
                 // Check bounds
-                if (x < 0 || x >= flat.getSizeX() || z < 0 || z >= flat.getSizeZ()) {
+                if (xi < 0 || xi >= flat.getSizeX() || zi < 0 || zi >= flat.getSizeZ()) {
                     break;
                 }
 
                 // Get current height
-                int currentHeight = flat.getLevel(x, z);
+                int currentHeight = flat.getLevel(xi, zi);
 
-                // Calculate base blend factor (1.0 at edge, 0.0 at full depth)
-                double normalizedDepth = depth / (double) width;
+                // Calculate smooth blend factor using smoothstep function
+                // This creates a much smoother transition than linear
+                double t = depth / (double) width;
 
-                // Apply curve variation (non-linear falloff for more natural transitions)
-                double curvedDepth = Math.pow(normalizedDepth, curveVariation);
-                float blendFactor = 1.0f - (float) curvedDepth;
+                // Smoothstep: 3t² - 2t³ (smooth S-curve)
+                double smoothT = t * t * (3.0 - 2.0 * t);
 
-                // Add per-pixel random variation (±10% for micro-variations)
-                // Scaled by randomness (0.0 = no variation, 1.0 = full ±10%)
-                float randomVariation = (random.nextFloat() - 0.5f) * 0.2f * (float) randomness;
-                blendFactor = Math.max(0.0f, Math.min(1.0f, blendFactor + randomVariation));
+                // Apply slight curve variation for organic feel
+                if (randomness > 0) {
+                    double curveVar = 1.0 + (random.nextDouble() - 0.5) * randomness * 0.3;
+                    smoothT = Math.pow(smoothT, curveVar);
+                }
 
-                // Interpolate height with slight noise
+                float blendFactor = 1.0f - (float) smoothT;
+
+                // Add minimal random variation (only if randomness is high)
+                if (randomness > 0.5) {
+                    float randomVar = (random.nextFloat() - 0.5f) * 0.05f * (float) randomness;
+                    blendFactor = Math.max(0.0f, Math.min(1.0f, blendFactor + randomVar));
+                }
+
+                // Smooth interpolation
                 float interpolated = (float) (avgOutwardHeight * blendFactor + currentHeight * (1.0f - blendFactor));
 
-                // Add subtle height variation (±1 block) for texture
-                // Scaled by randomness (0.0 = no noise, 1.0 = full ±1 block)
-                int heightNoise = randomness > 0 ? (int) Math.round((random.nextInt(3) - 1) * randomness) : 0;
+                // Very subtle noise (only at high randomness)
+                int heightNoise = 0;
+                if (randomness > 0.7 && depth > 0 && depth < width) {
+                    heightNoise = (random.nextInt(3) - 1);
+                }
 
                 int blendedHeight = Math.round(interpolated) + heightNoise;
                 blendedHeight = Math.max(0, Math.min(255, blendedHeight));
 
                 // Set the blended height
-                flat.setLevel(x, z, blendedHeight);
+                flat.setLevel(xi, zi, blendedHeight);
             }
         }
 
