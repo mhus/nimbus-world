@@ -350,7 +350,7 @@ public class HexCompositeBuilderSimpleTest {
 
         // Set blend width and randomness (optional, defaults are width=20, randomness=0.5)
         hexGrid.getParameters().put("g_edge_blend_width", "35");
-        hexGrid.getParameters().put("g_edge_blend_randomness", "0.2");  // Reduced randomness: 0.0=none, 1.0=full
+        hexGrid.getParameters().put("g_edge_blend_randomness", "0.4");  // Reduced randomness: 0.0=none, 1.0=full
 
         // Apply blender pipeline
         try {
@@ -565,28 +565,35 @@ public class HexCompositeBuilderSimpleTest {
         double centerZ = sizeZ / 2.0;
         double radius = sizeX / 2.0;
 
-        // Same hybrid approach as HexGridSideBlender:
-        // EAST/WEST extend to flat boundaries, diagonal sides use trigonometry
+        // Pointy-top hexagon (EAST/WEST vertical)
+        // Corners at: 30°, 90°, 150°, 210°, 270°, 330°
+        double angle;
         switch (side) {
             case NORTH_EAST:
-                return new int[]{(int) Math.round(centerX), 0};
+                angle = Math.toRadians(270);
+                break;
             case EAST:
-                int upperZ = (int) Math.round(centerZ - radius * Math.sin(Math.toRadians(30)));
-                return new int[]{sizeX - 1, upperZ};
+                angle = Math.toRadians(330);
+                break;
             case SOUTH_EAST:
-                int lowerZ = (int) Math.round(centerZ - radius * Math.sin(Math.toRadians(330)));
-                return new int[]{sizeX - 1, lowerZ};
+                angle = Math.toRadians(30);
+                break;
             case SOUTH_WEST:
-                return new int[]{(int) Math.round(centerX), sizeZ - 1};
+                angle = Math.toRadians(150);
+                break;
             case WEST:
-                int westLowerZ = (int) Math.round(centerZ - radius * Math.sin(Math.toRadians(210)));
-                return new int[]{0, westLowerZ};
+                angle = Math.toRadians(210);
+                break;
             case NORTH_WEST:
-                int westUpperZ = (int) Math.round(centerZ - radius * Math.sin(Math.toRadians(150)));
-                return new int[]{0, westUpperZ};
+                angle = Math.toRadians(270);
+                break;
             default:
                 return new int[]{0, 0};
         }
+
+        int x = (int) Math.round(centerX + radius * Math.cos(angle));
+        int z = (int) Math.round(centerZ + radius * Math.sin(angle));
+        return new int[]{x, z};
     }
 
     private int[] getCorner2ForSide(WHexGrid.SIDE side, int sizeX, int sizeZ) {
@@ -594,27 +601,34 @@ public class HexCompositeBuilderSimpleTest {
         double centerZ = sizeZ / 2.0;
         double radius = sizeX / 2.0;
 
-        // Same hybrid approach as HexGridSideBlender
+        // Second corner for each side
+        double angle;
         switch (side) {
             case NORTH_EAST:
-                int uz = (int) Math.round(centerZ - radius * Math.sin(Math.toRadians(30)));
-                return new int[]{sizeX - 1, uz};
+                angle = Math.toRadians(330);
+                break;
             case EAST:
-                int lowerZ = (int) Math.round(centerZ - radius * Math.sin(Math.toRadians(330)));
-                return new int[]{sizeX - 1, lowerZ};
+                angle = Math.toRadians(30);
+                break;
             case SOUTH_EAST:
-                return new int[]{(int) Math.round(centerX), sizeZ - 1};
+                angle = Math.toRadians(90);
+                break;
             case SOUTH_WEST:
-                int lz = (int) Math.round(centerZ - radius * Math.sin(Math.toRadians(210)));
-                return new int[]{0, lz};
+                angle = Math.toRadians(90);
+                break;
             case WEST:
-                int westUpperZ = (int) Math.round(centerZ - radius * Math.sin(Math.toRadians(150)));
-                return new int[]{0, westUpperZ};
+                angle = Math.toRadians(150);
+                break;
             case NORTH_WEST:
-                return new int[]{(int) Math.round(centerX), 0};
+                angle = Math.toRadians(210);
+                break;
             default:
                 return new int[]{0, 0};
         }
+
+        int x = (int) Math.round(centerX + radius * Math.cos(angle));
+        int z = (int) Math.round(centerZ + radius * Math.sin(angle));
+        return new int[]{x, z};
     }
 
     private double[] extendPointAlongRay(double centerX, double centerZ, double pointX, double pointZ,

@@ -176,38 +176,39 @@ public class HexGridSideBlender {
             int sizeZ = flat.getSizeZ();
             double centerX = sizeX / 2.0;
             double centerZ = sizeZ / 2.0;
-            double radius = sizeX / 2.0;  // Hexagon radius
+            double radius = sizeX / 2.0;
 
-            // Pointy-top hexagon with hybrid approach:
-            // - EAST/WEST sides extend to flat boundaries (x=0 or x=max) for full coverage
-            // - Diagonal sides use trigonometry for proper hexagon corners
-            // - Z-coordinates use trigonometry for all sides
+            // Pointy-top hexagon (EAST/WEST are vertical sides)
+            // Image coordinates: X right, Z down
+            // Corners at: 30° (right-down), 90° (down), 150° (left-down),
+            //             210° (left-up), 270° (up), 330° (right-up)
+            double angle;
             switch (side) {
                 case NORTH_EAST:
-                    // Top corner at 90°
-                    return new int[]{(int) Math.round(centerX), 0};
+                    angle = Math.toRadians(270); // Top corner
+                    break;
                 case EAST:
-                    // Right boundary, upper z at 30°
-                    int upperZ = (int) Math.round(centerZ - radius * Math.sin(Math.toRadians(30)));
-                    return new int[]{sizeX - 1, upperZ};
+                    angle = Math.toRadians(330); // Right-upper corner
+                    break;
                 case SOUTH_EAST:
-                    // Right boundary, lower z at 330°
-                    int lowerZ = (int) Math.round(centerZ - radius * Math.sin(Math.toRadians(330)));
-                    return new int[]{sizeX - 1, lowerZ};
+                    angle = Math.toRadians(30);  // Right-lower corner
+                    break;
                 case SOUTH_WEST:
-                    // Bottom corner at 270°
-                    return new int[]{(int) Math.round(centerX), sizeZ - 1};
+                    angle = Math.toRadians(150); // Left-lower corner
+                    break;
                 case WEST:
-                    // Left boundary, lower z at 210°
-                    int westLowerZ = (int) Math.round(centerZ - radius * Math.sin(Math.toRadians(210)));
-                    return new int[]{0, westLowerZ};
+                    angle = Math.toRadians(210); // Left-upper corner
+                    break;
                 case NORTH_WEST:
-                    // Left boundary, upper z at 150°
-                    int westUpperZ = (int) Math.round(centerZ - radius * Math.sin(Math.toRadians(150)));
-                    return new int[]{0, westUpperZ};
+                    angle = Math.toRadians(270); // Top corner
+                    break;
                 default:
                     return new int[]{0, 0};
             }
+
+            int x = (int) Math.round(centerX + radius * Math.cos(angle));
+            int z = (int) Math.round(centerZ + radius * Math.sin(angle));
+            return new int[]{x, z};
         }
 
         /**
@@ -220,39 +221,36 @@ public class HexGridSideBlender {
             int sizeZ = flat.getSizeZ();
             double centerX = sizeX / 2.0;
             double centerZ = sizeZ / 2.0;
-            double radius = sizeX / 2.0;  // Hexagon radius
+            double radius = sizeX / 2.0;
 
-            // Second corner for each side (matching hybrid approach from getCorner1)
+            // Second corner for each side
+            double angle;
             switch (side) {
                 case NORTH_EAST:
-                    // Corner at 30° (upper-right)
-                    int ux = (int) Math.round(centerX + radius * Math.cos(Math.toRadians(30)));
-                    int uz = (int) Math.round(centerZ - radius * Math.sin(Math.toRadians(30)));
-                    // Use flat boundary for x
-                    return new int[]{sizeX - 1, uz};
+                    angle = Math.toRadians(330); // Right-upper corner
+                    break;
                 case EAST:
-                    // Right boundary, lower z at 330°
-                    int lowerZ = (int) Math.round(centerZ - radius * Math.sin(Math.toRadians(330)));
-                    return new int[]{sizeX - 1, lowerZ};
+                    angle = Math.toRadians(30);  // Right-lower corner
+                    break;
                 case SOUTH_EAST:
-                    // Bottom corner at 270°
-                    return new int[]{(int) Math.round(centerX), sizeZ - 1};
+                    angle = Math.toRadians(90);  // Bottom corner
+                    break;
                 case SOUTH_WEST:
-                    // Corner at 210° (lower-left)
-                    int lx = (int) Math.round(centerX + radius * Math.cos(Math.toRadians(210)));
-                    int lz = (int) Math.round(centerZ - radius * Math.sin(Math.toRadians(210)));
-                    // Use flat boundary for x
-                    return new int[]{0, lz};
+                    angle = Math.toRadians(90);  // Bottom corner
+                    break;
                 case WEST:
-                    // Left boundary, upper z at 150°
-                    int westUpperZ = (int) Math.round(centerZ - radius * Math.sin(Math.toRadians(150)));
-                    return new int[]{0, westUpperZ};
+                    angle = Math.toRadians(150); // Left-lower corner
+                    break;
                 case NORTH_WEST:
-                    // Top corner at 90°
-                    return new int[]{(int) Math.round(centerX), 0};
+                    angle = Math.toRadians(210); // Left-upper corner
+                    break;
                 default:
                     return new int[]{0, 0};
             }
+
+            int x = (int) Math.round(centerX + radius * Math.cos(angle));
+            int z = (int) Math.round(centerZ + radius * Math.sin(angle));
+            return new int[]{x, z};
         }
 
         /**
