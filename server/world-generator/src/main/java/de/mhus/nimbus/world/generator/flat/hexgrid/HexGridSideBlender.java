@@ -84,11 +84,13 @@ public class HexGridSideBlender {
         /**
          * Blend the entire side with the neighbor.
          * Algorithm:
-         * 1. Calculate the two corner points of the hex side
-         * 2. Walk along the edge between corners
-         * 3. For each point on the edge:
-         *    - Sample outward (perpendicular away from hex center) to get average neighbor height
-         *    - Blend inward (toward hex center) with decreasing influence
+         * 1. Calculate the two corner points of the hex side (x1/z1, x2/z2)
+         * 2. Calculate radius of the hex grid
+         * 3. Extend corners outward along rays from center:
+         *    - Outer line: radius+width → (xs1/zs1) to (xs2/zs2)
+         *    - Inner line: radius-width → (xb1/zb1) to (xb2/zb2)
+         * 4. Walk along the outer straight line from (xs1/zs1) to (xs2/zs2)
+         * 5. For each point on outer line, interpolate inward to inner line
          */
         public void blend() {
             log.info("Blending side {} with neighbor flat {}, width={}",
@@ -101,51 +103,69 @@ public class HexGridSideBlender {
             log.info("Side {} corners: ({},{}) to ({},{})",
                     direction, corner1[0], corner1[1], corner2[0], corner2[1]);
 
-            // Calculate direction vectors
+            // Get hex center
             double[] centerPos = getCenterPosition();
-            double[] outwardDir = getOutwardDirection(corner1, corner2, centerPos);
+            double centerX = centerPos[0];
+            double centerZ = centerPos[1];
 
-            log.debug("Hex center: ({},{}), outward direction: ({},{})",
-                    centerPos[0], centerPos[1], outwardDir[0], outwardDir[1]);
+            // Calculate radius (approximate - use average distance of corners to center)
+            double dist1 = Math.sqrt(Math.pow(corner1[0] - centerX, 2) + Math.pow(corner1[1] - centerZ, 2));
+            double dist2 = Math.sqrt(Math.pow(corner2[0] - centerX, 2) + Math.pow(corner2[1] - centerZ, 2));
+            double radius = (dist1 + dist2) / 2.0;
+
+            log.info("Hex center: ({},{}), radius: {}", centerX, centerZ, String.format("%.1f", radius));
+
+            // Extend corner1 along ray from center
+            double[] ray1 = extendPointAlongRay(centerX, centerZ, corner1[0], corner1[1], radius, width);
+            double[] outerCorner1 = ray1; // radius + width
+            double[] innerCorner1 = extendPointAlongRay(centerX, centerZ, corner1[0], corner1[1], radius, -width); // radius - width
+
+            // Extend corner2 along ray from center
+            double[] ray2 = extendPointAlongRay(centerX, centerZ, corner2[0], corner2[1], radius, width);
+            double[] outerCorner2 = ray2; // radius + width
+            double[] innerCorner2 = extendPointAlongRay(centerX, centerZ, corner2[0], corner2[1], radius, -width); // radius - width
+
+            log.info("Outer line: ({},{}) to ({},{})",
+                    String.format("%.1f", outerCorner1[0]), String.format("%.1f", outerCorner1[1]),
+                    String.format("%.1f", outerCorner2[0]), String.format("%.1f", outerCorner2[1]));
+            log.info("Inner line: ({},{}) to ({},{})",
+                    String.format("%.1f", innerCorner1[0]), String.format("%.1f", innerCorner1[1]),
+                    String.format("%.1f", innerCorner2[0]), String.format("%.1f", innerCorner2[1]));
+
+            // Calculate length of outer line
+            double dx = outerCorner2[0] - outerCorner1[0];
+            double dz = outerCorner2[1] - outerCorner1[1];
+            double outerLineLength = Math.sqrt(dx * dx + dz * dz);
+            int steps = (int) Math.ceil(outerLineLength);
+
+            if (steps == 0) {
+                log.warn("Outer line length is 0 for side {}", direction);
+                return;
+            }
+
+            log.info("Walking outer line with {} steps", steps);
 
             int blendedCount = 0;
 
-            // Walk along the edge from corner1 to corner2
-            // Use more steps for smoother coverage (at least every 0.5 pixels)
-            int dx = Math.abs(corner2[0] - corner1[0]);
-            int dz = Math.abs(corner2[1] - corner1[1]);
-            int edgeLength = Math.max(dx, dz);
-            int steps = Math.max(edgeLength * 2, edgeLength + 10); // Denser sampling for smoothness
-
+            // Walk along the outer straight line
             for (int step = 0; step <= steps; step++) {
-                // Interpolate position along edge
+                // Interpolate position along outer line
                 double t = steps > 0 ? step / (double) steps : 0.5;
-                double edgeXd = corner1[0] * (1 - t) + corner2[0] * t;
-                double edgeZd = corner1[1] * (1 - t) + corner2[1] * t;
-                int edgeX = (int) Math.round(edgeXd);
-                int edgeZ = (int) Math.round(edgeZd);
+                double outerX = outerCorner1[0] * (1 - t) + outerCorner2[0] * t;
+                double outerZ = outerCorner1[1] * (1 - t) + outerCorner2[1] * t;
 
-                // Check bounds
-                if (edgeX < 0 || edgeX >= flat.getSizeX() ||
-                    edgeZ < 0 || edgeZ >= flat.getSizeZ()) {
-                    continue;
+                // Calculate corresponding point on inner line
+                double innerX = innerCorner1[0] * (1 - t) + innerCorner2[0] * t;
+                double innerZ = innerCorner1[1] * (1 - t) + innerCorner2[1] * t;
+
+                // Interpolate from outer point to inner point
+                if (blendLineInward(outerX, outerZ, innerX, innerZ)) {
+                    blendedCount++;
                 }
-
-                // Sample outward to get average neighbor height
-                double avgOutwardHeight = sampleOutward(edgeX, edgeZ, outwardDir);
-
-                if (avgOutwardHeight < 0) {
-                    // No valid samples found
-                    continue;
-                }
-
-                // Blend inward from this edge point
-                blendInward(edgeX, edgeZ, outwardDir, avgOutwardHeight);
-                blendedCount++;
             }
 
-            log.info("Side {} blending completed: {} edge points processed (steps={})",
-                    direction, blendedCount, steps);
+            log.info("Side {} blending completed: {} lines processed (steps={})",
+                    direction, blendedCount, steps + 1);
         }
 
         /**
@@ -261,6 +281,8 @@ public class HexGridSideBlender {
             // Use more samples for better averaging and smoothness
             int maxSampleDist = Math.min(width, 15);
 
+            boolean loggedFirst = false;
+
             for (int dist = 1; dist <= maxSampleDist; dist++) {
                 // Sample main direction
                 int sampleX = edgeX + (int) Math.round(outwardDir[0] * dist);
@@ -271,6 +293,14 @@ public class HexGridSideBlender {
                 if (height >= 0) {
                     sumHeight += height;
                     validSamples++;
+
+                    if (!loggedFirst && validSamples == 1) {
+                        log.debug("First sample at edge({},{}) + outward({},{}) * {} = sample({},{}) -> height={}",
+                                edgeX, edgeZ,
+                                String.format("%.2f", outwardDir[0]), String.format("%.2f", outwardDir[1]),
+                                dist, sampleX, sampleZ, height);
+                        loggedFirst = true;
+                    }
                 }
 
                 // Add lateral samples for better smoothing (±1 pixel perpendicular)
@@ -329,47 +359,83 @@ public class HexGridSideBlender {
         }
 
         /**
-         * Blend inward from edge point toward hex center with smooth transitions.
+         * Extend a point along a ray from center.
+         * Returns new position at distance (radius + extension) from center.
          */
-        private void blendInward(int edgeX, int edgeZ, double[] outwardDir, double avgOutwardHeight) {
-            // Inward direction is opposite of outward
-            double inwardDx = -outwardDir[0];
-            double inwardDz = -outwardDir[1];
+        private double[] extendPointAlongRay(double centerX, double centerZ, double pointX, double pointZ,
+                                              double radius, double extension) {
+            // Direction from center to point
+            double dx = pointX - centerX;
+            double dz = pointZ - centerZ;
+            double currentDist = Math.sqrt(dx * dx + dz * dz);
 
-            // Blend from edge (depth=0) to center (depth=width)
-            for (int depth = 0; depth <= width; depth++) {
-                // Calculate position
-                double x = edgeX + inwardDx * depth;
-                double z = edgeZ + inwardDz * depth;
+            if (currentDist == 0) {
+                return new double[]{pointX, pointZ};
+            }
 
-                // Add very slight lateral offset for organic feel (scaled by randomness)
-                if (randomness > 0.2) {
-                    double perpDx = -inwardDz;
-                    double perpDz = inwardDx;
-                    double lateralOffset = (random.nextDouble() - 0.5) * randomness * 0.5;
-                    x += perpDx * lateralOffset;
-                    z += perpDz * lateralOffset;
-                }
+            // Normalize direction
+            double dirX = dx / currentDist;
+            double dirZ = dz / currentDist;
+
+            // New distance from center
+            double newDist = radius + extension;
+
+            // Calculate new position
+            double newX = centerX + dirX * newDist;
+            double newZ = centerZ + dirZ * newDist;
+
+            return new double[]{newX, newZ};
+        }
+
+        /**
+         * Blend along a straight line from outer point to inner point.
+         * Samples neighbor height at outer point and blends toward current terrain at inner point.
+         * Returns true if blending was performed.
+         */
+        private boolean blendLineInward(double outerX, double outerZ, double innerX, double innerZ) {
+            // Sample neighbor height at outer position
+            double neighborHeight = getNeighborHeight((int) Math.round(outerX), (int) Math.round(outerZ));
+
+            if (neighborHeight < 0) {
+                // No valid neighbor sample
+                return false;
+            }
+
+            // Calculate line length and direction
+            double dx = innerX - outerX;
+            double dz = innerZ - outerZ;
+            double lineLength = Math.sqrt(dx * dx + dz * dz);
+
+            if (lineLength == 0) {
+                return false;
+            }
+
+            // Number of steps along the line (at least 1 step per pixel)
+            int steps = (int) Math.ceil(lineLength);
+
+            // Walk the line from outer to inner
+            for (int step = 0; step <= steps; step++) {
+                // Interpolate position along line
+                double t = steps > 0 ? step / (double) steps : 0.5;
+                double x = outerX * (1 - t) + innerX * t;
+                double z = outerZ * (1 - t) + innerZ * t;
 
                 int xi = (int) Math.round(x);
                 int zi = (int) Math.round(z);
 
                 // Check bounds
                 if (xi < 0 || xi >= flat.getSizeX() || zi < 0 || zi >= flat.getSizeZ()) {
-                    break;
+                    continue;
                 }
 
-                // Get current height
+                // Get current height at this position
                 int currentHeight = flat.getLevel(xi, zi);
 
-                // Calculate smooth blend factor using smoothstep function
-                // This creates a much smoother transition than linear
-                double t = depth / (double) width;
-
-                // Smoothstep: 3t² - 2t³ (smooth S-curve)
+                // Calculate blend factor: 1.0 at outer (step=0), 0.0 at inner (step=steps)
+                // Use smoothstep for smooth transition
                 double smoothT = t * t * (3.0 - 2.0 * t);
 
-                // Apply slight curve variation for organic feel
+                // Apply curve variation for organic feel (if randomness enabled)
                 if (randomness > 0) {
                     double curveVar = 1.0 + (random.nextDouble() - 0.5) * randomness * 0.3;
                     smoothT = Math.pow(smoothT, curveVar);
@@ -377,18 +443,18 @@ public class HexGridSideBlender {
 
                 float blendFactor = 1.0f - (float) smoothT;
 
-                // Add minimal random variation (only if randomness is high)
+                // Add minimal random variation at high randomness
                 if (randomness > 0.5) {
                     float randomVar = (random.nextFloat() - 0.5f) * 0.05f * (float) randomness;
                     blendFactor = Math.max(0.0f, Math.min(1.0f, blendFactor + randomVar));
                 }
 
-                // Smooth interpolation
-                float interpolated = (float) (avgOutwardHeight * blendFactor + currentHeight * (1.0f - blendFactor));
+                // Interpolate height
+                float interpolated = (float) (neighborHeight * blendFactor + currentHeight * (1.0f - blendFactor));
 
-                // Very subtle noise (only at high randomness)
+                // Add subtle height noise at high randomness
                 int heightNoise = 0;
-                if (randomness > 0.7 && depth > 0 && depth < width) {
+                if (randomness > 0.7 && step > 0 && step < steps) {
                     heightNoise = (random.nextInt(3) - 1);
                 }
 
@@ -398,6 +464,8 @@ public class HexGridSideBlender {
                 // Set the blended height
                 flat.setLevel(xi, zi, blendedHeight);
             }
+
+            return true;
         }
 
         /**
