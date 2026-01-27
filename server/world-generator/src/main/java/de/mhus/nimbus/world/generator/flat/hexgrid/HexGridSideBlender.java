@@ -78,6 +78,9 @@ public class HexGridSideBlender {
         private final Random random;
         private final long noiseSeed;
 
+        // Track which pixels were actually blended for post-processing
+        private final boolean[][] blendedPixels;
+
         public SideBlender(WFlat flat, BuilderContext context, WHexGrid.SIDE direction,
                            WFlat neighborFlat, int width, double randomness,
                            double shakeStrength, int blurRadius) {
@@ -93,6 +96,8 @@ public class HexGridSideBlender {
             this.random = new Random(flat.getFlatId().hashCode() + direction.ordinal());
             // Create noise seed based on flat position for consistent noise
             this.noiseSeed = (long) flat.getMountX() * 31 + (long) flat.getMountZ() * 37 + direction.ordinal();
+            // Initialize blended pixels tracking
+            this.blendedPixels = new boolean[flat.getSizeX()][flat.getSizeZ()];
         }
 
         /**
@@ -245,8 +250,9 @@ public class HexGridSideBlender {
         }
 
         /**
-         * Apply shake effect: randomly swap pixels within the blending region.
+         * Apply shake effect: randomly swap adjacent pixels within the blending region.
          * Creates a more organic, less uniform look by disturbing the blend pattern.
+         * Only swaps pixels with their direct neighbors (8-connected).
          *
          * @param outerCorner1 First corner of outer line
          * @param outerCorner2 Second corner of outer line
@@ -255,45 +261,70 @@ public class HexGridSideBlender {
          */
         private void applyShakeEffect(double[] outerCorner1, double[] outerCorner2,
                                       double[] innerCorner1, double[] innerCorner2) {
-            // Calculate bounding box for the blend region
-            double minX = Math.min(Math.min(outerCorner1[0], outerCorner2[0]),
-                                  Math.min(innerCorner1[0], innerCorner2[0]));
-            double maxX = Math.max(Math.max(outerCorner1[0], outerCorner2[0]),
-                                  Math.max(innerCorner1[0], innerCorner2[0]));
-            double minZ = Math.min(Math.min(outerCorner1[1], outerCorner2[1]),
-                                  Math.min(innerCorner1[1], innerCorner2[1]));
-            double maxZ = Math.max(Math.max(outerCorner1[1], outerCorner2[1]),
-                                  Math.max(innerCorner1[1], innerCorner2[1]));
+            // Build list of blended pixels and their neighbors that can be affected
+            java.util.List<int[]> candidatePixels = new java.util.ArrayList<>();
 
-            // Clamp to flat bounds
-            int startX = Math.max(0, (int) Math.floor(minX));
-            int endX = Math.min(flat.getSizeX() - 1, (int) Math.ceil(maxX));
-            int startZ = Math.max(0, (int) Math.floor(minZ));
-            int endZ = Math.min(flat.getSizeZ() - 1, (int) Math.ceil(maxZ));
+            // Add blended pixels and their immediate neighbors (1 pixel margin)
+            for (int x = 0; x < flat.getSizeX(); x++) {
+                for (int z = 0; z < flat.getSizeZ(); z++) {
+                    if (blendedPixels[x][z]) {
+                        // Add this pixel and neighbors to candidate list
+                        for (int dx = -1; dx <= 1; dx++) {
+                            for (int dz = -1; dz <= 1; dz++) {
+                                int nx = x + dx;
+                                int nz = z + dz;
+                                if (nx >= 0 && nx < flat.getSizeX() &&
+                                    nz >= 0 && nz < flat.getSizeZ()) {
+                                    candidatePixels.add(new int[]{nx, nz});
+                                }
+                            }
+                        }
+                    }
+                }
+            }
 
-            // Calculate number of swaps based on shake strength
-            int area = (endX - startX + 1) * (endZ - startZ + 1);
-            int numSwaps = (int) (area * shakeStrength * 0.3); // 30% of pixels at max strength
+            if (candidatePixels.isEmpty()) {
+                return;
+            }
 
-            // Perform random pixel swaps
-            for (int i = 0; i < numSwaps; i++) {
-                // Pick two random points in the region
-                int x1 = startX + random.nextInt(endX - startX + 1);
-                int z1 = startZ + random.nextInt(endZ - startZ + 1);
-                int x2 = startX + random.nextInt(endX - startX + 1);
-                int z2 = startZ + random.nextInt(endZ - startZ + 1);
+            // 8-directional neighbor offsets
+            int[][] neighborOffsets = {
+                {-1, -1}, {0, -1}, {1, -1},
+                {-1,  0},          {1,  0},
+                {-1,  1}, {0,  1}, {1,  1}
+            };
 
-                // Swap their heights
-                int height1 = flat.getLevel(x1, z1);
-                int height2 = flat.getLevel(x2, z2);
-                flat.setLevel(x1, z1, height2);
-                flat.setLevel(x2, z2, height1);
+            // For each candidate pixel, randomly decide if it should swap with a neighbor
+            for (int[] pixel : candidatePixels) {
+                int x = pixel[0];
+                int z = pixel[1];
+
+                // Random chance to swap based on shake strength
+                if (random.nextDouble() > shakeStrength) {
+                    continue; // Skip this pixel
+                }
+
+                // Pick a random neighbor direction
+                int[] offset = neighborOffsets[random.nextInt(neighborOffsets.length)];
+                int nx = x + offset[0];
+                int nz = z + offset[1];
+
+                // Check if neighbor is in bounds
+                if (nx >= 0 && nx < flat.getSizeX() &&
+                    nz >= 0 && nz < flat.getSizeZ()) {
+                    // Swap this pixel with its neighbor
+                    int height1 = flat.getLevel(x, z);
+                    int height2 = flat.getLevel(nx, nz);
+                    flat.setLevel(x, z, height2);
+                    flat.setLevel(nx, nz, height1);
+                }
             }
         }
 
         /**
          * Apply blur/smoothing effect to the blending region.
          * Uses a simple box blur for smooth transitions.
+         * Only affects pixels that were actually blended (plus a small margin).
          *
          * @param outerCorner1 First corner of outer line
          * @param outerCorner2 Second corner of outer line
@@ -302,54 +333,69 @@ public class HexGridSideBlender {
          */
         private void applyBlurEffect(double[] outerCorner1, double[] outerCorner2,
                                      double[] innerCorner1, double[] innerCorner2) {
-            // Calculate bounding box for the blend region
-            double minX = Math.min(Math.min(outerCorner1[0], outerCorner2[0]),
-                                  Math.min(innerCorner1[0], innerCorner2[0]));
-            double maxX = Math.max(Math.max(outerCorner1[0], outerCorner2[0]),
-                                  Math.max(innerCorner1[0], innerCorner2[0]));
-            double minZ = Math.min(Math.min(outerCorner1[1], outerCorner2[1]),
-                                  Math.min(innerCorner1[1], innerCorner2[1]));
-            double maxZ = Math.max(Math.max(outerCorner1[1], outerCorner2[1]),
-                                  Math.max(innerCorner1[1], innerCorner2[1]));
+            // Build list of pixels to blur (blended pixels + margin)
+            java.util.Set<String> pixelsToBlur = new java.util.HashSet<>();
 
-            // Expand region by blur radius
-            int startX = Math.max(0, (int) Math.floor(minX) - blurRadius);
-            int endX = Math.min(flat.getSizeX() - 1, (int) Math.ceil(maxX) + blurRadius);
-            int startZ = Math.max(0, (int) Math.floor(minZ) - blurRadius);
-            int endZ = Math.min(flat.getSizeZ() - 1, (int) Math.ceil(maxZ) + blurRadius);
+            int margin = blurRadius + 1; // Add 1 extra pixel margin for smooth edges
 
-            // Create temporary buffer for blur result
-            int[][] blurred = new int[endX - startX + 1][endZ - startZ + 1];
-
-            // Apply box blur
-            for (int x = startX; x <= endX; x++) {
-                for (int z = startZ; z <= endZ; z++) {
-                    int sum = 0;
-                    int count = 0;
-
-                    // Sample neighbors within blur radius
-                    for (int dx = -blurRadius; dx <= blurRadius; dx++) {
-                        for (int dz = -blurRadius; dz <= blurRadius; dz++) {
-                            int nx = x + dx;
-                            int nz = z + dz;
-
-                            if (nx >= 0 && nx < flat.getSizeX() &&
-                                nz >= 0 && nz < flat.getSizeZ()) {
-                                sum += flat.getLevel(nx, nz);
-                                count++;
+            // Find all blended pixels and add them + margin to blur set
+            for (int x = 0; x < flat.getSizeX(); x++) {
+                for (int z = 0; z < flat.getSizeZ(); z++) {
+                    if (blendedPixels[x][z]) {
+                        // Add this pixel and neighbors within margin
+                        for (int dx = -margin; dx <= margin; dx++) {
+                            for (int dz = -margin; dz <= margin; dz++) {
+                                int nx = x + dx;
+                                int nz = z + dz;
+                                if (nx >= 0 && nx < flat.getSizeX() &&
+                                    nz >= 0 && nz < flat.getSizeZ()) {
+                                    pixelsToBlur.add(nx + "," + nz);
+                                }
                             }
                         }
                     }
-
-                    blurred[x - startX][z - startZ] = count > 0 ? sum / count : flat.getLevel(x, z);
                 }
             }
 
-            // Write blurred values back to flat
-            for (int x = startX; x <= endX; x++) {
-                for (int z = startZ; z <= endZ; z++) {
-                    flat.setLevel(x, z, blurred[x - startX][z - startZ]);
+            if (pixelsToBlur.isEmpty()) {
+                return;
+            }
+
+            // Create temporary buffer for blur result
+            java.util.Map<String, Integer> blurred = new java.util.HashMap<>();
+
+            // Apply box blur only to pixels in the set
+            for (String key : pixelsToBlur) {
+                String[] parts = key.split(",");
+                int x = Integer.parseInt(parts[0]);
+                int z = Integer.parseInt(parts[1]);
+
+                int sum = 0;
+                int count = 0;
+
+                // Sample neighbors within blur radius
+                for (int dx = -blurRadius; dx <= blurRadius; dx++) {
+                    for (int dz = -blurRadius; dz <= blurRadius; dz++) {
+                        int nx = x + dx;
+                        int nz = z + dz;
+
+                        if (nx >= 0 && nx < flat.getSizeX() &&
+                            nz >= 0 && nz < flat.getSizeZ()) {
+                            sum += flat.getLevel(nx, nz);
+                            count++;
+                        }
+                    }
                 }
+
+                blurred.put(key, count > 0 ? sum / count : flat.getLevel(x, z));
+            }
+
+            // Write blurred values back to flat
+            for (java.util.Map.Entry<String, Integer> entry : blurred.entrySet()) {
+                String[] parts = entry.getKey().split(",");
+                int x = Integer.parseInt(parts[0]);
+                int z = Integer.parseInt(parts[1]);
+                flat.setLevel(x, z, entry.getValue());
             }
         }
 
@@ -631,6 +677,7 @@ public class HexGridSideBlender {
                 int zi = (int) Math.round(clampedOuterZ);
                 if (xi >= 0 && xi < flat.getSizeX() && zi >= 0 && zi < flat.getSizeZ()) {
                     flat.setLevel(xi, zi, (int) Math.round(neighborHeight));
+                    blendedPixels[xi][zi] = true;
                     return true;
                 }
                 return false;
@@ -701,6 +748,9 @@ public class HexGridSideBlender {
 
                 // Set the blended height
                 flat.setLevel(xi, zi, blendedHeight);
+
+                // Mark this pixel as blended for post-processing
+                blendedPixels[xi][zi] = true;
             }
 
             return pixelsWritten > 0;
