@@ -117,11 +117,13 @@ public class HexGridSideBlender {
 
             // Extend corner1 along ray from center
             double[] outerCorner1 = extendPointAlongRay(centerX, centerZ, corner1[0], corner1[1], radius, width);
-            double[] innerCorner1 = extendPointAlongRay(centerX, centerZ, corner1[0], corner1[1], radius, -width);
+            // Inner line extends further inward (1.5x width) for softer fade-out
+            double[] innerCorner1 = extendPointAlongRay(centerX, centerZ, corner1[0], corner1[1], radius, -width * 1.5);
 
             // Extend corner2 along ray from center
             double[] outerCorner2 = extendPointAlongRay(centerX, centerZ, corner2[0], corner2[1], radius, width);
-            double[] innerCorner2 = extendPointAlongRay(centerX, centerZ, corner2[0], corner2[1], radius, -width);
+            // Inner line extends further inward (1.5x width) for softer fade-out
+            double[] innerCorner2 = extendPointAlongRay(centerX, centerZ, corner2[0], corner2[1], radius, -width * 1.5);
 
             log.info("Outer line: ({},{}) to ({},{})",
                     String.format("%.1f", outerCorner1[0]), String.format("%.1f", outerCorner1[1]),
@@ -498,6 +500,14 @@ public class HexGridSideBlender {
                 }
 
                 float blendFactor = 1.0f - (float) smoothT;
+
+                // Fade zone: In the last 40% of the blend (t > 0.6), gradually reduce blend strength
+                // This creates a softer edge at the inner boundary
+                if (t > 0.6) {
+                    double fadeT = (t - 0.6) / 0.4;  // 0.0 at t=0.6, 1.0 at t=1.0
+                    double fadeFactor = 1.0 - fadeT; // 1.0 at t=0.6, 0.0 at t=1.0
+                    blendFactor *= fadeFactor;
+                }
 
                 // Add minimal random variation at high randomness
                 if (randomness > 0.5) {
