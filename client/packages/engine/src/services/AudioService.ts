@@ -344,6 +344,7 @@ export class AudioService implements IDisposable {
   private ambientFadeInterval?: number; // Fade in/out interval ID
   private pendingAmbientPath?: string; // Pending ambient music path (waiting for engine ready)
   private pendingAmbientVolume?: number; // Pending ambient music volume
+  private pendingAmbientLoop?: boolean; // Pending ambient music loop flag
 
   // Speech/narration
   private currentSpeech?: any; // Current speech sound
@@ -837,13 +838,15 @@ export class AudioService implements IDisposable {
 
     const path = this.pendingAmbientPath;
     const volume = this.pendingAmbientVolume ?? 1.0;
+    const loop = this.pendingAmbientLoop ?? false;
 
     // Clear pending before playing (to avoid loops)
     this.pendingAmbientPath = undefined;
     this.pendingAmbientVolume = undefined;
+    this.pendingAmbientLoop = undefined;
 
     // Play the ambient music
-    await this.playAmbientSound(path, true, volume);
+    await this.playAmbientSound(path, true, volume, loop);
   }
 
   /**
@@ -1478,13 +1481,25 @@ export class AudioService implements IDisposable {
    * @param stream Whether to stream the audio (default: true for large music files)
    * @param volume Volume (0.0 - 1.0), multiplied by ambientVolume
    */
-  async playAmbientSound(soundPath: string, stream: boolean = true, volume: number = 1.0): Promise<void> {
-    // Empty path → stop ambient music
-    if (!soundPath || soundPath.trim() === '') {
-      this.pendingAmbientPath = undefined;
-      this.pendingAmbientVolume = undefined;
-      await this.stopAmbientSound();
-      return;
+  async playAmbientSound(soundPath: string, stream: boolean = true, volume: number = 1.0, loop: boolean = false): Promise<void> {
+
+      // Empty path → stop ambient music
+      if (!soundPath || soundPath.trim() === '') {
+          this.pendingAmbientPath = undefined;
+          this.pendingAmbientVolume = undefined;
+          await this.stopAmbientSound();
+          return;
+      }
+
+    // Parse query string from soundPath
+    const questionMarkIndex = soundPath.indexOf('?');
+    if (questionMarkIndex !== -1) {
+      const queryString = soundPath.substring(questionMarkIndex + 1);
+      soundPath = soundPath.substring(0, questionMarkIndex);
+
+      if (queryString === 'loop') {
+        loop = true;
+      }
     }
 
     // Check if audio engine is ready
@@ -1492,6 +1507,7 @@ export class AudioService implements IDisposable {
       logger.debug('Audio engine not ready, deferring ambient music', { soundPath, volume });
       this.pendingAmbientPath = soundPath;
       this.pendingAmbientVolume = volume;
+      this.pendingAmbientLoop = loop;
       return;
     }
 
@@ -1515,6 +1531,7 @@ export class AudioService implements IDisposable {
     // Clear pending (we're playing now)
     this.pendingAmbientPath = undefined;
     this.pendingAmbientVolume = undefined;
+    this.pendingAmbientLoop = undefined;
 
     try {
       logger.debug('Loading ambient music', { soundPath, stream, volume });
@@ -1522,7 +1539,7 @@ export class AudioService implements IDisposable {
       // Load ambient music (non-spatial, looping)
       const sound = await this.loadAudio(soundPath, {
         volume: 0, // Start at 0 for fade in
-        loop: true, // Always loop ambient music
+        loop: loop, // Always loop ambient music
         autoplay: false,
         spatialSound: false, // Ambient music is non-spatial
       });
