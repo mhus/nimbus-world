@@ -28,6 +28,11 @@
                 <span v-if="chunkMetadata?.compressed" class="badge badge-success badge-sm ml-2">Yes</span>
                 <span v-else class="badge badge-ghost badge-sm ml-2">No</span>
               </div>
+              <div>
+                <span class="font-medium">Deny:</span>
+                <span v-if="chunkData.deny" class="badge badge-error badge-sm ml-2">Denied</span>
+                <span v-else class="badge badge-ghost badge-sm ml-2">Allowed</span>
+              </div>
               <div v-if="storageInfo">
                 <span class="font-medium">Storage Size:</span>
                 <span class="text-xs">{{ formatFileSize(storageInfo.size) }}</span>

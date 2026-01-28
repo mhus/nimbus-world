@@ -37,17 +37,17 @@ interface BlockTypesResponse {
  *
  * Group Strategy:
  * - BlockType ID format: "{group}:{name}" (e.g., "core:stone", "custom:tree")
- * - If no ":" in ID, default group "w" is used
+ * - If no ":" in ID, default group "r" is used
  * - All IDs are normalized to lowercase
  * - Each group is loaded once and cached
  *
  * Examples:
  * - "core:stone" → loads group "core"
- * - "310" → loads group "w" (default)
+ * - "310" → loads group "r" (default)
  * - "CUSTOM:Tree" → normalized to "custom:tree", loads group "custom"
  */
 export class BlockTypeService {
-  private loadedGroups: Map<string, Map<string, BlockType>> = new Map(); // Track which groups are loaded ('core', 'w', 'custom', ...)
+  private loadedGroups: Map<string, Map<string, BlockType>> = new Map(); // Track which groups are loaded ('core', 'r', 'custom', ...)
   private loadingGroups: Map<string, Promise<void>> = new Map(); // Track groups currently being loaded
   private airBlockType: BlockType; // Static AIR BlockType (id 0), always available
 
@@ -66,7 +66,7 @@ export class BlockTypeService {
    * It must always be available for the SelectService and other systems.
    *
    * NOTE: AIR is stored separately and NOT in the loadedGroups map,
-   * so that group 'w' can be properly loaded from server later.
+   * so that group 'r' can be properly loaded from server later.
    */
   private createAirBlockType(): BlockType {
     const airBlockType: BlockType = {
@@ -90,7 +90,7 @@ export class BlockTypeService {
 
   /**
    * Load a group of BlockTypes from the server
-   * @param groupName The group name to load (e.g., 'core', 'w', 'custom')
+   * @param groupName The group name to load (e.g., 'core', 'r', 'custom')
    */
   private async loadGroup(groupName: string): Promise<void> {
     const normalizedGroup = groupName.toLowerCase();
@@ -151,9 +151,9 @@ export class BlockTypeService {
       let groupMap = this.loadedGroups.get(groupName);
       if (!groupMap) {
         groupMap = new Map();
-        if (groupName === 'w') {
-          groupMap.set("0", this.airBlockType); // Ensure AIR BlockType is present in 'w' group
-          groupMap.set("w:0", this.airBlockType); // Ensure AIR BlockType is present in 'w' group
+        if (groupName === 'r') {
+          groupMap.set("0", this.airBlockType); // Ensure AIR BlockType is present in 'r' group
+          groupMap.set("r:0", this.airBlockType); // Ensure AIR BlockType is present in 'r' group
         }
         this.loadedGroups.set(groupName, groupMap);
       }
@@ -287,8 +287,8 @@ export class BlockTypeService {
       return normalized;
     }
 
-    // No prefix, add default group 'w'
-    return `w:${normalized}`;
+    // No prefix, add default group 'r'
+    return `r:${normalized}`;
   }
 
   /**
@@ -406,7 +406,7 @@ export class BlockTypeService {
    * Preload multiple groups at once
    * Useful for preloading common BlockType groups
    *
-   * @param groupNames Array of group names to load (e.g., ['core', 'custom', 'w'])
+   * @param groupNames Array of group names to load (e.g., ['core', 'custom', 'r'])
    */
   async preloadGroups(groupNames: string[]): Promise<void> {
     const promises = groupNames.map(name => this.loadGroup(name));
@@ -443,9 +443,9 @@ export class BlockTypeService {
   }
 
   private getIdGroup(id: string) {
-    // split by ':', return first part or 'w' if no ':'
+    // split by ':', return first part or 'r' if no ':'
     const parts = id.split(':');
-    return parts.length > 1 ? parts[0].toLowerCase() : 'w';
+    return parts.length > 1 ? parts[0].toLowerCase() : 'r';
   }
 
 }

@@ -110,7 +110,7 @@ public class LoginHandler implements MessageHandler {
     private void sendLoginResponse(PlayerSession session, String requestId, boolean success,
                                    String errorMessage, String sessionId, WWorld world) throws Exception {
         ObjectNode data = objectMapper.createObjectNode();
-        data.put("successful", success);
+        data.put("success", success);
 
         if (success) {
             data.put("userId", session.getPlayer().user().getUserId());

@@ -82,10 +82,10 @@ export class WorldCollection {
                 case WorldId.COLLECTION_PUBLIC:
                     return 'rp';
                 default:
-                    return parts[1] || 'w'; // should be 'n'
+                    return parts[1] || 'r';
             }
         }
-        return 'w';
+        return 'r';
     }
 
     prefix(): string {
@@ -99,6 +99,6 @@ export class WorldCollection {
             case WorldCollectionType.SHARED:
                 return this.worldId.getWorldName ? this.worldId.getWorldName() ?? '' : '';
         }
-        return 'w';
+        return 'r';
     }
 }

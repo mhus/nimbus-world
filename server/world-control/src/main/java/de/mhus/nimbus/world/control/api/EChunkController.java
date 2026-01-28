@@ -167,7 +167,8 @@ public class EChunkController extends BaseEditorController {
                     "size", chunkData.getSize(),
                     "blockCount", chunkData.getBlocks() != null ? chunkData.getBlocks().size() : 0,
                     "blocks", chunkData.getBlocks() != null ? chunkData.getBlocks() : List.of(),
-                    "heightData", chunkData.getHeightData() != null ? chunkData.getHeightData() : Map.of()
+                    "heightData", chunkData.getHeightData() != null ? chunkData.getHeightData() : Map.of(),
+                    "deny", chunkData.getDeny() != null ? chunkData.getDeny() : false
             ));
         } catch (Exception e) {
             log.error("Failed to load chunk data: worldId={}, chunkKey={}", lookupWorldId, chunkKey, e);

@@ -830,8 +830,14 @@ export class PhysicsService {
     }
 
     // Check if new position is in a loaded and accessible chunk
-    if (!this.isChunkLoaded(entity.position.x, entity.position.z)) {
+    if (entity.movementMode !== 'free_fly' && !this.isChunkLoaded(entity.position.x, entity.position.z)) {
       // Not loaded or denied - revert position
+      if (entity.position.x == oldX && entity.position.z == oldZ) {
+        if (oldX > 16) oldX-=16;
+        else if (oldX < -16) oldX+=16;
+        else if (oldZ > 16) oldZ-=16;
+        else if (oldZ < -16) oldZ+=16;
+      }
       entity.position.x = oldX;
       entity.position.z = oldZ;
       entity.velocity.x = 0;

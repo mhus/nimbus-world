@@ -449,10 +449,10 @@ public class WLayerOverlayService {
 
                     if (type == BlockTypeType.GROUND) {
                         // Track min and max ground levels for GROUND type blocks
-                        if (column.minGroundLevel == null || y < column.minGroundLevel) {
+                        if (y == minHeight || y < column.minGroundLevel) {
                             column.minGroundLevel = y;
                         }
-                        if (column.maxGroundLevel == null || y > column.maxGroundLevel) {
+                        if (y == maxHeight || y > column.maxGroundLevel) {
                             column.maxGroundLevel = y;
                         }
                     } else if (type == BlockTypeType.WATER || type == BlockTypeType.LAVA) {
@@ -471,12 +471,10 @@ public class WLayerOverlayService {
         Map<String, int[]> heightDataMap = new HashMap<>();
         for (ColumnData column : columns.values()) {
             String key = column.x + "," + column.z;
-            int groundLevel = column.maxGroundLevel != null ? column.maxGroundLevel : -1;
-
             if (column.waterLevel != null) {
-                heightDataMap.put(key, new int[]{column.maxHeight, column.minGroundLevel != null ? column.minGroundLevel : minHeight, groundLevel, column.waterLevel});
+                heightDataMap.put(key, new int[]{column.maxHeight, column.minGroundLevel, column.maxGroundLevel, column.waterLevel});
             } else {
-                heightDataMap.put(key, new int[]{column.maxHeight, column.minGroundLevel != null ? column.minGroundLevel : minHeight, groundLevel});
+                heightDataMap.put(key, new int[]{column.maxHeight, column.minGroundLevel, column.maxGroundLevel});
             }
         }
 
@@ -664,15 +662,17 @@ public class WLayerOverlayService {
         final int z;
         final int maxHeight;
         final int minHeight;
-        Integer minGroundLevel;
-        Integer maxGroundLevel;
+        int minGroundLevel;
+        int maxGroundLevel;
         Integer waterLevel;
 
         ColumnData(int x, int z, int minHeight, int maxHeight) {
             this.x = x;
             this.z = z;
             this.minHeight = minHeight;
+            this.minGroundLevel = minHeight;
             this.maxHeight = maxHeight;
+            this.maxGroundLevel = maxHeight;
         }
 
         void addBlock(Block block) {
