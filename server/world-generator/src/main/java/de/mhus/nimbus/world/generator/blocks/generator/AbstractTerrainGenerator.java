@@ -59,7 +59,7 @@ public abstract class AbstractTerrainGenerator implements JobExecutor {
             log.info("Generator {} completed: world={} grid={} blocks={}",
                     getExecutorName(), context.worldId(), context.gridPosition(), blockCount);
 
-            return JobResult.ofSuccess("Generated " + blockCount + " blocks");
+            return JobResult.success("Generated " + blockCount + " blocks");
 
         } catch (Exception e) {
             log.error("Generator {} failed", getExecutorName(), e);

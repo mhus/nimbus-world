@@ -82,7 +82,7 @@ public class FlatTerrainManipulator implements FlatManipulator {
             }
         }
 
-        log.info("Flat terrain manipulated: region=({},{},{},{}), groundLevel={}, success={}, failedColumn={}, failedLevel={}",
+        log.info("Flat terrain manipulated: region=({},{},{},{}), groundLevel={}, successful={}, failedColumn={}, failedLevel={}",
                 x, z, sizeX, sizeZ, groundLevel, successCount, failedColumnCount, failedLevelCount);
     }
 

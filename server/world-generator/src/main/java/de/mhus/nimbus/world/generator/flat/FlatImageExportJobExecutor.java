@@ -159,7 +159,7 @@ public class FlatImageExportJobExecutor implements JobExecutor {
             }
             log.info("Material image saved successfully");
 
-            // Build success result
+            // Build successful result
             String resultData = String.format(
                     "Successfully exported flat images: flatId=%s, worldId=%s, levelPath=%s (size=%d bytes), materialPath=%s (size=%d bytes), ignoreEmptyMaterial=%s",
                     flatId, worldId, levelPath, levelImageBytes.length, materialPath, materialImageBytes.length, ignoreEmptyMaterial
@@ -167,7 +167,7 @@ public class FlatImageExportJobExecutor implements JobExecutor {
 
             log.info("Flat image export job completed successfully: jobId={}, flatId={}", job.getId(), flatId);
 
-            return JobResult.ofSuccess(resultData);
+            return JobResult.success(resultData);
 
         } catch (JobExecutionException e) {
             log.error("Flat image export job failed: jobId={}", job.getId(), e);

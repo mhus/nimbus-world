@@ -113,14 +113,14 @@ public class ExternalResourceSyncJobExecutor implements JobExecutor {
                         worldId, name, result.entityCount(), result.deletedCount(), result.exportedByType()
                 );
                 log.info(resultMessage);
-                return JobResult.ofSuccess(resultMessage);
+                return JobResult.success(resultMessage);
             } else {
                 String errorMessage = String.format(
                         "Export failed: worldId=%s title=%s error=%s",
                         worldId, name, result.errorMessage()
                 );
                 log.error(errorMessage);
-                return JobResult.ofFailure(errorMessage);
+                return JobResult.failure(errorMessage);
             }
 
         } catch (JobExecutionException e) {
@@ -182,14 +182,14 @@ public class ExternalResourceSyncJobExecutor implements JobExecutor {
                         worldId, name, result.imported(), result.deleted(), result.importedByType()
                 );
                 log.info(resultMessage);
-                return JobResult.ofSuccess(resultMessage);
+                return JobResult.success(resultMessage);
             } else {
                 String errorMessage = String.format(
                         "Import failed: worldId=%s title=%s error=%s",
                         worldId, name, result.errorMessage()
                 );
                 log.error(errorMessage);
-                return JobResult.ofFailure(errorMessage);
+                return JobResult.failure(errorMessage);
             }
 
         } catch (JobExecutionException e) {
@@ -241,7 +241,7 @@ public class ExternalResourceSyncJobExecutor implements JobExecutor {
             }
 
             log.info("Validation completed:\n{}", result);
-            return JobResult.ofSuccess(result.toString());
+            return JobResult.success(result.toString());
 
         } catch (JobExecutionException e) {
             throw e;

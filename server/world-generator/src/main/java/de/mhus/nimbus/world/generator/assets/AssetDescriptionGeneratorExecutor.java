@@ -130,11 +130,11 @@ public class AssetDescriptionGeneratorExecutor implements JobExecutor {
             if (success) {
                 String message = String.format("Generated description for asset: %s", assetPath);
                 log.info(message);
-                return JobResult.ofSuccess(message);
+                return JobResult.success(message);
             } else {
                 String message = String.format("Failed to generate description for asset: %s", assetPath);
                 log.warn(message);
-                return JobResult.ofSuccess(message);
+                return JobResult.success(message);
             }
 
         } catch (Exception e) {
@@ -194,7 +194,7 @@ public class AssetDescriptionGeneratorExecutor implements JobExecutor {
         );
 
         log.info("Asset description generation completed: {}", resultMessage);
-        return JobResult.ofSuccess(resultMessage);
+        return JobResult.success(resultMessage);
     }
 
     /**

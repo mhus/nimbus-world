@@ -12,7 +12,6 @@ import org.springframework.stereotype.Component;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Job executor for resource repair operations.
@@ -104,7 +103,7 @@ public class ResourceRepairJobExecutor implements JobExecutor {
             String finalMessage = report.toString();
             log.info("Resource repair completed:\n{}", finalMessage);
 
-            return JobResult.ofSuccess(finalMessage);
+            return JobResult.success(finalMessage);
         } catch (JobExecutionException e) {
             throw e;
         } catch (Exception e) {

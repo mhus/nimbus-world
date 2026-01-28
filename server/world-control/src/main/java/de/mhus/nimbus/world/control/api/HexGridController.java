@@ -472,7 +472,7 @@ public class HexGridController extends BaseEditorController {
             dirtyChunkService.markChunksDirty(worldId, new java.util.ArrayList<>(affectedChunks), "hexgrid_manual_dirty");
 
             return ResponseEntity.ok(Map.of(
-                    "success", true,
+                    "successful", true,
                     "position", q + ":" + r,
                     "chunksMarked", affectedChunks.size(),
                     "message", "Marked " + affectedChunks.size() + " chunks as dirty"

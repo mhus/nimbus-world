@@ -41,7 +41,7 @@ import java.util.Map;
  *
  * Final response type: "cmd.rs" (command result)
  * {
- *   "rc": 0,  // return code (0=success, negative=system error, positive=command error)
+ *   "rc": 0,  // return code (0=successful, negative=system error, positive=command error)
  *   "message": "Command output"
  * }
  *

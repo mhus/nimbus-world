@@ -18,7 +18,7 @@ import java.util.*;
  * - Process features with status=COMPOSED
  * - Create WHexGrid instances from FeatureHexGrid configs
  * - Handle idempotent creation (skip existing grids)
- * - Update feature status to CREATED after success
+ * - Update feature status to CREATED after successful
  */
 @Service
 @Slf4j

@@ -109,14 +109,14 @@ public class FlatManipulateJobExecutor implements JobExecutor {
             flat.touchUpdate();
             WFlat updated = flatService.update(flat);
 
-            // Build success result
+            // Build successful result
             String resultData = String.format(
                     "Successfully manipulated flat: flatId=%s, manipulator=%s, region=(%d,%d,%d,%d), parameters=%s",
                     flatId, manipulatorName, x, z, sizeX, sizeZ, parameters.isEmpty() ? "none" : parameters.toString()
             );
 
             log.info("Flat manipulation completed successfully: flatId={}, manipulator={}", flatId, manipulatorName);
-            return JobResult.ofSuccess(resultData);
+            return JobResult.success(resultData);
 
         } catch (IllegalArgumentException e) {
             log.error("Invalid parameters for flat manipulation", e);

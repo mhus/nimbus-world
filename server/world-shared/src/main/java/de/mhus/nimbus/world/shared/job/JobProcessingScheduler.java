@@ -123,7 +123,7 @@ public class JobProcessingScheduler {
         try {
             JobExecutor.JobResult result = executor.execute(job);
 
-            if (result.success()) {
+            if (result.successful()) {
                 jobService.markJobCompleted(job.getId(), result.resultData());
                 scheduleNextJob(job, job.getOnSuccess(), result.resultData(), null);
             } else {
@@ -170,12 +170,12 @@ public class JobProcessingScheduler {
             );
 
             // Add automatic parameters from the completed job
-            parameters.put("previousJobId", completedJob.getId());
+            parameters.put(JobExecutor.PREVIOUS_JOB_ID, completedJob.getId());
             if (result != null) {
-                parameters.put("previousJobResult", result);
+                parameters.put(JobExecutor.PREVIOUS_JOB_RESULT, result);
             }
             if (errorMessage != null) {
-                parameters.put("previousJobErrorMessage", errorMessage);
+                parameters.put(JobExecutor.PREVIOUS_JOB_ERROR_MESSAGE, errorMessage);
             }
 
             // Create the next job with the same worldId

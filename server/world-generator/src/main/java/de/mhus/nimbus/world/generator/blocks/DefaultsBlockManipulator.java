@@ -96,7 +96,7 @@ public class DefaultsBlockManipulator implements BlockManipulator {
 
         log.info("Defaults updated: {}", message);
 
-        // Return success without ModelSelector (no blocks generated)
+        // Return successful without ModelSelector (no blocks generated)
         return ManipulatorResult.success(message);
     }
 

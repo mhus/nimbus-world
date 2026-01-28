@@ -35,7 +35,7 @@ public class WorkflowStartJobExecutor implements JobExecutor {
                 workflowName,
                 job.getParameters() != null ? job.getParameters() : Map.of()
         );
-        return JobResult.ofSuccess(workflowId);
+        return JobResult.success(workflowId);
     }
 
 }

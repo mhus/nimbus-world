@@ -81,7 +81,7 @@ public class ServerCommandSender {
      * @param session Player session
      * @param title   Notification title
      * @param message Notification message
-     * @param level   Level: "info", "success", "warning", "error"
+     * @param level   Level: "info", "successful", "warning", "error"
      */
     public void sendNotification(PlayerSession session, String title, String message, String level) {
         ObjectNode data = objectMapper.createObjectNode();

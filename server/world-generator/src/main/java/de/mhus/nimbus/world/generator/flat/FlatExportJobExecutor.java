@@ -92,7 +92,7 @@ public class FlatExportJobExecutor implements JobExecutor {
                 log.info("Flat deleted: flatId={}", flatId);
             }
 
-            // Build success result
+            // Build successful result
             String resultData = String.format(
                     "Successfully exported flat: flatId=%s, worldId=%s, layerName=%s, exportedColumns=%d, deleted=%s, smoothCorners=%s",
                     flatId, worldId, layerName, exportedColumns, deleteAfterExport, smoothCorners
@@ -100,7 +100,7 @@ public class FlatExportJobExecutor implements JobExecutor {
 
             log.debug("Flat export completed successfully: flatId={}, exportedColumns={}, deleted={}, smoothCorners={}",
                     flatId, exportedColumns, deleteAfterExport, smoothCorners);
-            return JobResult.ofSuccess(resultData);
+            return JobResult.success(resultData);
 
         } catch (JobExecutionException e) {
             log.error("Flat export job failed: {}", e.getMessage());

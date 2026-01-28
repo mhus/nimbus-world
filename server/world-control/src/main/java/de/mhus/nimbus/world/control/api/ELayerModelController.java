@@ -410,7 +410,7 @@ public class ELayerModelController extends BaseEditorController {
             log.info("Manually synced model to terrain: modelId={}, chunks={}", id, chunksAffected);
 
             return ResponseEntity.ok(Map.of(
-                    "success", true,
+                    "successful", true,
                     "chunksAffected", chunksAffected,
                     "message", "Model synced to terrain successfully"
             ));
@@ -494,7 +494,7 @@ public class ELayerModelController extends BaseEditorController {
                     id, transformed.getMountX(), transformed.getMountY(), transformed.getMountZ());
 
             return ResponseEntity.ok(Map.of(
-                    "success", true,
+                    "successful", true,
                     "model", toDto(transformed),
                     "message", "Model center auto-adjusted successfully"
             ));
@@ -582,7 +582,7 @@ public class ELayerModelController extends BaseEditorController {
                     id, offsetX, offsetY, offsetZ, transformed.getMountX(), transformed.getMountY(), transformed.getMountZ());
 
             return ResponseEntity.ok(Map.of(
-                    "success", true,
+                    "successful", true,
                     "model", toDto(transformed),
                     "message", "Model center manually adjusted successfully"
             ));
@@ -674,7 +674,7 @@ public class ELayerModelController extends BaseEditorController {
             log.info("Synced moved model to terrain: modelId={}, chunks={}", id, chunksAffected);
 
             return ResponseEntity.ok(Map.of(
-                    "success", true,
+                    "successful", true,
                     "model", toDto(transformed),
                     "chunksAffected", chunksAffected,
                     "message", "Model moved and synced to terrain successfully"
@@ -751,7 +751,7 @@ public class ELayerModelController extends BaseEditorController {
                     id, targetLayerId, copied.getId(), copied.getName());
 
             return ResponseEntity.status(HttpStatus.CREATED).body(Map.of(
-                    "success", true,
+                    "successful", true,
                     "id", copied.getId(),
                     "model", toDto(copied),
                     "message", "Model copied successfully"

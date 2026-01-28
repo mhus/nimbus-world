@@ -89,7 +89,7 @@ public class DuplicateWorldJobExecutor implements JobExecutor {
             String finalMessage = resultMessage.toString();
             log.info("World duplication completed:\n{}", finalMessage);
 
-            return JobResult.ofSuccess(finalMessage);
+            return JobResult.success(finalMessage);
 
         } catch (JobExecutionException e) {
             throw e;

@@ -28,7 +28,7 @@ public class VillageBuildFeatureTest {
         BuildContext context = BuildContext.of("test-world", 12345L);
         CompositionResult result = village.build(context);
 
-        // Verify build success
+        // Verify build successful
         assertTrue(result.isSuccess(), "Village build should succeed");
         assertNull(result.getErrorMessage(), "Should have no error");
 

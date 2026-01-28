@@ -112,7 +112,7 @@ public class HexCompositeBuilderSimpleTest {
             .build()
             .compose();
 
-        // Verify success
+        // Verify successful
         assertTrue(result.isSuccess(), "Composition should succeed: " + result.getErrorMessage());
         assertNull(result.getErrorMessage(), "Should have no error message");
 

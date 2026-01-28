@@ -424,7 +424,7 @@ public class EditorController extends BaseEditorController {
             log.info("Edit mode activated: worldId={}, sessionId={}, layer={}",
                     worldId, sessionId, state.getSelectedLayer());
 
-            // 5. Return success
+            // 5. Return successful
             return ResponseEntity.ok().body(Map.of(
                     "editMode", true,
                     "layer", state.getSelectedLayer(),
@@ -511,7 +511,7 @@ public class EditorController extends BaseEditorController {
             log.info("Change layer completed: worldId={}, sessionId={}, previousLayer={}",
                     worldId, sessionId, previousLayer);
 
-            // 3. Return success
+            // 3. Return successful
             return ResponseEntity.ok().body(Map.of(
                     "previousLayer", previousLayer != null ? previousLayer : "",
                     "editMode", false,

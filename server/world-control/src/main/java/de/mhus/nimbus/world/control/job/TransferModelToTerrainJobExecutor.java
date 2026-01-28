@@ -54,14 +54,14 @@ public class TransferModelToTerrainJobExecutor implements JobExecutor {
             int chunksProcessed = layerService.transferModelToTerrain(modelId, markChunksDirty);
 
             if (chunksProcessed < 0) {
-                return JobResult.ofFailure("Model not found: " + modelId);
+                return JobResult.failure("Model not found: " + modelId);
             }
 
             String resultMessage = String.format("Transferred model to terrain: modelId=%s chunks=%d",
                     modelId, chunksProcessed);
 
             log.info(resultMessage);
-            return JobResult.ofSuccess(resultMessage);
+            return JobResult.success(resultMessage);
 
         } catch (Exception e) {
             log.error("Failed to transfer model to terrain", e);

@@ -202,7 +202,7 @@ public class EChunkController extends BaseEditorController {
         dirtyChunkService.markChunkDirty(lookupWorldId, chunkKey, "manual_editor_request");
 
         log.info("Marked chunk as dirty: worldId={}, chunkKey={}", lookupWorldId, chunkKey);
-        return ResponseEntity.ok(Map.of("success", true));
+        return ResponseEntity.ok(Map.of("successful", true));
     }
 
     // Helper methods

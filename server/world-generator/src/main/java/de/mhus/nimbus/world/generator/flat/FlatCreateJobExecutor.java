@@ -93,7 +93,7 @@ public class FlatCreateJobExecutor implements JobExecutor {
                 }
             }
 
-            // Build success result
+            // Build successful result
             String resultData = String.format(
                     "Successfully created empty flat: id=%s, flatId=%s, worldId=%s, layerName=%s, size=%dx%d, mount=(%d,%d), palette=%s",
                     flat.getId(), flatId, worldId, layerName, flat.getSizeX(), flat.getSizeZ(), flat.getMountX(), flat.getMountZ(),
@@ -101,7 +101,7 @@ public class FlatCreateJobExecutor implements JobExecutor {
             );
 
             log.info("Flat create completed successfully: flatId={}, id={}", flatId, flat.getId());
-            return JobResult.ofSuccess(resultData);
+            return JobResult.success(resultData);
 
         } catch (IllegalArgumentException e) {
             log.error("Invalid parameters for flat create", e);

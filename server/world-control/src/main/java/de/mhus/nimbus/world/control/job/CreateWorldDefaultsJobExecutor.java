@@ -20,7 +20,6 @@ import de.mhus.nimbus.world.shared.layer.WLayer;
 import de.mhus.nimbus.world.shared.layer.WLayerService;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
 import de.mhus.nimbus.world.shared.world.WHexGridRepository;
-import de.mhus.nimbus.world.shared.world.WWorld;
 import de.mhus.nimbus.world.shared.world.WWorldService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -222,7 +221,7 @@ public class CreateWorldDefaultsJobExecutor implements JobExecutor {
                 String finalMessage = resultMessage.toString();
                 log.info("Successfully created default entities for world {}:\n{}", worldId, finalMessage);
 
-                return JobResult.ofSuccess(finalMessage);
+                return JobResult.success(finalMessage);
 
             } catch (Exception e) {
                 String errorMsg = String.format("Failed to create default entities: %s", e.getMessage());

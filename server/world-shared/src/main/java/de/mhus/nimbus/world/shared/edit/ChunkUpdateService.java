@@ -161,7 +161,7 @@ public class ChunkUpdateService {
                 }
             }
 
-            log.info("Processed dirty chunks: world={} success={}/{}",
+            log.info("Processed dirty chunks: world={} successful={}/{}",
                     worldId, successCount, dirtyChunks.size());
 
             return successCount;

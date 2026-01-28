@@ -6,7 +6,7 @@ import lombok.Data;
 
 /**
  * Result of a block manipulation operation.
- * Contains model selector with generated blocks, success status, and message for chat.
+ * Contains model selector with generated blocks, successful status, and message for chat.
  */
 @Data
 @Builder
@@ -32,10 +32,10 @@ public class ManipulatorResult {
     private String message;
 
     /**
-     * Create a success result with message.
+     * Create a successful result with message.
      *
-     * @param message success message
-     * @return success result
+     * @param message successful message
+     * @return successful result
      */
     public static ManipulatorResult success(String message) {
         return ManipulatorResult.builder()
@@ -45,11 +45,11 @@ public class ManipulatorResult {
     }
 
     /**
-     * Create a success result with message and model selector.
+     * Create a successful result with message and model selector.
      *
-     * @param message success message
+     * @param message successful message
      * @param modelSelector model selector with generated blocks
-     * @return success result
+     * @return successful result
      */
     public static ManipulatorResult success(String message, ModelSelector modelSelector) {
         return ManipulatorResult.builder()

@@ -1,6 +1,5 @@
 package de.mhus.nimbus.world.control.job;
 
-import de.mhus.nimbus.world.control.service.delete.DeleteWorldResources;
 import de.mhus.nimbus.world.control.service.repair.ResourceRepairService;
 import de.mhus.nimbus.world.shared.job.JobExecutionException;
 import de.mhus.nimbus.world.shared.job.JobExecutor;
@@ -105,7 +104,7 @@ public class DeleteWorldResourcesJobExecutor implements JobExecutor {
             String finalMessage = resultMessage.toString();
             log.info("World resources deletion completed:\n{}", finalMessage);
 
-            return JobResult.ofSuccess(finalMessage);
+            return JobResult.success(finalMessage);
 
         } catch (JobExecutionException e) {
             throw e;

@@ -49,14 +49,14 @@ public class FlatUpdateBorderJobExecutor implements JobExecutor {
             // Execute border update
             WFlat flat = flatCreateService.updateBorder(worldId, layerName, flatId);
 
-            // Build success result
+            // Build successful result
             String resultData = String.format(
                     "Successfully updated flat border: id=%s, flatId=%s, worldId=%s, layerName=%s, size=%dx%d",
                     flat.getId(), flatId, flat.getWorldId(), layerName, flat.getSizeX(), flat.getSizeZ()
             );
 
             log.info("Flat update-border completed successfully: flatId={}, id={}", flatId, flat.getId());
-            return JobResult.ofSuccess(resultData);
+            return JobResult.success(resultData);
 
         } catch (IllegalArgumentException e) {
             log.error("Invalid parameters for flat update-border", e);

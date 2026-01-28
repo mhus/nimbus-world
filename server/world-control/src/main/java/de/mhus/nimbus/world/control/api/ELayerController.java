@@ -345,7 +345,7 @@ public class ELayerController extends BaseEditorController {
                 log.info("Created regeneration job for MODEL layer: layerId={} jobId={}", id, job.getId());
 
                 return ResponseEntity.ok(Map.of(
-                        "success", true,
+                        "successful", true,
                         "layerType", "MODEL",
                         "jobId", job.getId(),
                         "message", "Regeneration job created successfully"
@@ -372,7 +372,7 @@ public class ELayerController extends BaseEditorController {
                 log.info("Marked {} chunks dirty for GROUND layer: layerId={}", affectedChunks.size(), id);
 
                 return ResponseEntity.ok(Map.of(
-                        "success", true,
+                        "successful", true,
                         "layerType", "GROUND",
                         "chunksMarked", affectedChunks.size(),
                         "message", "Chunks marked for regeneration successfully"

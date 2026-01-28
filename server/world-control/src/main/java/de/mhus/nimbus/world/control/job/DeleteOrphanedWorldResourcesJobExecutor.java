@@ -66,7 +66,7 @@ public class DeleteOrphanedWorldResourcesJobExecutor implements JobExecutor {
             log.info("Orphaned world resources deletion completed:\n{}", finalMessage);
 
             // Job succeeds even if some operations failed (partial cleanup is acceptable)
-            return JobResult.ofSuccess(finalMessage);
+            return JobResult.success(finalMessage);
 
         } catch (Exception e) {
             log.error("Failed to execute orphaned world resources deletion job", e);

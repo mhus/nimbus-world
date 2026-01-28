@@ -82,7 +82,7 @@ public class DocumentSummaryJobExecutor implements JobExecutor {
 
             if (content == null || content.isBlank()) {
                 log.warn("Document has no content, skipping summary generation: documentId={}", documentId);
-                return JobResult.ofSuccess("Document has no content - summary generation skipped");
+                return JobResult.success("Document has no content - summary generation skipped");
             }
 
             log.info("Document loaded: title='{}', contentLength={}", document.getTitle(), content.length());
@@ -131,7 +131,7 @@ public class DocumentSummaryJobExecutor implements JobExecutor {
             log.info("Document summary generated successfully: documentId={}, summaryLength={}",
                     documentId, cleanedSummary.length());
 
-            return JobResult.ofSuccess("Summary generated: " + cleanedSummary.length() + " characters");
+            return JobResult.success("Summary generated: " + cleanedSummary.length() + " characters");
 
         } catch (JobExecutionException e) {
             log.error("Job execution failed: {}", e.getMessage(), e);

@@ -26,7 +26,7 @@ import org.springframework.web.socket.TextMessage;
  *
  * Response (if needed):
  * {
- *   "success": false,
+ *   "successful": false,
  *   "errorCode": 403,
  *   "errorMessage": "You do not have permission..."
  * }
@@ -70,13 +70,13 @@ public class InteractionRequestHandler implements MessageHandler {
         // TODO: Check if block is interactive
         // TODO: Validate player has permission to interact
         // TODO: Execute interaction logic
-        // TODO: Send success response if needed
+        // TODO: Send successful response if needed
 
         // For now, just log the interaction
         log.info("Interaction request: pos=({}, {}, {}), groupId={}, user={}, session={}",
                 x, y, z, groupId, session.getTitle(), session.getSessionId());
 
-        // Example: Send success response (in future, based on actual interaction result)
+        // Example: Send successful response (in future, based on actual interaction result)
         // sendSuccessResponse(session, requestId);
     }
 
@@ -86,7 +86,7 @@ public class InteractionRequestHandler implements MessageHandler {
     private void sendFailureResponse(PlayerSession session, String requestId, int errorCode, String errorMessage) {
         try {
             com.fasterxml.jackson.databind.node.ObjectNode responseData = objectMapper.createObjectNode();
-            responseData.put("success", false);
+            responseData.put("successful", false);
             responseData.put("errorCode", errorCode);
             responseData.put("errorMessage", errorMessage);
 
@@ -107,13 +107,13 @@ public class InteractionRequestHandler implements MessageHandler {
     }
 
     /**
-     * Send success response to client (currently unused, example for future).
+     * Send successful response to client (currently unused, example for future).
      */
     @SuppressWarnings("unused")
     private void sendSuccessResponse(PlayerSession session, String requestId) {
         try {
             com.fasterxml.jackson.databind.node.ObjectNode responseData = objectMapper.createObjectNode();
-            responseData.put("success", true);
+            responseData.put("successful", true);
 
             NetworkMessage response = NetworkMessage.builder()
                     .r(requestId)
@@ -124,10 +124,10 @@ public class InteractionRequestHandler implements MessageHandler {
             String json = objectMapper.writeValueAsString(response);
             session.getWebSocketSession().sendMessage(new TextMessage(json));
 
-            log.debug("Sent interaction success response: requestId={}", requestId);
+            log.debug("Sent interaction successful response: requestId={}", requestId);
 
         } catch (Exception e) {
-            log.error("Failed to send interaction success response", e);
+            log.error("Failed to send interaction successful response", e);
         }
     }
 }

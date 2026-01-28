@@ -208,7 +208,7 @@ public class BlockManipulatorService {
         try {
             ManipulatorResult result = manipulator.execute(context);
 
-            log.info("Manipulator '{}' completed: success={}, message={}",
+            log.info("Manipulator '{}' completed: successful={}, message={}",
                     manipulatorName, result.isSuccess(), result.getMessage());
 
             return result;

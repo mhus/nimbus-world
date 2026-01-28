@@ -137,7 +137,7 @@ public class FlatHexGridImportJobExecutor implements JobExecutor {
                 }
             }
 
-            // Build success result
+            // Build successful result
             String hexCoords = flat.getHexGrid() != null
                 ? String.format("(%d,%d)", flat.getHexGrid().getQ(), flat.getHexGrid().getR())
                 : "(unknown)";
@@ -150,7 +150,7 @@ public class FlatHexGridImportJobExecutor implements JobExecutor {
             );
 
             log.info("Flat hexgrid import completed successfully: flatId={}, id={}", flatId, flat.getId());
-            return JobResult.ofSuccess(resultData);
+            return JobResult.success(resultData);
 
         } catch (IllegalArgumentException e) {
             log.error("Invalid parameters for flat hexgrid import", e);

@@ -154,7 +154,7 @@ public class ResourceRepairAllWorldsJobExecutor implements JobExecutor {
             String finalMessage = resultMessage.toString();
             log.info("Resource repair for all worlds completed:\n{}", finalMessage);
 
-            return JobResult.ofSuccess(finalMessage);
+            return JobResult.success(finalMessage);
 
         } catch (Exception e) {
             log.error("Failed to execute resource repair for all worlds", e);

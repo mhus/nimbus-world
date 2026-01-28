@@ -61,8 +61,8 @@ public class WorkflowEventJobExecutor implements JobExecutor {
             );
         }
         if (status == null || StatusRecord.FAILED.equals(status))
-            return JobResult.ofFailure(status);
-        return JobResult.ofSuccess(status);
+            return JobResult.failure(status);
+        return JobResult.success(status);
     }
 
 }

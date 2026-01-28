@@ -97,7 +97,7 @@ public class CompositionManipulator implements FlatManipulator {
             }
         }
 
-        log.info("Composition manipulation completed: preset={}, steps={}, success={}, failures={}",
+        log.info("Composition manipulation completed: preset={}, steps={}, successful={}, failures={}",
                 preset, steps, successCount, failureCount);
     }
 

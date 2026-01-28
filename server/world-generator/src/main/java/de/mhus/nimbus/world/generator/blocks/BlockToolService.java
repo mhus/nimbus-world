@@ -325,7 +325,7 @@ public class BlockToolService {
      * @param modelName Model name for MODEL layers (optional, can be empty)
      * @return Execution result message
      */
-    @Tool("Execute a block manipulator to generate blocks. Provide the manipulator name, parameters as JSON, worldId, sessionId, and layer information. Returns success message with block count.")
+    @Tool("Execute a block manipulator to generate blocks. Provide the manipulator name, parameters as JSON, worldId, sessionId, and layer information. Returns successful message with block count.")
     public String executeManipulator(
             String manipulatorName,
             String parametersJson,

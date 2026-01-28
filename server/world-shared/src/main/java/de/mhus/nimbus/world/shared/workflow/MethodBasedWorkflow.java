@@ -26,7 +26,7 @@ public abstract class MethodBasedWorkflow implements Workflow {
 
     protected abstract void onFailure(WorkflowContext context, String status, Map<String, String> data);
 
-    protected void onSuccess(WorkflowContext context, String status, Map<String, String> data) {
+    private void onSuccess(WorkflowContext context, String status, Map<String, String> data) {
         final var maybeEventHandler =
                 Arrays.stream(ReflectionUtils.getAllDeclaredMethods(getClass()))
                         .filter(
@@ -61,7 +61,7 @@ public abstract class MethodBasedWorkflow implements Workflow {
             }
         } else {
             log.warn(
-                    "No success handler found for workflow '{}' with status '{}'",
+                    "No successful handler found for workflow '{}' with status '{}'",
                     context.getWorkflowName(),
                     status);
             onUnhandledEvent(context, status, data);
@@ -70,6 +70,7 @@ public abstract class MethodBasedWorkflow implements Workflow {
     }
 
     protected void onUnhandledEvent(WorkflowContext context, String status, Map<String, String> data) {
+        context.addNote("Unhandled success event for status: " + status);
         context.updateWorkflowStatus(StatusRecord.TERMINATED);
     }
 

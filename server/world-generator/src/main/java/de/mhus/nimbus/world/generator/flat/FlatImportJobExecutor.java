@@ -93,7 +93,7 @@ public class FlatImportJobExecutor implements JobExecutor {
                 }
             }
 
-            // Build success result
+            // Build successful result
             String resultData = String.format(
                     "Successfully imported flat: id=%s, flatId=%s, worldId=%s, layerName=%s, size=%dx%d, mount=(%d,%d), palette=%s",
                     flat.getId(), flatId, worldId, layerName, sizeX, sizeZ, mountX, mountZ,
@@ -101,7 +101,7 @@ public class FlatImportJobExecutor implements JobExecutor {
             );
 
             log.info("Flat import completed successfully: flatId={}, id={}", flatId, flat.getId());
-            return JobResult.ofSuccess(resultData);
+            return JobResult.success(resultData);
 
         } catch (IllegalArgumentException e) {
             log.error("Invalid parameters for flat import", e);

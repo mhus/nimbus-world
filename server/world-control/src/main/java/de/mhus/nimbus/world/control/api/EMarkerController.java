@@ -62,7 +62,7 @@ public class EMarkerController extends BaseEditorController {
                     worldId, sessionId, x, y, z);
 
             return ResponseEntity.ok(Map.of(
-                    "success", true,
+                    "successful", true,
                     "worldId", worldId,
                     "sessionId", sessionId,
                     "x", x,
@@ -108,7 +108,7 @@ public class EMarkerController extends BaseEditorController {
             log.info("Marker cleared successfully: worldId={}, sessionId={}", worldId, sessionId);
 
             return ResponseEntity.ok(Map.of(
-                    "success", true,
+                    "successful", true,
                     "worldId", worldId,
                     "sessionId", sessionId
             ));

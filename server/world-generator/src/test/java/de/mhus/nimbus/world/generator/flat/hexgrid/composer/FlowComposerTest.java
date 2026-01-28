@@ -60,7 +60,7 @@ public class FlowComposerTest {
             .build()
             .compose();
 
-        // Verify composition success
+        // Verify composition successful
         assertTrue(result.isSuccess(), "Composition should succeed");
         assertNull(result.getErrorMessage(), "Should have no error message");
 
@@ -73,7 +73,7 @@ public class FlowComposerTest {
         assertTrue(result.getFlowCompositionResult().getTotalSegments() > 0,
             "Should have created segments");
 
-        log.info("Flow composition result: success={}, composed={}/{}, segments={}",
+        log.info("Flow composition result: successful={}, composed={}/{}, segments={}",
             result.getFlowCompositionResult().isSuccess(),
             result.getFlowCompositionResult().getComposedFlows(),
             result.getFlowCompositionResult().getTotalFlows(),
@@ -136,10 +136,10 @@ public class FlowComposerTest {
             .build()
             .compose();
 
-        // Verify composition success
+        // Verify composition successful
         assertTrue(result.isSuccess(), "Composition should succeed");
 
-        log.info("River composition: success={}, segments={}",
+        log.info("River composition: successful={}, segments={}",
             result.getFlowCompositionResult().isSuccess(),
             result.getFlowCompositionResult().getTotalSegments());
 

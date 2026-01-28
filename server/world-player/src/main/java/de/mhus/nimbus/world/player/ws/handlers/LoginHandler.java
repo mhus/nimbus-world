@@ -100,7 +100,7 @@ public class LoginHandler implements MessageHandler {
         // Use the actual session ID (may have changed for username/password login)
         String actualSessionId = session.getSessionId();
 
-        // Send success response with world data
+        // Send successful response with world data
         sendLoginResponse(session, message.getI(), true, null, actualSessionId, world);
 
         log.info("Login successful: user={}, sessionId={}, worldId={}",
@@ -110,7 +110,7 @@ public class LoginHandler implements MessageHandler {
     private void sendLoginResponse(PlayerSession session, String requestId, boolean success,
                                    String errorMessage, String sessionId, WWorld world) throws Exception {
         ObjectNode data = objectMapper.createObjectNode();
-        data.put("success", success);
+        data.put("successful", success);
 
         if (success) {
             data.put("userId", session.getPlayer().user().getUserId());

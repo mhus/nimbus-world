@@ -133,7 +133,7 @@ public class HexCompositeBuilderTest {
             .build()
             .compose();
 
-        // Verify success
+        // Verify successful
         assertTrue(result.isSuccess(), "Composition should succeed");
 
         // Verify river composition
@@ -240,7 +240,7 @@ public class HexCompositeBuilderTest {
         // Call build() on the composition (implements BuildFeature)
         CompositionResult result = composition.build(context);
 
-        // Verify success
+        // Verify successful
         assertTrue(result.isSuccess(), "Build should succeed");
         assertNull(result.getErrorMessage(), "Should have no error");
 
@@ -410,7 +410,7 @@ public class HexCompositeBuilderTest {
             .build()
             .compose();
 
-        // Verify success
+        // Verify successful
         assertTrue(result.isSuccess(), "Composition should succeed: " + result.getErrorMessage());
         assertNull(result.getErrorMessage(), "Should have no error message");
 

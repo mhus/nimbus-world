@@ -8,6 +8,7 @@ import de.mhus.nimbus.generated.types.BlockTypeType;
 import de.mhus.nimbus.generated.types.ChunkData;
 import de.mhus.nimbus.generated.types.Vector3Int;
 import de.mhus.nimbus.shared.storage.StorageService;
+import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.shared.utils.TypeUtil;
 import de.mhus.nimbus.world.shared.world.HexMathUtil;
 import de.mhus.nimbus.world.shared.world.WBlockType;
@@ -17,7 +18,6 @@ import de.mhus.nimbus.world.shared.world.WWorldService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.io.InputStream;
 import java.util.*;
@@ -53,7 +53,7 @@ public class WLayerOverlayService {
      * @param chunkKey Chunk key (format: "cx:cz")
      * @return Merged ChunkData or empty Optional if no layers
      */
-    @Transactional(readOnly = true)
+    // dont need or? @Transactional(readOnly = true)
     public Optional<ChunkData> generateChunk(String worldId, String chunkKey) {
 
         var world = worldService.getByWorldId(worldId).orElseThrow(
@@ -113,11 +113,14 @@ public class WLayerOverlayService {
         result.setCx(cx);
         result.setCz(cz);
         result.setSize(chunkSize);
+        
         result.setBlocks(new ArrayList<>(blockMap.values()));
 
         // Calculate height data
-        Map<String, int[]> heightData = calculateHeightData(worldId, chunkSize, blockMap.values(), layers);
+        Map<String, int[]> heightData = calculateHeightData(world, chunkSize, blockMap.values(), layers);
         result.setHeightData(heightData);
+        if (calculateDeny(world, heightData))
+            result.setDeny(true);
 
         List<AreaData> areaData = calculateAreaData(world, cx, cz);
         result.setA(areaData);
@@ -126,6 +129,19 @@ public class WLayerOverlayService {
                 chunkKey, layers.size(), blockMap.size());
 
         return Optional.of(result);
+    }
+
+    private boolean calculateDeny(WWorld world, Map<String,int[]> heightData) {
+        int minHeight = (int) world.getPublicData().getStart().getY();
+
+        // Check if any column has no GROUND block (minGroundLevel equals world minHeight)
+        for (int[] data : heightData.values()) {
+            if (data.length >= 2 && data[1] == minHeight) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private List<AreaData> calculateAreaData(WWorld world, int cx, int cz) {
@@ -392,29 +408,22 @@ public class WLayerOverlayService {
      * Format: int[chunkSize * chunkSize][3 or 4]
      * Each entry: [x, z, maxHeight, groundLevel, waterLevel?]
      *
-     * @param worldId World identifier for block type lookups
+     * @param world World for block type lookups
      * @param chunkSize Chunk size
      * @param blocks All blocks in the chunk
      * @param layers All layers (to find baseGround layer)
      * @return Height data array
      */
-    private Map<String, int[]> calculateHeightData(String worldId, int chunkSize, Collection<Block> blocks, List<WLayer> layers) {
-        var worldIdObj = de.mhus.nimbus.shared.types.WorldId.of(worldId).orElseThrow();
-        var world = worldService.getByWorldId(worldId).orElseThrow();
+    private Map<String, int[]> calculateHeightData(WWorld world, int chunkSize, Collection<Block> blocks, List<WLayer> layers) {
         int maxHeight = (int) world.getPublicData().getStop().getY();
         int minHeight = (int) world.getPublicData().getStart().getY();
-
-        // Find base ground layer
-        WLayer baseGroundLayer = null;
-        for (WLayer layer : layers) {
-            if (layer.isBaseGround() && layer.isEnabled()) {
-                baseGroundLayer = layer;
-                break;
-            }
-        }
+        var worldId = WorldId.of(world.getWorldId()).orElseThrow();
 
         // Group blocks by column (x, z) using world coordinates
         Map<String, ColumnData> columns = new HashMap<>();
+
+        // Cache for BlockTypes to improve performance
+        Map<String, Optional<WBlockType>> blockTypeCache = new HashMap<>();
 
         for (Block block : blocks) {
             if (block.getPosition() == null) continue;
@@ -426,21 +435,28 @@ public class WLayerOverlayService {
             ColumnData column = columns.computeIfAbsent(columnKey, k -> new ColumnData(worldX, worldZ, minHeight, maxHeight));
             column.addBlock(block);
 
-            // Check if this block is in baseGround layer and not water
-            // TODO what when more then one groundLayers ... and check for blockTypeType == GROUND ?! is baseGroundLayer obsolate?
-            if (baseGroundLayer != null && block.getBlockTypeId() != null) {
-                var blockType = blockTypeService.findByBlockId(worldIdObj, block.getBlockTypeId());
-                if (blockType.isPresent() && blockType.get().getPublicData() != null) {
-                    Integer shapeInt = getShapeFromBlockType(blockType.get().getPublicData()); // TODO deprecated !!!! use blockTypeType == GROUND
-                    boolean isWater = isWaterShape(shapeInt, blockType.get().getPublicData().getType());
+            // Check block type: GROUND blocks for ground levels, WATER/LAVA for water level
+            if (block.getBlockTypeId() != null) {
+                // Use cache to avoid repeated database lookups
+                var blockType = blockTypeCache.computeIfAbsent(
+                    block.getBlockTypeId(),
+                    blockTypeId -> blockTypeService.findByBlockId(worldId, blockTypeId)
+                );
 
-                    if (!isWater) {
-                        int y = (int) block.getPosition().getY();
-                        if (column.groundLevel == null || y > column.groundLevel) {
-                            column.groundLevel = y;
+                if (blockType.isPresent() && blockType.get().getPublicData() != null) {
+                    BlockTypeType type = blockType.get().getPublicData().getType();
+                    int y = (int) block.getPosition().getY();
+
+                    if (type == BlockTypeType.GROUND) {
+                        // Track min and max ground levels for GROUND type blocks
+                        if (column.minGroundLevel == null || y < column.minGroundLevel) {
+                            column.minGroundLevel = y;
                         }
-                    } else {
-                        int y = (int) block.getPosition().getY();
+                        if (column.maxGroundLevel == null || y > column.maxGroundLevel) {
+                            column.maxGroundLevel = y;
+                        }
+                    } else if (type == BlockTypeType.WATER || type == BlockTypeType.LAVA) {
+                        // Track water level (highest water/lava block)
                         if (column.waterLevel == null || y > column.waterLevel) {
                             column.waterLevel = y;
                         }
@@ -451,48 +467,22 @@ public class WLayerOverlayService {
 
         // Convert to Map with key format "worldX,worldZ" (world coordinates)
         // Format: [maxHeight, minHeight, groundLevel, waterLevel?]
+        // groundLevel = highest GROUND block, minHeight = lowest GROUND block
         Map<String, int[]> heightDataMap = new HashMap<>();
         for (ColumnData column : columns.values()) {
             String key = column.x + "," + column.z;
+            int groundLevel = column.maxGroundLevel != null ? column.maxGroundLevel : -1;
+
             if (column.waterLevel != null) {
-                heightDataMap.put(key, new int[]{column.maxHeight, column.minHeight, column.groundLevel != null ? column.groundLevel : -1, column.waterLevel});
+                heightDataMap.put(key, new int[]{column.maxHeight, column.minGroundLevel != null ? column.minGroundLevel : minHeight, groundLevel, column.waterLevel});
             } else {
-                heightDataMap.put(key, new int[]{column.maxHeight, column.minHeight, column.groundLevel != null ? column.groundLevel : -1});
+                heightDataMap.put(key, new int[]{column.maxHeight, column.minGroundLevel != null ? column.minGroundLevel : minHeight, groundLevel});
             }
         }
 
         return heightDataMap;
     }
 
-    /**
-     * Get shape from BlockType (checking modifiers).
-     */
-    private Integer getShapeFromBlockType(de.mhus.nimbus.generated.types.BlockType blockType) {
-        if (blockType.getModifiers() == null || blockType.getModifiers().isEmpty()) {
-            return null;
-        }
-        // Get first modifier (usually status 0)
-        var modifier = blockType.getModifiers().get(0);
-        if (modifier == null || modifier.getVisibility() == null) {
-            return null;
-        }
-        return modifier.getVisibility().getShape();
-    }
-
-    /**
-     * Check if shape is a water type.
-     */
-    private boolean isWaterShape(Integer shapeInt, BlockTypeType type) {
-        if (shapeInt == null) return false;
-        if (type == BlockTypeType.WATER || type == BlockTypeType.LAVA) return true; // lava is water too :)
-        // Check against Shape enum values
-        // TODO deprecated
-        return shapeInt == de.mhus.nimbus.generated.types.Shape.OCEAN.getTsIndex() ||
-               shapeInt == de.mhus.nimbus.generated.types.Shape.WATER.getTsIndex() ||
-               shapeInt == de.mhus.nimbus.generated.types.Shape.RIVER.getTsIndex() ||
-               shapeInt == de.mhus.nimbus.generated.types.Shape.OCEAN_MAELSTROM.getTsIndex() ||
-               shapeInt == de.mhus.nimbus.generated.types.Shape.OCEAN_COAST.getTsIndex();
-    }
 
     /**
      * Calculate and apply face visibility for GROUND, PATH and BLOCK type blocks in the chunk.
@@ -674,7 +664,8 @@ public class WLayerOverlayService {
         final int z;
         final int maxHeight;
         final int minHeight;
-        Integer groundLevel;
+        Integer minGroundLevel;
+        Integer maxGroundLevel;
         Integer waterLevel;
 
         ColumnData(int x, int z, int minHeight, int maxHeight) {

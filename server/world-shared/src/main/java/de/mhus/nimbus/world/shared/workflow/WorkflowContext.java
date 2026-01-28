@@ -119,6 +119,10 @@ public class WorkflowContext {
         );
     }
 
+    public void addNote(String note) {
+        addRecord(new NoteRecord(note));
+    }
+
 
     public record Job(String executor, String type, String location, Map<String, String> parameters) {
     }
