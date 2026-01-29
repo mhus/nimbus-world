@@ -41,6 +41,54 @@
           </label>
         </div>
 
+        <!-- License Source -->
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text">License Source</span>
+          </label>
+          <input
+            v-model="formData.licenseSource"
+            type="text"
+            class="input input-bordered"
+            placeholder="Source URL or description (optional)"
+          />
+          <label class="label">
+            <span class="label-text-alt">Where this model comes from</span>
+          </label>
+        </div>
+
+        <!-- License Type -->
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text">License Type</span>
+          </label>
+          <input
+            v-model="formData.licenseType"
+            type="text"
+            class="input input-bordered"
+            placeholder="e.g., CC-BY-SA, MIT, proprietary (optional)"
+          />
+          <label class="label">
+            <span class="label-text-alt">Type of license for this model</span>
+          </label>
+        </div>
+
+        <!-- License Author -->
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text">License Author</span>
+          </label>
+          <input
+            v-model="formData.licenseAuthor"
+            type="text"
+            class="input input-bordered"
+            placeholder="Author name (optional)"
+          />
+          <label class="label">
+            <span class="label-text-alt">Original author or creator</span>
+          </label>
+        </div>
+
         <!-- Mount Point -->
         <div class="form-control">
           <label class="label">
@@ -722,6 +770,9 @@ const isEditMode = computed(() => !!props.model);
 const formData = ref<Partial<LayerModelDto>>({
   name: '',
   title: '',
+  licenseSource: undefined,
+  licenseType: undefined,
+  licenseAuthor: undefined,
   mountX: 0,
   mountY: 0,
   mountZ: 0,
@@ -831,6 +882,9 @@ const handleSave = async () => {
       const updateData: UpdateLayerModelRequest = {
         name: formData.value.name || undefined,
         title: formData.value.title || undefined,
+        licenseSource: formData.value.licenseSource || undefined,
+        licenseType: formData.value.licenseType || undefined,
+        licenseAuthor: formData.value.licenseAuthor || undefined,
         mountX: formData.value.mountX,
         mountY: formData.value.mountY,
         mountZ: formData.value.mountZ,
@@ -846,6 +900,9 @@ const handleSave = async () => {
       const createData: CreateLayerModelRequest = {
         name: formData.value.name || undefined,
         title: formData.value.title || undefined,
+        licenseSource: formData.value.licenseSource || undefined,
+        licenseType: formData.value.licenseType || undefined,
+        licenseAuthor: formData.value.licenseAuthor || undefined,
         layerDataId: props.layerDataId,
         mountX: formData.value.mountX,
         mountY: formData.value.mountY,

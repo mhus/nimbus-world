@@ -6,6 +6,9 @@
 export interface CreateLayerModelRequest {
   name?: string;
   title?: string;
+  licenseSource?: string;
+  licenseType?: string;
+  licenseAuthor?: string;
   layerDataId: string;
   mountX?: number;
   mountY?: number;

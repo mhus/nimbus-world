@@ -8,6 +8,9 @@ export interface LayerModelDto {
   worldId: string;
   name?: string;
   title?: string;
+  licenseSource?: string;
+  licenseType?: string;
+  licenseAuthor?: string;
   layerDataId: string;
   mountX: number;
   mountY: number;

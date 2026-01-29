@@ -6,6 +6,9 @@
 export interface UpdateLayerModelRequest {
   name?: string;
   title?: string;
+  licenseSource?: string;
+  licenseType?: string;
+  licenseAuthor?: string;
   mountX?: number;
   mountY?: number;
   mountZ?: number;

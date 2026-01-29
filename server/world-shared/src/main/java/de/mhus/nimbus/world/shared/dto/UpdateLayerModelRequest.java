@@ -20,6 +20,15 @@ public record UpdateLayerModelRequest(
         String title,
 
         @TypeScript(optional = true)
+        String licenseSource,
+
+        @TypeScript(optional = true)
+        String licenseType,
+
+        @TypeScript(optional = true)
+        String licenseAuthor,
+
+        @TypeScript(optional = true)
         Integer mountX,
 
         @TypeScript(optional = true)

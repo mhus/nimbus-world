@@ -206,6 +206,9 @@ public class ELayerModelController extends BaseEditorController {
                     .worldId(lookupWorldId)
                     .name(request.name())
                     .title(request.title())
+                    .licenseSource(request.licenseSource())
+                    .licenseType(request.licenseType())
+                    .licenseAuthor(request.licenseAuthor())
                     .layerDataId(layerDataId)
                     .mountX(request.mountX() != null ? request.mountX() : 0)
                     .mountY(request.mountY() != null ? request.mountY() : 0)
@@ -295,6 +298,18 @@ public class ELayerModelController extends BaseEditorController {
         }
         if (request.title() != null) {
             model.setTitle(request.title());
+            changed = true;
+        }
+        if (request.licenseSource() != null) {
+            model.setLicenseSource(request.licenseSource());
+            changed = true;
+        }
+        if (request.licenseType() != null) {
+            model.setLicenseType(request.licenseType());
+            changed = true;
+        }
+        if (request.licenseAuthor() != null) {
+            model.setLicenseAuthor(request.licenseAuthor());
             changed = true;
         }
         if (request.mountX() != null) {
@@ -825,6 +840,9 @@ public class ELayerModelController extends BaseEditorController {
                 model.getWorldId(),
                 model.getName(),
                 model.getTitle(),
+                model.getLicenseSource(),
+                model.getLicenseType(),
+                model.getLicenseAuthor(),
                 model.getLayerDataId(),
                 model.getMountX(),
                 model.getMountY(),

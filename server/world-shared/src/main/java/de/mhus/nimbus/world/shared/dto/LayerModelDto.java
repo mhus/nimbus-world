@@ -23,6 +23,15 @@ public record LayerModelDto(
         @TypeScript(optional = true)
         String title,
 
+        @TypeScript(optional = true)
+        String licenseSource,
+
+        @TypeScript(optional = true)
+        String licenseType,
+
+        @TypeScript(optional = true)
+        String licenseAuthor,
+
         String layerDataId,
 
         int mountX,
