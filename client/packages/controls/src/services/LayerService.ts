@@ -93,6 +93,29 @@ export class LayerService {
       {}
     );
   }
+
+  /**
+   * Import layer model from JSON
+   * Imports a WLayerModel from JSON data (e.g., from schematic-tool)
+   */
+  async importModel(
+    worldId: string,
+    id: string,
+    request: {
+      jsonData: string;
+      name?: string;
+      mountX?: number;
+      mountY?: number;
+      mountZ?: number;
+      rotation?: number;
+      order?: number;
+    }
+  ): Promise<{ modelId: string; name: string; blocks: number }> {
+    return apiService.post(
+      `/control/worlds/${worldId}/layers/${id}/import`,
+      request
+    );
+  }
 }
 
 export const layerService = new LayerService();

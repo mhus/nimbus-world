@@ -176,16 +176,28 @@
         <div v-if="isEditMode && formData.layerType === 'MODEL'" class="space-y-4">
           <div class="flex justify-between items-center">
             <h4 class="font-semibold">Models in this Layer</h4>
-            <button
-              type="button"
-              class="btn btn-sm btn-primary"
-              @click="openCreateModelDialog"
-            >
-              <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-              </svg>
-              New Model
-            </button>
+            <div class="flex gap-2">
+              <button
+                type="button"
+                class="btn btn-sm btn-outline btn-secondary"
+                @click="openImportDialog"
+              >
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                </svg>
+                Import Model
+              </button>
+              <button
+                type="button"
+                class="btn btn-sm btn-primary"
+                @click="openCreateModelDialog"
+              >
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg>
+                New Model
+              </button>
+            </div>
           </div>
 
           <LoadingSpinner v-if="loadingModels" />
@@ -196,6 +208,54 @@
             @delete="handleDeleteModel"
           />
         </div>
+
+        <!-- Import Model Dialog -->
+        <dialog ref="importDialogRef" class="modal">
+          <div class="modal-box max-w-4xl">
+            <h3 class="font-bold text-lg">Import Layer Model</h3>
+            <p class="py-4 text-sm text-base-content/70">
+              Paste the JSON data from schematic-tool (.model.json file) below.
+            </p>
+
+            <div class="form-control">
+              <label class="label">
+                <span class="label-text">Model JSON Data *</span>
+              </label>
+              <textarea
+                v-model="importJsonData"
+                class="textarea textarea-bordered h-96 font-mono text-xs"
+                placeholder='Paste your .model.json content here...'
+                :class="{ 'textarea-error': importError }"
+              ></textarea>
+              <label v-if="importError" class="label">
+                <span class="label-text-alt text-error">{{ importError }}</span>
+              </label>
+            </div>
+
+            <div class="modal-action">
+              <button
+                type="button"
+                class="btn"
+                @click="closeImportDialog"
+                :disabled="importing"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                class="btn btn-primary"
+                @click="handleImport"
+                :disabled="importing || !importJsonData"
+              >
+                <span v-if="importing" class="loading loading-spinner"></span>
+                {{ importing ? 'Importing...' : 'Import' }}
+              </button>
+            </div>
+          </div>
+          <form method="dialog" class="modal-backdrop">
+            <button>close</button>
+          </form>
+        </dialog>
 
         <!-- Action Buttons -->
         <div class="modal-action">
@@ -303,6 +363,12 @@ const regenerating = ref(false);
 // Model management
 const models = ref<LayerModelDto[]>([]);
 const loadingModels = ref(false);
+
+// Import dialog state
+const importDialogRef = ref<HTMLDialogElement | null>(null);
+const importJsonData = ref('');
+const importError = ref('');
+const importing = ref(false);
 
 // Grid editor state
 // Removed: selectedModelForGrid - no longer needed
@@ -421,6 +487,60 @@ const handleDeleteModel = async (model: LayerModelDto) => {
   } catch (error: any) {
     logger.error('Failed to delete model', { modelId: model.id }, error);
     errorMessage.value = `Failed to delete model: ${error.message}`;
+  }
+};
+
+/**
+ * Open import dialog
+ */
+const openImportDialog = () => {
+  importJsonData.value = '';
+  importError.value = '';
+  importDialogRef.value?.showModal();
+};
+
+/**
+ * Close import dialog
+ */
+const closeImportDialog = () => {
+  importDialogRef.value?.close();
+  importJsonData.value = '';
+  importError.value = '';
+};
+
+/**
+ * Handle import model from JSON
+ */
+const handleImport = async () => {
+  if (!props.layer?.id || !importJsonData.value) return;
+
+  importing.value = true;
+  importError.value = '';
+
+  try {
+    // Validate JSON
+    JSON.parse(importJsonData.value);
+
+    // Call import API
+    await layerService.importModel(props.worldId, props.layer.id, {
+      jsonData: importJsonData.value
+    });
+
+    logger.info('Imported layer model successfully', { layerId: props.layer.id });
+
+    // Close dialog and reload models
+    closeImportDialog();
+    await loadModels();
+
+  } catch (error: any) {
+    logger.error('Failed to import model', { layerId: props.layer.id }, error);
+    if (error.message.includes('JSON')) {
+      importError.value = 'Invalid JSON data. Please check the format.';
+    } else {
+      importError.value = `Failed to import model: ${error.message}`;
+    }
+  } finally {
+    importing.value = false;
   }
 };
 

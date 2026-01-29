@@ -6712,6 +6712,13 @@
         "visibility" : null,
         "javaTypeHint" : null,
         "comment" : null
+      }, {
+        "name" : "selectionRadius",
+        "type" : "number",
+        "optional" : true,
+        "visibility" : null,
+        "javaTypeHint" : null,
+        "comment" : null
       } ],
       "methods" : [ ]
     } ],

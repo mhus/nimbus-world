@@ -1,11 +1,15 @@
 package de.mhus.nimbus.world.control.api;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.shared.types.WorldId;
+import de.mhus.nimbus.world.control.service.LayerModelImporter;
 import de.mhus.nimbus.world.shared.dto.CreateLayerRequest;
+import de.mhus.nimbus.world.shared.dto.ImportLayerModelRequest;
 import de.mhus.nimbus.world.shared.dto.LayerDto;
 import de.mhus.nimbus.world.shared.dto.UpdateLayerRequest;
 import de.mhus.nimbus.world.shared.layer.LayerType;
 import de.mhus.nimbus.world.shared.layer.WLayer;
+import de.mhus.nimbus.world.shared.layer.WLayerModel;
 import de.mhus.nimbus.world.shared.layer.WLayerService;
 import de.mhus.nimbus.world.shared.rest.BaseEditorController;
 import io.swagger.v3.oas.annotations.Operation;
@@ -42,6 +46,7 @@ public class ELayerController extends BaseEditorController {
     private final WLayerService layerService;
     private final de.mhus.nimbus.world.shared.job.WJobService jobService;
     private final de.mhus.nimbus.world.shared.layer.WDirtyChunkService dirtyChunkService;
+    private final ObjectMapper objectMapper;
 
     // DTOs moved to de.mhus.nimbus.world.shared.dto package for TypeScript generation
 
@@ -425,6 +430,100 @@ public class ELayerController extends BaseEditorController {
 
         log.info("Deleted layer: id={}, title={}", id, layer.getName());
         return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Import Layer Model from JSON.
+     * POST /control/worlds/{worldId}/layers/{id}/import
+     * <p>
+     * Imports a WLayerModel from JSON data (e.g., from schematic-tool).
+     * The layer must be of type MODEL.
+     */
+    @PostMapping("/{id}/import")
+    @Operation(summary = "Import Layer Model from JSON")
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "Model imported successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid request or layer is not MODEL type"),
+            @ApiResponse(responseCode = "404", description = "Layer not found")
+    })
+    public ResponseEntity<?> importModel(
+            @Parameter(description = "World identifier") @PathVariable String worldId,
+            @Parameter(description = "Layer identifier") @PathVariable String id,
+            @RequestBody ImportLayerModelRequest request) {
+
+        log.debug("IMPORT model: worldId={}, layerId={}", worldId, id);
+
+        var wid = WorldId.of(worldId).orElseThrow(
+                () -> new IllegalStateException("Invalid worldId: " + worldId)
+        );
+        var validation = validateId(id, "id");
+        if (validation != null) return validation;
+
+        // IMPORTANT: Filter out instances - layers are per world/zone only
+        String lookupWorldId = wid.withoutInstance().getId();
+
+        Optional<WLayer> opt = layerService.findById(id);
+        if (opt.isEmpty()) {
+            log.warn("Layer not found for import: id={}", id);
+            return notFound("layer not found");
+        }
+
+        WLayer layer = opt.get();
+        if (!layer.getWorldId().equals(lookupWorldId)) {
+            log.warn("Layer worldId mismatch: expected={}, actual={}", lookupWorldId, layer.getWorldId());
+            return notFound("layer not found");
+        }
+
+        // Verify layer is MODEL type
+        if (layer.getLayerType() != LayerType.MODEL) {
+            log.warn("Cannot import model to non-MODEL layer: layerId={} type={}", id, layer.getLayerType());
+            return bad("Layer must be of type MODEL");
+        }
+
+        // Validate request
+        if (request.jsonData() == null || request.jsonData().isBlank()) {
+            return bad("jsonData is required");
+        }
+
+        try {
+            // Build importer with all parameters
+            LayerModelImporter.Builder builder = LayerModelImporter.builder()
+                    .layerService(layerService)
+                    .objectMapper(objectMapper)
+                    .worldId(lookupWorldId)
+                    .layerDataId(layer.getLayerDataId())
+                    .jsonData(request.jsonData());
+
+            // Apply overrides if provided
+            if (request.name() != null) builder.name(request.name());
+            if (request.mountX() != null) builder.mountX(request.mountX());
+            if (request.mountY() != null) builder.mountY(request.mountY());
+            if (request.mountZ() != null) builder.mountZ(request.mountZ());
+            if (request.rotation() != null) builder.rotation(request.rotation());
+            if (request.order() != null) builder.order(request.order());
+
+            WLayerModel imported = builder.build().importModel();
+
+            log.info("Imported layer model: layerId={} modelId={} name={} blocks={}",
+                    id, imported.getId(), imported.getName(),
+                    imported.getContent() != null ? imported.getContent().size() : 0);
+
+            // Build response map with null-safe values
+            Map<String, Object> response = new java.util.HashMap<>();
+            response.put("modelId", imported.getId() != null ? imported.getId() : "");
+            response.put("name", imported.getName() != null ? imported.getName() : "");
+            response.put("blocks", imported.getContent() != null ? imported.getContent().size() : 0);
+
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
+
+        } catch (IllegalStateException e) {
+            log.warn("Failed to import layer model: {}", e.getMessage());
+            return bad(e.getMessage());
+        } catch (Exception e) {
+            log.error("Unexpected error importing layer model", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Failed to import model: " + e.getMessage()));
+        }
     }
 
     // Helper methods
