@@ -2,6 +2,7 @@ package de.mhus.nimbus.world.shared.job;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import de.mhus.nimbus.shared.utils.CastUtil;
 
 import java.util.Map;
 
@@ -11,8 +12,6 @@ import java.util.Map;
  * Executors are discovered via Spring ApplicationContext and registered by name.
  */
 public interface JobExecutor {
-
-    ObjectMapper mapper = new ObjectMapper();
 
     String PREVIOUS_JOB_ID = "previousJobId";
     String PREVIOUS_JOB_RESULT = "previousJobResult";
@@ -44,6 +43,7 @@ public interface JobExecutor {
      */
     record JobResult(
             boolean successful,
+            boolean async,
             String resultData,
             String errorMessage
     ) {
@@ -51,41 +51,39 @@ public interface JobExecutor {
          * Create a successful result without data.
          */
         public static JobResult success() {
-            return new JobResult(true, null, null);
+            return new JobResult(true, false, null, null);
         }
 
         /**
          * Create a successful result with data.
          */
         public static JobResult success(String resultData) {
-            return new JobResult(true, resultData, null);
+            return new JobResult(true, false, resultData, null);
+        }
+
+        /**
+         * Create a successful result with data.
+         */
+        public static JobResult async(String resultData) {
+            return new JobResult(true, true, resultData, null);
+        }
+
+        /**
+         * Create a successful result with data.
+         */
+        public static JobResult async(Map<String, Object> resultData) {
+            return new JobResult(true, true, CastUtil.mapToString(resultData), null);
         }
 
         public static JobResult success(Map<String, Object> resultData) {
-            return new JobResult(true, JobExecutor.mapToString(resultData), null);
+            return new JobResult(true, false, CastUtil.mapToString(resultData), null);
         }
 
         /**
          * Create a failure result with error message.
          */
         public static JobResult failure(String errorMessage) {
-            return new JobResult(false, null, errorMessage);
-        }
-    }
-
-    static String mapToString(Map<String, Object> resultData) {
-        try {
-            return mapper.writeValueAsString(resultData);
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException("Failed to serialize resultData map to JSON", e);
-        }
-    }
-
-    static Map<String, Object> stringToMap(String json) {
-        try {
-            return mapper.readValue(json, mapper.getTypeFactory().constructMapType(Map.class, String.class, String.class));
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to deserialize JSON to Map<String, String>", e);
+            return new JobResult(false, false, null, errorMessage);
         }
     }
 

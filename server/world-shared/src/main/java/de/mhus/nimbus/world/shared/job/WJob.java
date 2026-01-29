@@ -66,6 +66,12 @@ public class WJob implements Identifiable {
     private String type;
 
     /**
+     * Indicates if the job is asynchronous.
+     * Set result from async execution after startup.
+     */
+    private String async;
+
+    /**
      * Job status: PENDING, RUNNING, COMPLETED, FAILED
      */
     @Indexed

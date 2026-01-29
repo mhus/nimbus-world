@@ -15,18 +15,60 @@ public abstract class MethodBasedWorkflow implements Workflow {
             String status = context.getStatus();
             String eventType = event.getEvent();
             if (WorkflowEvent.SUCCESS.equals(eventType)) {
-                onSuccess(context, status, event.getData());
+                onSuccess(context, status, event);
             } else if (WorkflowEvent.FAILURE.equals(eventType)) {
-                onFailure(context, status, event.getData());
+                onFailure(context, status, event);
             } else {
                 log.warn("Unknown event type '{}' for workflow '{}'", eventType, context.getWorkflowName());
                 context.updateWorkflowStatus(StatusRecord.TERMINATED);
             }
     }
 
-    protected abstract void onFailure(WorkflowContext context, String status, Map<String, String> data);
+    protected void onFailure(WorkflowContext context, String status, WorkflowEvent event) {
+        Map<String, String> data = event.getData();
+        final var maybeEventHandler =
+                Arrays.stream(ReflectionUtils.getAllDeclaredMethods(getClass()))
+                        .filter(
+                                method -> {
+                                    final var anno = method.getAnnotation(OnFailure.class);
+                                    if (anno == null) {
+                                        return false;
+                                    }
+                                    return (anno.value().equals(status));
+                                })
+                        .sorted(
+                                (m1, m2) ->
+                                        Integer.compare(
+                                                m2.getParameterCount(), m1.getParameterCount()))
+                        .findFirst();
 
-    private void onSuccess(WorkflowContext context, String status, Map<String, String> data) {
+        if (maybeEventHandler.isPresent()) {
+            final var handler = maybeEventHandler.get();
+            if (!handler.canAccess(this)) {
+                handler.setAccessible(true);
+            }
+            try {
+                ReflectionUtils.invokeMethod(
+                        handler, this, findArgsForMethod(handler, context, status, event, data));
+            } catch (Exception e) {
+                log.warn(
+                        "Error invoking event handler {} for status {}, cancel workflow",
+                        handler,
+                        status,
+                        e);
+                context.updateWorkflowStatus(StatusRecord.FAILED);
+            }
+        } else {
+            log.warn(
+                    "No successful handler found for workflow '{}' with status '{}'",
+                    context.getWorkflowName(),
+                    status);
+            onUnhandledEvent(context, status, event);
+        }
+    }
+
+    protected void onSuccess(WorkflowContext context, String status, WorkflowEvent event) {
+        Map<String, String> data = event.getData();
         final var maybeEventHandler =
                 Arrays.stream(ReflectionUtils.getAllDeclaredMethods(getClass()))
                         .filter(
@@ -50,7 +92,7 @@ public abstract class MethodBasedWorkflow implements Workflow {
             }
             try {
                 ReflectionUtils.invokeMethod(
-                        handler, this, findArgsForMethod(handler, context, status, data));
+                        handler, this, findArgsForMethod(handler, context, status, event, data));
             } catch (Exception e) {
                 log.warn(
                         "Error invoking event handler {} for status {}, cancel workflow",
@@ -64,13 +106,18 @@ public abstract class MethodBasedWorkflow implements Workflow {
                     "No successful handler found for workflow '{}' with status '{}'",
                     context.getWorkflowName(),
                     status);
-            onUnhandledEvent(context, status, data);
+            onUnhandledEvent(context, status, event);
         }
-
     }
 
-    protected void onUnhandledEvent(WorkflowContext context, String status, Map<String, String> data) {
-        context.addNote("Unhandled success event for status: " + status);
+    protected void onUnhandledEvent(WorkflowContext context, String status, WorkflowEvent event) {
+        context.addNote("Unhandled event '{}' for status '{}'".formatted(event.getEvent(), status));
+        log.warn(
+                "Unhandled event '{}' for workflow '{}-{}' with status '{}'",
+                event.getEvent(),
+                context.getWorkflowName(),
+                context.getWorkflowId(),
+                status);
         context.updateWorkflowStatus(StatusRecord.TERMINATED);
     }
 
@@ -88,5 +135,4 @@ public abstract class MethodBasedWorkflow implements Workflow {
         log.debug("Resolved method args: {}", Arrays.toString(result));
         return result;
     }
-
 }

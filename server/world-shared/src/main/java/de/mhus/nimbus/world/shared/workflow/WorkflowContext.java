@@ -75,9 +75,9 @@ public class WorkflowContext {
                 .orElse(Map.of());
     }
 
-    public Optional<JournalRecord> getLastJournalRecord(Class<? extends JournalRecord> type) {
+    public <T extends JournalRecord> Optional<T> getLastJournalRecord(Class<T> type) {
         return getLastJournalRecord(type.getCanonicalName()).map(
-                entry -> entry.toJournalRecord(this));
+                entry -> (T)entry.toJournalRecord(this));
     }
 
     public Optional<WWorkflowJournalRecord> getLastJournalRecord(String type) {

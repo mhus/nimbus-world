@@ -41,11 +41,12 @@ public class WorkflowService {
      * @param workflowName Name of the workflow to create
      * @param worldId World identifier
      * @param params Initialization parameters
+     * @param jobId Optional a jobId to link the workflow to a job
      * @return Workflow identifier for the created workflow instance
      * @throws WorkflowException If workflow not found or initialization fails
      */
-    public String createWorkflow(String worldId, String workflowName, Map<String, String> params) throws WorkflowException {
-        log.info("Creating workflow: name={}, worldId={}", workflowName, worldId);
+    public String createWorkflow(String worldId, String workflowName, Map<String, String> params, String jobId) throws WorkflowException {
+        log.info("Creating workflow: name={}, worldId={}, jobId={}", workflowName, worldId, jobId);
 
         Workflow workflow = findWorkflow(workflowName)
                 .orElseThrow(() -> new WorkflowException(null, "Workflow not found: " + workflowName));
@@ -57,10 +58,10 @@ public class WorkflowService {
             Map<String,String> parameters = workflow.initialize(worldId, params != null ? params : new HashMap<>());
 
             // Create initial status entry
-            StartRecord start = StartRecord.builder()
-                    .workflow(workflowName)
-                    .build();
-            journalService.addWorkflowJournalRecord(worldId, workflowId, start);
+            journalService.addWorkflowJournalRecord(worldId, workflowId, new StartRecord(workflowName));
+            if (jobId != null) {
+                journalService.addWorkflowJournalRecord(worldId, workflowId, new JobIdRecord(jobId));
+            }
             WorkflowParameters workflowParameters = WorkflowParameters.builder()
                     .parameters(parameters)
                     .build();
@@ -206,6 +207,18 @@ public class WorkflowService {
                 log.error("Error during workflow finalization: workflowId={}", context.getWorkflowId(), e);
             }
             log.info("Workflow finalized: workflowId={}, status={}", context.getWorkflowId(), status);
+
+            var jobId = context.getLastJournalRecord(JobIdRecord.class).orElse(null);
+            if (jobId != null) {
+                var result = context.getLastJournalRecord(ResultRecord.class).orElse(null);
+                log.info("Marking linked job as completed: jobId={}, workflowId={}", jobId.getJobId(), context.getWorkflowId());
+                if (isStatusFailed(status)) {
+                    jobService.markJobFailed(jobId.getJobId(), result == null ? null : result.getResult());
+                } else {
+                    jobService.markJobCompleted(jobId.getJobId(), result == null ? null : result.getResult());
+                }
+            }
+
             // journalService.clearWorkflowJournal(context.getWorldId(), context.getWorkflowId());
             return;
         }
@@ -218,7 +231,11 @@ public class WorkflowService {
     }
 
     private boolean isStatusFinal(String status) {
-        return "COMPLETED".equals(status) || "FAILED".equals(status) || "CANCELLED".equals(status);
+        return StatusRecord.COMPLETED.equals(status) || StatusRecord.FAILED.equals(status) || StatusRecord.TERMINATED.equals(status);
+    }
+
+    private boolean isStatusFailed(String status) {
+        return StatusRecord.FAILED.equals(status) || StatusRecord.TERMINATED.equals(status);
     }
 
     /**

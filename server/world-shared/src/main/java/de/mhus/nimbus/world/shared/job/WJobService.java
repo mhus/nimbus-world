@@ -117,6 +117,18 @@ public class WJobService {
     }
 
     @Transactional
+    public Optional<WJob> markJobAsync(String jobId, String result) {
+        return jobRepository.findById(jobId).map(job -> {
+            job.setAsync(result);
+            WJob saved = jobRepository.save(job);
+            log.info("Job async: id={} world={} executor={} duration={}ms",
+                    jobId, job.getWorldId(), job.getExecutor(),
+                    calculateDuration(job));
+            return saved;
+        });
+    }
+
+    @Transactional
     public Optional<WJob> markJobCompleted(String jobId, String result) {
         return jobRepository.findById(jobId).map(job -> {
             job.markCompleted(result);

@@ -123,6 +123,9 @@ public class JobProcessingScheduler {
         try {
             JobExecutor.JobResult result = executor.execute(job);
 
+            if (result.async()) {
+                jobService.markJobAsync(job.getId(), result.resultData());
+            } else
             if (result.successful()) {
                 jobService.markJobCompleted(job.getId(), result.resultData());
                 scheduleNextJob(job, job.getOnSuccess(), result.resultData(), null);

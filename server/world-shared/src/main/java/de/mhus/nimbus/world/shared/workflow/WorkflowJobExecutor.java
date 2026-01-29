@@ -16,9 +16,9 @@ import java.util.Map;
         havingValue = "true",
         matchIfMissing = false
 )
-public class WorkflowStartJobExecutor implements JobExecutor {
+public class WorkflowJobExecutor implements JobExecutor {
 
-    public static final String NAME = "workflow-start-job-executor";
+    public static final String NAME = "workflow-job-executor";
 
     private final WorkflowService workflowService;
 
@@ -33,9 +33,12 @@ public class WorkflowStartJobExecutor implements JobExecutor {
         var workflowId = workflowService.createWorkflow(
                 job.getWorldId(),
                 workflowName,
-                job.getParameters() != null ? job.getParameters() : Map.of()
+                job.getParameters() != null ? job.getParameters() : Map.of(),
+                job.getId()
         );
-        return JobResult.success(workflowId);
+        return JobResult.async(Map.of(
+                "workflowId", workflowId
+        ));
     }
 
 }

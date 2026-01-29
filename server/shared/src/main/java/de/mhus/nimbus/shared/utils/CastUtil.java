@@ -1,8 +1,17 @@
 package de.mhus.nimbus.shared.utils;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import java.util.Map;
 
 public class CastUtil {
+
+    private static ObjectMapper mapper = new ObjectMapper();
+    static {
+        mapper.findAndRegisterModules();
+    }
+
 
     public static int toint(String value, int defaultValue) {
         try {
@@ -37,4 +46,21 @@ public class CastUtil {
         }
         return map;
     }
+
+    public static String mapToString(Map<String, Object> resultData) {
+        try {
+            return mapper.writeValueAsString(resultData);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Failed to serialize resultData map to JSON", e);
+        }
+    }
+
+    public static Map<String, Object> stringToMap(String json) {
+        try {
+            return mapper.readValue(json, mapper.getTypeFactory().constructMapType(Map.class, String.class, String.class));
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to deserialize JSON to Map<String, String>", e);
+        }
+    }
+
 }

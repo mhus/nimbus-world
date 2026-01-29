@@ -8,4 +8,5 @@ public interface JournalStringRecord extends JournalRecord {
 
     String entryToString();
     void stringToRecord(String data);
+
 }
