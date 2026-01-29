@@ -132,6 +132,9 @@ public class WLayerOverlayService {
     }
 
     private boolean calculateDeny(WWorld world, Map<String,int[]> heightData) {
+        int chunkSize = world.getPublicData().getChunkSize();
+        if (heightData.size() < chunkSize * chunkSize) // missed some chunk columns ... not good
+            return true;
         int minHeight = (int) world.getPublicData().getStart().getY();
 
         // Check if any column has no GROUND block (minGroundLevel equals world minHeight)
@@ -449,10 +452,10 @@ public class WLayerOverlayService {
 
                     if (type == BlockTypeType.GROUND) {
                         // Track min and max ground levels for GROUND type blocks
-                        if (y == minHeight || y < column.minGroundLevel) {
+                        if (column.minGroundLevel == minHeight || y < column.minGroundLevel) {
                             column.minGroundLevel = y;
                         }
-                        if (y == maxHeight || y > column.maxGroundLevel) {
+                        if (column.maxGroundLevel == maxHeight || y > column.maxGroundLevel) {
                             column.maxGroundLevel = y;
                         }
                     } else if (type == BlockTypeType.WATER || type == BlockTypeType.LAVA) {

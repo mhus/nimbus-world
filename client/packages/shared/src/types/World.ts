@@ -37,16 +37,16 @@ export interface WorldInfo {
   /** Stop position (max coordinates) */
   stop?: Vector3;
 
-  /** Chunk size (default: 16) */
+  /** Chunk size (default: 32). This is the width/depth of the chunk. height (y) is always 'all'. A chunk is a column. */
   chunkSize: number; // javaType: int
 
-    /** Hex grid size in blocks */
+    /** Hex grid size in blocks. This is the width not the radius of the hex grid. radius=hexGridSize/2 */
   hexGridSize: number; // javaType: int
 
   /** World icon asset path */
   worldIcon?: string;
 
-  /** World status (0=active, 1=inactive, etc.) */
+  /** World status (0=default,  etc. - this will control the default status vision of the blocks.) */
   status?: number; // javaType: byte
 
   /** Season status identifier (e.g., 'spring', 'summer', 'autumn', 'winter') */
