@@ -60,6 +60,7 @@
           <tr>
             <th>Title</th>
             <th>Name</th>
+            <th>Collection</th>
             <th>Type</th>
             <th>Language</th>
             <th>Format</th>
@@ -72,7 +73,7 @@
             v-for="doc in documents"
             :key="doc.documentId"
             class="cursor-pointer hover:bg-base-200"
-            @click="doc.readOnly ? null : openEditDialog(doc)"
+            @click="openEditDialog(doc)"
             :class="{ 'opacity-75': doc.readOnly }"
           >
             <td>
@@ -83,6 +84,9 @@
               <div v-if="doc.summary" class="text-xs text-base-content/60 mt-1">{{ doc.summary }}</div>
             </td>
             <td><code class="text-xs">{{ doc.name }}</code></td>
+            <td>
+              <span v-if="doc.collection" class="badge badge-sm badge-primary">{{ doc.collection }}</span>
+            </td>
             <td>
               <span v-if="doc.type" class="badge badge-sm">{{ doc.type }}</span>
             </td>
@@ -110,11 +114,14 @@
                 <button
                   class="btn btn-sm btn-ghost tooltip"
                   @click="openEditDialog(doc)"
-                  :disabled="doc.readOnly"
-                  :data-tip="doc.readOnly ? 'Cannot edit read-only document' : 'Edit'"
+                  :data-tip="doc.readOnly ? 'View' : 'Edit'"
                 >
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg v-if="!doc.readOnly" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                  <svg v-else class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                   </svg>
                 </button>
                 <button
@@ -138,7 +145,7 @@
     <div v-if="showEditorDialog" class="modal modal-open" @click.self="closeEditorDialog">
       <div class="modal-box max-w-4xl">
         <h3 class="font-bold text-lg mb-4">
-          {{ editingDocument ? 'Edit Document' : 'New Document' }}
+          {{ editingDocument?.readOnly ? 'View Document' : (editingDocument ? 'Edit Document' : 'New Document') }}
           <span v-if="editingDocument?.readOnly" class="badge badge-warning ml-2">Read-Only</span>
         </h3>
 
@@ -177,6 +184,23 @@
               class="input input-bordered"
               :disabled="editingDocument?.readOnly"
             />
+          </div>
+
+          <!-- Collection -->
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text">Collection</span>
+            </label>
+            <input
+              v-model="formData.collection"
+              type="text"
+              placeholder="Collection name"
+              class="input input-bordered"
+              :disabled="!!editingDocument"
+            />
+            <label v-if="editingDocument" class="label">
+              <span class="label-text-alt">Collection cannot be changed after creation</span>
+            </label>
           </div>
 
           <!-- Type, Language, Format -->
@@ -314,6 +338,7 @@ const logger = getLogger('DocumentEditor');
 interface FormData {
   title: string;
   name: string;
+  collection: string;
   type: string;
   language: string;
   format: string;
@@ -344,6 +369,7 @@ const saving = ref(false);
 const formData = ref<FormData>({
   title: '',
   name: '',
+  collection: '',
   type: '',
   language: '',
   format: 'plaintext',
@@ -398,6 +424,7 @@ const openCreateDialog = () => {
   formData.value = {
     title: '',
     name: '',
+    collection: selectedCollection.value || '',
     type: '',
     language: '',
     format: 'plaintext',
@@ -422,6 +449,7 @@ const openEditDialog = async (doc: DocumentMetadata) => {
   formData.value = {
     title: doc.title || '',
     name: doc.name || '',
+    collection: doc.collection || '',
     type: doc.type || '',
     language: doc.language || '',
     format: doc.format || 'plaintext',
@@ -440,7 +468,7 @@ const closeEditorDialog = () => {
 
 // Save document
 const saveDocument = async () => {
-  if (!documentsComposable.value || !selectedCollection.value) {
+  if (!documentsComposable.value || !formData.value.collection) {
     return;
   }
 
@@ -450,14 +478,13 @@ const saveDocument = async () => {
     if (editingDocument.value) {
       // Update existing document
       await documentsComposable.value.updateDocument(
-        selectedCollection.value,
+        editingDocument.value.collection,
         editingDocument.value.documentId,
         formData.value
       );
     } else {
       // Create new document
       await documentsComposable.value.createDocument({
-        collection: selectedCollection.value,
         ...formData.value,
       });
     }

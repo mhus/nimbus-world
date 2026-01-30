@@ -42,5 +42,11 @@ public interface SAssetRepository extends MongoRepository<SAsset, String> {
     @Query(value = "{ 'worldId': ?0, 'path': { $regex: ?1, $options: 'i' } }", count = true)
     long countByWorldIdAndPathContaining(String worldId, String pathPattern);
 
+    /**
+     * Find assets by worldId with path and extension filter (case-insensitive) and pagination.
+     */
+    @Query("{ 'worldId': ?0, 'path': { $regex: ?1, $options: 'i' }, 'name': { $regex: ?2, $options: 'i' } }")
+    Page<SAsset> findByWorldIdAndPathContainingAndExtension(String worldId, String pathPattern, String extensionPattern, Pageable pageable);
+
 }
 

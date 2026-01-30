@@ -369,23 +369,35 @@
                 <ErrorAlert v-if="saveError" :message="saveError" />
 
                 <!-- Actions -->
-                <div class="mt-6 flex justify-end gap-2">
+                <div class="mt-6 flex justify-between gap-2">
                   <button
                     type="button"
-                    class="btn"
-                    @click="$emit('close')"
-                    :disabled="saving"
+                    class="btn btn-outline btn-sm"
+                    @click="showJsonEditor = true"
                   >
-                    Cancel
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                    </svg>
+                    Source
                   </button>
-                  <button
-                    type="submit"
-                    class="btn btn-primary"
-                    :disabled="saving || !isFormValid"
-                  >
-                    <span v-if="saving" class="loading loading-spinner loading-sm"></span>
-                    {{ saving ? 'Creating...' : 'Create Job' }}
-                  </button>
+                  <div class="flex gap-2">
+                    <button
+                      type="button"
+                      class="btn"
+                      @click="$emit('close')"
+                      :disabled="saving"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      class="btn btn-primary"
+                      :disabled="saving || !isFormValid"
+                    >
+                      <span v-if="saving" class="loading loading-spinner loading-sm"></span>
+                      {{ saving ? 'Creating...' : 'Create Job' }}
+                    </button>
+                  </div>
                 </div>
               </form>
             </DialogPanel>
@@ -394,6 +406,13 @@
       </div>
     </Dialog>
   </TransitionRoot>
+
+  <!-- JSON Editor Dialog -->
+  <JsonEditorDialog
+    v-model:is-open="showJsonEditor"
+    :model-value="jobDataForJson"
+    @apply="handleJsonApply"
+  />
 </template>
 
 <script setup lang="ts">
@@ -401,6 +420,7 @@ import { ref, computed, watch } from 'vue';
 import { Dialog, DialogPanel, DialogTitle, TransitionRoot, TransitionChild } from '@headlessui/vue';
 import { useJobs, type Job, type JobCreateRequest, type NextJob } from '@/composables/useJobs';
 import ErrorAlert from '@components/ErrorAlert.vue';
+import JsonEditorDialog from '@components/JsonEditorDialog.vue';
 
 const props = defineProps<{
   worldId: string;
@@ -445,6 +465,7 @@ const onErrorParameters = ref<Array<{ key: string; value: string }>>([]);
 
 const saving = ref(false);
 const saveError = ref<string | null>(null);
+const showJsonEditor = ref(false);
 
 /**
  * Load initial values from a job (for cloning)
@@ -664,6 +685,84 @@ const buildOnErrorJob = (): NextJob | undefined => {
     type: onErrorData.value.type.trim() || undefined,
     parameters: Object.keys(parameters).length > 0 ? parameters : undefined,
   };
+};
+
+/**
+ * Get complete job data for JSON editor
+ */
+const jobDataForJson = computed(() => {
+  const parameters = buildParameters();
+  const onSuccess = buildOnSuccessJob();
+  const onError = buildOnErrorJob();
+
+  return {
+    executor: formData.value.executor,
+    type: formData.value.type || undefined,
+    location: formData.value.location || undefined,
+    parameters,
+    priority: formData.value.priority,
+    maxRetries: formData.value.maxRetries,
+    onSuccess,
+    onError,
+  };
+});
+
+/**
+ * Handle JSON apply from JSON editor
+ */
+const handleJsonApply = (jsonData: any) => {
+  // Update basic form data
+  if (jsonData.executor !== undefined) formData.value.executor = jsonData.executor;
+  if (jsonData.type !== undefined) formData.value.type = jsonData.type || '';
+  if (jsonData.location !== undefined) formData.value.location = jsonData.location || '';
+  if (jsonData.priority !== undefined) formData.value.priority = jsonData.priority;
+  if (jsonData.maxRetries !== undefined) formData.value.maxRetries = jsonData.maxRetries;
+
+  // Update parameters
+  if (jsonData.parameters && typeof jsonData.parameters === 'object') {
+    parameterList.value = Object.entries(jsonData.parameters).map(([key, value]) => ({
+      key,
+      value: String(value),
+    }));
+  } else {
+    parameterList.value = [];
+  }
+
+  // Update onSuccess
+  if (jsonData.onSuccess && jsonData.onSuccess.executor) {
+    showOnSuccess.value = true;
+    onSuccessData.value.executor = jsonData.onSuccess.executor;
+    onSuccessData.value.type = jsonData.onSuccess.type || '';
+    onSuccessParameters.value = jsonData.onSuccess.parameters
+      ? Object.entries(jsonData.onSuccess.parameters).map(([key, value]) => ({
+          key,
+          value: String(value),
+        }))
+      : [];
+  } else {
+    showOnSuccess.value = false;
+    onSuccessData.value.executor = '';
+    onSuccessData.value.type = '';
+    onSuccessParameters.value = [];
+  }
+
+  // Update onError
+  if (jsonData.onError && jsonData.onError.executor) {
+    showOnError.value = true;
+    onErrorData.value.executor = jsonData.onError.executor;
+    onErrorData.value.type = jsonData.onError.type || '';
+    onErrorParameters.value = jsonData.onError.parameters
+      ? Object.entries(jsonData.onError.parameters).map(([key, value]) => ({
+          key,
+          value: String(value),
+        }))
+      : [];
+  } else {
+    showOnError.value = false;
+    onErrorData.value.executor = '';
+    onErrorData.value.type = '';
+    onErrorParameters.value = [];
+  }
 };
 
 /**

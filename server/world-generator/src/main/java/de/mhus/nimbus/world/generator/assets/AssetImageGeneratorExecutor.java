@@ -12,6 +12,7 @@ import de.mhus.nimbus.world.ai.model.AiModelService;
 import de.mhus.nimbus.world.shared.job.JobExecutionException;
 import de.mhus.nimbus.world.shared.job.JobExecutor;
 import de.mhus.nimbus.world.shared.job.WJob;
+import de.mhus.nimbus.world.shared.archive.WArchiveService;
 import de.mhus.nimbus.world.shared.world.AssetMetadata;
 import de.mhus.nimbus.world.shared.world.SAsset;
 import de.mhus.nimbus.world.shared.world.SAssetService;
@@ -41,6 +42,7 @@ import java.util.Optional;
  *     <li>style (optional) - Image style: "vivid" or "natural" (default: "vivid")</li>
  *     <li>cropBorder (optional) - Crop pixels from each side before resize (default: 0, e.g., "70" crops 70px from each side)</li>
  *     <li>resize (optional) - Resize image to requested size if different (default: true)</li>
+ *     <li>transparency (optional) - Make color transparent: "false" (default), "true"/"black", "white", "blue", "red", "green"</li>
  *     <li>generateDescription (optional) - Generate AI description after saving (default: true)</li>
  *     <li>overwrite (optional) - Overwrite existing asset if path exists (default: false)</li>
  * </ul>
@@ -48,8 +50,10 @@ import java.util.Optional;
  * Processing order:
  * <ol>
  *     <li>Generate image with AI</li>
+ *     <li>Archive original image</li>
  *     <li>Crop border if cropBorder > 0</li>
  *     <li>Resize to target size if resize=true</li>
+ *     <li>Make color transparent if transparency != "false"</li>
  *     <li>Save to assets</li>
  *     <li>Generate description if generateDescription=true</li>
  * </ol>
@@ -72,6 +76,7 @@ public class AssetImageGeneratorExecutor implements JobExecutor {
     private final AiModelService aiModelService;
     private final SSettingsService settingsService;
     private final AssetDescriptionGeneratorExecutor descriptionGenerator;
+    private final WArchiveService archiveService;
 
     @Value("${asset.image.ai-model:default:generate}")
     private String aiModelName;
@@ -127,6 +132,7 @@ public class AssetImageGeneratorExecutor implements JobExecutor {
             boolean generateDescription = Boolean.parseBoolean(job.getParameters().getOrDefault("generateDescription", "true"));
             boolean overwrite = Boolean.parseBoolean(job.getParameters().getOrDefault("overwrite", "false"));
             int cropBorder = Integer.parseInt(job.getParameters().getOrDefault("cropBorder", "0"));
+            String transparency = job.getParameters().getOrDefault("transparency", "false");
 
             // Find unique path if requested path already exists (unless overwrite=true)
             String uniquePath = path;
@@ -169,6 +175,9 @@ public class AssetImageGeneratorExecutor implements JobExecutor {
             // Generate image
             AiImage image = generateImage(imageModel, prompt, width, height);
 
+            // Archive original image before any processing
+            archiveOriginalImage(image, uniquePath);
+
             // Crop border if requested
             if (cropBorder > 0) {
                 image = cropImageBorder(image, cropBorder, uniquePath);
@@ -179,12 +188,13 @@ public class AssetImageGeneratorExecutor implements JobExecutor {
                 image = resizeImageIfNeeded(image, width, height, uniquePath);
             }
 
+            // Make color transparent if requested
+            if (transparency != null && !transparency.equalsIgnoreCase("false")) {
+                image = makeColorTransparent(image, transparency, uniquePath);
+            }
+
             // Save to SAssets
             SAsset savedAsset = saveImage(worldId, uniquePath, image, prompt);
-            savedAsset.getPublicData().setSource("generated");
-            savedAsset.getPublicData().setAuthor("nimbus"); // TODO from settings
-            savedAsset.getPublicData().setLicense("nimbus license"); // TODO from settings
-            savedAsset.getPublicData().setLicenseFixed(true);
             assetService.updateMetadata(savedAsset, savedAsset.getPublicData());
 
             // Generate AI description if requested
@@ -317,6 +327,8 @@ public class AssetImageGeneratorExecutor implements JobExecutor {
             metadata.setHeight(actualHeight);
             metadata.setSource("AI Generated");
             metadata.setAuthor("DALL-E");
+            metadata.setLicense("CC0");
+            metadata.setLicenseFixed(true);
 
             // Store original prompt as custom property
             if (originalPrompt != null && !originalPrompt.isBlank()) {
@@ -687,6 +699,196 @@ public class AssetImageGeneratorExecutor implements JobExecutor {
         } catch (Exception e) {
             log.debug("Error checking asset existence: {}", path, e);
             return false;
+        }
+    }
+
+    /**
+     * Archive the original generated image before any processing (crop/resize).
+     * This preserves the unmodified AI-generated image for future reference.
+     *
+     * @param image Original generated image
+     * @param path Asset path (used to generate archive path)
+     */
+    private void archiveOriginalImage(AiImage image, String path) {
+        try {
+            // Get image bytes
+            byte[] imageBytes = image.getBytes();
+            if (imageBytes == null || imageBytes.length == 0) {
+                log.warn("Cannot archive original image: no bytes available for path {}", path);
+                return;
+            }
+
+            // Generate archive path: append ".original" before extension
+            String archivePath = generateArchivePath(path);
+
+            log.info("Archiving original image: {} ({} bytes, {}x{})",
+                    archivePath, imageBytes.length, image.getWidth(), image.getHeight());
+
+            // Archive with WArchiveService
+            ByteArrayInputStream inputStream = new ByteArrayInputStream(imageBytes);
+            archiveService.archive(archivePath, inputStream);
+
+            log.debug("Successfully archived original image: {}", archivePath);
+
+        } catch (Exception e) {
+            // Don't fail the job if archiving fails, just log the error
+            log.error("Failed to archive original image for path: {}", path, e);
+        }
+    }
+
+    /**
+     * Make a specific color transparent in the image.
+     * Useful for AI-generated images where DALL-E cannot create transparent backgrounds.
+     * <p>
+     * Supported colors:
+     * - "true" or "black": Make black (and near-black) pixels transparent
+     * - "white": Make white (and near-white) pixels transparent
+     * - "blue": Make blue pixels transparent
+     * - "red": Make red pixels transparent
+     * - "green": Make green pixels transparent
+     * <p>
+     * Uses a threshold of 40 per RGB component to catch similar colors.
+     *
+     * @param image Original image
+     * @param colorName Color name to make transparent
+     * @param path Asset path for logging
+     * @return Image with transparency applied
+     * @throws JobExecutionException if processing fails
+     */
+    private AiImage makeColorTransparent(AiImage image, String colorName, String path)
+            throws JobExecutionException {
+
+        log.info("Making {} pixels transparent for path: {}", colorName, path);
+
+        try {
+            // Get image bytes
+            byte[] originalBytes = image.getBytes();
+            if (originalBytes == null || originalBytes.length == 0) {
+                throw new JobExecutionException("Cannot make transparent: no image bytes available");
+            }
+
+            // Load image
+            ByteArrayInputStream inputStream = new ByteArrayInputStream(originalBytes);
+            BufferedImage originalImage = ImageIO.read(inputStream);
+
+            if (originalImage == null) {
+                throw new JobExecutionException("Cannot make transparent: failed to decode image");
+            }
+
+            int width = originalImage.getWidth();
+            int height = originalImage.getHeight();
+
+            // Create new image with alpha channel
+            BufferedImage transparentImage = new BufferedImage(
+                    width,
+                    height,
+                    BufferedImage.TYPE_INT_ARGB
+            );
+
+            // Determine target color RGB values
+            int targetR, targetG, targetB;
+            int threshold = 40; // Range for similar colors
+
+            switch (colorName.toLowerCase()) {
+                case "true":
+                case "black":
+                    targetR = 0; targetG = 0; targetB = 0;
+                    break;
+                case "white":
+                    targetR = 255; targetG = 255; targetB = 255;
+                    break;
+                case "blue":
+                    targetR = 0; targetG = 0; targetB = 255;
+                    threshold = 60; // Wider range for color matching
+                    break;
+                case "red":
+                    targetR = 255; targetG = 0; targetB = 0;
+                    threshold = 60;
+                    break;
+                case "green":
+                    targetR = 0; targetG = 255; targetB = 0;
+                    threshold = 60;
+                    break;
+                default:
+                    log.warn("Unknown transparency color '{}', skipping transparency", colorName);
+                    return image;
+            }
+
+            log.debug("Making pixels transparent: target RGB=({},{},{}), threshold={}",
+                    targetR, targetG, targetB, threshold);
+
+            // Process each pixel
+            int transparentCount = 0;
+            for (int y = 0; y < height; y++) {
+                for (int x = 0; x < width; x++) {
+                    int rgb = originalImage.getRGB(x, y);
+
+                    // Extract RGB components
+                    int alpha = (rgb >> 24) & 0xFF;
+                    int red = (rgb >> 16) & 0xFF;
+                    int green = (rgb >> 8) & 0xFF;
+                    int blue = rgb & 0xFF;
+
+                    // Check if color matches target within threshold
+                    boolean matches = Math.abs(red - targetR) <= threshold
+                            && Math.abs(green - targetG) <= threshold
+                            && Math.abs(blue - targetB) <= threshold;
+
+                    if (matches) {
+                        // Make transparent (alpha = 0)
+                        transparentImage.setRGB(x, y, 0x00000000);
+                        transparentCount++;
+                    } else {
+                        // Keep original pixel with full alpha
+                        transparentImage.setRGB(x, y, (0xFF << 24) | (red << 16) | (green << 8) | blue);
+                    }
+                }
+            }
+
+            int totalPixels = width * height;
+            float transparentPercent = (transparentCount * 100.0f) / totalPixels;
+            log.info("Made {} pixels transparent ({:.1f}% of image)", transparentCount, transparentPercent);
+
+            // Encode to bytes as PNG (PNG supports transparency)
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+            ImageIO.write(transparentImage, "png", outputStream);
+            byte[] transparentBytes = outputStream.toByteArray();
+
+            // Create new AiImage with transparent data
+            return AiImage.builder()
+                    .bytes(transparentBytes)
+                    .mimeType("image/png") // Force PNG for transparency support
+                    .width(width)
+                    .height(height)
+                    .revisedPrompt(image.getRevisedPrompt())
+                    .build();
+
+        } catch (Exception e) {
+            log.error("Failed to make color transparent: {}", colorName, e);
+            throw new JobExecutionException("Failed to make color transparent: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Generate archive path by inserting ".original" before the file extension.
+     * <p>
+     * Examples:
+     * - textures/blocks/stone.png -> textures/blocks/stone.original.png
+     * - models/tree -> models/tree.original
+     *
+     * @param path Original asset path
+     * @return Archive path with ".original" suffix
+     */
+    private String generateArchivePath(String path) {
+        int lastDot = path.lastIndexOf('.');
+        int lastSlash = path.lastIndexOf('/');
+
+        if (lastDot > lastSlash && lastDot > 0) {
+            // Has extension: insert before extension
+            return path.substring(0, lastDot) + ".original" + path.substring(lastDot);
+        } else {
+            // No extension: append at end
+            return path + ".original";
         }
     }
 }

@@ -13,7 +13,7 @@ import java.io.InputStream;
 @Slf4j
 public class WArchiveToFile implements WArchiveService {
 
-    @Value("${nimbus.world.archive.path:/tmp/nimbus-archive}")
+    @Value("${nimbus.world.archive.path:external/nimbus-archive}")
     private String archivePath;
 
     @PostConstruct

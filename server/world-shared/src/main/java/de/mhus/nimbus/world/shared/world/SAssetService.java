@@ -528,7 +528,7 @@ public class SAssetService implements StorageProvider {
      *
      * @param worldId The world identifier
      * @param query Search query (optional, prefix:path format, default prefix is "w:")
-     * @param extension Extension filter (optional, e.g., ".png")
+     * @param extension Extension filter (optional, e.g., "png" or ".png")
      * @param offset Pagination offset
      * @param limit Pagination limit
      * @return Page of assets with total count
@@ -548,20 +548,29 @@ public class SAssetService implements StorageProvider {
             query = ".*";
         }
 
+        // Prepare extension pattern (normalize: add dot if missing)
+        String extensionPattern = null;
+        if (Strings.isNotBlank(extension)) {
+            String normalizedExt = extension.startsWith(".") ? extension : "." + extension;
+            extensionPattern = ".*" + java.util.regex.Pattern.quote(normalizedExt) + "$";
+        }
+
         // Direct search - assets are only in main worlds
-        return searchInWorldId(lookupWorld.getId(), query, offset, limit);
+        return searchInWorldId(lookupWorld.getId(), query, extensionPattern, offset, limit);
     }
 
     /**
      * Search assets in a specific worldId with filtering and pagination.
      */
-    private AssetSearchResult searchInWorldId(String worldId, String pathPattern, int offset, int limit) {
+    private AssetSearchResult searchInWorldId(String worldId, String pathPattern, String extensionPattern, int offset, int limit) {
         // Calculate page number from offset (Spring Data uses 0-based page numbers)
         int pageNumber = offset / limit;
         Pageable pageable = PageRequest.of(pageNumber, limit);
         Page<SAsset> page;
 
-        if (pathPattern != null) {
+        if (pathPattern != null && extensionPattern != null) {
+            page = repository.findByWorldIdAndPathContainingAndExtension(worldId, pathPattern, extensionPattern, pageable);
+        } else if (pathPattern != null) {
             page = repository.findByWorldIdAndPathContaining(worldId, pathPattern, pageable);
         } else {
             page = repository.findByWorldId(worldId, pageable);

@@ -54,6 +54,8 @@ public class McpController extends BaseEditorController {
     private final McpJobExecutor mcpJobExecutor;
     private final JobExecutorRegistry executorRegistry;
     private final WJobService jobService;
+    private final de.mhus.nimbus.world.shared.world.SAssetService assetService;
+    private final de.mhus.nimbus.world.shared.world.WDocumentService documentService;
 
     // ==================== MCP PROTOCOL ====================
 
@@ -129,6 +131,187 @@ public class McpController extends BaseEditorController {
                                 "type", "string",
                                 "description", "World ID",
                                 "required", true
+                        ),
+                        "limit", Map.of(
+                                "type", "number",
+                                "description", "Maximum number of results",
+                                "required", false,
+                                "default", 100
+                        )
+                )
+        ));
+
+        tools.add(createToolDescriptor(
+                "get_block_type",
+                "Get a specific block type by ID (supports collection prefix like 'm:sand')",
+                Map.of(
+                        "worldId", Map.of(
+                                "type", "string",
+                                "description", "World ID",
+                                "required", true
+                        ),
+                        "blockId", Map.of(
+                                "type", "string",
+                                "description", "Block type ID, optionally with collection prefix (e.g., 'sand', 'm:sand', 'n:air')",
+                                "required", true
+                        )
+                )
+        ));
+
+        tools.add(createToolDescriptor(
+                "create_cube_block_type",
+                "Create a new cube block type with textures",
+                Map.of(
+                        "worldId", Map.of(
+                                "type", "string",
+                                "description", "World ID",
+                                "required", true
+                        ),
+                        "blockTypeId", Map.of(
+                                "type", "string",
+                                "description", "Unique block type ID (e.g., 'stone', 'm:sand')",
+                                "required", true
+                        ),
+                        "title", Map.of(
+                                "type", "string",
+                                "description", "Display name of the block type",
+                                "required", true
+                        ),
+                        "description", Map.of(
+                                "type", "string",
+                                "description", "Description of the block type",
+                                "required", false
+                        ),
+                        "textures", Map.of(
+                                "type", "object",
+                                "description", "Texture definitions (ALL, TOP, BOTTOM, NORTH, SOUTH, EAST, WEST)",
+                                "required", true
+                        ),
+                        "type", Map.of(
+                                "type", "string",
+                                "description", "Block type: GROUND, WATER, STRUCTURE, DECORATION, etc.",
+                                "required", false,
+                                "default", "BLOCK"
+                        ),
+                        "solid", Map.of(
+                                "type", "boolean",
+                                "description", "Whether the block is solid (cannot walk through)",
+                                "required", false,
+                                "default", true
+                        ),
+                        "autoJump", Map.of(
+                                "type", "number",
+                                "description", "Auto-jump height (useful for GROUND types, 0 = disabled)",
+                                "required", false,
+                                "default", 0.0
+                        )
+                )
+        ));
+
+        tools.add(createToolDescriptor(
+                "create_billboard_block_type",
+                "Create a new billboard block type (flat sprite facing camera, ideal for plants)",
+                Map.of(
+                        "worldId", Map.of(
+                                "type", "string",
+                                "description", "World ID",
+                                "required", true
+                        ),
+                        "blockTypeId", Map.of(
+                                "type", "string",
+                                "description", "Unique block type ID (e.g., 'grass', 'm:flower')",
+                                "required", true
+                        ),
+                        "title", Map.of(
+                                "type", "string",
+                                "description", "Display name of the block type",
+                                "required", true
+                        ),
+                        "description", Map.of(
+                                "type", "string",
+                                "description", "Description of the block type",
+                                "required", false
+                        ),
+                        "texture", Map.of(
+                                "type", "object",
+                                "description", "Single texture definition with path (e.g., {\"path\": \"m:textures/plants/grass.png\"})",
+                                "required", true
+                        ),
+                        "type", Map.of(
+                                "type", "string",
+                                "description", "Block type: DECORATION, PLANT, etc.",
+                                "required", false,
+                                "default", "DECORATION"
+                        ),
+                        "solid", Map.of(
+                                "type", "boolean",
+                                "description", "Whether the block is solid (usually false for billboards)",
+                                "required", false,
+                                "default", false
+                        ),
+                        "autoJump", Map.of(
+                                "type", "number",
+                                "description", "Auto-jump height (usually 0 for billboards)",
+                                "required", false,
+                                "default", 0.0
+                        )
+                )
+        ));
+
+        tools.add(createToolDescriptor(
+                "search_readme",
+                "Search README/HowTo documents by title or content",
+                Map.of(
+                        "query", Map.of(
+                                "type", "string",
+                                "description", "Search query for title or content",
+                                "required", true
+                        )
+                )
+        ));
+
+        tools.add(createToolDescriptor(
+                "get_readme",
+                "Get a specific README/HowTo document by name",
+                Map.of(
+                        "name", Map.of(
+                                "type", "string",
+                                "description", "Document name (technical identifier)",
+                                "required", true
+                        )
+                )
+        ));
+
+        tools.add(createToolDescriptor(
+                "search_assets",
+                "Search assets by collection, file type and query",
+                Map.of(
+                        "worldId", Map.of(
+                                "type", "string",
+                                "description", "World ID",
+                                "required", true
+                        ),
+                        "collection", Map.of(
+                                "type", "string",
+                                "description", "Collection prefix: 'w' (World), 'r' (Region), 'rp' (Region Public), 'm' (Minecraft-like Shared), 'n' (Nimbus Shared), 'p' (Public Shared)",
+                                "required", false,
+                                "enum", List.of("w", "r", "rp", "m", "n", "p")
+                        ),
+                        "fileType", Map.of(
+                                "type", "string",
+                                "description", "File extension (e.g., 'png', 'jpg', 'json')",
+                                "required", false
+                        ),
+                        "query", Map.of(
+                                "type", "string",
+                                "description", "Search query for asset path/name (e.g., 'sand', 'stone')",
+                                "required", false
+                        ),
+                        "offset", Map.of(
+                                "type", "number",
+                                "description", "Pagination offset",
+                                "required", false,
+                                "default", 0
                         ),
                         "limit", Map.of(
                                 "type", "number",
@@ -354,6 +537,10 @@ public class McpController extends BaseEditorController {
         endpoints.put("GET /generator/mcp/worlds", "List worlds");
         endpoints.put("GET /generator/mcp/worlds/{worldId}", "Get world");
         endpoints.put("GET /generator/mcp/worlds/{worldId}/blocktypes", "Get block types");
+        endpoints.put("GET /generator/mcp/worlds/{worldId}/blocktypes/{blockId}", "Get specific block type");
+        endpoints.put("POST /generator/mcp/worlds/{worldId}/blocktypes", "Create cube block type");
+        endpoints.put("POST /generator/mcp/worlds/{worldId}/blocktypes/billboard", "Create billboard block type");
+        endpoints.put("GET /generator/mcp/worlds/{worldId}/assets/search", "Search assets");
         endpoints.put("GET /generator/mcp/worlds/{worldId}/layers", "List layers");
         endpoints.put("GET /generator/mcp/worlds/{worldId}/layers/{layerId}", "Get layer");
         endpoints.put("POST /generator/mcp/worlds/{worldId}/layers", "Create layer");
@@ -363,6 +550,8 @@ public class McpController extends BaseEditorController {
         endpoints.put("GET /generator/mcp/worlds/{worldId}/jobs/{jobId}/status", "Get job status (world-scoped)");
         endpoints.put("POST /generator/mcp/jobs/execute", "Execute job synchronously (dynamic world selection)");
         endpoints.put("GET /generator/mcp/jobs/{jobId}/status", "Get job status (dynamic)");
+        endpoints.put("GET /generator/mcp/readme/search", "Search README documents");
+        endpoints.put("GET /generator/mcp/readme/{name}", "Get specific README document");
         response.put("endpoints", endpoints);
 
         return ResponseEntity.ok(response);
@@ -788,6 +977,61 @@ public class McpController extends BaseEditorController {
         }
     }
 
+    // ==================== ASSET OPERATIONS ====================
+
+    /**
+     * Search assets by collection, file type and query.
+     * Collections: 'w' (World), 'r' (Region), 'rp' (Region Public), 'm' (Minecraft-like Shared), 'n' (Nimbus Shared), 'p' (Public Shared).
+     * GET /generator/mcp/worlds/{worldId}/assets/search
+     */
+    @GetMapping("/worlds/{worldId}/assets/search")
+    @Operation(summary = "Search assets by collection, file type and query",
+               description = "Search for assets in different collections. Collections: 'w' (World - direct to world), " +
+                             "'r' (Region - bound to region), 'rp' (Region Public - available without login), " +
+                             "'m' (Minecraft-like Shared - textures, BlockTypes, models), " +
+                             "'n' (Nimbus Shared - basis textures, BlockTypes, models like n:0 Air or n:o Ocean Water), " +
+                             "'p' (Public Shared - public assets without login)")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Success"),
+            @ApiResponse(responseCode = "400", description = "Invalid parameters")
+    })
+    public ResponseEntity<?> searchAssets(
+            @Parameter(description = "World ID") @PathVariable String worldId,
+            @Parameter(description = "Collection prefix: 'w', 'r', 'rp', 'm', 'n', 'p'") @RequestParam(required = false) String collection,
+            @Parameter(description = "File extension (e.g., 'png', 'jpg', 'json')") @RequestParam(required = false) String fileType,
+            @Parameter(description = "Search query for asset path/name (e.g., 'sand', 'stone')") @RequestParam(required = false) String query,
+            @Parameter(description = "Pagination offset") @RequestParam(defaultValue = "0") int offset,
+            @Parameter(description = "Maximum number of results") @RequestParam(defaultValue = "100") int limit) {
+
+        log.debug("MCP: Search assets: worldId={}, collection={}, fileType={}, query={}, offset={}, limit={}",
+                worldId, collection, fileType, query, offset, limit);
+
+        var wid = WorldId.of(worldId).orElseThrow(
+                () -> new IllegalStateException("Invalid worldId: " + worldId)
+        );
+
+        // Combine collection and query - service will parse collection prefix using WorldCollection
+        String searchQuery = query;
+        if (Strings.isNotBlank(collection)) {
+            searchQuery = Strings.isNotBlank(query) ? collection + ":" + query : collection + ":";
+        }
+
+        // Service uses WorldCollection internally to parse collection prefix from query
+        var result = assetService.searchAssets(wid, searchQuery, fileType, offset, limit);
+
+        List<Map<String, Object>> assetDtos = result.assets().stream()
+                .map(this::toAssetDto)
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(Map.of(
+                "assets", assetDtos,
+                "count", assetDtos.size(),
+                "total", result.totalCount(),
+                "offset", result.offset(),
+                "limit", result.limit()
+        ));
+    }
+
     // ==================== BLOCK TYPE OPERATIONS ====================
 
     /**
@@ -821,6 +1065,229 @@ public class McpController extends BaseEditorController {
                 "count", blockTypeDtos.size(),
                 "total", blockTypes.size()
         ));
+    }
+
+    /**
+     * Get a specific block type by ID.
+     * Supports collection prefix (e.g., 'm:sand', 'n:air').
+     * GET /generator/mcp/worlds/{worldId}/blocktypes/{blockId}
+     */
+    @GetMapping("/worlds/{worldId}/blocktypes/{blockId}")
+    @Operation(summary = "Get a specific block type by ID",
+               description = "Get block type by ID. Supports collection prefix (e.g., 'm:sand' for Minecraft-like collection, " +
+                             "'n:air' for Nimbus collection). Without prefix, searches in world collection.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Block type found"),
+            @ApiResponse(responseCode = "400", description = "Invalid parameters"),
+            @ApiResponse(responseCode = "404", description = "Block type not found")
+    })
+    public ResponseEntity<?> getBlockType(
+            @Parameter(description = "World ID") @PathVariable String worldId,
+            @Parameter(description = "Block type ID (e.g., 'sand', 'm:sand', 'n:air')") @PathVariable String blockId) {
+
+        log.debug("MCP: Get block type: worldId={}, blockId={}", worldId, blockId);
+
+        var wid = WorldId.of(worldId).orElseThrow(
+                () -> new IllegalStateException("Invalid worldId: " + worldId)
+        );
+
+        // Service uses WorldCollection internally to parse collection prefix
+        Optional<WBlockType> blockTypeOpt = blockTypeService.findByBlockId(wid, blockId);
+
+        if (blockTypeOpt.isEmpty()) {
+            return notFound("block type not found");
+        }
+
+        return ResponseEntity.ok(toBlockTypeDto(blockTypeOpt.get()));
+    }
+
+    /**
+     * Create a new cube block type.
+     * POST /generator/mcp/worlds/{worldId}/blocktypes
+     */
+    @PostMapping("/worlds/{worldId}/blocktypes")
+    @Operation(summary = "Create a new cube block type",
+               description = "Creates a cube block type with textures. Textures must be pre-selected or created. " +
+                             "Supports collection prefix in blockTypeId (e.g., 'm:stone').")
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "Block type created"),
+            @ApiResponse(responseCode = "400", description = "Invalid request or validation failed"),
+            @ApiResponse(responseCode = "409", description = "Block type ID already exists")
+    })
+    public ResponseEntity<?> createCubeBlockType(
+            @Parameter(description = "World ID") @PathVariable String worldId,
+            @RequestBody CreateCubeBlockTypeRequest request) {
+
+        log.debug("MCP: Create cube block type: worldId={}, blockTypeId={}", worldId, request.blockTypeId());
+
+        var wid = WorldId.of(worldId).orElseThrow(
+                () -> new IllegalStateException("Invalid worldId: " + worldId)
+        );
+
+        // Validate required parameters
+        if (Strings.isBlank(request.blockTypeId())) {
+            return bad("blockTypeId is required");
+        }
+        if (Strings.isBlank(request.title())) {
+            return bad("title is required");
+        }
+        if (request.textures() == null || request.textures().isEmpty()) {
+            return bad("textures are required");
+        }
+
+        // Check if block type already exists
+        Optional<WBlockType> existing = blockTypeService.findByBlockId(wid, request.blockTypeId());
+        if (existing.isPresent()) {
+            return conflict("block type with ID '" + request.blockTypeId() + "' already exists");
+        }
+
+        try {
+            // Create BlockType DTO
+            de.mhus.nimbus.generated.types.BlockType publicData = de.mhus.nimbus.generated.types.BlockType.builder()
+                    .id(request.blockTypeId())
+                    .title(request.title())
+                    .description(request.description())
+                    .type(parseBlockTypeType(request.type()))
+                    .initialStatus(0)
+                    .modifiers(new HashMap<>())
+                    .build();
+
+            // Create modifier '0' with CUBE shape
+            de.mhus.nimbus.generated.types.BlockModifier modifier = de.mhus.nimbus.generated.types.BlockModifier.builder()
+                    .visibility(de.mhus.nimbus.generated.types.VisibilityModifier.builder()
+                            .shape(de.mhus.nimbus.generated.types.Shape.CUBE.getTsIndex())
+                            .textures(request.textures())
+                            .build())
+                    .physics(de.mhus.nimbus.generated.types.PhysicsModifier.builder()
+                            .solid(request.solid() != null ? request.solid() : true)
+                            .autoJump(request.autoJump() != null ? request.autoJump() : 0.0)
+                            .build())
+                    .build();
+
+            publicData.getModifiers().put(0, modifier);
+
+            // Save using WBlockTypeService
+            WBlockType saved = blockTypeService.save(wid, request.blockTypeId(), publicData);
+
+            log.info("MCP: Created cube block type: id={}, blockTypeId={}", saved.getId(), saved.getBlockId());
+            return ResponseEntity.status(HttpStatus.CREATED).body(Map.of(
+                    "id", saved.getId(),
+                    "blockTypeId", saved.getBlockId(),
+                    "worldId", saved.getWorldId()
+            ));
+
+        } catch (Exception e) {
+            log.error("MCP: Failed to create cube block type", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Failed to create block type: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * Create a new billboard block type.
+     * POST /generator/mcp/worlds/{worldId}/blocktypes/billboard
+     */
+    @PostMapping("/worlds/{worldId}/blocktypes/billboard")
+    @Operation(summary = "Create a new billboard block type",
+               description = "Creates a billboard block type (flat sprite facing camera). Ideal for plants, grass, flowers. " +
+                             "Texture is always transparent with back-face culling enabled. " +
+                             "Supports collection prefix in blockTypeId (e.g., 'm:grass').")
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "Block type created"),
+            @ApiResponse(responseCode = "400", description = "Invalid request or validation failed"),
+            @ApiResponse(responseCode = "409", description = "Block type ID already exists")
+    })
+    public ResponseEntity<?> createBillboardBlockType(
+            @Parameter(description = "World ID") @PathVariable String worldId,
+            @RequestBody CreateBillboardBlockTypeRequest request) {
+
+        log.debug("MCP: Create billboard block type: worldId={}, blockTypeId={}", worldId, request.blockTypeId());
+
+        var wid = WorldId.of(worldId).orElseThrow(
+                () -> new IllegalStateException("Invalid worldId: " + worldId)
+        );
+
+        // Validate required parameters
+        if (Strings.isBlank(request.blockTypeId())) {
+            return bad("blockTypeId is required");
+        }
+        if (Strings.isBlank(request.title())) {
+            return bad("title is required");
+        }
+        if (request.texture() == null) {
+            return bad("texture is required");
+        }
+
+        // Check if block type already exists
+        Optional<WBlockType> existing = blockTypeService.findByBlockId(wid, request.blockTypeId());
+        if (existing.isPresent()) {
+            return conflict("block type with ID '" + request.blockTypeId() + "' already exists");
+        }
+
+        try {
+            // Create BlockType DTO
+            de.mhus.nimbus.generated.types.BlockType publicData = de.mhus.nimbus.generated.types.BlockType.builder()
+                    .id(request.blockTypeId())
+                    .title(request.title())
+                    .description(request.description())
+                    .type(parseBlockTypeType(request.type() != null ? request.type() : "DECORATION"))
+                    .initialStatus(0)
+                    .modifiers(new HashMap<>())
+                    .build();
+
+            // Prepare texture with transparent=true and backFaceCulling=true
+            Map<String, Object> textureConfig = new HashMap<>(request.texture());
+            textureConfig.put("transparent", true);
+            textureConfig.put("backFaceCulling", true);
+
+            // Create textures map with single texture (key 0 = ALL)
+            Map<Integer, Object> textures = new HashMap<>();
+            textures.put(0, textureConfig);
+
+            // Create modifier '0' with BILLBOARD shape
+            de.mhus.nimbus.generated.types.BlockModifier modifier = de.mhus.nimbus.generated.types.BlockModifier.builder()
+                    .visibility(de.mhus.nimbus.generated.types.VisibilityModifier.builder()
+                            .shape(de.mhus.nimbus.generated.types.Shape.BILLBOARD.getTsIndex())
+                            .textures(textures)
+                            .build())
+                    .physics(de.mhus.nimbus.generated.types.PhysicsModifier.builder()
+                            .solid(request.solid() != null ? request.solid() : false)
+                            .autoJump(request.autoJump() != null ? request.autoJump() : 0.0)
+                            .build())
+                    .build();
+
+            publicData.getModifiers().put(0, modifier);
+
+            // Save using WBlockTypeService
+            WBlockType saved = blockTypeService.save(wid, request.blockTypeId(), publicData);
+
+            log.info("MCP: Created billboard block type: id={}, blockTypeId={}", saved.getId(), saved.getBlockId());
+            return ResponseEntity.status(HttpStatus.CREATED).body(Map.of(
+                    "id", saved.getId(),
+                    "blockTypeId", saved.getBlockId(),
+                    "worldId", saved.getWorldId()
+            ));
+
+        } catch (Exception e) {
+            log.error("MCP: Failed to create billboard block type", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Failed to create block type: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * Parse BlockTypeType from string.
+     */
+    private de.mhus.nimbus.generated.types.BlockTypeType parseBlockTypeType(String type) {
+        if (type == null || type.isBlank()) {
+            return de.mhus.nimbus.generated.types.BlockTypeType.BLOCK;
+        }
+        try {
+            return de.mhus.nimbus.generated.types.BlockTypeType.valueOf(type.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            log.warn("Invalid block type: {}, using BLOCK as default", type);
+            return de.mhus.nimbus.generated.types.BlockTypeType.BLOCK;
+        }
     }
 
     // ==================== JOB EXECUTION OPERATIONS ====================
@@ -1018,6 +1485,139 @@ public class McpController extends BaseEditorController {
         ));
     }
 
+    // ==================== README/DOCUMENTATION OPERATIONS ====================
+
+    /**
+     * Search README/HowTo documents by title or content.
+     * Searches in '@shared:n' world, collection 'mcp'.
+     * GET /generator/mcp/readme/search
+     */
+    @GetMapping("/readme/search")
+    @Operation(summary = "Search README/HowTo documents",
+               description = "Search for README, HowTo and documentation documents by title or content. " +
+                             "Documents are stored in the Nimbus shared collection (@shared:n) under collection 'mcp'.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Success"),
+            @ApiResponse(responseCode = "400", description = "Invalid parameters")
+    })
+    public ResponseEntity<?> searchReadme(
+            @Parameter(description = "Search query for title or content") @RequestParam String query) {
+
+        log.debug("MCP: Search readme: query={}", query);
+
+        if (Strings.isBlank(query)) {
+            return bad("query parameter is required");
+        }
+
+        try {
+            // Use Nimbus shared collection '@shared:n'
+            WorldId nimbusShared = WorldId.of(WorldId.COLLECTION_SHARED, "n")
+                    .orElseThrow(() -> new IllegalStateException("Failed to create Nimbus shared worldId"));
+
+            // Get all documents from 'mcp' collection
+            List<de.mhus.nimbus.world.shared.world.WDocument> allDocs =
+                    documentService.findByCollection(nimbusShared, "mcp");
+
+            // Filter by title or content containing query (case-insensitive)
+            String queryLower = query.toLowerCase();
+            List<de.mhus.nimbus.world.shared.world.WDocument> filtered = allDocs.stream()
+                    .filter(doc -> {
+                        boolean matchTitle = doc.getTitle() != null &&
+                                doc.getTitle().toLowerCase().contains(queryLower);
+                        boolean matchContent = doc.getContent() != null &&
+                                doc.getContent().toLowerCase().contains(queryLower);
+                        return matchTitle || matchContent;
+                    })
+                    .collect(Collectors.toList());
+
+            // Convert to DTOs (name, title, summary only)
+            List<Map<String, Object>> results = filtered.stream()
+                    .map(doc -> {
+                        Map<String, Object> dto = new HashMap<>();
+                        dto.put("name", doc.getName());
+                        dto.put("title", doc.getTitle());
+                        dto.put("summary", doc.getSummary());
+                        return dto;
+                    })
+                    .collect(Collectors.toList());
+
+            log.debug("MCP: Found {} documents matching query '{}'", results.size(), query);
+
+            return ResponseEntity.ok(Map.of(
+                    "documents", results,
+                    "count", results.size(),
+                    "query", query
+            ));
+
+        } catch (Exception e) {
+            log.error("MCP: Failed to search readme documents", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Failed to search documents: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * Get a specific README/HowTo document by name.
+     * Loads from '@shared:n' world, collection 'mcp'.
+     * GET /generator/mcp/readme/{name}
+     */
+    @GetMapping("/readme/{name}")
+    @Operation(summary = "Get specific README/HowTo document",
+               description = "Get a specific README, HowTo or documentation document by its technical name. " +
+                             "Returns the full document including content. " +
+                             "Documents are stored in the Nimbus shared collection (@shared:n) under collection 'mcp'.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Document found"),
+            @ApiResponse(responseCode = "400", description = "Invalid parameters"),
+            @ApiResponse(responseCode = "404", description = "Document not found")
+    })
+    public ResponseEntity<?> getReadme(
+            @Parameter(description = "Document name (technical identifier)") @PathVariable String name) {
+
+        log.debug("MCP: Get readme: name={}", name);
+
+        if (Strings.isBlank(name)) {
+            return bad("name parameter is required");
+        }
+
+        try {
+            // Use Nimbus shared collection '@shared:n'
+            WorldId nimbusShared = WorldId.of(WorldId.COLLECTION_SHARED, "n")
+                    .orElseThrow(() -> new IllegalStateException("Failed to create Nimbus shared worldId"));
+
+            // Find document by name
+            Optional<de.mhus.nimbus.world.shared.world.WDocument> docOpt =
+                    documentService.findByName(nimbusShared, "mcp", name);
+
+            if (docOpt.isEmpty()) {
+                return notFound("document not found: " + name);
+            }
+
+            de.mhus.nimbus.world.shared.world.WDocument doc = docOpt.get();
+
+            // Return full document
+            Map<String, Object> result = new HashMap<>();
+            result.put("name", doc.getName());
+            result.put("title", doc.getTitle());
+            result.put("summary", doc.getSummary());
+            result.put("content", doc.getContent());
+            result.put("format", doc.getFormat());
+            result.put("language", doc.getLanguage());
+            result.put("type", doc.getType());
+            result.put("createdAt", doc.getCreatedAt());
+            result.put("updatedAt", doc.getUpdatedAt());
+
+            log.debug("MCP: Found document: name={}, title={}", doc.getName(), doc.getTitle());
+
+            return ResponseEntity.ok(result);
+
+        } catch (Exception e) {
+            log.error("MCP: Failed to get readme document", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Failed to get document: " + e.getMessage()));
+        }
+    }
+
     // ==================== HELPER METHODS & DTOS ====================
 
     private Map<String, Object> toWorldDto(WWorld world) {
@@ -1081,6 +1681,24 @@ public class McpController extends BaseEditorController {
         return dto;
     }
 
+    private Map<String, Object> toAssetDto(de.mhus.nimbus.world.shared.world.SAsset asset) {
+        Map<String, Object> dto = new HashMap<>();
+        dto.put("id", asset.getId());
+        dto.put("worldId", asset.getWorldId());
+        dto.put("path", asset.getPath());
+        dto.put("name", asset.getName());
+        dto.put("size", asset.getSize());
+        dto.put("enabled", asset.isEnabled());
+        dto.put("compressed", asset.isCompressed());
+        if (asset.getPublicData() != null) {
+            dto.put("description", asset.getPublicData().getDescription());
+            dto.put("mimeType", asset.getPublicData().getMimeType());
+        }
+        dto.put("createdAt", asset.getCreatedAt());
+        dto.put("createdBy", asset.getCreatedBy());
+        return dto;
+    }
+
     // Request DTOs
     // CreateLayerRequest moved to de.mhus.nimbus.world.shared.dto package
 
@@ -1114,4 +1732,24 @@ public class McpController extends BaseEditorController {
 
     public record BlockRequest(int x, int y, int z, String blockId, String group) {
     }
+
+    public record CreateCubeBlockTypeRequest(
+            String blockTypeId,
+            String title,
+            String description,
+            Map<Integer, Object> textures,
+            String type,
+            Boolean solid,
+            Double autoJump
+    ) {}
+
+    public record CreateBillboardBlockTypeRequest(
+            String blockTypeId,
+            String title,
+            String description,
+            Map<String, Object> texture,
+            String type,
+            Boolean solid,
+            Double autoJump
+    ) {}
 }
