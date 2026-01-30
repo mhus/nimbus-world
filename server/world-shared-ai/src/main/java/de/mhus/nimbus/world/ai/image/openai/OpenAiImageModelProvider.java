@@ -63,12 +63,14 @@ public class OpenAiImageModelProvider implements LangchainImageModel {
                     .logRequests(options.isLogRequests())
                     .logResponses(options.isLogRequests());
 
-            // Add DALL-E specific options
-            if (options.getQuality() != null) {
-                builder.quality(options.getQuality());
-            }
-            if (options.getStyle() != null) {
-                builder.style(options.getStyle());
+            // Add DALL-E 3 specific options (quality and style are only supported by DALL-E 3)
+            if (modelName.contains("dall-e-3")) {
+                if (options.getQuality() != null) {
+                    builder.quality(options.getQuality());
+                }
+                if (options.getStyle() != null) {
+                    builder.style(options.getStyle());
+                }
             }
             if (options.getResponseFormat() != null) {
                 builder.responseFormat(options.getResponseFormat());

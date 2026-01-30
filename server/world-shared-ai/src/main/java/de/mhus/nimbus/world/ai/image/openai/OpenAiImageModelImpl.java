@@ -11,6 +11,9 @@ import dev.langchain4j.model.output.Response;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -91,8 +94,8 @@ public class OpenAiImageModelImpl implements AiImageModel {
      * Convert Langchain4j Image to AiImage.
      *
      * @param image Langchain4j image
-     * @param width Expected width
-     * @param height Expected height
+     * @param width Expected width (may differ from actual)
+     * @param height Expected height (may differ from actual)
      * @return AiImage instance
      * @throws AiImageException if conversion fails
      */
@@ -102,6 +105,8 @@ public class OpenAiImageModelImpl implements AiImageModel {
                 .height(height)
                 .mimeType("image/png");
 
+        byte[] imageBytes = null;
+
         // Check if image has URL
         if (image.url() != null && !image.url().toString().isBlank()) {
             String url = image.url().toString();
@@ -110,8 +115,8 @@ public class OpenAiImageModelImpl implements AiImageModel {
             // If response format is URL, download the image bytes
             if ("url".equals(options.getResponseFormat())) {
                 try {
-                    byte[] bytes = downloadImage(url);
-                    builder.bytes(bytes);
+                    imageBytes = downloadImage(url);
+                    builder.bytes(imageBytes);
                 } catch (Exception e) {
                     log.warn("Failed to download image from URL: {}", url, e);
                     // Keep URL, bytes will be null
@@ -122,10 +127,29 @@ public class OpenAiImageModelImpl implements AiImageModel {
         // Check if image has base64 data
         if (image.base64Data() != null && !image.base64Data().isBlank()) {
             try {
-                byte[] bytes = Base64.getDecoder().decode(image.base64Data());
-                builder.bytes(bytes);
+                imageBytes = Base64.getDecoder().decode(image.base64Data());
+                builder.bytes(imageBytes);
             } catch (IllegalArgumentException e) {
                 log.error("Failed to decode base64 image data", e);
+            }
+        }
+
+        // Read actual dimensions from image bytes if available
+        if (imageBytes != null && imageBytes.length > 0) {
+            try {
+                ByteArrayInputStream inputStream = new ByteArrayInputStream(imageBytes);
+                BufferedImage bufferedImage = ImageIO.read(inputStream);
+                if (bufferedImage != null) {
+                    int actualWidth = bufferedImage.getWidth();
+                    int actualHeight = bufferedImage.getHeight();
+                    builder.width(actualWidth);
+                    builder.height(actualHeight);
+                    log.debug("Actual image dimensions: {}x{} (requested: {}x{})",
+                            actualWidth, actualHeight, width, height);
+                }
+            } catch (Exception e) {
+                log.warn("Failed to read actual image dimensions, using requested dimensions", e);
+                // Keep requested dimensions as fallback
             }
         }
 

@@ -33,9 +33,12 @@ import java.util.Optional;
  * Job executor that generates AI images for game assets.
  * Creates new images/textures based on text prompts and saves them to SAssets.
  * <p>
+ * The prompt is used directly without any automatic enhancement or modification.
+ * This allows full control over the AI generation style and content.
+ * <p>
  * Job parameters:
  * <ul>
- *     <li>prompt (required) - Text description of the image</li>
+ *     <li>prompt (required) - Text description of the image (used as-is, no automatic enhancement)</li>
  *     <li>path (required) - Asset path where image will be saved (e.g., "textures/blocks/stone.png")</li>
  *     <li>size (optional) - Image size in pixels (default: 16x16, format: "16x16")</li>
  *     <li>quality (optional) - Image quality: "standard" or "hd" (default: "standard")</li>
@@ -226,12 +229,10 @@ public class AssetImageGeneratorExecutor implements JobExecutor {
     private AiImage generateImage(AiImageModel imageModel, String prompt, int width, int height)
             throws JobExecutionException {
         try {
-            // Enhance prompt for game texture/images
-            String enhancedPrompt = enhancePromptForGameTexture(prompt, width, height);
-            log.debug("Enhanced prompt: {}", enhancedPrompt);
+            log.debug("Generating image with prompt: {}", prompt);
 
-            // Generate image
-            AiImage image = imageModel.generate(enhancedPrompt, width, height);
+            // Generate image with original prompt (no enhancement)
+            AiImage image = imageModel.generate(prompt, width, height);
 
             if (image == null) {
                 throw new JobExecutionException("AI model returned null image");
@@ -528,40 +529,6 @@ public class AssetImageGeneratorExecutor implements JobExecutor {
         if (mimeType.contains("webp")) return "webp";
 
         return "png"; // Default
-    }
-
-    /**
-     * Enhance prompt for game image generation.
-     * Adds context about tileable textures, pixel art, and game assets.
-     *
-     * @param prompt Original prompt
-     * @param width Image width
-     * @param height Image height
-     * @return Enhanced prompt
-     */
-    private String enhancePromptForGameTexture(String prompt, int width, int height) {
-        StringBuilder enhanced = new StringBuilder();
-
-        // Add texture-specific context
-        if (width <= 64 && height <= 64) {
-            // Small textures - pixel art style
-            enhanced.append("Pixel art game texture/image, ");
-            enhanced.append(width).append("x").append(height).append(" pixels, ");
-            enhanced.append("tileable seamless pattern, ");
-        } else {
-            // Larger textures
-            enhanced.append("Game texture, ");
-            enhanced.append("tileable seamless pattern, ");
-            enhanced.append(width).append("x").append(height).append(" resolution, ");
-        }
-
-        // Add original prompt
-        enhanced.append(prompt);
-
-        // Add additional requirements
-        enhanced.append(". Clean, clear, no borders, suitable for tiling.");
-
-        return enhanced.toString();
     }
 
     /**
