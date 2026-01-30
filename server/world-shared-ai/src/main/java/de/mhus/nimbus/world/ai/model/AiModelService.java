@@ -1,6 +1,9 @@
 package de.mhus.nimbus.world.ai.model;
 
 import de.mhus.nimbus.shared.service.SSettingsService;
+import de.mhus.nimbus.world.ai.image.AiImageModel;
+import de.mhus.nimbus.world.ai.image.AiImageOptions;
+import de.mhus.nimbus.world.ai.image.LangchainImageModel;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -19,22 +22,35 @@ import java.util.concurrent.ConcurrentHashMap;
 public class AiModelService {
 
     private static final String MAPPING_PREFIX = "ai.model.mapping.";
+    private static final String IMAGE_MAPPING_PREFIX = "ai.image.mapping.";
 
     private final List<LangchainModel> modelProviders;
+    private final List<LangchainImageModel> imageModelProviders;
     private final SSettingsService settingsService;
     private final Map<String, LangchainModel> providerCache = new ConcurrentHashMap<>();
+    private final Map<String, LangchainImageModel> imageProviderCache = new ConcurrentHashMap<>();
 
     public AiModelService(List<LangchainModel> modelProviders,
+                          List<LangchainImageModel> imageModelProviders,
                           SSettingsService settingsService) {
         this.modelProviders = modelProviders;
+        this.imageModelProviders = imageModelProviders;
         this.settingsService = settingsService;
 
-        log.info("Initializing AiModelService with {} providers", modelProviders.size());
+        log.info("Initializing AiModelService with {} chat providers and {} image providers",
+                modelProviders.size(), imageModelProviders.size());
 
-        // Initialize provider cache
+        // Initialize chat provider cache
         for (LangchainModel provider : modelProviders) {
             providerCache.put(provider.getName(), provider);
-            log.info("Registered AI provider: {} (available: {})",
+            log.info("Registered AI chat provider: {} (available: {})",
+                    provider.getName(), provider.isAvailable());
+        }
+
+        // Initialize image provider cache
+        for (LangchainImageModel provider : imageModelProviders) {
+            imageProviderCache.put(provider.getName(), provider);
+            log.info("Registered AI image provider: {} (available: {})",
                     provider.getName(), provider.isAvailable());
         }
     }
@@ -104,6 +120,70 @@ public class AiModelService {
     }
 
     /**
+     * Create an AI image model instance by full model name.
+     * Format: provider:model or default:name (which resolves via mapping)
+     *
+     * @param fullModelName Full model name (e.g., "openai:dall-e-3", "default:generate")
+     * @param options Image generation options
+     * @return AI image model instance if available
+     */
+    public Optional<AiImageModel> createImageModel(String fullModelName, AiImageOptions options) {
+        if (fullModelName == null || fullModelName.isBlank()) {
+            log.warn("Empty image model name provided");
+            return Optional.empty();
+        }
+
+        // Resolve default: prefix
+        String resolvedName = resolveImageModelName(fullModelName);
+
+        // Parse provider:model
+        String[] parts = resolvedName.split(":", 2);
+        if (parts.length != 2) {
+            log.warn("Invalid image model name format: {}. Expected 'provider:model'", resolvedName);
+            return Optional.empty();
+        }
+
+        String providerName = parts[0];
+        String modelName = parts[1];
+
+        // Get provider
+        LangchainImageModel provider = imageProviderCache.get(providerName);
+        if (provider == null) {
+            log.warn("Unknown AI image provider: {}", providerName);
+            return Optional.empty();
+        }
+
+        if (!provider.isAvailable()) {
+            log.warn("AI image provider not available: {}", providerName);
+            return Optional.empty();
+        }
+
+        // Create image model
+        try {
+            Optional<AiImageModel> imageModel = provider.createImageModel(modelName, options);
+            if (imageModel.isPresent()) {
+                log.info("Created AI image model: {}", imageModel.get().getName());
+            } else {
+                log.warn("Provider {} could not create image model: {}", providerName, modelName);
+            }
+            return imageModel;
+        } catch (Exception e) {
+            log.error("Failed to create AI image model: {}:{}", providerName, modelName, e);
+            return Optional.empty();
+        }
+    }
+
+    /**
+     * Create an AI image model instance with default options.
+     *
+     * @param fullModelName Full model name
+     * @return AI image model instance if available
+     */
+    public Optional<AiImageModel> createImageModel(String fullModelName) {
+        return createImageModel(fullModelName, AiImageOptions.defaults());
+    }
+
+    /**
      * Register a model mapping in SSettingsService.
      * Maps "default:name" to a specific "provider:model".
      *
@@ -117,7 +197,20 @@ public class AiModelService {
     }
 
     /**
-     * Get all available provider names.
+     * Register an image model mapping in SSettingsService.
+     * Maps "default:name" to a specific "provider:model".
+     *
+     * @param alias Alias name (without "default:" prefix)
+     * @param targetModel Target model name (e.g., "openai:dall-e-3")
+     */
+    public void registerImageMapping(String alias, String targetModel) {
+        String settingKey = IMAGE_MAPPING_PREFIX + alias;
+        settingsService.setStringValue(settingKey, targetModel);
+        log.info("Registered image model mapping: default:{} -> {}", alias, targetModel);
+    }
+
+    /**
+     * Get all available chat provider names.
      *
      * @return List of provider names
      */
@@ -125,6 +218,18 @@ public class AiModelService {
         return modelProviders.stream()
                 .filter(LangchainModel::isAvailable)
                 .map(LangchainModel::getName)
+                .toList();
+    }
+
+    /**
+     * Get all available image provider names.
+     *
+     * @return List of image provider names
+     */
+    public List<String> getAvailableImageProviders() {
+        return imageModelProviders.stream()
+                .filter(LangchainImageModel::isAvailable)
+                .map(LangchainImageModel::getName)
                 .toList();
     }
 
@@ -174,6 +279,31 @@ public class AiModelService {
         return mappings;
     }
 
+    /**
+     * Get all registered image model mappings from SSettingsService.
+     *
+     * @return Map of alias to target model
+     */
+    public Map<String, String> getImageMappings() {
+        Map<String, String> mappings = new ConcurrentHashMap<>();
+
+        // Load all settings with prefix "ai.image.mapping."
+        List<de.mhus.nimbus.shared.persistence.SSettings> settings =
+                settingsService.getSettingsByType("string");
+
+        for (var setting : settings) {
+            if (setting.getKey().startsWith(IMAGE_MAPPING_PREFIX)) {
+                String alias = setting.getKey().substring(IMAGE_MAPPING_PREFIX.length());
+                String targetModel = setting.getValue();
+                if (targetModel != null && !targetModel.isBlank()) {
+                    mappings.put("default:" + alias, targetModel);
+                }
+            }
+        }
+
+        return mappings;
+    }
+
     private String resolveModelName(String fullModelName) {
         // Check if it's a default: mapping
         if (fullModelName.startsWith("default:")) {
@@ -186,6 +316,22 @@ public class AiModelService {
                 return resolved;
             }
             log.warn("No mapping found for: {} (key: {})", fullModelName, settingKey);
+        }
+        return fullModelName;
+    }
+
+    private String resolveImageModelName(String fullModelName) {
+        // Check if it's a default: mapping
+        if (fullModelName.startsWith("default:")) {
+            String alias = fullModelName.substring("default:".length());
+            String settingKey = IMAGE_MAPPING_PREFIX + alias;
+            String resolved = settingsService.getStringValue(settingKey);
+
+            if (resolved != null && !resolved.isBlank()) {
+                log.debug("Resolved image model mapping: {} -> {}", fullModelName, resolved);
+                return resolved;
+            }
+            log.warn("No mapping found for image model: {} (key: {})", fullModelName, settingKey);
         }
         return fullModelName;
     }

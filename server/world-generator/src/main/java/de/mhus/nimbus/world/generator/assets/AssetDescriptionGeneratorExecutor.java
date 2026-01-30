@@ -74,6 +74,34 @@ public class AssetDescriptionGeneratorExecutor implements JobExecutor {
         return EXECUTOR_NAME;
     }
 
+    /**
+     * Generate description for a specific asset.
+     * Can be called directly without creating a job.
+     *
+     * @param asset The asset to generate description for
+     * @return true if description was generated successfully
+     */
+    public boolean generateDescriptionForAsset(SAsset asset) {
+        try {
+            // Create AI chat instance
+            Optional<AiChat> aiChatOpt = aiModelService.createChat(aiModelName, createChatOptions());
+            if (aiChatOpt.isEmpty()) {
+                log.warn("Failed to create AI chat for description generation: {}", aiModelName);
+                return false;
+            }
+
+            AiChat aiChat = aiChatOpt.get();
+            log.debug("Generating description for asset: {} using model: {}", asset.getPath(), aiChat.getName());
+
+            // Process asset with force regeneration = true
+            return processAsset(asset, aiChat, true);
+
+        } catch (Exception e) {
+            log.error("Failed to generate description for asset: {}", asset.getPath(), e);
+            return false;
+        }
+    }
+
     @Override
     public JobResult execute(WJob job) throws JobExecutionException {
         try {

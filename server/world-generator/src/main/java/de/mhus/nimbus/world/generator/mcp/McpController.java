@@ -4,6 +4,10 @@ import de.mhus.nimbus.generated.types.Block;
 import de.mhus.nimbus.shared.engine.EngineMapper;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.shared.dto.CreateLayerRequest;
+import de.mhus.nimbus.world.shared.job.JobExecutorRegistry;
+import de.mhus.nimbus.world.shared.job.JobStatus;
+import de.mhus.nimbus.world.shared.job.WJob;
+import de.mhus.nimbus.world.shared.job.WJobService;
 import de.mhus.nimbus.world.shared.layer.*;
 import de.mhus.nimbus.world.shared.rest.BaseEditorController;
 import de.mhus.nimbus.world.shared.session.WSessionService;
@@ -23,6 +27,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -30,10 +35,10 @@ import java.util.stream.Collectors;
  * MCP (Model Context Protocol) REST API Controller.
  * Provides unified access to world control operations for MCP clients.
  * <p>
- * Base path: /control/mcp
+ * Base path: /generator/mcp
  */
 @RestController
-@RequestMapping("/control/mcp")
+@RequestMapping("/generator/mcp")
 @RequiredArgsConstructor
 @Slf4j
 @Tag(name = "MCP", description = "Model Context Protocol API for world control")
@@ -46,6 +51,9 @@ public class McpController extends BaseEditorController {
     private final WWorldService worldService;
     private final WBlockTypeService blockTypeService;
     private final EngineMapper engineMapper;
+    private final McpJobExecutor mcpJobExecutor;
+    private final JobExecutorRegistry executorRegistry;
+    private final WJobService jobService;
 
     // ==================== MCP PROTOCOL ====================
 
@@ -268,6 +276,73 @@ public class McpController extends BaseEditorController {
                 )
         ));
 
+        // Job execution tools
+        tools.add(createToolDescriptor(
+                "execute_job_world_scoped",
+                "Execute a job synchronously in a specific world (worldId in path)",
+                Map.of(
+                        "worldId", Map.of(
+                                "type", "string",
+                                "description", "World ID in path",
+                                "required", true
+                        ),
+                        "executor", Map.of(
+                                "type", "string",
+                                "description", "Executor name to use",
+                                "required", true
+                        ),
+                        "layer", Map.of(
+                                "type", "string",
+                                "description", "Optional layer name",
+                                "required", false
+                        ),
+                        "parameters", Map.of(
+                                "type", "object",
+                                "description", "Executor-specific parameters",
+                                "required", false
+                        ),
+                        "timeoutSeconds", Map.of(
+                                "type", "integer",
+                                "description", "Timeout in seconds",
+                                "required", false,
+                                "default", 300
+                        )
+                )
+        ));
+
+        tools.add(createToolDescriptor(
+                "execute_job_dynamic",
+                "Execute a job synchronously with dynamic world selection (worldId in body)",
+                Map.of(
+                        "worldId", Map.of(
+                                "type", "string",
+                                "description", "World ID in request body",
+                                "required", true
+                        ),
+                        "executor", Map.of(
+                                "type", "string",
+                                "description", "Executor name to use",
+                                "required", true
+                        ),
+                        "layer", Map.of(
+                                "type", "string",
+                                "description", "Optional layer name",
+                                "required", false
+                        ),
+                        "parameters", Map.of(
+                                "type", "object",
+                                "description", "Executor-specific parameters",
+                                "required", false
+                        ),
+                        "timeoutSeconds", Map.of(
+                                "type", "integer",
+                                "description", "Timeout in seconds",
+                                "required", false,
+                                "default", 300
+                        )
+                )
+        ));
+
         Map<String, Object> response = new HashMap<>();
         response.put("server", serverInfo);
         response.put("tools", tools);
@@ -275,18 +350,19 @@ public class McpController extends BaseEditorController {
 
         // Add REST API endpoints info
         Map<String, String> endpoints = new HashMap<>();
-        endpoints.put("GET /control/mcp", "Get this server info");
-        endpoints.put("GET /control/mcp/sessions/{sessionId}/marked-block", "Get marked block");
-        endpoints.put("GET /control/mcp/sessions/{sessionId}/selected-block", "Get selected block");
-        endpoints.put("GET /control/mcp/worlds", "List worlds");
-        endpoints.put("GET /control/mcp/worlds/{worldId}", "Get world");
-        endpoints.put("GET /control/mcp/worlds/{worldId}/blocktypes", "Get block types");
-        endpoints.put("GET /control/mcp/worlds/{worldId}/layers", "List layers");
-        endpoints.put("GET /control/mcp/worlds/{worldId}/layers/{layerId}", "Get layer");
-        endpoints.put("POST /control/mcp/worlds/{worldId}/layers", "Create layer");
-        endpoints.put("GET /control/mcp/worlds/{worldId}/layers/{layerId}/blocks", "Get layer blocks");
-        endpoints.put("POST /control/mcp/worlds/{worldId}/layers/{layerId}/blocks", "Add layer blocks");
-        // Note: groups endpoint removed - use WLayerModel API
+        endpoints.put("GET /generator/mcp", "Get this server info");
+        endpoints.put("GET /generator/mcp/worlds", "List worlds");
+        endpoints.put("GET /generator/mcp/worlds/{worldId}", "Get world");
+        endpoints.put("GET /generator/mcp/worlds/{worldId}/blocktypes", "Get block types");
+        endpoints.put("GET /generator/mcp/worlds/{worldId}/layers", "List layers");
+        endpoints.put("GET /generator/mcp/worlds/{worldId}/layers/{layerId}", "Get layer");
+        endpoints.put("POST /generator/mcp/worlds/{worldId}/layers", "Create layer");
+        endpoints.put("GET /generator/mcp/worlds/{worldId}/layers/{layerId}/blocks", "Get layer blocks");
+        endpoints.put("POST /generator/mcp/worlds/{worldId}/layers/{layerId}/blocks", "Add layer blocks");
+        endpoints.put("POST /generator/mcp/worlds/{worldId}/jobs/execute", "Execute job synchronously (world-scoped)");
+        endpoints.put("GET /generator/mcp/worlds/{worldId}/jobs/{jobId}/status", "Get job status (world-scoped)");
+        endpoints.put("POST /generator/mcp/jobs/execute", "Execute job synchronously (dynamic world selection)");
+        endpoints.put("GET /generator/mcp/jobs/{jobId}/status", "Get job status (dynamic)");
         response.put("endpoints", endpoints);
 
         return ResponseEntity.ok(response);
@@ -747,6 +823,201 @@ public class McpController extends BaseEditorController {
         ));
     }
 
+    // ==================== JOB EXECUTION OPERATIONS ====================
+
+    /**
+     * Execute job synchronously (world-scoped: worldId in path).
+     * POST /generator/mcp/worlds/{worldId}/jobs/execute
+     */
+    @PostMapping("/worlds/{worldId}/jobs/execute")
+    @Operation(summary = "Execute job synchronously (world-scoped)")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Job completed successfully"),
+            @ApiResponse(responseCode = "202", description = "Job still running (timeout exceeded)"),
+            @ApiResponse(responseCode = "400", description = "Invalid request"),
+            @ApiResponse(responseCode = "404", description = "Executor or world not found"),
+            @ApiResponse(responseCode = "500", description = "Job execution failed")
+    })
+    public ResponseEntity<?> executeJobWorldScoped(
+            @Parameter(description = "World ID") @PathVariable String worldId,
+            @RequestBody McpJobExecuteRequest request) {
+
+        log.debug("MCP: Execute job (world-scoped): worldId={} executor={}", worldId, request.executor());
+
+        // worldId from path overrides request body
+        return executeJobInternal(worldId, request);
+    }
+
+    /**
+     * Get job status (world-scoped: worldId in path).
+     * GET /generator/mcp/worlds/{worldId}/jobs/{jobId}/status
+     */
+    @GetMapping("/worlds/{worldId}/jobs/{jobId}/status")
+    @Operation(summary = "Get job status (world-scoped)")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Job status retrieved"),
+            @ApiResponse(responseCode = "404", description = "Job not found")
+    })
+    public ResponseEntity<?> getJobStatusWorldScoped(
+            @Parameter(description = "World ID") @PathVariable String worldId,
+            @Parameter(description = "Job ID") @PathVariable String jobId) {
+
+        log.debug("MCP: Get job status (world-scoped): worldId={} jobId={}", worldId, jobId);
+        return getJobStatusInternal(jobId);
+    }
+
+    /**
+     * Execute job synchronously (dynamic: worldId in request body).
+     * POST /generator/mcp/jobs/execute
+     */
+    @PostMapping("/jobs/execute")
+    @Operation(summary = "Execute job synchronously (dynamic world selection)")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Job completed successfully"),
+            @ApiResponse(responseCode = "202", description = "Job still running (timeout exceeded)"),
+            @ApiResponse(responseCode = "400", description = "Invalid request"),
+            @ApiResponse(responseCode = "404", description = "Executor or world not found"),
+            @ApiResponse(responseCode = "500", description = "Job execution failed")
+    })
+    public ResponseEntity<?> executeJobDynamic(@RequestBody McpJobExecuteRequest request) {
+        log.debug("MCP: Execute job (dynamic): worldId={} executor={}", request.worldId(), request.executor());
+
+        // worldId must be in request body
+        if (request.worldId() == null || request.worldId().isBlank()) {
+            return bad("worldId is required in request body");
+        }
+
+        return executeJobInternal(request.worldId(), request);
+    }
+
+    /**
+     * Get job status (dynamic).
+     * GET /generator/mcp/jobs/{jobId}/status
+     */
+    @GetMapping("/jobs/{jobId}/status")
+    @Operation(summary = "Get job status (dynamic)")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Job status retrieved"),
+            @ApiResponse(responseCode = "404", description = "Job not found")
+    })
+    public ResponseEntity<?> getJobStatusDynamic(@Parameter(description = "Job ID") @PathVariable String jobId) {
+        log.debug("MCP: Get job status (dynamic): jobId={}", jobId);
+        return getJobStatusInternal(jobId);
+    }
+
+    /**
+     * Internal implementation for job execution.
+     */
+    private ResponseEntity<?> executeJobInternal(String worldId, McpJobExecuteRequest request) {
+        // Validate worldId
+        WorldId.of(worldId).orElseThrow(
+                () -> new IllegalArgumentException("Invalid worldId: " + worldId)
+        );
+
+        // Validate executor exists
+        if (!executorRegistry.hasExecutor(request.executor())) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", "Executor not found: " + request.executor()));
+        }
+
+        // Calculate timeout
+        long timeoutMs = 300000; // Default: 5 minutes
+        if (request.timeoutSeconds() != null) {
+            timeoutMs = request.timeoutSeconds() * 1000L;
+        }
+
+        // Validate timeout bounds
+        if (timeoutMs > 600000) { // Max: 10 minutes
+            return bad("timeout exceeds maximum of 600 seconds");
+        }
+
+        try {
+            // Execute job
+            McpJobExecutor.JobExecutionResult result = mcpJobExecutor.builder()
+                    .worldId(worldId)
+                    .layer(request.layer())
+                    .executor(request.executor())
+                    .parameters(request.parameters())
+                    .timeout(timeoutMs)
+                    .build(mcpJobExecutor)
+                    .executeAndWait();
+
+            // Handle result
+            return switch (result.status()) {
+                case SUCCESS -> ResponseEntity.ok(new McpJobExecuteResponse(
+                        result.jobId(),
+                        "COMPLETED",
+                        result.result(),
+                        null,
+                        result.durationMs(),
+                        result.startedAt(),
+                        result.completedAt()
+                ));
+                case FAILURE -> ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body(new McpJobExecuteResponse(
+                                result.jobId(),
+                                "FAILED",
+                                null,
+                                result.error(),
+                                result.durationMs(),
+                                result.startedAt(),
+                                result.completedAt()
+                        ));
+                case TIMEOUT -> {
+                    // Should not happen as timeout throws exception
+                    yield ResponseEntity.status(HttpStatus.ACCEPTED)
+                            .body(new McpJobTimeoutResponse(
+                                    result.jobId(),
+                                    "RUNNING",
+                                    "Job exceeded timeout",
+                                    "/generator/mcp/jobs/" + result.jobId() + "/status"
+                            ));
+                }
+            };
+
+        } catch (McpJobTimeoutException e) {
+            return ResponseEntity.status(HttpStatus.ACCEPTED)
+                    .body(new McpJobTimeoutResponse(
+                            e.getJobId(),
+                            "RUNNING",
+                            e.getMessage(),
+                            "/generator/mcp/jobs/" + e.getJobId() + "/status"
+                    ));
+
+        } catch (McpJobException e) {
+            log.error("MCP: Job execution failed", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Job execution failed: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * Internal implementation for job status retrieval.
+     */
+    private ResponseEntity<?> getJobStatusInternal(String jobId) {
+        Optional<WJob> jobOpt = jobService.getJob(jobId);
+
+        if (jobOpt.isEmpty()) {
+            return notFound("job not found");
+        }
+
+        WJob job = jobOpt.get();
+        Long duration = null;
+        if (job.getStartedAt() != null && job.getCompletedAt() != null) {
+            duration = job.getCompletedAt().toEpochMilli() - job.getStartedAt().toEpochMilli();
+        }
+
+        return ResponseEntity.ok(new McpJobExecuteResponse(
+                job.getId(),
+                job.getStatus(),
+                job.getResult(),
+                job.getErrorMessage(),
+                duration,
+                job.getStartedAt(),
+                job.getCompletedAt()
+        ));
+    }
+
     // ==================== HELPER METHODS & DTOS ====================
 
     private Map<String, Object> toWorldDto(WWorld world) {
@@ -812,6 +1083,31 @@ public class McpController extends BaseEditorController {
 
     // Request DTOs
     // CreateLayerRequest moved to de.mhus.nimbus.world.shared.dto package
+
+    public record McpJobExecuteRequest(
+        String executor,
+        String worldId,
+        String layer,
+        Map<String, String> parameters,
+        Integer timeoutSeconds
+    ) {}
+
+    public record McpJobExecuteResponse(
+        String jobId,
+        String status,
+        String result,
+        String error,
+        Long durationMs,
+        Instant startedAt,
+        Instant completedAt
+    ) {}
+
+    public record McpJobTimeoutResponse(
+        String jobId,
+        String status,
+        String message,
+        String pollUrl
+    ) {}
 
     public record AddBlocksRequest(List<BlockRequest> blocks) {
     }
