@@ -1,5 +1,6 @@
 package de.mhus.nimbus.world.shared.layer;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.shared.storage.StorageService;
 import de.mhus.nimbus.shared.types.SchemaVersion;
@@ -1206,6 +1207,82 @@ public class WLayerService implements StorageProvider {
             source.setPosition(newPosition);
             return source;
         }
+    }
+
+    // ==================== TERRAIN IMPORT OPERATIONS ====================
+
+    /**
+     * Import model JSON directly to GROUND layer terrain chunks.
+     *
+     * This method allows importing large .model.json files directly into terrain chunks,
+     * bypassing MongoDB's 16MB document size limit. The model is parsed in-memory and
+     * distributed across terrain chunks via StorageService.
+     *
+     * @param worldId          World identifier
+     * @param layerDataId      Layer data ID (must be GROUND type)
+     * @param jsonData         JSON string from .model.json file
+     * @param mountX           Mount point X coordinate
+     * @param mountY           Mount point Y coordinate
+     * @param mountZ           Mount point Z coordinate
+     * @param markChunksDirty  Whether to mark affected chunks as dirty
+     * @return Number of chunks processed
+     * @throws IllegalArgumentException if layer not found, not GROUND type, or invalid JSON
+     */
+    @Transactional
+    public int importModelToTerrain(String worldId, String layerDataId,
+                                    String jsonData, int mountX, int mountY, int mountZ,
+                                    boolean markChunksDirty) {
+        // 1. Validate layer exists and is GROUND type
+        Optional<WLayer> layerOpt = layerRepository.findByWorldIdAndLayerDataId(worldId, layerDataId);
+        if (layerOpt.isEmpty()) {
+            throw new IllegalArgumentException("Layer not found");
+        }
+        WLayer layer = layerOpt.get();
+        if (layer.getLayerType() != LayerType.GROUND) {
+            throw new IllegalArgumentException("Layer must be of type GROUND");
+        }
+
+        // 2. Parse JSON to temporary WLayerModel (in-memory only, not saved)
+        WLayerModel tempModel;
+        try {
+            tempModel = objectMapper.readValue(jsonData, WLayerModel.class);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Failed to parse JSON data: " + e.getMessage(), e);
+        }
+
+        // 3. Set mount point from parameters
+        tempModel.setWorldId(worldId);
+        tempModel.setLayerDataId(layerDataId);
+        tempModel.setMountX(mountX);
+        tempModel.setMountY(mountY);
+        tempModel.setMountZ(mountZ);
+
+        // 4. Calculate affected chunks (reuse existing method)
+        Set<String> affectedChunks = calculateAffectedChunks(tempModel);
+        if (affectedChunks.isEmpty()) {
+            return 0;
+        }
+
+        // 5. Update WLayer.affectedChunks
+        updateLayerAffectedChunks(layer, affectedChunks);
+
+        // 6. Transfer to terrain chunks (reuse existing method)
+        int chunksProcessed = 0;
+        for (String chunkKey : affectedChunks) {
+            try {
+                transferModelToTerrainChunk(tempModel, layerDataId, chunkKey);
+                chunksProcessed++;
+            } catch (Exception e) {
+                log.error("Failed to transfer to terrain chunk: chunkKey={}", chunkKey, e);
+            }
+        }
+
+        // 7. Mark chunks dirty if requested
+        if (markChunksDirty && chunksProcessed > 0) {
+            dirtyChunkService.markChunksDirty(worldId, new ArrayList<>(affectedChunks), "terrain_import");
+        }
+
+        return chunksProcessed;
     }
 
     // ==================== MODEL LAYER OPERATIONS ====================

@@ -40,6 +40,7 @@ import java.util.Optional;
  * <ul>
  *     <li>prompt (required) - Text description of the image (used as-is, no automatic enhancement)</li>
  *     <li>path (required) - Asset path where image will be saved (e.g., "textures/blocks/stone.png")</li>
+ *     <li>model (optional) - AI model to use (e.g., "openai:dall-e-2", "openai:dall-e-3"). If not specified, uses default from settings.</li>
  *     <li>size (optional) - Image size in pixels (default: 16x16, format: "16x16")</li>
  *     <li>quality (optional) - Image quality: "standard" or "hd" (default: "standard")</li>
  *     <li>style (optional) - Image style: "vivid" or "natural" (default: "vivid")</li>
@@ -128,6 +129,7 @@ public class AssetImageGeneratorExecutor implements JobExecutor {
             }
 
             // Get optional parameters
+            String model = job.getParameters().get("model"); // null if not specified, use default
             String sizeStr = job.getParameters().getOrDefault("size", DEFAULT_SIZE + "x" + DEFAULT_SIZE);
             String quality = job.getParameters().getOrDefault("quality", defaultQuality.get());
             String style = job.getParameters().getOrDefault("style", defaultStyle.get());
@@ -153,8 +155,11 @@ public class AssetImageGeneratorExecutor implements JobExecutor {
             int width = dimensions[0];
             int height = dimensions[1];
 
-            log.info("Generating image: world={}, path={}, prompt='{}', size={}x{}, quality={}, style={}",
-                    worldId.getId(), uniquePath, prompt, width, height, quality, style);
+            // Determine which model to use
+            String modelToUse = (model != null && !model.isBlank()) ? model : aiModelName;
+
+            log.info("Generating image: world={}, path={}, model={}, prompt='{}', size={}x{}, quality={}, style={}",
+                    worldId.getId(), uniquePath, modelToUse, prompt, width, height, quality, style);
 
             // Create AI image model
             AiImageOptions options = AiImageOptions.builder()
@@ -167,9 +172,9 @@ public class AssetImageGeneratorExecutor implements JobExecutor {
                     .logRequests(false)
                     .build();
 
-            Optional<AiImageModel> imageModelOpt = aiModelService.createImageModel(aiModelName, options);
+            Optional<AiImageModel> imageModelOpt = aiModelService.createImageModel(modelToUse, options);
             if (imageModelOpt.isEmpty()) {
-                throw new JobExecutionException("Failed to create AI image model: " + aiModelName);
+                throw new JobExecutionException("Failed to create AI image model: " + modelToUse);
             }
 
             AiImageModel imageModel = imageModelOpt.get();

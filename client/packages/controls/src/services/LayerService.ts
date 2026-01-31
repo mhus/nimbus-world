@@ -116,6 +116,32 @@ export class LayerService {
       request
     );
   }
+
+  /**
+   * Import model directly to GROUND layer terrain
+   */
+  async importTerrain(
+    worldId: string,
+    id: string,
+    request: {
+      jsonData: string;
+      mountX: number;
+      mountY: number;
+      mountZ: number;
+      markChunksDirty?: boolean;
+    }
+  ): Promise<{
+    chunksAffected: number;
+    mountX: number;
+    mountY: number;
+    mountZ: number;
+    message: string;
+  }> {
+    return apiService.post(
+      `/control/worlds/${worldId}/layers/${id}/import-terrain`,
+      request
+    );
+  }
 }
 
 export const layerService = new LayerService();

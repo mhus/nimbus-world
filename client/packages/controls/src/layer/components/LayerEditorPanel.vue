@@ -209,6 +209,28 @@
           />
         </div>
 
+        <!-- Terrain Import (only for GROUND layers and edit mode) -->
+        <div v-if="isEditMode && formData.layerType === 'GROUND'" class="divider">Import Model to Terrain</div>
+
+        <div v-if="isEditMode && formData.layerType === 'GROUND'" class="space-y-4">
+          <div class="flex justify-between items-center">
+            <h4 class="font-semibold">Import Model into Terrain</h4>
+            <button
+              type="button"
+              class="btn btn-sm btn-outline btn-secondary"
+              @click="openTerrainImportDialog"
+            >
+              <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+              </svg>
+              Import Model to Terrain
+            </button>
+          </div>
+          <p class="text-sm text-base-content/70">
+            Import .model.json files directly into terrain chunks. Blocks are permanently added to terrain storage.
+          </p>
+        </div>
+
         <!-- Import Model Dialog -->
         <dialog ref="importDialogRef" class="modal">
           <div class="modal-box max-w-2xl">
@@ -254,6 +276,103 @@
               >
                 <span v-if="importing" class="loading loading-spinner"></span>
                 {{ importing ? 'Importing...' : 'Import' }}
+              </button>
+            </div>
+          </div>
+          <form method="dialog" class="modal-backdrop">
+            <button>close</button>
+          </form>
+        </dialog>
+
+        <!-- Import Terrain Dialog -->
+        <dialog ref="terrainImportDialogRef" class="modal">
+          <div class="modal-box max-w-2xl">
+            <h3 class="font-bold text-lg">Import Model to Terrain</h3>
+            <p class="py-4 text-sm text-base-content/70">
+              Import a .model.json file directly into terrain chunks. Specify mount point coordinates.
+            </p>
+
+            <div class="space-y-4">
+              <!-- File Input -->
+              <div class="form-control">
+                <label class="label">
+                  <span class="label-text">Select Model File (.model.json) *</span>
+                </label>
+                <input
+                  ref="terrainFileInputRef"
+                  type="file"
+                  accept=".json,.model.json"
+                  class="file-input file-input-bordered w-full"
+                  :class="{ 'file-input-error': terrainImportError }"
+                  @change="handleTerrainFileSelected"
+                />
+                <label v-if="terrainSelectedFileName" class="label">
+                  <span class="label-text-alt">Selected: {{ terrainSelectedFileName }}</span>
+                </label>
+              </div>
+
+              <!-- Mount Point Inputs -->
+              <div class="grid grid-cols-3 gap-4">
+                <div class="form-control">
+                  <label class="label">
+                    <span class="label-text">Mount X *</span>
+                  </label>
+                  <input
+                    v-model.number="terrainMountX"
+                    type="number"
+                    class="input input-bordered"
+                    placeholder="0"
+                    required
+                  />
+                </div>
+                <div class="form-control">
+                  <label class="label">
+                    <span class="label-text">Mount Y *</span>
+                  </label>
+                  <input
+                    v-model.number="terrainMountY"
+                    type="number"
+                    class="input input-bordered"
+                    placeholder="0"
+                    required
+                  />
+                </div>
+                <div class="form-control">
+                  <label class="label">
+                    <span class="label-text">Mount Z *</span>
+                  </label>
+                  <input
+                    v-model.number="terrainMountZ"
+                    type="number"
+                    class="input input-bordered"
+                    placeholder="0"
+                    required
+                  />
+                </div>
+              </div>
+
+              <label v-if="terrainImportError" class="label">
+                <span class="label-text-alt text-error">{{ terrainImportError }}</span>
+              </label>
+            </div>
+
+            <div class="modal-action">
+              <button
+                type="button"
+                class="btn"
+                @click="closeTerrainImportDialog"
+                :disabled="importingTerrain"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                class="btn btn-primary"
+                @click="handleTerrainImport"
+                :disabled="importingTerrain || !terrainImportJsonData || terrainMountX === null || terrainMountY === null || terrainMountZ === null"
+              >
+                <span v-if="importingTerrain" class="loading loading-spinner"></span>
+                {{ importingTerrain ? 'Importing...' : 'Import to Terrain' }}
               </button>
             </div>
           </div>
@@ -376,6 +495,17 @@ const importJsonData = ref('');
 const selectedFileName = ref('');
 const importError = ref('');
 const importing = ref(false);
+
+// Terrain import dialog state
+const terrainImportDialogRef = ref<HTMLDialogElement | null>(null);
+const terrainFileInputRef = ref<HTMLInputElement | null>(null);
+const terrainImportJsonData = ref('');
+const terrainSelectedFileName = ref('');
+const terrainImportError = ref('');
+const importingTerrain = ref(false);
+const terrainMountX = ref<number | null>(0);
+const terrainMountY = ref<number | null>(0);
+const terrainMountZ = ref<number | null>(0);
 
 // Grid editor state
 // Removed: selectedModelForGrid - no longer needed
@@ -700,6 +830,106 @@ const handleRegenerate = async () => {
     errorMessage.value = error.message || 'Failed to trigger layer regeneration';
   } finally {
     regenerating.value = false;
+  }
+};
+
+/**
+ * Open terrain import dialog
+ */
+const openTerrainImportDialog = () => {
+  terrainImportJsonData.value = '';
+  terrainSelectedFileName.value = '';
+  terrainImportError.value = '';
+  terrainMountX.value = 0;
+  terrainMountY.value = 0;
+  terrainMountZ.value = 0;
+  if (terrainFileInputRef.value) {
+    terrainFileInputRef.value.value = '';
+  }
+  terrainImportDialogRef.value?.showModal();
+};
+
+/**
+ * Close terrain import dialog
+ */
+const closeTerrainImportDialog = () => {
+  terrainImportDialogRef.value?.close();
+  terrainImportJsonData.value = '';
+  terrainSelectedFileName.value = '';
+  terrainImportError.value = '';
+  if (terrainFileInputRef.value) {
+    terrainFileInputRef.value.value = '';
+  }
+};
+
+/**
+ * Handle terrain file selection
+ */
+const handleTerrainFileSelected = async (event: Event) => {
+  const target = event.target as HTMLInputElement;
+  const file = target.files?.[0];
+
+  if (!file) {
+    terrainImportJsonData.value = '';
+    terrainSelectedFileName.value = '';
+    return;
+  }
+
+  terrainSelectedFileName.value = file.name;
+  terrainImportError.value = '';
+
+  try {
+    const text = await file.text();
+    terrainImportJsonData.value = text;
+  } catch (error: any) {
+    terrainImportError.value = `Failed to read file: ${error.message}`;
+    terrainImportJsonData.value = '';
+  }
+};
+
+/**
+ * Handle terrain import
+ */
+const handleTerrainImport = async () => {
+  if (!props.layer?.id || !terrainImportJsonData.value) return;
+  if (terrainMountX.value === null || terrainMountY.value === null || terrainMountZ.value === null) {
+    terrainImportError.value = 'Mount point coordinates are required';
+    return;
+  }
+
+  importingTerrain.value = true;
+  terrainImportError.value = '';
+
+  try {
+    // Validate JSON
+    JSON.parse(terrainImportJsonData.value);
+
+    // Call import terrain API
+    const result = await layerService.importTerrain(props.worldId, props.layer.id, {
+      jsonData: terrainImportJsonData.value,
+      mountX: terrainMountX.value,
+      mountY: terrainMountY.value,
+      mountZ: terrainMountZ.value,
+      markChunksDirty: true
+    });
+
+    logger.info('Imported model to terrain successfully', {
+      layerId: props.layer.id,
+      chunksAffected: result.chunksAffected
+    });
+
+    closeTerrainImportDialog();
+    alert(`Successfully imported model to terrain!\nChunks affected: ${result.chunksAffected}`);
+
+  } catch (error: any) {
+    logger.error('Failed to import model to terrain', { layerId: props.layer.id }, error);
+    if (error.message.includes('JSON')) {
+      terrainImportError.value = 'Invalid JSON data. Please check the format.';
+    } else {
+      terrainImportError.value = `Failed to import: ${error.message}`;
+    }
+  } finally {
+    importingTerrain.value = false;
   }
 };
 </script>

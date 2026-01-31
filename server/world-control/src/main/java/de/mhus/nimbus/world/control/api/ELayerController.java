@@ -526,6 +526,89 @@ public class ELayerController extends BaseEditorController {
         }
     }
 
+    @PostMapping("/{id}/import-terrain")
+    @Operation(summary = "Import Model to GROUND Layer Terrain")
+    @ApiResponses({
+        @ApiResponse(responseCode = "201", description = "Model imported to terrain successfully"),
+        @ApiResponse(responseCode = "400", description = "Invalid request or layer is not GROUND type"),
+        @ApiResponse(responseCode = "404", description = "Layer not found")
+    })
+    public ResponseEntity<?> importTerrain(
+            @Parameter(description = "World identifier") @PathVariable String worldId,
+            @Parameter(description = "Layer identifier") @PathVariable String id,
+            @RequestBody de.mhus.nimbus.world.shared.dto.ImportLayerTerrainRequest request) {
+
+        log.debug("IMPORT terrain: worldId={}, layerId={}", worldId, id);
+
+        var wid = WorldId.of(worldId).orElseThrow(
+                () -> new IllegalStateException("Invalid worldId: " + worldId)
+        );
+        var validation = validateId(id, "id");
+        if (validation != null) return validation;
+
+        String lookupWorldId = wid.withoutInstance().getId();
+
+        Optional<WLayer> opt = layerService.findById(id);
+        if (opt.isEmpty()) {
+            log.warn("Layer not found for terrain import: id={}", id);
+            return notFound("layer not found");
+        }
+
+        WLayer layer = opt.get();
+        if (!layer.getWorldId().equals(lookupWorldId)) {
+            log.warn("Layer worldId mismatch: expected={}, actual={}", lookupWorldId, layer.getWorldId());
+            return notFound("layer not found");
+        }
+
+        // Verify layer is GROUND type
+        if (layer.getLayerType() != LayerType.GROUND) {
+            log.warn("Cannot import terrain to non-GROUND layer: layerId={} type={}", id, layer.getLayerType());
+            return bad("Layer must be of type GROUND");
+        }
+
+        // Validate request
+        if (request.jsonData() == null || request.jsonData().isBlank()) {
+            return bad("jsonData is required");
+        }
+        if (request.mountX() == null || request.mountY() == null || request.mountZ() == null) {
+            return bad("Mount point coordinates (mountX, mountY, mountZ) are required");
+        }
+
+        try {
+            boolean markChunksDirty = request.markChunksDirty() != null ? request.markChunksDirty() : true;
+
+            int chunksProcessed = layerService.importModelToTerrain(
+                    lookupWorldId,
+                    layer.getLayerDataId(),
+                    request.jsonData(),
+                    request.mountX(),
+                    request.mountY(),
+                    request.mountZ(),
+                    markChunksDirty
+            );
+
+            log.info("Imported model to terrain: layerId={} chunks={} mountPoint=({},{},{})",
+                    id, chunksProcessed, request.mountX(), request.mountY(), request.mountZ());
+
+            Map<String, Object> response = new java.util.HashMap<>();
+            response.put("chunksAffected", chunksProcessed);
+            response.put("mountX", request.mountX());
+            response.put("mountY", request.mountY());
+            response.put("mountZ", request.mountZ());
+            response.put("message", "Model imported to terrain successfully");
+
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
+
+        } catch (IllegalArgumentException e) {
+            log.warn("Failed to import terrain: {}", e.getMessage());
+            return bad(e.getMessage());
+        } catch (Exception e) {
+            log.error("Unexpected error importing terrain", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Failed to import terrain: " + e.getMessage()));
+        }
+    }
+
     // Helper methods
 
     private LayerDto toDto(WLayer layer) {
