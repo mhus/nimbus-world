@@ -78,9 +78,9 @@ public class Biome extends Area {
                 featureHexGrid.getParameters().putAll(parameters);
             }
 
-            // Add biome type parameter
+            // Add biome type parameter (use builderName for consistency with HexGridBuilderService)
             if (type != null) {
-                featureHexGrid.addParameter("biome", type.name().toLowerCase());
+                featureHexGrid.addParameter("biome", type.getBuilderName());
                 featureHexGrid.addParameter("biomeName", getName());
             }
 

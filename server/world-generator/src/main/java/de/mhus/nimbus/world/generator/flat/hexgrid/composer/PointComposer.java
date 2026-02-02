@@ -288,10 +288,10 @@ public class PointComposer {
             return;
         }
 
-        // Get biome center as grid coordinate
-        HexVector2 gridCoordinate = biome.getPlacedCenter();
+        // Let point select its preferred grid coordinate (default: biome center, but subclasses can override)
+        HexVector2 gridCoordinate = point.selectGridCoordinate(biome, context);
         if (gridCoordinate == null) {
-            log.warn("Cannot initialize point {}: biome {} has no center", point.getName(), biome.getName());
+            log.warn("Cannot initialize point {}: could not select grid coordinate", point.getName());
             return;
         }
 

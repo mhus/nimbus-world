@@ -491,6 +491,26 @@ public class HexCompositeBuilderSimpleTest {
     }
 
     /**
+     * Adds text overlays showing coordinates for all grids.
+     */
+    private void addCoordinateTextOverlays(HexGridCompositeImageCreator creator, Map<HexVector2, WFlat> flats) {
+        for (Map.Entry<HexVector2, WFlat> entry : flats.entrySet()) {
+            HexVector2 coord = entry.getKey();
+            String text = coord.getQ() + "," + coord.getR();
+
+            // Calculate center position of hex grid in world coordinates
+            double[] hexCenter = HexMathUtil.hexToCartesian(coord, FLAT_SIZE);
+            int centerX = (int) Math.floor(hexCenter[0]);
+            int centerY = (int) Math.floor(hexCenter[1]);
+
+            // Create text overlay centered on grid (white color, scale 3)
+            int textWidth = text.length() * (5 + 1) * 3; // Approximate width
+            TextOverlay textOverlay = new TextOverlay(text, centerX - textWidth/2, centerY - 10, Color.WHITE, 3);
+            creator.addOverlay(textOverlay);
+        }
+    }
+
+    /**
      * Adds debug overlays for grid 0;0 showing blending coordinates.
      */
     private void addDebugOverlaysForGrid00(HexGridCompositeImageCreator creator, Map<HexVector2, WFlat> flats) {
@@ -669,6 +689,9 @@ public class HexCompositeBuilderSimpleTest {
             .imageName(name)
             .drawGridLines(false)  // Disable grid lines to see organic blending better
             .build();
+
+        // Add coordinate text overlays for all grids
+        addCoordinateTextOverlays(creator, flats);
 
         // Add debug overlays for grid 0;0
         // addDebugOverlaysForGrid00(creator, flats);

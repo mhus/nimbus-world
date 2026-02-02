@@ -67,13 +67,14 @@
       }
     },
     {
-      "featureType": "point",
+      "featureType": "ocean-edge",
       "name": "river-mouth",
-      "title": "River Mouth",
+      "title": "River Mouth at Ocean",
       "snap": {
         "mode": "INSIDE",
         "target": "west-region"
-      }
+      },
+      "oceanDirection": "W"
     },
     {
       "featureType": "river",

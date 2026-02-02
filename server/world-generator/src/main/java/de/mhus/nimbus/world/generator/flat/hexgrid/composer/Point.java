@@ -176,6 +176,19 @@ public abstract class Point extends Feature {
     }
 
     /**
+     * Selects the grid coordinate for this point within the given biome.
+     * Default: returns biome center. Subclasses can override to select different coordinates.
+     *
+     * @param biome The biome this point belongs to
+     * @param context The compose context
+     * @return The selected grid coordinate, or null to use biome center
+     */
+    public HexVector2 selectGridCoordinate(Area biome, ComposeContext context) {
+        // Default: use biome center
+        return biome.getPlacedCenter();
+    }
+
+    /**
      * Prepares this point for composition by calculating concrete values from positions.
      */
     public void prepareForComposition() {
