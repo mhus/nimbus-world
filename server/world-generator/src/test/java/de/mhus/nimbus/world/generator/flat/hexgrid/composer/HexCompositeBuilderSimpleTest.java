@@ -194,7 +194,7 @@ public class HexCompositeBuilderSimpleTest {
 
             // Create composite image
             log.info("Creating %s composite image...".formatted(name));
-            createCompositeImage(flats, fillResult, "continent-test-%s".formatted(name));
+            createCompositeImage(flats, fillResult, composition, "continent-test-%s".formatted(name));
 
             // Export generated model
             exportGeneratedModel(fillResult, result.getFlowCompositionResult(), "continent-test-%s".formatted(name));
@@ -491,23 +491,145 @@ public class HexCompositeBuilderSimpleTest {
     }
 
     /**
-     * Adds text overlays showing coordinates for all grids.
+     * Adds text overlays showing coordinates and biome names for all grids.
      */
-    private void addCoordinateTextOverlays(HexGridCompositeImageCreator creator, Map<HexVector2, WFlat> flats) {
+    private void addCoordinateTextOverlays(HexGridCompositeImageCreator creator, Map<HexVector2, WFlat> flats,
+                                          HexGridFillResult fillResult) {
+        // Build map of coordinate to biome name
+        Map<String, String> coordToBiomeName = new HashMap<>();
+        if (fillResult != null && fillResult.getAllGrids() != null) {
+            for (FilledHexGrid filled : fillResult.getAllGrids()) {
+                String coordKey = filled.getCoordinate().getQ() + "," + filled.getCoordinate().getR();
+                String biomeName = null;
+
+                if (filled.getBiome() != null && filled.getBiome().getBiome() != null) {
+                    biomeName = filled.getBiome().getBiome().getName();
+                } else if (filled.isFiller() && filled.getFillerType() != null) {
+                    biomeName = filled.getFillerType().name().toLowerCase();
+                }
+
+                if (biomeName != null) {
+                    coordToBiomeName.put(coordKey, biomeName);
+                }
+            }
+        }
+
         for (Map.Entry<HexVector2, WFlat> entry : flats.entrySet()) {
             HexVector2 coord = entry.getKey();
-            String text = coord.getQ() + "," + coord.getR();
+            String coordText = coord.getQ() + "," + coord.getR();
 
             // Calculate center position of hex grid in world coordinates
             double[] hexCenter = HexMathUtil.hexToCartesian(coord, FLAT_SIZE);
             int centerX = (int) Math.floor(hexCenter[0]);
             int centerY = (int) Math.floor(hexCenter[1]);
 
-            // Create text overlay centered on grid (white color, scale 3)
-            int textWidth = text.length() * (5 + 1) * 3; // Approximate width
-            TextOverlay textOverlay = new TextOverlay(text, centerX - textWidth/2, centerY - 10, Color.WHITE, 3);
-            creator.addOverlay(textOverlay);
+            // Create coordinate text overlay centered on grid (white color, scale 3)
+            int coordTextWidth = coordText.length() * (5 + 1) * 3; // Approximate width
+            TextOverlay coordOverlay = new TextOverlay(coordText, centerX - coordTextWidth/2, centerY - 15, Color.WHITE, 3);
+            creator.addOverlay(coordOverlay);
+
+            // Add biome name below coordinates if available
+            String coordKey = coord.getQ() + "," + coord.getR();
+            String biomeName = coordToBiomeName.get(coordKey);
+            if (biomeName != null) {
+                int biomeTextWidth = biomeName.length() * (5 + 1) * 2; // Scale 2 for biome name
+                TextOverlay biomeOverlay = new TextOverlay(biomeName, centerX - biomeTextWidth/2, centerY + 5, Color.CYAN, 2);
+                creator.addOverlay(biomeOverlay);
+            }
         }
+    }
+
+    /**
+     * Adds overlays for all composed points showing their positions and names.
+     */
+    private void addPointOverlays(HexGridCompositeImageCreator creator, HexComposition composition,
+                                 Map<HexVector2, WFlat> flats) {
+        if (composition == null || composition.getFeatures() == null) {
+            return;
+        }
+
+        // Collect all points from composition
+        List<Point> points = composition.getFeatures().stream()
+            .filter(f -> f instanceof Point)
+            .map(f -> (Point) f)
+            .filter(p -> p.getPointComposed() != null && p.getPointComposed().getGridCoordinate() != null)
+            .toList();
+
+        log.info("Adding overlays for {} composed points", points.size());
+
+        for (Point point : points) {
+            Point.PointComposed composed = point.getPointComposed();
+            HexVector2 gridCoord = composed.getGridCoordinate();
+
+            // Get WFlat for this grid
+            WFlat flat = flats.get(gridCoord);
+            if (flat == null) {
+                log.warn("No WFlat found for point '{}' at grid [{},{}]",
+                    point.getName(), gridCoord.getQ(), gridCoord.getR());
+                continue;
+            }
+
+            // Convert HexLocal position to absolute world coordinates
+            int[] worldCoords = getPointWorldCoordinates(composed, flat.getSizeX(), flat.getSizeZ(), gridCoord);
+            if (worldCoords == null) {
+                log.warn("Could not calculate world coordinates for point '{}'", point.getName());
+                continue;
+            }
+
+            int worldX = worldCoords[0];
+            int worldZ = worldCoords[1];
+
+            // Add CrossOverlay at point position (red color, size 20, thickness 3)
+            creator.addOverlay(new CrossOverlay(worldX, worldZ, 20, Color.RED, 3.0f));
+
+            // Add TextOverlay with point name (yellow color, scale 3)
+            String pointName = point.getName() != null ? point.getName() : "point";
+            int textWidth = pointName.length() * (5 + 1) * 3;
+            TextOverlay textOverlay = new TextOverlay(pointName, worldX - textWidth/2, worldZ - 25, Color.YELLOW, 3);
+            creator.addOverlay(textOverlay);
+
+            log.debug("Added overlay for point '{}' at world coords ({}, {})", pointName, worldX, worldZ);
+        }
+    }
+
+    /**
+     * Calculates world coordinates for a point from its HexLocal position.
+     * Similar to RiverBuilder.getEndpointCoordinate().
+     */
+    private int[] getPointWorldCoordinates(Point.PointComposed composed, int flatSizeX, int flatSizeZ,
+                                          HexVector2 gridCoord) {
+        int hexGridSize = flatSizeX;  // Assume flat size equals hex grid size
+
+        // Get position string - either from HexLocalPosition or HexLocalEdgeVector
+        String positionString = null;
+        if (composed.getHexLocalPosition() != null) {
+            positionString = de.mhus.nimbus.world.shared.util.HexLocalUtil.toString(composed.getHexLocalPosition());
+        } else if (composed.getHexLocalEdgeVector() != null) {
+            positionString = de.mhus.nimbus.world.shared.util.HexLocalUtil.toString(composed.getHexLocalEdgeVector());
+        }
+
+        if (positionString == null || positionString.isBlank()) {
+            log.warn("No position string found for point");
+            return null;
+        }
+
+        // Use HexLocalUtil to convert position to relative coordinates
+        de.mhus.nimbus.generated.types.Vector2Int relativePos =
+            de.mhus.nimbus.world.shared.util.HexLocalUtil.toHexgridLocalCenter(positionString, hexGridSize);
+
+        // Convert to absolute local coordinates within the flat
+        int lx = flatSizeX / 2 + relativePos.getX();
+        int lz = flatSizeZ / 2 + relativePos.getZ();
+
+        // Convert to absolute world coordinates
+        double[] hexCenter = HexMathUtil.hexToCartesian(gridCoord, FLAT_SIZE);
+        int mountX = (int) Math.floor(hexCenter[0] - FLAT_SIZE / 2.0);
+        int mountZ = (int) Math.floor(hexCenter[1] - FLAT_SIZE / 2.0);
+
+        int worldX = mountX + lx;
+        int worldZ = mountZ + lz;
+
+        return new int[]{worldX, worldZ};
     }
 
     /**
@@ -680,6 +802,7 @@ public class HexCompositeBuilderSimpleTest {
 
     private void createCompositeImage(Map<HexVector2, WFlat> flats,
                                      HexGridFillResult fillResult,
+                                     HexComposition composition,
                                      String name) throws Exception {
         // Use the HexGridCompositeImageCreator helper class with builder pattern
         HexGridCompositeImageCreator creator = HexGridCompositeImageCreator.builder()
@@ -690,8 +813,11 @@ public class HexCompositeBuilderSimpleTest {
             .drawGridLines(false)  // Disable grid lines to see organic blending better
             .build();
 
-        // Add coordinate text overlays for all grids
-        addCoordinateTextOverlays(creator, flats);
+        // Add coordinate and biome name text overlays for all grids
+        addCoordinateTextOverlays(creator, flats, fillResult);
+
+        // Add point overlays (cross + name)
+        addPointOverlays(creator, composition, flats);
 
         // Add debug overlays for grid 0;0
         // addDebugOverlaysForGrid00(creator, flats);
