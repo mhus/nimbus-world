@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Special point type that must be placed at the edge of an ocean biome.
@@ -46,29 +47,55 @@ public class OceanEdgePoint extends Point {
         log.info("OceanEdgePoint {}: Biome {} (center={}) has {} coordinates", getName(), biome.getName(),
             biome.getPlacedCenter(), coordinates.size());
 
+        // Find edge coordinates - coords at biome edge OR coords that have ocean/coast neighbors
         List<de.mhus.nimbus.generated.types.HexVector2> edgeCoords = new ArrayList<>();
         for (de.mhus.nimbus.generated.types.HexVector2 coord : coordinates) {
-            if (isAtBiomeEdge(coord, biome, context)) {
+            if (isAtBiomeEdge(coord, biome, context) || hasOceanCoastNeighbor(coord, context)) {
                 edgeCoords.add(coord);
             }
         }
 
-        log.info("OceanEdgePoint {}: Found {} edge coordinates: {}", getName(), edgeCoords.size(),
-            edgeCoords.stream().limit(5).map(c -> String.format("(%d,%d)", c.getQ(), c.getR())).toList());
+        // ALWAYS also check adjacent filler grids (they might be on the route)
+        log.info("OceanEdgePoint {}: Found {} coords in biome, also checking adjacent filler grids", getName(), edgeCoords.size());
+        List<de.mhus.nimbus.generated.types.HexVector2> adjacentFillers = findAdjacentFillerGridsWithOcean(biome, context);
+        if (!adjacentFillers.isEmpty()) {
+            log.info("OceanEdgePoint {}: Found {} adjacent filler grids with ocean access: {}",
+                getName(), adjacentFillers.size(),
+                adjacentFillers.stream().limit(10).map(c -> String.format("(%d,%d)", c.getQ(), c.getR())).toList());
+            edgeCoords.addAll(adjacentFillers);
+        } else {
+            log.info("OceanEdgePoint {}: No adjacent filler grids with ocean access found", getName());
+        }
+
+        log.info("OceanEdgePoint {}: Found {} edge coordinates out of {} total: {}",
+            getName(), edgeCoords.size(), coordinates.size(),
+            edgeCoords.stream().limit(10).map(c -> String.format("(%d,%d)", c.getQ(), c.getR())).toList());
 
         if (edgeCoords.isEmpty()) {
-            log.info("OceanEdgePoint {}: No edge found, using center", getName());
+            log.warn("OceanEdgePoint {}: No edge found, using center", getName());
             return biome.getPlacedCenter(); // Fallback
         }
 
         // If oceanDirection is set, prefer coordinates in that direction
         de.mhus.nimbus.generated.types.HexVector2 selected;
         if (oceanDirection != null && biome.getPlacedCenter() != null) {
+            log.info("OceanEdgePoint {}: Biome center is ({},{}), oceanDirection is {}",
+                getName(), biome.getPlacedCenter().getQ(), biome.getPlacedCenter().getR(), oceanDirection);
+
+            // Debug: show scores for all edge coords
+            for (de.mhus.nimbus.generated.types.HexVector2 coord : edgeCoords.stream().limit(5).toList()) {
+                double score = scoreCoordInDirection(coord, biome.getPlacedCenter(), oceanDirection);
+                log.info("  -> Edge coord ({},{}) has score {} for direction {}",
+                    coord.getQ(), coord.getR(), score, oceanDirection);
+            }
+
             selected = findBestCoordInDirection(edgeCoords, biome.getPlacedCenter(), oceanDirection);
-            log.info("OceanEdgePoint {}: Selected edge coordinate {} in direction {}", getName(), selected, oceanDirection);
+            log.info("OceanEdgePoint {}: Selected edge coordinate ({},{}) in direction {} with best score",
+                getName(), selected.getQ(), selected.getR(), oceanDirection);
         } else {
             selected = edgeCoords.get(0);
-            log.info("OceanEdgePoint {}: Selected first edge coordinate {}", getName(), selected);
+            log.warn("OceanEdgePoint {}: No oceanDirection set, selected first edge coordinate ({},{})",
+                getName(), selected.getQ(), selected.getR());
         }
 
         return selected;
@@ -77,16 +104,117 @@ public class OceanEdgePoint extends Point {
     /**
      * Composes the position for this ocean edge point.
      * The grid coordinate has already been selected by selectGridCoordinate().
-     * This method just returns the local position within that grid (center).
+     * Finds the edge that leads to ocean/coast by checking all neighbors.
      *
      * @param biome The biome this point belongs to
      * @param context The compose context with all biomes, points, and maps
-     * @return Composed HexLocalPosition (shared type) at center of selected grid
+     * @return Composed HexLocalEdgeVector (shared type) at ocean edge
      */
-    public de.mhus.nimbus.world.shared.world.HexLocalPosition composePosition(Area biome, ComposeContext context) {
-        // Grid coordinate was already selected by selectGridCoordinate()
-        // Just return center position (0,0) within that grid
-        return createCenterPosition(context);
+    public de.mhus.nimbus.world.shared.world.HexLocalEdgeVector composePosition(Area biome, ComposeContext context) {
+        log.info("OceanEdgePoint {}: composePosition() called with oceanDirection = {}", getName(), oceanDirection);
+
+        // Get the selected grid coordinate
+        de.mhus.nimbus.generated.types.HexVector2 gridCoord = getGridCoordinate();
+        if (gridCoord == null) {
+            log.warn("OceanEdgePoint {}: No grid coordinate set, using default WEST edge", getName());
+            return createDefaultEdgeVector();
+        }
+
+        // Check all 6 neighbors to find which one is ocean/coast
+        de.mhus.nimbus.world.shared.world.WHexGrid.EDGE oceanEdge = findOceanEdge(gridCoord, context);
+
+        if (oceanEdge == null) {
+            log.warn("OceanEdgePoint {}: No ocean/coast neighbor found at grid ({},{}), using oceanDirection {} as fallback",
+                getName(), gridCoord.getQ(), gridCoord.getR(), oceanDirection);
+            oceanEdge = oceanDirection != null ? directionToEdge(oceanDirection) : de.mhus.nimbus.world.shared.world.WHexGrid.EDGE.WEST;
+        }
+
+        // Position at middle of the edge (numerator = denominator/2)
+        int denominator = de.mhus.nimbus.world.shared.util.HexLocalUtil.DEFAULT_SIDE_DIVIDER;
+        int numerator = denominator / 2;
+
+        log.info("OceanEdgePoint {}: Composed edge position at {} {}/{} for grid ({},{})",
+            getName(), oceanEdge, numerator, denominator, gridCoord.getQ(), gridCoord.getR());
+
+        return new de.mhus.nimbus.world.shared.world.HexLocalEdgeVector(oceanEdge, numerator, denominator);
+    }
+
+    /**
+     * Finds the edge that leads to an ocean or coast neighbor.
+     */
+    private de.mhus.nimbus.world.shared.world.WHexGrid.EDGE findOceanEdge(de.mhus.nimbus.generated.types.HexVector2 coord, ComposeContext context) {
+        int q = coord.getQ();
+        int r = coord.getR();
+
+        log.info("OceanEdgePoint {}: Checking neighbors of grid ({},{}) to find ocean/coast edge", getName(), q, r);
+
+        // Check each of the 6 neighbors
+        // Array: {dq, dr, edge}
+        Object[][] neighbors = {
+            {1, -1, de.mhus.nimbus.world.shared.world.WHexGrid.EDGE.NORTH_EAST},  // NE
+            {1, 0, de.mhus.nimbus.world.shared.world.WHexGrid.EDGE.EAST},         // E
+            {0, 1, de.mhus.nimbus.world.shared.world.WHexGrid.EDGE.SOUTH_EAST},   // SE
+            {-1, 1, de.mhus.nimbus.world.shared.world.WHexGrid.EDGE.SOUTH_WEST},  // SW
+            {-1, 0, de.mhus.nimbus.world.shared.world.WHexGrid.EDGE.WEST},        // W
+            {0, -1, de.mhus.nimbus.world.shared.world.WHexGrid.EDGE.NORTH_WEST}   // NW
+        };
+
+        for (Object[] neighbor : neighbors) {
+            int dq = (int) neighbor[0];
+            int dr = (int) neighbor[1];
+            de.mhus.nimbus.world.shared.world.WHexGrid.EDGE edge = (de.mhus.nimbus.world.shared.world.WHexGrid.EDGE) neighbor[2];
+
+            de.mhus.nimbus.generated.types.HexVector2 neighborCoord =
+                de.mhus.nimbus.generated.types.HexVector2.builder()
+                    .q(q + dq)
+                    .r(r + dr)
+                    .build();
+
+            Area neighborBiome = getBiomeAt(neighborCoord, context);
+            if (neighborBiome == null) {
+                log.info("  -> Edge {}: neighbor ({},{}) has no biome", edge, neighborCoord.getQ(), neighborCoord.getR());
+            } else if (neighborBiome instanceof Biome) {
+                BiomeType type = ((Biome) neighborBiome).getType();
+                log.info("  -> Edge {}: neighbor ({},{}) is {} (biome: {})",
+                    edge, neighborCoord.getQ(), neighborCoord.getR(), type, neighborBiome.getName());
+
+                if (type == BiomeType.OCEAN || type == BiomeType.COAST) {
+                    log.info("*** OceanEdgePoint {}: FOUND ocean/coast at edge {} pointing to ({},{}) type={}",
+                        getName(), edge, neighborCoord.getQ(), neighborCoord.getR(), type);
+                    return edge;
+                }
+            } else {
+                log.info("  -> Edge {}: neighbor ({},{}) is not a Biome ({})",
+                    edge, neighborCoord.getQ(), neighborCoord.getR(), neighborBiome.getClass().getSimpleName());
+            }
+        }
+
+        log.warn("OceanEdgePoint {}: No ocean/coast neighbor found for grid ({},{})", getName(), q, r);
+        return null;
+    }
+
+    private de.mhus.nimbus.world.shared.world.HexLocalEdgeVector createDefaultEdgeVector() {
+        int denominator = de.mhus.nimbus.world.shared.util.HexLocalUtil.DEFAULT_SIDE_DIVIDER;
+        int numerator = denominator / 2;
+        return new de.mhus.nimbus.world.shared.world.HexLocalEdgeVector(
+            de.mhus.nimbus.world.shared.world.WHexGrid.EDGE.WEST, numerator, denominator);
+    }
+
+    /**
+     * Converts Direction to WHexGrid.EDGE.
+     */
+    private de.mhus.nimbus.world.shared.world.WHexGrid.EDGE directionToEdge(Direction direction) {
+        return switch (direction) {
+            case NE -> de.mhus.nimbus.world.shared.world.WHexGrid.EDGE.NORTH_EAST;
+            case E -> de.mhus.nimbus.world.shared.world.WHexGrid.EDGE.EAST;
+            case SE -> de.mhus.nimbus.world.shared.world.WHexGrid.EDGE.SOUTH_EAST;
+            case SW -> de.mhus.nimbus.world.shared.world.WHexGrid.EDGE.SOUTH_WEST;
+            case W -> de.mhus.nimbus.world.shared.world.WHexGrid.EDGE.WEST;
+            case NW -> de.mhus.nimbus.world.shared.world.WHexGrid.EDGE.NORTH_WEST;
+            // N and S don't map directly to hex edges, use closest
+            case N -> de.mhus.nimbus.world.shared.world.WHexGrid.EDGE.NORTH_EAST;
+            case S -> de.mhus.nimbus.world.shared.world.WHexGrid.EDGE.SOUTH_EAST;
+        };
     }
 
     private de.mhus.nimbus.world.shared.world.HexLocalPosition createCenterPosition(ComposeContext context) {
@@ -135,6 +263,97 @@ public class OceanEdgePoint extends Point {
         }
 
         return false;
+    }
+
+    /**
+     * Checks if a coordinate has any ocean or coast neighbor.
+     */
+    private boolean hasOceanCoastNeighbor(de.mhus.nimbus.generated.types.HexVector2 coord, ComposeContext context) {
+        int[][] neighbors = {
+            {coord.getQ()+1, coord.getR()-1},  // NE
+            {coord.getQ()+1, coord.getR()},    // E
+            {coord.getQ(), coord.getR()+1},    // SE
+            {coord.getQ()-1, coord.getR()+1},  // SW
+            {coord.getQ()-1, coord.getR()},    // W
+            {coord.getQ(), coord.getR()-1}     // NW
+        };
+
+        for (int[] neighbor : neighbors) {
+            de.mhus.nimbus.generated.types.HexVector2 neighborCoord =
+                de.mhus.nimbus.generated.types.HexVector2.builder()
+                    .q(neighbor[0])
+                    .r(neighbor[1])
+                    .build();
+
+            Area neighborBiome = getBiomeAt(neighborCoord, context);
+            if (neighborBiome instanceof Biome) {
+                BiomeType type = ((Biome) neighborBiome).getType();
+                if (type == BiomeType.OCEAN || type == BiomeType.COAST) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Finds adjacent filler grids (neighbors of the biome) that have ocean/coast access.
+     */
+    private List<de.mhus.nimbus.generated.types.HexVector2> findAdjacentFillerGridsWithOcean(Area biome, ComposeContext context) {
+        List<de.mhus.nimbus.generated.types.HexVector2> result = new ArrayList<>();
+        Set<String> checked = new java.util.HashSet<>();
+
+        // For each coord in the biome, check its neighbors
+        for (de.mhus.nimbus.generated.types.HexVector2 coord : biome.getAssignedCoordinates()) {
+            int[][] neighbors = {
+                {coord.getQ()+1, coord.getR()-1},  // NE
+                {coord.getQ()+1, coord.getR()},    // E
+                {coord.getQ(), coord.getR()+1},    // SE
+                {coord.getQ()-1, coord.getR()+1},  // SW
+                {coord.getQ()-1, coord.getR()},    // W
+                {coord.getQ(), coord.getR()-1}     // NW
+            };
+
+            for (int[] neighbor : neighbors) {
+                de.mhus.nimbus.generated.types.HexVector2 neighborCoord =
+                    de.mhus.nimbus.generated.types.HexVector2.builder()
+                        .q(neighbor[0])
+                        .r(neighbor[1])
+                        .build();
+
+                String key = neighborCoord.getQ() + "," + neighborCoord.getR();
+                if (checked.contains(key)) {
+                    continue;
+                }
+                checked.add(key);
+
+                // Check if this neighbor is not in the biome
+                boolean inBiome = biome.getAssignedCoordinates().stream()
+                    .anyMatch(c -> c.getQ() == neighborCoord.getQ() && c.getR() == neighborCoord.getR());
+
+                if (!inBiome) {
+                    // Check if this neighbor has ocean/coast access
+                    if (hasOceanCoastNeighbor(neighborCoord, context)) {
+                        result.add(neighborCoord);
+                    }
+                }
+            }
+        }
+
+        return result;
+    }
+
+    /**
+     * Gets the biome at a specific coordinate.
+     */
+    private Area getBiomeAt(de.mhus.nimbus.generated.types.HexVector2 coord, ComposeContext context) {
+        for (PlacedBiome placed : context.getPlacedBiomes()) {
+            if (placed.getCoordinates().stream()
+                .anyMatch(c -> c.getQ() == coord.getQ() && c.getR() == coord.getR())) {
+                return placed.getBiome();
+            }
+        }
+        return null;
     }
 
     private de.mhus.nimbus.generated.types.HexVector2 findBestCoordInDirection(

@@ -310,12 +310,12 @@ public class PointComposer {
                 return;
             }
         } else if (point instanceof OceanEdgePoint oceanEdgePoint) {
-            de.mhus.nimbus.world.shared.world.HexLocalPosition hexLocalPosition =
+            de.mhus.nimbus.world.shared.world.HexLocalEdgeVector hexLocalEdgeVector =
                 oceanEdgePoint.composePosition(biome, context);
-            if (hexLocalPosition != null) {
-                point.setHexLocalPosition(hexLocalPosition);
-                log.debug("Initialized OceanEdgePoint {} at grid {} with local position {}",
-                    point.getName(), gridCoordinate, hexLocalPosition);
+            if (hexLocalEdgeVector != null) {
+                point.setHexLocalEdgeVector(hexLocalEdgeVector);
+                log.debug("Initialized OceanEdgePoint {} at grid {} with edge vector {}",
+                    point.getName(), gridCoordinate, hexLocalEdgeVector);
                 return;
             }
         } else if (point instanceof EdgePoint edgePoint) {

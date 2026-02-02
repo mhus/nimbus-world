@@ -449,6 +449,12 @@ public class HexCompositeBuilder {
             parameters.putAll(featureHexGrid.getParameters());
         }
 
+        // Debug: check if river parameter exists
+        if (parameters.containsKey("g_river")) {
+            log.info("Grid ({},{}) has g_river parameter: {}",
+                coord.getQ(), coord.getR(), parameters.get("g_river").substring(0, Math.min(100, parameters.get("g_river").length())));
+        }
+
         // Add debug text overlay with coordinates
         String coordText = coord.getQ() + "," + coord.getR();
         parameters.put("debugText", coordText);

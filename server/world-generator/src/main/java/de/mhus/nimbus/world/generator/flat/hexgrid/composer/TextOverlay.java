@@ -9,7 +9,7 @@ import java.util.Map;
 
 /**
  * ImageOverlay implementation for drawing text using a simple bitmap font.
- * Supports uppercase letters A-Z, digits 0-9, and special characters: -_.;
+ * Supports uppercase letters A-Z, digits 0-9, and special characters: -_.;,/
  */
 @Getter
 @Setter
@@ -394,6 +394,24 @@ public class TextOverlay implements ImageOverlay {
             {0,0,0,0,0},
             {0,1,1,0,0},
             {0,1,0,0,0}
+        });
+        FONT.put(',', new int[][]{
+            {0,0,0,0,0},
+            {0,0,0,0,0},
+            {0,0,0,0,0},
+            {0,0,0,0,0},
+            {0,0,0,0,0},
+            {0,1,1,0,0},
+            {0,1,0,0,0}
+        });
+        FONT.put('/', new int[][]{
+            {0,0,0,0,1},
+            {0,0,0,0,1},
+            {0,0,0,1,0},
+            {0,0,1,0,0},
+            {0,1,0,0,0},
+            {1,0,0,0,0},
+            {1,0,0,0,0}
         });
         FONT.put(' ', new int[][]{
             {0,0,0,0,0},
