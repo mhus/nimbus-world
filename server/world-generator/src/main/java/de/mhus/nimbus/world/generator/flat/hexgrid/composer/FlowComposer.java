@@ -895,13 +895,35 @@ public class FlowComposer {
                     fromSide = RoadAndRiverConnector.getOppositeSide(directionFromLast);
                     log.debug("Closed loop: first segment comes from last ({})", fromSide);
                 } else if (flow.getStartPointFeature() != null) {
-                    // Start is a Point - use Point's lx/lz instead of SIDE
+                    // Start is a Point - use Point's HexLocal position
                     Point startPoint = flow.getStartPointFeature();
-                    fromLx = startPoint.getPlacedLx();
-                    fromLz = startPoint.getPlacedLz();
-                    fromSide = null; // Don't use SIDE when using lx/lz
-                    log.debug("First segment uses Point '{}' coordinates: lx={}, lz={}",
-                        startPoint.getName(), fromLx, fromLz);
+
+                    // Extract HexLocal position string from pointComposed
+                    if (startPoint.getPointComposed() != null) {
+                        if (startPoint.getPointComposed().getHexLocalPosition() != null) {
+                            fromPosition = de.mhus.nimbus.world.shared.util.HexLocalUtil.toString(
+                                startPoint.getPointComposed().getHexLocalPosition());
+                            log.debug("First segment uses Point '{}' HexLocalPosition: {}",
+                                startPoint.getName(), fromPosition);
+                        } else if (startPoint.getPointComposed().getHexLocalEdgeVector() != null) {
+                            fromPosition = de.mhus.nimbus.world.shared.util.HexLocalUtil.toString(
+                                startPoint.getPointComposed().getHexLocalEdgeVector());
+                            log.debug("First segment uses Point '{}' HexLocalEdgeVector: {}",
+                                startPoint.getName(), fromPosition);
+                        }
+                    }
+
+                    // Fall back to deprecated fields if new fields not available
+                    if (fromPosition == null) {
+                        fromLx = startPoint.getPlacedLx();
+                        fromLz = startPoint.getPlacedLz();
+                        if (fromLx != null && fromLz != null) {
+                            log.debug("First segment uses Point '{}' deprecated lx/lz: {}, {}",
+                                startPoint.getName(), fromLx, fromLz);
+                        }
+                    }
+
+                    fromSide = null; // Don't use SIDE when using position/lx/lz
                 }
             }
 
@@ -920,13 +942,35 @@ public class FlowComposer {
                     toPosition = edgeToHexLocalPosition(toSide, 2);
                     log.debug("Closed loop: last segment connects to first ({})", toSide);
                 } else if (flow.getEndPointFeature() != null) {
-                    // End is a Point - use Point's lx/lz instead of SIDE
+                    // End is a Point - use Point's HexLocal position
                     Point endPoint = flow.getEndPointFeature();
-                    toLx = endPoint.getPlacedLx();
-                    toLz = endPoint.getPlacedLz();
-                    toSide = null; // Don't use SIDE when using lx/lz
-                    log.debug("Last segment uses Point '{}' coordinates: lx={}, lz={}",
-                        endPoint.getName(), toLx, toLz);
+
+                    // Extract HexLocal position string from pointComposed
+                    if (endPoint.getPointComposed() != null) {
+                        if (endPoint.getPointComposed().getHexLocalPosition() != null) {
+                            toPosition = de.mhus.nimbus.world.shared.util.HexLocalUtil.toString(
+                                endPoint.getPointComposed().getHexLocalPosition());
+                            log.debug("Last segment uses Point '{}' HexLocalPosition: {}",
+                                endPoint.getName(), toPosition);
+                        } else if (endPoint.getPointComposed().getHexLocalEdgeVector() != null) {
+                            toPosition = de.mhus.nimbus.world.shared.util.HexLocalUtil.toString(
+                                endPoint.getPointComposed().getHexLocalEdgeVector());
+                            log.debug("Last segment uses Point '{}' HexLocalEdgeVector: {}",
+                                endPoint.getName(), toPosition);
+                        }
+                    }
+
+                    // Fall back to deprecated fields if new fields not available
+                    if (toPosition == null) {
+                        toLx = endPoint.getPlacedLx();
+                        toLz = endPoint.getPlacedLz();
+                        if (toLx != null && toLz != null) {
+                            log.debug("Last segment uses Point '{}' deprecated lx/lz: {}, {}",
+                                endPoint.getName(), toLx, toLz);
+                        }
+                    }
+
+                    toSide = null; // Don't use SIDE when using position/lx/lz
                 }
             }
 
