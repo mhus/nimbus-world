@@ -461,9 +461,24 @@ public class PointComposer {
     // ========== Helper Methods ==========
 
     private Area getBiomeForPoint(Point point, ComposeContext context) {
-        if (point.getBiomeId() == null) return null;
-        PlacedBiome placed = context.getBiomeMap().get(point.getBiomeId());
-        return placed != null ? placed.getBiome() : null;
+        // Try biomeId first (new format)
+        if (point.getBiomeId() != null) {
+            PlacedBiome placed = context.getBiomeMap().get(point.getBiomeId());
+            if (placed != null) {
+                return placed.getBiome();
+            }
+        }
+
+        // Fall back to snap.target (legacy format)
+        if (point.getSnap() != null && point.getSnap().getTarget() != null) {
+            String targetBiomeName = point.getSnap().getTarget();
+            PlacedBiome placed = context.getBiomeMap().get(targetBiomeName);
+            if (placed != null) {
+                return placed.getBiome();
+            }
+        }
+
+        return null;
     }
 
     private PointPosition getPointPosition(Point point, ComposeContext context) {
