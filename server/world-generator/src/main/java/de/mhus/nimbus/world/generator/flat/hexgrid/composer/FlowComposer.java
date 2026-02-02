@@ -1,7 +1,7 @@
 package de.mhus.nimbus.world.generator.flat.hexgrid.composer;
 
 import de.mhus.nimbus.generated.types.HexVector2;
-import de.mhus.nimbus.world.shared.world.WHexGrid.SIDE;
+import de.mhus.nimbus.world.shared.world.WHexGrid.EDGE;
 import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -243,25 +243,18 @@ public class FlowComposer {
                 }
             }
         } else if (flow instanceof River river) {
-            if (river.getMergeToId() != null) {
-                // Rivers can also use Points as merge targets
-                Point mergePoint = findPoint(river.getMergeToId(), prepared);
-                if (mergePoint != null) {
-                    flow.setEndPoint(mergePoint.getPlacedCoordinate());
-                    flow.setEndPointFeature(mergePoint);
+            if (river.getEndPointId() != null) {
+                // Rivers merge at a Point (end point)
+                Point endPoint = findPoint(river.getEndPointId(), prepared);
+                if (endPoint != null) {
+                    flow.setEndPoint(endPoint.getPlacedCoordinate());
+                    flow.setEndPointFeature(endPoint);
                     log.debug("Flow '{}' merges at Point '{}' with lx={}, lz={}",
-                        flow.getName(), mergePoint.getName(),
-                        mergePoint.getPlacedLx(), mergePoint.getPlacedLz());
+                        flow.getName(), endPoint.getName(),
+                        endPoint.getPlacedLx(), endPoint.getPlacedLz());
                 } else {
-                    // Fall back to Biome
-                    HexVector2 mergeCoord = findFeatureCoordinate(river.getMergeToId(),
-                        placementResult, prepared);
-                    if (mergeCoord == null) {
-                        log.warn("Could not find merge point: {}", river.getMergeToId());
-                        return false;
-                    }
-                    flow.setEndPoint(mergeCoord);
-                    flow.setEndPointFeature(null);
+                    log.warn("Could not find end point: {}", river.getEndPointId());
+                    return false;
                 }
             }
         }
@@ -875,8 +868,10 @@ public class FlowComposer {
 
         for (int i = 0; i < route.size(); i++) {
             HexVector2 coord = route.get(i);
-            SIDE fromSide = null;
-            SIDE toSide = null;
+            EDGE fromSide = null;
+            EDGE toSide = null;
+            String fromPosition = null;
+            String toPosition = null;
             Integer fromLx = null;
             Integer fromLz = null;
             Integer toLx = null;
@@ -887,14 +882,16 @@ public class FlowComposer {
                 HexVector2 prev = route.get(i - 1);
                 // Direction from prev to coord gives us the exit side of prev
                 // But we need the ENTRY side of THIS grid, which is the opposite!
-                SIDE directionFromPrev = RoadAndRiverConnector.determineSide(prev, coord);
+                EDGE directionFromPrev = RoadAndRiverConnector.determineSide(prev, coord);
                 fromSide = RoadAndRiverConnector.getOppositeSide(directionFromPrev);
+                // Generate HexLocal position string (use center position /2 for now)
+                fromPosition = edgeToHexLocalPosition(fromSide, 2);
             } else if (i == 0) {
                 // First segment
                 if (flow.isClosedLoop() && route.size() > 1) {
                     // Closed loop: first segment comes from last
                     HexVector2 last = route.get(route.size() - 1);
-                    SIDE directionFromLast = RoadAndRiverConnector.determineSide(last, coord);
+                    EDGE directionFromLast = RoadAndRiverConnector.determineSide(last, coord);
                     fromSide = RoadAndRiverConnector.getOppositeSide(directionFromLast);
                     log.debug("Closed loop: first segment comes from last ({})", fromSide);
                 } else if (flow.getStartPointFeature() != null) {
@@ -912,12 +909,15 @@ public class FlowComposer {
             if (i < route.size() - 1) {
                 HexVector2 next = route.get(i + 1);
                 toSide = RoadAndRiverConnector.determineSide(coord, next);
+                // Generate HexLocal position string (use center position /2 for now)
+                toPosition = edgeToHexLocalPosition(toSide, 2);
             } else if (i == route.size() - 1) {
                 // Last segment
                 if (flow.isClosedLoop() && route.size() > 1) {
                     // Closed loop: connect last segment back to first
                     HexVector2 first = route.get(0);
                     toSide = RoadAndRiverConnector.determineSide(coord, first);
+                    toPosition = edgeToHexLocalPosition(toSide, 2);
                     log.debug("Closed loop: last segment connects to first ({})", toSide);
                 } else if (flow.getEndPointFeature() != null) {
                     // End is a Point - use Point's lx/lz instead of SIDE
@@ -930,8 +930,8 @@ public class FlowComposer {
                 }
             }
 
-            // Create flow segment with both SIDE and lx/lz coordinates
-            FlowSegment segment = createFlowSegment(flow, fromSide, toSide, fromLx, fromLz, toLx, toLz);
+            // Create flow segment with SIDE, position strings, and lx/lz coordinates
+            FlowSegment segment = createFlowSegment(flow, fromSide, toSide, fromPosition, toPosition, fromLx, fromLz, toLx, toLz);
 
             // Add segment to flow's own FeatureHexGrid (already configured by flow.configureHexGrids())
             FeatureHexGrid flowHexGrid = flow.findHexGrid(coord);
@@ -954,15 +954,43 @@ public class FlowComposer {
     }
 
     /**
+     * Converts an EDGE and numerator to a HexLocal position string.
+     * Format: "<EDGE numerator/4>" where numerator is 1-3 (1=north, 2=center, 3=south along edge)
+     *
+     * @param edge The hex edge
+     * @param numerator Position along edge (1-3)
+     * @return HexLocal position string like "<NE 2/4>"
+     */
+    private String edgeToHexLocalPosition(EDGE edge, int numerator) {
+        if (edge == null || numerator < 1 || numerator > 3) {
+            return null;
+        }
+
+        String edgeAbbrev = switch (edge) {
+            case NORTH_EAST -> "NE";
+            case EAST -> "E";
+            case SOUTH_EAST -> "SE";
+            case SOUTH_WEST -> "SW";
+            case WEST -> "W";
+            case NORTH_WEST -> "NW";
+        };
+
+        return String.format("<%s %d/4>", edgeAbbrev, numerator);
+    }
+
+    /**
      * Creates a FlowSegment from PreparedFlow
      */
-    private FlowSegment createFlowSegment(Flow flow, SIDE fromSide, SIDE toSide,
+    private FlowSegment createFlowSegment(Flow flow, EDGE fromSide, EDGE toSide,
+                                          String fromPosition, String toPosition,
                                           Integer fromLx, Integer fromLz,
                                           Integer toLx, Integer toLz) {
         FlowSegment.FlowSegmentBuilder builder = FlowSegment.builder()
             .flowType(flow.getType())
             .fromSide(fromSide)
             .toSide(toSide)
+            .fromPosition(fromPosition)
+            .toPosition(toPosition)
             .fromLx(fromLx)
             .fromLz(fromLz)
             .toLx(toLx)
@@ -1222,7 +1250,7 @@ public class FlowComposer {
             for (FlowSegment segment : riverSegments) {
                 String groupId = segment.getFlowFeatureId() != null ? segment.getFlowFeatureId() : river.getFeatureId();
 
-                // Create FROM parts (from lx/lz or from SIDE)
+                // Create FROM parts (from lx/lz or from position string or from SIDE)
                 if (segment.hasFromCoordinates()) {
                     // Use lx/lz coordinates (Point endpoint)
                     RiverConfigPart part = RiverConfigPart.createFromPositionPart(
@@ -1234,10 +1262,22 @@ public class FlowComposer {
                         groupId
                     );
                     areaGrid.addRiverConfigPart(part);
-                    log.debug("Added position-based river FROM part at lx={}, lz={}",
+                    log.debug("Added lx/lz-based river FROM part at lx={}, lz={}",
                         segment.getFromLx(), segment.getFromLz());
+                } else if (segment.hasFromPosition()) {
+                    // Use HexLocal position string (grid-to-grid transition)
+                    RiverConfigPart part = RiverConfigPart.createFromPositionStringPart(
+                        segment.getFromPosition(),
+                        segment.getWidth(),
+                        segment.getDepth(),
+                        segment.getLevel(),
+                        groupId
+                    );
+                    areaGrid.addRiverConfigPart(part);
+                    log.debug("Added position-string-based river FROM part: {}",
+                        segment.getFromPosition());
                 } else if (segment.getFromSide() != null) {
-                    // Use SIDE (Biome endpoint)
+                    // Use SIDE (fallback for backward compatibility)
                     RiverConfigPart part = RiverConfigPart.createFromPart(
                         segment.getFromSide(),
                         segment.getWidth(),
@@ -1246,9 +1286,10 @@ public class FlowComposer {
                         groupId
                     );
                     areaGrid.addRiverConfigPart(part);
+                    log.debug("Added SIDE-based river FROM part: {}", segment.getFromSide());
                 }
 
-                // Create TO parts (to lx/lz or to SIDE)
+                // Create TO parts (to lx/lz or to position string or to SIDE)
                 if (segment.hasToCoordinates()) {
                     // Use lx/lz coordinates (Point endpoint)
                     RiverConfigPart part = RiverConfigPart.createToPositionPart(
@@ -1260,10 +1301,22 @@ public class FlowComposer {
                         groupId
                     );
                     areaGrid.addRiverConfigPart(part);
-                    log.debug("Added position-based river TO part at lx={}, lz={}",
+                    log.debug("Added lx/lz-based river TO part at lx={}, lz={}",
                         segment.getToLx(), segment.getToLz());
+                } else if (segment.hasToPosition()) {
+                    // Use HexLocal position string (grid-to-grid transition)
+                    RiverConfigPart part = RiverConfigPart.createToPositionStringPart(
+                        segment.getToPosition(),
+                        segment.getWidth(),
+                        segment.getDepth(),
+                        segment.getLevel(),
+                        groupId
+                    );
+                    areaGrid.addRiverConfigPart(part);
+                    log.debug("Added position-string-based river TO part: {}",
+                        segment.getToPosition());
                 } else if (segment.getToSide() != null) {
-                    // Use SIDE (Biome endpoint)
+                    // Use SIDE (fallback for backward compatibility)
                     RiverConfigPart part = RiverConfigPart.createToPart(
                         segment.getToSide(),
                         segment.getWidth(),
@@ -1272,6 +1325,7 @@ public class FlowComposer {
                         groupId
                     );
                     areaGrid.addRiverConfigPart(part);
+                    log.debug("Added SIDE-based river TO part: {}", segment.getToSide());
                 }
             }
 
@@ -1522,9 +1576,9 @@ public class FlowComposer {
             // Filter by sides if specified
             if (sideWall.getSides() != null && !sideWall.getSides().isEmpty()) {
                 // Only add sidewall to grids that have the requested sides exposed
-                List<SIDE> exposedSides = getExposedSides(edgeGrid, targetBiome, placementResult);
+                List<EDGE> exposedSides = getExposedSides(edgeGrid, targetBiome, placementResult);
                 boolean hasRequestedSide = false;
-                for (SIDE side : sideWall.getSides()) {
+                for (EDGE side : sideWall.getSides()) {
                     if (exposedSides.contains(side)) {
                         hasRequestedSide = true;
                         break;
@@ -1582,9 +1636,9 @@ public class FlowComposer {
     /**
      * Gets which sides of a grid are exposed (facing outside the biome).
      */
-    private List<SIDE> getExposedSides(FeatureHexGrid grid, Biome biome,
-                                        BiomePlacementResult placementResult) {
-        List<SIDE> exposedSides = new ArrayList<>();
+    private List<EDGE> getExposedSides(FeatureHexGrid grid, Biome biome,
+                                       BiomePlacementResult placementResult) {
+        List<EDGE> exposedSides = new ArrayList<>();
 
         // Build set of biome coordinates
         Set<String> biomeCoords = new HashSet<>();
@@ -1593,13 +1647,13 @@ public class FlowComposer {
         }
 
         // Check each direction
-        SIDE[] sides = {
-            SIDE.NORTH_EAST,
-            SIDE.EAST,
-            SIDE.SOUTH_EAST,
-            SIDE.SOUTH_WEST,
-            SIDE.WEST,
-            SIDE.NORTH_WEST
+        EDGE[] sides = {
+            EDGE.NORTH_EAST,
+            EDGE.EAST,
+            EDGE.SOUTH_EAST,
+            EDGE.SOUTH_WEST,
+            EDGE.WEST,
+            EDGE.NORTH_WEST
         };
 
         int[][] directions = {
@@ -1637,7 +1691,7 @@ public class FlowComposer {
             // Sides (if specified, otherwise all sides)
             if (sideWall.getSides() != null && !sideWall.getSides().isEmpty()) {
                 List<String> sideNames = new ArrayList<>();
-                for (SIDE side : sideWall.getSides()) {
+                for (EDGE side : sideWall.getSides()) {
                     sideNames.add(side.name());
                 }
                 config.put("sides", sideNames);

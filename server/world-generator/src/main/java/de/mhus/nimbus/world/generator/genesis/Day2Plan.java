@@ -1,7 +1,5 @@
 package de.mhus.nimbus.world.generator.genesis;
 
-import de.mhus.nimbus.shared.types.WorldId;
-import de.mhus.nimbus.world.shared.job.JobExecutor;
 import de.mhus.nimbus.world.shared.region.RRegionService;
 import de.mhus.nimbus.world.shared.workflow.MethodBasedWorkflow;
 import de.mhus.nimbus.world.shared.workflow.OnSuccess;
@@ -27,13 +25,18 @@ import java.util.Map;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class Day2Terraforming extends MethodBasedWorkflow {
+public class Day2Plan extends MethodBasedWorkflow {
 
     private final WWorldService worldService;
     private final RRegionService regionService;
 
     @Override
-    public Map<String, String> initialize(String worldId, Map<String, String> params) throws WorkflowException {
+    public String name() {
+        return "genesis-day2-plan";
+    }
+
+    @Override
+    public Map<String, Object> initialize(String worldId, Map<String, String> params) throws WorkflowException {
 
         var description = params.get(GenesisConst.DESCRIPTION);
         if (Strings.isBlank(description)) {
@@ -50,7 +53,7 @@ public class Day2Terraforming extends MethodBasedWorkflow {
         // first step create composite structure from description
         context.updateWorkflowStatus("createComposite");
         context.enqueueJob("genesisCreateComposite", "", Map.of(
-                GenesisConst.DESCRIPTION, context.getParameters().get(GenesisConst.DESCRIPTION)
+                GenesisConst.DESCRIPTION, (String)context.getParameters().get(GenesisConst.DESCRIPTION)
         ));
     }
 

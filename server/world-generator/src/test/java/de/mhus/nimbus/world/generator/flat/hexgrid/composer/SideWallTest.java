@@ -95,7 +95,7 @@ public class SideWallTest {
         // SideWall: Only on NE, E, SE sides
         SideWall sideWall = SideWall.builder()
             .targetBiomeId("plains")
-            .sides(List.of(WHexGrid.SIDE.NORTH_EAST, WHexGrid.SIDE.EAST, WHexGrid.SIDE.SOUTH_EAST))
+            .sides(List.of(WHexGrid.EDGE.NORTH_EAST, WHexGrid.EDGE.EAST, WHexGrid.EDGE.SOUTH_EAST))
             .height(15)
             .level(100)
             .distance(8)

@@ -35,7 +35,7 @@ public class HexGridSideBlender {
     /**
      * Blend all sides of this hex grid with its neighbors.
      */
-    public void blendAllSides(HashMap<WHexGrid.SIDE, String> sideFlats) {
+    public void blendAllSides(HashMap<WHexGrid.EDGE, String> sideFlats) {
         log.debug("Starting side blending for flat: {}, width={}", flat.getFlatId(), width);
 
         // Blend each side
@@ -54,7 +54,7 @@ public class HexGridSideBlender {
     /**
      * Blend a single side with its neighbor.
      */
-    private void blendSide(WHexGrid.SIDE direction, WFlat neighborFlat) {
+    private void blendSide(WHexGrid.EDGE direction, WFlat neighborFlat) {
         log.trace("Blending side: {}", direction);
 
         SideBlender sideBlender = new SideBlender(flat, context, direction, neighborFlat, width, randomness,
@@ -69,7 +69,7 @@ public class HexGridSideBlender {
     private static class SideBlender {
         private final WFlat flat;
         private final BuilderContext context;
-        private final WHexGrid.SIDE direction;
+        private final WHexGrid.EDGE direction;
         private final WFlat neighborFlat;
         private final int width;
         private final double randomness;
@@ -81,7 +81,7 @@ public class HexGridSideBlender {
         // Track which pixels were actually blended for post-processing
         private final boolean[][] blendedPixels;
 
-        public SideBlender(WFlat flat, BuilderContext context, WHexGrid.SIDE direction,
+        public SideBlender(WFlat flat, BuilderContext context, WHexGrid.EDGE direction,
                            WFlat neighborFlat, int width, double randomness,
                            double shakeStrength, int blurRadius) {
             this.flat = flat;
@@ -199,7 +199,7 @@ public class HexGridSideBlender {
          * @param side Which side we're blending
          * @return [offsetX, offsetZ] noise values
          */
-        private double[] calculateOrganicNoise(double x, double z, double t, WHexGrid.SIDE side) {
+        private double[] calculateOrganicNoise(double x, double z, double t, WHexGrid.EDGE side) {
             // Base frequency for wave patterns
             double freq1 = 0.15; // Large waves
             double freq2 = 0.4;  // Medium waves
@@ -404,7 +404,7 @@ public class HexGridSideBlender {
          * Uses actual hexagon geometry based on radius.
          * Flat-top hexagon: EAST/WEST are vertical sides at ±30° angles.
          */
-        private int[] getCorner1ForSide(WHexGrid.SIDE side) {
+        private int[] getCorner1ForSide(WHexGrid.EDGE side) {
             int sizeX = flat.getSizeX();
             int sizeZ = flat.getSizeZ();
             double centerX = sizeX / 2.0;
@@ -449,7 +449,7 @@ public class HexGridSideBlender {
          * Uses actual hexagon geometry based on radius.
          * Flat-top hexagon: EAST/WEST are vertical sides at ±30° angles.
          */
-        private int[] getCorner2ForSide(WHexGrid.SIDE side) {
+        private int[] getCorner2ForSide(WHexGrid.EDGE side) {
             int sizeX = flat.getSizeX();
             int sizeZ = flat.getSizeZ();
             double centerX = sizeX / 2.0;
@@ -760,7 +760,7 @@ public class HexGridSideBlender {
          * Check if a point in the neighbor flat is on the side that faces us.
          * Uses a simplified border-based check (points within 15 pixels of the edge).
          */
-        private boolean isOnNeighborSide(int nx, int nz, WHexGrid.SIDE side) {
+        private boolean isOnNeighborSide(int nx, int nz, WHexGrid.EDGE side) {
             final int BORDER = 15;
             int sizeX = neighborFlat.getSizeX();
             int sizeZ = neighborFlat.getSizeZ();
@@ -847,7 +847,7 @@ public class HexGridSideBlender {
          * Get inward direction vector for blending.
          * Returns [dx, dz] pointing from the side into the flat interior.
          */
-        private int[] getInwardDirection(WHexGrid.SIDE side) {
+        private int[] getInwardDirection(WHexGrid.EDGE side) {
             switch (side) {
                 case EAST:
                     return new int[]{-1, 0}; // From right edge, blend left
@@ -869,20 +869,20 @@ public class HexGridSideBlender {
         /**
          * Get the mirrored side (opposite side on neighbor).
          */
-        private WHexGrid.SIDE getMirroredSide(WHexGrid.SIDE direction) {
+        private WHexGrid.EDGE getMirroredSide(WHexGrid.EDGE direction) {
             switch (direction) {
                 case NORTH_WEST:
-                    return WHexGrid.SIDE.SOUTH_EAST;
+                    return WHexGrid.EDGE.SOUTH_EAST;
                 case NORTH_EAST:
-                    return WHexGrid.SIDE.SOUTH_WEST;
+                    return WHexGrid.EDGE.SOUTH_WEST;
                 case EAST:
-                    return WHexGrid.SIDE.WEST;
+                    return WHexGrid.EDGE.WEST;
                 case SOUTH_EAST:
-                    return WHexGrid.SIDE.NORTH_WEST;
+                    return WHexGrid.EDGE.NORTH_WEST;
                 case SOUTH_WEST:
-                    return WHexGrid.SIDE.NORTH_EAST;
+                    return WHexGrid.EDGE.NORTH_EAST;
                 case WEST:
-                    return WHexGrid.SIDE.EAST;
+                    return WHexGrid.EDGE.EAST;
                 default:
                     return direction;
             }

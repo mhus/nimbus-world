@@ -1,4 +1,4 @@
-package de.mhus.nimbus.world.shared.world;
+package de.mhus.nimbus.world.shared.util;
 
 import de.mhus.nimbus.generated.types.Area;
 import de.mhus.nimbus.generated.types.HexVector2;
@@ -6,6 +6,8 @@ import de.mhus.nimbus.generated.types.Vector2;
 import de.mhus.nimbus.generated.types.Vector2Int;
 import de.mhus.nimbus.generated.types.Vector2Pair;
 import de.mhus.nimbus.shared.utils.TypeUtil;
+import de.mhus.nimbus.world.shared.world.WHexGrid;
+import de.mhus.nimbus.world.shared.world.WWorld;
 import lombok.experimental.UtilityClass;
 
 import java.util.Iterator;
@@ -126,7 +128,7 @@ public class HexMathUtil {
         return new HexPositionIterator(hex, gridSize);
     }
 
-    public static HexVector2 getNeighborPosition(HexVector2 position, WHexGrid.SIDE nabor) {
+    public static HexVector2 getNeighborPosition(HexVector2 position, WHexGrid.EDGE nabor) {
         int q = position.getQ();
         int r = position.getR();
         switch (nabor) {

@@ -123,7 +123,7 @@ public class RoadWithPointEndpointsTest {
         features.add(plains);
 
         // Point A: City on the west side
-        Point cityA = new Point();
+        PositionPoint cityA = new PositionPoint();
         cityA.setName("city-a");
         cityA.setFeatureId("city-a");
         cityA.setStatus(FeatureStatus.NEW);
@@ -134,7 +134,7 @@ public class RoadWithPointEndpointsTest {
         features.add(cityA);
 
         // Point B: City on the east side
-        Point cityB = new Point();
+        PositionPoint cityB = new PositionPoint();
         cityB.setName("city-b");
         cityB.setFeatureId("city-b");
         cityB.setStatus(FeatureStatus.NEW);

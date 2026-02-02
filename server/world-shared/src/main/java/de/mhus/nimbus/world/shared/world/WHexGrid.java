@@ -7,9 +7,11 @@ import de.mhus.nimbus.generated.types.Vector2Int;
 import de.mhus.nimbus.shared.persistence.ActualSchemaVersion;
 import de.mhus.nimbus.shared.types.Identifiable;
 import de.mhus.nimbus.shared.utils.TypeUtil;
+import de.mhus.nimbus.world.shared.util.HexMathUtil;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
@@ -19,7 +21,6 @@ import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.Instant;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -38,13 +39,96 @@ import java.util.Map;
 @AllArgsConstructor
 public class WHexGrid implements Identifiable {
 
-    public enum SIDE {
-        NORTH_EAST, // TOP_RIGHT
-        EAST, // RIGHT
-        SOUTH_EAST, // BOTTOM_RIGHT
-        SOUTH_WEST, // BOTTOM_LEFT
-        WEST, // LEFT
-        NORTH_WEST // TOP_LEFT
+    public enum EDGE {
+        NORTH_EAST("NE"), // TOP_RIGHT
+        EAST("E"), // RIGHT
+        SOUTH_EAST("SE"), // BOTTOM_RIGHT
+        SOUTH_WEST("SW"), // BOTTOM_LEFT
+        WEST("W"), // LEFT
+        NORTH_WEST("NW") // TOP_LEFT
+        ;
+        @Getter
+        private final String shortName;
+
+        EDGE(String shortName) {
+            this.shortName = shortName;
+        }
+
+        public static EDGE fromString(String side) {
+            if (side == null) return null;
+            for (EDGE s : EDGE.values()) {
+                if (s.equals(side)) return s;
+            }
+            return null;
+        }
+
+        public boolean equals(String other) {
+            if (other == null) return false;
+            return other.equalsIgnoreCase(name()) || shortName.equalsIgnoreCase(other);
+        }
+
+        public EDGE getOpposite() {
+            return switch (this) {
+                case NORTH_EAST -> SOUTH_WEST;
+                case EAST -> WEST;
+                case SOUTH_EAST -> NORTH_WEST;
+                case SOUTH_WEST -> NORTH_EAST;
+                case WEST -> EAST;
+                case NORTH_WEST -> SOUTH_EAST;
+            };
+        }
+
+        public CORNER[] getAdjacentCorners() {
+            return switch (this) {
+                case NORTH_EAST -> new CORNER[]{CORNER.NORTH, CORNER.NORTH_EAST};
+                case EAST -> new CORNER[]{CORNER.NORTH_EAST, CORNER.SOUTH_EAST};
+                case SOUTH_EAST -> new CORNER[]{CORNER.SOUTH_EAST, CORNER.SOUTH};
+                case SOUTH_WEST -> new CORNER[]{CORNER.SOUTH, CORNER.SOUTH_WEST};
+                case WEST -> new CORNER[]{CORNER.SOUTH_WEST, CORNER.NORTH_WEST};
+                case NORTH_WEST -> new CORNER[]{CORNER.NORTH_WEST, CORNER.NORTH};
+            };
+        }
+
+    }
+
+    public enum CORNER {
+        NORTH("N"),
+        NORTH_EAST("NE"),
+        SOUTH_EAST("SE"),
+        SOUTH("S"),
+        SOUTH_WEST("SW"),
+        NORTH_WEST("NW")
+        ;
+        @Getter
+        private final String shortName;
+        CORNER(String shortName) {
+            this.shortName = shortName;
+        }
+
+        public boolean equals(String other) {
+            if (other == null) return false;
+            return other.equalsIgnoreCase(name()) || shortName.equalsIgnoreCase(other);
+        }
+
+        public EDGE[] getAdjacentEdges() {
+            return switch (this) {
+                case NORTH -> new EDGE[]{EDGE.NORTH_WEST, EDGE.NORTH_EAST};
+                case NORTH_EAST -> new EDGE[]{EDGE.NORTH_EAST, EDGE.EAST};
+                case SOUTH_EAST -> new EDGE[]{EDGE.EAST, EDGE.SOUTH_EAST};
+                case SOUTH -> new EDGE[]{EDGE.SOUTH_EAST, EDGE.SOUTH_WEST};
+                case SOUTH_WEST -> new EDGE[]{EDGE.SOUTH_WEST, EDGE.WEST};
+                case NORTH_WEST -> new EDGE[]{EDGE.WEST, EDGE.NORTH_WEST};
+            };
+        }
+
+        public static CORNER fromString(String corner) {
+            if (corner == null) return null;
+            for (CORNER e : CORNER.values()) {
+                if (e.equals(corner)) return e;
+            }
+            return null;
+        }
+
     }
 
     @Id
@@ -155,19 +239,19 @@ public class WHexGrid implements Identifiable {
         return () -> HexMathUtil.createFlatPositionIterator(publicData.getPosition(), gridSize);
     }
 
-    public HexVector2 getNeighborPosition(SIDE nabor) {
+    public HexVector2 getNeighborPosition(EDGE nabor) {
         if (publicData == null || publicData.getPosition() == null) {
             throw new IllegalStateException("Cannot calculate neighbor position: publicData or position is null");
         }
         return HexMathUtil.getNeighborPosition(publicData.getPosition(), nabor);
     }
 
-    public Map<SIDE, HexVector2> getAllNeighborPositions() {
+    public Map<EDGE, HexVector2> getAllNeighborPositions() {
         if (publicData == null || publicData.getPosition() == null) {
             throw new IllegalStateException("Cannot calculate neighbor positions: publicData or position is null");
         }
-        Map<SIDE, HexVector2> naborMap = new HashMap<>();
-        for (SIDE neighbor : SIDE.values()) {
+        Map<EDGE, HexVector2> naborMap = new HashMap<>();
+        for (EDGE neighbor : EDGE.values()) {
             naborMap.put(neighbor, HexMathUtil.getNeighborPosition(publicData.getPosition(), neighbor));
         }
         return naborMap;

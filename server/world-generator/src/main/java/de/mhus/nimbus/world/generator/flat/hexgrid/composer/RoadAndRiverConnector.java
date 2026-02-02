@@ -2,9 +2,8 @@ package de.mhus.nimbus.world.generator.flat.hexgrid.composer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.generated.types.HexVector2;
-import de.mhus.nimbus.shared.engine.EngineMapper;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
-import de.mhus.nimbus.world.shared.world.WHexGrid.SIDE;
+import de.mhus.nimbus.world.shared.world.WHexGrid.EDGE;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
@@ -31,103 +30,60 @@ public class RoadAndRiverConnector {
         log.info("Connecting roads and rivers across hex grid boundaries");
         log.info("Roads: {}, Rivers: {}", roadConnections.size(), riverConnections.size());
 
-        // Build grid map
-        Map<String, WHexGrid> gridMap = new HashMap<>();
+        // TODO: This connector needs to be reimplemented after Point composition is complete
+        // RoadConnection and RiverConnection now use Point IDs instead of grid coordinates
+        // Need to:
+        // 1. Resolve Point IDs to get their HexLocalPosition or HexLocalSideCoordinate
+        // 2. Extract grid coordinates and side information from Points
+        // 3. Apply connections to the grids as before
+        //
+        // For now, skip the connections to allow compilation
+        log.warn("RoadAndRiverConnector is temporarily disabled - needs Point composition data");
+
+        // Collect all grids without applying connections
+        List<WHexGrid> allGrids = new ArrayList<>();
         for (FilledHexGrid filled : fillResult.getAllGrids()) {
-            String key = coordKey(filled.getCoordinate());
-            gridMap.put(key, filled.getHexGrid());
+            allGrids.add(filled.getHexGrid());
         }
-
-        // Apply road connections
-        int roadsApplied = 0;
-        for (RoadConnection road : roadConnections) {
-            if (applyRoadConnection(road, gridMap)) {
-                roadsApplied++;
-            }
-        }
-
-        // Apply river connections
-        int riversApplied = 0;
-        for (RiverConnection river : riverConnections) {
-            if (applyRiverConnection(river, gridMap)) {
-                riversApplied++;
-            }
-        }
-
-        log.info("Applied {} roads and {} rivers", roadsApplied, riversApplied);
-
-        // Collect all grids
-        List<WHexGrid> allGrids = new ArrayList<>(gridMap.values());
 
         return ConnectionResult.builder()
             .hexGrids(allGrids)
-            .roadsApplied(roadsApplied)
-            .riversApplied(riversApplied)
+            .roadsApplied(0)
+            .riversApplied(0)
             .success(true)
             .build();
     }
 
     /**
      * Applies a road connection to two grids
+     * TODO: Reimplement after Point composition is complete
      */
+    @Deprecated
     private boolean applyRoadConnection(RoadConnection road, Map<String, WHexGrid> gridMap) {
-        WHexGrid fromGrid = gridMap.get(coordKey(road.getFromGrid()));
-        WHexGrid toGrid = gridMap.get(coordKey(road.getToGrid()));
-
-        log.debug("Applying road: {} -> {}", coordKey(road.getFromGrid()), coordKey(road.getToGrid()));
-        log.debug("FromGrid found: {}, ToGrid found: {}", fromGrid != null, toGrid != null);
-
-        if (fromGrid == null || toGrid == null) {
-            log.warn("Cannot apply road connection - grid not found: {} -> {}",
-                road.getFromGrid(), road.getToGrid());
-            return false;
-        }
-
-        // Add road parameter to from-grid
-        log.debug("Adding {} road to from-grid {}", road.getFromSide(), coordKey(road.getFromGrid()));
-        addRoadParameter(fromGrid, road.getFromSide(), road.getWidth(), road.getLevel(), road.getType());
-
-        // Add road parameter to to-grid
-        log.debug("Adding {} road to to-grid {}", road.getToSide(), coordKey(road.getToGrid()));
-        addRoadParameter(toGrid, road.getToSide(), road.getWidth(), road.getLevel(), road.getType());
-
-        log.debug("Applied road: {} side {} -> {} side {}",
-            road.getFromGrid(), road.getFromSide(), road.getToGrid(), road.getToSide());
-
-        return true;
+        // TODO: This method needs to be reimplemented to work with Point IDs
+        // RoadConnection now has fromPointId and toPointId instead of grid coordinates
+        // Need to resolve Points to extract grid coordinates and side information
+        log.warn("applyRoadConnection is not yet implemented for Point-based connections");
+        return false;
     }
 
     /**
      * Applies a river connection to two grids
+     * TODO: Reimplement after Point composition is complete
      */
+    @Deprecated
     private boolean applyRiverConnection(RiverConnection river, Map<String, WHexGrid> gridMap) {
-        WHexGrid fromGrid = gridMap.get(coordKey(river.getFromGrid()));
-        WHexGrid toGrid = gridMap.get(coordKey(river.getToGrid()));
-
-        if (fromGrid == null || toGrid == null) {
-            log.warn("Cannot apply river connection - grid not found: {} -> {}",
-                river.getFromGrid(), river.getToGrid());
-            return false;
-        }
-
-        // Add river parameter to from-grid
-        addRiverParameter(fromGrid, river.getFromSide(), river.getWidth(),
-            river.getDepth(), river.getLevel());
-
-        // Add river parameter to to-grid
-        addRiverParameter(toGrid, river.getToSide(), river.getWidth(),
-            river.getDepth(), river.getLevel());
-
-        log.debug("Applied river: {} side {} -> {} side {}",
-            river.getFromGrid(), river.getFromSide(), river.getToGrid(), river.getToSide());
-
-        return true;
+        // TODO: This method needs to be reimplemented to work with Point IDs
+        // RiverConnection now has fromPointId and toPointId instead of grid coordinates
+        // Need to resolve Points to extract grid coordinates and side information
+        log.warn("applyRiverConnection is not yet implemented for Point-based connections");
+        return false;
     }
 
     /**
      * Adds road parameter to a WHexGrid
      */
-    private void addRoadParameter(WHexGrid grid, SIDE side, int width, int level, String type) {
+    private void addRoadParameter(WHexGrid grid, EDGE side, int width, int level, String type) {
         Map<String, String> params = grid.getParameters();
         if (params == null) {
             params = new HashMap<>();
@@ -164,7 +120,7 @@ public class RoadAndRiverConnector {
     /**
      * Adds river parameter to a WHexGrid
      */
-    private void addRiverParameter(WHexGrid grid, SIDE side, int width, int depth, int level) {
+    private void addRiverParameter(WHexGrid grid, EDGE side, int width, int depth, int level) {
         Map<String, String> params = grid.getParameters();
         if (params == null) {
             params = new HashMap<>();
@@ -285,21 +241,21 @@ public class RoadAndRiverConnector {
     /**
      * Gets opposite side for hex grid connection
      */
-    public static SIDE getOppositeSide(SIDE side) {
+    public static EDGE getOppositeSide(EDGE side) {
         return switch (side) {
-            case NORTH_EAST -> SIDE.SOUTH_WEST;
-            case EAST -> SIDE.WEST;
-            case SOUTH_EAST -> SIDE.NORTH_WEST;
-            case SOUTH_WEST -> SIDE.NORTH_EAST;
-            case WEST -> SIDE.EAST;
-            case NORTH_WEST -> SIDE.SOUTH_EAST;
+            case NORTH_EAST -> EDGE.SOUTH_WEST;
+            case EAST -> EDGE.WEST;
+            case SOUTH_EAST -> EDGE.NORTH_WEST;
+            case SOUTH_WEST -> EDGE.NORTH_EAST;
+            case WEST -> EDGE.EAST;
+            case NORTH_WEST -> EDGE.SOUTH_EAST;
         };
     }
 
     /**
      * Calculates neighbor grid coordinate based on direction
      */
-    public static HexVector2 getNeighborCoordinate(HexVector2 coord, SIDE side) {
+    public static HexVector2 getNeighborCoordinate(HexVector2 coord, EDGE side) {
         return switch (side) {
             case NORTH_EAST -> HexVector2.builder().q(coord.getQ() + 1).r(coord.getR() - 1).build();
             case EAST -> HexVector2.builder().q(coord.getQ() + 1).r(coord.getR()).build();
@@ -313,16 +269,16 @@ public class RoadAndRiverConnector {
     /**
      * Determines which side to use based on grid direction
      */
-    public static SIDE determineSide(HexVector2 from, HexVector2 to) {
+    public static EDGE determineSide(HexVector2 from, HexVector2 to) {
         int dq = to.getQ() - from.getQ();
         int dr = to.getR() - from.getR();
 
-        if (dq == 1 && dr == -1) return SIDE.NORTH_EAST;
-        if (dq == 1 && dr == 0) return SIDE.EAST;
-        if (dq == 0 && dr == 1) return SIDE.SOUTH_EAST;
-        if (dq == -1 && dr == 1) return SIDE.SOUTH_WEST;
-        if (dq == -1 && dr == 0) return SIDE.WEST;
-        if (dq == 0 && dr == -1) return SIDE.NORTH_WEST;
+        if (dq == 1 && dr == -1) return EDGE.NORTH_EAST;
+        if (dq == 1 && dr == 0) return EDGE.EAST;
+        if (dq == 0 && dr == 1) return EDGE.SOUTH_EAST;
+        if (dq == -1 && dr == 1) return EDGE.SOUTH_WEST;
+        if (dq == -1 && dr == 0) return EDGE.WEST;
+        if (dq == 0 && dr == -1) return EDGE.NORTH_WEST;
 
         throw new IllegalArgumentException("Invalid hex direction: dq=" + dq + ", dr=" + dr);
     }

@@ -4,7 +4,10 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import de.mhus.nimbus.generated.types.HexVector2;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -12,6 +15,9 @@ import java.util.Map;
 import java.util.UUID;
 
 @Data
+@SuperBuilder
+@NoArgsConstructor
+@AllArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "featureType")
 @JsonSubTypes({
@@ -43,11 +49,26 @@ public abstract class Feature {
     private Map<String, String> metadata;
 
     /**
-     * List of HexGrid configurations created for this feature.
-     * Stores coordinates and parameters, NOT the actual WHexGrid instances.
-     * Only populated after BiomeComposer/HexGridFiller stage (status >= COMPOSED).
+     * Composed data - calculated during composition phase.
+     * Separates input configuration from runtime computed values.
      */
-    private List<FeatureHexGrid> hexGrids;
+    private FeatureComposed featureComposed;
+
+    /**
+     * Inner class for composed (calculated) data at Feature level.
+     * Stores values computed during composition, separate from user input.
+     */
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class FeatureComposed {
+        /**
+         * List of HexGrid configurations created for this feature.
+         * Stores coordinates and parameters, NOT the actual WHexGrid instances.
+         * Only populated after BiomeComposer/HexGridFiller stage (status >= COMPOSED).
+         */
+        private List<FeatureHexGrid> hexGrids;
+    }
 
     public void initialize() {
         if (featureId == null || featureId.isBlank()) {
@@ -97,24 +118,40 @@ public abstract class Feature {
      * Adds a HexGrid configuration to this feature
      */
     public void addHexGrid(FeatureHexGrid hexGrid) {
-        if (hexGrids == null) {
-            hexGrids = new ArrayList<>();
+        if (featureComposed == null) {
+            featureComposed = new FeatureComposed();
         }
-        hexGrids.add(hexGrid);
+        if (featureComposed.getHexGrids() == null) {
+            featureComposed.setHexGrids(new ArrayList<>());
+        }
+        featureComposed.getHexGrids().add(hexGrid);
     }
 
     /**
      * Returns all HexGrid configurations for this feature
      */
     public List<FeatureHexGrid> getHexGrids() {
-        return hexGrids != null ? hexGrids : new ArrayList<>();
+        return featureComposed != null && featureComposed.getHexGrids() != null
+            ? featureComposed.getHexGrids()
+            : new ArrayList<>();
+    }
+
+    /**
+     * Sets the HexGrid configurations for this feature
+     */
+    public void setHexGrids(List<FeatureHexGrid> hexGrids) {
+        if (featureComposed == null) {
+            featureComposed = new FeatureComposed();
+        }
+        featureComposed.setHexGrids(hexGrids);
     }
 
     /**
      * Finds a HexGrid configuration by coordinate
      */
     public FeatureHexGrid findHexGrid(HexVector2 coordinate) {
-        if (hexGrids == null || coordinate == null) return null;
+        List<FeatureHexGrid> hexGrids = getHexGrids();
+        if (hexGrids.isEmpty() || coordinate == null) return null;
         return hexGrids.stream()
             .filter(hg -> hg.getCoordinate() != null
                 && hg.getCoordinate().getQ() == coordinate.getQ()

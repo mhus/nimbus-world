@@ -146,9 +146,9 @@ public class FlatHexGridCreateJobExecutor implements JobExecutor {
                 }
 
                 // Parse border direction
-                WHexGrid.SIDE border;
+                WHexGrid.EDGE border;
                 try {
-                    border = WHexGrid.SIDE.valueOf(borderStr.toUpperCase());
+                    border = WHexGrid.EDGE.valueOf(borderStr.toUpperCase());
                 } catch (IllegalArgumentException e) {
                     throw new JobExecutionException("Invalid border direction: " + borderStr + ". Valid values: TOP_RIGHT, RIGHT, BOTTOM_RIGHT, BOTTOM_LEFT, LEFT, TOP_LEFT");
                 }

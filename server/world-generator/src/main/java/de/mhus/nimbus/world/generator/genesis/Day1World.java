@@ -2,7 +2,6 @@ package de.mhus.nimbus.world.generator.genesis;
 
 import de.mhus.nimbus.generated.types.WorldInfo;
 import de.mhus.nimbus.shared.types.WorldId;
-import de.mhus.nimbus.world.shared.job.JobExecutor;
 import de.mhus.nimbus.world.shared.layer.LayerType;
 import de.mhus.nimbus.world.shared.layer.WLayerService;
 import de.mhus.nimbus.world.shared.region.RRegionService;
@@ -23,14 +22,19 @@ import java.util.Map;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class Day1Light extends MethodBasedWorkflow  {
+public class Day1World extends MethodBasedWorkflow  {
 
     private final WWorldService worldService;
     private final RRegionService regionService;
     private final WLayerService layerService;
 
     @Override
-    public Map<String, String> initialize(String worldIdDontUse, Map<String, String> params) throws WorkflowException {
+    public String name() {
+        return "genesis-day1-world";
+    }
+
+    @Override
+    public Map<String, Object> initialize(String worldIdDontUse, Map<String, String> params) throws WorkflowException {
         // init parameters
         var worldId = params.get(GenesisConst.WORLD_ID);
         if (Strings.isBlank(worldId)) {
@@ -58,7 +62,7 @@ public class Day1Light extends MethodBasedWorkflow  {
     public void start(WorkflowContext context) throws WorkflowException {
 
         // create the world
-        var worldId = WorldId.of(context.getParameters().get(GenesisConst.WORLD_ID)).orElseThrow();
+        var worldId = WorldId.of((String)context.getParameters().get(GenesisConst.WORLD_ID)).orElseThrow();
         worldService.createWorld(worldId,
                 WorldInfo.builder()
                         .chunkSize(32)

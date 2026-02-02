@@ -1,8 +1,6 @@
 package de.mhus.nimbus.world.generator.flat.hexgrid.composer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import de.mhus.nimbus.generated.types.HexVector2;
-import de.mhus.nimbus.world.shared.world.WHexGrid.SIDE;
 import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -495,8 +493,17 @@ public class HexGridRoadConfigurator {
             for (RiverConfigPart part : fromParts) {
                 Map<String, Object> entry = new HashMap<>();
 
-                // Side-based routing
-                if (part.getSide() != null) {
+                // Priority 1: HexLocal position string (e.g., "<NE 2/4>")
+                if (part.getPosition() != null && !part.getPosition().isEmpty()) {
+                    entry.put("position", part.getPosition());
+                }
+                // Priority 2: lx/lz coordinates (Point endpoints)
+                else if (part.getLx() != null && part.getLz() != null) {
+                    entry.put("lx", part.getLx());
+                    entry.put("lz", part.getLz());
+                }
+                // Priority 3: Side-based routing (fallback for backward compatibility)
+                else if (part.getSide() != null) {
                     String sideKey = part.getSide().name();
                     // Skip duplicates
                     if (addedFromSides.contains(sideKey)) {
@@ -505,13 +512,8 @@ public class HexGridRoadConfigurator {
                     entry.put("side", sideKey);
                     addedFromSides.add(sideKey);
                 }
-                // Position-based routing
-                else if (part.getLx() != null && part.getLz() != null) {
-                    entry.put("lx", part.getLx());
-                    entry.put("lz", part.getLz());
-                }
                 else {
-                    log.warn("RiverConfigPart (FROM) has neither side nor lx/lz at grid {}", grid.getPositionKey());
+                    log.warn("RiverConfigPart (FROM) has neither position, side, nor lx/lz at grid {}", grid.getPositionKey());
                     continue;
                 }
 
@@ -541,8 +543,17 @@ public class HexGridRoadConfigurator {
             for (RiverConfigPart part : toParts) {
                 Map<String, Object> entry = new HashMap<>();
 
-                // Side-based routing
-                if (part.getSide() != null) {
+                // Priority 1: HexLocal position string (e.g., "<SW 2/4>")
+                if (part.getPosition() != null && !part.getPosition().isEmpty()) {
+                    entry.put("position", part.getPosition());
+                }
+                // Priority 2: lx/lz coordinates (Point endpoints)
+                else if (part.getLx() != null && part.getLz() != null) {
+                    entry.put("lx", part.getLx());
+                    entry.put("lz", part.getLz());
+                }
+                // Priority 3: Side-based routing (fallback for backward compatibility)
+                else if (part.getSide() != null) {
                     String sideKey = part.getSide().name();
                     // Skip duplicates
                     if (addedToSides.contains(sideKey)) {
@@ -551,13 +562,8 @@ public class HexGridRoadConfigurator {
                     entry.put("side", sideKey);
                     addedToSides.add(sideKey);
                 }
-                // Position-based routing
-                else if (part.getLx() != null && part.getLz() != null) {
-                    entry.put("lx", part.getLx());
-                    entry.put("lz", part.getLz());
-                }
                 else {
-                    log.warn("RiverConfigPart (TO) has neither side nor lx/lz at grid {}", grid.getPositionKey());
+                    log.warn("RiverConfigPart (TO) has neither position, side, nor lx/lz at grid {}", grid.getPositionKey());
                     continue;
                 }
 

@@ -10,7 +10,7 @@ import de.mhus.nimbus.world.shared.layer.LayerType;
 import de.mhus.nimbus.world.shared.layer.WLayer;
 import de.mhus.nimbus.world.shared.layer.WLayerService;
 import de.mhus.nimbus.generated.types.HexVector2;
-import de.mhus.nimbus.world.shared.world.HexMathUtil;
+import de.mhus.nimbus.world.shared.util.HexMathUtil;
 import de.mhus.nimbus.world.shared.world.WBlockTypeService;
 import de.mhus.nimbus.world.shared.world.WChunkService;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
@@ -1180,7 +1180,7 @@ public class FlatCreateService {
      * @return Created WFlat with border
      */
     public WFlat createGridBorderFlat(String worldId, String layerName, String flatId,
-                                      int hexQ, int hexR, WHexGrid.SIDE border, int borderSize,
+                                      int hexQ, int hexR, WHexGrid.EDGE border, int borderSize,
                                       String title, String description) {
         log.info("Creating grid border flat: worldId={}, layerName={}, flatId={}, hex=({},{}), border={}, size={}",
                 worldId, layerName, flatId, hexQ, hexR, border, borderSize);

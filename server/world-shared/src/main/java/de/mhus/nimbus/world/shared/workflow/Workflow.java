@@ -10,13 +10,10 @@ public interface Workflow {
 
     /**
      * Get the workflow name.
-     * Default implementation returns the canonical class name.
      *
      * @return Workflow name
      */
-    default String name() {
-        return getClass().getCanonicalName();
-    }
+    String name();
 
     /**
      * Initialize the workflow before starting.
@@ -27,7 +24,7 @@ public interface Workflow {
      * @param params Initialization parameters
      * @throws WorkflowException If initialization fails
      */
-    Map<String, String> initialize(String worldId, Map<String, String> params) throws WorkflowException;
+    Map<String, Object> initialize(String worldId, Map<String, String> params) throws WorkflowException;
 
     /**
      * Start the workflow execution.

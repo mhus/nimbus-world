@@ -13,25 +13,31 @@ public class CastUtil {
     }
 
 
-    public static int toint(String value, int defaultValue) {
+    public static int toint(Object value, int defaultValue) {
         try {
-            return Integer.parseInt(value);
+            return Integer.parseInt(toString(value));
         } catch (Exception e) {
             return defaultValue;
         }
     }
 
-    public static long tolong(String value, long defaultValue) {
+    private static String toString(Object value) {
+        if (value == null) return null;
+        if (value instanceof String) return (String) value;
+        return value.toString();
+    }
+
+    public static long tolong(Object value, long defaultValue) {
         try {
-            return Long.parseLong(value);
+            return Long.parseLong(toString(value));
         } catch (Exception e) {
             return defaultValue;
         }
     }
 
-    public static double todouble(String value, double defaultValue) {
+    public static double todouble(Object value, double defaultValue) {
         try {
-            return Double.parseDouble(value);
+            return Double.parseDouble(toString(value));
         } catch (Exception e) {
             return defaultValue;
         }

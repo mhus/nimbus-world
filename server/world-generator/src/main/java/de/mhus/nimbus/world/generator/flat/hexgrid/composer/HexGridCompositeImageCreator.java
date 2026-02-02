@@ -4,7 +4,7 @@ import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.world.shared.generator.FlatLevelImageCreator;
 import de.mhus.nimbus.world.shared.generator.FlatMaterialImageCreator;
 import de.mhus.nimbus.world.shared.generator.WFlat;
-import de.mhus.nimbus.world.shared.world.HexMathUtil;
+import de.mhus.nimbus.world.shared.util.HexMathUtil;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

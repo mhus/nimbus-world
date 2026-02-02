@@ -1,7 +1,7 @@
 package de.mhus.nimbus.world.generator.flat;
 
 import de.mhus.nimbus.generated.types.HexVector2;
-import de.mhus.nimbus.world.shared.world.HexMathUtil;
+import de.mhus.nimbus.world.shared.util.HexMathUtil;
 import de.mhus.nimbus.world.shared.generator.WFlat;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
 import de.mhus.nimbus.world.shared.world.WHexGridService;

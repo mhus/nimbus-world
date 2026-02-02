@@ -10,7 +10,7 @@ import de.mhus.nimbus.generated.types.Vector3Int;
 import de.mhus.nimbus.shared.storage.StorageService;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.shared.utils.TypeUtil;
-import de.mhus.nimbus.world.shared.world.HexMathUtil;
+import de.mhus.nimbus.world.shared.util.HexMathUtil;
 import de.mhus.nimbus.world.shared.world.WBlockType;
 import de.mhus.nimbus.world.shared.world.WHexGridService;
 import de.mhus.nimbus.world.shared.world.WWorld;

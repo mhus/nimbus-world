@@ -633,7 +633,7 @@ public class WorldCompositeImageTest {
         River mountainRiver = River.builder()
             .depth(2)
             .level(45)
-            .mergeToId("Central Plains")
+            .endPointId("Central Plains")
             .build();
         mountainRiver.setName("Mountain River");
         mountainRiver.setFeatureId("mountain-river");
@@ -1562,7 +1562,7 @@ public class WorldCompositeImageTest {
             .depth(3)
             .level(60)  // Water level - can flow through terrain >= 50 (ocean level)
             .waypointIds(new ArrayList<>())
-            .mergeToId("Coastal Lowlands")  // Intended destination (may not reach if ocean comes first)
+            .endPointId("Coastal Lowlands")  // Intended destination (may not reach if ocean comes first)
             .force(false)  // false: stop gracefully at ocean, true: throw error if destination not reached
             .build();
         river.setName("Great River");

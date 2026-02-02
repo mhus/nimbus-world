@@ -13,16 +13,15 @@ import java.util.List;
 
 /**
  * WallBuilder manipulator builder.
- * Creates straight walls from a center point to various destinations (sides or positions).
+ * Creates straight walls from a center point to various destinations.
  * Unlike RoadBuilder, walls are straight lines without curves.
  * <p>
  * Parameter format in HexGrid:
  * wall={
- *   lx: 130,
- *   lz: 130,
+ *   position: "<0;0>",
  *   route: [
  *     {
- *       side: "NE",
+ *       position: "<NE2/4>",
  *       height: 5,
  *       level: 50,
  *       type: 3,
@@ -32,14 +31,17 @@ import java.util.List;
  *       respectRiver: false
  *     },
  *     {
- *       lx: 80,
- *       lz: 40,
+ *       position: "<1;-1>",
  *       height: 4,
  *       level: 55,
  *       type: 3
  *     }
  *   ]
  * }
+ * <p>
+ * Position format (HexLocal):
+ * - Edge positions: "<NE2/4>", "<SW1/3>" - position on hex edge (North to South)
+ * - Inner positions: "<0;0>", "<1;-1>" - position within hex grid
  */
 @Slf4j
 public class WallBuilder extends HexGridBuilder {
@@ -66,12 +68,21 @@ public class WallBuilder extends HexGridBuilder {
         try {
             // Parse wall configuration
             WallConfig config = parseWallConfig(wallParam);
-            log.debug("Parsed wall config: center=({}, {}), routes={}",
-                    config.getCenter().getLx(), config.getCenter().getLz(), config.getRoute().size());
 
-            // Determine center position (use specified or default to flat center)
-            int centerX = config.getCenter().getLx() >= 0 ? config.getCenter().getLx() : flat.getSizeX() / 2;
-            int centerZ = config.getCenter().getLz() >= 0 ? config.getCenter().getLz() : flat.getSizeZ() / 2;
+            // Determine center position (use position string or default to flat center)
+            int centerX, centerZ;
+            if (config.getCenter().getPosition() != null) {
+                int[] centerCoords = getAbsoluteCoordinates(config.getCenter().getPosition(),
+                    flat.getSizeX(), flat.getSizeZ());
+                centerX = centerCoords[0];
+                centerZ = centerCoords[1];
+            } else {
+                // Default to flat center
+                centerX = flat.getSizeX() / 2;
+                centerZ = flat.getSizeZ() / 2;
+            }
+
+            log.debug("Parsed wall config: center=({}, {}), routes={}", centerX, centerZ, config.getRoute().size());
 
             log.debug("Center position: ({}, {})", centerX, centerZ);
 
@@ -94,10 +105,9 @@ public class WallBuilder extends HexGridBuilder {
 
         WallConfig config = new WallConfig();
 
-        // Parse center position (optional, defaults to -1 which means flat center)
+        // Parse center position (optional, null means flat center)
         CenterDefinition center = new CenterDefinition();
-        center.setLx(root.has("lx") ? root.get("lx").asInt() : -1);
-        center.setLz(root.has("lz") ? root.get("lz").asInt() : -1);
+        center.setPosition(root.has("position") ? root.get("position").asText() : null);
         config.setCenter(center);
 
         // Parse route array
@@ -106,13 +116,11 @@ public class WallBuilder extends HexGridBuilder {
             for (JsonNode routeNode : root.get("route")) {
                 WallRoute route = new WallRoute();
 
-                // Parse destination (either side or lx/lz position)
-                if (routeNode.has("side")) {
-                    route.setSide(parseSide(routeNode.get("side").asText()));
-                } else if (routeNode.has("lx") && routeNode.has("lz")) {
-                    route.setPositionX(routeNode.get("lx").asInt());
-                    route.setPositionZ(routeNode.get("lz").asInt());
+                // Parse position (required)
+                if (!routeNode.has("position")) {
+                    throw new IllegalArgumentException("Wall route must have 'position' field in HexLocal format (e.g., '<NE2/4>' or '<0;0>')");
                 }
+                route.setPosition(routeNode.get("position").asText());
 
                 // Parse wall properties
                 route.setHeight(routeNode.has("height") ? routeNode.get("height").asInt() : DEFAULT_HEIGHT);
@@ -135,19 +143,8 @@ public class WallBuilder extends HexGridBuilder {
      * Build a straight wall from center to destination.
      */
     private void buildWallToDestination(WFlat flat, int centerX, int centerZ, WallRoute route) {
-        // Determine destination coordinates
-        int[] destCoords;
-        if (route.getSide() != null) {
-            // Destination is a hex grid side
-            destCoords = getSideCoordinate(route.getSide(), flat.getSizeX(), flat.getSizeZ());
-        } else if (route.getPositionX() != null && route.getPositionZ() != null) {
-            // Destination is an absolute position
-            destCoords = new int[]{route.getPositionX(), route.getPositionZ()};
-        } else {
-            log.warn("Wall route has neither side nor position, skipping");
-            return;
-        }
-
+        // Get destination coordinates from position string
+        int[] destCoords = getAbsoluteCoordinates(route.getPosition(), flat.getSizeX(), flat.getSizeZ());
         int destX = destCoords[0];
         int destZ = destCoords[1];
 
@@ -185,51 +182,28 @@ public class WallBuilder extends HexGridBuilder {
      * Get coordinate on a specific side of the hex grid.
      * Returns the midpoint of that side.
      */
-    private int[] getSideCoordinate(WHexGrid.SIDE side, int sizeX, int sizeZ) {
-        switch (side) {
-            case NORTH_WEST:
-                return new int[]{sizeX / 4, 0};
-            case NORTH_EAST:
-                return new int[]{3 * sizeX / 4, 0};
-            case EAST:
-                return new int[]{sizeX - 1, sizeZ / 2};
-            case SOUTH_EAST:
-                return new int[]{3 * sizeX / 4, sizeZ - 1};
-            case SOUTH_WEST:
-                return new int[]{sizeX / 4, sizeZ - 1};
-            case WEST:
-                return new int[]{0, sizeZ / 2};
-            default:
-                return new int[]{sizeX / 2, sizeZ / 2};
-        }
-    }
-
     /**
-     * Parse side string to SIDE enum.
+     * Get absolute WFlat coordinates from HexLocal position string.
+     * Uses HexLocalUtil to parse the position and convert to absolute coordinates.
+     *
+     * @param position the position in HexLocal format (e.g., "<NE2/4>" or "<0;0>")
+     * @param sizeX WFlat width
+     * @param sizeZ WFlat height
+     * @return absolute coordinates [lx, lz] in WFlat coordinate system
      */
-    private WHexGrid.SIDE parseSide(String sideStr) {
-        switch (sideStr.toUpperCase()) {
-            case "NW":
-            case "NORTH_WEST":
-                return WHexGrid.SIDE.NORTH_WEST;
-            case "NE":
-            case "NORTH_EAST":
-                return WHexGrid.SIDE.NORTH_EAST;
-            case "E":
-            case "EAST":
-                return WHexGrid.SIDE.EAST;
-            case "SE":
-            case "SOUTH_EAST":
-                return WHexGrid.SIDE.SOUTH_EAST;
-            case "SW":
-            case "SOUTH_WEST":
-                return WHexGrid.SIDE.SOUTH_WEST;
-            case "W":
-            case "WEST":
-                return WHexGrid.SIDE.WEST;
-            default:
-                throw new IllegalArgumentException("Unknown side: " + sideStr);
-        }
+    private int[] getAbsoluteCoordinates(String position, int sizeX, int sizeZ) {
+        // Assume hexGridSize equals WFlat size (standard case)
+        int hexGridSize = sizeX;  // or could use Math.max(sizeX, sizeZ)
+
+        // Parse position string and get relative coordinates
+        de.mhus.nimbus.generated.types.Vector2Int relativePos =
+            de.mhus.nimbus.world.shared.util.HexLocalUtil.toHexgridLocalCenter(position, hexGridSize);
+
+        // Convert to absolute WFlat coordinates
+        int lx = sizeX / 2 + relativePos.getX();
+        int lz = sizeZ / 2 + relativePos.getZ();
+
+        return new int[]{lx, lz};
     }
 
     /**
@@ -352,7 +326,7 @@ public class WallBuilder extends HexGridBuilder {
     }
 
     @Override
-    public int getLandSideLevel(WHexGrid.SIDE side) {
+    public int getLandSideLevel(WHexGrid.EDGE side) {
         return getLandCenterLevel();
     }
 
@@ -370,8 +344,7 @@ public class WallBuilder extends HexGridBuilder {
      */
     @Data
     private static class CenterDefinition {
-        private int lx;  // Absolute local X position (-1 = use flat center)
-        private int lz;  // Absolute local Z position (-1 = use flat center)
+        private String position;  // HexLocal format: "<NE2/4>" or "<0;0>" (null = use flat center)
     }
 
     /**
@@ -379,9 +352,7 @@ public class WallBuilder extends HexGridBuilder {
      */
     @Data
     private static class WallRoute {
-        private WHexGrid.SIDE side;      // Optional: destination side
-        private Integer positionX;       // Optional: destination X position
-        private Integer positionZ;       // Optional: destination Z position
+        private String position;  // HexLocal format: "<NE2/4>" or "<0;0>"
         private int height;
         private int level;
         private int width;

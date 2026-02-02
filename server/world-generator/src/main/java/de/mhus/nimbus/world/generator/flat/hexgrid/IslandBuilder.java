@@ -117,7 +117,7 @@ public class IslandBuilder extends HexGridBuilder {
         }
     }
 
-    public int getLandSideLevel(WHexGrid.SIDE side) {
+    public int getLandSideLevel(WHexGrid.EDGE side) {
         return getLandCenterLevel();
     }
 

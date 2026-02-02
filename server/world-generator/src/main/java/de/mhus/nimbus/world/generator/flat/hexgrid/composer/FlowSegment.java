@@ -1,7 +1,7 @@
 package de.mhus.nimbus.world.generator.flat.hexgrid.composer;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import de.mhus.nimbus.world.shared.world.WHexGrid.SIDE;
+import de.mhus.nimbus.world.shared.world.WHexGrid.EDGE;
 import lombok.*;
 
 /**
@@ -22,16 +22,30 @@ public class FlowSegment {
 
     /**
      * Side where flow enters the grid (null if this is the start point or if fromLx/fromLz is used)
+     * DEPRECATED: Use fromPosition instead for precise edge positioning
      */
-    private SIDE fromSide;
+    private EDGE fromSide;
 
     /**
      * Side where flow exits the grid (null if this is the end point or if toLx/toLz is used)
+     * DEPRECATED: Use toPosition instead for precise edge positioning
      */
-    private SIDE toSide;
+    private EDGE toSide;
 
     /**
-     * Local X coordinate where flow enters (alternative to fromSide, used when endpoint is a Point)
+     * HexLocal position string where flow enters (e.g., "<NE 2>" for grid-to-grid transitions)
+     * Takes precedence over fromSide when set
+     */
+    private String fromPosition;
+
+    /**
+     * HexLocal position string where flow exits (e.g., "<SW 2>" for grid-to-grid transitions)
+     * Takes precedence over toPosition when set
+     */
+    private String toPosition;
+
+    /**
+     * Local X coordinate where flow enters (alternative to fromSide/fromPosition, used when endpoint is a Point)
      */
     private Integer fromLx;
 
@@ -91,39 +105,53 @@ public class FlowSegment {
     private String segmentName;
 
     /**
-     * Returns true if this is a start segment (no fromSide and no fromLx/fromLz)
+     * Returns true if this is a start segment (no fromSide, fromPosition and no fromLx/fromLz)
      */
     public boolean isStartSegment() {
-        return fromSide == null && fromLx == null && fromLz == null;
+        return fromSide == null && fromPosition == null && fromLx == null && fromLz == null;
     }
 
     /**
-     * Returns true if this is an end segment (no toSide and no toLx/toLz)
+     * Returns true if this is an end segment (no toSide, toPosition and no toLx/toLz)
      */
     public boolean isEndSegment() {
-        return toSide == null && toLx == null && toLz == null;
+        return toSide == null && toPosition == null && toLx == null && toLz == null;
     }
 
     /**
      * Returns true if this is a through segment (has both entry and exit)
      */
     public boolean isThroughSegment() {
-        boolean hasFrom = fromSide != null || (fromLx != null && fromLz != null);
-        boolean hasTo = toSide != null || (toLx != null && toLz != null);
+        boolean hasFrom = fromSide != null || fromPosition != null || (fromLx != null && fromLz != null);
+        boolean hasTo = toSide != null || toPosition != null || (toLx != null && toLz != null);
         return hasFrom && hasTo;
     }
 
     /**
-     * Returns true if entry point uses coordinates instead of side
+     * Returns true if entry point uses coordinates instead of side/position
      */
     public boolean hasFromCoordinates() {
         return fromLx != null && fromLz != null;
     }
 
     /**
-     * Returns true if exit point uses coordinates instead of side
+     * Returns true if exit point uses coordinates instead of side/position
      */
     public boolean hasToCoordinates() {
         return toLx != null && toLz != null;
+    }
+
+    /**
+     * Returns true if entry point uses HexLocal position string
+     */
+    public boolean hasFromPosition() {
+        return fromPosition != null && !fromPosition.isEmpty();
+    }
+
+    /**
+     * Returns true if exit point uses HexLocal position string
+     */
+    public boolean hasToPosition() {
+        return toPosition != null && !toPosition.isEmpty();
     }
 }

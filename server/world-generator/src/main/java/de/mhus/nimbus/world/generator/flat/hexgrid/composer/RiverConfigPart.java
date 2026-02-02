@@ -1,6 +1,6 @@
 package de.mhus.nimbus.world.generator.flat.hexgrid.composer;
 
-import de.mhus.nimbus.world.shared.world.WHexGrid.SIDE;
+import de.mhus.nimbus.world.shared.world.WHexGrid.EDGE;
 import lombok.Builder;
 import lombok.Data;
 
@@ -22,10 +22,11 @@ public class RiverConfigPart {
 
     private PartType partType;
 
-    // Common fields - either side-based OR position-based
-    private SIDE side;           // Side-based routing (NE, NW, etc.)
-    private Integer lx;          // Position-based routing x
-    private Integer lz;          // Position-based routing z
+    // Common fields - either side-based OR position-based OR position-string-based
+    private EDGE side;           // Side-based routing (NE, NW, etc.) - DEPRECATED, use position instead
+    private String position;     // HexLocal position string (e.g., "<NE 2/4>") for grid-to-grid transitions
+    private Integer lx;          // Position-based routing x (for Point endpoints)
+    private Integer lz;          // Position-based routing z (for Point endpoints)
     private Integer width;
     private Integer depth;
     private Integer level;
@@ -36,8 +37,8 @@ public class RiverConfigPart {
     /**
      * Creates a FROM part for river entry
      */
-    public static RiverConfigPart createFromPart(SIDE side, Integer width, Integer depth,
-                                                   Integer level, String groupId) {
+    public static RiverConfigPart createFromPart(EDGE side, Integer width, Integer depth,
+                                                 Integer level, String groupId) {
         return RiverConfigPart.builder()
             .partType(PartType.FROM)
             .side(side)
@@ -51,8 +52,8 @@ public class RiverConfigPart {
     /**
      * Creates a TO part for river exit
      */
-    public static RiverConfigPart createToPart(SIDE side, Integer width, Integer depth,
-                                                 Integer level, String groupId) {
+    public static RiverConfigPart createToPart(EDGE side, Integer width, Integer depth,
+                                               Integer level, String groupId) {
         return RiverConfigPart.builder()
             .partType(PartType.TO)
             .side(side)
@@ -88,6 +89,36 @@ public class RiverConfigPart {
             .partType(PartType.TO)
             .lx(lx)
             .lz(lz)
+            .width(width)
+            .depth(depth)
+            .level(level)
+            .groupId(groupId)
+            .build();
+    }
+
+    /**
+     * Creates a FROM part for river entry with HexLocal position string
+     */
+    public static RiverConfigPart createFromPositionStringPart(String position, Integer width,
+                                                                 Integer depth, Integer level, String groupId) {
+        return RiverConfigPart.builder()
+            .partType(PartType.FROM)
+            .position(position)
+            .width(width)
+            .depth(depth)
+            .level(level)
+            .groupId(groupId)
+            .build();
+    }
+
+    /**
+     * Creates a TO part for river exit with HexLocal position string
+     */
+    public static RiverConfigPart createToPositionStringPart(String position, Integer width,
+                                                               Integer depth, Integer level, String groupId) {
+        return RiverConfigPart.builder()
+            .partType(PartType.TO)
+            .position(position)
             .width(width)
             .depth(depth)
             .level(level)

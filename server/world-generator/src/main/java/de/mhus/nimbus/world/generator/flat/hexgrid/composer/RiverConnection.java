@@ -8,7 +8,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * Defines a river connection between two hex grids
+ * Defines a river connection between two points.
+ * Grid coordinates and sides are calculated during composition from point positions.
  */
 @Data
 @Builder
@@ -16,24 +17,14 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class RiverConnection {
     /**
-     * Start grid coordinate
+     * Start point ID
      */
-    private HexVector2 fromGrid;
+    private String fromPointId;
 
     /**
-     * End grid coordinate
+     * End point ID
      */
-    private HexVector2 toGrid;
-
-    /**
-     * Side at from-grid
-     */
-    private WHexGrid.SIDE fromSide;
-
-    /**
-     * Side at to-grid (opposite of fromSide)
-     */
-    private WHexGrid.SIDE toSide;
+    private String toPointId;
 
     /**
      * River width

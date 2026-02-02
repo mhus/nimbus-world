@@ -10,6 +10,7 @@ import de.mhus.nimbus.shared.types.SchemaVersion;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.shared.utils.TypeUtil;
 import de.mhus.nimbus.world.shared.util.FastNoiseLite;
+import de.mhus.nimbus.world.shared.util.HexMathUtil;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

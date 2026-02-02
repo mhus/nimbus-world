@@ -16,7 +16,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class BoundaryRoadDefinition {
-    private WHexGrid.SIDE side;
+    private WHexGrid.EDGE side;
     private int width;
     private int level;
     private String type;

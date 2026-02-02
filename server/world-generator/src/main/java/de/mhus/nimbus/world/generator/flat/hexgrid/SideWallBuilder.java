@@ -61,7 +61,7 @@ public class SideWallBuilder extends HexGridBuilder {
                     wallDef.isRespectRoad(), wallDef.isRespectRiver());
 
             // Build wall for each specified side
-            for (WHexGrid.SIDE side : wallDef.getSides()) {
+            for (WHexGrid.EDGE side : wallDef.getSides()) {
                 buildWall(flat, side, wallDef);
             }
 
@@ -80,7 +80,7 @@ public class SideWallBuilder extends HexGridBuilder {
         WallDefinition wallDef = new WallDefinition();
 
         // Parse sides array
-        List<WHexGrid.SIDE> sides = new ArrayList<>();
+        List<WHexGrid.EDGE> sides = new ArrayList<>();
         if (root.has("sides") && root.get("sides").isArray()) {
             for (JsonNode sideNode : root.get("sides")) {
                 sides.add(parseSide(sideNode.asText()));
@@ -105,26 +105,26 @@ public class SideWallBuilder extends HexGridBuilder {
     /**
      * Parse side string to SIDE enum.
      */
-    private WHexGrid.SIDE parseSide(String sideStr) {
+    private WHexGrid.EDGE parseSide(String sideStr) {
         switch (sideStr.toUpperCase()) {
             case "NW":
             case "NORTH_WEST":
-                return WHexGrid.SIDE.NORTH_WEST;
+                return WHexGrid.EDGE.NORTH_WEST;
             case "NE":
             case "NORTH_EAST":
-                return WHexGrid.SIDE.NORTH_EAST;
+                return WHexGrid.EDGE.NORTH_EAST;
             case "E":
             case "EAST":
-                return WHexGrid.SIDE.EAST;
+                return WHexGrid.EDGE.EAST;
             case "SE":
             case "SOUTH_EAST":
-                return WHexGrid.SIDE.SOUTH_EAST;
+                return WHexGrid.EDGE.SOUTH_EAST;
             case "SW":
             case "SOUTH_WEST":
-                return WHexGrid.SIDE.SOUTH_WEST;
+                return WHexGrid.EDGE.SOUTH_WEST;
             case "W":
             case "WEST":
-                return WHexGrid.SIDE.WEST;
+                return WHexGrid.EDGE.WEST;
             default:
                 throw new IllegalArgumentException("Unknown side: " + sideStr);
         }
@@ -133,7 +133,7 @@ public class SideWallBuilder extends HexGridBuilder {
     /**
      * Build a wall along a specified side.
      */
-    private void buildWall(WFlat flat, WHexGrid.SIDE side, WallDefinition wallDef) {
+    private void buildWall(WFlat flat, WHexGrid.EDGE side, WallDefinition wallDef) {
         log.debug("Building wall on side: {}", side);
 
         int sizeX = flat.getSizeX();
@@ -175,7 +175,7 @@ public class SideWallBuilder extends HexGridBuilder {
     /**
      * Get the two corners that define a side.
      */
-    private int[][] getSideCorners(WHexGrid.SIDE side, int sizeX, int sizeZ) {
+    private int[][] getSideCorners(WHexGrid.EDGE side, int sizeX, int sizeZ) {
         switch (side) {
             case NORTH_WEST:
                 return new int[][]{{0, 0}, {sizeX / 2, 0}};
@@ -197,7 +197,7 @@ public class SideWallBuilder extends HexGridBuilder {
     /**
      * Get the inward direction (perpendicular to side, pointing into the hex).
      */
-    private int[] getInwardDirection(WHexGrid.SIDE side) {
+    private int[] getInwardDirection(WHexGrid.EDGE side) {
         switch (side) {
             case NORTH_WEST:
             case NORTH_EAST:
@@ -342,7 +342,7 @@ public class SideWallBuilder extends HexGridBuilder {
     }
 
     @Override
-    public int getLandSideLevel(WHexGrid.SIDE side) {
+    public int getLandSideLevel(WHexGrid.EDGE side) {
         return getLandCenterLevel();
     }
 
@@ -351,7 +351,7 @@ public class SideWallBuilder extends HexGridBuilder {
      */
     @Data
     private static class WallDefinition {
-        private List<WHexGrid.SIDE> sides;
+        private List<WHexGrid.EDGE> sides;
         private int height;
         private int level;
         private int width;

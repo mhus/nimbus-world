@@ -2,12 +2,18 @@ package de.mhus.nimbus.world.generator.flat.hexgrid.composer;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import de.mhus.nimbus.generated.types.HexVector2;
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 
 import java.util.List;
 
 @Data
+@SuperBuilder
+@NoArgsConstructor
+@AllArgsConstructor
 @EqualsAndHashCode(callSuper = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public abstract class Area extends Feature {
@@ -84,12 +90,36 @@ public abstract class Area extends Feature {
      */
     private DeviationTendency tendRight;
 
-    // Calculated values (runtime, set during composition)
-    private Integer calculatedSizeFrom;  // Resolved from size enum
-    private Integer calculatedSizeTo;    // Resolved from size enum
-    private HexVector2 placedCenter;     // Where this area was actually placed
-    private List<HexVector2> assignedCoordinates;  // Actual coordinates assigned
-    private List<PreparedPosition> preparedPositions;  // Resolved positions with angles
+    /**
+     * Composed data - calculated during composition phase at Area level.
+     * Separates input configuration from runtime computed values.
+     */
+    private AreaComposed areaComposed;
+
+    /**
+     * Inner class for composed (calculated) data at Area level.
+     * Stores values computed during composition, separate from user input.
+     */
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class AreaComposed {
+        private Integer calculatedSizeFrom;  // Resolved from size enum (deprecated - use sizeQ/sizeR)
+        private Integer calculatedSizeTo;    // Resolved from size enum (deprecated - use sizeQ/sizeR)
+        private HexVector2 placedCenter;     // Where this area was actually placed
+        private List<HexVector2> assignedCoordinates;  // Actual coordinates assigned
+        private List<PreparedPosition> preparedPositions;  // Resolved positions with angles
+
+        // 2D dimensions of the biome
+        private Integer sizeQ;  // Actual size in Q direction (number of hexes)
+        private Integer sizeR;  // Actual size in R direction (number of hexes)
+
+        // Bounds of the biome
+        private Integer minQ;   // Minimum Q coordinate
+        private Integer maxQ;   // Maximum Q coordinate
+        private Integer minR;   // Minimum R coordinate
+        private Integer maxR;   // Maximum R coordinate
+    }
 
     public int getEffectiveSizeFrom() {
         return sizeFrom != null ? sizeFrom : (size != null ? size.getFrom() : 1);
@@ -104,19 +134,25 @@ public abstract class Area extends Feature {
      * Called by HexCompositionPreparer before BiomeComposer places the area.
      */
     public void prepareForComposition() {
+        // Initialize areaComposed if needed
+        if (areaComposed == null) {
+            areaComposed = new AreaComposed();
+        }
+
         // Calculate size ranges from enum
-        calculatedSizeFrom = getEffectiveSizeFrom();
-        calculatedSizeTo = getEffectiveSizeTo();
+        areaComposed.setCalculatedSizeFrom(getEffectiveSizeFrom());
+        areaComposed.setCalculatedSizeTo(getEffectiveSizeTo());
 
         // Prepare positions (convert RelativePosition → PreparedPosition)
         if (positions != null && !positions.isEmpty()) {
-            preparedPositions = new java.util.ArrayList<>();
+            List<PreparedPosition> preparedPositions = new java.util.ArrayList<>();
             for (RelativePosition pos : positions) {
                 preparedPositions.add(preparePosition(pos));
             }
+            areaComposed.setPreparedPositions(preparedPositions);
         } else {
             // No positions specified - create default position at origin
-            preparedPositions = new java.util.ArrayList<>();
+            List<PreparedPosition> preparedPositions = new java.util.ArrayList<>();
             PreparedPosition defaultPosition = new PreparedPosition();
             defaultPosition.setAnchor("origin");
             defaultPosition.setDirection(Direction.N);
@@ -125,6 +161,7 @@ public abstract class Area extends Feature {
             defaultPosition.setDistanceTo(0);
             defaultPosition.setPriority(5);
             preparedPositions.add(defaultPosition);
+            areaComposed.setPreparedPositions(preparedPositions);
         }
     }
 
@@ -221,10 +258,140 @@ public abstract class Area extends Feature {
      * @param coordinates List of coordinates assigned to this area
      */
     public void configureHexGrids(List<HexVector2> coordinates) {
+        // Initialize areaComposed if needed
+        if (areaComposed == null) {
+            areaComposed = new AreaComposed();
+        }
+
         // Store assigned coordinates
-        this.assignedCoordinates = coordinates;
+        areaComposed.setAssignedCoordinates(coordinates);
 
         // Default implementation - override in subclasses
         // Base areas do nothing special
+    }
+
+    // Helper methods for backward compatibility
+
+    public Integer getCalculatedSizeFrom() {
+        return areaComposed != null ? areaComposed.getCalculatedSizeFrom() : null;
+    }
+
+    public void setCalculatedSizeFrom(Integer calculatedSizeFrom) {
+        if (areaComposed == null) {
+            areaComposed = new AreaComposed();
+        }
+        areaComposed.setCalculatedSizeFrom(calculatedSizeFrom);
+    }
+
+    public Integer getCalculatedSizeTo() {
+        return areaComposed != null ? areaComposed.getCalculatedSizeTo() : null;
+    }
+
+    public void setCalculatedSizeTo(Integer calculatedSizeTo) {
+        if (areaComposed == null) {
+            areaComposed = new AreaComposed();
+        }
+        areaComposed.setCalculatedSizeTo(calculatedSizeTo);
+    }
+
+    public HexVector2 getPlacedCenter() {
+        return areaComposed != null ? areaComposed.getPlacedCenter() : null;
+    }
+
+    public void setPlacedCenter(HexVector2 placedCenter) {
+        if (areaComposed == null) {
+            areaComposed = new AreaComposed();
+        }
+        areaComposed.setPlacedCenter(placedCenter);
+    }
+
+    public List<HexVector2> getAssignedCoordinates() {
+        return areaComposed != null ? areaComposed.getAssignedCoordinates() : null;
+    }
+
+    public void setAssignedCoordinates(List<HexVector2> assignedCoordinates) {
+        if (areaComposed == null) {
+            areaComposed = new AreaComposed();
+        }
+        areaComposed.setAssignedCoordinates(assignedCoordinates);
+    }
+
+    public List<PreparedPosition> getPreparedPositions() {
+        return areaComposed != null ? areaComposed.getPreparedPositions() : null;
+    }
+
+    public void setPreparedPositions(List<PreparedPosition> preparedPositions) {
+        if (areaComposed == null) {
+            areaComposed = new AreaComposed();
+        }
+        areaComposed.setPreparedPositions(preparedPositions);
+    }
+
+    // Helper methods for 2D dimensions
+
+    public Integer getSizeQ() {
+        return areaComposed != null ? areaComposed.getSizeQ() : null;
+    }
+
+    public void setSizeQ(Integer sizeQ) {
+        if (areaComposed == null) {
+            areaComposed = new AreaComposed();
+        }
+        areaComposed.setSizeQ(sizeQ);
+    }
+
+    public Integer getSizeR() {
+        return areaComposed != null ? areaComposed.getSizeR() : null;
+    }
+
+    public void setSizeR(Integer sizeR) {
+        if (areaComposed == null) {
+            areaComposed = new AreaComposed();
+        }
+        areaComposed.setSizeR(sizeR);
+    }
+
+    public Integer getMinQ() {
+        return areaComposed != null ? areaComposed.getMinQ() : null;
+    }
+
+    public void setMinQ(Integer minQ) {
+        if (areaComposed == null) {
+            areaComposed = new AreaComposed();
+        }
+        areaComposed.setMinQ(minQ);
+    }
+
+    public Integer getMaxQ() {
+        return areaComposed != null ? areaComposed.getMaxQ() : null;
+    }
+
+    public void setMaxQ(Integer maxQ) {
+        if (areaComposed == null) {
+            areaComposed = new AreaComposed();
+        }
+        areaComposed.setMaxQ(maxQ);
+    }
+
+    public Integer getMinR() {
+        return areaComposed != null ? areaComposed.getMinR() : null;
+    }
+
+    public void setMinR(Integer minR) {
+        if (areaComposed == null) {
+            areaComposed = new AreaComposed();
+        }
+        areaComposed.setMinR(minR);
+    }
+
+    public Integer getMaxR() {
+        return areaComposed != null ? areaComposed.getMaxR() : null;
+    }
+
+    public void setMaxR(Integer maxR) {
+        if (areaComposed == null) {
+            areaComposed = new AreaComposed();
+        }
+        areaComposed.setMaxR(maxR);
     }
 }

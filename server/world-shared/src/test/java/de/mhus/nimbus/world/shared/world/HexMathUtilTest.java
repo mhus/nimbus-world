@@ -2,6 +2,7 @@ package de.mhus.nimbus.world.shared.world;
 
 import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.generated.types.WorldInfo;
+import de.mhus.nimbus.world.shared.util.HexMathUtil;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;

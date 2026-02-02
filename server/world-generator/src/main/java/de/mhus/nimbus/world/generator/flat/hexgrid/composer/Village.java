@@ -7,13 +7,14 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 @Data
-@Builder
+@SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(callSuper = true)
@@ -34,9 +35,7 @@ public class Village extends Structure implements BuildFeature {
     @Builder.Default
     private int baseLevel = 95;
 
-    public static VillageBuilder builder() {
-        return new VillageBuilder();
-    }
+    // Note: Village uses Structure.Composed (no Village-specific calculated fields yet)
 
     /**
      * Applies village-specific default configuration from StructureType

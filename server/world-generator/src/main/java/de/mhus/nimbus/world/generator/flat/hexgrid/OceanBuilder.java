@@ -86,7 +86,7 @@ public class OceanBuilder extends HexGridBuilder {
         }
     }
 
-    public int getLandSideLevel(WHexGrid.SIDE side) {
+    public int getLandSideLevel(WHexGrid.EDGE side) {
         return getLandCenterLevel();
     }
 
@@ -101,7 +101,7 @@ public class OceanBuilder extends HexGridBuilder {
         log.debug("Blending edges with default noise for flat: {}", flat.getFlatId());
 
         // Check all 6 hex edges for missing neighbors
-        for (WHexGrid.SIDE side : WHexGrid.SIDE.values()) {
+        for (WHexGrid.EDGE side : WHexGrid.EDGE.values()) {
             WHexGrid neighbor = context.getNeighborGrids().get(side);
 
             // Only blend if neighbor doesn't exist
@@ -119,7 +119,7 @@ public class OceanBuilder extends HexGridBuilder {
      * @param side The hex edge to blend
      * @param groundLevel The ground level for noise calculation
      */
-    private void blendEdgeWithNoise(WHexGrid.SIDE side, int groundLevel) {
+    private void blendEdgeWithNoise(WHexGrid.EDGE side, int groundLevel) {
         WFlat flat = context.getFlat();
         int blendDepth = 30;  // Depth of blending zone in blocks
 
@@ -170,18 +170,18 @@ public class OceanBuilder extends HexGridBuilder {
     /**
      * Helper class to calculate edge coordinates for a hex side.
      */
-    private EdgeCoordinates getEdgeCoordinates(WHexGrid.SIDE side, int sizeX, int sizeZ) {
-        if (side == WHexGrid.SIDE.NORTH_EAST) {
+    private EdgeCoordinates getEdgeCoordinates(WHexGrid.EDGE side, int sizeX, int sizeZ) {
+        if (side == WHexGrid.EDGE.NORTH_EAST) {
             return new EdgeCoordinates(sizeX / 2, 0, sizeX - 1, sizeZ / 4, 1, 1);
-        } else if (side == WHexGrid.SIDE.EAST) {
+        } else if (side == WHexGrid.EDGE.EAST) {
             return new EdgeCoordinates(sizeX - 1, sizeZ / 4, sizeX - 1, 3 * sizeZ / 4, 0, 1);
-        } else if (side == WHexGrid.SIDE.SOUTH_EAST) {
+        } else if (side == WHexGrid.EDGE.SOUTH_EAST) {
             return new EdgeCoordinates(sizeX - 1, 3 * sizeZ / 4, sizeX / 2, sizeZ - 1, -1, 1);
-        } else if (side == WHexGrid.SIDE.SOUTH_WEST) {
+        } else if (side == WHexGrid.EDGE.SOUTH_WEST) {
             return new EdgeCoordinates(sizeX / 2, sizeZ - 1, 0, 3 * sizeZ / 4, -1, -1);
-        } else if (side == WHexGrid.SIDE.WEST) {
+        } else if (side == WHexGrid.EDGE.WEST) {
             return new EdgeCoordinates(0, 3 * sizeZ / 4, 0, sizeZ / 4, 0, -1);
-        } else if (side == WHexGrid.SIDE.NORTH_WEST) {
+        } else if (side == WHexGrid.EDGE.NORTH_WEST) {
             return new EdgeCoordinates(0, sizeZ / 4, sizeX / 2, 0, 1, -1);
         } else {
             throw new IllegalArgumentException("Unknown side: " + side);

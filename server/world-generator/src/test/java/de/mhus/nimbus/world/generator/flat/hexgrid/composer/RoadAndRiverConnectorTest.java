@@ -3,7 +3,7 @@ package de.mhus.nimbus.world.generator.flat.hexgrid.composer;
 import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.shared.utils.TypeUtil;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
-import de.mhus.nimbus.world.shared.world.WHexGrid.SIDE;
+import de.mhus.nimbus.world.shared.world.WHexGrid.EDGE;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -46,10 +46,8 @@ public class RoadAndRiverConnectorTest {
 
         // Road from [0,0] EAST to [1,0] WEST
         roadConnections.add(RoadConnection.builder()
-            .fromGrid(HexVector2.builder().q(0).r(0).build())
-            .toGrid(HexVector2.builder().q(1).r(0).build())
-            .fromSide(SIDE.EAST)
-            .toSide(SIDE.WEST)
+            .fromPointId("point-" +HexVector2.builder().q(0).r(0).build())
+            .toPointId("point-" +HexVector2.builder().q(1).r(0).build())
             .width(4)
             .level(95)
             .type("street")
@@ -58,10 +56,8 @@ public class RoadAndRiverConnectorTest {
 
         // Road from [1,0] EAST to [2,0] WEST
         roadConnections.add(RoadConnection.builder()
-            .fromGrid(HexVector2.builder().q(1).r(0).build())
-            .toGrid(HexVector2.builder().q(2).r(0).build())
-            .fromSide(SIDE.EAST)
-            .toSide(SIDE.WEST)
+            .fromPointId("point-" +HexVector2.builder().q(1).r(0).build())
+            .toPointId("point-" +HexVector2.builder().q(2).r(0).build())
             .width(4)
             .level(95)
             .type("street")
@@ -113,10 +109,8 @@ public class RoadAndRiverConnectorTest {
         // Define river connection from [0,0] SOUTH_EAST to [0,1] NORTH_WEST
         List<RiverConnection> riverConnections = new ArrayList<>();
         riverConnections.add(RiverConnection.builder()
-            .fromGrid(HexVector2.builder().q(0).r(0).build())
-            .toGrid(HexVector2.builder().q(0).r(1).build())
-            .fromSide(SIDE.SOUTH_EAST)
-            .toSide(SIDE.NORTH_WEST)
+            .fromPointId("point-" +HexVector2.builder().q(0).r(0).build())
+            .toPointId("point-" +HexVector2.builder().q(0).r(1).build())
             .width(5)
             .depth(2)
             .level(45)
@@ -152,12 +146,12 @@ public class RoadAndRiverConnectorTest {
     public void testOppositeSideCalculation() {
         log.info("=== Testing Opposite Side Calculation ===");
 
-        assertEquals(SIDE.SOUTH_WEST, RoadAndRiverConnector.getOppositeSide(SIDE.NORTH_EAST));
-        assertEquals(SIDE.WEST, RoadAndRiverConnector.getOppositeSide(SIDE.EAST));
-        assertEquals(SIDE.NORTH_WEST, RoadAndRiverConnector.getOppositeSide(SIDE.SOUTH_EAST));
-        assertEquals(SIDE.NORTH_EAST, RoadAndRiverConnector.getOppositeSide(SIDE.SOUTH_WEST));
-        assertEquals(SIDE.EAST, RoadAndRiverConnector.getOppositeSide(SIDE.WEST));
-        assertEquals(SIDE.SOUTH_EAST, RoadAndRiverConnector.getOppositeSide(SIDE.NORTH_WEST));
+        assertEquals(EDGE.SOUTH_WEST, RoadAndRiverConnector.getOppositeSide(EDGE.NORTH_EAST));
+        assertEquals(EDGE.WEST, RoadAndRiverConnector.getOppositeSide(EDGE.EAST));
+        assertEquals(EDGE.NORTH_WEST, RoadAndRiverConnector.getOppositeSide(EDGE.SOUTH_EAST));
+        assertEquals(EDGE.NORTH_EAST, RoadAndRiverConnector.getOppositeSide(EDGE.SOUTH_WEST));
+        assertEquals(EDGE.EAST, RoadAndRiverConnector.getOppositeSide(EDGE.WEST));
+        assertEquals(EDGE.SOUTH_EAST, RoadAndRiverConnector.getOppositeSide(EDGE.NORTH_WEST));
 
         log.info("All opposite side calculations correct");
     }
@@ -168,27 +162,27 @@ public class RoadAndRiverConnectorTest {
 
         HexVector2 center = HexVector2.builder().q(0).r(0).build();
 
-        HexVector2 ne = RoadAndRiverConnector.getNeighborCoordinate(center, SIDE.NORTH_EAST);
+        HexVector2 ne = RoadAndRiverConnector.getNeighborCoordinate(center, EDGE.NORTH_EAST);
         assertEquals(1, ne.getQ());
         assertEquals(-1, ne.getR());
 
-        HexVector2 e = RoadAndRiverConnector.getNeighborCoordinate(center, SIDE.EAST);
+        HexVector2 e = RoadAndRiverConnector.getNeighborCoordinate(center, EDGE.EAST);
         assertEquals(1, e.getQ());
         assertEquals(0, e.getR());
 
-        HexVector2 se = RoadAndRiverConnector.getNeighborCoordinate(center, SIDE.SOUTH_EAST);
+        HexVector2 se = RoadAndRiverConnector.getNeighborCoordinate(center, EDGE.SOUTH_EAST);
         assertEquals(0, se.getQ());
         assertEquals(1, se.getR());
 
-        HexVector2 sw = RoadAndRiverConnector.getNeighborCoordinate(center, SIDE.SOUTH_WEST);
+        HexVector2 sw = RoadAndRiverConnector.getNeighborCoordinate(center, EDGE.SOUTH_WEST);
         assertEquals(-1, sw.getQ());
         assertEquals(1, sw.getR());
 
-        HexVector2 w = RoadAndRiverConnector.getNeighborCoordinate(center, SIDE.WEST);
+        HexVector2 w = RoadAndRiverConnector.getNeighborCoordinate(center, EDGE.WEST);
         assertEquals(-1, w.getQ());
         assertEquals(0, w.getR());
 
-        HexVector2 nw = RoadAndRiverConnector.getNeighborCoordinate(center, SIDE.NORTH_WEST);
+        HexVector2 nw = RoadAndRiverConnector.getNeighborCoordinate(center, EDGE.NORTH_WEST);
         assertEquals(0, nw.getQ());
         assertEquals(-1, nw.getR());
 
@@ -201,17 +195,17 @@ public class RoadAndRiverConnectorTest {
 
         HexVector2 center = HexVector2.builder().q(0).r(0).build();
 
-        assertEquals(SIDE.NORTH_EAST,
+        assertEquals(EDGE.NORTH_EAST,
             RoadAndRiverConnector.determineSide(center, HexVector2.builder().q(1).r(-1).build()));
-        assertEquals(SIDE.EAST,
+        assertEquals(EDGE.EAST,
             RoadAndRiverConnector.determineSide(center, HexVector2.builder().q(1).r(0).build()));
-        assertEquals(SIDE.SOUTH_EAST,
+        assertEquals(EDGE.SOUTH_EAST,
             RoadAndRiverConnector.determineSide(center, HexVector2.builder().q(0).r(1).build()));
-        assertEquals(SIDE.SOUTH_WEST,
+        assertEquals(EDGE.SOUTH_WEST,
             RoadAndRiverConnector.determineSide(center, HexVector2.builder().q(-1).r(1).build()));
-        assertEquals(SIDE.WEST,
+        assertEquals(EDGE.WEST,
             RoadAndRiverConnector.determineSide(center, HexVector2.builder().q(-1).r(0).build()));
-        assertEquals(SIDE.NORTH_WEST,
+        assertEquals(EDGE.NORTH_WEST,
             RoadAndRiverConnector.determineSide(center, HexVector2.builder().q(0).r(-1).build()));
 
         log.info("All side determinations correct");
@@ -232,23 +226,23 @@ public class RoadAndRiverConnectorTest {
         // Create roads from center to all 4 directions
         // Center [0,0] NORTH_WEST to [0,-1] SOUTH_EAST
         roadConnections.add(createRoadConnection(
-            HexVector2.builder().q(0).r(0).build(), SIDE.NORTH_WEST,
-            HexVector2.builder().q(0).r(-1).build(), SIDE.SOUTH_EAST));
+            HexVector2.builder().q(0).r(0).build(), EDGE.NORTH_WEST,
+            HexVector2.builder().q(0).r(-1).build(), EDGE.SOUTH_EAST));
 
         // Center [0,0] WEST to [-1,0] EAST
         roadConnections.add(createRoadConnection(
-            HexVector2.builder().q(0).r(0).build(), SIDE.WEST,
-            HexVector2.builder().q(-1).r(0).build(), SIDE.EAST));
+            HexVector2.builder().q(0).r(0).build(), EDGE.WEST,
+            HexVector2.builder().q(-1).r(0).build(), EDGE.EAST));
 
         // Center [0,0] EAST to [1,0] WEST
         roadConnections.add(createRoadConnection(
-            HexVector2.builder().q(0).r(0).build(), SIDE.EAST,
-            HexVector2.builder().q(1).r(0).build(), SIDE.WEST));
+            HexVector2.builder().q(0).r(0).build(), EDGE.EAST,
+            HexVector2.builder().q(1).r(0).build(), EDGE.WEST));
 
         // Center [0,0] SOUTH_EAST to [0,1] NORTH_WEST
         roadConnections.add(createRoadConnection(
-            HexVector2.builder().q(0).r(0).build(), SIDE.SOUTH_EAST,
-            HexVector2.builder().q(0).r(1).build(), SIDE.NORTH_WEST));
+            HexVector2.builder().q(0).r(0).build(), EDGE.SOUTH_EAST,
+            HexVector2.builder().q(0).r(1).build(), EDGE.NORTH_WEST));
 
         // Apply connections
         RoadAndRiverConnector connector = new RoadAndRiverConnector();
@@ -363,13 +357,11 @@ public class RoadAndRiverConnectorTest {
     /**
      * Creates a road connection helper
      */
-    private RoadConnection createRoadConnection(HexVector2 from, SIDE fromSide,
-                                                HexVector2 to, SIDE toSide) {
+    private RoadConnection createRoadConnection(HexVector2 from, EDGE fromSide,
+                                                HexVector2 to, EDGE toSide) {
         return RoadConnection.builder()
-            .fromGrid(from)
-            .toGrid(to)
-            .fromSide(fromSide)
-            .toSide(toSide)
+            .fromPointId("point-" +from)
+            .toPointId("point-" +to)
             .width(4)
             .level(95)
             .type("street")

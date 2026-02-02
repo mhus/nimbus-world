@@ -83,7 +83,7 @@ public class PointComposerTest {
         plains.initialize();
 
         // Create point at edge
-        Point edgePoint = new Point();
+        PositionPoint edgePoint = new PositionPoint();
         edgePoint.setName("edge-marker");
         edgePoint.setFeatureId("edge-marker");
         edgePoint.setStatus(FeatureStatus.NEW);
@@ -157,7 +157,7 @@ public class PointComposerTest {
         forest.initialize();
 
         // Create point that avoids forest
-        Point point = new Point();
+        PositionPoint point = new PositionPoint();
         point.setName("avoid-forest-point");
         point.setFeatureId("avoid-forest-point");
         point.setStatus(FeatureStatus.NEW);
@@ -267,7 +267,7 @@ public class PointComposerTest {
         features.add(coast);
 
         // Point: Minas Tirith
-        Point minasTirith = new Point();
+        PositionPoint minasTirith = new PositionPoint();
         minasTirith.setName("minas-tirith");
         minasTirith.setFeatureId("minas-tirith");
         minasTirith.setStatus(FeatureStatus.NEW);
@@ -280,7 +280,7 @@ public class PointComposerTest {
         features.add(minasTirith);
 
         // Point: Coastal Lighthouse
-        Point lighthouse = new Point();
+        PositionPoint lighthouse = new PositionPoint();
         lighthouse.setName("coastal-lighthouse");
         lighthouse.setFeatureId("coastal-lighthouse");
         lighthouse.setStatus(FeatureStatus.NEW);

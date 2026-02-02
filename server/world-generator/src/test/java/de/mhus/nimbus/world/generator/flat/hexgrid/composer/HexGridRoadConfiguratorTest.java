@@ -2,6 +2,7 @@ package de.mhus.nimbus.world.generator.flat.hexgrid.composer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.generated.types.HexVector2;
+import de.mhus.nimbus.world.shared.world.WHexGrid;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 
@@ -65,8 +66,8 @@ public class HexGridRoadConfiguratorTest {
 
         FlowSegment segment = FlowSegment.builder()
             .flowType(FlowType.ROAD)
-            .fromSide(de.mhus.nimbus.world.shared.world.WHexGrid.SIDE.WEST)
-            .toSide(de.mhus.nimbus.world.shared.world.WHexGrid.SIDE.EAST)
+            .fromSide(WHexGrid.EDGE.WEST)
+            .toSide(WHexGrid.EDGE.EAST)
             .width(3)
             .level(95)
             .type("street")
@@ -188,8 +189,8 @@ public class HexGridRoadConfiguratorTest {
 
         FlowSegment segment = FlowSegment.builder()
             .flowType(FlowType.RIVER)
-            .fromSide(de.mhus.nimbus.world.shared.world.WHexGrid.SIDE.NORTH_WEST)
-            .toSide(de.mhus.nimbus.world.shared.world.WHexGrid.SIDE.SOUTH_WEST)
+            .fromSide(WHexGrid.EDGE.NORTH_WEST)
+            .toSide(WHexGrid.EDGE.SOUTH_WEST)
             .width(5)
             .depth(2)
             .level(50)

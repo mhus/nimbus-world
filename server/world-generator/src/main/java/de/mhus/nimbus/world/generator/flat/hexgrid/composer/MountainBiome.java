@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.shared.utils.TypeUtil;
-import de.mhus.nimbus.world.shared.world.WHexGrid.SIDE;
+import de.mhus.nimbus.world.shared.world.WHexGrid.EDGE;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
@@ -210,15 +210,15 @@ public class MountainBiome extends Biome {
      * Hex directions: 0=N(top), 1=NE(top-right), 2=E(right), 3=S(bottom), 4=SW(bottom-left), 5=W(left)
      * SIDE values: NORTH_EAST, EAST, SOUTH_EAST, SOUTH_WEST, WEST, NORTH_WEST (6 sides of hexagon)
      */
-    private SIDE getDirectionSide(int direction) {
+    private EDGE getDirectionSide(int direction) {
         return switch (direction % 6) {
-            case 0 -> SIDE.NORTH_WEST;  // N (top) -> NORTH_WEST side
-            case 1 -> SIDE.NORTH_EAST;  // NE (top-right)
-            case 2 -> SIDE.EAST;        // E (right)
-            case 3 -> SIDE.SOUTH_EAST;  // S (bottom) -> SOUTH_EAST side
-            case 4 -> SIDE.SOUTH_WEST;  // SW (bottom-left)
-            case 5 -> SIDE.WEST;        // W (left)
-            default -> SIDE.NORTH_EAST;
+            case 0 -> EDGE.NORTH_WEST;  // N (top) -> NORTH_WEST side
+            case 1 -> EDGE.NORTH_EAST;  // NE (top-right)
+            case 2 -> EDGE.EAST;        // E (right)
+            case 3 -> EDGE.SOUTH_EAST;  // S (bottom) -> SOUTH_EAST side
+            case 4 -> EDGE.SOUTH_WEST;  // SW (bottom-left)
+            case 5 -> EDGE.WEST;        // W (left)
+            default -> EDGE.NORTH_EAST;
         };
     }
 }

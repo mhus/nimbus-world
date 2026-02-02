@@ -58,11 +58,29 @@
       }
     },
     {
+      "featureType": "point",
+      "name": "river-source",
+      "title": "Mountain River Source",
+      "snap": {
+        "mode": "INSIDE",
+        "target": "central-mountains"
+      }
+    },
+    {
+      "featureType": "point",
+      "name": "river-mouth",
+      "title": "River Mouth",
+      "snap": {
+        "mode": "INSIDE",
+        "target": "west-region"
+      }
+    },
+    {
       "featureType": "river",
       "name": "anduin-great-river",
       "type": "RIVER",
-      "startPointId": "central-mountains",
-      "mergeToId": "west-region",
+      "startPointId": "river-source",
+      "endPointId": "river-mouth",
       "depth": 4,
       "level": 60,
       "widthBlocks": 10,

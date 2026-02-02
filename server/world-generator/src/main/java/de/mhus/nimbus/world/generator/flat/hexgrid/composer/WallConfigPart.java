@@ -1,6 +1,6 @@
 package de.mhus.nimbus.world.generator.flat.hexgrid.composer;
 
-import de.mhus.nimbus.world.shared.world.WHexGrid.SIDE;
+import de.mhus.nimbus.world.shared.world.WHexGrid.EDGE;
 import lombok.Builder;
 import lombok.Data;
 
@@ -23,7 +23,7 @@ public class WallConfigPart {
     private PartType partType;
 
     // SIDE fields - either side-based OR position-based
-    private SIDE side;           // Side-based wall (NE, NW, etc.)
+    private EDGE side;           // Side-based wall (NE, NW, etc.)
     private Integer lx;          // Position-based wall x
     private Integer lz;          // Position-based wall z
     private Integer height;
@@ -32,15 +32,15 @@ public class WallConfigPart {
     private String material;
 
     // GATE fields
-    private SIDE gateSide;
+    private EDGE gateSide;
     private Integer gatePosition;
     private Integer gateWidth;
 
     /**
      * Creates a SIDE part for wall segment
      */
-    public static WallConfigPart createSidePart(SIDE side, Integer height, Integer width,
-                                                  Integer level, String material) {
+    public static WallConfigPart createSidePart(EDGE side, Integer height, Integer width,
+                                                Integer level, String material) {
         return WallConfigPart.builder()
             .partType(PartType.SIDE)
             .side(side)
@@ -70,7 +70,7 @@ public class WallConfigPart {
     /**
      * Creates a GATE part for opening in wall
      */
-    public static WallConfigPart createGatePart(SIDE side, Integer position, Integer width) {
+    public static WallConfigPart createGatePart(EDGE side, Integer position, Integer width) {
         return WallConfigPart.builder()
             .partType(PartType.GATE)
             .gateSide(side)

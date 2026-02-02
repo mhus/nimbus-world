@@ -55,7 +55,7 @@ public class WorkflowService {
         String workflowId = UUID.randomUUID().toString();
 
         try {
-            Map<String,String> parameters = workflow.initialize(worldId, params != null ? params : new HashMap<>());
+            Map<String,Object> parameters = workflow.initialize(worldId, params != null ? params : new HashMap<>());
 
             // Create initial status entry
             journalService.addWorkflowJournalRecord(worldId, workflowId, new StartRecord(workflowName));

@@ -15,26 +15,30 @@ import java.util.Map;
 
 /**
  * RiverBuilder manipulator builder.
- * Creates rivers through hex grids from one side to another.
+ * Creates rivers through hex grids from one position to another.
  * Rivers carve through the terrain with configurable width and depth.
  * Uses FastNoiseLite to create natural, curved river paths.
  * <p>
  * Parameter format in HexGrid:
  * river={
  *   from: [{
- *     side: "NE",
+ *     position: "<NE2/4>",
  *     width: 3,
  *     depth: 2,
  *     level: 40
  *   }],
  *   to: [{
- *     side: "SW",
+ *     position: "<SW2/4>",
  *     width: 5,
  *     depth: 2,
  *     level: 42
  *   }],
  *   groupId: "river-1234"
  * }
+ * <p>
+ * Position format (HexLocal):
+ * - Edge positions: "<NE2/4>", "<SW1/3>" - position on hex edge (North to South)
+ * - Inner positions: "<0;0>", "<1;-1>" - position within hex grid
  * <p>
  * Optional parameters:
  * - riverCurvature: Maximum lateral offset for river curves in pixels (default: 30)
@@ -114,23 +118,16 @@ public class RiverBuilder extends HexGridBuilder {
 
     /**
      * Parse a single endpoint from JSON node.
-     * Supports either side-based (side) or position-based (lx/lz) endpoints.
+     * Position must be in HexLocal format: "<NE2/4>" for edge or "<0;0>" for position.
      */
     private RiverEndpoint parseEndpoint(JsonNode node) {
         RiverEndpoint endpoint = new RiverEndpoint();
 
-        // Parse side-based endpoint
-        if (node.has("side")) {
-            endpoint.setSide(parseSide(node.get("side").asText()));
+        // Parse position (required)
+        if (!node.has("position")) {
+            throw new IllegalArgumentException("River endpoint must have 'position' field in HexLocal format (e.g., '<NE2/4>' or '<0;0>')");
         }
-
-        // Parse position-based endpoint
-        if (node.has("lx")) {
-            endpoint.setLx(node.get("lx").asInt());
-        }
-        if (node.has("lz")) {
-            endpoint.setLz(node.get("lz").asInt());
-        }
+        endpoint.setPosition(node.get("position").asText());
 
         // Parse common fields
         endpoint.setWidth(node.get("width").asInt());
@@ -141,45 +138,11 @@ public class RiverBuilder extends HexGridBuilder {
     }
 
     /**
-     * Parse side string to SIDE enum.
-     */
-    private WHexGrid.SIDE parseSide(String sideStr) {
-        switch (sideStr.toUpperCase()) {
-            case "NW":
-            case "NORTH_WEST":
-                return WHexGrid.SIDE.NORTH_WEST;
-            case "NE":
-            case "NORTH_EAST":
-                return WHexGrid.SIDE.NORTH_EAST;
-            case "E":
-            case "EAST":
-                return WHexGrid.SIDE.EAST;
-            case "SE":
-            case "SOUTH_EAST":
-                return WHexGrid.SIDE.SOUTH_EAST;
-            case "SW":
-            case "SOUTH_WEST":
-                return WHexGrid.SIDE.SOUTH_WEST;
-            case "W":
-            case "WEST":
-                return WHexGrid.SIDE.WEST;
-            default:
-                throw new IllegalArgumentException("Unknown side: " + sideStr);
-        }
-    }
-
-    /**
      * Build a river from one endpoint to another with natural curves.
      */
     private void buildRiver(WFlat flat, RiverEndpoint from, RiverEndpoint to, String groupId) {
         // Log endpoint info
-        String fromDesc = from.hasCoordinates() ?
-            String.format("lx=%d,lz=%d", from.getLx(), from.getLz()) :
-            String.format("side=%s", from.getSide());
-        String toDesc = to.hasCoordinates() ?
-            String.format("lx=%d,lz=%d", to.getLx(), to.getLz()) :
-            String.format("side=%s", to.getSide());
-        log.debug("Building river from {} to {}", fromDesc, toDesc);
+        log.debug("Building river from {} to {}", from.getPosition(), to.getPosition());
 
         // Get curvature parameter
         int curvature = parseIntParameter(parameters, "riverCurvature", DEFAULT_CURVATURE);
@@ -272,36 +235,29 @@ public class RiverBuilder extends HexGridBuilder {
     /**
      * Get endpoint coordinate - either from side or from lx/lz.
      */
-    private int[] getEndpointCoordinate(RiverEndpoint endpoint, int sizeX, int sizeZ) {
-        if (endpoint.hasCoordinates()) {
-            // Use exact lx/lz coordinates
-            return new int[]{endpoint.getLx(), endpoint.getLz()};
-        } else {
-            // Use side-based coordinate
-            return getSideCoordinate(endpoint.getSide(), sizeX, sizeZ);
-        }
-    }
-
     /**
-     * Get the center coordinate of a side.
+     * Get absolute WFlat coordinates from HexLocal position string.
+     * Uses HexLocalUtil to parse the position and convert to absolute coordinates.
+     *
+     * @param endpoint the river endpoint with position in HexLocal format
+     * @param sizeX WFlat width
+     * @param sizeZ WFlat height
+     * @return absolute coordinates [lx, lz] in WFlat coordinate system
      */
-    private int[] getSideCoordinate(WHexGrid.SIDE side, int sizeX, int sizeZ) {
-        switch (side) {
-            case NORTH_WEST:
-                return new int[]{sizeX / 4, 0};
-            case NORTH_EAST:
-                return new int[]{3 * sizeX / 4, 0};
-            case EAST:
-                return new int[]{sizeX - 1, sizeZ / 2};
-            case SOUTH_EAST:
-                return new int[]{3 * sizeX / 4, sizeZ - 1};
-            case SOUTH_WEST:
-                return new int[]{sizeX / 4, sizeZ - 1};
-            case WEST:
-                return new int[]{0, sizeZ / 2};
-            default:
-                return new int[]{sizeX / 2, sizeZ / 2};
-        }
+    private int[] getEndpointCoordinate(RiverEndpoint endpoint, int sizeX, int sizeZ) {
+        // Assume hexGridSize equals WFlat size (standard case)
+        int hexGridSize = sizeX;  // or could use Math.max(sizeX, sizeZ)
+
+        // Parse position string and get relative coordinates
+        de.mhus.nimbus.generated.types.Vector2Int relativePos =
+            de.mhus.nimbus.world.shared.util.HexLocalUtil.toHexgridLocalCenter(
+                endpoint.getPosition(), hexGridSize);
+
+        // Convert to absolute WFlat coordinates
+        int lx = sizeX / 2 + relativePos.getX();
+        int lz = sizeZ / 2 + relativePos.getZ();
+
+        return new int[]{lx, lz};
     }
 
     /**
@@ -451,7 +407,7 @@ public class RiverBuilder extends HexGridBuilder {
     }
 
     @Override
-    public int getLandSideLevel(WHexGrid.SIDE side) {
+    public int getLandSideLevel(WHexGrid.EDGE side) {
         return getLandCenterLevel();
     }
 
@@ -471,18 +427,9 @@ public class RiverBuilder extends HexGridBuilder {
      */
     @Data
     private static class RiverEndpoint {
-        private WHexGrid.SIDE side;  // Side-based endpoint (NE, NW, etc.)
-        private Integer lx;           // Position-based endpoint x (alternative to side)
-        private Integer lz;           // Position-based endpoint z (alternative to side)
+        private String position;  // HexLocal format: "<NE2/4>" for edge or "<0;0>" for position
         private int width;
         private int depth;
         private int level;
-
-        /**
-         * Returns true if this endpoint uses position coordinates instead of side
-         */
-        public boolean hasCoordinates() {
-            return lx != null && lz != null;
-        }
     }
 }

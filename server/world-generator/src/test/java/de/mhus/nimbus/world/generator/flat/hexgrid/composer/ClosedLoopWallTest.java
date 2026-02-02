@@ -106,7 +106,7 @@ public class ClosedLoopWallTest {
         features.add(plains);
 
         // Point: City center
-        Point city = new Point();
+        PositionPoint city = new PositionPoint();
         city.setName("city-center");
         city.setFeatureId("city-center");
         city.setStatus(FeatureStatus.NEW);
@@ -180,7 +180,7 @@ public class ClosedLoopWallTest {
         features.add(plains);
 
         // Point: City center
-        Point city = new Point();
+        PositionPoint city = new PositionPoint();
         city.setName("city-center");
         city.setFeatureId("city-center");
         city.setStatus(FeatureStatus.NEW);

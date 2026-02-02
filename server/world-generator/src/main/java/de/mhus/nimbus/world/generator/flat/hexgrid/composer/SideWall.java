@@ -45,7 +45,7 @@ public class SideWall extends Flow {
      * Which sides of the target should have walls.
      * If null or empty, all sides will have walls.
      */
-    private List<WHexGrid.SIDE> sides;
+    private List<WHexGrid.EDGE> sides;
 
     /**
      * Distance from the biome edge where the wall should be placed.
@@ -95,6 +95,8 @@ public class SideWall extends Flow {
      * Default: false
      */
     private Boolean respectRiver;
+
+    // Note: SideWall uses Flow.Composed (no SideWall-specific calculated fields yet)
 
     public static SideWallBuilder builder() {
         return new SideWallBuilder();

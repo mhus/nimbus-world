@@ -3,23 +3,24 @@ package de.mhus.nimbus.world.generator.flat.hexgrid.composer;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import de.mhus.nimbus.generated.types.HexVector2;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 
 import java.util.List;
 import java.util.Map;
 
 @Data
-@Builder
+@SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(callSuper = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class River extends Flow {
-    private List<String> waypointIds;
-    private String mergeToId;
+    // Note: waypointIds, startPointId, and endPointId are inherited from Flow
+    // For rivers, endPointId can be a merge point where rivers join
+
     private Integer depth;
     private Integer level;
 
@@ -30,9 +31,7 @@ public class River extends Flow {
      */
     private Boolean force;
 
-    public static RiverBuilder builder() {
-        return new RiverBuilder();
-    }
+    // Note: River uses Flow.Composed (no River-specific calculated fields yet)
 
     /**
      * Applies river-specific default configuration from FlowType.RIVER

@@ -1,6 +1,6 @@
 package de.mhus.nimbus.world.generator.flat.hexgrid.composer;
 
-import de.mhus.nimbus.world.shared.world.WHexGrid.SIDE;
+import de.mhus.nimbus.world.shared.world.WHexGrid.EDGE;
 import lombok.Builder;
 import lombok.Data;
 
@@ -30,7 +30,7 @@ public class RoadConfigPart {
     private String plazaMaterial;
 
     // ROUTE fields - either side-based OR position-based
-    private SIDE side;           // Side-based route (NE, NW, etc.)
+    private EDGE side;           // Side-based route (NE, NW, etc.)
     private Integer routeLx;     // Position-based route x
     private Integer routeLz;     // Position-based route z
     private Integer width;
@@ -55,7 +55,7 @@ public class RoadConfigPart {
     /**
      * Creates a ROUTE part for side-based routing (from Flow)
      */
-    public static RoadConfigPart createRouteSidePart(SIDE side, Integer width, Integer level, String type) {
+    public static RoadConfigPart createRouteSidePart(EDGE side, Integer width, Integer level, String type) {
         return RoadConfigPart.builder()
             .partType(PartType.ROUTE)
             .side(side)

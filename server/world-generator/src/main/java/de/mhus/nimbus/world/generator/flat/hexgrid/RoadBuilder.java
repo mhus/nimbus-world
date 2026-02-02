@@ -14,28 +14,26 @@ import java.util.Map;
 
 /**
  * RoadBuilder manipulator builder.
- * Creates roads from hex grid sides or positions to the center where they all meet.
+ * Creates roads from positions to the center where they all meet.
  * Roads can be streets or trails with transitions to grass.
  * Uses sinusoidal curves for natural, slightly curved roads.
  * Builds bridges when crossing rivers.
  * <p>
  * Parameter format in HexGrid:
  * road={
- *   lx: 130,
- *   lz: 130,
+ *   position: "<0;0>",
  *   level: 95,
  *   plazaSize: 30,
  *   plazaMaterial: "street",
  *   route: [
  *     {
- *       side: "NE",
+ *       position: "<NE2/4>",
  *       width: 3,
  *       level: 50,
  *       type: "street"
  *     },
  *     {
- *       lx: 80,
- *       lz: 40,
+ *       position: "<1;-1>",
  *       width: 4,
  *       level: 55,
  *       type: "street"
@@ -43,8 +41,12 @@ import java.util.Map;
  *   ]
  * }
  * <p>
+ * Position format (HexLocal):
+ * - Edge positions: "<NE2/4>", "<SW1/3>" - position on hex edge (North to South)
+ * - Inner positions: "<0;0>", "<1;-1>" - position within hex grid
+ * <p>
  * Optional parameters:
- * - lx, lz: Center position (default: flat center)
+ * - position: Center position (default: flat center)
  * - level: Center level (default: 0)
  * - roadCurvature: Maximum lateral offset for road curves in pixels (default: 10)
  * - roadWaves: Number of sine wave cycles along the road (default: 1.5)
@@ -79,9 +81,18 @@ public class RoadBuilder extends HexGridBuilder {
             // Parse road configuration
             RoadConfiguration config = parseRoadConfiguration(roadParam);
 
-            // Determine center position (use absolute position or default to flat center)
-            int centerX = config.getCenter().getLx() >= 0 ? config.getCenter().getLx() : flat.getSizeX() / 2;
-            int centerZ = config.getCenter().getLz() >= 0 ? config.getCenter().getLz() : flat.getSizeZ() / 2;
+            // Determine center position (use position string or default to flat center)
+            int centerX, centerZ;
+            if (config.getCenter().getPosition() != null) {
+                int[] centerCoords = getAbsoluteCoordinates(config.getCenter().getPosition(),
+                    flat.getSizeX(), flat.getSizeZ());
+                centerX = centerCoords[0];
+                centerZ = centerCoords[1];
+            } else {
+                // Default to flat center
+                centerX = flat.getSizeX() / 2;
+                centerZ = flat.getSizeZ() / 2;
+            }
             int centerLevel = config.getCenter().getLevel();
 
             log.debug("Parsed {} roads with center at ({}, {})",
@@ -114,8 +125,7 @@ public class RoadBuilder extends HexGridBuilder {
 
         // Parse center properties (optional, defaults to flat center)
         CenterDefinition center = new CenterDefinition();
-        center.setLx(root.has("lx") ? root.get("lx").asInt() : -1);  // -1 means use flat center
-        center.setLz(root.has("lz") ? root.get("lz").asInt() : -1);
+        center.setPosition(root.has("position") ? root.get("position").asText() : null);  // null means use flat center
         center.setLevel(root.has("level") ? root.get("level").asInt() : 0);
         center.setPlazaSize(root.has("plazaSize") ? root.get("plazaSize").asInt() : 0);
         center.setPlazaMaterial(root.has("plazaMaterial") ? root.get("plazaMaterial").asText() : null);
@@ -127,15 +137,11 @@ public class RoadBuilder extends HexGridBuilder {
             for (JsonNode roadNode : root.get("route")) {
                 Road road = new Road();
 
-                // Check if road has 'side' or 'lx'/'lz'
-                if (roadNode.has("side")) {
-                    // Start from hex grid side
-                    road.setSide(parseSide(roadNode.get("side").asText()));
-                } else if (roadNode.has("lx") && roadNode.has("lz")) {
-                    // Start from absolute position
-                    road.setPositionX(roadNode.get("lx").asInt());
-                    road.setPositionZ(roadNode.get("lz").asInt());
+                // Position is required in HexLocal format
+                if (!roadNode.has("position")) {
+                    throw new IllegalArgumentException("Road route must have 'position' field in HexLocal format (e.g., '<NE2/4>' or '<0;0>')");
                 }
+                road.setPosition(roadNode.get("position").asText());
 
                 road.setWidth(roadNode.get("width").asInt());
                 road.setLevel(roadNode.get("level").asInt());
@@ -149,55 +155,16 @@ public class RoadBuilder extends HexGridBuilder {
     }
 
     /**
-     * Parse side string to SIDE enum.
-     */
-    private WHexGrid.SIDE parseSide(String sideStr) {
-        switch (sideStr.toUpperCase()) {
-            case "NW":
-            case "NORTH_WEST":
-                return WHexGrid.SIDE.NORTH_WEST;
-            case "NE":
-            case "NORTH_EAST":
-                return WHexGrid.SIDE.NORTH_EAST;
-            case "E":
-            case "EAST":
-                return WHexGrid.SIDE.EAST;
-            case "SE":
-            case "SOUTH_EAST":
-                return WHexGrid.SIDE.SOUTH_EAST;
-            case "SW":
-            case "SOUTH_WEST":
-                return WHexGrid.SIDE.SOUTH_WEST;
-            case "W":
-            case "WEST":
-                return WHexGrid.SIDE.WEST;
-            default:
-                throw new IllegalArgumentException("Unknown side: " + sideStr);
-        }
-    }
-
-    /**
-     * Build a road from a side or position to the center of the hex grid with slight curves.
+     * Build a road from a position to the center of the hex grid with slight curves.
      */
     private void buildRoadToCenter(WFlat flat, Road road, int centerX, int centerZ, int centerLevel) {
         // Get curvature parameters
         int curvature = parseIntParameter(parameters, "roadCurvature", DEFAULT_CURVATURE);
         double waves = parseDoubleParameter(parameters, "roadWaves", DEFAULT_WAVES);
 
-        // Get start coordinates (either from side or position)
-        int[] startCoords;
-        if (road.getSide() != null) {
-            // Start from hex grid side
-            startCoords = getSideCoordinate(road.getSide(), flat.getSizeX(), flat.getSizeZ());
-            log.debug("Building road from side {} to center", road.getSide());
-        } else if (road.getPositionX() != null && road.getPositionZ() != null) {
-            // Start from absolute position
-            startCoords = new int[]{road.getPositionX(), road.getPositionZ()};
-            log.debug("Building road from position ({}, {}) to center", road.getPositionX(), road.getPositionZ());
-        } else {
-            log.warn("Road has neither side nor position defined, skipping");
-            return;
-        }
+        // Get start coordinates from position string
+        int[] startCoords = getAbsoluteCoordinates(road.getPosition(), flat.getSizeX(), flat.getSizeZ());
+        log.debug("Building road from {} to center", road.getPosition());
 
         // Calculate road path from start to center
         int dx = centerX - startCoords[0];
@@ -284,23 +251,28 @@ public class RoadBuilder extends HexGridBuilder {
     /**
      * Get the center coordinate of a side.
      */
-    private int[] getSideCoordinate(WHexGrid.SIDE side, int sizeX, int sizeZ) {
-        switch (side) {
-            case NORTH_WEST:
-                return new int[]{sizeX / 4, 0};
-            case NORTH_EAST:
-                return new int[]{3 * sizeX / 4, 0};
-            case EAST:
-                return new int[]{sizeX - 1, sizeZ / 2};
-            case SOUTH_EAST:
-                return new int[]{3 * sizeX / 4, sizeZ - 1};
-            case SOUTH_WEST:
-                return new int[]{sizeX / 4, sizeZ - 1};
-            case WEST:
-                return new int[]{0, sizeZ / 2};
-            default:
-                return new int[]{sizeX / 2, sizeZ / 2};
-        }
+    /**
+     * Get absolute WFlat coordinates from HexLocal position string.
+     * Uses HexLocalUtil to parse the position and convert to absolute coordinates.
+     *
+     * @param position the position in HexLocal format (e.g., "<NE2/4>" or "<0;0>")
+     * @param sizeX WFlat width
+     * @param sizeZ WFlat height
+     * @return absolute coordinates [lx, lz] in WFlat coordinate system
+     */
+    private int[] getAbsoluteCoordinates(String position, int sizeX, int sizeZ) {
+        // Assume hexGridSize equals WFlat size (standard case)
+        int hexGridSize = sizeX;  // or could use Math.max(sizeX, sizeZ)
+
+        // Parse position string and get relative coordinates
+        de.mhus.nimbus.generated.types.Vector2Int relativePos =
+            de.mhus.nimbus.world.shared.util.HexLocalUtil.toHexgridLocalCenter(position, hexGridSize);
+
+        // Convert to absolute WFlat coordinates
+        int lx = sizeX / 2 + relativePos.getX();
+        int lz = sizeZ / 2 + relativePos.getZ();
+
+        return new int[]{lx, lz};
     }
 
     /**
@@ -540,7 +512,7 @@ public class RoadBuilder extends HexGridBuilder {
     }
 
     @Override
-    public int getLandSideLevel(WHexGrid.SIDE side) {
+    public int getLandSideLevel(WHexGrid.EDGE side) {
         return getLandCenterLevel();
     }
 
@@ -550,21 +522,18 @@ public class RoadBuilder extends HexGridBuilder {
      */
     @Data
     private static class Road {
-        private WHexGrid.SIDE side;  // Optional: start from hex grid side
-        private Integer positionX;   // Optional: start from absolute position
-        private Integer positionZ;   // Optional: start from absolute position
+        private String position;  // HexLocal format: "<NE2/4>" for edge or "<0;0>" for position
         private int width;
         private int level;
         private String type;
     }
 
     /**
-     * Center definition with absolute local position, level and optional plaza.
+     * Center definition with position, level and optional plaza.
      */
     @Data
     private static class CenterDefinition {
-        private int lx;
-        private int lz;
+        private String position;  // HexLocal format: "<NE2/4>" for edge or "<0;0>" for position
         private int level;
         private int plazaSize;
         private String plazaMaterial;

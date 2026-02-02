@@ -2,18 +2,43 @@ package de.mhus.nimbus.world.generator.flat.hexgrid.composer;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import de.mhus.nimbus.generated.types.HexVector2;
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 
 import java.util.List;
 import java.util.Map;
 
 @Data
+@SuperBuilder
+@NoArgsConstructor
+@AllArgsConstructor
 @EqualsAndHashCode(callSuper = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public abstract class Flow extends Feature {
     private FlowType type;
+
+    /**
+     * ID of the starting Point feature.
+     * All flows must start at a Point (not a Biome).
+     */
     private String startPointId;
+
+    /**
+     * ID of the ending Point feature.
+     * All flows must end at a Point (not a Biome).
+     * For rivers, this can be a merge point where rivers join.
+     */
+    private String endPointId;
+
+    /**
+     * List of waypoint Point IDs that the flow should pass through.
+     * All waypoints must be Points (not Biomes).
+     */
+    private List<String> waypointIds;
+
     private FlowWidth width;
     private Integer widthBlocks;
     private Map<String, String> parameters;
@@ -29,25 +54,39 @@ public abstract class Flow extends Feature {
     private Integer sizeFrom;        // Explicit radius min (overrides size enum)
     private Integer sizeTo;          // Explicit radius max (overrides size enum)
 
-    // Calculated values (runtime, set during composition)
-    private Integer calculatedWidthBlocks;  // Resolved from width enum
-    private HexVector2 startPoint;          // Resolved coordinate
-    private HexVector2 endPoint;            // Resolved coordinate (Road/Wall) or merge point (River)
-    private List<HexVector2> waypoints;     // Resolved waypoints
-    private List<HexVector2> route;         // Calculated route from start to end
+    /**
+     * Composed data - calculated during composition phase at Flow level.
+     * Separates input configuration from runtime computed values.
+     */
+    private FlowComposed flowComposed;
 
     /**
-     * Reference to actual Point feature if startPointId refers to a Point (not a Biome).
-     * Used to extract lx/lz coordinates for flow connection.
+     * Inner class for flowComposed (calculated) data at Flow level.
+     * Stores values computed during composition, separate from user input.
      */
-    private Point startPointFeature;
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class FlowComposed {
+        private Integer calculatedWidthBlocks;  // Resolved from width enum
+        private HexVector2 startPoint;          // Resolved coordinate
+        private HexVector2 endPoint;            // Resolved coordinate (Road/Wall) or merge point (River)
+        private List<HexVector2> waypoints;     // Resolved waypoints
+        private List<HexVector2> route;         // Calculated route from start to end
 
-    /**
-     * Reference to actual Point feature if endPointId refers to a Point (not a Biome).
-     * Used to extract lx/lz coordinates for flow connection.
-     * Note: endPointId is defined in subclasses (Road, Wall) not in Flow base class.
-     */
-    private Point endPointFeature;
+        /**
+         * Reference to actual Point feature if startPointId refers to a Point (not a Biome).
+         * Used to extract lx/lz coordinates for flow connection.
+         */
+        private Point startPointFeature;
+
+        /**
+         * Reference to actual Point feature if endPointId refers to a Point (not a Biome).
+         * Used to extract lx/lz coordinates for flow connection.
+         * Note: endPointId is defined in subclasses (Road, Wall) not in Flow base class.
+         */
+        private Point endPointFeature;
+    }
 
     public int getEffectiveWidthBlocks() {
         return widthBlocks != null ? widthBlocks : (width != null ? width.getFrom() : 2);
@@ -111,8 +150,13 @@ public abstract class Flow extends Feature {
         // Apply defaults first (if not already applied)
         applyDefaults();
 
+        // Initialize flowComposed if needed
+        if (flowComposed == null) {
+            flowComposed = new FlowComposed();
+        }
+
         // Calculate width from enum or explicit value
-        calculatedWidthBlocks = getEffectiveWidthBlocks();
+        flowComposed.setCalculatedWidthBlocks(getEffectiveWidthBlocks());
     }
 
     /**
@@ -128,8 +172,13 @@ public abstract class Flow extends Feature {
             return;
         }
 
+        // Initialize flowComposed if needed
+        if (flowComposed == null) {
+            flowComposed = new FlowComposed();
+        }
+
         // Store route
-        this.route = coordinates;
+        flowComposed.setRoute(coordinates);
 
         // Clear existing configurations
         if (getHexGrids() != null) {
@@ -147,5 +196,84 @@ public abstract class Flow extends Feature {
             // Add to this feature
             addHexGrid(featureHexGrid);
         }
+    }
+
+    // Helper methods for backward compatibility
+
+    public Integer getCalculatedWidthBlocks() {
+        return flowComposed != null ? flowComposed.getCalculatedWidthBlocks() : null;
+    }
+
+    public void setCalculatedWidthBlocks(Integer calculatedWidthBlocks) {
+        if (flowComposed == null) {
+            flowComposed = new FlowComposed();
+        }
+        flowComposed.setCalculatedWidthBlocks(calculatedWidthBlocks);
+    }
+
+    public HexVector2 getStartPoint() {
+        return flowComposed != null ? flowComposed.getStartPoint() : null;
+    }
+
+    public void setStartPoint(HexVector2 startPoint) {
+        if (flowComposed == null) {
+            flowComposed = new FlowComposed();
+        }
+        flowComposed.setStartPoint(startPoint);
+    }
+
+    public HexVector2 getEndPoint() {
+        return flowComposed != null ? flowComposed.getEndPoint() : null;
+    }
+
+    public void setEndPoint(HexVector2 endPoint) {
+        if (flowComposed == null) {
+            flowComposed = new FlowComposed();
+        }
+        flowComposed.setEndPoint(endPoint);
+    }
+
+    public List<HexVector2> getWaypoints() {
+        return flowComposed != null ? flowComposed.getWaypoints() : null;
+    }
+
+    public void setWaypoints(List<HexVector2> waypoints) {
+        if (flowComposed == null) {
+            flowComposed = new FlowComposed();
+        }
+        flowComposed.setWaypoints(waypoints);
+    }
+
+    public List<HexVector2> getRoute() {
+        return flowComposed != null ? flowComposed.getRoute() : null;
+    }
+
+    public void setRoute(List<HexVector2> route) {
+        if (flowComposed == null) {
+            flowComposed = new FlowComposed();
+        }
+        flowComposed.setRoute(route);
+    }
+
+    public Point getStartPointFeature() {
+        return flowComposed != null ? flowComposed.getStartPointFeature() : null;
+    }
+
+    public void setStartPointFeature(Point startPointFeature) {
+        if (flowComposed == null) {
+            flowComposed = new FlowComposed();
+        }
+        flowComposed.setStartPointFeature(startPointFeature);
+    }
+
+    public Point getEndPointFeature() {
+        return flowComposed != null ? flowComposed.getEndPointFeature() : null;
+    }
+
+    public void setEndPointFeature(Point endPointFeature) {
+        if (flowComposed == null) {
+            flowComposed = new FlowComposed();
+        }
+        flowComposed.setEndPointFeature(endPointFeature);
     }
 }

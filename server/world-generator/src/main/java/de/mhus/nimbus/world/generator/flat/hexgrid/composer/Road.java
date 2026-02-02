@@ -3,29 +3,27 @@ package de.mhus.nimbus.world.generator.flat.hexgrid.composer;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import de.mhus.nimbus.generated.types.HexVector2;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 
 import java.util.List;
 import java.util.Map;
 
 @Data
-@Builder
+@SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(callSuper = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class Road extends Flow {
-    private List<String> waypointIds;
-    private String endPointId;
+    // Note: waypointIds, startPointId, and endPointId are inherited from Flow
+
     private String roadType;
     private Integer level;
 
-    public static RoadBuilder builder() {
-        return new RoadBuilder();
-    }
+    // Note: Road uses Flow.Composed (no Road-specific calculated fields yet)
 
     /**
      * Applies road-specific default configuration from FlowType.ROAD

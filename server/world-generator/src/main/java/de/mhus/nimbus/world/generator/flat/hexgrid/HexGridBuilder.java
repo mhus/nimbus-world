@@ -32,7 +32,7 @@ public abstract class HexGridBuilder {
     protected abstract int getDefaultLandOffset();
     protected abstract int getDefaultLandLevel();
 
-    public abstract int getLandSideLevel(WHexGrid.SIDE side);
+    public abstract int getLandSideLevel(WHexGrid.EDGE side);
 
     public int getLandCenterLevel() {
         return landLevel;

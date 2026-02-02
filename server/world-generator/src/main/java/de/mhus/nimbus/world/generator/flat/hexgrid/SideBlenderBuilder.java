@@ -38,8 +38,8 @@ public class SideBlenderBuilder extends HexGridBuilder {
         log.info("Blending sides for flat: {}", flat.getFlatId());
 
         // Note: parameters come from HexGridBuilderService which already strips the "g_" prefix
-        HashMap<WHexGrid.SIDE, String> sideFlats = new HashMap<>();
-        for (var side : WHexGrid.SIDE.values()) {
+        HashMap<WHexGrid.EDGE, String> sideFlats = new HashMap<>();
+        for (var side : WHexGrid.EDGE.values()) {
             String key = "side_flat_" + side.name().toLowerCase();
             String flatId = parameters.get(key);
             if (flatId != null) {
@@ -85,7 +85,7 @@ public class SideBlenderBuilder extends HexGridBuilder {
     }
 
     @Override
-    public int getLandSideLevel(WHexGrid.SIDE side) {
+    public int getLandSideLevel(WHexGrid.EDGE side) {
         // EdgeBlender uses the land level from the hex grid parameters
         // If not specified, use the center level
         return getLandCenterLevel();

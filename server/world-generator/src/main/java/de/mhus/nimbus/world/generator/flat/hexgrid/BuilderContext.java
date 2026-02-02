@@ -37,7 +37,7 @@ public class BuilderContext {
      * Key is the neighbor position.
      * Value is the loaded WHexGrid or null if neighbor doesn't exist.
      */
-    private final Map<WHexGrid.SIDE, WHexGrid> neighborGrids;
+    private final Map<WHexGrid.EDGE, WHexGrid> neighborGrids;
 
     private HexGridBuilderService builderService;
 
@@ -56,7 +56,7 @@ public class BuilderContext {
      */
     private final WChunkService chunkService;
 
-    public Optional<HexGridBuilder> getBuilderFor(WHexGrid.SIDE neighbor) {
+    public Optional<HexGridBuilder> getBuilderFor(WHexGrid.EDGE neighbor) {
         WHexGrid grid = neighborGrids.get(neighbor);
         if (grid == null) return Optional.empty();
         var ret = builderService.createBuilder(grid);

@@ -138,26 +138,26 @@ public class MountainBuilder extends HexGridBuilder {
     /**
      * Parse side string to SIDE enum.
      */
-    private WHexGrid.SIDE parseSide(String sideStr) {
+    private WHexGrid.EDGE parseSide(String sideStr) {
         switch (sideStr.toUpperCase()) {
             case "NW":
             case "NORTH_WEST":
-                return WHexGrid.SIDE.NORTH_WEST;
+                return WHexGrid.EDGE.NORTH_WEST;
             case "NE":
             case "NORTH_EAST":
-                return WHexGrid.SIDE.NORTH_EAST;
+                return WHexGrid.EDGE.NORTH_EAST;
             case "E":
             case "EAST":
-                return WHexGrid.SIDE.EAST;
+                return WHexGrid.EDGE.EAST;
             case "SE":
             case "SOUTH_EAST":
-                return WHexGrid.SIDE.SOUTH_EAST;
+                return WHexGrid.EDGE.SOUTH_EAST;
             case "SW":
             case "SOUTH_WEST":
-                return WHexGrid.SIDE.SOUTH_WEST;
+                return WHexGrid.EDGE.SOUTH_WEST;
             case "W":
             case "WEST":
-                return WHexGrid.SIDE.WEST;
+                return WHexGrid.EDGE.WEST;
             default:
                 throw new IllegalArgumentException("Unknown side: " + sideStr);
         }
@@ -253,7 +253,7 @@ public class MountainBuilder extends HexGridBuilder {
     /**
      * Get the two corners that define a side.
      */
-    private int[][] getSideCorners(WHexGrid.SIDE side, int sizeX, int sizeZ) {
+    private int[][] getSideCorners(WHexGrid.EDGE side, int sizeX, int sizeZ) {
         switch (side) {
             case NORTH_WEST:
                 return new int[][]{{0, 0}, {sizeX / 2, 0}};
@@ -315,7 +315,7 @@ public class MountainBuilder extends HexGridBuilder {
     }
 
     @Override
-    public int getLandSideLevel(WHexGrid.SIDE side) {
+    public int getLandSideLevel(WHexGrid.EDGE side) {
         // Check if this side has a ridge defined
         WHexGrid hexGrid = context.getHexGrid();
         String ridgeParam = hexGrid.getParameters() != null ? hexGrid.getParameters().get("g_ridge") : null;
@@ -367,7 +367,7 @@ public class MountainBuilder extends HexGridBuilder {
      */
     @Data
     private static class RidgeDefinition {
-        private WHexGrid.SIDE side;
+        private WHexGrid.EDGE side;
         private int level;
     }
 }

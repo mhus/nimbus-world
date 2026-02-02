@@ -69,7 +69,7 @@ public class WorkflowContext {
                 .orElse("unknown"); // sould not happen
     }
 
-    public Map<String, String> getParameters() {
+    public Map<String, Object> getParameters() {
         return getLastJournalRecord(WorkflowParameters.class)
                 .map(entry -> ((WorkflowParameters) entry).getParameters())
                 .orElse(Map.of());
@@ -123,6 +123,25 @@ public class WorkflowContext {
         addRecord(new NoteRecord(note));
     }
 
+    public void doComplete(String result) {
+        addRecord(new ResultRecord(result));
+        updateWorkflowStatus(StatusRecord.COMPLETED);
+    }
+
+    public void doFail(String result) {
+        addRecord(new ResultRecord(result));
+        updateWorkflowStatus(StatusRecord.FAILED);
+    }
+
+    public void doComplete(Map<String,Object> result) {
+        addRecord(new ResultRecord(result));
+        updateWorkflowStatus(StatusRecord.COMPLETED);
+    }
+
+    public void doFail(Map<String, Object> result) {
+        addRecord(new ResultRecord(result));
+        updateWorkflowStatus(StatusRecord.FAILED);
+    }
 
     public record Job(String executor, String type, String location, Map<String, String> parameters) {
     }

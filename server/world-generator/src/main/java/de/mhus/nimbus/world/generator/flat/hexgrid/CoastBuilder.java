@@ -35,7 +35,7 @@ public class CoastBuilder extends HexGridBuilder {
         fillWithOcean(flat, oceanLevel);
 
         // Step 2: Determine which sides are NOT ocean/islands (these are land sides)
-        Set<WHexGrid.SIDE> landSides = determineLandSides();
+        Set<WHexGrid.EDGE> landSides = determineLandSides();
 
         log.debug("Land sides detected: {}", landSides);
 
@@ -69,10 +69,10 @@ public class CoastBuilder extends HexGridBuilder {
      * Determine which sides are NOT ocean or islands (= land sides).
      * These are the sides where we create coastlines.
      */
-    private Set<WHexGrid.SIDE> determineLandSides() {
-        Set<WHexGrid.SIDE> landSides = new HashSet<>();
+    private Set<WHexGrid.EDGE> determineLandSides() {
+        Set<WHexGrid.EDGE> landSides = new HashSet<>();
 
-        for (WHexGrid.SIDE direction : WHexGrid.SIDE.values()) {
+        for (WHexGrid.EDGE direction : WHexGrid.EDGE.values()) {
             // Check if neighbor is NOT ocean or island
             boolean isLand = context.getBuilderFor(direction)
                     .map(builder -> !(builder instanceof OceanBuilder) && !(builder instanceof IslandBuilder))
@@ -90,7 +90,7 @@ public class CoastBuilder extends HexGridBuilder {
      * Create irregular coastlines with sand and grass along land sides.
      * Uses noise for natural, wavy coastline.
      */
-    private void createCoastlines(WFlat flat, Set<WHexGrid.SIDE> landSides, int oceanLevel, long seed) {
+    private void createCoastlines(WFlat flat, Set<WHexGrid.EDGE> landSides, int oceanLevel, long seed) {
         int sizeX = flat.getSizeX();
         int sizeZ = flat.getSizeZ();
 
@@ -104,7 +104,7 @@ public class CoastBuilder extends HexGridBuilder {
                 // Calculate distance to nearest land side
                 double minDistance = Double.MAX_VALUE;
 
-                for (WHexGrid.SIDE landSide : landSides) {
+                for (WHexGrid.EDGE landSide : landSides) {
                     double distance = calculateDistanceToSide(x, z, sizeX, sizeZ, landSide);
                     minDistance = Math.min(minDistance, distance);
                 }
@@ -144,7 +144,7 @@ public class CoastBuilder extends HexGridBuilder {
     /**
      * Calculate distance from a point to a specific side of the hex grid.
      */
-    private double calculateDistanceToSide(int x, int z, int sizeX, int sizeZ, WHexGrid.SIDE side) {
+    private double calculateDistanceToSide(int x, int z, int sizeX, int sizeZ, WHexGrid.EDGE side) {
         switch (side) {
             case NORTH_WEST:
             case NORTH_EAST:
@@ -176,7 +176,7 @@ public class CoastBuilder extends HexGridBuilder {
     }
 
     @Override
-    public int getLandSideLevel(WHexGrid.SIDE side) {
+    public int getLandSideLevel(WHexGrid.EDGE side) {
         return getLandCenterLevel();
     }
 

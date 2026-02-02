@@ -16,7 +16,7 @@ import de.mhus.nimbus.world.generator.flat.hexgrid.HexGridBuilder;
 import de.mhus.nimbus.world.generator.flat.hexgrid.HexGridBuilderService;
 import de.mhus.nimbus.world.generator.flat.hexgrid.HexGridIndex;
 import de.mhus.nimbus.world.shared.generator.WFlat;
-import de.mhus.nimbus.world.shared.world.HexMathUtil;
+import de.mhus.nimbus.world.shared.util.HexMathUtil;
 import de.mhus.nimbus.world.shared.world.WChunkService;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
 import de.mhus.nimbus.world.shared.world.WWorld;
@@ -345,7 +345,7 @@ public class HexCompositeBuilderSimpleTest {
             hexGrid.setParameters(new HashMap<>());
         }
 
-        for (WHexGrid.SIDE side : WHexGrid.SIDE.values()) {
+        for (WHexGrid.EDGE side : WHexGrid.EDGE.values()) {
             HexVector2 neighborPos = HexMathUtil.getNeighborPosition(filled.getCoordinate(), side);
             WFlat neighborFlat = allFlats.get(neighborPos);
             if (neighborFlat != null) {
@@ -448,7 +448,7 @@ public class HexCompositeBuilderSimpleTest {
         world.setNoiseSeed(1474);
         world.setNoiseFrequency(0.5);
 
-        Map<WHexGrid.SIDE, WHexGrid> neighbors = collectNeighbors(hexGrid.getPosition(), gridIndex);
+        Map<WHexGrid.EDGE, WHexGrid> neighbors = collectNeighbors(hexGrid.getPosition(), gridIndex);
 
         // Mock WFlatService for Phase 2 (BLENDER)
         de.mhus.nimbus.world.shared.generator.WFlatService flatService = null;
@@ -479,9 +479,9 @@ public class HexCompositeBuilderSimpleTest {
             .build();
     }
 
-    private Map<WHexGrid.SIDE, WHexGrid> collectNeighbors(String position, HexGridIndex gridIndex) {
-        var result = new HashMap<WHexGrid.SIDE, WHexGrid>();
-        for (WHexGrid.SIDE nabor : WHexGrid.SIDE.values()) {
+    private Map<WHexGrid.EDGE, WHexGrid> collectNeighbors(String position, HexGridIndex gridIndex) {
+        var result = new HashMap<WHexGrid.EDGE, WHexGrid>();
+        for (WHexGrid.EDGE nabor : WHexGrid.EDGE.values()) {
             HexVector2 naborPosition = HexMathUtil.getNeighborPosition(TypeUtil.parseHexCoord(position), nabor);
             var naborHex = gridIndex.getGrid(naborPosition);
             if (naborHex != null)
@@ -512,7 +512,7 @@ public class HexCompositeBuilderSimpleTest {
         double centerZ = flatSizeZ / 2.0;
 
         // For each side, calculate and draw the blending coordinates
-        for (WHexGrid.SIDE side : new WHexGrid.SIDE[]{WHexGrid.SIDE.EAST, WHexGrid.SIDE.WEST}) {
+        for (WHexGrid.EDGE side : new WHexGrid.EDGE[]{WHexGrid.EDGE.EAST, WHexGrid.EDGE.WEST}) {
             // Get corner positions
             int[] corner1 = getCorner1ForSide(side, flatSizeX, flatSizeZ);
             int[] corner2 = getCorner2ForSide(side, flatSizeX, flatSizeZ);
@@ -572,7 +572,7 @@ public class HexCompositeBuilderSimpleTest {
         log.info("Added debug overlays for grid 0;0 (EAST and WEST sides)");
     }
 
-    private int[] getCorner1ForSide(WHexGrid.SIDE side, int sizeX, int sizeZ) {
+    private int[] getCorner1ForSide(WHexGrid.EDGE side, int sizeX, int sizeZ) {
         double centerX = sizeX / 2.0;
         double centerZ = sizeZ / 2.0;
         double radius = sizeX / 2.0;
@@ -608,7 +608,7 @@ public class HexCompositeBuilderSimpleTest {
         return new int[]{x, z};
     }
 
-    private int[] getCorner2ForSide(WHexGrid.SIDE side, int sizeX, int sizeZ) {
+    private int[] getCorner2ForSide(WHexGrid.EDGE side, int sizeX, int sizeZ) {
         double centerX = sizeX / 2.0;
         double centerZ = sizeZ / 2.0;
         double radius = sizeX / 2.0;

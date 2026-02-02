@@ -18,7 +18,6 @@ import org.springframework.stereotype.Component;
 
 import java.util.EnumMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -87,7 +86,7 @@ public class HexGridManipulator implements FlatManipulator {
         }
 
         // Load neighbor grids
-        Map<WHexGrid.SIDE, WHexGrid> neighborGrids = loadNeighborGrids(hexGrid, flat.getWorldId());
+        Map<WHexGrid.EDGE, WHexGrid> neighborGrids = loadNeighborGrids(hexGrid, flat.getWorldId());
 
         // Build context
         BuilderContext context = BuilderContext.builder()
@@ -147,15 +146,15 @@ public class HexGridManipulator implements FlatManipulator {
      * Load neighboring hex grids.
      * Returns a map with neighbor position as key and loaded hex grid (or null) as value.
      */
-    private Map<WHexGrid.SIDE, WHexGrid> loadNeighborGrids(WHexGrid hexGrid, String worldId) {
-        Map<WHexGrid.SIDE, WHexGrid> neighborGrids = new EnumMap<>(WHexGrid.SIDE.class);
+    private Map<WHexGrid.EDGE, WHexGrid> loadNeighborGrids(WHexGrid hexGrid, String worldId) {
+        Map<WHexGrid.EDGE, WHexGrid> neighborGrids = new EnumMap<>(WHexGrid.EDGE.class);
 
         // Get all neighbor positions
-        Map<WHexGrid.SIDE, HexVector2> neighborPositions = hexGrid.getAllNeighborPositions();
+        Map<WHexGrid.EDGE, HexVector2> neighborPositions = hexGrid.getAllNeighborPositions();
 
         // Load each neighbor grid if it exists
-        for (Map.Entry<WHexGrid.SIDE, HexVector2> entry : neighborPositions.entrySet()) {
-            WHexGrid.SIDE direction = entry.getKey();
+        for (Map.Entry<WHexGrid.EDGE, HexVector2> entry : neighborPositions.entrySet()) {
+            WHexGrid.EDGE direction = entry.getKey();
             HexVector2 position = entry.getValue();
 
             WHexGrid neighbor = hexGridService.findByWorldIdAndPosition(worldId, position).orElse(null);

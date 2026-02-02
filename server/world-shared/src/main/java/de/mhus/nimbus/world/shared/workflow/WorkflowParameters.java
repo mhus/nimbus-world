@@ -13,5 +13,5 @@ import java.util.Map;
 @AllArgsConstructor
 public class WorkflowParameters implements JournalRecord {
 
-    private Map<String,String> parameters;
+    private Map<String,Object> parameters;
 }

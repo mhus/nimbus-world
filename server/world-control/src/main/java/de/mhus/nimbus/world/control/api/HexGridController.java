@@ -5,6 +5,7 @@ import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.generated.types.Vector2Int;
 import de.mhus.nimbus.shared.utils.TypeUtil;
 import de.mhus.nimbus.world.shared.rest.BaseEditorController;
+import de.mhus.nimbus.world.shared.util.HexMathUtil;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
 import de.mhus.nimbus.world.shared.world.WHexGridService;
 import lombok.RequiredArgsConstructor;
@@ -167,7 +168,7 @@ public class HexGridController extends BaseEditorController {
             // Convert flat world coordinates to hex coordinates using HexMathUtil
             Vector2Int flatPos = TypeUtil.vector2int(flatX, flatZ);
 
-            HexVector2 hexPos = de.mhus.nimbus.world.shared.world.HexMathUtil.flatToHex(
+            HexVector2 hexPos = HexMathUtil.flatToHex(
                 flatPos,
                 world.getPublicData().getHexGridSize()
             );

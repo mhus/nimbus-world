@@ -17,6 +17,10 @@ public class WorkflowException extends RuntimeException {
         this.workflowId = workflowId;
     }
 
+    public WorkflowException(WorkflowContext context, String message, Throwable cause) {
+        this(context.getWorkflowId(), message, cause);
+    }
+
     public String getWorkflowId() {
         return workflowId;
     }

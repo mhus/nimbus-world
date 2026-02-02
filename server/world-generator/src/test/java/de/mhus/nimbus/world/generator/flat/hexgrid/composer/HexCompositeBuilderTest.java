@@ -791,7 +791,7 @@ public class HexCompositeBuilderTest {
         river.setName("main-river");
         river.setTitle("Main River");
         river.setStartPointId("plains");
-        river.setMergeToId("swamp");
+        river.setEndPointId("swamp");
         river.setWidth(FlowWidth.MEDIUM);
 
         composition.getFeatures().add(plains);

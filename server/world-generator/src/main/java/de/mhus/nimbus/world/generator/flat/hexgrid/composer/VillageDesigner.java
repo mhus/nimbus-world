@@ -309,14 +309,14 @@ public class VillageDesigner {
                                   int baseLevel) {
 
         // Determine direction between grids
-        WHexGrid.SIDE sideFrom = determineSide(from.getGridPosition(), to.getGridPosition());
+        WHexGrid.EDGE sideFrom = determineSide(from.getGridPosition(), to.getGridPosition());
         if (sideFrom == null) {
             log.warn("Cannot determine side between grids {} and {}, skipping boundary road",
                 from.getGridPosition(), to.getGridPosition());
             return;
         }
 
-        WHexGrid.SIDE sideTo = getOppositeSide(sideFrom);
+        WHexGrid.EDGE sideTo = getOppositeSide(sideFrom);
 
         // From-Grid: Road zur Seite
         HexGridConfig fromConfig = gridConfigs.get(from.getGridPosition());
@@ -346,17 +346,17 @@ public class VillageDesigner {
     /**
      * Determines HexGrid side based on grid positions
      */
-    private WHexGrid.SIDE determineSide(HexVector2 from, HexVector2 to) {
+    private WHexGrid.EDGE determineSide(HexVector2 from, HexVector2 to) {
         int dq = to.getQ() - from.getQ();
         int dr = to.getR() - from.getR();
 
         // Hex Grid Directions (axial coordinates)
-        if (dq == 1 && dr == -1) return WHexGrid.SIDE.NORTH_EAST;
-        if (dq == 1 && dr == 0) return WHexGrid.SIDE.EAST;
-        if (dq == 0 && dr == 1) return WHexGrid.SIDE.SOUTH_EAST;
-        if (dq == -1 && dr == 1) return WHexGrid.SIDE.SOUTH_WEST;
-        if (dq == -1 && dr == 0) return WHexGrid.SIDE.WEST;
-        if (dq == 0 && dr == -1) return WHexGrid.SIDE.NORTH_WEST;
+        if (dq == 1 && dr == -1) return WHexGrid.EDGE.NORTH_EAST;
+        if (dq == 1 && dr == 0) return WHexGrid.EDGE.EAST;
+        if (dq == 0 && dr == 1) return WHexGrid.EDGE.SOUTH_EAST;
+        if (dq == -1 && dr == 1) return WHexGrid.EDGE.SOUTH_WEST;
+        if (dq == -1 && dr == 0) return WHexGrid.EDGE.WEST;
+        if (dq == 0 && dr == -1) return WHexGrid.EDGE.NORTH_WEST;
 
         log.warn("Invalid grid direction: dq={}, dr={}", dq, dr);
         return null;
@@ -365,14 +365,14 @@ public class VillageDesigner {
     /**
      * Gets opposite side
      */
-    private WHexGrid.SIDE getOppositeSide(WHexGrid.SIDE side) {
+    private WHexGrid.EDGE getOppositeSide(WHexGrid.EDGE side) {
         switch (side) {
-            case NORTH_EAST: return WHexGrid.SIDE.SOUTH_WEST;
-            case EAST: return WHexGrid.SIDE.WEST;
-            case SOUTH_EAST: return WHexGrid.SIDE.NORTH_WEST;
-            case SOUTH_WEST: return WHexGrid.SIDE.NORTH_EAST;
-            case WEST: return WHexGrid.SIDE.EAST;
-            case NORTH_WEST: return WHexGrid.SIDE.SOUTH_EAST;
+            case NORTH_EAST: return WHexGrid.EDGE.SOUTH_WEST;
+            case EAST: return WHexGrid.EDGE.WEST;
+            case SOUTH_EAST: return WHexGrid.EDGE.NORTH_WEST;
+            case SOUTH_WEST: return WHexGrid.EDGE.NORTH_EAST;
+            case WEST: return WHexGrid.EDGE.EAST;
+            case NORTH_WEST: return WHexGrid.EDGE.SOUTH_EAST;
             default: return null;
         }
     }

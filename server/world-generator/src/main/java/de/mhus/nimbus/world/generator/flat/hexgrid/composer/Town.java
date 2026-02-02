@@ -3,17 +3,17 @@ package de.mhus.nimbus.world.generator.flat.hexgrid.composer;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import de.mhus.nimbus.generated.types.HexVector2;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 @Data
-@Builder
+@SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(callSuper = true)
@@ -23,9 +23,7 @@ public class Town extends Structure {
     private List<VillageStreetDefinition> streets;
     private Map<String, String> parameters;
 
-    public static TownBuilder builder() {
-        return new TownBuilder();
-    }
+    // Note: Town uses Structure.Composed (no Town-specific calculated fields yet)
 
     /**
      * Applies town-specific default configuration from StructureType
