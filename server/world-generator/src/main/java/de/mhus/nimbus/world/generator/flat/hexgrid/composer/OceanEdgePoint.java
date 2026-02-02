@@ -67,10 +67,6 @@ public class OceanEdgePoint extends Point {
             log.info("OceanEdgePoint {}: No adjacent filler grids with ocean access found", getName());
         }
 
-        log.info("OceanEdgePoint {}: Found {} edge coordinates out of {} total: {}",
-            getName(), edgeCoords.size(), coordinates.size(),
-            edgeCoords.stream().limit(10).map(c -> String.format("(%d,%d)", c.getQ(), c.getR())).toList());
-
         if (edgeCoords.isEmpty()) {
             log.warn("OceanEdgePoint {}: No edge found, using center", getName());
             return biome.getPlacedCenter(); // Fallback
@@ -79,22 +75,12 @@ public class OceanEdgePoint extends Point {
         // If oceanDirection is set, prefer coordinates in that direction
         de.mhus.nimbus.generated.types.HexVector2 selected;
         if (oceanDirection != null && biome.getPlacedCenter() != null) {
-            log.info("OceanEdgePoint {}: Biome center is ({},{}), oceanDirection is {}",
-                getName(), biome.getPlacedCenter().getQ(), biome.getPlacedCenter().getR(), oceanDirection);
-
-            // Debug: show scores for all edge coords
-            for (de.mhus.nimbus.generated.types.HexVector2 coord : edgeCoords.stream().limit(5).toList()) {
-                double score = scoreCoordInDirection(coord, biome.getPlacedCenter(), oceanDirection);
-                log.info("  -> Edge coord ({},{}) has score {} for direction {}",
-                    coord.getQ(), coord.getR(), score, oceanDirection);
-            }
-
             selected = findBestCoordInDirection(edgeCoords, biome.getPlacedCenter(), oceanDirection);
-            log.info("OceanEdgePoint {}: Selected edge coordinate ({},{}) in direction {} with best score",
+            log.info("OceanEdgePoint {}: Selected grid ({},{}) in direction {}",
                 getName(), selected.getQ(), selected.getR(), oceanDirection);
         } else {
             selected = edgeCoords.get(0);
-            log.warn("OceanEdgePoint {}: No oceanDirection set, selected first edge coordinate ({},{})",
+            log.warn("OceanEdgePoint {}: No oceanDirection set, using first coordinate ({},{})",
                 getName(), selected.getQ(), selected.getR());
         }
 
@@ -111,8 +97,6 @@ public class OceanEdgePoint extends Point {
      * @return Composed HexLocalEdgeVector (shared type) at ocean edge
      */
     public de.mhus.nimbus.world.shared.world.HexLocalEdgeVector composePosition(Area biome, ComposeContext context) {
-        log.info("OceanEdgePoint {}: composePosition() called with oceanDirection = {}", getName(), oceanDirection);
-
         // Get the selected grid coordinate
         de.mhus.nimbus.generated.types.HexVector2 gridCoord = getGridCoordinate();
         if (gridCoord == null) {
@@ -124,8 +108,8 @@ public class OceanEdgePoint extends Point {
         de.mhus.nimbus.world.shared.world.WHexGrid.EDGE oceanEdge = findOceanEdge(gridCoord, context);
 
         if (oceanEdge == null) {
-            log.warn("OceanEdgePoint {}: No ocean/coast neighbor found at grid ({},{}), using oceanDirection {} as fallback",
-                getName(), gridCoord.getQ(), gridCoord.getR(), oceanDirection);
+            log.warn("OceanEdgePoint {}: No ocean/coast neighbor at grid ({},{}), using fallback",
+                getName(), gridCoord.getQ(), gridCoord.getR());
             oceanEdge = oceanDirection != null ? directionToEdge(oceanDirection) : de.mhus.nimbus.world.shared.world.WHexGrid.EDGE.WEST;
         }
 
@@ -133,8 +117,8 @@ public class OceanEdgePoint extends Point {
         int denominator = de.mhus.nimbus.world.shared.util.HexLocalUtil.DEFAULT_SIDE_DIVIDER;
         int numerator = denominator / 2;
 
-        log.info("OceanEdgePoint {}: Composed edge position at {} {}/{} for grid ({},{})",
-            getName(), oceanEdge, numerator, denominator, gridCoord.getQ(), gridCoord.getR());
+        log.info("OceanEdgePoint {}: Placed at grid ({},{}) edge {} leading to ocean/coast",
+            getName(), gridCoord.getQ(), gridCoord.getR(), oceanEdge);
 
         return new de.mhus.nimbus.world.shared.world.HexLocalEdgeVector(oceanEdge, numerator, denominator);
     }
