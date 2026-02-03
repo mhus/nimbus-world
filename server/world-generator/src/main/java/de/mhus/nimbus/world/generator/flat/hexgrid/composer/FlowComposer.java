@@ -865,6 +865,7 @@ public class FlowComposer {
                                    Map<String, Biome> gridMap,
                                    HexComposition prepared) {
         int segmentCount = 0;
+        Integer previousToLevel = null; // Track TO level from previous segment (becomes FROM of next segment)
 
         for (int i = 0; i < route.size(); i++) {
             HexVector2 coord = route.get(i);
@@ -974,8 +975,25 @@ public class FlowComposer {
                 }
             }
 
-            // Create flow segment with SIDE, position strings, and lx/lz coordinates
-            FlowSegment segment = createFlowSegment(flow, fromSide, toSide, fromPosition, toPosition, fromLx, fromLz, toLx, toLz);
+            // Calculate FROM and TO levels for this segment
+            Integer fromLevel;
+            Integer toLevel;
+
+            if (i == 0) {
+                // First segment: Calculate both FROM and TO
+                // FROM uses only gridA (start grid)
+                fromLevel = calculateSegmentLevel(flow, coord, route, i, null, gridMap);
+                // TO uses gridA and gridB (transition to next grid)
+                toLevel = calculateSegmentLevel(flow, coord, route, i, fromLevel, gridMap);
+            } else {
+                // Subsequent segments: FROM = previous TO, calculate new TO
+                fromLevel = previousToLevel;
+                toLevel = calculateSegmentLevel(flow, coord, route, i, fromLevel, gridMap);
+            }
+
+            // Create flow segment with SIDE, position strings, lx/lz coordinates, and FROM/TO levels
+            FlowSegment segment = createFlowSegment(flow, fromSide, toSide, fromPosition, toPosition,
+                fromLx, fromLz, toLx, toLz, fromLevel, toLevel);
 
             // Add segment to flow's own FeatureHexGrid (already configured by flow.configureHexGrids())
             FeatureHexGrid flowHexGrid = flow.findHexGrid(coord);
@@ -991,10 +1009,103 @@ public class FlowComposer {
                 biomeHexGrid.addFlowSegment(segment);
             }
 
+            // Store TO level for next segment's FROM
+            previousToLevel = toLevel;
+
             segmentCount++;
         }
 
         return segmentCount;
+    }
+
+    /**
+     * Calculates the level for a flow segment at the given grid.
+     * Uses flow.calculateSegmentLevel() with biome data.
+     */
+    private Integer calculateSegmentLevel(Flow flow, HexVector2 gridCoord,
+                                          List<HexVector2> route, int routeIndex,
+                                          Integer previousLevel,
+                                          Map<String, Biome> gridMap) {
+        // Get biome at current grid
+        Biome gridABiome = gridMap.get(coordKey(gridCoord));
+
+        // Get biome at next grid (if exists)
+        Biome gridBBiome = null;
+        if (routeIndex < route.size() - 1) {
+            HexVector2 nextCoord = route.get(routeIndex + 1);
+            gridBBiome = gridMap.get(coordKey(nextCoord));
+        }
+
+        // Extract landLevel and landOffset from biomes
+        Integer gridALandLevel = getBiomeLandLevel(gridABiome);
+        Integer gridALandOffset = getBiomeLandOffset(gridABiome);
+        Integer gridBLandLevel = getBiomeLandLevel(gridBBiome);
+        Integer gridBLandOffset = getBiomeLandOffset(gridBBiome);
+
+        // Get fixed level for FIXED mode
+        Integer fixedLevel = getFlowFixedLevel(flow);
+
+        // Calculate level using flow's method
+        return flow.calculateSegmentLevel(gridALandLevel, gridALandOffset,
+            gridBLandLevel, gridBLandOffset, previousLevel, fixedLevel);
+    }
+
+    /**
+     * Gets landLevel from biome parameters.
+     */
+    private Integer getBiomeLandLevel(Biome biome) {
+        if (biome == null || biome.getHexGrids() == null || biome.getHexGrids().isEmpty()) {
+            return null;
+        }
+
+        // Get landLevel from first FeatureHexGrid parameters
+        FeatureHexGrid firstGrid = biome.getHexGrids().get(0);
+        if (firstGrid.getParameters() != null && firstGrid.getParameters().containsKey("g_asl")) {
+            try {
+                return Integer.parseInt(firstGrid.getParameters().get("g_asl"));
+            } catch (NumberFormatException e) {
+                log.warn("Invalid g_asl value in biome {}: {}", biome.getName(),
+                    firstGrid.getParameters().get("g_asl"));
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Gets landOffset from biome parameters.
+     */
+    private Integer getBiomeLandOffset(Biome biome) {
+        if (biome == null || biome.getHexGrids() == null || biome.getHexGrids().isEmpty()) {
+            return null;
+        }
+
+        // Get landOffset from first FeatureHexGrid parameters
+        FeatureHexGrid firstGrid = biome.getHexGrids().get(0);
+        if (firstGrid.getParameters() != null && firstGrid.getParameters().containsKey("g_offset")) {
+            try {
+                return Integer.parseInt(firstGrid.getParameters().get("g_offset"));
+            } catch (NumberFormatException e) {
+                log.warn("Invalid g_offset value in biome {}: {}", biome.getName(),
+                    firstGrid.getParameters().get("g_offset"));
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Gets the fixed level value for a flow (used in FIXED mode).
+     */
+    private Integer getFlowFixedLevel(Flow flow) {
+        if (flow instanceof River river) {
+            return river.getLevel();
+        } else if (flow instanceof Road road) {
+            return road.getLevel();
+        } else if (flow instanceof Wall wall) {
+            return wall.getLevel();
+        }
+        return null;
     }
 
     /**
@@ -1028,7 +1139,8 @@ public class FlowComposer {
     private FlowSegment createFlowSegment(Flow flow, EDGE fromSide, EDGE toSide,
                                           String fromPosition, String toPosition,
                                           Integer fromLx, Integer fromLz,
-                                          Integer toLx, Integer toLz) {
+                                          Integer toLx, Integer toLz,
+                                          Integer fromLevel, Integer toLevel) {
         FlowSegment.FlowSegmentBuilder builder = FlowSegment.builder()
             .flowType(flow.getType())
             .fromSide(fromSide)
@@ -1040,18 +1152,20 @@ public class FlowComposer {
             .toLx(toLx)
             .toLz(toLz)
             .width(flow.getCalculatedWidthBlocks())
-            .flowFeatureId(flow.getFeatureId());
+            .flowFeatureId(flow.getFeatureId())
+            .fromLevel(fromLevel)
+            .toLevel(toLevel);
 
         // Type-specific attributes
         if (flow instanceof Road road) {
             builder.type(road.getRoadType());
-            builder.level(road.getLevel());
+            builder.level(fromLevel != null ? fromLevel : road.getLevel()); // Deprecated field for backward compatibility
         } else if (flow instanceof River river) {
             builder.depth(river.getDepth());
-            builder.level(river.getLevel());
+            builder.level(fromLevel != null ? fromLevel : river.getLevel()); // Deprecated field for backward compatibility
         } else if (flow instanceof Wall wall) {
             builder.height(wall.getHeight());
-            builder.level(wall.getLevel());
+            builder.level(fromLevel != null ? fromLevel : wall.getLevel()); // Deprecated field for backward compatibility
             builder.material(wall.getMaterial());
         }
 
@@ -1294,6 +1408,10 @@ public class FlowComposer {
             for (FlowSegment segment : riverSegments) {
                 String groupId = segment.getFlowFeatureId() != null ? segment.getFlowFeatureId() : river.getFeatureId();
 
+                // Get FROM and TO levels (fallback to deprecated 'level' if not set)
+                Integer fromLevel = segment.getFromLevel() != null ? segment.getFromLevel() : segment.getLevel();
+                Integer toLevel = segment.getToLevel() != null ? segment.getToLevel() : segment.getLevel();
+
                 // Create FROM parts (from lx/lz or from position string or from SIDE)
                 if (segment.hasFromCoordinates()) {
                     // Use lx/lz coordinates (Point endpoint)
@@ -1302,35 +1420,35 @@ public class FlowComposer {
                         segment.getFromLz(),
                         segment.getWidth(),
                         segment.getDepth(),
-                        segment.getLevel(),
+                        fromLevel,
                         groupId
                     );
                     areaGrid.addRiverConfigPart(part);
-                    log.debug("Added lx/lz-based river FROM part at lx={}, lz={}",
-                        segment.getFromLx(), segment.getFromLz());
+                    log.debug("Added lx/lz-based river FROM part at lx={}, lz={} with level={}",
+                        segment.getFromLx(), segment.getFromLz(), fromLevel);
                 } else if (segment.hasFromPosition()) {
                     // Use HexLocal position string (grid-to-grid transition)
                     RiverConfigPart part = RiverConfigPart.createFromPositionStringPart(
                         segment.getFromPosition(),
                         segment.getWidth(),
                         segment.getDepth(),
-                        segment.getLevel(),
+                        fromLevel,
                         groupId
                     );
                     areaGrid.addRiverConfigPart(part);
-                    log.debug("Added position-string-based river FROM part: {}",
-                        segment.getFromPosition());
+                    log.debug("Added position-string-based river FROM part: {} with level={}",
+                        segment.getFromPosition(), fromLevel);
                 } else if (segment.getFromSide() != null) {
                     // Use SIDE (fallback for backward compatibility)
                     RiverConfigPart part = RiverConfigPart.createFromPart(
                         segment.getFromSide(),
                         segment.getWidth(),
                         segment.getDepth(),
-                        segment.getLevel(),
+                        fromLevel,
                         groupId
                     );
                     areaGrid.addRiverConfigPart(part);
-                    log.debug("Added SIDE-based river FROM part: {}", segment.getFromSide());
+                    log.debug("Added SIDE-based river FROM part: {} with level={}", segment.getFromSide(), fromLevel);
                 }
 
                 // Create TO parts (to lx/lz or to position string or to SIDE)
@@ -1341,35 +1459,35 @@ public class FlowComposer {
                         segment.getToLz(),
                         segment.getWidth(),
                         segment.getDepth(),
-                        segment.getLevel(),
+                        toLevel,
                         groupId
                     );
                     areaGrid.addRiverConfigPart(part);
-                    log.debug("Added lx/lz-based river TO part at lx={}, lz={}",
-                        segment.getToLx(), segment.getToLz());
+                    log.debug("Added lx/lz-based river TO part at lx={}, lz={} with level={}",
+                        segment.getToLx(), segment.getToLz(), toLevel);
                 } else if (segment.hasToPosition()) {
                     // Use HexLocal position string (grid-to-grid transition)
                     RiverConfigPart part = RiverConfigPart.createToPositionStringPart(
                         segment.getToPosition(),
                         segment.getWidth(),
                         segment.getDepth(),
-                        segment.getLevel(),
+                        toLevel,
                         groupId
                     );
                     areaGrid.addRiverConfigPart(part);
-                    log.debug("Added position-string-based river TO part: {}",
-                        segment.getToPosition());
+                    log.debug("Added position-string-based river TO part: {} with level={}",
+                        segment.getToPosition(), toLevel);
                 } else if (segment.getToSide() != null) {
                     // Use SIDE (fallback for backward compatibility)
                     RiverConfigPart part = RiverConfigPart.createToPart(
                         segment.getToSide(),
                         segment.getWidth(),
                         segment.getDepth(),
-                        segment.getLevel(),
+                        toLevel,
                         groupId
                     );
                     areaGrid.addRiverConfigPart(part);
-                    log.debug("Added SIDE-based river TO part: {}", segment.getToSide());
+                    log.debug("Added SIDE-based river TO part: {} with level={}", segment.getToSide(), toLevel);
                 }
             }
 

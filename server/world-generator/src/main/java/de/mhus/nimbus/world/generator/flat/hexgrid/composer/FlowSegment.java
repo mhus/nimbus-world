@@ -70,9 +70,21 @@ public class FlowSegment {
     private Integer width;
 
     /**
-     * Level/height of the flow
+     * Level/height of the flow (deprecated - use fromLevel/toLevel instead)
+     * @deprecated Use fromLevel and toLevel for proper level transitions
      */
+    @Deprecated
     private Integer level;
+
+    /**
+     * Level/height at flow entry point (where flow enters the grid)
+     */
+    private Integer fromLevel;
+
+    /**
+     * Level/height at flow exit point (where flow exits the grid)
+     */
+    private Integer toLevel;
 
     /**
      * Type-specific attribute (e.g., "cobblestone" for road, null for rivers)

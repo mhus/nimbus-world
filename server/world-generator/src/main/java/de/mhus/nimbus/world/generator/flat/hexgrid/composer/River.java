@@ -59,4 +59,30 @@ public class River extends Flow {
         // Call parent to create basic FeatureHexGrids
         super.configureHexGrids(coordinates);
     }
+
+    /**
+     * Calculates river level with downhill constraint and minimum level 0.
+     * Overrides Flow.calculateSegmentLevel() to ensure rivers never flow uphill.
+     * In ADJUST mode: level2 = min(level2, level1) to enforce downhill flow.
+     * River level must never be below 0 (sea level minimum).
+     */
+    @Override
+    public int calculateSegmentLevel(Integer gridALandLevel, Integer gridALandOffset,
+                                      Integer gridBLandLevel, Integer gridBLandOffset,
+                                      Integer previousLevel, Integer fixedLevel) {
+        // Use parent calculation
+        int level = super.calculateSegmentLevel(gridALandLevel, gridALandOffset,
+            gridBLandLevel, gridBLandOffset, previousLevel, fixedLevel);
+
+        // For ADJUST mode with previousLevel: enforce downhill (level2 <= level1)
+        LevelMode mode = getLevelMode() != null ? getLevelMode() : LevelMode.FIXED;
+        if (mode == LevelMode.ADJUST && previousLevel != null) {
+            level = Math.min(level, previousLevel);
+        }
+
+        // River level must never go below 0 (absolute minimum)
+        level = Math.max(0, level);
+
+        return level;
+    }
 }

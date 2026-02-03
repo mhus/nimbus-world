@@ -43,6 +43,20 @@ public abstract class Flow extends Feature {
     private Integer widthBlocks;
     private Map<String, String> parameters;
 
+    /**
+     * Level mode - determines how flow height is calculated.
+     * FIXED: Use fixed 'level' parameter (default if not specified)
+     * ADJUST: Adapt to terrain height using 'meanLevelOffset'
+     */
+    private LevelMode levelMode;
+
+    /**
+     * Mean level offset - used when levelMode=ADJUST.
+     * Offset relative to mean biome height: meanHeight + meanLevelOffset
+     * where meanHeight = landLevel + landOffset/2
+     */
+    private Integer meanLevelOffset;
+
     // Route deviation control (for curves)
     private DeviationTendency tendLeft;
     private DeviationTendency tendRight;
@@ -275,5 +289,56 @@ public abstract class Flow extends Feature {
             flowComposed = new FlowComposed();
         }
         flowComposed.setEndPointFeature(endPointFeature);
+    }
+
+    /**
+     * Calculates the level for a flow segment based on levelMode.
+     *
+     * @param gridALandLevel landLevel of current grid
+     * @param gridALandOffset landOffset of current grid
+     * @param gridBLandLevel landLevel of next grid (can be null for last segment)
+     * @param gridBLandOffset landOffset of next grid (can be null for last segment)
+     * @param previousLevel level from previous segment (for continuation)
+     * @param fixedLevel fixed level value (used when levelMode=FIXED)
+     * @return calculated level for this segment
+     */
+    public int calculateSegmentLevel(Integer gridALandLevel, Integer gridALandOffset,
+                                      Integer gridBLandLevel, Integer gridBLandOffset,
+                                      Integer previousLevel, Integer fixedLevel) {
+        // Default to FIXED mode if not specified
+        LevelMode mode = levelMode != null ? levelMode : LevelMode.FIXED;
+
+        if (mode == LevelMode.FIXED) {
+            // Use fixed level (default to 0 if not specified)
+            return fixedLevel != null ? fixedLevel : 0;
+        } else {
+            // ADJUST mode - calculate based on biome mean heights
+            int offset = meanLevelOffset != null ? meanLevelOffset : 0;
+
+            // Calculate mean height of gridA
+            int gridALand = gridALandLevel != null ? gridALandLevel : 0;
+            int gridAOffset = gridALandOffset != null ? gridALandOffset : 0;
+            int gridAMeanHeight = gridALand + gridAOffset / 2;
+
+            // If we have a previous level, use it as level1
+            if (previousLevel != null) {
+                // Calculate level2 for segment end
+                if (gridBLandLevel != null) {
+                    // We have gridB - calculate average of both grids
+                    int gridBLand = gridBLandLevel;
+                    int gridBOffset = gridBLandOffset != null ? gridBLandOffset : 0;
+                    int gridBMeanHeight = gridBLand + gridBOffset / 2;
+
+                    int level2 = (gridAMeanHeight + gridBMeanHeight) / 2 + offset;
+                    return level2;
+                } else {
+                    // Last segment - just use gridA
+                    return gridAMeanHeight + offset;
+                }
+            } else {
+                // First segment - use gridA mean height
+                return gridAMeanHeight + offset;
+            }
+        }
     }
 }
