@@ -26,7 +26,6 @@
         {"direction": "W", "distanceFrom": 0, "anchor": "origin", "priority": 10}
       ],
       "parameters": {
-        "g_asl": "10"
       }
     },
     {
@@ -41,7 +40,6 @@
         {"direction": "E", "distanceFrom": 3, "distanceTo": 3, "anchor": "central-mountains", "priority": 10}
       ],
       "parameters": {
-        "g_asl": "10"
       }
     },
     {
@@ -60,12 +58,29 @@
       }
     },
     {
+      "featureType": "point",
+      "name": "rocky-hills",
+      "title": "Road Start at Rocky Hills",
+      "snap": {
+        "mode": "INSIDE",
+        "target": "central-mountains"
+      }
+    },
+    {
+      "featureType": "point",
+      "name": "coastline-west",
+      "title": "Road End at Western Coastline",
+      "biomeSide": "SW",
+      "biomeId": "west-region"
+    },
+    {
       "featureType": "road",
-      "name": "great-road",
+      "name": "long-road",
       "type": "ROAD",
-      "startPointId": "central-mountains",
-      "endPointId": "west-region",
-      "level": 60,
+      "startPointId": "rocky-hills",
+      "endPointId": "coastline-west",
+      "levelMode": "ADJUST",
+      "meanLevelOffset": 1,
       "widthBlocks": 10,
       "tendLeft": "NONE",
       "tendRight": "NONE",

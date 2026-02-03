@@ -137,11 +137,28 @@ public class RoadBuilder extends HexGridBuilder {
             for (JsonNode roadNode : root.get("route")) {
                 Road road = new Road();
 
-                // Position is required in HexLocal format
-                if (!roadNode.has("position")) {
-                    throw new IllegalArgumentException("Road route must have 'position' field in HexLocal format (e.g., '<NE2/4>' or '<0;0>')");
+                // Support multiple position formats:
+                // 1. "position": "<NE 2>" (HexLocal format - preferred)
+                // 2. "lx": 256, "lz": 256 (absolute coordinates)
+                // 3. "side": "NORTH_EAST" (EDGE enum - legacy)
+
+                if (roadNode.has("position")) {
+                    // HexLocal format (preferred)
+                    road.setPosition(roadNode.get("position").asText());
+                } else if (roadNode.has("lx") && roadNode.has("lz")) {
+                    // Absolute coordinates - convert to position string format
+                    int lx = roadNode.get("lx").asInt();
+                    int lz = roadNode.get("lz").asInt();
+                    road.setPosition(String.format("<%d;%d>", lx, lz));
+                } else if (roadNode.has("side")) {
+                    // EDGE enum (legacy) - convert to HexLocal edge format
+                    String sideStr = roadNode.get("side").asText();
+                    // Convert "NORTH_EAST" to "NE", etc.
+                    String edgeShort = convertEdgeToShortForm(sideStr);
+                    road.setPosition(String.format("<%s 2>", edgeShort));  // Default to middle of edge (2/4)
+                } else {
+                    throw new IllegalArgumentException("Road route must have 'position' (HexLocal), 'lx'/'lz' (coordinates), or 'side' (EDGE) field");
                 }
-                road.setPosition(roadNode.get("position").asText());
 
                 road.setWidth(roadNode.get("width").asInt());
                 road.setLevel(roadNode.get("level").asInt());
@@ -526,6 +543,22 @@ public class RoadBuilder extends HexGridBuilder {
         private int width;
         private int level;
         private String type;
+    }
+
+    /**
+     * Converts EDGE enum name to short form for HexLocal format.
+     * NORTH_EAST -> NE, SOUTH_WEST -> SW, EAST -> E, etc.
+     */
+    private String convertEdgeToShortForm(String edgeName) {
+        return switch (edgeName) {
+            case "NORTH_EAST" -> "NE";
+            case "EAST" -> "E";
+            case "SOUTH_EAST" -> "SE";
+            case "SOUTH_WEST" -> "SW";
+            case "WEST" -> "W";
+            case "NORTH_WEST" -> "NW";
+            default -> edgeName; // Fallback to original
+        };
     }
 
     /**
