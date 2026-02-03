@@ -1,0 +1,127 @@
+{
+  "name": "Simple Test World First",
+  "worldId": "simple-test-first",
+  "continents": [
+    {
+      "continentId": "main-continent",
+      "name": "Main Continent",
+      "biomeType": "MOUNTAINS",
+      "minNeighbors": 2,
+      "parameters": {
+        "g_offset": "10",
+        "g_roughness": "0.8"
+      }
+    }
+  ],
+  "features": [
+    {
+      "featureType": "biome",
+      "name": "west-region",
+      "title": "Western Plains",
+      "type": "PLAINS",
+      "shape": "CIRCLE",
+      "size": "LARGE",
+      "continentId": "main-continent",
+      "positions": [
+        {"direction": "W", "distanceFrom": 0, "anchor": "origin", "priority": 10}
+      ],
+      "parameters": {
+      }
+    },
+    {
+      "featureType": "biome",
+      "name": "east-region",
+      "title": "Eastern Forest",
+      "type": "FOREST",
+      "shape": "CIRCLE",
+      "size": "LARGE",
+      "continentId": "main-continent",
+      "positions": [
+        {"direction": "E", "distanceFrom": 3, "distanceTo": 3, "anchor": "central-mountains", "priority": 10}
+      ],
+      "parameters": {
+      }
+    },
+    {
+      "featureType": "mountain-biome",
+      "name": "central-mountains",
+      "title": "Central Mountains",
+      "type": "MOUNTAINS",
+      "height": "MEDIUM_PEAKS",
+      "shape": "CIRCLE",
+      "size": "MEDIUM",
+      "continentId": "main-continent",
+      "positions": [
+        {"direction": "E", "distanceFrom": 3, "distanceTo": 3, "anchor": "west-region", "priority": 10}
+      ],
+      "parameters": {
+      }
+    },
+    {
+      "featureType": "point",
+      "name": "river-source",
+      "title": "Mountain River Source",
+      "snap": {
+        "mode": "INSIDE",
+        "target": "central-mountains"
+      }
+    },
+    {
+      "featureType": "ocean-edge",
+      "name": "river-mouth",
+      "title": "River Mouth at Ocean",
+      "snap": {
+        "mode": "INSIDE",
+        "target": "west-region"
+      },
+      "oceanDirection": "W"
+    },
+    {
+      "featureType": "point",
+      "name": "rocky-hills",
+      "title": "Road Start at Rocky Hills",
+      "snap": {
+        "mode": "INSIDE",
+        "target": "central-mountains"
+      }
+    },
+    {
+      "featureType": "point",
+      "name": "coastline-west",
+      "title": "Road End at Western Coastline",
+      "biomeSide": "SW",
+      "biomeId": "west-region"
+    },
+    {
+      "featureType": "river",
+      "name": "anduin-great-river",
+      "type": "RIVER",
+      "startPointId": "river-source",
+      "endPointId": "river-mouth",
+      "depth": 4,
+      "levelMode": "ADJUST_MEAN",
+      "meanLevelOffset": -2,
+      "widthBlocks": 10,
+      "tendLeft": "SLIGHT",
+      "tendRight": "MODERATE",
+      "force": false,
+      "parameters": {
+      }
+    },
+    {
+      "featureType": "road",
+      "name": "long-road",
+      "type": "ROAD",
+      "startPointId": "rocky-hills",
+      "endPointId": "coastline-west",
+      "levelMode": "ADJUST_MEAN",
+      "meanLevelOffset": 1,
+      "widthBlocks": 1,
+      "roadType": "street",
+      "tendLeft": "NONE",
+      "tendRight": "NONE",
+      "parameters": {
+      }
+    }
+  ]
+}

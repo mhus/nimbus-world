@@ -78,6 +78,11 @@ public class HexCompositeBuilderSimpleTest {
     }
 
     @Test
+    public void testSimpleRiverRoad() throws Exception {
+        simpleContinentTest("river-road");
+    }
+
+    @Test
     public void testSimpleWall() throws Exception {
         simpleContinentTest("wall");
     }
