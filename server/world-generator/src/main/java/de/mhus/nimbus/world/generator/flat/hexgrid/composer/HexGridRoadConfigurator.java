@@ -391,13 +391,20 @@ public class HexGridRoadConfigurator {
                     roadConfig.put("plazaMaterial", existingRoadConfig.get("plazaMaterial"));
                 }
             } else {
-                // No CENTER part or existing config - calculate level from route parts
-                Integer baseLevel = routeParts.stream()
-                    .map(RoadConfigPart::getLevel)
-                    .filter(level -> level != null)
-                    .findFirst()
-                    .orElse(95);
-                roadConfig.put("level", baseLevel);
+                // No CENTER part or existing config - check if level is needed
+                // Only write level if route parts don't have fromLevel/toLevel
+                boolean hasFromToLevels = routeParts.stream()
+                    .allMatch(p -> p.getFromLevel() != null && p.getToLevel() != null);
+
+                if (!hasFromToLevels) {
+                    // Calculate level from route parts as fallback
+                    Integer baseLevel = routeParts.stream()
+                        .map(RoadConfigPart::getLevel)
+                        .filter(level -> level != null)
+                        .findFirst()
+                        .orElse(95);
+                    roadConfig.put("level", baseLevel);
+                }
             }
 
             // Build route array from ROUTE parts
@@ -407,20 +414,22 @@ public class HexGridRoadConfigurator {
             for (RoadConfigPart part : routeParts) {
                 Map<String, Object> entry = new HashMap<>();
 
-                // Side-based routing
+                // Side-based routing - convert to HexLocal edge format
                 if (part.getSide() != null) {
                     String sideKey = part.getSide().name();
                     // Skip duplicates
                     if (addedSides.contains(sideKey)) {
                         continue;
                     }
-                    entry.put("side", sideKey);
+                    // Convert EDGE to HexLocal format: "NORTH_EAST" -> "<NE 2>"
+                    String edgeShort = convertEdgeToShortForm(sideKey);
+                    entry.put("position", String.format("<%s 2>", edgeShort));  // Default to middle (2/4)
                     addedSides.add(sideKey);
                 }
-                // Position-based routing
+                // Position-based routing - convert to HexLocal format
                 else if (part.getRouteLx() != null && part.getRouteLz() != null) {
-                    entry.put("lx", part.getRouteLx());
-                    entry.put("lz", part.getRouteLz());
+                    // Convert lx/lz to HexLocal format: "<256;256>"
+                    entry.put("position", String.format("<%d;%d>", part.getRouteLx(), part.getRouteLz()));
                 }
                 else {
                     log.warn("RoadConfigPart has neither side nor lx/lz at grid {}", grid.getPositionKey());
@@ -431,7 +440,15 @@ public class HexGridRoadConfigurator {
                 if (part.getWidth() != null) {
                     entry.put("width", part.getWidth());
                 }
-                if (part.getLevel() != null) {
+                // Prefer fromLevel/toLevel if available, fall back to level for backward compatibility
+                if (part.getFromLevel() != null) {
+                    entry.put("fromLevel", part.getFromLevel());
+                }
+                if (part.getToLevel() != null) {
+                    entry.put("toLevel", part.getToLevel());
+                }
+                if (part.getLevel() != null && part.getFromLevel() == null && part.getToLevel() == null) {
+                    // Backward compatibility: only write 'level' if fromLevel/toLevel not present
                     entry.put("level", part.getLevel());
                 }
                 if (part.getType() != null) {
@@ -733,5 +750,21 @@ public class HexGridRoadConfigurator {
 
         // Default: terrain level + 1 (roads slightly above ground)
         return terrainLevel + 1;
+    }
+
+    /**
+     * Converts EDGE enum name to short form for HexLocal format.
+     * E.g., "NORTH_EAST" -> "NE"
+     */
+    private String convertEdgeToShortForm(String edgeName) {
+        return switch (edgeName) {
+            case "NORTH_EAST" -> "NE";
+            case "EAST" -> "E";
+            case "SOUTH_EAST" -> "SE";
+            case "SOUTH_WEST" -> "SW";
+            case "WEST" -> "W";
+            case "NORTH_WEST" -> "NW";
+            default -> edgeName; // Fallback to original
+        };
     }
 }

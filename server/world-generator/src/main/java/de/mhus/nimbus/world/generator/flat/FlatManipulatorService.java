@@ -47,7 +47,7 @@ public class FlatManipulatorService {
             }
 
             manipulators.put(name, manipulator);
-            log.info("Registered flat manipulator: {}", name);
+            log.debug("Registered flat manipulator: {}", name);
         }
 
         log.info("FlatManipulatorService initialized with {} manipulators", manipulators.size());

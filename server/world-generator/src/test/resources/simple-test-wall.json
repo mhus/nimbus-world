@@ -74,15 +74,14 @@
       "biomeId": "west-region"
     },
     {
-      "featureType": "road",
-      "name": "long-road",
-      "type": "ROAD",
+      "featureType": "wall",
+      "name": "long-wall",
+      "type": "WALL",
       "startPointId": "rocky-hills",
       "endPointId": "coastline-west",
       "levelMode": "ADJUST",
-      "meanLevelOffset": 1,
+      "meanLevelOffset": 10,
       "widthBlocks": 1,
-      "roadType": "street",
       "tendLeft": "NONE",
       "tendRight": "NONE",
       "parameters": {

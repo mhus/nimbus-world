@@ -112,7 +112,7 @@ public class HexGridEdgeBlender {
          * 5. For each point on outer line, interpolate inward to inner line
          */
         public void blend() {
-            log.info("Blending side {} with neighbor flat {}, width={}",
+            log.debug("Blending side {} with neighbor flat {}, width={}",
                     direction, neighborFlat.getFlatId(), width);
 
             // Calculate the two corners of this hex side

@@ -98,6 +98,9 @@ public class StraightPathFinder {
                 }
             }
 
+            // Roads must stay above sea level (minimum level 1)
+            level = Math.max(1, level);
+
             path.add(new TerrainPathFinder.PathPoint(x, z, level));
         }
 

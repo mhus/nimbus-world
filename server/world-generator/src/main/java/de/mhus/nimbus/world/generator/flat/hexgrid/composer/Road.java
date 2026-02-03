@@ -51,4 +51,22 @@ public class Road extends Flow {
         // Call parent to create basic FeatureHexGrids
         super.configureHexGrids(coordinates);
     }
+
+    /**
+     * Overrides Flow.calculateSegmentLevel() to ensure roads never go below level 1.
+     * Road level must never be below 1 (minimum for roads/paths).
+     */
+    @Override
+    public int calculateSegmentLevel(Integer gridALandLevel, Integer gridALandOffset,
+                                      Integer gridBLandLevel, Integer gridBLandOffset,
+                                      Integer previousLevel, Integer fixedLevel) {
+        // Use parent calculation
+        int level = super.calculateSegmentLevel(gridALandLevel, gridALandOffset,
+            gridBLandLevel, gridBLandOffset, previousLevel, fixedLevel);
+
+        // Road level must never go below 1 (absolute minimum)
+        level = Math.max(1, level);
+
+        return level;
+    }
 }

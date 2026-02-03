@@ -34,7 +34,9 @@ public class RoadConfigPart {
     private Integer routeLx;     // Position-based route x
     private Integer routeLz;     // Position-based route z
     private Integer width;
-    private Integer level;
+    private Integer level;       // Deprecated: use fromLevel/toLevel instead
+    private Integer fromLevel;   // Level when entering this position
+    private Integer toLevel;     // Level when exiting this position
     private String type;         // "street", "trail", etc.
 
     /**
@@ -61,6 +63,24 @@ public class RoadConfigPart {
             .side(side)
             .width(width)
             .level(level)
+            .fromLevel(level)  // Backward compatibility
+            .toLevel(level)
+            .type(type)
+            .build();
+    }
+
+    /**
+     * Creates a ROUTE part for side-based routing with fromLevel/toLevel (from Flow)
+     */
+    public static RoadConfigPart createRouteSidePartWithLevels(EDGE side, Integer width,
+                                                                Integer fromLevel, Integer toLevel, String type) {
+        return RoadConfigPart.builder()
+            .partType(PartType.ROUTE)
+            .side(side)
+            .width(width)
+            .level(fromLevel)  // Backward compatibility: use fromLevel as default
+            .fromLevel(fromLevel)
+            .toLevel(toLevel)
             .type(type)
             .build();
     }
@@ -76,6 +96,25 @@ public class RoadConfigPart {
             .routeLz(lz)
             .width(width)
             .level(level)
+            .fromLevel(level)  // Backward compatibility
+            .toLevel(level)
+            .type(type)
+            .build();
+    }
+
+    /**
+     * Creates a ROUTE part for position-based routing with fromLevel/toLevel (from Flow)
+     */
+    public static RoadConfigPart createRoutePositionPartWithLevels(Integer lx, Integer lz, Integer width,
+                                                                    Integer fromLevel, Integer toLevel, String type) {
+        return RoadConfigPart.builder()
+            .partType(PartType.ROUTE)
+            .routeLx(lx)
+            .routeLz(lz)
+            .width(width)
+            .level(fromLevel)  // Backward compatibility: use fromLevel as default
+            .fromLevel(fromLevel)
+            .toLevel(toLevel)
             .type(type)
             .build();
     }

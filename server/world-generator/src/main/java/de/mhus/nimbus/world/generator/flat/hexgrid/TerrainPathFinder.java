@@ -58,6 +58,11 @@ public class TerrainPathFinder {
         int currentLevel = startLevel;
         double traveledDistance = 0;
 
+        // Velocity vector for momentum (prevents zigzagging)
+        double velocityX = 0;
+        double velocityZ = 0;
+        double velocityDamping = 0.6;  // Velocity decreases quickly
+
         path.add(new PathPoint(currentX, currentZ, currentLevel));
 
         while (currentX != endX || currentZ != endZ) {
@@ -65,7 +70,8 @@ public class TerrainPathFinder {
             StepCandidate bestStep = findBestNextStep(
                 currentX, currentZ, currentLevel,
                 endX, endZ, endLevel,
-                directDistance, traveledDistance, maxPathLength
+                directDistance, traveledDistance, maxPathLength,
+                velocityX, velocityZ
             );
 
             if (bestStep == null) {
@@ -73,6 +79,14 @@ public class TerrainPathFinder {
                 log.debug("TerrainPathFinder: Path blocked at ({}, {})", currentX, currentZ);
                 return null;
             }
+
+            // Calculate movement vector
+            int moveX = bestStep.x - currentX;
+            int moveZ = bestStep.z - currentZ;
+
+            // Update velocity with damping
+            velocityX = velocityX * velocityDamping + moveX;
+            velocityZ = velocityZ * velocityDamping + moveZ;
 
             // Move to next position
             currentX = bestStep.x;
@@ -109,11 +123,15 @@ public class TerrainPathFinder {
 
     /**
      * Finds the best next step from current position.
+     *
+     * @param velocityX Current velocity X component (for momentum)
+     * @param velocityZ Current velocity Z component (for momentum)
      */
     private StepCandidate findBestNextStep(int currentX, int currentZ, int currentLevel,
                                             int targetX, int targetZ, int targetLevel,
                                             double directDistance, double traveledDistance,
-                                            double maxPathLength) {
+                                            double maxPathLength,
+                                            double velocityX, double velocityZ) {
         StepCandidate bestCandidate = null;
         double bestScore = Double.MAX_VALUE;
 
@@ -165,6 +183,14 @@ public class TerrainPathFinder {
                 nextLevel = currentLevel + (slopeFromCurrent > 0 ? maxSlopePerBlock : -maxSlopePerBlock);
             }
 
+            // Roads must stay above sea level (minimum level 1)
+            nextLevel = Math.max(1, nextLevel);
+
+            // Ensure level never goes below 1 (similar to rivers)
+            if (nextLevel < 1) {
+                nextLevel = 1;
+            }
+
             // Check if we can still reach target level
             double remainingLevelChange = Math.abs(targetLevel - nextLevel);
             if (remainingLevelChange > remainingSteps * maxSlopePerBlock) {
@@ -176,7 +202,12 @@ public class TerrainPathFinder {
             double distanceCost = distanceToTarget;  // Prefer getting closer to target
             double driftPenalty = (traveledDistance + stepDistance) / directDistance * 5.0;  // Penalty for drifting
 
-            double score = slopeCost + distanceCost + driftPenalty;
+            // Momentum bonus: prefer moving in the same direction as current velocity
+            // Dot product between movement direction and velocity vector
+            double momentumAlignment = neighbor[0] * velocityX + neighbor[1] * velocityZ;
+            double momentumPenalty = -momentumAlignment * 8.0;  // Bonus for alignment (negative = lower score)
+
+            double score = slopeCost + distanceCost + driftPenalty + momentumPenalty;
 
             if (score < bestScore) {
                 bestScore = score;

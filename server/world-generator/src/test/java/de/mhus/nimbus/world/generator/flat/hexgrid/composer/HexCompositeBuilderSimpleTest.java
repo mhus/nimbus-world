@@ -77,6 +77,11 @@ public class HexCompositeBuilderSimpleTest {
         simpleContinentTest("road");
     }
 
+    @Test
+    public void testSimpleWall() throws Exception {
+        simpleContinentTest("wall");
+    }
+
     public CompositionResult simpleContinentTest(String name) throws Exception {
         log.info("=== Testing %s System ===".formatted(name));
 

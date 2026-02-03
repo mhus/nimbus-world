@@ -9,8 +9,10 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * RoadBuilder manipulator builder.
@@ -169,7 +171,21 @@ public class RoadBuilder extends HexGridBuilder {
                 }
 
                 road.setWidth(roadNode.get("width").asInt());
-                road.setLevel(roadNode.get("level").asInt());
+
+                // Read fromLevel/toLevel if available, otherwise fall back to level
+                if (roadNode.has("fromLevel") && roadNode.has("toLevel")) {
+                    road.setFromLevel(roadNode.get("fromLevel").asInt());
+                    road.setToLevel(roadNode.get("toLevel").asInt());
+                    road.setLevel(road.getFromLevel()); // Backward compatibility
+                } else if (roadNode.has("level")) {
+                    int level = roadNode.get("level").asInt();
+                    road.setLevel(level);
+                    road.setFromLevel(level);  // Use same level for both
+                    road.setToLevel(level);
+                } else {
+                    throw new IllegalArgumentException("Road route must have 'level' or 'fromLevel'/'toLevel' fields");
+                }
+
                 road.setType(roadNode.has("type") ? roadNode.get("type").asText() : "street");
                 roads.add(road);
             }
@@ -188,11 +204,26 @@ public class RoadBuilder extends HexGridBuilder {
         int[] startCoords = getAbsoluteCoordinates(road.getPosition(), flat.getSizeX(), flat.getSizeZ());
         int startX = startCoords[0];
         int startZ = startCoords[1];
-        int startLevel = road.getLevel();
-        int endLevel = centerLevel > 0 ? centerLevel : startLevel;
 
-        log.debug("Building road from {} (level={}) to center ({},{}) (level={})",
-            road.getPosition(), startLevel, centerX, centerZ, endLevel);
+        // Use fromLevel if available, otherwise fall back to level
+        int startLevel = road.getFromLevel() != null ? road.getFromLevel() : road.getLevel();
+        // Ensure startLevel is at least 1 (roads must be above sea level)
+        startLevel = Math.max(1, startLevel);
+
+        // Use toLevel if available, otherwise use centerLevel or startLevel as fallback
+        int endLevel;
+        if (road.getToLevel() != null) {
+            endLevel = road.getToLevel();
+        } else if (centerLevel > 0) {
+            endLevel = centerLevel;
+        } else {
+            endLevel = startLevel;
+        }
+        // Ensure endLevel is at least 1 (roads must be above sea level)
+        endLevel = Math.max(1, endLevel);
+
+        log.debug("Building road from {} (fromLevel={}, toLevel={}) to center ({},{}) (centerLevel={})",
+            road.getPosition(), startLevel, endLevel, centerX, centerZ, centerLevel);
 
         // Read pathfinding parameters
         int maxSlopePerBlock = parseIntParameter(parameters, "maxSlopePerBlock", DEFAULT_MAX_SLOPE);
@@ -379,6 +410,7 @@ public class RoadBuilder extends HexGridBuilder {
     private void drawRoadSegment(WFlat flat, int centerX, int centerZ, int width, int level,
                                   String type, double dirX, double dirZ) {
         // Determine material based on type
+        boolean isTrail = type.equalsIgnoreCase("trail") || type.equalsIgnoreCase("path");
         int centerMaterial = type.equalsIgnoreCase("track") ? FlatMaterialService.TRACK : FlatMaterialService.STREET;
         int borderMaterial = type.equalsIgnoreCase("track") ? FlatMaterialService.TRACK_BORDER : FlatMaterialService.STREET_BORDER;
         int bridgeMaterial = type.equalsIgnoreCase("track") ? FlatMaterialService.TRACK_BRIDGE : FlatMaterialService.STREET_BRIDGE;
@@ -391,48 +423,89 @@ public class RoadBuilder extends HexGridBuilder {
         double perpX = -dirZ;
         double perpZ = dirX;
 
-        // Draw road perpendicular to movement direction
-        int halfWidth = width / 2;
+        // Use a set to track unique positions (avoid duplicates)
+        Set<String> drawnPositions = new HashSet<>();
 
-        // Along the direction (we draw just the center point in this direction)
-        // Perpendicular to direction (we extend halfWidth in both directions)
-        for (int perpOffset = -halfWidth; perpOffset <= halfWidth; perpOffset++) {
-            // Calculate actual position using perpendicular offset
-            int x = (int) Math.round(centerX + perpOffset * perpX);
-            int z = (int) Math.round(centerZ + perpOffset * perpZ);
+        if (isTrail) {
+            // TRAIL: Use oversampling for natural width variation in curves
+            double halfWidth = width / 2.0;
+            int samples = (int) Math.ceil(width * 1.5);  // Oversample for natural look
+            for (int i = 0; i <= samples; i++) {
+                double t = (i / (double) samples) * 2.0 - 1.0;  // -1.0 to 1.0
+                double offset = t * halfWidth;
 
-            // Check bounds
-            if (x < 0 || x >= flat.getSizeX() || z < 0 || z >= flat.getSizeZ()) {
-                continue;
-            }
+                // Calculate actual position using perpendicular offset
+                int x = (int) Math.round(centerX + offset * perpX);
+                int z = (int) Math.round(centerZ + offset * perpZ);
 
-            // Check if there's water at this position
-            boolean hasWater = hasWaterAtPosition(flat, x, z, waterBlockDef);
-
-            if (hasWater) {
-                // Build bridge: extraBlock at least 3 blocks above water level
-                int waterLevel = getWaterLevel(flat, x, z);
-                int bridgeLevel = Math.max(level, waterLevel + 3);
-
-                // Set bridge as extra block
-                String bridgeBlockDef = getBridgeBlockDef(flat, bridgeMaterial);
-                flat.setExtraBlock(x, bridgeLevel, z, bridgeBlockDef);
-            } else {
-                // Normal road: set level and material
-                // Determine material based on distance from center
-                int material;
-                if (Math.abs(perpOffset) <= 1) {
-                    // Center of road
-                    material = centerMaterial;
-                } else {
-                    // Border/edge of road
-                    material = borderMaterial;
+                // Create position key for duplicate checking
+                String posKey = x + "," + z;
+                if (drawnPositions.contains(posKey)) {
+                    continue;  // Skip if already drawn
                 }
+                drawnPositions.add(posKey);
 
-                // Set level and material
-                flat.setLevel(x, z, level);
-                flat.setColumn(x, z, material);
+                drawRoadBlock(flat, x, z, level, offset, centerMaterial, borderMaterial, bridgeMaterial, waterBlockDef);
             }
+        } else {
+            // STREET/ROAD: Exact width - draw exactly 'width' blocks perpendicular to direction
+            int halfWidth = width / 2;
+            for (int perpOffset = -halfWidth; perpOffset <= halfWidth; perpOffset++) {
+                // Calculate actual position using perpendicular offset
+                int x = (int) Math.round(centerX + perpOffset * perpX);
+                int z = (int) Math.round(centerZ + perpOffset * perpZ);
+
+                // Create position key for duplicate checking
+                String posKey = x + "," + z;
+                if (drawnPositions.contains(posKey)) {
+                    continue;  // Skip if already drawn
+                }
+                drawnPositions.add(posKey);
+
+                drawRoadBlock(flat, x, z, level, perpOffset, centerMaterial, borderMaterial, bridgeMaterial, waterBlockDef);
+            }
+        }
+    }
+
+    /**
+     * Draw a single road block at the given position.
+     *
+     * @param offset Distance from road center (for material determination)
+     */
+    private void drawRoadBlock(WFlat flat, int x, int z, int level, double offset,
+                                int centerMaterial, int borderMaterial, int bridgeMaterial,
+                                String waterBlockDef) {
+        // Check bounds
+        if (x < 0 || x >= flat.getSizeX() || z < 0 || z >= flat.getSizeZ()) {
+            return;
+        }
+
+        // Check if there's water at this position
+        boolean hasWater = hasWaterAtPosition(flat, x, z, waterBlockDef);
+
+        if (hasWater) {
+            // Build bridge: extraBlock at least 3 blocks above water level
+            int waterLevel = getWaterLevel(flat, x, z);
+            int bridgeLevel = Math.max(level, waterLevel + 3);
+
+            // Set bridge as extra block
+            String bridgeBlockDef = getBridgeBlockDef(flat, bridgeMaterial);
+            flat.setExtraBlock(x, bridgeLevel, z, bridgeBlockDef);
+        } else {
+            // Normal road: set level and material
+            // Determine material based on distance from center
+            int material;
+            if (Math.abs(offset) <= 1.0) {
+                // Center of road
+                material = centerMaterial;
+            } else {
+                // Border/edge of road
+                material = borderMaterial;
+            }
+
+            // Set level and material
+            flat.setLevel(x, z, level);
+            flat.setColumn(x, z, material);
         }
     }
 
@@ -629,7 +702,9 @@ public class RoadBuilder extends HexGridBuilder {
     private static class Road {
         private String position;  // HexLocal format: "<NE2/4>" for edge or "<0;0>" for position
         private int width;
-        private int level;
+        private int level;        // Deprecated: use fromLevel/toLevel
+        private Integer fromLevel; // Level at entry point
+        private Integer toLevel;   // Level at exit point
         private String type;
     }
 
