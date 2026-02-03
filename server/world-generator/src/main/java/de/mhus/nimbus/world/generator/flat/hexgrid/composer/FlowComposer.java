@@ -253,8 +253,15 @@ public class FlowComposer {
                         flow.getName(), endPoint.getName(),
                         endPoint.getPlacedLx(), endPoint.getPlacedLz());
                 } else {
-                    log.warn("Could not find end point: {}", river.getEndPointId());
-                    return false;
+                    // Fall back to Biome
+                    HexVector2 endCoord = findFeatureCoordinate(river.getEndPointId(),
+                        placementResult, prepared);
+                    if (endCoord == null) {
+                        log.warn("Could not find end point: {}", river.getEndPointId());
+                        return false;
+                    }
+                    flow.setEndPoint(endCoord);
+                    flow.setEndPointFeature(null);
                 }
             }
         }
@@ -914,11 +921,11 @@ public class FlowComposer {
                         }
                     }
 
-                    // Fall back to deprecated fields if new fields not available
-                    if (fromPosition == null) {
+                    // Also set fromLx/fromLz for backward compatibility if available
+                    if (startPoint.getPlacedLx() != null && startPoint.getPlacedLz() != null) {
                         fromLx = startPoint.getPlacedLx();
                         fromLz = startPoint.getPlacedLz();
-                        if (fromLx != null && fromLz != null) {
+                        if (fromPosition == null) {
                             log.debug("First segment uses Point '{}' deprecated lx/lz: {}, {}",
                                 startPoint.getName(), fromLx, fromLz);
                         }
@@ -961,11 +968,11 @@ public class FlowComposer {
                         }
                     }
 
-                    // Fall back to deprecated fields if new fields not available
-                    if (toPosition == null) {
+                    // Also set toLx/toLz for backward compatibility if available
+                    if (endPoint.getPlacedLx() != null && endPoint.getPlacedLz() != null) {
                         toLx = endPoint.getPlacedLx();
                         toLz = endPoint.getPlacedLz();
-                        if (toLx != null && toLz != null) {
+                        if (toPosition == null) {
                             log.debug("Last segment uses Point '{}' deprecated lx/lz: {}, {}",
                                 endPoint.getName(), toLx, toLz);
                         }

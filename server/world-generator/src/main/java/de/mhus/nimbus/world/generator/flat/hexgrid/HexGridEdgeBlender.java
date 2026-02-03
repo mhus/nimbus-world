@@ -13,7 +13,7 @@ import java.util.Random;
  * and interpolating along edges.
  */
 @Slf4j
-public class HexGridSideBlender {
+public class HexGridEdgeBlender {
 
     private final WFlat flat;
     private final BuilderContext context;
@@ -22,7 +22,7 @@ public class HexGridSideBlender {
     private final double shakeStrength;
     private final int blurRadius;
 
-    public HexGridSideBlender(WFlat flat, int width, BuilderContext context, double randomness,
+    public HexGridEdgeBlender(WFlat flat, int width, BuilderContext context, double randomness,
                               double shakeStrength, int blurRadius) {
         this.flat = flat;
         this.context = context;
@@ -57,16 +57,16 @@ public class HexGridSideBlender {
     private void blendSide(WHexGrid.EDGE direction, WFlat neighborFlat) {
         log.trace("Blending side: {}", direction);
 
-        SideBlender sideBlender = new SideBlender(flat, context, direction, neighborFlat, width, randomness,
+        EdgeBlender edgeBlender = new EdgeBlender(flat, context, direction, neighborFlat, width, randomness,
                 shakeStrength, blurRadius);
-        sideBlender.blend();
+        edgeBlender.blend();
     }
 
     /**
      * Helper class for blending a complete side with a neighbor.
      * Takes the neighbor's side data and blends it into our border area.
      */
-    private static class SideBlender {
+    private static class EdgeBlender {
         private final WFlat flat;
         private final BuilderContext context;
         private final WHexGrid.EDGE direction;
@@ -81,7 +81,7 @@ public class HexGridSideBlender {
         // Track which pixels were actually blended for post-processing
         private final boolean[][] blendedPixels;
 
-        public SideBlender(WFlat flat, BuilderContext context, WHexGrid.EDGE direction,
+        public EdgeBlender(WFlat flat, BuilderContext context, WHexGrid.EDGE direction,
                            WFlat neighborFlat, int width, double randomness,
                            double shakeStrength, int blurRadius) {
             this.flat = flat;

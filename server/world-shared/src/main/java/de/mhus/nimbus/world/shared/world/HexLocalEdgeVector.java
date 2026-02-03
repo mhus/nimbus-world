@@ -10,7 +10,7 @@ import de.mhus.nimbus.world.shared.util.HexLocalUtil;
  */
 public record HexLocalEdgeVector(WHexGrid.EDGE side, int numerator, int denominator) {
     public HexLocalEdgeVector {
-        if (denominator == 0) denominator = HexLocalUtil.DEFAULT_SIDE_DIVIDER;
+        if (denominator == 0) denominator = HexLocalUtil.DEFAULT_EDGE_DIVIDER;
         if (numerator < 0 || numerator > denominator) {
             throw new IllegalArgumentException("Numerator must be between 0 and denominator");
         }

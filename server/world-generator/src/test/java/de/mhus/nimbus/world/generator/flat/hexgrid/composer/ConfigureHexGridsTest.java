@@ -51,7 +51,7 @@ class ConfigureHexGridsTest {
             assertEquals("mountain", grid.getParameters().get("g_builder"));
             assertEquals("30", grid.getParameters().get("g_offset"));
             assertEquals("0.8", grid.getParameters().get("g_roughness"));
-            assertEquals("mountains", grid.getParameters().get("biome"));
+            assertEquals("mountain", grid.getParameters().get("biome"));  // BiomeType.MOUNTAINS defaultBuilder is "mountain"
             assertEquals("test-mountains", grid.getParameters().get("biomeName"));
         }
     }

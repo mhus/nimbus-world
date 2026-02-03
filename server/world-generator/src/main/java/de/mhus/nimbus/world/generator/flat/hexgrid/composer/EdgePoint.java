@@ -64,7 +64,7 @@ public class EdgePoint extends Point {
 
         // Center position (2 out of 4) on the edge
         int numerator = 2;
-        int denominator = de.mhus.nimbus.world.shared.util.HexLocalUtil.DEFAULT_SIDE_DIVIDER;
+        int denominator = de.mhus.nimbus.world.shared.util.HexLocalUtil.DEFAULT_EDGE_DIVIDER;
 
         return new de.mhus.nimbus.world.shared.world.HexLocalEdgeVector(edge, numerator, denominator);
     }

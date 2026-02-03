@@ -168,11 +168,6 @@ public abstract class Point extends Feature {
         @Deprecated
         private String placedInBiome;
 
-        /**
-         * @deprecated Use hexLocalEdgeVector instead
-         */
-        @Deprecated
-        private HexLocalSideCoordinate hexLocalSideCoordinate;
     }
 
     /**
@@ -255,10 +250,6 @@ public abstract class Point extends Feature {
                 return true;
             }
         }
-        // Check legacy format for backward compatibility
-        if (pointComposed.getHexLocalSideCoordinate() != null) {
-            return true;
-        }
         return pointComposed.getPlacedCoordinate() != null
             && pointComposed.getPlacedLx() != null
             && pointComposed.getPlacedLz() != null;
@@ -293,16 +284,6 @@ public abstract class Point extends Feature {
                 edge.side(),
                 edge.numerator(), edge.denominator(),
                 biomeName);
-        }
-
-        // Legacy format: HexLocalSideCoordinate (composer version)
-        if (pointComposed.getHexLocalSideCoordinate() != null) {
-            HexLocalSideCoordinate side = pointComposed.getHexLocalSideCoordinate();
-            return String.format("hex[%d,%d] side[%s] offset[%.2f] in %s",
-                side.getCoordinate().getQ(), side.getCoordinate().getR(),
-                side.getSide(),
-                side.getOffset() != null ? side.getOffset() : 0.0,
-                side.getBiome() != null ? side.getBiome() : "unknown");
         }
 
         // Legacy format: placedLx/placedLz
@@ -421,26 +402,5 @@ public abstract class Point extends Feature {
             pointComposed = new PointComposed();
         }
         pointComposed.setHexLocalEdgeVector(hexLocalEdgeVector);
-    }
-
-    // Legacy helper methods for backward compatibility
-
-    /**
-     * @deprecated Use getHexLocalEdgeVector() instead
-     */
-    @Deprecated
-    public HexLocalSideCoordinate getHexLocalSideCoordinate() {
-        return pointComposed != null ? pointComposed.getHexLocalSideCoordinate() : null;
-    }
-
-    /**
-     * @deprecated Use setHexLocalEdgeVector() instead
-     */
-    @Deprecated
-    public void setHexLocalSideCoordinate(HexLocalSideCoordinate hexLocalSideCoordinate) {
-        if (pointComposed == null) {
-            pointComposed = new PointComposed();
-        }
-        pointComposed.setHexLocalSideCoordinate(hexLocalSideCoordinate);
     }
 }

@@ -349,8 +349,8 @@ public class HexCompositeBuilderSimpleTest {
             HexVector2 neighborPos = HexMathUtil.getNeighborPosition(filled.getCoordinate(), side);
             WFlat neighborFlat = allFlats.get(neighborPos);
             if (neighborFlat != null) {
-                // Set parameter for SideBlenderBuilder
-                String paramKey = "g_side_flat_" + side.name().toLowerCase();
+                // Set parameter for EdgeBlenderBuilder
+                String paramKey = "g_edge_flat_" + side.name().toLowerCase();
                 hexGrid.getParameters().put(paramKey, neighborFlat.getFlatId());
                 log.trace("Set {} = {} for grid [{},{}]",
                     paramKey, neighborFlat.getFlatId(),
@@ -672,7 +672,7 @@ public class HexCompositeBuilderSimpleTest {
             // Draw edge line
             creator.addOverlay(new LineOverlay(worldC1X, worldC1Z, worldC2X, worldC2Z, Color.YELLOW, 3.0f));
 
-            // Calculate extended outer and inner lines (like in SideBlender)
+            // Calculate extended outer and inner lines (like in EdgeBlender)
             double dist1 = Math.sqrt(Math.pow(corner1[0] - centerX, 2) + Math.pow(corner1[1] - centerZ, 2));
             double dist2 = Math.sqrt(Math.pow(corner2[0] - centerX, 2) + Math.pow(corner2[1] - centerZ, 2));
 

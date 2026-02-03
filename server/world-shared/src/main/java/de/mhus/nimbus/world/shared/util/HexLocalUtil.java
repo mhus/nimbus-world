@@ -19,7 +19,7 @@ import de.mhus.nimbus.world.shared.world.WHexGrid;
  */
 public class HexLocalUtil {
 
-    public static final int DEFAULT_SIDE_DIVIDER = 4;
+    public static final int DEFAULT_EDGE_DIVIDER = 4;
     public static final int DEFAULT_POSITION_DIVIDER = 4;
     private static final double sqrt3 = Math.sqrt(3);
 
@@ -63,7 +63,7 @@ public class HexLocalUtil {
             throw new IllegalArgumentException("Invalid side: " + sidePart);
         }
         int numerator = 0;
-        int denominator = DEFAULT_SIDE_DIVIDER;
+        int denominator = DEFAULT_EDGE_DIVIDER;
         if (restPart.contains("/")) {
             String[] parts = restPart.split("/");
             if (parts.length != 2) {
@@ -82,7 +82,7 @@ public class HexLocalUtil {
         sb.append('<');
         sb.append(vector.side().getShortName());
         sb.append(vector.numerator());
-        if (vector.denominator() != DEFAULT_SIDE_DIVIDER && vector.denominator() != 0) {
+        if (vector.denominator() != DEFAULT_EDGE_DIVIDER && vector.denominator() != 0) {
             sb.append('/');
             sb.append(vector.denominator());
         }

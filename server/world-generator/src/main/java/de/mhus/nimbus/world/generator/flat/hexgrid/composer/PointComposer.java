@@ -439,21 +439,6 @@ public class PointComposer {
             }
         }
 
-        // Legacy: Check deprecated HexLocalSideCoordinate
-        if (point.getHexLocalSideCoordinate() != null) {
-            HexLocalSideCoordinate side = point.getHexLocalSideCoordinate();
-            // For side coordinates, calculate lx/lz from side + offset
-            int[] localPos = calculateLocalPositionFromSide(
-                side.getSide(), side.getOffset(), context.getHexGridSize());
-            // Legacy fields
-            point.setPlacedCoordinate(side.getCoordinate());
-            point.setPlacedLx(localPos[0]);
-            point.setPlacedLz(localPos[1]);
-            point.setPlacedInBiome(side.getBiome());
-            point.setStatus(FeatureStatus.COMPOSED);
-            return true;
-        }
-
         log.warn("Cannot finalize point {}: no position data", point.getName());
         return false;
     }
@@ -507,14 +492,6 @@ public class PointComposer {
             int lx = context.getHexGridSize() / 2 + relativePos.getX();
             int lz = context.getHexGridSize() / 2 + relativePos.getZ();
             return new PointPosition(gridCoord, lx, lz);
-        }
-
-        // Legacy: deprecated HexLocalSideCoordinate
-        if (point.getHexLocalSideCoordinate() != null) {
-            HexLocalSideCoordinate side = point.getHexLocalSideCoordinate();
-            int[] localPos = calculateLocalPositionFromSide(
-                side.getSide(), side.getOffset(), context.getHexGridSize());
-            return new PointPosition(side.getCoordinate(), localPos[0], localPos[1]);
         }
 
         return null;

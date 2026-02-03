@@ -8,11 +8,11 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.HashMap;
 
 /**
- * SideBlender manipulator builder.
+ * EdgeBlender manipulator builder.
  * Blends sides of hex grids with their neighbors, using side flats.
  * This is a manipulator builder that can be applied after the main terrain generation.
- * Set g_side_flat_north_east, g_side_flat_east, g_side_flat_south_east,
- * g_side_flat_south_west, g_side_flat_west, g_side_flat_north_west to define side flat ids.
+ * Set g_edge_flat_north_east, g_edge_flat_east, g_edge_flat_south_east,
+ * g_edge_flat_south_west, g_edge_flat_west, g_edge_flat_north_west to define side flat ids.
  * The flats will be loaded from WFlatService.
  * Set g_edge_blend_width to define the width of the blending area (default 20).
  * Set g_edge_blend_randomness to control random variations (default 0.5, range 0.0-1.0).
@@ -29,18 +29,18 @@ import java.util.HashMap;
  *   - 3-5 = stronger blur
  */
 @Slf4j
-public class SideBlenderBuilder extends HexGridBuilder {
+public class EdgeBlenderBuilder extends HexGridBuilder {
 
     @Override
     public void buildFlat() {
         WFlat flat = context.getFlat();
 
-        log.info("Blending sides for flat: {}", flat.getFlatId());
+        log.trace("Blending sides for flat: {}", flat.getFlatId());
 
         // Note: parameters come from HexGridBuilderService which already strips the "g_" prefix
         HashMap<WHexGrid.EDGE, String> sideFlats = new HashMap<>();
         for (var side : WHexGrid.EDGE.values()) {
-            String key = "side_flat_" + side.name().toLowerCase();
+            String key = "edge_flat_" + side.name().toLowerCase();
             String flatId = parameters.get(key);
             if (flatId != null) {
                 sideFlats.put(side, flatId);
@@ -68,10 +68,10 @@ public class SideBlenderBuilder extends HexGridBuilder {
         }
 
         // Blend sides with neighbors using the side blender
-        HexGridSideBlender sideBlender = new HexGridSideBlender(flat, width, context, randomness, shakeStrength, blurRadius);
-        sideBlender.blendAllSides(sideFlats);
+        HexGridEdgeBlender edgeBlender = new HexGridEdgeBlender(flat, width, context, randomness, shakeStrength, blurRadius);
+        edgeBlender.blendAllSides(sideFlats);
 
-        log.info("Side blending completed for flat: {}", flat.getFlatId());
+        log.trace("Side blending completed for flat: {}", flat.getFlatId());
     }
 
     @Override

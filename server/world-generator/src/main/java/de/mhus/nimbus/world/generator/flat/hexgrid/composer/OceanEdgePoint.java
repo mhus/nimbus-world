@@ -2,7 +2,6 @@ package de.mhus.nimbus.world.generator.flat.hexgrid.composer;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -114,7 +113,7 @@ public class OceanEdgePoint extends Point {
         }
 
         // Position at middle of the edge (numerator = denominator/2)
-        int denominator = de.mhus.nimbus.world.shared.util.HexLocalUtil.DEFAULT_SIDE_DIVIDER;
+        int denominator = de.mhus.nimbus.world.shared.util.HexLocalUtil.DEFAULT_EDGE_DIVIDER;
         int numerator = denominator / 2;
 
         log.info("OceanEdgePoint {}: Placed at grid ({},{}) edge {} leading to ocean/coast",
@@ -178,7 +177,7 @@ public class OceanEdgePoint extends Point {
     }
 
     private de.mhus.nimbus.world.shared.world.HexLocalEdgeVector createDefaultEdgeVector() {
-        int denominator = de.mhus.nimbus.world.shared.util.HexLocalUtil.DEFAULT_SIDE_DIVIDER;
+        int denominator = de.mhus.nimbus.world.shared.util.HexLocalUtil.DEFAULT_EDGE_DIVIDER;
         int numerator = denominator / 2;
         return new de.mhus.nimbus.world.shared.world.HexLocalEdgeVector(
             de.mhus.nimbus.world.shared.world.WHexGrid.EDGE.WEST, numerator, denominator);
