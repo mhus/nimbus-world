@@ -79,7 +79,7 @@
       "type": "ROAD",
       "startPointId": "rocky-hills",
       "endPointId": "coastline-west",
-      "levelMode": "ADJUST",
+      "levelMode": "ADJUST_MEAN",
       "meanLevelOffset": 1,
       "widthBlocks": 1,
       "roadType": "street",

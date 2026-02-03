@@ -46,13 +46,18 @@ public abstract class Flow extends Feature {
     /**
      * Level mode - determines how flow height is calculated.
      * FIXED: Use fixed 'level' parameter (default if not specified)
-     * ADJUST: Adapt to terrain height using 'meanLevelOffset'
+     * ADJUST_MEAN: Adapt to terrain with half offset: meanHeight + offset/2
+     * ADJUST_MINIMUM: Adapt to terrain without offset: meanHeight
+     * ADJUST_MAXIMUM: Adapt to terrain with full offset: meanHeight + offset
+     * where meanHeight = landLevel + landOffset/2
      */
     private LevelMode levelMode;
 
     /**
-     * Mean level offset - used when levelMode=ADJUST.
-     * Offset relative to mean biome height: meanHeight + meanLevelOffset
+     * Mean level offset - used when levelMode is ADJUST_MEAN, ADJUST_MINIMUM, or ADJUST_MAXIMUM.
+     * For ADJUST_MEAN: meanHeight + offset/2
+     * For ADJUST_MINIMUM: meanHeight (offset not used)
+     * For ADJUST_MAXIMUM: meanHeight + offset
      * where meanHeight = landLevel + landOffset/2
      */
     private Integer meanLevelOffset;
@@ -320,7 +325,8 @@ public abstract class Flow extends Feature {
             int gridAOffset = gridALandOffset != null ? gridALandOffset : 0;
             int gridAMeanHeight = gridALand + gridAOffset / 2;
 
-            // If we have a previous level, use it as level1
+            // Calculate mean height (will be used for all ADJUST modes)
+            int meanHeight;
             if (previousLevel != null) {
                 // Calculate level2 for segment end
                 if (gridBLandLevel != null) {
@@ -329,16 +335,30 @@ public abstract class Flow extends Feature {
                     int gridBOffset = gridBLandOffset != null ? gridBLandOffset : 0;
                     int gridBMeanHeight = gridBLand + gridBOffset / 2;
 
-                    int level2 = (gridAMeanHeight + gridBMeanHeight) / 2 + offset;
-                    return level2;
+                    meanHeight = (gridAMeanHeight + gridBMeanHeight) / 2;
                 } else {
                     // Last segment - just use gridA
-                    return gridAMeanHeight + offset;
+                    meanHeight = gridAMeanHeight;
                 }
             } else {
                 // First segment - use gridA mean height
-                return gridAMeanHeight + offset;
+                meanHeight = gridAMeanHeight;
             }
+
+            // Apply offset based on mode
+            if (mode == LevelMode.ADJUST_MEAN) {
+                // ADJUST_MEAN: offset/2 (ADJUST is deprecated, treated as ADJUST_MEAN)
+                return meanHeight + offset / 2;
+            } else if (mode == LevelMode.ADJUST_MINIMUM) {
+                // ADJUST_MINIMUM: no offset
+                return meanHeight;
+            } else if (mode == LevelMode.ADJUST_MAXIMUM) {
+                // ADJUST_MAXIMUM: full offset
+                return meanHeight + offset;
+            }
+
+            // Fallback (should not happen)
+            return meanHeight + offset / 2;
         }
     }
 }

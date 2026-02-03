@@ -1559,10 +1559,22 @@ public class FlowComposer {
 
             // Convert each FlowSegment to WallConfigPart
             for (FlowSegment segment : wallSegments) {
-                // Create parts for entry point (fromSide or fromLx/fromLz)
-                if (segment.hasFromCoordinates()) {
-                    // Use lx/lz coordinates (Point endpoint)
+                // Create parts for entry point (fromPosition or fromSide)
+                if (segment.getFromPosition() != null) {
+                    // Use HexLocal position string (Point endpoint)
                     WallConfigPart part = WallConfigPart.createPositionPart(
+                        segment.getFromPosition(),
+                        segment.getHeight(),
+                        segment.getWidth(),
+                        segment.getLevel(),
+                        segment.getMaterial()
+                    );
+                    areaGrid.addWallConfigPart(part);
+                    log.debug("Added position-based wall part (from) at position={}",
+                        segment.getFromPosition());
+                } else if (segment.hasFromCoordinates()) {
+                    // Fallback: Use deprecated lx/lz coordinates
+                    WallConfigPart part = WallConfigPart.createPositionPartDeprecated(
                         segment.getFromLx(),
                         segment.getFromLz(),
                         segment.getHeight(),
@@ -1571,8 +1583,8 @@ public class FlowComposer {
                         segment.getMaterial()
                     );
                     areaGrid.addWallConfigPart(part);
-                    log.debug("Added position-based wall part (from) at lx={}, lz={}",
-                        segment.getFromLx(), segment.getFromLz());
+                    log.warn("Using deprecated lx/lz for wall (from) at grid {}: lx={}, lz={}",
+                        coordKey, segment.getFromLx(), segment.getFromLz());
                 } else if (segment.getFromSide() != null) {
                     // Use SIDE (Biome endpoint)
                     WallConfigPart part = WallConfigPart.createSidePart(
@@ -1585,10 +1597,22 @@ public class FlowComposer {
                     areaGrid.addWallConfigPart(part);
                 }
 
-                // Create parts for exit point (toSide or toLx/toLz)
-                if (segment.hasToCoordinates()) {
-                    // Use lx/lz coordinates (Point endpoint)
+                // Create parts for exit point (toPosition or toSide)
+                if (segment.getToPosition() != null) {
+                    // Use HexLocal position string (Point endpoint)
                     WallConfigPart part = WallConfigPart.createPositionPart(
+                        segment.getToPosition(),
+                        segment.getHeight(),
+                        segment.getWidth(),
+                        segment.getLevel(),
+                        segment.getMaterial()
+                    );
+                    areaGrid.addWallConfigPart(part);
+                    log.debug("Added position-based wall part (to) at position={}",
+                        segment.getToPosition());
+                } else if (segment.hasToCoordinates()) {
+                    // Fallback: Use deprecated lx/lz coordinates
+                    WallConfigPart part = WallConfigPart.createPositionPartDeprecated(
                         segment.getToLx(),
                         segment.getToLz(),
                         segment.getHeight(),
@@ -1597,8 +1621,8 @@ public class FlowComposer {
                         segment.getMaterial()
                     );
                     areaGrid.addWallConfigPart(part);
-                    log.debug("Added position-based wall part (to) at lx={}, lz={}",
-                        segment.getToLx(), segment.getToLz());
+                    log.warn("Using deprecated lx/lz for wall (to) at grid {}: lx={}, lz={}",
+                        coordKey, segment.getToLx(), segment.getToLz());
                 } else if (segment.getToSide() != null && !segment.getToSide().equals(segment.getFromSide())) {
                     // Use SIDE (Biome endpoint)
                     WallConfigPart part = WallConfigPart.createSidePart(

@@ -11,10 +11,29 @@ public enum LevelMode {
     FIXED,
 
     /**
-     * Adjust level - adapts to terrain height of biomes.
+     * Adjust level with half offset - adapts to terrain height of biomes.
      * Uses the 'meanLevelOffset' parameter.
-     * Level is calculated as: (gridA.meanHeight + gridB.meanHeight) / 2 + meanLevelOffset
-     * where meanHeight = landLevel + landOffset/2
+     * Level is calculated as: meanHeight + offset/2
+     * where meanHeight = (gridA.meanHeight + gridB.meanHeight) / 2
+     * and meanHeight = landLevel + landOffset/2
      */
-    ADJUST
+    ADJUST_MEAN,
+
+    /**
+     * Adjust to minimum level - adapts to terrain without offset.
+     * Level is calculated as: meanHeight (no offset applied)
+     * where meanHeight = (gridA.meanHeight + gridB.meanHeight) / 2
+     * and meanHeight = landLevel + landOffset/2
+     */
+    ADJUST_MINIMUM,
+
+    /**
+     * Adjust to maximum level - adapts to terrain with full offset.
+     * Uses the 'meanLevelOffset' parameter.
+     * Level is calculated as: meanHeight + offset
+     * where meanHeight = (gridA.meanHeight + gridB.meanHeight) / 2
+     * and meanHeight = landLevel + landOffset/2
+     */
+    ADJUST_MAXIMUM,
+
 }

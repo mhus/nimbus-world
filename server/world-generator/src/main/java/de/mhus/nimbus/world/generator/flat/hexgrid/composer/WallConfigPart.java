@@ -24,8 +24,11 @@ public class WallConfigPart {
 
     // SIDE fields - either side-based OR position-based
     private EDGE side;           // Side-based wall (NE, NW, etc.)
-    private Integer lx;          // Position-based wall x
-    private Integer lz;          // Position-based wall z
+    private String position;     // HexLocal position string (e.g., "<NE 2/4>" or "<256;256>")
+    @Deprecated
+    private Integer lx;          // Deprecated: use position instead
+    @Deprecated
+    private Integer lz;          // Deprecated: use position instead
     private Integer height;
     private Integer width;
     private Integer level;
@@ -52,10 +55,27 @@ public class WallConfigPart {
     }
 
     /**
-     * Creates a position-based wall segment part
+     * Creates a position-based wall segment part with HexLocal position string
      */
-    public static WallConfigPart createPositionPart(Integer lx, Integer lz, Integer height,
+    public static WallConfigPart createPositionPart(String position, Integer height,
                                                      Integer width, Integer level, String material) {
+        return WallConfigPart.builder()
+            .partType(PartType.SIDE)
+            .position(position)
+            .height(height)
+            .width(width)
+            .level(level)
+            .material(material)
+            .build();
+    }
+
+    /**
+     * Creates a position-based wall segment part (deprecated version using lx/lz)
+     * @deprecated Use createPositionPart(String position, ...) instead
+     */
+    @Deprecated
+    public static WallConfigPart createPositionPartDeprecated(Integer lx, Integer lz, Integer height,
+                                                               Integer width, Integer level, String material) {
         return WallConfigPart.builder()
             .partType(PartType.SIDE)
             .lx(lx)

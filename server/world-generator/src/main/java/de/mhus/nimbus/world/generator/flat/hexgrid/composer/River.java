@@ -76,7 +76,7 @@ public class River extends Flow {
 
         // For ADJUST mode with previousLevel: enforce downhill (level2 <= level1)
         LevelMode mode = getLevelMode() != null ? getLevelMode() : LevelMode.FIXED;
-        if (mode == LevelMode.ADJUST && previousLevel != null) {
+        if (previousLevel != null) {
             level = Math.min(level, previousLevel);
         }
 

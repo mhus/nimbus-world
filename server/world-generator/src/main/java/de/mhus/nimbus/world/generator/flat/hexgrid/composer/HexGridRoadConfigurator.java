@@ -660,23 +660,31 @@ public class HexGridRoadConfigurator {
             for (WallConfigPart part : sideParts) {
                 Map<String, Object> entry = new HashMap<>();
 
-                // Side-based wall segment
+                // Side-based wall segment - convert to HexLocal edge format
                 if (part.getSide() != null) {
                     String sideKey = part.getSide().name();
                     // Skip duplicates
                     if (addedSides.contains(sideKey)) {
                         continue;
                     }
-                    entry.put("side", sideKey);
+                    // Convert EDGE to HexLocal format: "NORTH_EAST" -> "<NE 2>"
+                    String edgeShort = convertEdgeToShortForm(sideKey);
+                    entry.put("position", String.format("<%s 2>", edgeShort));  // Default to middle (2/4)
                     addedSides.add(sideKey);
                 }
-                // Position-based wall segment
+                // Position-based wall segment - use HexLocal position string directly
+                else if (part.getPosition() != null) {
+                    entry.put("position", part.getPosition());
+                }
+                // Deprecated: lx/lz coordinates
                 else if (part.getLx() != null && part.getLz() != null) {
-                    entry.put("lx", part.getLx());
-                    entry.put("lz", part.getLz());
+                    // Convert lx/lz to HexLocal format: "<256;256>"
+                    entry.put("position", String.format("<%d;%d>", part.getLx(), part.getLz()));
+                    log.warn("Using deprecated lx/lz for wall at grid {}: lx={}, lz={}",
+                        grid.getPositionKey(), part.getLx(), part.getLz());
                 }
                 else {
-                    log.warn("WallConfigPart has neither side nor lx/lz at grid {}", grid.getPositionKey());
+                    log.warn("WallConfigPart has no valid position at grid {}", grid.getPositionKey());
                     continue;
                 }
 
