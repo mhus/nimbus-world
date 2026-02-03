@@ -49,11 +49,14 @@ import java.util.Set;
  * <p>
  * Optional parameters:
  * - position: Center position (default: flat center)
- * - level: Center level (default: 0)
+ * - level: Center level (default: calculated from average toLevel of all roads)
  * - roadCurvature: Maximum lateral offset for road curves in pixels (default: 10)
  * - roadWaves: Number of sine wave cycles along the road (default: 1.5)
  * - plazaSize: Size of plaza at center (default: 0 = no plaza)
  * - plazaMaterial: Material for plaza (default: best material from routes, street > trail)
+ * <p>
+ * Note: The center level is automatically calculated as the average toLevel of all roads
+ * arriving at the center. If specified in the configuration, it's used as a fallback.
  */
 @Slf4j
 public class RoadBuilder extends HexGridBuilder {
@@ -103,14 +106,21 @@ public class RoadBuilder extends HexGridBuilder {
                 centerX = flat.getSizeX() / 2;
                 centerZ = flat.getSizeZ() / 2;
             }
-            int centerLevel = config.getCenter().getLevel();
 
-            log.debug("Parsed {} roads with center at ({}, {})",
-                    config.getRoute().size(), centerX, centerZ);
+            // Calculate center level from average toLevel of all roads
+            int centerLevel = calculateCenterLevel(config);
+
+            log.debug("Parsed {} roads with center at ({}, {}) and level {}",
+                    config.getRoute().size(), centerX, centerZ, centerLevel);
 
             // Build each road from its side to the center
             for (Road road : config.getRoute()) {
                 buildRoadToCenter(flat, road, centerX, centerZ, centerLevel);
+            }
+
+            // Fill center point to ensure all roads meet (prevent gaps)
+            if (!config.getRoute().isEmpty()) {
+                fillCenterPoint(flat, centerX, centerZ, centerLevel, config);
             }
 
             // Build plaza at center if configured
@@ -603,6 +613,95 @@ public class RoadBuilder extends HexGridBuilder {
         }
 
         return hasStreet ? "street" : "track";
+    }
+
+    /**
+     * Calculate center level from average toLevel of all roads arriving at the center.
+     * Falls back to configured center level if available, otherwise uses road levels.
+     */
+    private int calculateCenterLevel(RoadConfiguration config) {
+        int totalLevel = 0;
+        int roadCount = 0;
+        int configuredCenterLevel = config.getCenter().getLevel();
+
+        for (Road road : config.getRoute()) {
+            // Get the level this road arrives at (toLevel or fallback to centerLevel)
+            int arrivalLevel;
+            if (road.getToLevel() != null) {
+                arrivalLevel = road.getToLevel();
+            } else if (configuredCenterLevel > 0) {
+                arrivalLevel = configuredCenterLevel;
+            } else {
+                // Fallback: use fromLevel or level
+                arrivalLevel = road.getFromLevel() != null ? road.getFromLevel() : road.getLevel();
+            }
+
+            totalLevel += arrivalLevel;
+            roadCount++;
+        }
+
+        // Use average level of arriving roads, or configured center level as fallback
+        int centerLevel = roadCount > 0 ? totalLevel / roadCount : configuredCenterLevel;
+        // Ensure minimum level 1 (above sea)
+        return Math.max(1, centerLevel);
+    }
+
+    /**
+     * Fill the center point to ensure all roads meet without gaps.
+     * Draws a small circle around the center to connect all incoming roads.
+     */
+    private void fillCenterPoint(WFlat flat, int centerX, int centerZ, int centerLevel, RoadConfiguration config) {
+        // Determine material and maximum width from roads
+        String plazaMaterial = determinePlazaMaterial(config);
+        int material = plazaMaterial.equalsIgnoreCase("track") ? FlatMaterialService.TRACK : FlatMaterialService.STREET;
+
+        // Get water block definition
+        String waterBlockDef = getWaterBlockDef(flat);
+
+        // Find maximum road width to determine fill radius
+        int maxWidth = 0;
+        for (Road road : config.getRoute()) {
+            if (road.getWidth() > maxWidth) {
+                maxWidth = road.getWidth();
+            }
+        }
+
+        // Fill radius should be at least half the maximum width, minimum 2
+        int fillRadius = Math.max(2, maxWidth / 2 + 1);
+
+        // Draw small circle at center to connect all roads
+        for (int dx = -fillRadius; dx <= fillRadius; dx++) {
+            for (int dz = -fillRadius; dz <= fillRadius; dz++) {
+                // Check if point is within circle
+                double distanceSquared = dx * dx + dz * dz;
+                if (distanceSquared > fillRadius * fillRadius) {
+                    continue;
+                }
+
+                int x = centerX + dx;
+                int z = centerZ + dz;
+
+                // Check bounds
+                if (x < 0 || x >= flat.getSizeX() || z < 0 || z >= flat.getSizeZ()) {
+                    continue;
+                }
+
+                // Check if there's water at this position
+                boolean hasWater = hasWaterAtPosition(flat, x, z, waterBlockDef);
+
+                // Don't draw where water is present
+                if (hasWater) {
+                    continue;
+                }
+
+                // Set level and material
+                flat.setLevel(x, z, centerLevel);
+                flat.setColumn(x, z, material);
+            }
+        }
+
+        log.debug("Filled center point at ({}, {}) with radius {} and level {}",
+            centerX, centerZ, fillRadius, centerLevel);
     }
 
     /**
