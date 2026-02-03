@@ -514,12 +514,7 @@ public class HexGridRoadConfigurator {
                 if (part.getPosition() != null && !part.getPosition().isEmpty()) {
                     entry.put("position", part.getPosition());
                 }
-                // Priority 2: lx/lz coordinates (Point endpoints)
-                else if (part.getLx() != null && part.getLz() != null) {
-                    entry.put("lx", part.getLx());
-                    entry.put("lz", part.getLz());
-                }
-                // Priority 3: Side-based routing (fallback for backward compatibility)
+                // Priority 2: Side-based routing (fallback for backward compatibility)
                 else if (part.getSide() != null) {
                     String sideKey = part.getSide().name();
                     // Skip duplicates
@@ -530,7 +525,7 @@ public class HexGridRoadConfigurator {
                     addedFromSides.add(sideKey);
                 }
                 else {
-                    log.warn("RiverConfigPart (FROM) has neither position, side, nor lx/lz at grid {}", grid.getPositionKey());
+                    log.warn("RiverConfigPart (FROM) has neither position nor side at grid {}", grid.getPositionKey());
                     continue;
                 }
 
@@ -564,12 +559,7 @@ public class HexGridRoadConfigurator {
                 if (part.getPosition() != null && !part.getPosition().isEmpty()) {
                     entry.put("position", part.getPosition());
                 }
-                // Priority 2: lx/lz coordinates (Point endpoints)
-                else if (part.getLx() != null && part.getLz() != null) {
-                    entry.put("lx", part.getLx());
-                    entry.put("lz", part.getLz());
-                }
-                // Priority 3: Side-based routing (fallback for backward compatibility)
+                // Priority 2: Side-based routing (fallback for backward compatibility)
                 else if (part.getSide() != null) {
                     String sideKey = part.getSide().name();
                     // Skip duplicates
@@ -580,7 +570,7 @@ public class HexGridRoadConfigurator {
                     addedToSides.add(sideKey);
                 }
                 else {
-                    log.warn("RiverConfigPart (TO) has neither position, side, nor lx/lz at grid {}", grid.getPositionKey());
+                    log.warn("RiverConfigPart (TO) has neither position nor side at grid {}", grid.getPositionKey());
                     continue;
                 }
 

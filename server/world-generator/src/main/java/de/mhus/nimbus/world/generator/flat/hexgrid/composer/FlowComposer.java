@@ -1431,22 +1431,9 @@ public class FlowComposer {
                 Integer fromLevel = segment.getFromLevel() != null ? segment.getFromLevel() : segment.getLevel();
                 Integer toLevel = segment.getToLevel() != null ? segment.getToLevel() : segment.getLevel();
 
-                // Create FROM parts (from lx/lz or from position string or from SIDE)
-                if (segment.hasFromCoordinates()) {
-                    // Use lx/lz coordinates (Point endpoint)
-                    RiverConfigPart part = RiverConfigPart.createFromPositionPart(
-                        segment.getFromLx(),
-                        segment.getFromLz(),
-                        segment.getWidth(),
-                        segment.getDepth(),
-                        fromLevel,
-                        groupId
-                    );
-                    areaGrid.addRiverConfigPart(part);
-                    log.debug("Added lx/lz-based river FROM part at lx={}, lz={} with level={}",
-                        segment.getFromLx(), segment.getFromLz(), fromLevel);
-                } else if (segment.hasFromPosition()) {
-                    // Use HexLocal position string (grid-to-grid transition)
+                // Create FROM parts (priority: position string > SIDE)
+                if (segment.hasFromPosition()) {
+                    // Use HexLocal position string (grid-to-grid transition or Point endpoint)
                     RiverConfigPart part = RiverConfigPart.createFromPositionStringPart(
                         segment.getFromPosition(),
                         segment.getWidth(),
@@ -1470,22 +1457,9 @@ public class FlowComposer {
                     log.debug("Added SIDE-based river FROM part: {} with level={}", segment.getFromSide(), fromLevel);
                 }
 
-                // Create TO parts (to lx/lz or to position string or to SIDE)
-                if (segment.hasToCoordinates()) {
-                    // Use lx/lz coordinates (Point endpoint)
-                    RiverConfigPart part = RiverConfigPart.createToPositionPart(
-                        segment.getToLx(),
-                        segment.getToLz(),
-                        segment.getWidth(),
-                        segment.getDepth(),
-                        toLevel,
-                        groupId
-                    );
-                    areaGrid.addRiverConfigPart(part);
-                    log.debug("Added lx/lz-based river TO part at lx={}, lz={} with level={}",
-                        segment.getToLx(), segment.getToLz(), toLevel);
-                } else if (segment.hasToPosition()) {
-                    // Use HexLocal position string (grid-to-grid transition)
+                // Create TO parts (priority: position string > SIDE)
+                if (segment.hasToPosition()) {
+                    // Use HexLocal position string (grid-to-grid transition or Point endpoint)
                     RiverConfigPart part = RiverConfigPart.createToPositionStringPart(
                         segment.getToPosition(),
                         segment.getWidth(),
