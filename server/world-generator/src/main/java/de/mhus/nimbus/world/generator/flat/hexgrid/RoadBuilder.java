@@ -57,8 +57,16 @@ import java.util.Map;
 public class RoadBuilder extends HexGridBuilder {
 
     private static final ObjectMapper objectMapper = new ObjectMapper();
+
+    // Legacy parameters (kept for backward compatibility)
     private static final int DEFAULT_CURVATURE = 10;  // Default maximum lateral offset for curves
     private static final double DEFAULT_WAVES = 1.5;  // Default number of sine wave cycles
+
+    // New pathfinding parameters
+    private static final int DEFAULT_MAX_SLOPE = 1;  // Maximum elevation change per block
+    private static final int DEFAULT_TERRAIN_THRESHOLD = 5;  // Distance from terrain to trigger TerrainPathFinder
+    private static final double DEFAULT_MAX_DRIFT_RATIO = 1.5;  // Max path length ratio (1.5 = 50% longer)
+    private static final double DEFAULT_STRAIGHTNESS = 0.7;  // 0.0 = very curvy, 1.0 = straight
 
     @Override
     public void buildFlat() {
@@ -172,68 +180,138 @@ public class RoadBuilder extends HexGridBuilder {
     }
 
     /**
-     * Build a road from a position to the center of the hex grid with slight curves.
+     * Build a road from a position to the center using intelligent pathfinding.
+     * Chooses between TerrainPathFinder (terrain-adaptive) and StraightPathFinder (elevated/deep).
      */
     private void buildRoadToCenter(WFlat flat, Road road, int centerX, int centerZ, int centerLevel) {
-        // Get curvature parameters
-        int curvature = parseIntParameter(parameters, "roadCurvature", DEFAULT_CURVATURE);
-        double waves = parseDoubleParameter(parameters, "roadWaves", DEFAULT_WAVES);
-
         // Get start coordinates from position string
         int[] startCoords = getAbsoluteCoordinates(road.getPosition(), flat.getSizeX(), flat.getSizeZ());
-        log.debug("Building road from {} to center", road.getPosition());
-
-        // Calculate road path from start to center
-        int dx = centerX - startCoords[0];
-        int dz = centerZ - startCoords[1];
-        double distance = Math.sqrt(dx * dx + dz * dz);
-        int steps = (int) Math.ceil(distance);
-
-        // Calculate perpendicular direction for lateral offset
-        double[] perpDir = calculatePerpendicularDirection(dx, dz);
-
-        // Determine start and end levels
+        int startX = startCoords[0];
+        int startZ = startCoords[1];
         int startLevel = road.getLevel();
         int endLevel = centerLevel > 0 ? centerLevel : startLevel;
 
-        // Draw road along the curved path from edge to center
-        for (int step = 0; step <= steps; step++) {
-            double t = steps > 0 ? (double) step / steps : 0.0;
+        log.debug("Building road from {} (level={}) to center ({},{}) (level={})",
+            road.getPosition(), startLevel, centerX, centerZ, endLevel);
 
-            // Base position (straight line)
-            double baseX = startCoords[0] + t * dx;
-            double baseZ = startCoords[1] + t * dz;
+        // Read pathfinding parameters
+        int maxSlopePerBlock = parseIntParameter(parameters, "maxSlopePerBlock", DEFAULT_MAX_SLOPE);
+        int terrainThreshold = parseIntParameter(parameters, "terrainThreshold", DEFAULT_TERRAIN_THRESHOLD);
+        double maxDriftRatio = parseDoubleParameter(parameters, "maxDriftRatio", DEFAULT_MAX_DRIFT_RATIO);
+        double straightness = parseDoubleParameter(parameters, "straightness", DEFAULT_STRAIGHTNESS);
+        int maxLateralOffset = parseIntParameter(parameters, "roadCurvature", DEFAULT_CURVATURE);
 
-            // Calculate lateral offset using sine wave
-            // Sine creates smooth, natural curves
-            double sineValue = Math.sin(t * Math.PI * 2.0 * waves);
-            double lateralOffset = sineValue * curvature;
+        // Determine which pathfinder to use
+        List<TerrainPathFinder.PathPoint> path = null;
+        boolean useTerrainPathfinder = shouldUseTerrainPathfinder(
+            flat, startX, startZ, startLevel, centerX, centerZ, endLevel, terrainThreshold);
 
-            // Apply lateral offset perpendicular to road direction
-            int x = (int) (baseX + lateralOffset * perpDir[0]);
-            int z = (int) (baseZ + lateralOffset * perpDir[1]);
+        if (useTerrainPathfinder) {
+            // Try terrain-adaptive pathfinding
+            log.debug("Using TerrainPathFinder (road near terrain)");
+            TerrainPathFinder terrainFinder = new TerrainPathFinder(flat, maxSlopePerBlock, maxDriftRatio);
+            path = terrainFinder.findPath(startX, startZ, startLevel, centerX, centerZ, endLevel);
 
-            // Interpolate width and level from start to center
-            int width = road.getWidth();
-            int level = (int) (startLevel + t * (endLevel - startLevel));
+            if (path == null) {
+                log.debug("TerrainPathFinder failed, falling back to StraightPathFinder");
+            }
+        }
 
-            // Draw road segment
-            drawRoadSegment(flat, x, z, width, level, road.getType());
+        // Fall back to straight pathfinding if terrain pathfinder not used or failed
+        if (path == null) {
+            log.debug("Using StraightPathFinder (road elevated/deep or terrain path blocked)");
+            long seed = flat.getFlatId().hashCode();  // Deterministic seed
+            StraightPathFinder straightFinder = new StraightPathFinder(
+                maxSlopePerBlock, straightness, maxLateralOffset, seed);
+            path = straightFinder.findPath(startX, startZ, startLevel, centerX, centerZ, endLevel);
+        }
+
+        // Draw the road along the path
+        if (path != null && !path.isEmpty()) {
+            // Draw segments between consecutive path points
+            for (int i = 0; i < path.size() - 1; i++) {
+                TerrainPathFinder.PathPoint p1 = path.get(i);
+                TerrainPathFinder.PathPoint p2 = path.get(i + 1);
+
+                // Calculate direction
+                double dirX = p2.x - p1.x;
+                double dirZ = p2.z - p1.z;
+                double dirLength = Math.sqrt(dirX * dirX + dirZ * dirZ);
+
+                if (dirLength > 0.001) {
+                    dirX /= dirLength;
+                    dirZ /= dirLength;
+
+                    // Interpolate points between p1 and p2
+                    int steps = (int) Math.ceil(dirLength);
+                    for (int step = 0; step <= steps; step++) {
+                        double t = steps > 0 ? (double) step / steps : 0;
+                        int x = (int) Math.round(p1.x + t * (p2.x - p1.x));
+                        int z = (int) Math.round(p1.z + t * (p2.z - p1.z));
+                        int level = (int) Math.round(p1.level + t * (p2.level - p1.level));
+
+                        drawRoadSegment(flat, x, z, road.getWidth(), level, road.getType(), dirX, dirZ);
+                    }
+                }
+            }
+
+            // Draw last point
+            if (!path.isEmpty()) {
+                TerrainPathFinder.PathPoint lastPoint = path.get(path.size() - 1);
+                double dirX = 0, dirZ = 1;
+                if (path.size() > 1) {
+                    TerrainPathFinder.PathPoint prevPoint = path.get(path.size() - 2);
+                    dirX = lastPoint.x - prevPoint.x;
+                    dirZ = lastPoint.z - prevPoint.z;
+                    double dirLength = Math.sqrt(dirX * dirX + dirZ * dirZ);
+                    if (dirLength > 0.001) {
+                        dirX /= dirLength;
+                        dirZ /= dirLength;
+                    }
+                }
+                drawRoadSegment(flat, lastPoint.x, lastPoint.z, road.getWidth(), lastPoint.level, road.getType(), dirX, dirZ);
+            }
+
+            log.debug("Road built with {} segments", path.size());
+        } else {
+            log.warn("Failed to generate path for road from {} to center", road.getPosition());
         }
     }
 
     /**
-     * Calculate perpendicular direction vector (normalized).
-     * Returns a unit vector perpendicular to the direction (dx, dz).
+     * Determines whether to use TerrainPathFinder based on road's distance from terrain.
+     *
+     * @param terrainThreshold If road is within this distance from terrain, use TerrainPathFinder
+     * @return true if TerrainPathFinder should be used
      */
-    private double[] calculatePerpendicularDirection(int dx, int dz) {
-        // Perpendicular vector is (-dz, dx)
-        double length = Math.sqrt(dx * dx + dz * dz);
-        if (length == 0) {
-            return new double[]{0, 0};
+    private boolean shouldUseTerrainPathfinder(WFlat flat, int startX, int startZ, int startLevel,
+                                                 int endX, int endZ, int endLevel, int terrainThreshold) {
+        // Sample a few points along the direct path to check terrain distance
+        int samples = 5;
+        for (int i = 0; i <= samples; i++) {
+            double t = (double) i / samples;
+            int x = (int) (startX + t * (endX - startX));
+            int z = (int) (startZ + t * (endZ - startZ));
+            int level = (int) (startLevel + t * (endLevel - startLevel));
+
+            // Check bounds
+            if (x < 0 || x >= flat.getSizeX() || z < 0 || z >= flat.getSizeZ()) {
+                continue;
+            }
+
+            int terrainLevel = flat.getLevel(x, z);
+            int distanceFromTerrain = Math.abs(level - terrainLevel);
+
+            if (distanceFromTerrain <= terrainThreshold) {
+                // Road is close to terrain - use terrain pathfinder
+                return true;
+            }
         }
-        return new double[]{-dz / length, dx / length};
+
+        // Road is elevated or deep - use straight pathfinder
+        return false;
     }
+
 
     /**
      * Parse integer parameter with default value.
@@ -294,9 +372,12 @@ public class RoadBuilder extends HexGridBuilder {
 
     /**
      * Draw a road segment at the given position with the given width.
+     *
+     * @param dirX Direction X component (normalized)
+     * @param dirZ Direction Z component (normalized)
      */
     private void drawRoadSegment(WFlat flat, int centerX, int centerZ, int width, int level,
-                                  String type) {
+                                  String type, double dirX, double dirZ) {
         // Determine material based on type
         int centerMaterial = type.equalsIgnoreCase("track") ? FlatMaterialService.TRACK : FlatMaterialService.STREET;
         int borderMaterial = type.equalsIgnoreCase("track") ? FlatMaterialService.TRACK_BORDER : FlatMaterialService.STREET_BORDER;
@@ -305,45 +386,52 @@ public class RoadBuilder extends HexGridBuilder {
         // Get water block definition
         String waterBlockDef = getWaterBlockDef(flat);
 
-        // Draw center and edges
+        // Calculate perpendicular direction (rotate 90 degrees)
+        // If direction is (dx, dz), perpendicular is (-dz, dx)
+        double perpX = -dirZ;
+        double perpZ = dirX;
+
+        // Draw road perpendicular to movement direction
         int halfWidth = width / 2;
-        for (int dx = -halfWidth; dx <= halfWidth; dx++) {
-            for (int dz = -halfWidth; dz <= halfWidth; dz++) {
-                int x = centerX + dx;
-                int z = centerZ + dz;
 
-                // Check bounds
-                if (x < 0 || x >= flat.getSizeX() || z < 0 || z >= flat.getSizeZ()) {
-                    continue;
-                }
+        // Along the direction (we draw just the center point in this direction)
+        // Perpendicular to direction (we extend halfWidth in both directions)
+        for (int perpOffset = -halfWidth; perpOffset <= halfWidth; perpOffset++) {
+            // Calculate actual position using perpendicular offset
+            int x = (int) Math.round(centerX + perpOffset * perpX);
+            int z = (int) Math.round(centerZ + perpOffset * perpZ);
 
-                // Check if there's water at this position
-                boolean hasWater = hasWaterAtPosition(flat, x, z, waterBlockDef);
+            // Check bounds
+            if (x < 0 || x >= flat.getSizeX() || z < 0 || z >= flat.getSizeZ()) {
+                continue;
+            }
 
-                if (hasWater) {
-                    // Build bridge: extraBlock at least 3 blocks above water level
-                    int waterLevel = getWaterLevel(flat, x, z);
-                    int bridgeLevel = Math.max(level, waterLevel + 3);
+            // Check if there's water at this position
+            boolean hasWater = hasWaterAtPosition(flat, x, z, waterBlockDef);
 
-                    // Set bridge as extra block
-                    String bridgeBlockDef = getBridgeBlockDef(flat, bridgeMaterial);
-                    flat.setExtraBlock(x, bridgeLevel, z, bridgeBlockDef);
+            if (hasWater) {
+                // Build bridge: extraBlock at least 3 blocks above water level
+                int waterLevel = getWaterLevel(flat, x, z);
+                int bridgeLevel = Math.max(level, waterLevel + 3);
+
+                // Set bridge as extra block
+                String bridgeBlockDef = getBridgeBlockDef(flat, bridgeMaterial);
+                flat.setExtraBlock(x, bridgeLevel, z, bridgeBlockDef);
+            } else {
+                // Normal road: set level and material
+                // Determine material based on distance from center
+                int material;
+                if (Math.abs(perpOffset) <= 1) {
+                    // Center of road
+                    material = centerMaterial;
                 } else {
-                    // Normal road: set level and material
-                    // Determine material based on position relative to center
-                    int material;
-                    if (Math.abs(dx) <= 1 && Math.abs(dz) <= 1) {
-                        // Center of road
-                        material = centerMaterial;
-                    } else {
-                        // Border/edge of road
-                        material = borderMaterial;
-                    }
-
-                    // Set level and material
-                    flat.setLevel(x, z, level);
-                    flat.setColumn(x, z, material);
+                    // Border/edge of road
+                    material = borderMaterial;
                 }
+
+                // Set level and material
+                flat.setLevel(x, z, level);
+                flat.setColumn(x, z, material);
             }
         }
     }

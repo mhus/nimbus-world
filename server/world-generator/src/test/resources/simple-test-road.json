@@ -81,7 +81,7 @@
       "endPointId": "coastline-west",
       "levelMode": "ADJUST",
       "meanLevelOffset": 1,
-      "widthBlocks": 10,
+      "widthBlocks": 1,
       "tendLeft": "NONE",
       "tendRight": "NONE",
       "parameters": {
