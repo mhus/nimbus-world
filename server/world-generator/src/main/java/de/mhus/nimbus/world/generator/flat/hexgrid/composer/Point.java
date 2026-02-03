@@ -179,8 +179,54 @@ public abstract class Point extends Feature {
      * @return The selected grid coordinate, or null to use biome center
      */
     public HexVector2 selectGridCoordinate(Area biome, ComposeContext context) {
+        // If biomeSide is specified, select a grid at that edge of the biome
+        if (biomeSide != null) {
+            HexVector2 center = biome.getPlacedCenter();
+            if (center == null) {
+                return null;
+            }
+
+            // Convert Direction to EDGE enum
+            de.mhus.nimbus.world.shared.world.WHexGrid.EDGE edge = convertDirectionToEdge(biomeSide);
+            if (edge != null) {
+                // Get grid at the specified edge relative to center
+                HexVector2 edgeGrid = getGridAtEdge(center, edge);
+                return edgeGrid;
+            }
+        }
+
         // Default: use biome center
         return biome.getPlacedCenter();
+    }
+
+    /**
+     * Converts Direction enum to EDGE enum.
+     */
+    private de.mhus.nimbus.world.shared.world.WHexGrid.EDGE convertDirectionToEdge(Direction direction) {
+        return switch (direction) {
+            case NE -> de.mhus.nimbus.world.shared.world.WHexGrid.EDGE.NORTH_EAST;
+            case E -> de.mhus.nimbus.world.shared.world.WHexGrid.EDGE.EAST;
+            case SE -> de.mhus.nimbus.world.shared.world.WHexGrid.EDGE.SOUTH_EAST;
+            case SW -> de.mhus.nimbus.world.shared.world.WHexGrid.EDGE.SOUTH_WEST;
+            case W -> de.mhus.nimbus.world.shared.world.WHexGrid.EDGE.WEST;
+            case NW -> de.mhus.nimbus.world.shared.world.WHexGrid.EDGE.NORTH_WEST;
+            case N, S -> null; // N and S are not valid hex edges
+        };
+    }
+
+    /**
+     * Gets a grid coordinate at the specified edge relative to center.
+     */
+    private HexVector2 getGridAtEdge(HexVector2 center, de.mhus.nimbus.world.shared.world.WHexGrid.EDGE edge) {
+        // Offset by 1 grid in the direction of the edge
+        return switch (edge) {
+            case NORTH_EAST -> HexVector2.builder().q(center.getQ() + 1).r(center.getR() - 1).build();
+            case EAST -> HexVector2.builder().q(center.getQ() + 1).r(center.getR()).build();
+            case SOUTH_EAST -> HexVector2.builder().q(center.getQ()).r(center.getR() + 1).build();
+            case SOUTH_WEST -> HexVector2.builder().q(center.getQ() - 1).r(center.getR() + 1).build();
+            case WEST -> HexVector2.builder().q(center.getQ() - 1).r(center.getR()).build();
+            case NORTH_WEST -> HexVector2.builder().q(center.getQ()).r(center.getR() - 1).build();
+        };
     }
 
     /**
