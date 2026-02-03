@@ -14,13 +14,13 @@ import de.mhus.nimbus.world.shared.world.WHexGrid;
  * Side Coordinates: <NE2/4> or < SW1 / 3 >
  * Default side divider is 4.
  *
- * Position Coordinates: <0;0> or <  10 ; -5 / 4> or < -3 ; 2 # 100 >
- * Default position divider is 4.
+ * Position Coordinates: <0;0> or <  10 ; -5 / 5> or < -3 ; 2 # 100 >
+ * Default position divider is 5. - need to be a odd number to have center at 0;0
  */
 public class HexLocalUtil {
 
     public static final int DEFAULT_EDGE_DIVIDER = 4;
-    public static final int DEFAULT_POSITION_DIVIDER = 4;
+    public static final int DEFAULT_POSITION_DIVIDER = 5;
     private static final double sqrt3 = Math.sqrt(3);
 
 
@@ -92,7 +92,7 @@ public class HexLocalUtil {
 
     /**
      * Parse a hex local position from a string representation.
-     * Format example: <0;0> or <  10 ; -5 / 4> or < -3 ; 2 # 100 >
+     * Format example: <0;0> or <  10 ; -5 / 5> or < -3 ; 2 # 100 >
      *
      * @param str the string representation of the hex local position
      * @return the parsed HexLocalPosition
@@ -256,7 +256,7 @@ public class HexLocalUtil {
      *
      * Examples:
      * - EDGE format: "<NE2/4>", "<SW1/3>" - returns position on hex edge
-     * - POSITION format: "<0;0>", "<1;-1/4>" - returns position within hex
+     * - POSITION format: "<0;0>", "<1;-1/5>" - returns position within hex
      *
      * IMPORTANT: Returns coordinates RELATIVE to hex center.
      * To convert to absolute WFlat coordinates:
