@@ -78,6 +78,7 @@ public class HexCompositeBuilder {
      * 1. Initialize composition (applyDefaults)
      * 2. Prepare composition (HexCompositionPreparer)
      * 3. Compose biomes (BiomeComposer) - positioning only, no WHexGrids yet
+     * 3.5. Compose structures (StructureComposer) - villages, towns, etc. as multi-grid composites
      * 4. Fill gaps with ocean/land/coast (Fillers) - optional, creates PlacedBiomes only
      * 5. Compose points - precise locations within biomes (PointComposer)
      * 6. Compose flows - roads/rivers/walls (FlowComposer)
@@ -149,6 +150,23 @@ public class HexCompositeBuilder {
 
             resultBuilder.biomePlacementResult(placementResult);
             resultBuilder.totalBiomes(placementResult.getPlacedBiomes().size());
+
+            // Step 3.5: Compose structures (villages, towns, etc.)
+            log.info("Step 3.5: Composing structures");
+            StructureComposer structureComposer = new StructureComposer();
+            StructurePlacementResult structureResult = structureComposer.composeStructures(
+                composition, placementResult);
+
+            if (!structureResult.isSuccess()) {
+                warnings.add("Structure composition had issues: errors=" + structureResult.getErrors());
+            } else {
+                log.info("Composed {} structures ({} failed)",
+                    structureResult.getPlacedCount(),
+                    structureResult.getFailedCount());
+            }
+
+            resultBuilder.structurePlacementResult(structureResult);
+            resultBuilder.totalStructures(structureResult.getPlacedCount());
 
             // Track biome grid count before fillers
             int initialBiomeCount = placementResult.getPlacedBiomes().size();
@@ -403,8 +421,9 @@ public class HexCompositeBuilder {
 
             // Success!
             log.info("=== HexComposite Pipeline Complete ===");
-            log.info("Summary: biomes={}, points={}, flows={}, grids={}, filled={}, warnings={}",
+            log.info("Summary: biomes={}, structures={}, points={}, flows={}, grids={}, filled={}, warnings={}",
                 placementResult.getPlacedBiomes().size(),
+                structureResult.getPlacedCount(),
                 pointResult.getComposedPoints(),
                 flowResult.getComposedFlows(),
                 placementResult.getHexGrids().size(),

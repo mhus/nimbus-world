@@ -20,6 +20,7 @@ public class CompositionResult {
 
     // Step results
     private BiomePlacementResult biomePlacementResult;
+    private StructurePlacementResult structurePlacementResult;
     private HexGridFillResult fillResult;
     private PointComposer.PointCompositionResult pointCompositionResult;
     private FlowComposer.FlowCompositionResult flowCompositionResult;

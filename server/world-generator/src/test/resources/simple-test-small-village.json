@@ -56,6 +56,21 @@
       ],
       "parameters": {
       }
+    },
+    {
+      "featureType": "village",
+      "name": "small-village",
+      "title": "Small Village",
+      "templateName": "hamlet-medieval",
+      "baseLevel": 95,
+      "shape": "CIRCLE",
+      "size": "SMALL",
+      "continentId": "main-continent",
+      "positions": [
+        {"direction": "S", "anchor": "west-region", "priority": 10}
+      ],
+      "parameters": {
+      }
     }
   ]
 }
