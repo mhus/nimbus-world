@@ -45,10 +45,12 @@ public class PointComposer {
      *
      * @param prepared The prepared composition with points to place
      * @param placementResult Result from biome placement (needed to know where biomes are)
+     * @param world The world (needed for hexGridSize and other world properties)
      * @return Result with statistics
      */
     public PointCompositionResult composePoints(HexComposition prepared,
-                                                BiomePlacementResult placementResult) {
+                                                BiomePlacementResult placementResult,
+                                                de.mhus.nimbus.world.shared.world.WWorld world) {
         log.info("Starting point composition");
 
         List<String> errors = new ArrayList<>();
@@ -58,10 +60,21 @@ public class PointComposer {
 
         try {
             // Build compose context
-            ComposeContext context = buildComposeContext(prepared, placementResult);
+            ComposeContext context = buildComposeContext(prepared, placementResult, world);
 
             // Collect all points
-            List<Point> points = collectAllPoints(context);
+            List<Point> allPoints = collectAllPoints(context);
+
+            // Filter out precomposed points (synthetic/fixed points that don't need composition)
+            List<Point> points = allPoints.stream()
+                    .filter(p -> !p.isPrecomposed())
+                    .toList();
+
+            int precomposedCount = allPoints.size() - points.size();
+            if (precomposedCount > 0) {
+                log.info("Skipping {} precomposed points (already positioned)", precomposedCount);
+            }
+
             totalPoints = points.size();
 
             if (points.isEmpty()) {
@@ -138,7 +151,8 @@ public class PointComposer {
      * Builds a ComposeContext from biome placement result.
      */
     private ComposeContext buildComposeContext(HexComposition composition,
-                                              BiomePlacementResult placementResult) {
+                                              BiomePlacementResult placementResult,
+                                              de.mhus.nimbus.world.shared.world.WWorld world) {
         // Build biome maps
         Map<String, PlacedBiome> biomeMap = new HashMap<>();
         Map<String, HexVector2> biomeCenterMap = new HashMap<>();
@@ -174,6 +188,7 @@ public class PointComposer {
 
         return ComposeContext.builder()
             .composition(composition)
+            .world(world)
             .placedBiomes(placementResult.getPlacedBiomes())
             .biomeMap(biomeMap)
             .biomeCenterMap(biomeCenterMap)

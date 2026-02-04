@@ -252,11 +252,18 @@ public class HexCompositeBuilder {
                 log.info("Step 4: Skipping gap filling (disabled)");
             }
 
+            // Step 4c: Generate external connection points for villages
+            log.info("Step 4c: Generating external connection points for villages");
+            VillageExternalConnectionGenerator villageConnGenerator = new VillageExternalConnectionGenerator();
+            VillageExternalConnectionGenerator.GenerationResult villageConnResult =
+                    villageConnGenerator.generateExternalConnections(composition, placementResult);
+            log.info("Generated {} external connection points for villages", villageConnResult.getTotalPoints());
+
             // Step 5: Compose points (place Points within biomes)
             log.info("Step 5: Composing points");
             PointComposer pointComposer = new PointComposer();
             PointComposer.PointCompositionResult pointResult = pointComposer.composePoints(
-                composition, placementResult);
+                composition, placementResult, world);
 
             if (!pointResult.isSuccess()) {
                 warnings.add("Point composition had issues: errors=" + pointResult.getErrors());

@@ -41,6 +41,14 @@ public class Village extends Structure implements BuildFeature {
     private List<District> districts;
 
     /**
+     * List of external connection points for this village.
+     * These synthetic points are placed in neighboring grids outside the village
+     * to provide entry/exit points for external roads.
+     * Generated automatically by VillageExternalConnectionGenerator.
+     */
+    private List<VillageConnectionPoint> externalConnectionPoints;
+
+    /**
      * Base level for village terrain (typically 95)
      */
     @Builder.Default

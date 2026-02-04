@@ -1,6 +1,8 @@
 package de.mhus.nimbus.world.generator.flat.hexgrid.composer;
 
 import de.mhus.nimbus.generated.types.HexVector2;
+import de.mhus.nimbus.generated.types.WorldInfo;
+import de.mhus.nimbus.world.shared.world.WWorld;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 
@@ -33,10 +35,16 @@ public class RoadWithPointEndpointsTest {
         assertTrue(biomePlacementResult.isSuccess(), "Biome composition should succeed");
         log.info("Placed {} biomes", biomePlacementResult.getPlacedBiomes().size());
 
+        // Create world with hexGridSize
+        WWorld testWorld = new WWorld();
+        WorldInfo publicData = new WorldInfo();
+        publicData.setHexGridSize(370);
+        testWorld.setPublicData(publicData);
+
         // Compose points
         PointComposer pointComposer = new PointComposer();
         PointComposer.PointCompositionResult pointResult = pointComposer.composePoints(
-            composition, biomePlacementResult);
+            composition, biomePlacementResult, testWorld);
         assertTrue(pointResult.isSuccess(), "Point composition should succeed");
         assertEquals(2, pointResult.getComposedPoints(), "Should compose both points");
         log.info("Placed {} points", pointResult.getComposedPoints());

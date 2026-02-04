@@ -62,6 +62,15 @@
       }
     },
     {
+      "featureType": "point",
+      "name": "rocky-hills",
+      "title": "Road Start at Rocky Hills",
+      "snap": {
+        "mode": "INSIDE",
+        "target": "central-mountains"
+      }
+    },
+    {
       "featureType": "village",
       "name": "small-village",
       "title": "Small Village",
@@ -174,6 +183,21 @@
       "positions": [
         {"direction": "S", "anchor": "west-region", "priority": 10}
       ],
+      "parameters": {
+      }
+    },
+    {
+      "featureType": "road",
+      "name": "long-road",
+      "type": "ROAD",
+      "startPointId": "rocky-hills",
+      "endPointId": "small-village-e",
+      "levelMode": "ADJUST_MEAN",
+      "meanLevelOffset": 1,
+      "widthBlocks": 1,
+      "roadType": "street",
+      "tendLeft": "NONE",
+      "tendRight": "NONE",
       "parameters": {
       }
     }

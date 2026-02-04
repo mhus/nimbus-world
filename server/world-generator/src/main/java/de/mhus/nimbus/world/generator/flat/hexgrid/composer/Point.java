@@ -37,7 +37,8 @@ import java.util.Map;
 @JsonSubTypes({
     @JsonSubTypes.Type(value = PositionPoint.class, name = "point"),
     @JsonSubTypes.Type(value = EdgePoint.class, name = "edge"),
-    @JsonSubTypes.Type(value = OceanEdgePoint.class, name = "ocean-edge")
+    @JsonSubTypes.Type(value = OceanEdgePoint.class, name = "ocean-edge"),
+    @JsonSubTypes.Type(value = VillageConnectionPoint.class, name = "village-connection")
 })
 public abstract class Point extends Feature {
 
@@ -84,6 +85,14 @@ public abstract class Point extends Feature {
      * Custom parameters for the point (e.g., role, level, type).
      */
     private Map<String, String> parameters;
+
+    /**
+     * If true, this point is synthetic/pre-composed and should not be processed by PointComposer.
+     * Used for points that have fixed positions (e.g., VillageConnectionPoint) that are
+     * already positioned and don't need composition logic.
+     * Default: false (point will be composed normally)
+     */
+    private boolean precomposed;
 
     // ========== LEGACY: Deprecated fields for backward compatibility ==========
 
