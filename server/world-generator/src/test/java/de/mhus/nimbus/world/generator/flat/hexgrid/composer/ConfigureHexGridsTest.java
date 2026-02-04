@@ -1,6 +1,9 @@
 package de.mhus.nimbus.world.generator.flat.hexgrid.composer;
 
 import de.mhus.nimbus.generated.types.HexVector2;
+import de.mhus.nimbus.world.generator.composer.biome.Biome;
+import de.mhus.nimbus.world.generator.composer.biome.BiomeType;
+import de.mhus.nimbus.world.generator.composer.feature.FeatureHexGrid;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;

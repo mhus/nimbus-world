@@ -2,7 +2,27 @@ package de.mhus.nimbus.world.generator.flat.hexgrid.composer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.shared.utils.TypeUtil;
+import de.mhus.nimbus.world.generator.composer.area.AreaShape;
+import de.mhus.nimbus.world.generator.composer.area.AreaSize;
+import de.mhus.nimbus.world.generator.composer.biome.BiomePlacementResult;
+import de.mhus.nimbus.world.generator.composer.biome.BiomeType;
+import de.mhus.nimbus.world.generator.composer.build.CompositionResult;
+import de.mhus.nimbus.world.generator.composer.point.Direction;
+import de.mhus.nimbus.world.generator.composer.feature.FeatureHexGrid;
+import de.mhus.nimbus.world.generator.composer.build.FilledHexGrid;
+import de.mhus.nimbus.world.generator.composer.build.HexCompositeBuilder;
+import de.mhus.nimbus.world.generator.composer.build.HexComposition;
+import de.mhus.nimbus.world.generator.composer.filler.HexGridFillResult;
+import de.mhus.nimbus.world.generator.composer.biome.MountainBiome;
+import de.mhus.nimbus.world.generator.composer.biome.PlacedBiome;
+import de.mhus.nimbus.world.generator.composer.area.RelativePosition;
 import de.mhus.nimbus.world.generator.flat.hexgrid.HexGridBuilderService;
+import de.mhus.nimbus.world.generator.flat.manipulator.BorderSmoothManipulator;
+import de.mhus.nimbus.world.generator.flat.manipulator.FlatTerrainManipulator;
+import de.mhus.nimbus.world.generator.flat.manipulator.HillyTerrainManipulator;
+import de.mhus.nimbus.world.generator.flat.manipulator.IslandsManipulator;
+import de.mhus.nimbus.world.generator.flat.manipulator.NormalTerrainManipulator;
+import de.mhus.nimbus.world.generator.flat.manipulator.SoftenManipulator;
 import de.mhus.nimbus.world.shared.generator.WFlat;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
@@ -483,12 +503,12 @@ public class MountainBiomeTest {
             de.mhus.nimbus.world.generator.flat.FlatManipulatorService manipulatorService =
                 new de.mhus.nimbus.world.generator.flat.FlatManipulatorService(
                     java.util.List.of(
-                        new de.mhus.nimbus.world.generator.flat.HillyTerrainManipulator(),
-                        new de.mhus.nimbus.world.generator.flat.NormalTerrainManipulator(),
-                        new de.mhus.nimbus.world.generator.flat.FlatTerrainManipulator(),
-                        new de.mhus.nimbus.world.generator.flat.SoftenManipulator(),
-                        new de.mhus.nimbus.world.generator.flat.BorderSmoothManipulator(),
-                        new de.mhus.nimbus.world.generator.flat.IslandsManipulator()
+                        new HillyTerrainManipulator(),
+                        new NormalTerrainManipulator(),
+                        new FlatTerrainManipulator(),
+                        new SoftenManipulator(),
+                        new BorderSmoothManipulator(),
+                        new IslandsManipulator()
                     )
                 );
 

@@ -1,5 +1,15 @@
 package de.mhus.nimbus.world.generator.flat.hexgrid.composer;
 
+import de.mhus.nimbus.world.generator.composer.biome.Biome;
+import de.mhus.nimbus.world.generator.composer.biome.BiomeType;
+import de.mhus.nimbus.world.generator.composer.biome.CoastBiome;
+import de.mhus.nimbus.world.generator.composer.biome.DesertBiome;
+import de.mhus.nimbus.world.generator.composer.biome.ForestBiome;
+import de.mhus.nimbus.world.generator.composer.biome.IslandBiome;
+import de.mhus.nimbus.world.generator.composer.biome.MountainBiome;
+import de.mhus.nimbus.world.generator.composer.biome.OceanBiome;
+import de.mhus.nimbus.world.generator.composer.biome.PlainsBiome;
+import de.mhus.nimbus.world.generator.composer.biome.SwampBiome;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;

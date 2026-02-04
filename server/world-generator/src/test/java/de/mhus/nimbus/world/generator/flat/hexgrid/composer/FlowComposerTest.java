@@ -1,6 +1,19 @@
 package de.mhus.nimbus.world.generator.flat.hexgrid.composer;
 
-import de.mhus.nimbus.generated.types.HexVector2;
+import de.mhus.nimbus.world.generator.composer.area.AreaShape;
+import de.mhus.nimbus.world.generator.composer.area.AreaSize;
+import de.mhus.nimbus.world.generator.composer.biome.Biome;
+import de.mhus.nimbus.world.generator.composer.biome.BiomeType;
+import de.mhus.nimbus.world.generator.composer.build.CompositionResult;
+import de.mhus.nimbus.world.generator.composer.point.Direction;
+import de.mhus.nimbus.world.generator.composer.feature.FeatureHexGrid;
+import de.mhus.nimbus.world.generator.composer.feature.FeatureStatus;
+import de.mhus.nimbus.world.generator.composer.flow.FlowWidth;
+import de.mhus.nimbus.world.generator.composer.build.HexCompositeBuilder;
+import de.mhus.nimbus.world.generator.composer.build.HexComposition;
+import de.mhus.nimbus.world.generator.composer.area.RelativePosition;
+import de.mhus.nimbus.world.generator.composer.flow.River;
+import de.mhus.nimbus.world.generator.composer.flow.Road;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
 import de.mhus.nimbus.world.shared.world.WHexGridRepository;
 import lombok.extern.slf4j.Slf4j;

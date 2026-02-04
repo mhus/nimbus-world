@@ -4,14 +4,27 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.shared.utils.TypeUtil;
-import de.mhus.nimbus.world.generator.flat.BorderSmoothManipulator;
+import de.mhus.nimbus.world.generator.composer.biome.BiomeType;
+import de.mhus.nimbus.world.generator.composer.build.CompositionResult;
+import de.mhus.nimbus.world.generator.composer.biome.Continent;
+import de.mhus.nimbus.world.generator.composer.image.CrossOverlay;
+import de.mhus.nimbus.world.generator.composer.build.FilledHexGrid;
+import de.mhus.nimbus.world.generator.composer.flow.FlowComposer;
+import de.mhus.nimbus.world.generator.composer.build.HexCompositeBuilder;
+import de.mhus.nimbus.world.generator.composer.build.HexComposition;
+import de.mhus.nimbus.world.generator.composer.build.HexGridCompositeImageCreator;
+import de.mhus.nimbus.world.generator.composer.filler.HexGridFillResult;
+import de.mhus.nimbus.world.generator.composer.image.LineOverlay;
+import de.mhus.nimbus.world.generator.composer.point.Point;
+import de.mhus.nimbus.world.generator.composer.image.TextOverlay;
+import de.mhus.nimbus.world.generator.flat.manipulator.BorderSmoothManipulator;
 import de.mhus.nimbus.world.generator.flat.FlatManipulator;
 import de.mhus.nimbus.world.generator.flat.FlatManipulatorService;
-import de.mhus.nimbus.world.generator.flat.FlatTerrainManipulator;
-import de.mhus.nimbus.world.generator.flat.HillyTerrainManipulator;
-import de.mhus.nimbus.world.generator.flat.IslandsManipulator;
-import de.mhus.nimbus.world.generator.flat.NormalTerrainManipulator;
-import de.mhus.nimbus.world.generator.flat.SoftenManipulator;
+import de.mhus.nimbus.world.generator.flat.manipulator.FlatTerrainManipulator;
+import de.mhus.nimbus.world.generator.flat.manipulator.HillyTerrainManipulator;
+import de.mhus.nimbus.world.generator.flat.manipulator.IslandsManipulator;
+import de.mhus.nimbus.world.generator.flat.manipulator.NormalTerrainManipulator;
+import de.mhus.nimbus.world.generator.flat.manipulator.SoftenManipulator;
 import de.mhus.nimbus.world.generator.flat.hexgrid.BuilderContext;
 import de.mhus.nimbus.world.generator.flat.hexgrid.HexGridBuilder;
 import de.mhus.nimbus.world.generator.flat.hexgrid.HexGridBuilderService;
@@ -528,7 +541,7 @@ public class HexCompositeBuilderSimpleTest {
      * Adds text overlays showing coordinates and biome names for all grids.
      */
     private void addCoordinateTextOverlays(HexGridCompositeImageCreator creator, Map<HexVector2, WFlat> flats,
-                                          HexGridFillResult fillResult) {
+                                           HexGridFillResult fillResult) {
         // Build map of coordinate to biome name
         Map<String, String> coordToBiomeName = new HashMap<>();
         if (fillResult != null && fillResult.getAllGrids() != null) {
@@ -631,7 +644,7 @@ public class HexCompositeBuilderSimpleTest {
      * Similar to RiverBuilder.getEndpointCoordinate().
      */
     private int[] getPointWorldCoordinates(Point.PointComposed composed, int flatSizeX, int flatSizeZ,
-                                          HexVector2 gridCoord) {
+                                           HexVector2 gridCoord) {
         int hexGridSize = flatSizeX;  // Assume flat size equals hex grid size
 
         // Get position string - either from HexLocalPosition or HexLocalEdgeVector

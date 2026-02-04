@@ -1,6 +1,11 @@
 package de.mhus.nimbus.world.generator.flat.hexgrid.composer;
 
 import de.mhus.nimbus.generated.types.HexVector2;
+import de.mhus.nimbus.world.generator.composer.feature.FeatureHexGrid;
+import de.mhus.nimbus.world.generator.composer.structure.Structure;
+import de.mhus.nimbus.world.generator.composer.structure.StructureType;
+import de.mhus.nimbus.world.generator.composer.village.Town;
+import de.mhus.nimbus.world.generator.composer.village.Village;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;

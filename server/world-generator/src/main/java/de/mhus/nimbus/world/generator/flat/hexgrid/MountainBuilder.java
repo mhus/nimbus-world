@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.shared.utils.CastUtil;
 import de.mhus.nimbus.world.generator.flat.FlatMaterialService;
-import de.mhus.nimbus.world.generator.flat.HillyTerrainManipulator;
+import de.mhus.nimbus.world.generator.flat.manipulator.HillyTerrainManipulator;
 import de.mhus.nimbus.world.shared.generator.WFlat;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
 import lombok.Data;

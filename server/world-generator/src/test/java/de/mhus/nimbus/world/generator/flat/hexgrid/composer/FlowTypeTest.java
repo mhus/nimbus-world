@@ -1,5 +1,10 @@
 package de.mhus.nimbus.world.generator.flat.hexgrid.composer;
 
+import de.mhus.nimbus.world.generator.composer.flow.Flow;
+import de.mhus.nimbus.world.generator.composer.flow.FlowType;
+import de.mhus.nimbus.world.generator.composer.flow.River;
+import de.mhus.nimbus.world.generator.composer.flow.Road;
+import de.mhus.nimbus.world.generator.composer.flow.Wall;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;

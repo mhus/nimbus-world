@@ -2,6 +2,12 @@ package de.mhus.nimbus.world.generator.flat.hexgrid.composer;
 
 import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.shared.utils.TypeUtil;
+import de.mhus.nimbus.world.generator.composer.build.ConnectionResult;
+import de.mhus.nimbus.world.generator.composer.build.FilledHexGrid;
+import de.mhus.nimbus.world.generator.composer.filler.HexGridFillResult;
+import de.mhus.nimbus.world.generator.composer.flow.RiverConnection;
+import de.mhus.nimbus.world.generator.composer.flow.RoadAndRiverConnector;
+import de.mhus.nimbus.world.generator.composer.flow.RoadConnection;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
 import de.mhus.nimbus.world.shared.world.WHexGrid.EDGE;
 import lombok.extern.slf4j.Slf4j;

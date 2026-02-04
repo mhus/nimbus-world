@@ -1,7 +1,7 @@
 package de.mhus.nimbus.world.generator.flat.hexgrid;
 
 import de.mhus.nimbus.world.generator.flat.FlatMaterialService;
-import de.mhus.nimbus.world.generator.flat.HillyTerrainManipulator;
+import de.mhus.nimbus.world.generator.flat.manipulator.HillyTerrainManipulator;
 import de.mhus.nimbus.world.shared.generator.WFlat;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
 import lombok.extern.slf4j.Slf4j;

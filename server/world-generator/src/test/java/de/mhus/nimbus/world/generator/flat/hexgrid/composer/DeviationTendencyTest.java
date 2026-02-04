@@ -1,5 +1,15 @@
 package de.mhus.nimbus.world.generator.flat.hexgrid.composer;
 
+import de.mhus.nimbus.world.generator.composer.area.AreaShape;
+import de.mhus.nimbus.world.generator.composer.biome.BiomeType;
+import de.mhus.nimbus.world.generator.composer.build.CompositionResult;
+import de.mhus.nimbus.world.generator.composer.flow.DeviationTendency;
+import de.mhus.nimbus.world.generator.composer.point.Direction;
+import de.mhus.nimbus.world.generator.composer.build.HexCompositeBuilder;
+import de.mhus.nimbus.world.generator.composer.build.HexComposition;
+import de.mhus.nimbus.world.generator.composer.biome.MountainBiome;
+import de.mhus.nimbus.world.generator.composer.biome.PlacedBiome;
+import de.mhus.nimbus.world.generator.composer.area.RelativePosition;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 

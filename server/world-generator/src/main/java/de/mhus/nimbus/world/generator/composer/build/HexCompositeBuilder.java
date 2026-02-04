@@ -1,0 +1,544 @@
+package de.mhus.nimbus.world.generator.composer.build;
+
+import de.mhus.nimbus.shared.utils.TypeUtil;
+import de.mhus.nimbus.world.generator.composer.biome.Biome;
+import de.mhus.nimbus.world.generator.composer.biome.BiomeComposer;
+import de.mhus.nimbus.world.generator.composer.biome.BiomePlacementResult;
+import de.mhus.nimbus.world.generator.composer.biome.CoastFiller;
+import de.mhus.nimbus.world.generator.composer.biome.PlacedBiome;
+import de.mhus.nimbus.world.generator.composer.feature.Feature;
+import de.mhus.nimbus.world.generator.composer.feature.FeatureHexGrid;
+import de.mhus.nimbus.world.generator.composer.filler.ContinentFiller;
+import de.mhus.nimbus.world.generator.composer.filler.FillerType;
+import de.mhus.nimbus.world.generator.composer.filler.HexGridFillResult;
+import de.mhus.nimbus.world.generator.composer.filler.LowlandFiller;
+import de.mhus.nimbus.world.generator.composer.filler.MountainFiller;
+import de.mhus.nimbus.world.generator.composer.filler.OceanFiller;
+import de.mhus.nimbus.world.generator.composer.flow.FlowComposer;
+import de.mhus.nimbus.world.generator.composer.point.PointComposer;
+import de.mhus.nimbus.world.generator.composer.structure.StructureComposer;
+import de.mhus.nimbus.world.generator.composer.structure.StructurePlacementResult;
+import de.mhus.nimbus.world.generator.composer.village.Village;
+import de.mhus.nimbus.world.generator.composer.village.VillageExternalConnectionGenerator;
+import de.mhus.nimbus.world.shared.world.WHexGridRepository;
+import de.mhus.nimbus.world.shared.world.WWorld;
+import lombok.Builder;
+import lombok.extern.slf4j.Slf4j;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+/**
+ * Builder for orchestrating the complete hex composition pipeline.
+ * Centralizes all composition steps to avoid error-prone manual orchestration in tests and production.
+ *
+ * Usage:
+ * <pre>
+ * CompositionResult result = HexCompositeBuilder.builder()
+ *     .composition(hexComposition)
+ *     .worldId("test-world")
+ *     .seed(12345L)
+ *     .repository(mockRepository)  // optional, for testing
+ *     .fillGaps(true)              // optional, default true
+ *     .oceanBorderRings(1)         // optional, default 1
+ *     .build()
+ *     .compose();
+ * </pre>
+ */
+@Slf4j
+@Builder
+public class HexCompositeBuilder {
+
+    /**
+     * The composition to process
+     */
+    private final HexComposition composition;
+
+    /**
+     * World ID for the generated grids
+     */
+    private final String worldId;
+
+    /**
+     * Optional World object for accessing world configuration (hexGridSize, etc.)
+     */
+    private final WWorld world;
+
+    /**
+     * Random seed for composition
+     */
+    @Builder.Default
+    private final Long seed = System.currentTimeMillis();
+
+    /**
+     * Optional repository for WHexGrid persistence (required for HexGridGenerator step)
+     */
+    private final WHexGridRepository repository;
+
+    /**
+     * Whether to fill gaps with ocean/land/coast (default: true)
+     */
+    @Builder.Default
+    private final boolean fillGaps = true;
+
+    /**
+     * Number of ocean border rings around all features (default: 1)
+     */
+    @Builder.Default
+    private final int oceanBorderRings = 1;
+
+    /**
+     * Whether to generate WHexGrids (default: false, only if repository provided)
+     */
+    @Builder.Default
+    private final boolean generateWHexGrids = false;
+
+    /**
+     * Executes the complete composition pipeline.
+     *
+     * Steps:
+     * 1. Initialize composition (applyDefaults)
+     * 2. Prepare composition (HexCompositionPreparer)
+     * 3. Compose biomes (BiomeComposer) - positioning only, no WHexGrids yet
+     * 3.5. Compose structures (StructureComposer) - villages, towns, etc. as multi-grid composites
+     * 4. Fill gaps with ocean/land/coast (Fillers) - optional, creates PlacedBiomes only
+     * 5. Compose points - precise locations within biomes (PointComposer)
+     * 6. Compose flows - roads/rivers/walls (FlowComposer)
+     * 6b. Fill ocean gaps for flows - creates PlacedBiomes for flow gaps
+     * 7. Convert PlacedBiomes to WHexGrids - happens AFTER all compositions (biomes, points, flows)
+     * 8. Sync parameters from FeatureHexGrids to WHexGrids (HexGridParameterSync)
+     * 9. Generate WHexGrids (HexGridGenerator) - optional, only if repository provided
+     *
+     * Architecture: During composition (Steps 1-6), all data is stored in FeatureHexGrids
+     * (Feature.featureComposed.hexGrids). WHexGrids are only created at the end (Step 7)
+     * to ensure all composition data (biomes, points, flows) is included.
+     *
+     * @return CompositionResult with all intermediate results and statistics
+     */
+    public CompositionResult compose() {
+        log.info("=== Starting HexComposite Pipeline ===");
+        log.info("WorldId: {}, Seed: {}, FillGaps: {}, OceanBorderRings: {}, GenerateWHexGrids: {}",
+            worldId, seed, fillGaps, oceanBorderRings, generateWHexGrids);
+
+        List<String> warnings = new ArrayList<>();
+        CompositionResult.CompositionResultBuilder resultBuilder = CompositionResult.builder()
+            .warnings(warnings);
+
+        try {
+            // Validate inputs
+            if (composition == null) {
+                return resultBuilder
+                    .success(false)
+                    .errorMessage("Composition is null")
+                    .build();
+            }
+            if (worldId == null || worldId.isBlank()) {
+                return resultBuilder
+                    .success(false)
+                    .errorMessage("WorldId is required")
+                    .build();
+            }
+
+            // Step 1: Initialize composition (apply defaults to all features)
+            log.info("Step 1: Initializing composition");
+            composition.initialize();
+
+            // Step 2: Prepare composition
+            log.info("Step 2: Preparing composition");
+            HexCompositionPreparer preparer = new HexCompositionPreparer();
+            boolean prepareSuccess = preparer.prepare(composition);
+            if (!prepareSuccess) {
+                return resultBuilder
+                    .success(false)
+                    .errorMessage("Composition preparation failed")
+                    .build();
+            }
+
+            // Step 3: Compose biomes (positioning only, no WHexGrids yet)
+            log.info("Step 3: Composing biomes (positioning)");
+            BiomeComposer biomeComposer = new BiomeComposer();
+            BiomePlacementResult placementResult = biomeComposer.compose(composition, worldId, seed);
+
+            if (!placementResult.isSuccess()) {
+                return resultBuilder
+                    .success(false)
+                    .errorMessage("Biome composition failed: " + placementResult.getErrorMessage())
+                    .biomePlacementResult(placementResult)
+                    .build();
+            }
+
+            log.info("Placed {} biomes (positioning complete, WHexGrids not yet created)",
+                placementResult.getPlacedBiomes().size());
+
+            resultBuilder.biomePlacementResult(placementResult);
+            resultBuilder.totalBiomes(placementResult.getPlacedBiomes().size());
+
+            // Step 3.5: Compose structures (villages, towns, etc.)
+            log.info("Step 3.5: Composing structures");
+
+            // Create ComposeContext for structure composition
+            ComposeContext structureContext = ComposeContext.builder()
+                .composition(composition)
+                .world(world)
+                .build();
+
+            StructureComposer structureComposer = new StructureComposer();
+            StructurePlacementResult structureResult = structureComposer.composeStructures(
+                structureContext, placementResult);
+
+            if (!structureResult.isSuccess()) {
+                warnings.add("Structure composition had issues: errors=" + structureResult.getErrors());
+            } else {
+                log.info("Composed {} structures ({} failed)",
+                    structureResult.getPlacedCount(),
+                    structureResult.getFailedCount());
+            }
+
+            resultBuilder.structurePlacementResult(structureResult);
+            resultBuilder.totalStructures(structureResult.getPlacedCount());
+
+            // Track biome grid count before fillers
+            int initialBiomeCount = placementResult.getPlacedBiomes().size();
+            int initialBiomeGridCount = placementResult.getPlacedBiomes().stream()
+                .mapToInt(PlacedBiome::getActualSize)
+                .sum();
+
+            // Step 4: Fill gaps with specialized fillers (optional)
+            HexGridFillResult fillResult = null;
+            int mountainAdded = 0, lowlandAdded = 0, continentAdded = 0, coastAdded = 0, oceanAdded = 0;
+
+            if (fillGaps) {
+                log.info("Step 4: Filling gaps with MountainFiller, LowlandFiller, CoastFiller (coastRings={})", oceanBorderRings);
+
+                // Helper to build GridIndex from PlacedBiomes
+                java.util.function.Supplier<Set<String>> buildGridIndex = () -> {
+                    Set<String> coords = new java.util.HashSet<>();
+                    for (PlacedBiome placed : placementResult.getPlacedBiomes()) {
+                        for (de.mhus.nimbus.generated.types.HexVector2 coord : placed.getCoordinates()) {
+                            coords.add(TypeUtil.toStringHexCoord(coord.getQ(), coord.getR()));
+                        }
+                    }
+                    return coords;
+                };
+
+                // Execute fillers in sequence, rebuilding GridIndex each time
+
+                // 1. MountainFiller
+                Set<String> gridIndex = buildGridIndex.get();
+                MountainFiller mountainFiller = new MountainFiller();
+                mountainAdded = mountainFiller.fill(composition, gridIndex, placementResult);
+                log.info("MountainFiller: added {} PlacedBiomes", mountainAdded);
+
+                // 2. LowlandFiller
+                gridIndex = buildGridIndex.get();
+                LowlandFiller lowlandFiller = new LowlandFiller();
+                lowlandAdded = lowlandFiller.fill(composition, gridIndex, placementResult);
+                log.info("LowlandFiller: added {} PlacedBiomes", lowlandAdded);
+
+                // 2.5. ContinentFiller (fills gaps between biomes on same continent)
+                gridIndex = buildGridIndex.get();
+                ContinentFiller continentFiller = new ContinentFiller();
+                continentAdded = continentFiller.fill(composition, gridIndex, placementResult);
+                log.info("ContinentFiller: added {} grids", continentAdded);
+
+                // 3. CoastFiller
+                gridIndex = buildGridIndex.get();
+                CoastFiller coastFiller = new CoastFiller(oceanBorderRings);
+                coastAdded = coastFiller.fill(composition, gridIndex, placementResult);
+                log.info("CoastFiller: added {} PlacedBiomes", coastAdded);
+
+                // 4. OceanFiller (ensures all regions are connected)
+                gridIndex = buildGridIndex.get();
+                OceanFiller oceanFiller = new OceanFiller();
+                oceanAdded = oceanFiller.fill(composition, gridIndex, placementResult);
+                log.info("OceanFiller: added {} PlacedBiomes", oceanAdded);
+
+                int totalFillerBiomes = mountainAdded + lowlandAdded + continentAdded + coastAdded + oceanAdded;
+
+                log.info("Filling complete: added {} filler grids (Mountain: {}, Lowland: {}, Continent: {}, Coast: {}, Ocean: {})",
+                    totalFillerBiomes, mountainAdded, lowlandAdded, continentAdded, coastAdded, oceanAdded);
+
+                // Configure HexGrids for ALL PlacedBiomes (including filler biomes)
+                log.info("Step 4b: Configuring FeatureHexGrids for all {} PlacedBiomes (including fillers)",
+                    placementResult.getPlacedBiomes().size());
+                for (PlacedBiome placed : placementResult.getPlacedBiomes()) {
+                    placed.getBiome().configureHexGrids(placed.getCoordinates());
+                }
+            } else {
+                log.info("Step 4: Skipping gap filling (disabled)");
+            }
+
+            // Step 4c: Generate external connection points for villages
+            log.info("Step 4c: Generating external connection points for villages");
+            VillageExternalConnectionGenerator villageConnGenerator = new VillageExternalConnectionGenerator();
+            VillageExternalConnectionGenerator.GenerationResult villageConnResult =
+                    villageConnGenerator.generateExternalConnections(composition, placementResult);
+            log.info("Generated {} external connection points for villages", villageConnResult.getTotalPoints());
+
+            // Step 4d: Connect external connection points to village internal points
+            log.info("Step 4d: Connecting external connection points to village interiors");
+            int connectedVillages = 0;
+            for (Feature feature : composition.getFeatures()) {
+                if (feature instanceof Village village) {
+                    if (village.getExternalConnectionPoints() != null && !village.getExternalConnectionPoints().isEmpty()) {
+                        village.connectExternalConnectionPoints(world.getPublicData().getHexGridSize());
+                        connectedVillages++;
+                    }
+                }
+            }
+            log.info("Connected external points for {} villages", connectedVillages);
+
+            // Step 5: Compose points (place Points within biomes)
+            log.info("Step 5: Composing points");
+            PointComposer pointComposer = new PointComposer();
+            PointComposer.PointCompositionResult pointResult = pointComposer.composePoints(
+                composition, placementResult, world);
+
+            if (!pointResult.isSuccess()) {
+                warnings.add("Point composition had issues: errors=" + pointResult.getErrors());
+            } else {
+                log.info("Composed {} points ({} failed)",
+                    pointResult.getComposedPoints(),
+                    pointResult.getFailedPoints());
+            }
+
+            resultBuilder.pointCompositionResult(pointResult);
+            resultBuilder.totalPoints(pointResult.getComposedPoints());
+
+            // Step 6: Compose flows (roads, rivers, walls)
+            log.info("Step 6: Composing flows");
+            FlowComposer flowComposer = new FlowComposer();
+            FlowComposer.FlowCompositionResult flowResult = flowComposer.composeFlows(
+                composition, placementResult);
+
+            if (!flowResult.isSuccess()) {
+                warnings.add("Flow composition had issues: errors=" + flowResult.getFailedFlows());
+            } else {
+                log.info("Composed {} flows with {} total segments",
+                    flowResult.getComposedFlows(),
+                    flowResult.getTotalSegments());
+            }
+
+            resultBuilder.flowCompositionResult(flowResult);
+            resultBuilder.totalFlows(flowResult.getComposedFlows());
+
+            // Step 6b: Fill ocean gaps where flows cross empty space
+            if (fillGaps && flowResult.getComposedFlows() > 0) {
+                log.info("Step 6b: Filling ocean gaps where flows cross empty space");
+
+                // Rebuild grid index (includes all grids added so far)
+                Set<String> gridIndex = new java.util.HashSet<>();
+                for (PlacedBiome placed : placementResult.getPlacedBiomes()) {
+                    for (de.mhus.nimbus.generated.types.HexVector2 coord : placed.getCoordinates()) {
+                        gridIndex.add(TypeUtil.toStringHexCoord(coord.getQ(), coord.getR()));
+                    }
+                }
+
+                OceanFiller oceanFlowFiller = new OceanFiller();
+                int flowGapsFilled = oceanFlowFiller.fillFlowGaps(composition, gridIndex, placementResult);
+
+                if (flowGapsFilled > 0) {
+                    log.info("OceanFiller.fillFlowGaps: added {} ocean PlacedBiomes (WHexGrids will be created in Step 7)", flowGapsFilled);
+                } else {
+                    log.info("No flow gaps to fill - all flow grids already exist");
+                }
+            }
+
+            // Step 7: Convert FeatureHexGrids to WHexGrids (after all compositions)
+            // FeatureHexGrids contain accumulated data from all features (biomes, points, flows)
+            log.info("Step 7: Converting FeatureHexGrids to WHexGrids (includes all compositions: biomes, points, flows)");
+
+            // Collect all FeatureHexGrids from all features (primarily from Biomes which contain accumulated flow data)
+            Map<String, FeatureHexGrid> allFeatureHexGrids = new HashMap<>();
+            for (PlacedBiome placed : placementResult.getPlacedBiomes()) {
+                Biome biome = placed.getBiome();
+                if (biome.getHexGrids() != null) {
+                    for (FeatureHexGrid featureHexGrid : biome.getHexGrids()) {
+                        String key = featureHexGrid.getPositionKey();
+                        allFeatureHexGrids.put(key, featureHexGrid);
+                    }
+                }
+            }
+
+            log.info("Collected {} FeatureHexGrids from {} PlacedBiomes",
+                allFeatureHexGrids.size(), placementResult.getPlacedBiomes().size());
+
+            // Create WHexGrids from FeatureHexGrids
+            for (FeatureHexGrid featureHexGrid : allFeatureHexGrids.values()) {
+                de.mhus.nimbus.world.shared.world.WHexGrid wHexGrid = createWHexGridFromFeatureHexGrid(
+                    featureHexGrid, worldId);
+                placementResult.getHexGrids().add(wHexGrid);
+            }
+
+            log.info("Created {} WHexGrids from FeatureHexGrids", placementResult.getHexGrids().size());
+
+            // Set totalGrids to initial biome grids (before fillers)
+            resultBuilder.totalGrids(initialBiomeGridCount);
+
+            // Calculate number of filler grids
+            int totalWHexGrids = placementResult.getHexGrids().size();
+            int fillerGridCount = totalWHexGrids - initialBiomeGridCount;
+
+            // Create HexGridFillResult for backward compatibility
+            if (fillGaps) {
+                // Build map of existing grids for fast lookup
+                Map<String, de.mhus.nimbus.world.shared.world.WHexGrid> gridMap = new HashMap<>();
+                for (de.mhus.nimbus.world.shared.world.WHexGrid grid : placementResult.getHexGrids()) {
+                    gridMap.put(grid.getPosition(), grid);
+                }
+
+                List<FilledHexGrid> allGrids = new ArrayList<>();
+
+                // Add all biome grids (from placed biomes, including filler biomes)
+                for (PlacedBiome placed : placementResult.getPlacedBiomes()) {
+                    for (de.mhus.nimbus.generated.types.HexVector2 coord : placed.getCoordinates()) {
+                        String key = TypeUtil.toStringHexCoord(coord.getQ(), coord.getR());
+                        de.mhus.nimbus.world.shared.world.WHexGrid grid = gridMap.get(key);
+                        if (grid != null) {
+                            boolean isFiller = "true".equals(grid.getParameters().get("filler"));
+                            FillerType fillerType = null;
+
+                            if (isFiller) {
+                                String fillerTypeStr = grid.getParameters().get("fillerType");
+                                if ("mountain".equals(fillerTypeStr)) {
+                                    fillerType = FillerType.LAND;
+                                } else if ("coast".equals(fillerTypeStr)) {
+                                    fillerType = FillerType.COAST;
+                                } else if ("ocean".equals(fillerTypeStr)) {
+                                    fillerType = FillerType.OCEAN;
+                                } else {
+                                    fillerType = FillerType.LAND;
+                                }
+                            }
+
+                            allGrids.add(FilledHexGrid.builder()
+                                .coordinate(coord)
+                                .hexGrid(grid)
+                                .isFiller(isFiller)
+                                .fillerType(fillerType)
+                                .biome(placed)
+                                .build());
+                        }
+                    }
+                }
+
+                // Create fill result for backward compatibility
+                fillResult = HexGridFillResult.builder()
+                    .placementResult(placementResult)
+                    .allGrids(allGrids)
+                    .totalGridCount(placementResult.getHexGrids().size())
+                    .oceanFillCount(oceanAdded)
+                    .landFillCount(mountainAdded + lowlandAdded)
+                    .coastFillCount(coastAdded)
+                    .mountainFillCount(mountainAdded)
+                    .lowlandFillCount(lowlandAdded)
+                    .continentFillCount(continentAdded)
+                    .success(true)
+                    .build();
+
+                resultBuilder.fillResult(fillResult);
+                resultBuilder.filledGrids(fillerGridCount);
+            }
+
+            // Step 8: Sync parameters from FeatureHexGrids to WHexGrids
+            log.info("Step 8: Syncing parameters from FeatureHexGrids to WHexGrids");
+            HexGridParameterSync parameterSync = new HexGridParameterSync();
+            int syncedCount = parameterSync.syncParametersToWHexGrids(
+                composition, placementResult, placementResult.getHexGrids());
+            log.info("Synced parameters to {} WHexGrids", syncedCount);
+
+            // Step 9: Generate WHexGrids (optional, only if repository provided)
+            if (generateWHexGrids && repository != null) {
+                log.info("Step 9: Generating WHexGrids");
+                HexGridGenerator generator = new HexGridGenerator(repository);
+                HexGridGenerator.GenerationResult genResult = generator.generateHexGrids(composition);
+
+                if (!genResult.isSuccess()) {
+                    warnings.add("WHexGrid generation had issues: " + genResult.getErrors());
+                } else {
+                    log.info("Generated {} WHexGrids", genResult.getCreatedGrids());
+                }
+
+                resultBuilder.generationResult(genResult);
+                resultBuilder.generatedWHexGrids(genResult.getCreatedGrids());
+            } else {
+                if (generateWHexGrids && repository == null) {
+                    warnings.add("WHexGrid generation requested but no repository provided");
+                }
+                log.info("Step 9: Skipping WHexGrid generation (disabled or no repository)");
+            }
+
+            // Success!
+            log.info("=== HexComposite Pipeline Complete ===");
+            log.info("Summary: biomes={}, structures={}, points={}, flows={}, grids={}, filled={}, warnings={}",
+                placementResult.getPlacedBiomes().size(),
+                structureResult.getPlacedCount(),
+                pointResult.getComposedPoints(),
+                flowResult.getComposedFlows(),
+                placementResult.getHexGrids().size(),
+                fillResult != null ? fillResult.getTotalGridCount() : 0,
+                warnings.size());
+
+            return resultBuilder
+                .success(true)
+                .build();
+
+        } catch (Exception e) {
+            log.error("HexComposite pipeline failed with exception", e);
+            return resultBuilder
+                .success(false)
+                .errorMessage("Pipeline failed: " + e.getMessage())
+                .build();
+        }
+    }
+
+    /**
+     * Creates a WHexGrid from a FeatureHexGrid, preserving all accumulated composition data.
+     * This is the correct way to convert composed data to final WHexGrid format.
+     *
+     * @param featureHexGrid The FeatureHexGrid with accumulated data from all features
+     * @param worldId The world ID
+     * @return WHexGrid with all parameters and data from the FeatureHexGrid
+     */
+    private de.mhus.nimbus.world.shared.world.WHexGrid createWHexGridFromFeatureHexGrid(
+        FeatureHexGrid featureHexGrid, String worldId) {
+
+        de.mhus.nimbus.generated.types.HexVector2 coord = featureHexGrid.getCoordinate();
+
+        // Create public HexGrid data
+        de.mhus.nimbus.generated.types.HexGrid publicData = new de.mhus.nimbus.generated.types.HexGrid();
+        publicData.setPosition(coord);
+        publicData.setName(featureHexGrid.getName());
+        publicData.setDescription(featureHexGrid.getDescription());
+
+        // Copy all parameters from FeatureHexGrid
+        Map<String, String> parameters = new HashMap<>();
+        if (featureHexGrid.getParameters() != null) {
+            parameters.putAll(featureHexGrid.getParameters());
+        }
+
+        // Debug: check if river parameter exists
+        if (parameters.containsKey("g_river")) {
+            log.info("Grid ({},{}) has g_river parameter: {}",
+                coord.getQ(), coord.getR(), parameters.get("g_river").substring(0, Math.min(100, parameters.get("g_river").length())));
+        }
+
+        // Add debug text overlay with coordinates
+        String coordText = coord.getQ() + "," + coord.getR();
+        parameters.put("debugText", coordText);
+
+        // TODO: Convert riverConfigParts, roadConfigParts, wallConfigParts to JSON parameters
+        // This should be done by HexGridRoadConfigurator or similar component
+
+        return de.mhus.nimbus.world.shared.world.WHexGrid.builder()
+            .worldId(worldId)
+            .position(TypeUtil.toStringHexCoord(coord.getQ(), coord.getR()))
+            .publicData(publicData)
+            .parameters(parameters)
+            .enabled(true)
+            .build();
+    }
+}

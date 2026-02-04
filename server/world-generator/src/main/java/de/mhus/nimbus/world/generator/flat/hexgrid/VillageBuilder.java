@@ -5,15 +5,14 @@ import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.generated.types.Vector2Int;
 import de.mhus.nimbus.shared.utils.TypeUtil;
 import de.mhus.nimbus.world.generator.flat.FlatMaterialService;
-import de.mhus.nimbus.world.generator.flat.hexgrid.composer.TextOverlay;
-import de.mhus.nimbus.world.generator.flat.hexgrid.composer.VillageGridConfig;
+import de.mhus.nimbus.world.generator.composer.image.TextOverlay;
+import de.mhus.nimbus.world.generator.composer.village.VillageGridConfig;
 import de.mhus.nimbus.world.shared.generator.WFlat;
 import de.mhus.nimbus.world.shared.util.HexLocalUtil;
 import de.mhus.nimbus.world.shared.world.HexLocalPosition;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
