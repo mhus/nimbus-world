@@ -135,6 +135,12 @@ public class VillageBuilder extends HexGridBuilder {
         double distance = Math.sqrt(dx * dx + dz * dz);
         int steps = (int) Math.ceil(distance);
 
+        // Log street segment for debugging
+        log.info("STREET_SEGMENT: from=({},{}) to=({},{}) distance={} type='{}'",
+            street.getFromX(), street.getFromZ(),
+            street.getToX(), street.getToZ(),
+            (int)distance, street.getType());
+
         // Determine material based on type
         int material = getMaterialForStreetType(street.getType());
 

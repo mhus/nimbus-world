@@ -223,20 +223,27 @@ public class VillageDesigner {
 
     /**
      * Applies a direction to a hex position to get the neighbor position.
+     * IMPORTANT: Uses FLAT-TOP hexagon orientation for local hex grids.
+     * The 6 direct neighbors for flat-top are: N, NE, SE, S, SW, NW
+     * (E and W are not direct neighbors in flat-top orientation)
      */
     private static HexVector2 applyDirection(HexVector2 from, Direction direction) {
         int q = from.getQ();
         int r = from.getR();
 
+        // Flat-top hexagon neighbors (6 directions)
         switch (direction) {
-            case N:   return TypeUtil.hexVector2(q, r - 1);
-            case NE:  return TypeUtil.hexVector2(q + 1, r - 1);
-            case E:   return TypeUtil.hexVector2(q + 1, r);
-            case SE:  return TypeUtil.hexVector2(q, r + 1);
-            case S:   return TypeUtil.hexVector2(q - 1, r + 1);
-            case SW:  return TypeUtil.hexVector2(q - 1, r);
-            case W:   return TypeUtil.hexVector2(q - 1, r);
-            case NW:  return TypeUtil.hexVector2(q, r - 1);
+            case N:   return TypeUtil.hexVector2(q, r - 1);      // North
+            case NE:  return TypeUtil.hexVector2(q + 1, r - 1);  // NorthEast
+            case SE:  return TypeUtil.hexVector2(q + 1, r);      // SouthEast
+            case S:   return TypeUtil.hexVector2(q, r + 1);      // South
+            case SW:  return TypeUtil.hexVector2(q - 1, r + 1);  // SouthWest
+            case NW:  return TypeUtil.hexVector2(q - 1, r);      // NorthWest
+
+            // E and W are not direct neighbors in flat-top, approximate with diagonal
+            case E:   return TypeUtil.hexVector2(q + 1, r);      // Same as SE
+            case W:   return TypeUtil.hexVector2(q - 1, r);      // Same as NW
+
             default:  return from; // Stay at same position
         }
     }
@@ -401,17 +408,18 @@ public class VillageDesigner {
         int q = centerQ;
         int r = centerR - radius;
 
-        // Direction vectors for hex neighbors (in order: E, SE, S, SW, W, NW)
+        // Direction vectors for FLAT-TOP hex neighbors (clockwise from N)
+        // The 6 directions are: SE, S, SW, NW, N, NE
         int[][] directions = {
-            {1, 0},    // E
-            {0, 1},    // SE
-            {-1, 1},   // S (adjusted for axial coordinates)
-            {-1, 0},   // SW
-            {0, -1},   // W
-            {1, -1}    // NW
+            {1, 0},    // SE (move along q)
+            {0, 1},    // S  (move along r)
+            {-1, 1},   // SW (move along -q, +r)
+            {-1, 0},   // NW (move along -q)
+            {0, -1},   // N  (move along -r)
+            {1, -1}    // NE (move along +q, -r)
         };
 
-        // Walk around the ring
+        // Walk around the ring clockwise
         for (int side = 0; side < 6; side++) {
             for (int step = 0; step < radius; step++) {
                 ring.add(TypeUtil.hexVector2(q, r));
@@ -518,11 +526,16 @@ public class VillageDesigner {
 
                     districtConnectionPoints.add(cp);
                     allConnectionPoints.add(cp);
+
+                    log.info("CONNECTION_POINT: district='{}' name='{}' hex=<{};{}> local=({},{})",
+                        districtGrid.getName(), placedPlace.getPlace().getName(),
+                        placedPlace.getHexQ(), placedPlace.getHexR(),
+                        placedPlace.getLocalX(), placedPlace.getLocalZ());
                 }
             }
 
             connectionPointsByDistrict.put(districtGrid.getGridPosition(), districtConnectionPoints);
-            log.debug("District '{}' at [{},{}] has {} connection point(s)",
+            log.info("District '{}' at [{},{}] has {} connection point(s)",
                 districtGrid.getName(),
                 districtGrid.getGridPosition().getQ(),
                 districtGrid.getGridPosition().getR(),
@@ -567,14 +580,14 @@ public class VillageDesigner {
         for (DistrictGrid districtGrid : districtGrids) {
             HexVector2 pos = districtGrid.getGridPosition();
 
-            // Check all 6 hex directions for neighbors
+            // Check all 6 hex directions for neighbors (flat-top orientation)
             List<HexVector2> neighborDirections = List.of(
-                TypeUtil.hexVector2(pos.getQ() + 1, pos.getR()),     // E
+                TypeUtil.hexVector2(pos.getQ() + 1, pos.getR()),     // SE
                 TypeUtil.hexVector2(pos.getQ() + 1, pos.getR() - 1), // NE
-                TypeUtil.hexVector2(pos.getQ(), pos.getR() - 1),     // NW
-                TypeUtil.hexVector2(pos.getQ() - 1, pos.getR()),     // W
+                TypeUtil.hexVector2(pos.getQ(), pos.getR() - 1),     // N
+                TypeUtil.hexVector2(pos.getQ() - 1, pos.getR()),     // NW
                 TypeUtil.hexVector2(pos.getQ() - 1, pos.getR() + 1), // SW
-                TypeUtil.hexVector2(pos.getQ(), pos.getR() + 1)      // SE
+                TypeUtil.hexVector2(pos.getQ(), pos.getR() + 1)      // S
             );
 
             for (HexVector2 neighborPos : neighborDirections) {
@@ -721,39 +734,40 @@ public class VillageDesigner {
                                                     int local2X, int local2Z,
                                                     int dq, int dr,
                                                     int hexGridSize) {
-        // Determine which edge we're crossing based on direction
+        // Determine which edge we're crossing based on direction (FLAT-TOP orientation)
+        // Flat-top hexagons have N/S horizontal edges and NE/NW/SE/SW diagonal corners
         int edge1X, edge1Z, edge2X, edge2Z;
 
-        if (dq == 1 && dr == 0) { // East
+        if (dq == 1 && dr == 0) { // SE - diagonal corner (bottom-right to top-left)
             edge1X = hexGridSize; // Right edge of grid 1
-            edge1Z = local1Z;
+            edge1Z = hexGridSize; // Bottom of grid 1
             edge2X = 0; // Left edge of grid 2
-            edge2Z = local2Z;
-        } else if (dq == -1 && dr == 0) { // West
+            edge2Z = 0; // Top of grid 2
+        } else if (dq == -1 && dr == 0) { // NW - diagonal corner (top-left to bottom-right)
             edge1X = 0; // Left edge of grid 1
-            edge1Z = local1Z;
+            edge1Z = 0; // Top of grid 1
             edge2X = hexGridSize; // Right edge of grid 2
-            edge2Z = local2Z;
-        } else if (dq == 0 && dr == -1) { // North-West
+            edge2Z = hexGridSize; // Bottom of grid 2
+        } else if (dq == 0 && dr == -1) { // N - horizontal edge (top)
             edge1X = local1X;
             edge1Z = 0; // Top edge of grid 1
             edge2X = local2X;
             edge2Z = hexGridSize; // Bottom edge of grid 2
-        } else if (dq == 0 && dr == 1) { // South-East
+        } else if (dq == 0 && dr == 1) { // S - horizontal edge (bottom)
             edge1X = local1X;
             edge1Z = hexGridSize; // Bottom edge of grid 1
             edge2X = local2X;
             edge2Z = 0; // Top edge of grid 2
-        } else if (dq == 1 && dr == -1) { // North-East
-            edge1X = hexGridSize;
-            edge1Z = 0;
-            edge2X = 0;
-            edge2Z = hexGridSize;
-        } else if (dq == -1 && dr == 1) { // South-West
-            edge1X = 0;
-            edge1Z = hexGridSize;
-            edge2X = hexGridSize;
-            edge2Z = 0;
+        } else if (dq == 1 && dr == -1) { // NE - diagonal corner (top-right to bottom-left)
+            edge1X = hexGridSize; // Right of grid 1
+            edge1Z = 0; // Top of grid 1
+            edge2X = 0; // Left of grid 2
+            edge2Z = hexGridSize; // Bottom of grid 2
+        } else if (dq == -1 && dr == 1) { // SW - diagonal corner (bottom-left to top-right)
+            edge1X = 0; // Left of grid 1
+            edge1Z = hexGridSize; // Bottom of grid 1
+            edge2X = hexGridSize; // Right of grid 2
+            edge2Z = 0; // Top of grid 2
         } else {
             // Default fallback
             edge1X = local1X;
