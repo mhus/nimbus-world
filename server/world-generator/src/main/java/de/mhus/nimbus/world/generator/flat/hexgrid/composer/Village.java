@@ -49,6 +49,14 @@ public class Village extends Structure implements BuildFeature {
     private List<VillageConnectionPoint> externalConnectionPoints;
 
     /**
+     * Internal: Designed district grids from VillageDesigner.
+     * Stored to allow connecting external connection points after design phase.
+     * Not serialized to JSON (transient for design-time only).
+     */
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    private transient List<DistrictGrid> designedDistrictGrids;
+
+    /**
      * Base level for village terrain (typically 95)
      */
     @Builder.Default
@@ -203,6 +211,9 @@ public class Village extends Structure implements BuildFeature {
                 createFallbackGridsFromDistricts();
                 return;
             }
+
+            // Store designed district grids for later use (connecting external points)
+            this.designedDistrictGrids = designResult.getDistrictGrids();
 
             log.info("Village design successful: {} districts", designResult.getDistrictCount());
 
@@ -429,4 +440,152 @@ public class Village extends Structure implements BuildFeature {
             return "{}";
         }
     }
+
+    /**
+     * Connects external connection points to internal village connection points.
+     * This method is called after external connection points have been generated
+     * by VillageExternalConnectionGenerator (HexCompositeBuilder Step 4c).
+     *
+     * Creates street segments from internal connection points to the village boundary,
+     * connecting to external connection points in neighboring grids.
+     *
+     * @param hexGridSize The size of hex grids for coordinate calculations
+     */
+    public void connectExternalConnectionPoints(int hexGridSize) {
+        if (externalConnectionPoints == null || externalConnectionPoints.isEmpty()) {
+            log.debug("No external connection points to connect for village '{}'", getName());
+            return;
+        }
+
+        log.info("Connecting {} external connection points for village '{}'",
+            externalConnectionPoints.size(), getName());
+
+        // For each external connection point, find the corresponding internal connection point
+        // and create street segments connecting them
+        for (VillageConnectionPoint externalPoint : externalConnectionPoints) {
+            connectExternalPoint(externalPoint, hexGridSize);
+        }
+
+        log.info("External connection point routing complete for village '{}'", getName());
+    }
+
+    /**
+     * Connects a single external connection point to the village.
+     *
+     * @param externalPoint The external connection point to connect
+     * @param hexGridSize The size of hex grids
+     */
+    private void connectExternalPoint(VillageConnectionPoint externalPoint, int hexGridSize) {
+        String internalPointName = externalPoint.getInternalConnectionPointName();
+        Direction externalDirection = externalPoint.getExternalDirection();
+
+        log.debug("Connecting external point '{}' (direction: {}, internal: {})",
+            externalPoint.getName(), externalDirection, internalPointName);
+
+        if (designedDistrictGrids == null || designedDistrictGrids.isEmpty()) {
+            log.warn("No district grids available for external connection routing");
+            return;
+        }
+
+        // Find the internal connection point in the district grids
+        DistrictGrid targetDistrict = null;
+        PlacedPlace internalPlace = null;
+
+        for (DistrictGrid districtGrid : designedDistrictGrids) {
+            for (PlacedPlace placedPlace : districtGrid.getPlacedPlaces()) {
+                if (placedPlace.getPlace().getName().equals(internalPointName)) {
+                    targetDistrict = districtGrid;
+                    internalPlace = placedPlace;
+                    break;
+                }
+            }
+            if (internalPlace != null) break;
+        }
+
+        if (internalPlace == null) {
+            log.warn("Internal connection point '{}' not found in district grids", internalPointName);
+            return;
+        }
+
+        // Calculate grid boundary position in the direction of the external point
+        // The external point is in a neighbor grid, so we route to the edge of our district
+        int[] edgePosition = calculateEdgePosition(externalDirection, hexGridSize);
+        int edgeX = edgePosition[0];
+        int edgeZ = edgePosition[1];
+
+        // Find the corresponding FeatureHexGrid for this district
+        FeatureHexGrid targetHexGrid = findFeatureHexGrid(targetDistrict);
+        if (targetHexGrid == null) {
+            log.warn("Could not find FeatureHexGrid for district '{}'", targetDistrict.getName());
+            return;
+        }
+
+        // Create two RoadConfigParts: one at internal point position, one at edge position
+        // These will be assembled by HexGridRoadConfigurator
+        RoadConfigPart internalPart = RoadConfigPart.createRoutePositionPart(
+            internalPlace.getLocalX(),
+            internalPlace.getLocalZ(),
+            4,  // Standard street width
+            baseLevel,
+            "street"
+        );
+
+        RoadConfigPart edgePart = RoadConfigPart.createRoutePositionPart(
+            edgeX,
+            edgeZ,
+            4,  // Standard street width
+            baseLevel,
+            "street"
+        );
+
+        targetHexGrid.addRoadConfigPart(internalPart);
+        targetHexGrid.addRoadConfigPart(edgePart);
+
+        log.info("EXTERNAL_CONNECTION: district='{}' internal='{}' at ({},{}) → edge at ({},{}) direction {}",
+            targetDistrict.getName(), internalPointName,
+            internalPlace.getLocalX(), internalPlace.getLocalZ(),
+            edgeX, edgeZ, externalDirection);
+    }
+
+    /**
+     * Finds the FeatureHexGrid corresponding to a DistrictGrid.
+     *
+     * @param districtGrid The district grid to find
+     * @return The matching FeatureHexGrid, or null if not found
+     */
+    private FeatureHexGrid findFeatureHexGrid(DistrictGrid districtGrid) {
+        if (getHexGrids() == null) return null;
+
+        String targetName = getName() + " - " + districtGrid.getName();
+        for (FeatureHexGrid hexGrid : getHexGrids()) {
+            if (hexGrid.getName().equals(targetName)) {
+                return hexGrid;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Calculates the edge position for a given direction.
+     * Returns cartesian coordinates (x, z) at the grid boundary.
+     *
+     * @param direction The direction to the external point
+     * @param hexGridSize The size of the hex grid
+     * @return Array [x, z] at grid edge
+     */
+    private int[] calculateEdgePosition(Direction direction, int hexGridSize) {
+        int center = hexGridSize / 2;
+
+        return switch (direction) {
+            case N -> new int[]{center, 0};                      // North edge: center, top
+            case NE -> new int[]{hexGridSize, 0};                // Northeast edge: right, top
+            case E -> new int[]{hexGridSize, center};             // East edge: right, center
+            case SE -> new int[]{hexGridSize, hexGridSize};      // Southeast edge: right, bottom
+            case S -> new int[]{center, hexGridSize};            // South edge: center, bottom
+            case SW -> new int[]{0, hexGridSize};                // Southwest edge: left, bottom
+            case W -> new int[]{0, center};                      // West edge: left, center
+            case NW -> new int[]{0, 0};                          // Northwest edge: left, top
+        };
+    }
+
 }

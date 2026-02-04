@@ -259,6 +259,19 @@ public class HexCompositeBuilder {
                     villageConnGenerator.generateExternalConnections(composition, placementResult);
             log.info("Generated {} external connection points for villages", villageConnResult.getTotalPoints());
 
+            // Step 4d: Connect external connection points to village internal points
+            log.info("Step 4d: Connecting external connection points to village interiors");
+            int connectedVillages = 0;
+            for (Feature feature : composition.getFeatures()) {
+                if (feature instanceof Village village) {
+                    if (village.getExternalConnectionPoints() != null && !village.getExternalConnectionPoints().isEmpty()) {
+                        village.connectExternalConnectionPoints(world.getPublicData().getHexGridSize());
+                        connectedVillages++;
+                    }
+                }
+            }
+            log.info("Connected external points for {} villages", connectedVillages);
+
             // Step 5: Compose points (place Points within biomes)
             log.info("Step 5: Composing points");
             PointComposer pointComposer = new PointComposer();

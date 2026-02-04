@@ -359,13 +359,13 @@ public class VillageExternalConnectionGenerator {
      */
     private Map<Direction, String> findInternalConnectionPoints(Village village) {
         Map<Direction, String> result = new HashMap<>();
+        String fallbackConnectionPoint = null;
 
         if (village.getDistricts() == null) {
             return result;
         }
 
-        // TODO: Implement smarter mapping of internal connection points to external directions
-        // For now: use simple heuristic - first connection point in each district
+        // First pass: Map connection points to district directions
         for (District district : village.getDistricts()) {
             if (district.getPlaces() == null) {
                 continue;
@@ -373,6 +373,11 @@ public class VillageExternalConnectionGenerator {
 
             for (Place place : district.getPlaces()) {
                 if (place.isConnectionPoint()) {
+                    // Remember first connection point as fallback
+                    if (fallbackConnectionPoint == null) {
+                        fallbackConnectionPoint = place.getName();
+                    }
+
                     // Map to district direction if available
                     if (district.getDirection() != null) {
                         result.putIfAbsent(district.getDirection(), place.getName());
@@ -381,7 +386,41 @@ public class VillageExternalConnectionGenerator {
             }
         }
 
+        // Second pass: Fill missing directions with fallback or nearest direction
+        // If we have connection points but some directions are missing, use heuristics
+        if (fallbackConnectionPoint != null && !result.isEmpty()) {
+            // For directions without a direct match, use the fallback (usually center connection point)
+            for (Direction dir : Direction.values()) {
+                if (!result.containsKey(dir)) {
+                    // Try to find a connection point in a nearby direction
+                    String nearbyPoint = findNearbyConnectionPoint(dir, result);
+                    result.put(dir, nearbyPoint != null ? nearbyPoint : fallbackConnectionPoint);
+                }
+            }
+        }
+
         return result;
+    }
+
+    /**
+     * Finds a connection point in a nearby direction.
+     *
+     * @param direction The target direction
+     * @param existingPoints Existing direction-to-point mappings
+     * @return Connection point name from nearby direction, or null
+     */
+    private String findNearbyConnectionPoint(Direction direction, Map<Direction, String> existingPoints) {
+        // Map each direction to its neighbors (clockwise order)
+        return switch (direction) {
+            case N -> existingPoints.getOrDefault(Direction.NE, existingPoints.get(Direction.NW));
+            case NE -> existingPoints.getOrDefault(Direction.N, existingPoints.get(Direction.E));
+            case E -> existingPoints.getOrDefault(Direction.NE, existingPoints.get(Direction.SE));
+            case SE -> existingPoints.getOrDefault(Direction.E, existingPoints.get(Direction.S));
+            case S -> existingPoints.getOrDefault(Direction.SE, existingPoints.get(Direction.SW));
+            case SW -> existingPoints.getOrDefault(Direction.S, existingPoints.get(Direction.W));
+            case W -> existingPoints.getOrDefault(Direction.SW, existingPoints.get(Direction.NW));
+            case NW -> existingPoints.getOrDefault(Direction.W, existingPoints.get(Direction.N));
+        };
     }
 
     /**
