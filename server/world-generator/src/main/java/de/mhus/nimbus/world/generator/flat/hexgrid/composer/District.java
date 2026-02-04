@@ -76,6 +76,19 @@ public class District {
     private List<Place> places;
 
     /**
+     * Target occupancy rate for this district (total fill rate).
+     * Value between 0.0 and 1.0:
+     * - 0.0 = no slots filled (only explicit places from places list)
+     * - 0.75 = district should be 75% occupied
+     * - 1.0 = district should be 100% filled
+     *
+     * If explicit places already exceed fillRate, no additional slots are filled.
+     * Additional slots are filled starting with those nearest to streets.
+     * If null, defaults to 0.75 (75% occupancy).
+     */
+    private Double fillRate;
+
+    /**
      * Enum defining the slot size configurations for districts.
      * Each size determines the number and size of building plots available.
      */

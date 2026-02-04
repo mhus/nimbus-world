@@ -68,6 +68,20 @@ public class Village extends Structure implements BuildFeature {
     private double buildingTendency = 0.7;
 
     /**
+     * Target occupancy rate for the district (total fill rate).
+     * Value between 0.0 and 1.0:
+     * - 0.0 = no slots filled (only explicit places, no auto-filling)
+     * - 0.75 = district should be 75% occupied (if already 75%+ filled, no additional filling)
+     * - 1.0 = district should be 100% filled
+     *
+     * If explicit places already exceed fillRate, no additional slots are filled.
+     * Additional slots are filled starting with those nearest to streets.
+     * Default: 0.75 (75% total occupancy, 25% remain empty)
+     */
+    @Builder.Default
+    private double fillRate = 0.75;
+
+    /**
      * Enable debug mode to draw level-250 markers at the center of each place.
      * Useful for visualizing and verifying placement positions.
      * Default: false
