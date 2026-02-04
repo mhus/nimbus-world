@@ -2,6 +2,7 @@ package de.mhus.nimbus.world.generator.flat.hexgrid.composer;
 
 import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
+import de.mhus.nimbus.world.shared.world.WWorld;
 import lombok.Builder;
 import lombok.Data;
 
@@ -20,6 +21,11 @@ public class ComposeContext {
      * The composition being processed.
      */
     private HexComposition composition;
+
+    /**
+     * The world this composition belongs to.
+     */
+    private WWorld world;
 
     /**
      * All placed biomes with their coordinates.
@@ -61,8 +67,7 @@ public class ComposeContext {
      */
     private Map<String, Point> pointMap;
 
-    /**
-     * Hex grid size (default 512).
-     */
-    private int hexGridSize;
+    public int getHexGridSize() {
+        return world.getPublicData().getHexGridSize();
+    }
 }

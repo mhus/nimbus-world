@@ -1,8 +1,10 @@
 package de.mhus.nimbus.world.generator.flat.hexgrid.composer;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.generated.types.Vector2Int;
 import de.mhus.nimbus.world.shared.util.HexLocalUtil;
+import de.mhus.nimbus.world.shared.world.HexLocalPosition;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -50,9 +52,7 @@ public class PositionPoint extends Point {
 
         // 3. If relativeToPoints is set, position relative to other points
         if (getRelativeToPoints() != null && !getRelativeToPoints().isEmpty()) {
-            // TODO: Implement relative positioning to other points
-            // For now: fall back to center
-            return composeDefaultCenterPosition(context);
+            return composePositionRelativeToPoints(context);
         }
 
         // Default: Place at center of biome (0,0 in hex coordinates, divider 5)
@@ -72,7 +72,7 @@ public class PositionPoint extends Point {
      * @param context The compose context
      * @return HexLocalPosition near the specified side
      */
-    private de.mhus.nimbus.world.shared.world.HexLocalPosition composePositionNearSide(ComposeContext context) {
+    private HexLocalPosition composePositionNearSide(ComposeContext context) {
         // Place point at outer ring (distance = divider/2) in the direction of biomeSide
         Direction side = getBiomeSide();
         int distance = HexLocalUtil.DEFAULT_POSITION_DIVIDER / 2; // = 2 for divider 5
@@ -117,8 +117,8 @@ public class PositionPoint extends Point {
         // For now, we ignore sideOffset since we're placing at a single hex cell
         // TODO: Use sideOffset to interpolate between adjacent outer ring cells
 
-        de.mhus.nimbus.generated.types.HexVector2 hexPosition =
-            de.mhus.nimbus.generated.types.HexVector2.builder()
+        HexVector2 hexPosition =
+            HexVector2.builder()
                 .q(q)
                 .r(r)
                 .build();
@@ -182,8 +182,8 @@ public class PositionPoint extends Point {
                 break;
         }
 
-        de.mhus.nimbus.generated.types.HexVector2 hexPosition =
-            de.mhus.nimbus.generated.types.HexVector2.builder()
+        HexVector2 hexPosition =
+            HexVector2.builder()
                 .q(q)
                 .r(r)
                 .build();
@@ -192,6 +192,93 @@ public class PositionPoint extends Point {
         int size = context.getHexGridSize() / divider;
 
         return new de.mhus.nimbus.world.shared.world.HexLocalPosition(hexPosition, divider, size);
+    }
+
+    /**
+     * Composes position relative to other points using relativeToPoints.
+     * Takes the first relative position definition and calculates position based on:
+     * - Reference point's position
+     * - Direction from reference point
+     * - Distance in local hex cells
+     *
+     * If multiple relativeToPoints are defined, only the first is used.
+     * If reference point is not found or not yet composed, falls back to center.
+     *
+     * @param context The compose context with all points
+     * @return HexLocalPosition relative to another point
+     */
+    private HexLocalPosition composePositionRelativeToPoints(ComposeContext context) {
+        // Take first relative position (could be extended to handle multiple)
+        RelativeToPoint relativePos = getRelativeToPoints().get(0);
+
+        // Find reference point in context
+        Point referencePoint = context.getPointMap().get(relativePos.getPointId());
+        if (referencePoint == null) {
+            // Reference point not found - fall back to center
+            return composeDefaultCenterPosition(context);
+        }
+
+        // Get reference point's composed position
+        if (referencePoint.getPointComposed() == null ||
+            referencePoint.getPointComposed().getHexLocalPosition() == null) {
+            // Reference point not yet composed - fall back to center
+            return composeDefaultCenterPosition(context);
+        }
+
+        HexLocalPosition refPosition = referencePoint.getPointComposed().getHexLocalPosition();
+
+        // Calculate offset based on direction and distance
+        Direction direction = relativePos.getDirection();
+        int distance = relativePos.getDistance() != null ? relativePos.getDistance() : 1;
+
+        // Calculate direction offset in hex coordinates
+        int offsetQ = 0;
+        int offsetR = 0;
+
+        if (direction != null) {
+            switch (direction) {
+                case N:  // North
+                    offsetR = -distance;
+                    break;
+                case NE: // North-East
+                    offsetQ = distance;
+                    offsetR = -distance;
+                    break;
+                case E:  // East
+                    offsetQ = distance;
+                    break;
+                case SE: // South-East
+                    offsetR = distance;
+                    break;
+                case S:  // South
+                    offsetQ = -distance;
+                    offsetR = distance;
+                    break;
+                case SW: // South-West
+                    offsetQ = -distance;
+                    break;
+                case W:  // West
+                    offsetQ = -distance;
+                    break;
+                case NW: // North-West
+                    offsetR = -distance;
+                    break;
+                default:
+                    // No offset
+                    break;
+            }
+        }
+
+        // Calculate new position by adding offset to reference position
+        HexVector2 newHexPosition = HexVector2.builder()
+            .q(refPosition.position().getQ() + offsetQ)
+            .r(refPosition.position().getR() + offsetR)
+            .build();
+
+        int divider = HexLocalUtil.DEFAULT_POSITION_DIVIDER;
+        int size = context.getHexGridSize() / divider;
+
+        return new de.mhus.nimbus.world.shared.world.HexLocalPosition(newHexPosition, divider, size);
     }
 
     /**

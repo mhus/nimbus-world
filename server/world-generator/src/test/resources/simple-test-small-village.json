@@ -1,3 +1,7 @@
+/*
+    Simple Test World with a Village definition
+    This is a JSON with comments enabled.
+*/
 {
   "name": "Simple Test World First",
   "worldId": "simple-test-first",
@@ -61,8 +65,109 @@
       "featureType": "village",
       "name": "small-village",
       "title": "Small Village",
-      "templateName": "hamlet-medieval",
+      "style": "medieval",
       "baseLevel": 95,
+      "debug": true,
+      "districts": [
+        {
+          "name": "center",
+          "title": "Village Center",
+          "slots": "MEDIUM",
+          "places": [
+            {
+              "placeType": "building",
+              "name": "town-hall",
+              "kind": "town_hall",
+              "connectionPoint": false
+            },
+            {
+              "placeType": "free",
+              "name": "market-square",
+              "kind": "PLAZA",
+              "connectionPoint": true
+            },
+            {
+              "placeType": "road",
+              "name": "main-street",
+              "kind": "STREET",
+              "connectionPoint": true
+            }
+          ]
+        },
+        {
+          "name": "north",
+          "title": "Northern Quarter",
+          "direction": "N",
+          "anchorDistrict": "center",
+          "slots": "SMALL",
+          "places": [
+            {
+              "placeType": "building",
+              "name": "house-1",
+              "kind": "house",
+              "connectionPoint": false
+            },
+            {
+              "placeType": "building",
+              "name": "house-2",
+              "kind": "house",
+              "connectionPoint": false
+            },
+            {
+              "placeType": "building",
+              "name": "smithy",
+              "kind": "workshop",
+              "connectionPoint": false
+            },
+            {
+              "placeType": "free",
+              "name": "garden",
+              "kind": "GARDEN",
+              "connectionPoint": false
+            },
+            {
+              "placeType": "road",
+              "name": "north-road",
+              "kind": "TRAIL",
+              "connectionPoint": true
+            }
+          ]
+        },
+        {
+          "name": "south",
+          "title": "Southern Quarter",
+          "direction": "S",
+          "anchorDistrict": "center",
+          "slots": "SMALL",
+          "places": [
+            {
+              "placeType": "building",
+              "name": "tavern",
+              "kind": "tavern",
+              "style": "rustic",
+              "connectionPoint": false
+            },
+            {
+              "placeType": "building",
+              "name": "shop",
+              "kind": "shop",
+              "connectionPoint": false
+            },
+            {
+              "placeType": "river",
+              "name": "stream",
+              "kind": "STREAM",
+              "connectionPoint": true
+            },
+            {
+              "placeType": "wall",
+              "name": "fence",
+              "kind": "WOODEN_FENCE",
+              "connectionPoint": false
+            }
+          ]
+        }
+      ],
       "shape": "CIRCLE",
       "size": "SMALL",
       "continentId": "main-continent",

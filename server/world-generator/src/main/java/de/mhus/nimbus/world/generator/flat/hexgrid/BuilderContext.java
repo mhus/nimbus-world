@@ -64,4 +64,8 @@ public class BuilderContext {
         return ret;
     }
 
+    public int getHexGridSize() {
+        return world.getPublicData().getHexGridSize();
+    }
+
 }

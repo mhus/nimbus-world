@@ -26,7 +26,6 @@ import java.util.*;
 @Slf4j
 public class PointComposer {
 
-    private static final int DEFAULT_HEX_GRID_SIZE = 512;
     private static final int MAX_ITERATIONS = 100;
     private static final double CONVERGENCE_THRESHOLD = 0.01;
 
@@ -181,7 +180,6 @@ public class PointComposer {
             .coordinateToBiomeMap(coordinateToBiomeMap)
             .hexGrids(placementResult.getHexGrids())
             .hexGridMap(hexGridMap)
-            .hexGridSize(DEFAULT_HEX_GRID_SIZE)
             .build();
     }
 

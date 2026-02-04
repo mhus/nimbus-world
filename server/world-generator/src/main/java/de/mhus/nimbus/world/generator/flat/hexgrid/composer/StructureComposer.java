@@ -20,13 +20,15 @@ public class StructureComposer {
     /**
      * Composes structures from a prepared composition.
      *
-     * @param composition The composition with structure definitions
+     * @param context The compose context with world, composition, and placement result
      * @param placementResult The biome placement result (for anchors and adding placed structures)
      * @return Result with placed structures
      */
-    public StructurePlacementResult composeStructures(HexComposition composition,
+    public StructurePlacementResult composeStructures(ComposeContext context,
                                                        BiomePlacementResult placementResult) {
         log.info("Starting structure composition");
+
+        HexComposition composition = context.getComposition();
 
         List<PlacedStructure> placedStructures = new ArrayList<>();
         List<String> errors = new ArrayList<>();
@@ -40,7 +42,7 @@ public class StructureComposer {
 
         for (Village village : villages) {
             try {
-                PlacedStructure placed = placeVillage(village, placementResult);
+                PlacedStructure placed = placeVillage(village, placementResult, context);
                 if (placed != null) {
                     placedStructures.add(placed);
                     placedCount++;
@@ -76,19 +78,23 @@ public class StructureComposer {
     }
 
     /**
-     * Places a village with a fixed 3-grid structure (dummy implementation).
+     * Places a village using the new district-based design system.
      *
-     * The village consists of 3 grids arranged in a line:
-     * - Grid 0: Center grid
-     * - Grid 1: East neighbor
-     * - Grid 2: West neighbor
+     * The village consists of districts, each positioned as a separate grid.
+     * Districts contain places (buildings, roads, free spaces, etc.) that are
+     * arranged according to the district's slot configuration.
      *
      * @param village The village to place
      * @param placementResult The biome placement result (for finding anchor position)
+     * @param context The compose context (for accessing world/hexGridSize)
      * @return PlacedStructure or null if placement failed
      */
-    private PlacedStructure placeVillage(Village village, BiomePlacementResult placementResult) {
-        log.debug("Placing village '{}' with dummy 3-grid structure", village.getName());
+    private PlacedStructure placeVillage(Village village, BiomePlacementResult placementResult, ComposeContext context) {
+        log.info("Placing village '{}' with district-based design", village.getName());
+
+        // Get hexGridSize from world
+        int hexGridSize = context.getWorld() != null ?
+            context.getWorld().getPublicData().getHexGridSize() : 512;
 
         // Find anchor position from village positions
         HexVector2 center = findAnchorPosition(village, placementResult);
@@ -97,45 +103,70 @@ public class StructureComposer {
             return null;
         }
 
-        // Create 3 grids in a line: West - Center - East
+        log.info("Village '{}' anchor position: [{},{}]", village.getName(), center.getQ(), center.getR());
+
+        log.info("Village '{}' has {} districts from config",
+            village.getName(), village.getDistricts() != null ? village.getDistricts().size() : 0);
+
+        // IMPORTANT: Configure the village's HexGrids
+        // This will run VillageDesigner and set g_village parameters
+        // Pass empty list as coordinates are determined by districts
+        log.info("Calling village.configureHexGrids() for '{}' with hexGridSize: {}", village.getName(), hexGridSize);
+        village.configureHexGrids(new ArrayList<>(), hexGridSize);
+
+        log.info("Village '{}' configured {} HexGrids", village.getName(),
+            village.getHexGrids() != null ? village.getHexGrids().size() : 0);
+
+        if (village.getHexGrids() == null || village.getHexGrids().isEmpty()) {
+            log.error("Village '{}' has no HexGrids after configuration!", village.getName());
+            return null;
+        }
+
+        // Create PlacedBiomes for each configured grid
+        // Translate relative coordinates from FeatureHexGrids to absolute world coordinates
         List<HexVector2> grids = new ArrayList<>();
 
-        // Center grid
-        grids.add(center);
+        for (FeatureHexGrid featureHexGrid : village.getHexGrids()) {
+            HexVector2 relativePos = featureHexGrid.getCoordinate();
 
-        // East neighbor (q+1, r)
-        grids.add(TypeUtil.hexVector2(center.getQ() + 1, center.getR()));
+            // Convert relative district position to absolute world position
+            HexVector2 absolutePos = TypeUtil.hexVector2(
+                center.getQ() + relativePos.getQ(),
+                center.getR() + relativePos.getR()
+            );
 
-        // West neighbor (q-1, r)
-        grids.add(TypeUtil.hexVector2(center.getQ() - 1, center.getR()));
+            // Update the FeatureHexGrid with absolute coordinates
+            featureHexGrid.setCoordinate(absolutePos);
+            grids.add(absolutePos);
 
-        log.debug("Village '{}' grids: Center={}, East={}, West={}",
-            village.getName(), grids.get(0), grids.get(1), grids.get(2));
-
-        // Create PlacedBiomes for each grid with VILLAGE biome type
-        for (HexVector2 gridCoord : grids) {
             // Create a virtual "village" biome for this grid
             Biome villageBiome = Biome.builder()
-                .name(village.getName() + "-grid-" + gridCoord.getQ() + "," + gridCoord.getR())
+                .name(village.getName() + "-grid-" + absolutePos.getQ() + "," + absolutePos.getR())
                 .title(village.getTitle() + " Grid")
                 .type(BiomeType.VILLAGE)
                 .build();
             villageBiome.initialize();
 
-            // Configure the hex grid for this biome
-            villageBiome.configureHexGrids(List.of(gridCoord));
+            // Copy the FeatureHexGrid from village to the villageBiome
+            // This transfers all the g_village parameters
+            villageBiome.addHexGrid(featureHexGrid);
 
             // Create PlacedBiome (representing the village grid)
             PlacedBiome placedGrid = PlacedBiome.builder()
                 .biome(villageBiome)
-                .center(gridCoord)
-                .coordinates(List.of(gridCoord))
+                .center(absolutePos)
+                .coordinates(List.of(absolutePos))
                 .actualSize(1)
                 .build();
 
             // Add to placement result so it's included in the world
             placementResult.getPlacedBiomes().add(placedGrid);
+
+            log.debug("Created PlacedBiome for district at absolute position [{},{}]",
+                absolutePos.getQ(), absolutePos.getR());
         }
+
+        log.info("Village '{}' created {} PlacedBiomes", village.getName(), grids.size());
 
         // Create PlacedStructure result
         PlacedStructure placedStructure = PlacedStructure.builder()

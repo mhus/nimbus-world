@@ -1,5 +1,6 @@
 package de.mhus.nimbus.world.generator.flat.hexgrid.composer;
 
+import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.shared.utils.TypeUtil;
@@ -20,6 +21,7 @@ import de.mhus.nimbus.world.shared.util.HexMathUtil;
 import de.mhus.nimbus.world.shared.world.WChunkService;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
 import de.mhus.nimbus.world.shared.world.WWorld;
+import de.mhus.nimbus.generated.types.WorldInfo;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -100,6 +102,7 @@ public class HexCompositeBuilderSimpleTest {
         assertTrue(jsonFile.exists(), "Continent test JSON file '%s' should exist".formatted(name));
 
         ObjectMapper mapper = new ObjectMapper();
+        mapper.enable(JsonParser.Feature.ALLOW_COMMENTS);
         HexComposition composition = mapper.readValue(jsonFile, HexComposition.class);
 
         assertNotNull(composition, "Composition %s should be loaded".formatted(name));
@@ -115,11 +118,18 @@ public class HexCompositeBuilderSimpleTest {
             mainContinent.getParameters().get("g_asl"),
             mainContinent.getParameters().get("g_offset"));
 
+        // Create test world with publicData for hexGridSize
+        WWorld testWorld = new WWorld();
+        WorldInfo publicData = new WorldInfo();
+        publicData.setHexGridSize(512);
+        testWorld.setPublicData(publicData);
+
         // Use HexCompositeBuilder for the complete pipeline
         log.info("Starting composition pipeline...");
         CompositionResult result = HexCompositeBuilder.builder()
             .composition(composition)
             .worldId("continent-test-%s".formatted(name))
+            .world(testWorld)
             .seed(42L)  // Consistent seed for reproducible results
             .fillGaps(true)
             .oceanBorderRings(2)
@@ -462,6 +472,11 @@ public class HexCompositeBuilderSimpleTest {
         WWorld world = WWorld.builder().build();
         world.setNoiseSeed(1474);
         world.setNoiseFrequency(0.5);
+
+        // Set publicData with hexGridSize
+        WorldInfo publicData = new WorldInfo();
+        publicData.setHexGridSize(512);
+        world.setPublicData(publicData);
 
         Map<WHexGrid.EDGE, WHexGrid> neighbors = collectNeighbors(hexGrid.getPosition(), gridIndex);
 

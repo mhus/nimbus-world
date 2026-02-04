@@ -2,6 +2,7 @@ package de.mhus.nimbus.world.generator.flat.hexgrid.composer;
 
 import de.mhus.nimbus.shared.utils.TypeUtil;
 import de.mhus.nimbus.world.shared.world.WHexGridRepository;
+import de.mhus.nimbus.world.shared.world.WWorld;
 import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 
@@ -41,6 +42,11 @@ public class HexCompositeBuilder {
      * World ID for the generated grids
      */
     private final String worldId;
+
+    /**
+     * Optional World object for accessing world configuration (hexGridSize, etc.)
+     */
+    private final WWorld world;
 
     /**
      * Random seed for composition
@@ -153,9 +159,16 @@ public class HexCompositeBuilder {
 
             // Step 3.5: Compose structures (villages, towns, etc.)
             log.info("Step 3.5: Composing structures");
+
+            // Create ComposeContext for structure composition
+            ComposeContext structureContext = ComposeContext.builder()
+                .composition(composition)
+                .world(world)
+                .build();
+
             StructureComposer structureComposer = new StructureComposer();
             StructurePlacementResult structureResult = structureComposer.composeStructures(
-                composition, placementResult);
+                structureContext, placementResult);
 
             if (!structureResult.isSuccess()) {
                 warnings.add("Structure composition had issues: errors=" + structureResult.getErrors());

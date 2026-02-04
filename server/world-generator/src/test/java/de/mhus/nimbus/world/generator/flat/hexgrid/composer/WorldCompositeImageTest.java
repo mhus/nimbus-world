@@ -590,17 +590,17 @@ public class WorldCompositeImageTest {
 
         village.setPositions(Arrays.asList(villagePos));
 
-        // Use VillageDesigner to create village buildings
-        VillageTemplate template = VillageTemplateLoader.load("hamlet-medieval");
-        VillageDesigner designer = new VillageDesigner();
-        VillageDesignResult designResult = designer.design(template, 95);
-
-        // Add village parameters
-        HexGridConfig centerGridConfig = designResult.getGridConfigs().get(HexVector2.builder().q(0).r(0).build());
-        if (centerGridConfig != null) {
-            village.getParameters().put("g_village", centerGridConfig.toVillageParameter());
-            village.getParameters().put("g_road", centerGridConfig.toRoadParameter());
-        }
+//        // Use VillageDesigner to create village buildings
+//        VillageTemplate template = VillageTemplateLoader.load("hamlet-medieval");
+//        VillageDesigner designer = new VillageDesigner();
+//        VillageDesignResult designResult = designer.design(template, 95);
+//
+//        // Add village parameters
+//        HexGridConfig centerGridConfig = designResult.getGridConfigs().get(HexVector2.builder().q(0).r(0).build());
+//        if (centerGridConfig != null) {
+//            village.getParameters().put("g_village", centerGridConfig.toVillageParameter());
+//            village.getParameters().put("g_road", centerGridConfig.toRoadParameter());
+//        }
 
         composition.getFeatures().add(village);
 

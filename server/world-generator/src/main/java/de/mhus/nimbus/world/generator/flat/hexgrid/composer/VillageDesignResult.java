@@ -1,136 +1,58 @@
 package de.mhus.nimbus.world.generator.flat.hexgrid.composer;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import de.mhus.nimbus.generated.types.HexVector2;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 /**
- * Result of village design process
- * Contains HexGrid configurations that can be used by the Composer
+ * Result of village design process.
+ * Contains positioned districts and building assignments.
  */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Slf4j
 public class VillageDesignResult {
-    private VillageTemplate template;
-    private VillageGridLayout layout;
-    private int baseLevel;
-    private Map<HexVector2, HexGridConfig> gridConfigs;
 
     /**
-     * Converts to Village feature for Composer
+     * The village that was designed
      */
-    public Village toVillage(String name) {
-        // Collect all buildings
-        List<VillageBuildingDefinition> buildings = new ArrayList<>();
-        for (Map.Entry<HexVector2, HexGridConfig> entry : gridConfigs.entrySet()) {
-            HexVector2 gridPos = entry.getKey();
-            HexGridConfig config = entry.getValue();
+    private Village village;
 
-            for (VillagePlotDefinition plot : config.getPlots()) {
-                HexVector2 coordinate = HexVector2.builder()
-                    .q(gridPos.getQ())
-                    .r(gridPos.getR())
-                    .build();
+    /**
+     * List of district grids with positioned places
+     */
+    private List<DistrictGrid> districtGrids;
 
-                VillagePosition position = VillagePosition.builder()
-                    .coordinate(coordinate)
-                    .rotation(0)
-                    .build();
+    /**
+     * Whether the design was successful
+     */
+    private boolean success;
 
-                VillageBuildingDefinition building = VillageBuildingDefinition.builder()
-                    .id(plot.getId())
-                    .position(position)
-                    .buildingType("building")
-                    .size("medium")
-                    .build();
-                buildings.add(building);
-            }
-        }
+    /**
+     * List of errors encountered during design
+     */
+    private List<String> errors;
 
-        // Collect all streets
-        List<VillageStreetDefinition> streets = new ArrayList<>();
-        for (Map.Entry<HexVector2, HexGridConfig> entry : gridConfigs.entrySet()) {
-            HexVector2 gridPos = entry.getKey();
-            HexGridConfig config = entry.getValue();
-
-            for (VillageRoadDefinition road : config.getInternalRoads()) {
-                List<HexVector2> path = new ArrayList<>();
-
-                HexVector2 fromCoord = HexVector2.builder()
-                    .q(gridPos.getQ())
-                    .r(gridPos.getR())
-                    .build();
-                path.add(fromCoord);
-
-                HexVector2 toCoord = HexVector2.builder()
-                    .q(gridPos.getQ())
-                    .r(gridPos.getR())
-                    .build();
-                path.add(toCoord);
-
-                VillageStreetDefinition street = VillageStreetDefinition.builder()
-                    .id("street-" + streets.size())
-                    .path(path)
-                    .width(road.getWidth())
-                    .streetType(road.getType())
-                    .build();
-                streets.add(street);
-            }
-        }
-
-        // Calculate size
-        int width = layout.getGridPositions().stream()
-            .mapToInt(v -> v.getQ()).max().orElse(0) + 1;
-        int height = layout.getGridPositions().stream()
-            .mapToInt(v -> v.getR()).max().orElse(0) + 1;
-
-        // Build Village feature
-        Village village = Village.builder()
-            .buildings(buildings)
-            .streets(streets)
-            .build();
-        village.setName(name);
-        village.setCalculatedHexGridWidth(width);
-        village.setCalculatedHexGridHeight(height);
-        village.initialize();
-
-        return village;
+    /**
+     * Gets the total number of districts
+     */
+    public int getDistrictCount() {
+        return districtGrids != null ? districtGrids.size() : 0;
     }
 
     /**
-     * Exports as JSON
+     * Gets the total number of placed places across all districts
      */
-    public String toJson() {
-        try {
-            ObjectMapper mapper = new ObjectMapper();
-            return mapper.writerWithDefaultPrettyPrinter().writeValueAsString(this);
-        } catch (Exception e) {
-            log.error("Failed to serialize VillageDesignResult to JSON", e);
-            throw new RuntimeException("Failed to serialize VillageDesignResult", e);
+    public int getTotalPlaceCount() {
+        if (districtGrids == null) {
+            return 0;
         }
-    }
-
-    /**
-     * Loads from JSON
-     */
-    public static VillageDesignResult fromJson(String json) {
-        try {
-            ObjectMapper mapper = new ObjectMapper();
-            return mapper.readValue(json, VillageDesignResult.class);
-        } catch (Exception e) {
-            log.error("Failed to deserialize VillageDesignResult from JSON", e);
-            throw new RuntimeException("Failed to deserialize VillageDesignResult", e);
-        }
+        return districtGrids.stream()
+            .mapToInt(d -> d.getPlacedPlaces() != null ? d.getPlacedPlaces().size() : 0)
+            .sum();
     }
 }

@@ -21,13 +21,13 @@ public class TextOverlay implements ImageOverlay {
     private Color color = Color.WHITE;
     private int scale = 1;
 
-    private static final int CHAR_WIDTH = 5;
-    private static final int CHAR_HEIGHT = 7;
-    private static final int CHAR_SPACING = 1;
+    public static final int CHAR_WIDTH = 5;
+    public static final int CHAR_HEIGHT = 7;
+    public static final int CHAR_SPACING = 1;
 
     // Bitmap font definition: each character is 5x7 pixels
     // 1 = pixel on, 0 = pixel off
-    private static final Map<Character, int[][]> FONT = new HashMap<>();
+    public static final Map<Character, int[][]> FONT = new HashMap<>();
 
     static {
         // Letters A-Z
