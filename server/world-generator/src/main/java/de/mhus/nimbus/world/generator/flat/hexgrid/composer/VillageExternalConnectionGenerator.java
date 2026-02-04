@@ -161,6 +161,15 @@ public class VillageExternalConnectionGenerator {
                             de.mhus.nimbus.world.shared.util.HexLocalUtil.DEFAULT_EDGE_DIVIDER // denominator
                     )
             );
+
+            // IMPORTANT: Also set legacy fields for FlowComposer/TerrainPathFinder compatibility
+            // FlowComposer uses placedCoordinate to set flow start/end points
+            // TerrainPathFinder needs placedCoordinate/placedLx/placedLz to find paths
+            composed.setPlacedCoordinate(neighborGrid);
+            composed.setPlacedLx(0);  // Center of grid (will be overridden by HexLocalEdgeVector for rendering)
+            composed.setPlacedLz(0);
+            composed.setPlacedInBiome(biomeId);
+
             point.setPointComposed(composed);
 
             points.add(point);
