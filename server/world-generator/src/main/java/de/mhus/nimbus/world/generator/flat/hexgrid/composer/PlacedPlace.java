@@ -21,12 +21,24 @@ public class PlacedPlace {
     private Place place;
 
     /**
+     * Hexagonal Q coordinate within the local hex grid
+     */
+    private int hexQ;
+
+    /**
+     * Hexagonal R coordinate within the local hex grid
+     */
+    private int hexR;
+
+    /**
      * Local X coordinate within the grid (0 to grid size)
+     * Calculated from hex coordinates in VillageBuilder
      */
     private int localX;
 
     /**
      * Local Z coordinate within the grid (0 to grid size)
+     * Calculated from hex coordinates in VillageBuilder
      */
     private int localZ;
 

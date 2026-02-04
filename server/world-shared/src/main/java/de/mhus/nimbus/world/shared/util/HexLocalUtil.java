@@ -167,18 +167,41 @@ public class HexLocalUtil {
 
     /**
      * Return the coordinate from center in local hex grid coordinates.
-     * @param pos the local hex position
-     * @return Could be outside the hex grid!
+     * Converts hexagonal coordinates (q, r) to cartesian coordinates (x, z)
+     * using FLAT-TOP hexagon geometry.
+     *
+     * IMPORTANT: Local hex grids use FLAT-TOP orientation (W/E sides vertical),
+     * unlike the outer hex grid which uses pointy-top (N/S corners vertical).
+     *
+     * @param pos the local hex position with hex coordinates (q, r)
+     * @return Cartesian coordinates relative to grid center. Could be outside the hex grid!
      */
     public static Vector2Int toHexGridLocalCenter(HexLocalPosition pos) {
-        int x = (pos.position().getQ() * pos.size()) / pos.divider();
-        int z = (pos.position().getR() * pos.size()) / pos.divider();
-        return TypeUtil.vector2int(x, z);
+        int q = pos.position().getQ();
+        int r = pos.position().getR();
+        double slotSize = pos.size(); // Size = inter-center distance between neighboring slots
+
+        // Flat-top hexagon: convert axial (q, r) to cartesian (x, z)
+        // Standard flat-top formula produces neighbor distance = size * sqrt(3)
+        // We want neighbor distance = slotSize, so: size = slotSize / sqrt(3)
+        double size = slotSize / sqrt3;
+
+        // Standard flat-top formula:
+        //   x = size * 3/2 * q
+        //   z = size * sqrt(3)/2 * q + size * sqrt(3) * r
+        // Simplified: z = size * sqrt(3) * (r + q/2)
+        double x = size * 3.0/2.0 * q;
+        double z = size * sqrt3 * (r + q / 2.0);
+
+        return TypeUtil.vector2int((int) Math.round(x), (int) Math.round(z));
     }
 
     /**
      * Return the coordinate from center in local hex grid coordinates.
      * The coordinate is at one of the edges of the hex grid.
+     *
+     * IMPORTANT: This method uses POINTY-TOP geometry for the OUTER hex grid edges.
+     * This is different from the local hex positions which use flat-top geometry.
      *
      * Each side is measured from North to South (not clockwise):
      * - NW: from N corner to NW corner
@@ -201,7 +224,7 @@ public class HexLocalUtil {
     public static Vector2Int toHexgridLocalCenter(HexLocalEdgeVector edge, int hexGridSize) {
         double radius = hexGridSize / 2.0;
 
-        // Define corner positions for pointy-top hexagon
+        // Define corner positions for POINTY-TOP hexagon (outer hex grid)
         // Corners: N, NE, SE, S, SW, NW
         double[][] corners = {
             {0, -radius},           // N  (0)

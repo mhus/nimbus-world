@@ -119,9 +119,11 @@ public class HexCompositeBuilderSimpleTest {
             mainContinent.getParameters().get("g_offset"));
 
         // Create test world with publicData for hexGridSize
+        // FlatCreateService adds +30 to hexGridSize (10px safety + 20px border)
+        // So: FLAT_SIZE = hexGridSize + 30
         WWorld testWorld = new WWorld();
         WorldInfo publicData = new WorldInfo();
-        publicData.setHexGridSize(512);
+        publicData.setHexGridSize(FLAT_SIZE - 30);  // 370 for FLAT_SIZE=400
         testWorld.setPublicData(publicData);
 
         // Use HexCompositeBuilder for the complete pipeline
@@ -474,8 +476,10 @@ public class HexCompositeBuilderSimpleTest {
         world.setNoiseFrequency(0.5);
 
         // Set publicData with hexGridSize
+        // FlatCreateService adds +30 to hexGridSize (10px safety + 20px border)
+        // So: FLAT_SIZE = hexGridSize + 30
         WorldInfo publicData = new WorldInfo();
-        publicData.setHexGridSize(512);
+        publicData.setHexGridSize(FLAT_SIZE - 30);  // 370 for FLAT_SIZE=400
         world.setPublicData(publicData);
 
         Map<WHexGrid.EDGE, WHexGrid> neighbors = collectNeighbors(hexGrid.getPosition(), gridIndex);

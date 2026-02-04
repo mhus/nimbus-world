@@ -1,10 +1,15 @@
 package de.mhus.nimbus.world.generator.flat.hexgrid;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import de.mhus.nimbus.generated.types.HexVector2;
+import de.mhus.nimbus.generated.types.Vector2Int;
+import de.mhus.nimbus.shared.utils.TypeUtil;
 import de.mhus.nimbus.world.generator.flat.FlatMaterialService;
 import de.mhus.nimbus.world.generator.flat.hexgrid.composer.TextOverlay;
 import de.mhus.nimbus.world.generator.flat.hexgrid.composer.VillageGridConfig;
 import de.mhus.nimbus.world.shared.generator.WFlat;
+import de.mhus.nimbus.world.shared.util.HexLocalUtil;
+import de.mhus.nimbus.world.shared.world.HexLocalPosition;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
 import lombok.extern.slf4j.Slf4j;
 
@@ -55,6 +60,20 @@ public class VillageBuilder extends HexGridBuilder {
                 config.getVillageName(), config.getDistrictName(),
                 config.getPlaces() != null ? config.getPlaces().size() : 0,
                 config.getStreets() != null ? config.getStreets().size() : 0);
+
+            // Convert hexagonal coordinates to cartesian for all places
+            convertHexToCartesian(config, flat, hexGridSize);
+
+            // Log all converted positions for debugging
+            log.info("=== SLOT_POSITIONS: District '{}' with {} places (hexGridSize={}) ===",
+                config.getDistrictName(), config.getPlaces().size(), hexGridSize);
+            for (VillageGridConfig.PlacedPlaceConfig place : config.getPlaces()) {
+                log.info("SLOT_POSITION: district='{}' name='{}' type='{}' hex=<{};{}> local=({},{}) divider={}",
+                    config.getDistrictName(), place.getName(), place.getType(),
+                    place.getHexQ(), place.getHexR(),
+                    place.getLocalX(), place.getLocalZ(),
+                    place.getDivider());
+            }
 
             // DRAWING ORDER (critical for overlaps):
 
@@ -544,6 +563,45 @@ public class VillageBuilder extends HexGridBuilder {
                     flat.setGroup(x, z, groupId);
                 }
             }
+        }
+    }
+
+    /**
+     * Convert hexagonal coordinates to cartesian coordinates for all places in the config.
+     * This must be called after parsing the VillageGridConfig and before drawing.
+     */
+    private void convertHexToCartesian(VillageGridConfig config, WFlat flat, int hexGridSize) {
+        if (config.getPlaces() == null || config.getPlaces().isEmpty()) {
+            return;
+        }
+
+        log.info("Converting {} places from hex to cartesian coordinates (hexGridSize: {}, flatSize: {}x{})",
+            config.getPlaces().size(), hexGridSize, flat.getSizeX(), flat.getSizeZ());
+
+        for (VillageGridConfig.PlacedPlaceConfig place : config.getPlaces()) {
+            // Create HexVector2 from hex coordinates
+            HexVector2 hexPos = TypeUtil.hexVector2(place.getHexQ(), place.getHexR());
+
+            // Calculate slot size based on divider
+            int slotSize = hexGridSize / place.getDivider();
+
+            // Create HexLocalPosition
+            HexLocalPosition hexLocalPos = new HexLocalPosition(hexPos, place.getDivider(), slotSize);
+
+            // Convert hex position to cartesian coordinates relative to grid center
+            Vector2Int relativePos = HexLocalUtil.toHexGridLocalCenter(hexLocalPos);
+
+            // Convert to absolute coordinates using flat center (not hexGridSize center)
+            // Flat is larger than hexGrid due to borders, so use flat dimensions
+            int localX = flat.getSizeX() / 2 + relativePos.getX();
+            int localZ = flat.getSizeZ() / 2 + relativePos.getZ();
+
+            // Update place config with cartesian coordinates
+            place.setLocalX(localX);
+            place.setLocalZ(localZ);
+
+            log.debug("Converted place '{}' from hex <{};{}> to cartesian ({}, {})",
+                place.getName(), place.getHexQ(), place.getHexR(), localX, localZ);
         }
     }
 

@@ -1,8 +1,11 @@
 package de.mhus.nimbus.world.generator.flat.hexgrid.composer;
 
 import de.mhus.nimbus.generated.types.HexVector2;
+import de.mhus.nimbus.generated.types.Vector2Int;
 import de.mhus.nimbus.generated.types.Vector3Int;
 import de.mhus.nimbus.shared.utils.TypeUtil;
+import de.mhus.nimbus.world.shared.util.HexLocalUtil;
+import de.mhus.nimbus.world.shared.world.HexLocalPosition;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
@@ -308,26 +311,29 @@ public class VillageDesigner {
             return;
         }
 
-        // For other districts: Distribute places across slots
-        // TODO: Implement proper slot-based placement algorithm
-        // For now: Simple distribution in a grid pattern
-        int placesPerRow = (int) Math.ceil(Math.sqrt(availableSlots));
+        // For other districts: Distribute places across hexagonal slots
+        List<HexVector2> slotPositions = getHexagonalSlotPositions(divider);
+
+        if (slotPositions.size() < district.getPlaces().size()) {
+            String error = String.format(
+                "Not enough hexagonal slots for district '%s': %d places but only %d slots for divider %d",
+                district.getName(),
+                district.getPlaces().size(),
+                slotPositions.size(),
+                divider);
+            log.error(error);
+            throw new IllegalStateException(error);
+        }
+
         int slotIndex = 0;
-
         for (Place place : district.getPlaces()) {
+            HexVector2 hexPos = slotPositions.get(slotIndex);
 
-            // Calculate position based on slot index
-            int row = slotIndex / placesPerRow;
-            int col = slotIndex % placesPerRow;
-
-            int slotWidth = hexGridSize / placesPerRow;
-            int localX = col * slotWidth + slotWidth / 2;
-            int localZ = row * slotWidth + slotWidth / 2;
-
+            // Store hexagonal coordinates - conversion to cartesian happens in VillageBuilder
             PlacedPlace placedPlace = PlacedPlace.builder()
                 .place(place)
-                .localX(localX)
-                .localZ(localZ)
+                .hexQ(hexPos.getQ())
+                .hexR(hexPos.getR())
                 .divider(divider)
                 .slotIndex(slotIndex)
                 .build();
@@ -335,9 +341,86 @@ public class VillageDesigner {
             districtGrid.getPlacedPlaces().add(placedPlace);
             slotIndex++;
 
-            log.debug("Placed '{}' at slot {} (local: {}/{})",
-                place.getName(), slotIndex - 1, localX, localZ);
+            log.debug("Placed '{}' at hex slot <{};{}> (divider {})",
+                place.getName(), hexPos.getQ(), hexPos.getR(), divider);
         }
+    }
+
+    /**
+     * Returns hexagonal slot positions for a given divider.
+     *
+     * Spec:
+     * - Divider 1: 1 slot at <0;0>
+     * - Divider 3: 7 slots (center + ring 1)
+     * - Divider 5: 19 slots (center + ring 1 + ring 2)
+     * - Divider 7: 37 slots (center + ring 1 + ring 2 + ring 3)
+     */
+    private List<HexVector2> getHexagonalSlotPositions(int divider) {
+        List<HexVector2> positions = new ArrayList<>();
+
+        // Center position
+        positions.add(TypeUtil.hexVector2(0, 0));
+
+        // Calculate number of rings based on divider
+        int rings;
+        switch (divider) {
+            case 1:
+                rings = 0; // Only center
+                break;
+            case 3:
+                rings = 1; // Center + ring 1 = 7 slots
+                break;
+            case 5:
+                rings = 2; // Center + ring 1 + ring 2 = 19 slots
+                break;
+            case 7:
+                rings = 3; // Center + ring 1 + ring 2 + ring 3 = 37 slots
+                break;
+            default:
+                log.warn("Unknown divider {}, using rings=0", divider);
+                rings = 0;
+        }
+
+        // Add hexagonal rings around center
+        for (int ring = 1; ring <= rings; ring++) {
+            positions.addAll(getHexRing(0, 0, ring));
+        }
+
+        log.debug("Generated {} hexagonal slot positions for divider {}", positions.size(), divider);
+        return positions;
+    }
+
+    /**
+     * Returns all hex positions in a ring around a center position.
+     * Ring radius 1 gives 6 positions, radius 2 gives 12 positions, etc.
+     */
+    private List<HexVector2> getHexRing(int centerQ, int centerR, int radius) {
+        List<HexVector2> ring = new ArrayList<>();
+
+        // Start at position directly north of center
+        int q = centerQ;
+        int r = centerR - radius;
+
+        // Direction vectors for hex neighbors (in order: E, SE, S, SW, W, NW)
+        int[][] directions = {
+            {1, 0},    // E
+            {0, 1},    // SE
+            {-1, 1},   // S (adjusted for axial coordinates)
+            {-1, 0},   // SW
+            {0, -1},   // W
+            {1, -1}    // NW
+        };
+
+        // Walk around the ring
+        for (int side = 0; side < 6; side++) {
+            for (int step = 0; step < radius; step++) {
+                ring.add(TypeUtil.hexVector2(q, r));
+                q += directions[side][0];
+                r += directions[side][1];
+            }
+        }
+
+        return ring;
     }
 
     /**
@@ -915,25 +998,29 @@ public class VillageDesigner {
             .map(PlacedPlace::getSlotIndex)
             .toList();
 
-        // Fill empty slots
-        int placesPerRow = (int) Math.ceil(Math.sqrt(availableSlots));
+        // Fill empty slots using hexagonal positions
+        List<HexVector2> allSlotPositions = getHexagonalSlotPositions(divider);
         int filledCount = 0;
         int buildingCount = 0;
         int freeCount = 0;
 
-        for (int slotIndex = 0; slotIndex < availableSlots; slotIndex++) {
+        for (int slotIndex = 0; slotIndex < allSlotPositions.size(); slotIndex++) {
             // Skip if slot is already used
             if (usedSlotIndices.contains(slotIndex)) {
                 continue;
             }
 
-            // Calculate position for this slot
-            int row = slotIndex / placesPerRow;
-            int col = slotIndex % placesPerRow;
+            // Get hexagonal position for this slot
+            HexVector2 hexPos = allSlotPositions.get(slotIndex);
 
-            int slotWidth = hexGridSize / placesPerRow;
-            int localX = col * slotWidth + slotWidth / 2;
-            int localZ = row * slotWidth + slotWidth / 2;
+            // Calculate hex slot pixel size
+            int hexSlotSize = hexGridSize / divider;
+
+            // Create HexLocalPosition for distance calculation
+            HexLocalPosition hexLocalPos = new HexLocalPosition(hexPos, divider, hexSlotSize);
+            Vector2Int relativePos = HexLocalUtil.toHexGridLocalCenter(hexLocalPos);
+            int localX = hexGridSize / 2 + relativePos.getX();
+            int localZ = hexGridSize / 2 + relativePos.getZ();
 
             // Check distance to nearest street
             double distanceToStreet = calculateDistanceToNearestStreet(
@@ -977,11 +1064,11 @@ public class VillageDesigner {
                 freeCount++;
             }
 
-            // Create PlacedPlace
+            // Create PlacedPlace with hexagonal coordinates
             PlacedPlace placedPlace = PlacedPlace.builder()
                 .place(newPlace)
-                .localX(localX)
-                .localZ(localZ)
+                .hexQ(hexPos.getQ())
+                .hexR(hexPos.getR())
                 .divider(divider)
                 .slotIndex(slotIndex)
                 .rotation(0)

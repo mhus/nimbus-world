@@ -366,6 +366,8 @@ public class Village extends Structure implements BuildFeature {
         return VillageGridConfig.PlacedPlaceConfig.builder()
             .name(place.getName())
             .type(type)
+            .hexQ(placedPlace.getHexQ())
+            .hexR(placedPlace.getHexR())
             .localX(placedPlace.getLocalX())
             .localZ(placedPlace.getLocalZ())
             .rotation(placedPlace.getRotation())

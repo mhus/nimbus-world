@@ -65,8 +65,10 @@ public class VillageGridConfig {
     public static class PlacedPlaceConfig {
         private String name;
         private String type; // "building", "free", "road", "river", "wall"
-        private int localX;
-        private int localZ;
+        private int hexQ; // Hexagonal Q coordinate
+        private int hexR; // Hexagonal R coordinate
+        private int localX; // Cartesian X (calculated from hex in VillageBuilder)
+        private int localZ; // Cartesian Z (calculated from hex in VillageBuilder)
         private int rotation;
         private int divider; // Slot divider (1, 3, 5, or 7) - determines size
         private String buildingId;

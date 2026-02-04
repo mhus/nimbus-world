@@ -82,23 +82,27 @@ public class District {
     public enum DistrictSlotSize {
         /**
          * One large building slot (e.g., town hall, cathedral, castle)
+         * Hexagonal divider: 1, Slots: 1 (center only)
          */
         BIG(1),
 
         /**
-         * Three medium building slots (e.g., shops, warehouses, large houses)
+         * Seven medium building slots (e.g., shops, warehouses, large houses)
+         * Hexagonal divider: 3, Slots: 7 (center + ring 1)
          */
-        MEDIUM(3),
+        MEDIUM(7),
 
         /**
-         * Five small building slots (e.g., houses, workshops)
+         * Nineteen small building slots (e.g., houses, workshops)
+         * Hexagonal divider: 5, Slots: 19 (center + ring 1 + ring 2)
          */
-        SMALL(5),
+        SMALL(19),
 
         /**
-         * Seven tiny building slots (e.g., stalls, small huts, storage)
+         * Thirty-seven tiny building slots (e.g., stalls, small huts, storage)
+         * Hexagonal divider: 7, Slots: 37 (center + ring 1 + ring 2 + ring 3)
          */
-        TINY(7);
+        TINY(37);
 
         private final int slotCount;
 
@@ -109,7 +113,7 @@ public class District {
         /**
          * Gets the number of building slots for this size category.
          *
-         * @return Number of slots (1, 3, 5, or 7)
+         * @return Number of hexagonal slots (1, 7, 19, or 37)
          */
         public int getSlotCount() {
             return slotCount;
