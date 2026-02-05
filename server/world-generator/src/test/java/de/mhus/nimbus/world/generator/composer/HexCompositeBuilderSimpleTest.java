@@ -17,6 +17,7 @@ import de.mhus.nimbus.world.generator.composer.filler.HexGridFillResult;
 import de.mhus.nimbus.world.generator.composer.image.LineOverlay;
 import de.mhus.nimbus.world.generator.composer.point.Point;
 import de.mhus.nimbus.world.generator.composer.image.TextOverlay;
+import de.mhus.nimbus.world.generator.composer.village.VillageDebugOverlayHelper;
 import de.mhus.nimbus.world.generator.flat.manipulator.BorderSmoothManipulator;
 import de.mhus.nimbus.world.generator.flat.FlatManipulator;
 import de.mhus.nimbus.world.generator.flat.FlatManipulatorService;
@@ -640,6 +641,29 @@ public class HexCompositeBuilderSimpleTest {
     }
 
     /**
+     * Adds village slot overlays (cross + slot name) to the composite image creator.
+     * Extracts WHexGrids from fillResult and uses VillageDebugOverlayHelper to create overlays.
+     */
+    private void addVillageSlotOverlays(HexGridCompositeImageCreator creator, HexGridFillResult fillResult) {
+        if (fillResult == null || fillResult.getAllGrids() == null) {
+            return;
+        }
+
+        // Extract WHexGrids from fillResult and create a map by coordinate
+        Map<HexVector2, WHexGrid> hexGrids = new HashMap<>();
+        for (FilledHexGrid filled : fillResult.getAllGrids()) {
+            if (filled.getHexGrid() != null) {
+                hexGrids.put(filled.getCoordinate(), filled.getHexGrid());
+            }
+        }
+
+        // Use VillageDebugOverlayHelper to add village slot overlays
+        // IMPORTANT: Use FLAT_SIZE here, not hexGridSize (FLAT_SIZE - 30), because the
+        // HexGridCompositeImageCreator positions flats using FLAT_SIZE
+        VillageDebugOverlayHelper.addVillageSlotOverlaysFromHexGrids(creator, hexGrids, FLAT_SIZE);
+    }
+
+    /**
      * Calculates world coordinates for a point from its HexLocal position.
      * Similar to RiverBuilder.getEndpointCoordinate().
      */
@@ -865,6 +889,9 @@ public class HexCompositeBuilderSimpleTest {
 
         // Add point overlays (cross + name)
         addPointOverlays(creator, composition, flats);
+
+        // Add village slot overlays (cross + slot name)
+        addVillageSlotOverlays(creator, fillResult);
 
         // Add debug overlays for grid 0;0
         // addDebugOverlaysForGrid00(creator, flats);

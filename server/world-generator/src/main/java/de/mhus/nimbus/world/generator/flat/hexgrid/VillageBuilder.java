@@ -90,16 +90,6 @@ public class VillageBuilder extends HexGridBuilder {
             // Step 4: Draw all building slots (only plot at level+1)
             drawBuildings(flat, config, hexGridSize);
 
-            // Step 5: Draw debug markers if enabled
-            String debugParam = hexGrid.getParameters() != null ?
-                hexGrid.getParameters().get("g_village_debug") : null;
-            boolean debugEnabled = "true".equalsIgnoreCase(debugParam);
-
-            if (debugEnabled) {
-                drawDebugMarkers(flat, config);
-                drawDebugLabels(flat, config);
-            }
-
             log.debug("Village district '{}' completed", config.getDistrictName());
 
         } catch (Exception e) {

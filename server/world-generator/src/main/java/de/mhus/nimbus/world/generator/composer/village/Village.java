@@ -264,12 +264,6 @@ public class Village extends Structure implements BuildFeature {
             featureHexGrid.addParameter("structureName", getName());
             featureHexGrid.addParameter("districtName", districtGrid.getName());
 
-            // Add debug flag if enabled
-            if (debug) {
-                featureHexGrid.addParameter("g_village_debug", "true");
-                log.debug("Debug mode enabled for district '{}'", districtGrid.getName());
-            }
-
             // Copy village parameters to grid
             if (parameters != null) {
                 featureHexGrid.getParameters().putAll(parameters);
