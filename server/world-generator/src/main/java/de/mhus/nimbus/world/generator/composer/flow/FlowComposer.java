@@ -48,7 +48,7 @@ public class FlowComposer {
      */
     public FlowCompositionResult composeFlows(HexComposition prepared,
                                               BiomePlacementResult placementResult) {
-        log.info("Starting flow composition");
+        log.debug("Starting flow composition");
 
         List<String> errors = new ArrayList<>();
         int totalFlows = 0;

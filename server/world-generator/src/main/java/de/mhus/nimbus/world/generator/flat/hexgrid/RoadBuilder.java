@@ -129,7 +129,7 @@ public class RoadBuilder extends HexGridBuilder {
                 buildPlaza(flat, centerX, centerZ, centerLevel, config.getCenter().getPlazaSize(), plazaMaterial);
             }
 
-            log.info("Roads completed for flat: {} roads built", config.getRoute().size());
+            log.debug("Roads completed for flat: {} roads built", config.getRoute().size());
         } catch (Exception e) {
             log.error("Failed to build roads for flat: {}", flat.getFlatId(), e);
         }

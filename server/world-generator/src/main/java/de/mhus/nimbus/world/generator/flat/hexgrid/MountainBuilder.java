@@ -46,7 +46,7 @@ public class MountainBuilder extends HexGridBuilder {
     public void buildFlat() {
         WFlat flat = context.getFlat();
 
-        log.info("Building mountain scenario for flat: {}", flat.getFlatId());
+        log.debug("Building mountain scenario for flat: {}", flat.getFlatId());
 
         int seaLevel = flat.getSeaLevel();
 

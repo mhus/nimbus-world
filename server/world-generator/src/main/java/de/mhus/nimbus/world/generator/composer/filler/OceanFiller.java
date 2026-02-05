@@ -355,7 +355,7 @@ public class OceanFiller {
     public int fillFlowGaps(HexComposition composition,
                             Set<String> existingCoords,
                             BiomePlacementResult placementResult) {
-        log.info("Starting OceanFiller.fillFlowGaps to fill grids crossed by flows");
+        log.debug("Starting OceanFiller.fillFlowGaps to fill grids crossed by flows");
 
         // Collect all coordinates that flows pass through
         Set<String> flowCoords = new HashSet<>();

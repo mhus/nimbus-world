@@ -58,7 +58,7 @@ public class PointComposer {
     public PointCompositionResult composePoints(HexComposition prepared,
                                                 BiomePlacementResult placementResult,
                                                 de.mhus.nimbus.world.shared.world.WWorld world) {
-        log.info("Starting point composition");
+        log.debug("Starting point composition");
 
         List<String> errors = new ArrayList<>();
         int totalPoints = 0;

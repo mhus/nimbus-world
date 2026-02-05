@@ -242,20 +242,20 @@ public class VillageDesigner {
         int r = from.getR();
 
         // Flat-top hexagon neighbors (6 directions)
-        switch (direction) {
-            case N:   return TypeUtil.hexVector2(q, r - 1);      // North
-            case NE:  return TypeUtil.hexVector2(q + 1, r - 1);  // NorthEast
-            case SE:  return TypeUtil.hexVector2(q + 1, r);      // SouthEast
-            case S:   return TypeUtil.hexVector2(q, r + 1);      // South
-            case SW:  return TypeUtil.hexVector2(q - 1, r + 1);  // SouthWest
-            case NW:  return TypeUtil.hexVector2(q - 1, r);      // NorthWest
+        return switch (direction) {
+            case N -> TypeUtil.hexVector2(q, r - 1);      // North
+            case NE -> TypeUtil.hexVector2(q + 1, r - 1);  // NorthEast
+            case SE -> TypeUtil.hexVector2(q + 1, r);      // SouthEast
+            case S -> TypeUtil.hexVector2(q, r + 1);      // South
+            case SW -> TypeUtil.hexVector2(q - 1, r + 1);  // SouthWest
+            case NW -> TypeUtil.hexVector2(q - 1, r);      // NorthWest
 
             // E and W are not direct neighbors in flat-top, approximate with diagonal
-            case E:   return TypeUtil.hexVector2(q + 1, r);      // Same as SE
-            case W:   return TypeUtil.hexVector2(q - 1, r);      // Same as NW
+            case E -> TypeUtil.hexVector2(q + 1, r);      // Same as SE
+            case W -> TypeUtil.hexVector2(q - 1, r);      // Same as NW
 
-            default:  return from; // Stay at same position
-        }
+            default -> from; // Stay at same position
+        };
     }
 
     /**
@@ -315,7 +315,7 @@ public class VillageDesigner {
             }
 
             // Single place in center
-            Place place = district.getPlaces().get(0);
+            Place place = district.getPlaces().getFirst();
             PlacedPlace placedPlace = PlacedPlace.builder()
                 .place(place)
                 .localX(hexGridSize / 2)
@@ -357,6 +357,7 @@ public class VillageDesigner {
                 .place(place)
                 .hexQ(hexPos.getQ())
                 .hexR(hexPos.getR())
+                .relativePosition(relativePos)
                 .localX(localX)
                 .localZ(localZ)
                 .divider(divider)
@@ -387,24 +388,16 @@ public class VillageDesigner {
         positions.add(TypeUtil.hexVector2(0, 0));
 
         // Calculate number of rings based on divider
-        int rings;
-        switch (divider) {
-            case 1:
-                rings = 0; // Only center
-                break;
-            case 3:
-                rings = 1; // Center + ring 1 = 7 slots
-                break;
-            case 5:
-                rings = 2; // Center + ring 1 + ring 2 = 19 slots
-                break;
-            case 7:
-                rings = 3; // Center + ring 1 + ring 2 + ring 3 = 37 slots
-                break;
-            default:
+        int rings = switch (divider) {
+            case 1 -> 0; // Only center
+            case 3 -> 1; // Center + ring 1 = 7 slots
+            case 5 -> 2; // Center + ring 1 + ring 2 = 19 slots
+            case 7 -> 3; // Center + ring 1 + ring 2 + ring 3 = 37 slots
+            default -> {
                 log.warn("Unknown divider {}, using rings=0", divider);
-                rings = 0;
-        }
+                yield 0;
+            }
+        };
 
         // Add hexagonal rings around center
         for (int ring = 1; ring <= rings; ring++) {
@@ -457,11 +450,10 @@ public class VillageDesigner {
             Place place = placedPlace.getPlace();
 
             // Only process BuildingPlace
-            if (!(place instanceof BuildingPlace)) {
+            if (!(place instanceof BuildingPlace buildingPlace)) {
                 continue;
             }
 
-            BuildingPlace buildingPlace = (BuildingPlace) place;
             String style = buildingPlace.getStyle() != null ? buildingPlace.getStyle() : village.getStyle();
             String kind = buildingPlace.getKind();
 
@@ -666,7 +658,7 @@ public class VillageDesigner {
             }
         }
 
-        if (closest1 == null || closest2 == null) {
+        if (closest1 == null) {
             return;
         }
 
@@ -741,7 +733,7 @@ public class VillageDesigner {
 
         // Minimum spanning tree approach: connect each unconnected point to the nearest connected point
         Set<HexCoord> connected = new HashSet<>();
-        connected.add(connectionCoords.get(0)); // Start with first point
+        connected.add(connectionCoords.getFirst()); // Start with first point
 
         VillageHexPathfinder pathfinder = new VillageHexPathfinder();
         int pathsCreated = 0;
@@ -1535,18 +1527,13 @@ public class VillageDesigner {
      * Gets the divider value from a DistrictSlotSize.
      */
     private int getDividerFromSlotSize(District.DistrictSlotSize slotSize) {
-        switch (slotSize) {
-            case BIG:
-                return 1;
-            case MEDIUM:
-                return 3;
-            case SMALL:
-                return 5;
-            case TINY:
-                return 7;
-            default:
-                return 3; // Default to MEDIUM
-        }
+        return switch (slotSize) {
+            case BIG -> 1;
+            case MEDIUM -> 3;
+            case SMALL -> 5;
+            case TINY -> 7;
+            default -> 3; // Default to MEDIUM
+        };
     }
 
     /**

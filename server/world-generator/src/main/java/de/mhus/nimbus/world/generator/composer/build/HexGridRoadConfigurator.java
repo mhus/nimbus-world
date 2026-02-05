@@ -199,7 +199,7 @@ public class HexGridRoadConfigurator {
      * @return Result with statistics (for logging only)
      */
     public RoadConfigurationResult configureRoads(HexComposition composition, BiomePlacementResult placementResult) {
-        log.info("Starting Phase 2: road configuration from RoadConfigParts");
+        log.debug("Starting Phase 2: road configuration from RoadConfigParts");
 
         List<String> errors = new ArrayList<>();
         int totalGrids = 0;
@@ -237,7 +237,7 @@ public class HexGridRoadConfigurator {
                         areaGrid.addParameter("g_road", roadJson);
                         configured = true;
                         totalParts += partCount;
-                        log.info("Assembled road={} from {} parts + existing={} at {} (area: {})",
+                        log.debug("Assembled road={} from {} parts + existing={} at {} (area: {})",
                             roadJson,
                             partCount,
                             existingRoad != null,
@@ -280,7 +280,7 @@ public class HexGridRoadConfigurator {
                 }
             }
 
-            log.info("Road configuration complete: configured={}/{}, parts={}, skipped={}",
+            log.debug("Road configuration complete: configured={}/{}, parts={}, skipped={}",
                 configuredGrids, totalGrids, totalParts, skippedGrids);
 
             return RoadConfigurationResult.builder()

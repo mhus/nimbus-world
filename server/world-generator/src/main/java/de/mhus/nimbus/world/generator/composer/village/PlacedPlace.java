@@ -1,5 +1,6 @@
 package de.mhus.nimbus.world.generator.composer.village;
 
+import de.mhus.nimbus.generated.types.Vector2Int;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -41,6 +42,13 @@ public class PlacedPlace {
      * Calculated from hex coordinates in VillageBuilder
      */
     private int localZ;
+
+
+    /**
+     * Relative position as a 2D vector (localX, localZ)
+     * relative to the center of the district hex grid
+     */
+    private Vector2Int relativePosition;
 
     /**
      * The divider used for this place (1, 3, 5, or 7)

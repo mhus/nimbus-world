@@ -300,7 +300,7 @@ public class HexCompositeBuilder {
             if (!pointResult.isSuccess()) {
                 warnings.add("Point composition had issues: errors=" + pointResult.getErrors());
             } else {
-                log.info("Composed {} points ({} failed)",
+                log.debug("Composed {} points ({} failed)",
                     pointResult.getComposedPoints(),
                     pointResult.getFailedPoints());
             }
@@ -317,7 +317,7 @@ public class HexCompositeBuilder {
             if (!flowResult.isSuccess()) {
                 warnings.add("Flow composition had issues: errors=" + flowResult.getFailedFlows());
             } else {
-                log.info("Composed {} flows with {} total segments",
+                log.debug("Composed {} flows with {} total segments",
                     flowResult.getComposedFlows(),
                     flowResult.getTotalSegments());
             }
