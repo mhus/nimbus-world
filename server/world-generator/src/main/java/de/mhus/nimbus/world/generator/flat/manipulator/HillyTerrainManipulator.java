@@ -91,7 +91,7 @@ public class HillyTerrainManipulator implements FlatManipulator {
             }
         }
 
-        log.info("Hilly terrain manipulated: region=({},{},{},{}), base={}, hillHeight={}, seed={}",
+        log.debug("Hilly terrain manipulated: region=({},{},{},{}), base={}, hillHeight={}, seed={}",
                 x, z, sizeX, sizeZ, baseHeight, hillHeight, seed);
     }
 

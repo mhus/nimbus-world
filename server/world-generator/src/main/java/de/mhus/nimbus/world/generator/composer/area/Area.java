@@ -5,7 +5,7 @@ import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.world.generator.composer.flow.DeviationTendency;
 import de.mhus.nimbus.world.generator.composer.point.Direction;
 import de.mhus.nimbus.world.generator.composer.feature.Feature;
-import de.mhus.nimbus.world.generator.composer.PreparedPosition;
+import de.mhus.nimbus.world.generator.composer.structure.PreparedPosition;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;

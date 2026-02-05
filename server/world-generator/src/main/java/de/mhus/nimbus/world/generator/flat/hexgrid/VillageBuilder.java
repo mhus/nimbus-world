@@ -656,7 +656,7 @@ public class VillageBuilder extends HexGridBuilder {
             return;
         }
 
-        log.info("Drawing {} debug labels for village district '{}'",
+        log.debug("Drawing {} debug labels for village district '{}'",
             config.getPlaces().size(), config.getDistrictName());
 
         for (VillageGridConfig.PlacedPlaceConfig place : config.getPlaces()) {

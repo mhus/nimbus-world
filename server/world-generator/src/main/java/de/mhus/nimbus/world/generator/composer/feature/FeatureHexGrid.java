@@ -3,7 +3,7 @@ package de.mhus.nimbus.world.generator.composer.feature;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.shared.utils.TypeUtil;
-import de.mhus.nimbus.world.generator.composer.RiverConfigPart;
+import de.mhus.nimbus.world.generator.composer.flow.RiverConfigPart;
 import de.mhus.nimbus.world.generator.composer.flow.FlowSegment;
 import de.mhus.nimbus.world.generator.composer.flow.FlowType;
 import de.mhus.nimbus.world.generator.composer.flow.RoadConfigPart;

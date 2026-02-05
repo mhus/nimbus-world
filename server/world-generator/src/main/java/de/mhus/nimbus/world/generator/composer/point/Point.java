@@ -7,7 +7,7 @@ import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.world.generator.composer.area.Area;
 import de.mhus.nimbus.world.generator.composer.build.ComposeContext;
 import de.mhus.nimbus.world.generator.composer.feature.Feature;
-import de.mhus.nimbus.world.generator.composer.PreparedPosition;
+import de.mhus.nimbus.world.generator.composer.structure.PreparedPosition;
 import de.mhus.nimbus.world.generator.composer.area.RelativePosition;
 import de.mhus.nimbus.world.generator.composer.biome.BiomeDistance;
 import de.mhus.nimbus.world.generator.composer.village.VillageConnectionPoint;

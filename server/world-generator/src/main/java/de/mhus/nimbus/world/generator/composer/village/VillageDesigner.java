@@ -5,7 +5,6 @@ import de.mhus.nimbus.generated.types.Vector2Int;
 import de.mhus.nimbus.generated.types.Vector3Int;
 import de.mhus.nimbus.shared.utils.TypeUtil;
 import de.mhus.nimbus.world.generator.composer.point.Direction;
-import de.mhus.nimbus.world.generator.composer.PlacedPlace;
 import de.mhus.nimbus.world.generator.composer.flow.StreetSegment;
 import de.mhus.nimbus.world.generator.composer.pathfinding.EdgeSide;
 import de.mhus.nimbus.world.generator.composer.pathfinding.HexCoord;
@@ -14,7 +13,6 @@ import de.mhus.nimbus.world.generator.composer.pathfinding.HexPath;
 import de.mhus.nimbus.world.generator.composer.pathfinding.VillageHexPathfinder;
 import de.mhus.nimbus.world.shared.util.HexLocalUtil;
 import de.mhus.nimbus.world.shared.world.HexLocalPosition;
-import de.mhus.nimbus.world.generator.flat.hexgrid.composer.pathfinding.*;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;

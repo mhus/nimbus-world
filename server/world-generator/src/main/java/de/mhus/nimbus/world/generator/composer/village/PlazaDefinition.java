@@ -1,4 +1,4 @@
-package de.mhus.nimbus.world.generator.composer;
+package de.mhus.nimbus.world.generator.composer.village;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.AllArgsConstructor;

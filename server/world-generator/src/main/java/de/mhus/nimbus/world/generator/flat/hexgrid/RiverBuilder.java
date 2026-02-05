@@ -55,7 +55,7 @@ public class RiverBuilder extends HexGridBuilder {
         WFlat flat = context.getFlat();
         WHexGrid hexGrid = context.getHexGrid();
 
-        log.info("Building rivers for flat: {}", flat.getFlatId());
+        log.debug("Building rivers for flat: {}", flat.getFlatId());
 
         // Clear all existing WATER extra blocks before building rivers
         clearWaterExtraBlocks(flat);

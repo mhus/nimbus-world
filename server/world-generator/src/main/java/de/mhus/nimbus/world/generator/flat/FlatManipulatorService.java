@@ -50,7 +50,7 @@ public class FlatManipulatorService {
             log.debug("Registered flat manipulator: {}", name);
         }
 
-        log.info("FlatManipulatorService initialized with {} manipulators", manipulators.size());
+        log.debug("FlatManipulatorService initialized with {} manipulators", manipulators.size());
     }
 
     /**
@@ -103,7 +103,7 @@ public class FlatManipulatorService {
         // Execute manipulator
         try {
             manipulator.manipulate(flat, x, z, sizeX, sizeZ, parameters != null ? parameters : new HashMap<>());
-            log.info("Manipulator executed successfully: name={}, region=({},{},{},{})",
+            log.debug("Manipulator executed successfully: name={}, region=({},{},{},{})",
                     name, x, z, sizeX, sizeZ);
         } catch (Exception e) {
             log.error("Manipulator execution failed: name={}", name, e);

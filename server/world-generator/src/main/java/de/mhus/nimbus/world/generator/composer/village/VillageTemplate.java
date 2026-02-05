@@ -2,7 +2,6 @@ package de.mhus.nimbus.world.generator.composer.village;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import de.mhus.nimbus.world.generator.composer.PlazaDefinition;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

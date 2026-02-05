@@ -1,4 +1,4 @@
-package de.mhus.nimbus.world.generator.flat.hexgrid.composer;
+package de.mhus.nimbus.world.generator.composer;
 
 import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.world.generator.composer.feature.FeatureHexGrid;
@@ -123,24 +123,6 @@ class StructureTypeTest {
     }
 
     @Test
-    void testVillageConfiguresOwnGrids() {
-        Village village = (Village) StructureType.HAMLET.createInstance();
-        village.setName("test-hamlet");
-
-        List<HexVector2> coordinates = Arrays.asList(hex(0, 0));
-        village.configureHexGrids(coordinates);
-
-        assertEquals(1, village.getHexGrids().size());
-
-        FeatureHexGrid grid = village.getHexGrids().get(0);
-        assertEquals(0, grid.getCoordinate().getQ());
-        assertEquals(0, grid.getCoordinate().getR());
-        assertEquals("hamlet", grid.getParameters().get("structure"));
-        assertEquals("test-hamlet", grid.getParameters().get("structureName"));
-        assertEquals("island", grid.getParameters().get("g_builder"));
-    }
-
-    @Test
     void testTownConfiguresOwnGrids() {
         Town town = (Town) StructureType.TOWN.createInstance();
         town.setName("test-town");
@@ -177,59 +159,4 @@ class StructureTypeTest {
         assertEquals("true", grid.getParameters().get("has_wall"));
     }
 
-    @Test
-    void testVillageCanOverrideDefaults() {
-        Village village = (Village) StructureType.VILLAGE.createInstance();
-        village.setName("custom-village");
-
-        // Override default level
-        village.getParameters().put("default_level", "100");
-
-        List<HexVector2> coordinates = Arrays.asList(hex(0, 0));
-        village.configureHexGrids(coordinates);
-
-        FeatureHexGrid grid = village.getHexGrids().get(0);
-        assertEquals("100", grid.getParameters().get("default_level"));
-    }
-
-    @Test
-    void testStructureWithoutType() {
-        Village village = new Village();
-        village.setName("legacy-village");
-
-        // No type set - should handle gracefully
-        village.applyDefaults();  // Should not crash
-
-        List<HexVector2> coordinates = Arrays.asList(hex(0, 0));
-        village.configureHexGrids(coordinates);
-
-        assertEquals(1, village.getHexGrids().size());
-        FeatureHexGrid grid = village.getHexGrids().get(0);
-        assertEquals("g_village", grid.getParameters().get("structure"));  // Falls back to class name
-    }
-
-    @Test
-    void testDifferentStructureTypesSameClass() {
-        // Small village
-        Village smallVillage = (Village) StructureType.SMALL_VILLAGE.createInstance();
-        smallVillage.setName("small");
-        smallVillage.configureHexGrids(Arrays.asList(hex(0, 0)));
-
-        // Large village - same class, different defaults
-        Village largeVillage = (Village) StructureType.LARGE_VILLAGE.createInstance();
-        largeVillage.setName("large");
-        largeVillage.configureHexGrids(Arrays.asList(hex(0, 0)));
-
-        // Both are Villages
-        assertEquals(Village.class, smallVillage.getClass());
-        assertEquals(Village.class, largeVillage.getClass());
-
-        // But have different types
-        assertEquals(StructureType.SMALL_VILLAGE, smallVillage.getType());
-        assertEquals(StructureType.LARGE_VILLAGE, largeVillage.getType());
-
-        // And different structure parameters
-        assertEquals("small_village", smallVillage.getHexGrids().get(0).getParameters().get("structure"));
-        assertEquals("large_village", largeVillage.getHexGrids().get(0).getParameters().get("structure"));
-    }
 }

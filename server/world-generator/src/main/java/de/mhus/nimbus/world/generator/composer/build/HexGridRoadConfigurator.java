@@ -1,7 +1,7 @@
 package de.mhus.nimbus.world.generator.composer.build;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import de.mhus.nimbus.world.generator.composer.RiverConfigPart;
+import de.mhus.nimbus.world.generator.composer.flow.RiverConfigPart;
 import de.mhus.nimbus.world.generator.composer.area.Area;
 import de.mhus.nimbus.world.generator.composer.area.Composite;
 import de.mhus.nimbus.world.generator.composer.biome.Biome;

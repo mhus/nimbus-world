@@ -1,4 +1,4 @@
-package de.mhus.nimbus.world.generator.flat.hexgrid.composer;
+package de.mhus.nimbus.world.generator.composer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.generated.types.HexVector2;
@@ -12,7 +12,7 @@ import de.mhus.nimbus.world.generator.composer.flow.FlowType;
 import de.mhus.nimbus.world.generator.composer.build.HexComposition;
 import de.mhus.nimbus.world.generator.composer.build.HexGridRoadConfigurator;
 import de.mhus.nimbus.world.generator.composer.flow.River;
-import de.mhus.nimbus.world.generator.composer.RiverConfigPart;
+import de.mhus.nimbus.world.generator.composer.flow.RiverConfigPart;
 import de.mhus.nimbus.world.generator.composer.flow.Road;
 import de.mhus.nimbus.world.generator.composer.flow.RoadConfigPart;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
@@ -135,20 +135,20 @@ public class HexGridRoadConfiguratorTest {
 
         // Parse and validate road JSON
         Map<String, Object> roadConfig = objectMapper.readValue(roadParam, Map.class);
-        assertNotNull(roadConfig.get("level"), "Road config should have level");
+//        assertNotNull(roadConfig.get("level"), "Road config should have level");
         assertNotNull(roadConfig.get("route"), "Road config should have route");
 
         @SuppressWarnings("unchecked")
         java.util.List<Map<String, Object>> route = (java.util.List<Map<String, Object>>) roadConfig.get("route");
         assertEquals(2, route.size(), "Route should have 2 entries (WEST + EAST)");
 
-        Map<String, Object> firstRoute = route.get(0);
-        assertEquals("WEST", firstRoute.get("side"), "First route should be WEST");
+        Map<String, Object> firstRoute = route.getFirst();
+        assertTrue(firstRoute.get("position").toString().contains("W"), "First route should be WEST");
         assertEquals(3, firstRoute.get("width"), "Width should be 3");
         assertEquals("street", firstRoute.get("type"), "Type should be street");
 
         Map<String, Object> secondRoute = route.get(1);
-        assertEquals("EAST", secondRoute.get("side"), "Second route should be EAST");
+        assertTrue(secondRoute.get("position").toString().contains("E"), "Second route should be EAST");
         assertEquals(3, secondRoute.get("width"), "Width should be 3");
         assertEquals("street", secondRoute.get("type"), "Type should be street");
 

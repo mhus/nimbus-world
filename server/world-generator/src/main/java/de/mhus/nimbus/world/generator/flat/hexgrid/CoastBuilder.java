@@ -27,7 +27,7 @@ public class CoastBuilder extends HexGridBuilder {
     public void buildFlat() {
         WFlat flat = context.getFlat();
 
-        log.info("Building coast scenario for flat: {}", flat.getFlatId());
+        log.debug("Building coast scenario for flat: {}", flat.getFlatId());
 
         int oceanLevel = flat.getSeaLevel();
         long seed = context.getWorld().getNoiseSeed();  // Use seed from world
@@ -41,7 +41,7 @@ public class CoastBuilder extends HexGridBuilder {
         // Step 2: Adjust sides based on neighbor types
         adjustSidesBasedOnNeighbors(flat, oceanLevel, seed, frequency);
 
-        log.info("Coast scenario completed");
+        log.debug("Coast scenario completed");
     }
 
     /**

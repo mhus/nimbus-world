@@ -48,7 +48,7 @@ public class HexGridEdgeBlender {
             blendSide(side.getKey(), neighborFlat);
         }
 
-        log.info("Side blending completed for flat: {}", flat.getFlatId());
+        log.debug("Side blending completed for flat: {}", flat.getFlatId());
     }
 
     /**

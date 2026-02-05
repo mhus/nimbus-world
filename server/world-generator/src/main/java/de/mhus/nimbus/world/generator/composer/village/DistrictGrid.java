@@ -1,7 +1,6 @@
 package de.mhus.nimbus.world.generator.composer.village;
 
 import de.mhus.nimbus.generated.types.HexVector2;
-import de.mhus.nimbus.world.generator.composer.PlacedPlace;
 import de.mhus.nimbus.world.generator.composer.flow.StreetSegment;
 import lombok.AllArgsConstructor;
 import lombok.Builder;

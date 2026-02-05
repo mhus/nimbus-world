@@ -120,13 +120,13 @@ public class HexGridCompositeImageCreator {
             throw new IllegalStateException("No flats provided - cannot create composite image");
         }
 
-        log.info("Creating composite images from {} hex grids", flats.size());
+        log.debug("Creating composite images from {} hex grids", flats.size());
 
         try {
             // Calculate hex coordinate bounds
             HexBounds bounds = calculateHexBounds();
 
-            log.info("Creating HEX composite: {}x{} grids, bounds q=[{},{}] r=[{},{}]",
+            log.debug("Creating HEX composite: {}x{} grids, bounds q=[{},{}] r=[{},{}]",
                 bounds.gridWidth, bounds.gridHeight, bounds.minQ, bounds.maxQ, bounds.minR, bounds.maxR);
 
             // Calculate cartesian bounds using HexMathUtil
@@ -150,7 +150,7 @@ public class HexGridCompositeImageCreator {
             // Render each hex grid onto the composite
             int renderedCount = renderHexGrids(levelImage, materialImage, cartBounds);
 
-            log.info("Rendered {} of {} grids with HEX geometry", renderedCount, flats.size());
+            log.debug("Rendered {} of {} grids with HEX geometry", renderedCount, flats.size());
 
             // Draw grid lines if enabled
             if (drawGridLines) {

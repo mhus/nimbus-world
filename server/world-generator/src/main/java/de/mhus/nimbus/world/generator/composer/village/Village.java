@@ -7,7 +7,6 @@ import de.mhus.nimbus.world.generator.composer.build.BuildFeature;
 import de.mhus.nimbus.world.generator.composer.build.CompositionResult;
 import de.mhus.nimbus.world.generator.composer.point.Direction;
 import de.mhus.nimbus.world.generator.composer.feature.FeatureHexGrid;
-import de.mhus.nimbus.world.generator.composer.PlacedPlace;
 import de.mhus.nimbus.world.generator.composer.flow.RoadConfigPart;
 import de.mhus.nimbus.world.generator.composer.flow.StreetSegment;
 import de.mhus.nimbus.world.generator.composer.structure.Structure;

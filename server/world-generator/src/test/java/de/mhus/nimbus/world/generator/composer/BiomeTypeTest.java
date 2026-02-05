@@ -1,4 +1,4 @@
-package de.mhus.nimbus.world.generator.flat.hexgrid.composer;
+package de.mhus.nimbus.world.generator.composer;
 
 import de.mhus.nimbus.world.generator.composer.biome.Biome;
 import de.mhus.nimbus.world.generator.composer.biome.BiomeType;

@@ -1,4 +1,4 @@
-package de.mhus.nimbus.world.generator.flat.hexgrid.composer;
+package de.mhus.nimbus.world.generator.composer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.generated.types.HexVector2;

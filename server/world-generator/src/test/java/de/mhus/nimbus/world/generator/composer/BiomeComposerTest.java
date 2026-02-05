@@ -1,4 +1,4 @@
-package de.mhus.nimbus.world.generator.flat.hexgrid.composer;
+package de.mhus.nimbus.world.generator.composer;
 
 import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.world.generator.composer.area.AreaShape;
@@ -9,7 +9,7 @@ import de.mhus.nimbus.world.generator.composer.biome.BiomeType;
 import de.mhus.nimbus.world.generator.composer.point.Direction;
 import de.mhus.nimbus.world.generator.composer.build.HexComposition;
 import de.mhus.nimbus.world.generator.composer.biome.PlacedBiome;
-import de.mhus.nimbus.world.generator.composer.PreparedPosition;
+import de.mhus.nimbus.world.generator.composer.structure.PreparedPosition;
 import de.mhus.nimbus.world.generator.composer.area.RelativePosition;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;

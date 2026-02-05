@@ -1,4 +1,4 @@
-package de.mhus.nimbus.world.generator.composer;
+package de.mhus.nimbus.world.generator.composer.structure;
 
 import de.mhus.nimbus.world.generator.composer.area.RelativePosition;
 import de.mhus.nimbus.world.generator.composer.point.Direction;

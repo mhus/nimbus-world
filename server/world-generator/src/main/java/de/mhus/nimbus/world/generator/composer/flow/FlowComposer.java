@@ -7,7 +7,6 @@ import de.mhus.nimbus.world.generator.composer.feature.FeatureStatus;
 import de.mhus.nimbus.world.generator.composer.build.HexComposition;
 import de.mhus.nimbus.world.generator.composer.build.HexGridRoadConfigurator;
 import de.mhus.nimbus.world.generator.composer.biome.PlacedBiome;
-import de.mhus.nimbus.world.generator.composer.RiverConfigPart;
 import de.mhus.nimbus.world.generator.composer.area.Area;
 import de.mhus.nimbus.world.generator.composer.area.Composite;
 import de.mhus.nimbus.world.generator.composer.biome.Biome;

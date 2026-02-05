@@ -1,4 +1,4 @@
-package de.mhus.nimbus.world.generator.composer;
+package de.mhus.nimbus.world.generator.composer.flow;
 
 import de.mhus.nimbus.world.shared.world.WHexGrid.EDGE;
 import lombok.Builder;

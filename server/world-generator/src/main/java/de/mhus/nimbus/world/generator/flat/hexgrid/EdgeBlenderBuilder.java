@@ -54,11 +54,11 @@ public class EdgeBlenderBuilder extends HexGridBuilder {
         int blurRadius = CastUtil.toint(parameters.get("edge_blur_radius"), 0);
 
         if (sideFlats.isEmpty()) {
-            log.info("No side flats defined for blending in flat: {}", flat.getFlatId());
+            log.debug("No side flats defined for blending in flat: {}", flat.getFlatId());
             return;
         }
 
-        log.info("Side flats for blending: {}, width={}, randomness={}, shake={}, blur={}",
+        log.debug("Side flats for blending: {}, width={}, randomness={}, shake={}, blur={}",
                 sideFlats, width, randomness, shakeStrength, blurRadius);
 
         // Check if flatService is available
@@ -71,7 +71,7 @@ public class EdgeBlenderBuilder extends HexGridBuilder {
         HexGridEdgeBlender edgeBlender = new HexGridEdgeBlender(flat, width, context, randomness, shakeStrength, blurRadius);
         edgeBlender.blendAllSides(sideFlats);
 
-        log.trace("Side blending completed for flat: {}", flat.getFlatId());
+        log.debug("Side blending completed for flat: {}", flat.getFlatId());
     }
 
     @Override

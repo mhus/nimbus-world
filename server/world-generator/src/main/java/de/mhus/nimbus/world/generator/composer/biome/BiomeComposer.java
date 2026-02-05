@@ -7,7 +7,7 @@ import de.mhus.nimbus.world.generator.composer.area.Area;
 import de.mhus.nimbus.world.generator.composer.area.AreaShape;
 import de.mhus.nimbus.world.generator.composer.build.CompositionContext;
 import de.mhus.nimbus.world.generator.composer.build.HexComposition;
-import de.mhus.nimbus.world.generator.composer.PreparedPosition;
+import de.mhus.nimbus.world.generator.composer.structure.PreparedPosition;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
 import lombok.extern.slf4j.Slf4j;
 
