@@ -52,9 +52,10 @@ public class Day2Plan extends MethodBasedWorkflow {
     public void start(WorkflowContext context) throws WorkflowException {
         // first step create composite structure from description
         context.updateWorkflowStatus("createComposite");
-        context.enqueueJob("genesisCreateComposite", "", Map.of(
-                GenesisConst.DESCRIPTION, (String)context.getParameters().get(GenesisConst.DESCRIPTION)
-        ));
+        // deprecated use TranslateInstructionJobExecutor und ApplyTranslatedInstructionJobExecutor
+//        context.enqueueJob("genesisCreateComposite", "", Map.of(
+//                GenesisConst.DESCRIPTION, (String)context.getParameters().get(GenesisConst.DESCRIPTION)
+//        ));
     }
 
     @OnSuccess("createComposite")
