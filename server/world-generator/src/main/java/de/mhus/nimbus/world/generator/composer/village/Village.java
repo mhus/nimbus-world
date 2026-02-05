@@ -411,6 +411,7 @@ public class Village extends Structure implements BuildFeature {
             .hexR(placedPlace.getHexR())
             .localX(placedPlace.getLocalX())
             .localZ(placedPlace.getLocalZ())
+            .relativePos(placedPlace.getRelativePos())
             .rotation(placedPlace.getRotation())
             .divider(placedPlace.getDivider())
             .buildingId(placedPlace.getBuildingId())

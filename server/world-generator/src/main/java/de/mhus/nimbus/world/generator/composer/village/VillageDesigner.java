@@ -357,7 +357,7 @@ public class VillageDesigner {
                 .place(place)
                 .hexQ(hexPos.getQ())
                 .hexR(hexPos.getR())
-                .relativePosition(relativePos)
+                .relativePos(relativePos)
                 .localX(localX)
                 .localZ(localZ)
                 .divider(divider)

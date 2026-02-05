@@ -86,7 +86,7 @@ public class MountainBuilder extends HexGridBuilder {
         // Set materials based on height
         setMountainMaterials(flat, seaLevel);
 
-        log.info("Mountain scenario completed: baseHeight={}, hillHeight={}, oceanLevel={}",
+        log.debug("Mountain scenario completed: baseHeight={}, hillHeight={}, oceanLevel={}",
                 baseHeight, hillHeight, seaLevel);
     }
 

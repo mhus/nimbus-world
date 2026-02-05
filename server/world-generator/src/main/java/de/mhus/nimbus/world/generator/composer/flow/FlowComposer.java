@@ -64,7 +64,7 @@ public class FlowComposer {
             List<Flow> flows = collectFlows(prepared);
             totalFlows = flows.size();
 
-            log.info("Found {} flows to compose", totalFlows);
+            log.debug("Found {} flows to compose", totalFlows);
 
             for (Flow flow : flows) {
                 try {
@@ -72,7 +72,7 @@ public class FlowComposer {
                     if (segments > 0) {
                         composedFlows++;
                         totalSegments += segments;
-                        log.info("Composed flow '{}': {} segments", flow.getName(), segments);
+                        log.debug("Composed flow '{}': {} segments", flow.getName(), segments);
                     } else {
                         failedFlows++;
                         errors.add("Flow " + flow.getName() + ": no route found");
@@ -92,7 +92,7 @@ public class FlowComposer {
             HexGridRoadConfigurator.RoadConfigurationResult roadResult =
                 roadConfigurator.configureRoads(prepared, placementResult);
 
-            log.info("Road configuration: configured={}/{}, segments={}",
+            log.debug("Road configuration: configured={}/{}, segments={}",
                 roadResult.getConfiguredGrids(), roadResult.getTotalGrids(),
                 roadResult.getTotalSegments());
 
@@ -100,7 +100,7 @@ public class FlowComposer {
                 log.warn("Road configuration had errors: {}", roadResult.getErrors());
             }
 
-            log.info("Flow composition complete: composed={}/{}, segments={}, failed={}",
+            log.debug("Flow composition complete: composed={}/{}, segments={}, failed={}",
                 composedFlows, totalFlows, totalSegments, failedFlows);
 
             return FlowCompositionResult.builder()
@@ -281,12 +281,12 @@ public class FlowComposer {
         if (flow instanceof Road road) {
             if (road.getEndPointId() != null && road.getEndPointId().equals(flow.getStartPointId())) {
                 flow.setClosedLoop(true);
-                log.info("Flow '{}' is a closed loop (start == end)", flow.getName());
+                log.debug("Flow '{}' is a closed loop (start == end)", flow.getName());
             }
         } else if (flow instanceof Wall wall) {
             if (wall.getEndPointId() != null && wall.getEndPointId().equals(flow.getStartPointId())) {
                 flow.setClosedLoop(true);
-                log.info("Flow '{}' is a closed loop (start == end)", flow.getName());
+                log.debug("Flow '{}' is a closed loop (start == end)", flow.getName());
             }
         }
 
@@ -386,7 +386,7 @@ public class FlowComposer {
 
         // Check for closed loop
         if (flow.isClosedLoop()) {
-            log.info("Planning closed loop route for flow '{}' around point {},{} with radius {}",
+            log.debug("Planning closed loop route for flow '{}' around point {},{} with radius {}",
                 flow.getName(), start.getQ(), start.getR(), flow.getEffectiveSizeFrom());
             return planClosedLoopRoute(flow, start);
         }
@@ -527,7 +527,7 @@ public class FlowComposer {
                 if (flow instanceof River river) {
                     // Check if river reached ocean (no more downhill path)
                     if (isAtOceanLevel(current, gridMap)) {
-                        log.info("River '{}' reached ocean at {},{}", flow.getName(), current.getQ(), current.getR());
+                        log.debug("River '{}' reached ocean at {},{}", flow.getName(), current.getQ(), current.getR());
                         break;
                     }
 
@@ -1706,7 +1706,7 @@ public class FlowComposer {
             }
         }
 
-        log.info("Collected {} FeatureHexGrids from {} PlacedBiomes ({} with grids, {} without)",
+        log.debug("Collected {} FeatureHexGrids from {} PlacedBiomes ({} with grids, {} without)",
             collectedCount, placementResult.getPlacedBiomes().size(), biomesWithGrids, biomesWithoutGrids);
     }
 
@@ -1728,7 +1728,7 @@ public class FlowComposer {
      */
     private int composeSideWall(SideWall sideWall, HexComposition prepared,
                                 BiomePlacementResult placementResult) {
-        log.info("Composing SideWall '{}' for target '{}'", sideWall.getName(), sideWall.getTargetBiomeId());
+        log.debug("Composing SideWall '{}' for target '{}'", sideWall.getName(), sideWall.getTargetBiomeId());
 
         if (sideWall.getTargetBiomeId() == null) {
             log.warn("SideWall '{}' has no targetBiomeId", sideWall.getName());
@@ -1783,7 +1783,7 @@ public class FlowComposer {
             configuredCount++;
         }
 
-        log.info("Configured {} edge grids with sidewall for '{}'", configuredCount, sideWall.getName());
+        log.debug("Configured {} edge grids with sidewall for '{}'", configuredCount, sideWall.getName());
 
         // Update feature status
         if (configuredCount > 0) {

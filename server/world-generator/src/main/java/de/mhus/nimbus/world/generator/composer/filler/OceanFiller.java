@@ -379,7 +379,7 @@ public class OceanFiller {
 
         // TODO: Also collect from composites if needed
 
-        log.info("Found {} grids crossed by flows", flowCoords.size());
+        log.debug("Found {} grids crossed by flows", flowCoords.size());
 
         // Find flow coordinates that are NOT yet filled
         List<HexVector2> unfilledCoords = new ArrayList<>();
@@ -391,7 +391,7 @@ public class OceanFiller {
             }
         }
 
-        log.info("Found {} unfilled grids that need ocean filler", unfilledCoords.size());
+        log.debug("Found {} unfilled grids that need ocean filler", unfilledCoords.size());
 
         if (unfilledCoords.isEmpty()) {
             log.info("All flow grids are already filled");
@@ -426,7 +426,7 @@ public class OceanFiller {
 
         placementResult.getPlacedBiomes().add(placedOcean);
 
-        log.info("OceanFiller.fillFlowGaps added 1 ocean biome with {} grids", unfilledCoords.size());
+        log.debug("OceanFiller.fillFlowGaps added 1 ocean biome with {} grids", unfilledCoords.size());
 
         return 1;
     }

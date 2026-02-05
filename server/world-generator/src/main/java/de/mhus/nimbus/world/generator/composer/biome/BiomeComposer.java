@@ -55,7 +55,7 @@ public class BiomeComposer {
                     }
                 }
 
-                log.info("Placing {} normal biomes and {} enclosed biomes",
+                log.debug("Placing {} normal biomes and {} enclosed biomes",
                     normalBiomes.size(), enclosedBiomes.size());
 
                 // Phase 1: Place normal biomes
@@ -70,7 +70,7 @@ public class BiomeComposer {
 
                     // Add biome name as anchor for other biomes to reference
                     if (biome.getName() != null && !context.getPlacedBiomes().isEmpty()) {
-                        PlacedBiome lastPlaced = context.getPlacedBiomes().get(context.getPlacedBiomes().size() - 1);
+                        PlacedBiome lastPlaced = context.getPlacedBiomes().getLast();
                         context.addAnchor(biome.getName(), lastPlaced.getCenter());
                     }
                 }
@@ -87,7 +87,7 @@ public class BiomeComposer {
 
                     // Add biome name as anchor for other biomes to reference
                     if (biome.getName() != null && !context.getPlacedBiomes().isEmpty()) {
-                        PlacedBiome lastPlaced = context.getPlacedBiomes().get(context.getPlacedBiomes().size() - 1);
+                        PlacedBiome lastPlaced = context.getPlacedBiomes().getLast();
                         context.addAnchor(biome.getName(), lastPlaced.getCenter());
                     }
                 }
@@ -183,7 +183,7 @@ public class BiomeComposer {
 
                     context.getPlacedBiomes().add(placed);
 
-                    log.info("Placed biome '{}' at {} with {} hexes (attempt {})",
+                    log.debug("Placed biome '{}' at {} with {} hexes (attempt {})",
                         biome.getName(), targetCenter, coordinates.size(), attempts);
 
                     return true;
@@ -270,7 +270,7 @@ public class BiomeComposer {
 
                 context.getPlacedBiomes().add(placed);
 
-                log.info("Placed enclosed biome '{}' at {} with {} hexes (attempt {})",
+                log.debug("Placed enclosed biome '{}' at {} with {} hexes (attempt {})",
                     biome.getName(), targetCenter, coordinates.size(), attempts);
 
                 return true;
@@ -393,18 +393,12 @@ public class BiomeComposer {
         }
 
         switch (shape) {
-            case CIRCLE:
-                coordinates = generateCircularCoordinates(center, size);
-                break;
-            case LINE:
-                coordinates = generateLineCoordinates(center, size, context.getRandom(), biome);
-                break;
-            case RECTANGLE:
+            case CIRCLE -> coordinates = generateCircularCoordinates(center, size);
+            case LINE -> coordinates = generateLineCoordinates(center, size, context.getRandom(), biome);
+            case RECTANGLE ->
                 // For now, treat RECTANGLE like CIRCLE (can be improved later)
-                coordinates = generateCircularCoordinates(center, size);
-                break;
-            default:
-                coordinates.add(center); // Single hex
+                    coordinates = generateCircularCoordinates(center, size);
+            default -> coordinates.add(center); // Single hex
         }
 
         return coordinates;
@@ -627,7 +621,7 @@ public class BiomeComposer {
             }
 
             // Add biome type as parameter
-            parameters.put("biome", biome.getType().getBuilderName());
+            parameters.put("biome", biome.getType().getDefaultBuilder());
             parameters.put("biomeName", biome.getName());
 
             WHexGrid hexGrid = WHexGrid.builder()
@@ -663,7 +657,7 @@ public class BiomeComposer {
         }
 
         // Add biome type as parameter (use builderName for consistency with HexGridBuilderService)
-        parameters.put("biome", biome.getType().getBuilderName());
+        parameters.put("biome", biome.getType().getDefaultBuilder());
         parameters.put("biomeName", biome.getName());
 
         return WHexGrid.builder()
@@ -685,8 +679,7 @@ public class BiomeComposer {
 
     /**
      * Stores HexGrid configurations in PreparedBiomes
-     */
-    /**
+     * <p>
      * Configures HexGrids for all placed biomes by calling each biome's configureHexGrids method.
      * Each biome configures its own grids polymorphically.
      */

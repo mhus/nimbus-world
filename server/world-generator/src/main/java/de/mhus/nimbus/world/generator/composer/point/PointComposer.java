@@ -130,7 +130,7 @@ public class PointComposer {
                 }
             }
 
-            log.info("Point composition complete: composed={}/{}, failed={}",
+            log.debug("Point composition complete: composed={}/{}, failed={}",
                 composedPoints, totalPoints, failedPoints);
 
             return PointCompositionResult.builder()

@@ -48,7 +48,7 @@ public class PlacedPlace {
      * Relative position as a 2D vector (localX, localZ)
      * relative to the center of the district hex grid
      */
-    private Vector2Int relativePosition;
+    private Vector2Int relativePos;
 
     /**
      * The divider used for this place (1, 3, 5, or 7)

@@ -604,6 +604,7 @@ public class VillageBuilder extends HexGridBuilder {
             // Update place config with cartesian coordinates
             place.setLocalX(localX);
             place.setLocalZ(localZ);
+            place.setRelativePos(relativePos);
 
             log.debug("Converted place '{}' from hex <{};{}> to cartesian ({}, {})",
                 place.getName(), place.getHexQ(), place.getHexR(), localX, localZ);

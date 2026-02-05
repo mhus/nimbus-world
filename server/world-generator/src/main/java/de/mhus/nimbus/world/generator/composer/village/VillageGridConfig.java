@@ -1,6 +1,7 @@
 package de.mhus.nimbus.world.generator.composer.village;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import de.mhus.nimbus.generated.types.Vector2Int;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -69,6 +70,7 @@ public class VillageGridConfig {
         private int hexR; // Hexagonal R coordinate
         private int localX; // Cartesian X (calculated from hex in VillageBuilder)
         private int localZ; // Cartesian Z (calculated from hex in VillageBuilder)
+        private Vector2Int relativePos; // Relative position within the hex (0-15)
         private int rotation;
         private int divider; // Slot divider (1, 3, 5, or 7) - determines size
         private String buildingId;
