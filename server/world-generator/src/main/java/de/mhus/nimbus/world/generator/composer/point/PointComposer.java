@@ -79,13 +79,13 @@ public class PointComposer {
 
             int precomposedCount = allPoints.size() - points.size();
             if (precomposedCount > 0) {
-                log.info("Skipping {} precomposed points (already positioned)", precomposedCount);
+                log.debug("Skipping {} precomposed points (already positioned)", precomposedCount);
             }
 
             totalPoints = points.size();
 
             if (points.isEmpty()) {
-                log.info("No points to compose");
+                log.debug("No points to compose");
                 return PointCompositionResult.builder()
                     .totalPoints(0)
                     .composedPoints(0)
@@ -94,7 +94,7 @@ public class PointComposer {
                     .build();
             }
 
-            log.info("Found {} points to compose", totalPoints);
+            log.debug("Found {} points to compose", totalPoints);
 
             // Build constraint graph
             Map<String, List<PointConstraint>> constraintGraph = buildConstraintGraph(points, context);
@@ -117,7 +117,7 @@ public class PointComposer {
                     boolean success = finalizePointPosition(point, context);
                     if (success) {
                         composedPoints++;
-                        log.info("Composed point '{}': {}", point.getName(), point.getPlacedPositionString());
+                        log.debug("Composed point '{}': {}", point.getName(), point.getPlacedPositionString());
                     } else {
                         failedPoints++;
                         errors.add("Point " + point.getName() + ": could not finalize position");
@@ -394,7 +394,7 @@ public class PointComposer {
             log.debug("Iteration {}: max movement = {}", iteration, maxMovement);
 
             if (maxMovement < CONVERGENCE_THRESHOLD) {
-                log.info("Converged after {} iterations", iteration + 1);
+                log.debug("Converged after {} iterations", iteration + 1);
                 return true;
             }
         }

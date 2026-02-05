@@ -22,7 +22,7 @@ public class IslandBuilder extends HexGridBuilder {
     public void buildFlat() {
         WFlat flat = context.getFlat();
 
-        log.info("Building island scenario for flat: {}",
+        log.debug("Building island scenario for flat: {}",
                 flat.getFlatId());
 
         int oceanLevel = flat.getSeaLevel();
@@ -84,7 +84,7 @@ public class IslandBuilder extends HexGridBuilder {
                 islandParams
         );
 
-        log.info("Island scenario completed: baseHeight={}, hillHeight={}, oceanLevel={}",
+        log.debug("Island scenario completed: baseHeight={}, hillHeight={}, oceanLevel={}",
                 baseHeight, hillHeight, oceanLevel);
     }
 

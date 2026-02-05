@@ -184,7 +184,7 @@ public class Village extends Structure implements BuildFeature {
      * @param hexGridSize Size of each hex grid from world configuration
      */
     public void configureHexGrids(List<HexVector2> coordinates, int hexGridSize) {
-        log.info("Configuring HexGrids for village '{}' with {} districts (hexGridSize: {})",
+        log.debug("Configuring HexGrids for village '{}' with {} districts (hexGridSize: {})",
             getName(), districts != null ? districts.size() : 0, hexGridSize);
 
         // Clear existing configurations
@@ -223,7 +223,7 @@ public class Village extends Structure implements BuildFeature {
             // Store designed district grids for later use (connecting external points)
             this.designedDistrictGrids = designResult.getDistrictGrids();
 
-            log.info("Village design successful: {} districts", designResult.getDistrictCount());
+            log.debug("Village design successful: {} districts", designResult.getDistrictCount());
 
         } catch (Exception e) {
             log.error("Exception during village design for '{}'", getName(), e);
@@ -232,7 +232,7 @@ public class Village extends Structure implements BuildFeature {
             return;
         }
 
-        log.info("Village design successful: {} districts, {} places",
+        log.debug("Village design successful: {} districts, {} places",
             designResult.getDistrictCount(), designResult.getTotalPlaceCount());
 
         // Create FeatureHexGrid for each DistrictGrid with configuration
@@ -283,7 +283,7 @@ public class Village extends Structure implements BuildFeature {
                 districtGrid.getPlacedPlaces().size(), districtGrid.getStreets().size());
         }
 
-        log.info("Village '{}' configured: {} grids created", getName(), getHexGrids().size());
+        log.debug("Village '{}' configured: {} grids created", getName(), getHexGrids().size());
     }
 
     /**
@@ -466,7 +466,7 @@ public class Village extends Structure implements BuildFeature {
             return;
         }
 
-        log.info("Connecting {} external connection points for village '{}'",
+        log.debug("Connecting {} external connection points for village '{}'",
             externalConnectionPoints.size(), getName());
 
         // For each external connection point, find the corresponding internal connection point
@@ -475,7 +475,7 @@ public class Village extends Structure implements BuildFeature {
             connectExternalPoint(externalPoint, hexGridSize);
         }
 
-        log.info("External connection point routing complete for village '{}'", getName());
+        log.debug("External connection point routing complete for village '{}'", getName());
     }
 
     /**
@@ -550,7 +550,7 @@ public class Village extends Structure implements BuildFeature {
         targetHexGrid.addRoadConfigPart(internalPart);
         targetHexGrid.addRoadConfigPart(edgePart);
 
-        log.info("EXTERNAL_CONNECTION: district='{}' internal='{}' at ({},{}) → edge at ({},{}) direction {}",
+        log.debug("EXTERNAL_CONNECTION: district='{}' internal='{}' at ({},{}) → edge at ({},{}) direction {}",
             targetDistrict.getName(), internalPointName,
             internalPlace.getLocalX(), internalPlace.getLocalZ(),
             edgeX, edgeZ, externalDirection);

@@ -37,7 +37,7 @@ public class VillageExternalConnectionGenerator {
      */
     public GenerationResult generateExternalConnections(HexComposition composition,
                                                         BiomePlacementResult placementResult) {
-        log.info("Starting external connection point generation for villages");
+        log.debug("Starting external connection point generation for villages");
 
         GenerationResult result = new GenerationResult();
 
@@ -54,7 +54,7 @@ public class VillageExternalConnectionGenerator {
             return result;
         }
 
-        log.info("Found {} villages to process", villages.size());
+        log.debug("Found {} villages to process", villages.size());
 
         // Generate connection points for each village
         for (Village village : villages) {

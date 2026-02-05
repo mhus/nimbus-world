@@ -31,7 +31,7 @@ public class BiomeComposer {
      * @return Result with placed biomes and generated HexGrids
      */
     public BiomePlacementResult compose(HexComposition prepared, String worldId, long seed) {
-        log.info("Starting biome composition with seed: {}", seed);
+        log.debug("Starting biome composition with seed: {}", seed);
 
         CompositionContext context = new CompositionContext(seed);
 
@@ -93,7 +93,7 @@ public class BiomeComposer {
                 }
 
                 success = true;
-                log.info("Successfully placed all {} biomes ({} normal, {} enclosed)",
+                log.debug("Successfully placed all {} biomes ({} normal, {} enclosed)",
                     prepared.getBiomes().size(), normalBiomes.size(), enclosedBiomes.size());
 
             } catch (BiomePlacementException e) {
@@ -591,7 +591,7 @@ public class BiomeComposer {
             }
         }
 
-        log.info("Generated {} HexGrids from {} biomes", hexGrids.size(), placedBiomes.size());
+        log.debug("Generated {} HexGrids from {} biomes", hexGrids.size(), placedBiomes.size());
         return hexGrids;
     }
 

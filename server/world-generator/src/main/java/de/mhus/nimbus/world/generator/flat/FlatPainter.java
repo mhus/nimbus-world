@@ -2,7 +2,9 @@ package de.mhus.nimbus.world.generator.flat;
 
 import de.mhus.nimbus.world.shared.generator.WFlat;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class FlatPainter {
 
     private static final int DO_NOT_SET = -1;
@@ -269,8 +271,8 @@ public class FlatPainter {
 
         // Log statistics
         if (attemptedCount > 0) {
-            System.out.println(String.format("[FlatPainter.soften] Attempted: %d, Changed: %d (%.1f%%)",
-                attemptedCount, changedCount, 100.0 * changedCount / attemptedCount));
+            log.debug("Attempted: {}, Changed: {} ({}%)",
+                attemptedCount, changedCount, 100.0 * changedCount / attemptedCount);
         }
     }
 

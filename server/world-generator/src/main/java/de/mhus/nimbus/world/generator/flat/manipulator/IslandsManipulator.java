@@ -94,7 +94,7 @@ public class IslandsManipulator implements FlatManipulator {
         int baseLevel = underwater ? oceanLevel - mainHeight : oceanLevel;
         int targetHeight = underwater ? oceanLevel - 5 : oceanLevel + mainHeight;
 
-        log.info("Island generation: center=({},{}), size=({},{}), oceanLevel={}, mainHeight={} (relative), baseLevel={}, targetHeight={}, mainSize={}, underwater={}",
+        log.debug("Island generation: center=({},{}), size=({},{}), oceanLevel={}, mainHeight={} (relative), baseLevel={}, targetHeight={}, mainSize={}, underwater={}",
                 centerX, centerZ, sizeX, sizeZ, oceanLevel, mainHeight, baseLevel, targetHeight, mainSize, underwater);
 
         // Draw main island
@@ -145,7 +145,7 @@ public class IslandsManipulator implements FlatManipulator {
             }
         }
 
-        log.info("Islands manipulation completed: mainSize={}, mainHeight={}, smallIslands={}, underwater={}",
+        log.debug("Islands manipulation completed: mainSize={}, mainHeight={}, smallIslands={}, underwater={}",
                 mainSize, mainHeight, smallCount, underwater);
     }
 
@@ -191,7 +191,7 @@ public class IslandsManipulator implements FlatManipulator {
             }
         }
 
-        log.info("Island drawn: center=({},{}), radius={}, baseLevel={}, peakHeight={}, pixelsDrawn={}",
+        log.debug("Island drawn: center=({},{}), radius={}, baseLevel={}, peakHeight={}, pixelsDrawn={}",
                 centerX, centerZ, radius, baseLevel, peakHeight, pixelsDrawn);
     }
 

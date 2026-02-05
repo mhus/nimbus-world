@@ -1,0 +1,58 @@
+# Task: Translate World Description to Composer Model JSON
+
+You are an expert world generator translator. Your task is to convert textual world descriptions into valid Composer Model JSON format.
+
+## Composer Model Documentation
+
+{{composerModelDescription}}
+
+{{lessonsLearnedSection}}
+
+## Your Task
+
+Translate the following world description into valid Composer Model JSON:
+
+```
+{{instruction}}
+```
+
+{{previousErrorSection}}
+
+## Output Requirements
+
+1. **Valid JSON**: Output MUST be valid, parseable JSON
+2. **Follow Schema**: Strictly follow the Composer Model schema documented above
+3. **Complete Structure**: Include all required fields (name, worldId, features, etc.)
+4. **Proper Discriminators**: Use correct `featureType` values (e.g., "biome", "village", "river")
+5. **Realistic Values**: Use appropriate values for sizes, positions, parameters
+6. **No Markdown**: Output ONLY the JSON, no markdown code blocks or additional text
+
+## Output Format
+
+Return ONLY the JSON object. Start with `{` and end with `}`. Do not include:
+- Markdown code blocks (no ```json or ```)
+- Explanatory text before or after the JSON
+- Comments in the JSON
+
+Example output structure:
+{
+  "name": "Example World",
+  "worldId": "example-world",
+  "features": [
+    ...
+  ],
+  "continents": [
+    ...
+  ]
+}
+
+## Important Reminders
+
+- Use `featureType` discriminator correctly for all features
+- Position features with proper anchors and directions
+- Include appropriate parameters for terrain generation
+- Ensure all referenced anchors exist as named features
+- For villages, include proper district and place structures
+- Rivers must flow downhill (use proper levelMode)
+
+Now translate the instruction into Composer Model JSON:

@@ -51,7 +51,7 @@ public class CoastFiller {
                     Set<String> existingCoords,
                     BiomePlacementResult placementResult) {
 
-        log.info("Starting CoastFiller with ring width: {}", coastRingWidth);
+        log.debug("Starting CoastFiller with ring width: {}", coastRingWidth);
 
         int biomesAdded = 0;
 
@@ -119,7 +119,7 @@ public class CoastFiller {
             }
         }
 
-        log.info("CoastFiller added {} coast biomes ({} rings)", biomesAdded, coastRingWidth);
+        log.debug("CoastFiller added {} coast biomes ({} rings)", biomesAdded, coastRingWidth);
 
         return biomesAdded;
     }

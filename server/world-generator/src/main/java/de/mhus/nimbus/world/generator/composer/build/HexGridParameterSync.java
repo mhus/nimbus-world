@@ -37,7 +37,7 @@ public class HexGridParameterSync {
     public int syncParametersToWHexGrids(HexComposition composition,
                                          BiomePlacementResult placementResult,
                                          List<WHexGrid> wHexGrids) {
-        log.info("Starting parameter sync from FeatureHexGrids to WHexGrids");
+        log.debug("Starting parameter sync from FeatureHexGrids to WHexGrids");
 
         // Build index of WHexGrids by coordinate for fast lookup
         Map<String, WHexGrid> wHexGridIndex = new HashMap<>();
@@ -79,7 +79,7 @@ public class HexGridParameterSync {
             }
         }
 
-        log.info("Parameter sync complete: updated {} WHexGrids", updatedCount);
+        log.debug("Parameter sync complete: updated {} WHexGrids", updatedCount);
         return updatedCount;
     }
 

@@ -43,7 +43,7 @@ public class OceanFiller {
                     Set<String> existingCoords,
                     BiomePlacementResult placementResult) {
 
-        log.info("Starting OceanFiller - ensuring all regions are connected");
+        log.debug("Starting OceanFiller - ensuring all regions are connected");
 
         int biomesAdded = 0;
 
@@ -60,7 +60,7 @@ public class OceanFiller {
             }
         }
 
-        log.info("Found {} connected grids to process", connectedCoords.size());
+        log.debug("Found {} connected grids to process", connectedCoords.size());
 
         if (connectedCoords.isEmpty()) {
             log.info("No connected grids to process");
@@ -70,10 +70,10 @@ public class OceanFiller {
         // Step 2: FloodFill to find all connected regions
         List<Set<String>> groups = groupConnectedRegions(connectedCoords);
 
-        log.info("Found {} connected groups", groups.size());
+        log.debug("Found {} connected groups", groups.size());
 
         if (groups.size() <= 1) {
-            log.info("All terrain is already connected");
+            log.debug("All terrain is already connected");
             return 0;
         }
 
@@ -83,7 +83,7 @@ public class OceanFiller {
             Set<String> group = groups.get(i);
             HexVector2 center = findGroupCenter(group);
             groupCenters.add(center);
-            log.info("Group {} has {} grids, center: {}", i + 1, group.size(), TypeUtil.toStringHexCoord(center));
+            log.debug("Group {} has {} grids, center: {}", i + 1, group.size(), TypeUtil.toStringHexCoord(center));
         }
 
         // Step 4: Connect all groups with each other (fully meshed topology)
@@ -95,7 +95,7 @@ public class OceanFiller {
                 HexVector2 centerA = groupCenters.get(i);
                 HexVector2 centerB = groupCenters.get(j);
 
-                log.info("Creating ocean line from group {} ({}) to group {} ({})",
+                log.debug("Creating ocean line from group {} ({}) to group {} ({})",
                     i + 1, TypeUtil.toStringHexCoord(centerA), j + 1, TypeUtil.toStringHexCoord(centerB));
 
                 // Create straight line between centers
@@ -140,14 +140,14 @@ public class OceanFiller {
                     biomesAdded++;
                     connectionId++;
 
-                    log.info("Created ocean connection with {} grids", linePath.size());
+                    log.debug("Created ocean connection with {} grids", linePath.size());
                 } else {
-                    log.info("No ocean connection needed (regions already connected)");
+                    log.debug("No ocean connection needed (regions already connected)");
                 }
             }
         }
 
-        log.info("OceanFiller added {} ocean connection biomes", biomesAdded);
+        log.debug("OceanFiller added {} ocean connection biomes", biomesAdded);
 
         return biomesAdded;
     }
@@ -394,7 +394,7 @@ public class OceanFiller {
         log.debug("Found {} unfilled grids that need ocean filler", unfilledCoords.size());
 
         if (unfilledCoords.isEmpty()) {
-            log.info("All flow grids are already filled");
+            log.debug("All flow grids are already filled");
             return 0;
         }
 

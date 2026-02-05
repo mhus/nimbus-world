@@ -78,7 +78,7 @@ public class RoadBuilder extends HexGridBuilder {
         WFlat flat = context.getFlat();
         WHexGrid hexGrid = context.getHexGrid();
 
-        log.info("Building roads for flat: {}", flat.getFlatId());
+        log.debug("Building roads for flat: {}", flat.getFlatId());
 
         // Clear all existing bridge extra blocks before building roads
         clearBridgeExtraBlocks(flat);

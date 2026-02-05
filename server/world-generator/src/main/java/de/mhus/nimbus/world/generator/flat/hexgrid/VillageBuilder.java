@@ -40,7 +40,7 @@ public class VillageBuilder extends HexGridBuilder {
         // Get actual hexGridSize from world context
         int hexGridSize = context.getHexGridSize();
 
-        log.info("Building village for flat: {} with hexGridSize: {}", flat.getFlatId(), hexGridSize);
+        log.debug("Building village for flat: {} with hexGridSize: {}", flat.getFlatId(), hexGridSize);
 
         // Get village parameter from hex grid
         String villageParam = hexGrid.getParameters() != null ?
@@ -55,7 +55,7 @@ public class VillageBuilder extends HexGridBuilder {
             // Parse village configuration
             VillageGridConfig config = objectMapper.readValue(villageParam, VillageGridConfig.class);
 
-            log.info("Parsed village config for '{}' district '{}': {} places, {} streets",
+            log.debug("Parsed village config for '{}' district '{}': {} places, {} streets",
                 config.getVillageName(), config.getDistrictName(),
                 config.getPlaces() != null ? config.getPlaces().size() : 0,
                 config.getStreets() != null ? config.getStreets().size() : 0);
@@ -64,10 +64,10 @@ public class VillageBuilder extends HexGridBuilder {
             convertHexToCartesian(config, flat, hexGridSize);
 
             // Log all converted positions for debugging
-            log.info("=== SLOT_POSITIONS: District '{}' with {} places (hexGridSize={}) ===",
+            log.debug("=== SLOT_POSITIONS: District '{}' with {} places (hexGridSize={}) ===",
                 config.getDistrictName(), config.getPlaces().size(), hexGridSize);
             for (VillageGridConfig.PlacedPlaceConfig place : config.getPlaces()) {
-                log.info("SLOT_POSITION: district='{}' name='{}' type='{}' hex=<{};{}> local=({},{}) divider={}",
+                log.debug("SLOT_POSITION: district='{}' name='{}' type='{}' hex=<{};{}> local=({},{}) divider={}",
                     config.getDistrictName(), place.getName(), place.getType(),
                     place.getHexQ(), place.getHexR(),
                     place.getLocalX(), place.getLocalZ(),
@@ -100,7 +100,7 @@ public class VillageBuilder extends HexGridBuilder {
                 drawDebugLabels(flat, config);
             }
 
-            log.info("Village district '{}' completed", config.getDistrictName());
+            log.debug("Village district '{}' completed", config.getDistrictName());
 
         } catch (Exception e) {
             log.error("Failed to build village for flat: {}", flat.getFlatId(), e);
@@ -135,7 +135,7 @@ public class VillageBuilder extends HexGridBuilder {
         int steps = (int) Math.ceil(distance);
 
         // Log street segment for debugging
-        log.info("STREET_SEGMENT: from=({},{}) to=({},{}) distance={} type='{}'",
+        log.debug("STREET_SEGMENT: from=({},{}) to=({},{}) distance={} type='{}'",
             street.getFromX(), street.getFromZ(),
             street.getToX(), street.getToZ(),
             (int)distance, street.getType());
@@ -580,7 +580,7 @@ public class VillageBuilder extends HexGridBuilder {
             return;
         }
 
-        log.info("Converting {} places from hex to cartesian coordinates (hexGridSize: {}, flatSize: {}x{})",
+        log.debug("Converting {} places from hex to cartesian coordinates (hexGridSize: {}, flatSize: {}x{})",
             config.getPlaces().size(), hexGridSize, flat.getSizeX(), flat.getSizeZ());
 
         for (VillageGridConfig.PlacedPlaceConfig place : config.getPlaces()) {
@@ -620,7 +620,7 @@ public class VillageBuilder extends HexGridBuilder {
             return;
         }
 
-        log.info("Drawing {} debug markers for village district '{}'",
+        log.debug("Drawing {} debug markers for village district '{}'",
             config.getPlaces().size(), config.getDistrictName());
 
         for (VillageGridConfig.PlacedPlaceConfig place : config.getPlaces()) {
@@ -645,7 +645,7 @@ public class VillageBuilder extends HexGridBuilder {
                 place.getName(), place.getType(), x, z);
         }
 
-        log.info("Debug markers completed");
+        log.debug("Debug markers completed");
     }
 
     /**
@@ -679,7 +679,7 @@ public class VillageBuilder extends HexGridBuilder {
             log.debug("Debug label '{}' at [{},{}]", label, startX, startZ);
         }
 
-        log.info("Debug labels completed");
+        log.debug("Debug labels completed");
     }
 
     /**

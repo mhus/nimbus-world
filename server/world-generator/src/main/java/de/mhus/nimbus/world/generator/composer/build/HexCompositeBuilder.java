@@ -272,7 +272,7 @@ public class HexCompositeBuilder {
             }
 
             // Step 4c: Generate external connection points for villages
-            log.info("Step 4c: Generating external connection points for villages");
+            log.debug("Step 4c: Generating external connection points for villages");
             VillageExternalConnectionGenerator villageConnGenerator = new VillageExternalConnectionGenerator();
             VillageExternalConnectionGenerator.GenerationResult villageConnResult =
                     villageConnGenerator.generateExternalConnections(composition, placementResult);
@@ -309,7 +309,7 @@ public class HexCompositeBuilder {
             resultBuilder.totalPoints(pointResult.getComposedPoints());
 
             // Step 6: Compose flows (roads, rivers, walls)
-            log.info("Step 6: Composing flows");
+            log.debug("Step 6: Composing flows");
             FlowComposer flowComposer = new FlowComposer();
             FlowComposer.FlowCompositionResult flowResult = flowComposer.composeFlows(
                 composition, placementResult);
@@ -448,7 +448,7 @@ public class HexCompositeBuilder {
             HexGridParameterSync parameterSync = new HexGridParameterSync();
             int syncedCount = parameterSync.syncParametersToWHexGrids(
                 composition, placementResult, placementResult.getHexGrids());
-            log.info("Synced parameters to {} WHexGrids", syncedCount);
+            log.debug("Synced parameters to {} WHexGrids", syncedCount);
 
             // Step 9: Generate WHexGrids (optional, only if repository provided)
             if (generateWHexGrids && repository != null) {

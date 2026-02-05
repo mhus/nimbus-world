@@ -1,0 +1,9 @@
+Create a fantasy world called "Test Valley" with the following features:
+
+1. A central mountain range called "Dragon Peaks" positioned at the origin, medium size and circular shape
+2. A plains region called "Green Fields" to the west of the mountains, large size
+3. A forest region called "Dark Woods" to the east of the mountains, large size
+4. A river called "Silver Stream" that starts in the mountains and flows west into the plains
+5. A small village called "Riverside" located in the plains near where the river ends
+
+The world ID should be "test-valley-001".

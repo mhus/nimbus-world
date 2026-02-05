@@ -212,7 +212,7 @@ public class HexGridRoadConfigurator {
             GridIndex gridIndex = GridIndex.build(composition, placementResult);
             totalGrids = gridIndex.size();
 
-            log.info("Built GridIndex with {} Area grids (including Filler-Biomes)", totalGrids);
+            log.debug("Built GridIndex with {} Area grids (including Filler-Biomes)", totalGrids);
 
             // Iterate over all Area grids and assemble RoadConfigParts
             for (String coordKey : gridIndex.keySet()) {

@@ -41,7 +41,7 @@ public class MountainFiller {
                     Set<String> existingCoords,
                     BiomePlacementResult placementResult) {
 
-        log.info("Starting MountainFiller");
+        log.debug("Starting MountainFiller");
 
         int biomesAdded = 0;
 
@@ -50,7 +50,7 @@ public class MountainFiller {
             .filter(pb -> pb.getBiome() instanceof MountainBiome)
             .collect(Collectors.toList());
 
-        log.info("Found {} mountain biomes to process", mountainBiomes.size());
+        log.debug("Found {} mountain biomes to process", mountainBiomes.size());
 
         // Process each mountain biome
         for (PlacedBiome placedBiome : mountainBiomes) {
@@ -133,7 +133,7 @@ public class MountainFiller {
             }
         }
 
-        log.info("MountainFiller added {} slope biomes", biomesAdded);
+        log.debug("MountainFiller added {} slope biomes", biomesAdded);
 
         return biomesAdded;
     }

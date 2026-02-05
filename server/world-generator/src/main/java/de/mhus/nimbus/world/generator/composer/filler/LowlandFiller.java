@@ -31,12 +31,12 @@ public class LowlandFiller {
                     Set<String> existingCoords,
                     BiomePlacementResult placementResult) {
 
-        log.info("Starting LowlandFiller (stub - not yet implemented)");
+        log.debug("Starting LowlandFiller (stub - not yet implemented)");
 
         // TODO: Implement lowland filling logic
         // For now, do nothing
 
-        log.info("LowlandFiller: 0 biomes added (stub)");
+        log.debug("LowlandFiller: 0 biomes added (stub)");
 
         return 0;
     }

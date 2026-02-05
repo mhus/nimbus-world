@@ -41,11 +41,11 @@ public class ContinentFiller {
                     Set<String> existingCoords,
                     BiomePlacementResult placementResult) {
 
-        log.info("Starting ContinentFiller");
+        log.debug("Starting ContinentFiller");
 
         // If no continents defined, skip filling
         if (composition.getContinents() == null || composition.getContinents().isEmpty()) {
-            log.info("No continents defined, skipping continent filling");
+            log.debug("No continents defined, skipping continent filling");
             return 0;
         }
 
@@ -53,7 +53,7 @@ public class ContinentFiller {
         Map<String, Continent> continentMap = new HashMap<>();
         for (Continent continent : composition.getContinents()) {
             continentMap.put(continent.getContinentId(), continent);
-            log.info("Continent: {} (type={})",
+            log.debug("Continent: {} (type={})",
                 continent.getContinentId(), continent.getBiomeType());
         }
 
@@ -77,11 +77,11 @@ public class ContinentFiller {
             }
 
             if (allContinentCoords.isEmpty()) {
-                log.info("No land biomes found for continent '{}'", continentId);
+                log.debug("No land biomes found for continent '{}'", continentId);
                 continue;
             }
 
-            log.info("Continent '{}': computing hull for {} biome grids", continentId, allContinentCoords.size());
+            log.debug("Continent '{}': computing hull for {} biome grids", continentId, allContinentCoords.size());
 
             // Calculate center of all coordinates
             int centerQ = 0, centerR = 0;
@@ -92,7 +92,7 @@ public class ContinentFiller {
             centerQ /= allContinentCoords.size();
             centerR /= allContinentCoords.size();
 
-            log.info("Continent center: q={}, r={}", centerQ, centerR);
+            log.debug("Continent center: q={}, r={}", centerQ, centerR);
 
             // Find outermost points in 6 directions (every 60 degrees)
             // Hex directions: NE (30°), E (90°), SE (150°), SW (210°), W (270°), NW (330°)
@@ -129,7 +129,7 @@ public class ContinentFiller {
                 }
             }
 
-            log.info("Found {} boundary points for continent '{}'", boundaryPoints.size(), continentId);
+            log.debug("Found {} boundary points for continent '{}'", boundaryPoints.size(), continentId);
 
             // Calculate bounding box to limit search area
             int minQ = Integer.MAX_VALUE, maxQ = Integer.MIN_VALUE;
@@ -163,7 +163,7 @@ public class ContinentFiller {
 
             if (!fills.isEmpty()) {
                 continentFills.put(continentId, fills);
-                log.info("Continent '{}': filled {} grids within hull", continentId, fills.size());
+                log.debug("Continent '{}': filled {} grids within hull", continentId, fills.size());
             }
         }
 
@@ -194,11 +194,11 @@ public class ContinentFiller {
 
             placementResult.getPlacedBiomes().add(placedFiller);
 
-            log.info("Filled {} grids for continent '{}'", coords.size(), continentId);
+            log.debug("Filled {} grids for continent '{}'", coords.size(), continentId);
             totalFilled += coords.size();
         }
 
-        log.info("ContinentFiller: added {} grids total", totalFilled);
+        log.debug("ContinentFiller: added {} grids total", totalFilled);
         return totalFilled;
     }
 

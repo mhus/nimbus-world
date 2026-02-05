@@ -35,7 +35,7 @@ public class StructureComposer {
      */
     public StructurePlacementResult composeStructures(ComposeContext context,
                                                       BiomePlacementResult placementResult) {
-        log.info("Starting structure composition");
+        log.debug("Starting structure composition");
 
         HexComposition composition = context.getComposition();
 
@@ -55,7 +55,7 @@ public class StructureComposer {
                 if (placed != null) {
                     placedStructures.add(placed);
                     placedCount++;
-                    log.info("Placed village '{}' at center {} with {} grids",
+                    log.debug("Placed village '{}' at center {} with {} grids",
                         village.getName(), placed.getCenter(), placed.getGrids().size());
                 } else {
                     failedCount++;
@@ -73,7 +73,7 @@ public class StructureComposer {
 
         boolean success = failedCount == 0;
 
-        log.info("Structure composition complete: {}/{} structures placed ({} failed)",
+        log.debug("Structure composition complete: {}/{} structures placed ({} failed)",
             placedCount, totalStructures, failedCount);
 
         return StructurePlacementResult.builder()
@@ -99,7 +99,7 @@ public class StructureComposer {
      * @return PlacedStructure or null if placement failed
      */
     private PlacedStructure placeVillage(Village village, BiomePlacementResult placementResult, ComposeContext context) {
-        log.info("Placing village '{}' with district-based design", village.getName());
+        log.debug("Placing village '{}' with district-based design", village.getName());
 
         // Get hexGridSize from world
         int hexGridSize = context.getWorld() != null ?
@@ -112,18 +112,18 @@ public class StructureComposer {
             return null;
         }
 
-        log.info("Village '{}' anchor position: [{},{}]", village.getName(), center.getQ(), center.getR());
+        log.debug("Village '{}' anchor position: [{},{}]", village.getName(), center.getQ(), center.getR());
 
-        log.info("Village '{}' has {} districts from config",
+        log.debug("Village '{}' has {} districts from config",
             village.getName(), village.getDistricts() != null ? village.getDistricts().size() : 0);
 
         // IMPORTANT: Configure the village's HexGrids
         // This will run VillageDesigner and set g_village parameters
         // Pass empty list as coordinates are determined by districts
-        log.info("Calling village.configureHexGrids() for '{}' with hexGridSize: {}", village.getName(), hexGridSize);
+        log.debug("Calling village.configureHexGrids() for '{}' with hexGridSize: {}", village.getName(), hexGridSize);
         village.configureHexGrids(new ArrayList<>(), hexGridSize);
 
-        log.info("Village '{}' configured {} HexGrids", village.getName(),
+        log.debug("Village '{}' configured {} HexGrids", village.getName(),
             village.getHexGrids() != null ? village.getHexGrids().size() : 0);
 
         if (village.getHexGrids() == null || village.getHexGrids().isEmpty()) {
@@ -175,7 +175,7 @@ public class StructureComposer {
                 absolutePos.getQ(), absolutePos.getR());
         }
 
-        log.info("Village '{}' created {} PlacedBiomes", village.getName(), grids.size());
+        log.debug("Village '{}' created {} PlacedBiomes", village.getName(), grids.size());
 
         // Create PlacedStructure result
         PlacedStructure placedStructure = PlacedStructure.builder()

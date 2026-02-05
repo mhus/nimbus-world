@@ -115,7 +115,7 @@ public class MountainBiome extends Biome {
         getParameters().put("g_offset", String.valueOf(height.getLandOffset()));
         getParameters().put("g_frequency", String.valueOf(height.getFrequency()));
 
-        log.info("Applied MountainBiome defaults for '{}': height={}, landLevel={}, landOffset={}",
+        log.debug("Applied MountainBiome defaults for '{}': height={}, landLevel={}, landOffset={}",
             getName(), height, height.getAboveSeaLevel(), height.getLandOffset());
     }
 
@@ -174,7 +174,7 @@ public class MountainBiome extends Biome {
             }
         }
 
-        log.info("Configured {} mountain grids with ridge parameters (ridgeLevel={})",
+        log.debug("Configured {} mountain grids with ridge parameters (ridgeLevel={})",
             getHexGrids().size(), ridgeLevel);
     }
 

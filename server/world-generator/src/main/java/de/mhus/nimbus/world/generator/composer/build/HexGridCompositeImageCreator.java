@@ -135,7 +135,7 @@ public class HexGridCompositeImageCreator {
             int imageWidth = (int) Math.ceil(cartBounds.maxX - cartBounds.minX);
             int imageHeight = (int) Math.ceil(cartBounds.maxZ - cartBounds.minZ);
 
-            log.info("HEX composite cartesian bounds: x=[{},{}] z=[{},{}], image size={}x{}",
+            log.debug("HEX composite cartesian bounds: x=[{},{}] z=[{},{}], image size={}x{}",
                 (int)cartBounds.minX, (int)cartBounds.maxX, (int)cartBounds.minZ, (int)cartBounds.maxZ,
                 imageWidth, imageHeight);
 
@@ -170,9 +170,9 @@ public class HexGridCompositeImageCreator {
                 levelFile = saveImage(levelImage, outputDirectory, imageName + "-level.png");
                 materialFile = saveImage(materialImage, outputDirectory, imageName + "-material.png");
 
-                log.info("Saved composite level image: {} ({}x{} pixels)",
+                log.debug("Saved composite level image: {} ({}x{} pixels)",
                     levelFile.getAbsolutePath(), imageWidth, imageHeight);
-                log.info("Saved composite material image: {} ({}x{} pixels)",
+                log.debug("Saved composite material image: {} ({}x{} pixels)",
                     materialFile.getAbsolutePath(), imageWidth, imageHeight);
             }
 

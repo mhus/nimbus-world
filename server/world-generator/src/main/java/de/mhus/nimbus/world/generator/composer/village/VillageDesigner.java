@@ -69,7 +69,7 @@ public class VillageDesigner {
      * @return VillageDesignResult with positioned districts and buildings
      */
     public VillageDesignResult design(Village village, int hexGridSize) {
-        log.info("Designing village: {} (style: {}, hexGridSize: {})",
+        log.debug("Designing village: {} (style: {}, hexGridSize: {})",
             village.getName(), village.getStyle(), hexGridSize);
 
         VillageDesignResult result = new VillageDesignResult();
@@ -112,7 +112,7 @@ public class VillageDesigner {
             }
 
             result.setSuccess(true);
-            log.info("Village design completed: {} districts, {} total places",
+            log.debug("Village design completed: {} districts, {} total places",
                 districtGrids.size(),
                 districtGrids.stream().mapToInt(d -> d.getPlacedPlaces().size()).sum());
 
@@ -541,7 +541,7 @@ public class VillageDesigner {
                     districtConnectionPoints.add(cp);
                     allConnectionPoints.add(cp);
 
-                    log.info("CONNECTION_POINT: district='{}' name='{}' hex=<{};{}> local=({},{})",
+                    log.debug("CONNECTION_POINT: district='{}' name='{}' hex=<{};{}> local=({},{})",
                         districtGrid.getName(), placedPlace.getPlace().getName(),
                         placedPlace.getHexQ(), placedPlace.getHexR(),
                         placedPlace.getLocalX(), placedPlace.getLocalZ());
@@ -549,7 +549,7 @@ public class VillageDesigner {
             }
 
             connectionPointsByDistrict.put(districtGrid.getGridPosition(), districtConnectionPoints);
-            log.info("District '{}' at [{},{}] has {} connection point(s)",
+            log.debug("District '{}' at [{},{}] has {} connection point(s)",
                 districtGrid.getName(),
                 districtGrid.getGridPosition().getQ(),
                 districtGrid.getGridPosition().getR(),
@@ -785,7 +785,7 @@ public class VillageDesigner {
             connected.add(closestUnconnected);
         }
 
-        log.info("District '{}': Created {} paths connecting {} connection points",
+        log.debug("District '{}': Created {} paths connecting {} connection points",
                 districtGrid.getName(), pathsCreated, connectionCoords.size());
     }
 
@@ -866,7 +866,7 @@ public class VillageDesigner {
             linkCrossDistrictNeighbors(coord, hexGraph, hexGridSize);
         }
 
-        log.info("Built hex graph with {} coordinates", hexGraph.size());
+        log.debug("Built hex graph with {} coordinates", hexGraph.size());
         return hexGraph;
     }
 
@@ -1337,7 +1337,7 @@ public class VillageDesigner {
         double targetFillRate = district.getFillRate() != null ? district.getFillRate() : 0.75;
         double currentOccupancy = (double) usedSlots / availableSlots;
 
-        log.info("District '{}': {}/{} slots used ({}%), target: {}%",
+        log.debug("District '{}': {}/{} slots used ({}%), target: {}%",
             district.getName(), usedSlots, availableSlots,
             String.format("%.1f", currentOccupancy * 100),
             String.format("%.1f", targetFillRate * 100));
@@ -1359,7 +1359,7 @@ public class VillageDesigner {
             return;
         }
 
-        log.info("District '{}': Will fill {} additional slots (target: {}/{} = {}%)",
+        log.debug("District '{}': Will fill {} additional slots (target: {}/{} = {}%)",
             district.getName(), slotsToFill, targetSlots, availableSlots,
             String.format("%.1f", targetFillRate * 100));
 
@@ -1405,7 +1405,7 @@ public class VillageDesigner {
             ));
         }
 
-        log.info("Collected {} empty slot candidates for district '{}'", candidates.size(), district.getName());
+        log.debug("Collected {} empty slot candidates for district '{}'", candidates.size(), district.getName());
 
         // Sort candidates by distance to street (nearest first)
         candidates.sort(Comparator.comparingDouble(EmptySlotCandidate::getDistanceToStreet));
@@ -1478,7 +1478,7 @@ public class VillageDesigner {
                 candidate.isNearStreet());
         }
 
-        log.info("Area filling completed for district '{}': filled {} slots ({} buildings, {} free places)",
+        log.debug("Area filling completed for district '{}': filled {} slots ({} buildings, {} free places)",
             district.getName(), filledCount, buildingCount, freeCount);
 
         // Step 3b: Assign buildings to newly created BuildingPlaces
