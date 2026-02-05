@@ -1,0 +1,564 @@
+{
+  "compositionId" : "e5c29438-aa84-4b91-8481-c9dbc8952526",
+  "name" : "small-village-world",
+  "title" : "Small Village World",
+  "worldId" : "test:world",
+  "features" : [ {
+    "featureType" : "plains-biome",
+    "featureId" : "2a674d1d-96c5-4597-bffb-929427cc4a8f",
+    "name" : "central-plains",
+    "title" : "Central Plains",
+    "status" : "PREPARED",
+    "enabled" : true,
+    "featureComposed" : {
+      "hexGrids" : [ {
+        "coordinate" : {
+          "q" : 0,
+          "r" : 0
+        },
+        "parameters" : {
+          "g_asl" : "10",
+          "g_roughness" : "0.3",
+          "g_offset" : "1",
+          "biomeName" : "central-plains",
+          "biome" : "mountain",
+          "g_builder" : "mountain"
+        },
+        "areas" : { },
+        "flowSegments" : [ ],
+        "roadConfigParts" : [ ],
+        "riverConfigParts" : [ ],
+        "wallConfigParts" : [ ],
+        "name" : "central-plains [0,0]",
+        "description" : "Part of PLAINS biome"
+      }, {
+        "coordinate" : {
+          "q" : -1,
+          "r" : 1
+        },
+        "parameters" : {
+          "g_asl" : "10",
+          "g_roughness" : "0.3",
+          "g_offset" : "1",
+          "biomeName" : "central-plains",
+          "biome" : "mountain",
+          "g_builder" : "mountain"
+        },
+        "areas" : { },
+        "flowSegments" : [ ],
+        "roadConfigParts" : [ ],
+        "riverConfigParts" : [ ],
+        "wallConfigParts" : [ ],
+        "name" : "central-plains [-1,1]",
+        "description" : "Part of PLAINS biome"
+      }, {
+        "coordinate" : {
+          "q" : 0,
+          "r" : 0
+        },
+        "parameters" : {
+          "g_asl" : "10",
+          "g_roughness" : "0.3",
+          "g_offset" : "1",
+          "biomeName" : "central-plains",
+          "biome" : "mountain",
+          "g_builder" : "mountain"
+        },
+        "areas" : { },
+        "flowSegments" : [ ],
+        "roadConfigParts" : [ ],
+        "riverConfigParts" : [ ],
+        "wallConfigParts" : [ ],
+        "name" : "central-plains [0,0]",
+        "description" : "Part of PLAINS biome"
+      } ]
+    },
+    "shape" : "CIRCLE",
+    "size" : "SMALL",
+    "positions" : [ {
+      "anchor" : "origin",
+      "priority" : 10
+    } ],
+    "areaComposed" : {
+      "calculatedSizeFrom" : 1,
+      "calculatedSizeTo" : 3,
+      "placedCenter" : {
+        "q" : 0,
+        "r" : 0
+      },
+      "assignedCoordinates" : [ {
+        "q" : 0,
+        "r" : 0
+      }, {
+        "q" : -1,
+        "r" : 1
+      }, {
+        "q" : 0,
+        "r" : 0
+      } ],
+      "preparedPositions" : [ {
+        "original" : {
+          "anchor" : "origin",
+          "priority" : 10
+        },
+        "direction" : null,
+        "directionAngle" : 0,
+        "distanceFrom" : 0,
+        "distanceTo" : 0,
+        "anchor" : "origin",
+        "priority" : 10
+      } ],
+      "sizeQ" : null,
+      "sizeR" : null,
+      "minQ" : null,
+      "maxQ" : null,
+      "minR" : null,
+      "maxR" : null
+    },
+    "type" : "PLAINS",
+    "parameters" : {
+      "g_asl" : "10",
+      "g_roughness" : "0.3",
+      "g_offset" : "1",
+      "g_builder" : "mountain"
+    },
+    "calculatedSizeFrom" : 1,
+    "calculatedSizeTo" : 3,
+    "preparedPositions" : [ {
+      "original" : {
+        "anchor" : "origin",
+        "priority" : 10
+      },
+      "direction" : null,
+      "directionAngle" : 0,
+      "distanceFrom" : 0,
+      "distanceTo" : 0,
+      "anchor" : "origin",
+      "priority" : 10
+    } ],
+    "assignedCoordinates" : [ {
+      "q" : 0,
+      "r" : 0
+    }, {
+      "q" : -1,
+      "r" : 1
+    }, {
+      "q" : 0,
+      "r" : 0
+    } ],
+    "placedCenter" : {
+      "q" : 0,
+      "r" : 0
+    },
+    "hexGrids" : [ {
+      "coordinate" : {
+        "q" : 0,
+        "r" : 0
+      },
+      "parameters" : {
+        "g_asl" : "10",
+        "g_roughness" : "0.3",
+        "g_offset" : "1",
+        "biomeName" : "central-plains",
+        "biome" : "mountain",
+        "g_builder" : "mountain"
+      },
+      "areas" : { },
+      "flowSegments" : [ ],
+      "roadConfigParts" : [ ],
+      "riverConfigParts" : [ ],
+      "wallConfigParts" : [ ],
+      "name" : "central-plains [0,0]",
+      "description" : "Part of PLAINS biome"
+    }, {
+      "coordinate" : {
+        "q" : -1,
+        "r" : 1
+      },
+      "parameters" : {
+        "g_asl" : "10",
+        "g_roughness" : "0.3",
+        "g_offset" : "1",
+        "biomeName" : "central-plains",
+        "biome" : "mountain",
+        "g_builder" : "mountain"
+      },
+      "areas" : { },
+      "flowSegments" : [ ],
+      "roadConfigParts" : [ ],
+      "riverConfigParts" : [ ],
+      "wallConfigParts" : [ ],
+      "name" : "central-plains [-1,1]",
+      "description" : "Part of PLAINS biome"
+    }, {
+      "coordinate" : {
+        "q" : 0,
+        "r" : 0
+      },
+      "parameters" : {
+        "g_asl" : "10",
+        "g_roughness" : "0.3",
+        "g_offset" : "1",
+        "biomeName" : "central-plains",
+        "biome" : "mountain",
+        "g_builder" : "mountain"
+      },
+      "areas" : { },
+      "flowSegments" : [ ],
+      "roadConfigParts" : [ ],
+      "riverConfigParts" : [ ],
+      "wallConfigParts" : [ ],
+      "name" : "central-plains [0,0]",
+      "description" : "Part of PLAINS biome"
+    } ]
+  }, {
+    "featureType" : "village",
+    "featureId" : "b32f02f0-ccff-4215-a085-19fee76fbc4f",
+    "name" : "test-village",
+    "title" : "Test Village",
+    "status" : "PREPARED",
+    "enabled" : true,
+    "featureComposed" : {
+      "hexGrids" : [ {
+        "coordinate" : {
+          "q" : -3,
+          "r" : 3
+        },
+        "parameters" : {
+          "districtName" : "market-district",
+          "structureName" : "test-village",
+          "g_village" : "{\"villageName\":\"test-village\",\"style\":\"medieval\",\"districtName\":\"market-district\",\"districtTitle\":\"Market District\",\"baseLevel\":95,\"places\":[{\"name\":\"marketplace\",\"type\":\"free\",\"hexQ\":0,\"hexR\":0,\"localX\":256,\"localZ\":256,\"relativePos\":{\"x\":0,\"z\":0},\"rotation\":0,\"divider\":3,\"kind\":\"PLAZA\",\"oversized\":false,\"connectionPoint\":false},{\"name\":\"tavern\",\"type\":\"building\",\"hexQ\":0,\"hexR\":-1,\"localX\":256,\"localZ\":86,\"relativePos\":{\"x\":0,\"z\":-170},\"rotation\":0,\"divider\":3,\"kind\":\"tavern\",\"oversized\":false,\"connectionPoint\":false},{\"name\":\"main-street\",\"type\":\"road\",\"hexQ\":1,\"hexR\":-1,\"localX\":403,\"localZ\":171,\"relativePos\":{\"x\":147,\"z\":-85},\"rotation\":0,\"divider\":3,\"kind\":\"STREET\",\"oversized\":false,\"connectionPoint\":true},{\"name\":\"filled-park-3\",\"type\":\"free\",\"hexQ\":1,\"hexR\":0,\"localX\":403,\"localZ\":341,\"rotation\":0,\"divider\":3,\"kind\":\"PARK\",\"oversized\":false,\"connectionPoint\":false},{\"name\":\"filled-park-4\",\"type\":\"free\",\"hexQ\":0,\"hexR\":1,\"localX\":256,\"localZ\":426,\"rotation\":0,\"divider\":3,\"kind\":\"PARK\",\"oversized\":false,\"connectionPoint\":false},{\"name\":\"filled-park-5\",\"type\":\"free\",\"hexQ\":-1,\"hexR\":1,\"localX\":109,\"localZ\":341,\"rotation\":0,\"divider\":3,\"kind\":\"PARK\",\"oversized\":false,\"connectionPoint\":false}],\"streets\":[]}",
+          "structure" : "village"
+        },
+        "areas" : { },
+        "flowSegments" : [ ],
+        "roadConfigParts" : [ ],
+        "riverConfigParts" : [ ],
+        "wallConfigParts" : [ ],
+        "name" : "test-village - market-district",
+        "description" : "District 'Market District' of test-village"
+      } ]
+    },
+    "shape" : "CIRCLE",
+    "size" : "SMALL",
+    "positions" : [ {
+      "direction" : "S",
+      "anchor" : "central-plains",
+      "priority" : 9,
+      "distanceFrom" : 0,
+      "distanceTo" : 1
+    } ],
+    "areaComposed" : {
+      "calculatedSizeFrom" : 1,
+      "calculatedSizeTo" : 3,
+      "placedCenter" : null,
+      "assignedCoordinates" : null,
+      "preparedPositions" : [ {
+        "original" : {
+          "direction" : "S",
+          "anchor" : "central-plains",
+          "priority" : 9,
+          "distanceFrom" : 0,
+          "distanceTo" : 1
+        },
+        "direction" : "S",
+        "directionAngle" : 150,
+        "distanceFrom" : 0,
+        "distanceTo" : 1,
+        "anchor" : "central-plains",
+        "priority" : 9
+      } ],
+      "sizeQ" : null,
+      "sizeR" : null,
+      "minQ" : null,
+      "maxQ" : null,
+      "minR" : null,
+      "maxR" : null
+    },
+    "style" : "medieval",
+    "districts" : [ {
+      "name" : "market-district",
+      "title" : "Market District",
+      "slots" : "MEDIUM",
+      "places" : [ {
+        "placeType" : "free",
+        "name" : "marketplace",
+        "connectionPoint" : false,
+        "kind" : "PLAZA"
+      }, {
+        "placeType" : "building",
+        "name" : "tavern",
+        "connectionPoint" : false,
+        "kind" : "tavern"
+      }, {
+        "placeType" : "road",
+        "name" : "main-street",
+        "connectionPoint" : true,
+        "kind" : "STREET"
+      } ]
+    } ],
+    "externalConnectionPoints" : [ {
+      "pointType" : "village-connection",
+      "featureId" : "test-village-n",
+      "name" : "test-village-n",
+      "title" : "Connection N",
+      "featureComposed" : {
+        "hexGrids" : [ ]
+      },
+      "precomposed" : true,
+      "pointComposed" : {
+        "gridCoordinate" : {
+          "q" : -3,
+          "r" : 2
+        },
+        "biome" : null,
+        "hexLocalPosition" : null,
+        "hexLocalEdgeVector" : {
+          "side" : "SOUTH_WEST",
+          "numerator" : 2,
+          "denominator" : 4
+        },
+        "preparedPositions" : null,
+        "placedCoordinate" : {
+          "q" : -3,
+          "r" : 2
+        },
+        "placedLx" : 0,
+        "placedLz" : 0,
+        "placedInBiome" : null
+      },
+      "villageId" : "test-village",
+      "externalDirection" : "N",
+      "neighborGridCoordinate" : {
+        "q" : -3,
+        "r" : 2
+      },
+      "placedInNeighborGrid" : true,
+      "gridDistance" : 1,
+      "hexLocalEdgeVector" : {
+        "side" : "SOUTH_WEST",
+        "numerator" : 2,
+        "denominator" : 4
+      },
+      "placedCoordinate" : {
+        "q" : -3,
+        "r" : 2
+      },
+      "gridCoordinate" : {
+        "q" : -3,
+        "r" : 2
+      },
+      "placedLx" : 0,
+      "placedLz" : 0,
+      "hexGrids" : [ ]
+    }, {
+      "pointType" : "village-connection",
+      "featureId" : "test-village-s",
+      "name" : "test-village-s",
+      "title" : "Connection S",
+      "featureComposed" : {
+        "hexGrids" : [ ]
+      },
+      "precomposed" : true,
+      "pointComposed" : {
+        "gridCoordinate" : {
+          "q" : -3,
+          "r" : 4
+        },
+        "biome" : null,
+        "hexLocalPosition" : null,
+        "hexLocalEdgeVector" : {
+          "side" : "NORTH_EAST",
+          "numerator" : 2,
+          "denominator" : 4
+        },
+        "preparedPositions" : null,
+        "placedCoordinate" : {
+          "q" : -3,
+          "r" : 4
+        },
+        "placedLx" : 0,
+        "placedLz" : 0,
+        "placedInBiome" : null
+      },
+      "villageId" : "test-village",
+      "externalDirection" : "S",
+      "neighborGridCoordinate" : {
+        "q" : -3,
+        "r" : 4
+      },
+      "placedInNeighborGrid" : true,
+      "gridDistance" : 1,
+      "hexLocalEdgeVector" : {
+        "side" : "NORTH_EAST",
+        "numerator" : 2,
+        "denominator" : 4
+      },
+      "placedCoordinate" : {
+        "q" : -3,
+        "r" : 4
+      },
+      "gridCoordinate" : {
+        "q" : -3,
+        "r" : 4
+      },
+      "placedLx" : 0,
+      "placedLz" : 0,
+      "hexGrids" : [ ]
+    } ],
+    "baseLevel" : 95,
+    "fillEmptySlots" : true,
+    "buildingTendency" : 0.7,
+    "fillRate" : 0.75,
+    "debug" : false,
+    "calculatedSizeFrom" : 1,
+    "calculatedSizeTo" : 3,
+    "preparedPositions" : [ {
+      "original" : {
+        "direction" : "S",
+        "anchor" : "central-plains",
+        "priority" : 9,
+        "distanceFrom" : 0,
+        "distanceTo" : 1
+      },
+      "direction" : "S",
+      "directionAngle" : 150,
+      "distanceFrom" : 0,
+      "distanceTo" : 1,
+      "anchor" : "central-plains",
+      "priority" : 9
+    } ],
+    "hexGrids" : [ {
+      "coordinate" : {
+        "q" : -3,
+        "r" : 3
+      },
+      "parameters" : {
+        "districtName" : "market-district",
+        "structureName" : "test-village",
+        "g_village" : "{\"villageName\":\"test-village\",\"style\":\"medieval\",\"districtName\":\"market-district\",\"districtTitle\":\"Market District\",\"baseLevel\":95,\"places\":[{\"name\":\"marketplace\",\"type\":\"free\",\"hexQ\":0,\"hexR\":0,\"localX\":256,\"localZ\":256,\"relativePos\":{\"x\":0,\"z\":0},\"rotation\":0,\"divider\":3,\"kind\":\"PLAZA\",\"oversized\":false,\"connectionPoint\":false},{\"name\":\"tavern\",\"type\":\"building\",\"hexQ\":0,\"hexR\":-1,\"localX\":256,\"localZ\":86,\"relativePos\":{\"x\":0,\"z\":-170},\"rotation\":0,\"divider\":3,\"kind\":\"tavern\",\"oversized\":false,\"connectionPoint\":false},{\"name\":\"main-street\",\"type\":\"road\",\"hexQ\":1,\"hexR\":-1,\"localX\":403,\"localZ\":171,\"relativePos\":{\"x\":147,\"z\":-85},\"rotation\":0,\"divider\":3,\"kind\":\"STREET\",\"oversized\":false,\"connectionPoint\":true},{\"name\":\"filled-park-3\",\"type\":\"free\",\"hexQ\":1,\"hexR\":0,\"localX\":403,\"localZ\":341,\"rotation\":0,\"divider\":3,\"kind\":\"PARK\",\"oversized\":false,\"connectionPoint\":false},{\"name\":\"filled-park-4\",\"type\":\"free\",\"hexQ\":0,\"hexR\":1,\"localX\":256,\"localZ\":426,\"rotation\":0,\"divider\":3,\"kind\":\"PARK\",\"oversized\":false,\"connectionPoint\":false},{\"name\":\"filled-park-5\",\"type\":\"free\",\"hexQ\":-1,\"hexR\":1,\"localX\":109,\"localZ\":341,\"rotation\":0,\"divider\":3,\"kind\":\"PARK\",\"oversized\":false,\"connectionPoint\":false}],\"streets\":[]}",
+        "structure" : "village"
+      },
+      "areas" : { },
+      "flowSegments" : [ ],
+      "roadConfigParts" : [ ],
+      "riverConfigParts" : [ ],
+      "wallConfigParts" : [ ],
+      "name" : "test-village - market-district",
+      "description" : "District 'Market District' of test-village"
+    } ]
+  }, {
+    "featureType" : "village-connection",
+    "featureId" : "test-village-n",
+    "name" : "test-village-n",
+    "title" : "Connection N",
+    "featureComposed" : {
+      "hexGrids" : [ ]
+    },
+    "precomposed" : true,
+    "pointComposed" : {
+      "gridCoordinate" : {
+        "q" : -3,
+        "r" : 2
+      },
+      "biome" : null,
+      "hexLocalPosition" : null,
+      "hexLocalEdgeVector" : {
+        "side" : "SOUTH_WEST",
+        "numerator" : 2,
+        "denominator" : 4
+      },
+      "preparedPositions" : null,
+      "placedCoordinate" : {
+        "q" : -3,
+        "r" : 2
+      },
+      "placedLx" : 0,
+      "placedLz" : 0,
+      "placedInBiome" : null
+    },
+    "villageId" : "test-village",
+    "externalDirection" : "N",
+    "neighborGridCoordinate" : {
+      "q" : -3,
+      "r" : 2
+    },
+    "placedInNeighborGrid" : true,
+    "gridDistance" : 1,
+    "hexLocalEdgeVector" : {
+      "side" : "SOUTH_WEST",
+      "numerator" : 2,
+      "denominator" : 4
+    },
+    "placedCoordinate" : {
+      "q" : -3,
+      "r" : 2
+    },
+    "gridCoordinate" : {
+      "q" : -3,
+      "r" : 2
+    },
+    "placedLx" : 0,
+    "placedLz" : 0,
+    "hexGrids" : [ ]
+  }, {
+    "featureType" : "village-connection",
+    "featureId" : "test-village-s",
+    "name" : "test-village-s",
+    "title" : "Connection S",
+    "featureComposed" : {
+      "hexGrids" : [ ]
+    },
+    "precomposed" : true,
+    "pointComposed" : {
+      "gridCoordinate" : {
+        "q" : -3,
+        "r" : 4
+      },
+      "biome" : null,
+      "hexLocalPosition" : null,
+      "hexLocalEdgeVector" : {
+        "side" : "NORTH_EAST",
+        "numerator" : 2,
+        "denominator" : 4
+      },
+      "preparedPositions" : null,
+      "placedCoordinate" : {
+        "q" : -3,
+        "r" : 4
+      },
+      "placedLx" : 0,
+      "placedLz" : 0,
+      "placedInBiome" : null
+    },
+    "villageId" : "test-village",
+    "externalDirection" : "S",
+    "neighborGridCoordinate" : {
+      "q" : -3,
+      "r" : 4
+    },
+    "placedInNeighborGrid" : true,
+    "gridDistance" : 1,
+    "hexLocalEdgeVector" : {
+      "side" : "NORTH_EAST",
+      "numerator" : 2,
+      "denominator" : 4
+    },
+    "placedCoordinate" : {
+      "q" : -3,
+      "r" : 4
+    },
+    "gridCoordinate" : {
+      "q" : -3,
+      "r" : 4
+    },
+    "placedLx" : 0,
+    "placedLz" : 0,
+    "hexGrids" : [ ]
+  } ],
+  "continents" : [ ],
+  "version" : "1.0.0",
+  "createdAt" : 1770306728.371936000,
+  "updatedAt" : 1770306728.372706000,
+  "description" : "A small world with a village in a plains biome."
+}

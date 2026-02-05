@@ -1,5 +1,6 @@
 package de.mhus.nimbus.world.generator.composer.build;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import de.mhus.nimbus.world.generator.composer.village.Town;
 import de.mhus.nimbus.world.generator.composer.area.Composite;
@@ -75,16 +76,19 @@ public class HexComposition implements BuildFeature {
         updatedAt = Instant.now();
     }
 
+    @JsonIgnore
     public int getTotalBiomeCount() {
         return features != null ? features.size() : 0;
     }
 
+    @JsonIgnore
     public String getDisplayTitle() {
         return title != null ? title : name;
     }
 
     // Helper methods to access features by type
 
+    @JsonIgnore
     public List<Biome> getBiomes() {
         if (features == null) {
             return new ArrayList<>();
@@ -95,6 +99,7 @@ public class HexComposition implements BuildFeature {
             .collect(Collectors.toList());
     }
 
+    @JsonIgnore
     public List<Village> getVillages() {
         if (features == null) {
             return new ArrayList<>();
@@ -105,6 +110,7 @@ public class HexComposition implements BuildFeature {
             .collect(Collectors.toList());
     }
 
+    @JsonIgnore
     public List<Town> getTowns() {
         if (features == null) {
             return new ArrayList<>();
@@ -115,6 +121,7 @@ public class HexComposition implements BuildFeature {
             .collect(Collectors.toList());
     }
 
+    @JsonIgnore
     public List<Composite> getComposites() {
         if (features == null) {
             return new ArrayList<>();
@@ -125,6 +132,7 @@ public class HexComposition implements BuildFeature {
             .collect(Collectors.toList());
     }
 
+    @JsonIgnore
     public List<Flow> getFlows() {
         if (features == null) {
             return new ArrayList<>();
@@ -135,6 +143,7 @@ public class HexComposition implements BuildFeature {
             .collect(Collectors.toList());
     }
 
+    @JsonIgnore
     public List<Road> getRoads() {
         if (features == null) {
             return new ArrayList<>();
@@ -145,6 +154,7 @@ public class HexComposition implements BuildFeature {
             .collect(Collectors.toList());
     }
 
+    @JsonIgnore
     public List<River> getRivers() {
         if (features == null) {
             return new ArrayList<>();
@@ -155,6 +165,7 @@ public class HexComposition implements BuildFeature {
             .collect(Collectors.toList());
     }
 
+    @JsonIgnore
     public List<Wall> getWalls() {
         if (features == null) {
             return new ArrayList<>();

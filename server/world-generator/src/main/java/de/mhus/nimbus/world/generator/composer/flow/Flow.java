@@ -1,5 +1,7 @@
 package de.mhus.nimbus.world.generator.composer.flow;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.world.generator.composer.feature.Feature;
@@ -21,6 +23,7 @@ import java.util.Map;
 @AllArgsConstructor
 @EqualsAndHashCode(callSuper = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown = true)
 public abstract class Flow extends Feature {
     private FlowType type;
 
@@ -111,6 +114,7 @@ public abstract class Flow extends Feature {
         private Point endPointFeature;
     }
 
+    @JsonIgnore
     public int getEffectiveWidthBlocks() {
         return widthBlocks != null ? widthBlocks : (width != null ? width.getFrom() : 2);
     }
@@ -119,6 +123,7 @@ public abstract class Flow extends Feature {
      * Gets the effective radius for closed loops.
      * Priority: sizeFrom/sizeTo > size enum > default (3)
      */
+    @JsonIgnore
     public int getEffectiveSizeFrom() {
         return sizeFrom != null ? sizeFrom : (size != null ? size.getFrom() : 3);
     }
@@ -127,6 +132,7 @@ public abstract class Flow extends Feature {
      * Gets the effective maximum radius for closed loops.
      * Priority: sizeFrom/sizeTo > size enum > default (3)
      */
+    @JsonIgnore
     public int getEffectiveSizeTo() {
         return sizeTo != null ? sizeTo : (size != null ? size.getTo() : 3);
     }

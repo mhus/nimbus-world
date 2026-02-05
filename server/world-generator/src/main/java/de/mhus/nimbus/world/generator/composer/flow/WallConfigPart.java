@@ -1,8 +1,10 @@
 package de.mhus.nimbus.world.generator.composer.flow;
 
 import de.mhus.nimbus.world.shared.world.WHexGrid.EDGE;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 /**
  * A part of a wall configuration that will be assembled into final wall={} JSON.
@@ -10,6 +12,8 @@ import lombok.Data;
  */
 @Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class WallConfigPart {
 
     /**

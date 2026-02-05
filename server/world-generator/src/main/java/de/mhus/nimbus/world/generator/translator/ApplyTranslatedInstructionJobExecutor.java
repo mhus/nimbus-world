@@ -100,6 +100,9 @@ public class ApplyTranslatedInstructionJobExecutor implements JobExecutor {
                 originalInstruction = loaded.originalInstruction;
                 documentName = loaded.documentName;
 
+                // Override worldId with the one from job context (defensive programming)
+                composition.setWorldId(job.getWorldId());
+
                 log.info("Loaded composition: name='{}', features={}",
                         composition.getName(),
                         composition.getFeatures() != null ? composition.getFeatures().size() : 0);
@@ -145,7 +148,8 @@ public class ApplyTranslatedInstructionJobExecutor implements JobExecutor {
                             .seed(compositionSeed)
                             .fillGaps(fillGaps)
                             .oceanBorderRings(oceanBorderRings)
-                            .generateWHexGrids(false)  // Don't generate WFlats, only model
+                            .generateWHexGrids(true)  // Generate hexGrid model data
+                            .repository(null)  // Don't save WHexGrid entities yet
                             .build()
                             .compose();
 
@@ -310,6 +314,7 @@ public class ApplyTranslatedInstructionJobExecutor implements JobExecutor {
 
         // Parse composition
         ObjectMapper compMapper = new ObjectMapper();
+        compMapper.registerModule(new com.fasterxml.jackson.datatype.jsr310.JavaTimeModule());
         compMapper.enable(JsonParser.Feature.ALLOW_COMMENTS);
         HexComposition composition = compMapper.readValue(compositionJson, HexComposition.class);
 

@@ -1,5 +1,7 @@
 package de.mhus.nimbus.world.generator.composer.area;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import de.mhus.nimbus.world.generator.composer.point.Direction;
 import lombok.AllArgsConstructor;
@@ -12,6 +14,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class RelativePosition {
 
     private Direction direction;
@@ -22,12 +25,14 @@ public class RelativePosition {
     private Integer distanceFrom;
     private Integer distanceTo;
 
+    @JsonIgnore
     public int getEffectiveDistanceFrom() {
         if (distanceFrom != null) return distanceFrom;
         if (distance != null) return distance.getFrom();
         return 0; // Default if both are null
     }
 
+    @JsonIgnore
     public int getEffectiveDistanceTo() {
         if (distanceTo != null) return distanceTo;
         if (distance != null) return distance.getTo();

@@ -1,0 +1,3 @@
+Create a minimal test world:
+
+- One small mountain biome at origin (SMALL size)

@@ -1,5 +1,7 @@
 package de.mhus.nimbus.world.generator.composer.area;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.world.generator.composer.flow.DeviationTendency;
@@ -18,6 +20,7 @@ import java.util.List;
 @SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonIgnoreProperties(ignoreUnknown = true)
 @EqualsAndHashCode(callSuper = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public abstract class Area extends Feature {
@@ -125,10 +128,12 @@ public abstract class Area extends Feature {
         private Integer maxR;   // Maximum R coordinate
     }
 
+    @JsonIgnore
     public int getEffectiveSizeFrom() {
         return sizeFrom != null ? sizeFrom : (size != null ? size.getFrom() : 1);
     }
 
+    @JsonIgnore
     public int getEffectiveSizeTo() {
         return sizeTo != null ? sizeTo : (size != null ? size.getTo() : 1);
     }
@@ -210,6 +215,7 @@ public abstract class Area extends Feature {
      *
      * @return Probability value (0.0 - 1.0)
      */
+    @JsonIgnore
     public double getEffectiveDeviationLeft() {
         // Priority 1: tendLeft enum (preferred)
         if (tendLeft != null) {
@@ -235,6 +241,7 @@ public abstract class Area extends Feature {
      *
      * @return Probability value (0.0 - 1.0)
      */
+    @JsonIgnore
     public double getEffectiveDeviationRight() {
         // Priority 1: tendRight enum (preferred)
         if (tendRight != null) {

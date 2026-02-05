@@ -28,7 +28,7 @@ import java.util.UUID;
  *
  * Optional parameters:
  * - documentPath: Path/collection where to save the translated document (default: 'generator_translations')
- * - maxAttempts: Maximum number of translation attempts before giving up (default: 3)
+ * - maxAttempts: Maximum number of translation attempts before giving up (default: 5)
  *
  * Output:
  * - success: Document path where translation was saved
@@ -45,7 +45,7 @@ public class TranslateInstructionJobExecutor implements JobExecutor {
 
     private static final String EXECUTOR_NAME = "generator-translate-instruction";
     private static final String DEFAULT_COLLECTION = "generator_translations";
-    private static final int DEFAULT_MAX_ATTEMPTS = 3;
+    private static final int DEFAULT_MAX_ATTEMPTS = 5;
     private static final DateTimeFormatter TIMESTAMP_FORMATTER = DateTimeFormatter.ISO_INSTANT;
 
     private final TranslatorService translatorService;
@@ -89,6 +89,8 @@ public class TranslateInstructionJobExecutor implements JobExecutor {
                     result = translatorService.translateInstructionToComposite(instruction, previousError);
 
                     if (result.isSuccessful()) {
+                        // Override worldId with the one from job context (not from instruction/Gemini)
+                        result.getComposition().setWorldId(job.getWorldId());
                         log.info("Translation successful on attempt {}/{}", attempt, maxAttempts);
                         break;
                     } else {

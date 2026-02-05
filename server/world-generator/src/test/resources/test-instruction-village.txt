@@ -1,0 +1,8 @@
+Create a small world with a village:
+
+- One small plains biome at origin
+- One village named "test-village" in the plains biome
+  - Style: medieval
+  - One district called "market-district"
+    - Size: MEDIUM
+    - Contains: marketplace (PLAZA), tavern (building), main street (road with connection point)

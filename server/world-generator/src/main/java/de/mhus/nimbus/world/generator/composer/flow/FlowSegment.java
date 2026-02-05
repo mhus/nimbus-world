@@ -1,5 +1,6 @@
 package de.mhus.nimbus.world.generator.composer.flow;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import de.mhus.nimbus.world.shared.world.WHexGrid.EDGE;
 import lombok.*;
@@ -119,6 +120,7 @@ public class FlowSegment {
     /**
      * Returns true if this is a start segment (no fromSide, fromPosition and no fromLx/fromLz)
      */
+    @JsonIgnore
     public boolean isStartSegment() {
         return fromSide == null && fromPosition == null && fromLx == null && fromLz == null;
     }
@@ -126,6 +128,7 @@ public class FlowSegment {
     /**
      * Returns true if this is an end segment (no toSide, toPosition and no toLx/toLz)
      */
+    @JsonIgnore
     public boolean isEndSegment() {
         return toSide == null && toPosition == null && toLx == null && toLz == null;
     }
@@ -133,6 +136,7 @@ public class FlowSegment {
     /**
      * Returns true if this is a through segment (has both entry and exit)
      */
+    @JsonIgnore
     public boolean isThroughSegment() {
         boolean hasFrom = fromSide != null || fromPosition != null || (fromLx != null && fromLz != null);
         boolean hasTo = toSide != null || toPosition != null || (toLx != null && toLz != null);

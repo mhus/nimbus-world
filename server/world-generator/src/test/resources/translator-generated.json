@@ -1,0 +1,2781 @@
+{
+  "compositionId" : "65a76f6a-85c2-4ae9-9678-3d1f657c566b",
+  "name" : "test-valley",
+  "title" : "Test Valley",
+  "worldId" : "test-valley-001",
+  "features" : [ {
+    "featureType" : "mountain-biome",
+    "featureId" : "d819a0fa-5871-4fed-adc5-035d565b3511",
+    "name" : "dragon-peaks",
+    "title" : "Dragon Peaks",
+    "status" : "PREPARED",
+    "enabled" : true,
+    "featureComposed" : {
+      "hexGrids" : [ {
+        "coordinate" : {
+          "q" : 0,
+          "r" : 0
+        },
+        "parameters" : {
+          "g_roughness" : "0.8",
+          "biome" : "mountain",
+          "g_ridge" : "[{\"side\":\"SOUTH_WEST\",\"level\":145}]",
+          "g_asl" : "100",
+          "g_offset" : "30",
+          "g_frequency" : "0.8",
+          "biomeName" : "dragon-peaks",
+          "g_builder" : "mountain"
+        },
+        "areas" : { },
+        "flowSegments" : [ {
+          "flowType" : "RIVER",
+          "toSide" : "WEST",
+          "fromPosition" : "<-1;0#102>",
+          "toPosition" : "<W 2/4>",
+          "fromLx" : 168,
+          "fromLz" : 205,
+          "width" : 4,
+          "level" : 115,
+          "fromLevel" : 115,
+          "toLevel" : 102,
+          "depth" : 3,
+          "flowFeatureId" : "84831a42-8d88-4d32-9b01-39569b63a61c"
+        } ],
+        "roadConfigParts" : [ ],
+        "riverConfigParts" : [ ],
+        "wallConfigParts" : [ ],
+        "name" : "dragon-peaks [0,0]",
+        "description" : "Part of MOUNTAINS biome"
+      }, {
+        "coordinate" : {
+          "q" : -1,
+          "r" : 1
+        },
+        "parameters" : {
+          "g_roughness" : "0.8",
+          "biome" : "mountain",
+          "g_ridge" : "[{\"side\":\"NORTH_EAST\",\"level\":145}]",
+          "g_asl" : "100",
+          "g_offset" : "30",
+          "g_frequency" : "0.8",
+          "biomeName" : "dragon-peaks",
+          "g_builder" : "mountain"
+        },
+        "areas" : { },
+        "flowSegments" : [ ],
+        "roadConfigParts" : [ ],
+        "riverConfigParts" : [ ],
+        "wallConfigParts" : [ ],
+        "name" : "dragon-peaks [-1,1]",
+        "description" : "Part of MOUNTAINS biome"
+      }, {
+        "coordinate" : {
+          "q" : 0,
+          "r" : 0
+        },
+        "parameters" : {
+          "g_roughness" : "0.8",
+          "g_river" : "{\"groupId\":\"84831a42-8d88-4d32-9b01-39569b63a61c\",\"from\":[{\"depth\":3,\"level\":115,\"width\":4,\"position\":\"<-1;0#102>\"}],\"to\":[{\"depth\":3,\"level\":102,\"width\":4,\"position\":\"<W 2/4>\"}]}",
+          "biome" : "mountain",
+          "g_ridge" : "[{\"side\":\"SOUTH_WEST\",\"level\":145}]",
+          "g_asl" : "100",
+          "g_offset" : "30",
+          "g_frequency" : "0.8",
+          "biomeName" : "dragon-peaks",
+          "g_builder" : "mountain"
+        },
+        "areas" : { },
+        "flowSegments" : [ ],
+        "roadConfigParts" : [ ],
+        "riverConfigParts" : [ {
+          "partType" : "FROM",
+          "side" : null,
+          "position" : "<-1;0#102>",
+          "lx" : null,
+          "lz" : null,
+          "width" : 4,
+          "depth" : 3,
+          "level" : 115,
+          "groupId" : "84831a42-8d88-4d32-9b01-39569b63a61c"
+        }, {
+          "partType" : "TO",
+          "side" : null,
+          "position" : "<W 2/4>",
+          "lx" : null,
+          "lz" : null,
+          "width" : 4,
+          "depth" : 3,
+          "level" : 102,
+          "groupId" : "84831a42-8d88-4d32-9b01-39569b63a61c"
+        } ],
+        "wallConfigParts" : [ ],
+        "name" : "dragon-peaks [0,0]",
+        "description" : "Part of MOUNTAINS biome"
+      } ]
+    },
+    "shape" : "CIRCLE",
+    "size" : "MEDIUM",
+    "positions" : [ {
+      "anchor" : "origin",
+      "priority" : 10
+    } ],
+    "continentId" : "main-continent",
+    "areaComposed" : {
+      "calculatedSizeFrom" : 3,
+      "calculatedSizeTo" : 7,
+      "placedCenter" : {
+        "q" : 0,
+        "r" : 0
+      },
+      "assignedCoordinates" : [ {
+        "q" : 0,
+        "r" : 0
+      }, {
+        "q" : -1,
+        "r" : 1
+      }, {
+        "q" : 0,
+        "r" : 0
+      } ],
+      "preparedPositions" : [ {
+        "original" : {
+          "anchor" : "origin",
+          "priority" : 10
+        },
+        "direction" : null,
+        "directionAngle" : 0,
+        "distanceFrom" : 0,
+        "distanceTo" : 0,
+        "anchor" : "origin",
+        "priority" : 10
+      } ],
+      "sizeQ" : null,
+      "sizeR" : null,
+      "minQ" : null,
+      "maxQ" : null,
+      "minR" : null,
+      "maxR" : null
+    },
+    "type" : "MOUNTAINS",
+    "parameters" : {
+      "g_asl" : "100",
+      "g_offset" : "30",
+      "g_roughness" : "0.8",
+      "g_builder" : "mountain",
+      "g_frequency" : "0.8"
+    },
+    "height" : "MEDIUM_PEAKS",
+    "placedCenter" : {
+      "q" : 0,
+      "r" : 0
+    },
+    "calculatedSizeFrom" : 3,
+    "calculatedSizeTo" : 7,
+    "preparedPositions" : [ {
+      "original" : {
+        "anchor" : "origin",
+        "priority" : 10
+      },
+      "direction" : null,
+      "directionAngle" : 0,
+      "distanceFrom" : 0,
+      "distanceTo" : 0,
+      "anchor" : "origin",
+      "priority" : 10
+    } ],
+    "assignedCoordinates" : [ {
+      "q" : 0,
+      "r" : 0
+    }, {
+      "q" : -1,
+      "r" : 1
+    }, {
+      "q" : 0,
+      "r" : 0
+    } ],
+    "hexGrids" : [ {
+      "coordinate" : {
+        "q" : 0,
+        "r" : 0
+      },
+      "parameters" : {
+        "g_roughness" : "0.8",
+        "biome" : "mountain",
+        "g_ridge" : "[{\"side\":\"SOUTH_WEST\",\"level\":145}]",
+        "g_asl" : "100",
+        "g_offset" : "30",
+        "g_frequency" : "0.8",
+        "biomeName" : "dragon-peaks",
+        "g_builder" : "mountain"
+      },
+      "areas" : { },
+      "flowSegments" : [ {
+        "flowType" : "RIVER",
+        "toSide" : "WEST",
+        "fromPosition" : "<-1;0#102>",
+        "toPosition" : "<W 2/4>",
+        "fromLx" : 168,
+        "fromLz" : 205,
+        "width" : 4,
+        "level" : 115,
+        "fromLevel" : 115,
+        "toLevel" : 102,
+        "depth" : 3,
+        "flowFeatureId" : "84831a42-8d88-4d32-9b01-39569b63a61c"
+      } ],
+      "roadConfigParts" : [ ],
+      "riverConfigParts" : [ ],
+      "wallConfigParts" : [ ],
+      "name" : "dragon-peaks [0,0]",
+      "description" : "Part of MOUNTAINS biome"
+    }, {
+      "coordinate" : {
+        "q" : -1,
+        "r" : 1
+      },
+      "parameters" : {
+        "g_roughness" : "0.8",
+        "biome" : "mountain",
+        "g_ridge" : "[{\"side\":\"NORTH_EAST\",\"level\":145}]",
+        "g_asl" : "100",
+        "g_offset" : "30",
+        "g_frequency" : "0.8",
+        "biomeName" : "dragon-peaks",
+        "g_builder" : "mountain"
+      },
+      "areas" : { },
+      "flowSegments" : [ ],
+      "roadConfigParts" : [ ],
+      "riverConfigParts" : [ ],
+      "wallConfigParts" : [ ],
+      "name" : "dragon-peaks [-1,1]",
+      "description" : "Part of MOUNTAINS biome"
+    }, {
+      "coordinate" : {
+        "q" : 0,
+        "r" : 0
+      },
+      "parameters" : {
+        "g_roughness" : "0.8",
+        "g_river" : "{\"groupId\":\"84831a42-8d88-4d32-9b01-39569b63a61c\",\"from\":[{\"depth\":3,\"level\":115,\"width\":4,\"position\":\"<-1;0#102>\"}],\"to\":[{\"depth\":3,\"level\":102,\"width\":4,\"position\":\"<W 2/4>\"}]}",
+        "biome" : "mountain",
+        "g_ridge" : "[{\"side\":\"SOUTH_WEST\",\"level\":145}]",
+        "g_asl" : "100",
+        "g_offset" : "30",
+        "g_frequency" : "0.8",
+        "biomeName" : "dragon-peaks",
+        "g_builder" : "mountain"
+      },
+      "areas" : { },
+      "flowSegments" : [ ],
+      "roadConfigParts" : [ ],
+      "riverConfigParts" : [ {
+        "partType" : "FROM",
+        "side" : null,
+        "position" : "<-1;0#102>",
+        "lx" : null,
+        "lz" : null,
+        "width" : 4,
+        "depth" : 3,
+        "level" : 115,
+        "groupId" : "84831a42-8d88-4d32-9b01-39569b63a61c"
+      }, {
+        "partType" : "TO",
+        "side" : null,
+        "position" : "<W 2/4>",
+        "lx" : null,
+        "lz" : null,
+        "width" : 4,
+        "depth" : 3,
+        "level" : 102,
+        "groupId" : "84831a42-8d88-4d32-9b01-39569b63a61c"
+      } ],
+      "wallConfigParts" : [ ],
+      "name" : "dragon-peaks [0,0]",
+      "description" : "Part of MOUNTAINS biome"
+    } ]
+  }, {
+    "featureType" : "plains-biome",
+    "featureId" : "b316728e-5b8d-4979-86bb-11a669c0d32c",
+    "name" : "green-fields",
+    "title" : "Green Fields",
+    "status" : "PREPARED",
+    "enabled" : true,
+    "featureComposed" : {
+      "hexGrids" : [ {
+        "coordinate" : {
+          "q" : -3,
+          "r" : 3
+        },
+        "parameters" : {
+          "g_asl" : "10",
+          "g_roughness" : "0.3",
+          "g_offset" : "1",
+          "biomeName" : "green-fields",
+          "biome" : "mountain",
+          "g_builder" : "mountain"
+        },
+        "areas" : { },
+        "flowSegments" : [ {
+          "flowType" : "RIVER",
+          "fromSide" : "NORTH_EAST",
+          "fromPosition" : "<NE 2/4>",
+          "toPosition" : "<-3;0#102>",
+          "toLx" : -9,
+          "toLz" : 103,
+          "width" : 4,
+          "level" : 45,
+          "fromLevel" : 45,
+          "toLevel" : 10,
+          "depth" : 3,
+          "flowFeatureId" : "84831a42-8d88-4d32-9b01-39569b63a61c"
+        } ],
+        "roadConfigParts" : [ ],
+        "riverConfigParts" : [ ],
+        "wallConfigParts" : [ ],
+        "name" : "green-fields [-3,3]",
+        "description" : "Part of PLAINS biome"
+      }, {
+        "coordinate" : {
+          "q" : -4,
+          "r" : 4
+        },
+        "parameters" : {
+          "g_asl" : "10",
+          "g_roughness" : "0.3",
+          "g_offset" : "1",
+          "biomeName" : "green-fields",
+          "biome" : "mountain",
+          "g_builder" : "mountain"
+        },
+        "areas" : { },
+        "flowSegments" : [ ],
+        "roadConfigParts" : [ ],
+        "riverConfigParts" : [ ],
+        "wallConfigParts" : [ ],
+        "name" : "green-fields [-4,4]",
+        "description" : "Part of PLAINS biome"
+      }, {
+        "coordinate" : {
+          "q" : -3,
+          "r" : 3
+        },
+        "parameters" : {
+          "g_asl" : "10",
+          "g_roughness" : "0.3",
+          "g_offset" : "1",
+          "biomeName" : "green-fields",
+          "biome" : "mountain",
+          "g_builder" : "mountain"
+        },
+        "areas" : { },
+        "flowSegments" : [ ],
+        "roadConfigParts" : [ ],
+        "riverConfigParts" : [ ],
+        "wallConfigParts" : [ ],
+        "name" : "green-fields [-3,3]",
+        "description" : "Part of PLAINS biome"
+      }, {
+        "coordinate" : {
+          "q" : -2,
+          "r" : 3
+        },
+        "parameters" : {
+          "g_asl" : "10",
+          "g_roughness" : "0.3",
+          "g_offset" : "1",
+          "biomeName" : "green-fields",
+          "biome" : "mountain",
+          "g_builder" : "mountain"
+        },
+        "areas" : { },
+        "flowSegments" : [ ],
+        "roadConfigParts" : [ ],
+        "riverConfigParts" : [ ],
+        "wallConfigParts" : [ ],
+        "name" : "green-fields [-2,3]",
+        "description" : "Part of PLAINS biome"
+      }, {
+        "coordinate" : {
+          "q" : -2,
+          "r" : 4
+        },
+        "parameters" : {
+          "g_asl" : "10",
+          "g_roughness" : "0.3",
+          "g_offset" : "1",
+          "biomeName" : "green-fields",
+          "biome" : "mountain",
+          "g_builder" : "mountain"
+        },
+        "areas" : { },
+        "flowSegments" : [ ],
+        "roadConfigParts" : [ ],
+        "riverConfigParts" : [ ],
+        "wallConfigParts" : [ ],
+        "name" : "green-fields [-2,4]",
+        "description" : "Part of PLAINS biome"
+      }, {
+        "coordinate" : {
+          "q" : -3,
+          "r" : 5
+        },
+        "parameters" : {
+          "g_asl" : "10",
+          "g_roughness" : "0.3",
+          "g_offset" : "1",
+          "biomeName" : "green-fields",
+          "biome" : "mountain",
+          "g_builder" : "mountain"
+        },
+        "areas" : { },
+        "flowSegments" : [ ],
+        "roadConfigParts" : [ ],
+        "riverConfigParts" : [ ],
+        "wallConfigParts" : [ ],
+        "name" : "green-fields [-3,5]",
+        "description" : "Part of PLAINS biome"
+      }, {
+        "coordinate" : {
+          "q" : -4,
+          "r" : 5
+        },
+        "parameters" : {
+          "g_asl" : "10",
+          "g_roughness" : "0.3",
+          "g_offset" : "1",
+          "biomeName" : "green-fields",
+          "biome" : "mountain",
+          "g_builder" : "mountain"
+        },
+        "areas" : { },
+        "flowSegments" : [ ],
+        "roadConfigParts" : [ ],
+        "riverConfigParts" : [ ],
+        "wallConfigParts" : [ ],
+        "name" : "green-fields [-4,5]",
+        "description" : "Part of PLAINS biome"
+      }, {
+        "coordinate" : {
+          "q" : -5,
+          "r" : 5
+        },
+        "parameters" : {
+          "g_asl" : "10",
+          "g_roughness" : "0.3",
+          "g_offset" : "1",
+          "biomeName" : "green-fields",
+          "biome" : "mountain",
+          "g_builder" : "mountain"
+        },
+        "areas" : { },
+        "flowSegments" : [ ],
+        "roadConfigParts" : [ ],
+        "riverConfigParts" : [ ],
+        "wallConfigParts" : [ ],
+        "name" : "green-fields [-5,5]",
+        "description" : "Part of PLAINS biome"
+      }, {
+        "coordinate" : {
+          "q" : -4,
+          "r" : 4
+        },
+        "parameters" : {
+          "g_asl" : "10",
+          "g_roughness" : "0.3",
+          "g_offset" : "1",
+          "biomeName" : "green-fields",
+          "biome" : "mountain",
+          "g_builder" : "mountain"
+        },
+        "areas" : { },
+        "flowSegments" : [ ],
+        "roadConfigParts" : [ ],
+        "riverConfigParts" : [ ],
+        "wallConfigParts" : [ ],
+        "name" : "green-fields [-4,4]",
+        "description" : "Part of PLAINS biome"
+      }, {
+        "coordinate" : {
+          "q" : -3,
+          "r" : 3
+        },
+        "parameters" : {
+          "g_roughness" : "0.3",
+          "g_river" : "{\"groupId\":\"84831a42-8d88-4d32-9b01-39569b63a61c\",\"from\":[{\"depth\":3,\"level\":45,\"width\":4,\"position\":\"<NE 2/4>\"}],\"to\":[{\"depth\":3,\"level\":10,\"width\":4,\"position\":\"<-3;0#102>\"}]}",
+          "biome" : "mountain",
+          "g_asl" : "10",
+          "g_offset" : "1",
+          "biomeName" : "green-fields",
+          "g_builder" : "mountain"
+        },
+        "areas" : { },
+        "flowSegments" : [ ],
+        "roadConfigParts" : [ ],
+        "riverConfigParts" : [ {
+          "partType" : "FROM",
+          "side" : null,
+          "position" : "<NE 2/4>",
+          "lx" : null,
+          "lz" : null,
+          "width" : 4,
+          "depth" : 3,
+          "level" : 45,
+          "groupId" : "84831a42-8d88-4d32-9b01-39569b63a61c"
+        }, {
+          "partType" : "TO",
+          "side" : null,
+          "position" : "<-3;0#102>",
+          "lx" : null,
+          "lz" : null,
+          "width" : 4,
+          "depth" : 3,
+          "level" : 10,
+          "groupId" : "84831a42-8d88-4d32-9b01-39569b63a61c"
+        } ],
+        "wallConfigParts" : [ ],
+        "name" : "green-fields [-3,3]",
+        "description" : "Part of PLAINS biome"
+      } ]
+    },
+    "shape" : "CIRCLE",
+    "size" : "LARGE",
+    "positions" : [ {
+      "direction" : "W",
+      "anchor" : "dragon-peaks",
+      "priority" : 9,
+      "distanceFrom" : 2,
+      "distanceTo" : 4
+    } ],
+    "continentId" : "main-continent",
+    "areaComposed" : {
+      "calculatedSizeFrom" : 7,
+      "calculatedSizeTo" : 15,
+      "placedCenter" : {
+        "q" : -3,
+        "r" : 3
+      },
+      "assignedCoordinates" : [ {
+        "q" : -3,
+        "r" : 3
+      }, {
+        "q" : -4,
+        "r" : 4
+      }, {
+        "q" : -3,
+        "r" : 3
+      }, {
+        "q" : -2,
+        "r" : 3
+      }, {
+        "q" : -2,
+        "r" : 4
+      }, {
+        "q" : -3,
+        "r" : 5
+      }, {
+        "q" : -4,
+        "r" : 5
+      }, {
+        "q" : -5,
+        "r" : 5
+      }, {
+        "q" : -4,
+        "r" : 4
+      }, {
+        "q" : -3,
+        "r" : 3
+      } ],
+      "preparedPositions" : [ {
+        "original" : {
+          "direction" : "W",
+          "anchor" : "dragon-peaks",
+          "priority" : 9,
+          "distanceFrom" : 2,
+          "distanceTo" : 4
+        },
+        "direction" : "W",
+        "directionAngle" : 240,
+        "distanceFrom" : 2,
+        "distanceTo" : 4,
+        "anchor" : "dragon-peaks",
+        "priority" : 9
+      } ],
+      "sizeQ" : null,
+      "sizeR" : null,
+      "minQ" : null,
+      "maxQ" : null,
+      "minR" : null,
+      "maxR" : null
+    },
+    "type" : "PLAINS",
+    "parameters" : {
+      "g_asl" : "10",
+      "g_roughness" : "0.3",
+      "g_offset" : "1",
+      "g_builder" : "mountain"
+    },
+    "placedCenter" : {
+      "q" : -3,
+      "r" : 3
+    },
+    "calculatedSizeFrom" : 7,
+    "calculatedSizeTo" : 15,
+    "preparedPositions" : [ {
+      "original" : {
+        "direction" : "W",
+        "anchor" : "dragon-peaks",
+        "priority" : 9,
+        "distanceFrom" : 2,
+        "distanceTo" : 4
+      },
+      "direction" : "W",
+      "directionAngle" : 240,
+      "distanceFrom" : 2,
+      "distanceTo" : 4,
+      "anchor" : "dragon-peaks",
+      "priority" : 9
+    } ],
+    "assignedCoordinates" : [ {
+      "q" : -3,
+      "r" : 3
+    }, {
+      "q" : -4,
+      "r" : 4
+    }, {
+      "q" : -3,
+      "r" : 3
+    }, {
+      "q" : -2,
+      "r" : 3
+    }, {
+      "q" : -2,
+      "r" : 4
+    }, {
+      "q" : -3,
+      "r" : 5
+    }, {
+      "q" : -4,
+      "r" : 5
+    }, {
+      "q" : -5,
+      "r" : 5
+    }, {
+      "q" : -4,
+      "r" : 4
+    }, {
+      "q" : -3,
+      "r" : 3
+    } ],
+    "hexGrids" : [ {
+      "coordinate" : {
+        "q" : -3,
+        "r" : 3
+      },
+      "parameters" : {
+        "g_asl" : "10",
+        "g_roughness" : "0.3",
+        "g_offset" : "1",
+        "biomeName" : "green-fields",
+        "biome" : "mountain",
+        "g_builder" : "mountain"
+      },
+      "areas" : { },
+      "flowSegments" : [ {
+        "flowType" : "RIVER",
+        "fromSide" : "NORTH_EAST",
+        "fromPosition" : "<NE 2/4>",
+        "toPosition" : "<-3;0#102>",
+        "toLx" : -9,
+        "toLz" : 103,
+        "width" : 4,
+        "level" : 45,
+        "fromLevel" : 45,
+        "toLevel" : 10,
+        "depth" : 3,
+        "flowFeatureId" : "84831a42-8d88-4d32-9b01-39569b63a61c"
+      } ],
+      "roadConfigParts" : [ ],
+      "riverConfigParts" : [ ],
+      "wallConfigParts" : [ ],
+      "name" : "green-fields [-3,3]",
+      "description" : "Part of PLAINS biome"
+    }, {
+      "coordinate" : {
+        "q" : -4,
+        "r" : 4
+      },
+      "parameters" : {
+        "g_asl" : "10",
+        "g_roughness" : "0.3",
+        "g_offset" : "1",
+        "biomeName" : "green-fields",
+        "biome" : "mountain",
+        "g_builder" : "mountain"
+      },
+      "areas" : { },
+      "flowSegments" : [ ],
+      "roadConfigParts" : [ ],
+      "riverConfigParts" : [ ],
+      "wallConfigParts" : [ ],
+      "name" : "green-fields [-4,4]",
+      "description" : "Part of PLAINS biome"
+    }, {
+      "coordinate" : {
+        "q" : -3,
+        "r" : 3
+      },
+      "parameters" : {
+        "g_asl" : "10",
+        "g_roughness" : "0.3",
+        "g_offset" : "1",
+        "biomeName" : "green-fields",
+        "biome" : "mountain",
+        "g_builder" : "mountain"
+      },
+      "areas" : { },
+      "flowSegments" : [ ],
+      "roadConfigParts" : [ ],
+      "riverConfigParts" : [ ],
+      "wallConfigParts" : [ ],
+      "name" : "green-fields [-3,3]",
+      "description" : "Part of PLAINS biome"
+    }, {
+      "coordinate" : {
+        "q" : -2,
+        "r" : 3
+      },
+      "parameters" : {
+        "g_asl" : "10",
+        "g_roughness" : "0.3",
+        "g_offset" : "1",
+        "biomeName" : "green-fields",
+        "biome" : "mountain",
+        "g_builder" : "mountain"
+      },
+      "areas" : { },
+      "flowSegments" : [ ],
+      "roadConfigParts" : [ ],
+      "riverConfigParts" : [ ],
+      "wallConfigParts" : [ ],
+      "name" : "green-fields [-2,3]",
+      "description" : "Part of PLAINS biome"
+    }, {
+      "coordinate" : {
+        "q" : -2,
+        "r" : 4
+      },
+      "parameters" : {
+        "g_asl" : "10",
+        "g_roughness" : "0.3",
+        "g_offset" : "1",
+        "biomeName" : "green-fields",
+        "biome" : "mountain",
+        "g_builder" : "mountain"
+      },
+      "areas" : { },
+      "flowSegments" : [ ],
+      "roadConfigParts" : [ ],
+      "riverConfigParts" : [ ],
+      "wallConfigParts" : [ ],
+      "name" : "green-fields [-2,4]",
+      "description" : "Part of PLAINS biome"
+    }, {
+      "coordinate" : {
+        "q" : -3,
+        "r" : 5
+      },
+      "parameters" : {
+        "g_asl" : "10",
+        "g_roughness" : "0.3",
+        "g_offset" : "1",
+        "biomeName" : "green-fields",
+        "biome" : "mountain",
+        "g_builder" : "mountain"
+      },
+      "areas" : { },
+      "flowSegments" : [ ],
+      "roadConfigParts" : [ ],
+      "riverConfigParts" : [ ],
+      "wallConfigParts" : [ ],
+      "name" : "green-fields [-3,5]",
+      "description" : "Part of PLAINS biome"
+    }, {
+      "coordinate" : {
+        "q" : -4,
+        "r" : 5
+      },
+      "parameters" : {
+        "g_asl" : "10",
+        "g_roughness" : "0.3",
+        "g_offset" : "1",
+        "biomeName" : "green-fields",
+        "biome" : "mountain",
+        "g_builder" : "mountain"
+      },
+      "areas" : { },
+      "flowSegments" : [ ],
+      "roadConfigParts" : [ ],
+      "riverConfigParts" : [ ],
+      "wallConfigParts" : [ ],
+      "name" : "green-fields [-4,5]",
+      "description" : "Part of PLAINS biome"
+    }, {
+      "coordinate" : {
+        "q" : -5,
+        "r" : 5
+      },
+      "parameters" : {
+        "g_asl" : "10",
+        "g_roughness" : "0.3",
+        "g_offset" : "1",
+        "biomeName" : "green-fields",
+        "biome" : "mountain",
+        "g_builder" : "mountain"
+      },
+      "areas" : { },
+      "flowSegments" : [ ],
+      "roadConfigParts" : [ ],
+      "riverConfigParts" : [ ],
+      "wallConfigParts" : [ ],
+      "name" : "green-fields [-5,5]",
+      "description" : "Part of PLAINS biome"
+    }, {
+      "coordinate" : {
+        "q" : -4,
+        "r" : 4
+      },
+      "parameters" : {
+        "g_asl" : "10",
+        "g_roughness" : "0.3",
+        "g_offset" : "1",
+        "biomeName" : "green-fields",
+        "biome" : "mountain",
+        "g_builder" : "mountain"
+      },
+      "areas" : { },
+      "flowSegments" : [ ],
+      "roadConfigParts" : [ ],
+      "riverConfigParts" : [ ],
+      "wallConfigParts" : [ ],
+      "name" : "green-fields [-4,4]",
+      "description" : "Part of PLAINS biome"
+    }, {
+      "coordinate" : {
+        "q" : -3,
+        "r" : 3
+      },
+      "parameters" : {
+        "g_roughness" : "0.3",
+        "g_river" : "{\"groupId\":\"84831a42-8d88-4d32-9b01-39569b63a61c\",\"from\":[{\"depth\":3,\"level\":45,\"width\":4,\"position\":\"<NE 2/4>\"}],\"to\":[{\"depth\":3,\"level\":10,\"width\":4,\"position\":\"<-3;0#102>\"}]}",
+        "biome" : "mountain",
+        "g_asl" : "10",
+        "g_offset" : "1",
+        "biomeName" : "green-fields",
+        "g_builder" : "mountain"
+      },
+      "areas" : { },
+      "flowSegments" : [ ],
+      "roadConfigParts" : [ ],
+      "riverConfigParts" : [ {
+        "partType" : "FROM",
+        "side" : null,
+        "position" : "<NE 2/4>",
+        "lx" : null,
+        "lz" : null,
+        "width" : 4,
+        "depth" : 3,
+        "level" : 45,
+        "groupId" : "84831a42-8d88-4d32-9b01-39569b63a61c"
+      }, {
+        "partType" : "TO",
+        "side" : null,
+        "position" : "<-3;0#102>",
+        "lx" : null,
+        "lz" : null,
+        "width" : 4,
+        "depth" : 3,
+        "level" : 10,
+        "groupId" : "84831a42-8d88-4d32-9b01-39569b63a61c"
+      } ],
+      "wallConfigParts" : [ ],
+      "name" : "green-fields [-3,3]",
+      "description" : "Part of PLAINS biome"
+    } ]
+  }, {
+    "featureType" : "forest-biome",
+    "featureId" : "1e09eef2-0d20-402d-975b-5f2c5b06cdc6",
+    "name" : "dark-woods",
+    "title" : "Dark Woods",
+    "status" : "PREPARED",
+    "enabled" : true,
+    "featureComposed" : {
+      "hexGrids" : [ {
+        "coordinate" : {
+          "q" : 2,
+          "r" : 0
+        },
+        "parameters" : {
+          "g_treeType" : "dark_oak",
+          "biome" : "mountain",
+          "g_offset" : "2",
+          "biomeName" : "dark-woods",
+          "g_flora" : "forest",
+          "flora_density" : "0.8",
+          "g_builder" : "mountain"
+        },
+        "areas" : { },
+        "flowSegments" : [ ],
+        "roadConfigParts" : [ ],
+        "riverConfigParts" : [ ],
+        "wallConfigParts" : [ ],
+        "name" : "dark-woods [2,0]",
+        "description" : "Part of FOREST biome"
+      }, {
+        "coordinate" : {
+          "q" : 1,
+          "r" : 1
+        },
+        "parameters" : {
+          "g_treeType" : "dark_oak",
+          "biome" : "mountain",
+          "g_offset" : "2",
+          "biomeName" : "dark-woods",
+          "g_flora" : "forest",
+          "flora_density" : "0.8",
+          "g_builder" : "mountain"
+        },
+        "areas" : { },
+        "flowSegments" : [ ],
+        "roadConfigParts" : [ ],
+        "riverConfigParts" : [ ],
+        "wallConfigParts" : [ ],
+        "name" : "dark-woods [1,1]",
+        "description" : "Part of FOREST biome"
+      }, {
+        "coordinate" : {
+          "q" : 2,
+          "r" : 0
+        },
+        "parameters" : {
+          "g_treeType" : "dark_oak",
+          "biome" : "mountain",
+          "g_offset" : "2",
+          "biomeName" : "dark-woods",
+          "g_flora" : "forest",
+          "flora_density" : "0.8",
+          "g_builder" : "mountain"
+        },
+        "areas" : { },
+        "flowSegments" : [ ],
+        "roadConfigParts" : [ ],
+        "riverConfigParts" : [ ],
+        "wallConfigParts" : [ ],
+        "name" : "dark-woods [2,0]",
+        "description" : "Part of FOREST biome"
+      }, {
+        "coordinate" : {
+          "q" : 3,
+          "r" : 0
+        },
+        "parameters" : {
+          "g_treeType" : "dark_oak",
+          "biome" : "mountain",
+          "g_offset" : "2",
+          "biomeName" : "dark-woods",
+          "g_flora" : "forest",
+          "flora_density" : "0.8",
+          "g_builder" : "mountain"
+        },
+        "areas" : { },
+        "flowSegments" : [ ],
+        "roadConfigParts" : [ ],
+        "riverConfigParts" : [ ],
+        "wallConfigParts" : [ ],
+        "name" : "dark-woods [3,0]",
+        "description" : "Part of FOREST biome"
+      }, {
+        "coordinate" : {
+          "q" : 3,
+          "r" : 1
+        },
+        "parameters" : {
+          "g_treeType" : "dark_oak",
+          "biome" : "mountain",
+          "g_offset" : "2",
+          "biomeName" : "dark-woods",
+          "g_flora" : "forest",
+          "flora_density" : "0.8",
+          "g_builder" : "mountain"
+        },
+        "areas" : { },
+        "flowSegments" : [ ],
+        "roadConfigParts" : [ ],
+        "riverConfigParts" : [ ],
+        "wallConfigParts" : [ ],
+        "name" : "dark-woods [3,1]",
+        "description" : "Part of FOREST biome"
+      }, {
+        "coordinate" : {
+          "q" : 2,
+          "r" : 2
+        },
+        "parameters" : {
+          "g_treeType" : "dark_oak",
+          "biome" : "mountain",
+          "g_offset" : "2",
+          "biomeName" : "dark-woods",
+          "g_flora" : "forest",
+          "flora_density" : "0.8",
+          "g_builder" : "mountain"
+        },
+        "areas" : { },
+        "flowSegments" : [ ],
+        "roadConfigParts" : [ ],
+        "riverConfigParts" : [ ],
+        "wallConfigParts" : [ ],
+        "name" : "dark-woods [2,2]",
+        "description" : "Part of FOREST biome"
+      }, {
+        "coordinate" : {
+          "q" : 1,
+          "r" : 2
+        },
+        "parameters" : {
+          "g_treeType" : "dark_oak",
+          "biome" : "mountain",
+          "g_offset" : "2",
+          "biomeName" : "dark-woods",
+          "g_flora" : "forest",
+          "flora_density" : "0.8",
+          "g_builder" : "mountain"
+        },
+        "areas" : { },
+        "flowSegments" : [ ],
+        "roadConfigParts" : [ ],
+        "riverConfigParts" : [ ],
+        "wallConfigParts" : [ ],
+        "name" : "dark-woods [1,2]",
+        "description" : "Part of FOREST biome"
+      }, {
+        "coordinate" : {
+          "q" : 0,
+          "r" : 2
+        },
+        "parameters" : {
+          "g_treeType" : "dark_oak",
+          "biome" : "mountain",
+          "g_offset" : "2",
+          "biomeName" : "dark-woods",
+          "g_flora" : "forest",
+          "flora_density" : "0.8",
+          "g_builder" : "mountain"
+        },
+        "areas" : { },
+        "flowSegments" : [ ],
+        "roadConfigParts" : [ ],
+        "riverConfigParts" : [ ],
+        "wallConfigParts" : [ ],
+        "name" : "dark-woods [0,2]",
+        "description" : "Part of FOREST biome"
+      }, {
+        "coordinate" : {
+          "q" : 1,
+          "r" : 1
+        },
+        "parameters" : {
+          "g_treeType" : "dark_oak",
+          "biome" : "mountain",
+          "g_offset" : "2",
+          "biomeName" : "dark-woods",
+          "g_flora" : "forest",
+          "flora_density" : "0.8",
+          "g_builder" : "mountain"
+        },
+        "areas" : { },
+        "flowSegments" : [ ],
+        "roadConfigParts" : [ ],
+        "riverConfigParts" : [ ],
+        "wallConfigParts" : [ ],
+        "name" : "dark-woods [1,1]",
+        "description" : "Part of FOREST biome"
+      }, {
+        "coordinate" : {
+          "q" : 2,
+          "r" : 0
+        },
+        "parameters" : {
+          "g_treeType" : "dark_oak",
+          "biome" : "mountain",
+          "g_offset" : "2",
+          "biomeName" : "dark-woods",
+          "g_flora" : "forest",
+          "flora_density" : "0.8",
+          "g_builder" : "mountain"
+        },
+        "areas" : { },
+        "flowSegments" : [ ],
+        "roadConfigParts" : [ ],
+        "riverConfigParts" : [ ],
+        "wallConfigParts" : [ ],
+        "name" : "dark-woods [2,0]",
+        "description" : "Part of FOREST biome"
+      }, {
+        "coordinate" : {
+          "q" : 3,
+          "r" : 0
+        },
+        "parameters" : {
+          "g_treeType" : "dark_oak",
+          "biome" : "mountain",
+          "g_offset" : "2",
+          "biomeName" : "dark-woods",
+          "g_flora" : "forest",
+          "flora_density" : "0.8",
+          "g_builder" : "mountain"
+        },
+        "areas" : { },
+        "flowSegments" : [ ],
+        "roadConfigParts" : [ ],
+        "riverConfigParts" : [ ],
+        "wallConfigParts" : [ ],
+        "name" : "dark-woods [3,0]",
+        "description" : "Part of FOREST biome"
+      }, {
+        "coordinate" : {
+          "q" : 4,
+          "r" : 0
+        },
+        "parameters" : {
+          "g_treeType" : "dark_oak",
+          "biome" : "mountain",
+          "g_offset" : "2",
+          "biomeName" : "dark-woods",
+          "g_flora" : "forest",
+          "flora_density" : "0.8",
+          "g_builder" : "mountain"
+        },
+        "areas" : { },
+        "flowSegments" : [ ],
+        "roadConfigParts" : [ ],
+        "riverConfigParts" : [ ],
+        "wallConfigParts" : [ ],
+        "name" : "dark-woods [4,0]",
+        "description" : "Part of FOREST biome"
+      }, {
+        "coordinate" : {
+          "q" : 4,
+          "r" : 1
+        },
+        "parameters" : {
+          "g_treeType" : "dark_oak",
+          "biome" : "mountain",
+          "g_offset" : "2",
+          "biomeName" : "dark-woods",
+          "g_flora" : "forest",
+          "flora_density" : "0.8",
+          "g_builder" : "mountain"
+        },
+        "areas" : { },
+        "flowSegments" : [ ],
+        "roadConfigParts" : [ ],
+        "riverConfigParts" : [ ],
+        "wallConfigParts" : [ ],
+        "name" : "dark-woods [4,1]",
+        "description" : "Part of FOREST biome"
+      }, {
+        "coordinate" : {
+          "q" : 4,
+          "r" : 2
+        },
+        "parameters" : {
+          "g_treeType" : "dark_oak",
+          "biome" : "mountain",
+          "g_offset" : "2",
+          "biomeName" : "dark-woods",
+          "g_flora" : "forest",
+          "flora_density" : "0.8",
+          "g_builder" : "mountain"
+        },
+        "areas" : { },
+        "flowSegments" : [ ],
+        "roadConfigParts" : [ ],
+        "riverConfigParts" : [ ],
+        "wallConfigParts" : [ ],
+        "name" : "dark-woods [4,2]",
+        "description" : "Part of FOREST biome"
+      }, {
+        "coordinate" : {
+          "q" : 3,
+          "r" : 3
+        },
+        "parameters" : {
+          "g_treeType" : "dark_oak",
+          "biome" : "mountain",
+          "g_offset" : "2",
+          "biomeName" : "dark-woods",
+          "g_flora" : "forest",
+          "flora_density" : "0.8",
+          "g_builder" : "mountain"
+        },
+        "areas" : { },
+        "flowSegments" : [ ],
+        "roadConfigParts" : [ ],
+        "riverConfigParts" : [ ],
+        "wallConfigParts" : [ ],
+        "name" : "dark-woods [3,3]",
+        "description" : "Part of FOREST biome"
+      } ]
+    },
+    "shape" : "CIRCLE",
+    "size" : "LARGE",
+    "positions" : [ {
+      "direction" : "E",
+      "anchor" : "dragon-peaks",
+      "priority" : 9,
+      "distanceFrom" : 1,
+      "distanceTo" : 2
+    } ],
+    "continentId" : "main-continent",
+    "areaComposed" : {
+      "calculatedSizeFrom" : 7,
+      "calculatedSizeTo" : 15,
+      "placedCenter" : {
+        "q" : 2,
+        "r" : 0
+      },
+      "assignedCoordinates" : [ {
+        "q" : 2,
+        "r" : 0
+      }, {
+        "q" : 1,
+        "r" : 1
+      }, {
+        "q" : 2,
+        "r" : 0
+      }, {
+        "q" : 3,
+        "r" : 0
+      }, {
+        "q" : 3,
+        "r" : 1
+      }, {
+        "q" : 2,
+        "r" : 2
+      }, {
+        "q" : 1,
+        "r" : 2
+      }, {
+        "q" : 0,
+        "r" : 2
+      }, {
+        "q" : 1,
+        "r" : 1
+      }, {
+        "q" : 2,
+        "r" : 0
+      }, {
+        "q" : 3,
+        "r" : 0
+      }, {
+        "q" : 4,
+        "r" : 0
+      }, {
+        "q" : 4,
+        "r" : 1
+      }, {
+        "q" : 4,
+        "r" : 2
+      }, {
+        "q" : 3,
+        "r" : 3
+      } ],
+      "preparedPositions" : [ {
+        "original" : {
+          "direction" : "E",
+          "anchor" : "dragon-peaks",
+          "priority" : 9,
+          "distanceFrom" : 1,
+          "distanceTo" : 2
+        },
+        "direction" : "E",
+        "directionAngle" : 60,
+        "distanceFrom" : 1,
+        "distanceTo" : 2,
+        "anchor" : "dragon-peaks",
+        "priority" : 9
+      } ],
+      "sizeQ" : null,
+      "sizeR" : null,
+      "minQ" : null,
+      "maxQ" : null,
+      "minR" : null,
+      "maxR" : null
+    },
+    "type" : "FOREST",
+    "parameters" : {
+      "flora_density" : "0.8",
+      "g_treeType" : "dark_oak",
+      "g_flora" : "forest",
+      "g_offset" : "2",
+      "g_builder" : "mountain"
+    },
+    "placedCenter" : {
+      "q" : 2,
+      "r" : 0
+    },
+    "calculatedSizeFrom" : 7,
+    "calculatedSizeTo" : 15,
+    "preparedPositions" : [ {
+      "original" : {
+        "direction" : "E",
+        "anchor" : "dragon-peaks",
+        "priority" : 9,
+        "distanceFrom" : 1,
+        "distanceTo" : 2
+      },
+      "direction" : "E",
+      "directionAngle" : 60,
+      "distanceFrom" : 1,
+      "distanceTo" : 2,
+      "anchor" : "dragon-peaks",
+      "priority" : 9
+    } ],
+    "assignedCoordinates" : [ {
+      "q" : 2,
+      "r" : 0
+    }, {
+      "q" : 1,
+      "r" : 1
+    }, {
+      "q" : 2,
+      "r" : 0
+    }, {
+      "q" : 3,
+      "r" : 0
+    }, {
+      "q" : 3,
+      "r" : 1
+    }, {
+      "q" : 2,
+      "r" : 2
+    }, {
+      "q" : 1,
+      "r" : 2
+    }, {
+      "q" : 0,
+      "r" : 2
+    }, {
+      "q" : 1,
+      "r" : 1
+    }, {
+      "q" : 2,
+      "r" : 0
+    }, {
+      "q" : 3,
+      "r" : 0
+    }, {
+      "q" : 4,
+      "r" : 0
+    }, {
+      "q" : 4,
+      "r" : 1
+    }, {
+      "q" : 4,
+      "r" : 2
+    }, {
+      "q" : 3,
+      "r" : 3
+    } ],
+    "hexGrids" : [ {
+      "coordinate" : {
+        "q" : 2,
+        "r" : 0
+      },
+      "parameters" : {
+        "g_treeType" : "dark_oak",
+        "biome" : "mountain",
+        "g_offset" : "2",
+        "biomeName" : "dark-woods",
+        "g_flora" : "forest",
+        "flora_density" : "0.8",
+        "g_builder" : "mountain"
+      },
+      "areas" : { },
+      "flowSegments" : [ ],
+      "roadConfigParts" : [ ],
+      "riverConfigParts" : [ ],
+      "wallConfigParts" : [ ],
+      "name" : "dark-woods [2,0]",
+      "description" : "Part of FOREST biome"
+    }, {
+      "coordinate" : {
+        "q" : 1,
+        "r" : 1
+      },
+      "parameters" : {
+        "g_treeType" : "dark_oak",
+        "biome" : "mountain",
+        "g_offset" : "2",
+        "biomeName" : "dark-woods",
+        "g_flora" : "forest",
+        "flora_density" : "0.8",
+        "g_builder" : "mountain"
+      },
+      "areas" : { },
+      "flowSegments" : [ ],
+      "roadConfigParts" : [ ],
+      "riverConfigParts" : [ ],
+      "wallConfigParts" : [ ],
+      "name" : "dark-woods [1,1]",
+      "description" : "Part of FOREST biome"
+    }, {
+      "coordinate" : {
+        "q" : 2,
+        "r" : 0
+      },
+      "parameters" : {
+        "g_treeType" : "dark_oak",
+        "biome" : "mountain",
+        "g_offset" : "2",
+        "biomeName" : "dark-woods",
+        "g_flora" : "forest",
+        "flora_density" : "0.8",
+        "g_builder" : "mountain"
+      },
+      "areas" : { },
+      "flowSegments" : [ ],
+      "roadConfigParts" : [ ],
+      "riverConfigParts" : [ ],
+      "wallConfigParts" : [ ],
+      "name" : "dark-woods [2,0]",
+      "description" : "Part of FOREST biome"
+    }, {
+      "coordinate" : {
+        "q" : 3,
+        "r" : 0
+      },
+      "parameters" : {
+        "g_treeType" : "dark_oak",
+        "biome" : "mountain",
+        "g_offset" : "2",
+        "biomeName" : "dark-woods",
+        "g_flora" : "forest",
+        "flora_density" : "0.8",
+        "g_builder" : "mountain"
+      },
+      "areas" : { },
+      "flowSegments" : [ ],
+      "roadConfigParts" : [ ],
+      "riverConfigParts" : [ ],
+      "wallConfigParts" : [ ],
+      "name" : "dark-woods [3,0]",
+      "description" : "Part of FOREST biome"
+    }, {
+      "coordinate" : {
+        "q" : 3,
+        "r" : 1
+      },
+      "parameters" : {
+        "g_treeType" : "dark_oak",
+        "biome" : "mountain",
+        "g_offset" : "2",
+        "biomeName" : "dark-woods",
+        "g_flora" : "forest",
+        "flora_density" : "0.8",
+        "g_builder" : "mountain"
+      },
+      "areas" : { },
+      "flowSegments" : [ ],
+      "roadConfigParts" : [ ],
+      "riverConfigParts" : [ ],
+      "wallConfigParts" : [ ],
+      "name" : "dark-woods [3,1]",
+      "description" : "Part of FOREST biome"
+    }, {
+      "coordinate" : {
+        "q" : 2,
+        "r" : 2
+      },
+      "parameters" : {
+        "g_treeType" : "dark_oak",
+        "biome" : "mountain",
+        "g_offset" : "2",
+        "biomeName" : "dark-woods",
+        "g_flora" : "forest",
+        "flora_density" : "0.8",
+        "g_builder" : "mountain"
+      },
+      "areas" : { },
+      "flowSegments" : [ ],
+      "roadConfigParts" : [ ],
+      "riverConfigParts" : [ ],
+      "wallConfigParts" : [ ],
+      "name" : "dark-woods [2,2]",
+      "description" : "Part of FOREST biome"
+    }, {
+      "coordinate" : {
+        "q" : 1,
+        "r" : 2
+      },
+      "parameters" : {
+        "g_treeType" : "dark_oak",
+        "biome" : "mountain",
+        "g_offset" : "2",
+        "biomeName" : "dark-woods",
+        "g_flora" : "forest",
+        "flora_density" : "0.8",
+        "g_builder" : "mountain"
+      },
+      "areas" : { },
+      "flowSegments" : [ ],
+      "roadConfigParts" : [ ],
+      "riverConfigParts" : [ ],
+      "wallConfigParts" : [ ],
+      "name" : "dark-woods [1,2]",
+      "description" : "Part of FOREST biome"
+    }, {
+      "coordinate" : {
+        "q" : 0,
+        "r" : 2
+      },
+      "parameters" : {
+        "g_treeType" : "dark_oak",
+        "biome" : "mountain",
+        "g_offset" : "2",
+        "biomeName" : "dark-woods",
+        "g_flora" : "forest",
+        "flora_density" : "0.8",
+        "g_builder" : "mountain"
+      },
+      "areas" : { },
+      "flowSegments" : [ ],
+      "roadConfigParts" : [ ],
+      "riverConfigParts" : [ ],
+      "wallConfigParts" : [ ],
+      "name" : "dark-woods [0,2]",
+      "description" : "Part of FOREST biome"
+    }, {
+      "coordinate" : {
+        "q" : 1,
+        "r" : 1
+      },
+      "parameters" : {
+        "g_treeType" : "dark_oak",
+        "biome" : "mountain",
+        "g_offset" : "2",
+        "biomeName" : "dark-woods",
+        "g_flora" : "forest",
+        "flora_density" : "0.8",
+        "g_builder" : "mountain"
+      },
+      "areas" : { },
+      "flowSegments" : [ ],
+      "roadConfigParts" : [ ],
+      "riverConfigParts" : [ ],
+      "wallConfigParts" : [ ],
+      "name" : "dark-woods [1,1]",
+      "description" : "Part of FOREST biome"
+    }, {
+      "coordinate" : {
+        "q" : 2,
+        "r" : 0
+      },
+      "parameters" : {
+        "g_treeType" : "dark_oak",
+        "biome" : "mountain",
+        "g_offset" : "2",
+        "biomeName" : "dark-woods",
+        "g_flora" : "forest",
+        "flora_density" : "0.8",
+        "g_builder" : "mountain"
+      },
+      "areas" : { },
+      "flowSegments" : [ ],
+      "roadConfigParts" : [ ],
+      "riverConfigParts" : [ ],
+      "wallConfigParts" : [ ],
+      "name" : "dark-woods [2,0]",
+      "description" : "Part of FOREST biome"
+    }, {
+      "coordinate" : {
+        "q" : 3,
+        "r" : 0
+      },
+      "parameters" : {
+        "g_treeType" : "dark_oak",
+        "biome" : "mountain",
+        "g_offset" : "2",
+        "biomeName" : "dark-woods",
+        "g_flora" : "forest",
+        "flora_density" : "0.8",
+        "g_builder" : "mountain"
+      },
+      "areas" : { },
+      "flowSegments" : [ ],
+      "roadConfigParts" : [ ],
+      "riverConfigParts" : [ ],
+      "wallConfigParts" : [ ],
+      "name" : "dark-woods [3,0]",
+      "description" : "Part of FOREST biome"
+    }, {
+      "coordinate" : {
+        "q" : 4,
+        "r" : 0
+      },
+      "parameters" : {
+        "g_treeType" : "dark_oak",
+        "biome" : "mountain",
+        "g_offset" : "2",
+        "biomeName" : "dark-woods",
+        "g_flora" : "forest",
+        "flora_density" : "0.8",
+        "g_builder" : "mountain"
+      },
+      "areas" : { },
+      "flowSegments" : [ ],
+      "roadConfigParts" : [ ],
+      "riverConfigParts" : [ ],
+      "wallConfigParts" : [ ],
+      "name" : "dark-woods [4,0]",
+      "description" : "Part of FOREST biome"
+    }, {
+      "coordinate" : {
+        "q" : 4,
+        "r" : 1
+      },
+      "parameters" : {
+        "g_treeType" : "dark_oak",
+        "biome" : "mountain",
+        "g_offset" : "2",
+        "biomeName" : "dark-woods",
+        "g_flora" : "forest",
+        "flora_density" : "0.8",
+        "g_builder" : "mountain"
+      },
+      "areas" : { },
+      "flowSegments" : [ ],
+      "roadConfigParts" : [ ],
+      "riverConfigParts" : [ ],
+      "wallConfigParts" : [ ],
+      "name" : "dark-woods [4,1]",
+      "description" : "Part of FOREST biome"
+    }, {
+      "coordinate" : {
+        "q" : 4,
+        "r" : 2
+      },
+      "parameters" : {
+        "g_treeType" : "dark_oak",
+        "biome" : "mountain",
+        "g_offset" : "2",
+        "biomeName" : "dark-woods",
+        "g_flora" : "forest",
+        "flora_density" : "0.8",
+        "g_builder" : "mountain"
+      },
+      "areas" : { },
+      "flowSegments" : [ ],
+      "roadConfigParts" : [ ],
+      "riverConfigParts" : [ ],
+      "wallConfigParts" : [ ],
+      "name" : "dark-woods [4,2]",
+      "description" : "Part of FOREST biome"
+    }, {
+      "coordinate" : {
+        "q" : 3,
+        "r" : 3
+      },
+      "parameters" : {
+        "g_treeType" : "dark_oak",
+        "biome" : "mountain",
+        "g_offset" : "2",
+        "biomeName" : "dark-woods",
+        "g_flora" : "forest",
+        "flora_density" : "0.8",
+        "g_builder" : "mountain"
+      },
+      "areas" : { },
+      "flowSegments" : [ ],
+      "roadConfigParts" : [ ],
+      "riverConfigParts" : [ ],
+      "wallConfigParts" : [ ],
+      "name" : "dark-woods [3,3]",
+      "description" : "Part of FOREST biome"
+    } ]
+  }, {
+    "featureType" : "point",
+    "featureId" : "642c3403-db9d-4c6a-8c86-ccbaa4284187",
+    "name" : "river-source",
+    "title" : "Silver Stream Source",
+    "status" : "COMPOSED",
+    "enabled" : true,
+    "featureComposed" : {
+      "hexGrids" : [ ]
+    },
+    "biomeId" : "dragon-peaks",
+    "direction" : "W",
+    "biomeDistance" : "NEAR",
+    "precomposed" : false,
+    "pointComposed" : {
+      "gridCoordinate" : {
+        "q" : 0,
+        "r" : 0
+      },
+      "biome" : "dragon-peaks",
+      "hexLocalPosition" : {
+        "position" : {
+          "q" : -1,
+          "r" : 0
+        },
+        "divider" : 5,
+        "size" : 102
+      },
+      "hexLocalEdgeVector" : null,
+      "preparedPositions" : null,
+      "placedCoordinate" : {
+        "q" : 0,
+        "r" : 0
+      },
+      "placedLx" : 168,
+      "placedLz" : 205,
+      "placedInBiome" : "dragon-peaks"
+    },
+    "gridCoordinate" : {
+      "q" : 0,
+      "r" : 0
+    },
+    "placedLx" : 168,
+    "placedLz" : 205,
+    "biome" : "dragon-peaks",
+    "placedInBiome" : "dragon-peaks",
+    "hexLocalPosition" : {
+      "position" : {
+        "q" : -1,
+        "r" : 0
+      },
+      "divider" : 5,
+      "size" : 102
+    },
+    "placedCoordinate" : {
+      "q" : 0,
+      "r" : 0
+    },
+    "hexGrids" : [ ]
+  }, {
+    "featureType" : "point",
+    "featureId" : "3fafcb6c-eb81-4cc6-885c-ef2acddabc97",
+    "name" : "river-end",
+    "title" : "Silver Stream End",
+    "status" : "COMPOSED",
+    "enabled" : true,
+    "featureComposed" : {
+      "hexGrids" : [ ]
+    },
+    "biomeId" : "green-fields",
+    "direction" : "W",
+    "biomeDistance" : "FAR",
+    "precomposed" : false,
+    "pointComposed" : {
+      "gridCoordinate" : {
+        "q" : -3,
+        "r" : 3
+      },
+      "biome" : "green-fields",
+      "hexLocalPosition" : {
+        "position" : {
+          "q" : -3,
+          "r" : 0
+        },
+        "divider" : 5,
+        "size" : 102
+      },
+      "hexLocalEdgeVector" : null,
+      "preparedPositions" : null,
+      "placedCoordinate" : {
+        "q" : -3,
+        "r" : 3
+      },
+      "placedLx" : -9,
+      "placedLz" : 103,
+      "placedInBiome" : "green-fields"
+    },
+    "gridCoordinate" : {
+      "q" : -3,
+      "r" : 3
+    },
+    "placedLx" : -9,
+    "placedLz" : 103,
+    "biome" : "green-fields",
+    "placedInBiome" : "green-fields",
+    "hexLocalPosition" : {
+      "position" : {
+        "q" : -3,
+        "r" : 0
+      },
+      "divider" : 5,
+      "size" : 102
+    },
+    "placedCoordinate" : {
+      "q" : -3,
+      "r" : 3
+    },
+    "hexGrids" : [ ]
+  }, {
+    "featureType" : "river",
+    "featureId" : "84831a42-8d88-4d32-9b01-39569b63a61c",
+    "name" : "silver-stream",
+    "title" : "Silver Stream",
+    "status" : "COMPOSED",
+    "enabled" : true,
+    "featureComposed" : {
+      "hexGrids" : [ {
+        "coordinate" : {
+          "q" : 0,
+          "r" : 0
+        },
+        "parameters" : { },
+        "areas" : { },
+        "flowSegments" : [ {
+          "flowType" : "RIVER",
+          "toSide" : "WEST",
+          "fromPosition" : "<-1;0#102>",
+          "toPosition" : "<W 2/4>",
+          "fromLx" : 168,
+          "fromLz" : 205,
+          "width" : 4,
+          "level" : 115,
+          "fromLevel" : 115,
+          "toLevel" : 102,
+          "depth" : 3,
+          "flowFeatureId" : "84831a42-8d88-4d32-9b01-39569b63a61c"
+        } ],
+        "roadConfigParts" : [ ],
+        "riverConfigParts" : [ ],
+        "wallConfigParts" : [ ],
+        "name" : "silver-stream [0,0]",
+        "description" : "Flow segment for silver-stream"
+      }, {
+        "coordinate" : {
+          "q" : -1,
+          "r" : 0
+        },
+        "parameters" : { },
+        "areas" : { },
+        "flowSegments" : [ {
+          "flowType" : "RIVER",
+          "fromSide" : "EAST",
+          "toSide" : "SOUTH_WEST",
+          "fromPosition" : "<E 2/4>",
+          "toPosition" : "<SW 2/4>",
+          "width" : 4,
+          "level" : 102,
+          "fromLevel" : 102,
+          "toLevel" : 90,
+          "depth" : 3,
+          "flowFeatureId" : "84831a42-8d88-4d32-9b01-39569b63a61c"
+        } ],
+        "roadConfigParts" : [ ],
+        "riverConfigParts" : [ ],
+        "wallConfigParts" : [ ],
+        "name" : "silver-stream [-1,0]",
+        "description" : "Flow segment for silver-stream"
+      }, {
+        "coordinate" : {
+          "q" : -2,
+          "r" : 1
+        },
+        "parameters" : { },
+        "areas" : { },
+        "flowSegments" : [ {
+          "flowType" : "RIVER",
+          "fromSide" : "NORTH_EAST",
+          "toSide" : "SOUTH_WEST",
+          "fromPosition" : "<NE 2/4>",
+          "toPosition" : "<SW 2/4>",
+          "width" : 4,
+          "level" : 90,
+          "fromLevel" : 90,
+          "toLevel" : 90,
+          "depth" : 3,
+          "flowFeatureId" : "84831a42-8d88-4d32-9b01-39569b63a61c"
+        } ],
+        "roadConfigParts" : [ ],
+        "riverConfigParts" : [ ],
+        "wallConfigParts" : [ ],
+        "name" : "silver-stream [-2,1]",
+        "description" : "Flow segment for silver-stream"
+      }, {
+        "coordinate" : {
+          "q" : -3,
+          "r" : 2
+        },
+        "parameters" : { },
+        "areas" : { },
+        "flowSegments" : [ {
+          "flowType" : "RIVER",
+          "fromSide" : "NORTH_EAST",
+          "toSide" : "EAST",
+          "fromPosition" : "<NE 2/4>",
+          "toPosition" : "<E 2/4>",
+          "width" : 4,
+          "level" : 90,
+          "fromLevel" : 90,
+          "toLevel" : 45,
+          "depth" : 3,
+          "flowFeatureId" : "84831a42-8d88-4d32-9b01-39569b63a61c"
+        } ],
+        "roadConfigParts" : [ ],
+        "riverConfigParts" : [ ],
+        "wallConfigParts" : [ ],
+        "name" : "silver-stream [-3,2]",
+        "description" : "Flow segment for silver-stream"
+      }, {
+        "coordinate" : {
+          "q" : -2,
+          "r" : 2
+        },
+        "parameters" : { },
+        "areas" : { },
+        "flowSegments" : [ {
+          "flowType" : "RIVER",
+          "fromSide" : "WEST",
+          "toSide" : "SOUTH_WEST",
+          "fromPosition" : "<W 2/4>",
+          "toPosition" : "<SW 2/4>",
+          "width" : 4,
+          "level" : 45,
+          "fromLevel" : 45,
+          "toLevel" : 45,
+          "depth" : 3,
+          "flowFeatureId" : "84831a42-8d88-4d32-9b01-39569b63a61c"
+        } ],
+        "roadConfigParts" : [ ],
+        "riverConfigParts" : [ ],
+        "wallConfigParts" : [ ],
+        "name" : "silver-stream [-2,2]",
+        "description" : "Flow segment for silver-stream"
+      }, {
+        "coordinate" : {
+          "q" : -3,
+          "r" : 3
+        },
+        "parameters" : { },
+        "areas" : { },
+        "flowSegments" : [ {
+          "flowType" : "RIVER",
+          "fromSide" : "NORTH_EAST",
+          "fromPosition" : "<NE 2/4>",
+          "toPosition" : "<-3;0#102>",
+          "toLx" : -9,
+          "toLz" : 103,
+          "width" : 4,
+          "level" : 45,
+          "fromLevel" : 45,
+          "toLevel" : 10,
+          "depth" : 3,
+          "flowFeatureId" : "84831a42-8d88-4d32-9b01-39569b63a61c"
+        } ],
+        "roadConfigParts" : [ ],
+        "riverConfigParts" : [ ],
+        "wallConfigParts" : [ ],
+        "name" : "silver-stream [-3,3]",
+        "description" : "Flow segment for silver-stream"
+      } ]
+    },
+    "type" : "RIVER",
+    "startPointId" : "river-source",
+    "endPointId" : "river-end",
+    "width" : "MEDIUM",
+    "widthBlocks" : 4,
+    "levelMode" : "ADJUST_MEAN",
+    "meanLevelOffset" : -1,
+    "tendLeft" : "SLIGHT",
+    "tendRight" : "MODERATE",
+    "flowComposed" : {
+      "calculatedWidthBlocks" : 4,
+      "startPoint" : {
+        "q" : 0,
+        "r" : 0
+      },
+      "endPoint" : {
+        "q" : -3,
+        "r" : 3
+      },
+      "waypoints" : null,
+      "route" : [ {
+        "q" : 0,
+        "r" : 0
+      }, {
+        "q" : -1,
+        "r" : 0
+      }, {
+        "q" : -2,
+        "r" : 1
+      }, {
+        "q" : -3,
+        "r" : 2
+      }, {
+        "q" : -2,
+        "r" : 2
+      }, {
+        "q" : -3,
+        "r" : 3
+      } ],
+      "startPointFeature" : {
+        "pointType" : "point",
+        "featureId" : "642c3403-db9d-4c6a-8c86-ccbaa4284187",
+        "name" : "river-source",
+        "title" : "Silver Stream Source",
+        "status" : "COMPOSED",
+        "enabled" : true,
+        "featureComposed" : {
+          "hexGrids" : [ ]
+        },
+        "biomeId" : "dragon-peaks",
+        "direction" : "W",
+        "biomeDistance" : "NEAR",
+        "precomposed" : false,
+        "pointComposed" : {
+          "gridCoordinate" : {
+            "q" : 0,
+            "r" : 0
+          },
+          "biome" : "dragon-peaks",
+          "hexLocalPosition" : {
+            "position" : {
+              "q" : -1,
+              "r" : 0
+            },
+            "divider" : 5,
+            "size" : 102
+          },
+          "hexLocalEdgeVector" : null,
+          "preparedPositions" : null,
+          "placedCoordinate" : {
+            "q" : 0,
+            "r" : 0
+          },
+          "placedLx" : 168,
+          "placedLz" : 205,
+          "placedInBiome" : "dragon-peaks"
+        },
+        "gridCoordinate" : {
+          "q" : 0,
+          "r" : 0
+        },
+        "placedLx" : 168,
+        "placedLz" : 205,
+        "biome" : "dragon-peaks",
+        "placedInBiome" : "dragon-peaks",
+        "hexLocalPosition" : {
+          "position" : {
+            "q" : -1,
+            "r" : 0
+          },
+          "divider" : 5,
+          "size" : 102
+        },
+        "placedCoordinate" : {
+          "q" : 0,
+          "r" : 0
+        },
+        "hexGrids" : [ ]
+      },
+      "endPointFeature" : {
+        "pointType" : "point",
+        "featureId" : "3fafcb6c-eb81-4cc6-885c-ef2acddabc97",
+        "name" : "river-end",
+        "title" : "Silver Stream End",
+        "status" : "COMPOSED",
+        "enabled" : true,
+        "featureComposed" : {
+          "hexGrids" : [ ]
+        },
+        "biomeId" : "green-fields",
+        "direction" : "W",
+        "biomeDistance" : "FAR",
+        "precomposed" : false,
+        "pointComposed" : {
+          "gridCoordinate" : {
+            "q" : -3,
+            "r" : 3
+          },
+          "biome" : "green-fields",
+          "hexLocalPosition" : {
+            "position" : {
+              "q" : -3,
+              "r" : 0
+            },
+            "divider" : 5,
+            "size" : 102
+          },
+          "hexLocalEdgeVector" : null,
+          "preparedPositions" : null,
+          "placedCoordinate" : {
+            "q" : -3,
+            "r" : 3
+          },
+          "placedLx" : -9,
+          "placedLz" : 103,
+          "placedInBiome" : "green-fields"
+        },
+        "gridCoordinate" : {
+          "q" : -3,
+          "r" : 3
+        },
+        "placedLx" : -9,
+        "placedLz" : 103,
+        "biome" : "green-fields",
+        "placedInBiome" : "green-fields",
+        "hexLocalPosition" : {
+          "position" : {
+            "q" : -3,
+            "r" : 0
+          },
+          "divider" : 5,
+          "size" : 102
+        },
+        "placedCoordinate" : {
+          "q" : -3,
+          "r" : 3
+        },
+        "hexGrids" : [ ]
+      }
+    },
+    "depth" : 3,
+    "level" : 85,
+    "route" : [ {
+      "q" : 0,
+      "r" : 0
+    }, {
+      "q" : -1,
+      "r" : 0
+    }, {
+      "q" : -2,
+      "r" : 1
+    }, {
+      "q" : -3,
+      "r" : 2
+    }, {
+      "q" : -2,
+      "r" : 2
+    }, {
+      "q" : -3,
+      "r" : 3
+    } ],
+    "startPoint" : {
+      "q" : 0,
+      "r" : 0
+    },
+    "endPoint" : {
+      "q" : -3,
+      "r" : 3
+    },
+    "endPointFeature" : {
+      "pointType" : "point",
+      "featureId" : "3fafcb6c-eb81-4cc6-885c-ef2acddabc97",
+      "name" : "river-end",
+      "title" : "Silver Stream End",
+      "status" : "COMPOSED",
+      "enabled" : true,
+      "featureComposed" : {
+        "hexGrids" : [ ]
+      },
+      "biomeId" : "green-fields",
+      "direction" : "W",
+      "biomeDistance" : "FAR",
+      "precomposed" : false,
+      "pointComposed" : {
+        "gridCoordinate" : {
+          "q" : -3,
+          "r" : 3
+        },
+        "biome" : "green-fields",
+        "hexLocalPosition" : {
+          "position" : {
+            "q" : -3,
+            "r" : 0
+          },
+          "divider" : 5,
+          "size" : 102
+        },
+        "hexLocalEdgeVector" : null,
+        "preparedPositions" : null,
+        "placedCoordinate" : {
+          "q" : -3,
+          "r" : 3
+        },
+        "placedLx" : -9,
+        "placedLz" : 103,
+        "placedInBiome" : "green-fields"
+      },
+      "gridCoordinate" : {
+        "q" : -3,
+        "r" : 3
+      },
+      "placedLx" : -9,
+      "placedLz" : 103,
+      "biome" : "green-fields",
+      "placedInBiome" : "green-fields",
+      "hexLocalPosition" : {
+        "position" : {
+          "q" : -3,
+          "r" : 0
+        },
+        "divider" : 5,
+        "size" : 102
+      },
+      "placedCoordinate" : {
+        "q" : -3,
+        "r" : 3
+      },
+      "hexGrids" : [ ]
+    },
+    "calculatedWidthBlocks" : 4,
+    "startPointFeature" : {
+      "pointType" : "point",
+      "featureId" : "642c3403-db9d-4c6a-8c86-ccbaa4284187",
+      "name" : "river-source",
+      "title" : "Silver Stream Source",
+      "status" : "COMPOSED",
+      "enabled" : true,
+      "featureComposed" : {
+        "hexGrids" : [ ]
+      },
+      "biomeId" : "dragon-peaks",
+      "direction" : "W",
+      "biomeDistance" : "NEAR",
+      "precomposed" : false,
+      "pointComposed" : {
+        "gridCoordinate" : {
+          "q" : 0,
+          "r" : 0
+        },
+        "biome" : "dragon-peaks",
+        "hexLocalPosition" : {
+          "position" : {
+            "q" : -1,
+            "r" : 0
+          },
+          "divider" : 5,
+          "size" : 102
+        },
+        "hexLocalEdgeVector" : null,
+        "preparedPositions" : null,
+        "placedCoordinate" : {
+          "q" : 0,
+          "r" : 0
+        },
+        "placedLx" : 168,
+        "placedLz" : 205,
+        "placedInBiome" : "dragon-peaks"
+      },
+      "gridCoordinate" : {
+        "q" : 0,
+        "r" : 0
+      },
+      "placedLx" : 168,
+      "placedLz" : 205,
+      "biome" : "dragon-peaks",
+      "placedInBiome" : "dragon-peaks",
+      "hexLocalPosition" : {
+        "position" : {
+          "q" : -1,
+          "r" : 0
+        },
+        "divider" : 5,
+        "size" : 102
+      },
+      "placedCoordinate" : {
+        "q" : 0,
+        "r" : 0
+      },
+      "hexGrids" : [ ]
+    },
+    "hexGrids" : [ {
+      "coordinate" : {
+        "q" : 0,
+        "r" : 0
+      },
+      "parameters" : { },
+      "areas" : { },
+      "flowSegments" : [ {
+        "flowType" : "RIVER",
+        "toSide" : "WEST",
+        "fromPosition" : "<-1;0#102>",
+        "toPosition" : "<W 2/4>",
+        "fromLx" : 168,
+        "fromLz" : 205,
+        "width" : 4,
+        "level" : 115,
+        "fromLevel" : 115,
+        "toLevel" : 102,
+        "depth" : 3,
+        "flowFeatureId" : "84831a42-8d88-4d32-9b01-39569b63a61c"
+      } ],
+      "roadConfigParts" : [ ],
+      "riverConfigParts" : [ ],
+      "wallConfigParts" : [ ],
+      "name" : "silver-stream [0,0]",
+      "description" : "Flow segment for silver-stream"
+    }, {
+      "coordinate" : {
+        "q" : -1,
+        "r" : 0
+      },
+      "parameters" : { },
+      "areas" : { },
+      "flowSegments" : [ {
+        "flowType" : "RIVER",
+        "fromSide" : "EAST",
+        "toSide" : "SOUTH_WEST",
+        "fromPosition" : "<E 2/4>",
+        "toPosition" : "<SW 2/4>",
+        "width" : 4,
+        "level" : 102,
+        "fromLevel" : 102,
+        "toLevel" : 90,
+        "depth" : 3,
+        "flowFeatureId" : "84831a42-8d88-4d32-9b01-39569b63a61c"
+      } ],
+      "roadConfigParts" : [ ],
+      "riverConfigParts" : [ ],
+      "wallConfigParts" : [ ],
+      "name" : "silver-stream [-1,0]",
+      "description" : "Flow segment for silver-stream"
+    }, {
+      "coordinate" : {
+        "q" : -2,
+        "r" : 1
+      },
+      "parameters" : { },
+      "areas" : { },
+      "flowSegments" : [ {
+        "flowType" : "RIVER",
+        "fromSide" : "NORTH_EAST",
+        "toSide" : "SOUTH_WEST",
+        "fromPosition" : "<NE 2/4>",
+        "toPosition" : "<SW 2/4>",
+        "width" : 4,
+        "level" : 90,
+        "fromLevel" : 90,
+        "toLevel" : 90,
+        "depth" : 3,
+        "flowFeatureId" : "84831a42-8d88-4d32-9b01-39569b63a61c"
+      } ],
+      "roadConfigParts" : [ ],
+      "riverConfigParts" : [ ],
+      "wallConfigParts" : [ ],
+      "name" : "silver-stream [-2,1]",
+      "description" : "Flow segment for silver-stream"
+    }, {
+      "coordinate" : {
+        "q" : -3,
+        "r" : 2
+      },
+      "parameters" : { },
+      "areas" : { },
+      "flowSegments" : [ {
+        "flowType" : "RIVER",
+        "fromSide" : "NORTH_EAST",
+        "toSide" : "EAST",
+        "fromPosition" : "<NE 2/4>",
+        "toPosition" : "<E 2/4>",
+        "width" : 4,
+        "level" : 90,
+        "fromLevel" : 90,
+        "toLevel" : 45,
+        "depth" : 3,
+        "flowFeatureId" : "84831a42-8d88-4d32-9b01-39569b63a61c"
+      } ],
+      "roadConfigParts" : [ ],
+      "riverConfigParts" : [ ],
+      "wallConfigParts" : [ ],
+      "name" : "silver-stream [-3,2]",
+      "description" : "Flow segment for silver-stream"
+    }, {
+      "coordinate" : {
+        "q" : -2,
+        "r" : 2
+      },
+      "parameters" : { },
+      "areas" : { },
+      "flowSegments" : [ {
+        "flowType" : "RIVER",
+        "fromSide" : "WEST",
+        "toSide" : "SOUTH_WEST",
+        "fromPosition" : "<W 2/4>",
+        "toPosition" : "<SW 2/4>",
+        "width" : 4,
+        "level" : 45,
+        "fromLevel" : 45,
+        "toLevel" : 45,
+        "depth" : 3,
+        "flowFeatureId" : "84831a42-8d88-4d32-9b01-39569b63a61c"
+      } ],
+      "roadConfigParts" : [ ],
+      "riverConfigParts" : [ ],
+      "wallConfigParts" : [ ],
+      "name" : "silver-stream [-2,2]",
+      "description" : "Flow segment for silver-stream"
+    }, {
+      "coordinate" : {
+        "q" : -3,
+        "r" : 3
+      },
+      "parameters" : { },
+      "areas" : { },
+      "flowSegments" : [ {
+        "flowType" : "RIVER",
+        "fromSide" : "NORTH_EAST",
+        "fromPosition" : "<NE 2/4>",
+        "toPosition" : "<-3;0#102>",
+        "toLx" : -9,
+        "toLz" : 103,
+        "width" : 4,
+        "level" : 45,
+        "fromLevel" : 45,
+        "toLevel" : 10,
+        "depth" : 3,
+        "flowFeatureId" : "84831a42-8d88-4d32-9b01-39569b63a61c"
+      } ],
+      "roadConfigParts" : [ ],
+      "riverConfigParts" : [ ],
+      "wallConfigParts" : [ ],
+      "name" : "silver-stream [-3,3]",
+      "description" : "Flow segment for silver-stream"
+    } ]
+  }, {
+    "featureType" : "village",
+    "featureId" : "ce673299-e15f-4905-833b-61891c01848a",
+    "name" : "riverside",
+    "title" : "Riverside",
+    "status" : "PREPARED",
+    "enabled" : true,
+    "featureComposed" : {
+      "hexGrids" : [ ]
+    },
+    "shape" : "CIRCLE",
+    "size" : "SMALL",
+    "positions" : [ {
+      "direction" : "S",
+      "anchor" : "river-end",
+      "priority" : 8,
+      "distanceFrom" : 0,
+      "distanceTo" : 1
+    } ],
+    "continentId" : "main-continent",
+    "areaComposed" : {
+      "calculatedSizeFrom" : 1,
+      "calculatedSizeTo" : 3,
+      "placedCenter" : null,
+      "assignedCoordinates" : null,
+      "preparedPositions" : [ {
+        "original" : {
+          "direction" : "S",
+          "anchor" : "river-end",
+          "priority" : 8,
+          "distanceFrom" : 0,
+          "distanceTo" : 1
+        },
+        "direction" : "S",
+        "directionAngle" : 150,
+        "distanceFrom" : 0,
+        "distanceTo" : 1,
+        "anchor" : "river-end",
+        "priority" : 8
+      } ],
+      "sizeQ" : null,
+      "sizeR" : null,
+      "minQ" : null,
+      "maxQ" : null,
+      "minR" : null,
+      "maxR" : null
+    },
+    "style" : "medieval",
+    "districts" : [ {
+      "name" : "center",
+      "title" : "Village Center",
+      "slots" : "SMALL",
+      "places" : [ {
+        "placeType" : "free",
+        "name" : "village-square",
+        "connectionPoint" : false,
+        "kind" : "PLAZA"
+      }, {
+        "placeType" : "road",
+        "name" : "main-street",
+        "connectionPoint" : true,
+        "kind" : "STREET"
+      }, {
+        "placeType" : "building",
+        "name" : "tavern",
+        "connectionPoint" : false,
+        "kind" : "tavern"
+      } ]
+    } ],
+    "externalConnectionPoints" : [ {
+      "pointType" : "village-connection",
+      "featureId" : "riverside-n",
+      "name" : "riverside-n",
+      "title" : "Connection N",
+      "featureComposed" : {
+        "hexGrids" : [ ]
+      },
+      "biomeId" : "dragon-peaks-slopes",
+      "precomposed" : true,
+      "pointComposed" : {
+        "gridCoordinate" : {
+          "q" : 0,
+          "r" : -1
+        },
+        "biome" : "dragon-peaks-slopes",
+        "hexLocalPosition" : null,
+        "hexLocalEdgeVector" : {
+          "side" : "SOUTH_WEST",
+          "numerator" : 2,
+          "denominator" : 4
+        },
+        "preparedPositions" : null,
+        "placedCoordinate" : {
+          "q" : 0,
+          "r" : -1
+        },
+        "placedLx" : 0,
+        "placedLz" : 0,
+        "placedInBiome" : "dragon-peaks-slopes"
+      },
+      "villageId" : "riverside",
+      "externalDirection" : "N",
+      "neighborGridCoordinate" : {
+        "q" : 0,
+        "r" : -1
+      },
+      "placedInNeighborGrid" : true,
+      "gridDistance" : 1,
+      "gridCoordinate" : {
+        "q" : 0,
+        "r" : -1
+      },
+      "placedLx" : 0,
+      "placedLz" : 0,
+      "biome" : "dragon-peaks-slopes",
+      "placedInBiome" : "dragon-peaks-slopes",
+      "hexLocalEdgeVector" : {
+        "side" : "SOUTH_WEST",
+        "numerator" : 2,
+        "denominator" : 4
+      },
+      "placedCoordinate" : {
+        "q" : 0,
+        "r" : -1
+      },
+      "hexGrids" : [ ]
+    }, {
+      "pointType" : "village-connection",
+      "featureId" : "riverside-s",
+      "name" : "riverside-s",
+      "title" : "Connection S",
+      "featureComposed" : {
+        "hexGrids" : [ ]
+      },
+      "biomeId" : "dragon-peaks-slopes",
+      "precomposed" : true,
+      "pointComposed" : {
+        "gridCoordinate" : {
+          "q" : 0,
+          "r" : 1
+        },
+        "biome" : "dragon-peaks-slopes",
+        "hexLocalPosition" : null,
+        "hexLocalEdgeVector" : {
+          "side" : "NORTH_EAST",
+          "numerator" : 2,
+          "denominator" : 4
+        },
+        "preparedPositions" : null,
+        "placedCoordinate" : {
+          "q" : 0,
+          "r" : 1
+        },
+        "placedLx" : 0,
+        "placedLz" : 0,
+        "placedInBiome" : "dragon-peaks-slopes"
+      },
+      "villageId" : "riverside",
+      "externalDirection" : "S",
+      "neighborGridCoordinate" : {
+        "q" : 0,
+        "r" : 1
+      },
+      "placedInNeighborGrid" : true,
+      "gridDistance" : 1,
+      "gridCoordinate" : {
+        "q" : 0,
+        "r" : 1
+      },
+      "placedLx" : 0,
+      "placedLz" : 0,
+      "biome" : "dragon-peaks-slopes",
+      "placedInBiome" : "dragon-peaks-slopes",
+      "hexLocalEdgeVector" : {
+        "side" : "NORTH_EAST",
+        "numerator" : 2,
+        "denominator" : 4
+      },
+      "placedCoordinate" : {
+        "q" : 0,
+        "r" : 1
+      },
+      "hexGrids" : [ ]
+    } ],
+    "baseLevel" : 95,
+    "fillEmptySlots" : true,
+    "buildingTendency" : 0.7,
+    "fillRate" : 0.8,
+    "debug" : false,
+    "calculatedSizeFrom" : 1,
+    "calculatedSizeTo" : 3,
+    "preparedPositions" : [ {
+      "original" : {
+        "direction" : "S",
+        "anchor" : "river-end",
+        "priority" : 8,
+        "distanceFrom" : 0,
+        "distanceTo" : 1
+      },
+      "direction" : "S",
+      "directionAngle" : 150,
+      "distanceFrom" : 0,
+      "distanceTo" : 1,
+      "anchor" : "river-end",
+      "priority" : 8
+    } ],
+    "hexGrids" : [ ]
+  }, {
+    "featureType" : "village-connection",
+    "featureId" : "riverside-n",
+    "name" : "riverside-n",
+    "title" : "Connection N",
+    "featureComposed" : {
+      "hexGrids" : [ ]
+    },
+    "biomeId" : "dragon-peaks-slopes",
+    "precomposed" : true,
+    "pointComposed" : {
+      "gridCoordinate" : {
+        "q" : 0,
+        "r" : -1
+      },
+      "biome" : "dragon-peaks-slopes",
+      "hexLocalPosition" : null,
+      "hexLocalEdgeVector" : {
+        "side" : "SOUTH_WEST",
+        "numerator" : 2,
+        "denominator" : 4
+      },
+      "preparedPositions" : null,
+      "placedCoordinate" : {
+        "q" : 0,
+        "r" : -1
+      },
+      "placedLx" : 0,
+      "placedLz" : 0,
+      "placedInBiome" : "dragon-peaks-slopes"
+    },
+    "villageId" : "riverside",
+    "externalDirection" : "N",
+    "neighborGridCoordinate" : {
+      "q" : 0,
+      "r" : -1
+    },
+    "placedInNeighborGrid" : true,
+    "gridDistance" : 1,
+    "gridCoordinate" : {
+      "q" : 0,
+      "r" : -1
+    },
+    "placedLx" : 0,
+    "placedLz" : 0,
+    "biome" : "dragon-peaks-slopes",
+    "placedInBiome" : "dragon-peaks-slopes",
+    "hexLocalEdgeVector" : {
+      "side" : "SOUTH_WEST",
+      "numerator" : 2,
+      "denominator" : 4
+    },
+    "placedCoordinate" : {
+      "q" : 0,
+      "r" : -1
+    },
+    "hexGrids" : [ ]
+  }, {
+    "featureType" : "village-connection",
+    "featureId" : "riverside-s",
+    "name" : "riverside-s",
+    "title" : "Connection S",
+    "featureComposed" : {
+      "hexGrids" : [ ]
+    },
+    "biomeId" : "dragon-peaks-slopes",
+    "precomposed" : true,
+    "pointComposed" : {
+      "gridCoordinate" : {
+        "q" : 0,
+        "r" : 1
+      },
+      "biome" : "dragon-peaks-slopes",
+      "hexLocalPosition" : null,
+      "hexLocalEdgeVector" : {
+        "side" : "NORTH_EAST",
+        "numerator" : 2,
+        "denominator" : 4
+      },
+      "preparedPositions" : null,
+      "placedCoordinate" : {
+        "q" : 0,
+        "r" : 1
+      },
+      "placedLx" : 0,
+      "placedLz" : 0,
+      "placedInBiome" : "dragon-peaks-slopes"
+    },
+    "villageId" : "riverside",
+    "externalDirection" : "S",
+    "neighborGridCoordinate" : {
+      "q" : 0,
+      "r" : 1
+    },
+    "placedInNeighborGrid" : true,
+    "gridDistance" : 1,
+    "gridCoordinate" : {
+      "q" : 0,
+      "r" : 1
+    },
+    "placedLx" : 0,
+    "placedLz" : 0,
+    "biome" : "dragon-peaks-slopes",
+    "placedInBiome" : "dragon-peaks-slopes",
+    "hexLocalEdgeVector" : {
+      "side" : "NORTH_EAST",
+      "numerator" : 2,
+      "denominator" : 4
+    },
+    "placedCoordinate" : {
+      "q" : 0,
+      "r" : 1
+    },
+    "hexGrids" : [ ]
+  } ],
+  "continents" : [ {
+    "continentId" : "main-continent",
+    "biomeType" : "PLAINS",
+    "minNeighbors" : 2,
+    "name" : "Main Continent"
+  } ],
+  "version" : "1.0.0",
+  "createdAt" : 1770304749.007376000,
+  "updatedAt" : 1770304749.008480000,
+  "description" : "A fantasy world with a central mountain range, surrounding plains and forest, a river, and a small village."
+}

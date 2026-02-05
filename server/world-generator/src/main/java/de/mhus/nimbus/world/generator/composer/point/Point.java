@@ -1,5 +1,6 @@
 package de.mhus.nimbus.world.generator.composer.point;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
@@ -301,6 +302,7 @@ public abstract class Point extends Feature {
     /**
      * Returns true if this point has been placed (has calculated coordinates).
      */
+    @JsonIgnore
     public boolean isPlaced() {
         if (pointComposed == null) {
             return false;
@@ -319,6 +321,7 @@ public abstract class Point extends Feature {
     /**
      * Gets a human-readable position string.
      */
+    @JsonIgnore
     public String getPlacedPositionString() {
         if (!isPlaced()) {
             return "not placed";

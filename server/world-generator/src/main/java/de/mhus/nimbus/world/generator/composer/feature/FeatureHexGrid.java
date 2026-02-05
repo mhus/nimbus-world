@@ -1,5 +1,6 @@
 package de.mhus.nimbus.world.generator.composer.feature;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.shared.utils.TypeUtil;
@@ -187,6 +188,7 @@ public class FeatureHexGrid {
         return flowSegments != null && !flowSegments.isEmpty();
     }
 
+    @JsonIgnore
     public String getPositionKey() {
         return TypeUtil.toStringHexCoord(coordinate);
     }

@@ -141,7 +141,7 @@ public class WHexGrid implements Identifiable {
     private String worldId;
 
     /**
-     * Position key in format "q:r" (e.g., "0;0", "-1;2").
+     * Position key in format "q;r" (e.g., "0;0", "-1;2").
      * Derived from publicData.position and indexed for efficient queries.
      */
     @Indexed
