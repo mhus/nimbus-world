@@ -31,7 +31,7 @@ import java.util.UUID;
  * Executor name: 'generator-apply-translated-instruction'
  *
  * Required parameters:
- * - documentPath: Path to the translated instruction document in 'generator_translations' collection
+ * - translationDocumentId: Document ID of the translated instruction in 'generator_translations' collection
  *
  * Optional parameters:
  * - maxAttempts: Maximum number of composition attempts before giving up (default: 3)
@@ -40,7 +40,7 @@ import java.util.UUID;
  * - oceanBorderRings: Number of ocean border rings (default: 1)
  *
  * Output:
- * - success: Document path where composed model was saved
+ * - success: Document ID where composed model was saved
  * - failure: Error message after all attempts failed
  *
  * The job loads a translated instruction document, applies the composition pipeline
@@ -53,8 +53,6 @@ import java.util.UUID;
 public class ApplyTranslatedInstructionJobExecutor implements JobExecutor {
 
     private static final String EXECUTOR_NAME = "generator-apply-translated-instruction";
-    private static final String INPUT_COLLECTION = "generator_translations";
-    private static final String OUTPUT_COLLECTION = "generator_composed";
     private static final int DEFAULT_MAX_ATTEMPTS = 3;
     private static final DateTimeFormatter TIMESTAMP_FORMATTER = DateTimeFormatter.ISO_INSTANT;
 
@@ -73,7 +71,7 @@ public class ApplyTranslatedInstructionJobExecutor implements JobExecutor {
             log.info("Starting apply translated instruction job: jobId={}", job.getId());
 
             // Extract required parameters
-            String documentPath = getRequiredParameter(job, "documentPath");
+            String translationDocumentId = getRequiredParameter(job, "translationDocumentId");
 
             // Extract optional parameters
             int maxAttempts = getOptionalIntParameter(job, "maxAttempts", DEFAULT_MAX_ATTEMPTS);
@@ -86,8 +84,8 @@ public class ApplyTranslatedInstructionJobExecutor implements JobExecutor {
                 throw new JobExecutionException("maxAttempts must be between 1 and 10, got: " + maxAttempts);
             }
 
-            log.info("Applying composition: documentPath={}, maxAttempts={}, seed={}, fillGaps={}, oceanBorderRings={}",
-                    documentPath, maxAttempts, seed, fillGaps, oceanBorderRings);
+            log.info("Applying composition: translationDocumentId={}, maxAttempts={}, seed={}, fillGaps={}, oceanBorderRings={}",
+                    translationDocumentId, maxAttempts, seed, fillGaps, oceanBorderRings);
 
             // Load translated document
             HexComposition composition;
@@ -95,7 +93,7 @@ public class ApplyTranslatedInstructionJobExecutor implements JobExecutor {
             String documentName;
 
             try {
-                LoadedDocument loaded = loadTranslatedDocument(job.getWorldId(), documentPath);
+                LoadedDocument loaded = loadTranslatedDocument(job.getWorldId(), translationDocumentId);
                 composition = loaded.composition;
                 originalInstruction = loaded.originalInstruction;
                 documentName = loaded.documentName;
@@ -172,7 +170,7 @@ public class ApplyTranslatedInstructionJobExecutor implements JobExecutor {
                             );
 
                             // Reload composition for retry (it might have been modified)
-                            LoadedDocument reloaded = loadTranslatedDocument(job.getWorldId(), documentPath);
+                            LoadedDocument reloaded = loadTranslatedDocument(job.getWorldId(), translationDocumentId);
                             composition = reloaded.composition;
                         } else {
                             // Last attempt failed
@@ -195,7 +193,7 @@ public class ApplyTranslatedInstructionJobExecutor implements JobExecutor {
 
                         // Reload composition for retry
                         try {
-                            LoadedDocument reloaded = loadTranslatedDocument(job.getWorldId(), documentPath);
+                            LoadedDocument reloaded = loadTranslatedDocument(job.getWorldId(), translationDocumentId);
                             composition = reloaded.composition;
                         } catch (Exception reloadEx) {
                             log.error("Failed to reload composition for retry", reloadEx);
@@ -220,7 +218,7 @@ public class ApplyTranslatedInstructionJobExecutor implements JobExecutor {
 
             // Save composed model to document
             try {
-                String outputDocumentPath = saveComposedModel(
+                String outputDocumentId = saveComposedModel(
                         job.getWorldId(),
                         documentName,
                         originalInstruction,
@@ -228,11 +226,11 @@ public class ApplyTranslatedInstructionJobExecutor implements JobExecutor {
                         result
                 );
 
-                log.info("Composed model saved to document: {}", outputDocumentPath);
+                log.info("Composed model saved to document: {}", outputDocumentId);
 
                 // Build success result
                 Map<String, Object> resultData = new HashMap<>();
-                resultData.put("documentPath", outputDocumentPath);
+                resultData.put("documentId", outputDocumentId);
                 resultData.put("totalGrids", result.getTotalGrids());
                 resultData.put("totalBiomes", result.getTotalBiomes());
                 resultData.put("totalStructures", result.getTotalStructures());
@@ -264,45 +262,35 @@ public class ApplyTranslatedInstructionJobExecutor implements JobExecutor {
     /**
      * Load translated document and extract composition.
      */
-    private LoadedDocument loadTranslatedDocument(String worldId, String documentPath) throws Exception {
-        // Parse document path (format: worldId/collection/documentName)
-        String[] pathParts = documentPath.split("/");
-        if (pathParts.length < 3) {
-            throw new IllegalArgumentException("Invalid document path format. Expected: worldId/collection/documentName");
-        }
-
-        String docWorldId = pathParts[0];
-        String collection = pathParts[1];
-        String documentName = pathParts[2];
-
-        // Verify collection
-        if (!INPUT_COLLECTION.equals(collection)) {
-            log.warn("Document path collection '{}' != expected '{}', but continuing", collection, INPUT_COLLECTION);
-        }
-
+    private LoadedDocument loadTranslatedDocument(String worldId, String documentId) throws Exception {
         // Create WorldId
-        WorldId wid = WorldId.of(docWorldId)
-                .orElseThrow(() -> new IllegalArgumentException("Invalid worldId in document path: " + docWorldId));
+        WorldId wid = WorldId.of(worldId)
+                .orElseThrow(() -> new IllegalArgumentException("Invalid worldId: " + worldId));
 
-        // Load document
-        Optional<WDocument> docOpt = documentService.findByName(wid, collection, documentName);
+        // Load document by ID
+        Optional<WDocument> docOpt = documentService.findByDocumentId(wid, TranslateInstructionJobExecutor.TRANSLATIONS_COLLECTION, documentId);
         if (docOpt.isEmpty()) {
-            throw new IllegalArgumentException("Document not found: " + documentPath);
+            throw new IllegalArgumentException("Document not found: " + documentId);
         }
 
         WDocument document = docOpt.get();
         String content = document.getContent();
 
         if (content == null || content.isBlank()) {
-            throw new IllegalArgumentException("Document content is empty: " + documentPath);
+            throw new IllegalArgumentException("Document content is empty: " + documentId);
         }
 
         // Parse document content
         JsonNode rootNode = objectMapper.readTree(content);
 
-        // Extract original instruction
-        String originalInstruction = rootNode.has("originalInstruction") ?
-                rootNode.get("originalInstruction").asText() : "";
+        // Extract instructionsDocumentId (not the instruction text itself)
+        String instructionsDocumentId = "";
+        if (rootNode.has("compositionMetadata")) {
+            JsonNode metadata = rootNode.get("compositionMetadata");
+            if (metadata.has("instructionsDocumentId")) {
+                instructionsDocumentId = metadata.get("instructionsDocumentId").asText();
+            }
+        }
 
         // Extract composition JSON
         String compositionJson;
@@ -324,8 +312,8 @@ public class ApplyTranslatedInstructionJobExecutor implements JobExecutor {
 
         LoadedDocument result = new LoadedDocument();
         result.composition = composition;
-        result.originalInstruction = originalInstruction;
-        result.documentName = documentName;
+        result.originalInstruction = instructionsDocumentId;
+        result.documentName = document.getName();
 
         return result;
     }
@@ -370,7 +358,7 @@ public class ApplyTranslatedInstructionJobExecutor implements JobExecutor {
         String content = buildDocumentContent(originalInstruction, compositionJson, composition, compositionResult);
 
         // Save document
-        WDocument document = documentService.save(wid, OUTPUT_COLLECTION, documentId, doc -> {
+        WDocument document = documentService.save(wid, TranslateInstructionJobExecutor.COMPOSED_COLLECTION, documentId, doc -> {
             doc.setName(documentName);
             doc.setTitle(composition.getName() != null ? composition.getName() : "Composed World");
             doc.setFormat("json");
@@ -381,23 +369,23 @@ public class ApplyTranslatedInstructionJobExecutor implements JobExecutor {
         });
 
         log.info("Saved composed model document: worldId={}, collection={}, documentId={}, name={}",
-                worldId, OUTPUT_COLLECTION, documentId, documentName);
+                worldId, TranslateInstructionJobExecutor.COMPOSED_COLLECTION, documentId, documentName);
 
-        // Return document path
-        return String.format("%s/%s/%s", worldId, OUTPUT_COLLECTION, documentName);
+        // Return document ID
+        return documentId;
     }
 
     /**
      * Build document content with metadata and enriched composition JSON.
      */
     private String buildDocumentContent(
-            String originalInstruction,
+            String instructionsDocumentId,
             String compositionJson,
             HexComposition composition,
             CompositionResult result
     ) throws Exception {
         Map<String, Object> documentContent = new HashMap<>();
-        documentContent.put("originalInstruction", originalInstruction);
+        documentContent.put("instructionsDocumentId", instructionsDocumentId);
         documentContent.put("composedAt", Instant.now().toString());
         documentContent.put("enrichedCompositionJson", compositionJson);
 

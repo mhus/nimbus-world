@@ -20,13 +20,15 @@ import org.springframework.stereotype.Component;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static de.mhus.nimbus.world.generator.translator.TranslateInstructionJobExecutor.COMPOSED_COLLECTION;
+
 /**
  * Job executor for generating WHexGrids from a composed model.
  *
  * Executor name: 'generator-generate-hexgrid-from-composite'
  *
  * Required parameters:
- * - documentPath: Path to the document containing the enriched composition (in 'generator_composed' collection)
+ * - documentId: Id of the document containing the enriched composition (in 'generator_composed' collection)
  *
  * Optional parameters:
  * - seed: Random seed for reproducible generation (default: random)
@@ -60,7 +62,7 @@ public class GenerateHexGridFromCompositeJobExecutor implements JobExecutor {
             log.info("Starting generate hexgrid job: jobId={}", job.getId());
 
             // Extract required parameters
-            String documentPath = getRequiredParameter(job, "documentPath");
+            String documentId = getRequiredParameter(job, "documentId");
 
             // Extract optional parameters
             Long seed = getOptionalLongParameter(job, "seed", null);
@@ -69,12 +71,12 @@ public class GenerateHexGridFromCompositeJobExecutor implements JobExecutor {
                 log.info("No seed provided, using current time: {}", seed);
             }
 
-            log.info("Generating hexgrids: documentPath={}, seed={}", documentPath, seed);
+            log.info("Generating hexgrids: documentId={}, seed={}", documentId, seed);
 
             // Step 1: Load document from path
-            WDocument document = loadDocumentFromPath(job.getWorldId(), documentPath);
+            WDocument document = loadDocumentFromPath(job.getWorldId(), documentId);
             if (document == null) {
-                return JobResult.failure("Document not found: " + documentPath);
+                return JobResult.failure("Document not found: " + documentId);
             }
 
             // Step 2: Extract enriched composition from document
@@ -171,38 +173,27 @@ public class GenerateHexGridFromCompositeJobExecutor implements JobExecutor {
     /**
      * Load document from path format: worldId/collection/name
      */
-    private WDocument loadDocumentFromPath(String worldId, String documentPath) {
-        log.info("Loading document from path: {}", documentPath);
+    private WDocument loadDocumentFromPath(String worldId, String documentId) {
+        log.info("Loading document from path: {}", documentId);
 
         try {
-            // Parse path: worldId/collection/name
-            String[] parts = documentPath.split("/");
-            if (parts.length != 3) {
-                log.error("Invalid document path format: {}. Expected: worldId/collection/name", documentPath);
-                return null;
-            }
-
-            String pathWorldId = parts[0];
-            String collection = parts[1];
-            String name = parts[2];
-
             // Create WorldId
-            WorldId wid = WorldId.of(pathWorldId)
-                    .orElseThrow(() -> new IllegalArgumentException("Invalid worldId: " + pathWorldId));
+            WorldId wid = WorldId.of(worldId)
+                    .orElseThrow(() -> new IllegalArgumentException("Invalid worldId: " + worldId));
 
             // Load document
-            Optional<WDocument> documentOpt = documentService.findByName(wid, collection, name);
+            Optional<WDocument> documentOpt = documentService.findByDocumentId(wid, COMPOSED_COLLECTION, documentId);
 
             if (documentOpt.isEmpty()) {
-                log.warn("Document not found: worldId={}, collection={}, name={}", pathWorldId, collection, name);
+                log.warn("Document not found: worldId={}, collection={}, id={}", worldId, COMPOSED_COLLECTION, documentId);
                 return null;
             }
 
-            log.info("Document loaded: {}", name);
+            log.info("Document loaded: {}", documentId);
             return documentOpt.get();
 
         } catch (Exception e) {
-            log.error("Failed to load document from path: {}", documentPath, e);
+            log.error("Failed to load document from path: {}", documentId, e);
             return null;
         }
     }

@@ -10,7 +10,6 @@ import de.mhus.nimbus.world.ai.model.AiChatOptions;
 import de.mhus.nimbus.world.ai.model.AiModelService;
 import de.mhus.nimbus.world.shared.world.WDocument;
 import de.mhus.nimbus.world.shared.world.WDocumentService;
-import dev.langchain4j.data.message.AiMessage;
 import dev.langchain4j.model.input.Prompt;
 import dev.langchain4j.model.input.PromptTemplate;
 import lombok.RequiredArgsConstructor;
@@ -36,7 +35,8 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class TranslatorService {
 
-    private static final String COMPOSER_MODEL_DOCUMENT_NAME = "composer-model-description.md";
+    private static final String COMPOSER_MODEL_DESCRIPTION_DOCUMENT_NAME = "composer-model-description.md";
+    private static final String COMPOSER_MODEL_README_DOCUMENT_NAME = "composer-model-readme.md";
     private static final String LESSONS_LEARNED_DOCUMENT_NAME = "composer-model-lessons-learned.md";
     private static final String DOCUMENT_COLLECTION = "generator";
     private static final String SHARED_WORLD_ID = "@shared:n";
@@ -48,6 +48,8 @@ public class TranslatorService {
 
     // Cache for loaded composer model description
     private String cachedComposerModelDescription;
+    // Cache for loaded composer model readme
+    private String cachedComposerModelReadme;
     // Cache for loaded lessons learned
     private String cachedLessonsLearned;
     // Cache for loaded prompt template
@@ -60,49 +62,66 @@ public class TranslatorService {
      *
      * @return Composer Model description as string, or empty if not found
      */
-    public Optional<String> loadComposerModelDescription() {
-        // Return cached version if available
-        if (cachedComposerModelDescription != null) {
-            log.debug("Returning cached Composer Model description");
-            return Optional.of(cachedComposerModelDescription);
-        }
+    public void loadComposerModelDescription() {
 
-        log.info("Loading Composer Model description from WDocumentService");
 
         try {
             // Create WorldId for @shared:n
             WorldId sharedWorldId = WorldId.of(WorldId.COLLECTION_SHARED, "n")
                     .orElseThrow(() -> new IllegalStateException("Failed to create shared WorldId"));
 
-            // Load document by name
-            Optional<WDocument> documentOpt = documentService.findByName(
-                    sharedWorldId,
-                    DOCUMENT_COLLECTION,
-                    COMPOSER_MODEL_DOCUMENT_NAME
-            );
+            if (cachedComposerModelDescription == null) {
+                log.info("Loading Composer Model description from WDocumentService");
+                // Load document by name
+                Optional<WDocument> documentDescriptionOpt = documentService.findByName(
+                        sharedWorldId,
+                        DOCUMENT_COLLECTION,
+                        COMPOSER_MODEL_DESCRIPTION_DOCUMENT_NAME
+                );
 
-            if (documentOpt.isPresent()) {
-                WDocument document = documentOpt.get();
-                String content = document.getContent();
+                if (documentDescriptionOpt.isPresent()) {
+                    WDocument document = documentDescriptionOpt.get();
+                    String content = document.getContent();
 
-                if (content == null || content.isBlank()) {
-                    log.warn("Composer Model description document found but content is empty");
-                    return Optional.empty();
+                    if (content == null || content.isBlank()) {
+                        log.warn("Composer Model description document found but content is empty");
+                    } else {
+                        // Cache the content
+                        cachedComposerModelDescription = content;
+                        log.info("Successfully loaded Composer Model description ({} characters)", content.length());
+                    }
+                } else {
+                    log.warn("Composer Model description document not found: worldId={}, collection={}, name={}",
+                            SHARED_WORLD_ID, DOCUMENT_COLLECTION, COMPOSER_MODEL_DESCRIPTION_DOCUMENT_NAME);
                 }
-
-                // Cache the content
-                cachedComposerModelDescription = content;
-                log.info("Successfully loaded Composer Model description ({} characters)", content.length());
-                return Optional.of(content);
-            } else {
-                log.warn("Composer Model description document not found: worldId={}, collection={}, name={}",
-                        SHARED_WORLD_ID, DOCUMENT_COLLECTION, COMPOSER_MODEL_DOCUMENT_NAME);
-                return Optional.empty();
             }
 
+            if (cachedComposerModelReadme == null) {
+                log.info("Loading Composer Model readme from WDocumentService");
+                // Load document by name
+                Optional<WDocument> documentReadmeOpt = documentService.findByName(
+                        sharedWorldId,
+                        DOCUMENT_COLLECTION,
+                        COMPOSER_MODEL_README_DOCUMENT_NAME
+                );
+                if (documentReadmeOpt.isPresent()) {
+                    WDocument document = documentReadmeOpt.get();
+                    String content = document.getContent();
+
+                    if (content == null || content.isBlank()) {
+                        log.warn("Composer Model readme document found but content is empty");
+                    } else {
+                        // Cache the content
+                        cachedComposerModelReadme = content;
+                        log.info("Successfully loaded Composer Model readme ({} characters)", content.length());
+                    }
+                } else {
+                    log.warn("Composer Model readme document not found: worldId={}, collection={}, name={}",
+                            SHARED_WORLD_ID, DOCUMENT_COLLECTION, COMPOSER_MODEL_README_DOCUMENT_NAME);
+                }
+            }
         } catch (Exception e) {
             log.error("Failed to load Composer Model description", e);
-            return Optional.empty();
         }
     }
 
@@ -219,26 +238,8 @@ public class TranslatorService {
     public void clearCache() {
         log.info("Clearing cached Composer Model description and Lessons Learned");
         cachedComposerModelDescription = null;
+        cachedComposerModelReadme = null;
         cachedLessonsLearned = null;
-    }
-
-    /**
-     * Check if the Composer Model description is available.
-     *
-     * @return true if document exists and has content
-     */
-    public boolean isComposerModelDescriptionAvailable() {
-        return loadComposerModelDescription().isPresent();
-    }
-
-    /**
-     * Translate textual instructions into Composer Model JSON format.
-     *
-     * @param instruction Textual world description
-     * @return Translation result with JSON or errors
-     */
-    public TranslationResult translateInstruction(String instruction) {
-        return translateInstruction(instruction, null);
     }
 
     /**
@@ -260,14 +261,8 @@ public class TranslatorService {
         }
 
         try {
-            // 1. Load Composer Model description
-            Optional<String> modelDescriptionOpt = loadComposerModelDescription();
-            if (modelDescriptionOpt.isEmpty()) {
-                return TranslationResult.failure(
-                        "Composer Model description not available. " +
-                        "Please ensure the document is loaded in the database.");
-            }
-            String modelDescription = modelDescriptionOpt.get();
+            // 1. Load Composer Model description and readme
+            loadComposerModelDescription();
 
             // 2. Load Lessons Learned (optional)
             Optional<String> lessonsLearnedOpt = loadLessonsLearned();
@@ -295,7 +290,8 @@ public class TranslatorService {
             // 4. Build prompt with template
             PromptTemplate template = PromptTemplate.from(promptTemplateText);
             Map<String, Object> variables = new HashMap<>();
-            variables.put("composerModelDescription", modelDescription);
+            variables.put("composerModelDescription", cachedComposerModelDescription == null ? "" : cachedComposerModelDescription);
+            variables.put("composerModelReadme", cachedComposerModelReadme == null ? "" : cachedComposerModelReadme);
             variables.put("instruction", instruction);
 
             // Add lessons learned section if available
@@ -416,17 +412,17 @@ public class TranslatorService {
      * Optionally includes error feedback from a previous translation attempt.
      * Does NOT arrange or build the composition - only parses the model structure.
      *
-     * @param instruction Textual world description
+     * @param instructions Textual world description
      * @param previousError Error message from previous translation attempt (optional)
      * @return Composition result with HexComposition object or errors
      */
-    public CompositionResult translateInstructionToComposite(String instruction, String previousError) {
+    public CompositionResult translateInstructionToComposite(String instructions, String previousError) {
         log.info("Translating instruction to HexComposition (length: {} chars, has previous error: {})",
-                instruction != null ? instruction.length() : 0,
+                instructions != null ? instructions.length() : 0,
                 previousError != null);
 
         // Step 1: Translate to JSON
-        TranslationResult translationResult = translateInstruction(instruction, previousError);
+        TranslationResult translationResult = translateInstruction(instructions, previousError);
 
         if (translationResult.hasFailed()) {
             log.warn("Translation to JSON failed with {} errors", translationResult.getErrors().size());

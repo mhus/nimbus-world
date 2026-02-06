@@ -24,14 +24,15 @@ import java.util.UUID;
  * Executor name: 'generator-translate-instruction'
  *
  * Required parameters:
- * - instruction: Textual world description to translate
+ * - instructionsDocumentId: Id to the Textual world description to translate document in the collection 'generator_instructions'.
+ *   This document should contain the textual instructions to be translated.
  *
  * Optional parameters:
- * - documentPath: Path/collection where to save the translated document (default: 'generator_translations')
+ * - documentPath: Path where to save the translated document, will be completed with a timestamp
  * - maxAttempts: Maximum number of translation attempts before giving up (default: 5)
  *
  * Output:
- * - success: Document path where translation was saved
+ * - success: Document Id where translation was saved
  * - failure: Error message after all attempts failed
  *
  * The job automatically retries on translation errors, passing previous error messages
@@ -43,10 +44,14 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class TranslateInstructionJobExecutor implements JobExecutor {
 
+    public static final String TRANSLATIONS_COLLECTION = "generator_translations";
+    public static final String INSTRUCTIONS_COLLECTION = "generator_instructions";
+    public static final String COMPOSED_COLLECTION = "generator_composed";
+
     private static final String EXECUTOR_NAME = "generator-translate-instruction";
-    private static final String DEFAULT_COLLECTION = "generator_translations";
     private static final int DEFAULT_MAX_ATTEMPTS = 5;
     private static final DateTimeFormatter TIMESTAMP_FORMATTER = DateTimeFormatter.ISO_INSTANT;
+    private static final String DEFAULT_DOCUMENT_PATH = "translation";
 
     private final TranslatorService translatorService;
     private final WDocumentService documentService;
@@ -63,19 +68,21 @@ public class TranslateInstructionJobExecutor implements JobExecutor {
             log.info("Starting translate instruction job: jobId={}", job.getId());
 
             // Extract required parameters
-            String instruction = getRequiredParameter(job, "instruction");
+            String instructionsDocumentId = getRequiredParameter(job, "instructionsDocumentId");
 
             // Extract optional parameters
-            String collection = getOptionalParameter(job, "documentPath", DEFAULT_COLLECTION);
             int maxAttempts = getOptionalIntParameter(job, "maxAttempts", DEFAULT_MAX_ATTEMPTS);
+            String documentName = getOptionalParameter(job, "documentPath", DEFAULT_DOCUMENT_PATH);
 
             // Validate parameters
             if (maxAttempts < 1 || maxAttempts > 10) {
                 throw new JobExecutionException("maxAttempts must be between 1 and 10, got: " + maxAttempts);
             }
 
-            log.info("Translating instruction: length={}, collection={}, maxAttempts={}",
-                    instruction.length(), collection, maxAttempts);
+            log.info("Translating instruction: documentId={}, resultPath={}, maxAttempts={}",
+                    instructionsDocumentId, documentName, maxAttempts);
+
+            String instructions = loadInstructions(job.getWorldId(), instructionsDocumentId);
 
             // Retry loop
             String previousError = null;
@@ -86,7 +93,7 @@ public class TranslateInstructionJobExecutor implements JobExecutor {
 
                 try {
                     // Attempt translation
-                    result = translatorService.translateInstructionToComposite(instruction, previousError);
+                    result = translatorService.translateInstructionToComposite(instructions, previousError);
 
                     if (result.isSuccessful()) {
                         // Override worldId with the one from job context (not from instruction/Gemini)
@@ -141,22 +148,21 @@ public class TranslateInstructionJobExecutor implements JobExecutor {
 
             // Save successful translation to document
             try {
-                String documentPath = saveTranslationToDocument(
+                String documentIdOut = saveTranslationToDocument(
                         job.getWorldId(),
-                        collection,
-                        instruction,
+                        documentName,
+                        instructionsDocumentId,
                         result.getComposition(),
                         result.getComposerModelJson()
                 );
 
-                log.info("Translation saved to document: {}", documentPath);
+                log.info("Translation saved to document: {}", documentIdOut);
 
                 // Build success result
                 Map<String, Object> resultData = new HashMap<>();
-                resultData.put("documentPath", documentPath);
+                resultData.put("documentId", documentIdOut);
                 resultData.put("featuresCount", result.getComposition().getFeatures() != null ?
                         result.getComposition().getFeatures().size() : 0);
-                resultData.put("worldId", result.getComposition().getWorldId());
                 resultData.put("compositionName", result.getComposition().getName());
 
                 return JobResult.success(resultData);
@@ -174,14 +180,23 @@ public class TranslateInstructionJobExecutor implements JobExecutor {
         }
     }
 
+    private String loadInstructions(String worldId, String instructionPath) {
+
+        // Create WorldId
+        WorldId wid = WorldId.of(worldId)
+                .orElseThrow(() -> new IllegalArgumentException("Invalid worldId: " + worldId));
+
+        return documentService.findByDocumentId(wid, INSTRUCTIONS_COLLECTION, instructionPath).orElseThrow().getContent();
+    }
+
     /**
      * Save translation result to a WDocument.
      * Creates a new document with timestamp to preserve history.
      */
     private String saveTranslationToDocument(
             String worldId,
-            String collection,
-            String originalInstruction,
+            String documentName,
+            String instructionsDocumentId,
             HexComposition composition,
             String json
     ) throws Exception {
@@ -194,7 +209,7 @@ public class TranslateInstructionJobExecutor implements JobExecutor {
         Instant now = Instant.now();
         String timestamp = TIMESTAMP_FORMATTER.format(now).replaceAll(":", "-");
         String documentId = UUID.randomUUID().toString();
-        String documentName = String.format("translation-%s", timestamp);
+        String finalDocumentName = String.format("%s-%s", documentName, timestamp);
 
         // Create document metadata
         Map<String, String> metadata = new HashMap<>();
@@ -205,11 +220,11 @@ public class TranslateInstructionJobExecutor implements JobExecutor {
                 composition.getFeatures() != null ? composition.getFeatures().size() : 0));
 
         // Build document content with original instruction and JSON
-        String content = buildDocumentContent(originalInstruction, json, composition);
+        String content = buildDocumentContent(instructionsDocumentId, json, composition);
 
         // Save document
-        WDocument document = documentService.save(wid, collection, documentId, doc -> {
-            doc.setName(documentName);
+        WDocument document = documentService.save(wid, TRANSLATIONS_COLLECTION, documentId, doc -> {
+            doc.setName(finalDocumentName);
             doc.setTitle(composition.getName() != null ? composition.getName() : "Generated World");
             doc.setFormat("json");
             doc.setContent(content);
@@ -219,25 +234,24 @@ public class TranslateInstructionJobExecutor implements JobExecutor {
         });
 
         log.info("Saved translation document: worldId={}, collection={}, documentId={}, name={}",
-                worldId, collection, documentId, documentName);
+                worldId, documentName, documentId, finalDocumentName);
 
-        // Return document path
-        return String.format("%s/%s/%s", worldId, collection, documentName);
+        // Return document id
+        return documentId;
     }
 
     /**
      * Build document content with metadata and JSON.
      */
-    private String buildDocumentContent(String instruction, String json, HexComposition composition) throws Exception {
+    private String buildDocumentContent(String instructionsDocumentId, String json, HexComposition composition) throws Exception {
         Map<String, Object> documentContent = new HashMap<>();
-        documentContent.put("originalInstruction", instruction);
         documentContent.put("generatedAt", Instant.now().toString());
         documentContent.put("compositionJson", json);
 
         // Add composition metadata
         Map<String, Object> compositionMeta = new HashMap<>();
+        compositionMeta.put("instructionsDocumentId", instructionsDocumentId);
         compositionMeta.put("name", composition.getName());
-        compositionMeta.put("worldId", composition.getWorldId());
         compositionMeta.put("featuresCount", composition.getFeatures() != null ? composition.getFeatures().size() : 0);
         compositionMeta.put("continentsCount", composition.getContinents() != null ? composition.getContinents().size() : 0);
         documentContent.put("compositionMetadata", compositionMeta);

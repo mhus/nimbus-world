@@ -6,6 +6,8 @@ You are an expert world generator translator. Your task is to convert textual wo
 
 {{composerModelDescription}}
 
+{{composerModelReadme}}
+
 {{lessonsLearnedSection}}
 
 ## Your Task

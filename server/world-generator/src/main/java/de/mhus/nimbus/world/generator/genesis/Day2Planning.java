@@ -25,14 +25,14 @@ import java.util.Map;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class Day2Plan extends MethodBasedWorkflow {
+public class Day2Planning extends MethodBasedWorkflow {
 
     private final WWorldService worldService;
     private final RRegionService regionService;
 
     @Override
     public String name() {
-        return "genesis-day2-plan";
+        return "genesis-day2-planning";
     }
 
     @Override

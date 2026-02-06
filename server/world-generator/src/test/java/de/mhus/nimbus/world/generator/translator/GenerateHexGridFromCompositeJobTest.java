@@ -44,7 +44,7 @@ public class GenerateHexGridFromCompositeJobTest {
     private final Set<String> existingHexGridKeys = new HashSet<>();
 
     private static final String TEST_WORLD_ID = "test:valley";
-    private static final String TEST_DOCUMENT_PATH = "test:valley/generator_composed/test-composition";
+    private static final String TEST_DOCUMENT_ID = "test-composition-id";
     private static final String GENERATED_JSON_FILE = "translator-generated.json";
 
     @BeforeEach
@@ -86,7 +86,7 @@ public class GenerateHexGridFromCompositeJobTest {
 
         // Create job parameters
         Map<String, String> params = new HashMap<>();
-        params.put("documentPath", TEST_DOCUMENT_PATH);
+        params.put("documentId", TEST_DOCUMENT_ID);
         params.put("seed", "42");
 
         // Create job
@@ -154,7 +154,7 @@ public class GenerateHexGridFromCompositeJobTest {
 
         // Create job parameters
         Map<String, String> params = new HashMap<>();
-        params.put("documentPath", TEST_DOCUMENT_PATH);
+        params.put("documentId", TEST_DOCUMENT_ID);
         params.put("seed", "42");
 
         // Create job
@@ -191,12 +191,12 @@ public class GenerateHexGridFromCompositeJobTest {
     }
 
     @Test
-    public void testGenerateHexGridsWithInvalidDocumentPath() throws Exception {
-        log.info("=== Starting HexGrid Generation Test with Invalid Path ===");
+    public void testGenerateHexGridsWithInvalidDocumentId() throws Exception {
+        log.info("=== Starting HexGrid Generation Test with Invalid Document ID ===");
 
-        // Create job with invalid document path
+        // Create job with invalid document ID
         Map<String, String> params = new HashMap<>();
-        params.put("documentPath", "invalid/path/to/document");
+        params.put("documentId", "invalid-document-id");
         params.put("seed", "42");
 
         WJob job = WJob.builder()
@@ -210,12 +210,12 @@ public class GenerateHexGridFromCompositeJobTest {
         JobExecutor.JobResult result = jobExecutor.execute(job);
 
         // Validate result - should fail
-        assertFalse(result.successful(), "Job should fail with invalid document path");
+        assertFalse(result.successful(), "Job should fail with invalid document ID");
         assertNotNull(result.errorMessage(), "Should have error message");
         assertTrue(result.errorMessage().contains("not found"),
                 "Error should mention document not found");
 
-        log.info("=== Invalid Path Test Successful - Job failed as expected ===");
+        log.info("=== Invalid Document ID Test Successful - Job failed as expected ===");
     }
 
     @Test
@@ -228,11 +228,11 @@ public class GenerateHexGridFromCompositeJobTest {
         existingHexGridKeys.clear();
 
         // Load village test document
-        loadVillageTestDocument();
+        String villageDocumentId = loadVillageTestDocument();
 
         // Create job parameters
         Map<String, String> params = new HashMap<>();
-        params.put("documentPath", "test:village/generator_composed/village-composition");
+        params.put("documentId", villageDocumentId);
         params.put("seed", "42");
 
         // Create job
@@ -317,34 +317,33 @@ public class GenerateHexGridFromCompositeJobTest {
         String content = objectMapper.writerWithDefaultPrettyPrinter()
                 .writeValueAsString(documentContent);
 
-        // Parse document path
-        String[] parts = TEST_DOCUMENT_PATH.split("/");
-        WorldId worldId = WorldId.of(parts[0]).orElseThrow();
-        String collection = parts[1];
-        String name = parts[2];
+        WorldId worldId = WorldId.of(TEST_WORLD_ID).orElseThrow();
+        String collection = "generator_composed";
+        String documentName = "test-composition";
 
         // Create document
         WDocument document = WDocument.builder()
                 .id(UUID.randomUUID().toString())
                 .worldId(worldId.getId())
                 .collection(collection)
-                .name(name)
-                .documentId(name)
+                .name(documentName)
+                .documentId(TEST_DOCUMENT_ID)
                 .content(content)
                 .build();
         document.touchCreate();
 
-        // Store in memory
-        String key = buildStorageKey(worldId.getId(), collection, name);
+        // Store in memory (by name and by documentId)
+        String key = buildStorageKey(worldId.getId(), collection, documentName);
         documentStorage.put(key, document);
 
-        log.info("Stored test document: {}", key);
+        log.info("Stored test document: documentId={}, key={}", TEST_DOCUMENT_ID, key);
     }
 
     /**
      * Load village test document with enriched composition JSON
+     * @return the documentId of the created document
      */
-    private void loadVillageTestDocument() throws Exception {
+    private String loadVillageTestDocument() throws Exception {
         String villageJsonFile = "translator-generated-village.json";
         log.info("Loading village test document from: {}", villageJsonFile);
 
@@ -371,29 +370,28 @@ public class GenerateHexGridFromCompositeJobTest {
         String content = objectMapper.writerWithDefaultPrettyPrinter()
                 .writeValueAsString(documentContent);
 
-        // Parse document path for village
-        String villagePath = "test:village/generator_composed/village-composition";
-        String[] parts = villagePath.split("/");
-        WorldId worldId = WorldId.of(parts[0]).orElseThrow();
-        String collection = parts[1];
-        String name = parts[2];
+        WorldId worldId = WorldId.of("test:village").orElseThrow();
+        String collection = "generator_composed";
+        String documentName = "village-composition";
+        String documentId = "village-composition-id";
 
         // Create document
         WDocument document = WDocument.builder()
                 .id(UUID.randomUUID().toString())
                 .worldId(worldId.getId())
                 .collection(collection)
-                .name(name)
-                .documentId(name)
+                .name(documentName)
+                .documentId(documentId)
                 .content(content)
                 .build();
         document.touchCreate();
 
-        // Store in memory
-        String key = buildStorageKey(worldId.getId(), collection, name);
+        // Store in memory (by name and by documentId)
+        String key = buildStorageKey(worldId.getId(), collection, documentName);
         documentStorage.put(key, document);
 
-        log.info("Stored village test document: {}", key);
+        log.info("Stored village test document: documentId={}, key={}", documentId, key);
+        return documentId;
     }
 
     /**
@@ -413,6 +411,27 @@ public class GenerateHexGridFromCompositeJobTest {
                             worldId, collection, name, doc != null);
 
                     return Optional.ofNullable(doc);
+                });
+
+        // Mock findByDocumentId - retrieve document from storage by documentId
+        when(documentService.findByDocumentId(any(WorldId.class), any(String.class), any(String.class)))
+                .thenAnswer(invocation -> {
+                    WorldId worldId = invocation.getArgument(0);
+                    String collection = invocation.getArgument(1);
+                    String documentId = invocation.getArgument(2);
+
+                    // Search through storage for document with matching documentId
+                    WDocument foundDoc = documentStorage.values().stream()
+                            .filter(doc -> doc.getDocumentId().equals(documentId) &&
+                                    doc.getWorldId().equals(worldId.getId()) &&
+                                    doc.getCollection().equals(collection))
+                            .findFirst()
+                            .orElse(null);
+
+                    log.debug("Mock findByDocumentId: worldId={}, collection={}, documentId={}, found={}",
+                            worldId, collection, documentId, foundDoc != null);
+
+                    return Optional.ofNullable(foundDoc);
                 });
     }
 

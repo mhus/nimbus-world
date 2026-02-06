@@ -65,6 +65,7 @@ public class TranslatorIntegrationTest {
     private static final String TEST_INSTRUCTION_FILE = "test-instruction-simple-world.txt";
     private static final String TEST_INSTRUCTION_MINIMAL_FILE = "test-instruction-minimal-world.txt";
     private static final String COMPOSER_MODEL_DESCRIPTION_FILE = "documents/generator/composer-model-description.md";
+    private static final String COMPOSER_MODEL_README_FILE = "documents/generator/composer-model-readme.md";
     private static final String LESSONS_LEARNED_FILE = "composer-model-lessons-learned.md";
 
     @BeforeEach
@@ -87,6 +88,8 @@ public class TranslatorIntegrationTest {
 
         // Load composer-model-description.md into document storage
         loadComposerModelDescription();
+        // Load composer-model-readme.md into document storage
+        loadComposerModelReadme();
 
         // Load lessons learned into document storage (optional - test continues if not found)
         boolean lessonsLearnedLoaded = loadLessonsLearned();
@@ -218,12 +221,14 @@ public class TranslatorIntegrationTest {
         WorldId sharedWorldId = WorldId.of(WorldId.COLLECTION_SHARED, "n").orElseThrow();
         String collection = "generator";
         String documentName = "composer-model-description.md";
+        String documentId = UUID.randomUUID().toString();
 
         WDocument document = WDocument.builder()
                 .id(UUID.randomUUID().toString())
                 .worldId(sharedWorldId.getId())
                 .collection(collection)
                 .name(documentName)
+                .documentId(documentId)
                 .content(content)
                 .build();
         document.touchCreate();
@@ -232,6 +237,40 @@ public class TranslatorIntegrationTest {
         documentStorage.put(key, document);
 
         log.info("Stored composer-model-description.md in document storage: {}", key);
+    }
+
+    /**
+     * Load composer-model-description.md into document storage for TranslatorService
+     */
+    private void loadComposerModelReadme() throws Exception {
+        log.info("Loading composer-model-readme.md from resources");
+
+        // Load file from resources
+        ClassPathResource resource = new ClassPathResource(COMPOSER_MODEL_README_FILE);
+        String content = new String(resource.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+
+        log.info("Loaded composer-model-readme.md: {} characters", content.length());
+
+        // Create document in storage (worldId @shared:n, collection generator)
+        WorldId sharedWorldId = WorldId.of(WorldId.COLLECTION_SHARED, "n").orElseThrow();
+        String collection = "generator";
+        String documentName = "composer-model-readme.md";
+        String documentId = UUID.randomUUID().toString();
+
+        WDocument document = WDocument.builder()
+                .id(UUID.randomUUID().toString())
+                .worldId(sharedWorldId.getId())
+                .collection(collection)
+                .name(documentName)
+                .documentId(documentId)
+                .content(content)
+                .build();
+        document.touchCreate();
+
+        String key = buildStorageKey(sharedWorldId.getId(), collection, documentName);
+        documentStorage.put(key, document);
+
+        log.info("Stored composer-model-readme.md in document storage: {}", key);
     }
 
     /**
@@ -260,12 +299,14 @@ public class TranslatorIntegrationTest {
             WorldId sharedWorldId = WorldId.of(WorldId.COLLECTION_SHARED, "n").orElseThrow();
             String collection = "generator";
             String documentName = "composer-model-lessons-learned.md";
+            String documentId = UUID.randomUUID().toString();
 
             WDocument document = WDocument.builder()
                     .id(UUID.randomUUID().toString())
                     .worldId(sharedWorldId.getId())
                     .collection(collection)
                     .name(documentName)
+                    .documentId(documentId)
                     .content(content)
                     .build();
             document.touchCreate();
@@ -291,9 +332,13 @@ public class TranslatorIntegrationTest {
         assertNotNull(instruction, "Test instruction should be loaded");
         log.info("Loaded instruction: {} characters", instruction.length());
 
+        // Save instruction to a document first
+        String instructionsDocumentId = saveInstructionToDocument(instruction);
+        log.info("Saved instruction to document: {}", instructionsDocumentId);
+
         // Create job parameters
         Map<String, String> params = new HashMap<>();
-        params.put("instruction", instruction);
+        params.put("instructionsDocumentId", instructionsDocumentId);
         params.put("documentPath", "test_translations");
         params.put("maxAttempts", "5");  // Allow 5 attempts with error feedback
 
@@ -317,29 +362,26 @@ public class TranslatorIntegrationTest {
 
         // Parse result data
         JsonNode resultNode = objectMapper.readTree(jobResult.resultData());
-        String documentPath = resultNode.get("documentPath").asText();
+        String documentId = resultNode.get("documentId").asText();
         int featuresCount = resultNode.get("featuresCount").asInt();
-        String worldId = resultNode.get("worldId").asText();
         String compositionName = resultNode.get("compositionName").asText();
 
-        log.info("Translation result: documentPath={}, features={}, worldId={}, name={}",
-                documentPath, featuresCount, worldId, compositionName);
+        log.info("Translation result: documentId={}, features={}, name={}",
+                documentId, featuresCount, compositionName);
 
         // Validate result data
-        assertNotNull(documentPath, "Document path should not be null");
+        assertNotNull(documentId, "Document ID should not be null");
         assertTrue(featuresCount > 0, "Should have at least one feature");
-        assertNotNull(worldId, "WorldId should not be null");
         assertNotNull(compositionName, "Composition name should not be null");
 
         // Load and validate the saved document
-        WDocument savedDoc = getDocumentFromStorage(documentPath);
+        WDocument savedDoc = getDocumentByDocumentId(TEST_WORLD_ID, "generator_translations", documentId);
         assertNotNull(savedDoc, "Saved document should exist");
         assertNotNull(savedDoc.getContent(), "Document should have content");
 
         // Parse document content
         JsonNode docContent = objectMapper.readTree(savedDoc.getContent());
         assertTrue(docContent.has("compositionJson"), "Document should contain compositionJson");
-        assertTrue(docContent.has("originalInstruction"), "Document should contain original instruction");
 
         String compositionJson = docContent.get("compositionJson").asText();
         assertNotNull(compositionJson, "Composition JSON should not be null");
@@ -371,7 +413,7 @@ public class TranslatorIntegrationTest {
 
         // Create ApplyTranslatedInstruction job parameters
         Map<String, String> applyParams = new HashMap<>();
-        applyParams.put("documentPath", documentPath);
+        applyParams.put("translationDocumentId", documentId);
         applyParams.put("maxAttempts", "5");  // Allow 5 attempts with error feedback
 
         // Create ApplyTranslatedInstruction job
@@ -394,12 +436,12 @@ public class TranslatorIntegrationTest {
 
         // Parse apply result data
         JsonNode applyResultNode = objectMapper.readTree(applyJobResult.resultData());
-        String enrichedDocumentPath = applyResultNode.get("documentPath").asText();
+        String enrichedDocumentId = applyResultNode.get("documentId").asText();
 
-        log.info("Enriched document path: {}", enrichedDocumentPath);
+        log.info("Enriched document ID: {}", enrichedDocumentId);
 
         // Load enriched document
-        WDocument enrichedDoc = getDocumentFromStorage(enrichedDocumentPath);
+        WDocument enrichedDoc = getDocumentByDocumentId(TEST_WORLD_ID, "generator_composed", enrichedDocumentId);
         assertNotNull(enrichedDoc, "Enriched document should exist");
 
         // Parse enriched document content
@@ -441,11 +483,38 @@ public class TranslatorIntegrationTest {
     }
 
     /**
-     * Get document from storage by path.
+     * Save instruction text to a document and return the document ID.
      */
-    private WDocument getDocumentFromStorage(String path) {
-        WDocument doc = documentStorage.get(path);
-        log.debug("Get document from storage: path={}, found={}", path, doc != null);
+    private String saveInstructionToDocument(String instruction) {
+        WorldId worldId = WorldId.of(TEST_WORLD_ID).orElseThrow();
+        String collection = "generator_instructions";
+        String documentId = UUID.randomUUID().toString();
+
+        WDocument document = documentService.save(worldId, collection, documentId, doc -> {
+            doc.setName("test-instruction-" + documentId);
+            doc.setTitle("Test Instruction");
+            doc.setContent(instruction);
+        });
+
+        log.info("Saved instruction document: documentId={}, name={}", documentId, document.getName());
+        return documentId;
+    }
+
+    /**
+     * Get document from storage by documentId.
+     */
+    private WDocument getDocumentByDocumentId(String worldId, String collection, String documentId) {
+        WorldId wid = WorldId.of(worldId).orElseThrow();
+        Optional<WDocument> docOpt = documentService.findByDocumentId(wid, collection, documentId);
+
+        if (docOpt.isEmpty()) {
+            log.error("Document not found: worldId={}, collection={}, documentId={}", worldId, collection, documentId);
+            return null;
+        }
+
+        WDocument doc = docOpt.get();
+        log.debug("Get document by documentId: worldId={}, collection={}, documentId={}, found=true",
+                worldId, collection, documentId);
         return doc;
     }
 
@@ -492,9 +561,12 @@ public class TranslatorIntegrationTest {
         ClassPathResource resource = new ClassPathResource(TEST_INSTRUCTION_MINIMAL_FILE);
         String instruction = new String(resource.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
 
+        // Save instruction to document
+        String instructionsDocumentId = saveInstructionToDocument(instruction);
+
         // Step 1: Translate
         Map<String, String> translateParams = new HashMap<>();
-        translateParams.put("instruction", instruction);
+        translateParams.put("instructionsDocumentId", instructionsDocumentId);
         translateParams.put("documentPath", "test_translations");
         translateParams.put("maxAttempts", "5"); // Allow 5 attempts with error feedback
 
@@ -509,11 +581,11 @@ public class TranslatorIntegrationTest {
         assertTrue(translateResult.successful(), "Translation should succeed");
 
         JsonNode translateResultNode = objectMapper.readTree(translateResult.resultData());
-        String documentPath = translateResultNode.get("documentPath").asText();
+        String documentId = translateResultNode.get("documentId").asText();
 
         // Step 2: Apply
         Map<String, String> applyParams = new HashMap<>();
-        applyParams.put("documentPath", documentPath);
+        applyParams.put("translationDocumentId", documentId);
         applyParams.put("maxAttempts", "5"); // Allow 5 attempts with error feedback
         applyParams.put("fillGaps", "false");  // Don't fill gaps for minimal test
         applyParams.put("oceanBorderRings", "0");  // No ocean border
@@ -530,9 +602,9 @@ public class TranslatorIntegrationTest {
 
         // Get enriched composition
         JsonNode applyResultNode = objectMapper.readTree(applyResult.resultData());
-        String enrichedDocumentPath = applyResultNode.get("documentPath").asText();
+        String enrichedDocumentId = applyResultNode.get("documentId").asText();
 
-        WDocument enrichedDoc = getDocumentFromStorage(enrichedDocumentPath);
+        WDocument enrichedDoc = getDocumentByDocumentId(TEST_WORLD_ID, "generator_composed", enrichedDocumentId);
         JsonNode enrichedContent = objectMapper.readTree(enrichedDoc.getContent());
         String enrichedCompositionJson = enrichedContent.get("enrichedCompositionJson").asText();
 
@@ -572,9 +644,12 @@ public class TranslatorIntegrationTest {
         ClassPathResource resource = new ClassPathResource("test-instruction-village.txt");
         String instruction = new String(resource.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
 
+        // Save instruction to document
+        String instructionsDocumentId = saveInstructionToDocument(instruction);
+
         // Step 1: Translate
         Map<String, String> translateParams = new HashMap<>();
-        translateParams.put("instruction", instruction);
+        translateParams.put("instructionsDocumentId", instructionsDocumentId);
         translateParams.put("documentPath", "test_translations");
         translateParams.put("maxAttempts", "3");
 
@@ -589,11 +664,11 @@ public class TranslatorIntegrationTest {
         assertTrue(translateResult.successful(), "Translation should succeed");
 
         JsonNode translateResultNode = objectMapper.readTree(translateResult.resultData());
-        String documentPath = translateResultNode.get("documentPath").asText();
+        String documentId = translateResultNode.get("documentId").asText();
 
         // Step 2: Apply
         Map<String, String> applyParams = new HashMap<>();
-        applyParams.put("documentPath", documentPath);
+        applyParams.put("translationDocumentId", documentId);
         applyParams.put("maxAttempts", "3");
         applyParams.put("fillGaps", "false");
         applyParams.put("oceanBorderRings", "0");
@@ -610,9 +685,9 @@ public class TranslatorIntegrationTest {
 
         // Get enriched composition
         JsonNode applyResultNode = objectMapper.readTree(applyResult.resultData());
-        String enrichedDocumentPath = applyResultNode.get("documentPath").asText();
+        String enrichedDocumentId = applyResultNode.get("documentId").asText();
 
-        WDocument enrichedDoc = getDocumentFromStorage(enrichedDocumentPath);
+        WDocument enrichedDoc = getDocumentByDocumentId(TEST_WORLD_ID, "generator_composed", enrichedDocumentId);
         JsonNode enrichedContent = objectMapper.readTree(enrichedDoc.getContent());
         String enrichedCompositionJson = enrichedContent.get("enrichedCompositionJson").asText();
 
@@ -699,6 +774,28 @@ public class TranslatorIntegrationTest {
                     return Optional.ofNullable(doc);
                 });
 
+        // Mock findByDocumentId - retrieve document from storage by documentId
+        when(documentService.findByDocumentId(any(WorldId.class), any(String.class), any(String.class)))
+                .thenAnswer(invocation -> {
+                    WorldId worldId = invocation.getArgument(0);
+                    String collection = invocation.getArgument(1);
+                    String documentId = invocation.getArgument(2);
+
+                    // Search through storage for document with matching documentId
+                    WDocument foundDoc = documentStorage.values().stream()
+                            .filter(doc -> doc.getDocumentId() != null &&
+                                    doc.getDocumentId().equals(documentId) &&
+                                    doc.getWorldId().equals(worldId.getId()) &&
+                                    doc.getCollection().equals(collection))
+                            .findFirst()
+                            .orElse(null);
+
+                    log.debug("Mock findByDocumentId: worldId={}, collection={}, documentId={}, found={}",
+                            worldId, collection, documentId, foundDoc != null);
+
+                    return Optional.ofNullable(foundDoc);
+                });
+
         // Mock save - store document in storage
         when(documentService.save(any(WorldId.class), any(String.class), any(String.class), any()))
                 .thenAnswer(invocation -> {
@@ -720,7 +817,7 @@ public class TranslatorIntegrationTest {
                     updater.accept(document);
                     document.touchUpdate();
 
-                    // Store in memory
+                    // Store in memory (by name key and also track documentId)
                     String key = buildStorageKey(worldId.getId(), collection, document.getName());
                     documentStorage.put(key, document);
 

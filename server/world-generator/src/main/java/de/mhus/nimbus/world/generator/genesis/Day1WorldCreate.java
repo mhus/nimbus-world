@@ -22,7 +22,7 @@ import java.util.Map;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class Day1World extends MethodBasedWorkflow  {
+public class Day1WorldCreate extends MethodBasedWorkflow  {
 
     private final WWorldService worldService;
     private final RRegionService regionService;
@@ -30,7 +30,7 @@ public class Day1World extends MethodBasedWorkflow  {
 
     @Override
     public String name() {
-        return "genesis-day1-world";
+        return "genesis-day1-world-create";
     }
 
     @Override
