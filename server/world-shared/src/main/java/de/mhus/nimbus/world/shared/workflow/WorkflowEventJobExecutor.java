@@ -52,7 +52,6 @@ public class WorkflowEventJobExecutor implements JobExecutor {
                     .eventName(event)
                     .data(job.getParameters() != null ? job.getParameters() : Map.of())
                     .build();
-            journalService.addWorkflowJournalRecord(job.getWorldId(), workflowId, eventObject);
             status = workflowService.processEvent(
                     job.getWorldId(),
                     workflowName,
