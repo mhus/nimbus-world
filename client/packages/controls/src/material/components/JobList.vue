@@ -100,7 +100,7 @@
             <div class="flex gap-2">
               <button
                 class="btn btn-xs btn-ghost"
-                @click="$emit('view', job)"
+                @click.stop="$emit('view', job)"
                 title="View Details"
               >
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -111,7 +111,7 @@
 
               <button
                 class="btn btn-xs btn-ghost text-info"
-                @click="$emit('clone', job)"
+                @click.stop="$emit('clone', job)"
                 title="Clone Job"
               >
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -122,7 +122,7 @@
               <button
                 v-if="job.status === 'FAILED'"
                 class="btn btn-xs btn-ghost text-warning"
-                @click="$emit('retry', job)"
+                @click.stop="$emit('retry', job)"
                 title="Retry"
               >
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -133,7 +133,7 @@
               <button
                 v-if="job.status === 'PENDING' || job.status === 'RUNNING'"
                 class="btn btn-xs btn-ghost text-warning"
-                @click="$emit('cancel', job)"
+                @click.stop="$emit('cancel', job)"
                 title="Cancel"
               >
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -143,7 +143,7 @@
 
               <button
                 class="btn btn-xs btn-ghost text-error"
-                @click="$emit('delete', job)"
+                @click.stop="$emit('delete', job)"
                 title="Delete"
               >
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
