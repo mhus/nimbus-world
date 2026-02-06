@@ -293,6 +293,7 @@ public class WWorldService {
 
         WWorld entity = WWorld.builder()
                 .worldId(worldId.getId())
+                .regionId(worldId.getRegionId())
                 .publicData(info)
                 .build();
         entity.touchForCreate();

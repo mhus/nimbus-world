@@ -1,7 +1,10 @@
 package de.mhus.nimbus.world.generator.genesis;
 
+import de.mhus.nimbus.generated.types.Rotation;
 import de.mhus.nimbus.generated.types.WorldInfo;
+import de.mhus.nimbus.generated.types.WorldInfoEntryPointDTO;
 import de.mhus.nimbus.shared.types.WorldId;
+import de.mhus.nimbus.shared.utils.TypeUtil;
 import de.mhus.nimbus.world.shared.layer.LayerType;
 import de.mhus.nimbus.world.shared.layer.WLayerService;
 import de.mhus.nimbus.world.shared.region.RRegionService;
@@ -67,6 +70,15 @@ public class Day1WorldCreate extends MethodBasedWorkflow  {
                 WorldInfo.builder()
                         .chunkSize(32)
                         .hexGridSize(400)
+                        .start(TypeUtil.vector3(-100d,0d,-100d))
+                        .stop(TypeUtil.vector3(100d,255d,100d))
+                        .title("World " + worldId.getWorldName())
+                        .entryPoint(
+                                WorldInfoEntryPointDTO.builder()
+                                        .area(TypeUtil.area(0,60,0,0,0,0))
+                                        .rotation(Rotation.builder().y(0).build())
+                                        .build()
+                        )
                         .description("Genesis world")
                         .build()
         );
