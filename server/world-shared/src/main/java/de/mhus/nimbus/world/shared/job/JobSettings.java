@@ -23,7 +23,6 @@ public class JobSettings {
     private SettingBoolean cleanupEnabled;
     private SettingInteger cleanupIntervalMs;
     private SettingInteger retentionHours;
-    private SettingBoolean hardDelete;
 
     @PostConstruct
     private void init() {
@@ -50,10 +49,6 @@ public class JobSettings {
         retentionHours = settingsService.getInteger(
                 "job.retentionHours",
                 24
-        );
-        hardDelete = settingsService.getBoolean(
-                "job.hardDelete",
-                false
         );
     }
 
@@ -107,11 +102,4 @@ public class JobSettings {
         return retentionHours.get();
     }
 
-    /**
-     * Use hard delete (remove from DB) vs soft delete (set enabled=false).
-     * Default: false (soft delete)
-     */
-    public boolean isHardDelete() {
-        return hardDelete.get();
-    }
 }

@@ -36,9 +36,7 @@ public class WorkflowJobExecutor implements JobExecutor {
                 job.getParameters() != null ? job.getParameters() : Map.of(),
                 job.getId()
         );
-        return JobResult.async(Map.of(
-                "workflowId", workflowId
-        ));
+        return JobResult.async("workflowId:" + workflowId);
     }
 
 }

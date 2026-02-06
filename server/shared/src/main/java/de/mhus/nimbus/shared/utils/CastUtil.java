@@ -43,11 +43,31 @@ public class CastUtil {
         }
     }
 
-    public static Map<Integer, String> mapOf(Object ... keyValues) {
+    public static Map<Integer, String> mapIntegerOfString(Object ... keyValues) {
         Map<Integer, String> map = new java.util.HashMap<>();
         for (int i = 0; i < keyValues.length; i += 2) {
             Integer key = (Integer) keyValues[i];
-            String value = (String) keyValues[i + 1];
+            String value = String.valueOf(keyValues[i + 1]);
+            map.put(key, value);
+        }
+        return map;
+    }
+
+    public static Map<String, Object> mapStringOfObject(Object ... keyValues) {
+        Map<String, Object> map = new java.util.HashMap<>();
+        for (int i = 0; i < keyValues.length; i += 2) {
+            var key = String.valueOf(keyValues[i]);
+            var value = keyValues[i + 1];
+            map.put(key, value);
+        }
+        return map;
+    }
+
+    public static Map<String, String> mapStringOfString(Object ... keyValues) {
+        Map<String, String> map = new java.util.HashMap<>();
+        for (int i = 0; i < keyValues.length; i += 2) {
+            var key = String.valueOf(keyValues[i]);
+            var value = String.valueOf(keyValues[i + 1]);
             map.put(key, value);
         }
         return map;

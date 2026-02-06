@@ -38,44 +38,6 @@ public class JobCleanupScheduler {
             return;
         }
 
-        try {
-            Instant cutoffTime = Instant.now()
-                    .minus(properties.getRetentionHours(), ChronoUnit.HOURS);
-
-            log.debug("Starting job cleanup: cutoff={}", cutoffTime);
-
-            List<WJob> jobsToCleanup = jobService.findJobsForCleanup(cutoffTime);
-
-            if (jobsToCleanup.isEmpty()) {
-                log.trace("No old jobs to clean up");
-                return;
-            }
-
-            int deleted = 0;
-            int failed = 0;
-
-            for (WJob job : jobsToCleanup) {
-                try {
-                    if (properties.isHardDelete()) {
-                        if (jobService.hardDeleteJob(job.getId())) {
-                            deleted++;
-                        }
-                    } else {
-                        if (jobService.deleteJob(job.getId())) {
-                            deleted++;
-                        }
-                    }
-                } catch (Exception e) {
-                    log.error("Error deleting job: {}", job.getId(), e);
-                    failed++;
-                }
-            }
-
-            log.info("Job cleanup completed: deleted={} failed={} cutoff={}",
-                    deleted, failed, cutoffTime);
-
-        } catch (Exception e) {
-            log.error("Error during job cleanup", e);
-        }
+        jobService.cleanup(properties.getRetentionHours());
     }
 }

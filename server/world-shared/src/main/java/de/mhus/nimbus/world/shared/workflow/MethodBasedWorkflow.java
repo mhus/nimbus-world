@@ -11,21 +11,21 @@ import java.util.Map;
 public abstract class MethodBasedWorkflow implements Workflow {
 
     @Override
-    public void event(WorkflowContext context, WorkflowEvent event) throws WorkflowException {
+    public void event(WorkflowContext context) throws WorkflowException {
             String status = context.getStatus();
-            String eventType = event.getEvent();
+            String eventType = context.getEvent().getEventName();
             if (WorkflowEvent.SUCCESS.equals(eventType)) {
-                onSuccess(context, status, event);
+                onSuccess(context, status);
             } else if (WorkflowEvent.FAILURE.equals(eventType)) {
-                onFailure(context, status, event);
+                onFailure(context, status);
             } else {
                 log.warn("Unknown event type '{}' for workflow '{}'", eventType, context.getWorkflowName());
                 context.updateWorkflowStatus(StatusRecord.TERMINATED);
             }
     }
 
-    protected void onFailure(WorkflowContext context, String status, WorkflowEvent event) {
-        Map<String, String> data = event.getData();
+    protected void onFailure(WorkflowContext context, String status) {
+        Map<String, String> data = context.getEvent().getData();
         final var maybeEventHandler =
                 Arrays.stream(ReflectionUtils.getAllDeclaredMethods(getClass()))
                         .filter(
@@ -49,7 +49,7 @@ public abstract class MethodBasedWorkflow implements Workflow {
             }
             try {
                 ReflectionUtils.invokeMethod(
-                        handler, this, findArgsForMethod(handler, context, status, event, data));
+                        handler, this, findArgsForMethod(handler, context, status, data));
             } catch (Exception e) {
                 log.warn(
                         "Error invoking event handler {} for status {}, cancel workflow",
@@ -63,12 +63,12 @@ public abstract class MethodBasedWorkflow implements Workflow {
                     "No successful handler found for workflow '{}' with status '{}'",
                     context.getWorkflowName(),
                     status);
-            onUnhandledEvent(context, status, event);
+            onUnhandledEvent(context, status);
         }
     }
 
-    protected void onSuccess(WorkflowContext context, String status, WorkflowEvent event) {
-        Map<String, String> data = event.getData();
+    protected void onSuccess(WorkflowContext context, String status) {
+        Map<String, String> data = context.getEvent().getData();
         final var maybeEventHandler =
                 Arrays.stream(ReflectionUtils.getAllDeclaredMethods(getClass()))
                         .filter(
@@ -92,7 +92,7 @@ public abstract class MethodBasedWorkflow implements Workflow {
             }
             try {
                 ReflectionUtils.invokeMethod(
-                        handler, this, findArgsForMethod(handler, context, status, event, data));
+                        handler, this, findArgsForMethod(handler, context, status, data));
             } catch (Exception e) {
                 log.warn(
                         "Error invoking event handler {} for status {}, cancel workflow",
@@ -106,15 +106,15 @@ public abstract class MethodBasedWorkflow implements Workflow {
                     "No successful handler found for workflow '{}' with status '{}'",
                     context.getWorkflowName(),
                     status);
-            onUnhandledEvent(context, status, event);
+            onUnhandledEvent(context, status);
         }
     }
 
-    protected void onUnhandledEvent(WorkflowContext context, String status, WorkflowEvent event) {
-        context.addNote("Unhandled event '{}' for status '{}'".formatted(event.getEvent(), status));
+    protected void onUnhandledEvent(WorkflowContext context, String status) {
+        context.addNote("Unhandled event '{}' for status '{}'".formatted(context.getEvent().getEventName(), status));
         log.warn(
                 "Unhandled event '{}' for workflow '{}-{}' with status '{}'",
-                event.getEvent(),
+                context.getEvent().getEventName(),
                 context.getWorkflowName(),
                 context.getWorkflowId(),
                 status);

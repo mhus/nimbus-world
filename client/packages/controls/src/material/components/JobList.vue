@@ -6,6 +6,7 @@
           <th>ID</th>
           <th>Executor</th>
           <th>Type</th>
+          <th>Parent</th>
           <th>Location</th>
           <th>Status</th>
           <th>Priority</th>
@@ -16,7 +17,13 @@
         </tr>
       </thead>
       <tbody>
-        <tr v-for="job in jobs" :key="job.id">
+        <tr
+          v-for="job in jobs"
+          :key="job.id"
+          :class="{ 'bg-base-200/50': job.parent }"
+          class="cursor-pointer hover:bg-base-300"
+          @click="$emit('view', job)"
+        >
           <!-- ID -->
           <td>
             <code class="text-xs font-mono">{{ job.id.substring(0, 8) }}...</code>
@@ -32,6 +39,17 @@
             <div class="text-sm text-base-content/70">{{ job.type }}</div>
           </td>
 
+          <!-- Parent -->
+          <td>
+            <div v-if="job.parent" class="flex items-center gap-1">
+              <svg class="w-3 h-3 text-info" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+              </svg>
+              <span class="font-mono text-xs text-base-content/70">{{ job.parent.substring(0, 8) }}...</span>
+            </div>
+            <div v-else class="text-xs text-base-content/50">-</div>
+          </td>
+
           <!-- Location -->
           <td>
             <div v-if="job.location" class="badge badge-sm badge-outline">{{ job.location }}</div>
@@ -39,7 +57,7 @@
           </td>
 
           <!-- Status -->
-          <td>
+          <td class="w-24">
             <span
               class="badge badge-sm"
               :class="getStatusClass(job.status)"

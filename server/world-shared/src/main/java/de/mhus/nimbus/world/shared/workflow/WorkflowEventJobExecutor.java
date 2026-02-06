@@ -49,7 +49,7 @@ public class WorkflowEventJobExecutor implements JobExecutor {
                 throw new JobExecutionException("Workflow does not exist: " + workflowId);
             }
             var eventObject = WorkflowEvent.builder()
-                    .event(event)
+                    .eventName(event)
                     .data(job.getParameters() != null ? job.getParameters() : Map.of())
                     .build();
             journalService.addWorkflowJournalRecord(job.getWorldId(), workflowId, eventObject);

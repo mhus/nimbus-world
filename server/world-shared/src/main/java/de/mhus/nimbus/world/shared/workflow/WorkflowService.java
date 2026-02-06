@@ -109,6 +109,7 @@ public class WorkflowService {
                 type,
                 parameters,
                 location,
+                "workflow:" + context.getWorkflowId(),
                 5,
                 0,
                 onSuccess,
@@ -123,6 +124,7 @@ public class WorkflowService {
                 WorkflowEvent.START + ":" + workflowName + ":" + workflowId,
                 Map.of(),
                 locationService.getApplicationServiceName(),
+                "workflow:" + workflowId,
                 5,
                 0,
                 null,
@@ -145,7 +147,7 @@ public class WorkflowService {
         Workflow workflow = findWorkflow(workflowName)
                 .orElseThrow(() -> new WorkflowException(workflowId, "Workflow not found: " + workflowName));
         // Reload context with new status
-        WorkflowContext context = loadWorkflowContext(worldId, workflowId, workflowName);
+        WorkflowContext context = loadWorkflowContext(worldId, workflowId, workflowName, null);
         try {
             workflow.start(context);
             log.info("Workflow started successfully: workflowId={}", workflowId);
@@ -161,23 +163,23 @@ public class WorkflowService {
      * Send an event to a workflow.
      * Loads the workflow context and calls event() on the workflow implementation.
      *
-     * @param workflowName Name of the workflow
      * @param worldId World identifier
+     * @param workflowName Name of the workflow
      * @param workflowId Workflow identifier
      * @param event Event to send
      * @return Updated workflow status after processing the event
      * @throws WorkflowException If workflow not found or event handling fails
      */
-    public String processEvent(String workflowName, String worldId, String workflowId, WorkflowEvent event) throws WorkflowException {
-        log.debug("Sending event to workflow: workflowId={}, event={}", workflowId, event.getEvent());
+    public String processEvent(String worldId, String workflowName, String workflowId, WorkflowEvent event) throws WorkflowException {
+        log.debug("Sending event to workflow: workflowId={}, event={}", workflowId, event.getEventName());
 
         Workflow workflow = findWorkflow(workflowName)
                 .orElseThrow(() -> new WorkflowException(workflowId, "Workflow not found: " + workflowName));
 
-        WorkflowContext context = loadWorkflowContext(worldId, workflowId, workflowName);
+        WorkflowContext context = loadWorkflowContext(worldId, workflowId, workflowName, event);
         String status = context.getStatus();
         if (isStatusFinal(status)) {
-            log.warn("Cannot process event for finalized workflow: workflowId={}, status={}, event={}", workflowId, status, event.getEvent());
+            log.warn("Cannot process event for finalized workflow: workflowId={}, status={}, event={}", workflowId, status, event.getEventName());
             return status;
         }
 
@@ -186,12 +188,11 @@ public class WorkflowService {
             journalService.addWorkflowJournalRecord(worldId, workflowId, event);
 
             // Reload context with new event
-            context = loadWorkflowContext(worldId, workflowId, workflowName);
-
-            workflow.event(context, event);
-            log.debug("Event handled successfully: workflowId={}, event={}", workflowId, event.getEvent());
+            context = loadWorkflowContext(worldId, workflowId, workflowName, event);
+            workflow.event(context);
+            log.debug("Event handled successfully: workflowId={}, event={}", workflowId, event.getEventName());
         } catch (Exception e) {
-            log.error("Unexpected error handling event: workflowId={}, event={}", workflowId, event.getEvent(), e);
+            log.error("Unexpected error handling event: workflowId={}, event={}", workflowId, event.getEventName(), e);
         }
         checkAfterRunTask(workflow, context);
         return context.getStatus();
@@ -241,11 +242,12 @@ public class WorkflowService {
     /**
      * Get workflow context with all journal entries.
      *
-     * @param worldId World identifier
+     * @param worldId    World identifier
      * @param workflowId Workflow identifier
+     * @param event
      * @return Workflow context
      */
-    public WorkflowContext loadWorkflowContext(String worldId, String workflowId, String workflowName) {
+    public WorkflowContext loadWorkflowContext(String worldId, String workflowId, String workflowName, WorkflowEvent event) {
         List<WWorkflowJournalRecord> journal = journalService.getWorkflowJournalRecords(worldId, workflowId);
 
         return WorkflowContext.builder()
@@ -255,6 +257,7 @@ public class WorkflowService {
                 .workflowId(workflowId)
                 .workflowName(workflowName)
                 .journal(journal)
+                .event(event)
                 .build();
     }
 

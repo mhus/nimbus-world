@@ -44,7 +44,7 @@ public class FlatMaterialService {
 
     // Preset material palettes with format: "blockDef|nextBlockDef|hasOcean"
     private static final Map<String,Map<Integer,String>> PRESET_MATERIALS = Map.of(
-            PALETTE_MIMBUS, CastUtil.mapOf(
+            PALETTE_MIMBUS, CastUtil.mapIntegerOfString(
                     GRASS, "n:g@s:default||true",
                     DIRT, "n:d@s:default||true",
                     STONE, "n:s@s:default||true",
@@ -62,7 +62,7 @@ public class FlatMaterialService {
                     TRACK_BORDER, "n:s@s:default||false",
                     TRACK_BRIDGE, "n:s@s:default||false"
             ),
-            PALETTE_LEGACY, CastUtil.mapOf(
+            PALETTE_LEGACY, CastUtil.mapIntegerOfString(
                     GRASS, "w:310@s:default||true",        // old world
                     DIRT, "w:279@s:default||true",         // old world
                     STONE, "w:553@s:default||true",

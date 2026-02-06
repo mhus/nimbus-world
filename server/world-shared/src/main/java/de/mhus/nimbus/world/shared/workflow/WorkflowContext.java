@@ -1,5 +1,7 @@
 package de.mhus.nimbus.world.shared.workflow;
 
+import de.mhus.nimbus.shared.utils.CastUtil;
+import de.mhus.nimbus.world.shared.job.JobExecutor;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -43,6 +45,11 @@ public class WorkflowContext {
      * Ordered by creation time ascending.
      */
     private List<WWorkflowJournalRecord> journal;
+
+    /**
+     * The event that triggered the current workflow execution step, if applicable.
+     */
+    private WorkflowEvent event;
 
     @Builder.Default
     private List<Job> jobQueue = new ArrayList<>();
@@ -103,14 +110,33 @@ public class WorkflowContext {
         );
     }
 
+    /**
+     * Enqueue a job for execution. The job will be executed after the current workflow step is completed.
+     *
+     * @param executor the job executor to use for this job
+     * @param type the job type
+     * @param parameters the parameters for the job
+     */
     public void enqueueJob(String executor, String type, Map<String, String> parameters) {
         jobQueue.add(new Job(executor, type, null, parameters));
     }
 
+    /**
+     * Enqueue a job for execution. The job will be executed after the current workflow step is completed.
+     *
+     * @param executor the job executor to use for this job
+     * @param type the job type
+     * @param location the location of the job to execute. See LocationService
+     * @param parameters the parameters for the job
+     */
     public void enqueueJob(String executor, String type, String location, Map<String, String> parameters) {
         jobQueue.add(new Job(executor, type, location, parameters));
     }
 
+    /**
+     * Add a journal entry to the workflow journal. This will be stored in the database and can be used to track the workflow execution history.
+     * @param record the journal record to add, can be used to store any information about the workflow execution, e.g. intermediate results, debug information, etc.
+     */
     public void addRecord(JournalRecord record) {
         journalService.addWorkflowJournalRecord(
                 worldId,
@@ -119,28 +145,103 @@ public class WorkflowContext {
         );
     }
 
+    /**
+     * Add a note to the workflow journal. Can be used to store any information about the workflow execution, e.g. intermediate results, debug information, etc.
+     * @param note the note to add to the journal
+     */
     public void addNote(String note) {
         addRecord(new NoteRecord(note));
     }
 
+    /**
+     * Complete the workflow with a success status and a result.
+     * @param result the result to store in the journal, can be used to store any information about the workflow completion, e.g. output data or summary of the workflow execution.
+     */
     public void doComplete(String result) {
         addRecord(new ResultRecord(result));
         updateWorkflowStatus(StatusRecord.COMPLETED);
     }
 
+    /**
+     * Complete the workflow with a failure status and a result.
+     * @param result the result to store in the journal, can be used to store error details or other information about the failure.
+     */
     public void doFail(String result) {
         addRecord(new ResultRecord(result));
         updateWorkflowStatus(StatusRecord.FAILED);
     }
 
+    /**
+     * Complete the workflow with a success status and a result.
+     * @param result the result to store in the journal, can be used to store any information about the workflow completion, e.g. output data or summary of the workflow execution.
+     */
     public void doComplete(Map<String,Object> result) {
         addRecord(new ResultRecord(result));
         updateWorkflowStatus(StatusRecord.COMPLETED);
     }
 
+    /**
+     * Complete the workflow with a failure status and a result.
+     * @param result the result to store in the journal, can be used to store error details or other information about the failure.
+     */
     public void doFail(Map<String, Object> result) {
         addRecord(new ResultRecord(result));
         updateWorkflowStatus(StatusRecord.FAILED);
+    }
+
+    /**
+     * Helper methods to access job result from event data.
+     * Assumes that the previous job result is stored in event data with key JobExecutor.PREVIOUS_JOB_RESULT.
+     */
+    public Optional<String> getJobResultAsString() {
+        if (getEvent() == null || getEvent().getData() == null) {
+            return Optional.empty();
+        }
+        return Optional.ofNullable(getEvent().getData().get(JobExecutor.PREVIOUS_JOB_RESULT));
+    }
+
+    /**
+     * Helper method to get job result as map. Assumes that the job result is stored as JSON string in event data with key JobExecutor.PREVIOUS_JOB_RESULT.
+     *
+     * @return the job result as map, or empty map if the job result is not available or cannot be parsed as JSON.
+     */
+    public Map<String, Object> getJobResultAsMap() {
+        try {
+            return CastUtil.stringToMap(getJobResultAsString().orElse("{}"));
+        } catch (Exception e) {
+            return Map.of();
+        }
+    }
+
+    /**
+     * Helper method to get a specific value from the job result map.
+     *
+     * @param key the key to look for in the job result map
+     * @return the value associated with the key in the job result map, or empty if the key is not present or the job result is not available.
+     */
+    public Optional<Object> getJobResultFromMap(String key) {
+        return Optional.ofNullable(getJobResultAsMap().get(key));
+    }
+
+    /**
+     * Helper method to get a specific value from the job result map as string.
+     * @param key the key to look for in the job result map
+     * @return the value associated with the key in the job result map as string, or empty if the key is not present or the job result is not available.
+     */
+    public Optional<String> getJobResultString(String key) {
+        var result = getJobResultAsMap().get(key);
+        if (result == null) {
+            return Optional.empty();
+        }
+        return Optional.of(String.valueOf(result));
+    }
+
+    /**
+     * Helper method to get job error message from event data. Assumes that the previous job error message is stored in event data with key JobExecutor.PREVIOUS_JOB_ERROR_MESSAGE.
+     * @return the job error message, or null if not available.
+     */
+    public String getJobError() {
+        return getEvent().getData().get(JobExecutor.PREVIOUS_JOB_ERROR_MESSAGE);
     }
 
     public record Job(String executor, String type, String location, Map<String, String> parameters) {

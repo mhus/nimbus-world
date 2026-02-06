@@ -46,6 +46,20 @@
             <label class="text-sm font-semibold text-base-content/70">Retries</label>
             <div class="text-sm mt-1">{{ job.retryCount }} / {{ job.maxRetries }}</div>
           </div>
+          <div>
+            <label class="text-sm font-semibold text-base-content/70">Parent</label>
+            <div class="text-sm mt-1">
+              <span v-if="job.parent" class="font-mono text-xs">{{ job.parent }}</span>
+              <span v-else class="text-base-content/50">None</span>
+            </div>
+          </div>
+          <div>
+            <label class="text-sm font-semibold text-base-content/70">Async</label>
+            <div class="text-sm mt-1">
+              <span v-if="job.async" class="badge badge-sm badge-info">{{ job.async }}</span>
+              <span v-else class="text-base-content/50">-</span>
+            </div>
+          </div>
         </div>
 
         <!-- Timestamps -->
@@ -76,9 +90,9 @@
         </div>
 
         <!-- Result Data -->
-        <div v-if="job.resultData" class="divider">Result</div>
-        <div v-if="job.resultData" class="bg-success/10 rounded p-4">
-          <pre class="text-xs font-mono overflow-x-auto text-success">{{ job.resultData }}</pre>
+        <div v-if="job.result" class="divider">Result</div>
+        <div v-if="job.result" class="bg-success/10 rounded p-4">
+          <pre class="text-xs font-mono overflow-x-auto text-success">{{ job.result }}</pre>
         </div>
 
         <!-- Error Message -->

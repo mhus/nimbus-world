@@ -24,12 +24,14 @@ export interface Job {
   executor: string;
   type: string;
   location?: string;
-  parameters: Record<string, string>;
   status: JobStatus;
+  parent?: string;
+  async?: string;
+  parameters: Record<string, string>;
   priority: number;
   maxRetries: number;
   retryCount: number;
-  resultData?: string;
+  result?: string;
   errorMessage?: string;
   onSuccess?: NextJob;
   onError?: NextJob;
@@ -58,23 +60,34 @@ export interface JobCreateRequest {
   onError?: NextJob;
 }
 
+export interface JobSettings {
+  retentionHours: number;
+  hardDelete: boolean;
+  cleanupEnabled: boolean;
+  cleanupIntervalMs: number;
+}
+
 export interface UseJobsReturn {
   jobs: Ref<Job[]>;
   summary: Ref<JobSummary | null>;
+  settings: Ref<JobSettings | null>;
   loading: Ref<boolean>;
   error: Ref<string | null>;
   loadJobs: (status?: JobStatus) => Promise<void>;
   loadJob: (jobId: string) => Promise<Job | null>;
   loadSummary: () => Promise<void>;
+  loadSettings: () => Promise<void>;
   createJob: (request: JobCreateRequest) => Promise<Job>;
   retryJob: (jobId: string) => Promise<void>;
   cancelJob: (jobId: string) => Promise<void>;
   deleteJob: (jobId: string) => Promise<void>;
+  cleanup: () => Promise<void>;
 }
 
 export function useJobs(worldId: string): UseJobsReturn {
   const jobs = ref<Job[]>([]);
   const summary = ref<JobSummary | null>(null);
+  const settings = ref<JobSettings | null>(null);
   const loading = ref(false);
   const error = ref<string | null>(null);
 
@@ -96,7 +109,10 @@ export function useJobs(worldId: string): UseJobsReturn {
         : `/control/worlds/${worldId}/jobs`;
 
       const response = await apiService.get<Job[]>(url);
-      jobs.value = response;
+      // Sort jobs by createdAt in descending order (newest first)
+      jobs.value = response.sort((a, b) => {
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      });
       logger.info('Loaded jobs', { worldId, status, count: jobs.value.length });
     } catch (err) {
       error.value = 'Failed to load jobs';
@@ -154,6 +170,32 @@ export function useJobs(worldId: string): UseJobsReturn {
     } catch (err) {
       error.value = 'Failed to load job summary';
       logger.error('Failed to load job summary', { worldId }, err as Error);
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  /**
+   * Load job settings
+   */
+  const loadSettings = async () => {
+    // Skip if worldId is not set
+    if (!worldId || worldId === '?') {
+      return;
+    }
+
+    loading.value = true;
+    error.value = null;
+
+    try {
+      const response = await apiService.get<JobSettings>(
+        `/control/worlds/${worldId}/jobs/settings`
+      );
+      settings.value = response;
+      logger.info('Loaded job settings', { worldId, settings: response });
+    } catch (err) {
+      error.value = 'Failed to load job settings';
+      logger.error('Failed to load job settings', { worldId }, err as Error);
     } finally {
       loading.value = false;
     }
@@ -274,17 +316,48 @@ export function useJobs(worldId: string): UseJobsReturn {
     }
   };
 
+  /**
+   * Trigger job cleanup
+   */
+  const cleanup = async () => {
+    // Skip if worldId is not set
+    if (!worldId || worldId === '?') {
+      throw new Error('World ID not set');
+    }
+
+    loading.value = true;
+    error.value = null;
+
+    try {
+      await apiService.post<void>(
+        `/control/worlds/${worldId}/jobs/cleanup`
+      );
+      logger.info('Job cleanup triggered', { worldId });
+      await loadJobs();
+      await loadSummary();
+    } catch (err) {
+      error.value = 'Failed to trigger cleanup';
+      logger.error('Failed to trigger cleanup', { worldId }, err as Error);
+      throw err;
+    } finally {
+      loading.value = false;
+    }
+  };
+
   return {
     jobs,
     summary,
+    settings,
     loading,
     error,
     loadJobs,
     loadJob,
     loadSummary,
+    loadSettings,
     createJob,
     retryJob,
     cancelJob,
     deleteJob,
+    cleanup,
   };
 }

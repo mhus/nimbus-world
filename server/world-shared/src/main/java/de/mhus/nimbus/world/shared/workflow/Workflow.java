@@ -40,10 +40,9 @@ public interface Workflow {
      * This method is called when an event is received for this workflow.
      *
      * @param context Workflow context with journal entries
-     * @param event Event to process
      * @throws WorkflowException If event handling fails
      */
-    void event(WorkflowContext context, WorkflowEvent event) throws WorkflowException;
+    void event(WorkflowContext context) throws WorkflowException;
 
     /**
      * Finalize the workflow execution.

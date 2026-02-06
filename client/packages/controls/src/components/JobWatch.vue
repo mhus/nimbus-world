@@ -39,9 +39,9 @@
           </div>
         </div>
 
-        <div v-if="job.resultData" class="bg-success/10 rounded p-3">
+        <div v-if="job.result" class="bg-success/10 rounded p-3">
           <div class="font-semibold text-sm mb-1">Result:</div>
-          <pre class="text-xs font-mono overflow-x-auto">{{ job.resultData }}</pre>
+          <pre class="text-xs font-mono overflow-x-auto">{{ job.result }}</pre>
         </div>
       </div>
 

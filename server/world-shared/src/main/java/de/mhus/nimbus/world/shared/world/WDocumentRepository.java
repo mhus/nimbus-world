@@ -14,6 +14,8 @@ public interface WDocumentRepository extends MongoRepository<WDocument, String> 
 
     Optional<WDocument> findByWorldIdAndCollectionAndDocumentId(String worldId, String collection, String documentId);
 
+    Optional<WDocument> findByWorldIdAndDocumentId(String worldId, String documentId);
+
     Optional<WDocument> findByWorldIdAndCollectionAndName(String worldId, String collection, String name);
 
     List<WDocument> findByWorldId(String worldId);

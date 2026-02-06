@@ -1,5 +1,6 @@
 package de.mhus.nimbus.world.control.api;
 
+import de.mhus.nimbus.world.shared.job.JobSettings;
 import de.mhus.nimbus.world.shared.job.JobStatus;
 import de.mhus.nimbus.world.shared.job.WJob;
 import de.mhus.nimbus.world.shared.job.WJobService;
@@ -25,6 +26,7 @@ import java.util.Map;
 public class JobController extends BaseEditorController {
 
     private final WJobService jobService;
+    private final JobSettings jobSettings;
 
     // DTOs
 
@@ -52,6 +54,8 @@ public class JobController extends BaseEditorController {
             String type,
             String location,
             String status,
+            String parent,
+            String async,
             Map<String, String> parameters,
             String result,
             String errorMessage,
@@ -86,6 +90,8 @@ public class JobController extends BaseEditorController {
                 job.getType(),
                 job.getLocation(),
                 job.getStatus(),
+                job.getParent(),
+                job.getAsync(),
                 job.getParameters(),
                 job.getResult(),
                 job.getErrorMessage(),
@@ -224,6 +230,7 @@ public class JobController extends BaseEditorController {
                     type,
                     request.parameters(),
                     location,
+                    null,
                     priority,
                     maxRetries,
                     request.onSuccess(),
@@ -399,5 +406,44 @@ public class JobController extends BaseEditorController {
                 })
                 .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND)
                         .body(Map.of("error", "Job not found: " + jobId)));
+    }
+
+    /**
+     * Trigger job cleanup manually
+     * POST /control/worlds/{worldId}/jobs/cleanup
+     */
+    @PostMapping("/cleanup")
+    public ResponseEntity<?> cleanup(@PathVariable String worldId) {
+        var error = validateId(worldId, "worldId");
+        if (error != null) return error;
+
+        try {
+            long retentionHours = jobSettings.getRetentionHours();
+
+            jobService.cleanup(retentionHours);
+
+            return ResponseEntity.ok(Map.of(
+                    "message", "Cleanup completed",
+                    "retentionHours", retentionHours
+            ));
+        } catch (Exception e) {
+            return bad("Failed to cleanup jobs: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Get current job settings
+     * GET /control/worlds/{worldId}/jobs/settings
+     */
+    @GetMapping("/settings")
+    public ResponseEntity<?> getSettings(@PathVariable String worldId) {
+        var error = validateId(worldId, "worldId");
+        if (error != null) return error;
+
+        return ResponseEntity.ok(Map.of(
+                "retentionHours", jobSettings.getRetentionHours(),
+                "cleanupEnabled", jobSettings.isCleanupEnabled(),
+                "cleanupIntervalMs", jobSettings.getCleanupIntervalMs()
+        ));
     }
 }

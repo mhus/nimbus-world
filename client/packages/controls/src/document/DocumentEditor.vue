@@ -584,7 +584,7 @@ const handleJobWatchClose = () => {
 };
 
 const handleJobCompleted = (job: Job) => {
-  logger.info('Job completed successfully', { jobId: job.id, result: job.resultData });
+  logger.info('Job completed successfully', { jobId: job.id, result: job.result });
   watchingJobId.value = null;
 
   // Reload documents to show updated summary

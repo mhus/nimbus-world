@@ -34,6 +34,17 @@ public class WDocumentService {
     }
 
     /**
+     * Find document by documentId.
+     */
+    @Transactional(readOnly = true)
+    public Optional<WDocument> findByDocumentId(WorldId worldId, String documentId) {
+        if (worldId.isInstance()) {
+            throw new IllegalArgumentException("worldId must not be an instance id");
+        }
+        return repository.findByWorldIdAndDocumentId(worldId.getId(), documentId);
+    }
+
+    /**
      * Find document by technical name.
      */
     @Transactional(readOnly = true)

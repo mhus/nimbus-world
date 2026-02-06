@@ -23,7 +23,7 @@ public class WorkflowEvent implements JournalRecord {
     /**
      * Event name/type.
      */
-    private String event;
+    private String eventName;
 
     /**
      * Event data payload.

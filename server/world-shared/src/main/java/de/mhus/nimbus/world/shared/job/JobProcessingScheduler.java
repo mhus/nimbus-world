@@ -188,6 +188,7 @@ public class JobProcessingScheduler {
                     nextJobConfig.getType() != null ? nextJobConfig.getType() : nextJobConfig.getExecutor(),
                     parameters,
                     nextJobConfig.getLocation(),
+                    "job:" + completedJob.getId(), // parent reference
                     5,
                     0,
                     null,

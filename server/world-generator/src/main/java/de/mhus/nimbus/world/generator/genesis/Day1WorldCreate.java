@@ -89,12 +89,22 @@ public class Day1WorldCreate extends MethodBasedWorkflow  {
                 List.of(),
                 false
         );
+        var structuresLayer = layerService.createLayer(
+                worldId.getId(),
+                "structures",
+                LayerType.MODEL,
+                25,
+                true,
+                List.of(),
+                false
+        );
 
         context.addRecord(new ResultRecord(
                 Map.of(
                         "worldId", worldId.getId(),
                         "groundLayerId", groundLayer.getLayerDataId(),
-                        "floraLayerId", floraLayer.getLayerDataId()
+                        "floraLayerId", floraLayer.getLayerDataId(),
+                        "structuresLayerId", structuresLayer.getLayerDataId()
                 )
         ));
 

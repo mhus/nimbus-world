@@ -3,11 +3,13 @@ package de.mhus.nimbus.world.shared.job;
 import de.mhus.nimbus.shared.types.WorldId;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.logging.log4j.util.Strings;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -37,41 +39,51 @@ public class WJobService {
     @Transactional
     public WJob createJob(String worldId, String executor, String type,
                           Map<String, String> parameters) {
-        return createJob(worldId, executor, type, parameters, null, 5, 0, null, null);
-    }
-
-    public WJob createJob(String worldId, String executor, String type,
-                          Map<String, String> parameters, int priority, int maxRetries) {
-        return createJob(worldId, executor, type, parameters, null, priority, maxRetries, null, null);
+        return createJob(worldId, executor, type, parameters, null, null, 5, 0, null, null);
     }
 
     @Transactional
     public WJob createJob(String worldId, String executor, String type,
-                          Map<String, String> parameters, String location, int priority, int maxRetries,
+                          Map<String, String> parameters, int priority, int maxRetries) {
+        return createJob(worldId, executor, type, parameters, null, null, priority, maxRetries, null, null);
+    }
+
+    @Transactional
+    public WJob createJob(String worldId, String executor, String type,
+                          Map<String, String> parameters, String location, String parent, int priority, int maxRetries,
                           NextJob onSuccess, NextJob onError) {
 
-        // IMPORTANT: Filter out instances - jobs are per world only
-        WorldId parsedWorldId = de.mhus.nimbus.shared.types.WorldId.unchecked(worldId);
-        String lookupWorldId = parsedWorldId.withoutInstance().getId();
-
         WJob job = WJob.builder()
-                .worldId(lookupWorldId)
                 .executor(executor)
                 .type(type)
                 .location(location)
-                .status(JobStatus.PENDING.name())
                 .parameters(parameters != null ? parameters : Map.of())
                 .priority(priority)
+                .parent(parent)
                 .maxRetries(maxRetries)
                 .onSuccess(onSuccess)
                 .onError(onError)
                 .build();
+        return createJob(worldId, job);
+    }
+
+    @Transactional
+    public WJob createJob(String worldId, WJob job) {
+        // IMPORTANT: Filter out instances - jobs are per world only
+        WorldId parsedWorldId = de.mhus.nimbus.shared.types.WorldId.unchecked(worldId);
+        String lookupWorldId = parsedWorldId.withoutInstance().getId();
+
+        job.setWorldId(lookupWorldId);
+        job.setStatus(JobStatus.PENDING.name());
+        if (Strings.isBlank(job.getExecutor())) {
+            throw new IllegalArgumentException("Executor must be specified");
+        }
 
         job.touchCreate();
         WJob saved = jobRepository.save(job);
 
         log.info("Created job: id={} world={} executor={} type={} priority={}",
-                saved.getId(), worldId, executor, type, priority);
+                saved.getId(), worldId, job.getExecutor(), job.getType(), job.getPriority());
 
         return saved;
     }
@@ -248,5 +260,42 @@ public class WJobService {
             return job.getCompletedAt().toEpochMilli() - job.getStartedAt().toEpochMilli();
         }
         return null;
+    }
+
+    @Transactional(readOnly = true)
+    public void cleanup(long retentionHours) {
+        try {
+            Instant cutoffTime = Instant.now()
+                    .minus(retentionHours, ChronoUnit.HOURS);
+
+            log.debug("Starting job cleanup: cutoff={}", cutoffTime);
+
+            List<WJob> jobsToCleanup = findJobsForCleanup(cutoffTime);
+
+            if (jobsToCleanup.isEmpty()) {
+                log.trace("No old jobs to clean up");
+                return;
+            }
+
+            int deleted = 0;
+            int failed = 0;
+
+            for (WJob job : jobsToCleanup) {
+                try {
+                    if (hardDeleteJob(job.getId())) {
+                        deleted++;
+                    }
+                } catch (Exception e) {
+                    log.error("Error deleting job: {}", job.getId(), e);
+                    failed++;
+                }
+            }
+
+            log.info("Job cleanup completed: deleted={} failed={} cutoff={}",
+                    deleted, failed, cutoffTime);
+
+        } catch (Exception e) {
+            log.error("Error during job cleanup", e);
+        }
     }
 }

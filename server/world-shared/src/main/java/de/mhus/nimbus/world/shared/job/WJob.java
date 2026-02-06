@@ -114,6 +114,11 @@ public class WJob implements Identifiable {
     @Builder.Default
     private int retryCount = 0;
 
+    /**
+     * Optional parent Information (not only JobId, could also be a workflowId) for tracking job hierarchies (e.g. workflow -> sub-jobs).
+     */
+    private String parent;
+
     private Instant createdAt;
     private Instant startedAt;
     private Instant completedAt;
