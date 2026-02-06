@@ -186,6 +186,19 @@
             />
           </div>
 
+          <!-- Document ID (read-only, only for existing documents) -->
+          <div v-if="editingDocument" class="form-control">
+            <label class="label">
+              <span class="label-text">Document ID</span>
+            </label>
+            <input
+              :value="editingDocument.documentId"
+              type="text"
+              class="input input-bordered font-mono text-sm"
+              readonly
+            />
+          </div>
+
           <!-- Collection -->
           <div class="form-control">
             <label class="label">
@@ -245,13 +258,12 @@
             <label class="label">
               <span class="label-text">Summary</span>
             </label>
-            <input
+            <textarea
               v-model="formData.summary"
-              type="text"
-              placeholder="Short summary"
-              class="input input-bordered"
+              class="textarea textarea-bordered h-32"
+              placeholder="Document summary"
               :disabled="editingDocument?.readOnly"
-            />
+            ></textarea>
           </div>
 
           <!-- Content -->
@@ -559,7 +571,7 @@ const handleGenerateSummary = async (doc: DocumentMetadata) => {
         collection: doc.collection,
         documentId: doc.documentId,
         aiModel: 'default:chat',
-        maxTokens: '200',
+        maxTokens: '2000',
         temperature: '0.7'
       },
       priority: 5,

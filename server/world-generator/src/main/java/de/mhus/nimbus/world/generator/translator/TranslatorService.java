@@ -139,7 +139,7 @@ public class TranslatorService {
             // Create chat options optimized for translation
             AiChatOptions options = AiChatOptions.builder()
                     .temperature(0.2)  // Low temperature for deterministic, structured output
-                    .maxTokens(4096)   // Sufficient for large JSON outputs
+                    .maxTokens(0)      // Use model maximum for large JSON outputs
                     .build();
 
             Optional<AiChat> chatOpt = aiModelService.createChat(modelName, options);

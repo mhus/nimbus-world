@@ -29,7 +29,7 @@ import java.util.Optional;
  *
  * Optional parameters:
  * - aiModel: AI model to use (default: "default:chat")
- * - maxTokens: Maximum tokens for AI response (default: 150)
+ * - maxTokens: Maximum tokens for AI response (default: 2000)
  * - temperature: AI temperature setting (default: 0.7)
  */
 @Component
@@ -39,7 +39,7 @@ public class DocumentSummaryJobExecutor implements JobExecutor {
 
     private static final String EXECUTOR_NAME = "document-summary";
     private static final String DEFAULT_AI_MODEL = "default:chat";
-    private static final int DEFAULT_MAX_TOKENS = 150;
+    private static final int DEFAULT_MAX_TOKENS = 2000;
     private static final double DEFAULT_TEMPERATURE = 0.7;
 
     private final WDocumentService documentService;
@@ -88,7 +88,7 @@ public class DocumentSummaryJobExecutor implements JobExecutor {
             log.info("Document loaded: title='{}', contentLength={}", document.getTitle(), content.length());
 
             // Generate summary using AI
-            log.debug("Creating AI chat with model: {}", aiModel);
+            log.debug("Creating AI chat with model: {}, maxTokens: {}, temperature: {}", aiModel, maxTokens, temperature);
             AiChatOptions options = AiChatOptions.builder()
                     .maxTokens(maxTokens)
                     .temperature(temperature)
@@ -147,15 +147,20 @@ public class DocumentSummaryJobExecutor implements JobExecutor {
      */
     private String buildSummaryPrompt(String title, String content) {
         StringBuilder prompt = new StringBuilder();
-        prompt.append("Please provide a concise summary (maximum 2-3 sentences) of the following document");
+        prompt.append("Write a detailed, comprehensive summary of the following document");
 
         if (title != null && !title.isBlank()) {
             prompt.append(" titled '").append(title).append("'");
         }
 
-        prompt.append(":\n\n");
+        prompt.append(". Your summary must be at least 150 words and should include:\n");
+        prompt.append("- Main topics and themes\n");
+        prompt.append("- All key points and details\n");
+        prompt.append("- Important specifications and requirements\n");
+        prompt.append("- A complete overview that captures the full content\n\n");
+        prompt.append("Document content:\n");
         prompt.append(content);
-        prompt.append("\n\nSummary:");
+        prompt.append("\n\nWrite your detailed summary now (minimum 150 words):");
 
         return prompt.toString();
     }
