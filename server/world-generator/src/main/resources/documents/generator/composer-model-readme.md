@@ -3,8 +3,136 @@
 
 If you want to compose roads or rivers you have to define points first.
 
+For river mouths you can use ocean edges, for river sources you can use mountain biomes, 
+for road starts and ends you can use any biome or mountain biome.
+Ocean edges will snap to the ocean border of the biome.
+
+Example:
+
+```json
+{
+  "name": "Simple Test World First",
+  "worldId": "simple-test-first",
+  "continents": [
+    {
+      "continentId": "main-continent",
+      "name": "Main Continent",
+      "biomeType": "MOUNTAINS",
+      "minNeighbors": 2
+    }
+  ],
+  "features": [
+    {
+      "featureType": "biome",
+      "name": "west-region",
+      "title": "Western Plains",
+      "type": "PLAINS",
+      "shape": "CIRCLE",
+      "size": "LARGE",
+      "continentId": "main-continent",
+      "positions": [
+        {"direction": "W", "distanceFrom": 0, "anchor": "origin", "priority": 10}
+      ],
+      "parameters": {
+      }
+    },
+    {
+      "featureType": "biome",
+      "name": "east-region",
+      "title": "Eastern Forest",
+      "type": "FOREST",
+      "shape": "CIRCLE",
+      "size": "LARGE",
+      "continentId": "main-continent",
+      "positions": [
+        {"direction": "E", "distanceFrom": 3, "distanceTo": 3, "anchor": "central-mountains", "priority": 10}
+      ],
+      "parameters": {
+      }
+    },
+    {
+      "featureType": "mountain-biome",
+      "name": "central-mountains",
+      "title": "Central Mountains",
+      "type": "MOUNTAINS",
+      "height": "MEDIUM_PEAKS",
+      "shape": "CIRCLE",
+      "size": "MEDIUM",
+      "continentId": "main-continent",
+      "positions": [
+        {"direction": "E", "distanceFrom": 3, "distanceTo": 3, "anchor": "west-region", "priority": 10}
+      ],
+      "parameters": {
+      }
+    },
+    {
+      "featureType": "point",
+      "name": "river-source",
+      "title": "Mountain River Source",
+      "snap": {
+        "mode": "INSIDE",
+        "target": "central-mountains"
+      }
+    },
+    {
+      "featureType": "ocean-edge",
+      "name": "river-mouth",
+      "title": "River Mouth at Ocean",
+      "snap": {
+        "mode": "INSIDE",
+        "target": "west-region"
+      },
+      "oceanDirection": "W"
+    },
+    {
+      "featureType": "point",
+      "name": "rocky-hills",
+      "title": "Road Start at Rocky Hills",
+      "snap": {
+        "mode": "INSIDE",
+        "target": "central-mountains"
+      }
+    },
+    {
+      "featureType": "point",
+      "name": "coastline-west",
+      "title": "Road End at Western Coastline",
+      "biomeSide": "SW",
+      "biomeId": "west-region"
+    },
+    {
+      "featureType": "river",
+      "name": "anduin-great-river",
+      "type": "RIVER",
+      "startPointId": "river-source",
+      "endPointId": "river-mouth",
+      "depth": 4,
+      "levelMode": "ADJUST_MEAN",
+      "meanLevelOffset": -2,
+      "widthBlocks": 10,
+      "tendLeft": "SLIGHT",
+      "tendRight": "MODERATE",
+      "force": false,
+      "parameters": {
+      }
+    },
+    {
+      "featureType": "road",
+      "name": "long-road",
+      "type": "ROAD",
+      "startPointId": "rocky-hills",
+      "endPointId": "coastline-west",
+      "levelMode": "ADJUST_MEAN",
+      "meanLevelOffset": 1,
+      "widthBlocks": 1,
+      "roadType": "street",
+      "tendLeft": "NONE",
+      "tendRight": "NONE",
+      "parameters": {
+      }
+    }
+  ]
+}
+```
 
 
-
-JSON parsing error: Cannot deserialize value of type `de.mhus.nimbus.world.generator.composer.area.DistanceRange` from String "NORMAL": not one of the values accepted for Enum class: [DIRECT_BEHIND, FAR, NEAR]
-at [Source: REDACTED (`StreamReadFeature.INCLUDE_SOURCE_IN_LOCATION` disabled); line: 52, column: 23] (through reference chain: de.mhus.nimbus.world.generator.composer.build.HexComposition["features"]->java.util.ArrayList[1]->de.mhus.nimbus.world.generator.composer.biome.PlainsBiome["positions"]->java.util.ArrayList[0]->de.mhus.nimbus.world.generator.composer.area.RelativePosition["distance"])

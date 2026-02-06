@@ -351,9 +351,16 @@ public class TranslatorService {
                 return TranslationResult.success(cleanedJson);
             } catch (Exception e) {
                 log.warn("Generated JSON is invalid", e);
-                return TranslationResult.failure(
-                        "Generated JSON is invalid: " + e.getMessage() + "\n\nGenerated content:\n" + cleanedJson
-                );
+                String errorMessage = "Generated JSON is invalid: " + e.getMessage() + "\n\nGenerated content:\n" + cleanedJson;
+
+                // Update Lessons Learned with this error
+                try {
+                    updateLessonsLearnedWithError(errorMessage, instruction, cleanedJson);
+                } catch (Exception lessonsEx) {
+                    log.warn("Failed to update Lessons Learned", lessonsEx);
+                }
+
+                return TranslationResult.failure(errorMessage);
             }
 
         } catch (Exception e) {
@@ -465,6 +472,13 @@ public class TranslatorService {
                     json
             );
 
+            // Update Lessons Learned with this error
+            try {
+                updateLessonsLearnedWithError(errorMessage, instructions, json);
+            } catch (Exception lessonsEx) {
+                log.warn("Failed to update Lessons Learned", lessonsEx);
+            }
+
             List<String> errors = new ArrayList<>();
             errors.add(errorMessage);
             return CompositionResult.failure(errors, json);
@@ -492,5 +506,196 @@ public class TranslatorService {
         }
 
         return cleaned.trim();
+    }
+
+    /**
+     * Update the Lessons Learned document with a new error.
+     * Uses AI to analyze the error and extend the lessons learned document.
+     *
+     * @param errorMessage The error message to add to lessons learned
+     * @param instruction The original instruction that caused the error
+     * @param generatedJson The JSON that was generated (if available)
+     */
+    public void updateLessonsLearnedWithError(String errorMessage, String instruction, String generatedJson) {
+        log.info("Updating Lessons Learned with new error");
+
+        try {
+            // 1. Load current Lessons Learned document
+            Optional<String> currentLessonsOpt = loadLessonsLearned();
+            String currentLessons = currentLessonsOpt.orElse("");
+
+            // 2. Create AI chat for analyzing the error
+            Optional<AiChat> chatOpt = createDefaultTranslatorChatModel();
+            if (chatOpt.isEmpty()) {
+                log.warn("Cannot update Lessons Learned: AI model not available");
+                return;
+            }
+            AiChat chat = chatOpt.get();
+
+            // 3. Build prompt for updating lessons learned
+            String updatePrompt = buildLessonsLearnedUpdatePrompt(
+                    currentLessons,
+                    errorMessage,
+                    instruction,
+                    generatedJson
+            );
+
+            // 4. Ask AI to create updated version
+            String updatedLessons;
+            try {
+                updatedLessons = chat.ask(updatePrompt);
+            } catch (AiChatException e) {
+                log.error("Failed to get AI response for lessons learned update", e);
+                return;
+            }
+
+            // 5. Clean response (remove markdown if present)
+            updatedLessons = cleanMarkdownResponse(updatedLessons);
+
+            // 6. Validate that updated lessons is not empty or suspiciously short
+            if (updatedLessons.isBlank()) {
+                log.error("AI returned empty lessons learned document - not updating");
+                return;
+            }
+
+            if (updatedLessons.length() < 100) {
+                log.warn("Updated lessons learned suspiciously short ({} chars) - not updating", updatedLessons.length());
+                return;
+            }
+
+            // 7. Save updated lessons learned
+            saveLessonsLearned(updatedLessons);
+
+            log.info("Successfully updated Lessons Learned document (new length: {} chars)", updatedLessons.length());
+
+        } catch (Exception e) {
+            log.error("Failed to update Lessons Learned", e);
+        }
+    }
+
+    /**
+     * Build prompt for updating lessons learned document.
+     */
+    private String buildLessonsLearnedUpdatePrompt(
+            String currentLessons,
+            String errorMessage,
+            String instruction,
+            String generatedJson) {
+
+        String currentLessonsSection = currentLessons.isBlank()
+                ? "No previous lessons learned available yet."
+                : currentLessons;
+
+        String generatedJsonSection = (generatedJson != null && !generatedJson.isBlank())
+                ? "\n\n## Generated JSON\n\n```json\n" + generatedJson + "\n```"
+                : "";
+
+        return String.format("""
+                You are an expert system that helps improve the Composer Model translation process by maintaining
+                a "Lessons Learned" document. This document captures common errors and pitfalls to help avoid them
+                in future translations.
+
+                ## Current Lessons Learned Document
+
+                %s
+
+                ## New Error to Analyze
+
+                **Original Instruction:**
+                %s
+
+                **Error Message:**
+                %s%s
+
+                ## Your Task
+
+                Analyze this error and update the Lessons Learned document:
+
+                1. Identify the root cause of this error
+                2. Extract a general lesson that applies beyond this specific case
+                3. Add this lesson to the document in a clear, actionable format
+                4. Keep existing lessons unless they are outdated or redundant
+                5. Organize lessons by category (e.g., JSON structure, naming conventions, data types, etc.)
+                6. Make lessons concise but specific enough to be helpful
+
+                ## Output Format
+
+                Return ONLY the updated Lessons Learned document in markdown format.
+                Do NOT include any explanation or meta-commentary.
+                Do NOT wrap the output in code blocks.
+
+                The document should start with "# Composer Model - Lessons Learned" as the main heading.
+                """,
+                currentLessonsSection,
+                instruction,
+                errorMessage,
+                generatedJsonSection
+        );
+    }
+
+    /**
+     * Clean markdown response by removing code blocks.
+     */
+    private String cleanMarkdownResponse(String response) {
+        String cleaned = response.trim();
+
+        // Remove markdown code blocks if present
+        if (cleaned.startsWith("```markdown")) {
+            cleaned = cleaned.substring("```markdown".length());
+        } else if (cleaned.startsWith("```md")) {
+            cleaned = cleaned.substring("```md".length());
+        } else if (cleaned.startsWith("```")) {
+            cleaned = cleaned.substring("```".length());
+        }
+
+        if (cleaned.endsWith("```")) {
+            cleaned = cleaned.substring(0, cleaned.length() - 3);
+        }
+
+        return cleaned.trim();
+    }
+
+    /**
+     * Save updated lessons learned document to the database.
+     */
+    private void saveLessonsLearned(String content) {
+        try {
+            WorldId sharedWorldId = WorldId.of(WorldId.COLLECTION_SHARED, "n")
+                    .orElseThrow(() -> new IllegalStateException("Failed to create shared WorldId"));
+
+            // Check if document exists
+            Optional<WDocument> existingDocOpt = documentService.findByName(
+                    sharedWorldId,
+                    DOCUMENT_COLLECTION,
+                    LESSONS_LEARNED_DOCUMENT_NAME
+            );
+
+            if (existingDocOpt.isPresent()) {
+                // Update existing document
+                WDocument existingDoc = existingDocOpt.get();
+                documentService.save(sharedWorldId, DOCUMENT_COLLECTION, existingDoc.getDocumentId(), doc -> {
+                    doc.setContent(content);
+                });
+                log.info("Updated existing Lessons Learned document");
+            } else {
+                // Create new document
+                String documentId = java.util.UUID.randomUUID().toString();
+                documentService.save(sharedWorldId, DOCUMENT_COLLECTION, documentId, doc -> {
+                    doc.setName(LESSONS_LEARNED_DOCUMENT_NAME);
+                    doc.setTitle("Composer Model - Lessons Learned");
+                    doc.setContent(content);
+                    doc.setFormat("markdown");
+                    doc.setType("documentation");
+                });
+                log.info("Created new Lessons Learned document");
+            }
+
+            // Clear cache to force reload on next access
+            cachedLessonsLearned = null;
+
+        } catch (Exception e) {
+            log.error("Failed to save Lessons Learned document", e);
+            throw new RuntimeException("Failed to save Lessons Learned", e);
+        }
     }
 }
