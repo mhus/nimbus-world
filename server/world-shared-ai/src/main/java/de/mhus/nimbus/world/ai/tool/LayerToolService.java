@@ -483,6 +483,7 @@ public class LayerToolService {
                 var job = jobService.createJob(
                         lookupWorldId,
                         "recreate-model-based-layer",
+                        "Regenerate Layer: " + layerName,
                         "layer-regeneration",
                         Map.of(
                                 "layerDataId", layer.getLayerDataId(),

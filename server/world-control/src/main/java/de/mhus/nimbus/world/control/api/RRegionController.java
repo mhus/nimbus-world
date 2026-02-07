@@ -182,6 +182,7 @@ public class RRegionController extends BaseEditorController {
             de.mhus.nimbus.world.shared.job.WJob regionJob = jobService.createJob(
                     regionCollectionId,
                     "delete-world-resources",
+                    "Delete Region Collection: " + regionName,
                     "cleanup",
                     regionJobParams,
                     5,  // priority
@@ -193,6 +194,7 @@ public class RRegionController extends BaseEditorController {
             jobService.createJob(
                     publicCollectionId,
                     "delete-world-resources",
+                    "Delete Public Collection: " + regionName,
                     "cleanup",
                     publicJobParams,
                     5,  // priority

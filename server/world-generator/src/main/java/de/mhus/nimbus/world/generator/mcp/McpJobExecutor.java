@@ -49,6 +49,7 @@ public class McpJobExecutor {
         private String worldId;
         private String layer;
         private String executor;
+        private String title;
         private Map<String, String> parameters = new HashMap<>();
         private long timeoutMs = 300000; // Default: 5 minutes
 
@@ -64,6 +65,11 @@ public class McpJobExecutor {
 
         public Builder executor(String executor) {
             this.executor = executor;
+            return this;
+        }
+
+        public Builder title(String title) {
+            this.title = title;
             return this;
         }
 
@@ -161,9 +167,15 @@ public class McpJobExecutor {
             jobParams.put("layer", config.layer);
         }
 
+        // Use provided title or generate one
+        String jobTitle = config.title != null && !config.title.isBlank()
+            ? config.title
+            : "MCP Job: " + config.executor;
+
         return jobService.createJob(
             config.worldId,
             config.executor,
+            jobTitle,
             config.executor,
             jobParams
         );

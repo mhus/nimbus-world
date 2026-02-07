@@ -13,6 +13,12 @@
 
       <!-- Job Info -->
       <div class="space-y-4">
+        <!-- Title -->
+        <div class="bg-base-200 rounded p-3">
+          <label class="text-sm font-semibold text-base-content/70">Title</label>
+          <div class="text-lg font-semibold mt-1">{{ job.title }}</div>
+        </div>
+
         <!-- Basic Info -->
         <div class="grid grid-cols-2 gap-4">
           <div>

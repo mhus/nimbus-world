@@ -338,6 +338,7 @@ public class ELayerController extends BaseEditorController {
                 de.mhus.nimbus.world.shared.job.WJob job = jobService.createJob(
                         lookupWorldId,
                         "recreate-model-based-layer",
+                        "Regenerate Layer: " + layer.getName(),
                         "layer-regeneration",
                         Map.of(
                                 "layerDataId", layer.getLayerDataId(),

@@ -22,6 +22,7 @@ export interface Job {
   id: string;
   worldId: string;
   executor: string;
+  title: string;
   type: string;
   location?: string;
   status: JobStatus;
@@ -51,6 +52,7 @@ export interface JobSummary {
 
 export interface JobCreateRequest {
   executor: string;
+  title: string;
   type?: string;
   location?: string;
   parameters: Record<string, string>;

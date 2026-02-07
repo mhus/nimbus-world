@@ -37,24 +37,25 @@ public class WJobService {
     private final JobExecutorRegistry executorRegistry;
 
     @Transactional
-    public WJob createJob(String worldId, String executor, String type,
+    public WJob createJob(String worldId, String executor, String title, String type,
                           Map<String, String> parameters) {
-        return createJob(worldId, executor, type, parameters, null, null, 5, 0, null, null);
+        return createJob(worldId, executor, title, type, parameters, null, null, 5, 0, null, null);
     }
 
     @Transactional
-    public WJob createJob(String worldId, String executor, String type,
+    public WJob createJob(String worldId, String executor, String title, String type,
                           Map<String, String> parameters, int priority, int maxRetries) {
-        return createJob(worldId, executor, type, parameters, null, null, priority, maxRetries, null, null);
+        return createJob(worldId, executor, title, type, parameters, null, null, priority, maxRetries, null, null);
     }
 
     @Transactional
-    public WJob createJob(String worldId, String executor, String type,
+    public WJob createJob(String worldId, String executor, String title, String type,
                           Map<String, String> parameters, String location, String parent, int priority, int maxRetries,
                           NextJob onSuccess, NextJob onError) {
 
         WJob job = WJob.builder()
                 .executor(executor)
+                .title(title)
                 .type(type)
                 .location(location)
                 .parameters(parameters != null ? parameters : Map.of())
@@ -78,12 +79,15 @@ public class WJobService {
         if (Strings.isBlank(job.getExecutor())) {
             throw new IllegalArgumentException("Executor must be specified");
         }
+        if (Strings.isBlank(job.getTitle())) {
+            throw new IllegalArgumentException("Title must be specified");
+        }
 
         job.touchCreate();
         WJob saved = jobRepository.save(job);
 
-        log.info("Created job: id={} world={} executor={} type={} priority={}",
-                saved.getId(), worldId, job.getExecutor(), job.getType(), job.getPriority());
+        log.info("Created job: id={} world={} executor={} title={} type={} priority={}",
+                saved.getId(), worldId, job.getExecutor(), job.getTitle(), job.getType(), job.getPriority());
 
         return saved;
     }
@@ -245,10 +249,12 @@ public class WJobService {
                 .filter(job -> {
                     String id = job.getId();
                     String executor = job.getExecutor();
+                    String title = job.getTitle();
                     String type = job.getType();
                     String status = job.getStatus();
                     return (id != null && id.toLowerCase().contains(lowerQuery)) ||
                             (executor != null && executor.toLowerCase().contains(lowerQuery)) ||
+                            (title != null && title.toLowerCase().contains(lowerQuery)) ||
                             (type != null && type.toLowerCase().contains(lowerQuery)) ||
                             (status != null && status.toLowerCase().contains(lowerQuery));
                 })

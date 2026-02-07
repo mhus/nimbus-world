@@ -44,6 +44,12 @@ public class WJob implements Identifiable {
     private String worldId;
 
     /**
+     * Human-readable title describing what this job does.
+     * Example: "Generate world terrain", "Export world data"
+     */
+    private String title;
+
+    /**
      * Executor name to use (maps to JobExecutor bean).
      * Example: "chunk-regeneration", "world-export", "layer-cleanup"
      */

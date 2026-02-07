@@ -31,6 +31,23 @@
 
               <!-- Form -->
               <form @submit.prevent="handleCreate" class="space-y-4">
+                <!-- Title -->
+                <div class="form-control">
+                  <label class="label">
+                    <span class="label-text">Title</span>
+                  </label>
+                  <input
+                    v-model="formData.title"
+                    type="text"
+                    class="input input-bordered"
+                    placeholder="e.g., Generate world terrain"
+                    required
+                  />
+                  <label class="label">
+                    <span class="label-text-alt">A descriptive title explaining what this job does</span>
+                  </label>
+                </div>
+
                 <!-- Executor -->
                 <div class="form-control">
                   <label class="label">
@@ -438,6 +455,7 @@ const { createJob } = useJobs(props.worldId);
 // Form data
 const formData = ref({
   executor: '',
+  title: '',
   type: '',
   location: '',
   priority: 5,
@@ -473,6 +491,7 @@ const showJsonEditor = ref(false);
 const loadFromJob = (job: Job) => {
   // Set basic form data
   formData.value.executor = job.executor;
+  formData.value.title = job.title;
   formData.value.type = job.type;
   formData.value.location = job.location || '';
   formData.value.priority = job.priority;
@@ -519,6 +538,7 @@ const loadFromPreset = (data: any) => {
 
   // Set basic form data from preset
   if (data.executor) formData.value.executor = data.executor;
+  if (data.title) formData.value.title = data.title;
   if (data.type) formData.value.type = data.type;
   if (data.location) formData.value.location = data.location;
   if (data.priority !== undefined) formData.value.priority = data.priority;
@@ -585,7 +605,7 @@ watch(
  * Validate form
  */
 const isFormValid = computed(() => {
-  return formData.value.executor !== '';
+  return formData.value.executor !== '' && formData.value.title !== '';
 });
 
 /**
@@ -697,6 +717,7 @@ const jobDataForJson = computed(() => {
 
   return {
     executor: formData.value.executor,
+    title: formData.value.title,
     type: formData.value.type || undefined,
     location: formData.value.location || undefined,
     parameters,
@@ -713,6 +734,7 @@ const jobDataForJson = computed(() => {
 const handleJsonApply = (jsonData: any) => {
   // Update basic form data
   if (jsonData.executor !== undefined) formData.value.executor = jsonData.executor;
+  if (jsonData.title !== undefined) formData.value.title = jsonData.title || '';
   if (jsonData.type !== undefined) formData.value.type = jsonData.type || '';
   if (jsonData.location !== undefined) formData.value.location = jsonData.location || '';
   if (jsonData.priority !== undefined) formData.value.priority = jsonData.priority;
@@ -779,6 +801,7 @@ const handleCreate = async () => {
   try {
     const request: JobCreateRequest = {
       executor: formData.value.executor,
+      title: formData.value.title.trim(),
       type: formData.value.type.trim() || undefined,
       location: formData.value.location.trim() || undefined,
       parameters: buildParameters(),

@@ -35,6 +35,7 @@ public class JobController extends BaseEditorController {
      */
     public record JobRequest(
             String executor,
+            String title,
             String type,
             String location,
             Map<String, String> parameters,
@@ -51,6 +52,7 @@ public class JobController extends BaseEditorController {
             String id,
             String worldId,
             String executor,
+            String title,
             String type,
             String location,
             String status,
@@ -87,6 +89,7 @@ public class JobController extends BaseEditorController {
                 job.getId(),
                 job.getWorldId(),
                 job.getExecutor(),
+                job.getTitle(),
                 job.getType(),
                 job.getLocation(),
                 job.getStatus(),
@@ -218,6 +221,10 @@ public class JobController extends BaseEditorController {
             return bad("executor is required");
         }
 
+        if (Strings.isBlank(request.title())) {
+            return bad("title is required");
+        }
+
         try {
             int priority = request.priority() != null ? request.priority() : 5;
             int maxRetries = request.maxRetries() != null ? request.maxRetries() : 0;
@@ -227,6 +234,7 @@ public class JobController extends BaseEditorController {
             WJob created = jobService.createJob(
                     worldId,
                     request.executor(),
+                    request.title(),
                     type,
                     request.parameters(),
                     location,

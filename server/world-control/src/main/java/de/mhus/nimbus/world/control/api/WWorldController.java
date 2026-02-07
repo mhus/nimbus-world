@@ -361,6 +361,7 @@ public class WWorldController extends BaseEditorController {
             de.mhus.nimbus.world.shared.job.WJob job = jobService.createJob(
                     request.worldId(),
                     "create-world-defaults",
+                    "Initialize World: " + request.worldId(),
                     "initialize",
                     jobParameters,
                     5,  // priority
@@ -519,6 +520,7 @@ public class WWorldController extends BaseEditorController {
             de.mhus.nimbus.world.shared.job.WJob job = jobService.createJob(
                     worldId,
                     "delete-world-resources",
+                    "Delete World Resources: " + worldId,
                     "cleanup",
                     jobParameters,
                     5,  // priority
@@ -673,6 +675,7 @@ public class WWorldController extends BaseEditorController {
             de.mhus.nimbus.world.shared.job.WJob job = jobService.createJob(
                     targetWorldId,
                     "duplicate-world",
+                    "Duplicate World: " + worldId + " to " + targetWorldId,
                     "duplicate",
                     jobParameters,
                     5,  // priority

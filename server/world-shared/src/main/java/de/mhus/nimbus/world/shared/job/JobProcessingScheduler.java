@@ -182,9 +182,11 @@ public class JobProcessingScheduler {
             }
 
             // Create the next job with the same worldId
+            String nextJobTitle = "Follow-up: " + (nextJobConfig.getType() != null ? nextJobConfig.getType() : nextJobConfig.getExecutor());
             WJob nextJob = jobService.createJob(
                     completedJob.getWorldId(),
                     nextJobConfig.getExecutor(),
+                    nextJobTitle,
                     nextJobConfig.getType() != null ? nextJobConfig.getType() : nextJobConfig.getExecutor(),
                     parameters,
                     nextJobConfig.getLocation(),

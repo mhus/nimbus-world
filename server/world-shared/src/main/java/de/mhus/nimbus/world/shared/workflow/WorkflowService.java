@@ -88,7 +88,7 @@ public class WorkflowService {
         }
     }
 
-    private void fireJob(WorkflowContext context, String executor, String type, String location, Map<String,String > parameters) {
+    private void fireJob(WorkflowContext context, String executor, String type, String location, String titleSuffix, Map<String,String > parameters) {
 
         var onSuccess = NextJob.builder()
                 .executor(WorkflowEventJobExecutor.NAME)
@@ -103,9 +103,24 @@ public class WorkflowService {
                 .parameters(Map.of())
                 .build();
 
+        // Build descriptive title: "workflow-name: status [executor/type]" or with suffix: "workflow-name: status - titleSuffix"
+        String title;
+        if (titleSuffix != null && !titleSuffix.isBlank()) {
+            title = String.format("%s: %s - %s",
+                    context.getWorkflowName(),
+                    context.getStatus(),
+                    titleSuffix);
+        } else {
+            title = String.format("%s: %s [%s]",
+                    context.getWorkflowName(),
+                    context.getStatus(),
+                    type.isBlank() ? executor : type);
+        }
+
         jobService.createJob(
                 context.getWorldId(),
                 executor,
+                title,
                 type,
                 parameters,
                 location,
@@ -121,6 +136,7 @@ public class WorkflowService {
         jobService.createJob(
                 worldId,
                 WorkflowEventJobExecutor.NAME,
+                "Workflow Start: " + workflowName,
                 WorkflowEvent.START + ":" + workflowName + ":" + workflowId,
                 Map.of(),
                 locationService.getApplicationServiceName(),
@@ -225,7 +241,7 @@ public class WorkflowService {
         }
 
         for (WorkflowContext.Job job : context.getJobQueue()) {
-            fireJob(context, job.executor(), job.type(), job.location(), job.parameters());
+            fireJob(context, job.executor(), job.type(), job.location(), job.titleSuffix(), job.parameters());
         }
 
 

@@ -63,16 +63,26 @@ public class FlatImageExportJobExecutor implements JobExecutor {
 
             // Extract optional parameters
             boolean ignoreEmptyMaterial = getOptionalBooleanParameter(job, "ignoreEmptyMaterial", false);
+            String layerDataId = getOptionalParameter(job, "layerDataId", null);
 
             log.info("Exporting flat images: flatId={}, worldId={}, levelPath={}, materialPath={}, ignoreEmptyMaterial={}",
                     flatId, worldId, levelPath, materialPath, ignoreEmptyMaterial);
 
-            // Load flat
-            Optional<WFlat> flatOpt = flatService.findById(flatId);
-            if (flatOpt.isEmpty()) {
-                throw new JobExecutionException("Flat not found: " + flatId);
+            // Load flat using worldId and flatId (like other flat jobs)
+            WFlat flat;
+            if (layerDataId != null && !layerDataId.isBlank()) {
+                // Use compound lookup with worldId, layerDataId, and flatId
+                flat = flatService.findByWorldIdAndLayerDataIdAndFlatId(worldId, layerDataId, flatId)
+                        .orElseThrow(() -> new JobExecutionException("Flat not found: worldId=" + worldId +
+                                ", layerDataId=" + layerDataId + ", flatId=" + flatId));
+            } else {
+                // Search for flat with matching flatId in this world
+                flat = flatService.findByWorldId(worldId).stream()
+                        .filter(f -> flatId.equals(f.getFlatId()))
+                        .findFirst()
+                        .orElseThrow(() -> new JobExecutionException("Flat not found: worldId=" + worldId +
+                                ", flatId=" + flatId));
             }
-            WFlat flat = flatOpt.get();
 
             log.info("Flat loaded: id={}, flatId={}, title={}, size={}x{}",
                     flat.getId(), flat.getFlatId(), flat.getTitle(), flat.getSizeX(), flat.getSizeZ());
@@ -185,6 +195,17 @@ public class FlatImageExportJobExecutor implements JobExecutor {
         String value = job.getParameters().get(key);
         if (value == null || value.isBlank()) {
             throw new JobExecutionException("Missing required parameter: " + key);
+        }
+        return value;
+    }
+
+    /**
+     * Get optional string parameter from job with default value.
+     */
+    private String getOptionalParameter(WJob job, String paramName, String defaultValue) {
+        String value = job.getParameters().get(paramName);
+        if (value == null || value.isBlank()) {
+            return defaultValue;
         }
         return value;
     }
