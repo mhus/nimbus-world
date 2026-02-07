@@ -28,8 +28,8 @@ public class IslandBuilder extends HexGridBuilder {
         int oceanLevel = flat.getSeaLevel();
 
         // Step 1: Create hilly ocean floor using HillyTerrainManipulator (like OceanBuilder)
-        int hillHeight = getLandOffset();
-        int baseHeight = Math.min(getHexGridLevel(), oceanLevel - hillHeight + 2); // Ensure ocean floor is below ocean level
+        int hillHeight = getOffset();
+        int baseHeight = Math.min(getHexGridAsl(), oceanLevel - hillHeight + 2); // Ensure ocean floor is below ocean level
 
         long seed = parseLongParameter(parameters, "seed", System.currentTimeMillis());
 
@@ -96,12 +96,12 @@ public class IslandBuilder extends HexGridBuilder {
     }
 
     @Override
-    protected int getDefaultLandOffset() {
+    protected int getDefaultOffset() {
         return 5;  // LAND: normal variation
     }
 
     @Override
-    protected int getDefaultLandLevel() {
+    protected int getDefaultAsl() {
         return 15;  // LAND: above ocean level
     }
 
@@ -118,7 +118,7 @@ public class IslandBuilder extends HexGridBuilder {
     }
 
     public int getLandSideLevel(WHexGrid.EDGE side) {
-        return getLandCenterLevel();
+        return getCenterAsl();
     }
 
 }

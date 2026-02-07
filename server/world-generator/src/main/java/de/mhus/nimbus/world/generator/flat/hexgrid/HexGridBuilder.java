@@ -13,8 +13,8 @@ import java.util.Map;
 public abstract class HexGridBuilder {
 
     protected Map<String, String> parameters;
-    private int landLevel;
-    private int landOffset;
+    private int asl;
+    private int offset;
     @Setter @Getter
     protected BuilderContext context;
 
@@ -25,28 +25,28 @@ public abstract class HexGridBuilder {
 
     public void init(Map<String, String> parameters) {
         this.parameters = parameters;
-        this.landLevel = CastUtil.toint(parameters.get("g_asl"), getDefaultLandLevel());
-        this.landOffset = CastUtil.toint(parameters.get("g_offset"), getDefaultLandOffset());
+        this.asl = CastUtil.toint(parameters.get("g_asl"), getDefaultAsl());
+        this.offset = CastUtil.toint(parameters.get("g_offset"), getDefaultOffset());
     }
 
-    protected abstract int getDefaultLandOffset();
-    protected abstract int getDefaultLandLevel();
+    protected abstract int getDefaultOffset();
+    protected abstract int getDefaultAsl();
 
     public abstract int getLandSideLevel(WHexGrid.EDGE side);
 
-    public int getLandCenterLevel() {
-        return landLevel;
+    public int getCenterAsl() {
+        return asl;
     }
 
-    public int getLandOffset() {
-        return landOffset;
+    public int getOffset() {
+        return offset;
     }
 
-    public int getHexGridLevel() {
-        return landLevel + context.getWorld().getSeaLevel();
+    public int getHexGridAsl() {
+        return asl + context.getWorld().getSeaLevel();
     }
 
-    public int getOceanLevel() {
+    public int getSeaLevel() {
         return context.getWorld().getSeaLevel();
     }
 

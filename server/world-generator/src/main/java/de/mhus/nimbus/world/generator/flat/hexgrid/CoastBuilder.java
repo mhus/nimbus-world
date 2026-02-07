@@ -50,8 +50,8 @@ public class CoastBuilder extends HexGridBuilder {
      */
     private void createBaseNoiseTerrain(WFlat flat, int oceanLevel, long seed) {
         // Use same approach as OceanBuilder
-        int hillHeight = getLandOffset();
-        int baseHeight = Math.min(getHexGridLevel(), oceanLevel - hillHeight + 2);
+        int hillHeight = getOffset();
+        int baseHeight = Math.min(getHexGridAsl(), oceanLevel - hillHeight + 2);
 
         log.debug("Creating base noise terrain: baseHeight={}, hillHeight={}", baseHeight, hillHeight);
 
@@ -240,17 +240,17 @@ public class CoastBuilder extends HexGridBuilder {
     }
 
     @Override
-    protected int getDefaultLandOffset() {
+    protected int getDefaultOffset() {
         return 5;  // COAST: medium variation for base noise
     }
 
     @Override
-    protected int getDefaultLandLevel() {
+    protected int getDefaultAsl() {
         return -5;  // COAST: below ocean level (for base noise)
     }
 
     @Override
     public int getLandSideLevel(WHexGrid.EDGE side) {
-        return getLandCenterLevel();
+        return getCenterAsl();
     }
 }

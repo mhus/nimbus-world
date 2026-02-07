@@ -51,8 +51,8 @@ public class MountainBuilder extends HexGridBuilder {
         int seaLevel = flat.getSeaLevel();
 
         // Use getHexGridLevel() as baseHeight and getLandOffset() as hillHeight
-        int hillHeight = getLandOffset();
-        int baseHeight = getHexGridLevel();
+        int hillHeight = getOffset();
+        int baseHeight = getHexGridAsl();
 
         long seed = context.getWorld().getNoiseSeed();
         double frequency = CastUtil.todouble(parameters.getOrDefault(HillyTerrainManipulator.PARAM_FREQUENCY, "1.0"), 1d);
@@ -305,12 +305,12 @@ public class MountainBuilder extends HexGridBuilder {
     }
 
     @Override
-    protected int getDefaultLandOffset() {
+    protected int getDefaultOffset() {
         return 20;  // MOUNTAIN: large variation for dramatic peaks
     }
 
     @Override
-    protected int getDefaultLandLevel() {
+    protected int getDefaultAsl() {
         return 50;  // MOUNTAIN: well above ocean level
     }
 
@@ -335,7 +335,7 @@ public class MountainBuilder extends HexGridBuilder {
         }
 
         // No ridge on this side, return center level
-        return getLandCenterLevel();
+        return getCenterAsl();
     }
 
     private long parseLongParameter(Map<String, String> parameters, String name, long defaultValue) {

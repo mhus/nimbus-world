@@ -1,6 +1,5 @@
 package de.mhus.nimbus.world.generator.flat.hexgrid;
 
-import de.mhus.nimbus.shared.utils.CastUtil;
 import de.mhus.nimbus.world.shared.generator.WFlat;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
 import lombok.extern.slf4j.Slf4j;
@@ -77,12 +76,12 @@ public class EdgeFillerBuilder extends HexGridBuilder {
     }
 
     @Override
-    protected int getDefaultLandOffset() {
+    protected int getDefaultOffset() {
         return 0;  // EdgeFiller doesn't use land offset
     }
 
     @Override
-    protected int getDefaultLandLevel() {
+    protected int getDefaultAsl() {
         return 0;  // EdgeFiller doesn't use land level
     }
 
@@ -90,6 +89,6 @@ public class EdgeFillerBuilder extends HexGridBuilder {
     public int getLandSideLevel(WHexGrid.EDGE side) {
         // EdgeFiller uses the land level from the hex grid parameters
         // If not specified, use the center level
-        return getLandCenterLevel();
+        return getCenterAsl();
     }
 }

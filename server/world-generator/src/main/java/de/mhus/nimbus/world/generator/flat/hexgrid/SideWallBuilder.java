@@ -332,18 +332,18 @@ public class SideWallBuilder extends HexGridBuilder {
     }
 
     @Override
-    protected int getDefaultLandOffset() {
+    protected int getDefaultOffset() {
         return 0;
     }
 
     @Override
-    protected int getDefaultLandLevel() {
+    protected int getDefaultAsl() {
         return 0;
     }
 
     @Override
     public int getLandSideLevel(WHexGrid.EDGE side) {
-        return getLandCenterLevel();
+        return getCenterAsl();
     }
 
     /**

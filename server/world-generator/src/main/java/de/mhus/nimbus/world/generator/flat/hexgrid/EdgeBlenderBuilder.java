@@ -75,12 +75,12 @@ public class EdgeBlenderBuilder extends HexGridBuilder {
     }
 
     @Override
-    protected int getDefaultLandOffset() {
+    protected int getDefaultOffset() {
         return 0;  // EdgeBlender doesn't use land offset
     }
 
     @Override
-    protected int getDefaultLandLevel() {
+    protected int getDefaultAsl() {
         return 0;  // EdgeBlender doesn't use land level
     }
 
@@ -88,6 +88,6 @@ public class EdgeBlenderBuilder extends HexGridBuilder {
     public int getLandSideLevel(WHexGrid.EDGE side) {
         // EdgeBlender uses the land level from the hex grid parameters
         // If not specified, use the center level
-        return getLandCenterLevel();
+        return getCenterAsl();
     }
 }
