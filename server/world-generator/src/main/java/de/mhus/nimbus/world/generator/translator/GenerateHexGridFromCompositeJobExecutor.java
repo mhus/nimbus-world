@@ -100,6 +100,7 @@ public class GenerateHexGridFromCompositeJobExecutor implements JobExecutor {
             int createdGrids = 0;
             int skippedGrids = 0;
             List<HexVector2> allCoordinates = new ArrayList<>();
+            Set<String> allCoordinateStrings = new HashSet<>();
 
             if (composition.getFeatures() != null) {
                 for (var feature : composition.getFeatures()) {
@@ -110,6 +111,7 @@ public class GenerateHexGridFromCompositeJobExecutor implements JobExecutor {
                     for (var hexGrid : feature.getHexGrids()) {
                         HexVector2 coord = hexGrid.getCoordinate();
                         allCoordinates.add(coord);
+                        allCoordinateStrings.add(coord.getQ() + ";" + coord.getR());
 
                         // Check if grid already exists
                         String position = coord.getQ() + ";" + coord.getR();
@@ -144,6 +146,46 @@ public class GenerateHexGridFromCompositeJobExecutor implements JobExecutor {
                     }
                 }
             }
+
+            // Step 3b: Add edge_flat parameters for neighbor flats
+            log.info("Adding edge_flat parameters for {} grids", allCoordinates.size());
+            int edgeParamsAdded = 0;
+
+            for (HexVector2 coord : allCoordinates) {
+                String position = coord.getQ() + ";" + coord.getR();
+                Optional<de.mhus.nimbus.world.shared.world.WHexGrid> gridOpt =
+                    hexGridRepository.findByWorldIdAndPosition(composition.getWorldId(), position);
+
+                if (gridOpt.isEmpty()) {
+                    continue;
+                }
+
+                de.mhus.nimbus.world.shared.world.WHexGrid grid = gridOpt.get();
+                boolean modified = false;
+
+                // For each hex side, check if neighbor exists and add edge_flat parameter
+                for (de.mhus.nimbus.world.shared.world.WHexGrid.EDGE side : de.mhus.nimbus.world.shared.world.WHexGrid.EDGE.values()) {
+                    HexVector2 neighborCoord = getNeighborCoordinate(coord, side);
+                    String neighborPosition = neighborCoord.getQ() + ";" + neighborCoord.getR();
+
+                    // Check if neighbor grid exists in our composition
+                    if (allCoordinateStrings.contains(neighborPosition)) {
+                        // Generate flat ID using naming convention: genesis_{q}_{r}
+                        String neighborFlatId = "genesis_" + neighborCoord.getQ() + "_" + neighborCoord.getR();
+                        String paramKey = "g_edge_flat_" + side.name().toLowerCase();
+                        grid.getParameters().put(paramKey, neighborFlatId);
+                        modified = true;
+                        log.trace("Set {} = {} for grid at {}", paramKey, neighborFlatId, position);
+                    }
+                }
+
+                if (modified) {
+                    hexGridRepository.save(grid);
+                    edgeParamsAdded++;
+                }
+            }
+
+            log.info("Added edge_flat parameters to {} grids", edgeParamsAdded);
 
             log.info("WHexGrid generation complete: created={}, skipped={}, total={}",
                     createdGrids, skippedGrids, allCoordinates.size());
@@ -256,5 +298,23 @@ public class GenerateHexGridFromCompositeJobExecutor implements JobExecutor {
             log.warn("Invalid long parameter '{}': {}, using default: {}", paramName, value, defaultValue);
             return defaultValue;
         }
+    }
+
+    /**
+     * Get neighbor coordinate for a given hex side.
+     * Uses axial coordinate system (q, r).
+     */
+    private HexVector2 getNeighborCoordinate(HexVector2 coord, de.mhus.nimbus.world.shared.world.WHexGrid.EDGE side) {
+        int q = coord.getQ();
+        int r = coord.getR();
+
+        return switch (side) {
+            case NORTH_EAST -> HexVector2.builder().q(q + 1).r(r - 1).build();
+            case EAST -> HexVector2.builder().q(q + 1).r(r).build();
+            case SOUTH_EAST -> HexVector2.builder().q(q).r(r + 1).build();
+            case SOUTH_WEST -> HexVector2.builder().q(q - 1).r(r + 1).build();
+            case WEST -> HexVector2.builder().q(q - 1).r(r).build();
+            case NORTH_WEST -> HexVector2.builder().q(q).r(r - 1).build();
+        };
     }
 }

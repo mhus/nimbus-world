@@ -131,7 +131,7 @@ public class Day3Generation extends MethodBasedWorkflow {
 
         switch (phase) {
             case "createAll" -> {
-                String flatId = "flat_" + coord.getQ() + "_" + coord.getR() + "_" + context.getWorkflowId().substring(0, 8);
+                String flatId = "genesis_" + coord.getQ() + "_" + coord.getR();
                 // delete if exists
                 if (flatService.exists(context.getWorldId(), flatId)) {
                     log.debug("Flat {} already exists for world {}, deleting before creation", flatId, context.getWorldId());

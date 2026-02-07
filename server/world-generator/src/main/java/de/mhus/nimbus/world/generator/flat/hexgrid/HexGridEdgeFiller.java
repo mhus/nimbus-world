@@ -113,8 +113,8 @@ public class HexGridEdgeFiller {
             // Only fill if material is not set (==0)
             int currentMaterial = flat.getColumn(xi, zi);
             if (currentMaterial == WFlat.MATERIAL_NOT_SET) {
+                // Only set level, not material
                 flat.setLevel(xi, zi, groundLevel);
-                flat.setColumn(xi, zi, BEDROCK_MATERIAL);
                 filledCount++;
             }
         }
@@ -269,10 +269,9 @@ public class HexGridEdgeFiller {
                         int neighborMaterial = neighborFlat.getColumn(neighborPoint[0], neighborPoint[1]);
                         if (neighborMaterial != WFlat.MATERIAL_NOT_SET &&
                             neighborMaterial != WFlat.MATERIAL_NOT_SET_MUTABLE) {
-                            // Copy level and material from neighbor
+                            // Only copy level from neighbor, not material
                             int neighborLevel = neighborFlat.getLevel(neighborPoint[0], neighborPoint[1]);
                             flat.setLevel(xi, zi, neighborLevel);
-                            flat.setColumn(xi, zi, neighborMaterial);
                             filledCount++;
                         }
                     }

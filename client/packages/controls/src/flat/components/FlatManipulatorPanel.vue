@@ -399,6 +399,19 @@
 
       <!-- Hex Grid -->
       <div v-if="selectedManipulator === 'hex-grid'" class="space-y-3">
+        <div class="form-control">
+          <label class="label"><span class="label-text">Build Step</span></label>
+          <select v-model="params.step" class="select select-bordered">
+            <option value="ALL">ALL - Complete terrain generation (default)</option>
+            <option value="GROUND">GROUND - Main builder only (base terrain)</option>
+            <option value="BLENDER">BLENDER - Edge blending only</option>
+            <option value="FILLER">FILLER - Edge filling only</option>
+            <option value="TERRAIN">TERRAIN - Rivers, roads, walls, structures</option>
+          </select>
+          <label class="label">
+            <span class="label-text-alt text-base-content/70">Select which build step to execute. ALL runs the complete pipeline.</span>
+          </label>
+        </div>
         <div class="alert alert-info">
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
           <div>
@@ -410,13 +423,6 @@
             <div class="text-sm mt-2">
               <strong>Optional:</strong> Additional parameters with prefix <code class="bg-base-300 px-1 rounded">gf.*</code> can be configured in the hex grid for scenario-specific options.
             </div>
-          </div>
-        </div>
-        <div class="alert alert-warning">
-          <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
-          <div>
-            <div class="font-bold">No Parameters Needed</div>
-            <div class="text-sm">All configuration is taken from the hex grid. Configure the hex grid in the hex editor, then run this manipulator.</div>
           </div>
         </div>
       </div>
@@ -557,6 +563,11 @@ const resetParameters = () => {
   params.value = {};
   genericParams.value = '';
   error.value = null;
+
+  // Set default values for specific manipulators
+  if (selectedManipulator.value === 'hex-grid') {
+    params.value.step = 'ALL';
+  }
 };
 
 /**
@@ -601,6 +612,7 @@ const executeManipulator = async () => {
     // Create job
     const jobRequest: JobCreateRequest = {
       executor: 'flat-manipulate',
+      title: `Apply ${selectedManipulator.value} to ${props.flatId}`,
       type: selectedManipulator.value,
       parameters: jobParams,
       priority: 5,

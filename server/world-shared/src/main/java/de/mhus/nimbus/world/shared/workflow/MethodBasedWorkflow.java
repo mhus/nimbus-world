@@ -132,7 +132,7 @@ public abstract class MethodBasedWorkflow implements Workflow {
                 }
             }
         }
-        log.debug("Resolved method args: {}", Arrays.toString(result));
+        log.trace("Resolved method args: {}", Arrays.toString(result));
         return result;
     }
 }

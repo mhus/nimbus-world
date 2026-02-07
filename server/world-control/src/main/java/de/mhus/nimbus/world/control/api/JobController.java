@@ -221,20 +221,21 @@ public class JobController extends BaseEditorController {
             return bad("executor is required");
         }
 
-        if (Strings.isBlank(request.title())) {
-            return bad("title is required");
-        }
-
         try {
             int priority = request.priority() != null ? request.priority() : 5;
             int maxRetries = request.maxRetries() != null ? request.maxRetries() : 0;
             String type = Strings.isBlank(request.type()) ? "" : request.type();
             String location = Strings.isBlank(request.location()) ? "" : request.location();
 
+            // Generate default title if not provided
+            String title = Strings.isBlank(request.title())
+                ? (request.executor() + (Strings.isNotBlank(type) ? " - " + type : ""))
+                : request.title();
+
             WJob created = jobService.createJob(
                     worldId,
                     request.executor(),
-                    request.title(),
+                    title,
                     type,
                     request.parameters(),
                     location,

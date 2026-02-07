@@ -52,7 +52,7 @@ export interface JobSummary {
 
 export interface JobCreateRequest {
   executor: string;
-  title: string;
+  title?: string;
   type?: string;
   location?: string;
   parameters: Record<string, string>;

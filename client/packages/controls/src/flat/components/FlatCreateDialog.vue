@@ -404,6 +404,7 @@ const handleCreate = async () => {
 
     const jobRequest: JobCreateRequest = {
       executor: isGridBorderType.value ? 'flat-create-hexgrid' : jobType.value,
+      title: title.value || `Create flat in ${layerName.value}`,
       type: jobTypeValue,
       parameters: parameters,
       priority: 5,

@@ -69,10 +69,6 @@ public class EdgeFillerBuilder extends HexGridBuilder {
 
             log.debug("Edge filling completed for flat: {}", flat.getFlatId());
 
-            // Update the flat
-            context.getFlatService().update(flat);
-            log.debug("Updated flat after edge filling: {}", flat.getFlatId());
-
         } finally {
             // Restore protection flags
             flat.setUnknownProtected(originalUnknownProtected);
