@@ -14,6 +14,7 @@ import de.mhus.nimbus.world.generator.composer.filler.HexGridFillResult;
 import de.mhus.nimbus.world.generator.composer.filler.LowlandFiller;
 import de.mhus.nimbus.world.generator.composer.filler.MountainFiller;
 import de.mhus.nimbus.world.generator.composer.filler.OceanFiller;
+import de.mhus.nimbus.world.generator.composer.filler.OrphanGridFiller;
 import de.mhus.nimbus.world.generator.composer.flow.FlowComposer;
 import de.mhus.nimbus.world.generator.composer.point.PointComposer;
 import de.mhus.nimbus.world.generator.composer.structure.StructureComposer;
@@ -345,6 +346,16 @@ public class HexCompositeBuilder {
                 } else {
                     log.debug("No flow gaps to fill - all flow grids already exist");
                 }
+            }
+
+            // Step 6c: Fill orphan grids (grids used by features but not assigned to any biome)
+            log.debug("Step 6c: Filling orphan grids");
+            OrphanGridFiller orphanGridFiller = new OrphanGridFiller();
+            int orphansAdded = orphanGridFiller.fill(composition, placementResult);
+            if (orphansAdded > 0) {
+                log.debug("OrphanGridFiller: assigned {} orphan grids to biomes", orphansAdded);
+            } else {
+                log.debug("No orphan grids found");
             }
 
             // Step 7: Convert FeatureHexGrids to WHexGrids (after all compositions)

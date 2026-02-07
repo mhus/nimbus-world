@@ -99,6 +99,17 @@ public class FlatManipulateJobExecutor implements JobExecutor {
                 }
             }
 
+            // Also pass through other direct job parameters (like "step")
+            // These are parameters that are not handled specially above
+            for (Map.Entry<String, String> entry : job.getParameters().entrySet()) {
+                String key = entry.getKey();
+                // Skip parameters that are already handled
+                if (!key.equals("flatId") && !key.equals("x") && !key.equals("z") &&
+                    !key.equals("sizeX") && !key.equals("sizeZ") && !key.equals("parameters")) {
+                    parameters.put(key, entry.getValue());
+                }
+            }
+
             log.info("Manipulating flat: flatId={}, manipulator={}, region=({},{},{},{}), parameters={}",
                     flatId, manipulatorName, x, z, sizeX, sizeZ, parameters);
 

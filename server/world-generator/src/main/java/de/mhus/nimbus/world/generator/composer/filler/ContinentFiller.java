@@ -182,6 +182,9 @@ public class ContinentFiller {
             // Create a filler biome for this continent
             Biome continentBiome = createContinentFillerBiome(continent);
 
+            // Configure hex grids with biome parameters
+            continentBiome.configureHexGrids(coords);
+
             // Calculate center of filled area
             HexVector2 center = calculateCenter(coords);
 
@@ -194,7 +197,8 @@ public class ContinentFiller {
 
             placementResult.getPlacedBiomes().add(placedFiller);
 
-            log.debug("Filled {} grids for continent '{}'", coords.size(), continentId);
+            log.debug("Filled {} grids for continent '{}' with {} FeatureHexGrids",
+                    coords.size(), continentId, continentBiome.getHexGrids() != null ? continentBiome.getHexGrids().size() : 0);
             totalFilled += coords.size();
         }
 

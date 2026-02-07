@@ -114,6 +114,11 @@ public class HexGridEdgeBlender {
         public void blend() {
             log.debug("Blending side {} with neighbor flat {}, width={}",
                     direction, neighborFlat.getFlatId(), width);
+            log.debug("Current flat: flatId={}, mount=({},{}), size=({},{})",
+                    flat.getFlatId(), flat.getMountX(), flat.getMountZ(), flat.getSizeX(), flat.getSizeZ());
+            log.debug("Neighbor flat: flatId={}, mount=({},{}), size=({},{})",
+                    neighborFlat.getFlatId(), neighborFlat.getMountX(), neighborFlat.getMountZ(),
+                    neighborFlat.getSizeX(), neighborFlat.getSizeZ());
 
             // Calculate the two corners of this hex side
             int[] corner1 = getCorner1ForSide(direction);
@@ -601,6 +606,19 @@ public class HexGridEdgeBlender {
             // Convert to neighbor coordinates
             int neighborX = worldX - neighborFlat.getMountX();
             int neighborZ = worldZ - neighborFlat.getMountZ();
+
+            // Debug first few calls to see transformation
+            if (random.nextInt(100) == 0) {
+                // Check bounds in neighbor flat
+                boolean inBounds = (neighborX >= 0 && neighborX < neighborFlat.getSizeX() &&
+                                   neighborZ >= 0 && neighborZ < neighborFlat.getSizeZ());
+                int material = inBounds ? neighborFlat.getColumn(neighborX, neighborZ) : -1;
+                int level = inBounds ? neighborFlat.getLevel(neighborX, neighborZ) : -1;
+
+                log.debug("Coord transform: local=({},{}) -> world=({},{}) -> neighbor=({},{}) [neighborSize={},{}, bounds ok={}, material={}, level={}]",
+                        localX, localZ, worldX, worldZ, neighborX, neighborZ,
+                        neighborFlat.getSizeX(), neighborFlat.getSizeZ(), inBounds, material, level);
+            }
 
             // Check bounds in neighbor flat
             if (neighborX < 0 || neighborX >= neighborFlat.getSizeX() ||
