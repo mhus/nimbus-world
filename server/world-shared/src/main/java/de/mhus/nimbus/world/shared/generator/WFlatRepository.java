@@ -62,4 +62,8 @@ public interface WFlatRepository extends MongoRepository<WFlat, String> {
     boolean existsByWorldIdAndLayerDataIdAndFlatId(String worldId, String layerDataId, String flatId);
 
     WFlat findByWorldIdAndFlatId(String worldId, String flatId);
+
+    boolean existsByWorldIdAndFlatId(String worldId, String flatId);
+
+    void deleteByWorldIdAndFlatId(String worldId, String flatId);
 }

@@ -22,6 +22,7 @@ public class HexGridBuilderService {
         ALL,
         GROUND,
         BLENDER,
+        FILLER,
         TERRAIN // flows, structures
     }
 
@@ -43,6 +44,7 @@ public class HexGridBuilderService {
 
         // Manipulator builders
         manipulatorRegistry.put("g_edgeblender", EdgeBlenderBuilder.class);
+        manipulatorRegistry.put("g_edgefiller", EdgeFillerBuilder.class);
         manipulatorRegistry.put("g_river", RiverBuilder.class);
         manipulatorRegistry.put("g_road", RoadBuilder.class);
         manipulatorRegistry.put("g_wall", WallBuilder.class);
@@ -105,6 +107,7 @@ public class HexGridBuilderService {
      * 6. SideWallBuilder (if sidewall parameter exists)
      * 7. PlotBuilder (if plot parameter exists)
      * 8. VillageBuilder (if village parameter exists)
+     * 9. EdgeFillerBuilder (always, after all terrain manipulators)
      *
      * @param grid The hex grid to build pipeline for
      * @return List of builders to execute in order
@@ -210,6 +213,15 @@ public class HexGridBuilderService {
                     pipeline.add(villageBuilder.get());
                     log.debug("Added VillageBuilder to pipeline");
                 }
+            }
+        }
+
+        // 9. EdgeFillerBuilder (always, after all terrain manipulators)
+        if (step == STEP.ALL || step == STEP.FILLER) {
+            Optional<HexGridBuilder> edgeFiller = createManipulator("g_edgefiller", builderParams);
+            if (edgeFiller.isPresent()) {
+                pipeline.add(edgeFiller.get());
+                log.debug("Added EdgeFillerBuilder to pipeline");
             }
         }
 

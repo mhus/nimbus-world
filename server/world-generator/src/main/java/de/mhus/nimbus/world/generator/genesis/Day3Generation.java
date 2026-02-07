@@ -1,6 +1,7 @@
 package de.mhus.nimbus.world.generator.genesis;
 
 import de.mhus.nimbus.shared.types.WorldId;
+import de.mhus.nimbus.world.shared.generator.WFlatService;
 import de.mhus.nimbus.world.shared.workflow.MethodBasedWorkflow;
 import de.mhus.nimbus.world.shared.workflow.OnSuccess;
 import de.mhus.nimbus.world.shared.workflow.WorkflowContext;
@@ -24,6 +25,7 @@ import java.util.stream.Collectors;
 public class Day3Generation extends MethodBasedWorkflow {
 
     private final WDocumentService documentService;
+    private final WFlatService flatService;
 
     @Override
     public String name() {
@@ -129,7 +131,12 @@ public class Day3Generation extends MethodBasedWorkflow {
 
         switch (phase) {
             case "createAll" -> {
-                String flatId = "flat_" + coord.getQ() + "_" + coord.getR() + "_" + UUID.randomUUID().toString().substring(0, 8);
+                String flatId = "flat_" + coord.getQ() + "_" + coord.getR() + "_" + context.getWorkflowId().substring(0, 8);
+                // delete if exists
+                if (flatService.exists(context.getWorldId(), flatId)) {
+                    log.debug("Flat {} already exists for world {}, deleting before creation", flatId, context.getWorldId());
+                    flatService.delete(context.getWorldId(), flatId);
+                }
                 // Store flatId in list for use in later phases
                 state.getFlatIds().set(index, flatId);
                 context.addRecord(state);
@@ -174,6 +181,16 @@ public class Day3Generation extends MethodBasedWorkflow {
                                 "step", "TERRAIN"
                         ));
             }
+            case "fillerAll" -> {
+                String flatId = state.getFlatIds().get(index);
+                context.updateWorkflowStatus("manipulateFiller");
+                context.enqueueJob("flat-manipulate", "hex-grid", null,
+                        "FILLER for " + gridLabel,
+                        Map.of(
+                                "flatId", flatId,
+                                "step", "FILLER"
+                        ));
+            }
             case "exportAll" -> {
                 String flatId = state.getFlatIds().get(index);
                 context.updateWorkflowStatus("exportFlat");
@@ -186,8 +203,8 @@ public class Day3Generation extends MethodBasedWorkflow {
             }
             case "imagesAll" -> {
                 String flatId = state.getFlatIds().get(index);
-                String levelPath = String.format("genesis/hexgrids/%d_%d/level.png", coord.getQ(), coord.getR());
-                String materialPath = String.format("genesis/hexgrids/%d_%d/material.png", coord.getQ(), coord.getR());
+                String levelPath = String.format("map/%d_%d/level.png", coord.getQ(), coord.getR());
+                String materialPath = String.format("map/%d_%d/material.png", coord.getQ(), coord.getR());
                 context.updateWorkflowStatus("exportImages");
                 context.enqueueJob("flat-export-images", "", null,
                         "Export Images " + gridLabel,
@@ -207,7 +224,8 @@ public class Day3Generation extends MethodBasedWorkflow {
             case "createAll" -> "groundAll";
             case "groundAll" -> "blenderAll";
             case "blenderAll" -> "terrainAll";
-            case "terrainAll" -> "exportAll";
+            case "terrainAll" -> "fillerAll";
+            case "fillerAll" -> "exportAll";
             case "exportAll" -> "imagesAll";
             case "imagesAll" -> null; // All phases complete
             default -> throw new IllegalStateException("Unknown phase: " + currentPhase);
@@ -231,6 +249,11 @@ public class Day3Generation extends MethodBasedWorkflow {
 
     @OnSuccess("manipulateTerrain")
     public void onManipulateTerrainSuccess(WorkflowContext context) throws WorkflowException {
+        advanceToNextInPhase(context);
+    }
+
+    @OnSuccess("manipulateFiller")
+    public void onManipulateFillerSuccess(WorkflowContext context) throws WorkflowException {
         advanceToNextInPhase(context);
     }
 

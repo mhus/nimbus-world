@@ -171,4 +171,13 @@ public class WFlatService {
     public WFlat findByWorldAndFlatId(String worldId, String flatId) {
         return wFlatRepository.findByWorldIdAndFlatId(worldId, flatId);
     }
+
+    public boolean exists(String worldId, String flatId) {
+        return wFlatRepository.existsByWorldIdAndFlatId(worldId, flatId);
+    }
+
+    public void delete(String worldId, String flatId) {
+        log.debug("Deleting flat: worldId={}, flatId={}", worldId, flatId);
+        wFlatRepository.deleteByWorldIdAndFlatId(worldId, flatId);
+    }
 }
