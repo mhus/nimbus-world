@@ -486,9 +486,9 @@ public class FlatCreateService {
         int sizeZ = gridSize + 30;  // +30: +10 safety margin + 20 border (10 per side)
 
         // Calculate mount position (top-left corner of bounding box)
-        // Shift mount position by 10 pixels to the left and up to accommodate border
-        int mountX = (int) Math.floor(centerX - sizeX / 2.0) - 10;
-        int mountZ = (int) Math.floor(centerZ - sizeZ / 2.0) - 10;
+        // Border is already included in sizeX/sizeZ (+30 pixels)
+        int mountX = (int) Math.round(centerX - sizeX / 2.0);
+        int mountZ = (int) Math.round(centerZ - sizeZ / 2.0);
 
         log.info("Calculated flat parameters: sizeX={}, sizeZ={}, mount=({},{}), hexCenter=({},{})",
                 sizeX, sizeZ, mountX, mountZ, centerX, centerZ);
@@ -702,9 +702,9 @@ public class FlatCreateService {
         int sizeZ = gridSize + 30;  // +30: +10 safety margin + 20 border (10 per side)
 
         // Calculate mount position (top-left corner of bounding box)
-        // Shift mount position by 10 pixels to the left and up to accommodate border
-        int mountX = (int) Math.floor(centerX - sizeX / 2.0) - 10;
-        int mountZ = (int) Math.floor(centerZ - sizeZ / 2.0) - 10;
+        // Border is already included in sizeX/sizeZ (+30 pixels)
+        int mountX = (int) Math.round(centerX - sizeX / 2.0);
+        int mountZ = (int) Math.round(centerZ - sizeZ / 2.0);
 
         log.info("Calculated flat parameters: sizeX={}, sizeZ={}, mount=({},{}), hexCenter=({},{})",
                 sizeX, sizeZ, mountX, mountZ, centerX, centerZ);
@@ -1073,15 +1073,15 @@ public class FlatCreateService {
         double centerX = center[0];
         double centerZ = center[1];
 
-        // Calculate bounding box for pointy-top hexagon with 10-pixel border on each side
+        // Calculate bounding box for pointy-top hexagon with 15-pixel border on each side
         double SQRT_3 = Math.sqrt(3.0);
-        int sizeX = (int) Math.ceil(gridSize * SQRT_3 / 2.0) + 30;  // +30: +10 safety margin + 20 border (10 per side)
-        int sizeZ = gridSize + 30;  // +30: +10 safety margin + 20 border (10 per side)
+        int sizeX = (int) Math.ceil(gridSize * SQRT_3 / 2.0) + 30;  // +30 total: 15px border on each side
+        int sizeZ = gridSize + 30;  // +30 total: 15px border on each side
 
         // Calculate mount position (top-left corner of bounding box)
-        // Shift mount position by 10 pixels to the left and up to accommodate border
-        int mountX = (int) Math.floor(centerX - sizeX / 2.0) - 10;
-        int mountZ = (int) Math.floor(centerZ - sizeZ / 2.0) - 10;
+        // Border is already included in sizeX/sizeZ (+30 pixels)
+        int mountX = (int) Math.round(centerX - sizeX / 2.0);
+        int mountZ = (int) Math.round(centerZ - sizeZ / 2.0);
 
         log.info("Calculated flat parameters: sizeX={}, sizeZ={}, mount=({},{}), hexCenter=({},{})",
                 sizeX, sizeZ, mountX, mountZ, centerX, centerZ);

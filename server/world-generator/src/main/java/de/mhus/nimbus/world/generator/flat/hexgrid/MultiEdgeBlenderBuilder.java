@@ -47,10 +47,7 @@ public class MultiEdgeBlenderBuilder extends HexGridBuilder {
             }
         }
 
-        int width = CastUtil.toint(parameters.get("edge_blend_width"), 20);
-        double randomness = CastUtil.todouble(parameters.get("edge_blend_randomness"), 0.5);
-        double shakeStrength = CastUtil.todouble(parameters.get("edge_shake_strength"), 0.0);
-        int blurRadius = CastUtil.toint(parameters.get("edge_blur_radius"), 0);
+        int width = CastUtil.toint(parameters.get("edge_blend_width"), 50);
         boolean blendAllSides = CastUtil.toboolean(parameters.get("edge_blend_all_sides"), false);
 
         if (sideFlats.isEmpty()) {
@@ -58,8 +55,8 @@ public class MultiEdgeBlenderBuilder extends HexGridBuilder {
             return;
         }
 
-        log.debug("Side flats for multi-blending: {}, width={}, randomness={}, shake={}, blur={}, allSides={}",
-                sideFlats, width, randomness, shakeStrength, blurRadius, blendAllSides);
+        log.debug("Side flats for multi-blending: {}, width={}, allSides={}",
+                sideFlats, width,  blendAllSides);
 
         // Check if flatService is available
         if (context.getFlatService() == null) {
@@ -114,7 +111,7 @@ public class MultiEdgeBlenderBuilder extends HexGridBuilder {
 
         // Blend all sides simultaneously using multi-flat blender
         HexGridMultiEdgeBlender multiEdgeBlender = new HexGridMultiEdgeBlender(
-                centerFlat, loadedNeighbors, width, context, randomness, shakeStrength, blurRadius);
+                centerFlat, loadedNeighbors, width, context);
         multiEdgeBlender.blendAllEdges();
 
         // Save all modified neighbor flats (but NOT the center flat)

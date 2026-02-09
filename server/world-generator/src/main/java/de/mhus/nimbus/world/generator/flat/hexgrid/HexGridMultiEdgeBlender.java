@@ -14,26 +14,20 @@ import java.util.Random;
 @Slf4j
 public class HexGridMultiEdgeBlender {
 
+    private static final int RANGE = 10;
     private final WFlat centerFlat;
     private final HashMap<WHexGrid.EDGE, WFlat> neighbors;
     private final int width;
     private final BuilderContext context;
-    private final double randomness;
-    private final double shakeStrength;
-    private final int blurRadius;
     private final Random random;
     private final FlatProjection projection;
 
     public HexGridMultiEdgeBlender(WFlat centerFlat, HashMap<WHexGrid.EDGE, WFlat> neighbors,
-                                   int width, BuilderContext context, double randomness,
-                                   double shakeStrength, int blurRadius) {
+                                   int width, BuilderContext context) {
         this.centerFlat = centerFlat;
         this.neighbors = neighbors;
         this.width = width;
         this.context = context;
-        this.randomness = randomness;
-        this.shakeStrength = shakeStrength;
-        this.blurRadius = blurRadius;
         this.random = new Random(centerFlat.getFlatId().hashCode());
 
         // Initialize projection system with all flats
@@ -139,8 +133,8 @@ public class HexGridMultiEdgeBlender {
                 // Sample surrounding area for averaging
                 int sampleCount = 0;
                 int heightSum = 0;
-                for (int dy = -3; dy <= 3; dy++) {
-                    for (int dx = -3; dx <= 3; dx++) {
+                for (int dy = -RANGE; dy <= RANGE; dy++) {
+                    for (int dx = -RANGE; dx <= RANGE; dx++) {
                         Integer sampleHeight = projection.getLevel(worldX + dx, worldZ + dy);
                         if (sampleHeight != null && sampleHeight > 0) {
                             heightSum += sampleHeight;
@@ -157,8 +151,9 @@ public class HexGridMultiEdgeBlender {
 
                 // Calculate adjustment - more aggressive blending
                 int heightDifference = avgHeight - currentHeight;
-                double adjustmentFactor = (1.0 - blendFactor) * 0.8; // Stronger effect near edge
-                double rawAdjustment = heightDifference * adjustmentFactor;
+                double adjustmentFactor = (1.0 - blendFactor); // Stronger effect near edge
+                // double rawAdjustment = heightDifference * adjustmentFactor;
+                double rawAdjustment = 200 * adjustmentFactor; //XXX
                 int adjustment = (int) Math.round(rawAdjustment);
 
                 // Apply adjustment
