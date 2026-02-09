@@ -83,7 +83,7 @@ public class CastUtil {
 
     public static Map<String, Object> stringToMap(String json) {
         try {
-            return mapper.readValue(json, mapper.getTypeFactory().constructMapType(Map.class, String.class, String.class));
+            return mapper.readValue(json, mapper.getTypeFactory().constructMapType(Map.class, String.class, Object.class));
         } catch (Exception e) {
             throw new RuntimeException("Failed to deserialize JSON to Map<String, String>", e);
         }

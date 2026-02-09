@@ -16,9 +16,25 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
+/**
+ *
+ * Bis zu bestimmter Phase:
+ *   Map.of(
+ *       "compositionId", "...",
+ *       "targetPhase", "groundAll"  // Stoppt nach groundAll
+ *   )
+ *   Mögliche Werte für targetPhase:
+ *   - "createAll" - Nur Grids erstellen
+ *   - "groundAll" - Bis Ground-Manipulation
+ *   - "blenderAll" - Bis Blender-Manipulation
+ *   - "terrainAll" - Bis Terrain-Manipulation
+ *   - "fillerAll" - Bis Filler-Manipulation
+ *   - "exportAll" - Bis Export zu Layers
+ *   - "imagesAll" - Vollständig (Default)
+ *
+ */
 @Service
 @Slf4j
 @RequiredArgsConstructor
@@ -45,8 +61,23 @@ public class Day3Generation extends MethodBasedWorkflow {
             throw new WorkflowException(null, "composition document not found: " + compositionId);
         }
 
+        // Optional targetPhase parameter - defaults to IMAGES_ALL (complete workflow)
+        String targetPhaseParam = params.get(GenesisConst.TARGET_PHASE);
+        Day3Phase targetPhase = Day3Phase.IMAGES_ALL; // Default: run to completion
+
+        if (!Strings.isBlank(targetPhaseParam)) {
+            Day3Phase parsed = Day3Phase.fromPhaseName(targetPhaseParam);
+            if (parsed != null) {
+                targetPhase = parsed;
+                log.info("Target phase set to: {} ({})", targetPhase.getPhaseName(), targetPhase.getDescription());
+            } else {
+                log.warn("Invalid targetPhase parameter '{}', using default (IMAGES_ALL)", targetPhaseParam);
+            }
+        }
+
         return Map.of(
-                GenesisConst.COMPOSITION_ID, compositionId
+                GenesisConst.COMPOSITION_ID, compositionId,
+                GenesisConst.TARGET_PHASE, targetPhase.getPhaseName()
         );
     }
 
@@ -103,8 +134,21 @@ public class Day3Generation extends MethodBasedWorkflow {
         int index = state.getCurrentIndex();
         int total = state.getCoordinates().size();
 
+        // Get target phase from workflow parameters
+        String targetPhaseParam = (String) context.getParameters().get(GenesisConst.TARGET_PHASE);
+        Day3Phase targetPhase = Day3Phase.fromPhaseName(targetPhaseParam);
+        Day3Phase currentPhaseEnum = Day3Phase.fromPhaseName(phase);
+
         // Check if current phase is complete
         if (index >= total) {
+            // Check if we've reached the target phase
+            if (targetPhase != null && currentPhaseEnum != null &&
+                currentPhaseEnum.ordinal() >= targetPhase.ordinal()) {
+                log.info("Target phase '{}' completed for {} hexgrids", targetPhase.getPhaseName(), total);
+                context.doComplete("Processed " + total + " hexgrids up to phase: " + targetPhase.getPhaseName());
+                return;
+            }
+
             // Move to next phase
             String nextPhase = getNextPhase(phase);
             if (nextPhase == null) {
@@ -141,7 +185,7 @@ public class Day3Generation extends MethodBasedWorkflow {
                 state.getFlatIds().set(index, flatId);
                 context.addRecord(state);
                 context.updateWorkflowStatus("createFlat");
-                context.enqueueJob("flat-create-hexgrid-empty", "", null,
+                context.enqueueJob("flat-create-hexgrid-empty", "", "",
                         "Create " + gridLabel,
                         Map.of(
                                 "layerName", "ground",
@@ -154,7 +198,7 @@ public class Day3Generation extends MethodBasedWorkflow {
             case "groundAll" -> {
                 String flatId = state.getFlatIds().get(index);
                 context.updateWorkflowStatus("manipulateGround");
-                context.enqueueJob("flat-manipulate", "hex-grid", null,
+                context.enqueueJob("flat-manipulate", "hex-grid", "",
                         "GROUND for " + gridLabel,
                         Map.of(
                                 "flatId", flatId,
@@ -164,7 +208,7 @@ public class Day3Generation extends MethodBasedWorkflow {
             case "blenderAll" -> {
                 String flatId = state.getFlatIds().get(index);
                 context.updateWorkflowStatus("manipulateBlender");
-                context.enqueueJob("flat-manipulate", "hex-grid", null,
+                context.enqueueJob("flat-manipulate", "hex-grid", "",
                         "BLENDER for " + gridLabel,
                         Map.of(
                                 "flatId", flatId,
@@ -174,7 +218,7 @@ public class Day3Generation extends MethodBasedWorkflow {
             case "terrainAll" -> {
                 String flatId = state.getFlatIds().get(index);
                 context.updateWorkflowStatus("manipulateTerrain");
-                context.enqueueJob("flat-manipulate", "hex-grid", null,
+                context.enqueueJob("flat-manipulate", "hex-grid", "",
                         "TERRAIN for " + gridLabel,
                         Map.of(
                                 "flatId", flatId,
@@ -184,7 +228,7 @@ public class Day3Generation extends MethodBasedWorkflow {
             case "fillerAll" -> {
                 String flatId = state.getFlatIds().get(index);
                 context.updateWorkflowStatus("manipulateFiller");
-                context.enqueueJob("flat-manipulate", "hex-grid", null,
+                context.enqueueJob("flat-manipulate", "hex-grid", "",
                         "FILLER for " + gridLabel,
                         Map.of(
                                 "flatId", flatId,
@@ -194,7 +238,7 @@ public class Day3Generation extends MethodBasedWorkflow {
             case "exportAll" -> {
                 String flatId = state.getFlatIds().get(index);
                 context.updateWorkflowStatus("exportFlat");
-                context.enqueueJob("flat-export", "", null,
+                context.enqueueJob("flat-export", "", "",
                         "Export to Layer " + gridLabel,
                         Map.of(
                                 "flatId", flatId,
@@ -206,7 +250,7 @@ public class Day3Generation extends MethodBasedWorkflow {
                 String levelPath = String.format("map/%d_%d/level.png", coord.getQ(), coord.getR());
                 String materialPath = String.format("map/%d_%d/material.png", coord.getQ(), coord.getR());
                 context.updateWorkflowStatus("exportImages");
-                context.enqueueJob("flat-export-images", "", null,
+                context.enqueueJob("flat-export-images", "", "",
                         "Export Images " + gridLabel,
                         Map.of(
                                 "flatId", flatId,

@@ -104,8 +104,12 @@ public class HexGridManipulator implements FlatManipulator {
 
         // Create builder pipeline
         List<HexGridBuilder> builderPipeline = builderService.createBuilderPipeline(hexGrid, step);
+        if ((step == HexGridBuilderService.STEP.ALL || step == HexGridBuilderService.STEP.GROUND) && builderPipeline.isEmpty()) {
+            throw new IllegalStateException("No builders in pipeline in step GROUND for hex grid: " + hexGrid.getPosition());
+        }
         if (builderPipeline.isEmpty()) {
-            throw new IllegalStateException("No builders in pipeline for hex grid: " + hexGrid.getPosition());
+            log.info("No builders to execute for hex grid: {} at step: {}", hexGrid.getPosition(), step);
+            return;
         }
 
         log.info("Executing builder pipeline with {} builders for hex grid: {}",

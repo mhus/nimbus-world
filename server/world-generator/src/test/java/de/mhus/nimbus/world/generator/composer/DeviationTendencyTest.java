@@ -46,7 +46,6 @@ public class DeviationTendencyTest {
             .worldId("test-world")
             .seed(12345L)
             .fillGaps(false)
-            .generateWHexGrids(false)
             .build()
             .compose();
 
@@ -84,7 +83,6 @@ public class DeviationTendencyTest {
             .worldId("test-world")
             .seed(22222L)
             .fillGaps(false)
-            .generateWHexGrids(false)
             .build()
             .compose();
 
@@ -122,7 +120,6 @@ public class DeviationTendencyTest {
             .worldId("test-world")
             .seed(33333L)
             .fillGaps(false)
-            .generateWHexGrids(false)
             .build()
             .compose();
 
@@ -160,7 +157,6 @@ public class DeviationTendencyTest {
             .worldId("test-world")
             .seed(44444L)
             .fillGaps(false)
-            .generateWHexGrids(false)
             .build()
             .compose();
 
@@ -198,7 +194,6 @@ public class DeviationTendencyTest {
             .worldId("test-world")
             .seed(55555L)
             .fillGaps(false)
-            .generateWHexGrids(false)
             .build()
             .compose();
 

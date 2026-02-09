@@ -99,75 +99,47 @@ public class GenerateHexGridFromCompositeJobExecutor implements JobExecutor {
             // Override worldId with the one from job context (defensive programming)
             composition.setWorldId(job.getWorldId());
 
-            log.info("Loaded enriched composition: name='{}', worldId='{}', features={}",
+            log.info("Loaded enriched composition: name='{}', worldId='{}', filledHexGrids={}",
                     composition.getName(),
                     composition.getWorldId(),
-                    composition.getFeatures() != null ? composition.getFeatures().size() : 0);
+                    composition.getFilledHexGrids() != null ? composition.getFilledHexGrids().size() : 0);
 
-            // Step 3: Create WHexGrids from already enriched/composed model
-            // The composition has already been applied by ApplyTranslatedInstructionJob
-            // We just need to extract the hexGrids and create WHexGrid entities
+            // Step 3: Create WHexGrids from FilledHexGrids in composition
+            // The composition already contains fully composed FilledHexGrids with WHexGrid instances
+            // We just need to persist them to the database
+
+            if (composition.getFilledHexGrids() == null || composition.getFilledHexGrids().isEmpty()) {
+                log.warn("No FilledHexGrids found in composition - falling back to Feature-based approach");
+                return JobResult.failure("No FilledHexGrids found in composition");
+            }
 
             int createdGrids = 0;
             int updatedGrids = 0;
-            List<HexVector2> allCoordinates = new ArrayList<>();
             Set<String> allCoordinateStrings = new HashSet<>();
 
-            // First pass: collect all hexGrids and merge parameters by coordinate
-            Map<String, Map<String, String>> mergedParameters = new HashMap<>();
-            Set<String> processedCoords = new HashSet<>();
+            // Process all FilledHexGrids from composition
+            for (var filledHexGrid : composition.getFilledHexGrids()) {
+                HexVector2 coord = filledHexGrid.getCoordinate();
+                String position = coord.getQ() + ";" + coord.getR();
+                allCoordinateStrings.add(position);
 
-            if (composition.getFeatures() != null) {
-                for (var feature : composition.getFeatures()) {
-                    if (feature.getHexGrids() == null || feature.getHexGrids().isEmpty()) {
-                        continue;
-                    }
-
-                    for (var hexGrid : feature.getHexGrids()) {
-                        HexVector2 coord = hexGrid.getCoordinate();
-                        String position = coord.getQ() + ";" + coord.getR();
-
-                        allCoordinates.add(coord);
-                        allCoordinateStrings.add(position);
-
-                        // Merge parameters: later parameters override earlier ones,
-                        // but only if they have g_builder
-                        if (hexGrid.getParameters() != null && !hexGrid.getParameters().isEmpty()) {
-                            Map<String, String> existing = mergedParameters.get(position);
-
-                            if (existing == null) {
-                                // First occurrence - use these parameters
-                                mergedParameters.put(position, new HashMap<>(hexGrid.getParameters()));
-                            } else {
-                                // Merge: prefer parameters with g_builder
-                                boolean existingHasBuilder = existing.containsKey("g_builder");
-                                boolean newHasBuilder = hexGrid.getParameters().containsKey("g_builder");
-
-                                if (newHasBuilder && !existingHasBuilder) {
-                                    // New has builder, existing doesn't - replace all
-                                    mergedParameters.put(position, new HashMap<>(hexGrid.getParameters()));
-                                } else if (newHasBuilder) {
-                                    // Both have builder - merge, new values override
-                                    existing.putAll(hexGrid.getParameters());
-                                }
-                                // If new doesn't have builder but existing does, keep existing
-                            }
-                        }
-                    }
+                // Get WHexGrid from FilledHexGrid (already has all parameters)
+                de.mhus.nimbus.world.shared.world.WHexGrid sourceGrid = filledHexGrid.getHexGrid();
+                if (sourceGrid == null || sourceGrid.getParameters() == null) {
+                    log.warn("FilledHexGrid at {} has no WHexGrid or parameters, skipping", position);
+                    continue;
                 }
-            }
 
-            // Second pass: create or update WHexGrids with merged parameters
-            for (String position : mergedParameters.keySet()) {
-                Map<String, String> params = mergedParameters.get(position);
+                Map<String, String> params = sourceGrid.getParameters();
 
+                // Check if grid already exists in database
                 Optional<de.mhus.nimbus.world.shared.world.WHexGrid> existingOpt =
                     hexGridRepository.findByWorldIdAndPosition(composition.getWorldId(), position);
 
                 de.mhus.nimbus.world.shared.world.WHexGrid wHexGrid;
 
                 if (existingOpt.isPresent()) {
-                    // Update existing grid with merged parameters
+                    // Update existing grid with parameters from FilledHexGrid
                     wHexGrid = existingOpt.get();
                     wHexGrid.setParameters(new HashMap<>(params));
                     wHexGrid.touchUpdate();
@@ -176,13 +148,7 @@ public class GenerateHexGridFromCompositeJobExecutor implements JobExecutor {
                             composition.getWorldId(), position, params.size());
                     updatedGrids++;
                 } else {
-                    // Create new WHexGrid entity
-                    String[] parts = position.split(";");
-                    HexVector2 coord = HexVector2.builder()
-                            .q(Integer.parseInt(parts[0]))
-                            .r(Integer.parseInt(parts[1]))
-                            .build();
-
+                    // Create new WHexGrid entity from FilledHexGrid
                     de.mhus.nimbus.generated.types.HexGrid publicData = de.mhus.nimbus.generated.types.HexGrid.builder()
                             .position(coord)
                             .build();
@@ -205,12 +171,15 @@ public class GenerateHexGridFromCompositeJobExecutor implements JobExecutor {
                 hexGridRepository.save(wHexGrid);
             }
 
+            log.info("WHexGrid creation/update complete: created={}, updated={}, total={}",
+                    createdGrids, updatedGrids, composition.getFilledHexGrids().size());
+
             // Step 3b: Add edge_flat parameters for neighbor flats and edge blending parameters
-            log.info("Adding edge_flat and edge blending parameters for {} grids", allCoordinates.size());
+            log.info("Adding edge_flat and edge blending parameters for {} unique grids", allCoordinateStrings.size());
             int edgeParamsAdded = 0;
 
-            for (HexVector2 coord : allCoordinates) {
-                String position = coord.getQ() + ";" + coord.getR();
+            // Iterate over unique coordinates only (use Set instead of List to avoid duplicates)
+            for (String position : allCoordinateStrings) {
                 Optional<de.mhus.nimbus.world.shared.world.WHexGrid> gridOpt =
                     hexGridRepository.findByWorldIdAndPosition(composition.getWorldId(), position);
 
@@ -220,6 +189,13 @@ public class GenerateHexGridFromCompositeJobExecutor implements JobExecutor {
 
                 de.mhus.nimbus.world.shared.world.WHexGrid grid = gridOpt.get();
                 boolean modified = false;
+
+                // Parse coordinate from position string
+                String[] parts = position.split(";");
+                HexVector2 coord = HexVector2.builder()
+                        .q(Integer.parseInt(parts[0]))
+                        .r(Integer.parseInt(parts[1]))
+                        .build();
 
                 // For each hex side, check if neighbor exists and add edge_flat parameter
                 for (de.mhus.nimbus.world.shared.world.WHexGrid.EDGE side : de.mhus.nimbus.world.shared.world.WHexGrid.EDGE.values()) {
@@ -254,20 +230,20 @@ public class GenerateHexGridFromCompositeJobExecutor implements JobExecutor {
 
             log.info("Added edge_flat and edge blending parameters to {} grids", edgeParamsAdded);
 
-            log.info("WHexGrid generation complete: created={}, updated={}, total={}",
-                    createdGrids, updatedGrids, mergedParameters.size());
-
-            // Step 4: Format coordinates as space-separated list
-            String coordinatesStr = allCoordinates.stream()
-                    .map(coord -> coord.getQ() + ";" + coord.getR())
+            // Step 4: Format coordinates as space-separated list (sorted for consistency)
+            String coordinatesStr = allCoordinateStrings.stream()
+                    .sorted()
                     .collect(Collectors.joining(" "));
 
             // Build success result
             Map<String, Object> resultData = new HashMap<>();
             resultData.put("coordinates", coordinatesStr);
-            resultData.put("gridCount", mergedParameters.size());
+            resultData.put("gridCount", composition.getFilledHexGrids().size());
             resultData.put("createdGrids", createdGrids);
             resultData.put("updatedGrids", updatedGrids);
+
+            log.info("GenerateHexGridFromComposite completed: gridCount={}, created={}, updated={}",
+                    composition.getFilledHexGrids().size(), createdGrids, updatedGrids);
 
             return JobResult.success(resultData);
 
@@ -308,28 +284,17 @@ public class GenerateHexGridFromCompositeJobExecutor implements JobExecutor {
     }
 
     /**
-     * Extract enriched composition JSON from document.
+     * Extract composition directly from document content (no wrapper).
      */
     private HexComposition extractCompositionFromDocument(WDocument document) {
         try {
-            // Parse document content
-            JsonNode content = objectMapper.readTree(document.getContent());
-
-            // Extract enriched composition JSON
-            if (!content.has("enrichedCompositionJson")) {
-                log.error("Document does not contain enrichedCompositionJson field");
-                return null;
-            }
-
-            String compositionJson = content.get("enrichedCompositionJson").asText();
-
-            // Parse to HexComposition
+            // Parse composition directly from document content
             ObjectMapper mapper = new ObjectMapper();
             mapper.registerModule(new com.fasterxml.jackson.datatype.jsr310.JavaTimeModule());
             mapper.enable(JsonParser.Feature.ALLOW_COMMENTS);
             mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
-            HexComposition composition = mapper.readValue(compositionJson, HexComposition.class);
+            HexComposition composition = mapper.readValue(document.getContent(), HexComposition.class);
 
             log.info("Successfully parsed HexComposition from document");
             return composition;

@@ -68,7 +68,7 @@ public class TranslateInstructionJobExecutor implements JobExecutor {
             log.info("Starting translate instruction job: jobId={}", job.getId());
 
             // Extract required parameters
-            String instructionsDocumentId = getRequiredParameter(job, "instructionsDocumentId");
+            String instructionsDocumentId = getRequiredParameter(job, "instructionsId");
 
             // Extract optional parameters
             int maxAttempts = getOptionalIntParameter(job, "maxAttempts", DEFAULT_MAX_ATTEMPTS);
@@ -180,13 +180,17 @@ public class TranslateInstructionJobExecutor implements JobExecutor {
         }
     }
 
-    private String loadInstructions(String worldId, String instructionPath) {
+    private String loadInstructions(String worldId, String instructionDocumentId) {
 
         // Create WorldId
         WorldId wid = WorldId.of(worldId)
                 .orElseThrow(() -> new IllegalArgumentException("Invalid worldId: " + worldId));
 
-        return documentService.findByDocumentId(wid, INSTRUCTIONS_COLLECTION, instructionPath).orElseThrow().getContent();
+        return documentService.findByDocumentId(wid, INSTRUCTIONS_COLLECTION, instructionDocumentId)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        String.format("Instructions document not found: worldId=%s, collection=%s, documentId=%s",
+                                worldId, INSTRUCTIONS_COLLECTION, instructionDocumentId)))
+                .getContent();
     }
 
     /**
@@ -212,22 +216,20 @@ public class TranslateInstructionJobExecutor implements JobExecutor {
         String finalDocumentName = String.format("%s-%s", documentName, timestamp);
 
         // Create document metadata
+        // Save document with composition as direct JSON content
         Map<String, String> metadata = new HashMap<>();
         metadata.put("generatedAt", now.toString());
         metadata.put("compositionName", composition.getName());
         metadata.put("compositionWorldId", composition.getWorldId());
         metadata.put("featuresCount", String.valueOf(
                 composition.getFeatures() != null ? composition.getFeatures().size() : 0));
+        metadata.put("instructionsDocumentId", instructionsDocumentId);
 
-        // Build document content with original instruction and JSON
-        String content = buildDocumentContent(instructionsDocumentId, json, composition);
-
-        // Save document
         WDocument document = documentService.save(wid, TRANSLATIONS_COLLECTION, documentId, doc -> {
             doc.setName(finalDocumentName);
             doc.setTitle(composition.getName() != null ? composition.getName() : "Generated World");
             doc.setFormat("json");
-            doc.setContent(content);
+            doc.setContent(json);  // Direct model JSON
             doc.setMetadata(metadata);
             doc.setType("composer-translation");
             doc.setReadOnly(false);
@@ -238,25 +240,6 @@ public class TranslateInstructionJobExecutor implements JobExecutor {
 
         // Return document id
         return documentId;
-    }
-
-    /**
-     * Build document content with metadata and JSON.
-     */
-    private String buildDocumentContent(String instructionsDocumentId, String json, HexComposition composition) throws Exception {
-        Map<String, Object> documentContent = new HashMap<>();
-        documentContent.put("generatedAt", Instant.now().toString());
-        documentContent.put("compositionJson", json);
-
-        // Add composition metadata
-        Map<String, Object> compositionMeta = new HashMap<>();
-        compositionMeta.put("instructionsDocumentId", instructionsDocumentId);
-        compositionMeta.put("name", composition.getName());
-        compositionMeta.put("featuresCount", composition.getFeatures() != null ? composition.getFeatures().size() : 0);
-        compositionMeta.put("continentsCount", composition.getContinents() != null ? composition.getContinents().size() : 0);
-        documentContent.put("compositionMetadata", compositionMeta);
-
-        return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(documentContent);
     }
 
     /**

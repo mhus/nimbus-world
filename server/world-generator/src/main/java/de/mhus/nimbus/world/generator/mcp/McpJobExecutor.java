@@ -176,7 +176,7 @@ public class McpJobExecutor {
             config.worldId,
             config.executor,
             jobTitle,
-            config.executor,
+            "",  // type - not used in MCP jobs
             jobParams
         );
     }

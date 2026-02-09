@@ -50,7 +50,6 @@ public class DirectionDeviationTest {
             .worldId("test-world")
             .seed(12345L)
             .fillGaps(false)
-            .generateWHexGrids(false)
             .build()
             .compose();
 
@@ -97,7 +96,6 @@ public class DirectionDeviationTest {
             .worldId("test-world")
             .seed(54321L)
             .fillGaps(false)
-            .generateWHexGrids(false)
             .build()
             .compose();
 
@@ -143,7 +141,6 @@ public class DirectionDeviationTest {
             .worldId("test-world")
             .seed(99999L)
             .fillGaps(false)
-            .generateWHexGrids(false)
             .build()
             .compose();
 
@@ -186,7 +183,6 @@ public class DirectionDeviationTest {
             .worldId("test-world")
             .seed(77777L)
             .fillGaps(false)
-            .generateWHexGrids(false)
             .build()
             .compose();
 

@@ -95,7 +95,6 @@ public class WorldCompositeImageTest {
             .seed(99999L)
             .fillGaps(true)
             .oceanBorderRings(1)
-            .generateWHexGrids(false)  // We don't need WHexGrid generation for this test
             .build()
             .compose();
 
@@ -207,7 +206,6 @@ public class WorldCompositeImageTest {
             .seed(54321L)
             .fillGaps(true)
             .oceanBorderRings(2)
-            .generateWHexGrids(false)
             .build()
             .compose();
 
@@ -266,7 +264,6 @@ public class WorldCompositeImageTest {
             .seed(77777L)
             .fillGaps(true)
             .oceanBorderRings(1)
-            .generateWHexGrids(false)
             .build()
             .compose();
 
@@ -331,7 +328,6 @@ public class WorldCompositeImageTest {
             .seed(88888L)
             .fillGaps(true)
             .oceanBorderRings(1)
-            .generateWHexGrids(false)
             .build()
             .compose();
 
@@ -1181,7 +1177,6 @@ public class WorldCompositeImageTest {
             .seed(11111L)
             .fillGaps(true)
             .oceanBorderRings(1)
-            .generateWHexGrids(false)
             .build()
             .compose();
 
@@ -1287,7 +1282,6 @@ public class WorldCompositeImageTest {
             .seed(99999L)
             .fillGaps(true)
             .oceanBorderRings(0) // No coast rings to force the flow-gap scenario
-            .generateWHexGrids(false)
             .build()
             .compose();
 
@@ -1341,7 +1335,6 @@ public class WorldCompositeImageTest {
             .seed(77777L)
             .fillGaps(true)
             .oceanBorderRings(0)
-            .generateWHexGrids(false)
             .build()
             .compose();
 
@@ -1497,7 +1490,6 @@ public class WorldCompositeImageTest {
             .seed(88888L)
             .fillGaps(true)
             .oceanBorderRings(2)
-            .generateWHexGrids(false)
             .build()
             .compose();
 

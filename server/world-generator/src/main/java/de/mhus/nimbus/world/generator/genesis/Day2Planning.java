@@ -52,7 +52,7 @@ public class Day2Planning extends MethodBasedWorkflow {
         context.updateWorkflowStatus("translationInstruction");
         // TranslateInstructionJobExecutor
         context.enqueueJob("generator-translate-instruction", "", Map.of(
-                "instructionsDocumentId", (String)context.getParameters().get(GenesisConst.INSTRUCTIONS_DOCUMENT_ID)
+                GenesisConst.INSTRUCTIONS_DOCUMENT_ID, (String)context.getParameters().get(GenesisConst.INSTRUCTIONS_DOCUMENT_ID)
         ));
     }
 
@@ -73,8 +73,26 @@ public class Day2Planning extends MethodBasedWorkflow {
 
     @OnSuccess("applyInstruction")
     public void onApplyInstructionSuccess(WorkflowContext context) throws WorkflowException {
-        String hexCoordinates = context.getJobResultAsString().orElseThrow();
-        context.doComplete(hexCoordinates);
+        // Extract composition document ID from result
+        var compositionDocumentId = context.getJobResultString("documentId")
+                .orElseThrow(() -> new WorkflowException(null,
+                        "ApplyTranslatedInstruction job result does not contain 'documentId'. " +
+                        "Check if ApplyTranslatedInstructionJobExecutor completed successfully."));
+        var totalGrids = context.getJobResultString("totalGrids").orElse("unknown");
+
+        log.info("Composition created: documentId={}, totalGrids={}", compositionDocumentId, totalGrids);
+
+        // Verify composition document exists
+        if (documentService.findByDocumentId(WorldId.of(context.getWorldId()).orElseThrow(), compositionDocumentId).isEmpty()) {
+            throw new WorkflowException(null, "composition document not found: " + compositionDocumentId);
+        }
+
+        // Complete with composition ID in result message
+        // The composition ID will be passed to Day3Generation as a workflow parameter by the orchestrator
+        context.doComplete(Map.of(
+                "documentId", compositionDocumentId,
+                "totalGrids", totalGrids
+        ));
     }
 
     @Override

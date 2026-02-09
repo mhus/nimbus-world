@@ -107,7 +107,6 @@ public class HexCompositeBuilderTest {
             .seed(12345L)
             .fillGaps(true)
             .oceanBorderRings(1)
-            .generateWHexGrids(false)  // Don't generate WHexGrids in this test
             .build()
             .compose();
 
@@ -262,7 +261,6 @@ public class HexCompositeBuilderTest {
             .seed(777L)
             .fillGaps(true)
             .oceanBorderRings(1)
-            .generateWHexGrids(false)
             .build();
 
         // Call build() on the composition (implements BuildFeature)
@@ -316,7 +314,6 @@ public class HexCompositeBuilderTest {
             .seed(42L)  // Consistent seed for reproducible results
             .fillGaps(true)
             .oceanBorderRings(2)
-            .generateWHexGrids(false)  // Don't generate WHexGrids for this test
             .build()
             .compose();
 
@@ -434,7 +431,6 @@ public class HexCompositeBuilderTest {
             .seed(42L)  // Consistent seed for reproducible results
             .fillGaps(true)
             .oceanBorderRings(2)
-            .generateWHexGrids(false)  // Don't generate WHexGrids for this test
             .build()
             .compose();
 
@@ -883,7 +879,6 @@ public class HexCompositeBuilderTest {
             .seed(12345L)
             .fillGaps(true)
             .oceanBorderRings(2)
-            .generateWHexGrids(false)
             .build()
             .compose();
 

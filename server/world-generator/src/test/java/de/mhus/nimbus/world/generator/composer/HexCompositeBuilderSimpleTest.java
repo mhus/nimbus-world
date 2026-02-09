@@ -149,7 +149,6 @@ public class HexCompositeBuilderSimpleTest {
             .seed(42L)  // Consistent seed for reproducible results
             .fillGaps(true)
             .oceanBorderRings(2)
-            .generateWHexGrids(false)  // Don't generate WHexGrids for this test
             .build()
             .compose();
 

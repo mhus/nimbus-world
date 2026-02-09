@@ -68,10 +68,11 @@ public class FlowComposerTest {
             .worldId("test-world")
             .seed(12345L)
             .fillGaps(false)  // No gap filling for this test
-            .repository(mockRepository)
-            .generateWHexGrids(true)  // Generate WHexGrids in this test
             .build()
             .compose();
+
+        // Generate WHexGrids for testing
+        result = HexCompositeTestHelper.generateWHexGridsForResult(result, composition, mockRepository);
 
         // Verify composition successful
         assertTrue(result.isSuccess(), "Composition should succeed");
@@ -144,10 +145,11 @@ public class FlowComposerTest {
             .worldId("test-world")
             .seed(54321L)
             .fillGaps(false)  // No gap filling for this test
-            .repository(mockRepository)
-            .generateWHexGrids(true)  // Generate WHexGrids in this test
             .build()
             .compose();
+
+        // Generate WHexGrids for testing
+        result = HexCompositeTestHelper.generateWHexGridsForResult(result, composition, mockRepository);
 
         // Verify composition successful
         assertTrue(result.isSuccess(), "Composition should succeed");

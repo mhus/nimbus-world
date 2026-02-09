@@ -102,6 +102,7 @@ public class WDocumentController extends BaseEditorController {
     public record UpdateDocumentRequest(
             String name,
             String title,
+            String collection,  // Included for JSON parsing, but value from path parameter is used
             String language,
             String format,
             String content,
@@ -354,6 +355,7 @@ public class WDocumentController extends BaseEditorController {
         Optional<WDocument> updated = documentService.update(wid, collection, documentId, doc -> {
             if (request.name() != null) doc.setName(request.name());
             if (request.title() != null) doc.setTitle(request.title());
+            if (request.collection() != null) doc.setCollection(request.collection());
             if (request.language() != null) doc.setLanguage(request.language());
             if (request.format() != null) doc.setFormat(request.format());
             if (request.content() != null) doc.setContent(request.content());

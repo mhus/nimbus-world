@@ -43,6 +43,9 @@ public class HexComposition implements BuildFeature {
     // Continent definitions for filling gaps between biomes
     private List<Continent> continents;
 
+    // Filled hex grids - final composed grids with all parameters
+    private List<FilledHexGrid> filledHexGrids;
+
     @Builder.Default
     private String version = "1.0.0";
     private Instant createdAt;
@@ -191,8 +194,6 @@ public class HexComposition implements BuildFeature {
             .seed(context.getSeed())
             .fillGaps(context.isFillGaps())
             .oceanBorderRings(context.getOceanBorderRings())
-            .repository(context.getRepository())
-            .generateWHexGrids(context.isGenerateWHexGrids())
             .build()
             .compose();
     }

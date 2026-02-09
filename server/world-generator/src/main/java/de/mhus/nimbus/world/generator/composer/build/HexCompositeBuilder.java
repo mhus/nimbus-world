@@ -75,11 +75,6 @@ public class HexCompositeBuilder {
     private final Long seed = System.currentTimeMillis();
 
     /**
-     * Optional repository for WHexGrid persistence (required for HexGridGenerator step)
-     */
-    private final WHexGridRepository repository;
-
-    /**
      * Whether to fill gaps with ocean/land/coast (default: true)
      */
     @Builder.Default
@@ -90,12 +85,6 @@ public class HexCompositeBuilder {
      */
     @Builder.Default
     private final int oceanBorderRings = 1;
-
-    /**
-     * Whether to generate WHexGrids (default: false, only if repository provided)
-     */
-    @Builder.Default
-    private final boolean generateWHexGrids = false;
 
     /**
      * Executes the complete composition pipeline.
@@ -111,7 +100,9 @@ public class HexCompositeBuilder {
      * 6b. Fill ocean gaps for flows - creates PlacedBiomes for flow gaps
      * 7. Convert PlacedBiomes to WHexGrids - happens AFTER all compositions (biomes, points, flows)
      * 8. Sync parameters from FeatureHexGrids to WHexGrids (HexGridParameterSync)
-     * 9. Generate WHexGrids (HexGridGenerator) - optional, only if repository provided
+     *
+     * Note: WHexGrid persistence to database happens later in GenerateHexGridFromCompositeJobExecutor (Day3).
+     * For tests that need WHexGrid persistence, use HexCompositeTestHelper.generateAndSaveWHexGrids().
      *
      * Architecture: During composition (Steps 1-6), all data is stored in FeatureHexGrids
      * (Feature.featureComposed.hexGrids). WHexGrids are only created at the end (Step 7)
@@ -121,8 +112,8 @@ public class HexCompositeBuilder {
      */
     public CompositionResult compose() {
         log.debug("=== Starting HexComposite Pipeline ===");
-        log.debug("WorldId: {}, Seed: {}, FillGaps: {}, OceanBorderRings: {}, GenerateWHexGrids: {}",
-            worldId, seed, fillGaps, oceanBorderRings, generateWHexGrids);
+        log.debug("WorldId: {}, Seed: {}, FillGaps: {}, OceanBorderRings: {}",
+            worldId, seed, fillGaps, oceanBorderRings);
 
         List<String> warnings = new ArrayList<>();
         CompositionResult.CompositionResultBuilder resultBuilder = CompositionResult.builder()
@@ -436,6 +427,10 @@ public class HexCompositeBuilder {
                     }
                 }
 
+                // Store FilledHexGrids in composition model
+                composition.setFilledHexGrids(allGrids);
+                log.debug("Stored {} FilledHexGrids in composition model", allGrids.size());
+
                 // Create fill result for backward compatibility
                 fillResult = HexGridFillResult.builder()
                     .placementResult(placementResult)
@@ -452,6 +447,35 @@ public class HexCompositeBuilder {
 
                 resultBuilder.fillResult(fillResult);
                 resultBuilder.filledGrids(fillerGridCount);
+            } else {
+                // Even without fillGaps, create FilledHexGrids from placed biomes
+                List<FilledHexGrid> allGrids = new ArrayList<>();
+
+                // Build map of existing grids for fast lookup
+                Map<String, de.mhus.nimbus.world.shared.world.WHexGrid> gridMap = new HashMap<>();
+                for (de.mhus.nimbus.world.shared.world.WHexGrid grid : placementResult.getHexGrids()) {
+                    gridMap.put(grid.getPosition(), grid);
+                }
+
+                // Add all biome grids from placed biomes
+                for (PlacedBiome placed : placementResult.getPlacedBiomes()) {
+                    for (de.mhus.nimbus.generated.types.HexVector2 coord : placed.getCoordinates()) {
+                        String key = TypeUtil.toStringHexCoord(coord.getQ(), coord.getR());
+                        de.mhus.nimbus.world.shared.world.WHexGrid grid = gridMap.get(key);
+                        if (grid != null) {
+                            allGrids.add(FilledHexGrid.builder()
+                                .coordinate(coord)
+                                .hexGrid(grid)
+                                .isFiller(false)
+                                .biome(placed)
+                                .build());
+                        }
+                    }
+                }
+
+                // Store FilledHexGrids in composition model
+                composition.setFilledHexGrids(allGrids);
+                log.debug("Stored {} FilledHexGrids in composition model (without fillers)", allGrids.size());
             }
 
             // Step 8: Sync parameters from FeatureHexGrids to WHexGrids
@@ -461,26 +485,8 @@ public class HexCompositeBuilder {
                 composition, placementResult, placementResult.getHexGrids());
             log.debug("Synced parameters to {} WHexGrids", syncedCount);
 
-            // Step 9: Generate WHexGrids (optional, only if repository provided)
-            if (generateWHexGrids && repository != null) {
-                log.debug("Step 9: Generating WHexGrids");
-                HexGridGenerator generator = new HexGridGenerator(repository);
-                HexGridGenerator.GenerationResult genResult = generator.generateHexGrids(composition);
-
-                if (!genResult.isSuccess()) {
-                    warnings.add("WHexGrid generation had issues: " + genResult.getErrors());
-                } else {
-                    log.debug("Generated {} WHexGrids", genResult.getCreatedGrids());
-                }
-
-                resultBuilder.generationResult(genResult);
-                resultBuilder.generatedWHexGrids(genResult.getCreatedGrids());
-            } else {
-                if (generateWHexGrids && repository == null) {
-                    warnings.add("WHexGrid generation requested but no repository provided");
-                }
-                log.debug("Step 9: Skipping WHexGrid generation (disabled or no repository)");
-            }
+            // WHexGrid persistence happens later in GenerateHexGridFromCompositeJobExecutor (Day3)
+            // For tests, use HexCompositeTestHelper.generateAndSaveWHexGrids()
 
             // Success!
             log.debug("=== HexComposite Pipeline Complete ===");

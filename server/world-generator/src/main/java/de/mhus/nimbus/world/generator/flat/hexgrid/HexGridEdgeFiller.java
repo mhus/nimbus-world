@@ -230,48 +230,26 @@ public class HexGridEdgeFiller {
             log.debug("Filling side {} with neighbor flat {}", direction, neighborFlat.getFlatId());
 
             // Calculate the two corners of this hex side
-            int[] corner1 = getCorner1ForSide(direction);
-            int[] corner2 = getCorner2ForSide(direction);
-
-            // Walk along the edge line (from corner1 to corner2)
-            double dx = corner2[0] - corner1[0];
-            double dz = corner2[1] - corner1[1];
-            double edgeLength = Math.sqrt(dx * dx + dz * dz);
-            int steps = (int) Math.ceil(edgeLength);
-
-            if (steps == 0) {
-                log.warn("Edge length is 0 for side {}", direction);
-                return;
-            }
+            int[] area = getAreaForSide(direction);
+            int[] neighborArea = getAreaForSide(direction.getOpposite());
 
             int filledCount = 0;
-
-            // Walk along the edge
-            for (int step = 0; step <= steps; step++) {
-                double t = steps > 0 ? step / (double) steps : 0.5;
-                double x = corner1[0] * (1 - t) + corner2[0] * t;
-                double z = corner1[1] * (1 - t) + corner2[1] * t;
-
-                int xi = (int) Math.round(x);
-                int zi = (int) Math.round(z);
-
-                // Check bounds
-                if (xi < 0 || xi >= flat.getSizeX() || zi < 0 || zi >= flat.getSizeZ()) {
-                    continue;
-                }
-
-                // Only fill if material is not set (==0)
-                int currentMaterial = flat.getColumn(xi, zi);
-                if (currentMaterial == WFlat.MATERIAL_NOT_SET) {
-                    // Get corresponding point from neighbor
-                    int[] neighborPoint = getCorrespondingNeighborPoint(xi, zi);
-                    if (neighborPoint != null) {
-                        int neighborMaterial = neighborFlat.getColumn(neighborPoint[0], neighborPoint[1]);
-                        if (neighborMaterial != WFlat.MATERIAL_NOT_SET &&
-                            neighborMaterial != WFlat.MATERIAL_NOT_SET_MUTABLE) {
-                            // Only copy level from neighbor, not material
-                            int neighborLevel = neighborFlat.getLevel(neighborPoint[0], neighborPoint[1]);
-                            flat.setLevel(xi, zi, neighborLevel);
+            for (int z = area[1]; z < area[3]; z++) {
+                for (int x = area[0]; x < area[2]; x++) {
+                    var neighborX = neighborArea[0] + (x - area[0]);
+                    var neighborZ = neighborArea[1] + (z - area[1]);
+                    // check neighbor bounds
+                    if (neighborX < 0 || neighborX >= neighborFlat.getSizeX() ||
+                        neighborZ < 0 || neighborZ >= neighborFlat.getSizeZ()) {
+                        continue;
+                    }
+                    // Only fill if material is not set (==0)
+                    int currentMaterial = flat.getColumn(x, z);
+                    if (currentMaterial == WFlat.MATERIAL_NOT_SET || currentMaterial == WFlat.MATERIAL_NOT_SET_MUTABLE) {
+                        // Get corresponding point from neighbor
+                        var neighborLevel = neighborFlat.getLevel(neighborX, neighborZ);
+                        if (neighborLevel > 0) {
+                            flat.setLevel(x, z, neighborLevel);
                             filledCount++;
                         }
                     }
@@ -281,27 +259,28 @@ public class HexGridEdgeFiller {
             log.debug("Filled {} points from neighbor on side {}", filledCount, direction);
         }
 
-        /**
-         * Get corresponding point in neighbor flat for a point in our flat.
-         * Converts local coordinates to world coordinates, then to neighbor coordinates.
-         * Returns null if the point is outside neighbor bounds.
-         */
-        private int[] getCorrespondingNeighborPoint(int localX, int localZ) {
-            // Convert to world coordinates
-            int worldX = flat.getMountX() + localX;
-            int worldZ = flat.getMountZ() + localZ;
+        private int[] getAreaForSide(WHexGrid.EDGE direction) {
+            int sizeX = flat.getSizeX();
+            int sizeZ = flat.getSizeZ();
+            int[] corner1 = getCorner1ForSide(direction); // x,z
+            int[] corner2 = getCorner2ForSide(direction); // x,z
 
-            // Convert to neighbor coordinates
-            int neighborX = worldX - neighborFlat.getMountX();
-            int neighborZ = worldZ - neighborFlat.getMountZ();
-
-            // Check bounds in neighbor flat
-            if (neighborX < 0 || neighborX >= neighborFlat.getSizeX() ||
-                neighborZ < 0 || neighborZ >= neighborFlat.getSizeZ()) {
-                return null;
+            switch (direction) {
+                case NORTH_EAST:
+                    return new int[]{corner1[0], 0, sizeX, corner2[1]};
+                case EAST:
+                        return new int[]{corner1[0], corner1[1], sizeX, corner2[1]};
+                case SOUTH_EAST:
+                    return new int[]{corner1[0], corner1[1], sizeX, sizeZ};
+                case SOUTH_WEST:
+                    return new int[]{0, corner1[1], corner2[0], sizeZ};
+                case WEST:
+                    return new int[]{0, corner1[1], corner2[0], corner2[1]};
+                case NORTH_WEST:
+                    return new int[]{0, 0, corner2[0], corner2[1]};
+                default:
+                    return new int[]{0, 0, sizeX, sizeZ};
             }
-
-            return new int[]{neighborX, neighborZ};
         }
 
         /**

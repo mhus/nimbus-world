@@ -11,6 +11,9 @@ import de.mhus.nimbus.world.shared.world.WDocument;
 import de.mhus.nimbus.world.shared.world.WDocumentService;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
 import de.mhus.nimbus.world.shared.world.WHexGridRepository;
+import de.mhus.nimbus.world.shared.world.WWorld;
+import de.mhus.nimbus.world.shared.world.WWorldService;
+import de.mhus.nimbus.generated.types.WorldInfo;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -31,8 +34,10 @@ import static org.mockito.Mockito.*;
 @Slf4j
 public class GenerateHexGridFromCompositeJobTest {
 
-    private GenerateHexGridFromCompositeJobExecutor jobExecutor;
+    private GenerateHexGridFromCompositeJobExecutor generateJobExecutor;
+    private ApplyTranslatedInstructionJobExecutor applyJobExecutor;
     private WDocumentService documentService;
+    private WWorldService worldService;
     private WHexGridRepository hexGridRepository;
     private ObjectMapper objectMapper;
 
@@ -56,12 +61,17 @@ public class GenerateHexGridFromCompositeJobTest {
         createdHexGrids.clear();
         existingHexGridKeys.clear();
 
-        // Create ObjectMapper
+        // Create ObjectMapper with JavaTimeModule for Instant serialization
         objectMapper = new ObjectMapper();
+        objectMapper.registerModule(new com.fasterxml.jackson.datatype.jsr310.JavaTimeModule());
 
         // Mock WDocumentService
         documentService = mock(WDocumentService.class);
         setupDocumentServiceMock();
+
+        // Mock WWorldService
+        worldService = mock(WWorldService.class);
+        setupWorldServiceMock();
 
         // Mock WHexGridRepository
         hexGridRepository = mock(WHexGridRepository.class);
@@ -70,10 +80,16 @@ public class GenerateHexGridFromCompositeJobTest {
         // Load test document with generated composition
         loadTestDocument();
 
-        // Create job executor
-        jobExecutor = new GenerateHexGridFromCompositeJobExecutor(
+        // Create job executors
+        generateJobExecutor = new GenerateHexGridFromCompositeJobExecutor(
                 documentService,
                 hexGridRepository,
+                objectMapper
+        );
+
+        applyJobExecutor = new ApplyTranslatedInstructionJobExecutor(
+                documentService,
+                worldService,
                 objectMapper
         );
 
@@ -99,7 +115,7 @@ public class GenerateHexGridFromCompositeJobTest {
 
         // Execute job
         log.info("Executing hexgrid generation job...");
-        JobExecutor.JobResult result = jobExecutor.execute(job);
+        JobExecutor.JobResult result = generateJobExecutor.execute(job);
 
         // Validate result
         assertTrue(result.successful(), "Job should succeed: " + result.errorMessage());
@@ -110,12 +126,12 @@ public class GenerateHexGridFromCompositeJobTest {
         String coordinates = resultNode.get("coordinates").asText();
         int gridCount = resultNode.get("gridCount").asInt();
         int createdGrids = resultNode.get("createdGrids").asInt();
-        int skippedGrids = resultNode.get("skippedGrids").asInt();
+        int updatedGrids = resultNode.get("updatedGrids").asInt();
 
         log.info("Job completed successfully!");
         log.info("Grid count: {}", gridCount);
         log.info("Created grids: {}", createdGrids);
-        log.info("Skipped grids: {}", skippedGrids);
+        log.info("Updated grids: {}", updatedGrids);
         log.info("Coordinates sample: {}",
                 coordinates.length() > 100 ? coordinates.substring(0, 100) + "..." : coordinates);
 
@@ -166,7 +182,7 @@ public class GenerateHexGridFromCompositeJobTest {
                 .build();
 
         // Execute job
-        JobExecutor.JobResult result = jobExecutor.execute(job);
+        JobExecutor.JobResult result = generateJobExecutor.execute(job);
 
         // Validate result
         assertTrue(result.successful(), "Job should succeed even with existing grids");
@@ -175,17 +191,16 @@ public class GenerateHexGridFromCompositeJobTest {
         JsonNode resultNode = objectMapper.readTree(result.resultData());
         int gridCount = resultNode.get("gridCount").asInt();
         int createdGrids = resultNode.get("createdGrids").asInt();
-        int skippedGrids = resultNode.get("skippedGrids").asInt();
+        int updatedGrids = resultNode.get("updatedGrids").asInt();
 
-        log.info("Created: {}, Skipped: {}, Total coordinates: {}", createdGrids, skippedGrids, gridCount);
+        log.info("Created: {}, Updated: {}, Total coordinates: {}", createdGrids, updatedGrids, gridCount);
 
-        // Validate that some grids were skipped
-        assertTrue(skippedGrids > 0, "Should have skipped at least some existing grids");
+        // Validate that some grids were updated (previously existing grids)
+        assertTrue(updatedGrids > 0, "Should have updated at least some existing grids");
 
-        // Note: gridCount includes all coordinates from all features (with duplicates)
-        // while created+skipped counts only unique processed grids
-        assertTrue(gridCount >= createdGrids + skippedGrids,
-                "Total coordinates should be at least created + skipped");
+        // gridCount is the number of unique coordinates processed
+        assertEquals(gridCount, createdGrids + updatedGrids,
+                "Grid count should equal created + updated");
 
         log.info("=== HexGrid Generation Test with Existing Grids Successful ===");
     }
@@ -207,7 +222,7 @@ public class GenerateHexGridFromCompositeJobTest {
                 .build();
 
         // Execute job
-        JobExecutor.JobResult result = jobExecutor.execute(job);
+        JobExecutor.JobResult result = generateJobExecutor.execute(job);
 
         // Validate result - should fail
         assertFalse(result.successful(), "Job should fail with invalid document ID");
@@ -245,7 +260,7 @@ public class GenerateHexGridFromCompositeJobTest {
 
         // Execute job
         log.info("Executing hexgrid generation job for village...");
-        JobExecutor.JobResult result = jobExecutor.execute(job);
+        JobExecutor.JobResult result = generateJobExecutor.execute(job);
 
         // Validate result
         assertTrue(result.successful(), "Job should succeed: " + result.errorMessage());
@@ -255,16 +270,16 @@ public class GenerateHexGridFromCompositeJobTest {
         JsonNode resultNode = objectMapper.readTree(result.resultData());
         int gridCount = resultNode.get("gridCount").asInt();
         int createdGrids = resultNode.get("createdGrids").asInt();
-        int skippedGrids = resultNode.get("skippedGrids").asInt();
+        int updatedGrids = resultNode.get("updatedGrids").asInt();
 
         log.info("Village job completed successfully!");
         log.info("Grid count: {}", gridCount);
         log.info("Created grids: {}", createdGrids);
-        log.info("Skipped grids: {}", skippedGrids);
+        log.info("Updated grids: {}", updatedGrids);
 
         // Verify at least some grids were created
         assertTrue(createdGrids > 0, "Should have created at least one hexgrid");
-        assertEquals(gridCount, createdGrids + skippedGrids, "Grid count should match created + skipped");
+        assertEquals(gridCount, createdGrids + updatedGrids, "Grid count should match created + updated");
 
         // Verify village-specific hexgrids were created
         boolean hasVillageGrid = createdHexGrids.stream()
@@ -286,6 +301,351 @@ public class GenerateHexGridFromCompositeJobTest {
 
         log.info("=== Village HexGrid Generation Test Successful ===");
         log.info("Total village grids generated: {}", createdGrids);
+    }
+
+    @Test
+    public void testGenerateHexGridsFromGenesisDay2Prepared() throws Exception {
+        log.info("=== Starting HexGrid Generation Test for Genesis Day2 (prepared) ===");
+
+        // Clear storage and reload with genesis composition
+        documentStorage.clear();
+        createdHexGrids.clear();
+        existingHexGridKeys.clear();
+
+        // Load genesis day2 prepared document
+        String genesisDocumentId = loadGenesisDay2PreparedDocument();
+
+        // Create job parameters with edge blending settings
+        Map<String, String> params = new HashMap<>();
+        params.put("documentId", genesisDocumentId);
+        params.put("seed", "42");
+        params.put("edge_blend_width", "30");
+        params.put("edge_blend_randomness", "0.6");
+        params.put("edge_shake_strength", "0.2");
+        params.put("edge_blur_radius", "1");
+
+        // Create job
+        WJob job = WJob.builder()
+                .id(UUID.randomUUID().toString())
+                .worldId("ymir:hello1")
+                .executor("generator-generate-hexgrid-from-composite")
+                .parameters(params)
+                .build();
+
+        // Execute job
+        log.info("Executing hexgrid generation job for genesis day2 prepared...");
+        JobExecutor.JobResult result = generateJobExecutor.execute(job);
+
+        // Validate result
+        assertTrue(result.successful(), "Job should succeed: " + result.errorMessage());
+        assertNotNull(result.resultData(), "Job should return result data");
+
+        // Parse result data
+        JsonNode resultNode = objectMapper.readTree(result.resultData());
+        int gridCount = resultNode.get("gridCount").asInt();
+        int createdGrids = resultNode.get("createdGrids").asInt();
+        int updatedGrids = resultNode.get("updatedGrids").asInt();
+
+        log.info("Genesis day2 job completed successfully!");
+        log.info("Grid count: {}", gridCount);
+        log.info("Created grids: {}", createdGrids);
+        log.info("Updated grids: {}", updatedGrids);
+
+        // Verify at least some grids were created
+        assertTrue(gridCount > 0, "Should have generated at least one grid");
+        assertTrue(createdGrids > 0 || updatedGrids > 0, "Should have created or updated at least one grid");
+
+        // CRITICAL: Verify ALL grids have g_builder parameter
+        log.info("Verifying all {} grids have g_builder parameter...", createdHexGrids.size());
+        List<String> gridsWithoutBuilder = new ArrayList<>();
+
+        for (WHexGrid grid : createdHexGrids) {
+            Map<String, String> params2 = grid.getParameters();
+            if (params2 == null || !params2.containsKey("g_builder")) {
+                gridsWithoutBuilder.add(grid.getPosition());
+                log.error("Grid {} has no g_builder parameter! Parameters: {}",
+                        grid.getPosition(), params2);
+            }
+        }
+
+        assertTrue(gridsWithoutBuilder.isEmpty(),
+                "All grids must have g_builder parameter. Missing in: " + gridsWithoutBuilder);
+
+        // Verify edge blending parameters were added
+        long gridsWithEdgeBlending = createdHexGrids.stream()
+                .filter(grid -> grid.getParameters() != null &&
+                        grid.getParameters().containsKey("g_edge_blend_width"))
+                .count();
+
+        log.info("Grids with edge blending parameters: {}", gridsWithEdgeBlending);
+        assertTrue(gridsWithEdgeBlending > 0, "Should have added edge blending parameters to at least some grids");
+
+        // Verify edge_flat parameters were added for neighbors
+        long gridsWithEdgeFlat = createdHexGrids.stream()
+                .filter(grid -> grid.getParameters() != null &&
+                        grid.getParameters().keySet().stream()
+                                .anyMatch(key -> key.startsWith("g_edge_flat_")))
+                .count();
+
+        log.info("Grids with edge_flat neighbor parameters: {}", gridsWithEdgeFlat);
+        assertTrue(gridsWithEdgeFlat > 0, "Should have added edge_flat parameters for neighbors");
+
+        log.info("=== Genesis Day2 HexGrid Generation Test Successful ===");
+        log.info("Total grids generated: {}", gridCount);
+        log.info("All grids have required g_builder parameter");
+    }
+
+    @Test
+    public void testFullPipelineFromTranslatedToHexGrids() throws Exception {
+        log.info("=== Starting Full Pipeline Test: Translated -> Apply -> Generate ===");
+
+        // Clear storage and reload
+        documentStorage.clear();
+        createdHexGrids.clear();
+        existingHexGridKeys.clear();
+
+        // Load genesis day2 translated document
+        String translatedDocId = loadGenesisDay2TranslatedDocument();
+
+        // STEP 1: Apply translated instruction (runs OrphanGridFiller, etc.)
+        log.info("STEP 1: Applying translated instruction...");
+        Map<String, String> applyParams = new HashMap<>();
+        applyParams.put("translationDocumentId", translatedDocId);
+        applyParams.put("seed", "42");
+        applyParams.put("fillGaps", "true");
+        applyParams.put("oceanBorderRings", "1");
+
+        WJob applyJob = WJob.builder()
+                .id(UUID.randomUUID().toString())
+                .worldId("ymir:hello1")
+                .executor("generator-apply-translated-instruction")
+                .parameters(applyParams)
+                .build();
+
+        JobExecutor.JobResult applyResult = applyJobExecutor.execute(applyJob);
+
+        // Validate apply result
+        assertTrue(applyResult.successful(), "Apply job should succeed: " + applyResult.errorMessage());
+        assertNotNull(applyResult.resultData(), "Apply job should return result data");
+
+        // Parse apply result to get composition document ID
+        JsonNode applyResultNode = objectMapper.readTree(applyResult.resultData());
+        String compositionDocId = applyResultNode.get("documentId").asText();
+        int totalGrids = applyResultNode.get("totalGrids").asInt();
+
+        log.info("Apply job completed: compositionDocumentId={}, totalGrids={}", compositionDocId, totalGrids);
+
+        // Verify that enriched composition was saved
+        WDocument compositionDoc = documentStorage.values().stream()
+                .filter(doc -> doc.getDocumentId().equals(compositionDocId))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("Composition document should be saved"));
+
+        log.info("Composition document found: {}", compositionDoc.getName());
+
+        // CRITICAL CHECK AFTER APPLY: Parse enrichedCompositionJson and verify all grids
+        log.info("=== Verifying composition after Apply (before Generate) ===");
+
+        JsonNode compositionContent = objectMapper.readTree(compositionDoc.getContent());
+        String enrichedCompositionJson = compositionContent.get("enrichedCompositionJson").asText();
+        JsonNode compositionNode = objectMapper.readTree(enrichedCompositionJson);
+
+        // Count all FeatureHexGrids and check for duplicates and g_builder
+        Map<String, Integer> compositionCoordinateCounts = new HashMap<>();
+        List<String> compositionGridsWithoutBuilder = new ArrayList<>();
+        int totalFeatureHexGrids = 0;
+
+        JsonNode features = compositionNode.get("features");
+        if (features != null && features.isArray()) {
+            for (JsonNode feature : features) {
+                JsonNode hexGrids = feature.get("hexGrids");
+                if (hexGrids != null && hexGrids.isArray()) {
+                    for (JsonNode hexGrid : hexGrids) {
+                        totalFeatureHexGrids++;
+
+                        JsonNode coordinate = hexGrid.get("coordinate");
+                        int q = coordinate.get("q").asInt();
+                        int r = coordinate.get("r").asInt();
+                        String position = q + ";" + r;
+
+                        // Count occurrences
+                        compositionCoordinateCounts.put(position,
+                                compositionCoordinateCounts.getOrDefault(position, 0) + 1);
+
+                        // Check for g_builder
+                        JsonNode parameters = hexGrid.get("parameters");
+                        if (parameters == null || !parameters.has("g_builder")) {
+                            compositionGridsWithoutBuilder.add(position);
+                        }
+                    }
+                }
+            }
+        }
+
+        log.info("Composition contains {} FeatureHexGrids", totalFeatureHexGrids);
+        log.info("Unique coordinates: {}", compositionCoordinateCounts.size());
+
+        // Check for duplicate coordinates in composition
+        List<String> compositionDuplicates = compositionCoordinateCounts.entrySet().stream()
+                .filter(e -> e.getValue() > 1)
+                .map(e -> e.getKey() + " (x" + e.getValue() + ")")
+                .toList();
+
+        if (!compositionDuplicates.isEmpty()) {
+            log.warn("Composition has duplicate coordinates: {}", compositionDuplicates);
+            // This is OK - multiple features can reference the same grid
+        }
+
+        // Check for grids without g_builder
+        assertTrue(compositionGridsWithoutBuilder.isEmpty(),
+                "After Apply, all FeatureHexGrids must have g_builder. Missing in: " + compositionGridsWithoutBuilder);
+
+        log.info("✓ All {} FeatureHexGrids in composition have g_builder", totalFeatureHexGrids);
+        log.info("✓ Composition has {} unique coordinates", compositionCoordinateCounts.size());
+
+        // STEP 2: Generate hex grids from composed model
+        log.info("STEP 2: Generating hex grids from composition...");
+        Map<String, String> generateParams = new HashMap<>();
+        generateParams.put("documentId", compositionDocId);
+        generateParams.put("seed", "42");
+        generateParams.put("edge_blend_width", "30");
+        generateParams.put("edge_blend_randomness", "0.6");
+        generateParams.put("edge_shake_strength", "0.2");
+        generateParams.put("edge_blur_radius", "1");
+
+        WJob generateJob = WJob.builder()
+                .id(UUID.randomUUID().toString())
+                .worldId("ymir:hello1")
+                .executor("generator-generate-hexgrid-from-composite")
+                .parameters(generateParams)
+                .build();
+
+        JobExecutor.JobResult generateResult = generateJobExecutor.execute(generateJob);
+
+        // Validate generate result
+        assertTrue(generateResult.successful(), "Generate job should succeed: " + generateResult.errorMessage());
+        assertNotNull(generateResult.resultData(), "Generate job should return result data");
+
+        // Parse generate result
+        JsonNode generateResultNode = objectMapper.readTree(generateResult.resultData());
+        int gridCount = generateResultNode.get("gridCount").asInt();
+        int createdGrids = generateResultNode.get("createdGrids").asInt();
+        int updatedGrids = generateResultNode.get("updatedGrids").asInt();
+
+        log.info("Generate job completed: gridCount={}, created={}, updated={}", gridCount, createdGrids, updatedGrids);
+
+        // CRITICAL VALIDATIONS:
+        // 1. All grids should have been created (not just updated)
+        assertTrue(createdGrids > 0, "Should have created at least one grid");
+        assertEquals(gridCount, totalGrids, "Grid count should match total grids from composition");
+
+        // 2. Each coordinate should appear only ONCE
+        Map<String, Integer> coordinateCounts = new HashMap<>();
+        for (WHexGrid grid : createdHexGrids) {
+            String pos = grid.getPosition();
+            coordinateCounts.put(pos, coordinateCounts.getOrDefault(pos, 0) + 1);
+        }
+
+        List<String> duplicates = coordinateCounts.entrySet().stream()
+                .filter(e -> e.getValue() > 1)
+                .map(e -> e.getKey() + " (x" + e.getValue() + ")")
+                .toList();
+
+        assertTrue(duplicates.isEmpty(),
+                "Each coordinate should appear exactly once. Duplicates: " + duplicates);
+
+        // 3. ALL grids must have g_builder parameter
+        log.info("Verifying all {} grids have g_builder parameter...", createdHexGrids.size());
+        List<String> gridsWithoutBuilder = new ArrayList<>();
+
+        for (WHexGrid grid : createdHexGrids) {
+            Map<String, String> params = grid.getParameters();
+            if (params == null || !params.containsKey("g_builder")) {
+                gridsWithoutBuilder.add(grid.getPosition());
+                log.error("Grid {} has no g_builder parameter! Parameters: {}",
+                        grid.getPosition(), params);
+            }
+        }
+
+        assertTrue(gridsWithoutBuilder.isEmpty(),
+                "All grids must have g_builder parameter. Missing in: " + gridsWithoutBuilder);
+
+        // 4. Verify edge parameters were added
+        long gridsWithEdgeFlat = createdHexGrids.stream()
+                .filter(grid -> grid.getParameters() != null &&
+                        grid.getParameters().keySet().stream()
+                                .anyMatch(key -> key.startsWith("g_edge_flat_")))
+                .count();
+
+        log.info("Grids with edge_flat parameters: {}", gridsWithEdgeFlat);
+        assertTrue(gridsWithEdgeFlat > 0, "Should have added edge_flat parameters to at least some grids");
+
+        log.info("=== Full Pipeline Test Successful ===");
+        log.info("Total unique grids: {}", gridCount);
+        log.info("All grids have required g_builder parameter");
+        log.info("No duplicate coordinates");
+    }
+
+    @Test
+    public void testGenerateHexGridsWithExistingGridsUpdate() throws Exception {
+        log.info("=== Starting HexGrid Generation Test with Existing Grids (Update Mode) ===");
+
+        // Clear storage and reload with genesis composition
+        documentStorage.clear();
+        createdHexGrids.clear();
+        existingHexGridKeys.clear();
+
+        // Load genesis day2 prepared document
+        String genesisDocumentId = loadGenesisDay2PreparedDocument();
+
+        // Simulate existing grids with EMPTY or INCOMPLETE parameters
+        // This simulates the scenario where grids were created before OrphanGridFiller ran
+        log.info("Simulating existing grids with empty/incomplete parameters...");
+        existingHexGridKeys.add("ymir:hello1:0;0");
+        existingHexGridKeys.add("ymir:hello1:-1;0");
+        existingHexGridKeys.add("ymir:hello1:-2;0");
+
+        // Create job parameters
+        Map<String, String> params = new HashMap<>();
+        params.put("documentId", genesisDocumentId);
+        params.put("seed", "42");
+
+        // Create job
+        WJob job = WJob.builder()
+                .id(UUID.randomUUID().toString())
+                .worldId("ymir:hello1")
+                .executor("generator-generate-hexgrid-from-composite")
+                .parameters(params)
+                .build();
+
+        // Execute job
+        log.info("Executing hexgrid generation job (should UPDATE existing grids)...");
+        JobExecutor.JobResult result = generateJobExecutor.execute(job);
+
+        // Validate result
+        assertTrue(result.successful(), "Job should succeed: " + result.errorMessage());
+
+        // Parse result data
+        JsonNode resultNode = objectMapper.readTree(result.resultData());
+        int gridCount = resultNode.get("gridCount").asInt();
+        int createdGrids = resultNode.get("createdGrids").asInt();
+        int updatedGrids = resultNode.get("updatedGrids").asInt();
+
+        log.info("Created: {}, Updated: {}, Total: {}", createdGrids, updatedGrids, gridCount);
+
+        // Verify that some grids were updated
+        assertTrue(updatedGrids > 0, "Should have updated at least the existing grids");
+
+        // CRITICAL: Verify updated grids now have g_builder parameter
+        log.info("Verifying all {} grids have g_builder parameter after update...", createdHexGrids.size());
+
+        for (WHexGrid grid : createdHexGrids) {
+            Map<String, String> gridParams = grid.getParameters();
+            assertTrue(gridParams != null && gridParams.containsKey("g_builder"),
+                    "Grid " + grid.getPosition() + " should have g_builder parameter after update");
+        }
+
+        log.info("=== HexGrid Generation Test with Update Successful ===");
     }
 
     /**
@@ -395,6 +755,96 @@ public class GenerateHexGridFromCompositeJobTest {
     }
 
     /**
+     * Load genesis day2 prepared document with enriched composition JSON
+     * @return the documentId of the created document
+     */
+    private String loadGenesisDay2PreparedDocument() throws Exception {
+        String genesisJsonFile = "genesis-day2-prepared.json";
+        log.info("Loading genesis day2 prepared document from: {}", genesisJsonFile);
+
+        // Load genesis JSON from resources
+        ClassPathResource resource = new ClassPathResource(genesisJsonFile);
+        String documentJson = new String(
+                resource.getInputStream().readAllBytes(),
+                StandardCharsets.UTF_8);
+
+        log.info("Loaded genesis document JSON: {} characters", documentJson.length());
+
+        // Parse the document to extract enrichedCompositionJson
+        JsonNode documentNode = objectMapper.readTree(documentJson);
+        String enrichedCompositionJson = documentNode.get("enrichedCompositionJson").asText();
+
+        log.info("Extracted enriched composition JSON: {} characters", enrichedCompositionJson.length());
+
+        // Create document content (wrapped like ApplyTranslatedInstructionJobExecutor does)
+        Map<String, Object> documentContent = new HashMap<>();
+        documentContent.put("enrichedCompositionJson", enrichedCompositionJson);
+
+        // Extract compositionResult if available
+        if (documentNode.has("compositionResult")) {
+            documentContent.put("compositionResult", objectMapper.convertValue(
+                    documentNode.get("compositionResult"), Map.class));
+        } else {
+            documentContent.put("compositionResult", Map.of(
+                    "success", true,
+                    "totalGrids", 27,
+                    "totalBiomes", 3,
+                    "totalStructures", 1,
+                    "totalPoints", 2,
+                    "totalFlows", 1,
+                    "filledGrids", 69
+            ));
+        }
+
+        String content = objectMapper.writerWithDefaultPrettyPrinter()
+                .writeValueAsString(documentContent);
+
+        WorldId worldId = WorldId.of("ymir:hello1").orElseThrow();
+        String collection = "generator_composed";
+        String documentName = "genesis-composition";
+        String documentId = "genesis-day2-prepared-id";
+
+        // Create document
+        WDocument document = WDocument.builder()
+                .id(UUID.randomUUID().toString())
+                .worldId(worldId.getId())
+                .collection(collection)
+                .name(documentName)
+                .documentId(documentId)
+                .content(content)
+                .build();
+        document.touchCreate();
+
+        // Store in memory
+        String key = buildStorageKey(worldId.getId(), collection, documentName);
+        documentStorage.put(key, document);
+
+        log.info("Stored genesis day2 prepared document: documentId={}, key={}", documentId, key);
+        return documentId;
+    }
+
+    /**
+     * Setup WWorldService mock
+     */
+    private void setupWorldServiceMock() {
+        when(worldService.getByWorldId(any(WorldId.class)))
+                .thenAnswer(invocation -> {
+                    WorldId worldId = invocation.getArgument(0);
+
+                    // Create WorldInfo with hexGridSize
+                    WorldInfo publicData = WorldInfo.builder()
+                            .hexGridSize(512)  // Default hex grid size
+                            .build();
+
+                    WWorld world = WWorld.builder()
+                            .worldId(worldId.getId())
+                            .publicData(publicData)
+                            .build();
+                    return Optional.of(world);
+                });
+    }
+
+    /**
      * Setup WDocumentService mock for in-memory storage
      */
     private void setupDocumentServiceMock() {
@@ -433,6 +883,45 @@ public class GenerateHexGridFromCompositeJobTest {
 
                     return Optional.ofNullable(foundDoc);
                 });
+
+        // Mock save - store document in memory
+        when(documentService.save(any(WorldId.class), any(String.class), any(String.class), any()))
+                .thenAnswer(invocation -> {
+                    WorldId worldId = invocation.getArgument(0);
+                    String collection = invocation.getArgument(1);
+                    String documentId = invocation.getArgument(2);
+                    @SuppressWarnings("unchecked")
+                    java.util.function.Consumer<WDocument> updater = invocation.getArgument(3);
+
+                    // Find or create document
+                    WDocument doc = documentStorage.values().stream()
+                            .filter(d -> d.getDocumentId().equals(documentId) &&
+                                        d.getWorldId().equals(worldId.getId()) &&
+                                        d.getCollection().equals(collection))
+                            .findFirst()
+                            .orElseGet(() -> {
+                                WDocument newDoc = WDocument.builder()
+                                        .id(UUID.randomUUID().toString())
+                                        .worldId(worldId.getId())
+                                        .collection(collection)
+                                        .documentId(documentId)
+                                        .name(documentId)  // Use documentId as name for simplicity
+                                        .build();
+                                newDoc.touchCreate();
+                                return newDoc;
+                            });
+
+                    // Apply updates
+                    updater.accept(doc);
+
+                    // Store by name key
+                    String key = buildStorageKey(doc.getWorldId(), doc.getCollection(), doc.getName());
+                    documentStorage.put(key, doc);
+
+                    log.debug("Mock save: stored document at key={}, documentId={}", key, doc.getDocumentId());
+
+                    return doc;
+                });
     }
 
     /**
@@ -457,7 +946,14 @@ public class GenerateHexGridFromCompositeJobTest {
                 .thenAnswer(invocation -> {
                     WHexGrid grid = invocation.getArgument(0);
 
+                    // Remove existing grid with same position before adding (to handle updates)
+                    createdHexGrids.removeIf(existing ->
+                            existing.getWorldId().equals(grid.getWorldId()) &&
+                            existing.getPosition().equals(grid.getPosition()));
+
+                    // Add the updated/new grid
                     createdHexGrids.add(grid);
+
                     HexVector2 pos = grid.getPublicData().getPosition();
                     String key = grid.getWorldId() + ":" + pos.getQ() + ";" + pos.getR();
                     existingHexGridKeys.add(key);
@@ -476,8 +972,20 @@ public class GenerateHexGridFromCompositeJobTest {
 
                     String key = worldId + ":" + position;
 
+                    // Find the ACTUAL saved grid, not a new empty one
+                    Optional<WHexGrid> found = createdHexGrids.stream()
+                            .filter(g -> g.getWorldId().equals(worldId) &&
+                                         g.getPosition().equals(position))
+                            .findFirst();
+
+                    if (found.isPresent()) {
+                        return found;
+                    }
+
+                    // If not in createdHexGrids but in existingHexGridKeys (simulated existing grids)
                     if (existingHexGridKeys.contains(key)) {
-                        // Return a mock grid
+                        // Return a mock grid with EMPTY parameters to simulate the bug
+                        // where grids exist but have no g_builder
                         String[] parts = position.split(";");
                         int q = Integer.parseInt(parts[0]);
                         int r = Integer.parseInt(parts[1]);
@@ -493,12 +1001,53 @@ public class GenerateHexGridFromCompositeJobTest {
                                 .worldId(worldId)
                                 .position(position)
                                 .publicData(publicData)
+                                .parameters(new HashMap<>())  // Empty parameters to simulate bug
                                 .build();
                         return Optional.of(grid);
                     }
 
                     return Optional.empty();
                 });
+    }
+
+    /**
+     * Load genesis day2 translated document
+     * @return the documentId of the created document
+     */
+    private String loadGenesisDay2TranslatedDocument() throws Exception {
+        String translatedJsonFile = "genesis-day2-translated.json";
+        log.info("Loading genesis day2 translated document from: {}", translatedJsonFile);
+
+        // Load translated JSON from resources
+        ClassPathResource resource = new ClassPathResource(translatedJsonFile);
+        String translatedJson = new String(
+                resource.getInputStream().readAllBytes(),
+                StandardCharsets.UTF_8);
+
+        log.info("Loaded translated JSON: {} characters", translatedJson.length());
+
+        WorldId worldId = WorldId.of("ymir:hello1").orElseThrow();
+        String collection = "generator_translations";
+        String documentName = "genesis-day2-translated";
+        String documentId = "genesis-day2-translated-id";
+
+        // Create document
+        WDocument document = WDocument.builder()
+                .id(UUID.randomUUID().toString())
+                .worldId(worldId.getId())
+                .collection(collection)
+                .name(documentName)
+                .documentId(documentId)
+                .content(translatedJson)
+                .build();
+        document.touchCreate();
+
+        // Store in memory
+        String key = buildStorageKey(worldId.getId(), collection, documentName);
+        documentStorage.put(key, document);
+
+        log.info("Stored genesis day2 translated document: documentId={}, key={}", documentId, key);
+        return documentId;
     }
 
     /**

@@ -28,7 +28,7 @@ public class JobSettings {
     private void init() {
         processingEnabled = settingsService.getBoolean(
                 "job.processingEnabled",
-                true
+                false
         );
         processingIntervalMs = settingsService.getInteger(
                 "job.processingIntervalMs",

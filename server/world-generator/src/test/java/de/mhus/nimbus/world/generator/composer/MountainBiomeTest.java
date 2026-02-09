@@ -230,7 +230,6 @@ public class MountainBiomeTest {
             .worldId("test-world")
             .seed(12345L)
             .fillGaps(false)
-            .generateWHexGrids(false)
             .build()
             .compose();
 
@@ -298,7 +297,6 @@ public class MountainBiomeTest {
             .worldId("test-world")
             .seed(12345L)
             .fillGaps(false)
-            .generateWHexGrids(false)
             .build()
             .compose();
 
@@ -352,7 +350,6 @@ public class MountainBiomeTest {
             .worldId("test-world")
             .seed(12345L)
             .fillGaps(false)
-            .generateWHexGrids(false)
             .build()
             .compose();
 
@@ -406,7 +403,6 @@ public class MountainBiomeTest {
             .worldId("test-world")
             .seed(12345L)
             .fillGaps(false)
-            .generateWHexGrids(false)
             .build()
             .compose();
 
@@ -609,7 +605,6 @@ public class MountainBiomeTest {
             .worldId("test-world")
             .seed(12345L)
             .fillGaps(false)
-            .generateWHexGrids(false)
             .build()
             .compose();
 
@@ -723,7 +718,6 @@ public class MountainBiomeTest {
             .seed(12345L)
             .fillGaps(true)  // Enable fillers!
             .oceanBorderRings(1)
-            .generateWHexGrids(false)
             .build()
             .compose();
 

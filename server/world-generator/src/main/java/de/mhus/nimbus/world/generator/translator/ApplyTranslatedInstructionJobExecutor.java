@@ -1,6 +1,7 @@
 package de.mhus.nimbus.world.generator.translator;
 
 import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.shared.types.WorldId;
@@ -139,6 +140,7 @@ public class ApplyTranslatedInstructionJobExecutor implements JobExecutor {
                     long compositionSeed = seed != null ? seed : System.currentTimeMillis();
 
                     // Apply composition pipeline
+                    // WHexGrids will be generated later by GenerateHexGridFromCompositeJobExecutor in Day3
                     result = HexCompositeBuilder.builder()
                             .composition(composition)
                             .worldId(composition.getWorldId())
@@ -146,8 +148,6 @@ public class ApplyTranslatedInstructionJobExecutor implements JobExecutor {
                             .seed(compositionSeed)
                             .fillGaps(fillGaps)
                             .oceanBorderRings(oceanBorderRings)
-                            .generateWHexGrids(true)  // Generate hexGrid model data
-                            .repository(null)  // Don't save WHexGrid entities yet
                             .build()
                             .compose();
 
@@ -280,35 +280,22 @@ public class ApplyTranslatedInstructionJobExecutor implements JobExecutor {
             throw new IllegalArgumentException("Document content is empty: " + documentId);
         }
 
-        // Parse document content
-        JsonNode rootNode = objectMapper.readTree(content);
-
-        // Extract instructionsDocumentId (not the instruction text itself)
-        String instructionsDocumentId = "";
-        if (rootNode.has("compositionMetadata")) {
-            JsonNode metadata = rootNode.get("compositionMetadata");
-            if (metadata.has("instructionsDocumentId")) {
-                instructionsDocumentId = metadata.get("instructionsDocumentId").asText();
-            }
-        }
-
-        // Extract composition JSON
-        String compositionJson;
-        if (rootNode.has("compositionJson")) {
-            compositionJson = rootNode.get("compositionJson").asText();
-        } else {
-            throw new IllegalArgumentException("Document does not contain 'compositionJson' field");
-        }
-
-        // Parse composition
+        // Parse composition directly from document content (no wrapper)
         ObjectMapper compMapper = new ObjectMapper();
         compMapper.registerModule(new com.fasterxml.jackson.datatype.jsr310.JavaTimeModule());
         compMapper.enable(JsonParser.Feature.ALLOW_COMMENTS);
-        HexComposition composition = compMapper.readValue(compositionJson, HexComposition.class);
+        compMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
+        HexComposition composition = compMapper.readValue(content, HexComposition.class);
 
         if (composition == null) {
             throw new IllegalArgumentException("Failed to parse HexComposition from document");
         }
+
+        // Get instructionsDocumentId from document metadata (not from content)
+        String instructionsDocumentId = document.getMetadata() != null
+            ? document.getMetadata().get("instructionsDocumentId")
+            : "";
 
         LoadedDocument result = new LoadedDocument();
         result.composition = composition;
@@ -337,7 +324,11 @@ public class ApplyTranslatedInstructionJobExecutor implements JobExecutor {
         String documentId = UUID.randomUUID().toString();
         String documentName = sourceDocumentName;  // Same name as source document
 
-        // Create document metadata
+        // Serialize composition directly to JSON (no wrapper)
+        String compositionJson = objectMapper.writerWithDefaultPrettyPrinter()
+                .writeValueAsString(composition);
+
+        // Create document metadata (for search/filtering, not part of content)
         Map<String, String> metadata = new HashMap<>();
         metadata.put("composedAt", Instant.now().toString());
         metadata.put("compositionName", composition.getName());
@@ -349,20 +340,14 @@ public class ApplyTranslatedInstructionJobExecutor implements JobExecutor {
         metadata.put("totalFlows", String.valueOf(compositionResult.getTotalFlows()));
         metadata.put("filledGrids", String.valueOf(compositionResult.getFilledGrids()));
         metadata.put("sourceDocumentName", sourceDocumentName);
+        metadata.put("instructionsDocumentId", originalInstruction);
 
-        // Serialize enriched composition to JSON
-        String compositionJson = objectMapper.writerWithDefaultPrettyPrinter()
-                .writeValueAsString(composition);
-
-        // Build document content
-        String content = buildDocumentContent(originalInstruction, compositionJson, composition, compositionResult);
-
-        // Save document
+        // Save document with composition as direct JSON content
         WDocument document = documentService.save(wid, TranslateInstructionJobExecutor.COMPOSED_COLLECTION, documentId, doc -> {
             doc.setName(documentName);
             doc.setTitle(composition.getName() != null ? composition.getName() : "Composed World");
             doc.setFormat("json");
-            doc.setContent(content);
+            doc.setContent(compositionJson);  // Direct model JSON
             doc.setMetadata(metadata);
             doc.setType("composer-composed");
             doc.setReadOnly(false);
@@ -373,47 +358,6 @@ public class ApplyTranslatedInstructionJobExecutor implements JobExecutor {
 
         // Return document ID
         return documentId;
-    }
-
-    /**
-     * Build document content with metadata and enriched composition JSON.
-     */
-    private String buildDocumentContent(
-            String instructionsDocumentId,
-            String compositionJson,
-            HexComposition composition,
-            CompositionResult result
-    ) throws Exception {
-        Map<String, Object> documentContent = new HashMap<>();
-        documentContent.put("instructionsDocumentId", instructionsDocumentId);
-        documentContent.put("composedAt", Instant.now().toString());
-        documentContent.put("enrichedCompositionJson", compositionJson);
-
-        // Add composition metadata
-        Map<String, Object> compositionMeta = new HashMap<>();
-        compositionMeta.put("name", composition.getName());
-        compositionMeta.put("worldId", composition.getWorldId());
-        compositionMeta.put("featuresCount", composition.getFeatures() != null ? composition.getFeatures().size() : 0);
-        compositionMeta.put("continentsCount", composition.getContinents() != null ? composition.getContinents().size() : 0);
-        documentContent.put("compositionMetadata", compositionMeta);
-
-        // Add composition result summary
-        Map<String, Object> resultSummary = new HashMap<>();
-        resultSummary.put("success", result.isSuccess());
-        resultSummary.put("totalGrids", result.getTotalGrids());
-        resultSummary.put("totalBiomes", result.getTotalBiomes());
-        resultSummary.put("totalStructures", result.getTotalStructures());
-        resultSummary.put("totalPoints", result.getTotalPoints());
-        resultSummary.put("totalFlows", result.getTotalFlows());
-        resultSummary.put("filledGrids", result.getFilledGrids());
-
-        if (!result.getWarnings().isEmpty()) {
-            resultSummary.put("warnings", result.getWarnings());
-        }
-
-        documentContent.put("compositionResult", resultSummary);
-
-        return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(documentContent);
     }
 
     // Helper methods for parameter extraction
