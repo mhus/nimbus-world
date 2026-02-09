@@ -70,8 +70,8 @@ public class Day1WorldCreate extends MethodBasedWorkflow  {
                 WorldInfo.builder()
                         .chunkSize(32)
                         .hexGridSize(400)
-                        .start(TypeUtil.vector3(-1000d,0d,-1000d))
-                        .stop(TypeUtil.vector3(1000d,300d,1000d))
+                        .start(TypeUtil.vector3(-10000d,0d,-10000d))
+                        .stop(TypeUtil.vector3(10000d,300d,10000d))
                         .title("World " + worldId.getWorldName())
                         .entryPoint(
                                 WorldInfoEntryPointDTO.builder()
