@@ -11,7 +11,8 @@ public enum Day3Phase {
     TERRAIN_ALL("terrainAll", "Apply terrain manipulation to all grids"),
     FILLER_ALL("fillerAll", "Apply filler manipulation to all grids"),
     EXPORT_ALL("exportAll", "Export all grids to layers"),
-    IMAGES_ALL("imagesAll", "Export all grid images");
+    IMAGES_ALL("imagesAll", "Export all grid images"),
+    COMPOSITE_IMAGES("compositeImages", "Create composite images of entire world");
 
     private final String phaseName;
     private final String description;

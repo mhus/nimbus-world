@@ -32,7 +32,8 @@ import java.util.stream.Collectors;
  *   - "terrainAll" - Bis Terrain-Manipulation
  *   - "fillerAll" - Bis Filler-Manipulation
  *   - "exportAll" - Bis Export zu Layers
- *   - "imagesAll" - Vollständig (Default)
+ *   - "imagesAll" - Bis Export einzelner Grid-Images
+ *   - "compositeImages" - Vollständig inklusive Gesamtbildern (Default)
  *
  */
 @Service
@@ -259,6 +260,26 @@ public class Day3Generation extends MethodBasedWorkflow {
                                 "ignoreEmptyMaterial", "false"
                         ));
             }
+            case "compositeImages" -> {
+                // Only execute once (at index 0), not for each grid
+                if (index == 0) {
+                    String compositionId = (String) context.getParameters().get(GenesisConst.COMPOSITION_ID);
+                    context.updateWorkflowStatus("createCompositeImages");
+                    context.enqueueJob("hex-grid-composite-image", "", "",
+                            "Create Composite Images",
+                            Map.of(
+                                    "compositionId", compositionId,
+                                    "flatIdSuffix", "genesis_",
+                                    "flatSize", "400",
+                                    "drawGridLines", "false"
+                            ));
+                } else {
+                    // Skip remaining indices - composite images only created once
+                    state.setCurrentIndex(total);
+                    context.addRecord(state);
+                    processNextInPhase(context, state);
+                }
+            }
             default -> throw new WorkflowException(null, "Unknown phase: " + phase);
         }
     }
@@ -271,7 +292,8 @@ public class Day3Generation extends MethodBasedWorkflow {
             case "terrainAll" -> "fillerAll";
             case "fillerAll" -> "exportAll";
             case "exportAll" -> "imagesAll";
-            case "imagesAll" -> null; // All phases complete
+            case "imagesAll" -> "compositeImages";
+            case "compositeImages" -> null; // All phases complete
             default -> throw new IllegalStateException("Unknown phase: " + currentPhase);
         };
     }
@@ -308,6 +330,12 @@ public class Day3Generation extends MethodBasedWorkflow {
 
     @OnSuccess("exportImages")
     public void onExportImagesSuccess(WorkflowContext context) throws WorkflowException {
+        advanceToNextInPhase(context);
+    }
+
+    @OnSuccess("createCompositeImages")
+    public void onCreateCompositeImagesSuccess(WorkflowContext context) throws WorkflowException {
+        log.info("Composite images created successfully");
         advanceToNextInPhase(context);
     }
 

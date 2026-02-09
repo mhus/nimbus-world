@@ -46,8 +46,16 @@ public class HexGridCompositeImageCreator {
     /**
      * Map of hex coordinates to WFlat terrain data.
      * Each WFlat contains the terrain levels and materials for a single hex grid.
+     * @deprecated Use flatProvider instead for better memory efficiency
      */
+    @Deprecated
     private final Map<HexVector2, WFlat> flats;
+
+    /**
+     * Provider for loading WFlat objects on demand.
+     * Allows lazy loading of flat terrain data to avoid memory issues.
+     */
+    private final FlatProvider flatProvider;
 
     /**
      * Size of each flat/hex grid in pixels (typically 512).
@@ -116,21 +124,28 @@ public class HexGridCompositeImageCreator {
      * @throws IOException if image creation or saving fails
      */
     public CompositeImageResult createCompositeImages() throws IOException {
-        if (flats == null || flats.isEmpty()) {
-            throw new IllegalStateException("No flats provided - cannot create composite image");
+        // Determine which provider to use
+        FlatProvider provider = getEffectiveFlatProvider();
+        if (provider == null) {
+            throw new IllegalStateException("No flats or flatProvider provided - cannot create composite image");
         }
 
-        log.debug("Creating composite images from {} hex grids", flats.size());
+        int gridCount = provider.getCoordinates().size();
+        if (gridCount == 0) {
+            throw new IllegalStateException("No hex grids available - cannot create composite image");
+        }
+
+        log.debug("Creating composite images from {} hex grids", gridCount);
 
         try {
             // Calculate hex coordinate bounds
-            HexBounds bounds = calculateHexBounds();
+            HexBounds bounds = calculateHexBounds(provider);
 
             log.debug("Creating HEX composite: {}x{} grids, bounds q=[{},{}] r=[{},{}]",
                 bounds.gridWidth, bounds.gridHeight, bounds.minQ, bounds.maxQ, bounds.minR, bounds.maxR);
 
             // Calculate cartesian bounds using HexMathUtil
-            CartesianBounds cartBounds = calculateCartesianBounds();
+            CartesianBounds cartBounds = calculateCartesianBounds(provider);
 
             int imageWidth = (int) Math.ceil(cartBounds.maxX - cartBounds.minX);
             int imageHeight = (int) Math.ceil(cartBounds.maxZ - cartBounds.minZ);
@@ -148,14 +163,14 @@ public class HexGridCompositeImageCreator {
             fillBackground(materialImage, Color.BLACK);
 
             // Render each hex grid onto the composite
-            int renderedCount = renderHexGrids(levelImage, materialImage, cartBounds);
+            int renderedCount = renderHexGrids(levelImage, materialImage, cartBounds, provider);
 
-            log.debug("Rendered {} of {} grids with HEX geometry", renderedCount, flats.size());
+            log.debug("Rendered {} of {} grids with HEX geometry", renderedCount, gridCount);
 
             // Draw grid lines if enabled
             if (drawGridLines) {
-                drawHexagonGridLines(levelImage, cartBounds);
-                drawHexagonGridLines(materialImage, cartBounds);
+                drawHexagonGridLines(levelImage, cartBounds, provider);
+                drawHexagonGridLines(materialImage, cartBounds, provider);
             }
 
             // Draw overlays
@@ -182,7 +197,7 @@ public class HexGridCompositeImageCreator {
                 .imageWidth(imageWidth)
                 .imageHeight(imageHeight)
                 .renderedGridCount(renderedCount)
-                .totalGridCount(flats.size())
+                .totalGridCount(gridCount)
                 .levelFile(levelFile)
                 .materialFile(materialFile)
                 .success(true)
@@ -198,13 +213,26 @@ public class HexGridCompositeImageCreator {
     }
 
     /**
+     * Gets the effective flat provider (either flatProvider or creates one from flats map).
+     */
+    private FlatProvider getEffectiveFlatProvider() {
+        if (flatProvider != null) {
+            return flatProvider;
+        }
+        if (flats != null && !flats.isEmpty()) {
+            return new MapFlatProvider(flats);
+        }
+        return null;
+    }
+
+    /**
      * Calculates hex coordinate bounds (min/max Q and R).
      */
-    private HexBounds calculateHexBounds() {
+    private HexBounds calculateHexBounds(FlatProvider provider) {
         int minQ = Integer.MAX_VALUE, maxQ = Integer.MIN_VALUE;
         int minR = Integer.MAX_VALUE, maxR = Integer.MIN_VALUE;
 
-        for (HexVector2 coord : flats.keySet()) {
+        for (HexVector2 coord : provider.getCoordinates()) {
             minQ = Math.min(minQ, coord.getQ());
             maxQ = Math.max(maxQ, coord.getQ());
             minR = Math.min(minR, coord.getR());
@@ -217,11 +245,11 @@ public class HexGridCompositeImageCreator {
     /**
      * Calculates cartesian bounds for all hex grids.
      */
-    private CartesianBounds calculateCartesianBounds() {
+    private CartesianBounds calculateCartesianBounds(FlatProvider provider) {
         double minX = Double.MAX_VALUE, maxX = Double.MIN_VALUE;
         double minZ = Double.MAX_VALUE, maxZ = Double.MIN_VALUE;
 
-        for (HexVector2 coord : flats.keySet()) {
+        for (HexVector2 coord : provider.getCoordinates()) {
             double[] cartesian = HexMathUtil.hexToCartesian(coord, flatSize);
             double halfSize = flatSize / 2.0;
 
@@ -250,12 +278,15 @@ public class HexGridCompositeImageCreator {
      * @return Number of successfully rendered grids
      */
     private int renderHexGrids(BufferedImage levelImage, BufferedImage materialImage,
-                               CartesianBounds bounds) throws IOException {
+                               CartesianBounds bounds, FlatProvider provider) throws IOException {
         int renderedCount = 0;
 
-        for (Map.Entry<HexVector2, WFlat> entry : flats.entrySet()) {
-            HexVector2 coord = entry.getKey();
-            WFlat flat = entry.getValue();
+        for (HexVector2 coord : provider.getCoordinates()) {
+            WFlat flat = provider.getFlat(coord);
+            if (flat == null) {
+                log.warn("Flat not found for coordinate [{},{}], skipping", coord.getQ(), coord.getR());
+                continue;
+            }
 
             try {
                 renderSingleHexGrid(levelImage, materialImage, coord, flat, bounds);
@@ -320,12 +351,12 @@ public class HexGridCompositeImageCreator {
     /**
      * Draws hexagon grid lines on the composite image.
      */
-    private void drawHexagonGridLines(BufferedImage image, CartesianBounds bounds) {
+    private void drawHexagonGridLines(BufferedImage image, CartesianBounds bounds, FlatProvider provider) {
         Graphics2D g = image.createGraphics();
         g.setColor(gridLineColor);
         g.setStroke(new BasicStroke(gridLineWidth));
 
-        for (HexVector2 coord : flats.keySet()) {
+        for (HexVector2 coord : provider.getCoordinates()) {
             double[] cartesian = HexMathUtil.hexToCartesian(coord, flatSize);
             double hexCenterX = cartesian[0] - bounds.minX;
             double hexCenterZ = cartesian[1] - bounds.minZ;
