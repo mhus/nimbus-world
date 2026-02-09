@@ -236,8 +236,35 @@ public class HexGridEdgeFiller {
             int filledCount = 0;
             for (int z = area[1]; z < area[3]; z++) {
                 for (int x = area[0]; x < area[2]; x++) {
+                    // Direct mapping (no mirroring)
                     var neighborX = neighborArea[0] + (x - area[0]);
                     var neighborZ = neighborArea[1] + (z - area[1]);
+
+                    // Apply offset to compensate for 15-pixel border gap
+                    switch (direction) {
+                        case NORTH_EAST:
+                            neighborX += 15;
+                            neighborZ -= 15;
+                            break;
+                        case EAST:
+                            neighborX += 15;
+                            break;
+                        case SOUTH_EAST:
+                            neighborX += 15;
+                            neighborZ += 15;
+                            break;
+                        case SOUTH_WEST:
+                            neighborX -= 15;
+                            neighborZ += 15;
+                            break;
+                        case WEST:
+                            neighborX -= 15;
+                            break;
+                        case NORTH_WEST:
+                            neighborX -= 15;
+                            neighborZ -= 15;
+                            break;
+                    }
 
                     // check neighbor bounds
                     if (neighborX < 0 || neighborX >= neighborFlat.getSizeX() ||
@@ -247,6 +274,7 @@ public class HexGridEdgeFiller {
                     // Only fill if material is not set (==0)
                     int currentMaterial = flat.getColumn(x, z);
                     if (currentMaterial == WFlat.MATERIAL_NOT_SET || currentMaterial == WFlat.MATERIAL_NOT_SET_MUTABLE) {
+                        flat.setLevel(x, z, 200); // Set some level to mark as filled
                         // Get corresponding point from neighbor
                         var neighborLevel = neighborFlat.getLevel(neighborX, neighborZ);
                         if (neighborLevel > 0) {
