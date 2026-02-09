@@ -44,6 +44,7 @@ public class HexGridBuilderService {
 
         // Manipulator builders
         manipulatorRegistry.put("g_edgeblender", EdgeBlenderBuilder.class);
+        manipulatorRegistry.put("g_multiedgeblender", MultiEdgeBlenderBuilder.class);
         manipulatorRegistry.put("g_edgefiller", EdgeFillerBuilder.class);
         manipulatorRegistry.put("g_river", RiverBuilder.class);
         manipulatorRegistry.put("g_road", RoadBuilder.class);
@@ -100,7 +101,7 @@ public class HexGridBuilderService {
      * Create a pipeline of builders for a hex grid.
      * The pipeline consists of:
      * 1. Main builder (from g_builder parameter)
-     * 2. EdgeBlenderBuilder (always)
+     * 2. MultiEdgeBlenderBuilder (always, blends edges with neighbors for seamless transitions)
      * 3. RiverBuilder (if river parameter exists)
      * 4. RoadBuilder (if road parameter exists)
      * 5. WallBuilder (if wall parameter exists)
@@ -151,12 +152,12 @@ public class HexGridBuilderService {
             }
         }
 
-        // 2. EdgeBlenderBuilder
+        // 2. MultiEdgeBlenderBuilder (uses multi-flat blending for seamless transitions)
         if (step == STEP.ALL || step == STEP.BLENDER) {
-            Optional<HexGridBuilder> edgeBlender = createManipulator("g_edgeblender", builderParams);
+            Optional<HexGridBuilder> edgeBlender = createManipulator("g_multiedgeblender", builderParams);
             if (edgeBlender.isPresent()) {
                 pipeline.add(edgeBlender.get());
-                log.debug("Added EdgeBlenderBuilder to pipeline");
+                log.debug("Added MultiEdgeBlenderBuilder to pipeline");
             }
         }
 

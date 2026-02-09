@@ -89,4 +89,12 @@ public class CastUtil {
         }
     }
 
+    public static boolean toboolean(String edgeBlendAllSides, boolean b) {
+        if (edgeBlendAllSides == null) return b;
+        try {
+            return Boolean.parseBoolean(edgeBlendAllSides);
+        } catch (Exception e) {
+            return b;
+        }
+    }
 }
