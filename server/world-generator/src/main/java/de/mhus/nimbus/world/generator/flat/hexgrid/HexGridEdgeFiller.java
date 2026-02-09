@@ -238,6 +238,7 @@ public class HexGridEdgeFiller {
                 for (int x = area[0]; x < area[2]; x++) {
                     var neighborX = neighborArea[0] + (x - area[0]);
                     var neighborZ = neighborArea[1] + (z - area[1]);
+
                     // check neighbor bounds
                     if (neighborX < 0 || neighborX >= neighborFlat.getSizeX() ||
                         neighborZ < 0 || neighborZ >= neighborFlat.getSizeZ()) {
@@ -269,15 +270,15 @@ public class HexGridEdgeFiller {
                 case NORTH_EAST:
                     return new int[]{corner1[0], 0, sizeX, corner2[1]};
                 case EAST:
-                        return new int[]{corner1[0], corner1[1], sizeX, corner2[1]};
+                    return new int[]{corner1[0], corner1[1], sizeX, corner2[1]};
                 case SOUTH_EAST:
-                    return new int[]{corner1[0], corner1[1], sizeX, sizeZ};
+                    return new int[]{Math.min(corner1[0], corner2[0]), Math.min(corner1[1], corner2[1]), sizeX, sizeZ};
                 case SOUTH_WEST:
                     return new int[]{0, corner1[1], corner2[0], sizeZ};
                 case WEST:
                     return new int[]{0, corner1[1], corner2[0], corner2[1]};
                 case NORTH_WEST:
-                    return new int[]{0, 0, corner2[0], corner2[1]};
+                    return new int[]{0, 0, Math.max(corner1[0], corner2[0]), Math.max(corner1[1], corner2[1])};
                 default:
                     return new int[]{0, 0, sizeX, sizeZ};
             }
@@ -291,7 +292,7 @@ public class HexGridEdgeFiller {
             int sizeZ = flat.getSizeZ();
             double centerX = sizeX / 2.0;
             double centerZ = sizeZ / 2.0;
-            double radius = sizeX / 2.0;
+            double radius = context.getWorld().getPublicData().getHexGridSize() / 2.0;
 
             double angle;
             switch (side) {
@@ -330,7 +331,7 @@ public class HexGridEdgeFiller {
             int sizeZ = flat.getSizeZ();
             double centerX = sizeX / 2.0;
             double centerZ = sizeZ / 2.0;
-            double radius = sizeX / 2.0;
+            double radius = context.getWorld().getPublicData().getHexGridSize() / 2.0;
 
             double angle;
             switch (side) {
