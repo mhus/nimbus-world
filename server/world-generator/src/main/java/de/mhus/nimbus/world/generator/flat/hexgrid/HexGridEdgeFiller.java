@@ -228,6 +228,7 @@ public class HexGridEdgeFiller {
          */
         public void fill() {
             log.debug("Filling side {} with neighbor flat {}", direction, neighborFlat.getFlatId());
+            int gap = 15; // Offset to compensate for 15-pixel border gap in hex grid
 
             // Calculate the two corners of this hex side
             int[] area = getAreaForSide(direction);
@@ -243,26 +244,26 @@ public class HexGridEdgeFiller {
                     // Apply offset to compensate for 15-pixel border gap
                     switch (direction) {
                         case NORTH_EAST:
-                            neighborX += 15;
-                            neighborZ -= 15;
+                            neighborX += gap;
+                            neighborZ -= gap;
                             break;
                         case EAST:
-                            neighborX += 15;
+                            neighborX += gap;
                             break;
                         case SOUTH_EAST:
-                            neighborX += 15;
-                            neighborZ += 15;
+                            neighborX += gap;
+                            neighborZ += gap;
                             break;
                         case SOUTH_WEST:
-                            neighborX -= 15;
-                            neighborZ += 15;
+                            neighborX -= gap;
+                            neighborZ += gap;
                             break;
                         case WEST:
-                            neighborX -= 15;
+                            neighborX -= gap;
                             break;
                         case NORTH_WEST:
-                            neighborX -= 15;
-                            neighborZ -= 15;
+                            neighborX -= gap;
+                            neighborZ -= gap;
                             break;
                     }
 

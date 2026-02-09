@@ -599,6 +599,8 @@ public class HexGridEdgeBlender {
          * Returns -1 if not available in neighbor flat.
          */
         private double getNeighborHeight(int localX, int localZ) {
+            int gap = 15; // Offset to compensate for 15-pixel border gap in hex grid
+
             // Convert to world coordinates (can be outside our flat bounds)
             int worldX = flat.getMountX() + localX;
             int worldZ = flat.getMountZ() + localZ;
@@ -606,6 +608,32 @@ public class HexGridEdgeBlender {
             // Convert to neighbor coordinates
             int neighborX = worldX - neighborFlat.getMountX();
             int neighborZ = worldZ - neighborFlat.getMountZ();
+
+            // Apply offset to compensate for 15-pixel border gap
+            switch (direction) {
+                case NORTH_EAST:
+                    neighborX += gap;
+                    neighborZ -= gap;
+                    break;
+                case EAST:
+                    neighborX += gap;
+                    break;
+                case SOUTH_EAST:
+                    neighborX += gap;
+                    neighborZ += gap;
+                    break;
+                case SOUTH_WEST:
+                    neighborX -= gap;
+                    neighborZ += gap;
+                    break;
+                case WEST:
+                    neighborX -= gap;
+                    break;
+                case NORTH_WEST:
+                    neighborX -= gap;
+                    neighborZ -= gap;
+                    break;
+            }
 
             // Debug first few calls to see transformation
             if (random.nextInt(100) == 0) {
