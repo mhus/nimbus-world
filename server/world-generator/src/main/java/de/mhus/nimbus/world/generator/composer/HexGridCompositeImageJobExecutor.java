@@ -8,6 +8,8 @@ import de.mhus.nimbus.world.shared.generator.WFlatService;
 import de.mhus.nimbus.world.shared.job.JobExecutionException;
 import de.mhus.nimbus.world.shared.job.JobExecutor;
 import de.mhus.nimbus.world.shared.job.WJob;
+import de.mhus.nimbus.world.shared.world.WWorld;
+import de.mhus.nimbus.world.shared.world.WWorldService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -24,11 +26,10 @@ import java.io.IOException;
  * <p>
  * Required parameters:
  * - compositionId: ID of the composition (used in archive path)
- * - flatIdSuffix: Prefix pattern for flatIds (e.g., "genesis_" matches "genesis_0_0", "genesis_1_0", etc.)
  * <p>
  * Optional parameters:
- * - flatSize: Size of individual flats in pixels (default: 512)
  * - drawGridLines: Whether to draw hex grid lines (default: false)
+ * - flatIdSuffix: Prefix pattern for flatIds (e.g., "genesis_" matches "genesis_0_0", "genesis_1_0", etc.)
  * <p>
  * Images are stored in the archive at:
  * - "composites/{worldId}_{compositionId}_level.png"
@@ -40,10 +41,10 @@ import java.io.IOException;
 public class HexGridCompositeImageJobExecutor implements JobExecutor {
 
     private static final String EXECUTOR_NAME = "hex-grid-composite-image";
-    private static final int DEFAULT_FLAT_SIZE = 512;
 
     private final WFlatService flatService;
     private final WArchiveService archiveService;
+    private final WWorldService worldService;
 
     @Override
     public String getExecutorName() {
@@ -60,14 +61,16 @@ public class HexGridCompositeImageJobExecutor implements JobExecutor {
             WorldId.of(worldId).orElseThrow(
                     () -> new JobExecutionException("Invalid worldId: " + worldId)
             );
+            WWorld world = worldService.getByWorldId(worldId).orElseThrow();
 
             // Extract required parameters
             String compositionId = getRequiredParameter(job, "compositionId");
-            String flatIdSuffix = getRequiredParameter(job, "flatIdSuffix");
 
             // Extract optional parameters
-            int flatSize = getOptionalIntParameter(job, "flatSize", DEFAULT_FLAT_SIZE);
             boolean drawGridLines = getOptionalBooleanParameter(job, "drawGridLines", false);
+            String flatIdSuffix = getOptionalParameter(job, "flatIdSuffix", "genesis_");
+
+            int flatSize = world.getPublicData().getHexGridSize();
 
             log.info("Creating composite images: worldId={}, compositionId={}, flatIdSuffix={}, flatSize={}, drawGridLines={}",
                     worldId, compositionId, flatIdSuffix, flatSize, drawGridLines);
@@ -157,19 +160,14 @@ public class HexGridCompositeImageJobExecutor implements JobExecutor {
     }
 
     /**
-     * Get optional integer parameter from job.
+     * Get optional  parameter from job.
      */
-    private int getOptionalIntParameter(WJob job, String key, int defaultValue) {
+    private String getOptionalParameter(WJob job, String key, String defaultValue) {
         String value = job.getParameters().get(key);
         if (value == null || value.isBlank()) {
             return defaultValue;
         }
-        try {
-            return Integer.parseInt(value);
-        } catch (NumberFormatException e) {
-            log.warn("Invalid integer value for parameter {}: {}, using default: {}", key, value, defaultValue);
-            return defaultValue;
-        }
+        return value;
     }
 
     /**

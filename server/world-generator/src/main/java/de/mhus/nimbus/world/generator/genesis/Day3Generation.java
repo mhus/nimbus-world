@@ -62,9 +62,9 @@ public class Day3Generation extends MethodBasedWorkflow {
             throw new WorkflowException(null, "composition document not found: " + compositionId);
         }
 
-        // Optional targetPhase parameter - defaults to IMAGES_ALL (complete workflow)
+        // Optional targetPhase parameter - defaults to COMPOSITE_IMAGES (complete workflow including composite images)
         String targetPhaseParam = params.get(GenesisConst.TARGET_PHASE);
-        Day3Phase targetPhase = Day3Phase.IMAGES_ALL; // Default: run to completion
+        Day3Phase targetPhase = Day3Phase.COMPOSITE_IMAGES; // Default: run to completion including composite images
 
         if (!Strings.isBlank(targetPhaseParam)) {
             Day3Phase parsed = Day3Phase.fromPhaseName(targetPhaseParam);
@@ -72,7 +72,7 @@ public class Day3Generation extends MethodBasedWorkflow {
                 targetPhase = parsed;
                 log.info("Target phase set to: {} ({})", targetPhase.getPhaseName(), targetPhase.getDescription());
             } else {
-                log.warn("Invalid targetPhase parameter '{}', using default (IMAGES_ALL)", targetPhaseParam);
+                log.warn("Invalid targetPhase parameter '{}', using default (COMPOSITE_IMAGES)", targetPhaseParam);
             }
         }
 
@@ -270,7 +270,6 @@ public class Day3Generation extends MethodBasedWorkflow {
                             Map.of(
                                     "compositionId", compositionId,
                                     "flatIdSuffix", "genesis_",
-                                    "flatSize", "400",
                                     "drawGridLines", "false"
                             ));
                 } else {

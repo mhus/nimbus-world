@@ -139,19 +139,55 @@ public class GenerateHexGridFromCompositeJobExecutor implements JobExecutor {
                 de.mhus.nimbus.world.shared.world.WHexGrid wHexGrid;
 
                 if (existingOpt.isPresent()) {
-                    // Update existing grid with parameters from FilledHexGrid
+                    // Update existing grid with parameters and publicData from FilledHexGrid
                     wHexGrid = existingOpt.get();
                     wHexGrid.setParameters(new HashMap<>(params));
+
+                    // Update publicData (name, title) from sourceGrid
+                    if (sourceGrid.getPublicData() != null) {
+                        if (wHexGrid.getPublicData() == null) {
+                            wHexGrid.setPublicData(de.mhus.nimbus.generated.types.HexGrid.builder()
+                                    .position(coord)
+                                    .build());
+                        }
+
+                        // Copy name and title from sourceGrid
+                        if (sourceGrid.getPublicData().getName() != null) {
+                            wHexGrid.getPublicData().setName(sourceGrid.getPublicData().getName());
+                        }
+                        if (sourceGrid.getPublicData().getTitle() != null) {
+                            wHexGrid.getPublicData().setTitle(sourceGrid.getPublicData().getTitle());
+                        }
+                        if (sourceGrid.getPublicData().getDescription() != null) {
+                            wHexGrid.getPublicData().setDescription(sourceGrid.getPublicData().getDescription());
+                        }
+                    }
+
                     wHexGrid.touchUpdate();
 
-                    log.debug("Updated WHexGrid: {} at {} with {} parameters",
-                            composition.getWorldId(), position, params.size());
+                    log.debug("Updated WHexGrid: {} at {} with {} parameters, name={}, title={}",
+                            composition.getWorldId(), position, params.size(),
+                            wHexGrid.getPublicData() != null ? wHexGrid.getPublicData().getName() : null,
+                            wHexGrid.getPublicData() != null ? wHexGrid.getPublicData().getTitle() : null);
                     updatedGrids++;
                 } else {
                     // Create new WHexGrid entity from FilledHexGrid
                     de.mhus.nimbus.generated.types.HexGrid publicData = de.mhus.nimbus.generated.types.HexGrid.builder()
                             .position(coord)
                             .build();
+
+                    // Copy name, title, and description from sourceGrid
+                    if (sourceGrid.getPublicData() != null) {
+                        if (sourceGrid.getPublicData().getName() != null) {
+                            publicData.setName(sourceGrid.getPublicData().getName());
+                        }
+                        if (sourceGrid.getPublicData().getTitle() != null) {
+                            publicData.setTitle(sourceGrid.getPublicData().getTitle());
+                        }
+                        if (sourceGrid.getPublicData().getDescription() != null) {
+                            publicData.setDescription(sourceGrid.getPublicData().getDescription());
+                        }
+                    }
 
                     wHexGrid = de.mhus.nimbus.world.shared.world.WHexGrid.builder()
                             .worldId(composition.getWorldId())
@@ -162,8 +198,9 @@ public class GenerateHexGridFromCompositeJobExecutor implements JobExecutor {
                     wHexGrid.touchCreate();
                     wHexGrid.syncPositionKey();
 
-                    log.debug("Created WHexGrid: {} at {} with {} parameters",
-                            composition.getWorldId(), position, params.size());
+                    log.debug("Created WHexGrid: {} at {} with {} parameters, name={}, title={}",
+                            composition.getWorldId(), position, params.size(),
+                            publicData.getName(), publicData.getTitle());
                     createdGrids++;
                 }
 

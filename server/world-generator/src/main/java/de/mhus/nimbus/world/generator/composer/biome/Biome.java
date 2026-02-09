@@ -47,6 +47,32 @@ public class Biome extends Area {
 
         // Set default builder
         parameters.putIfAbsent("g_builder", type.getDefaultBuilder());
+
+        // Set default color based on biome type if not already set
+        if (!parameters.containsKey("p_color")) {
+            String defaultColor = getDefaultColorForType(type);
+            if (defaultColor != null) {
+                parameters.put("p_color", defaultColor);
+            }
+        }
+    }
+
+    /**
+     * Returns default color for a biome type.
+     */
+    private String getDefaultColorForType(BiomeType type) {
+        return switch (type) {
+            case MOUNTAINS -> "#8B7355";      // Brown
+            case FOREST -> "#228B22";         // Forest Green
+            case PLAINS -> "#90EE90";         // Light Green
+            case DESERT -> "#EDC9AF";         // Desert Sand
+            case SWAMP -> "#2F4F2F";          // Dark Green
+            case COAST -> "#F0E68C";          // Khaki (sandy coast)
+            case ISLAND -> "#98FB98";         // Pale Green
+            case OCEAN -> "#4682B4";          // Steel Blue
+            case VILLAGE -> "#DEB887";        // Burlywood
+            case TOWN -> "#CD853F";           // Peru (darker brown)
+        };
     }
 
     /**

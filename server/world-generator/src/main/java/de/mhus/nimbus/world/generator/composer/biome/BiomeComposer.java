@@ -611,7 +611,19 @@ public class BiomeComposer {
             // Create public HexGrid data
             HexGrid publicData = new HexGrid();
             publicData.setPosition(coord);
-            publicData.setName(biome.getName() + " [" + coord.getQ() + "," + coord.getR() + "]");
+
+            // Set name from biome - use biome's name as technical name
+            if (biome.getName() != null && !biome.getName().isBlank()) {
+                publicData.setName(biome.getName());
+            } else {
+                publicData.setName("hex_" + coord.getQ() + "_" + coord.getR());
+            }
+
+            // Set title from biome - use biome's title as display name
+            if (biome.getTitle() != null && !biome.getTitle().isBlank()) {
+                publicData.setTitle(biome.getTitle());
+            }
+
             publicData.setDescription("Part of " + biome.getType() + " biome");
 
             // Copy parameters from biome
@@ -623,6 +635,11 @@ public class BiomeComposer {
             // Add biome type as parameter
             parameters.put("biome", biome.getType().getDefaultBuilder());
             parameters.put("biomeName", biome.getName());
+
+            // Add biome title if available
+            if (biome.getTitle() != null && !biome.getTitle().isBlank()) {
+                parameters.put("biomeTitle", biome.getTitle());
+            }
 
             WHexGrid hexGrid = WHexGrid.builder()
                 .worldId(worldId)
@@ -647,10 +664,22 @@ public class BiomeComposer {
         // Create public HexGrid data
         HexGrid publicData = new HexGrid();
         publicData.setPosition(coord);
-        publicData.setName(biome.getName() + " [" + coord.getQ() + "," + coord.getR() + "]");
+
+        // Set name from biome - use biome's name as technical name
+        if (biome.getName() != null && !biome.getName().isBlank()) {
+            publicData.setName(biome.getName());
+        } else {
+            publicData.setName("hex_" + coord.getQ() + "_" + coord.getR());
+        }
+
+        // Set title from biome - use biome's title as display name
+        if (biome.getTitle() != null && !biome.getTitle().isBlank()) {
+            publicData.setTitle(biome.getTitle());
+        }
+
         publicData.setDescription("Part of " + biome.getType() + " biome");
 
-        // Copy parameters from biome
+        // Copy parameters from biome (includes p_color from applyDefaults)
         Map<String, String> parameters = new HashMap<>();
         if (biome.getParameters() != null) {
             parameters.putAll(biome.getParameters());
@@ -659,6 +688,11 @@ public class BiomeComposer {
         // Add biome type as parameter (use builderName for consistency with HexGridBuilderService)
         parameters.put("biome", biome.getType().getDefaultBuilder());
         parameters.put("biomeName", biome.getName());
+
+        // Add biome title if available
+        if (biome.getTitle() != null && !biome.getTitle().isBlank()) {
+            parameters.put("biomeTitle", biome.getTitle());
+        }
 
         return WHexGrid.builder()
             .worldId(worldId)
