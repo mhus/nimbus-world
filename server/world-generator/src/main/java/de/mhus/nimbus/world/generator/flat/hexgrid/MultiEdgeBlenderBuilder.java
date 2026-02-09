@@ -109,44 +109,22 @@ public class MultiEdgeBlenderBuilder extends HexGridBuilder {
             return;
         }
 
-        // Disable protection on all flats to allow edge modifications
-        boolean centerUnknownProtected = centerFlat.isUnknownProtected();
-        boolean centerBorderProtected = centerFlat.isBorderProtected();
-        HashMap<WFlat, Boolean> neighborUnknownProtected = new HashMap<>();
-        HashMap<WFlat, Boolean> neighborBorderProtected = new HashMap<>();
+        // Protection flags are NOT disabled - they protect areas outside the hexagon
+        // We only write inside the hexagon, so no need to disable protection
 
-        for (WFlat neighborFlat : loadedNeighbors.values()) {
-            neighborUnknownProtected.put(neighborFlat, neighborFlat.isUnknownProtected());
-            neighborBorderProtected.put(neighborFlat, neighborFlat.isBorderProtected());
-            neighborFlat.setUnknownProtected(false);
-            neighborFlat.setBorderProtected(false);
+        // Blend all sides simultaneously using multi-flat blender
+        HexGridMultiEdgeBlender multiEdgeBlender = new HexGridMultiEdgeBlender(
+                centerFlat, loadedNeighbors, width, context, randomness, shakeStrength, blurRadius);
+        multiEdgeBlender.blendAllEdges();
+
+        // Save all modified neighbor flats (but NOT the center flat)
+        for (var entry : loadedNeighbors.entrySet()) {
+            WFlat neighborFlat = entry.getValue();
+            context.getFlatService().update(neighborFlat);
+            log.debug("Saved modified neighbor flat for side {}: {}", entry.getKey(), neighborFlat.getFlatId());
         }
 
-        try {
-            // Blend all sides simultaneously using multi-flat blender
-            HexGridMultiEdgeBlender multiEdgeBlender = new HexGridMultiEdgeBlender(
-                    centerFlat, loadedNeighbors, width, context, randomness, shakeStrength, blurRadius);
-            multiEdgeBlender.blendAllEdges();
-
-            // Save all modified neighbor flats (but NOT the center flat)
-            for (var entry : loadedNeighbors.entrySet()) {
-                WFlat neighborFlat = entry.getValue();
-                context.getFlatService().update(neighborFlat);
-                log.debug("Saved modified neighbor flat for side {}: {}", entry.getKey(), neighborFlat.getFlatId());
-            }
-
-            log.debug("Multi-side blending completed for flat: {}", centerFlat.getFlatId());
-
-        } finally {
-            // Restore protection flags on all flats
-            centerFlat.setUnknownProtected(centerUnknownProtected);
-            centerFlat.setBorderProtected(centerBorderProtected);
-
-            for (WFlat neighborFlat : loadedNeighbors.values()) {
-                neighborFlat.setUnknownProtected(neighborUnknownProtected.get(neighborFlat));
-                neighborFlat.setBorderProtected(neighborBorderProtected.get(neighborFlat));
-            }
-        }
+        log.debug("Multi-side blending completed for flat: {}", centerFlat.getFlatId());
     }
 
     @Override

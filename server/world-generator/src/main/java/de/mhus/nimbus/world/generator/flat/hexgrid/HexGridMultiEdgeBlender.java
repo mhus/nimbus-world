@@ -4,15 +4,12 @@ import de.mhus.nimbus.world.shared.generator.WFlat;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Random;
 
 /**
  * Helper class for blending edges between multiple neighboring hex grids simultaneously.
- * Uses a projection system to automatically write to the correct flat based on world coordinates.
- * Ensures smooth transitions at hex boundaries by processing all adjacent flats together.
+ * Uses area-based blending similar to EdgeFiller but with smooth fading instead of copying.
  */
 @Slf4j
 public class HexGridMultiEdgeBlender {
@@ -25,8 +22,6 @@ public class HexGridMultiEdgeBlender {
     private final double shakeStrength;
     private final int blurRadius;
     private final Random random;
-
-    // Projection system: maps world coordinates to the appropriate flat
     private final FlatProjection projection;
 
     public HexGridMultiEdgeBlender(WFlat centerFlat, HashMap<WHexGrid.EDGE, WFlat> neighbors,
@@ -47,344 +42,219 @@ public class HexGridMultiEdgeBlender {
 
     /**
      * Blend all edges between center flat and its neighbors.
-     * Processes each edge line and writes to the appropriate flats via projection system.
      */
     public void blendAllEdges() {
         log.debug("Starting multi-edge blending for center flat: {}, neighbors: {}",
                 centerFlat.getFlatId(), neighbors.keySet());
 
-        // Process each edge
         for (var entry : neighbors.entrySet()) {
             WHexGrid.EDGE side = entry.getKey();
             WFlat neighborFlat = entry.getValue();
 
-            log.debug("Blending edge {} between center and neighbor {}",
-                    side, neighborFlat.getFlatId());
-
+            log.debug("Blending edge {} with neighbor {}", side, neighborFlat.getFlatId());
             blendEdge(side, neighborFlat);
         }
-
-        // Blur is disabled for multi-edge blending to avoid unintended side effects
-        // The blending algorithm itself provides smooth transitions
 
         log.debug("Multi-edge blending completed");
     }
 
     /**
-     * Blend a single edge between center and neighbor using distance-based fading.
-     * Professional approach: Calculate distance from each pixel to the edge line,
-     * then fade smoothly based on that distance.
+     * Blend a single edge using projection system - works in world coordinates.
+     * Uses simple perpendicular distance from edge boundary.
      */
     private void blendEdge(WHexGrid.EDGE direction, WFlat neighborFlat) {
-        // Calculate the two corners of this hex side in center flat (local coordinates)
-        int[] corner1 = getCorner1ForSide(direction);
-        int[] corner2 = getCorner2ForSide(direction);
+        // Get the edge boundary in center flat (local coordinates)
+        int[] centerArea = getAreaForSide(direction, centerFlat);
 
-        // Convert to world coordinates for the edge line
-        int worldCorner1X = centerFlat.getMountX() + corner1[0];
-        int worldCorner1Z = centerFlat.getMountZ() + corner1[1];
-        int worldCorner2X = centerFlat.getMountX() + corner2[0];
-        int worldCorner2Z = centerFlat.getMountZ() + corner2[1];
+        // Calculate edge line position (the actual boundary)
+        int edgePosition = getEdgePosition(direction, centerFlat);
 
-        log.debug("Blending edge {}: corner1=({},{}) corner2=({},{}) in world coords",
-                direction, worldCorner1X, worldCorner1Z, worldCorner2X, worldCorner2Z);
+        // Define blend zone in local coordinates
+        int blendStart, blendEnd;
+        boolean isHorizontal = (direction == WHexGrid.EDGE.EAST || direction == WHexGrid.EDGE.WEST);
 
-        // Calculate edge line vector and normal
-        double edgeDx = worldCorner2X - worldCorner1X;
-        double edgeDz = worldCorner2Z - worldCorner1Z;
-        double edgeLength = Math.sqrt(edgeDx * edgeDx + edgeDz * edgeDz);
-
-        if (edgeLength < 1.0) {
-            log.warn("Edge line length too short for side {}", direction);
-            return;
-        }
-
-        // Normalize edge direction
-        double edgeDirX = edgeDx / edgeLength;
-        double edgeDirZ = edgeDz / edgeLength;
-
-        // Calculate perpendicular normal (pointing towards center flat)
-        double normalX = -edgeDirZ;
-        double normalZ = edgeDirX;
-
-        // Determine which side is center and which is neighbor
-        // Normal should point from neighbor towards center
-        double centerX = centerFlat.getMountX() + centerFlat.getSizeX() / 2.0;
-        double centerZ = centerFlat.getMountZ() + centerFlat.getSizeZ() / 2.0;
-        double edgeMidX = (worldCorner1X + worldCorner2X) / 2.0;
-        double edgeMidZ = (worldCorner1Z + worldCorner2Z) / 2.0;
-        double toCenter = (centerX - edgeMidX) * normalX + (centerZ - edgeMidZ) * normalZ;
-        if (toCenter < 0) {
-            // Flip normal to point towards center
-            normalX = -normalX;
-            normalZ = -normalZ;
-        }
-
-        // Define blend zone: extend width pixels in both directions from edge line
-        double blendWidth = width * 1.5; // Total blend width on each side
-
-        // Calculate bounding box for the blend zone (in world coordinates)
-        double minX = Math.min(worldCorner1X, worldCorner2X) - blendWidth;
-        double maxX = Math.max(worldCorner1X, worldCorner2X) + blendWidth;
-        double minZ = Math.min(worldCorner1Z, worldCorner2Z) - blendWidth;
-        double maxZ = Math.max(worldCorner1Z, worldCorner2Z) + blendWidth;
-
-        // Extend bounding box perpendicular to edge line
-        minX -= blendWidth;
-        maxX += blendWidth;
-        minZ -= blendWidth;
-        maxZ += blendWidth;
-
-        int pixelsBlended = 0;
-
-        // Iterate over all pixels in the bounding box
-        for (int worldX = (int) Math.floor(minX); worldX <= (int) Math.ceil(maxX); worldX++) {
-            for (int worldZ = (int) Math.floor(minZ); worldZ <= (int) Math.ceil(maxZ); worldZ++) {
-
-                // Calculate signed distance from this pixel to the edge line
-                // Distance is positive on center side, negative on neighbor side
-                double signedDistance = calculateSignedDistanceToEdgeLine(
-                        worldX, worldZ,
-                        worldCorner1X, worldCorner1Z,
-                        worldCorner2X, worldCorner2Z,
-                        normalX, normalZ);
-
-                // Check if pixel is within blend zone
-                if (Math.abs(signedDistance) > blendWidth) {
-                    continue; // Outside blend zone
-                }
-
-                // Calculate blend factor based on distance
-                // 0.0 = full neighbor (negative distance)
-                // 1.0 = full center (positive distance)
-                // 0.5 = exactly on edge line (distance = 0)
-                double normalizedDistance = signedDistance / blendWidth; // Range: -1.0 to 1.0
-                double blendFactor = (normalizedDistance + 1.0) / 2.0; // Range: 0.0 to 1.0
-
-                // Apply smooth fade (smoothstep)
-                blendFactor = blendFactor * blendFactor * (3.0 - 2.0 * blendFactor);
-
-                // Add randomness for organic look
-                if (randomness > 0.1) {
-                    double noise = calculateNoiseAtPosition(worldX, worldZ, direction);
-                    blendFactor = Math.max(0.0, Math.min(1.0, blendFactor + noise * randomness * 0.1));
-                }
-
-                // Get heights from both flats
-                Integer centerHeight = projection.getLevel(worldX, worldZ);
-                if (centerHeight == null) {
-                    continue; // Pixel not in any flat
-                }
-
-                // Sample neighbor height by looking slightly towards the neighbor
-                int neighborSampleX = (int) Math.round(worldX - normalX * blendWidth * 0.5);
-                int neighborSampleZ = (int) Math.round(worldZ - normalZ * blendWidth * 0.5);
-                Integer neighborHeight = projection.getLevel(neighborSampleX, neighborSampleZ);
-                if (neighborHeight == null) {
-                    neighborHeight = centerHeight; // Fallback
-                }
-
-                // Blend heights
-                int blendedHeight = (int) Math.round(centerHeight * blendFactor + neighborHeight * (1.0 - blendFactor));
-                blendedHeight = Math.max(0, Math.min(255, blendedHeight));
-
-                // Write blended height to the appropriate flat
-                boolean written = projection.setLevel(worldX, worldZ, blendedHeight);
-                if (written) {
-                    pixelsBlended++;
-                }
+        if (isHorizontal) {
+            // For EAST/WEST, blend along X axis
+            if (direction == WHexGrid.EDGE.EAST) {
+                blendStart = edgePosition - width;
+                blendEnd = edgePosition + width;
+            } else {
+                blendStart = edgePosition - width;
+                blendEnd = edgePosition + width;
             }
+        } else {
+            // For diagonal edges, blend in both directions
+            blendStart = -width;
+            blendEnd = width;
         }
 
-        log.debug("Blended {} pixels for edge {}", pixelsBlended, direction);
-    }
+        // Convert area to world coordinates
+        int worldMinX = centerFlat.getMountX() + centerArea[0] - width;
+        int worldMinZ = centerFlat.getMountZ() + centerArea[1] - width;
+        int worldMaxX = centerFlat.getMountX() + centerArea[2] + width;
+        int worldMaxZ = centerFlat.getMountZ() + centerArea[3] + width;
 
-    /**
-     * Calculate signed distance from a point to an infinite line defined by two points.
-     * The sign is determined by the normal vector: positive if point is on normal side.
-     */
-    private double calculateSignedDistanceToEdgeLine(
-            double px, double pz,
-            double line1X, double line1Z,
-            double line2X, double line2Z,
-            double normalX, double normalZ) {
+        int blendedPixels = 0;
+        int totalPixels = 0;
+        int skippedEmpty = 0;
 
-        // Vector from line point 1 to the test point
-        double toPx = px - line1X;
-        double toPz = pz - line1Z;
+        log.debug("Blend zone for {}: world coords ({},{}) to ({},{}), edgePos={}",
+                  direction, worldMinX, worldMinZ, worldMaxX, worldMaxZ, edgePosition);
 
-        // Project onto normal to get signed distance
-        double distance = toPx * normalX + toPz * normalZ;
+        // Iterate over the blend zone in world coordinates
+        for (int worldZ = worldMinZ; worldZ < worldMaxZ; worldZ++) {
+            for (int worldX = worldMinX; worldX < worldMaxX; worldX++) {
+                totalPixels++;
 
-        return distance;
-    }
+                // Get current height via projection
+                Integer currentHeight = projection.getLevel(worldX, worldZ);
+                if (currentHeight == null || currentHeight == 0) {
+                    skippedEmpty++;
+                    continue;
+                }
 
-    /**
-     * Calculate noise value at a specific position for organic variation.
-     */
-    private double calculateNoiseAtPosition(int worldX, int worldZ, WHexGrid.EDGE side) {
-        long seed = (long) centerFlat.getMountX() * 31 + (long) centerFlat.getMountZ() * 37 + side.ordinal();
-        long hash = seed ^ ((long) worldX * 73856093) ^ ((long) worldZ * 19349663);
-        Random rnd = new Random(hash);
-        return (rnd.nextDouble() - 0.5) * 2.0; // Range: -1.0 to 1.0
-    }
+                // Calculate perpendicular distance to edge boundary
+                int localX = worldX - centerFlat.getMountX();
+                int localZ = worldZ - centerFlat.getMountZ();
 
+                double distanceToEdge;
+                if (direction == WHexGrid.EDGE.EAST) {
+                    distanceToEdge = Math.abs(localX - edgePosition);
+                } else if (direction == WHexGrid.EDGE.WEST) {
+                    distanceToEdge = Math.abs(localX - edgePosition);
+                } else {
+                    // For diagonal edges, use approximate distance
+                    distanceToEdge = calculateDiagonalDistance(localX, localZ, direction, centerFlat);
+                }
 
-    /**
-     * Apply blur effect to all modified neighbor flats.
-     * The center flat is NOT blurred here as it will be saved by the main builder.
-     */
-    private void applyBlurToAllFlats() {
-        log.debug("Applying blur with radius {} to neighbor flats only", blurRadius);
+                // Skip if outside blend zone
+                if (distanceToEdge > width) {
+                    continue;
+                }
 
-        // Only blur neighbor flats, NOT the center flat
-        // The center flat will be handled by the main builder
-        for (WFlat neighborFlat : neighbors.values()) {
-            applyBlurToFlat(neighborFlat);
-        }
-    }
+                // Calculate blend factor (0.0 = at edge, 1.0 = far from edge)
+                double blendFactor = distanceToEdge / width;
+                blendFactor = blendFactor * blendFactor * (3.0 - 2.0 * blendFactor); // smoothstep
 
-    /**
-     * Apply blur to a single flat.
-     * Uses a simple box blur for smooth transitions.
-     */
-    private void applyBlurToFlat(WFlat flat) {
-        int sizeX = flat.getSizeX();
-        int sizeZ = flat.getSizeZ();
-
-        // Create temporary buffer for blur result
-        int[][] blurred = new int[sizeX][sizeZ];
-
-        // Apply box blur to entire flat
-        for (int x = 0; x < sizeX; x++) {
-            for (int z = 0; z < sizeZ; z++) {
-                int sum = 0;
-                int count = 0;
-
-                // Sample neighbors within blur radius
-                for (int dx = -blurRadius; dx <= blurRadius; dx++) {
-                    for (int dz = -blurRadius; dz <= blurRadius; dz++) {
-                        int nx = x + dx;
-                        int nz = z + dz;
-
-                        if (nx >= 0 && nx < sizeX && nz >= 0 && nz < sizeZ) {
-                            sum += flat.getLevel(nx, nz);
-                            count++;
+                // Sample surrounding area for averaging
+                int sampleCount = 0;
+                int heightSum = 0;
+                for (int dy = -3; dy <= 3; dy++) {
+                    for (int dx = -3; dx <= 3; dx++) {
+                        Integer sampleHeight = projection.getLevel(worldX + dx, worldZ + dy);
+                        if (sampleHeight != null && sampleHeight > 0) {
+                            heightSum += sampleHeight;
+                            sampleCount++;
                         }
                     }
                 }
 
-                blurred[x][z] = count > 0 ? sum / count : flat.getLevel(x, z);
+                if (sampleCount < 3) {
+                    continue; // Not enough samples
+                }
+
+                int avgHeight = heightSum / sampleCount;
+
+                // Calculate adjustment - more aggressive blending
+                int heightDifference = avgHeight - currentHeight;
+                double adjustmentFactor = (1.0 - blendFactor) * 0.8; // Stronger effect near edge
+                double rawAdjustment = heightDifference * adjustmentFactor;
+                int adjustment = (int) Math.round(rawAdjustment);
+
+                // Apply adjustment
+                int newHeight = currentHeight + adjustment;
+                newHeight = Math.max(0, Math.min(255, newHeight));
+
+                // Write back (always write, even if adjustment is small)
+                projection.setLevel(worldX, worldZ, newHeight);
+                blendedPixels++;
             }
         }
 
-        // Write blurred values back to flat
-        for (int x = 0; x < sizeX; x++) {
-            for (int z = 0; z < sizeZ; z++) {
-                flat.setLevel(x, z, blurred[x][z]);
-            }
-        }
+        log.debug("Blended {} pixels for edge {} (total={}, empty={})",
+                  blendedPixels, direction, totalPixels, skippedEmpty);
     }
 
     /**
-     * Get first corner of the hex side (in local flat coordinates).
+     * Get the edge position (coordinate along the main axis).
      */
-    private int[] getCorner1ForSide(WHexGrid.EDGE side) {
-        int sizeX = centerFlat.getSizeX();
-        int sizeZ = centerFlat.getSizeZ();
-        double centerX = sizeX / 2.0;
-        double centerZ = sizeZ / 2.0;
-        double radius = sizeX / 2.0;
+    private int getEdgePosition(WHexGrid.EDGE direction, WFlat flat) {
+        int sizeX = flat.getSizeX();
+        int sizeZ = flat.getSizeZ();
 
-        double angle;
-        switch (side) {
-            case NORTH_EAST:
-                angle = Math.toRadians(270);
-                break;
+        switch (direction) {
             case EAST:
-                angle = Math.toRadians(330);
-                break;
-            case SOUTH_EAST:
-                angle = Math.toRadians(30);
-                break;
-            case SOUTH_WEST:
-                angle = Math.toRadians(150);
-                break;
+                return sizeX - 1;
             case WEST:
-                angle = Math.toRadians(210);
-                break;
-            case NORTH_WEST:
-                angle = Math.toRadians(270);
-                break;
-            default:
-                return new int[]{0, 0};
-        }
-
-        int x = (int) Math.round(centerX + radius * Math.cos(angle));
-        int z = (int) Math.round(centerZ + radius * Math.sin(angle));
-        return new int[]{x, z};
-    }
-
-    /**
-     * Get second corner of the hex side (in local flat coordinates).
-     */
-    private int[] getCorner2ForSide(WHexGrid.EDGE side) {
-        int sizeX = centerFlat.getSizeX();
-        int sizeZ = centerFlat.getSizeZ();
-        double centerX = sizeX / 2.0;
-        double centerZ = sizeZ / 2.0;
-        double radius = sizeX / 2.0;
-
-        double angle;
-        switch (side) {
+                return 0;
             case NORTH_EAST:
-                angle = Math.toRadians(330);
-                break;
-            case EAST:
-                angle = Math.toRadians(30);
-                break;
             case SOUTH_EAST:
-                angle = Math.toRadians(90);
-                break;
-            case SOUTH_WEST:
-                angle = Math.toRadians(90);
-                break;
-            case WEST:
-                angle = Math.toRadians(150);
-                break;
+                return sizeX - 1;
             case NORTH_WEST:
-                angle = Math.toRadians(210);
-                break;
+            case SOUTH_WEST:
+                return 0;
             default:
-                return new int[]{0, 0};
+                return sizeX / 2;
         }
-
-        int x = (int) Math.round(centerX + radius * Math.cos(angle));
-        int z = (int) Math.round(centerZ + radius * Math.sin(angle));
-        return new int[]{x, z};
     }
 
     /**
-     * Extend a point along a ray from center.
+     * Calculate distance to diagonal edge.
      */
-    private double[] extendPointAlongRay(double centerX, double centerZ, double pointX, double pointZ,
-                                          double radius, double extension) {
-        double dx = pointX - centerX;
-        double dz = pointZ - centerZ;
-        double currentDist = Math.sqrt(dx * dx + dz * dz);
+    private double calculateDiagonalDistance(int x, int z, WHexGrid.EDGE direction, WFlat flat) {
+        int[] corner1 = getCorner1ForSide(direction, flat);
+        int[] corner2 = getCorner2ForSide(direction, flat);
 
-        if (currentDist == 0) {
-            return new double[]{pointX, pointZ};
+        // Calculate perpendicular distance to line from corner1 to corner2
+        double dx = corner2[0] - corner1[0];
+        double dz = corner2[1] - corner1[1];
+        double lineLength = Math.sqrt(dx * dx + dz * dz);
+
+        if (lineLength < 1) {
+            return Math.hypot(x - corner1[0], z - corner1[1]);
         }
 
-        double dirX = dx / currentDist;
-        double dirZ = dz / currentDist;
-        double newDist = currentDist + extension;
+        // Project point onto line
+        double t = ((x - corner1[0]) * dx + (z - corner1[1]) * dz) / (lineLength * lineLength);
+        t = Math.max(0, Math.min(1, t));
 
-        double newX = centerX + dirX * newDist;
-        double newZ = centerZ + dirZ * newDist;
+        double projX = corner1[0] + t * dx;
+        double projZ = corner1[1] + t * dz;
 
-        return new double[]{newX, newZ};
+        return Math.hypot(x - projX, z - projZ);
+    }
+
+    /**
+     * Calculate distance from a pixel to the edge of the flat (perpendicular distance).
+     * Returns distance in pixels from the outer edge.
+     */
+    private double calculateDistanceFromEdge(int x, int z, WHexGrid.EDGE direction, WFlat flat) {
+        int sizeX = flat.getSizeX();
+        int sizeZ = flat.getSizeZ();
+
+        switch (direction) {
+            case NORTH_EAST:
+                // Distance from top-right edge
+                // Use minimum distance to either top or right edge
+                return Math.min(z, sizeX - 1 - x);
+            case EAST:
+                // Distance from right edge
+                return sizeX - 1 - x;
+            case SOUTH_EAST:
+                // Distance from bottom-right edge
+                return Math.min(sizeZ - 1 - z, sizeX - 1 - x);
+            case SOUTH_WEST:
+                // Distance from bottom-left edge
+                return Math.min(sizeZ - 1 - z, x);
+            case WEST:
+                // Distance from left edge
+                return x;
+            case NORTH_WEST:
+                // Distance from top-left edge
+                return Math.min(z, x);
+            default:
+                return 0;
+        }
     }
 
     /**
@@ -395,12 +265,12 @@ public class HexGridMultiEdgeBlender {
     private static class FlatProjection {
         private final WFlat centerFlat;
         private final HashMap<WHexGrid.EDGE, WFlat> neighbors;
-        private final List<WFlat> allFlats;
+        private final java.util.List<WFlat> allFlats;
 
         public FlatProjection(WFlat centerFlat, HashMap<WHexGrid.EDGE, WFlat> neighbors) {
             this.centerFlat = centerFlat;
             this.neighbors = neighbors;
-            this.allFlats = new ArrayList<>();
+            this.allFlats = new java.util.ArrayList<>();
             this.allFlats.add(centerFlat);
             this.allFlats.addAll(neighbors.values());
         }
@@ -440,12 +310,129 @@ public class HexGridMultiEdgeBlender {
                 if (localX >= 0 && localX < flat.getSizeX() &&
                     localZ >= 0 && localZ < flat.getSizeZ()) {
                     // This flat contains the coordinate
+                    int oldLevel = flat.getLevel(localX, localZ);
                     flat.setLevel(localX, localZ, level);
+
+                    // Debug: log first few writes
+                    if (writeCount++ < 5) {
+                        log.debug("Write: world({},{}) -> flat={} local({},{}) level {} -> {}",
+                                worldX, worldZ, flat.getFlatId(), localX, localZ, oldLevel, level);
+                    }
                     return true;
                 }
             }
 
             return false; // Coordinate not in any flat
         }
+
+        private int writeCount = 0;
+    }
+
+    /**
+     * Get the area (bounding box) for a side of the flat.
+     * Returns [minX, minZ, maxX, maxZ] in local flat coordinates.
+     * Based on EdgeFiller implementation.
+     */
+    private int[] getAreaForSide(WHexGrid.EDGE direction, WFlat flat) {
+        int sizeX = flat.getSizeX();
+        int sizeZ = flat.getSizeZ();
+        int[] corner1 = getCorner1ForSide(direction, flat);
+        int[] corner2 = getCorner2ForSide(direction, flat);
+
+        switch (direction) {
+            case NORTH_EAST:
+                return new int[]{corner1[0], 0, sizeX, corner2[1]};
+            case EAST:
+                return new int[]{corner1[0], corner1[1], sizeX, corner2[1]};
+            case SOUTH_EAST:
+                return new int[]{Math.min(corner1[0], corner2[0]), Math.min(corner1[1], corner2[1]), sizeX, sizeZ};
+            case SOUTH_WEST:
+                return new int[]{0, corner1[1], corner2[0], sizeZ};
+            case WEST:
+                return new int[]{0, corner1[1], corner2[0], corner2[1]};
+            case NORTH_WEST:
+                return new int[]{0, 0, Math.max(corner1[0], corner2[0]), Math.max(corner1[1], corner2[1])};
+            default:
+                return new int[]{0, 0, sizeX, sizeZ};
+        }
+    }
+
+    /**
+     * Get first corner of the hex side (in local flat coordinates).
+     * Uses the world's hex grid size, not the flat size.
+     */
+    private int[] getCorner1ForSide(WHexGrid.EDGE side, WFlat flat) {
+        int sizeX = flat.getSizeX();
+        int sizeZ = flat.getSizeZ();
+        double centerX = sizeX / 2.0;
+        double centerZ = sizeZ / 2.0;
+        double radius = context.getWorld().getPublicData().getHexGridSize() / 2.0;
+
+        double angle;
+        switch (side) {
+            case NORTH_EAST:
+                angle = Math.toRadians(270);
+                break;
+            case EAST:
+                angle = Math.toRadians(330);
+                break;
+            case SOUTH_EAST:
+                angle = Math.toRadians(30);
+                break;
+            case SOUTH_WEST:
+                angle = Math.toRadians(150);
+                break;
+            case WEST:
+                angle = Math.toRadians(210);
+                break;
+            case NORTH_WEST:
+                angle = Math.toRadians(270);
+                break;
+            default:
+                return new int[]{0, 0};
+        }
+
+        int x = (int) Math.round(centerX + radius * Math.cos(angle));
+        int z = (int) Math.round(centerZ + radius * Math.sin(angle));
+        return new int[]{x, z};
+    }
+
+    /**
+     * Get second corner of the hex side (in local flat coordinates).
+     */
+    private int[] getCorner2ForSide(WHexGrid.EDGE side, WFlat flat) {
+        int sizeX = flat.getSizeX();
+        int sizeZ = flat.getSizeZ();
+        double centerX = sizeX / 2.0;
+        double centerZ = sizeZ / 2.0;
+        double radius = context.getWorld().getPublicData().getHexGridSize() / 2.0;
+
+        double angle;
+        switch (side) {
+            case NORTH_EAST:
+                angle = Math.toRadians(330);
+                break;
+            case EAST:
+                angle = Math.toRadians(30);
+                break;
+            case SOUTH_EAST:
+                angle = Math.toRadians(90);
+                break;
+            case SOUTH_WEST:
+                angle = Math.toRadians(90);
+                break;
+            case WEST:
+                angle = Math.toRadians(150);
+                break;
+            case NORTH_WEST:
+                angle = Math.toRadians(210);
+                break;
+            default:
+                return new int[]{0, 0};
+        }
+
+        int x = (int) Math.round(centerX + radius * Math.cos(angle));
+        int z = (int) Math.round(centerZ + radius * Math.sin(angle));
+        return new int[]{x, z};
     }
 }

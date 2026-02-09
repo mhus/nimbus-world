@@ -118,19 +118,15 @@ export class FlatService {
     const formData = new FormData();
     formData.append('file', file);
 
-    const response = await fetch(
-      `${apiService.getBaseUrl()}/control/flats/${encodeURIComponent(id)}/import`,
+    return apiService.post<FlatDetail>(
+      `/control/flats/${encodeURIComponent(id)}/import`,
+      formData,
       {
-        method: 'POST',
-        body: formData,
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
       }
     );
-
-    if (!response.ok) {
-      throw new Error(`Import failed: ${response.statusText}`);
-    }
-
-    return response.json();
   }
 
   /**
