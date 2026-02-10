@@ -1,0 +1,73 @@
+{
+  "name": "Simple Village Point Test",
+  "worldId": "simple-test-village-point",
+  "continents": [
+    {
+      "continentId": "main-continent",
+      "name": "Main Continent",
+      "biomeType": "PLAINS",
+      "minNeighbors": 1,
+      "parameters": {
+        "g_offset": "5",
+        "g_roughness": "0.3"
+      }
+    }
+  ],
+  "features": [
+    {
+      "featureType": "plains-biome",
+      "name": "central-plains",
+      "title": "Central Plains",
+      "type": "PLAINS",
+      "shape": "CIRCLE",
+      "size": "MEDIUM",
+      "continentId": "main-continent",
+      "positions": [
+        {
+          "anchor": "origin",
+          "priority": 10
+        }
+      ],
+      "parameters": {
+      }
+    },
+    {
+      "featureType": "village-point",
+      "name": "test-village",
+      "title": "Test Village",
+      "biomeId": "central-plains",
+      "biomeDistance": "CENTER",
+      "style": "medieval",
+      "baseLevel": 95,
+      "fillEmptySlots": true,
+      "buildingTendency": 0.7,
+      "fillRate": 0.75,
+      "debug": false,
+      "district": {
+        "name": "village-center",
+        "title": "Village Center",
+        "slots": "MEDIUM",
+        "places": [
+          {
+            "placeType": "free",
+            "name": "marketplace",
+            "connectionPoint": false,
+            "kind": "PLAZA"
+          },
+          {
+            "placeType": "building",
+            "name": "tavern",
+            "connectionPoint": false,
+            "kind": "tavern"
+          },
+          {
+            "placeType": "road",
+            "name": "main-street",
+            "connectionPoint": true,
+            "kind": "STREET"
+          }
+        ]
+      }
+    }
+  ]
+}

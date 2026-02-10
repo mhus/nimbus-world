@@ -16,6 +16,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 
 import java.util.List;
 import java.util.Map;
@@ -32,10 +33,12 @@ import java.util.Map;
  * - PositionPoint: Standard positioning (most common)
  * - EdgePoint: Positioned at biome edges
  * - OceanEdgePoint: Positioned at ocean edges
+ * - VillagePoint: Village positioned at a point (replaces area-based Town)
  *
  * Example: Minas Tirith, Mount Doom, Village Centers, Quest Markers
  */
 @Data
+@SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(callSuper = true)
@@ -45,7 +48,8 @@ import java.util.Map;
     @JsonSubTypes.Type(value = PositionPoint.class, name = "point"),
     @JsonSubTypes.Type(value = EdgePoint.class, name = "edge"),
     @JsonSubTypes.Type(value = OceanEdgePoint.class, name = "ocean-edge"),
-    @JsonSubTypes.Type(value = TownConnectionPoint.class, name = "village-connection")
+    @JsonSubTypes.Type(value = TownConnectionPoint.class, name = "village-connection"),
+    @JsonSubTypes.Type(value = VillagePoint.class, name = "village-point")
 })
 public abstract class Point extends Feature {
 

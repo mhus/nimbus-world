@@ -126,6 +126,11 @@ public class HexCompositeBuilderSimpleTest {
         simpleContinentTest("small-town");
     }
 
+    @Test
+    public void testSimpleVillagePoint() throws Exception {
+        simpleContinentTest("village-point");
+    }
+
     public CompositionResult simpleContinentTest(String name) throws Exception {
         log.info("=== Testing %s System ===".formatted(name));
 

@@ -428,6 +428,13 @@ public class PointComposer {
 
                 log.debug("Finalized point {} at grid {} with lx={}, lz={}",
                     point.getName(), gridCoord, lx, lz);
+
+                // If this is a VillagePoint, configure the HexGrid with village data
+                if (point instanceof VillagePoint villagePoint) {
+                    villagePoint.configureHexGrid(gridCoord, context.getHexGridSize());
+                    log.debug("Configured VillagePoint {} on grid {}", point.getName(), gridCoord);
+                }
+
                 return true;
             }
         }
@@ -455,6 +462,13 @@ public class PointComposer {
 
                 log.debug("Finalized edge point {} at grid {} with lx={}, lz={}",
                     point.getName(), gridCoord, lx, lz);
+
+                // If this is a VillagePoint, configure the HexGrid with village data
+                if (point instanceof VillagePoint villagePoint) {
+                    villagePoint.configureHexGrid(gridCoord, context.getHexGridSize());
+                    log.debug("Configured VillagePoint {} on grid {}", point.getName(), gridCoord);
+                }
+
                 return true;
             }
         }

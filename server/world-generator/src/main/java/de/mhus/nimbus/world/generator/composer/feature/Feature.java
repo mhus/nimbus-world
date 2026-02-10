@@ -53,7 +53,8 @@ import java.util.UUID;
     @JsonSubTypes.Type(value = River.class, name = "river"),
     @JsonSubTypes.Type(value = Wall.class, name = "wall"),
     @JsonSubTypes.Type(value = SideWall.class, name = "sidewall"),
-    @JsonSubTypes.Type(value = Point.class, name = "point")
+    @JsonSubTypes.Type(value = Point.class, name = "point"),
+    @JsonSubTypes.Type(value = de.mhus.nimbus.world.generator.composer.point.VillagePoint.class, name = "village-point")
 })
 public abstract class Feature {
     private String featureId;
