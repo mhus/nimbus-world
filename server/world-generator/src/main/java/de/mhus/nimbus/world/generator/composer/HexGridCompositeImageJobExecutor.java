@@ -90,10 +90,10 @@ public class HexGridCompositeImageJobExecutor implements JobExecutor {
             boolean drawGridLines = getOptionalBooleanParameter(job, "drawGridLines", false);
             String flatIdSuffix = getOptionalParameter(job, "flatIdSuffix", "genesis_");
 
-            int flatSize = world.getPublicData().getHexGridSize();
+            int hexGridSize = world.getPublicData().getHexGridSize();
 
             log.info("Creating composite images: worldId={}, compositionId={}, flatIdSuffix={}, flatSize={}, drawGridLines={}",
-                    worldId, compositionId, flatIdSuffix, flatSize, drawGridLines);
+                    worldId, compositionId, flatIdSuffix, hexGridSize, drawGridLines);
 
             // Step 1: Load HexComposition from document to get FilledHexGrids
             HexComposition composition = loadComposition(worldId, compositionId);
@@ -129,12 +129,12 @@ public class HexGridCompositeImageJobExecutor implements JobExecutor {
             // Step 4: Create composite images using the provider
             HexGridCompositeImageCreator creator = HexGridCompositeImageCreator.builder()
                     .flatProvider(flatProvider)
-                    .flatSize(flatSize)
+                    .hexGridSize(hexGridSize)
                     .drawGridLines(drawGridLines)
                     .build();
 
             // Step 5: Add overlays from composition
-            addOverlaysFromComposition(creator, composition, flatProvider, hexGridsByCoord, flatSize);
+            addOverlaysFromComposition(creator, composition, flatProvider, hexGridsByCoord, hexGridSize);
 
             // Step 6: Create composite images
             HexGridCompositeImageCreator.CompositeImageResult result = creator.createCompositeImages();

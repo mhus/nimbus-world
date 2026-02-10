@@ -108,16 +108,6 @@ public class MultiEdgeBlenderBuilder extends HexGridBuilder {
             return;
         }
 
-        // DEBUG: Temporary log to verify blending is executed
-        log.info("BLENDING: Executing multi-edge blend for flat {} (hexPos={}) with {} neighbors (width={}, range={})",
-                centerFlat.getFlatId(), centerFlat.getHexGrid(), loadedNeighbors.size(), width, range);
-
-        // DEBUG: Log which neighbors were loaded and their hex positions
-        for (var entry : loadedNeighbors.entrySet()) {
-            log.info("BLENDING:   - {} neighbor: flatId={}, hexPos={}",
-                    entry.getKey(), entry.getValue().getFlatId(), entry.getValue().getHexGrid());
-        }
-
         // Protection flags are NOT disabled - they protect areas outside the hexagon
         // We only write inside the hexagon, so no need to disable protection
 

@@ -661,7 +661,7 @@ public class HexCompositeBuilderTest {
         // Use the HexGridCompositeImageCreator helper class with builder pattern
         HexGridCompositeImageCreator creator = HexGridCompositeImageCreator.builder()
             .flats(flats)
-            .flatSize(FLAT_SIZE)
+            .hexGridSize(FLAT_SIZE)
             .outputDirectory(outputDir.toString())
             .imageName(name)
             .drawGridLines(true)

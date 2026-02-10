@@ -79,7 +79,7 @@ import static org.mockito.Mockito.when;
 @Slf4j
 public class HexCompositeBuilderSimpleTest {
 
-    private static final int FLAT_SIZE = 400;
+    private static final int HEX_GRID_SIZE = 400;  // hexGridSize from world.publicData
     private static final int OCEAN_LEVEL = 50;
 
     private Path outputDir;
@@ -151,12 +151,16 @@ public class HexCompositeBuilderSimpleTest {
             mainContinent.getParameters().get("g_offset"));
 
         // Create test world with publicData for hexGridSize
-        // FlatCreateService adds +30 to hexGridSize (10px safety + 20px border)
-        // So: FLAT_SIZE = hexGridSize + 30
         WWorld testWorld = new WWorld();
+        testWorld.setWorldId("middle-earth");  // Must match the worldId in WFlats!
+        testWorld.setNoiseSeed(1474);
+        testWorld.setNoiseFrequency(0.5);
         WorldInfo publicData = new WorldInfo();
-        publicData.setHexGridSize(FLAT_SIZE - 30);  // 370 for FLAT_SIZE=400
+        publicData.setHexGridSize(HEX_GRID_SIZE);  // 400 - FlatCreateService calculates actual flat size
+        publicData.setChunkSize(32);
+
         testWorld.setPublicData(publicData);
+
 
         // Use HexCompositeBuilder for the complete pipeline
         log.info("Starting composition pipeline...");
@@ -255,18 +259,18 @@ public class HexCompositeBuilderSimpleTest {
 
         // ===== PHASE 2: GROUND - Execute GROUND builder pipeline for all grids =====
         log.info("Phase GROUND: Building basic terrain for {} grids", allGrids.size());
-        int groundCount = executePhaseForAllGrids(allGrids, flats, grids, flatService, hexGridService, index, HexGridBuilderService.STEP.GROUND, "GROUND");
+        int groundCount = executePhaseForAllGrids(allGrids, flats, grids, flatService, hexGridService, index, HexGridBuilderService.STEP.GROUND, "GROUND", testWorld);
         log.info("Phase GROUND completed: {}/{} grids processed", groundCount, allGrids.size());
 
         // ===== PHASE 3: BLENDER - Execute BLENDER pipeline for all grids =====
         log.info("Phase BLENDER: Blending edges for {} grids", flats.size());
         setupBlenderParameters(flats, grids);  // Add edge_flat parameters
-        int blenderCount = executePhaseForAllGrids(allGrids, flats, grids, flatService, hexGridService, index, HexGridBuilderService.STEP.BLENDER, "BLENDER");
+        int blenderCount = executePhaseForAllGrids(allGrids, flats, grids, flatService, hexGridService, index, HexGridBuilderService.STEP.BLENDER, "BLENDER", testWorld);
         log.info("Phase BLENDER completed: {}/{} grids processed", blenderCount, flats.size());
 
         // ===== PHASE 4: TERRAIN - Execute TERRAIN pipeline for all grids =====
         log.info("Phase TERRAIN: Applying terrain features for {} grids", allGrids.size());
-        int terrainCount = executePhaseForAllGrids(allGrids, flats, grids, flatService, hexGridService, index, HexGridBuilderService.STEP.TERRAIN, "TERRAIN");
+        int terrainCount = executePhaseForAllGrids(allGrids, flats, grids, flatService, hexGridService, index, HexGridBuilderService.STEP.TERRAIN, "TERRAIN", testWorld);
         log.info("Phase TERRAIN completed: {}/{} grids processed", terrainCount, allGrids.size());
 
         // Create composite image
@@ -371,7 +375,8 @@ public class HexCompositeBuilderSimpleTest {
                                         WHexGridService hexGridService,
                                         HexGridIndex gridIndex,
                                         HexGridBuilderService.STEP step,
-                                        String phaseName) {
+                                        String phaseName,
+                                        WWorld world) {
         int successCount = 0;
         HexGridBuilderService builderService = new HexGridBuilderService();
 
@@ -416,7 +421,7 @@ public class HexCompositeBuilderSimpleTest {
                     }
 
                     // Create context with all necessary dependencies
-                    BuilderContext context = createContext(flat, hexGrid, gridIndex, flatService, hexGridService);
+                    BuilderContext context = createContext(flat, hexGrid, gridIndex, flatService, hexGridService, world);
 
                     // Execute all builders in pipeline
                     for (HexGridBuilder builder : pipeline) {
@@ -488,7 +493,7 @@ public class HexCompositeBuilderSimpleTest {
     }
 
     private BuilderContext createContext(WFlat flat, WHexGrid hexGrid, HexGridIndex gridIndex,
-                                        WFlatService flatService, WHexGridService hexGridService) {
+                                        WFlatService flatService, WHexGridService hexGridService, WWorld world) {
         // WHexGrid is already properly configured from FilledHexGrid
 
         List<FlatManipulator> manipulators = List.of(
@@ -502,17 +507,6 @@ public class HexCompositeBuilderSimpleTest {
         FlatManipulatorService manipulatorService = new FlatManipulatorService(manipulators);
 
         WChunkService chunkService = mock(WChunkService.class);
-        WWorld world = WWorld.builder().build();
-        world.setWorldId("middle-earth");  // Must match the worldId in WFlats!
-        world.setNoiseSeed(1474);
-        world.setNoiseFrequency(0.5);
-
-        // Set publicData with hexGridSize
-        // FlatCreateService adds +30 to hexGridSize (10px safety + 20px border)
-        // So: FLAT_SIZE = hexGridSize + 30
-        WorldInfo publicData = new WorldInfo();
-        publicData.setHexGridSize(FLAT_SIZE - 30);  // 370 for FLAT_SIZE=400
-        world.setPublicData(publicData);
 
         Map<WHexGrid.EDGE, WHexGrid> neighbors = collectNeighbors(hexGrid.getPosition(), gridIndex);
 
@@ -704,174 +698,6 @@ public class HexCompositeBuilderSimpleTest {
         return new int[]{worldX, worldZ};
     }
 
-    /**
-     * Adds debug overlays for grid 0;0 showing blending coordinates.
-     */
-    private void addDebugOverlaysForGrid00(HexGridCompositeImageCreator creator, Map<HexVector2, WFlat> flats) {
-        HexVector2 grid00 = TypeUtil.hexVector2(0, 0);
-        WFlat flat = flats.get(grid00);
-        if (flat == null) {
-            log.warn("Grid 0;0 not found, cannot add debug overlays");
-            return;
-        }
-
-        // Get world position of grid 0;0
-        double[] hexCenter = HexMathUtil.hexToCartesian(grid00, FLAT_SIZE);
-        int mountX = (int) Math.floor(hexCenter[0] - FLAT_SIZE / 2.0);
-        int mountZ = (int) Math.floor(hexCenter[1] - FLAT_SIZE / 2.0);
-
-        int flatSizeX = flat.getSizeX();
-        int flatSizeZ = flat.getSizeZ();
-        double centerX = flatSizeX / 2.0;
-        double centerZ = flatSizeZ / 2.0;
-
-        // For each side, calculate and draw the blending coordinates
-        for (WHexGrid.EDGE side : new WHexGrid.EDGE[]{WHexGrid.EDGE.EAST, WHexGrid.EDGE.WEST}) {
-            // Get corner positions
-            int[] corner1 = getCorner1ForSide(side, flatSizeX, flatSizeZ);
-            int[] corner2 = getCorner2ForSide(side, flatSizeX, flatSizeZ);
-
-            // Calculate world coordinates
-            int worldC1X = mountX + corner1[0];
-            int worldC1Z = mountZ + corner1[1];
-            int worldC2X = mountX + corner2[0];
-            int worldC2Z = mountZ + corner2[1];
-
-            // Draw corner points as crosses
-            creator.addOverlay(new CrossOverlay(worldC1X, worldC1Z, 15, Color.RED, 3.0f));
-            creator.addOverlay(new CrossOverlay(worldC2X, worldC2Z, 15, Color.RED, 3.0f));
-
-            // Draw edge line
-            creator.addOverlay(new LineOverlay(worldC1X, worldC1Z, worldC2X, worldC2Z, Color.YELLOW, 3.0f));
-
-            // Calculate extended outer and inner lines (like in EdgeBlender)
-            double dist1 = Math.sqrt(Math.pow(corner1[0] - centerX, 2) + Math.pow(corner1[1] - centerZ, 2));
-            double dist2 = Math.sqrt(Math.pow(corner2[0] - centerX, 2) + Math.pow(corner2[1] - centerZ, 2));
-
-            double[] outerCorner1 = extendPointAlongRay(centerX, centerZ, corner1[0], corner1[1], dist1, 15);
-            double[] outerCorner2 = extendPointAlongRay(centerX, centerZ, corner2[0], corner2[1], dist2, 15);
-            double[] innerCorner1 = extendPointAlongRay(centerX, centerZ, corner1[0], corner1[1], dist1, -15);
-            double[] innerCorner2 = extendPointAlongRay(centerX, centerZ, corner2[0], corner2[1], dist2, -15);
-
-            // Convert to world coordinates
-            int worldOut1X = mountX + (int)outerCorner1[0];
-            int worldOut1Z = mountZ + (int)outerCorner1[1];
-            int worldOut2X = mountX + (int)outerCorner2[0];
-            int worldOut2Z = mountZ + (int)outerCorner2[1];
-            int worldIn1X = mountX + (int)innerCorner1[0];
-            int worldIn1Z = mountZ + (int)innerCorner1[1];
-            int worldIn2X = mountX + (int)innerCorner2[0];
-            int worldIn2Z = mountZ + (int)innerCorner2[1];
-
-            // Draw outer line (for sampling neighbor)
-            creator.addOverlay(new LineOverlay(worldOut1X, worldOut1Z, worldOut2X, worldOut2Z, Color.CYAN, 2.0f));
-
-            // Draw inner line (end of blending)
-            creator.addOverlay(new LineOverlay(worldIn1X, worldIn1Z, worldIn2X, worldIn2Z, Color.GREEN, 2.0f));
-
-            // Draw clamped outer line (actual start of blending)
-            double clampedOut1X = Math.max(0, Math.min(flatSizeX - 1, outerCorner1[0]));
-            double clampedOut1Z = Math.max(0, Math.min(flatSizeZ - 1, outerCorner1[1]));
-            double clampedOut2X = Math.max(0, Math.min(flatSizeX - 1, outerCorner2[0]));
-            double clampedOut2Z = Math.max(0, Math.min(flatSizeZ - 1, outerCorner2[1]));
-
-            int worldClamp1X = mountX + (int)clampedOut1X;
-            int worldClamp1Z = mountZ + (int)clampedOut1Z;
-            int worldClamp2X = mountX + (int)clampedOut2X;
-            int worldClamp2Z = mountZ + (int)clampedOut2Z;
-
-            creator.addOverlay(new LineOverlay(worldClamp1X, worldClamp1Z, worldClamp2X, worldClamp2Z, Color.MAGENTA, 4.0f));
-        }
-
-        log.info("Added debug overlays for grid 0;0 (EAST and WEST sides)");
-    }
-
-    private int[] getCorner1ForSide(WHexGrid.EDGE side, int sizeX, int sizeZ) {
-        double centerX = sizeX / 2.0;
-        double centerZ = sizeZ / 2.0;
-        double radius = sizeX / 2.0;
-
-        // Pointy-top hexagon (EAST/WEST vertical)
-        // Corners at: 30°, 90°, 150°, 210°, 270°, 330°
-        double angle;
-        switch (side) {
-            case NORTH_EAST:
-                angle = Math.toRadians(270);
-                break;
-            case EAST:
-                angle = Math.toRadians(330);
-                break;
-            case SOUTH_EAST:
-                angle = Math.toRadians(30);
-                break;
-            case SOUTH_WEST:
-                angle = Math.toRadians(150);
-                break;
-            case WEST:
-                angle = Math.toRadians(210);
-                break;
-            case NORTH_WEST:
-                angle = Math.toRadians(270);
-                break;
-            default:
-                return new int[]{0, 0};
-        }
-
-        int x = (int) Math.round(centerX + radius * Math.cos(angle));
-        int z = (int) Math.round(centerZ + radius * Math.sin(angle));
-        return new int[]{x, z};
-    }
-
-    private int[] getCorner2ForSide(WHexGrid.EDGE side, int sizeX, int sizeZ) {
-        double centerX = sizeX / 2.0;
-        double centerZ = sizeZ / 2.0;
-        double radius = sizeX / 2.0;
-
-        // Second corner for each side
-        double angle;
-        switch (side) {
-            case NORTH_EAST:
-                angle = Math.toRadians(330);
-                break;
-            case EAST:
-                angle = Math.toRadians(30);
-                break;
-            case SOUTH_EAST:
-                angle = Math.toRadians(90);
-                break;
-            case SOUTH_WEST:
-                angle = Math.toRadians(90);
-                break;
-            case WEST:
-                angle = Math.toRadians(150);
-                break;
-            case NORTH_WEST:
-                angle = Math.toRadians(210);
-                break;
-            default:
-                return new int[]{0, 0};
-        }
-
-        int x = (int) Math.round(centerX + radius * Math.cos(angle));
-        int z = (int) Math.round(centerZ + radius * Math.sin(angle));
-        return new int[]{x, z};
-    }
-
-    private double[] extendPointAlongRay(double centerX, double centerZ, double pointX, double pointZ,
-                                         double currentDist, double extension) {
-        double dx = pointX - centerX;
-        double dz = pointZ - centerZ;
-        if (currentDist == 0) {
-            return new double[]{pointX, pointZ};
-        }
-        double dirX = dx / currentDist;
-        double dirZ = dz / currentDist;
-        double newDist = currentDist + extension;
-        double newX = centerX + dirX * newDist;
-        double newZ = centerZ + dirZ * newDist;
-        return new double[]{newX, newZ};
-    }
-
     private void createCompositeImage(Map<String, WFlat> flats,
                                      HexGridFillResult fillResult,
                                      HexComposition composition,
@@ -885,27 +711,23 @@ public class HexCompositeBuilderSimpleTest {
             }
         }
 
-        // IMPORTANT: Use hexGridSize (400) like HexGridCompositeImageJobExecutor does (line 93)
-        // FlatCreateService automatically calculates actual flat size from hexGridSize
-        int hexGridSize = FLAT_SIZE;  // 400
-
         // Use the HexGridCompositeImageCreator helper class with builder pattern
         HexGridCompositeImageCreator creator = HexGridCompositeImageCreator.builder()
             .flats(flatsByCoord)
-            .flatSize(hexGridSize)  // Use hexGridSize (400)
+            .hexGridSize(HEX_GRID_SIZE)  // Use HEX_GRID_SIZE (400)
             .outputDirectory(outputDir.toString())
             .imageName(name)
             .drawGridLines(false)  // Disable grid lines to see organic blending better
             .build();
 
         // Add coordinate and biome name text overlays for all grids
-        addCoordinateTextOverlays(creator, flatsByCoord, fillResult, hexGridSize);
+        addCoordinateTextOverlays(creator, flatsByCoord, fillResult, HEX_GRID_SIZE);
 
         // Add point overlays (cross + name)
-        addPointOverlays(creator, composition, flatsByCoord, hexGridSize);
+        addPointOverlays(creator, composition, flatsByCoord, HEX_GRID_SIZE);
 
         // Add village slot overlays (cross + slot name)
-        addVillageSlotOverlays(creator, fillResult, hexGridSize);
+        addVillageSlotOverlays(creator, fillResult, HEX_GRID_SIZE);
 
         // Add debug overlays for grid 0;0
         // addDebugOverlaysForGrid00(creator, flatsByCoord);
@@ -983,7 +805,7 @@ public class HexCompositeBuilderSimpleTest {
         WWorld testWorld = new WWorld();
         testWorld.setWorldId("middle-earth");
         WorldInfo publicData = new WorldInfo();
-        publicData.setHexGridSize(FLAT_SIZE);  // hexGridSize = 400 (FlatCreateService calculates actual flat size)
+        publicData.setHexGridSize(HEX_GRID_SIZE);  // 400 - FlatCreateService calculates actual flat size
         publicData.setChunkSize(16);  // Standard chunk size
         testWorld.setPublicData(publicData);
         testWorld.setSeaLevel(OCEAN_LEVEL);

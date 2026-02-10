@@ -58,10 +58,10 @@ public class HexGridCompositeImageCreator {
     private final FlatProvider flatProvider;
 
     /**
-     * Size of each flat/hex grid in pixels (typically 512).
+     * Size of each flat/hex grid in pixels (typically 400).
      */
     @Builder.Default
-    private final int flatSize = 512;
+    private final int hexGridSize = 400;
 
     /**
      * Output directory where images will be saved.
@@ -250,8 +250,8 @@ public class HexGridCompositeImageCreator {
         double minZ = Double.MAX_VALUE, maxZ = Double.MIN_VALUE;
 
         for (HexVector2 coord : provider.getCoordinates()) {
-            double[] cartesian = HexMathUtil.hexToCartesian(coord, flatSize);
-            double halfSize = flatSize / 2.0;
+            double[] cartesian = HexMathUtil.hexToCartesian(coord, hexGridSize);
+            double halfSize = hexGridSize / 2.0;
 
             minX = Math.min(minX, cartesian[0] - halfSize);
             maxX = Math.max(maxX, cartesian[0] + halfSize);
@@ -307,7 +307,7 @@ public class HexGridCompositeImageCreator {
                                      HexVector2 coord, WFlat flat,
                                      CartesianBounds bounds) throws IOException {
         // Calculate cartesian center position
-        double[] cartesian = HexMathUtil.hexToCartesian(coord, flatSize);
+        double[] cartesian = HexMathUtil.hexToCartesian(coord, hexGridSize);
         double hexCenterX = cartesian[0] - bounds.minX;
         double hexCenterZ = cartesian[1] - bounds.minZ;
 
@@ -321,7 +321,7 @@ public class HexGridCompositeImageCreator {
         BufferedImage flatMaterialImage = ImageIO.read(new ByteArrayInputStream(materialBytes));
 
         // Render only pixels inside the hexagon
-        int halfSize = flatSize / 2;
+        int halfSize = hexGridSize / 2;
         int startX = Math.max(0, (int)(hexCenterX - halfSize));
         int endX = Math.min(levelImage.getWidth(), (int)(hexCenterX + halfSize));
         int startZ = Math.max(0, (int)(hexCenterZ - halfSize));
@@ -330,12 +330,12 @@ public class HexGridCompositeImageCreator {
         for (int z = startZ; z < endZ; z++) {
             for (int x = startX; x < endX; x++) {
                 // Check if this pixel is inside the hexagon
-                if (HexMathUtil.isPointInHex(x, z, hexCenterX, hexCenterZ, flatSize)) {
+                if (HexMathUtil.isPointInHex(x, z, hexCenterX, hexCenterZ, hexGridSize)) {
                     // Calculate source pixel coordinates in flat image
                     int flatX = (int)(x - hexCenterX + halfSize);
                     int flatZ = (int)(z - hexCenterZ + halfSize);
 
-                    if (flatX >= 0 && flatX < flatSize && flatZ >= 0 && flatZ < flatSize) {
+                    if (flatX >= 0 && flatX < hexGridSize && flatZ >= 0 && flatZ < hexGridSize) {
                         // Copy pixel from flat image to composite
                         int levelPixel = flatLevelImage.getRGB(flatX, flatZ);
                         int materialPixel = flatMaterialImage.getRGB(flatX, flatZ);
@@ -357,12 +357,12 @@ public class HexGridCompositeImageCreator {
         g.setStroke(new BasicStroke(gridLineWidth));
 
         for (HexVector2 coord : provider.getCoordinates()) {
-            double[] cartesian = HexMathUtil.hexToCartesian(coord, flatSize);
+            double[] cartesian = HexMathUtil.hexToCartesian(coord, hexGridSize);
             double hexCenterX = cartesian[0] - bounds.minX;
             double hexCenterZ = cartesian[1] - bounds.minZ;
 
             // Draw hexagon outline
-            Polygon hexagon = createHexagonPolygon(hexCenterX, hexCenterZ, flatSize);
+            Polygon hexagon = createHexagonPolygon(hexCenterX, hexCenterZ, hexGridSize);
             g.draw(hexagon);
         }
 

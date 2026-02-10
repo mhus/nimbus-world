@@ -952,7 +952,7 @@ public class WorldCompositeImageTest {
         // Use the new HexGridCompositeImageCreator helper class
         HexGridCompositeImageCreator creator = HexGridCompositeImageCreator.builder()
             .flats(flats)
-            .flatSize(FLAT_SIZE)
+            .hexGridSize(FLAT_SIZE)
             .outputDirectory(outputDir.toString())
             .imageName(name)
             .drawGridLines(true)
