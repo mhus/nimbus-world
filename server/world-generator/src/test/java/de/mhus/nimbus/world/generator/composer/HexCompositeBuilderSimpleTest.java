@@ -31,9 +31,11 @@ import de.mhus.nimbus.world.generator.flat.hexgrid.HexGridBuilder;
 import de.mhus.nimbus.world.generator.flat.hexgrid.HexGridBuilderService;
 import de.mhus.nimbus.world.generator.flat.hexgrid.HexGridIndex;
 import de.mhus.nimbus.world.shared.generator.WFlat;
+import de.mhus.nimbus.world.shared.generator.WFlatService;
 import de.mhus.nimbus.world.shared.util.HexMathUtil;
 import de.mhus.nimbus.world.shared.world.WChunkService;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
+import de.mhus.nimbus.world.shared.world.WHexGridService;
 import de.mhus.nimbus.world.shared.world.WWorld;
 import de.mhus.nimbus.generated.types.WorldInfo;
 import lombok.extern.slf4j.Slf4j;
@@ -60,7 +62,19 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 /**
- * Tests for HexCompositeBuilder - orchestrates complete composition pipeline
+ * Tests for HexCompositeBuilder - orchestrates complete composition pipeline.
+ * <p>
+ * This test uses the same architecture as Day3Generation workflow:
+ * <ol>
+ *   <li>HexCompositeBuilder.compose() - Enrichment with fillGaps and oceanBorderRings (like ApplyTranslatedInstructionJobExecutor)</li>
+ *   <li>CREATE ALL - Initialize WFlats (like FlatHexGridEmptyCreateJobExecutor)</li>
+ *   <li>GROUND - Build basic terrain using HexGridBuilderService.STEP.GROUND (like FlatManipulateJobExecutor with step=GROUND)</li>
+ *   <li>BLENDER - Blend edges using HexGridBuilderService.STEP.BLENDER (like FlatManipulateJobExecutor with step=BLENDER)</li>
+ *   <li>TERRAIN - Apply features using HexGridBuilderService.STEP.TERRAIN (like FlatManipulateJobExecutor with step=TERRAIN)</li>
+ * </ol>
+ * <p>
+ * The test uses HexGridBuilderService directly (like HexGridManipulator does) without DB service dependencies,
+ * making it a fast unit test that still validates the production code paths.
  */
 @Slf4j
 public class HexCompositeBuilderSimpleTest {
@@ -69,6 +83,7 @@ public class HexCompositeBuilderSimpleTest {
     private static final int OCEAN_LEVEL = 50;
 
     private Path outputDir;
+    private de.mhus.nimbus.world.generator.flat.FlatCreateService flatCreateService;
 
     @BeforeEach
     public void setup() throws Exception {
@@ -76,6 +91,9 @@ public class HexCompositeBuilderSimpleTest {
         outputDir = Paths.get("target/test-output/hex-composite-simple");
         Files.createDirectories(outputDir);
         log.info("Output directory: {}", outputDir.toAbsolutePath());
+
+        // Setup FlatCreateService with mocked dependencies
+        setupFlatCreateService();
     }
 
     @Test
@@ -185,60 +203,78 @@ public class HexCompositeBuilderSimpleTest {
             }
         }
 
-        // Build terrain for all grids in 3 phases
-        log.info("Building terrain for all grids in 3 phases...");
-        Map<HexVector2, WFlat> flats = new HashMap<>();
+        assertNotNull(result.getFillResult(), "Fill result should not be null");
+
+        // Build terrain for all grids using HexGridBuilderService pipeline (like Day3Generation)
+        log.info("Building terrain for all grids using production pipeline...");
+        Map<String, WFlat> flats = new HashMap<>();
+        Map<String, WHexGrid> grids = new HashMap<>();
         HexGridFillResult fillResult = result.getFillResult();
 
-        if (fillResult != null) {
-            var allGrids = fillResult.getAllGrids();
-            var index = new HexGridIndex(allGrids.stream().map(g -> g.getHexGrid()).toList());
+        var allGrids = fillResult.getAllGrids();
+        var index = new HexGridIndex(allGrids.stream().map(g -> g.getHexGrid()).toList());
 
-            // ===== PHASE 1: GROUND - Create all basic terrains =====
-            log.info("Phase 1 (GROUND): Creating basic terrain for {} grids", allGrids.size());
-            for (FilledHexGrid filled : allGrids) {
-                try {
-                    WFlat flat = buildGridTerrain(filled, index);
-                    flats.put(filled.getCoordinate(), flat);
-                } catch (Exception e) {
-                    log.warn("Phase 1 failed for grid {}: {}", filled.getCoordinate(), e.getMessage(), e);
-                }
+        // ===== PHASE 1: CREATE ALL - Initialize all WFlats with base terrain =====
+        log.info("Phase CREATE ALL: Initializing {} grids", allGrids.size());
+        for (FilledHexGrid filled : allGrids) {
+            WHexGrid hexGrid = filled.getHexGrid();
+            if (hexGrid.getParameters() == null) {
+                hexGrid.setParameters(new HashMap<>());
             }
-            log.info("Phase 1 completed: {}/{} grids created", flats.size(), allGrids.size());
-
-            // ===== PHASE 2: BLENDER - Blend all sides with neighbors =====
-            log.info("Phase 2 (BLENDER): Blending sides for {} grids", allGrids.size());
-            int blendedCount = 0;
-            for (FilledHexGrid filled : allGrids) {
-                try {
-                    blendGridSides(filled, index, flats);
-                    blendedCount++;
-                } catch (Exception e) {
-                    log.warn("Phase 2 failed for grid {}: {}", filled.getCoordinate(), e.getMessage(), e);
-                }
-            }
-            log.info("Phase 2 completed: {}/{} grids blended", blendedCount, allGrids.size());
-
-            // ===== PHASE 3: TERRAIN - Apply terrain features =====
-            log.info("Phase 3 (TERRAIN): Applying terrain features for {} grids", allGrids.size());
-            int terrainCount = 0;
-            for (FilledHexGrid filled : allGrids) {
-                try {
-                    applyTerrainFeatures(filled, index, flats);
-                    terrainCount++;
-                } catch (Exception e) {
-                    log.warn("Phase 3 failed for grid {}: {}", filled.getCoordinate(), e.getMessage(), e);
-                }
-            }
-            log.info("Phase 3 completed: {}/{} grids processed", terrainCount, allGrids.size());
-
-            // Create composite image
-            log.info("Creating %s composite image...".formatted(name));
-            createCompositeImage(flats, fillResult, composition, "continent-test-%s".formatted(name));
-
-            // Export generated model
-            exportGeneratedModel(fillResult, result.getFlowCompositionResult(), "continent-test-%s".formatted(name));
+            grids.put(filled.getCoordinate().getQ() + "_" + filled.getCoordinate().getR(), hexGrid);
         }
+        for (FilledHexGrid filled : allGrids) {
+            try {
+                WFlat flat = initializeFlat(filled);
+                flats.put("genesis_" + filled.getCoordinate().getQ() + "_" + filled.getCoordinate().getR(), flat);
+            } catch (Exception e) {
+                log.warn("CREATE failed for grid {}: {}", filled.getCoordinate(), e.getMessage(), e);
+            }
+        }
+        WFlatService flatService = mock(WFlatService.class);
+        when(flatService.findByWorldAndFlatId(any(), any())).thenAnswer(invocation -> {
+            String worldId = invocation.getArgument(0);
+            String flatId = invocation.getArgument(1);
+            return flats.get(flatId);
+        });
+        when(flatService.update(any())).thenAnswer(invocation -> {
+            WFlat updatedFlat = invocation.getArgument(0);
+            // do nothing flats.put(updatedFlat.getFlatId(), updatedFlat);
+            return updatedFlat;
+        });
+
+        WHexGridService hexGridService = mock(WHexGridService.class);
+        when(hexGridService.findByWorldIdAndPosition(any(), any())).thenAnswer(invocation -> {
+            String worldId = invocation.getArgument(0);
+            HexVector2 coord = invocation.getArgument(1);
+            return grids.get(coord.getQ() + "_" + coord.getR());
+        });
+
+
+        log.info("Phase CREATE ALL completed: {}/{} grids created", flats.size(), allGrids.size());
+
+        // ===== PHASE 2: GROUND - Execute GROUND builder pipeline for all grids =====
+        log.info("Phase GROUND: Building basic terrain for {} grids", allGrids.size());
+        int groundCount = executePhaseForAllGrids(allGrids, flats, grids, flatService, hexGridService, index, HexGridBuilderService.STEP.GROUND, "GROUND");
+        log.info("Phase GROUND completed: {}/{} grids processed", groundCount, allGrids.size());
+
+        // ===== PHASE 3: BLENDER - Execute BLENDER pipeline for all grids =====
+        log.info("Phase BLENDER: Blending edges for {} grids", flats.size());
+        setupBlenderParameters(flats, grids);  // Add edge_flat parameters
+        int blenderCount = executePhaseForAllGrids(allGrids, flats, grids, flatService, hexGridService, index, HexGridBuilderService.STEP.BLENDER, "BLENDER");
+        log.info("Phase BLENDER completed: {}/{} grids processed", blenderCount, flats.size());
+
+        // ===== PHASE 4: TERRAIN - Execute TERRAIN pipeline for all grids =====
+        log.info("Phase TERRAIN: Applying terrain features for {} grids", allGrids.size());
+        int terrainCount = executePhaseForAllGrids(allGrids, flats, grids, flatService, hexGridService, index, HexGridBuilderService.STEP.TERRAIN, "TERRAIN");
+        log.info("Phase TERRAIN completed: {}/{} grids processed", terrainCount, allGrids.size());
+
+        // Create composite image
+        log.info("Creating %s composite image...".formatted(name));
+        createCompositeImage(flats, fillResult, composition, "continent-test-%s".formatted(name));
+
+        // Export generated model
+        exportGeneratedModel(fillResult, result.getFlowCompositionResult(), "continent-test-%s".formatted(name));
 
         // Export the processed input composition model
         exportInputComposition(composition, "simple-continent-test-%s".formatted(name));
@@ -251,13 +287,44 @@ public class HexCompositeBuilderSimpleTest {
 
     // ============= Helper Methods =============
 
-    private WFlat buildGridTerrain(FilledHexGrid filled, HexGridIndex gridIndex) {
-        // Initialize level and column arrays
-        byte[] levels = new byte[FLAT_SIZE * FLAT_SIZE];
-        byte[] columns = new byte[FLAT_SIZE * FLAT_SIZE];
+    /**
+     * Initialize a WFlat for a FilledHexGrid using production FlatCreateService.
+     * This uses the exact same code as FlatHexGridEmptyCreateJobExecutor.
+     * - Positions inside the HexGrid: level 0, material 255 (NOT_SET_MUTABLE)
+     * - Positions outside the HexGrid (corners): level 0, material 0 (NOT_SET)
+     * - unknownProtected = true
+     */
+    private WFlat initializeFlat(FilledHexGrid filled) {
+        // Determine builder type (sets g_builder parameter on hexGrid)
+        determineAndSetBuilderType(filled);
 
-        // Determine builder type
+        // Generate flatId using hex coordinates (like Day3Generation does)
+        String flatId = "genesis_" + filled.getCoordinate().getQ() + "_" + filled.getCoordinate().getR();
+
+        // Use production FlatCreateService to create the flat
+        WFlat flat = flatCreateService.createEmptyHexGridFlat(
+            "middle-earth",
+            "ground",
+            flatId,
+            filled.getCoordinate().getQ(),
+            filled.getCoordinate().getR(),
+            null,  // title
+            null   // description
+        );
+
+        log.debug("Created flat using FlatCreateService for hex [{},{}]: flatId={}, size={}x{}, mount=({},{})",
+            filled.getCoordinate().getQ(), filled.getCoordinate().getR(),
+            flat.getFlatId(), flat.getSizeX(), flat.getSizeZ(), flat.getMountX(), flat.getMountZ());
+
+        return flat;
+    }
+
+    /**
+     * Determine and set g_builder parameter for a FilledHexGrid based on biome type.
+     */
+    private void determineAndSetBuilderType(FilledHexGrid filled) {
         String builderType = "island";  // Default
+
         if (filled.getHexGrid() != null && filled.getHexGrid().getParameters() != null) {
             builderType = filled.getHexGrid().getParameters().get("g_builder");
             if (builderType == null) {
@@ -282,8 +349,6 @@ public class HexCompositeBuilderSimpleTest {
                 case ISLAND -> BiomeType.ISLAND.getBuilderName();
                 case TOWN -> BiomeType.TOWN.getBuilderName();
             };
-        } else {
-            builderType = BiomeType.COAST.getBuilderName();
         }
 
         // Set g_builder parameter on hexGrid
@@ -291,170 +356,124 @@ public class HexCompositeBuilderSimpleTest {
             filled.getHexGrid().setParameters(new HashMap<>());
         }
         filled.getHexGrid().getParameters().put("g_builder", builderType);
-
-        // Initialize with base terrain based on type
-        int baseLevel = getBuilderBaseLevel(builderType);
-        for (int i = 0; i < levels.length; i++) {
-            levels[i] = (byte) baseLevel;
-            columns[i] = 0;
-        }
-
-        // Generate unique flatId using UUID based on coordinate
-        String flatId = "flat-" + java.util.UUID.nameUUIDFromBytes(
-            (filled.getCoordinate().getQ() + ":" + filled.getCoordinate().getR()).getBytes()
-        );
-
-        // Calculate mount position from hex coordinates
-        // The flat should be positioned in world coordinates matching the hex position
-        // Use FlatCreateService logic: calculate hex center and then top-left corner of bounding box
-        // For FLAT_SIZE=400, we use a hex gridSize that fits well
-        int gridSize = 370; // Hex grid size that fits with FLAT_SIZE=400 and 15px borders
-        double[] hexCenter = HexMathUtil.hexToCartesian(filled.getCoordinate(), gridSize);
-
-        // Calculate mount as top-left corner of the FLAT_SIZE bounding box
-        int mountX = (int) Math.floor(hexCenter[0] - FLAT_SIZE / 2.0);
-        int mountZ = (int) Math.floor(hexCenter[1] - FLAT_SIZE / 2.0);
-
-        log.debug("Hex [{},{}] center=({},{}) -> mount=({},{}) with FLAT_SIZE={}",
-            filled.getCoordinate().getQ(), filled.getCoordinate().getR(),
-            hexCenter[0], hexCenter[1], mountX, mountZ, FLAT_SIZE);
-
-        WFlat flat = WFlat.builder()
-            .flatId(flatId)
-            .worldId("middle-earth")
-            .layerDataId("test-layer")
-            .hexGrid(filled.getCoordinate())
-            .sizeX(FLAT_SIZE)
-            .sizeZ(FLAT_SIZE)
-            .seaLevel(OCEAN_LEVEL)
-            .mountX(mountX)
-            .mountZ(mountZ)
-            .levels(levels)
-            .columns(columns)
-            .extraBlocks(new HashMap<>())
-            .materials(new HashMap<>())
-            .unknownProtected(false)
-            .borderProtected(false)
-            .build();
-
-        // ===== PHASE 1: GROUND - Create basic terrain =====
-        log.debug("Phase 1 (GROUND): Building basic terrain for grid [{},{}]",
-            filled.getCoordinate().getQ(), filled.getCoordinate().getR());
-
-        try {
-            HexGridBuilderService builderService = new HexGridBuilderService();
-            List<HexGridBuilder> groundPipeline = builderService.createBuilderPipeline(
-                filled.getHexGrid(), HexGridBuilderService.STEP.GROUND);
-
-            if (!groundPipeline.isEmpty()) {
-                BuilderContext context = createContext(flat, filled.getHexGrid(), gridIndex, null);
-                for (HexGridBuilder builder : groundPipeline) {
-                    builder.setContext(context);
-                    builder.buildFlat();
-                }
-            }
-        } catch (Exception e) {
-            log.warn("Phase 1 (GROUND) failed for grid [{},{}]: {}",
-                filled.getCoordinate().getQ(), filled.getCoordinate().getR(),
-                e.getMessage(), e);
-        }
-
-        return flat;
     }
 
     /**
-     * Phase 2: BLENDER - Blend sides with neighbors
-     * Must be called after all flats are created in Phase 1
+     * Execute a specific pipeline phase (GROUND, BLENDER, TERRAIN) for all grids.
+     * This replicates what HexGridManipulator does when called via FlatManipulateJobExecutor.
+     *
+     * @return Number of grids successfully processed
      */
-    private void blendGridSides(FilledHexGrid filled, HexGridIndex gridIndex,
-                                Map<HexVector2, WFlat> allFlats) {
-        WFlat flat = allFlats.get(filled.getCoordinate());
-        if (flat == null) {
-            log.warn("Flat not found for grid [{},{}] in Phase 2",
-                filled.getCoordinate().getQ(), filled.getCoordinate().getR());
-            return;
-        }
+    private int executePhaseForAllGrids(List<FilledHexGrid> allGrids,
+                                        Map<String, WFlat> flats,
+                                        Map<String, WHexGrid> grids,
+                                        WFlatService flatService,
+                                        WHexGridService hexGridService,
+                                        HexGridIndex gridIndex,
+                                        HexGridBuilderService.STEP step,
+                                        String phaseName) {
+        int successCount = 0;
+        HexGridBuilderService builderService = new HexGridBuilderService();
 
-        log.debug("Phase 2 (BLENDER): Blending sides for grid [{},{}]",
-            filled.getCoordinate().getQ(), filled.getCoordinate().getR());
+        // Iterate over flats map to avoid processing duplicates
+        for (Map.Entry<String, WFlat> entry : flats.entrySet()) {
+            String flatKey = entry.getKey();
+            WFlat flat = entry.getValue();
 
-        // Set neighbor flat IDs as parameters
-        WHexGrid hexGrid = filled.getHexGrid();
-        if (hexGrid.getParameters() == null) {
-            hexGrid.setParameters(new HashMap<>());
-        }
-
-        for (WHexGrid.EDGE side : WHexGrid.EDGE.values()) {
-            HexVector2 neighborPos = HexMathUtil.getNeighborPosition(filled.getCoordinate(), side);
-            WFlat neighborFlat = allFlats.get(neighborPos);
-            if (neighborFlat != null) {
-                // Set parameter for EdgeBlenderBuilder
-                String paramKey = "g_edge_flat_" + side.name().toLowerCase();
-                hexGrid.getParameters().put(paramKey, neighborFlat.getFlatId());
-                log.trace("Set {} = {} for grid [{},{}]",
-                    paramKey, neighborFlat.getFlatId(),
-                    filled.getCoordinate().getQ(), filled.getCoordinate().getR());
+            // Get hex coordinate from flat
+            HexVector2 coord = flat.getHexGrid();
+            if (coord == null) {
+                log.warn("{} phase: Flat {} has no hex coordinate", phaseName, flatKey);
+                continue;
             }
-        }
 
-        // Set blend width and randomness (optional, defaults are width=20, randomness=0.5)
-        hexGrid.getParameters().put("g_edge_blend_width", "30");
-        hexGrid.getParameters().put("g_edge_blend_randomness", "0.6");  // Higher randomness for organic edges: 0.0=none, 1.0=full
-        hexGrid.getParameters().put("g_edge_shake_strength", "0.2");    // Shake effect for organic look: 0.0=none, 1.0=full
-        hexGrid.getParameters().put("g_edge_blur_radius", "1");         // Blur radius for smooth transitions: 0=none, 1-5=blur
+            // Get WHexGrid for this coordinate
+            String gridKey = coord.getQ() + "_" + coord.getR();
+            WHexGrid hexGrid = grids.get(gridKey);
+            if (hexGrid == null) {
+                log.warn("{} phase: WHexGrid not found for coordinate [{},{}]", phaseName, coord.getQ(), coord.getR());
+                continue;
+            }
 
-        // Apply blender pipeline
-        try {
-            HexGridBuilderService builderService = new HexGridBuilderService();
-            List<HexGridBuilder> blenderPipeline = builderService.createBuilderPipeline(
-                hexGrid, HexGridBuilderService.STEP.BLENDER);
+            try {
+                // Create builder pipeline for this step (like HexGridManipulator)
+                List<HexGridBuilder> pipeline = builderService.createBuilderPipeline(hexGrid, step);
 
-            if (!blenderPipeline.isEmpty()) {
-                BuilderContext context = createContext(flat, hexGrid, gridIndex, allFlats);
-                for (HexGridBuilder builder : blenderPipeline) {
-                    builder.setContext(context);
-                    builder.buildFlat();
+                if (!pipeline.isEmpty()) {
+                    // Debug: Log pipeline builders and parameters for first grid in BLENDER phase
+                    if (step == HexGridBuilderService.STEP.BLENDER && successCount == 0) {
+                        log.info("BLENDER pipeline for first grid [{},{}]: {} builders",
+                            coord.getQ(), coord.getR(),
+                            pipeline.stream().map(b -> b.getClass().getSimpleName()).toList());
+
+                        // Log edge_flat parameters
+                        Map<String, String> params = hexGrid.getParameters();
+                        log.info("Grid [{},{}] edge_flat parameters: {}",
+                            coord.getQ(), coord.getR(),
+                            params.entrySet().stream()
+                                .filter(e -> e.getKey().contains("edge_flat"))
+                                .collect(java.util.stream.Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
+                    }
+
+                    // Create context with all necessary dependencies
+                    BuilderContext context = createContext(flat, hexGrid, gridIndex, flatService, hexGridService);
+
+                    // Execute all builders in pipeline
+                    for (HexGridBuilder builder : pipeline) {
+                        builder.setContext(context);
+                        builder.buildFlat();
+                    }
+
+                    log.debug("{} phase completed for grid [{},{}] with {} builders",
+                        phaseName, coord.getQ(), coord.getR(),
+                        pipeline.size());
+                    successCount++;
                 }
+            } catch (Exception e) {
+                log.warn("{} phase failed for grid [{},{}]: {}",
+                    phaseName, coord.getQ(), coord.getR(),
+                    e.getMessage(), e);
             }
-        } catch (Exception e) {
-            log.warn("Phase 2 (BLENDER) failed for grid [{},{}]: {}",
-                filled.getCoordinate().getQ(), filled.getCoordinate().getR(),
-                e.getMessage(), e);
         }
+
+        return successCount;
     }
 
     /**
-     * Phase 3: TERRAIN - Apply terrain features (rivers, roads, etc.)
+     * Setup blender parameters for all grids.
+     * Sets edge_flat parameters to reference neighbor flats, and configures blend parameters.
+     * This replicates what GenerateHexGridFromCompositeJobExecutor does.
      */
-    private void applyTerrainFeatures(FilledHexGrid filled, HexGridIndex gridIndex,
-                                     Map<HexVector2, WFlat> allFlats) {
-        WFlat flat = allFlats.get(filled.getCoordinate());
-        if (flat == null) {
-            log.warn("Flat not found for grid [{},{}] in Phase 3",
-                filled.getCoordinate().getQ(), filled.getCoordinate().getR());
-            return;
-        }
+    private void setupBlenderParameters(Map<String, WFlat> flats, Map<String, WHexGrid> grids) {
+        int totalNeighbors = 0;
+        // Iterate over grids map to avoid processing duplicates
+        for (Map.Entry<String, WHexGrid> entry : grids.entrySet()) {
+            WHexGrid hexGrid = entry.getValue();
+            if (hexGrid.getParameters() == null) {
+                hexGrid.setParameters(new HashMap<>());
+            }
 
-        log.debug("Phase 3 (TERRAIN): Applying terrain features for grid [{},{}]",
-            filled.getCoordinate().getQ(), filled.getCoordinate().getR());
+            // Get coordinate from hexGrid
+            HexVector2 coord = TypeUtil.parseHexCoord(hexGrid.getPosition());
 
-        try {
-            HexGridBuilderService builderService = new HexGridBuilderService();
-            List<HexGridBuilder> terrainPipeline = builderService.createBuilderPipeline(
-                filled.getHexGrid(), HexGridBuilderService.STEP.TERRAIN);
-
-            if (!terrainPipeline.isEmpty()) {
-                BuilderContext context = createContext(flat, filled.getHexGrid(), gridIndex, allFlats);
-                for (HexGridBuilder builder : terrainPipeline) {
-                    builder.setContext(context);
-                    builder.buildFlat();
+            // Set neighbor flat IDs for each side
+            int neighborsForThisGrid = 0;
+            for (WHexGrid.EDGE side : WHexGrid.EDGE.values()) {
+                HexVector2 neighborPos = HexMathUtil.getNeighborPosition(coord, side);
+                String neighborFlatKey = "genesis_" + neighborPos.getQ() + "_" + neighborPos.getR();
+                WFlat neighborFlat = flats.get(neighborFlatKey);
+                if (neighborFlat != null) {
+                    String paramKey = "g_edge_flat_" + side.name().toLowerCase();
+                    hexGrid.getParameters().put(paramKey, neighborFlat.getFlatId());
+                    neighborsForThisGrid++;
                 }
             }
-        } catch (Exception e) {
-            log.warn("Phase 3 (TERRAIN) failed for grid [{},{}]: {}",
-                filled.getCoordinate().getQ(), filled.getCoordinate().getR(),
-                e.getMessage(), e);
+            if (neighborsForThisGrid > 0) {
+                totalNeighbors += neighborsForThisGrid;
+            }
+
         }
+        log.info("Setup blender parameters: {} neighbor edges configured for {} grids", totalNeighbors, grids.size());
     }
 
     private int getBuilderBaseLevel(String builderType) {
@@ -469,7 +488,7 @@ public class HexCompositeBuilderSimpleTest {
     }
 
     private BuilderContext createContext(WFlat flat, WHexGrid hexGrid, HexGridIndex gridIndex,
-                                        Map<HexVector2, WFlat> allFlats) {
+                                        WFlatService flatService, WHexGridService hexGridService) {
         // WHexGrid is already properly configured from FilledHexGrid
 
         List<FlatManipulator> manipulators = List.of(
@@ -484,6 +503,7 @@ public class HexCompositeBuilderSimpleTest {
 
         WChunkService chunkService = mock(WChunkService.class);
         WWorld world = WWorld.builder().build();
+        world.setWorldId("middle-earth");  // Must match the worldId in WFlats!
         world.setNoiseSeed(1474);
         world.setNoiseFrequency(0.5);
 
@@ -495,20 +515,6 @@ public class HexCompositeBuilderSimpleTest {
         world.setPublicData(publicData);
 
         Map<WHexGrid.EDGE, WHexGrid> neighbors = collectNeighbors(hexGrid.getPosition(), gridIndex);
-
-        // Mock WFlatService for Phase 2 (BLENDER)
-        de.mhus.nimbus.world.shared.generator.WFlatService flatService = null;
-        if (allFlats != null) {
-            flatService = mock(de.mhus.nimbus.world.shared.generator.WFlatService.class);
-            // Setup mock to return flats by flatId
-            when(flatService.findByWorldAndFlatId(any(), any())).thenAnswer(invocation -> {
-                String flatId = invocation.getArgument(1);
-                return allFlats.values().stream()
-                    .filter(f -> f.getFlatId().equals(flatId))
-                    .findFirst()
-                    .orElse(null);
-            });
-        }
 
         // Create HexGridBuilderService
         HexGridBuilderService builderService = new HexGridBuilderService();
@@ -540,7 +546,7 @@ public class HexCompositeBuilderSimpleTest {
      * Adds text overlays showing coordinates and biome names for all grids.
      */
     private void addCoordinateTextOverlays(HexGridCompositeImageCreator creator, Map<HexVector2, WFlat> flats,
-                                           HexGridFillResult fillResult) {
+                                           HexGridFillResult fillResult, int hexGridSize) {
         // Build map of coordinate to biome name
         Map<String, String> coordToBiomeName = new HashMap<>();
         if (fillResult != null && fillResult.getAllGrids() != null) {
@@ -565,7 +571,7 @@ public class HexCompositeBuilderSimpleTest {
             String coordText = coord.getQ() + "," + coord.getR();
 
             // Calculate center position of hex grid in world coordinates
-            double[] hexCenter = HexMathUtil.hexToCartesian(coord, FLAT_SIZE);
+            double[] hexCenter = HexMathUtil.hexToCartesian(coord, hexGridSize);
             int centerX = (int) Math.floor(hexCenter[0]);
             int centerY = (int) Math.floor(hexCenter[1]);
 
@@ -589,7 +595,7 @@ public class HexCompositeBuilderSimpleTest {
      * Adds overlays for all composed points showing their positions and names.
      */
     private void addPointOverlays(HexGridCompositeImageCreator creator, HexComposition composition,
-                                 Map<HexVector2, WFlat> flats) {
+                                 Map<HexVector2, WFlat> flats, int hexGridSize) {
         if (composition == null || composition.getFeatures() == null) {
             return;
         }
@@ -616,7 +622,7 @@ public class HexCompositeBuilderSimpleTest {
             }
 
             // Convert HexLocal position to absolute world coordinates
-            int[] worldCoords = getPointWorldCoordinates(composed, flat.getSizeX(), flat.getSizeZ(), gridCoord);
+            int[] worldCoords = getPointWorldCoordinates(composed, flat.getSizeX(), flat.getSizeZ(), gridCoord, hexGridSize);
             if (worldCoords == null) {
                 log.warn("Could not calculate world coordinates for point '{}'", point.getName());
                 continue;
@@ -642,7 +648,7 @@ public class HexCompositeBuilderSimpleTest {
      * Adds village slot overlays (cross + slot name) to the composite image creator.
      * Extracts WHexGrids from fillResult and uses VillageDebugOverlayHelper to create overlays.
      */
-    private void addVillageSlotOverlays(HexGridCompositeImageCreator creator, HexGridFillResult fillResult) {
+    private void addVillageSlotOverlays(HexGridCompositeImageCreator creator, HexGridFillResult fillResult, int hexGridSize) {
         if (fillResult == null || fillResult.getAllGrids() == null) {
             return;
         }
@@ -656,9 +662,8 @@ public class HexCompositeBuilderSimpleTest {
         }
 
         // Use VillageDebugOverlayHelper to add village slot overlays
-        // IMPORTANT: Use FLAT_SIZE here, not hexGridSize (FLAT_SIZE - 30), because the
-        // HexGridCompositeImageCreator positions flats using FLAT_SIZE
-        TownDebugOverlayHelper.addVillageSlotOverlaysFromHexGrids(creator, hexGrids, FLAT_SIZE);
+        // Use hexGridSize like HexGridCompositeImageJobExecutor does
+        TownDebugOverlayHelper.addVillageSlotOverlaysFromHexGrids(creator, hexGrids, hexGridSize);
     }
 
     /**
@@ -666,9 +671,7 @@ public class HexCompositeBuilderSimpleTest {
      * Similar to RiverBuilder.getEndpointCoordinate().
      */
     private int[] getPointWorldCoordinates(Point.PointComposed composed, int flatSizeX, int flatSizeZ,
-                                           HexVector2 gridCoord) {
-        int hexGridSize = flatSizeX;  // Assume flat size equals hex grid size
-
+                                           HexVector2 gridCoord, int hexGridSize) {
         // Get position string - either from HexLocalPosition or HexLocalEdgeVector
         String positionString = null;
         if (composed.getHexLocalPosition() != null) {
@@ -691,9 +694,9 @@ public class HexCompositeBuilderSimpleTest {
         int lz = flatSizeZ / 2 + relativePos.getZ();
 
         // Convert to absolute world coordinates
-        double[] hexCenter = HexMathUtil.hexToCartesian(gridCoord, FLAT_SIZE);
-        int mountX = (int) Math.floor(hexCenter[0] - FLAT_SIZE / 2.0);
-        int mountZ = (int) Math.floor(hexCenter[1] - FLAT_SIZE / 2.0);
+        double[] hexCenter = HexMathUtil.hexToCartesian(gridCoord, hexGridSize);
+        int mountX = (int) Math.floor(hexCenter[0] - hexGridSize / 2.0);
+        int mountZ = (int) Math.floor(hexCenter[1] - hexGridSize / 2.0);
 
         int worldX = mountX + lx;
         int worldZ = mountZ + lz;
@@ -869,30 +872,43 @@ public class HexCompositeBuilderSimpleTest {
         return new double[]{newX, newZ};
     }
 
-    private void createCompositeImage(Map<HexVector2, WFlat> flats,
+    private void createCompositeImage(Map<String, WFlat> flats,
                                      HexGridFillResult fillResult,
                                      HexComposition composition,
                                      String name) throws Exception {
+        // Convert flats map from String keys to HexVector2 keys for HexGridCompositeImageCreator
+        Map<HexVector2, WFlat> flatsByCoord = new HashMap<>();
+        for (Map.Entry<String, WFlat> entry : flats.entrySet()) {
+            WFlat flat = entry.getValue();
+            if (flat.getHexGrid() != null) {
+                flatsByCoord.put(flat.getHexGrid(), flat);
+            }
+        }
+
+        // IMPORTANT: Use hexGridSize (400) like HexGridCompositeImageJobExecutor does (line 93)
+        // FlatCreateService automatically calculates actual flat size from hexGridSize
+        int hexGridSize = FLAT_SIZE;  // 400
+
         // Use the HexGridCompositeImageCreator helper class with builder pattern
         HexGridCompositeImageCreator creator = HexGridCompositeImageCreator.builder()
-            .flats(flats)
-            .flatSize(FLAT_SIZE)
+            .flats(flatsByCoord)
+            .flatSize(hexGridSize)  // Use hexGridSize (400)
             .outputDirectory(outputDir.toString())
             .imageName(name)
             .drawGridLines(false)  // Disable grid lines to see organic blending better
             .build();
 
         // Add coordinate and biome name text overlays for all grids
-        addCoordinateTextOverlays(creator, flats, fillResult);
+        addCoordinateTextOverlays(creator, flatsByCoord, fillResult, hexGridSize);
 
         // Add point overlays (cross + name)
-        addPointOverlays(creator, composition, flats);
+        addPointOverlays(creator, composition, flatsByCoord, hexGridSize);
 
         // Add village slot overlays (cross + slot name)
-        addVillageSlotOverlays(creator, fillResult);
+        addVillageSlotOverlays(creator, fillResult, hexGridSize);
 
         // Add debug overlays for grid 0;0
-        // addDebugOverlaysForGrid00(creator, flats);
+        // addDebugOverlaysForGrid00(creator, flatsByCoord);
 
         HexGridCompositeImageCreator.CompositeImageResult result = creator.createCompositeImages();
 
@@ -957,5 +973,55 @@ public class HexCompositeBuilderSimpleTest {
         mapper.writerWithDefaultPrettyPrinter().writeValue(outputFile, composition);
 
         log.info("Exported input composition to: {}", outputFile.getAbsolutePath());
+    }
+
+    /**
+     * Setup FlatCreateService with mocked dependencies.
+     */
+    private void setupFlatCreateService() {
+        // Create test world with publicData for hexGridSize
+        WWorld testWorld = new WWorld();
+        testWorld.setWorldId("middle-earth");
+        WorldInfo publicData = new WorldInfo();
+        publicData.setHexGridSize(FLAT_SIZE);  // hexGridSize = 400 (FlatCreateService calculates actual flat size)
+        publicData.setChunkSize(16);  // Standard chunk size
+        testWorld.setPublicData(publicData);
+        testWorld.setSeaLevel(OCEAN_LEVEL);
+        testWorld.setSeaBlockType("n:water");
+
+        // Mock WWorldService
+        de.mhus.nimbus.world.shared.world.WWorldService worldService = mock(de.mhus.nimbus.world.shared.world.WWorldService.class);
+        when(worldService.getByWorldId("middle-earth")).thenReturn(java.util.Optional.of(testWorld));
+
+        // Mock WFlatService (just return the flat that was passed in)
+        de.mhus.nimbus.world.shared.generator.WFlatService flatService = mock(de.mhus.nimbus.world.shared.generator.WFlatService.class);
+        when(flatService.create(any(WFlat.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        // Mock WLayerService
+        de.mhus.nimbus.world.shared.layer.WLayerService layerService = mock(de.mhus.nimbus.world.shared.layer.WLayerService.class);
+        de.mhus.nimbus.world.shared.layer.WLayer testLayer = de.mhus.nimbus.world.shared.layer.WLayer.builder()
+            .worldId("middle-earth")
+            .name("ground")
+            .layerDataId("test-layer")
+            .layerType(de.mhus.nimbus.world.shared.layer.LayerType.GROUND)
+            .build();
+        when(layerService.findByWorldIdAndName("middle-earth", "ground")).thenReturn(java.util.Optional.of(testLayer));
+
+        // Mock WBlockTypeService (not used in createEmptyHexGridFlat)
+        de.mhus.nimbus.world.shared.world.WBlockTypeService blockTypeService = mock(de.mhus.nimbus.world.shared.world.WBlockTypeService.class);
+
+        // Mock WChunkService (not used in createEmptyHexGridFlat)
+        de.mhus.nimbus.world.shared.world.WChunkService chunkService = mock(de.mhus.nimbus.world.shared.world.WChunkService.class);
+
+        // Create FlatCreateService with mocked dependencies
+        flatCreateService = new de.mhus.nimbus.world.generator.flat.FlatCreateService(
+            worldService,
+            flatService,
+            layerService,
+            blockTypeService,
+            chunkService
+        );
+
+        log.info("FlatCreateService initialized with mocked dependencies");
     }
 }
