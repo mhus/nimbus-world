@@ -16,21 +16,22 @@ import java.util.Random;
 @Slf4j
 public class HexGridMultiEdgeBlender {
 
-    private static final int RANGE = 10;
     private final WFlat centerFlat;
     private final HashMap<WHexGrid.EDGE, WFlat> neighbors;
     private final int width;
     private final BuilderContext context;
     private final Random random;
     private final FlatProjection projection;
+    private final int range;
 
     public HexGridMultiEdgeBlender(WFlat centerFlat, HashMap<WHexGrid.EDGE, WFlat> neighbors,
-                                   int width, BuilderContext context) {
+                                   int width, int range, BuilderContext context) {
         this.centerFlat = centerFlat;
         this.neighbors = neighbors;
         this.width = width;
         this.context = context;
         this.random = new Random(centerFlat.getFlatId().hashCode());
+        this.range = range;
 
         // Initialize projection system with all flats
         this.projection = new FlatProjection(centerFlat, neighbors);
@@ -48,7 +49,7 @@ public class HexGridMultiEdgeBlender {
             WFlat neighborFlat = entry.getValue();
 
             log.debug("Blending edge {} with neighbor {}", side, neighborFlat.getFlatId());
-            blendEdge(side, neighborFlat);
+            blendEdge(side, range);
         }
 
         log.debug("Multi-edge blending completed");
@@ -58,44 +59,24 @@ public class HexGridMultiEdgeBlender {
      * Blend a single edge using projection system - works in world coordinates.
      * Uses simple perpendicular distance from edge boundary.
      */
-    private void blendEdge(WHexGrid.EDGE direction, WFlat neighborFlat) {
-        // Get the edge boundary in center flat (local coordinates)
-        int[] centerArea = getAreaForSide(direction, centerFlat);
+    private void blendEdge(WHexGrid.EDGE direction, int range) {
+        // Get edge corners in world coordinates (both at once to avoid duplicate calculation)
+        int[][] corners = getHexSideCorners(direction, centerFlat);
+        int[] corner1World = corners[0];
+        int[] corner2World = corners[1];
 
-        // Calculate edge line position (the actual boundary)
-        int edgePosition = getEdgePosition(direction, centerFlat);
-
-        // Define blend zone in local coordinates
-        int blendStart, blendEnd;
-        boolean isHorizontal = (direction == WHexGrid.EDGE.EAST || direction == WHexGrid.EDGE.WEST);
-
-        if (isHorizontal) {
-            // For EAST/WEST, blend along X axis
-            if (direction == WHexGrid.EDGE.EAST) {
-                blendStart = edgePosition - width;
-                blendEnd = edgePosition + width;
-            } else {
-                blendStart = edgePosition - width;
-                blendEnd = edgePosition + width;
-            }
-        } else {
-            // For diagonal edges, blend in both directions
-            blendStart = -width;
-            blendEnd = width;
-        }
-
-        // Convert area to world coordinates
-        int worldMinX = centerFlat.getMountX() + centerArea[0] - width;
-        int worldMinZ = centerFlat.getMountZ() + centerArea[1] - width;
-        int worldMaxX = centerFlat.getMountX() + centerArea[2] + width;
-        int worldMaxZ = centerFlat.getMountZ() + centerArea[3] + width;
+        // Calculate bounding box for blend zone in world coordinates
+        int worldMinX = Math.min(corner1World[0], corner2World[0]) - width;
+        int worldMaxX = Math.max(corner1World[0], corner2World[0]) + width;
+        int worldMinZ = Math.min(corner1World[1], corner2World[1]) - width;
+        int worldMaxZ = Math.max(corner1World[1], corner2World[1]) + width;
 
         int blendedPixels = 0;
         int totalPixels = 0;
         int skippedEmpty = 0;
 
-        log.debug("Blend zone for {}: world coords ({},{}) to ({},{}), edgePos={}",
-                  direction, worldMinX, worldMinZ, worldMaxX, worldMaxZ, edgePosition);
+        log.debug("Blend zone for {}: world coords ({},{}) to ({},{}) with range {}",
+                  direction, worldMinX, worldMinZ, worldMaxX, worldMaxZ, range);
 
         // Iterate over the blend zone in world coordinates
         for (int worldZ = worldMinZ; worldZ < worldMaxZ; worldZ++) {
@@ -109,19 +90,9 @@ public class HexGridMultiEdgeBlender {
                     continue;
                 }
 
-                // Calculate perpendicular distance to edge boundary
-                int localX = worldX - centerFlat.getMountX();
-                int localZ = worldZ - centerFlat.getMountZ();
-
-                double distanceToEdge;
-                if (direction == WHexGrid.EDGE.EAST) {
-                    distanceToEdge = Math.abs(localX - edgePosition);
-                } else if (direction == WHexGrid.EDGE.WEST) {
-                    distanceToEdge = Math.abs(localX - edgePosition);
-                } else {
-                    // For diagonal edges, use approximate distance
-                    distanceToEdge = calculateDiagonalDistance(localX, localZ, direction, centerFlat);
-                }
+                // Calculate perpendicular distance to edge line in world coordinates
+                double distanceToEdge = calculateDistanceToEdgeLine(
+                    worldX, worldZ, corner1World, corner2World);
 
                 // Skip if outside blend zone
                 if (distanceToEdge > width) {
@@ -135,8 +106,8 @@ public class HexGridMultiEdgeBlender {
                 // Sample surrounding area for averaging
                 int sampleCount = 0;
                 int heightSum = 0;
-                for (int dy = -RANGE; dy <= RANGE; dy++) {
-                    for (int dx = -RANGE; dx <= RANGE; dx++) {
+                for (int dy = -range; dy <= range; dy++) {
+                    for (int dx = -range; dx <= range; dx++) {
                         Integer sampleHeight = projection.getLevel(worldX + dx, worldZ + dy);
                         if (sampleHeight != null && sampleHeight > 0) {
                             heightSum += sampleHeight;
@@ -154,8 +125,8 @@ public class HexGridMultiEdgeBlender {
                 // Calculate adjustment - more aggressive blending
                 int heightDifference = avgHeight - currentHeight;
                 double adjustmentFactor = (1.0 - blendFactor); // Stronger effect near edge
-                // double rawAdjustment = heightDifference * adjustmentFactor;
-                double rawAdjustment = 200 * adjustmentFactor; //XXX
+                double rawAdjustment = heightDifference * adjustmentFactor;
+                //double rawAdjustment = 255; //XXX
                 int adjustment = (int) Math.round(rawAdjustment);
 
                 // Apply adjustment
@@ -173,7 +144,32 @@ public class HexGridMultiEdgeBlender {
     }
 
     /**
+     * Calculate perpendicular distance from point to edge line in world coordinates.
+     */
+    private double calculateDistanceToEdgeLine(int worldX, int worldZ,
+                                               int[] corner1, int[] corner2) {
+        // Calculate perpendicular distance to line from corner1 to corner2
+        double dx = corner2[0] - corner1[0];
+        double dz = corner2[1] - corner1[1];
+        double lineLength = Math.sqrt(dx * dx + dz * dz);
+
+        if (lineLength < 1) {
+            return Math.hypot(worldX - corner1[0], worldZ - corner1[1]);
+        }
+
+        // Project point onto line
+        double t = ((worldX - corner1[0]) * dx + (worldZ - corner1[1]) * dz) / (lineLength * lineLength);
+        t = Math.max(0, Math.min(1, t));
+
+        double projX = corner1[0] + t * dx;
+        double projZ = corner1[1] + t * dz;
+
+        return Math.hypot(worldX - projX, worldZ - projZ);
+    }
+
+    /**
      * Get the edge position (coordinate along the main axis).
+     * DEPRECATED - not used anymore, working with world coordinates now.
      */
     private int getEdgePosition(WHexGrid.EDGE direction, WFlat flat) {
         int sizeX = flat.getSizeX();
@@ -197,6 +193,7 @@ public class HexGridMultiEdgeBlender {
 
     /**
      * Calculate distance to diagonal edge.
+     * DEPRECATED - not used anymore, using calculateDistanceToEdgeLine now.
      */
     private double calculateDiagonalDistance(int x, int z, WHexGrid.EDGE direction, WFlat flat) {
         int[] corner1 = getCorner1ForSide(direction, flat);
@@ -285,8 +282,11 @@ public class HexGridMultiEdgeBlender {
 
                 if (localX >= 0 && localX < flat.getSizeX() &&
                     localZ >= 0 && localZ < flat.getSizeZ()) {
-                    // This flat contains the coordinate
-                    return flat.getLevel(localX, localZ);
+                    // This flat maybe contains the coordinate
+                    var material = flat.getColumn(localX, localZ); // Ensure column is loaded for debugging
+                    if (material != WFlat.MATERIAL_NOT_SET) { // this means the coordinate is in the hex grid area, not in the border
+                        return flat.getLevel(localX, localZ);
+                    }
                 }
             }
 
@@ -306,16 +306,20 @@ public class HexGridMultiEdgeBlender {
 
                 if (localX >= 0 && localX < flat.getSizeX() &&
                     localZ >= 0 && localZ < flat.getSizeZ()) {
-                    // This flat contains the coordinate
-                    int oldLevel = flat.getLevel(localX, localZ);
-                    flat.setLevel(localX, localZ, level);
 
-                    // Debug: log first few writes
-                    if (writeCount++ < 5) {
-                        log.debug("Write: world({},{}) -> flat={} local({},{}) level {} -> {}",
-                                worldX, worldZ, flat.getFlatId(), localX, localZ, oldLevel, level);
+                    var material = flat.getColumn(localX, localZ); // Ensure column is loaded for debugging
+                    if (material != WFlat.MATERIAL_NOT_SET) { // this means the coordinate is in the hex grid area, not in the border
+                        // This flat contains the coordinate
+                        int oldLevel = flat.getLevel(localX, localZ);
+                        flat.setLevel(localX, localZ, level);
+
+                        // Debug: log first few writes
+                        if (writeCount++ < 5) {
+                            log.debug("Write: world({},{}) -> flat={} local({},{}) level {} -> {}",
+                                    worldX, worldZ, flat.getFlatId(), localX, localZ, oldLevel, level);
+                        }
+                        return true;
                     }
-                    return true;
                 }
             }
 
@@ -355,73 +359,77 @@ public class HexGridMultiEdgeBlender {
     }
 
     /**
-     * Get first corner of the hex side (in local flat coordinates).
-     * Calculates corner position based on hex center in world coordinates (without borders),
-     * then converts to local flat coordinates.
+     * Get first corner of hex side in world coordinates.
+     * @deprecated Use getHexSideCorners() instead for efficiency
      */
     private int[] getCorner1ForSide(WHexGrid.EDGE side, WFlat flat) {
-        int gridSize = context.getWorld().getPublicData().getHexGridSize();
-        double radius = gridSize / 2.0;
-
-        // Parse flatId to get hex coordinates (e.g., "genesis_0_0" -> q=0, r=0)
-        String flatId = flat.getFlatId();
-        String[] parts = flatId.split("_");
-        // FlatId format: "prefix_q_r", extract last two parts
-        int q = Integer.parseInt(parts[parts.length - 2]);
-        int r = Integer.parseInt(parts[parts.length - 1]);
-
-        // Get hex center in world coordinates (without borders)
-        HexVector2 hexVec = HexVector2.builder().q(q).r(r).build();
-        double[] worldCenter = HexMathUtil.hexToCartesian(hexVec, gridSize);
-
-        double angle;
-        switch (side) {
-            case NORTH_EAST:
-                angle = Math.toRadians(270);
-                break;
-            case EAST:
-                angle = Math.toRadians(330);
-                break;
-            case SOUTH_EAST:
-                angle = Math.toRadians(30);
-                break;
-            case SOUTH_WEST:
-                angle = Math.toRadians(150);
-                break;
-            case WEST:
-                angle = Math.toRadians(210);
-                break;
-            case NORTH_WEST:
-                angle = Math.toRadians(270);
-                break;
-            default:
-                return new int[]{0, 0};
-        }
-
-        // Calculate corner in world coordinates
-        double worldCornerX = worldCenter[0] + radius * Math.cos(angle);
-        double worldCornerZ = worldCenter[1] + radius * Math.sin(angle);
-
-        // Convert to local flat coordinates
-        int localX = (int) Math.round(worldCornerX - flat.getMountX());
-        int localZ = (int) Math.round(worldCornerZ - flat.getMountZ());
-
-        return new int[]{localX, localZ};
+        return getHexSideCorners(side, flat)[0];
     }
 
     /**
-     * Get second corner of the hex side (in local flat coordinates).
-     * Calculates corner position based on hex center in world coordinates (without borders),
-     * then converts to local flat coordinates.
+     * Get second corner of hex side in world coordinates.
+     * @deprecated Use getHexSideCorners() instead for efficiency
      */
     private int[] getCorner2ForSide(WHexGrid.EDGE side, WFlat flat) {
+        return getHexSideCorners(side, flat)[1];
+    }
+
+    /**
+     * Get both corners of a hex side in world coordinates.
+     * Returns array with [corner1, corner2] where each corner is [worldX, worldZ].
+     * Calculates both corners at once to avoid duplicate flat parsing and hex center calculation.
+     */
+    private int[][] getHexSideCorners(WHexGrid.EDGE side, WFlat flat) {
+        double angle1, angle2;
+
+        switch (side) {
+            case NORTH_EAST:
+                angle1 = Math.toRadians(270);  // Top
+                angle2 = Math.toRadians(330);  // Top-right
+                break;
+            case EAST:
+                angle1 = Math.toRadians(330);  // Top-right
+                angle2 = Math.toRadians(30);   // Bottom-right
+                break;
+            case SOUTH_EAST:
+                angle1 = Math.toRadians(30);   // Bottom-right
+                angle2 = Math.toRadians(90);   // Bottom
+                break;
+            case SOUTH_WEST:
+                angle1 = Math.toRadians(150);  // Bottom-left
+                angle2 = Math.toRadians(90);   // Bottom
+                break;
+            case WEST:
+                angle1 = Math.toRadians(210);  // Top-left
+                angle2 = Math.toRadians(150);  // Bottom-left
+                break;
+            case NORTH_WEST:
+                angle1 = Math.toRadians(270);  // Top
+                angle2 = Math.toRadians(210);  // Top-left
+                break;
+            default:
+                return new int[][]{{0, 0}, {0, 0}};
+        }
+
+        return new int[][]{
+            getHexCorner(flat, angle1),
+            getHexCorner(flat, angle2)
+        };
+    }
+
+    /**
+     * Calculate hex corner position in world coordinates.
+     * @param flat The flat to get hex center from
+     * @param angleRadians Angle in radians for the corner
+     * @return Corner position in world coordinates [worldX, worldZ]
+     */
+    private int[] getHexCorner(WFlat flat, double angleRadians) {
         int gridSize = context.getWorld().getPublicData().getHexGridSize();
         double radius = gridSize / 2.0;
 
         // Parse flatId to get hex coordinates (e.g., "genesis_0_0" -> q=0, r=0)
         String flatId = flat.getFlatId();
         String[] parts = flatId.split("_");
-        // FlatId format: "prefix_q_r", extract last two parts
         int q = Integer.parseInt(parts[parts.length - 2]);
         int r = Integer.parseInt(parts[parts.length - 1]);
 
@@ -429,38 +437,10 @@ public class HexGridMultiEdgeBlender {
         HexVector2 hexVec = HexVector2.builder().q(q).r(r).build();
         double[] worldCenter = HexMathUtil.hexToCartesian(hexVec, gridSize);
 
-        double angle;
-        switch (side) {
-            case NORTH_EAST:
-                angle = Math.toRadians(330);
-                break;
-            case EAST:
-                angle = Math.toRadians(30);
-                break;
-            case SOUTH_EAST:
-                angle = Math.toRadians(90);
-                break;
-            case SOUTH_WEST:
-                angle = Math.toRadians(90);
-                break;
-            case WEST:
-                angle = Math.toRadians(150);
-                break;
-            case NORTH_WEST:
-                angle = Math.toRadians(210);
-                break;
-            default:
-                return new int[]{0, 0};
-        }
-
         // Calculate corner in world coordinates
-        double worldCornerX = worldCenter[0] + radius * Math.cos(angle);
-        double worldCornerZ = worldCenter[1] + radius * Math.sin(angle);
+        int worldCornerX = (int) Math.round(worldCenter[0] + radius * Math.cos(angleRadians));
+        int worldCornerZ = (int) Math.round(worldCenter[1] + radius * Math.sin(angleRadians));
 
-        // Convert to local flat coordinates
-        int localX = (int) Math.round(worldCornerX - flat.getMountX());
-        int localZ = (int) Math.round(worldCornerZ - flat.getMountZ());
-
-        return new int[]{localX, localZ};
+        return new int[]{worldCornerX, worldCornerZ};
     }
 }

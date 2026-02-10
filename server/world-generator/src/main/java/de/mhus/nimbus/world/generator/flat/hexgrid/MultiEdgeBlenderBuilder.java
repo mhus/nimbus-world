@@ -23,6 +23,7 @@ import java.util.Set;
  * Set g_edge_flat_north_east, g_edge_flat_east, g_edge_flat_south_east,
  * g_edge_flat_south_west, g_edge_flat_west, g_edge_flat_north_west to define side flat ids.
  * Set g_edge_blend_width to define the width of the blending area (default 20).
+ * Set edge_blend_range to control blur range for blending (default 10).
  * Set g_edge_blend_randomness to control random variations (default 0.5, range 0.0-1.0).
  * Set g_edge_shake_strength to add pixel swapping for more organic look (default 0.0, range 0.0-1.0).
  * Set g_edge_blur_radius to apply blur/smoothing after blending (default 0, range 0-5).
@@ -48,6 +49,7 @@ public class MultiEdgeBlenderBuilder extends HexGridBuilder {
         }
 
         int width = CastUtil.toint(parameters.get("edge_blend_width"), 50);
+        int range = CastUtil.toint(parameters.get("edge_blend_range"), 10);
         boolean blendAllSides = CastUtil.toboolean(parameters.get("edge_blend_all_sides"), false);
 
         if (sideFlats.isEmpty()) {
@@ -111,7 +113,7 @@ public class MultiEdgeBlenderBuilder extends HexGridBuilder {
 
         // Blend all sides simultaneously using multi-flat blender
         HexGridMultiEdgeBlender multiEdgeBlender = new HexGridMultiEdgeBlender(
-                centerFlat, loadedNeighbors, width, context);
+                centerFlat, loadedNeighbors, width, range, context);
         multiEdgeBlender.blendAllEdges();
 
         // Save all modified neighbor flats (but NOT the center flat)
