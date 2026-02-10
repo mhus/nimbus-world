@@ -1,6 +1,8 @@
 package de.mhus.nimbus.world.generator.flat.hexgrid;
 
+import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.world.shared.generator.WFlat;
+import de.mhus.nimbus.world.shared.util.HexMathUtil;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
 import lombok.extern.slf4j.Slf4j;
 
@@ -354,14 +356,23 @@ public class HexGridMultiEdgeBlender {
 
     /**
      * Get first corner of the hex side (in local flat coordinates).
-     * Uses the world's hex grid size, not the flat size.
+     * Calculates corner position based on hex center in world coordinates (without borders),
+     * then converts to local flat coordinates.
      */
     private int[] getCorner1ForSide(WHexGrid.EDGE side, WFlat flat) {
-        int sizeX = flat.getSizeX();
-        int sizeZ = flat.getSizeZ();
-        double centerX = sizeX / 2.0;
-        double centerZ = sizeZ / 2.0;
-        double radius = context.getWorld().getPublicData().getHexGridSize() / 2.0;
+        int gridSize = context.getWorld().getPublicData().getHexGridSize();
+        double radius = gridSize / 2.0;
+
+        // Parse flatId to get hex coordinates (e.g., "genesis_0_0" -> q=0, r=0)
+        String flatId = flat.getFlatId();
+        String[] parts = flatId.split("_");
+        // FlatId format: "prefix_q_r", extract last two parts
+        int q = Integer.parseInt(parts[parts.length - 2]);
+        int r = Integer.parseInt(parts[parts.length - 1]);
+
+        // Get hex center in world coordinates (without borders)
+        HexVector2 hexVec = HexVector2.builder().q(q).r(r).build();
+        double[] worldCenter = HexMathUtil.hexToCartesian(hexVec, gridSize);
 
         double angle;
         switch (side) {
@@ -387,20 +398,36 @@ public class HexGridMultiEdgeBlender {
                 return new int[]{0, 0};
         }
 
-        int x = (int) Math.round(centerX + radius * Math.cos(angle));
-        int z = (int) Math.round(centerZ + radius * Math.sin(angle));
-        return new int[]{x, z};
+        // Calculate corner in world coordinates
+        double worldCornerX = worldCenter[0] + radius * Math.cos(angle);
+        double worldCornerZ = worldCenter[1] + radius * Math.sin(angle);
+
+        // Convert to local flat coordinates
+        int localX = (int) Math.round(worldCornerX - flat.getMountX());
+        int localZ = (int) Math.round(worldCornerZ - flat.getMountZ());
+
+        return new int[]{localX, localZ};
     }
 
     /**
      * Get second corner of the hex side (in local flat coordinates).
+     * Calculates corner position based on hex center in world coordinates (without borders),
+     * then converts to local flat coordinates.
      */
     private int[] getCorner2ForSide(WHexGrid.EDGE side, WFlat flat) {
-        int sizeX = flat.getSizeX();
-        int sizeZ = flat.getSizeZ();
-        double centerX = sizeX / 2.0;
-        double centerZ = sizeZ / 2.0;
-        double radius = context.getWorld().getPublicData().getHexGridSize() / 2.0;
+        int gridSize = context.getWorld().getPublicData().getHexGridSize();
+        double radius = gridSize / 2.0;
+
+        // Parse flatId to get hex coordinates (e.g., "genesis_0_0" -> q=0, r=0)
+        String flatId = flat.getFlatId();
+        String[] parts = flatId.split("_");
+        // FlatId format: "prefix_q_r", extract last two parts
+        int q = Integer.parseInt(parts[parts.length - 2]);
+        int r = Integer.parseInt(parts[parts.length - 1]);
+
+        // Get hex center in world coordinates (without borders)
+        HexVector2 hexVec = HexVector2.builder().q(q).r(r).build();
+        double[] worldCenter = HexMathUtil.hexToCartesian(hexVec, gridSize);
 
         double angle;
         switch (side) {
@@ -426,8 +453,14 @@ public class HexGridMultiEdgeBlender {
                 return new int[]{0, 0};
         }
 
-        int x = (int) Math.round(centerX + radius * Math.cos(angle));
-        int z = (int) Math.round(centerZ + radius * Math.sin(angle));
-        return new int[]{x, z};
+        // Calculate corner in world coordinates
+        double worldCornerX = worldCenter[0] + radius * Math.cos(angle);
+        double worldCornerZ = worldCenter[1] + radius * Math.sin(angle);
+
+        // Convert to local flat coordinates
+        int localX = (int) Math.round(worldCornerX - flat.getMountX());
+        int localZ = (int) Math.round(worldCornerZ - flat.getMountZ());
+
+        return new int[]{localX, localZ};
     }
 }

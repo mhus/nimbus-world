@@ -22,7 +22,7 @@ class HexGridMountCoordinatesTest {
 
     private static final int GRID_SIZE = 400;
     private static final double SQRT_3 = Math.sqrt(3.0);
-    private static final int SIZE_X = (int) Math.ceil(GRID_SIZE * SQRT_3 / 2.0) + 30;  // 377
+    private static final int SIZE_X = (int) Math.round(GRID_SIZE * SQRT_3 / 2.0) + 30;  // 346 + 30 = 376
     private static final int SIZE_Z = GRID_SIZE + 30;  // 430
 
     /**
@@ -46,10 +46,10 @@ class HexGridMountCoordinatesTest {
         // Grid 0;0 should be centered at world origin (0, 0)
         int[] mount = calculateMountPosition(0, 0);
 
-        System.out.printf("Grid 0;0: centerX=0, centerZ=0, mount=(%d, %d)%n",
-                mount[0], mount[1]);
+        System.out.printf("Grid 0;0: centerX=0, centerZ=0, mount=(%d, %d), sizeX=%d%n",
+                mount[0], mount[1], SIZE_X);
 
-        // Expected: mount = (0 - 377/2, 0 - 430/2) = (-188.5, -215) rounded to (-188, -215)
+        // Expected: mount = (0 - 376/2, 0 - 430/2) = (-188, -215)
         assertEquals(-188, mount[0], "Grid 0;0 mountX should be -188");
         assertEquals(-215, mount[1], "Grid 0;0 mountZ should be -215");
     }
@@ -60,7 +60,7 @@ class HexGridMountCoordinatesTest {
         int[] mount = calculateMountPosition(1, 0);
 
         // Expected center: (200 * sqrt(3) * (1 + 0/2), 200 * 1.5 * 0) = (346.41, 0)
-        // Expected mount: (346.41 - 188.5, 0 - 215) = (157.91, -215) rounded to (158, -215)
+        // Expected mount: (346.41 - 188, 0 - 215) = (158.41, -215) rounded to (158, -215)
         System.out.printf("Grid 1;0: centerX=346.41, centerZ=0, mount=(%d, %d)%n",
                 mount[0], mount[1]);
 
@@ -74,7 +74,7 @@ class HexGridMountCoordinatesTest {
         int[] mount = calculateMountPosition(0, 1);
 
         // Expected center: (200 * sqrt(3) * (0 + 1/2), 200 * 1.5 * 1) = (173.21, 300)
-        // Expected mount: (173.21 - 188.5, 300 - 215) = (-15.29, 85) rounded to (-15, 85)
+        // Expected mount: (173.21 - 188, 300 - 215) = (-14.79, 85) rounded to (-15, 85)
         System.out.printf("Grid 0;1: centerX=173.21, centerZ=300, mount=(%d, %d)%n",
                 mount[0], mount[1]);
 
@@ -88,11 +88,11 @@ class HexGridMountCoordinatesTest {
         int[] mount = calculateMountPosition(1, 1);
 
         // Expected center: (200 * sqrt(3) * (1 + 1/2), 200 * 1.5 * 1) = (519.62, 300)
-        // Expected mount: (519.62 - 188.5, 300 - 215) = (331.12, 85) rounded to (331, 85)
+        // Expected mount: (519.62 - 188, 300 - 215) = (331.62, 85) rounded to (332, 85)
         System.out.printf("Grid 1;1: centerX=519.62, centerZ=300, mount=(%d, %d)%n",
                 mount[0], mount[1]);
 
-        assertEquals(331, mount[0], "Grid 1;1 mountX should be 331");
+        assertEquals(332, mount[0], "Grid 1;1 mountX should be 332");
         assertEquals(85, mount[1], "Grid 1;1 mountZ should be 85");
     }
 
@@ -102,11 +102,11 @@ class HexGridMountCoordinatesTest {
         int[] mount = calculateMountPosition(-1, 0);
 
         // Expected center: (200 * sqrt(3) * (-1 + 0/2), 200 * 1.5 * 0) = (-346.41, 0)
-        // Expected mount: (-346.41 - 188.5, 0 - 215) = (-534.91, -215) rounded to (-535, -215)
+        // Expected mount: (-346.41 - 188, 0 - 215) = (-534.41, -215) rounded to (-534, -215)
         System.out.printf("Grid -1;0: centerX=-346.41, centerZ=0, mount=(%d, %d)%n",
                 mount[0], mount[1]);
 
-        assertEquals(-535, mount[0], "Grid -1;0 mountX should be -535");
+        assertEquals(-534, mount[0], "Grid -1;0 mountX should be -534");
         assertEquals(-215, mount[1], "Grid -1;0 mountZ should be -215");
     }
 
@@ -116,11 +116,11 @@ class HexGridMountCoordinatesTest {
         int[] mount = calculateMountPosition(0, -1);
 
         // Expected center: (200 * sqrt(3) * (0 + (-1)/2), 200 * 1.5 * (-1)) = (-173.21, -300)
-        // Expected mount: (-173.21 - 188.5, -300 - 215) = (-361.71, -515) rounded to (-362, -515)
+        // Expected mount: (-173.21 - 188, -300 - 215) = (-361.21, -515) rounded to (-361, -515)
         System.out.printf("Grid 0;-1: centerX=-173.21, centerZ=-300, mount=(%d, %d)%n",
                 mount[0], mount[1]);
 
-        assertEquals(-362, mount[0], "Grid 0;-1 mountX should be -362");
+        assertEquals(-361, mount[0], "Grid 0;-1 mountX should be -361");
         assertEquals(-515, mount[1], "Grid 0;-1 mountZ should be -515");
     }
 
@@ -133,16 +133,16 @@ class HexGridMountCoordinatesTest {
         int[] mount_0_0 = calculateMountPosition(0, 0);
         int[] mount_1_0 = calculateMountPosition(1, 0);
 
-        // Grid 0;0 right edge: mountX + sizeX = -188 + 377 = 189
+        // Grid 0;0 right edge: mountX + sizeX = -188 + 376 = 188
         // Grid 1;0 left edge: mountX = 158
-        // Distance between edges: 158 - 189 = -31 (negative means overlap)
+        // Distance between edges: 158 - 188 = -30 (negative means overlap)
         int horizontalOverlap = mount_1_0[0] - (mount_0_0[0] + SIZE_X);
 
-        System.out.printf("Horizontal overlap between 0;0 and 1;0: %d pixels (expected: -31)%n",
+        System.out.printf("Horizontal overlap between 0;0 and 1;0: %d pixels (expected: -30)%n",
                 horizontalOverlap);
 
-        assertEquals(-31, horizontalOverlap,
-                "Horizontal grids should have 31 pixels overlap (15px border on each side + 1px shared)");
+        assertEquals(-30, horizontalOverlap,
+                "Horizontal grids should have 30 pixels overlap (15px border on each side)");
     }
 
     @Test
@@ -150,8 +150,8 @@ class HexGridMountCoordinatesTest {
         // Verify that flat bounding box dimensions are correct
         System.out.printf("Flat bounding box: SizeX=%d, SizeZ=%d%n", SIZE_X, SIZE_Z);
 
-        // Expected: 377 x 430 (hex width 346 + 30 border, hex height 400 + 30 border)
-        assertEquals(377, SIZE_X, "SizeX should be 377");
+        // Expected: 376 x 430 (hex width 346 + 30 border, hex height 400 + 30 border)
+        assertEquals(376, SIZE_X, "SizeX should be 376");
         assertEquals(430, SIZE_Z, "SizeZ should be 430");
     }
 

@@ -1075,8 +1075,8 @@ public class FlatCreateService {
 
         // Calculate bounding box for pointy-top hexagon with 15-pixel border on each side
         double SQRT_3 = Math.sqrt(3.0);
-        int sizeX = (int) Math.ceil(gridSize * SQRT_3 / 2.0) + 30;  // +30 total: 15px border on each side
-        int sizeZ = gridSize + 30;  // +30 total: 15px border on each side
+        int sizeX = (int) Math.round(gridSize * SQRT_3 / 2.0) + 30;  // round(346.41) = 346, +30 = 376 (even)
+        int sizeZ = gridSize + 30;  // 400 + 30 = 430 (even)
 
         // Calculate mount position (top-left corner of bounding box)
         // Border is already included in sizeX/sizeZ (+30 pixels)
@@ -1132,9 +1132,9 @@ public class FlatCreateService {
                 int worldX = mountX + localX;
                 int worldZ = mountZ + localZ;
 
-                // Adjust coordinates for hex grid check: hex is positioned 10 pixels into the flat
-                int hexCheckX = worldX + 10;
-                int hexCheckZ = worldZ + 10;
+                // Use world coordinates directly for hex grid check
+                int hexCheckX = worldX;
+                int hexCheckZ = worldZ;
 
                 // Check if this position is inside the HexGrid
                 boolean isInHex = HexMathUtil.isPointInHex(hexCheckX, hexCheckZ, hexCenterX, hexCenterZ, gridSize);
