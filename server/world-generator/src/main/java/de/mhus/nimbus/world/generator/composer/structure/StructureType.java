@@ -1,7 +1,6 @@
 package de.mhus.nimbus.world.generator.composer.structure;
 
-import de.mhus.nimbus.world.generator.composer.village.Town;
-import de.mhus.nimbus.world.generator.composer.village.Village;
+import de.mhus.nimbus.world.generator.composer.town.Town;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -25,41 +24,6 @@ import java.util.Map;
  * </pre>
  */
 public enum StructureType {
-    /**
-     * Small hamlet with few buildings (7-10 buildings, single hex)
-     */
-    HAMLET(Village.class, "island", Map.of(
-        "g_offset", "1",
-        "default_level", "95",
-        "default_material", "1"
-    )),
-
-    /**
-     * Small village (10-15 buildings, 1-2 hexes)
-     */
-    SMALL_VILLAGE(Village.class, "island", Map.of(
-        "g_offset", "1",
-        "default_level", "95",
-        "default_material", "1"
-    )),
-
-    /**
-     * Medium village (15-25 buildings, 2-3 hexes)
-     */
-    VILLAGE(Village.class, "island", Map.of(
-        "g_offset", "1",
-        "default_level", "95",
-        "default_material", "1"
-    )),
-
-    /**
-     * Large village (25-40 buildings, 3-5 hexes)
-     */
-    LARGE_VILLAGE(Village.class, "island", Map.of(
-        "g_offset", "1",
-        "default_level", "95",
-        "default_material", "1"
-    )),
 
     /**
      * Small town (40-60 buildings, 5-7 hexes, cross pattern)

@@ -11,7 +11,7 @@ import de.mhus.nimbus.world.generator.composer.build.HexGridCompositeImageCreato
 import de.mhus.nimbus.world.generator.composer.image.CrossOverlay;
 import de.mhus.nimbus.world.generator.composer.image.TextOverlay;
 import de.mhus.nimbus.world.generator.composer.point.Point;
-import de.mhus.nimbus.world.generator.composer.village.VillageDebugOverlayHelper;
+import de.mhus.nimbus.world.generator.composer.town.TownDebugOverlayHelper;
 import de.mhus.nimbus.world.shared.archive.WArchiveService;
 import de.mhus.nimbus.world.shared.generator.WFlat;
 import de.mhus.nimbus.world.shared.generator.WFlatService;
@@ -434,7 +434,7 @@ public class HexGridCompositeImageJobExecutor implements JobExecutor {
         }
 
         // Use VillageDebugOverlayHelper to add village slot overlays
-        VillageDebugOverlayHelper.addVillageSlotOverlaysFromHexGrids(creator, hexGridsByCoord, flatSize);
+        TownDebugOverlayHelper.addVillageSlotOverlaysFromHexGrids(creator, hexGridsByCoord, flatSize);
         log.info("Added village slot overlays for {} grids", hexGridsByCoord.size());
     }
 

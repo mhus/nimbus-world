@@ -23,7 +23,7 @@ import de.mhus.nimbus.world.generator.composer.area.RelativePosition;
 import de.mhus.nimbus.world.generator.composer.flow.River;
 import de.mhus.nimbus.world.generator.composer.flow.Road;
 import de.mhus.nimbus.world.generator.composer.structure.StructureType;
-import de.mhus.nimbus.world.generator.composer.village.Village;
+import de.mhus.nimbus.world.generator.composer.town.Town;
 import de.mhus.nimbus.world.generator.composer.flow.Wall;
 import de.mhus.nimbus.world.generator.flat.*;
 import de.mhus.nimbus.world.generator.flat.hexgrid.*;
@@ -597,13 +597,13 @@ public class WorldCompositeImageTest {
             2, 3, Direction.E, 90, 5, 8, "origin", 8));
 
         // Village in center plains
-        Village village = Village.builder()
+        Town village = Town.builder()
             .buildings(new ArrayList<>())
             .streets(new ArrayList<>())
             .parameters(new HashMap<>())
             .build();
         village.setName("Central Village");
-        village.setType(StructureType.HAMLET);
+        village.setType(StructureType.TOWN);
 
         RelativePosition villagePos = RelativePosition.builder()
             .direction(Direction.N)
@@ -733,7 +733,6 @@ public class WorldCompositeImageTest {
                     case OCEAN -> BiomeType.OCEAN.getBuilderName();
                     case COAST -> BiomeType.COAST.getBuilderName();
                     case ISLAND -> BiomeType.ISLAND.getBuilderName();
-                    case VILLAGE -> BiomeType.VILLAGE.getBuilderName();
                     case TOWN -> BiomeType.TOWN.getBuilderName();
                 };
             } else {

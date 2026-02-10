@@ -3,14 +3,14 @@ package de.mhus.nimbus.world.generator.composer.structure;
 import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.shared.utils.TypeUtil;
 import de.mhus.nimbus.world.generator.composer.build.HexComposition;
-import de.mhus.nimbus.world.generator.composer.village.PlacedStructure;
+import de.mhus.nimbus.world.generator.composer.town.PlacedStructure;
 import de.mhus.nimbus.world.generator.composer.biome.Biome;
 import de.mhus.nimbus.world.generator.composer.biome.BiomePlacementResult;
 import de.mhus.nimbus.world.generator.composer.biome.BiomeType;
 import de.mhus.nimbus.world.generator.composer.biome.PlacedBiome;
 import de.mhus.nimbus.world.generator.composer.build.ComposeContext;
 import de.mhus.nimbus.world.generator.composer.feature.FeatureHexGrid;
-import de.mhus.nimbus.world.generator.composer.village.Village;
+import de.mhus.nimbus.world.generator.composer.town.Town;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
@@ -46,10 +46,10 @@ public class StructureComposer {
         int failedCount = 0;
 
         // Process villages
-        List<Village> villages = composition.getVillages();
+        List<Town> villages = composition.getVillages();
         totalStructures += villages.size();
 
-        for (Village village : villages) {
+        for (Town village : villages) {
             try {
                 PlacedStructure placed = placeVillage(village, placementResult, context);
                 if (placed != null) {
@@ -98,7 +98,7 @@ public class StructureComposer {
      * @param context The compose context (for accessing world/hexGridSize)
      * @return PlacedStructure or null if placement failed
      */
-    private PlacedStructure placeVillage(Village village, BiomePlacementResult placementResult, ComposeContext context) {
+    private PlacedStructure placeVillage(Town village, BiomePlacementResult placementResult, ComposeContext context) {
         log.debug("Placing village '{}' with district-based design", village.getName());
 
         // Get hexGridSize from world
@@ -152,7 +152,7 @@ public class StructureComposer {
             Biome villageBiome = Biome.builder()
                 .name(village.getName() + "-grid-" + absolutePos.getQ() + "," + absolutePos.getR())
                 .title(village.getTitle() + " Grid")
-                .type(BiomeType.VILLAGE)
+                .type(BiomeType.TOWN)
                 .build();
             villageBiome.initialize();
 

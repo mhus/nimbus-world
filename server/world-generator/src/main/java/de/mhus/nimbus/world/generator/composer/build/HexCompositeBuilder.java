@@ -19,9 +19,8 @@ import de.mhus.nimbus.world.generator.composer.flow.FlowComposer;
 import de.mhus.nimbus.world.generator.composer.point.PointComposer;
 import de.mhus.nimbus.world.generator.composer.structure.StructureComposer;
 import de.mhus.nimbus.world.generator.composer.structure.StructurePlacementResult;
-import de.mhus.nimbus.world.generator.composer.village.Village;
-import de.mhus.nimbus.world.generator.composer.village.VillageExternalConnectionGenerator;
-import de.mhus.nimbus.world.shared.world.WHexGridRepository;
+import de.mhus.nimbus.world.generator.composer.town.Town;
+import de.mhus.nimbus.world.generator.composer.town.TownExternalConnectionGenerator;
 import de.mhus.nimbus.world.shared.world.WWorld;
 import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
@@ -265,8 +264,8 @@ public class HexCompositeBuilder {
 
             // Step 4c: Generate external connection points for villages
             log.debug("Step 4c: Generating external connection points for villages");
-            VillageExternalConnectionGenerator villageConnGenerator = new VillageExternalConnectionGenerator();
-            VillageExternalConnectionGenerator.GenerationResult villageConnResult =
+            TownExternalConnectionGenerator villageConnGenerator = new TownExternalConnectionGenerator();
+            TownExternalConnectionGenerator.GenerationResult villageConnResult =
                     villageConnGenerator.generateExternalConnections(composition, placementResult);
             log.debug("Generated {} external connection points for villages", villageConnResult.getTotalPoints());
 
@@ -274,7 +273,7 @@ public class HexCompositeBuilder {
             log.debug("Step 4d: Connecting external connection points to village interiors");
             int connectedVillages = 0;
             for (Feature feature : composition.getFeatures()) {
-                if (feature instanceof Village village) {
+                if (feature instanceof Town village) {
                     if (village.getExternalConnectionPoints() != null && !village.getExternalConnectionPoints().isEmpty()) {
                         village.connectExternalConnectionPoints(world.getPublicData().getHexGridSize());
                         connectedVillages++;

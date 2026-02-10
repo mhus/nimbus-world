@@ -15,7 +15,7 @@ Das **Composer Model** ist das zentrale Konfigurationssystem des World Generator
 ### Root Class: HexComposition
 
 Die `HexComposition` ist der Einstiegspunkt jeder Weltdefinition. Sie enthält:
-- Eine Liste von **Features** (Biome, Villages, Flows, Points)
+- Eine Liste von **Features** (Biome, Towns, Flows, Points)
 - **Continents** für Gap-Filling zwischen Biomes
 - Metadaten (name, worldId, version)
 
@@ -37,8 +37,7 @@ Feature (abstract base)
 │   │   └── OceanBiome
 │   └── Composite
 ├── Structure (abstract, extends Area)
-│   ├── Village
-│   └── Town
+│   ├── Town
 ├── Flow (abstract, extends Feature)
 │   ├── River
 │   ├── Road
@@ -48,7 +47,7 @@ Feature (abstract base)
     ├── PositionPoint (standard)
     ├── EdgePoint
     ├── OceanEdgePoint
-    └── VillageConnectionPoint
+    └── TownConnectionPoint
 ```
 
 ### Jackson Polymorphic Deserialization
@@ -59,7 +58,7 @@ Das Composer Model nutzt Jackson `@JsonTypeInfo` und `@JsonSubTypes` für polymo
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "featureType")
 @JsonSubTypes({
     @JsonSubTypes.Type(value = Biome.class, name = "biome"),
-    @JsonSubTypes.Type(value = Village.class, name = "village"),
+    @JsonSubTypes.Type(value = Town.class, name = "town"),
     @JsonSubTypes.Type(value = River.class, name = "river"),
     // ... etc
 })
@@ -82,7 +81,6 @@ Der **discriminator** `featureType` bestimmt die konkrete Klasse beim Deserialis
 | `island-biome` | IslandBiome | Area |
 | `ocean-biome` | OceanBiome | Area |
 | `composite` | Composite | Area |
-| `village` | Village | Structure |
 | `town` | Town | Structure |
 | `river` | River | Flow |
 | `road` | Road | Flow |
@@ -91,7 +89,7 @@ Der **discriminator** `featureType` bestimmt die konkrete Klasse beim Deserialis
 | `point` | PositionPoint | Point |
 | `edge` | EdgePoint | Point |
 | `ocean-edge` | OceanEdgePoint | Point |
-| `village-connection` | VillageConnectionPoint | Point |
+| `town-connection` | TownConnectionPoint | Point |
 
 ## 3. Root Class: HexComposition
 
@@ -107,7 +105,7 @@ public class HexComposition {
     private String name;               // Technical name
     private String title;              // Display name
     private String worldId;            // Target world ID
-    private List<Feature> features;    // All features (biomes, villages, flows, points)
+    private List<Feature> features;    // All features (biomes, towns, flows, points)
     private List<Continent> continents; // Continent definitions for gap-filling
     private String version;            // Schema version (default: "1.0.0")
     private String description;        // Human-readable description
@@ -135,7 +133,7 @@ public class HexComposition {
   ],
   "features": [
     { "featureType": "biome", ... },
-    { "featureType": "village", ... },
+    { "featureType": "town", ... },
     { "featureType": "river", ... }
   ]
 }
@@ -320,17 +318,17 @@ private List<Feature> features;   // Nested features
   "positions": [...],
   "features": [
     { "featureType": "biome", "name": "shire-green", ... },
-    { "featureType": "village", "name": "hobbiton", ... }
+    { "featureType": "town", "name": "hobbiton", ... }
   ]
 }
 ```
 
 ### 4.3 Structure Features
 
-#### Village
+#### Town
 
-**Feature Type**: `village`
-**Java Class**: `de.mhus.nimbus.world.generator.composer.village.Village`
+**Feature Type**: `town`
+**Java Class**: `de.mhus.nimbus.world.generator.composer.town.Town`
 **Parent**: `Structure` (extends `Area`)
 
 **Purpose**: Dörfer mit Gebäuden, Straßen und Distrikten.
@@ -339,7 +337,7 @@ private List<Feature> features;   // Nested features
 ```java
 private String style;                           // "medieval", "modern", "fantasy"
 private List<District> districts;               // District definitions
-private List<VillageConnectionPoint> externalConnectionPoints; // External roads
+private List<TownConnectionPoint> externalConnectionPoints; // External roads
 private int baseLevel;                          // Terrain base level (default: 95)
 private boolean fillEmptySlots;                 // Auto-fill empty slots (default: true)
 private double buildingTendency;                // 0.0-1.0, tendency towards buildings vs free places (default: 0.7)
@@ -355,7 +353,7 @@ public class District {
     private String title;               // Display name
     private Direction direction;        // Direction from anchor (N, NE, E, SE, S, SW, W, NW)
     private String anchorDistrict;      // Anchor district name (null for origin)
-    private VillageSize slots;          // TINY, SMALL, MEDIUM, LARGE
+    private TownSize slots;          // HAMLET, SMALL_VILLAGE, VILLAGE, TOWN, LARGE_TOWN
     private List<Place> places;         // Places in this district
 }
 ```
@@ -370,9 +368,9 @@ public class District {
 **Example JSON**:
 ```json
 {
-  "featureType": "village",
-  "name": "small-village",
-  "title": "Small Village",
+  "featureType": "town",
+  "name": "small-town",
+  "title": "Small Town",
   "style": "medieval",
   "baseLevel": 95,
   "fillEmptySlots": true,
@@ -382,7 +380,7 @@ public class District {
   "districts": [
     {
       "name": "center",
-      "title": "Village Center",
+      "title": "Town Center",
       "slots": "MEDIUM",
       "places": [
         {
@@ -427,14 +425,6 @@ public class District {
   ]
 }
 ```
-
-#### Town
-
-**Feature Type**: `town`
-**Java Class**: `de.mhus.nimbus.world.generator.composer.village.Town`
-**Parent**: `Structure`
-
-**Purpose**: Größere Siedlungen (ähnlich wie Village, aber mit mehr Features).
 
 ### 4.4 Flow Features
 
@@ -652,13 +642,13 @@ private Direction oceanDirection;       // Direction to ocean
 }
 ```
 
-#### VillageConnectionPoint
+#### TownConnectionPoint
 
-**Feature Type**: `village-connection`
-**Java Class**: `de.mhus.nimbus.world.generator.composer.village.VillageConnectionPoint`
+**Feature Type**: `town-connection`
+**Java Class**: `de.mhus.nimbus.world.generator.composer.town.TownConnectionPoint`
 **Parent**: `Point`
 
-**Purpose**: Externe Connection Points für Villages (automatisch generiert).
+**Purpose**: Externe Connection Points für Towns (automatisch generiert).
 
 **Special Behavior**: Diese Points werden automatisch vom System generiert und sollten nicht manuell definiert werden.
 
@@ -666,7 +656,7 @@ private Direction oceanDirection;       // Direction to ocean
 
 ### 5.1 AreaShape
 
-Defines the shape of area features (biomes, villages, composites).
+Defines the shape of area features (biomes, towns, composites).
 
 **Values**:
 - `CIRCLE`: Circular area expanding from center
@@ -829,14 +819,14 @@ Custom key-value parameters für Terrain Generation.
 }
 ```
 
-## 6. Village System Deep Dive
+## 6. Town System Deep Dive
 
-### 6.1 Village Structure
+### 6.1 Town Structure
 
-Hierarchie: **Village → Districts → Places**
+Hierarchie: **Town → Districts → Places**
 
 ```
-Village "small-village"
+Town "small-town"
 ├── District "center" (MEDIUM slots)
 │   ├── Place "town-hall" (BuildingPlace)
 │   ├── Place "market-square" (FreePlace)
@@ -858,12 +848,12 @@ public class District {
     private String title;               // Display name
     private Direction direction;        // Direction from anchor (N, NE, E, SE, S, SW, W, NW)
     private String anchorDistrict;      // Anchor district name (null for origin/center)
-    private VillageSize slots;          // Slot configuration (TINY, SMALL, MEDIUM, LARGE)
+    private DistrictSlotSize slots;     // Slot configuration (TINY, SMALL, MEDIUM, LARGE)
     private List<Place> places;         // Places in this district
 }
 ```
 
-**VillageSize (Slot Configuration)**:
+**DistrictSlotSize (Slot Configuration)**:
 
 | Size | Slot Grid |
 |------|-----------|
@@ -999,9 +989,9 @@ private boolean connectionPoint;    // Is this a connection point for external r
 **Purpose**: Connection Points markieren Orte, an denen externe Straßen das Dorf betreten/verlassen können.
 
 **Automatic External Connection Generation**:
-- System generiert automatisch `VillageConnectionPoint` Features in Nachbar-Grids
+- System generiert automatisch `TownConnectionPoint` Features in Nachbar-Grids
 - Diese externen Points können als `endPointId` für Roads verwendet werden
-- Naming convention: `{village-name}-{direction}` (z.B. `small-village-e` für östlichen Connection Point)
+- Naming convention: `{town-name}-{direction}` (z.B. `small-town-e` für östlichen Connection Point)
 
 **Example**:
 ```json
@@ -1009,12 +999,12 @@ private boolean connectionPoint;    // Is this a connection point for external r
   "featureType": "road",
   "name": "approach-road",
   "startPointId": "rocky-hills",
-  "endPointId": "small-village-e",
+  "endPointId": "small-town-e",
   "roadType": "street"
 }
 ```
 
-### 6.5 Village Configuration Options
+### 6.5 Town Configuration Options
 
 **baseLevel**: Terrain base level (default: 95)
 ```json
@@ -1141,11 +1131,11 @@ private boolean connectionPoint;    // Is this a connection point for external r
 }
 ```
 
-### 7.5 Village Integration
+### 7.5 Town Integration
 
-**Connecting Villages to Roads**:
-1. Define Village with connection points in Districts
-2. System auto-generates external connection points (e.g., `village-e`, `village-w`)
+**Connecting Towns to Roads**:
+1. Define Town with connection points in Districts
+2. System auto-generates external connection points (e.g., `town-e`, `town-w`)
 3. Reference external connection points in Road definitions
 
 **Example**:
@@ -1153,8 +1143,8 @@ private boolean connectionPoint;    // Is this a connection point for external r
 {
   "features": [
     {
-      "featureType": "village",
-      "name": "small-village",
+      "featureType": "town",
+      "name": "small-town",
       "districts": [
         {
           "places": [
@@ -1166,7 +1156,7 @@ private boolean connectionPoint;    // Is this a connection point for external r
     {
       "featureType": "road",
       "startPointId": "mountain-pass",
-      "endPointId": "small-village-e"
+      "endPointId": "small-town-e"
     }
   ]
 }
@@ -1179,7 +1169,7 @@ private boolean connectionPoint;    // Is this a connection point for external r
   "name": "middle-earth-shire",
   "worldId": "world-01",
   "title": "The Shire Region",
-  "description": "Peaceful countryside with rolling hills and villages",
+  "description": "Peaceful countryside with rolling hills and towns",
   "version": "1.0.0",
 
   "continents": [
@@ -1268,7 +1258,7 @@ private boolean connectionPoint;    // Is this a connection point for external r
     },
 
     {
-      "featureType": "village",
+      "featureType": "town",
       "name": "hobbiton",
       "title": "Hobbiton",
       "style": "medieval",
@@ -1280,12 +1270,12 @@ private boolean connectionPoint;    // Is this a connection point for external r
       "districts": [
         {
           "name": "center",
-          "title": "Village Green",
+          "title": "Town Green",
           "slots": "MEDIUM",
           "places": [
             {
               "placeType": "free",
-              "name": "village-green",
+              "name": "town-green",
               "kind": "PLAZA",
               "connectionPoint": true
             },
@@ -1392,7 +1382,7 @@ private boolean connectionPoint;    // Is this a connection point for external r
 `PLAINS`, `FOREST`, `MOUNTAINS`, `DESERT`, `SWAMP`, `COAST`, `OCEAN`, `ISLAND`
 
 ### MountainHeight
-`LOW_HILLS`, `MEDIUM_PEAKS`, `HIGH_PEAKS`, `EXTREME_PEAKS`
+HIGH_PEAKS (120, 40, 20, 0.8), MEDIUM_PEAKS (100, 30, 15, 0.8), LOW_PEAKS (80, 20, 10, 0.7), MEADOW (60, 10, 5, 0.6)
 
 ### ForestDensity
 `SPARSE`, `NORMAL`, `DENSE`, `VERY_DENSE`
@@ -1407,7 +1397,7 @@ private boolean connectionPoint;    // Is this a connection point for external r
 `N`, `NE`, `E`, `SE`, `S`, `SW`, `W`, `NW`
 
 ### DistanceRange
-`ADJACENT` (0-1), `NEAR` (1-2), `NORMAL` (2-4), `FAR` (4-7), `VERY_FAR` (7-12)
+DIRECT_BEHIND (1, 1), NEAR (1, 10), FAR (10, 20);
 
 ### BiomeDistance
 `CENTER` (0), `NEAR` (1), `NORMAL` (2), `FAR` (3), `VERY_FAR` (4)
@@ -1424,7 +1414,7 @@ private boolean connectionPoint;    // Is this a connection point for external r
 ### DeviationTendency
 `NONE` (0.0), `SLIGHT` (0.2), `MODERATE` (0.4), `STRONG` (0.6)
 
-### VillageSize (Slots)
+### DistrictSlotSize (Slots)
 `TINY` (3x3), `SMALL` (5x5), `MEDIUM` (7x7), `LARGE` (9x9)
 
 ### FeatureStatus
@@ -1438,7 +1428,7 @@ private boolean connectionPoint;    // Is this a connection point for external r
 2. **name is unique**: Feature names must be unique within a composition for referencing
 3. **Positioning flexibility**: Use either enum values (`size: "LARGE"`) or explicit values (`sizeFrom: 10, sizeTo: 15`)
 4. **Points before Flows**: Always define Points before Flows that reference them
-5. **Villages auto-generate connection points**: Reference them as `{village-name}-{direction}`
+5. **Towns auto-generate connection points**: Reference them as `{town-name}-{direction}`
 6. **Deprecated fields**: Prefer new syntax over deprecated fields (e.g., `biomeId` + `direction` over `snap`)
 
 ### Common Pitfalls
@@ -1485,7 +1475,7 @@ private boolean connectionPoint;    // Is this a connection point for external r
 - [ ] All referenced IDs exist (`startPointId`, `endPointId`, `biomeId`, `anchorDistrict`)
 - [ ] Positioning is defined (`positions`, `biomeId`, or `snap`)
 - [ ] Flow points are defined before flows
-- [ ] Village districts have valid `slots` enum
+- [ ] Town districts have valid `slots` enum
 - [ ] Continent IDs match between continents and biomes
 - [ ] Direction values are valid enum values
 

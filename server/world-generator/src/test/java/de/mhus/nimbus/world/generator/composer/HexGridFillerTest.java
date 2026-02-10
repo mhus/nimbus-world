@@ -284,7 +284,6 @@ public class HexGridFillerTest {
         biomeColors.put(BiomeType.SWAMP, new Color(85, 107, 47));       // Dark olive green
         biomeColors.put(BiomeType.OCEAN, new Color(30, 144, 255));      // Dodger blue
         biomeColors.put(BiomeType.COAST, new Color(135, 206, 250));     // Light sky blue
-        biomeColors.put(BiomeType.VILLAGE, new Color(160, 82, 45));     // Sienna
         biomeColors.put(BiomeType.TOWN, new Color(178, 34, 34));        // Firebrick
 
         // Filler colors (lighter/transparent)

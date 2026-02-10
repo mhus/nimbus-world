@@ -1,6 +1,6 @@
 package de.mhus.nimbus.world.generator.composer.structure;
 
-import de.mhus.nimbus.world.generator.composer.village.PlacedStructure;
+import de.mhus.nimbus.world.generator.composer.town.PlacedStructure;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

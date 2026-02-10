@@ -7,8 +7,8 @@ import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.world.generator.composer.flow.RouteDefinition;
 import de.mhus.nimbus.world.generator.composer.flow.BoundaryRoadDefinition;
 import de.mhus.nimbus.world.generator.composer.flow.RoadConfig;
-import de.mhus.nimbus.world.generator.composer.village.VillagePlotDefinition;
-import de.mhus.nimbus.world.generator.composer.village.VillageRoadDefinition;
+import de.mhus.nimbus.world.generator.composer.town.TownPlotDefinition;
+import de.mhus.nimbus.world.generator.composer.town.TownRoadDefinition;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -33,10 +33,10 @@ public class HexGridConfig {
 
     // VillageBuilder configuration
     @Builder.Default
-    private List<VillagePlotDefinition> plots = new ArrayList<>();
+    private List<TownPlotDefinition> plots = new ArrayList<>();
 
     @Builder.Default
-    private List<VillageRoadDefinition> internalRoads = new ArrayList<>();
+    private List<TownRoadDefinition> internalRoads = new ArrayList<>();
 
     // RoadBuilder configuration (for Plaza)
     private RoadConfig roadConfig;
@@ -48,7 +48,7 @@ public class HexGridConfig {
     /**
      * Adds a plot to this grid
      */
-    public void addPlot(VillagePlotDefinition plot) {
+    public void addPlot(TownPlotDefinition plot) {
         if (plots == null) {
             plots = new ArrayList<>();
         }
@@ -58,7 +58,7 @@ public class HexGridConfig {
     /**
      * Adds an internal road to this grid
      */
-    public void addInternalRoad(VillageRoadDefinition road) {
+    public void addInternalRoad(TownRoadDefinition road) {
         if (internalRoads == null) {
             internalRoads = new ArrayList<>();
         }
@@ -88,7 +88,7 @@ public class HexGridConfig {
 
             // Add plots
             ArrayNode plotsArray = mapper.createArrayNode();
-            for (VillagePlotDefinition plot : plots) {
+            for (TownPlotDefinition plot : plots) {
                 ObjectNode plotNode = mapper.createObjectNode();
                 plotNode.put("lx", plot.getLx());
                 plotNode.put("lz", plot.getLz());
@@ -117,7 +117,7 @@ public class HexGridConfig {
 
             // Add internal roads
             ArrayNode roadsArray = mapper.createArrayNode();
-            for (VillageRoadDefinition road : internalRoads) {
+            for (TownRoadDefinition road : internalRoads) {
                 ObjectNode roadNode = mapper.createObjectNode();
 
                 ObjectNode fromNode = mapper.createObjectNode();

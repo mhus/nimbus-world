@@ -6,7 +6,6 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.world.generator.composer.biome.IslandBiome;
-import de.mhus.nimbus.world.generator.composer.village.Town;
 import de.mhus.nimbus.world.generator.composer.area.Composite;
 import de.mhus.nimbus.world.generator.composer.biome.Biome;
 import de.mhus.nimbus.world.generator.composer.biome.CoastBiome;
@@ -21,7 +20,7 @@ import de.mhus.nimbus.world.generator.composer.flow.Road;
 import de.mhus.nimbus.world.generator.composer.flow.SideWall;
 import de.mhus.nimbus.world.generator.composer.flow.Wall;
 import de.mhus.nimbus.world.generator.composer.point.Point;
-import de.mhus.nimbus.world.generator.composer.village.Village;
+import de.mhus.nimbus.world.generator.composer.town.Town;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -48,7 +47,6 @@ import java.util.UUID;
     @JsonSubTypes.Type(value = CoastBiome.class, name = "coast-biome"),
     @JsonSubTypes.Type(value = IslandBiome.class, name = "island-biome"),
     @JsonSubTypes.Type(value = OceanBiome.class, name = "ocean-biome"),
-    @JsonSubTypes.Type(value = Village.class, name = "village"),
     @JsonSubTypes.Type(value = Town.class, name = "town"),
     @JsonSubTypes.Type(value = Composite.class, name = "composite"),
     @JsonSubTypes.Type(value = Road.class, name = "road"),

@@ -9,6 +9,7 @@ import de.mhus.nimbus.world.ai.model.AiChatOptions;
 import de.mhus.nimbus.world.ai.model.AiModelService;
 import de.mhus.nimbus.world.ai.model.gemini.GeminiChat;
 import de.mhus.nimbus.world.generator.composer.build.HexComposition;
+import de.mhus.nimbus.world.generator.composer.town.Town;
 import de.mhus.nimbus.world.shared.world.WDocument;
 import de.mhus.nimbus.world.shared.world.WDocumentService;
 import de.mhus.nimbus.world.shared.world.WWorld;
@@ -338,7 +339,7 @@ public class TranslatorIntegrationTest {
 
         // Create job parameters
         Map<String, String> params = new HashMap<>();
-        params.put("instructionsDocumentId", instructionsDocumentId);
+        params.put("instructionsId", instructionsDocumentId);
         params.put("documentPath", "test_translations");
         params.put("maxAttempts", "5");  // Allow 5 attempts with error feedback
 
@@ -379,15 +380,8 @@ public class TranslatorIntegrationTest {
         assertNotNull(savedDoc, "Saved document should exist");
         assertNotNull(savedDoc.getContent(), "Document should have content");
 
-        // Parse document content
-        JsonNode docContent = objectMapper.readTree(savedDoc.getContent());
-        assertTrue(docContent.has("compositionJson"), "Document should contain compositionJson");
-
-        String compositionJson = docContent.get("compositionJson").asText();
-        assertNotNull(compositionJson, "Composition JSON should not be null");
-
-        // Validate that JSON can be parsed to HexComposition
-        HexComposition composition = objectMapper.readValue(compositionJson, HexComposition.class);
+        // Parse document content directly as HexComposition
+        HexComposition composition = objectMapper.readValue(savedDoc.getContent(), HexComposition.class);
         assertNotNull(composition, "Composition should be parseable");
         assertNotNull(composition.getFeatures(), "Composition should have features");
         assertFalse(composition.getFeatures().isEmpty(), "Composition should have at least one feature");
@@ -444,15 +438,8 @@ public class TranslatorIntegrationTest {
         WDocument enrichedDoc = getDocumentByDocumentId(TEST_WORLD_ID, "generator_composed", enrichedDocumentId);
         assertNotNull(enrichedDoc, "Enriched document should exist");
 
-        // Parse enriched document content
-        JsonNode enrichedContent = objectMapper.readTree(enrichedDoc.getContent());
-        assertTrue(enrichedContent.has("enrichedCompositionJson"), "Document should contain enrichedCompositionJson");
-
-        String enrichedCompositionJson = enrichedContent.get("enrichedCompositionJson").asText();
-        assertNotNull(enrichedCompositionJson, "Enriched composition JSON should not be null");
-
-        // Parse enriched composition
-        HexComposition enrichedComposition = objectMapper.readValue(enrichedCompositionJson, HexComposition.class);
+        // Parse enriched composition directly from document content
+        HexComposition enrichedComposition = objectMapper.readValue(enrichedDoc.getContent(), HexComposition.class);
         assertNotNull(enrichedComposition, "Enriched composition should be parseable");
 
         // Count total hexGrids across all features
@@ -566,7 +553,7 @@ public class TranslatorIntegrationTest {
 
         // Step 1: Translate
         Map<String, String> translateParams = new HashMap<>();
-        translateParams.put("instructionsDocumentId", instructionsDocumentId);
+        translateParams.put("instructionsId", instructionsDocumentId);
         translateParams.put("documentPath", "test_translations");
         translateParams.put("maxAttempts", "5"); // Allow 5 attempts with error feedback
 
@@ -605,10 +592,9 @@ public class TranslatorIntegrationTest {
         String enrichedDocumentId = applyResultNode.get("documentId").asText();
 
         WDocument enrichedDoc = getDocumentByDocumentId(TEST_WORLD_ID, "generator_composed", enrichedDocumentId);
-        JsonNode enrichedContent = objectMapper.readTree(enrichedDoc.getContent());
-        String enrichedCompositionJson = enrichedContent.get("enrichedCompositionJson").asText();
 
-        HexComposition enrichedComposition = objectMapper.readValue(enrichedCompositionJson, HexComposition.class);
+        // Composition is now directly in the document content
+        HexComposition enrichedComposition = objectMapper.readValue(enrichedDoc.getContent(), HexComposition.class);
 
         // Count hexGrids
         int totalHexGrids = 0;
@@ -649,7 +635,7 @@ public class TranslatorIntegrationTest {
 
         // Step 1: Translate
         Map<String, String> translateParams = new HashMap<>();
-        translateParams.put("instructionsDocumentId", instructionsDocumentId);
+        translateParams.put("instructionsId", instructionsDocumentId);
         translateParams.put("documentPath", "test_translations");
         translateParams.put("maxAttempts", "3");
 
@@ -688,23 +674,22 @@ public class TranslatorIntegrationTest {
         String enrichedDocumentId = applyResultNode.get("documentId").asText();
 
         WDocument enrichedDoc = getDocumentByDocumentId(TEST_WORLD_ID, "generator_composed", enrichedDocumentId);
-        JsonNode enrichedContent = objectMapper.readTree(enrichedDoc.getContent());
-        String enrichedCompositionJson = enrichedContent.get("enrichedCompositionJson").asText();
 
-        HexComposition enrichedComposition = objectMapper.readValue(enrichedCompositionJson, HexComposition.class);
+        // Composition is now directly in the document content
+        HexComposition enrichedComposition = objectMapper.readValue(enrichedDoc.getContent(), HexComposition.class);
 
         // Verify village with district
         assertNotNull(enrichedComposition.getFeatures(), "Should have features");
 
         var villages = enrichedComposition.getFeatures().stream()
-                .filter(f -> f instanceof de.mhus.nimbus.world.generator.composer.village.Village)
-                .map(f -> (de.mhus.nimbus.world.generator.composer.village.Village) f)
+                .filter(f -> f instanceof Town)
+                .map(f -> (Town) f)
                 .toList();
 
         assertFalse(villages.isEmpty(), "Should have at least one village");
 
         var village = villages.get(0);
-        assertEquals("test-village", village.getName(), "Village should have correct name");
+        assertEquals("test-town", village.getName(), "Village should have correct name");
         assertNotNull(village.getDistricts(), "Village should have districts");
         assertFalse(village.getDistricts().isEmpty(), "Village should have at least one district");
 

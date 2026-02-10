@@ -41,10 +41,6 @@ public enum BiomeType implements TsEnum {
         "g_water", "true"
     )),
 
-    VILLAGE(Biome.class, "island", Map.of(
-        "g_offset", "1"
-    )),
-
     TOWN(Biome.class, "island", Map.of(
         "g_offset", "1"
     )),

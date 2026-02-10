@@ -17,7 +17,7 @@ import de.mhus.nimbus.world.generator.composer.filler.HexGridFillResult;
 import de.mhus.nimbus.world.generator.composer.image.LineOverlay;
 import de.mhus.nimbus.world.generator.composer.point.Point;
 import de.mhus.nimbus.world.generator.composer.image.TextOverlay;
-import de.mhus.nimbus.world.generator.composer.village.VillageDebugOverlayHelper;
+import de.mhus.nimbus.world.generator.composer.town.TownDebugOverlayHelper;
 import de.mhus.nimbus.world.generator.flat.manipulator.BorderSmoothManipulator;
 import de.mhus.nimbus.world.generator.flat.FlatManipulator;
 import de.mhus.nimbus.world.generator.flat.FlatManipulatorService;
@@ -104,8 +104,8 @@ public class HexCompositeBuilderSimpleTest {
     }
 
     @Test
-    public void testSimpleSmallVillage() throws Exception {
-        simpleContinentTest("small-village");
+    public void testSimpleSmallTown() throws Exception {
+        simpleContinentTest("small-town");
     }
 
     public CompositionResult simpleContinentTest(String name) throws Exception {
@@ -280,7 +280,6 @@ public class HexCompositeBuilderSimpleTest {
                 case OCEAN -> BiomeType.OCEAN.getBuilderName();
                 case COAST -> BiomeType.COAST.getBuilderName();
                 case ISLAND -> BiomeType.ISLAND.getBuilderName();
-                case VILLAGE -> BiomeType.VILLAGE.getBuilderName();
                 case TOWN -> BiomeType.TOWN.getBuilderName();
             };
         } else {
@@ -659,7 +658,7 @@ public class HexCompositeBuilderSimpleTest {
         // Use VillageDebugOverlayHelper to add village slot overlays
         // IMPORTANT: Use FLAT_SIZE here, not hexGridSize (FLAT_SIZE - 30), because the
         // HexGridCompositeImageCreator positions flats using FLAT_SIZE
-        VillageDebugOverlayHelper.addVillageSlotOverlaysFromHexGrids(creator, hexGrids, FLAT_SIZE);
+        TownDebugOverlayHelper.addVillageSlotOverlaysFromHexGrids(creator, hexGrids, FLAT_SIZE);
     }
 
     /**

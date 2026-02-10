@@ -11,7 +11,7 @@ import de.mhus.nimbus.world.generator.composer.feature.Feature;
 import de.mhus.nimbus.world.generator.composer.structure.PreparedPosition;
 import de.mhus.nimbus.world.generator.composer.area.RelativePosition;
 import de.mhus.nimbus.world.generator.composer.biome.BiomeDistance;
-import de.mhus.nimbus.world.generator.composer.village.VillageConnectionPoint;
+import de.mhus.nimbus.world.generator.composer.town.TownConnectionPoint;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -45,7 +45,7 @@ import java.util.Map;
     @JsonSubTypes.Type(value = PositionPoint.class, name = "point"),
     @JsonSubTypes.Type(value = EdgePoint.class, name = "edge"),
     @JsonSubTypes.Type(value = OceanEdgePoint.class, name = "ocean-edge"),
-    @JsonSubTypes.Type(value = VillageConnectionPoint.class, name = "village-connection")
+    @JsonSubTypes.Type(value = TownConnectionPoint.class, name = "village-connection")
 })
 public abstract class Point extends Feature {
 

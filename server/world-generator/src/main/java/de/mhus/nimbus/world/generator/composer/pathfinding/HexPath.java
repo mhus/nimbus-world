@@ -1,6 +1,6 @@
 package de.mhus.nimbus.world.generator.composer.pathfinding;
 
-import de.mhus.nimbus.world.generator.composer.village.DistrictGrid;
+import de.mhus.nimbus.world.generator.composer.town.DistrictGrid;
 import lombok.Data;
 
 import java.util.ArrayList;

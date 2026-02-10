@@ -2,7 +2,6 @@ package de.mhus.nimbus.world.generator.composer.build;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import de.mhus.nimbus.world.generator.composer.village.Town;
 import de.mhus.nimbus.world.generator.composer.area.Composite;
 import de.mhus.nimbus.world.generator.composer.biome.Biome;
 import de.mhus.nimbus.world.generator.composer.biome.Continent;
@@ -12,7 +11,7 @@ import de.mhus.nimbus.world.generator.composer.flow.Flow;
 import de.mhus.nimbus.world.generator.composer.flow.River;
 import de.mhus.nimbus.world.generator.composer.flow.Road;
 import de.mhus.nimbus.world.generator.composer.flow.Wall;
-import de.mhus.nimbus.world.generator.composer.village.Village;
+import de.mhus.nimbus.world.generator.composer.town.Town;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -103,18 +102,7 @@ public class HexComposition implements BuildFeature {
     }
 
     @JsonIgnore
-    public List<Village> getVillages() {
-        if (features == null) {
-            return new ArrayList<>();
-        }
-        return features.stream()
-            .filter(f -> f instanceof Village)
-            .map(f -> (Village) f)
-            .collect(Collectors.toList());
-    }
-
-    @JsonIgnore
-    public List<Town> getTowns() {
+    public List<Town> getVillages() {
         if (features == null) {
             return new ArrayList<>();
         }

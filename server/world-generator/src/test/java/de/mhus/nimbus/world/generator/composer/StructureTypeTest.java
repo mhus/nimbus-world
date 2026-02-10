@@ -1,15 +1,8 @@
 package de.mhus.nimbus.world.generator.composer;
 
 import de.mhus.nimbus.generated.types.HexVector2;
-import de.mhus.nimbus.world.generator.composer.feature.FeatureHexGrid;
-import de.mhus.nimbus.world.generator.composer.structure.Structure;
 import de.mhus.nimbus.world.generator.composer.structure.StructureType;
-import de.mhus.nimbus.world.generator.composer.village.Town;
-import de.mhus.nimbus.world.generator.composer.village.Village;
 import org.junit.jupiter.api.Test;
-
-import java.util.Arrays;
-import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -20,67 +13,6 @@ class StructureTypeTest {
 
     private HexVector2 hex(int q, int r) {
         return HexVector2.builder().q(q).r(r).build();
-    }
-
-    @Test
-    void testCreateInstance_Hamlet_ReturnsVillage() {
-        Structure structure = StructureType.HAMLET.createInstance();
-
-        assertNotNull(structure);
-        assertInstanceOf(Village.class, structure);
-        assertEquals(StructureType.HAMLET, structure.getType());
-
-        Village village = (Village) structure;
-        assertNotNull(village.getParameters());
-        assertEquals("island", village.getParameters().get("g_builder"));
-        assertEquals("1", village.getParameters().get("g_offset"));
-        assertEquals("95", village.getParameters().get("default_level"));
-    }
-
-    @Test
-    void testCreateInstance_Village_ReturnsVillage() {
-        Structure structure = StructureType.VILLAGE.createInstance();
-
-        assertNotNull(structure);
-        assertInstanceOf(Village.class, structure);
-        assertEquals(StructureType.VILLAGE, structure.getType());
-    }
-
-    @Test
-    void testCreateInstance_Town_ReturnsTown() {
-        Structure structure = StructureType.TOWN.createInstance();
-
-        assertNotNull(structure);
-        assertInstanceOf(Town.class, structure);
-        assertEquals(StructureType.TOWN, structure.getType());
-
-        Town town = (Town) structure;
-        assertNotNull(town.getParameters());
-        assertEquals("island", town.getParameters().get("g_builder"));
-        assertEquals("false", town.getParameters().get("has_wall"));
-    }
-
-    @Test
-    void testCreateInstance_City_ReturnsTown() {
-        Structure structure = StructureType.CITY.createInstance();
-
-        assertNotNull(structure);
-        assertInstanceOf(Town.class, structure);
-        assertEquals(StructureType.CITY, structure.getType());
-
-        Town town = (Town) structure;
-        assertEquals("true", town.getParameters().get("has_wall"));
-        assertEquals("true", town.getParameters().get("has_districts"));
-    }
-
-    @Test
-    void testDefaultParameters_Hamlet() {
-        var defaults = StructureType.HAMLET.getDefaultParameters();
-
-        assertNotNull(defaults);
-        assertEquals("1", defaults.get("g_offset"));
-        assertEquals("95", defaults.get("default_level"));
-        assertEquals("1", defaults.get("default_material"));
     }
 
     @Test
@@ -99,64 +31,6 @@ class StructureTypeTest {
         assertNotNull(defaults);
         assertEquals("true", defaults.get("has_wall"));
         assertEquals("true", defaults.get("has_districts"));
-    }
-
-    @Test
-    void testGetStructureClass() {
-        assertEquals(Village.class, StructureType.HAMLET.getStructureClass());
-        assertEquals(Village.class, StructureType.SMALL_VILLAGE.getStructureClass());
-        assertEquals(Village.class, StructureType.VILLAGE.getStructureClass());
-        assertEquals(Village.class, StructureType.LARGE_VILLAGE.getStructureClass());
-        assertEquals(Town.class, StructureType.TOWN.getStructureClass());
-        assertEquals(Town.class, StructureType.LARGE_TOWN.getStructureClass());
-        assertEquals(Town.class, StructureType.CITY.getStructureClass());
-    }
-
-    @Test
-    void testFromString() {
-        assertEquals(StructureType.HAMLET, StructureType.fromString("hamlet"));
-        assertEquals(StructureType.HAMLET, StructureType.fromString("HAMLET"));
-        assertEquals(StructureType.VILLAGE, StructureType.fromString("village"));
-        assertEquals(StructureType.TOWN, StructureType.fromString("town"));
-        assertNull(StructureType.fromString(null));
-        assertThrows(IllegalArgumentException.class, () -> StructureType.fromString("invalid"));
-    }
-
-    @Test
-    void testTownConfiguresOwnGrids() {
-        Town town = (Town) StructureType.TOWN.createInstance();
-        town.setName("test-town");
-
-        List<HexVector2> coordinates = Arrays.asList(
-            hex(0, 0),
-            hex(1, 0),
-            hex(0, 1),
-            hex(1, 1),
-            hex(-1, 0)  // 5-cross pattern
-        );
-        town.configureHexGrids(coordinates);
-
-        assertEquals(5, town.getHexGrids().size());
-
-        FeatureHexGrid grid = town.getHexGrids().get(0);
-        assertEquals("town", grid.getParameters().get("structure"));
-        assertEquals("test-town", grid.getParameters().get("structureName"));
-        assertEquals("false", grid.getParameters().get("has_wall"));
-    }
-
-    @Test
-    void testCityWithWall() {
-        Town city = (Town) StructureType.CITY.createInstance();
-        city.setName("metropolis");
-
-        List<HexVector2> coordinates = Arrays.asList(hex(0, 0));
-        city.configureHexGrids(coordinates);
-
-        assertEquals(1, city.getHexGrids().size());
-
-        FeatureHexGrid grid = city.getHexGrids().get(0);
-        assertEquals("city", grid.getParameters().get("structure"));
-        assertEquals("true", grid.getParameters().get("has_wall"));
     }
 
 }

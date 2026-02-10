@@ -555,7 +555,6 @@ public class HexCompositeBuilderTest {
                 case OCEAN -> BiomeType.OCEAN.getBuilderName();
                 case COAST -> BiomeType.COAST.getBuilderName();
                 case ISLAND -> BiomeType.ISLAND.getBuilderName();
-                case VILLAGE -> BiomeType.VILLAGE.getBuilderName();
                 case TOWN -> BiomeType.TOWN.getBuilderName();
             };
         } else {

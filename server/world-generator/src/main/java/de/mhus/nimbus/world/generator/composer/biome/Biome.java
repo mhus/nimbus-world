@@ -70,7 +70,6 @@ public class Biome extends Area {
             case COAST -> "#F0E68C";          // Khaki (sandy coast)
             case ISLAND -> "#98FB98";         // Pale Green
             case OCEAN -> "#4682B4";          // Steel Blue
-            case VILLAGE -> "#DEB887";        // Burlywood
             case TOWN -> "#CD853F";           // Peru (darker brown)
         };
     }

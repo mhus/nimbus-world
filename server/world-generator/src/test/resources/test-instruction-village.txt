@@ -1,7 +1,7 @@
-Create a small world with a village:
+Create a small world with a town:
 
 - One small plains biome at origin
-- One village named "test-village" in the plains biome
+- One town named "test-town" in the plains biome
   - Style: medieval
   - One district called "market-district"
     - Size: MEDIUM

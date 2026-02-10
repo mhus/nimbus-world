@@ -427,14 +427,14 @@ public class HexGridMultiEdgeBlender {
         int gridSize = context.getWorld().getPublicData().getHexGridSize();
         double radius = gridSize / 2.0;
 
-        // Parse flatId to get hex coordinates (e.g., "genesis_0_0" -> q=0, r=0)
-        String flatId = flat.getFlatId();
-        String[] parts = flatId.split("_");
-        int q = Integer.parseInt(parts[parts.length - 2]);
-        int r = Integer.parseInt(parts[parts.length - 1]);
+        // Get hex coordinates directly from flat.hexGrid
+        HexVector2 hexVec = flat.getHexGrid();
+        if (hexVec == null) {
+            log.error("Flat {} has no hexGrid set", flat.getFlatId());
+            return new int[]{0, 0};
+        }
 
         // Get hex center in world coordinates (without borders)
-        HexVector2 hexVec = HexVector2.builder().q(q).r(r).build();
         double[] worldCenter = HexMathUtil.hexToCartesian(hexVec, gridSize);
 
         // Calculate corner in world coordinates

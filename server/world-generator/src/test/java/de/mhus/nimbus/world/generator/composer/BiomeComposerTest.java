@@ -310,7 +310,6 @@ public class BiomeComposerTest {
         biomeColors.put(BiomeType.DESERT, new Color(244, 164, 96));   // Sandy brown
         biomeColors.put(BiomeType.SWAMP, new Color(85, 107, 47));     // Dark olive green
         biomeColors.put(BiomeType.OCEAN, new Color(30, 144, 255));    // Dodger blue
-        biomeColors.put(BiomeType.VILLAGE, new Color(160, 82, 45));   // Sienna
         biomeColors.put(BiomeType.TOWN, new Color(178, 34, 34));      // Firebrick
 
         // Draw hexes
