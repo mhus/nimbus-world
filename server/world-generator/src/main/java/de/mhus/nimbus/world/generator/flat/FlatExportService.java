@@ -169,6 +169,9 @@ public class FlatExportService {
                 // Get block type from column definition
                 WFlat.MaterialDefinition columnDef = flat.getColumnMaterial(localX, localZ);
                 if (columnDef == null) {
+                    columnDef = flat.getMaterial(FlatMaterialService.BEDROCK);
+                }
+                if (columnDef == null) {
                     log.warn("Column definition not found for column at ({}, {}), skipping", localX, localZ);
                     skippedColumns++;
                     continue;
@@ -187,6 +190,8 @@ public class FlatExportService {
                     exportedColumns++;
                 } else {
                     skippedColumns++;
+                    fillColumn(layerChunkData, worldX, worldZ, level, world.getGroundLevel(), columnDef, flat,
+                            smoothCorners, blockTypeCache, wid, localX, localZ, extraBlocksCache, groupIdCache);
                 }
             }
         }

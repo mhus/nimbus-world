@@ -10,6 +10,11 @@ export interface WLayerModel {
   licenseSource?: string;
   licenseType?: string;
   licenseAuthor?: string;
+  sizeX: number;
+  sizeY: number;
+  sizeZ: number;
+  style: string;
+  kind: string;
   layerDataId: string;
   mountX: number;
   mountY: number;

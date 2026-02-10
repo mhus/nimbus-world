@@ -487,8 +487,8 @@ public class FlatCreateService {
 
         // Calculate mount position (top-left corner of bounding box)
         // Border is already included in sizeX/sizeZ (+30 pixels)
-        int mountX = (int) Math.round(centerX - sizeX / 2.0);
-        int mountZ = (int) Math.round(centerZ - sizeZ / 2.0);
+        int mountX = (int) Math.floor(centerX - sizeX / 2.0);
+        int mountZ = (int) Math.floor(centerZ - sizeZ / 2.0);
 
         log.info("Calculated flat parameters: sizeX={}, sizeZ={}, mount=({},{}), hexCenter=({},{})",
                 sizeX, sizeZ, mountX, mountZ, centerX, centerZ);
@@ -703,8 +703,8 @@ public class FlatCreateService {
 
         // Calculate mount position (top-left corner of bounding box)
         // Border is already included in sizeX/sizeZ (+30 pixels)
-        int mountX = (int) Math.round(centerX - sizeX / 2.0);
-        int mountZ = (int) Math.round(centerZ - sizeZ / 2.0);
+        int mountX = (int) Math.floor(centerX - sizeX / 2.0);
+        int mountZ = (int) Math.floor(centerZ - sizeZ / 2.0);
 
         log.info("Calculated flat parameters: sizeX={}, sizeZ={}, mount=({},{}), hexCenter=({},{})",
                 sizeX, sizeZ, mountX, mountZ, centerX, centerZ);
@@ -1075,13 +1075,13 @@ public class FlatCreateService {
 
         // Calculate bounding box for pointy-top hexagon with 15-pixel border on each side
         double SQRT_3 = Math.sqrt(3.0);
-        int sizeX = (int) Math.round(gridSize * SQRT_3 / 2.0) + 30;  // round(346.41) = 346, +30 = 376 (even)
+        int sizeX = (int) Math.floor(gridSize * SQRT_3 / 2.0) + 30;
         int sizeZ = gridSize + 30;  // 400 + 30 = 430 (even)
 
         // Calculate mount position (top-left corner of bounding box)
         // Border is already included in sizeX/sizeZ (+30 pixels)
-        int mountX = (int) Math.round(centerX - sizeX / 2.0);
-        int mountZ = (int) Math.round(centerZ - sizeZ / 2.0);
+        int mountX = (int) Math.floor(centerX - sizeX / 2.0);
+        int mountZ = (int) Math.floor(centerZ - sizeZ / 2.0);
 
         log.info("Calculated flat parameters: sizeX={}, sizeZ={}, mount=({},{}), hexCenter=({},{})",
                 sizeX, sizeZ, mountX, mountZ, centerX, centerZ);

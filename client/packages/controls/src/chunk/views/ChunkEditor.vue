@@ -10,15 +10,27 @@
 
     <!-- Chunk Editor Content (only shown when world is selected) -->
     <template v-else>
-      <!-- Header with Search -->
+      <!-- Header with Search and Mark Dirty -->
       <div class="flex flex-col sm:flex-row gap-4 items-stretch sm:items-center justify-between">
         <div class="flex-1">
           <SearchInput
             v-model="searchQuery"
-            placeholder="Search chunks by key (e.g., 0:0)..."
+            placeholder="Search chunks by key (e.g., 0:0) or mark non-existing chunk as dirty..."
             @search="handleSearch"
           />
         </div>
+
+        <!-- Mark Chunk as Dirty Button -->
+        <button
+          class="btn btn-warning btn-sm"
+          :disabled="!searchQuery.trim()"
+          @click="handleMarkNewChunkDirty"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+          </svg>
+          Mark as Dirty
+        </button>
       </div>
 
       <!-- Loading State -->
@@ -155,6 +167,30 @@ const handleMarkDirty = async (chunkKey: string) => {
 
   try {
     await chunksComposable.value?.markChunkDirty(chunkKey);
+  } catch (e: any) {
+    alert(`Failed to mark chunk as dirty: ${e.message}`);
+  }
+};
+
+/**
+ * Handle mark new/non-existing chunk as dirty
+ * Uses the current search query value as chunk key
+ */
+const handleMarkNewChunkDirty = async () => {
+  if (!currentWorldId.value || !searchQuery.value.trim()) return;
+
+  const chunkKey = searchQuery.value.trim();
+
+  if (!confirm(`Mark chunk ${chunkKey} as dirty for generation/regeneration?\n\nThis will create or regenerate the chunk.`)) {
+    return;
+  }
+
+  try {
+    await chunksComposable.value?.markChunkDirty(chunkKey);
+    alert(`Chunk ${chunkKey} marked as dirty successfully!`);
+    // Clear search and reload chunks to show the newly marked chunk if it was created
+    searchQuery.value = '';
+    await chunksComposable.value?.loadChunks();
   } catch (e: any) {
     alert(`Failed to mark chunk as dirty: ${e.message}`);
   }
