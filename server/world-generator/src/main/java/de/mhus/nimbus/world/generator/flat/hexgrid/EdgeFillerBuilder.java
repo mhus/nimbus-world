@@ -1,5 +1,6 @@
 package de.mhus.nimbus.world.generator.flat.hexgrid;
 
+import de.mhus.nimbus.shared.utils.CastUtil;
 import de.mhus.nimbus.world.shared.generator.WFlat;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
 import lombok.extern.slf4j.Slf4j;
@@ -14,6 +15,7 @@ import java.util.HashMap;
  * Set g_edge_flat_north_east, g_edge_flat_east, g_edge_flat_south_east,
  * g_edge_flat_south_west, g_edge_flat_west, g_edge_flat_north_west to define side flat ids.
  * The flats will be loaded from WFlatService.
+ * Set g_edge_fill_flat to true to also fill the center flat (default true).
  *
  * Only fills points where material==0 (empty).
  */
@@ -28,9 +30,14 @@ public class EdgeFillerBuilder extends HexGridBuilder {
 
         log.trace("Filling edges for flat: {}", flat.getFlatId());
 
+        // Get ground level from world
+        int groundLevel = context.getWorld().getGroundLevel();
+
         // Disable protection to allow edge modifications
         boolean originalUnknownProtected = flat.isUnknownProtected();
         boolean originalBorderProtected = flat.isBorderProtected();
+        boolean fillFlat = CastUtil.toboolean(parameters.get("edge_fill_flat"), true);
+
         flat.setUnknownProtected(false);
         flat.setBorderProtected(false);
 
@@ -59,9 +66,6 @@ public class EdgeFillerBuilder extends HexGridBuilder {
                 return;
             }
 
-            // Get ground level from world
-            int groundLevel = context.getWorld().getGroundLevel();
-
             // Fill edges with neighbors using the edge filler
             HexGridEdgeFiller edgeFiller = new HexGridEdgeFiller(flat, context, groundLevel);
             edgeFiller.fillAllSides(sideFlats);
@@ -73,6 +77,12 @@ public class EdgeFillerBuilder extends HexGridBuilder {
             flat.setUnknownProtected(originalUnknownProtected);
             flat.setBorderProtected(originalBorderProtected);
         }
+
+        if (fillFlat) {
+            HexGridFlatFiller flatFiller = new HexGridFlatFiller(flat, context);
+            flatFiller.fillFlat();
+        }
+
     }
 
     @Override

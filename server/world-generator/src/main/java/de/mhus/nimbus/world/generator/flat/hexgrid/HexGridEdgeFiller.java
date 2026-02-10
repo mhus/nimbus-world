@@ -12,9 +12,7 @@ import java.util.HashMap;
  */
 @Slf4j
 public class HexGridEdgeFiller {
-
-    private static final int BEDROCK_MATERIAL = 6;
-
+    
     private final WFlat flat;
     private final BuilderContext context;
     private final int groundLevel;

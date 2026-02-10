@@ -75,6 +75,13 @@ public class WLayerModel implements Identifiable {
     @TypeScript(optional = true)
     private String licenseAuthor;
 
+    private int sizeX;
+    private int sizeY;
+    private int sizeZ;
+
+    private String style;
+    private String kind;
+
     /**
      * References WLayer.layerDataId (1:1 relationship).
      */
