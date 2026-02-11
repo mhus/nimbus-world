@@ -99,13 +99,15 @@ public class FlatHexGridCreateJobExecutor implements JobExecutor {
                 int hexQ = getRequiredIntParameter(job, "hexQ");
                 int hexR = getRequiredIntParameter(job, "hexR");
 
+                int border = getOptionalIntParameter(job, "border", 30); // Optional border size for grid mode
+
                 log.info("Creating HexGrid flat (grid mode): worldId={}, layerName={}, flatId={}, hex=({},{}), title={}, description={}, palette={}",
                         worldId, layerName, flatId, hexQ, hexR, title, description, paletteName);
 
                 // Execute create with auto-calculated size/mount
                 flat = flatCreateService.createHexGridFlat(
                         worldId, layerName, flatId,
-                        hexQ, hexR, title, description
+                        hexQ, hexR, border, title, description
                 );
             } else if ("rectangular".equals(jobType)) {
                 // Rectangular mode: use explicit rectangular coordinates

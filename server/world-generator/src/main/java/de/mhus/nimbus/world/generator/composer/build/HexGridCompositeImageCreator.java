@@ -150,7 +150,7 @@ public class HexGridCompositeImageCreator {
             int imageWidth = (int) Math.ceil(cartBounds.maxX - cartBounds.minX);
             int imageHeight = (int) Math.ceil(cartBounds.maxZ - cartBounds.minZ);
 
-            log.debug("HEX composite cartesian bounds: x=[{},{}] z=[{},{}], image size={}x{}",
+            log.debug("HEX composite Cartesian bounds: x=[{},{}] z=[{},{}], image size={}x{}",
                 (int)cartBounds.minX, (int)cartBounds.maxX, (int)cartBounds.minZ, (int)cartBounds.maxZ,
                 imageWidth, imageHeight);
 
@@ -321,21 +321,36 @@ public class HexGridCompositeImageCreator {
         BufferedImage flatMaterialImage = ImageIO.read(new ByteArrayInputStream(materialBytes));
 
         // Render only pixels inside the hexagon
-        int halfSize = hexGridSize / 2;
-        int startX = Math.max(0, (int)(hexCenterX - halfSize));
-        int endX = Math.min(levelImage.getWidth(), (int)(hexCenterX + halfSize));
-        int startZ = Math.max(0, (int)(hexCenterZ - halfSize));
-        int endZ = Math.min(levelImage.getHeight(), (int)(hexCenterZ + halfSize));
+        // Note: Flat is larger than hexGrid due to border
+        // Flat center is at (flatHalfSizeX, flatHalfSizeZ)
+        // HexGrid center is also at flat center, with radius hexGridSize/2
+        int flatHalfSizeX = flat.getSizeX() / 2;
+        int flatHalfSizeZ = flat.getSizeZ() / 2;
+        int hexGridRadius = hexGridSize / 2;
+
+        // Iterate over the area where the hex might be (use hexGridRadius for bounds)
+        int startX = Math.max(0, (int)(hexCenterX - hexGridRadius));
+        int endX = Math.min(levelImage.getWidth(), (int)(hexCenterX + hexGridRadius));
+        int startZ = Math.max(0, (int)(hexCenterZ - hexGridRadius));
+        int endZ = Math.min(levelImage.getHeight(), (int)(hexCenterZ + hexGridRadius));
 
         for (int z = startZ; z < endZ; z++) {
             for (int x = startX; x < endX; x++) {
                 // Check if this pixel is inside the hexagon
                 if (HexMathUtil.isPointInHex(x, z, hexCenterX, hexCenterZ, hexGridSize)) {
                     // Calculate source pixel coordinates in flat image
-                    int flatX = (int)(x - hexCenterX + halfSize);
-                    int flatZ = (int)(z - hexCenterZ + halfSize);
+                    // Transform from composite space to flat space:
+                    // - (x, z) is in composite image space (relative to composite origin)
+                    // - hexCenterX/Z is the hex center in composite space
+                    // - Offset from hex center: (x - hexCenterX, z - hexCenterZ)
+                    // - Flat center is at (flatHalfSizeX, flatHalfSizeZ)
+                    // - So flat coordinate is: flatCenter + offsetFromHexCenter
+                    int flatX = (int)(x - hexCenterX + flatHalfSizeX);
+                    int flatZ = (int)(z - hexCenterZ + flatHalfSizeZ);
 
-                    if (flatX >= 0 && flatX < hexGridSize && flatZ >= 0 && flatZ < hexGridSize) {
+                    // Bounds check using flat dimensions
+                    if (flatX >= 0 && flatX < flat.getSizeX() &&
+                        flatZ >= 0 && flatZ < flat.getSizeZ()) {
                         // Copy pixel from flat image to composite
                         int levelPixel = flatLevelImage.getRGB(flatX, flatZ);
                         int materialPixel = flatMaterialImage.getRGB(flatX, flatZ);
@@ -386,8 +401,8 @@ public class HexGridCompositeImageCreator {
         // This creates a pointy-top hexagon (point facing up)
         for (int i = 0; i < 6; i++) {
             double angle = Math.PI / 180.0 * (60 * i - 30);
-            xPoints[i] = (int) Math.round(centerX + radius * Math.cos(angle));
-            zPoints[i] = (int) Math.round(centerZ + radius * Math.sin(angle));
+            xPoints[i] = (int) Math.floor(centerX + radius * Math.cos(angle));
+            zPoints[i] = (int) Math.floor(centerZ + radius * Math.sin(angle));
         }
 
         return new Polygon(xPoints, zPoints, 6);

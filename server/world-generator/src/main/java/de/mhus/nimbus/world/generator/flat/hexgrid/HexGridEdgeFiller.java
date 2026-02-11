@@ -1,6 +1,7 @@
 package de.mhus.nimbus.world.generator.flat.hexgrid;
 
 import de.mhus.nimbus.world.shared.generator.WFlat;
+import de.mhus.nimbus.world.shared.util.HexMathUtil;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
 import lombok.extern.slf4j.Slf4j;
 
@@ -12,7 +13,7 @@ import java.util.HashMap;
  */
 @Slf4j
 public class HexGridEdgeFiller {
-    
+
     private final WFlat flat;
     private final BuilderContext context;
     private final int groundLevel;
@@ -226,7 +227,8 @@ public class HexGridEdgeFiller {
          */
         public void fill() {
             log.debug("Filling side {} with neighbor flat {}", direction, neighborFlat.getFlatId());
-            int gap = 15; // Offset to compensate for 15-pixel border gap in hex grid
+            int gapX = (flat.getSizeX() - (int)Math.floor(context.getHexGridSize()* HexMathUtil.SQRT_3/2.0) ) / 2;
+            int gapZ = (flat.getSizeZ() - context.getHexGridSize()) / 2;
 
             // Calculate the two corners of this hex side
             int[] area = getAreaForSide(direction);
@@ -242,26 +244,26 @@ public class HexGridEdgeFiller {
                     // Apply offset to compensate for 15-pixel border gap
                     switch (direction) {
                         case NORTH_EAST:
-                            neighborX += gap;
-                            neighborZ -= gap;
+                            neighborX += gapX;
+                            neighborZ -= gapZ;
                             break;
                         case EAST:
-                            neighborX += gap;
+                            neighborX += gapX;
                             break;
                         case SOUTH_EAST:
-                            neighborX += gap;
-                            neighborZ += gap;
+                            neighborX += gapX;
+                            neighborZ += gapZ;
                             break;
                         case SOUTH_WEST:
-                            neighborX -= gap;
-                            neighborZ += gap;
+                            neighborX -= gapX;
+                            neighborZ += gapZ;
                             break;
                         case WEST:
-                            neighborX -= gap;
+                            neighborX -= gapX;
                             break;
                         case NORTH_WEST:
-                            neighborX -= gap;
-                            neighborZ -= gap;
+                            neighborX -= gapX;
+                            neighborZ -= gapZ;
                             break;
                     }
 

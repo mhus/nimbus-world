@@ -51,19 +51,16 @@
           {
             "placeType": "free",
             "name": "marketplace",
-            "connectionPoint": false,
             "kind": "PLAZA"
           },
           {
             "placeType": "building",
             "name": "tavern",
-            "connectionPoint": false,
             "kind": "tavern"
           },
           {
             "placeType": "road",
             "name": "main-street",
-            "connectionPoint": true,
             "kind": "STREET"
           }
         ]

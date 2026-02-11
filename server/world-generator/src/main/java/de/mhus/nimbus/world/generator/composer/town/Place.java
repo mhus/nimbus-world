@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
@@ -46,5 +47,6 @@ public abstract class Place {
      * Connection points generate actual Point features that can be used by
      * Road/River/Wall builders to connect structures.
      */
-    private boolean connectionPoint;
+    @Builder.Default
+    private boolean connectionPoint = false;
 }

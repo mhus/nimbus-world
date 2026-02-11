@@ -31,10 +31,10 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class FlatCreateService {
 
+    private static final int HEX_BORDER = 4; // Because of small borders around the hexagons
     private final WWorldService worldService;
     private final WFlatService flatService;
     private final WLayerService layerService;
-    private final WBlockTypeService blockTypeService;
     private final WChunkService chunkService;
 
     /**
@@ -81,7 +81,7 @@ public class FlatCreateService {
                 .mountX(mountX)
                 .mountZ(mountZ)
                 .seaLevel(oceanLevel)
-                .oceanBlockId(oceanBlockId)
+                .seaBlockId(oceanBlockId)
                 .hexGrid(HexMathUtil.getDominantHexForArea(
                         world, TypeUtil.area(mountX, mountZ, sizeX, sizeZ)
                 ))
@@ -172,7 +172,7 @@ public class FlatCreateService {
                 .mountX(mountX)
                 .mountZ(mountZ)
                 .seaLevel(oceanLevel)
-                .oceanBlockId(oceanBlockId)
+                .seaBlockId(oceanBlockId)
                 .hexGrid(HexMathUtil.getDominantHexForArea(
                         world, TypeUtil.area(mountX, mountZ, sizeX, sizeZ)
                 ))
@@ -346,7 +346,7 @@ public class FlatCreateService {
                 .mountX(mountX)
                 .mountZ(mountZ)
                 .seaLevel(oceanLevel)
-                .oceanBlockId(oceanBlockId)
+                .seaBlockId(oceanBlockId)
                 .hexGrid(HexMathUtil.getDominantHexForArea(
                         world, TypeUtil.area(mountX, mountZ, sizeX, sizeZ)
                 ))
@@ -455,7 +455,7 @@ public class FlatCreateService {
      * @throws IllegalArgumentException if world or layer not found, or layer is not GROUND type
      */
     public WFlat createHexGridFlat(String worldId, String layerName, String flatId,
-                                   int hexQ, int hexR, String title, String description) {
+                                   int hexQ, int hexR, int border, String title, String description) {
         log.info("Creating HexGrid flat (auto-size): worldId={}, layerName={}, flatId={}, hex=({},{}), title={}, description={}",
                 worldId, layerName, flatId, hexQ, hexR, title, description);
 
@@ -481,9 +481,8 @@ public class FlatCreateService {
         // Radius = gridSize / 2
         // Height (point to point) = 2 * radius = gridSize
         // Width (flat side to flat side) = sqrt(3) * radius = gridSize * sqrt(3) / 2
-        double SQRT_3 = Math.sqrt(3.0);
-        int sizeX = (int) Math.ceil(gridSize * SQRT_3 / 2.0) + 30;  // +30: +10 safety margin + 20 border (10 per side)
-        int sizeZ = gridSize + 30;  // +30: +10 safety margin + 20 border (10 per side)
+        int sizeX = (int) Math.ceil(gridSize * HexMathUtil.SQRT_3 / 2.0) + 30;  // +30: +10 safety margin + 20 border (10 per side)
+        int sizeZ = gridSize + border;  // +30: +10 safety margin + 20 border (10 per side)
 
         // Calculate mount position (top-left corner of bounding box)
         // Border is already included in sizeX/sizeZ (+30 pixels)
@@ -570,7 +569,7 @@ public class FlatCreateService {
                 .mountX(mountX)
                 .mountZ(mountZ)
                 .seaLevel(oceanLevel)
-                .oceanBlockId(oceanBlockId)
+                .seaBlockId(oceanBlockId)
                 .hexGrid(TypeUtil.hexVector2(hexQ, hexR))
                 .build();
 
@@ -612,6 +611,9 @@ public class FlatCreateService {
         int hexCellsSet = 0;
         int outsideCellsImported = 0;
 
+        int gapX = (sizeX - (int)Math.floor(gridSize*HexMathUtil.SQRT_3/2.0) ) / 2;
+        int gapZ = (sizeZ - gridSize) / 2;
+
         // Process each cell in the flat
         // The hex grid is positioned with a 10-pixel offset to allow for border connections
         for (int localX = 0; localX < sizeX; localX++) {
@@ -622,11 +624,11 @@ public class FlatCreateService {
 
                 // Adjust coordinates for hex grid check: hex is positioned 10 pixels into the flat
                 // to allow for a 10-pixel border on each side for connections
-                int hexCheckX = worldX + 10;
-                int hexCheckZ = worldZ + 10;
+                int hexCheckX = worldX + gapX;
+                int hexCheckZ = worldZ + gapZ;
 
                 // Check if this position is inside the HexGrid
-                boolean isInHex = HexMathUtil.isPointInHex(hexCheckX, hexCheckZ, hexCenterX, hexCenterZ, gridSize);
+                boolean isInHex = HexMathUtil.isPointInHex(hexCheckX, hexCheckZ, hexCenterX, hexCenterZ, gridSize + HEX_BORDER); // test
 
                 if (isInHex) {
                     // Position is inside HexGrid: mark with NOT_SET_MUTABLE (255) at level 0
@@ -697,8 +699,7 @@ public class FlatCreateService {
         // Radius = gridSize / 2
         // Height (point to point) = 2 * radius = gridSize
         // Width (flat side to flat side) = sqrt(3) * radius = gridSize * sqrt(3) / 2
-        double SQRT_3 = Math.sqrt(3.0);
-        int sizeX = (int) Math.ceil(gridSize * SQRT_3 / 2.0) + 30;  // +30: +10 safety margin + 20 border (10 per side)
+        int sizeX = (int) Math.ceil(gridSize * HexMathUtil.SQRT_3 / 2.0) + 30;  // +30: +10 safety margin + 20 border (10 per side)
         int sizeZ = gridSize + 30;  // +30: +10 safety margin + 20 border (10 per side)
 
         // Calculate mount position (top-left corner of bounding box)
@@ -786,7 +787,7 @@ public class FlatCreateService {
                 .mountX(mountX)
                 .mountZ(mountZ)
                 .seaLevel(oceanLevel)
-                .oceanBlockId(oceanBlockId)
+                .seaBlockId(oceanBlockId)
                 .hexGrid(TypeUtil.hexVector2(hexQ, hexR)
                 )
                 .build();
@@ -873,6 +874,9 @@ public class FlatCreateService {
             }
         }
 
+        int gapX = (sizeX - (int)Math.floor(gridSize*HexMathUtil.SQRT_3/2.0) ) / 2;
+        int gapZ = (sizeZ - gridSize) / 2;
+
         // Step 2: Set positions OUTSIDE HexGrid to material 0 (UNKNOWN_PROTECTED)
         // The hex grid is positioned with a 10-pixel offset to allow for border connections
         log.debug("Step 2: Setting outside positions to material 0. HexCenter: ({}, {}), gridSize: {}", hexCenterX, hexCenterZ, gridSize);
@@ -884,11 +888,11 @@ public class FlatCreateService {
 
                 // Adjust coordinates for hex grid check: hex is positioned 10 pixels into the flat
                 // to allow for a 10-pixel border on each side for connections
-                int hexCheckX = worldX + 10;
-                int hexCheckZ = worldZ + 10;
+                int hexCheckX = worldX + gapX;
+                int hexCheckZ = worldZ + gapZ;
 
                 // Check if this position is inside the HexGrid
-                boolean isInHex = HexMathUtil.isPointInHex(hexCheckX, hexCheckZ, hexCenterX, hexCenterZ, gridSize);
+                boolean isInHex = HexMathUtil.isPointInHex(hexCheckX, hexCheckZ, hexCenterX, hexCenterZ, gridSize + HEX_BORDER); // test
 
                 if (!isInHex) {
                     // Position is outside HexGrid: Set material to 0 (UNKNOWN_PROTECTED)
@@ -1074,9 +1078,14 @@ public class FlatCreateService {
         double centerZ = center[1];
 
         // Calculate bounding box for pointy-top hexagon with 15-pixel border on each side
-        double SQRT_3 = Math.sqrt(3.0);
-        int sizeX = (int) Math.floor(gridSize * SQRT_3 / 2.0) + 30;
+        int sizeX = (int) Math.floor(gridSize * HexMathUtil.SQRT_3 / 2.0) + 30; // 400: 346 + 30 = 376 (even)
+        if (sizeX % 2 != 0) {
+            sizeX++; // Ensure even size for symmetry
+        }
         int sizeZ = gridSize + 30;  // 400 + 30 = 430 (even)
+        if (sizeZ % 2 != 0) {
+            sizeZ++; // Ensure even size for symmetry
+        }
 
         // Calculate mount position (top-left corner of bounding box)
         // Border is already included in sizeX/sizeZ (+30 pixels)
@@ -1095,8 +1104,8 @@ public class FlatCreateService {
         }
 
         // Get ocean level and block from world
-        int oceanLevel = world.getSeaLevel() == null ? 60 : world.getSeaLevel();
-        String oceanBlockId = world.getSeaBlockType() == null ? "n:o" : world.getSeaBlockType();
+        int seaLevel = world.getSeaLevel() == null ? 60 : world.getSeaLevel();
+        String seaBlockId = world.getSeaBlockType() == null ? "n:o" : world.getSeaBlockType();
 
         // Build WFlat instance
         WFlat flat = WFlat.builder()
@@ -1107,19 +1116,15 @@ public class FlatCreateService {
                 .description(description)
                 .mountX(mountX)
                 .mountZ(mountZ)
-                .seaLevel(oceanLevel)
-                .oceanBlockId(oceanBlockId)
+                .seaLevel(seaLevel)
+                .seaBlockId(seaBlockId)
                 .hexGrid(TypeUtil.hexVector2(hexQ, hexR))
                 .build();
 
         // Initialize with size (sets all levels to 0 by default)
         flat.initWithSize(sizeX, sizeZ);
 
-        // Calculate hex center coordinates
-        double hexCenterX = centerX;
-        double hexCenterZ = centerZ;
-
-        log.debug("Hex center in cartesian: ({}, {})", hexCenterX, hexCenterZ);
+        log.debug("Hex center in cartesian: ({}, {})", centerX, centerZ);
 
         int hexCellsSet = 0;
         int outsideCellsSet = 0;
@@ -1132,12 +1137,8 @@ public class FlatCreateService {
                 int worldX = mountX + localX;
                 int worldZ = mountZ + localZ;
 
-                // Use world coordinates directly for hex grid check
-                int hexCheckX = worldX;
-                int hexCheckZ = worldZ;
-
                 // Check if this position is inside the HexGrid
-                boolean isInHex = HexMathUtil.isPointInHex(hexCheckX, hexCheckZ, hexCenterX, hexCenterZ, gridSize);
+                boolean isInHex = HexMathUtil.isPointInHex(worldX, worldZ, centerX, centerZ, gridSize + HEX_BORDER); // test with small margin
 
                 if (isInHex) {
                     // Position is inside HexGrid: mark with NOT_SET_MUTABLE (255) at level 0
@@ -1259,8 +1260,8 @@ public class FlatCreateService {
         }
 
         // Get ocean level
-        int oceanLevel = world.getSeaLevel() == null ? 60 : world.getSeaLevel();
-        String oceanBlockId = world.getSeaBlockType() == null ? "n:o" : world.getSeaBlockType();
+        int seaLevel = world.getSeaLevel() == null ? 60 : world.getSeaLevel();
+        String seaBlockId = world.getSeaBlockType() == null ? "n:o" : world.getSeaBlockType();
 
         // Build WFlat instance
         WFlat flat = WFlat.builder()
@@ -1271,15 +1272,15 @@ public class FlatCreateService {
                 .description(description)
                 .mountX(mountX)
                 .mountZ(mountZ)
-                .seaLevel(oceanLevel)
-                .oceanBlockId(oceanBlockId)
+                .seaLevel(seaLevel)
+                .seaBlockId(seaBlockId)
                 .hexGrid(TypeUtil.hexVector2(hexQ, hexR))
                 .build();
 
         // Initialize with size
         flat.initWithSize(sizeX, sizeZ);
         int chunkSize = world.getPublicData().getChunkSize();
-        int defaultLevel = oceanLevel - 10;
+        int defaultLevel = seaLevel - 10;
 
         // Import from layer (all positions start with NOT_SET material 0)
         java.util.Set<String> requiredChunkKeys = new java.util.HashSet<>();

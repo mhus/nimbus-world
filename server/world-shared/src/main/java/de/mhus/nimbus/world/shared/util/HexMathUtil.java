@@ -24,7 +24,7 @@ import java.util.NoSuchElementException;
 @UtilityClass
 public class HexMathUtil {
 
-    private static final double SQRT_3 = Math.sqrt(3.0);
+    public static final double SQRT_3 = Math.sqrt(3.0);
 
     /**
      * Converts hex coordinates to cartesian coordinates (center position).

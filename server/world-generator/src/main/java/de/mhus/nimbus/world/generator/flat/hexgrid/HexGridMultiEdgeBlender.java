@@ -168,90 +168,6 @@ public class HexGridMultiEdgeBlender {
     }
 
     /**
-     * Get the edge position (coordinate along the main axis).
-     * DEPRECATED - not used anymore, working with world coordinates now.
-     */
-    private int getEdgePosition(WHexGrid.EDGE direction, WFlat flat) {
-        int sizeX = flat.getSizeX();
-        int sizeZ = flat.getSizeZ();
-
-        switch (direction) {
-            case EAST:
-                return sizeX - 1;
-            case WEST:
-                return 0;
-            case NORTH_EAST:
-            case SOUTH_EAST:
-                return sizeX - 1;
-            case NORTH_WEST:
-            case SOUTH_WEST:
-                return 0;
-            default:
-                return sizeX / 2;
-        }
-    }
-
-    /**
-     * Calculate distance to diagonal edge.
-     * DEPRECATED - not used anymore, using calculateDistanceToEdgeLine now.
-     */
-    private double calculateDiagonalDistance(int x, int z, WHexGrid.EDGE direction, WFlat flat) {
-        int[] corner1 = getCorner1ForSide(direction, flat);
-        int[] corner2 = getCorner2ForSide(direction, flat);
-
-        // Calculate perpendicular distance to line from corner1 to corner2
-        double dx = corner2[0] - corner1[0];
-        double dz = corner2[1] - corner1[1];
-        double lineLength = Math.sqrt(dx * dx + dz * dz);
-
-        if (lineLength < 1) {
-            return Math.hypot(x - corner1[0], z - corner1[1]);
-        }
-
-        // Project point onto line
-        double t = ((x - corner1[0]) * dx + (z - corner1[1]) * dz) / (lineLength * lineLength);
-        t = Math.max(0, Math.min(1, t));
-
-        double projX = corner1[0] + t * dx;
-        double projZ = corner1[1] + t * dz;
-
-        return Math.hypot(x - projX, z - projZ);
-    }
-
-    /**
-     * Calculate distance from a pixel to the edge of the flat (perpendicular distance).
-     * Returns distance in pixels from the outer edge.
-     */
-    private double calculateDistanceFromEdge(int x, int z, WHexGrid.EDGE direction, WFlat flat) {
-        int sizeX = flat.getSizeX();
-        int sizeZ = flat.getSizeZ();
-
-        switch (direction) {
-            case NORTH_EAST:
-                // Distance from top-right edge
-                // Use minimum distance to either top or right edge
-                return Math.min(z, sizeX - 1 - x);
-            case EAST:
-                // Distance from right edge
-                return sizeX - 1 - x;
-            case SOUTH_EAST:
-                // Distance from bottom-right edge
-                return Math.min(sizeZ - 1 - z, sizeX - 1 - x);
-            case SOUTH_WEST:
-                // Distance from bottom-left edge
-                return Math.min(sizeZ - 1 - z, x);
-            case WEST:
-                // Distance from left edge
-                return x;
-            case NORTH_WEST:
-                // Distance from top-left edge
-                return Math.min(z, x);
-            default:
-                return 0;
-        }
-    }
-
-    /**
      * Projection system: Maps world coordinates to the appropriate flat.
      * Automatically determines which flat a coordinate belongs to and provides
      * read/write access across all flats.
@@ -300,6 +216,7 @@ public class HexGridMultiEdgeBlender {
          */
         public boolean setLevel(int worldX, int worldZ, int level) {
             // Try all flats to find which one contains this coordinate
+            boolean found = false;
             for (WFlat flat : allFlats) {
                 int localX = worldX - flat.getMountX();
                 int localZ = worldZ - flat.getMountZ();
@@ -318,60 +235,15 @@ public class HexGridMultiEdgeBlender {
                             log.debug("Write: world({},{}) -> flat={} local({},{}) level {} -> {}",
                                     worldX, worldZ, flat.getFlatId(), localX, localZ, oldLevel, level);
                         }
-                        return true;
+                        found = true;
                     }
                 }
             }
 
-            return false; // Coordinate not in any flat
+            return found; // Coordinate not in any flat
         }
 
         private int writeCount = 0;
-    }
-
-    /**
-     * Get the area (bounding box) for a side of the flat.
-     * Returns [minX, minZ, maxX, maxZ] in local flat coordinates.
-     * Based on EdgeFiller implementation.
-     */
-    private int[] getAreaForSide(WHexGrid.EDGE direction, WFlat flat) {
-        int sizeX = flat.getSizeX();
-        int sizeZ = flat.getSizeZ();
-        int[] corner1 = getCorner1ForSide(direction, flat);
-        int[] corner2 = getCorner2ForSide(direction, flat);
-
-        switch (direction) {
-            case NORTH_EAST:
-                return new int[]{corner1[0], 0, sizeX, corner2[1]};
-            case EAST:
-                return new int[]{corner1[0], corner1[1], sizeX, corner2[1]};
-            case SOUTH_EAST:
-                return new int[]{Math.min(corner1[0], corner2[0]), Math.min(corner1[1], corner2[1]), sizeX, sizeZ};
-            case SOUTH_WEST:
-                return new int[]{0, corner1[1], corner2[0], sizeZ};
-            case WEST:
-                return new int[]{0, corner1[1], corner2[0], corner2[1]};
-            case NORTH_WEST:
-                return new int[]{0, 0, Math.max(corner1[0], corner2[0]), Math.max(corner1[1], corner2[1])};
-            default:
-                return new int[]{0, 0, sizeX, sizeZ};
-        }
-    }
-
-    /**
-     * Get first corner of hex side in world coordinates.
-     * @deprecated Use getHexSideCorners() instead for efficiency
-     */
-    private int[] getCorner1ForSide(WHexGrid.EDGE side, WFlat flat) {
-        return getHexSideCorners(side, flat)[0];
-    }
-
-    /**
-     * Get second corner of hex side in world coordinates.
-     * @deprecated Use getHexSideCorners() instead for efficiency
-     */
-    private int[] getCorner2ForSide(WHexGrid.EDGE side, WFlat flat) {
-        return getHexSideCorners(side, flat)[1];
     }
 
     /**

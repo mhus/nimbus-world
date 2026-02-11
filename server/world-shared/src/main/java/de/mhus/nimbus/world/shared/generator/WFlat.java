@@ -68,7 +68,7 @@ public class WFlat implements Identifiable {
     @Getter
     private int seaLevel;
     @Getter @Setter
-    private String oceanBlockId;
+    private String seaBlockId;
     /**
      * If true, unknown/not set columns are protected from modification
      * Set this after initial setting up block you want to modify. Leave others untouched at 0.
@@ -327,7 +327,7 @@ public class WFlat implements Identifiable {
             }
             // finally: ocean block (only above terrain level!)
             if (hasOcean && y > level && y == flat.getSeaLevel())
-                return flat.getOceanBlockId();
+                return flat.getSeaBlockId();
             // or air
             return null;
         }

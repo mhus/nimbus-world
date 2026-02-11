@@ -14,7 +14,6 @@ import de.mhus.nimbus.world.generator.composer.build.HexCompositeBuilder;
 import de.mhus.nimbus.world.generator.composer.build.HexComposition;
 import de.mhus.nimbus.world.generator.composer.build.HexGridCompositeImageCreator;
 import de.mhus.nimbus.world.generator.composer.filler.HexGridFillResult;
-import de.mhus.nimbus.world.generator.composer.image.LineOverlay;
 import de.mhus.nimbus.world.generator.composer.point.Point;
 import de.mhus.nimbus.world.generator.composer.image.TextOverlay;
 import de.mhus.nimbus.world.generator.composer.town.TownDebugOverlayHelper;
@@ -80,7 +79,8 @@ import static org.mockito.Mockito.when;
 public class HexCompositeBuilderSimpleTest {
 
     private static final int HEX_GRID_SIZE = 400;  // hexGridSize from world.publicData
-    private static final int OCEAN_LEVEL = 50;
+    private static final int SEA_LEVEL = 50;
+    private static final int GROUND_LEVEL = 20;
 
     private Path outputDir;
     private de.mhus.nimbus.world.generator.flat.FlatCreateService flatCreateService;
@@ -160,6 +160,8 @@ public class HexCompositeBuilderSimpleTest {
         testWorld.setWorldId("middle-earth");  // Must match the worldId in WFlats!
         testWorld.setNoiseSeed(1474);
         testWorld.setNoiseFrequency(0.5);
+        testWorld.setSeaLevel(SEA_LEVEL);
+        testWorld.setGroundLevel(GROUND_LEVEL);
         WorldInfo publicData = new WorldInfo();
         publicData.setHexGridSize(HEX_GRID_SIZE);  // 400 - FlatCreateService calculates actual flat size
         publicData.setChunkSize(32);
@@ -304,8 +306,6 @@ public class HexCompositeBuilderSimpleTest {
      * - unknownProtected = true
      */
     private WFlat initializeFlat(FilledHexGrid filled) {
-        // Determine builder type (sets g_builder parameter on hexGrid)
-        determineAndSetBuilderType(filled);
 
         // Generate flatId using hex coordinates (like Day3Generation does)
         String flatId = "genesis_" + filled.getCoordinate().getQ() + "_" + filled.getCoordinate().getR();
@@ -326,45 +326,6 @@ public class HexCompositeBuilderSimpleTest {
             flat.getFlatId(), flat.getSizeX(), flat.getSizeZ(), flat.getMountX(), flat.getMountZ());
 
         return flat;
-    }
-
-    /**
-     * Determine and set g_builder parameter for a FilledHexGrid based on biome type.
-     */
-    private void determineAndSetBuilderType(FilledHexGrid filled) {
-        String builderType = "island";  // Default
-
-        if (filled.getHexGrid() != null && filled.getHexGrid().getParameters() != null) {
-            builderType = filled.getHexGrid().getParameters().get("g_builder");
-            if (builderType == null) {
-                builderType = "island";
-            }
-        } else if (filled.isFiller()) {
-            builderType = switch (filled.getFillerType()) {
-                case OCEAN -> BiomeType.OCEAN.getBuilderName();
-                case LAND -> BiomeType.ISLAND.getBuilderName();
-                case COAST -> BiomeType.COAST.getBuilderName();
-                default -> BiomeType.COAST.getBuilderName();
-            };
-        } else if (filled.getBiome() != null && filled.getBiome().getBiome() != null) {
-            builderType = switch (filled.getBiome().getBiome().getType()) {
-                case MOUNTAINS -> BiomeType.MOUNTAINS.getBuilderName();
-                case FOREST -> BiomeType.COAST.getBuilderName();
-                case DESERT -> BiomeType.COAST.getBuilderName();
-                case SWAMP -> BiomeType.COAST.getBuilderName();
-                case PLAINS -> BiomeType.ISLAND.getBuilderName();
-                case OCEAN -> BiomeType.OCEAN.getBuilderName();
-                case COAST -> BiomeType.COAST.getBuilderName();
-                case ISLAND -> BiomeType.ISLAND.getBuilderName();
-                case TOWN -> BiomeType.TOWN.getBuilderName();
-            };
-        }
-
-        // Set g_builder parameter on hexGrid
-        if (filled.getHexGrid().getParameters() == null) {
-            filled.getHexGrid().setParameters(new HashMap<>());
-        }
-        filled.getHexGrid().getParameters().put("g_builder", builderType);
     }
 
     /**
@@ -811,9 +772,10 @@ public class HexCompositeBuilderSimpleTest {
         testWorld.setWorldId("middle-earth");
         WorldInfo publicData = new WorldInfo();
         publicData.setHexGridSize(HEX_GRID_SIZE);  // 400 - FlatCreateService calculates actual flat size
-        publicData.setChunkSize(16);  // Standard chunk size
+        publicData.setChunkSize(32);  // Standard chunk size
         testWorld.setPublicData(publicData);
-        testWorld.setSeaLevel(OCEAN_LEVEL);
+        testWorld.setSeaLevel(SEA_LEVEL);
+        testWorld.setGroundLevel(GROUND_LEVEL);
         testWorld.setSeaBlockType("n:water");
 
         // Mock WWorldService
@@ -834,9 +796,6 @@ public class HexCompositeBuilderSimpleTest {
             .build();
         when(layerService.findByWorldIdAndName("middle-earth", "ground")).thenReturn(java.util.Optional.of(testLayer));
 
-        // Mock WBlockTypeService (not used in createEmptyHexGridFlat)
-        de.mhus.nimbus.world.shared.world.WBlockTypeService blockTypeService = mock(de.mhus.nimbus.world.shared.world.WBlockTypeService.class);
-
         // Mock WChunkService (not used in createEmptyHexGridFlat)
         de.mhus.nimbus.world.shared.world.WChunkService chunkService = mock(de.mhus.nimbus.world.shared.world.WChunkService.class);
 
@@ -845,7 +804,6 @@ public class HexCompositeBuilderSimpleTest {
             worldService,
             flatService,
             layerService,
-            blockTypeService,
             chunkService
         );
 
