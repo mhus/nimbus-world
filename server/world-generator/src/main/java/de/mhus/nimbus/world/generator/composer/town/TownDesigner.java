@@ -1333,8 +1333,11 @@ public class TownDesigner {
         int usedSlots = districtGrid.getPlacedPlaces().size();
         int emptySlots = availableSlots - usedSlots;
 
-        // Get target fill rate (default 0.75 = 75%)
-        double targetFillRate = district.getFillRate() != null ? district.getFillRate() : 0.75;
+        // Get target fill rate: district-level overrides village-level
+        // If district.fillRate is null, use village-level fillRate as fallback
+        double targetFillRate = district.getFillRate() != null
+            ? district.getFillRate()
+            : village.getFillRate();
         double currentOccupancy = (double) usedSlots / availableSlots;
 
         log.debug("District '{}': {}/{} slots used ({}%), target: {}%",

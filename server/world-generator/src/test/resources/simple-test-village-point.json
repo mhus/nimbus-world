@@ -41,10 +41,11 @@
       "baseLevel": 95,
       "fillEmptySlots": true,
       "buildingTendency": 0.7,
-      "fillRate": 0.75,
+      "fillRate": 0.0,
       "debug": false,
       "district": {
         "name": "village-center",
+        "fillRate": 0,
         "title": "Village Center",
         "slots": "MEDIUM",
         "places": [
