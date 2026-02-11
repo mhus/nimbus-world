@@ -56,9 +56,16 @@ public class HexComposition implements BuildFeature {
      * Key: coordinate string "q,r"
      * Value: FeatureHexGrid
      */
+    // Central registry for all FeatureHexGrids (single source of truth during composition)
+    // Map version for internal use (fast lookup by coordinate)
     @JsonIgnore
     @Builder.Default
-    private Map<String, de.mhus.nimbus.world.generator.composer.feature.FeatureHexGrid> featureHexGridRegistry = new ConcurrentHashMap<>();
+    private Map<String, de.mhus.nimbus.world.generator.composer.feature.FeatureHexGrid> featureHexGridRegistry = new HashMap<>();
+
+    // List version for JSON export (Jackson has issues with Map<String, FeatureHexGrid>)
+    // This is populated before export
+    @JsonInclude(JsonInclude.Include.ALWAYS)
+    private List<de.mhus.nimbus.world.generator.composer.feature.FeatureHexGrid> featureHexGrids;
 
     @Builder.Default
     private String version = "1.0.0";

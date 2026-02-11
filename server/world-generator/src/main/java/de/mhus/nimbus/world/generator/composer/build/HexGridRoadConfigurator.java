@@ -50,45 +50,58 @@ public class HexGridRoadConfigurator {
         private List<String> overlappingCoordinates;
 
         /**
-         * Creates a GridIndex from a composition by collecting all Area FeatureHexGrids.
+         * Creates a GridIndex from the central FeatureHexGrid registry.
+         * Uses central registry as single source of truth for all grids (Biomes, Structures, Flows).
          */
         public static GridIndex build(HexComposition composition, BiomePlacementResult placementResult) {
             Map<String, GridEntry> index = new HashMap<>();
             int overlappingCount = 0;
             List<String> overlapping = new ArrayList<>();
 
-            // Collect from all features in composition
-            if (composition.getFeatures() != null) {
-                for (Feature feature : composition.getFeatures()) {
-                    if (feature instanceof Area area) {
-                        int overlaps = indexAreaGrids(area, index, overlapping);
-                        overlappingCount += overlaps;
-                    }
-                }
+            // Use central FeatureHexGrid registry (single source of truth)
+            // This includes all grids: Biomes (already registered), Structures, and Flows
+            if (composition.getFeatureHexGridRegistry() == null || composition.getFeatureHexGridRegistry().isEmpty()) {
+                log.warn("Central FeatureHexGrid registry is empty - cannot build GridIndex");
+                return new GridIndex(index, 0, overlapping);
             }
 
-            // Collect from composites
-            if (composition.getComposites() != null) {
-                for (Composite composite : composition.getComposites()) {
-                    for (Feature nestedFeature : composite.getFeatures()) {
-                        if (nestedFeature instanceof Area area) {
-                            int overlaps = indexAreaGrids(area, index, overlapping);
-                            overlappingCount += overlaps;
+            log.debug("Building GridIndex from central registry with {} grids",
+                composition.getFeatureHexGridRegistry().size());
+
+            // Build index directly from central registry
+            // The central registry contains ALL FeatureHexGrids (Biomes, Structures, Fillers)
+            // We use dummy Area for grids that don't have a real Area
+            for (Map.Entry<String, FeatureHexGrid> entry : composition.getFeatureHexGridRegistry().entrySet()) {
+                String coordKey = entry.getKey();
+                FeatureHexGrid hexGrid = entry.getValue();
+
+                // Use a dummy Area (null is ok - GridEntry.area is only used for logging)
+                Area area = null;
+
+                // Try to find the real Area for better logging
+                if (placementResult != null && placementResult.getPlacedBiomes() != null) {
+                    for (PlacedBiome placedBiome : placementResult.getPlacedBiomes()) {
+                        if (placedBiome.getCoordinates().contains(hexGrid.getCoordinate())) {
+                            if (placedBiome.getBiome() instanceof Area) {
+                                area = (Area) placedBiome.getBiome();
+                            }
+                            break;
                         }
                     }
                 }
+
+                // Check for overlaps (multiple grids at same coordinate)
+                if (index.containsKey(coordKey)) {
+                    GridEntry existing = index.get(coordKey);
+                    log.debug("Grid overlap at {}: using latest", coordKey);
+                    overlapping.add(coordKey);
+                    overlappingCount++;
+                }
+
+                index.put(coordKey, new GridEntry(area, hexGrid));
             }
 
-            // CRITICAL: Also collect from PlacedBiomes (includes Filler-Biomes!)
-            if (placementResult != null && placementResult.getPlacedBiomes() != null) {
-                for (PlacedBiome placedBiome : placementResult.getPlacedBiomes()) {
-                    Biome biome = placedBiome.getBiome();
-                    if (biome != null && biome instanceof Area area) {
-                        int overlaps = indexAreaGrids(area, index, overlapping);
-                        overlappingCount += overlaps;
-                    }
-                }
-            }
+            log.debug("Built GridIndex with {} Area grids from central registry", index.size());
 
             GridIndex gridIndex = new GridIndex(index, overlappingCount, overlapping);
 
@@ -103,13 +116,20 @@ public class HexGridRoadConfigurator {
 
         private static int indexAreaGrids(Area area, Map<String, GridEntry> index,
                                          List<String> overlapping) {
-            if (area.getHexGrids() == null) {
+            // Only Structures have local hexGrids (Flows are not Areas)
+            List<de.mhus.nimbus.world.generator.composer.feature.FeatureHexGrid> hexGrids = null;
+            if (area instanceof de.mhus.nimbus.world.generator.composer.structure.Structure) {
+                hexGrids = ((de.mhus.nimbus.world.generator.composer.structure.Structure) area).getHexGrids();
+            }
+            // Note: Flows are not Areas, so they cannot be cast here
+
+            if (hexGrids == null) {
                 return 0;
             }
 
             int overlapCount = 0;
 
-            for (FeatureHexGrid hexGrid : area.getHexGrids()) {
+            for (FeatureHexGrid hexGrid : hexGrids) {
                 String coordKey = hexGrid.getPositionKey();
                 if (coordKey == null) {
                     continue;
@@ -199,7 +219,7 @@ public class HexGridRoadConfigurator {
      * @return Result with statistics (for logging only)
      */
     public RoadConfigurationResult configureRoads(HexComposition composition, BiomePlacementResult placementResult) {
-        log.debug("Starting Phase 2: road configuration from RoadConfigParts");
+        log.info("Starting Phase 2: road configuration from RoadConfigParts");
 
         List<String> errors = new ArrayList<>();
         int totalGrids = 0;
@@ -212,7 +232,7 @@ public class HexGridRoadConfigurator {
             GridIndex gridIndex = GridIndex.build(composition, placementResult);
             totalGrids = gridIndex.size();
 
-            log.debug("Built GridIndex with {} Area grids (including Filler-Biomes)", totalGrids);
+            log.info("Built GridIndex with {} Area grids (including Filler-Biomes)", totalGrids);
 
             // Iterate over all Area grids and assemble RoadConfigParts
             for (String coordKey : gridIndex.keySet()) {
@@ -280,7 +300,7 @@ public class HexGridRoadConfigurator {
                 }
             }
 
-            log.debug("Road configuration complete: configured={}/{}, parts={}, skipped={}",
+            log.info("Road configuration complete: configured={}/{}, parts={}, skipped={}",
                 configuredGrids, totalGrids, totalParts, skippedGrids);
 
             return RoadConfigurationResult.builder()

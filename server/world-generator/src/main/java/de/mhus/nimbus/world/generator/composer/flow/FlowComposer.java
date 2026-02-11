@@ -87,18 +87,9 @@ public class FlowComposer {
 
             // No need to copy back - Flows now store their data directly
 
-            // After all flows are composed, configure road={} JSON
-            HexGridRoadConfigurator roadConfigurator = new HexGridRoadConfigurator();
-            HexGridRoadConfigurator.RoadConfigurationResult roadResult =
-                roadConfigurator.configureRoads(prepared, placementResult);
-
-            log.debug("Road configuration: configured={}/{}, segments={}",
-                roadResult.getConfiguredGrids(), roadResult.getTotalGrids(),
-                roadResult.getTotalSegments());
-
-            if (!roadResult.isSuccess()) {
-                log.warn("Road configuration had errors: {}", roadResult.getErrors());
-            }
+            // Note: Road configuration (g_road, g_river, g_wall parameters) is now done
+            // in HexCompositeBuilder after populateCentralRegistry(), so that
+            // HexGridRoadConfigurator works with the complete central registry
 
             log.debug("Flow composition complete: composed={}/{}, segments={}, failed={}",
                 composedFlows, totalFlows, totalSegments, failedFlows);
@@ -124,6 +115,49 @@ public class FlowComposer {
                 .errors(errors)
                 .build();
         }
+    }
+
+    /**
+     * Phase 1: Converts FlowSegments (from central registry) to RoadConfigParts/RiverConfigParts
+     * and adds them to the central registry FeatureHexGrids.
+     *
+     * MUST be called AFTER populateCentralRegistry() so that Flow.hexGrids with flowSegments
+     * have been transferred to the central registry.
+     *
+     * @param composition The composition with all features
+     * @param placementResult The placement result with all PlacedBiomes
+     * @return Number of flows processed
+     */
+    public int convertAllFlowSegmentsToConfigParts(HexComposition composition,
+                                                    BiomePlacementResult placementResult) {
+        int processedFlows = 0;
+
+        if (composition.getFeatures() == null) {
+            return 0;
+        }
+
+        // Iterate through all Flow features and convert their segments to ConfigParts
+        for (Feature feature : composition.getFeatures()) {
+            if (!(feature instanceof Flow)) {
+                continue;
+            }
+
+            Flow flow = (Flow) feature;
+
+            if (flow instanceof Road) {
+                convertFlowSegmentsToRoadConfigParts(flow, composition, placementResult);
+                processedFlows++;
+            } else if (flow instanceof River) {
+                convertFlowSegmentsToRiverConfigParts(flow, composition, placementResult);
+                processedFlows++;
+            } else if (flow instanceof Wall) {
+                convertFlowSegmentsToWallConfigParts(flow, composition, placementResult);
+                processedFlows++;
+            }
+        }
+
+        log.info("Converted FlowSegments to ConfigParts for {} flows", processedFlows);
+        return processedFlows;
     }
 
     /**
@@ -161,16 +195,8 @@ public class FlowComposer {
         // Create flow segments and add them to the configured HexGrids
         int segments = createFlowSegments(flow, route, gridMap, prepared);
 
-        // Phase 1: Convert FlowSegments to ConfigParts and add to Area grids
-        if (segments > 0) {
-            if (flow instanceof Road) {
-                convertFlowSegmentsToRoadConfigParts(flow, prepared, placementResult);
-            } else if (flow instanceof River) {
-                convertFlowSegmentsToRiverConfigParts(flow, prepared, placementResult);
-            } else if (flow instanceof Wall) {
-                convertFlowSegmentsToWallConfigParts(flow, prepared, placementResult);
-            }
-        }
+        // Note: Phase 1 (Convert FlowSegments to ConfigParts) was moved to HexCompositeBuilder
+        // after populateCentralRegistry(), so that flowSegments are in central registry first
 
         // Update feature status to COMPOSED
         if (segments > 0) {
@@ -1014,7 +1040,7 @@ public class FlowComposer {
                 fromLx, fromLz, toLx, toLz, fromLevel, toLevel);
 
             // Add segment to flow's own FeatureHexGrid (already configured by flow.configureHexGrids())
-            FeatureHexGrid flowHexGrid = flow.findHexGrid(coord);
+            FeatureHexGrid flowHexGrid = flow.findHexGrid(coord.getQ(), coord.getR());
             if (flowHexGrid != null) {
                 flowHexGrid.addFlowSegment(segment);
             } else {
@@ -1022,7 +1048,7 @@ public class FlowComposer {
             }
 
             // Also add segment to biome's FeatureHexGrid (if flow crosses a biome)
-            FeatureHexGrid biomeHexGrid = findFeatureHexGridInBiome(coord, gridMap);
+            FeatureHexGrid biomeHexGrid = findFeatureHexGridInBiome(coord, gridMap, prepared);
             if (biomeHexGrid != null) {
                 biomeHexGrid.addFlowSegment(segment);
             }
@@ -1072,18 +1098,17 @@ public class FlowComposer {
      * Gets landLevel from biome parameters.
      */
     private Integer getBiomeLandLevel(Biome biome) {
-        if (biome == null || biome.getHexGrids() == null || biome.getHexGrids().isEmpty()) {
+        if (biome == null || biome.getParameters() == null) {
             return null;
         }
 
-        // Get landLevel from first FeatureHexGrid parameters
-        FeatureHexGrid firstGrid = biome.getHexGrids().get(0);
-        if (firstGrid.getParameters() != null && firstGrid.getParameters().containsKey("g_asl")) {
+        // Get landLevel directly from biome parameters
+        if (biome.getParameters().containsKey("g_asl")) {
             try {
-                return Integer.parseInt(firstGrid.getParameters().get("g_asl"));
+                return Integer.parseInt(biome.getParameters().get("g_asl"));
             } catch (NumberFormatException e) {
                 log.warn("Invalid g_asl value in biome {}: {}", biome.getName(),
-                    firstGrid.getParameters().get("g_asl"));
+                    biome.getParameters().get("g_asl"));
             }
         }
 
@@ -1094,18 +1119,17 @@ public class FlowComposer {
      * Gets landOffset from biome parameters.
      */
     private Integer getBiomeLandOffset(Biome biome) {
-        if (biome == null || biome.getHexGrids() == null || biome.getHexGrids().isEmpty()) {
+        if (biome == null || biome.getParameters() == null) {
             return null;
         }
 
-        // Get landOffset from first FeatureHexGrid parameters
-        FeatureHexGrid firstGrid = biome.getHexGrids().get(0);
-        if (firstGrid.getParameters() != null && firstGrid.getParameters().containsKey("g_offset")) {
+        // Get landOffset directly from biome parameters
+        if (biome.getParameters().containsKey("g_offset")) {
             try {
-                return Integer.parseInt(firstGrid.getParameters().get("g_offset"));
+                return Integer.parseInt(biome.getParameters().get("g_offset"));
             } catch (NumberFormatException e) {
                 log.warn("Invalid g_offset value in biome {}: {}", biome.getName(),
-                    firstGrid.getParameters().get("g_offset"));
+                    biome.getParameters().get("g_offset"));
             }
         }
 
@@ -1191,10 +1215,10 @@ public class FlowComposer {
     }
 
     /**
-     * Finds a FeatureHexGrid in a biome at the given coordinate.
-     * Returns null if no biome exists at that coordinate or if the biome has no FeatureHexGrid there.
+     * Finds a FeatureHexGrid in central registry at the given coordinate.
+     * Returns null if no FeatureHexGrid exists at that coordinate.
      */
-    private FeatureHexGrid findFeatureHexGridInBiome(HexVector2 coord, Map<String, Biome> gridMap) {
+    private FeatureHexGrid findFeatureHexGridInBiome(HexVector2 coord, Map<String, Biome> gridMap, HexComposition composition) {
         // Find the biome at this coordinate
         Biome biome = gridMap.get(coordKey(coord));
 
@@ -1203,17 +1227,16 @@ public class FlowComposer {
             return null;
         }
 
-        // Find existing FeatureHexGrid in biome
-        FeatureHexGrid existing = biome.getHexGrids().stream()
-            .filter(hg -> hg.getCoordinate() != null
-                && hg.getCoordinate().getQ() == coord.getQ()
-                && hg.getCoordinate().getR() == coord.getR())
-            .findFirst()
-            .orElse(null);
+        // Find existing FeatureHexGrid in central registry
+        String coordKey = de.mhus.nimbus.shared.utils.TypeUtil.toStringHexCoord(coord);
+        FeatureHexGrid existing = null;
+        if (composition.getFeatureHexGridRegistry() != null) {
+            existing = composition.getFeatureHexGridRegistry().get(coordKey);
+        }
 
         if (existing == null) {
             // Should not happen - biomes should already have FeatureHexGrids from BiomeComposer
-            log.warn("Biome {} has no FeatureHexGrid at {}", biome.getName(), coord);
+            log.warn("Biome {} has no FeatureHexGrid at {} in central registry", biome.getName(), coord);
         }
 
         return existing;
@@ -1275,57 +1298,39 @@ public class FlowComposer {
             return; // Only roads use RoadConfigParts
         }
 
-        // Build a map of Area grids by coordinate for fast lookup
-        Map<String, FeatureHexGrid> areaGridMap = new HashMap<>();
-
-        // Collect Area grids from all features in composition
-        if (composition.getFeatures() != null) {
-            for (Feature feature : composition.getFeatures()) {
-                if (feature instanceof Area) {
-                    collectAreaGrids((Area) feature, areaGridMap);
-                }
-            }
+        // Iterate directly over central registry instead of flow.getHexGrids()
+        // This ensures we find ALL grids with road segments, even orphan grids
+        if (composition.getFeatureHexGridRegistry() == null) {
+            log.warn("Central registry is null, cannot convert road segments");
+            return;
         }
 
-        // Collect Area grids from composites
-        if (composition.getComposites() != null) {
-            for (Composite composite : composition.getComposites()) {
-                for (Feature nestedFeature : composite.getFeatures()) {
-                    if (nestedFeature instanceof Area) {
-                        collectAreaGrids((Area) nestedFeature, areaGridMap);
-                    }
-                }
-            }
-        }
+        int convertedGrids = 0;
 
-        // IMPORTANT: Also collect from PlacedBiomes (includes Filler-Biomes!)
-        collectAreaGridsFromPlacedBiomes(placementResult, areaGridMap);
-
-        log.debug("Collected {} Area grids (incl. Filler) for road config conversion", areaGridMap.size());
-
-        // Now convert FlowSegments to RoadConfigParts and add to Area grids
-        for (FeatureHexGrid flowGrid : flow.getHexGrids()) {
-            String coordKey = flowGrid.getPositionKey();
-            if (coordKey == null) {
+        for (FeatureHexGrid centralGrid : composition.getFeatureHexGridRegistry().values()) {
+            if (centralGrid == null) {
                 continue;
             }
 
-            // Find the Area grid at this coordinate
-            FeatureHexGrid areaGrid = areaGridMap.get(coordKey);
-            if (areaGrid == null) {
-                log.debug("No Area grid found at {}, flow crosses empty space", coordKey);
-                continue;
-            }
-
-            // Get flow segments for this grid
-            List<FlowSegment> roadSegments = flowGrid.getFlowSegmentsByType(FlowType.ROAD);
-
+            // Get road segments for this grid (from this specific flow)
+            List<FlowSegment> roadSegments = centralGrid.getFlowSegmentsByType(FlowType.ROAD);
             if (roadSegments.isEmpty()) {
                 continue;
             }
 
+            // Filter segments that belong to this flow
+            List<FlowSegment> flowRoadSegments = roadSegments.stream()
+                .filter(seg -> flow.getFeatureId().equals(seg.getFlowFeatureId()))
+                .toList();
+
+            if (flowRoadSegments.isEmpty()) {
+                continue;
+            }
+
+            convertedGrids++;
+
             // Convert each FlowSegment to RoadConfigPart
-            for (FlowSegment segment : roadSegments) {
+            for (FlowSegment segment : flowRoadSegments) {
                 // Get fromLevel and toLevel from segment
                 Integer fromLevel = segment.getFromLevel();
                 Integer toLevel = segment.getToLevel();
@@ -1341,7 +1346,7 @@ public class FlowComposer {
                         toLevel,
                         segment.getType()
                     );
-                    areaGrid.addRoadConfigPart(part);
+                    centralGrid.addRoadConfigPart(part);
                     log.debug("Added position-based route part (from) at lx={}, lz={} with levels {}/{}",
                         segment.getFromLx(), segment.getFromLz(), fromLevel, toLevel);
                 } else if (segment.getFromSide() != null) {
@@ -1353,7 +1358,7 @@ public class FlowComposer {
                         toLevel,
                         segment.getType()
                     );
-                    areaGrid.addRoadConfigPart(part);
+                    centralGrid.addRoadConfigPart(part);
                     log.debug("Added SIDE-based route part (from) at {} with levels {}/{}",
                         segment.getFromSide(), fromLevel, toLevel);
                 }
@@ -1369,7 +1374,7 @@ public class FlowComposer {
                         toLevel,
                         segment.getType()
                     );
-                    areaGrid.addRoadConfigPart(part);
+                    centralGrid.addRoadConfigPart(part);
                     log.debug("Added position-based route part (to) at lx={}, lz={} with levels {}/{}",
                         segment.getToLx(), segment.getToLz(), fromLevel, toLevel);
                 } else if (segment.getToSide() != null && !segment.getToSide().equals(segment.getFromSide())) {
@@ -1381,15 +1386,15 @@ public class FlowComposer {
                         toLevel,
                         segment.getType()
                     );
-                    areaGrid.addRoadConfigPart(part);
+                    centralGrid.addRoadConfigPart(part);
                     log.debug("Added SIDE-based route part (to) at {} with levels {}/{}",
                         segment.getToSide(), fromLevel, toLevel);
                 }
             }
-
-            log.debug("Converted {} road segments to {} config parts for Area grid {}",
-                roadSegments.size(), areaGrid.getRoadConfigParts().size(), coordKey);
         }
+
+        log.info("Converted road segments to config parts for {} grids (flow: {})",
+            convertedGrids, flow.getName());
     }
 
     /**
@@ -1407,35 +1412,38 @@ public class FlowComposer {
 
         River river = (River) flow;
 
-        // Build a map of Area grids by coordinate for fast lookup
-        Map<String, FeatureHexGrid> areaGridMap = new HashMap<>();
-        collectAllAreaGrids(composition, areaGridMap);
+        // Iterate directly over central registry instead of flow.getHexGrids()
+        if (composition.getFeatureHexGridRegistry() == null) {
+            log.warn("Central registry is null, cannot convert river segments");
+            return;
+        }
 
-        // Also collect from PlacedBiomes (includes Filler-Biomes!)
-        collectAreaGridsFromPlacedBiomes(placementResult, areaGridMap);
+        int convertedGrids = 0;
 
-        // Convert FlowSegments to RiverConfigParts and add to Area grids
-        for (FeatureHexGrid flowGrid : flow.getHexGrids()) {
-            String coordKey = flowGrid.getPositionKey();
-            if (coordKey == null) {
+        for (FeatureHexGrid centralGrid : composition.getFeatureHexGridRegistry().values()) {
+            if (centralGrid == null) {
                 continue;
             }
 
-            // Find the Area grid at this coordinate
-            FeatureHexGrid areaGrid = areaGridMap.get(coordKey);
-            if (areaGrid == null) {
-                log.debug("No Area grid found at {}, river crosses empty space", coordKey);
-                continue;
-            }
-
-            // Get river segments for this grid
-            List<FlowSegment> riverSegments = flowGrid.getFlowSegmentsByType(FlowType.RIVER);
+            // Get river segments for this grid (from this specific flow)
+            List<FlowSegment> riverSegments = centralGrid.getFlowSegmentsByType(FlowType.RIVER);
             if (riverSegments.isEmpty()) {
                 continue;
             }
 
+            // Filter segments that belong to this flow
+            List<FlowSegment> flowRiverSegments = riverSegments.stream()
+                .filter(seg -> flow.getFeatureId().equals(seg.getFlowFeatureId()))
+                .toList();
+
+            if (flowRiverSegments.isEmpty()) {
+                continue;
+            }
+
+            convertedGrids++;
+
             // Convert each FlowSegment to RiverConfigPart
-            for (FlowSegment segment : riverSegments) {
+            for (FlowSegment segment : flowRiverSegments) {
                 String groupId = segment.getFlowFeatureId() != null ? segment.getFlowFeatureId() : river.getFeatureId();
 
                 // Get FROM and TO levels (fallback to deprecated 'level' if not set)
@@ -1452,7 +1460,7 @@ public class FlowComposer {
                         fromLevel,
                         groupId
                     );
-                    areaGrid.addRiverConfigPart(part);
+                    centralGrid.addRiverConfigPart(part);
                     log.debug("Added position-string-based river FROM part: {} with level={}",
                         segment.getFromPosition(), fromLevel);
                 } else if (segment.getFromSide() != null) {
@@ -1464,7 +1472,7 @@ public class FlowComposer {
                         fromLevel,
                         groupId
                     );
-                    areaGrid.addRiverConfigPart(part);
+                    centralGrid.addRiverConfigPart(part);
                     log.debug("Added SIDE-based river FROM part: {} with level={}", segment.getFromSide(), fromLevel);
                 }
 
@@ -1478,7 +1486,7 @@ public class FlowComposer {
                         toLevel,
                         groupId
                     );
-                    areaGrid.addRiverConfigPart(part);
+                    centralGrid.addRiverConfigPart(part);
                     log.debug("Added position-string-based river TO part: {} with level={}",
                         segment.getToPosition(), toLevel);
                 } else if (segment.getToSide() != null) {
@@ -1490,14 +1498,14 @@ public class FlowComposer {
                         toLevel,
                         groupId
                     );
-                    areaGrid.addRiverConfigPart(part);
+                    centralGrid.addRiverConfigPart(part);
                     log.debug("Added SIDE-based river TO part: {} with level={}", segment.getToSide(), toLevel);
                 }
             }
-
-            log.debug("Converted {} river segments to {} config parts for Area grid {}",
-                riverSegments.size(), areaGrid.getRiverConfigParts().size(), coordKey);
         }
+
+        log.info("Converted river segments to config parts for {} grids (flow: {})",
+            convertedGrids, flow.getName());
     }
 
     /**
@@ -1515,35 +1523,38 @@ public class FlowComposer {
 
         Wall wall = (Wall) flow;
 
-        // Build a map of Area grids by coordinate for fast lookup
-        Map<String, FeatureHexGrid> areaGridMap = new HashMap<>();
-        collectAllAreaGrids(composition, areaGridMap);
+        // Iterate directly over central registry instead of flow.getHexGrids()
+        if (composition.getFeatureHexGridRegistry() == null) {
+            log.warn("Central registry is null, cannot convert wall segments");
+            return;
+        }
 
-        // Also collect from PlacedBiomes (includes Filler-Biomes!)
-        collectAreaGridsFromPlacedBiomes(placementResult, areaGridMap);
+        int convertedGrids = 0;
 
-        // Convert FlowSegments to WallConfigParts and add to Area grids
-        for (FeatureHexGrid flowGrid : flow.getHexGrids()) {
-            String coordKey = flowGrid.getPositionKey();
-            if (coordKey == null) {
+        for (FeatureHexGrid centralGrid : composition.getFeatureHexGridRegistry().values()) {
+            if (centralGrid == null) {
                 continue;
             }
 
-            // Find the Area grid at this coordinate
-            FeatureHexGrid areaGrid = areaGridMap.get(coordKey);
-            if (areaGrid == null) {
-                log.debug("No Area grid found at {}, wall crosses empty space", coordKey);
-                continue;
-            }
-
-            // Get wall segments for this grid
-            List<FlowSegment> wallSegments = flowGrid.getFlowSegmentsByType(FlowType.WALL);
+            // Get wall segments for this grid (from this specific flow)
+            List<FlowSegment> wallSegments = centralGrid.getFlowSegmentsByType(FlowType.WALL);
             if (wallSegments.isEmpty()) {
                 continue;
             }
 
+            // Filter segments that belong to this flow
+            List<FlowSegment> flowWallSegments = wallSegments.stream()
+                .filter(seg -> flow.getFeatureId().equals(seg.getFlowFeatureId()))
+                .toList();
+
+            if (flowWallSegments.isEmpty()) {
+                continue;
+            }
+
+            convertedGrids++;
+
             // Convert each FlowSegment to WallConfigPart
-            for (FlowSegment segment : wallSegments) {
+            for (FlowSegment segment : flowWallSegments) {
                 // Create parts for entry point (fromPosition or fromSide)
                 if (segment.getFromPosition() != null) {
                     // Use HexLocal position string (Point endpoint)
@@ -1554,7 +1565,7 @@ public class FlowComposer {
                         segment.getLevel(),
                         segment.getMaterial()
                     );
-                    areaGrid.addWallConfigPart(part);
+                    centralGrid.addWallConfigPart(part);
                     log.debug("Added position-based wall part (from) at position={}",
                         segment.getFromPosition());
                 } else if (segment.hasFromCoordinates()) {
@@ -1567,9 +1578,10 @@ public class FlowComposer {
                         segment.getLevel(),
                         segment.getMaterial()
                     );
-                    areaGrid.addWallConfigPart(part);
-                    log.warn("Using deprecated lx/lz for wall (from) at grid {}: lx={}, lz={}",
-                        coordKey, segment.getFromLx(), segment.getFromLz());
+                    centralGrid.addWallConfigPart(part);
+                    log.warn("Using deprecated lx/lz for wall (from) at grid ({},{}): lx={}, lz={}",
+                        centralGrid.getCoordinate().getQ(), centralGrid.getCoordinate().getR(),
+                        segment.getFromLx(), segment.getFromLz());
                 } else if (segment.getFromSide() != null) {
                     // Use SIDE (Biome endpoint)
                     WallConfigPart part = WallConfigPart.createSidePart(
@@ -1579,7 +1591,7 @@ public class FlowComposer {
                         segment.getLevel(),
                         segment.getMaterial()
                     );
-                    areaGrid.addWallConfigPart(part);
+                    centralGrid.addWallConfigPart(part);
                 }
 
                 // Create parts for exit point (toPosition or toSide)
@@ -1592,7 +1604,7 @@ public class FlowComposer {
                         segment.getLevel(),
                         segment.getMaterial()
                     );
-                    areaGrid.addWallConfigPart(part);
+                    centralGrid.addWallConfigPart(part);
                     log.debug("Added position-based wall part (to) at position={}",
                         segment.getToPosition());
                 } else if (segment.hasToCoordinates()) {
@@ -1605,9 +1617,10 @@ public class FlowComposer {
                         segment.getLevel(),
                         segment.getMaterial()
                     );
-                    areaGrid.addWallConfigPart(part);
-                    log.warn("Using deprecated lx/lz for wall (to) at grid {}: lx={}, lz={}",
-                        coordKey, segment.getToLx(), segment.getToLz());
+                    centralGrid.addWallConfigPart(part);
+                    log.warn("Using deprecated lx/lz for wall (to) at grid ({},{}): lx={}, lz={}",
+                        centralGrid.getCoordinate().getQ(), centralGrid.getCoordinate().getR(),
+                        segment.getToLx(), segment.getToLz());
                 } else if (segment.getToSide() != null && !segment.getToSide().equals(segment.getFromSide())) {
                     // Use SIDE (Biome endpoint)
                     WallConfigPart part = WallConfigPart.createSidePart(
@@ -1617,13 +1630,13 @@ public class FlowComposer {
                         segment.getLevel(),
                         segment.getMaterial()
                     );
-                    areaGrid.addWallConfigPart(part);
+                    centralGrid.addWallConfigPart(part);
                 }
             }
-
-            log.debug("Converted {} wall segments to {} config parts for Area grid {}",
-                wallSegments.size(), areaGrid.getWallConfigParts().size(), coordKey);
         }
+
+        log.info("Converted wall segments to config parts for {} grids (flow: {})",
+            convertedGrids, flow.getName());
     }
 
     /**
@@ -1652,14 +1665,24 @@ public class FlowComposer {
     }
 
     /**
-     * Collects Area grids into a map by coordinate key
+     * Collects Area grids into a map by coordinate key.
+     * Only Structures have hexGrids - Biomes store them in central registry.
+     * Note: Flows are not Areas, they are handled separately.
      */
     private void collectAreaGrids(Area area, Map<String, FeatureHexGrid> areaGridMap) {
-        if (area.getHexGrids() == null) {
+        List<FeatureHexGrid> hexGrids = null;
+
+        // Only Structures have local hexGrids (Flows are not Areas)
+        if (area instanceof de.mhus.nimbus.world.generator.composer.structure.Structure) {
+            hexGrids = ((de.mhus.nimbus.world.generator.composer.structure.Structure) area).getHexGrids();
+        }
+        // Note: Biomes no longer have local hexGrids - they use central registry
+
+        if (hexGrids == null) {
             return;
         }
 
-        for (FeatureHexGrid hexGrid : area.getHexGrids()) {
+        for (FeatureHexGrid hexGrid : hexGrids) {
             String coordKey = hexGrid.getPositionKey();
             if (coordKey != null) {
                 areaGridMap.put(coordKey, hexGrid);
@@ -1671,43 +1694,50 @@ public class FlowComposer {
      * Collects Area grids from all PlacedBiomes (including Filler-Biomes!)
      * This is CRITICAL for flows that cross Filler grids (CoastFiller, OceanFiller, etc.)
      *
+     * Note: Biomes no longer have local hexGrids - they are stored in central registry.
+     * This method now collects from central HexComposition.featureHexGridRegistry.
+     *
      * @param placementResult The placement result with all PlacedBiomes
      * @param areaGridMap Map to add grids to
+     * @param composition The composition with central FeatureHexGrid registry
      */
     private void collectAreaGridsFromPlacedBiomes(BiomePlacementResult placementResult,
-                                                   Map<String, FeatureHexGrid> areaGridMap) {
+                                                   Map<String, FeatureHexGrid> areaGridMap,
+                                                   HexComposition composition) {
         if (placementResult == null || placementResult.getPlacedBiomes() == null) {
             log.warn("placementResult or PlacedBiomes is null!");
             return;
         }
 
-        int collectedCount = 0;
-        int biomesWithGrids = 0;
-        int biomesWithoutGrids = 0;
+        // Collect from central FeatureHexGrid registry instead of biome.getHexGrids()
+        if (composition.getFeatureHexGridRegistry() == null || composition.getFeatureHexGridRegistry().isEmpty()) {
+            log.warn("Central FeatureHexGrid registry is empty!");
+            return;
+        }
 
+        int collectedCount = 0;
+
+        // Iterate through all PlacedBiomes and collect their coordinates from central registry
         for (PlacedBiome placedBiome : placementResult.getPlacedBiomes()) {
             Biome biome = placedBiome.getBiome();
-            if (biome != null && biome.getHexGrids() != null && !biome.getHexGrids().isEmpty()) {
-                biomesWithGrids++;
-                for (FeatureHexGrid hexGrid : biome.getHexGrids()) {
-                    String coordKey = hexGrid.getPositionKey();
-                    if (coordKey != null) {
-                        // Add to map (may overwrite, but that's OK - same coordinate)
-                        areaGridMap.put(coordKey, hexGrid);
-                        collectedCount++;
-                    }
-                }
-            } else {
-                biomesWithoutGrids++;
-                if (biome != null) {
-                    log.warn("PlacedBiome has no FeatureHexGrids: {} (type: {})",
-                        biome.getName(), biome.getType());
+            if (biome == null) {
+                continue;
+            }
+
+            // For each coordinate of this biome, get the FeatureHexGrid from central registry
+            for (HexVector2 coord : placedBiome.getCoordinates()) {
+                String coordKey = de.mhus.nimbus.shared.utils.TypeUtil.toStringHexCoord(coord);
+                FeatureHexGrid hexGrid = composition.getFeatureHexGridRegistry().get(coordKey);
+                if (hexGrid != null) {
+                    // Add to map (may overwrite, but that's OK - same coordinate)
+                    areaGridMap.put(coordKey, hexGrid);
+                    collectedCount++;
                 }
             }
         }
 
-        log.debug("Collected {} FeatureHexGrids from {} PlacedBiomes ({} with grids, {} without)",
-            collectedCount, placementResult.getPlacedBiomes().size(), biomesWithGrids, biomesWithoutGrids);
+        log.debug("Collected {} FeatureHexGrids from central registry for {} PlacedBiomes",
+            collectedCount, placementResult.getPlacedBiomes().size());
     }
 
     /**
@@ -1743,13 +1773,11 @@ public class FlowComposer {
             return 0;
         }
 
-        if (targetBiome.getHexGrids() == null || targetBiome.getHexGrids().isEmpty()) {
-            log.warn("Target biome '{}' has no HexGrids", targetBiome.getName());
-            return 0;
-        }
+        // Note: Biomes no longer have local hexGrids - they use central registry
+        // findBiomeEdgeGrids() uses placementResult.coordinates and central registry
 
         // Find edge grids of the target biome
-        List<FeatureHexGrid> edgeGrids = findBiomeEdgeGrids(targetBiome, placementResult);
+        List<FeatureHexGrid> edgeGrids = findBiomeEdgeGrids(targetBiome, placementResult, prepared);
         if (edgeGrids.isEmpty()) {
             log.warn("Target biome '{}' has no edge grids", targetBiome.getName());
             return 0;
@@ -1766,7 +1794,7 @@ public class FlowComposer {
             // Filter by sides if specified
             if (sideWall.getSides() != null && !sideWall.getSides().isEmpty()) {
                 // Only add sidewall to grids that have the requested sides exposed
-                List<EDGE> exposedSides = getExposedSides(edgeGrid, targetBiome, placementResult);
+                List<EDGE> exposedSides = getExposedSides(edgeGrid, targetBiome, placementResult, prepared);
                 boolean hasRequestedSide = false;
                 for (EDGE side : sideWall.getSides()) {
                     if (exposedSides.contains(side)) {
@@ -1795,19 +1823,44 @@ public class FlowComposer {
 
     /**
      * Finds edge grids of a biome (grids that have at least one side not connected to another biome grid).
+     * Uses PlacementResult coordinates and central FeatureHexGrid registry.
      */
-    private List<FeatureHexGrid> findBiomeEdgeGrids(Biome biome, BiomePlacementResult placementResult) {
+    private List<FeatureHexGrid> findBiomeEdgeGrids(Biome biome, BiomePlacementResult placementResult, HexComposition composition) {
         List<FeatureHexGrid> edgeGrids = new ArrayList<>();
+
+        // Find PlacedBiome for this biome
+        PlacedBiome placedBiome = null;
+        for (PlacedBiome pb : placementResult.getPlacedBiomes()) {
+            if (pb.getBiome() == biome) {
+                placedBiome = pb;
+                break;
+            }
+        }
+
+        if (placedBiome == null) {
+            log.warn("Could not find PlacedBiome for biome: {}", biome.getName());
+            return edgeGrids;
+        }
 
         // Build set of all biome coordinates for quick lookup
         Set<String> biomeCoords = new HashSet<>();
-        for (FeatureHexGrid grid : biome.getHexGrids()) {
-            biomeCoords.add(coordKey(grid.getCoordinate()));
+        for (HexVector2 coord : placedBiome.getCoordinates()) {
+            biomeCoords.add(coordKey(coord));
         }
 
         // Find edge grids (grids with at least one neighbor not in biome)
-        for (FeatureHexGrid grid : biome.getHexGrids()) {
-            List<HexVector2> neighbors = getHexNeighbors(grid.getCoordinate());
+        // Get FeatureHexGrids from central registry
+        for (HexVector2 coord : placedBiome.getCoordinates()) {
+            String coordKey = de.mhus.nimbus.shared.utils.TypeUtil.toStringHexCoord(coord);
+            FeatureHexGrid grid = composition.getFeatureHexGridRegistry() != null
+                ? composition.getFeatureHexGridRegistry().get(coordKey)
+                : null;
+
+            if (grid == null) {
+                continue;
+            }
+
+            List<HexVector2> neighbors = getHexNeighbors(coord);
             boolean isEdge = false;
             for (HexVector2 neighbor : neighbors) {
                 if (!biomeCoords.contains(coordKey(neighbor))) {
@@ -1827,13 +1880,27 @@ public class FlowComposer {
      * Gets which sides of a grid are exposed (facing outside the biome).
      */
     private List<EDGE> getExposedSides(FeatureHexGrid grid, Biome biome,
-                                       BiomePlacementResult placementResult) {
+                                       BiomePlacementResult placementResult,
+                                       HexComposition composition) {
         List<EDGE> exposedSides = new ArrayList<>();
 
-        // Build set of biome coordinates
+        // Find PlacedBiome for this biome
+        PlacedBiome placedBiome = null;
+        for (PlacedBiome pb : placementResult.getPlacedBiomes()) {
+            if (pb.getBiome() == biome) {
+                placedBiome = pb;
+                break;
+            }
+        }
+
+        if (placedBiome == null) {
+            return exposedSides;
+        }
+
+        // Build set of biome coordinates from PlacementResult
         Set<String> biomeCoords = new HashSet<>();
-        for (FeatureHexGrid g : biome.getHexGrids()) {
-            biomeCoords.add(coordKey(g.getCoordinate()));
+        for (HexVector2 coord : placedBiome.getCoordinates()) {
+            biomeCoords.add(coordKey(coord));
         }
 
         // Check each direction

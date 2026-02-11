@@ -114,8 +114,8 @@ public class OrphanGridFiller {
                     log.debug("Updated parameters for {} FeatureHexGrid(s) at {} from biome '{}'",
                             updated, coordKey(coord), assignedBiome.getName());
                 } else {
-                    // No existing grid found - add to biome (fallback)
-                    addGridToPlacedBiome(coord, assignedBiome, placementResult);
+                    // No existing grid found - add to central registry
+                    addGridToCentralRegistry(coord, assignedBiome, placementResult, composition);
                     log.debug("Created new FeatureHexGrid for orphan grid {} in biome '{}'",
                             coordKey(coord), assignedBiome.getName());
                 }
@@ -280,24 +280,23 @@ public class OrphanGridFiller {
     }
 
     /**
-     * Finds ALL existing FeatureHexGrids for this coordinate in all features
+     * Finds ALL existing FeatureHexGrids for this coordinate in central registry
      */
     private List<FeatureHexGrid> findAllFeatureHexGrids(HexVector2 coord, HexComposition composition) {
         List<FeatureHexGrid> result = new ArrayList<>();
 
-        if (composition.getFeatures() == null) {
+        // Use central FeatureHexGrid registry (Single Source of Truth)
+        Map<String, FeatureHexGrid> registry = composition.getFeatureHexGridRegistry();
+        if (registry == null || registry.isEmpty()) {
             return result;
         }
 
-        for (Feature feature : composition.getFeatures()) {
-            if (feature.getHexGrids() != null) {
-                for (FeatureHexGrid hexGrid : feature.getHexGrids()) {
-                    if (hexGrid.getCoordinate() != null &&
-                        hexGrid.getCoordinate().getQ() == coord.getQ() &&
-                        hexGrid.getCoordinate().getR() == coord.getR()) {
-                        result.add(hexGrid);
-                    }
-                }
+        // Find all grids at this coordinate
+        for (FeatureHexGrid hexGrid : registry.values()) {
+            if (hexGrid.getCoordinate() != null &&
+                hexGrid.getCoordinate().getQ() == coord.getQ() &&
+                hexGrid.getCoordinate().getR() == coord.getR()) {
+                result.add(hexGrid);
             }
         }
 
@@ -328,10 +327,11 @@ public class OrphanGridFiller {
     }
 
     /**
-     * Adds a grid to a placed biome and creates a FeatureHexGrid with biome parameters
+     * Adds a grid to central registry and placed biome with biome parameters
      */
-    private void addGridToPlacedBiome(HexVector2 coord, Biome biome,
-                                      BiomePlacementResult placementResult) {
+    private void addGridToCentralRegistry(HexVector2 coord, Biome biome,
+                                          BiomePlacementResult placementResult,
+                                          HexComposition composition) {
         // Find the PlacedBiome for this biome
         PlacedBiome targetPlaced = null;
         for (PlacedBiome placed : placementResult.getPlacedBiomes()) {
@@ -370,21 +370,19 @@ public class OrphanGridFiller {
 
         featureHexGrid.setParameters(parameters);
 
-        // Add to biome's hexGrids
-        if (biome.getHexGrids() == null) {
-            biome.setHexGrids(new java.util.ArrayList<>());
-        }
+        // Add to central FeatureHexGrid registry (Single Source of Truth)
+        String positionKey = featureHexGrid.getPositionKey();
+        if (positionKey != null) {
+            if (composition.getFeatureHexGridRegistry() == null) {
+                composition.setFeatureHexGridRegistry(new HashMap<>());
+            }
 
-        // Check if grid already exists in biome
-        boolean exists = biome.getHexGrids().stream()
-            .anyMatch(g -> g.getCoordinate() != null &&
-                          g.getCoordinate().getQ() == coord.getQ() &&
-                          g.getCoordinate().getR() == coord.getR());
-
-        if (!exists) {
-            biome.getHexGrids().add(featureHexGrid);
-            log.debug("Created FeatureHexGrid for orphan grid {} with parameters: {}",
-                     coordKey(coord), parameters);
+            // Check if grid already exists in central registry
+            if (!composition.getFeatureHexGridRegistry().containsKey(positionKey)) {
+                composition.getFeatureHexGridRegistry().put(positionKey, featureHexGrid);
+                log.debug("Created FeatureHexGrid for orphan grid {} in central registry with parameters: {}",
+                         coordKey(coord), parameters);
+            }
         }
     }
 
@@ -404,22 +402,20 @@ public class OrphanGridFiller {
     }
 
     /**
-     * Collects all grids from all features (not just biomes)
+     * Collects all grids from central FeatureHexGrid registry
      */
     private Set<HexVector2> collectAllFeatureGrids(HexComposition composition) {
         Set<HexVector2> allGrids = new HashSet<>();
 
-        if (composition.getFeatures() == null) {
+        // Use central FeatureHexGrid registry (Single Source of Truth)
+        Map<String, FeatureHexGrid> registry = composition.getFeatureHexGridRegistry();
+        if (registry == null || registry.isEmpty()) {
             return allGrids;
         }
 
-        for (Feature feature : composition.getFeatures()) {
-            if (feature.getHexGrids() != null) {
-                for (FeatureHexGrid hexGrid : feature.getHexGrids()) {
-                    if (hexGrid.getCoordinate() != null) {
-                        allGrids.add(hexGrid.getCoordinate());
-                    }
-                }
+        for (FeatureHexGrid hexGrid : registry.values()) {
+            if (hexGrid.getCoordinate() != null) {
+                allGrids.add(hexGrid.getCoordinate());
             }
         }
 

@@ -146,9 +146,18 @@ public class HexGridGenerator {
         List<WHexGrid> gridsToCreate = new ArrayList<>();
 
         try {
-            List<FeatureHexGrid> hexGridConfigs = feature.getHexGrids();
+            // Only Structures and Flows have local hexGrids
+            // Biomes use central registry (handled separately)
+            List<FeatureHexGrid> hexGridConfigs = null;
+            if (feature instanceof de.mhus.nimbus.world.generator.composer.structure.Structure) {
+                hexGridConfigs = ((de.mhus.nimbus.world.generator.composer.structure.Structure) feature).getHexGrids();
+            } else if (feature instanceof de.mhus.nimbus.world.generator.composer.flow.Flow) {
+                hexGridConfigs = ((de.mhus.nimbus.world.generator.composer.flow.Flow) feature).getHexGrids();
+            }
+
             if (hexGridConfigs == null || hexGridConfigs.isEmpty()) {
-                log.warn("Feature {} has no HexGrid configurations", feature.getName());
+                // Not an error - Biomes don't have local hexGrids
+                log.debug("Feature {} has no local HexGrid configurations (may use central registry)", feature.getName());
                 return FeatureGenerationResult.builder()
                     .createdCount(0)
                     .skippedCount(0)
@@ -302,12 +311,22 @@ public class HexGridGenerator {
     }
 
     /**
-     * Checks if a feature can be processed by this generator
+     * Checks if a feature can be processed by this generator.
+     * Only Structures and Flows have local hexGrids that can be generated.
      */
     public boolean canGenerate(Feature feature) {
         if (feature == null) return false;
         if (!feature.needsHexGridCreation()) return false;
-        if (feature.getHexGrids() == null || feature.getHexGrids().isEmpty()) return false;
+
+        // Only Structures and Flows have local hexGrids
+        List<de.mhus.nimbus.world.generator.composer.feature.FeatureHexGrid> hexGrids = null;
+        if (feature instanceof de.mhus.nimbus.world.generator.composer.structure.Structure) {
+            hexGrids = ((de.mhus.nimbus.world.generator.composer.structure.Structure) feature).getHexGrids();
+        } else if (feature instanceof de.mhus.nimbus.world.generator.composer.flow.Flow) {
+            hexGrids = ((de.mhus.nimbus.world.generator.composer.flow.Flow) feature).getHexGrids();
+        }
+
+        if (hexGrids == null || hexGrids.isEmpty()) return false;
         return true;
     }
 

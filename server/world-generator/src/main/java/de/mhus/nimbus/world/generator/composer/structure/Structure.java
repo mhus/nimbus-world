@@ -3,12 +3,14 @@ package de.mhus.nimbus.world.generator.composer.structure;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.world.generator.composer.area.Area;
+import de.mhus.nimbus.world.generator.composer.feature.FeatureHexGrid;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -30,6 +32,10 @@ public abstract class Structure extends Area {
     /**
      * Inner class for structureComposed (calculated) data at Structure level.
      * Stores values computed during composition, separate from user input.
+     *
+     * Note: hexGrids is temporary storage during composition phase.
+     * Structures configure their FeatureHexGrids here, then they are copied to
+     * the central HexComposition.featureHexGridRegistry by StructureComposer.
      */
     @Data
     @NoArgsConstructor
@@ -37,6 +43,12 @@ public abstract class Structure extends Area {
     public static class StructureComposed {
         private Integer calculatedHexGridWidth;
         private Integer calculatedHexGridHeight;
+
+        /**
+         * Temporary storage for FeatureHexGrids during composition phase.
+         * After composition, these are registered in central HexComposition.featureHexGridRegistry.
+         */
+        private List<FeatureHexGrid> hexGrids;
     }
 
     /**
@@ -100,5 +112,40 @@ public abstract class Structure extends Area {
             structureComposed = new StructureComposed();
         }
         structureComposed.setCalculatedHexGridHeight(calculatedHexGridHeight);
+    }
+
+    // HexGrid management methods
+
+    public List<FeatureHexGrid> getHexGrids() {
+        return structureComposed != null ? structureComposed.getHexGrids() : null;
+    }
+
+    public void setHexGrids(List<FeatureHexGrid> hexGrids) {
+        if (structureComposed == null) {
+            structureComposed = new StructureComposed();
+        }
+        structureComposed.setHexGrids(hexGrids);
+    }
+
+    public void addHexGrid(FeatureHexGrid hexGrid) {
+        if (structureComposed == null) {
+            structureComposed = new StructureComposed();
+        }
+        if (structureComposed.getHexGrids() == null) {
+            structureComposed.setHexGrids(new ArrayList<>());
+        }
+        structureComposed.getHexGrids().add(hexGrid);
+    }
+
+    public FeatureHexGrid findHexGrid(int q, int r) {
+        if (structureComposed == null || structureComposed.getHexGrids() == null) {
+            return null;
+        }
+        return structureComposed.getHexGrids().stream()
+            .filter(grid -> grid.getCoordinate() != null &&
+                          grid.getCoordinate().getQ() == q &&
+                          grid.getCoordinate().getR() == r)
+            .findFirst()
+            .orElse(null);
     }
 }

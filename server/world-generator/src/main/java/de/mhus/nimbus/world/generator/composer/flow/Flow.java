@@ -89,6 +89,10 @@ public abstract class Flow extends Feature {
     /**
      * Inner class for flowComposed (calculated) data at Flow level.
      * Stores values computed during composition, separate from user input.
+     *
+     * Note: hexGrids is temporary storage during composition phase.
+     * Flows configure their FeatureHexGrids here, then they are copied to
+     * the central HexComposition.featureHexGridRegistry by FlowComposer.
      */
     @Data
     @NoArgsConstructor
@@ -112,6 +116,13 @@ public abstract class Flow extends Feature {
          * Note: endPointId is defined in subclasses (Road, Wall) not in Flow base class.
          */
         private Point endPointFeature;
+
+        /**
+         * Temporary storage for FeatureHexGrids during composition phase.
+         * After composition, these are registered in central HexComposition.featureHexGridRegistry.
+         */
+        @Deprecated // TODO remove this later
+        private List<FeatureHexGrid> hexGrids;
     }
 
     @JsonIgnore
@@ -304,6 +315,41 @@ public abstract class Flow extends Feature {
             flowComposed = new FlowComposed();
         }
         flowComposed.setEndPointFeature(endPointFeature);
+    }
+
+    // HexGrid management methods
+
+    public List<FeatureHexGrid> getHexGrids() {
+        return flowComposed != null ? flowComposed.getHexGrids() : null;
+    }
+
+    public void setHexGrids(List<FeatureHexGrid> hexGrids) {
+        if (flowComposed == null) {
+            flowComposed = new FlowComposed();
+        }
+        flowComposed.setHexGrids(hexGrids);
+    }
+
+    public void addHexGrid(FeatureHexGrid hexGrid) {
+        if (flowComposed == null) {
+            flowComposed = new FlowComposed();
+        }
+        if (flowComposed.getHexGrids() == null) {
+            flowComposed.setHexGrids(new java.util.ArrayList<>());
+        }
+        flowComposed.getHexGrids().add(hexGrid);
+    }
+
+    public FeatureHexGrid findHexGrid(int q, int r) {
+        if (flowComposed == null || flowComposed.getHexGrids() == null) {
+            return null;
+        }
+        return flowComposed.getHexGrids().stream()
+            .filter(grid -> grid.getCoordinate() != null &&
+                          grid.getCoordinate().getQ() == q &&
+                          grid.getCoordinate().getR() == r)
+            .findFirst()
+            .orElse(null);
     }
 
     /**

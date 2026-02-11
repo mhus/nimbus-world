@@ -110,7 +110,7 @@ public class TownDebugOverlayHelper {
                     // where relativePos comes from HexLocalUtil.toHexGridLocalCenter() which uses hexGridSize (not flatSize)
                     // Since hexGridSize = flatSize - 30, and the border is split evenly, we need to add 15 pixels
                     // to account for the difference: (flatSize - hexGridSize) / 2 = 15
-                    double worldX = hexCenterX - flatSize / 2.0 + place.getLocalX() + 15;
+                    double worldX = hexCenterX - flatSize / 2.0 + place.getLocalX() + 15; // TODO calculate hexGrid Size X and Z and not flat size
                     double worldZ = hexCenterZ - flatSize / 2.0 + place.getLocalZ() + 15;
 
                     // Add CrossOverlay at slot center

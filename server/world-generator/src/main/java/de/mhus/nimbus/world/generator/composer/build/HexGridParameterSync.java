@@ -1,13 +1,7 @@
 package de.mhus.nimbus.world.generator.composer.build;
 
-import de.mhus.nimbus.world.generator.composer.area.Area;
-import de.mhus.nimbus.world.generator.composer.area.Composite;
-import de.mhus.nimbus.world.generator.composer.biome.Biome;
 import de.mhus.nimbus.world.generator.composer.biome.BiomePlacementResult;
-import de.mhus.nimbus.world.generator.composer.biome.PlacedBiome;
-import de.mhus.nimbus.world.generator.composer.feature.Feature;
 import de.mhus.nimbus.world.generator.composer.feature.FeatureHexGrid;
-import de.mhus.nimbus.world.generator.composer.point.Point;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
 import lombok.extern.slf4j.Slf4j;
 
@@ -31,10 +25,10 @@ import java.util.Map;
 public class HexGridParameterSync {
 
     /**
-     * Syncs parameters from Area FeatureHexGrids to WHexGrids.
+     * Syncs parameters from central FeatureHexGrid registry to WHexGrids.
      * Copies road, river, wall parameters from FeatureHexGrids to matching WHexGrids.
      *
-     * @param composition The composition with Area features containing FeatureHexGrids
+     * @param composition The composition with central FeatureHexGrid registry
      * @param placementResult The placement result with all placed biomes (including Fillers)
      * @param wHexGrids List of WHexGrids to update
      * @return Number of grids updated
@@ -42,7 +36,7 @@ public class HexGridParameterSync {
     public int syncParametersToWHexGrids(HexComposition composition,
                                          BiomePlacementResult placementResult,
                                          List<WHexGrid> wHexGrids) {
-        log.debug("Starting parameter sync from FeatureHexGrids to WHexGrids");
+        log.debug("Starting parameter sync from central FeatureHexGrid registry to WHexGrids");
 
         // Build index of WHexGrids by coordinate for fast lookup
         Map<String, WHexGrid> wHexGridIndex = new HashMap<>();
@@ -52,57 +46,18 @@ public class HexGridParameterSync {
 
         int updatedCount = 0;
 
-        // Iterate all Area features and sync their FeatureHexGrid parameters
-        // Note: Flow parameters (road, river, wall) were already added to Area grids
-        // by FlowComposer.convertFlowSegmentsToConfigParts(), so we only need to sync Areas
-        // Points are ASPEKTE - they don't have their own HexGrids, they add parameters
-        // directly to biome grids, so no sync needed
-        if (composition.getFeatures() != null) {
-            for (Feature feature : composition.getFeatures()) {
-                if (feature instanceof Area area) {
-                    updatedCount += syncFeatureHexGrids(area, wHexGridIndex);
-                }
-                // Points don't need sync - they modify biome grids directly
-            }
-        }
-
-        // Also check composites
-        if (composition.getComposites() != null) {
-            for (Composite composite : composition.getComposites()) {
-                for (Feature nestedFeature : composite.getFeatures()) {
-                    if (nestedFeature instanceof Area area) {
-                        updatedCount += syncFeatureHexGrids(area, wHexGridIndex);
-                    }
-                    // Points don't need sync - they modify biome grids directly
-                }
-            }
-        }
-
-        // CRITICAL: Also sync from PlacedBiomes (includes Filler-Biomes!)
-        if (placementResult != null && placementResult.getPlacedBiomes() != null) {
-            for (PlacedBiome placedBiome : placementResult.getPlacedBiomes()) {
-                Biome biome = placedBiome.getBiome();
-                if (biome != null && biome instanceof Area area) {
-                    updatedCount += syncFeatureHexGrids(area, wHexGridIndex);
-                }
-            }
-        }
-
-        log.debug("Parameter sync complete: updated {} WHexGrids", updatedCount);
-        return updatedCount;
-    }
-
-    /**
-     * Syncs FeatureHexGrids from a single Area feature to WHexGrids.
-     */
-    private int syncFeatureHexGrids(Area area, Map<String, WHexGrid> wHexGridIndex) {
-        if (area.getHexGrids() == null) {
+        // Use central FeatureHexGrid registry (Single Source of Truth)
+        // All FeatureHexGrids are managed here, regardless of their source (Biome, Point, Flow, etc.)
+        Map<String, FeatureHexGrid> featureHexGridRegistry = composition.getFeatureHexGridRegistry();
+        if (featureHexGridRegistry == null || featureHexGridRegistry.isEmpty()) {
+            log.warn("No FeatureHexGrids found in central registry");
             return 0;
         }
 
-        int syncedCount = 0;
+        log.debug("Syncing parameters from {} FeatureHexGrids in central registry", featureHexGridRegistry.size());
 
-        for (FeatureHexGrid featureHexGrid : area.getHexGrids()) {
+        // Sync all FeatureHexGrids from central registry to WHexGrids
+        for (FeatureHexGrid featureHexGrid : featureHexGridRegistry.values()) {
             String coordKey = featureHexGrid.getPositionKey();
             if (coordKey == null) {
                 continue;
@@ -111,18 +66,19 @@ public class HexGridParameterSync {
             // Find matching WHexGrid
             WHexGrid wHexGrid = wHexGridIndex.get(coordKey);
             if (wHexGrid == null) {
-                log.debug("No WHexGrid found for coordinate {} (Area: {})", coordKey, area.getName());
+                log.debug("No WHexGrid found for coordinate {} (from central registry)", coordKey);
                 continue;
             }
 
-            // Sync parameters that were added by FlowComposer
-            boolean synced = syncFlowParameters(featureHexGrid, wHexGrid, area.getName());
+            // Sync parameters
+            boolean synced = syncFlowParameters(featureHexGrid, wHexGrid, "central-registry");
             if (synced) {
-                syncedCount++;
+                updatedCount++;
             }
         }
 
-        return syncedCount;
+        log.debug("Parameter sync complete: updated {} WHexGrids", updatedCount);
+        return updatedCount;
     }
 
 

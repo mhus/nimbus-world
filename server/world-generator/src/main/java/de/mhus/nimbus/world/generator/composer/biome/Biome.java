@@ -82,37 +82,16 @@ public class Biome extends Area {
      * @param coordinates List of coordinates assigned to this biome
      */
     @Override
+    /**
+     * Configures HexGrids for this biome.
+     *
+     * @deprecated This method is kept for backward compatibility but does nothing.
+     *             FeatureHexGrids are now created by BiomeComposer.configureHexGridsForPlacedBiomes()
+     *             which registers them in the central HexComposition.featureHexGridRegistry.
+     */
+    @Deprecated(since = "1.0.0", forRemoval = true)
     public void configureHexGrids(List<HexVector2> coordinates) {
-        if (coordinates == null || coordinates.isEmpty()) {
-            return;
-        }
-
-        // Clear existing configurations
-        if (getHexGrids() != null) {
-            getHexGrids().clear();
-        }
-
-        // Create FeatureHexGrid for each coordinate
-        for (HexVector2 coord : coordinates) {
-            FeatureHexGrid featureHexGrid = FeatureHexGrid.builder()
-                .coordinate(coord)
-                .name(getName() + " [" + coord.getQ() + "," + coord.getR() + "]")
-                .description("Part of " + (type != null ? type.name() : "unknown") + " biome")
-                .build();
-
-            // Copy biome parameters to grid
-            if (parameters != null) {
-                featureHexGrid.getParameters().putAll(parameters);
-            }
-
-            // Add biome type parameter (use builderName for consistency with HexGridBuilderService)
-            if (type != null) {
-                featureHexGrid.addParameter("biome", type.getBuilderName());
-                featureHexGrid.addParameter("biomeName", getName());
-            }
-
-            // Add to this feature
-            addHexGrid(featureHexGrid);
-        }
+        // No-op: FeatureHexGrids are now managed centrally by BiomeComposer
+        // This method is kept for backward compatibility with Filler classes
     }
 }

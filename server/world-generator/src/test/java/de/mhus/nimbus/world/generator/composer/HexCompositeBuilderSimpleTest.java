@@ -289,6 +289,11 @@ public class HexCompositeBuilderSimpleTest {
         exportGeneratedModel(fillResult, result.getFlowCompositionResult(), "continent-test-%s".formatted(name));
 
         // Export the processed input composition model
+        log.info("Registry size before export: {}", composition.getFeatureHexGridRegistry() != null ? composition.getFeatureHexGridRegistry().size() : "NULL");
+        // Convert registry Map to List for export (Jackson has issues with Map<String, FeatureHexGrid>)
+        if (composition.getFeatureHexGridRegistry() != null) {
+            composition.setFeatureHexGrids(new ArrayList<>(composition.getFeatureHexGridRegistry().values()));
+        }
         exportInputComposition(composition, "simple-continent-test-%s".formatted(name));
 
         log.info("=== Simple Content Test %s Completed ===".formatted(name));

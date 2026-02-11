@@ -252,12 +252,8 @@ public class HexCompositeBuilder {
                 log.debug("Filling complete: added {} filler grids (Mountain: {}, Lowland: {}, Continent: {}, Coast: {}, Ocean: {})",
                     totalFillerBiomes, mountainAdded, lowlandAdded, continentAdded, coastAdded, oceanAdded);
 
-                // Configure HexGrids for ALL PlacedBiomes (including filler biomes)
-                log.debug("Step 4b: Configuring FeatureHexGrids for all {} PlacedBiomes (including fillers)",
-                    placementResult.getPlacedBiomes().size());
-                for (PlacedBiome placed : placementResult.getPlacedBiomes()) {
-                    placed.getBiome().configureHexGrids(placed.getCoordinates());
-                }
+                // Note: FeatureHexGrid configuration is now done in Step 6d by BiomeComposer.configureHexGridsForPlacedBiomes()
+                // This registers all PlacedBiomes (including fillers) in the central FeatureHexGrid registry
             } else {
                 log.debug("Step 4: Skipping gap filling (disabled)");
             }
@@ -298,6 +294,14 @@ public class HexCompositeBuilder {
 
             resultBuilder.pointCompositionResult(pointResult);
             resultBuilder.totalPoints(pointResult.getComposedPoints());
+
+            // Step 5b: Register ALL PlacedBiomes (including fillers) in central FeatureHexGrid registry
+            // MUST happen BEFORE FlowComposer, so that FlowComposer can add RoadConfigParts to filler grids
+            log.debug("Step 5b: Registering all biomes (including fillers) in central registry");
+            BiomeComposer biomeComposerForFillers = new BiomeComposer();
+            biomeComposerForFillers.configureHexGridsForPlacedBiomes(
+                placementResult.getPlacedBiomes(), composition);
+            log.debug("Registered all biomes (including fillers) in central FeatureHexGrid registry");
 
             // Step 6: Compose flows (roads, rivers, walls)
             log.debug("Step 6: Composing flows");
@@ -348,13 +352,8 @@ public class HexCompositeBuilder {
                 log.debug("No orphan grids found");
             }
 
-            // Step 6d: Register filler PlacedBiomes in central FeatureHexGrid registry
-            // Fillers add new PlacedBiomes, but don't register their FeatureHexGrids
-            log.debug("Step 6d: Registering filler biomes in central registry");
-            BiomeComposer biomeComposerForFillers = new BiomeComposer();
-            biomeComposerForFillers.configureHexGridsForPlacedBiomes(
-                placementResult.getPlacedBiomes(), composition);
-            log.debug("Registered all biomes (including fillers) in central FeatureHexGrid registry");
+            // Note: Registering biomes in central registry was moved to Step 5b (before FlowComposer)
+            // so that FlowComposer can add RoadConfigParts to all grids including fillers
 
             // Step 7: Convert FeatureHexGrids to WHexGrids (after all compositions)
             // FeatureHexGrids are now managed centrally in composition.featureHexGridRegistry
@@ -422,8 +421,40 @@ public class HexCompositeBuilder {
                     allFeatureHexGrids.size());
             }
 
-            // Step 7.5 (removed): populateCentralRegistry() is no longer needed
-            // FeatureHexGrids are now registered directly by BiomeComposer during composition
+            // Step 7.5: Populate central registry with Structure and Flow HexGrids
+            // Biomes are already registered by BiomeComposer, but Structures and Flows
+            // need to be transferred from their local storage to central registry
+            log.debug("Step 7.5: Populating central registry with Structure and Flow HexGrids");
+            populateCentralRegistry(composition);
+            log.debug("Central registry populated with Structure/Flow HexGrids");
+
+            // Step 7.5a: Convert FlowSegments to ConfigParts (AFTER flowSegments are in central registry)
+            // Now that Flow.hexGrids have been transferred to central registry, we can convert
+            // the flowSegments to RoadConfigParts/RiverConfigParts
+            log.info("Step 7.5a: Converting FlowSegments to ConfigParts");
+            int convertedFlows = flowComposer.convertAllFlowSegmentsToConfigParts(composition, placementResult);
+            log.info("Converted FlowSegments for {} flows", convertedFlows);
+
+            // Step 7.5b: Merge Flow Aspects (RoadConfigParts) into central registry
+            // Flows store their aspects (RoadConfigParts, RiverConfigParts) in Flow.hexGrids
+            // These need to be merged into the FeatureHexGrids in central registry
+            log.info("Step 7.5b: Merging Flow Aspects into central registry");
+            int mergedAspects = mergeFlowAspectsIntoCentralRegistry(composition);
+            log.info("Merged {} flow aspects into central registry", mergedAspects);
+
+            // Step 7.6: Configure road/river/wall parameters from RoadConfigParts
+            // Must run AFTER populateCentralRegistry() so HexGridRoadConfigurator
+            // works with the complete central registry
+            log.debug("Step 7.6: Configuring road/river/wall parameters");
+            HexGridRoadConfigurator roadConfigurator = new HexGridRoadConfigurator();
+            HexGridRoadConfigurator.RoadConfigurationResult roadResult =
+                roadConfigurator.configureRoads(composition, placementResult);
+            log.debug("Road configuration: configured={}/{} grids, {} total segments",
+                roadResult.getConfiguredGrids(), roadResult.getTotalGrids(),
+                roadResult.getTotalSegments());
+            if (!roadResult.isSuccess()) {
+                log.warn("Road configuration had errors: {}", roadResult.getErrors());
+            }
 
             // Step 8: Sync parameters from central registry to WHexGrids
             log.debug("Step 8: Syncing parameters from central registry to WHexGrids");
@@ -502,74 +533,87 @@ public class HexCompositeBuilder {
 
         if (composition.getFeatures() != null) {
             for (Feature feature : composition.getFeatures()) {
-                // Only process area-based features (Biomes, Composites) that have HexGrids
-                if (feature instanceof de.mhus.nimbus.world.generator.composer.area.Area) {
-                    de.mhus.nimbus.world.generator.composer.area.Area area =
-                        (de.mhus.nimbus.world.generator.composer.area.Area) feature;
+                // Only Structures and Flows have local hexGrids
+                // Biomes use central registry (already populated by BiomeComposer)
+                List<FeatureHexGrid> hexGrids = null;
+                if (feature instanceof de.mhus.nimbus.world.generator.composer.structure.Structure) {
+                    hexGrids = ((de.mhus.nimbus.world.generator.composer.structure.Structure) feature).getHexGrids();
+                } else if (feature instanceof de.mhus.nimbus.world.generator.composer.flow.Flow) {
+                    hexGrids = ((de.mhus.nimbus.world.generator.composer.flow.Flow) feature).getHexGrids();
+                }
 
-                    if (area.getHexGrids() == null || area.getHexGrids().isEmpty()) {
+                if (hexGrids == null || hexGrids.isEmpty()) {
+                    continue;
+                }
+
+                for (FeatureHexGrid featureGrid : hexGrids) {
+                    if (featureGrid.getCoordinate() == null) {
+                        log.warn("Feature '{}' has HexGrid without coordinate, skipping",
+                            feature.getName());
                         continue;
                     }
 
-                    for (FeatureHexGrid featureGrid : area.getHexGrids()) {
-                        if (featureGrid.getCoordinate() == null) {
-                            log.warn("Feature '{}' has HexGrid without coordinate, skipping",
-                                feature.getName());
-                            continue;
+                    // Get or create in central registry
+                    FeatureHexGrid centralGrid = composition.getOrCreateFeatureHexGrid(
+                        featureGrid.getCoordinate());
+
+                    // Check if grid was newly created or already existed
+                    boolean isNew = centralGrid.getName() == null && centralGrid.getParameters().isEmpty();
+
+                    if (isNew) {
+                        // New grid - copy all data
+                        centralGrid.setName(featureGrid.getName());
+                        centralGrid.setDescription(featureGrid.getDescription());
+
+                        if (featureGrid.getParameters() != null) {
+                            centralGrid.getParameters().putAll(featureGrid.getParameters());
                         }
 
-                        // Get or create in central registry
-                        FeatureHexGrid centralGrid = composition.getOrCreateFeatureHexGrid(
-                            featureGrid.getCoordinate());
+                        // Copy flowSegments from Flow/Structure to central registry
+                        if (featureGrid.getFlowSegments() != null && !featureGrid.getFlowSegments().isEmpty()) {
+                            centralGrid.getFlowSegments().addAll(featureGrid.getFlowSegments());
+                        }
 
-                        // Check if grid was newly created or already existed
-                        boolean isNew = centralGrid.getName() == null && centralGrid.getParameters().isEmpty();
+                        registeredCount++;
+                        log.trace("Registered new grid [{},{}] from feature '{}'",
+                            featureGrid.getCoordinate().getQ(),
+                            featureGrid.getCoordinate().getR(),
+                            feature.getName());
+                    } else {
+                        // Grid already exists - merge parameters with collision detection
+                        mergedCount++;
 
-                        if (isNew) {
-                            // New grid - copy all data
-                            centralGrid.setName(featureGrid.getName());
-                            centralGrid.setDescription(featureGrid.getDescription());
+                        if (featureGrid.getParameters() != null) {
+                            for (Map.Entry<String, String> entry : featureGrid.getParameters().entrySet()) {
+                                String existingValue = centralGrid.getParameters().get(entry.getKey());
 
-                            if (featureGrid.getParameters() != null) {
-                                centralGrid.getParameters().putAll(featureGrid.getParameters());
-                            }
-
-                            registeredCount++;
-                            log.trace("Registered new grid [{},{}] from feature '{}'",
-                                featureGrid.getCoordinate().getQ(),
-                                featureGrid.getCoordinate().getR(),
-                                feature.getName());
-                        } else {
-                            // Grid already exists - merge parameters with collision detection
-                            mergedCount++;
-
-                            if (featureGrid.getParameters() != null) {
-                                for (Map.Entry<String, String> entry : featureGrid.getParameters().entrySet()) {
-                                    String existingValue = centralGrid.getParameters().get(entry.getKey());
-
-                                    if (existingValue != null && !existingValue.equals(entry.getValue())) {
-                                        // Parameter collision
-                                        log.warn("Parameter collision at grid [{},{}]: key='{}' " +
-                                            "existing='{}' new='{}' - keeping existing value",
-                                            featureGrid.getCoordinate().getQ(),
-                                            featureGrid.getCoordinate().getR(),
-                                            entry.getKey(),
-                                            existingValue.substring(0, Math.min(50, existingValue.length())),
-                                            entry.getValue().substring(0, Math.min(50, entry.getValue().length())));
-                                        parameterCollisionCount++;
-                                    } else if (existingValue == null) {
-                                        // New parameter - add it
-                                        centralGrid.getParameters().put(entry.getKey(), entry.getValue());
-                                    }
-                                    // If values are equal, no action needed
+                                if (existingValue != null && !existingValue.equals(entry.getValue())) {
+                                    // Parameter collision
+                                    log.warn("Parameter collision at grid [{},{}]: key='{}' " +
+                                        "existing='{}' new='{}' - keeping existing value",
+                                        featureGrid.getCoordinate().getQ(),
+                                        featureGrid.getCoordinate().getR(),
+                                        entry.getKey(),
+                                        existingValue.substring(0, Math.min(50, existingValue.length())),
+                                        entry.getValue().substring(0, Math.min(50, entry.getValue().length())));
+                                    parameterCollisionCount++;
+                                } else if (existingValue == null) {
+                                    // New parameter - add it
+                                    centralGrid.getParameters().put(entry.getKey(), entry.getValue());
                                 }
+                                // If values are equal, no action needed
                             }
-
-                            log.trace("Merged parameters for grid [{},{}] from feature '{}'",
-                                featureGrid.getCoordinate().getQ(),
-                                featureGrid.getCoordinate().getR(),
-                                feature.getName());
                         }
+
+                        // Merge flowSegments from Flow/Structure to central registry
+                        if (featureGrid.getFlowSegments() != null && !featureGrid.getFlowSegments().isEmpty()) {
+                            centralGrid.getFlowSegments().addAll(featureGrid.getFlowSegments());
+                        }
+
+                        log.trace("Merged parameters for grid [{},{}] from feature '{}'",
+                            featureGrid.getCoordinate().getQ(),
+                            featureGrid.getCoordinate().getR(),
+                            feature.getName());
                     }
                 }
             }
@@ -577,6 +621,105 @@ public class HexCompositeBuilder {
 
         log.debug("Central registry populated: {} new grids registered, {} grids merged, {} parameter collisions",
             registeredCount, mergedCount, parameterCollisionCount);
+    }
+
+    /**
+     * Merges Flow aspects (RoadConfigParts, RiverConfigParts, WallConfigParts) into the central registry.
+     *
+     * Flows store their aspects in Flow.hexGrids during composition. These aspects need to be
+     * merged into the corresponding FeatureHexGrids in the central registry so that
+     * HexGridRoadConfigurator can find them and convert them to g_road/g_river/g_wall parameters.
+     *
+     * Multiple Flows can contribute to the same HexGrid coordinate - all their ConfigParts
+     * are collected and merged together.
+     *
+     * @param composition The composition with central registry
+     * @return Number of aspect grids merged
+     */
+    private int mergeFlowAspectsIntoCentralRegistry(HexComposition composition) {
+        if (composition == null || composition.getFeatures() == null) {
+            log.warn("Cannot merge flow aspects - composition or features is null");
+            return 0;
+        }
+
+        int mergedGridCount = 0;
+        int roadPartsCount = 0;
+        int riverPartsCount = 0;
+        int wallPartsCount = 0;
+
+        log.debug("Merging Flow aspects from {} features into central registry",
+            composition.getFeatures().size());
+
+        // Iterate through all features to find Flows
+        for (Feature feature : composition.getFeatures()) {
+            if (!(feature instanceof de.mhus.nimbus.world.generator.composer.flow.Flow)) {
+                continue;
+            }
+
+            de.mhus.nimbus.world.generator.composer.flow.Flow flow =
+                (de.mhus.nimbus.world.generator.composer.flow.Flow) feature;
+
+            List<de.mhus.nimbus.world.generator.composer.feature.FeatureHexGrid> flowHexGrids = flow.getHexGrids();
+            if (flowHexGrids == null || flowHexGrids.isEmpty()) {
+                log.trace("Flow '{}' has no hexGrids, skipping", flow.getName());
+                continue;
+            }
+
+            log.debug("Flow '{}' has {} aspect grids to merge", flow.getName(), flowHexGrids.size());
+
+            // For each aspect grid in the Flow, merge its ConfigParts into central registry
+            for (de.mhus.nimbus.world.generator.composer.feature.FeatureHexGrid flowGrid : flowHexGrids) {
+                if (flowGrid.getCoordinate() == null) {
+                    log.warn("Flow '{}' has hexGrid without coordinate, skipping", flow.getName());
+                    continue;
+                }
+
+                // Get or create the corresponding grid in central registry
+                de.mhus.nimbus.world.generator.composer.feature.FeatureHexGrid centralGrid =
+                    composition.getOrCreateFeatureHexGrid(flowGrid.getCoordinate());
+
+                boolean merged = false;
+
+                // Merge RoadConfigParts
+                if (flowGrid.getRoadConfigParts() != null && !flowGrid.getRoadConfigParts().isEmpty()) {
+                    centralGrid.getRoadConfigParts().addAll(flowGrid.getRoadConfigParts());
+                    roadPartsCount += flowGrid.getRoadConfigParts().size();
+                    merged = true;
+                    log.trace("Merged {} RoadConfigParts from Flow '{}' to grid [{},{}]",
+                        flowGrid.getRoadConfigParts().size(), flow.getName(),
+                        flowGrid.getCoordinate().getQ(), flowGrid.getCoordinate().getR());
+                }
+
+                // Merge RiverConfigParts
+                if (flowGrid.getRiverConfigParts() != null && !flowGrid.getRiverConfigParts().isEmpty()) {
+                    centralGrid.getRiverConfigParts().addAll(flowGrid.getRiverConfigParts());
+                    riverPartsCount += flowGrid.getRiverConfigParts().size();
+                    merged = true;
+                    log.trace("Merged {} RiverConfigParts from Flow '{}' to grid [{},{}]",
+                        flowGrid.getRiverConfigParts().size(), flow.getName(),
+                        flowGrid.getCoordinate().getQ(), flowGrid.getCoordinate().getR());
+                }
+
+                // Merge WallConfigParts
+                if (flowGrid.getWallConfigParts() != null && !flowGrid.getWallConfigParts().isEmpty()) {
+                    centralGrid.getWallConfigParts().addAll(flowGrid.getWallConfigParts());
+                    wallPartsCount += flowGrid.getWallConfigParts().size();
+                    merged = true;
+                    log.trace("Merged {} WallConfigParts from Flow '{}' to grid [{},{}]",
+                        flowGrid.getWallConfigParts().size(), flow.getName(),
+                        flowGrid.getCoordinate().getQ(), flowGrid.getCoordinate().getR());
+                }
+
+                if (merged) {
+                    mergedGridCount++;
+                }
+            }
+        }
+
+        log.info("Merged {} aspect grids: {} road parts, {} river parts, {} wall parts",
+            mergedGridCount, roadPartsCount, riverPartsCount, wallPartsCount);
+
+        return mergedGridCount;
     }
 
     /**

@@ -49,7 +49,7 @@ public class MultiEdgeBlenderBuilder extends HexGridBuilder {
         }
 
         int width = CastUtil.toint(parameters.get("edge_blend_width"), 50);
-        int range = CastUtil.toint(parameters.get("edge_blend_range"), 10);
+        int range = CastUtil.toint(parameters.get("edge_blend_range"), 3);
         boolean blendAllSides = CastUtil.toboolean(parameters.get("edge_blend_all_sides"), false);
 
         if (sideFlats.isEmpty()) {

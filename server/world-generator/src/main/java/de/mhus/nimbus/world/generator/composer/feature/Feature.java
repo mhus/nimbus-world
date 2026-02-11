@@ -74,17 +74,13 @@ public abstract class Feature {
     /**
      * Inner class for composed (calculated) data at Feature level.
      * Stores values computed during composition, separate from user input.
+     *
+     * Note: FeatureHexGrids are managed in HexComposition.featureHexGridRegistry (central registry).
+     * Structures have their own temporary hexGrids storage in Structure.StructureComposed.
      */
     @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
     public static class FeatureComposed {
-        /**
-         * List of HexGrid configurations created for this feature.
-         * Stores coordinates and parameters, NOT the actual WHexGrid instances.
-         * Only populated after BiomeComposer/HexGridFiller stage (status >= COMPOSED).
-         */
-        private List<FeatureHexGrid> hexGrids;
+        // No fields - FeatureHexGrids are managed centrally or in Structure subclass
     }
 
     public void initialize() {
@@ -131,52 +127,6 @@ public abstract class Feature {
     @JsonIgnore
     public String getDisplayTitle() {
         return title != null ? title : name;
-    }
-
-    /**
-     * Adds a HexGrid configuration to this feature
-     */
-    public void addHexGrid(FeatureHexGrid hexGrid) {
-        if (featureComposed == null) {
-            featureComposed = new FeatureComposed();
-        }
-        if (featureComposed.getHexGrids() == null) {
-            featureComposed.setHexGrids(new ArrayList<>());
-        }
-        featureComposed.getHexGrids().add(hexGrid);
-    }
-
-    /**
-     * Returns all HexGrid configurations for this feature
-     */
-    public List<FeatureHexGrid> getHexGrids() {
-        return featureComposed != null && featureComposed.getHexGrids() != null
-            ? featureComposed.getHexGrids()
-            : new ArrayList<>();
-    }
-
-    /**
-     * Sets the HexGrid configurations for this feature
-     */
-    public void setHexGrids(List<FeatureHexGrid> hexGrids) {
-        if (featureComposed == null) {
-            featureComposed = new FeatureComposed();
-        }
-        featureComposed.setHexGrids(hexGrids);
-    }
-
-    /**
-     * Finds a HexGrid configuration by coordinate
-     */
-    public FeatureHexGrid findHexGrid(HexVector2 coordinate) {
-        List<FeatureHexGrid> hexGrids = getHexGrids();
-        if (hexGrids.isEmpty() || coordinate == null) return null;
-        return hexGrids.stream()
-            .filter(hg -> hg.getCoordinate() != null
-                && hg.getCoordinate().getQ() == coordinate.getQ()
-                && hg.getCoordinate().getR() == coordinate.getR())
-            .findFirst()
-            .orElse(null);
     }
 
     /**

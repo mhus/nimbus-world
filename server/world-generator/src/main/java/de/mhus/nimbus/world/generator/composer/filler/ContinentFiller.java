@@ -197,8 +197,8 @@ public class ContinentFiller {
 
             placementResult.getPlacedBiomes().add(placedFiller);
 
-            log.debug("Filled {} grids for continent '{}' with {} FeatureHexGrids",
-                    coords.size(), continentId, continentBiome.getHexGrids() != null ? continentBiome.getHexGrids().size() : 0);
+            log.debug("Filled {} grids for continent '{}' (FeatureHexGrids in central registry)",
+                    coords.size(), continentId);
             totalFilled += coords.size();
         }
 

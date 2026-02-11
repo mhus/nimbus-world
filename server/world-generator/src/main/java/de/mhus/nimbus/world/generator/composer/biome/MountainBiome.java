@@ -122,12 +122,27 @@ public class MountainBiome extends Biome {
     /**
      * Configures HexGrids for mountains with ridge configurations.
      * Creates ridge=[{"side":"NE","level":200},...] parameters for connected grids.
+     *
+     * @deprecated This method is deprecated and does nothing.
+     *             Ridge configuration should be done in BiomeComposer.configureHexGridsForPlacedBiomes()
+     *             where FeatureHexGrids are created and registered in central registry.
      */
+    @Deprecated(since = "1.0.0", forRemoval = true)
     @Override
     public void configureHexGrids(List<HexVector2> coordinates) {
-        // Call base implementation to create standard FeatureHexGrids
-        super.configureHexGrids(coordinates);
+        // No-op: FeatureHexGrids are now managed centrally by BiomeComposer
+        // Ridge configuration needs to be implemented in BiomeComposer
+        // TODO: Implement ridge configuration in BiomeComposer.configureHexGridsForPlacedBiomes()
+    }
 
+    /**
+     * Configures ridge parameters for mountain grids.
+     * This method is kept for future implementation in BiomeComposer.
+     *
+     * @deprecated Kept for reference - needs to be refactored to work with central registry
+     */
+    @Deprecated(since = "1.0.0", forRemoval = true)
+    private void configureRidgesOld(List<HexVector2> coordinates) {
         // Build coordinate set for fast neighbor lookups
         Set<String> coordSet = coordinates.stream()
             .map(c -> TypeUtil.toStringHexCoord(c.getQ(), c.getR()))
@@ -137,6 +152,8 @@ public class MountainBiome extends Biome {
         int ridgeLevel = height.getAboveSeaLevel() + height.getLandOffset() + height.getRidgeOffset();
 
         // For each grid, check neighbors and create ridge configuration
+        // Note: This code is kept for reference but doesn't work without hexGrids
+        /* OLD CODE - doesn't work with central registry
         for (FeatureHexGrid hexGrid : getHexGrids()) {
             HexVector2 coord = hexGrid.getCoordinate();
             if (coord == null) {
@@ -176,6 +193,7 @@ public class MountainBiome extends Biome {
 
         log.debug("Configured {} mountain grids with ridge parameters (ridgeLevel={})",
             getHexGrids().size(), ridgeLevel);
+        */
     }
 
     /**

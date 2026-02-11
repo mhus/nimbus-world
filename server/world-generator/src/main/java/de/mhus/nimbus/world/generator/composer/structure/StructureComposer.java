@@ -156,9 +156,9 @@ public class StructureComposer {
                 .build();
             villageBiome.initialize();
 
-            // Copy the FeatureHexGrid from village to the villageBiome
-            // This transfers all the g_village parameters
-            villageBiome.addHexGrid(featureHexGrid);
+            // Note: Biomes no longer have local hexGrids - they use central registry
+            // The featureHexGrid will be registered in central registry by BiomeComposer
+            // after PlacedBiome is created
 
             // Create PlacedBiome (representing the village grid)
             PlacedBiome placedGrid = PlacedBiome.builder()
