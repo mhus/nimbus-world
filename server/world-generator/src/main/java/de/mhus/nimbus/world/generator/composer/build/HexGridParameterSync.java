@@ -7,6 +7,7 @@ import de.mhus.nimbus.world.generator.composer.biome.BiomePlacementResult;
 import de.mhus.nimbus.world.generator.composer.biome.PlacedBiome;
 import de.mhus.nimbus.world.generator.composer.feature.Feature;
 import de.mhus.nimbus.world.generator.composer.feature.FeatureHexGrid;
+import de.mhus.nimbus.world.generator.composer.point.Point;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
 import lombok.extern.slf4j.Slf4j;
 
@@ -15,12 +16,16 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Synchronizes parameters from FeatureHexGrids to WHexGrids.
+ * Synchronizes parameters from HexComposite model (FilledHexGrids) to WHexGrids.
  *
  * This is needed because:
- * 1. BiomeComposer creates WHexGrids early (for HexGridFiller)
- * 2. FlowComposer adds road/river parameters to FeatureHexGrids later
- * 3. These parameters need to be copied to the existing WHexGrids
+ * 1. HexCompositeBuilder creates FilledHexGrids from the composition model
+ * 2. FilledHexGrids are created from PlacedBiomes and Points with their FeatureHexGrids
+ * 3. FeatureHexGrids contain parameters (g_village, g_road, g_river, etc.)
+ * 4. These parameters need to be synced to the WHexGrids for terrain building
+ *
+ * IMPORTANT: Synchronisiert nur aus bereits erstellten FilledHexGrids,
+ * die im HexComposite-Modell vorhanden sind.
  */
 @Slf4j
 public class HexGridParameterSync {
@@ -50,11 +55,14 @@ public class HexGridParameterSync {
         // Iterate all Area features and sync their FeatureHexGrid parameters
         // Note: Flow parameters (road, river, wall) were already added to Area grids
         // by FlowComposer.convertFlowSegmentsToConfigParts(), so we only need to sync Areas
+        // Points are ASPEKTE - they don't have their own HexGrids, they add parameters
+        // directly to biome grids, so no sync needed
         if (composition.getFeatures() != null) {
             for (Feature feature : composition.getFeatures()) {
                 if (feature instanceof Area area) {
                     updatedCount += syncFeatureHexGrids(area, wHexGridIndex);
                 }
+                // Points don't need sync - they modify biome grids directly
             }
         }
 
@@ -65,6 +73,7 @@ public class HexGridParameterSync {
                     if (nestedFeature instanceof Area area) {
                         updatedCount += syncFeatureHexGrids(area, wHexGridIndex);
                     }
+                    // Points don't need sync - they modify biome grids directly
                 }
             }
         }
@@ -116,6 +125,7 @@ public class HexGridParameterSync {
         return syncedCount;
     }
 
+
     /**
      * Syncs ALL parameters from FeatureHexGrid to WHexGrid.
      *
@@ -128,7 +138,7 @@ public class HexGridParameterSync {
      *
      * @return true if any parameters were synced
      */
-    private boolean syncFlowParameters(FeatureHexGrid featureHexGrid, WHexGrid wHexGrid, String areaName) {
+    private boolean syncFlowParameters(FeatureHexGrid featureHexGrid, WHexGrid wHexGrid, String sourceName) {
         if (featureHexGrid.getParameters() == null || featureHexGrid.getParameters().isEmpty()) {
             return false;
         }
@@ -150,23 +160,30 @@ public class HexGridParameterSync {
                 continue;
             }
 
+            String existingValue = wHexGrid.getParameters().get(key);
+
             // Special handling for "g_road" parameter - merge if existing
             if ("g_road".equals(key)) {
-                String existingRoad = wHexGrid.getParameters().get("g_road");
-                if (existingRoad != null) {
+                if (existingValue != null) {
                     // Merge road parameters (existing + new routes)
-                    String mergedRoad = mergeRoadParameters(existingRoad, value, wHexGrid.getPosition());
+                    String mergedRoad = mergeRoadParameters(existingValue, value, wHexGrid.getPosition());
                     wHexGrid.getParameters().put("g_road", mergedRoad);
-                    log.debug("Merged road parameter to WHexGrid {} (Area: {})", wHexGrid.getPosition(), areaName);
+                    log.debug("Merged road parameter to WHexGrid {} (from: {})", wHexGrid.getPosition(), sourceName);
                 } else {
                     // No existing road, just set it
                     wHexGrid.getParameters().put("g_road", value);
-                    log.debug("Synced road parameter to WHexGrid {} (Area: {})", wHexGrid.getPosition(), areaName);
+                    log.debug("Synced road parameter to WHexGrid {} (from: {})", wHexGrid.getPosition(), sourceName);
                 }
                 parameterCount++;
                 synced = true;
             } else {
-                // All other parameters: copy 1:1
+                // All other parameters: warn if overwriting, then set
+                if (existingValue != null && !existingValue.equals(value)) {
+                    log.warn("Overwriting parameter '{}' on WHexGrid {} (from: {}) - old: {}, new: {}",
+                        key, wHexGrid.getPosition(), sourceName,
+                        existingValue.length() > 50 ? existingValue.substring(0, 50) + "..." : existingValue,
+                        value.length() > 50 ? value.substring(0, 50) + "..." : value);
+                }
                 wHexGrid.getParameters().put(key, value);
                 parameterCount++;
                 synced = true;
@@ -174,8 +191,8 @@ public class HexGridParameterSync {
         }
 
         if (synced) {
-            log.debug("Synced {} parameters to WHexGrid {} (Area: {})",
-                parameterCount, wHexGrid.getPosition(), areaName);
+            log.debug("Synced {} parameters to WHexGrid {} (from: {})",
+                parameterCount, wHexGrid.getPosition(), sourceName);
         }
 
         return synced;

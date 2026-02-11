@@ -431,7 +431,7 @@ public class PointComposer {
 
                 // If this is a VillagePoint, configure the HexGrid with village data
                 if (point instanceof VillagePoint villagePoint) {
-                    villagePoint.configureHexGrid(gridCoord, context.getHexGridSize());
+                    villagePoint.configureHexGrid(gridCoord, context.getHexGridSize(), context);
                     log.debug("Configured VillagePoint {} on grid {}", point.getName(), gridCoord);
                 }
 
@@ -465,7 +465,7 @@ public class PointComposer {
 
                 // If this is a VillagePoint, configure the HexGrid with village data
                 if (point instanceof VillagePoint villagePoint) {
-                    villagePoint.configureHexGrid(gridCoord, context.getHexGridSize());
+                    villagePoint.configureHexGrid(gridCoord, context.getHexGridSize(), context);
                     log.debug("Configured VillagePoint {} on grid {}", point.getName(), gridCoord);
                 }
 

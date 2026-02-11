@@ -426,6 +426,9 @@ public class HexCompositeBuilder {
                     }
                 }
 
+                // Points are ASPEKTE - they don't create FilledHexGrids, they only add
+                // parameters to existing biome grids
+
                 // Store FilledHexGrids in composition model
                 composition.setFilledHexGrids(allGrids);
                 log.debug("Stored {} FilledHexGrids in composition model", allGrids.size());
@@ -471,6 +474,9 @@ public class HexCompositeBuilder {
                         }
                     }
                 }
+
+                // Points are ASPEKTE - they don't create FilledHexGrids, they only add
+                // parameters to existing biome grids
 
                 // Store FilledHexGrids in composition model
                 composition.setFilledHexGrids(allGrids);

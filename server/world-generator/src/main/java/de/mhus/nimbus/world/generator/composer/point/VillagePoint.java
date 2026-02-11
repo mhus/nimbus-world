@@ -116,8 +116,9 @@ public class VillagePoint extends Point {
      *
      * @param gridCoordinate The coordinate of the grid where this point is placed
      * @param hexGridSize Size of the hex grid
+     * @param context The composition context
      */
-    public void configureHexGrid(HexVector2 gridCoordinate, int hexGridSize) {
+    public void configureHexGrid(HexVector2 gridCoordinate, int hexGridSize, ComposeContext context) {
         log.debug("Configuring HexGrid for VillagePoint '{}' at [{},{}] with hexGridSize: {}",
             getName(), gridCoordinate.getQ(), gridCoordinate.getR(), hexGridSize);
 
@@ -193,20 +194,34 @@ public class VillagePoint extends Point {
         // Serialize to JSON
         String configJson = serializeToJson(gridConfig);
 
-        // Find or create the FeatureHexGrid for this point's grid
-        FeatureHexGrid featureHexGrid = findOrCreateFeatureHexGrid(gridCoordinate);
+        // Find the FeatureHexGrid from a biome (Points are aspects, not grid owners)
+        FeatureHexGrid biomeGrid = findBiomeFeatureHexGrid(gridCoordinate, context);
 
-        // Add g_village parameter with configuration
-        featureHexGrid.addParameter("g_village", configJson);
+        if (biomeGrid == null) {
+            log.error("VillagePoint '{}' cannot configure grid [{},{}] - no biome grid found",
+                getName(), gridCoordinate.getQ(), gridCoordinate.getR());
+            return;
+        }
+
+        // Add g_village parameter as aspect (with collision check)
+        String existingVillage = biomeGrid.getParameters().get("g_village");
+        if (existingVillage != null && !existingVillage.isBlank()) {
+            log.warn("VillagePoint '{}' - grid [{},{}] already has g_village parameter! " +
+                "Another aspect already defined a village here. Skipping this VillagePoint.",
+                getName(), gridCoordinate.getQ(), gridCoordinate.getR());
+            return;
+        }
+
+        biomeGrid.addParameter("g_village", configJson);
 
         // Add basic structure parameters
-        featureHexGrid.addParameter("structure", "village");
-        featureHexGrid.addParameter("structureName", getName());
-        featureHexGrid.addParameter("villagePointId", getFeatureId());
+        biomeGrid.addParameter("structure", "village");
+        biomeGrid.addParameter("structureName", getName());
+        biomeGrid.addParameter("villagePointId", getFeatureId());
 
         // Copy village parameters to grid
         if (parameters != null) {
-            featureHexGrid.getParameters().putAll(parameters);
+            biomeGrid.getParameters().putAll(parameters);
         }
 
         log.debug("VillagePoint '{}' configured on grid [{},{}] with {} places, {} streets",
@@ -322,28 +337,39 @@ public class VillagePoint extends Point {
     }
 
     /**
-     * Finds or creates the FeatureHexGrid for this point's coordinate.
-     * Since points are positioned on a grid, we need to access that grid's configuration.
+     * Finds the FeatureHexGrid for this point's coordinate from the composition context.
+     * Points are ASPEKTE - they don't create their own HexGrids, but add parameters
+     * to existing grids from biomes.
      *
      * @param gridCoordinate The grid coordinate
-     * @return The FeatureHexGrid for this coordinate
+     * @param context The composition context containing all features
+     * @return The FeatureHexGrid from a biome, or null if not found
      */
-    private FeatureHexGrid findOrCreateFeatureHexGrid(HexVector2 gridCoordinate) {
-        // Find existing grid in parent feature (biome)
-        FeatureHexGrid existing = findHexGrid(gridCoordinate);
-        if (existing != null) {
-            return existing;
+    private FeatureHexGrid findBiomeFeatureHexGrid(HexVector2 gridCoordinate, ComposeContext context) {
+        // Points don't have their own HexGrids - they are aspects on biome grids
+        // Search all features in the composition for a grid at this coordinate
+
+        if (context == null || context.getComposition() == null) {
+            log.warn("VillagePoint '{}' has no composition context - cannot find biome grid at [{},{}]",
+                getName(), gridCoordinate.getQ(), gridCoordinate.getR());
+            return null;
         }
 
-        // Create new grid configuration
-        FeatureHexGrid newGrid = FeatureHexGrid.builder()
-            .coordinate(gridCoordinate)
-            .name(getName() + " at [" + gridCoordinate.getQ() + "," + gridCoordinate.getR() + "]")
-            .description("VillagePoint " + getName())
-            .build();
+        // Search in all features (Areas/Biomes)
+        for (de.mhus.nimbus.world.generator.composer.feature.Feature feature : context.getComposition().getFeatures()) {
+            if (feature instanceof de.mhus.nimbus.world.generator.composer.area.Area area) {
+                FeatureHexGrid grid = area.findHexGrid(gridCoordinate);
+                if (grid != null) {
+                    log.debug("VillagePoint '{}' found FeatureHexGrid at [{},{}] in biome '{}'",
+                        getName(), gridCoordinate.getQ(), gridCoordinate.getR(), area.getName());
+                    return grid;
+                }
+            }
+        }
 
-        addHexGrid(newGrid);
-        return newGrid;
+        log.warn("VillagePoint '{}' - no biome has a FeatureHexGrid at [{},{}]",
+            getName(), gridCoordinate.getQ(), gridCoordinate.getR());
+        return null;
     }
 
     @Override
