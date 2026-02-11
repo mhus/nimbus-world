@@ -19,9 +19,11 @@ import lombok.NoArgsConstructor;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 @Data
@@ -42,8 +44,21 @@ public class HexComposition implements BuildFeature {
     // Continent definitions for filling gaps between biomes
     private List<Continent> continents;
 
-    // Filled hex grids - final composed grids with all parameters
+    // Filled hex grids - DEPRECATED - use featureHexGridRegistry instead
+    // All grid data is now in the central FeatureHexGrid registry
+    @Deprecated(since = "1.0.0", forRemoval = true)
+    @com.fasterxml.jackson.annotation.JsonIgnore
     private List<FilledHexGrid> filledHexGrids;
+
+    /**
+     * Central registry for all FeatureHexGrids across all features.
+     * Prevents duplicate grids at the same coordinate.
+     * Key: coordinate string "q,r"
+     * Value: FeatureHexGrid
+     */
+    @JsonIgnore
+    @Builder.Default
+    private Map<String, de.mhus.nimbus.world.generator.composer.feature.FeatureHexGrid> featureHexGridRegistry = new ConcurrentHashMap<>();
 
     @Builder.Default
     private String version = "1.0.0";
@@ -76,6 +91,57 @@ public class HexComposition implements BuildFeature {
 
     public void touch() {
         updatedAt = Instant.now();
+    }
+
+    /**
+     * Gets or creates a FeatureHexGrid for the given coordinate from the central registry.
+     * Prevents duplicate grids at the same coordinate.
+     *
+     * @param coordinate The hex coordinate
+     * @return The FeatureHexGrid (existing or newly created)
+     */
+    public de.mhus.nimbus.world.generator.composer.feature.FeatureHexGrid getOrCreateFeatureHexGrid(
+            de.mhus.nimbus.generated.types.HexVector2 coordinate) {
+        if (coordinate == null) {
+            throw new IllegalArgumentException("Coordinate cannot be null");
+        }
+
+        String key = coordinate.getQ() + "," + coordinate.getR();
+        return featureHexGridRegistry.computeIfAbsent(key, k ->
+            de.mhus.nimbus.world.generator.composer.feature.FeatureHexGrid.builder()
+                .coordinate(coordinate)
+                .build()
+        );
+    }
+
+    /**
+     * Gets a FeatureHexGrid for the given coordinate from the central registry.
+     *
+     * @param coordinate The hex coordinate
+     * @return The FeatureHexGrid, or null if not found
+     */
+    public de.mhus.nimbus.world.generator.composer.feature.FeatureHexGrid getFeatureHexGrid(
+            de.mhus.nimbus.generated.types.HexVector2 coordinate) {
+        if (coordinate == null) {
+            return null;
+        }
+
+        String key = coordinate.getQ() + "," + coordinate.getR();
+        return featureHexGridRegistry.get(key);
+    }
+
+    /**
+     * Gets the central FeatureHexGrid registry.
+     * This is the single source of truth for all FeatureHexGrids in the composition.
+     *
+     * @return The central registry map (never null)
+     */
+    @JsonIgnore
+    public Map<String, de.mhus.nimbus.world.generator.composer.feature.FeatureHexGrid> getFeatureHexGridRegistry() {
+        if (featureHexGridRegistry == null) {
+            featureHexGridRegistry = new ConcurrentHashMap<>();
+        }
+        return featureHexGridRegistry;
     }
 
     @JsonIgnore

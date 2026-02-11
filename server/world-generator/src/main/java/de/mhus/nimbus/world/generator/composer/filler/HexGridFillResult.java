@@ -1,7 +1,6 @@
 package de.mhus.nimbus.world.generator.composer.filler;
 
 import de.mhus.nimbus.world.generator.composer.biome.BiomePlacementResult;
-import de.mhus.nimbus.world.generator.composer.build.FilledHexGrid;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -11,7 +10,9 @@ import lombok.NoArgsConstructor;
 import java.util.List;
 
 /**
- * Result of hex grid filling process
+ * Result of hex grid filling process.
+ * Note: Individual grids are now managed in the central FeatureHexGrid registry.
+ * This class only contains statistics about the filling process.
  */
 @Data
 @Builder
@@ -19,14 +20,9 @@ import java.util.List;
 @AllArgsConstructor
 public class HexGridFillResult {
     /**
-     * Original placement result
+     * Original placement result (contains WHexGrids)
      */
     private BiomePlacementResult placementResult;
-
-    /**
-     * All hex grids (biomes + fillers)
-     */
-    private List<FilledHexGrid> allGrids;
 
     /**
      * Count of ocean filler grids
@@ -74,11 +70,13 @@ public class HexGridFillResult {
     private String errorMessage;
 
     /**
-     * Gets all WHexGrid instances
+     * Gets all WHexGrid instances from the placement result.
+     * Replaces the old getAllGrids() method that returned FilledHexGrid.
      */
-    public List<WHexGrid> getAllHexGrids() {
-        return allGrids.stream()
-            .map(FilledHexGrid::getHexGrid)
-            .toList();
+    public List<WHexGrid> getAllGrids() {
+        if (placementResult == null) {
+            return List.of();
+        }
+        return placementResult.getHexGrids();
     }
 }

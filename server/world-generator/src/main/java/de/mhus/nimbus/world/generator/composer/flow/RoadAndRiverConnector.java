@@ -43,11 +43,8 @@ public class RoadAndRiverConnector {
         // For now, skip the connections to allow compilation
         log.warn("RoadAndRiverConnector is temporarily disabled - needs Point composition data");
 
-        // Collect all grids without applying connections
-        List<WHexGrid> allGrids = new ArrayList<>();
-        for (FilledHexGrid filled : fillResult.getAllGrids()) {
-            allGrids.add(filled.getHexGrid());
-        }
+        // Get all grids from fillResult (now returns WHexGrid directly)
+        List<WHexGrid> allGrids = fillResult.getAllGrids();
 
         return ConnectionResult.builder()
             .hexGrids(allGrids)

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.shared.utils.TypeUtil;
+import de.mhus.nimbus.world.generator.composer.filler.FillerType;
 import de.mhus.nimbus.world.generator.composer.flow.RiverConfigPart;
 import de.mhus.nimbus.world.generator.composer.flow.FlowSegment;
 import de.mhus.nimbus.world.generator.composer.flow.FlowType;
@@ -82,6 +83,31 @@ public class FeatureHexGrid {
      * Optional description for this HexGrid
      */
     private String description;
+
+    /**
+     * Reference to the source biome name that created/owns this HexGrid.
+     * Used to maintain the relationship when grids are managed centrally.
+     */
+    private String sourceBiomeName;
+
+    /**
+     * Reference to the source biome feature ID that created/owns this HexGrid.
+     * Used to maintain the relationship when grids are managed centrally.
+     */
+    private String sourceBiomeId;
+
+    /**
+     * Whether this grid is a filler grid (coast, ocean, land filler).
+     * Filler grids are automatically generated to fill gaps between biomes.
+     */
+    @Builder.Default
+    private boolean isFiller = false;
+
+    /**
+     * Type of filler if this is a filler grid.
+     * Only relevant when isFiller = true.
+     */
+    private FillerType fillerType;
 
     /**
      * Adds or updates a parameter

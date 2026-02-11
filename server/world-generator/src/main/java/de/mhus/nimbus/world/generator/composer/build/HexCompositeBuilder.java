@@ -348,24 +348,28 @@ public class HexCompositeBuilder {
                 log.debug("No orphan grids found");
             }
 
-            // Step 7: Convert FeatureHexGrids to WHexGrids (after all compositions)
-            // FeatureHexGrids contain accumulated data from all features (biomes, points, flows)
-            log.debug("Step 7: Converting FeatureHexGrids to WHexGrids (includes all compositions: biomes, points, flows)");
+            // Step 6d: Register filler PlacedBiomes in central FeatureHexGrid registry
+            // Fillers add new PlacedBiomes, but don't register their FeatureHexGrids
+            log.debug("Step 6d: Registering filler biomes in central registry");
+            BiomeComposer biomeComposerForFillers = new BiomeComposer();
+            biomeComposerForFillers.configureHexGridsForPlacedBiomes(
+                placementResult.getPlacedBiomes(), composition);
+            log.debug("Registered all biomes (including fillers) in central FeatureHexGrid registry");
 
-            // Collect all FeatureHexGrids from all features (primarily from Biomes which contain accumulated flow data)
-            Map<String, FeatureHexGrid> allFeatureHexGrids = new HashMap<>();
-            for (PlacedBiome placed : placementResult.getPlacedBiomes()) {
-                Biome biome = placed.getBiome();
-                if (biome.getHexGrids() != null) {
-                    for (FeatureHexGrid featureHexGrid : biome.getHexGrids()) {
-                        String key = featureHexGrid.getPositionKey();
-                        allFeatureHexGrids.put(key, featureHexGrid);
-                    }
-                }
+            // Step 7: Convert FeatureHexGrids to WHexGrids (after all compositions)
+            // FeatureHexGrids are now managed centrally in composition.featureHexGridRegistry
+            // They contain accumulated data from all features (biomes, points, flows)
+            log.debug("Step 7: Converting FeatureHexGrids from central registry to WHexGrids");
+
+            // Use FeatureHexGrids from central registry (single source of truth, no duplicates)
+            Map<String, FeatureHexGrid> allFeatureHexGrids = composition.getFeatureHexGridRegistry();
+
+            if (allFeatureHexGrids == null || allFeatureHexGrids.isEmpty()) {
+                log.warn("No FeatureHexGrids found in central registry - composition might be incomplete");
+                allFeatureHexGrids = new HashMap<>();
             }
 
-            log.debug("Collected {} FeatureHexGrids from {} PlacedBiomes",
-                allFeatureHexGrids.size(), placementResult.getPlacedBiomes().size());
+            log.debug("Found {} FeatureHexGrids in central registry", allFeatureHexGrids.size());
 
             // Create WHexGrids from FeatureHexGrids
             for (FeatureHexGrid featureHexGrid : allFeatureHexGrids.values()) {
@@ -374,7 +378,7 @@ public class HexCompositeBuilder {
                 placementResult.getHexGrids().add(wHexGrid);
             }
 
-            log.debug("Created {} WHexGrids from FeatureHexGrids", placementResult.getHexGrids().size());
+            log.debug("Created {} WHexGrids from central registry", placementResult.getHexGrids().size());
 
             // Set totalGrids to initial biome grids (before fillers)
             resultBuilder.totalGrids(initialBiomeGridCount);
@@ -385,58 +389,20 @@ public class HexCompositeBuilder {
 
             // Create HexGridFillResult for backward compatibility
             if (fillGaps) {
-                // Build map of existing grids for fast lookup
-                Map<String, de.mhus.nimbus.world.shared.world.WHexGrid> gridMap = new HashMap<>();
-                for (de.mhus.nimbus.world.shared.world.WHexGrid grid : placementResult.getHexGrids()) {
-                    gridMap.put(grid.getPosition(), grid);
-                }
+                // Filler information is already set in FeatureHexGrids by BiomeComposer
+                // and copied to WHexGrids by createWHexGridFromFeatureHexGrid()
+                log.debug("All {} FeatureHexGrids have filler information set by BiomeComposer", allFeatureHexGrids.size());
 
-                List<FilledHexGrid> allGrids = new ArrayList<>();
+                // Points are ASPEKTE - they don't create separate grids, they only add
+                // parameters to existing grids in the central registry
 
-                // Add all biome grids (from placed biomes, including filler biomes)
-                for (PlacedBiome placed : placementResult.getPlacedBiomes()) {
-                    for (de.mhus.nimbus.generated.types.HexVector2 coord : placed.getCoordinates()) {
-                        String key = TypeUtil.toStringHexCoord(coord.getQ(), coord.getR());
-                        de.mhus.nimbus.world.shared.world.WHexGrid grid = gridMap.get(key);
-                        if (grid != null) {
-                            boolean isFiller = "true".equals(grid.getParameters().get("filler"));
-                            FillerType fillerType = null;
+                // No need to store separate FilledHexGrids - all data is in central FeatureHexGrid registry
+                log.debug("All grid data stored in central FeatureHexGrid registry ({} grids)",
+                    allFeatureHexGrids.size());
 
-                            if (isFiller) {
-                                String fillerTypeStr = grid.getParameters().get("fillerType");
-                                if ("mountain".equals(fillerTypeStr)) {
-                                    fillerType = FillerType.LAND;
-                                } else if ("coast".equals(fillerTypeStr)) {
-                                    fillerType = FillerType.COAST;
-                                } else if ("ocean".equals(fillerTypeStr)) {
-                                    fillerType = FillerType.OCEAN;
-                                } else {
-                                    fillerType = FillerType.LAND;
-                                }
-                            }
-
-                            allGrids.add(FilledHexGrid.builder()
-                                .coordinate(coord)
-                                .hexGrid(grid)
-                                .isFiller(isFiller)
-                                .fillerType(fillerType)
-                                .biome(placed)
-                                .build());
-                        }
-                    }
-                }
-
-                // Points are ASPEKTE - they don't create FilledHexGrids, they only add
-                // parameters to existing biome grids
-
-                // Store FilledHexGrids in composition model
-                composition.setFilledHexGrids(allGrids);
-                log.debug("Stored {} FilledHexGrids in composition model", allGrids.size());
-
-                // Create fill result for backward compatibility
+                // Create fill result with statistics (grids are in central registry)
                 fillResult = HexGridFillResult.builder()
                     .placementResult(placementResult)
-                    .allGrids(allGrids)
                     .totalGridCount(placementResult.getHexGrids().size())
                     .oceanFillCount(oceanAdded)
                     .landFillCount(mountainAdded + lowlandAdded)
@@ -450,41 +416,17 @@ public class HexCompositeBuilder {
                 resultBuilder.fillResult(fillResult);
                 resultBuilder.filledGrids(fillerGridCount);
             } else {
-                // Even without fillGaps, create FilledHexGrids from placed biomes
-                List<FilledHexGrid> allGrids = new ArrayList<>();
-
-                // Build map of existing grids for fast lookup
-                Map<String, de.mhus.nimbus.world.shared.world.WHexGrid> gridMap = new HashMap<>();
-                for (de.mhus.nimbus.world.shared.world.WHexGrid grid : placementResult.getHexGrids()) {
-                    gridMap.put(grid.getPosition(), grid);
-                }
-
-                // Add all biome grids from placed biomes
-                for (PlacedBiome placed : placementResult.getPlacedBiomes()) {
-                    for (de.mhus.nimbus.generated.types.HexVector2 coord : placed.getCoordinates()) {
-                        String key = TypeUtil.toStringHexCoord(coord.getQ(), coord.getR());
-                        de.mhus.nimbus.world.shared.world.WHexGrid grid = gridMap.get(key);
-                        if (grid != null) {
-                            allGrids.add(FilledHexGrid.builder()
-                                .coordinate(coord)
-                                .hexGrid(grid)
-                                .isFiller(false)
-                                .biome(placed)
-                                .build());
-                        }
-                    }
-                }
-
-                // Points are ASPEKTE - they don't create FilledHexGrids, they only add
-                // parameters to existing biome grids
-
-                // Store FilledHexGrids in composition model
-                composition.setFilledHexGrids(allGrids);
-                log.debug("Stored {} FilledHexGrids in composition model (without fillers)", allGrids.size());
+                // Even without fillGaps, all grids are already in central registry
+                // No filler grids, so isFiller remains false (default) for all grids
+                log.debug("All grid data stored in central FeatureHexGrid registry ({} grids, no fillers)",
+                    allFeatureHexGrids.size());
             }
 
-            // Step 8: Sync parameters from FeatureHexGrids to WHexGrids
-            log.debug("Step 8: Syncing parameters from FeatureHexGrids to WHexGrids");
+            // Step 7.5 (removed): populateCentralRegistry() is no longer needed
+            // FeatureHexGrids are now registered directly by BiomeComposer during composition
+
+            // Step 8: Sync parameters from central registry to WHexGrids
+            log.debug("Step 8: Syncing parameters from central registry to WHexGrids");
             HexGridParameterSync parameterSync = new HexGridParameterSync();
             int syncedCount = parameterSync.syncParametersToWHexGrids(
                 composition, placementResult, placementResult.getHexGrids());
@@ -515,6 +457,126 @@ public class HexCompositeBuilder {
                 .errorMessage("Pipeline failed: " + e.getMessage())
                 .build();
         }
+    }
+
+    /**
+     * Finds a PlacedBiome by its biome name.
+     *
+     * @param placedBiomes List of placed biomes
+     * @param biomeName The biome name to search for
+     * @return The PlacedBiome with matching biome name, or null if not found
+     */
+    private PlacedBiome findPlacedBiomeByName(List<PlacedBiome> placedBiomes, String biomeName) {
+        if (biomeName == null || placedBiomes == null) {
+            return null;
+        }
+
+        return placedBiomes.stream()
+            .filter(placed -> biomeName.equals(placed.getBiome().getName()))
+            .findFirst()
+            .orElse(null);
+    }
+
+    /**
+     * Populates the central FeatureHexGrid registry from all features.
+     * Collects all FeatureHexGrids from Biomes and other Area-based features
+     * into the central composition registry to prevent duplicates.
+     *
+     * For grids that already exist in the registry, parameters are merged
+     * with warnings on collision.
+     *
+     * @param composition The composition with central registry
+     */
+    private void populateCentralRegistry(HexComposition composition) {
+        if (composition == null) {
+            log.warn("Cannot populate central registry - composition is null");
+            return;
+        }
+
+        int registeredCount = 0;
+        int mergedCount = 0;
+        int parameterCollisionCount = 0;
+
+        log.debug("Populating central FeatureHexGrid registry from {} features",
+            composition.getFeatures() != null ? composition.getFeatures().size() : 0);
+
+        if (composition.getFeatures() != null) {
+            for (Feature feature : composition.getFeatures()) {
+                // Only process area-based features (Biomes, Composites) that have HexGrids
+                if (feature instanceof de.mhus.nimbus.world.generator.composer.area.Area) {
+                    de.mhus.nimbus.world.generator.composer.area.Area area =
+                        (de.mhus.nimbus.world.generator.composer.area.Area) feature;
+
+                    if (area.getHexGrids() == null || area.getHexGrids().isEmpty()) {
+                        continue;
+                    }
+
+                    for (FeatureHexGrid featureGrid : area.getHexGrids()) {
+                        if (featureGrid.getCoordinate() == null) {
+                            log.warn("Feature '{}' has HexGrid without coordinate, skipping",
+                                feature.getName());
+                            continue;
+                        }
+
+                        // Get or create in central registry
+                        FeatureHexGrid centralGrid = composition.getOrCreateFeatureHexGrid(
+                            featureGrid.getCoordinate());
+
+                        // Check if grid was newly created or already existed
+                        boolean isNew = centralGrid.getName() == null && centralGrid.getParameters().isEmpty();
+
+                        if (isNew) {
+                            // New grid - copy all data
+                            centralGrid.setName(featureGrid.getName());
+                            centralGrid.setDescription(featureGrid.getDescription());
+
+                            if (featureGrid.getParameters() != null) {
+                                centralGrid.getParameters().putAll(featureGrid.getParameters());
+                            }
+
+                            registeredCount++;
+                            log.trace("Registered new grid [{},{}] from feature '{}'",
+                                featureGrid.getCoordinate().getQ(),
+                                featureGrid.getCoordinate().getR(),
+                                feature.getName());
+                        } else {
+                            // Grid already exists - merge parameters with collision detection
+                            mergedCount++;
+
+                            if (featureGrid.getParameters() != null) {
+                                for (Map.Entry<String, String> entry : featureGrid.getParameters().entrySet()) {
+                                    String existingValue = centralGrid.getParameters().get(entry.getKey());
+
+                                    if (existingValue != null && !existingValue.equals(entry.getValue())) {
+                                        // Parameter collision
+                                        log.warn("Parameter collision at grid [{},{}]: key='{}' " +
+                                            "existing='{}' new='{}' - keeping existing value",
+                                            featureGrid.getCoordinate().getQ(),
+                                            featureGrid.getCoordinate().getR(),
+                                            entry.getKey(),
+                                            existingValue.substring(0, Math.min(50, existingValue.length())),
+                                            entry.getValue().substring(0, Math.min(50, entry.getValue().length())));
+                                        parameterCollisionCount++;
+                                    } else if (existingValue == null) {
+                                        // New parameter - add it
+                                        centralGrid.getParameters().put(entry.getKey(), entry.getValue());
+                                    }
+                                    // If values are equal, no action needed
+                                }
+                            }
+
+                            log.trace("Merged parameters for grid [{},{}] from feature '{}'",
+                                featureGrid.getCoordinate().getQ(),
+                                featureGrid.getCoordinate().getR(),
+                                feature.getName());
+                        }
+                    }
+                }
+            }
+        }
+
+        log.debug("Central registry populated: {} new grids registered, {} grids merged, {} parameter collisions",
+            registeredCount, mergedCount, parameterCollisionCount);
     }
 
     /**

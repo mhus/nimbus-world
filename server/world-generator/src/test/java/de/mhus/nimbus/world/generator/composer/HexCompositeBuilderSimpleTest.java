@@ -8,7 +8,6 @@ import de.mhus.nimbus.world.generator.composer.biome.BiomeType;
 import de.mhus.nimbus.world.generator.composer.build.CompositionResult;
 import de.mhus.nimbus.world.generator.composer.biome.Continent;
 import de.mhus.nimbus.world.generator.composer.image.CrossOverlay;
-import de.mhus.nimbus.world.generator.composer.build.FilledHexGrid;
 import de.mhus.nimbus.world.generator.composer.flow.FlowComposer;
 import de.mhus.nimbus.world.generator.composer.build.HexCompositeBuilder;
 import de.mhus.nimbus.world.generator.composer.build.HexComposition;
@@ -222,24 +221,26 @@ public class HexCompositeBuilderSimpleTest {
         Map<String, WHexGrid> grids = new HashMap<>();
         HexGridFillResult fillResult = result.getFillResult();
 
-        var allGrids = fillResult.getAllGrids();
-        var index = new HexGridIndex(allGrids.stream().map(g -> g.getHexGrid()).toList());
+        var allGrids = fillResult.getAllGrids(); // Now returns List<WHexGrid>
+        var index = new HexGridIndex(allGrids);
 
         // ===== PHASE 1: CREATE ALL - Initialize all WFlats with base terrain =====
         log.info("Phase CREATE ALL: Initializing {} grids", allGrids.size());
-        for (FilledHexGrid filled : allGrids) {
-            WHexGrid hexGrid = filled.getHexGrid();
+        for (WHexGrid hexGrid : allGrids) {
             if (hexGrid.getParameters() == null) {
                 hexGrid.setParameters(new HashMap<>());
             }
-            grids.put(filled.getCoordinate().getQ() + "_" + filled.getCoordinate().getR(), hexGrid);
+            de.mhus.nimbus.generated.types.HexVector2 coord = hexGrid.getPublicData().getPosition();
+            grids.put(coord.getQ() + "_" + coord.getR(), hexGrid);
         }
-        for (FilledHexGrid filled : allGrids) {
+        for (WHexGrid hexGrid : allGrids) {
             try {
-                WFlat flat = initializeFlat(filled);
-                flats.put("genesis_" + filled.getCoordinate().getQ() + "_" + filled.getCoordinate().getR(), flat);
+                WFlat flat = initializeFlat(hexGrid);
+                de.mhus.nimbus.generated.types.HexVector2 coord = hexGrid.getPublicData().getPosition();
+                flats.put("genesis_" + coord.getQ() + "_" + coord.getR(), flat);
             } catch (Exception e) {
-                log.warn("CREATE failed for grid {}: {}", filled.getCoordinate(), e.getMessage(), e);
+                de.mhus.nimbus.generated.types.HexVector2 coord = hexGrid.getPublicData().getPosition();
+                log.warn("CREATE failed for grid {}: {}", coord, e.getMessage(), e);
             }
         }
         WFlatService flatService = mock(WFlatService.class);
@@ -299,30 +300,31 @@ public class HexCompositeBuilderSimpleTest {
     // ============= Helper Methods =============
 
     /**
-     * Initialize a WFlat for a FilledHexGrid using production FlatCreateService.
+     * Initialize a WFlat for a WHexGrid using production FlatCreateService.
      * This uses the exact same code as FlatHexGridEmptyCreateJobExecutor.
      * - Positions inside the HexGrid: level 0, material 255 (NOT_SET_MUTABLE)
      * - Positions outside the HexGrid (corners): level 0, material 0 (NOT_SET)
      * - unknownProtected = true
      */
-    private WFlat initializeFlat(FilledHexGrid filled) {
+    private WFlat initializeFlat(WHexGrid hexGrid) {
+        de.mhus.nimbus.generated.types.HexVector2 coord = hexGrid.getPublicData().getPosition();
 
         // Generate flatId using hex coordinates (like Day3Generation does)
-        String flatId = "genesis_" + filled.getCoordinate().getQ() + "_" + filled.getCoordinate().getR();
+        String flatId = "genesis_" + coord.getQ() + "_" + coord.getR();
 
         // Use production FlatCreateService to create the flat
         WFlat flat = flatCreateService.createEmptyHexGridFlat(
             "middle-earth",
             "ground",
             flatId,
-            filled.getCoordinate().getQ(),
-            filled.getCoordinate().getR(),
+            coord.getQ(),
+            coord.getR(),
             null,  // title
             null   // description
         );
 
         log.debug("Created flat using FlatCreateService for hex [{},{}]: flatId={}, size={}x{}, mount=({},{})",
-            filled.getCoordinate().getQ(), filled.getCoordinate().getR(),
+            coord.getQ(), coord.getR(),
             flat.getFlatId(), flat.getSizeX(), flat.getSizeZ(), flat.getMountX(), flat.getMountZ());
 
         return flat;
@@ -334,7 +336,7 @@ public class HexCompositeBuilderSimpleTest {
      *
      * @return Number of grids successfully processed
      */
-    private int executePhaseForAllGrids(List<FilledHexGrid> allGrids,
+    private int executePhaseForAllGrids(List<WHexGrid> allGrids,
                                         Map<String, WFlat> flats,
                                         Map<String, WHexGrid> grids,
                                         WFlatService flatService,
@@ -460,7 +462,7 @@ public class HexCompositeBuilderSimpleTest {
 
     private BuilderContext createContext(WFlat flat, WHexGrid hexGrid, HexGridIndex gridIndex,
                                         WFlatService flatService, WHexGridService hexGridService, WWorld world) {
-        // WHexGrid is already properly configured from FilledHexGrid
+        // WHexGrid is already properly configured from central FeatureHexGrid registry
 
         List<FlatManipulator> manipulators = List.of(
             new HillyTerrainManipulator(),
@@ -510,14 +512,22 @@ public class HexCompositeBuilderSimpleTest {
         // Build map of coordinate to biome name
         Map<String, String> coordToBiomeName = new HashMap<>();
         if (fillResult != null && fillResult.getAllGrids() != null) {
-            for (FilledHexGrid filled : fillResult.getAllGrids()) {
-                String coordKey = filled.getCoordinate().getQ() + "," + filled.getCoordinate().getR();
+            for (WHexGrid hexGrid : fillResult.getAllGrids()) {
+                HexVector2 coord = hexGrid.getPublicData().getPosition();
+                String coordKey = coord.getQ() + "," + coord.getR();
                 String biomeName = null;
 
-                if (filled.getBiome() != null && filled.getBiome().getBiome() != null) {
-                    biomeName = filled.getBiome().getBiome().getName();
-                } else if (filled.isFiller() && filled.getFillerType() != null) {
-                    biomeName = filled.getFillerType().name().toLowerCase();
+                // Get biome name from parameters
+                if (hexGrid.getParameters() != null) {
+                    biomeName = hexGrid.getParameters().get("biomeName");
+
+                    // If it's a filler, use fillerType
+                    if (biomeName == null && "true".equals(hexGrid.getParameters().get("filler"))) {
+                        String fillerType = hexGrid.getParameters().get("fillerType");
+                        if (fillerType != null) {
+                            biomeName = fillerType.toLowerCase();
+                        }
+                    }
                 }
 
                 if (biomeName != null) {
@@ -615,10 +625,9 @@ public class HexCompositeBuilderSimpleTest {
 
         // Extract WHexGrids from fillResult and create a map by coordinate
         Map<HexVector2, WHexGrid> hexGrids = new HashMap<>();
-        for (FilledHexGrid filled : fillResult.getAllGrids()) {
-            if (filled.getHexGrid() != null) {
-                hexGrids.put(filled.getCoordinate(), filled.getHexGrid());
-            }
+        for (WHexGrid hexGrid : fillResult.getAllGrids()) {
+            HexVector2 coord = hexGrid.getPublicData().getPosition();
+            hexGrids.put(coord, hexGrid);
         }
 
         // Use VillageDebugOverlayHelper to add village slot overlays
@@ -732,16 +741,27 @@ public class HexCompositeBuilderSimpleTest {
 
         // Add grid list
         List<Map<String, Object>> grids = new ArrayList<>();
-        for (FilledHexGrid filled : fillResult.getAllGrids()) {
+        for (WHexGrid hexGrid : fillResult.getAllGrids()) {
             Map<String, Object> gridInfo = new HashMap<>();
-            gridInfo.put("coordinate", filled.getCoordinate().getQ() + "," + filled.getCoordinate().getR());
-            gridInfo.put("isFiller", filled.isFiller());
-            if (filled.isFiller()) {
-                gridInfo.put("fillerType", filled.getFillerType().name());
+            HexVector2 coord = hexGrid.getPublicData().getPosition();
+            gridInfo.put("coordinate", coord.getQ() + "," + coord.getR());
+
+            boolean isFiller = "true".equals(hexGrid.getParameters().get("filler"));
+            gridInfo.put("isFiller", isFiller);
+            if (isFiller) {
+                String fillerType = hexGrid.getParameters().get("fillerType");
+                if (fillerType != null) {
+                    gridInfo.put("fillerType", fillerType);
+                }
             }
-            if (filled.getBiome() != null && filled.getBiome().getBiome() != null) {
-                gridInfo.put("biome", filled.getBiome().getBiome().getName());
-                gridInfo.put("biomeType", filled.getBiome().getBiome().getType().name());
+
+            String biomeName = hexGrid.getParameters().get("biomeName");
+            if (biomeName != null) {
+                gridInfo.put("biome", biomeName);
+                String biomeType = hexGrid.getParameters().get("biomeType");
+                if (biomeType != null) {
+                    gridInfo.put("biomeType", biomeType);
+                }
             }
             grids.add(gridInfo);
         }

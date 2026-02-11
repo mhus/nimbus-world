@@ -124,7 +124,6 @@ public class HexGridFiller {
 
         return HexGridFillResult.builder()
             .placementResult(placementResult)
-            .allGrids(allGrids)
             .oceanFillCount(oceanCount)
             .landFillCount(landCount)
             .coastFillCount(coastCount)

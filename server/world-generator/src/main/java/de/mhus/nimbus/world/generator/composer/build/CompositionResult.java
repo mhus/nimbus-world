@@ -41,9 +41,10 @@ public class CompositionResult {
     private int generatedWHexGrids;
 
     /**
-     * Returns all FilledHexGrids from the fill result (if filling was enabled)
+     * Returns all WHexGrids from the fill result (if filling was enabled).
+     * Note: FilledHexGrid has been replaced by central FeatureHexGrid registry.
      */
-    public List<FilledHexGrid> getAllGrids() {
+    public List<de.mhus.nimbus.world.shared.world.WHexGrid> getAllGrids() {
         if (fillResult != null) {
             return fillResult.getAllGrids();
         }

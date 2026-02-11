@@ -194,17 +194,17 @@ public class VillagePoint extends Point {
         // Serialize to JSON
         String configJson = serializeToJson(gridConfig);
 
-        // Find the FeatureHexGrid from a biome (Points are aspects, not grid owners)
-        FeatureHexGrid biomeGrid = findBiomeFeatureHexGrid(gridCoordinate, context);
+        // Get FeatureHexGrid from central registry (Points are aspects, not grid owners)
+        FeatureHexGrid grid = getFeatureHexGridFromRegistry(gridCoordinate, context);
 
-        if (biomeGrid == null) {
-            log.error("VillagePoint '{}' cannot configure grid [{},{}] - no biome grid found",
+        if (grid == null) {
+            log.error("VillagePoint '{}' cannot configure grid [{},{}] - registry access failed",
                 getName(), gridCoordinate.getQ(), gridCoordinate.getR());
             return;
         }
 
         // Add g_village parameter as aspect (with collision check)
-        String existingVillage = biomeGrid.getParameters().get("g_village");
+        String existingVillage = grid.getParameters().get("g_village");
         if (existingVillage != null && !existingVillage.isBlank()) {
             log.warn("VillagePoint '{}' - grid [{},{}] already has g_village parameter! " +
                 "Another aspect already defined a village here. Skipping this VillagePoint.",
@@ -212,16 +212,16 @@ public class VillagePoint extends Point {
             return;
         }
 
-        biomeGrid.addParameter("g_village", configJson);
+        grid.addParameter("g_village", configJson);
 
         // Add basic structure parameters
-        biomeGrid.addParameter("structure", "village");
-        biomeGrid.addParameter("structureName", getName());
-        biomeGrid.addParameter("villagePointId", getFeatureId());
+        grid.addParameter("structure", "village");
+        grid.addParameter("structureName", getName());
+        grid.addParameter("villagePointId", getFeatureId());
 
         // Copy village parameters to grid
         if (parameters != null) {
-            biomeGrid.getParameters().putAll(parameters);
+            grid.getParameters().putAll(parameters);
         }
 
         log.debug("VillagePoint '{}' configured on grid [{},{}] with {} places, {} streets",
@@ -337,39 +337,28 @@ public class VillagePoint extends Point {
     }
 
     /**
-     * Finds the FeatureHexGrid for this point's coordinate from the composition context.
+     * Gets the FeatureHexGrid for this point's coordinate from the central registry.
      * Points are ASPEKTE - they don't create their own HexGrids, but add parameters
-     * to existing grids from biomes.
+     * to existing grids from the central composition registry.
      *
      * @param gridCoordinate The grid coordinate
-     * @param context The composition context containing all features
-     * @return The FeatureHexGrid from a biome, or null if not found
+     * @param context The composition context with central registry
+     * @return The FeatureHexGrid from the central registry
      */
-    private FeatureHexGrid findBiomeFeatureHexGrid(HexVector2 gridCoordinate, ComposeContext context) {
-        // Points don't have their own HexGrids - they are aspects on biome grids
-        // Search all features in the composition for a grid at this coordinate
-
+    private FeatureHexGrid getFeatureHexGridFromRegistry(HexVector2 gridCoordinate, ComposeContext context) {
         if (context == null || context.getComposition() == null) {
-            log.warn("VillagePoint '{}' has no composition context - cannot find biome grid at [{},{}]",
-                getName(), gridCoordinate.getQ(), gridCoordinate.getR());
+            log.error("VillagePoint '{}' has no composition context - cannot access grid registry",
+                getName());
             return null;
         }
 
-        // Search in all features (Areas/Biomes)
-        for (de.mhus.nimbus.world.generator.composer.feature.Feature feature : context.getComposition().getFeatures()) {
-            if (feature instanceof de.mhus.nimbus.world.generator.composer.area.Area area) {
-                FeatureHexGrid grid = area.findHexGrid(gridCoordinate);
-                if (grid != null) {
-                    log.debug("VillagePoint '{}' found FeatureHexGrid at [{},{}] in biome '{}'",
-                        getName(), gridCoordinate.getQ(), gridCoordinate.getR(), area.getName());
-                    return grid;
-                }
-            }
-        }
+        // Get grid from central registry (will be created if not exists)
+        FeatureHexGrid grid = context.getComposition().getOrCreateFeatureHexGrid(gridCoordinate);
 
-        log.warn("VillagePoint '{}' - no biome has a FeatureHexGrid at [{},{}]",
+        log.debug("VillagePoint '{}' accessing FeatureHexGrid at [{},{}] from central registry",
             getName(), gridCoordinate.getQ(), gridCoordinate.getR());
-        return null;
+
+        return grid;
     }
 
     @Override

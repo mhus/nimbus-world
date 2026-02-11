@@ -115,8 +115,8 @@ public class BiomeComposer {
         // Generate WHexGrids for all placed biomes
         List<WHexGrid> hexGrids = generateHexGrids(context.getPlacedBiomes(), worldId);
 
-        // Configure HexGrids for all placed biomes
-        configureHexGridsForPlacedBiomes(context.getPlacedBiomes());
+        // Configure HexGrids for all placed biomes - register in central composition registry
+        configureHexGridsForPlacedBiomes(context.getPlacedBiomes(), prepared);
 
         return BiomePlacementResult.builder()
             .composition(prepared)
@@ -717,11 +717,90 @@ public class BiomeComposer {
      * Configures HexGrids for all placed biomes by calling each biome's configureHexGrids method.
      * Each biome configures its own grids polymorphically.
      */
-    private void configureHexGridsForPlacedBiomes(List<PlacedBiome> placedBiomes) {
+    /**
+     * Configures FeatureHexGrids for all placed biomes by registering them
+     * in the central composition registry.
+     * This replaces the old approach of storing grids in individual biome instances.
+     *
+     * @param placedBiomes List of placed biomes
+     * @param composition Composition with central FeatureHexGrid registry
+     */
+    public void configureHexGridsForPlacedBiomes(List<PlacedBiome> placedBiomes, HexComposition composition) {
         for (PlacedBiome placed : placedBiomes) {
-            // Let the biome configure its own HexGrids with the assigned coordinates
-            placed.getBiome().configureHexGrids(placed.getCoordinates());
+            Biome biome = placed.getBiome();
+            List<de.mhus.nimbus.generated.types.HexVector2> coordinates = placed.getCoordinates();
+
+            if (coordinates == null || coordinates.isEmpty()) {
+                continue;
+            }
+
+            // Create FeatureHexGrid for each coordinate and register in central registry
+            for (de.mhus.nimbus.generated.types.HexVector2 coord : coordinates) {
+                // Get or create grid from central registry (prevents duplicates)
+                de.mhus.nimbus.world.generator.composer.feature.FeatureHexGrid featureHexGrid =
+                    composition.getOrCreateFeatureHexGrid(coord);
+
+                // Set source biome reference
+                if (featureHexGrid.getSourceBiomeName() == null) {
+                    featureHexGrid.setSourceBiomeName(biome.getName());
+                    featureHexGrid.setSourceBiomeId(biome.getFeatureId());
+                }
+
+                // Set name and description if not already set
+                if (featureHexGrid.getName() == null) {
+                    featureHexGrid.setName(biome.getName() + " [" + coord.getQ() + "," + coord.getR() + "]");
+                }
+                if (featureHexGrid.getDescription() == null) {
+                    featureHexGrid.setDescription("Part of " + (biome.getType() != null ? biome.getType().name() : "unknown") + " biome");
+                }
+
+                // Copy biome parameters to grid (only if not already present)
+                if (biome.getParameters() != null) {
+                    for (Map.Entry<String, String> entry : biome.getParameters().entrySet()) {
+                        if (!featureHexGrid.getParameters().containsKey(entry.getKey())) {
+                            featureHexGrid.addParameter(entry.getKey(), entry.getValue());
+                        }
+                    }
+                }
+
+                // Add biome type parameter (use builderName for consistency)
+                if (biome.getType() != null) {
+                    if (!featureHexGrid.getParameters().containsKey("biome")) {
+                        featureHexGrid.addParameter("biome", biome.getType().getBuilderName());
+                    }
+                    if (!featureHexGrid.getParameters().containsKey("biomeName")) {
+                        featureHexGrid.addParameter("biomeName", biome.getName());
+                    }
+                    if (!featureHexGrid.getParameters().containsKey("biomeType")) {
+                        featureHexGrid.addParameter("biomeType", biome.getType().name());
+                    }
+                }
+
+                // Set filler information from parameters
+                if (featureHexGrid.getParameters().containsKey("filler")) {
+                    boolean isFiller = "true".equals(featureHexGrid.getParameters().get("filler"));
+                    featureHexGrid.setFiller(isFiller);
+
+                    if (isFiller && featureHexGrid.getParameters().containsKey("fillerType")) {
+                        String fillerTypeStr = featureHexGrid.getParameters().get("fillerType");
+                        try {
+                            de.mhus.nimbus.world.generator.composer.filler.FillerType fillerType =
+                                de.mhus.nimbus.world.generator.composer.filler.FillerType.valueOf(fillerTypeStr.toUpperCase());
+                            featureHexGrid.setFillerType(fillerType);
+                        } catch (IllegalArgumentException e) {
+                            log.warn("Invalid fillerType '{}' for grid [{},{}], ignoring",
+                                fillerTypeStr, coord.getQ(), coord.getR());
+                        }
+                    }
+                }
+
+                log.trace("Registered FeatureHexGrid [{},{}] for biome '{}' in central registry",
+                    coord.getQ(), coord.getR(), biome.getName());
+            }
         }
+
+        log.debug("Registered {} biomes with their HexGrids in central composition registry",
+            placedBiomes.size());
     }
 
     /**
