@@ -189,10 +189,8 @@ public class FlowComposer {
 
         flow.setRoute(route);
 
-        // Configure HexGrids for this flow (creates FeatureHexGrids with parameters)
-        flow.configureHexGrids(route);
-
-        // Create flow segments and add them to the configured HexGrids
+        // Create flow segments and add them directly to central registry
+        // No need for flow.configureHexGrids() - segments are added to composition.getOrCreateFeatureHexGrid()
         int segments = createFlowSegments(flow, route, gridMap, prepared);
 
         // Note: Phase 1 (Convert FlowSegments to ConfigParts) was moved to HexCompositeBuilder
@@ -1039,19 +1037,10 @@ public class FlowComposer {
             FlowSegment segment = createFlowSegment(flow, fromSide, toSide, fromPosition, toPosition,
                 fromLx, fromLz, toLx, toLz, fromLevel, toLevel);
 
-            // Add segment to flow's own FeatureHexGrid (already configured by flow.configureHexGrids())
-            FeatureHexGrid flowHexGrid = flow.findHexGrid(coord.getQ(), coord.getR());
-            if (flowHexGrid != null) {
-                flowHexGrid.addFlowSegment(segment);
-            } else {
-                log.warn("No FeatureHexGrid found for flow {} at coordinate {}", flow.getName(), coord);
-            }
-
-            // Also add segment to biome's FeatureHexGrid (if flow crosses a biome)
-            FeatureHexGrid biomeHexGrid = findFeatureHexGridInBiome(coord, gridMap, prepared);
-            if (biomeHexGrid != null) {
-                biomeHexGrid.addFlowSegment(segment);
-            }
+            // Add segment directly to central registry (no longer to flow.hexGrids!)
+            // This merges the segment into existing grid (created by Biome) or creates new orphan grid
+            FeatureHexGrid centralGrid = prepared.getOrCreateFeatureHexGrid(coord);
+            centralGrid.addFlowSegment(segment);
 
             // Store TO level for next segment's FROM
             previousToLevel = toLevel;

@@ -151,9 +151,8 @@ public class HexGridGenerator {
             List<FeatureHexGrid> hexGridConfigs = null;
             if (feature instanceof de.mhus.nimbus.world.generator.composer.structure.Structure) {
                 hexGridConfigs = ((de.mhus.nimbus.world.generator.composer.structure.Structure) feature).getHexGrids();
-            } else if (feature instanceof de.mhus.nimbus.world.generator.composer.flow.Flow) {
-                hexGridConfigs = ((de.mhus.nimbus.world.generator.composer.flow.Flow) feature).getHexGrids();
             }
+            // Note: Flows no longer have local hexGrids - they write directly to central registry
 
             if (hexGridConfigs == null || hexGridConfigs.isEmpty()) {
                 // Not an error - Biomes don't have local hexGrids
@@ -322,9 +321,8 @@ public class HexGridGenerator {
         List<de.mhus.nimbus.world.generator.composer.feature.FeatureHexGrid> hexGrids = null;
         if (feature instanceof de.mhus.nimbus.world.generator.composer.structure.Structure) {
             hexGrids = ((de.mhus.nimbus.world.generator.composer.structure.Structure) feature).getHexGrids();
-        } else if (feature instanceof de.mhus.nimbus.world.generator.composer.flow.Flow) {
-            hexGrids = ((de.mhus.nimbus.world.generator.composer.flow.Flow) feature).getHexGrids();
         }
+        // Note: Flows no longer have local hexGrids - they write directly to central registry
 
         if (hexGrids == null || hexGrids.isEmpty()) return false;
         return true;

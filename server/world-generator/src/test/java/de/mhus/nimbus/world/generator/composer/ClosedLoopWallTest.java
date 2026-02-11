@@ -26,6 +26,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -89,9 +90,15 @@ public class ClosedLoopWallTest {
 
         log.info("Wall has {} segments forming a closed loop", wall.getRoute().size());
 
+        // Collect grids from Central Registry that contain segments from this wall
+        List<FeatureHexGrid> wallGrids = composition.getFeatureHexGridRegistry().values().stream()
+            .filter(grid -> grid.getFlowSegments() != null && grid.getFlowSegments().stream()
+                .anyMatch(seg -> wall.getFeatureId().equals(seg.getFlowFeatureId())))
+            .collect(Collectors.toList());
+
         // Verify segments form a closed loop
         // First segment should connect from last to first
-        FeatureHexGrid firstGrid = wall.getHexGrids().get(0);
+        FeatureHexGrid firstGrid = wallGrids.get(0);
         List<FlowSegment> firstSegments = firstGrid.getFlowSegmentsByType(FlowType.WALL);
         assertFalse(firstSegments.isEmpty(), "First grid should have wall segments");
 
@@ -101,7 +108,7 @@ public class ClosedLoopWallTest {
         log.info("First segment: from {} to {}", firstSegment.getFromSide(), firstSegment.getToSide());
 
         // Last segment should connect to first
-        FeatureHexGrid lastGrid = wall.getHexGrids().get(wall.getHexGrids().size() - 1);
+        FeatureHexGrid lastGrid = wallGrids.get(wallGrids.size() - 1);
         List<FlowSegment> lastSegments = lastGrid.getFlowSegmentsByType(FlowType.WALL);
         assertFalse(lastSegments.isEmpty(), "Last grid should have wall segments");
 

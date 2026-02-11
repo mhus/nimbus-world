@@ -26,6 +26,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -97,8 +98,14 @@ public class RoadWithPointEndpointsTest {
         // Verify flow segments have lx/lz coordinates instead of sides
         assertTrue(road.getRoute().size() > 0, "Road should have route");
 
+        // Collect grids from Central Registry that contain segments from this road
+        List<FeatureHexGrid> roadGrids = composition.getFeatureHexGridRegistry().values().stream()
+            .filter(grid -> grid.getFlowSegments() != null && grid.getFlowSegments().stream()
+                .anyMatch(seg -> road.getFeatureId().equals(seg.getFlowFeatureId())))
+            .collect(Collectors.toList());
+
         // First segment should have fromLx/fromLz (from Point)
-        FeatureHexGrid firstGrid = road.getHexGrids().get(0);
+        FeatureHexGrid firstGrid = roadGrids.get(0);
         List<FlowSegment> firstSegments = firstGrid.getFlowSegmentsByType(FlowType.ROAD);
         assertFalse(firstSegments.isEmpty(), "First grid should have road segments");
 
@@ -113,7 +120,7 @@ public class RoadWithPointEndpointsTest {
         }
 
         // Last segment should have toLx/toLz (to Point)
-        FeatureHexGrid lastGrid = road.getHexGrids().get(road.getHexGrids().size() - 1);
+        FeatureHexGrid lastGrid = roadGrids.get(roadGrids.size() - 1);
         List<FlowSegment> lastSegments = lastGrid.getFlowSegmentsByType(FlowType.ROAD);
         assertFalse(lastSegments.isEmpty(), "Last grid should have road segments");
 

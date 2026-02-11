@@ -41,16 +41,7 @@ public class Road extends Flow {
         }
     }
 
-    /**
-     * Configures HexGrids with road-specific parameters.
-     * Road-specific parameters are added by HexGridRoadConfigurator
-     * after all flows have been composed.
-     */
-    @Override
-    public void configureHexGrids(List<HexVector2> coordinates) {
-        // Call parent to create basic FeatureHexGrids
-        super.configureHexGrids(coordinates);
-    }
+    // Note: configureHexGrids() was removed - roads write directly to central registry
 
     /**
      * Overrides Flow.calculateSegmentLevel() to ensure roads never go below level 1.

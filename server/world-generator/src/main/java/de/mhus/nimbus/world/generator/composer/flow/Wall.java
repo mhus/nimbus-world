@@ -45,14 +45,5 @@ public class Wall extends Flow {
         }
     }
 
-    /**
-     * Configures HexGrids with wall-specific parameters.
-     * Wall-specific parameters are added by HexGridRoadConfigurator
-     * after all flows have been composed.
-     */
-    @Override
-    public void configureHexGrids(List<HexVector2> coordinates) {
-        // Call parent to create basic FeatureHexGrids
-        super.configureHexGrids(coordinates);
-    }
+    // Note: configureHexGrids() was removed - walls write directly to central registry
 }

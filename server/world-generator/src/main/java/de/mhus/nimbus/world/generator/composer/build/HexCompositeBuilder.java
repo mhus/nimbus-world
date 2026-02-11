@@ -421,12 +421,13 @@ public class HexCompositeBuilder {
                     allFeatureHexGrids.size());
             }
 
-            // Step 7.5: Populate central registry with Structure and Flow HexGrids
-            // Biomes are already registered by BiomeComposer, but Structures and Flows
-            // need to be transferred from their local storage to central registry
-            log.debug("Step 7.5: Populating central registry with Structure and Flow HexGrids");
+            // Step 7.5: Populate central registry with Structure HexGrids
+            // Biomes are already registered by BiomeComposer
+            // Flows write directly to central registry (no transfer needed)
+            // Structures need to be transferred from their local storage to central registry
+            log.debug("Step 7.5: Populating central registry with Structure HexGrids");
             populateCentralRegistry(composition);
-            log.debug("Central registry populated with Structure/Flow HexGrids");
+            log.debug("Central registry populated with Structure HexGrids");
 
             // Step 7.5a: Convert FlowSegments to ConfigParts (AFTER flowSegments are in central registry)
             // Now that Flow.hexGrids have been transferred to central registry, we can convert
@@ -435,12 +436,8 @@ public class HexCompositeBuilder {
             int convertedFlows = flowComposer.convertAllFlowSegmentsToConfigParts(composition, placementResult);
             log.info("Converted FlowSegments for {} flows", convertedFlows);
 
-            // Step 7.5b: Merge Flow Aspects (RoadConfigParts) into central registry
-            // Flows store their aspects (RoadConfigParts, RiverConfigParts) in Flow.hexGrids
-            // These need to be merged into the FeatureHexGrids in central registry
-            log.info("Step 7.5b: Merging Flow Aspects into central registry");
-            int mergedAspects = mergeFlowAspectsIntoCentralRegistry(composition);
-            log.info("Merged {} flow aspects into central registry", mergedAspects);
+            // Note: Step 7.5b (Merge Flow Aspects) was removed
+            // Flows now write directly to central registry, no merge needed
 
             // Step 7.6: Configure road/river/wall parameters from RoadConfigParts
             // Must run AFTER populateCentralRegistry() so HexGridRoadConfigurator
@@ -509,9 +506,12 @@ public class HexCompositeBuilder {
     }
 
     /**
-     * Populates the central FeatureHexGrid registry from all features.
-     * Collects all FeatureHexGrids from Biomes and other Area-based features
-     * into the central composition registry to prevent duplicates.
+     * Populates the central FeatureHexGrid registry from Structure features.
+     * Transfers FeatureHexGrids from Structures' local storage into the central registry.
+     *
+     * Note: Biomes already write to central registry directly (via BiomeComposer).
+     * Note: Flows already write to central registry directly (via FlowComposer).
+     * Only Structures need to be transferred here.
      *
      * For grids that already exist in the registry, parameters are merged
      * with warnings on collision.
@@ -533,13 +533,12 @@ public class HexCompositeBuilder {
 
         if (composition.getFeatures() != null) {
             for (Feature feature : composition.getFeatures()) {
-                // Only Structures and Flows have local hexGrids
+                // Only Structures have local hexGrids
                 // Biomes use central registry (already populated by BiomeComposer)
+                // Flows write directly to central registry (no local hexGrids)
                 List<FeatureHexGrid> hexGrids = null;
                 if (feature instanceof de.mhus.nimbus.world.generator.composer.structure.Structure) {
                     hexGrids = ((de.mhus.nimbus.world.generator.composer.structure.Structure) feature).getHexGrids();
-                } else if (feature instanceof de.mhus.nimbus.world.generator.composer.flow.Flow) {
-                    hexGrids = ((de.mhus.nimbus.world.generator.composer.flow.Flow) feature).getHexGrids();
                 }
 
                 if (hexGrids == null || hexGrids.isEmpty()) {
@@ -623,104 +622,8 @@ public class HexCompositeBuilder {
             registeredCount, mergedCount, parameterCollisionCount);
     }
 
-    /**
-     * Merges Flow aspects (RoadConfigParts, RiverConfigParts, WallConfigParts) into the central registry.
-     *
-     * Flows store their aspects in Flow.hexGrids during composition. These aspects need to be
-     * merged into the corresponding FeatureHexGrids in the central registry so that
-     * HexGridRoadConfigurator can find them and convert them to g_road/g_river/g_wall parameters.
-     *
-     * Multiple Flows can contribute to the same HexGrid coordinate - all their ConfigParts
-     * are collected and merged together.
-     *
-     * @param composition The composition with central registry
-     * @return Number of aspect grids merged
-     */
-    private int mergeFlowAspectsIntoCentralRegistry(HexComposition composition) {
-        if (composition == null || composition.getFeatures() == null) {
-            log.warn("Cannot merge flow aspects - composition or features is null");
-            return 0;
-        }
-
-        int mergedGridCount = 0;
-        int roadPartsCount = 0;
-        int riverPartsCount = 0;
-        int wallPartsCount = 0;
-
-        log.debug("Merging Flow aspects from {} features into central registry",
-            composition.getFeatures().size());
-
-        // Iterate through all features to find Flows
-        for (Feature feature : composition.getFeatures()) {
-            if (!(feature instanceof de.mhus.nimbus.world.generator.composer.flow.Flow)) {
-                continue;
-            }
-
-            de.mhus.nimbus.world.generator.composer.flow.Flow flow =
-                (de.mhus.nimbus.world.generator.composer.flow.Flow) feature;
-
-            List<de.mhus.nimbus.world.generator.composer.feature.FeatureHexGrid> flowHexGrids = flow.getHexGrids();
-            if (flowHexGrids == null || flowHexGrids.isEmpty()) {
-                log.trace("Flow '{}' has no hexGrids, skipping", flow.getName());
-                continue;
-            }
-
-            log.debug("Flow '{}' has {} aspect grids to merge", flow.getName(), flowHexGrids.size());
-
-            // For each aspect grid in the Flow, merge its ConfigParts into central registry
-            for (de.mhus.nimbus.world.generator.composer.feature.FeatureHexGrid flowGrid : flowHexGrids) {
-                if (flowGrid.getCoordinate() == null) {
-                    log.warn("Flow '{}' has hexGrid without coordinate, skipping", flow.getName());
-                    continue;
-                }
-
-                // Get or create the corresponding grid in central registry
-                de.mhus.nimbus.world.generator.composer.feature.FeatureHexGrid centralGrid =
-                    composition.getOrCreateFeatureHexGrid(flowGrid.getCoordinate());
-
-                boolean merged = false;
-
-                // Merge RoadConfigParts
-                if (flowGrid.getRoadConfigParts() != null && !flowGrid.getRoadConfigParts().isEmpty()) {
-                    centralGrid.getRoadConfigParts().addAll(flowGrid.getRoadConfigParts());
-                    roadPartsCount += flowGrid.getRoadConfigParts().size();
-                    merged = true;
-                    log.trace("Merged {} RoadConfigParts from Flow '{}' to grid [{},{}]",
-                        flowGrid.getRoadConfigParts().size(), flow.getName(),
-                        flowGrid.getCoordinate().getQ(), flowGrid.getCoordinate().getR());
-                }
-
-                // Merge RiverConfigParts
-                if (flowGrid.getRiverConfigParts() != null && !flowGrid.getRiverConfigParts().isEmpty()) {
-                    centralGrid.getRiverConfigParts().addAll(flowGrid.getRiverConfigParts());
-                    riverPartsCount += flowGrid.getRiverConfigParts().size();
-                    merged = true;
-                    log.trace("Merged {} RiverConfigParts from Flow '{}' to grid [{},{}]",
-                        flowGrid.getRiverConfigParts().size(), flow.getName(),
-                        flowGrid.getCoordinate().getQ(), flowGrid.getCoordinate().getR());
-                }
-
-                // Merge WallConfigParts
-                if (flowGrid.getWallConfigParts() != null && !flowGrid.getWallConfigParts().isEmpty()) {
-                    centralGrid.getWallConfigParts().addAll(flowGrid.getWallConfigParts());
-                    wallPartsCount += flowGrid.getWallConfigParts().size();
-                    merged = true;
-                    log.trace("Merged {} WallConfigParts from Flow '{}' to grid [{},{}]",
-                        flowGrid.getWallConfigParts().size(), flow.getName(),
-                        flowGrid.getCoordinate().getQ(), flowGrid.getCoordinate().getR());
-                }
-
-                if (merged) {
-                    mergedGridCount++;
-                }
-            }
-        }
-
-        log.info("Merged {} aspect grids: {} road parts, {} river parts, {} wall parts",
-            mergedGridCount, roadPartsCount, riverPartsCount, wallPartsCount);
-
-        return mergedGridCount;
-    }
+    // Note: mergeFlowAspectsIntoCentralRegistry() was removed
+    // Flows now write directly to central registry, no merge needed
 
     /**
      * Creates a WHexGrid from a FeatureHexGrid, preserving all accumulated composition data.

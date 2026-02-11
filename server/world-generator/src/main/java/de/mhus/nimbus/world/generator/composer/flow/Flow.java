@@ -117,12 +117,8 @@ public abstract class Flow extends Feature {
          */
         private Point endPointFeature;
 
-        /**
-         * Temporary storage for FeatureHexGrids during composition phase.
-         * After composition, these are registered in central HexComposition.featureHexGridRegistry.
-         */
-        @Deprecated // TODO remove this later
-        private List<FeatureHexGrid> hexGrids;
+        // Note: Flow.hexGrids was removed - flows now write directly to central registry
+        // via composition.getOrCreateFeatureHexGrid() during FlowComposer.createFlowSegments()
     }
 
     @JsonIgnore
@@ -207,36 +203,8 @@ public abstract class Flow extends Feature {
      *
      * @param coordinates Ordered list of coordinates for the flow route
      */
-    public void configureHexGrids(List<HexVector2> coordinates) {
-        if (coordinates == null || coordinates.isEmpty()) {
-            return;
-        }
-
-        // Initialize flowComposed if needed
-        if (flowComposed == null) {
-            flowComposed = new FlowComposed();
-        }
-
-        // Store route
-        flowComposed.setRoute(coordinates);
-
-        // Clear existing configurations
-        if (getHexGrids() != null) {
-            getHexGrids().clear();
-        }
-
-        // Create FeatureHexGrid for each coordinate
-        for (HexVector2 coord : coordinates) {
-            FeatureHexGrid featureHexGrid = FeatureHexGrid.builder()
-                .coordinate(coord)
-                .name(getName() + " [" + coord.getQ() + "," + coord.getR() + "]")
-                .description("Flow segment for " + getName())
-                .build();
-
-            // Add to this feature
-            addHexGrid(featureHexGrid);
-        }
-    }
+    // Note: configureHexGrids() was removed - flows now write directly to central registry
+    // No need to pre-configure hexGrids, they are created on-the-fly during createFlowSegments()
 
     // Helper methods for backward compatibility
 
@@ -317,40 +285,8 @@ public abstract class Flow extends Feature {
         flowComposed.setEndPointFeature(endPointFeature);
     }
 
-    // HexGrid management methods
-
-    public List<FeatureHexGrid> getHexGrids() {
-        return flowComposed != null ? flowComposed.getHexGrids() : null;
-    }
-
-    public void setHexGrids(List<FeatureHexGrid> hexGrids) {
-        if (flowComposed == null) {
-            flowComposed = new FlowComposed();
-        }
-        flowComposed.setHexGrids(hexGrids);
-    }
-
-    public void addHexGrid(FeatureHexGrid hexGrid) {
-        if (flowComposed == null) {
-            flowComposed = new FlowComposed();
-        }
-        if (flowComposed.getHexGrids() == null) {
-            flowComposed.setHexGrids(new java.util.ArrayList<>());
-        }
-        flowComposed.getHexGrids().add(hexGrid);
-    }
-
-    public FeatureHexGrid findHexGrid(int q, int r) {
-        if (flowComposed == null || flowComposed.getHexGrids() == null) {
-            return null;
-        }
-        return flowComposed.getHexGrids().stream()
-            .filter(grid -> grid.getCoordinate() != null &&
-                          grid.getCoordinate().getQ() == q &&
-                          grid.getCoordinate().getR() == r)
-            .findFirst()
-            .orElse(null);
-    }
+    // Note: getHexGrids(), setHexGrids(), addHexGrid() and findHexGrid() were removed
+    // Flows now write directly to central registry via composition.getOrCreateFeatureHexGrid()
 
     /**
      * Calculates the level for a flow segment based on levelMode.

@@ -200,15 +200,5 @@ public class SideWall extends Flow {
         return respectRiver != null ? respectRiver : false;
     }
 
-    /**
-     * SideWall does not configure its own grids.
-     * Instead, it adds sidewall parameters to the target biome's edge grids.
-     * This is handled by FlowComposer.
-     */
-    @Override
-    public void configureHexGrids(List<HexVector2> coordinates) {
-        // SideWall doesn't create its own grids
-        // It decorates existing biome grids
-        // FlowComposer handles this in composeSideWall()
-    }
+    // Note: configureHexGrids() was removed - SideWall decorates existing biome grids directly
 }

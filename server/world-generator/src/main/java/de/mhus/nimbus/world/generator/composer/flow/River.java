@@ -49,16 +49,7 @@ public class River extends Flow {
         }
     }
 
-    /**
-     * Configures HexGrids with river-specific parameters.
-     * River-specific parameters are added by HexGridRoadConfigurator
-     * after all flows have been composed.
-     */
-    @Override
-    public void configureHexGrids(List<HexVector2> coordinates) {
-        // Call parent to create basic FeatureHexGrids
-        super.configureHexGrids(coordinates);
-    }
+    // Note: configureHexGrids() was removed - rivers write directly to central registry
 
     /**
      * Calculates river level with downhill constraint and minimum level 0.

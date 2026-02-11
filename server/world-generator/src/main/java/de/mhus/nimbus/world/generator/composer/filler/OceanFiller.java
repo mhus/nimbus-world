@@ -363,17 +363,17 @@ public class OceanFiller {
         // Collect from direct flows
         if (composition.getRoads() != null) {
             for (Road road : composition.getRoads()) {
-                collectFlowCoordinates(road, flowCoords);
+                collectFlowCoordinates(road, flowCoords, composition);
             }
         }
         if (composition.getRivers() != null) {
             for (River river : composition.getRivers()) {
-                collectFlowCoordinates(river, flowCoords);
+                collectFlowCoordinates(river, flowCoords, composition);
             }
         }
         if (composition.getWalls() != null) {
             for (Wall wall : composition.getWalls()) {
-                collectFlowCoordinates(wall, flowCoords);
+                collectFlowCoordinates(wall, flowCoords, composition);
             }
         }
 
@@ -432,17 +432,25 @@ public class OceanFiller {
     }
 
     /**
-     * Collects all coordinates from a flow's FeatureHexGrids.
+     * Collects all coordinates from a flow's segments in central registry.
      */
-    private void collectFlowCoordinates(Flow flow, Set<String> flowCoords) {
-        if (flow.getHexGrids() == null) {
+    private void collectFlowCoordinates(Flow flow, Set<String> flowCoords, HexComposition composition) {
+        if (composition == null || composition.getFeatureHexGridRegistry() == null) {
             return;
         }
 
-        for (FeatureHexGrid hexGrid : flow.getHexGrids()) {
-            String coordKey = hexGrid.getPositionKey();
-            if (coordKey != null) {
-                flowCoords.add(coordKey);
+        // Iterate through central registry and find grids with segments from this flow
+        for (FeatureHexGrid centralGrid : composition.getFeatureHexGridRegistry().values()) {
+            if (centralGrid.getFlowSegments() != null) {
+                boolean hasFlowSegment = centralGrid.getFlowSegments().stream()
+                    .anyMatch(seg -> flow.getFeatureId().equals(seg.getFlowFeatureId()));
+
+                if (hasFlowSegment) {
+                    String coordKey = centralGrid.getPositionKey();
+                    if (coordKey != null) {
+                        flowCoords.add(coordKey);
+                    }
+                }
             }
         }
     }

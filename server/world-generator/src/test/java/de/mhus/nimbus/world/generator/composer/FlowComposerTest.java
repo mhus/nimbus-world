@@ -24,6 +24,7 @@ import org.mockito.Mockito;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -93,9 +94,12 @@ public class FlowComposerTest {
             result.getFlowCompositionResult().getTotalFlows(),
             result.getFlowCompositionResult().getTotalSegments());
 
-        // Check that FeatureHexGrids have flow segments
+        // Collect grids from Central Registry that contain segments from this road
         Road road = composition.getRoads().get(0);
-        List<FeatureHexGrid> roadHexGrids = road.getHexGrids();
+        List<FeatureHexGrid> roadHexGrids = composition.getFeatureHexGridRegistry().values().stream()
+            .filter(grid -> grid.getFlowSegments() != null && grid.getFlowSegments().stream()
+                .anyMatch(seg -> road.getFeatureId().equals(seg.getFlowFeatureId())))
+            .collect(Collectors.toList());
 
         assertNotNull(roadHexGrids, "Road should have hexGrids");
         assertFalse(roadHexGrids.isEmpty(), "Road hexGrids should not be empty");
@@ -158,12 +162,17 @@ public class FlowComposerTest {
             result.getFlowCompositionResult().isSuccess(),
             result.getFlowCompositionResult().getTotalSegments());
 
-        // Verify river has flow segments
+        // Collect grids from Central Registry that contain segments from this river
         River river = composition.getRivers().get(0);
-        assertNotNull(river.getHexGrids());
-        assertFalse(river.getHexGrids().isEmpty());
+        List<FeatureHexGrid> riverHexGrids = composition.getFeatureHexGridRegistry().values().stream()
+            .filter(grid -> grid.getFlowSegments() != null && grid.getFlowSegments().stream()
+                .anyMatch(seg -> river.getFeatureId().equals(seg.getFlowFeatureId())))
+            .collect(Collectors.toList());
 
-        log.info("River '{}' has {} hexGrids", river.getName(), river.getHexGrids().size());
+        assertNotNull(riverHexGrids);
+        assertFalse(riverHexGrids.isEmpty());
+
+        log.info("River '{}' has {} hexGrids", river.getName(), riverHexGrids.size());
 
         // Verify WHexGrid generation
         assertTrue(result.getGenerationResult().isSuccess(), "HexGrid generation should succeed");
