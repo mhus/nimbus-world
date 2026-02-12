@@ -44,12 +44,6 @@ public class HexComposition implements BuildFeature {
     // Continent definitions for filling gaps between biomes
     private List<Continent> continents;
 
-    // Filled hex grids - DEPRECATED - use featureHexGridRegistry instead
-    // All grid data is now in the central FeatureHexGrid registry
-    @Deprecated(since = "1.0.0", forRemoval = true)
-    @com.fasterxml.jackson.annotation.JsonIgnore
-    private List<FilledHexGrid> filledHexGrids;
-
     /**
      * Central registry for all FeatureHexGrids across all features.
      * Prevents duplicate grids at the same coordinate.

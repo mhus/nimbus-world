@@ -16,7 +16,12 @@ public interface WDocumentRepository extends MongoRepository<WDocument, String> 
 
     Optional<WDocument> findByWorldIdAndDocumentId(String worldId, String documentId);
 
-    Optional<WDocument> findByWorldIdAndCollectionAndName(String worldId, String collection, String name);
+    /**
+     * Finds the newest document matching worldId, collection, and name.
+     * Note: 'name' is not part of the unique constraint, so multiple documents may exist with the same name.
+     * Returns the newest document (ordered by createdAt descending) to handle legacy duplicates.
+     */
+    Optional<WDocument> findFirstByWorldIdAndCollectionAndNameOrderByCreatedAtDesc(String worldId, String collection, String name);
 
     List<WDocument> findByWorldId(String worldId);
 

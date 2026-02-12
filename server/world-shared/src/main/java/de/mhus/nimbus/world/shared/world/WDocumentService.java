@@ -52,7 +52,7 @@ public class WDocumentService {
         if (worldId.isInstance()) {
             throw new IllegalArgumentException("worldId must not be an instance id");
         }
-        return repository.findByWorldIdAndCollectionAndName(worldId.getId(), collection, name);
+        return repository.findFirstByWorldIdAndCollectionAndNameOrderByCreatedAtDesc(worldId.getId(), collection, name);
     }
 
     /**
@@ -180,7 +180,25 @@ public class WDocumentService {
                     return neu;
                 });
 
+        // Apply the updater first to get the name
         updater.accept(document);
+
+        // Check for duplicate names - if found, update the existing document instead of creating a duplicate
+        if (!Strings.isBlank(document.getName())) {
+            Optional<WDocument> existingByName = repository.findFirstByWorldIdAndCollectionAndNameOrderByCreatedAtDesc(
+                    worldId.getId(), collection, document.getName());
+
+            if (existingByName.isPresent() && !existingByName.get().getDocumentId().equals(documentId)) {
+                log.info("Document with name '{}' already exists in worldId={}, collection={} (documentId={}). " +
+                        "Updating existing document instead of creating duplicate.",
+                        document.getName(), worldId, collection, existingByName.get().getDocumentId());
+
+                // Use the existing document and apply the updater to it
+                document = existingByName.get();
+                updater.accept(document);
+            }
+        }
+
         document.touchUpdate();
 
         WDocument saved = repository.save(document);
@@ -193,13 +211,41 @@ public class WDocumentService {
      */
     @Transactional
     public List<WDocument> saveAll(List<WDocument> documents) {
-        documents.forEach(doc -> {
-            if (doc.getCreatedAt() == null) {
-                doc.touchCreate();
+        List<WDocument> toSave = new ArrayList<>();
+
+        // Check for duplicate names and merge with existing documents if found
+        for (WDocument doc : documents) {
+            WDocument documentToSave = doc;
+
+            if (!Strings.isBlank(doc.getName())) {
+                Optional<WDocument> existingByName = repository.findFirstByWorldIdAndCollectionAndNameOrderByCreatedAtDesc(
+                        doc.getWorldId(), doc.getCollection(), doc.getName());
+
+                if (existingByName.isPresent() && !existingByName.get().getDocumentId().equals(doc.getDocumentId())) {
+                    log.info("Document with name '{}' already exists in worldId={}, collection={} (documentId={}). " +
+                            "Updating existing document instead of creating duplicate.",
+                            doc.getName(), doc.getWorldId(), doc.getCollection(), existingByName.get().getDocumentId());
+
+                    // Use the existing document and copy data from the new one
+                    documentToSave = existingByName.get();
+                    // Copy fields from new document to existing one
+                    documentToSave.setTitle(doc.getTitle());
+                    documentToSave.setLanguage(doc.getLanguage());
+                    documentToSave.setFormat(doc.getFormat());
+                    documentToSave.setContent(doc.getContent());
+                    documentToSave.setType(doc.getType());
+                    documentToSave.setMetadata(doc.getMetadata());
+                }
             }
-            doc.touchUpdate();
-        });
-        List<WDocument> saved = repository.saveAll(documents);
+
+            if (documentToSave.getCreatedAt() == null) {
+                documentToSave.touchCreate();
+            }
+            documentToSave.touchUpdate();
+            toSave.add(documentToSave);
+        }
+
+        List<WDocument> saved = repository.saveAll(toSave);
         log.debug("Saved {} WDocument entities", saved.size());
         return saved;
     }

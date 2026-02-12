@@ -21,6 +21,7 @@ import org.springframework.stereotype.Component;
 
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -323,6 +324,16 @@ public class ApplyTranslatedInstructionJobExecutor implements JobExecutor {
         // Generate document identifiers (keep same name as source, but in different collection)
         String documentId = UUID.randomUUID().toString();
         String documentName = sourceDocumentName;  // Same name as source document
+
+        // Convert featureHexGridRegistry Map to featureHexGrids List for JSON serialization
+        // (Jackson has issues with Map<String, FeatureHexGrid>)
+        if (composition.getFeatureHexGridRegistry() != null && !composition.getFeatureHexGridRegistry().isEmpty()) {
+            composition.setFeatureHexGrids(new ArrayList<>(composition.getFeatureHexGridRegistry().values()));
+            log.info("Converted {} FeatureHexGrids from registry to list for serialization",
+                    composition.getFeatureHexGrids().size());
+        } else {
+            log.warn("No FeatureHexGrids in registry to convert");
+        }
 
         // Serialize composition directly to JSON (no wrapper)
         String compositionJson = objectMapper.writerWithDefaultPrettyPrinter()

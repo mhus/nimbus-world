@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.shared.types.WorldId;
-import de.mhus.nimbus.world.generator.composer.build.FilledHexGrid;
 import de.mhus.nimbus.world.generator.composer.build.HexComposition;
 import de.mhus.nimbus.world.generator.composer.build.HexGridCompositeImageCreator;
 import de.mhus.nimbus.world.generator.composer.image.CrossOverlay;
@@ -95,27 +94,25 @@ public class HexGridCompositeImageJobExecutor implements JobExecutor {
             log.info("Creating composite images: worldId={}, compositionId={}, flatIdSuffix={}, flatSize={}, drawGridLines={}",
                     worldId, compositionId, flatIdSuffix, hexGridSize, drawGridLines);
 
-            // Step 1: Load HexComposition from document to get FilledHexGrids
+            // Step 1: Load HexComposition from document to get FeatureHexGrids
             HexComposition composition = loadComposition(worldId, compositionId);
-            if (composition == null || composition.getFilledHexGrids() == null || composition.getFilledHexGrids().isEmpty()) {
-                throw new JobExecutionException("No FilledHexGrids found in composition: " + compositionId);
+            if (composition.getFeatureHexGridRegistry() == null || composition.getFeatureHexGridRegistry().isEmpty()) {
+                throw new JobExecutionException("No FeatureHexGrids found in composition: " + compositionId);
             }
 
-            log.info("Loaded composition with {} FilledHexGrids", composition.getFilledHexGrids().size());
+            log.info("Loaded composition with {} FeatureHexGrids", composition.getFeatureHexGridRegistry().size());
 
-            // Step 2: Extract coordinates from FilledHexGrids
+            // Step 2: Extract coordinates from FeatureHexGrids
             Set<HexVector2> validCoordinates = new HashSet<>();
             Map<HexVector2, WHexGrid> hexGridsByCoord = new HashMap<>();
-            for (FilledHexGrid filledHexGrid : composition.getFilledHexGrids()) {
-                validCoordinates.add(filledHexGrid.getCoordinate());
-                if (filledHexGrid.getHexGrid() != null) {
-                    hexGridsByCoord.put(filledHexGrid.getCoordinate(), filledHexGrid.getHexGrid());
-                }
+            for (var featureHexGrid : composition.getFeatureHexGridRegistry().values()) {
+                validCoordinates.add(featureHexGrid.getCoordinate());
+                // WHexGrids are in the database, not in FeatureHexGrid - will be loaded by flatProvider
             }
 
-            log.info("Found {} valid coordinates from FilledHexGrids", validCoordinates.size());
+            log.info("Found {} valid coordinates from FeatureHexGrids", validCoordinates.size());
 
-            // Step 3: Create filtered flat provider that only loads flats from FilledHexGrids
+            // Step 3: Create filtered flat provider that only loads flats from FeatureHexGrids
             FilteredFlatProvider flatProvider = new FilteredFlatProvider(flatService, worldId, flatIdSuffix, validCoordinates);
 
             // Check that we have grids to render
@@ -247,6 +244,20 @@ public class HexGridCompositeImageJobExecutor implements JobExecutor {
             mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
             HexComposition composition = mapper.readValue(document.getContent(), HexComposition.class);
+
+            // Convert featureHexGrids List back to featureHexGridRegistry Map
+            // (Jackson can't handle Map<String, FeatureHexGrid> directly, so we use a List for JSON)
+            if (composition.getFeatureHexGrids() != null && !composition.getFeatureHexGrids().isEmpty()) {
+                Map<String, de.mhus.nimbus.world.generator.composer.feature.FeatureHexGrid> registry =
+                    composition.getFeatureHexGridRegistry();
+                for (de.mhus.nimbus.world.generator.composer.feature.FeatureHexGrid grid : composition.getFeatureHexGrids()) {
+                    String key = grid.getCoordinate().getQ() + "," + grid.getCoordinate().getR();
+                    registry.put(key, grid);
+                }
+                log.info("Converted {} FeatureHexGrids from list to registry after deserialization",
+                        composition.getFeatureHexGrids().size());
+            }
+
             log.info("Successfully loaded HexComposition from document: {}", compositionId);
             return composition;
 
@@ -263,15 +274,15 @@ public class HexGridCompositeImageJobExecutor implements JobExecutor {
                                            HexComposition composition,
                                            FilteredFlatProvider flatProvider,
                                            Map<HexVector2, WHexGrid> hexGridsByCoord,
-                                           int flatSize) {
+                                           int hexGridSize) {
         // Add coordinate and biome name text overlays
-        addCoordinateTextOverlays(creator, composition, flatProvider, flatSize);
+        addCoordinateTextOverlays(creator, composition, flatProvider, hexGridSize);
 
         // Add point overlays (cross + name)
-        addPointOverlays(creator, composition, flatProvider, flatSize);
+        addPointOverlays(creator, composition, flatProvider, hexGridSize);
 
         // Add village slot overlays (cross + slot name)
-        addVillageSlotOverlays(creator, hexGridsByCoord, flatSize);
+        addVillageSlotOverlays(creator, hexGridsByCoord, hexGridSize);
     }
 
     /**
@@ -283,15 +294,22 @@ public class HexGridCompositeImageJobExecutor implements JobExecutor {
                                           int flatSize) {
         // Build map of coordinate to biome name
         Map<String, String> coordToBiomeName = new HashMap<>();
-        if (composition.getFilledHexGrids() != null) {
-            for (FilledHexGrid filled : composition.getFilledHexGrids()) {
-                String coordKey = filled.getCoordinate().getQ() + "," + filled.getCoordinate().getR();
+        if (composition.getFeatureHexGridRegistry() != null) {
+            for (var featureGrid : composition.getFeatureHexGridRegistry().values()) {
+                String coordKey = featureGrid.getCoordinate().getQ() + "," + featureGrid.getCoordinate().getR();
                 String biomeName = null;
 
-                if (filled.getBiome() != null && filled.getBiome().getBiome() != null) {
-                    biomeName = filled.getBiome().getBiome().getName();
-                } else if (filled.isFiller() && filled.getFillerType() != null) {
-                    biomeName = filled.getFillerType().name().toLowerCase();
+                // Get biome name from parameters
+                if (featureGrid.getParameters() != null) {
+                    biomeName = featureGrid.getParameters().get("biomeName");
+
+                    // If no biomeName, try fillerType for filler grids
+                    if (biomeName == null && "true".equals(featureGrid.getParameters().get("filler"))) {
+                        String fillerType = featureGrid.getParameters().get("fillerType");
+                        if (fillerType != null) {
+                            biomeName = fillerType.toLowerCase();
+                        }
+                    }
                 }
 
                 if (biomeName != null) {
@@ -332,7 +350,7 @@ public class HexGridCompositeImageJobExecutor implements JobExecutor {
     private void addPointOverlays(HexGridCompositeImageCreator creator,
                                  HexComposition composition,
                                  FilteredFlatProvider flatProvider,
-                                 int flatSize) {
+                                 int hexGridSize) {
         if (composition.getFeatures() == null) {
             return;
         }
@@ -363,7 +381,7 @@ public class HexGridCompositeImageJobExecutor implements JobExecutor {
             }
 
             // Convert HexLocal position to absolute world coordinates
-            int[] worldCoords = getPointWorldCoordinates(composed, flat.getSizeX(), flat.getSizeZ(), gridCoord, flatSize);
+            int[] worldCoords = getPointWorldCoordinates(composed, flat.getSizeX(), flat.getSizeZ(), hexGridSize, gridCoord, hexGridSize);
             if (worldCoords == null) {
                 log.warn("Could not calculate world coordinates for point '{}'", point.getName());
                 continue;
@@ -389,8 +407,8 @@ public class HexGridCompositeImageJobExecutor implements JobExecutor {
      * Calculates world coordinates for a point from its HexLocal position.
      */
     private int[] getPointWorldCoordinates(Point.PointComposed composed, int flatSizeX, int flatSizeZ,
+                                          int hexGridSize,
                                           HexVector2 gridCoord, int flatSize) {
-        int hexGridSize = flatSizeX;
 
         // Get position string
         String positionString = null;

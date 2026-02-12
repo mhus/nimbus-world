@@ -109,8 +109,11 @@ public class GenerateHexGridFromCompositeJobExecutor implements JobExecutor {
             // We create WHexGrids from them and persist to the database
 
             if (composition.getFeatureHexGridRegistry() == null || composition.getFeatureHexGridRegistry().isEmpty()) {
-                log.warn("No FeatureHexGrids found in Central Registry");
-                return JobResult.failure("No FeatureHexGrids found in composition - cannot generate WHexGrids");
+                log.error("No FeatureHexGrids found in Central Registry. This composition was likely created with an older " +
+                        "version of the generator and needs to be re-generated. Composition: name='{}', documentId='{}'",
+                        composition.getName(), documentId);
+                return JobResult.failure("No FeatureHexGrids found in composition - the composition needs to be " +
+                        "re-generated. Please delete the instruction and create a new one.");
             }
 
             int createdGrids = 0;
@@ -211,7 +214,7 @@ public class GenerateHexGridFromCompositeJobExecutor implements JobExecutor {
             }
 
             log.info("WHexGrid creation/update complete: created={}, updated={}, total={}",
-                    createdGrids, updatedGrids, composition.getFilledHexGrids().size());
+                    createdGrids, updatedGrids, composition.getFeatureHexGridRegistry().size());
 
             // Step 3b: Add edge_flat parameters for neighbor flats and edge blending parameters
             log.info("Adding edge_flat and edge blending parameters for {} unique grids", allCoordinateStrings.size());
@@ -334,6 +337,21 @@ public class GenerateHexGridFromCompositeJobExecutor implements JobExecutor {
             mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
             HexComposition composition = mapper.readValue(document.getContent(), HexComposition.class);
+
+            // Convert featureHexGrids List back to featureHexGridRegistry Map
+            // (Jackson can't handle Map<String, FeatureHexGrid> directly, so we use a List for JSON)
+            if (composition.getFeatureHexGrids() != null && !composition.getFeatureHexGrids().isEmpty()) {
+                Map<String, de.mhus.nimbus.world.generator.composer.feature.FeatureHexGrid> registry =
+                    composition.getFeatureHexGridRegistry();
+                for (de.mhus.nimbus.world.generator.composer.feature.FeatureHexGrid grid : composition.getFeatureHexGrids()) {
+                    String key = grid.getCoordinate().getQ() + "," + grid.getCoordinate().getR();
+                    registry.put(key, grid);
+                }
+                log.info("Converted {} FeatureHexGrids from list to registry after deserialization",
+                        composition.getFeatureHexGrids().size());
+            } else {
+                log.warn("No FeatureHexGrids in list to convert to registry");
+            }
 
             log.info("Successfully parsed HexComposition from document");
             return composition;
