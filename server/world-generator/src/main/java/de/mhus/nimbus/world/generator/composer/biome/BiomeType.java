@@ -19,26 +19,42 @@ public enum BiomeType implements TsEnum {
         "g_roughness", "0.8"
     )),
 
-    FOREST(ForestBiome.class, "mountain", Map.of(
-        "g_offset", "2",
+    FOREST(ForestBiome.class, "forest", Map.of(
+        "g_offset", "5",
+        "g_asl", "20",
+        "dirtRatio", "0.3",
         "g_flora", "forest",
         "flora_density", "0.8"
     )),
 
-    PLAINS(PlainsBiome.class, "mountain", Map.of(
-        "g_offset", "1"
-
+    PLAINS(PlainsBiome.class, "plains", Map.of(
+        "g_offset", "5",
+        "g_asl", "15",
+        "dirtRatio", "0.1",
+        "enableLakes", "true",
+        "lakeDepth", "4"
     )),
 
-    DESERT(DesertBiome.class, "mountain", Map.of(
-        "g_offset", "5",
+    DESERT(DesertBiome.class, "desert", Map.of(
+        "g_offset", "15",
+        "g_asl", "30",
+        "dirtRatio", "0.05",
+        "stoneRatio", "0.3",
         "g_flora", "desert",
         "cactus_density", "0.3"
     )),
 
-    SWAMP(SwampBiome.class, "coast", Map.of(
-        "g_offset", "1",
-        "g_water", "true"
+    SWAMP(SwampBiome.class, "swamp", Map.of(
+        "g_offset", "10",
+        "g_asl", "5",
+        "swampDepth", "3"
+    )),
+
+    MARSH(MarshBiome.class, "swamp", Map.of(
+        "g_offset", "5",
+        "g_asl", "2",
+        "swampDepth", "3",
+        "grassMaterial", "DIRT"
     )),
 
     TOWN(Biome.class, "island", Map.of(

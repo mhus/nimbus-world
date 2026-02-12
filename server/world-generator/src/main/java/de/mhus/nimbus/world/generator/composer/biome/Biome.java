@@ -67,6 +67,7 @@ public class Biome extends Area {
             case PLAINS -> "#90EE90";         // Light Green
             case DESERT -> "#EDC9AF";         // Desert Sand
             case SWAMP -> "#2F4F2F";          // Dark Green
+            case MARSH -> "#556B2F";          // Dark Olive Green
             case COAST -> "#F0E68C";          // Khaki (sandy coast)
             case ISLAND -> "#98FB98";         // Pale Green
             case OCEAN -> "#4682B4";          // Steel Blue

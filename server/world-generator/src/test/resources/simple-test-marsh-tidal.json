@@ -1,0 +1,30 @@
+{
+  "name": "Marsh Tidal Test",
+  "worldId": "simple-test-marsh-tidal",
+  "continents": [
+    {
+      "continentId": "main-continent",
+      "name": "Main Continent",
+      "biomeType": "MOUNTAINS",
+      "minNeighbors": 2,
+      "parameters": {}
+    }
+  ],
+  "features": [
+    {
+      "featureType": "biome",
+      "name": "central-marsh",
+      "title": "Central Marsh",
+      "type": "MARSH",
+      "shape": "CIRCLE",
+      "size": "LARGE",
+      "continentId": "main-continent",
+      "positions": [
+        {"direction": "E", "distanceFrom": 0, "anchor": "origin", "priority": 10}
+      ],
+      "parameters": {
+        "waterLevel": "TIDAL"
+      }
+    }
+  ]
+}

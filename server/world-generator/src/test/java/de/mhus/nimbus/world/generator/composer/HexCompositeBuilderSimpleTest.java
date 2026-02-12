@@ -142,6 +142,132 @@ public class HexCompositeBuilderSimpleTest {
         assertTrue(hexGridString.contains("g_village"), "HexGrids should contain village parameters");
     }
 
+    // ============= Biome Type Tests =============
+
+    @Test
+    public void testForestBiomeDense() throws Exception {
+        log.info("=== Testing Forest Biome with DENSE density ===");
+        var res = simpleContinentTest("forest-dense");
+        var hexGridString = new ObjectMapper().writeValueAsString(res.getWHexGrids());
+        assertTrue(hexGridString.contains("g_builder\":\"forest\""), "HexGrids should use forest builder");
+        assertNotNull(res.getFillResult(), "Fill result should not be null");
+    }
+
+    @Test
+    public void testForestBiomeSparse() throws Exception {
+        log.info("=== Testing Forest Biome with SPARSE density ===");
+        var res = simpleContinentTest("forest-sparse");
+        var hexGridString = new ObjectMapper().writeValueAsString(res.getWHexGrids());
+        assertTrue(hexGridString.contains("g_builder\":\"forest\""), "HexGrids should use forest builder");
+    }
+
+    @Test
+    public void testPlainsBiomeRolling() throws Exception {
+        log.info("=== Testing Plains Biome with ROLLING variation ===");
+        var res = simpleContinentTest("plains-rolling");
+        var hexGridString = new ObjectMapper().writeValueAsString(res.getWHexGrids());
+        assertTrue(hexGridString.contains("g_builder\":\"plains\""), "HexGrids should use plains builder");
+        assertTrue(hexGridString.contains("enableLakes"), "Plains should have lakes enabled");
+    }
+
+    @Test
+    public void testPlainsBiomeMeadow() throws Exception {
+        log.info("=== Testing Plains Biome with MEADOW variation ===");
+        var res = simpleContinentTest("plains-meadow");
+        var hexGridString = new ObjectMapper().writeValueAsString(res.getWHexGrids());
+        assertTrue(hexGridString.contains("g_builder\":\"plains\""), "HexGrids should use plains builder");
+    }
+
+    @Test
+    public void testDesertBiomeDunes() throws Exception {
+        log.info("=== Testing Desert Biome with DUNES terrain ===");
+        var res = simpleContinentTest("desert-dunes");
+        var hexGridString = new ObjectMapper().writeValueAsString(res.getWHexGrids());
+        assertTrue(hexGridString.contains("g_builder\":\"desert\""), "HexGrids should use desert builder");
+    }
+
+    @Test
+    public void testDesertBiomeBadlands() throws Exception {
+        log.info("=== Testing Desert Biome with BADLANDS terrain ===");
+        var res = simpleContinentTest("desert-badlands");
+        var hexGridString = new ObjectMapper().writeValueAsString(res.getWHexGrids());
+        assertTrue(hexGridString.contains("g_builder\":\"desert\""), "HexGrids should use desert builder");
+        assertTrue(hexGridString.contains("stoneRatio"), "Desert should have stone ratio parameter");
+    }
+
+    @Test
+    public void testSwampBiomeDeep() throws Exception {
+        log.info("=== Testing Swamp Biome with DEEP depth ===");
+        var res = simpleContinentTest("swamp-deep");
+        var hexGridString = new ObjectMapper().writeValueAsString(res.getWHexGrids());
+        assertTrue(hexGridString.contains("g_builder\":\"swamp\""), "HexGrids should use swamp builder");
+        assertTrue(hexGridString.contains("swampDepth"), "Swamp should have depth parameter");
+    }
+
+    @Test
+    public void testSwampBiomeBog() throws Exception {
+        log.info("=== Testing Swamp Biome with BOG depth ===");
+        var res = simpleContinentTest("swamp-bog");
+        var hexGridString = new ObjectMapper().writeValueAsString(res.getWHexGrids());
+        assertTrue(hexGridString.contains("g_builder\":\"swamp\""), "HexGrids should use swamp builder");
+    }
+
+    @Test
+    public void testMarshBiomeTidal() throws Exception {
+        log.info("=== Testing Marsh Biome with TIDAL water level ===");
+        var res = simpleContinentTest("marsh-tidal");
+        var hexGridString = new ObjectMapper().writeValueAsString(res.getWHexGrids());
+        assertTrue(hexGridString.contains("g_builder\":\"swamp\""), "HexGrids should use swamp builder (marsh uses swamp builder)");
+    }
+
+    // ============= GroundType Tests =============
+
+    @Test
+    public void testGroundTypeSnowy() throws Exception {
+        log.info("=== Testing GroundType SNOWY ===");
+        var res = simpleContinentTest("groundtype-snowy");
+        var hexGridString = new ObjectMapper().writeValueAsString(res.getWHexGrids());
+        assertTrue(hexGridString.contains("snowMaterial") || hexGridString.contains("groundType"),
+            "HexGrids should contain snow material or groundType parameter");
+    }
+
+    @Test
+    public void testGroundTypeSandy() throws Exception {
+        log.info("=== Testing GroundType SANDY ===");
+        var res = simpleContinentTest("groundtype-sandy");
+        var hexGridString = new ObjectMapper().writeValueAsString(res.getWHexGrids());
+        assertTrue(hexGridString.contains("desertSandMaterial") || hexGridString.contains("groundType"),
+            "HexGrids should contain desert sand material or groundType parameter");
+    }
+
+    @Test
+    public void testGroundTypeVolcanic() throws Exception {
+        log.info("=== Testing GroundType VOLCANIC ===");
+        var res = simpleContinentTest("groundtype-volcanic");
+        var hexGridString = new ObjectMapper().writeValueAsString(res.getWHexGrids());
+        assertTrue(hexGridString.contains("bedrockMaterial") || hexGridString.contains("groundType"),
+            "HexGrids should contain bedrock material or groundType parameter");
+    }
+
+    @Test
+    public void testGroundTypeIcy() throws Exception {
+        log.info("=== Testing GroundType ICY ===");
+        var res = simpleContinentTest("groundtype-icy");
+        var hexGridString = new ObjectMapper().writeValueAsString(res.getWHexGrids());
+        assertTrue(hexGridString.contains("iceMaterial") || hexGridString.contains("groundType"),
+            "HexGrids should contain ice material or groundType parameter");
+    }
+
+    @Test
+    public void testMountainBiomeSnowy() throws Exception {
+        log.info("=== Testing Mountain Biome with SNOWY groundType ===");
+        var res = simpleContinentTest("mountain-snowy");
+        var hexGridString = new ObjectMapper().writeValueAsString(res.getWHexGrids());
+        assertTrue(hexGridString.contains("g_builder\":\"mountain\""), "HexGrids should use mountain builder");
+        assertTrue(hexGridString.contains("groundType") || hexGridString.contains("snowMaterial"),
+            "HexGrids should contain groundType or snow material");
+    }
+
     public CompositionResult simpleContinentTest(String name) throws Exception {
         log.info("=== Testing %s System ===".formatted(name));
 

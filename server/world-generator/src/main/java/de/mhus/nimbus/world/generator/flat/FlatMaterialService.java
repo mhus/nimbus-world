@@ -21,13 +21,15 @@ public class FlatMaterialService {
     public static final int GRASS = 1;
     public static final int DIRT = 2;
     public static final int STONE = 3;
-    public static final int SAND = 4;
+    public static final int SAND = 4; // Coast Sand
     public static final int WATER = 5;
     public static final int BEDROCK = 6;
     public static final int SNOW = 7;
     public static final int INVISIBLE = 8;
     public static final int INVISIBLE_SOLID = 9;
     public static final int DESERT_SAND = 10;
+    public static final int SWAMP = 11;
+    public static final int ICE = 12;
 
     public static final int STREET = 20;
     public static final int STREET_BORDER = 21;

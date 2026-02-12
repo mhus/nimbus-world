@@ -1,0 +1,32 @@
+{
+  "name": "Mountain Snowy Test",
+  "worldId": "simple-test-mountain-snowy",
+  "continents": [
+    {
+      "continentId": "main-continent",
+      "name": "Main Continent",
+      "biomeType": "MOUNTAINS",
+      "minNeighbors": 2,
+      "parameters": {}
+    }
+  ],
+  "features": [
+    {
+      "featureType": "mountain-biome",
+      "name": "central-mountains",
+      "title": "Central Mountains",
+      "type": "MOUNTAINS",
+      "height": "HIGH_PEAKS",
+      "shape": "CIRCLE",
+      "size": "LARGE",
+      "continentId": "main-continent",
+      "positions": [
+        {"direction": "E", "distanceFrom": 0, "anchor": "origin", "priority": 10}
+      ],
+      "parameters": {
+        "height": "HIGH_PEAKS",
+        "groundType": "SNOWY"
+      }
+    }
+  ]
+}

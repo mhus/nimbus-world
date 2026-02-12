@@ -244,34 +244,169 @@ private MountainHeight height;    // LOW_HILLS, MEDIUM_PEAKS, HIGH_PEAKS, EXTREM
 
 **Feature Type**: `forest-biome`
 **Java Class**: `de.mhus.nimbus.world.generator.composer.biome.ForestBiome`
+**Parent**: `Biome`
 
-**Purpose**: Waldgebiete mit Baum-Dichte-Konfiguration.
+**Purpose**: Waldgebiete mit Baum-Dichte-Konfiguration. Nutzt ForestBuilder für sanft hügeliges Terrain mit GRASS/DIRT Mischung.
 
 **Additional Properties**:
 ```java
-private ForestDensity density;    // SPARSE, NORMAL, DENSE, VERY_DENSE
+private ForestDensity density;    // SPARSE, LIGHT, DENSE, OLD_GROWTH
+private GroundType groundType;    // Material type (DEFAULT, SNOWY, SANDY, etc.)
+```
+
+**ForestDensity Presets**:
+- `SPARSE` (0.4): Lichter Wald, flora_density=0.4, g_offset=3, 10% DIRT
+- `LIGHT` (0.6): Normaler Wald, flora_density=0.6, g_offset=5, 20% DIRT
+- `DENSE` (0.8): Dichter Wald, flora_density=0.8, g_offset=5, 30% DIRT [Default]
+- `OLD_GROWTH` (0.9): Urwald, flora_density=0.9, g_offset=7, 40% DIRT
+
+**Example JSON**:
+```json
+{
+  "featureType": "forest-biome",
+  "name": "ancient-forest",
+  "type": "FOREST",
+  "density": "OLD_GROWTH",
+  "groundType": "DEFAULT",
+  "shape": "CIRCLE",
+  "size": "LARGE"
+}
 ```
 
 #### PlainsBiome
 
 **Feature Type**: `plains-biome`
 **Java Class**: `de.mhus.nimbus.world.generator.composer.biome.PlainsBiome`
+**Parent**: `Biome`
 
-**Purpose**: Ebenen und Grasland.
+**Purpose**: Ebenes Grasland mit optionalen Seen. Nutzt PlainsBuilder für sehr flaches Terrain mit GRASS/DIRT Oberfläche.
+
+**Additional Properties**:
+```java
+private PlainsVariation variation; // FLAT, ROLLING, MEADOW, STEPPE
+private GroundType groundType;     // Material type (DEFAULT, GRASSY, etc.)
+```
+
+**PlainsVariation Presets**:
+- `FLAT` (g_offset=2): Fast flach, 5% DIRT, keine Seen
+- `ROLLING` (g_offset=5): Sanft hügelig, 10% DIRT, Seen aktiv [Default]
+- `MEADOW` (g_offset=7): Variierte Wiesen, 15% DIRT, Seen aktiv, tiefer
+- `STEPPE` (g_offset=4): Trockenes Grasland, 20% DIRT, keine Seen, höher gelegen
+
+**Example JSON**:
+```json
+{
+  "featureType": "plains-biome",
+  "name": "green-meadows",
+  "type": "PLAINS",
+  "variation": "MEADOW",
+  "groundType": "GRASSY",
+  "shape": "CIRCLE",
+  "size": "LARGE",
+  "parameters": {
+    "lakeDepth": "5"
+  }
+}
+```
 
 #### DesertBiome
 
 **Feature Type**: `desert-biome`
 **Java Class**: `de.mhus.nimbus.world.generator.composer.biome.DesertBiome`
+**Parent**: `Biome`
 
-**Purpose**: Wüsten und trockene Gebiete.
+**Purpose**: Wüsten und trockene Gebiete. Nutzt DesertBuilder für sandiges Terrain mit gelegentlichen Felsformationen.
+
+**Additional Properties**:
+```java
+private DesertTerrain terrain;    // FLAT, DUNES, ROCKY, BADLANDS
+private GroundType groundType;    // Material type (DEFAULT, SANDY, etc.)
+```
+
+**DesertTerrain Presets**:
+- `FLAT` (g_offset=5): Flache Wüstenebene, 10% Stein
+- `DUNES` (g_offset=15): Sanddünen, 30% Stein [Default]
+- `ROCKY` (g_offset=18): Felsige Wüste, 50% Stein
+- `BADLANDS` (g_offset=20): Erosionslandschaft, 70% Stein
+
+**Example JSON**:
+```json
+{
+  "featureType": "desert-biome",
+  "name": "red-badlands",
+  "type": "DESERT",
+  "terrain": "BADLANDS",
+  "groundType": "SANDY",
+  "shape": "CIRCLE",
+  "size": "LARGE"
+}
+```
 
 #### SwampBiome
 
 **Feature Type**: `swamp-biome`
 **Java Class**: `de.mhus.nimbus.world.generator.composer.biome.SwampBiome`
+**Parent**: `Biome`
 
-**Purpose**: Sumpfgebiete und Feuchtgebiete.
+**Purpose**: Sumpfgebiete mit wassergefüllten Tälern. Nutzt SwampBuilder für niedriges Terrain mit automatischer Wasser-Füllung in abgeschlossenen Tälern.
+
+**Additional Properties**:
+```java
+private SwampDepth depth;         // SHALLOW, MEDIUM, DEEP, BOG
+private GroundType groundType;    // Material type (SWAMPY, etc.)
+```
+
+**SwampDepth Presets**:
+- `SHALLOW` (swampDepth=2): Flache Pfützen, g_offset=8
+- `MEDIUM` (swampDepth=3): Mittlere Pools, g_offset=10 [Default]
+- `DEEP` (swampDepth=5): Tiefe Wasserbecken, g_offset=12
+- `BOG` (swampDepth=4): Moor, sehr niedrig (g_asl=3), g_offset=6
+
+**Example JSON**:
+```json
+{
+  "featureType": "swamp-biome",
+  "name": "deep-marshlands",
+  "type": "SWAMP",
+  "depth": "DEEP",
+  "groundType": "SWAMPY",
+  "shape": "CIRCLE",
+  "size": "MEDIUM"
+}
+```
+
+#### MarshBiome
+
+**Feature Type**: `marsh-biome`
+**Java Class**: `de.mhus.nimbus.world.generator.composer.biome.MarshBiome`
+**Parent**: `Biome`
+
+**Purpose**: Flaches Marschland nahe Meeresspiegel. Nutzt SwampBuilder mit niedrigerer Höhe und offeneren Wasserflächen als Swamp.
+
+**Additional Properties**:
+```java
+private MarshWaterLevel waterLevel; // TIDAL, COASTAL, INLAND, WETLAND
+private GroundType groundType;      // Material type (SWAMPY, etc.)
+```
+
+**MarshWaterLevel Presets**:
+- `TIDAL` (swampDepth=2): Fast auf Meereshöhe, g_asl=1, g_offset=4
+- `COASTAL` (swampDepth=3): Nahe Meeresspiegel, g_asl=2, g_offset=5 [Default]
+- `INLAND` (swampDepth=4): Leicht erhöht, g_asl=4, g_offset=7
+- `WETLAND` (swampDepth=5): Höher gelegen, g_asl=6, g_offset=9
+
+**Example JSON**:
+```json
+{
+  "featureType": "marsh-biome",
+  "name": "tidal-flats",
+  "type": "MARSH",
+  "waterLevel": "TIDAL",
+  "groundType": "SWAMPY",
+  "shape": "RECTANGLE",
+  "size": "LARGE"
+}
+```
 
 #### CoastBiome
 
@@ -796,17 +931,88 @@ Controls how flows deviate from straight lines (creates curves).
 }
 ```
 
-### 5.8 Parameters Map
+### 5.8 GroundType (Material Presets)
+
+**Purpose**: `GroundType` definiert Material-Presets für verschiedene Bodentypen. Jedes Preset legt fest, welche Materialien für unterschiedliche Höhenbereiche verwendet werden.
+
+**Enum Values**:
+
+| GroundType | Description | Surface Materials |
+|------------|-------------|-------------------|
+| `DEFAULT` | Standard materials | SAND, GRASS, DIRT, STONE, SNOW |
+| `SNOWY` | Snow-covered terrain | All elevations covered in SNOW |
+| `SANDY` | Desert-like terrain | DESERT_SAND everywhere, STONE at peaks |
+| `GRASSY` | Lush grasslands | GRASS at all elevations |
+| `STONY` | Rocky terrain | STONE everywhere |
+| `SWAMPY` | Muddy wetlands | SWAMP material (muddy/wet) |
+| `VOLCANIC` | Dark volcanic rock | BEDROCK and STONE |
+| `ICY` | Frozen landscape | ICE material with SNOW peaks |
+
+**Material Zones** (from low to high elevation):
+1. **sandMaterial**: At/below ocean level
+2. **grassMaterial**: Low elevations above ocean
+3. **dirtMaterial**: Medium elevations
+4. **stoneMaterial**: High elevations
+5. **snowMaterial**: Peaks/highest points
+
+**Usage in Biome**:
+```json
+{
+  "featureType": "mountain-biome",
+  "name": "snowy-peaks",
+  "height": "HIGH_PEAKS",
+  "groundType": "SNOWY"
+}
+```
+
+**Usage in Builder Parameters**:
+```json
+{
+  "parameters": {
+    "groundType": "VOLCANIC",
+    "g_asl": "100"
+  }
+}
+```
+
+**Override Individual Materials**:
+You can still override individual materials even with a groundType:
+```json
+{
+  "parameters": {
+    "groundType": "SANDY",
+    "stoneMaterial": "BEDROCK"
+  }
+}
+```
+
+**Available in Builders**: MountainBuilder, ForestBuilder, DesertBuilder, PlainsBuilder, SwampBuilder
+
+### 5.9 Parameters Map
 
 Custom key-value parameters für Terrain Generation.
 
 **Common Parameters**:
-- `g_builder`: Builder type ("plains", "forest", "mountains", etc.)
+- `g_builder`: Builder type ("plains", "forest", "mountains", "desert", "swamp")
 - `g_asl`: Above sea level (base height)
 - `g_offset`: Height variation
 - `g_roughness`: Terrain roughness (0.0-1.0)
-- `g_treeType`: Tree type for forests
-- `g_treeDensity`: Tree density (0.0-1.0)
+- `g_frequency`: Noise frequency (0.0-1.0)
+- `groundType`: Material preset (DEFAULT, SNOWY, SANDY, GRASSY, STONY, SWAMPY, VOLCANIC, ICY)
+
+**Material Parameters** (overrides groundType):
+- `sandMaterial`: Material for ocean level (SAND, DESERT_SAND, etc.)
+- `grassMaterial`: Material for low elevation (GRASS, DIRT, SWAMP, ICE, etc.)
+- `dirtMaterial`: Material for medium elevation
+- `stoneMaterial`: Material for high elevation (STONE, BEDROCK, etc.)
+- `snowMaterial`: Material for peaks (SNOW, STONE, etc.)
+
+**Biome-Specific Parameters**:
+- **Forest**: `dirtRatio` (0.0-1.0, default: 0.3)
+- **Desert**: `dirtRatio` (0.0-1.0, default: 0.05), `stoneRatio` (0.0-1.0, default: 0.3)
+- **Plains**: `dirtRatio` (0.0-1.0, default: 0.1), `enableLakes` (true/false), `lakeDepth` (blocks)
+- **Swamp**: `swampDepth` (blocks, default: 3)
+- **Mountain**: `stoneOffset` (blocks, default: 20), `snowOffset` (blocks, default: 50)
 
 **Example**:
 ```json
@@ -814,7 +1020,9 @@ Custom key-value parameters für Terrain Generation.
   "parameters": {
     "g_asl": "10",
     "g_offset": "15",
-    "g_roughness": "0.8"
+    "g_frequency": "0.8",
+    "groundType": "VOLCANIC",
+    "dirtRatio": "0.2"
   }
 }
 ```
@@ -1379,13 +1587,53 @@ private boolean connectionPoint;    // Is this a connection point for external r
 ## 9. Appendix: Enum Reference
 
 ### BiomeType
-`PLAINS`, `FOREST`, `MOUNTAINS`, `DESERT`, `SWAMP`, `COAST`, `OCEAN`, `ISLAND`
+`PLAINS`, `FOREST`, `MOUNTAINS`, `DESERT`, `SWAMP`, `MARSH`, `COAST`, `OCEAN`, `ISLAND`, `TOWN`
 
 ### MountainHeight
-HIGH_PEAKS (120, 40, 20, 0.8), MEDIUM_PEAKS (100, 30, 15, 0.8), LOW_PEAKS (80, 20, 10, 0.7), MEADOW (60, 10, 5, 0.6)
+- `HIGH_PEAKS`: landLevel=120, landOffset=40, ridgeOffset=20, frequency=0.8
+- `MEDIUM_PEAKS`: landLevel=100, landOffset=30, ridgeOffset=15, frequency=0.8
+- `LOW_PEAKS`: landLevel=80, landOffset=20, ridgeOffset=10, frequency=0.7
+- `MEADOW`: landLevel=60, landOffset=10, ridgeOffset=5, frequency=0.6
 
 ### ForestDensity
-`SPARSE`, `NORMAL`, `DENSE`, `VERY_DENSE`
+- `SPARSE`: floraDensity=0.4, landOffset=3, dirtRatio=0.1
+- `LIGHT`: floraDensity=0.6, landOffset=5, dirtRatio=0.2
+- `DENSE`: floraDensity=0.8, landOffset=5, dirtRatio=0.3
+- `OLD_GROWTH`: floraDensity=0.9, landOffset=7, dirtRatio=0.4
+
+### PlainsVariation
+- `FLAT`: landOffset=2, enableLakes=false, dirtRatio=0.05
+- `ROLLING`: landOffset=5, enableLakes=true, dirtRatio=0.1
+- `MEADOW`: landOffset=7, enableLakes=true, lakeDepth=5, dirtRatio=0.15
+- `STEPPE`: landOffset=4, enableLakes=false, dirtRatio=0.2, asl=20
+
+### DesertTerrain
+- `FLAT`: landOffset=5, stoneRatio=0.1, dirtRatio=0.05
+- `DUNES`: landOffset=15, stoneRatio=0.3, dirtRatio=0.05
+- `ROCKY`: landOffset=18, stoneRatio=0.5, dirtRatio=0.1
+- `BADLANDS`: landOffset=20, stoneRatio=0.7, dirtRatio=0.15
+
+### SwampDepth
+- `SHALLOW`: swampDepth=2, asl=5, landOffset=8
+- `MEDIUM`: swampDepth=3, asl=5, landOffset=10
+- `DEEP`: swampDepth=5, asl=5, landOffset=12
+- `BOG`: swampDepth=4, asl=3, landOffset=6
+
+### MarshWaterLevel
+- `TIDAL`: swampDepth=2, asl=1, landOffset=4
+- `COASTAL`: swampDepth=3, asl=2, landOffset=5
+- `INLAND`: swampDepth=4, asl=4, landOffset=7
+- `WETLAND`: swampDepth=5, asl=6, landOffset=9
+
+### GroundType (Material Presets)
+- `DEFAULT`: Standard materials (SAND, GRASS, DIRT, STONE, SNOW)
+- `SNOWY`: All snow-covered (SNOW everywhere)
+- `SANDY`: Desert terrain (DESERT_SAND, STONE)
+- `GRASSY`: Lush grassland (GRASS everywhere)
+- `STONY`: Rocky terrain (STONE everywhere)
+- `SWAMPY`: Muddy wetland (SWAMP material)
+- `VOLCANIC`: Volcanic rock (BEDROCK, STONE)
+- `ICY`: Frozen landscape (ICE, SNOW)
 
 ### AreaShape
 `CIRCLE`, `LINE`, `RECTANGLE`

@@ -51,6 +51,12 @@ public class MountainBiome extends Biome {
     private MountainHeight height;
 
     /**
+     * Ground material type for this mountain biome.
+     * Determines which materials are used for different elevations.
+     */
+    private GroundType groundType;
+
+    /**
      * Mountain height presets with land level and offset values.
      * Formula: maxLevel = landLevel + oceanLevel + landOffset (terrain)
      *          ridgeLevel = landLevel + oceanLevel + landOffset + ridgeOffset (peaks)
@@ -115,8 +121,14 @@ public class MountainBiome extends Biome {
         getParameters().put("g_offset", String.valueOf(height.getLandOffset()));
         getParameters().put("g_frequency", String.valueOf(height.getFrequency()));
 
-        log.debug("Applied MountainBiome defaults for '{}': height={}, landLevel={}, landOffset={}",
-            getName(), height, height.getAboveSeaLevel(), height.getLandOffset());
+        // Apply ground type materials if specified
+        if (groundType == null) {
+            groundType = GroundType.DEFAULT;
+        }
+        groundType.applyToParameters(getParameters());
+
+        log.debug("Applied MountainBiome defaults for '{}': height={}, landLevel={}, landOffset={}, groundType={}",
+            getName(), height, height.getAboveSeaLevel(), height.getLandOffset(), groundType);
     }
 
     /**

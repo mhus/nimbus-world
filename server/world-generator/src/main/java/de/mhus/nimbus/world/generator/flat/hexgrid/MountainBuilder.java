@@ -35,6 +35,18 @@ import java.util.Map;
  * <p>
  * Optional parameters:
  * - ridgeWidth: Width of ridge effect in pixels (default: 200)
+ * - stoneOffset: Height offset from ocean level where stone starts (default: 20)
+ * - snowOffset: Height offset from ocean level where snow starts (default: 50)
+ * - sandMaterial: Material for areas at/below ocean level (default: SAND or 4)
+ * - grassMaterial: Material for low elevations (default: GRASS or 1)
+ * - stoneMaterial: Material for medium elevations (default: STONE or 3)
+ * - snowMaterial: Material for high elevations (default: SNOW or 7)
+ *
+ *   Material-Logik:
+ *   - sandMaterial: level ≤ oceanLevel
+ *   - grassMaterial: oceanLevel < level < (oceanLevel + stoneOffset)
+ *   - stoneMaterial: (oceanLevel + stoneOffset) ≤ level < (oceanLevel + snowOffset)
+ *   - snowMaterial: level ≥ (oceanLevel + snowOffset)
  */
 @Slf4j
 public class MountainBuilder extends HexGridBuilder {
@@ -275,14 +287,40 @@ public class MountainBuilder extends HexGridBuilder {
     /**
      * Set materials based on height.
      * Higher elevations get stone, lower elevations get grass.
+     * <p>
+     * Optional parameters:
+     * - groundType: Ground type preset (DEFAULT, SNOWY, SANDY, GRASSY, STONY, SWAMPY, VOLCANIC, ICY)
+     * - stoneOffset: Height offset from ocean level where stone starts (default: 20)
+     * - snowOffset: Height offset from ocean level where snow starts (default: 50)
+     * - sandMaterial: Material for areas at/below ocean level (default: SAND or 4)
+     * - grassMaterial: Material for low elevations (default: GRASS or 1)
+     * - stoneMaterial: Material for medium elevations (default: STONE or 3)
+     * - snowMaterial: Material for high elevations (default: SNOW or 7)
      */
     private void setMountainMaterials(WFlat flat, int oceanLevel) {
         int sizeX = flat.getSizeX();
         int sizeZ = flat.getSizeZ();
 
-        // Calculate material thresholds
-        int grassToStoneThreshold = oceanLevel + 20;  // Stone starts 20 above ocean level
-        int snowThreshold = oceanLevel + 50;          // Snow starts 50 above ocean level
+        // Apply ground type if specified (overrides individual material settings)
+        applyGroundTypeIfPresent();
+
+        // Get material thresholds from parameters (with defaults)
+        int stoneOffset = parseIntParameter(parameters, "stoneOffset", 20);
+        int snowOffset = parseIntParameter(parameters, "snowOffset", 50);
+
+        // Get materials from parameters (with defaults)
+        int sandMaterial = parseMaterialParameter(parameters, "sandMaterial", FlatMaterialService.SAND);
+        int grassMaterial = parseMaterialParameter(parameters, "grassMaterial", FlatMaterialService.GRASS);
+        int stoneMaterial = parseMaterialParameter(parameters, "stoneMaterial", FlatMaterialService.STONE);
+        int snowMaterial = parseMaterialParameter(parameters, "snowMaterial", FlatMaterialService.SNOW);
+
+        int grassToStoneThreshold = oceanLevel + stoneOffset;
+        int snowThreshold = oceanLevel + snowOffset;
+
+        log.debug("Material thresholds: stone={}, snow={} (oceanLevel={})",
+                grassToStoneThreshold, snowThreshold, oceanLevel);
+        log.debug("Materials: sand={}, grass={}, stone={}, snow={}",
+                sandMaterial, grassMaterial, stoneMaterial, snowMaterial);
 
         for (int z = 0; z < sizeZ; z++) {
             for (int x = 0; x < sizeX; x++) {
@@ -290,13 +328,13 @@ public class MountainBuilder extends HexGridBuilder {
 
                 int material;
                 if (level >= snowThreshold) {
-                    material = FlatMaterialService.SNOW;
+                    material = snowMaterial;
                 } else if (level >= grassToStoneThreshold) {
-                    material = FlatMaterialService.STONE;
+                    material = stoneMaterial;
                 } else if (level <= oceanLevel) {
-                    material = FlatMaterialService.SAND;
+                    material = sandMaterial;
                 } else {
-                    material = FlatMaterialService.GRASS;
+                    material = grassMaterial;
                 }
 
                 flat.setColumn(x, z, material);
@@ -359,6 +397,92 @@ public class MountainBuilder extends HexGridBuilder {
         } catch (NumberFormatException e) {
             log.warn("Invalid int parameter '{}': {}, using default: {}", name, parameters.get(name), defaultValue);
             return defaultValue;
+        }
+    }
+
+    /**
+     * Parse material parameter. Accepts either material name (e.g. "SNOW", "GRASS") or material ID (e.g. "7", "1").
+     */
+    private int parseMaterialParameter(Map<String, String> parameters, String name, int defaultValue) {
+        if (parameters == null || !parameters.containsKey(name)) {
+            return defaultValue;
+        }
+
+        String value = parameters.get(name);
+        if (value == null || value.isBlank()) {
+            return defaultValue;
+        }
+
+        // Try to parse as integer first
+        try {
+            int materialId = Integer.parseInt(value);
+            if (materialId >= 0 && materialId <= 255) {
+                return materialId;
+            }
+            log.warn("Material ID out of range (0-255) for '{}': {}, using default: {}", name, value, defaultValue);
+            return defaultValue;
+        } catch (NumberFormatException e) {
+            // Not a number, try to parse as material name
+            return parseMaterialName(value, name, defaultValue);
+        }
+    }
+
+    /**
+     * Parse material name to material ID.
+     */
+    private int parseMaterialName(String name, String paramName, int defaultValue) {
+        switch (name.toUpperCase().trim()) {
+            case "GRASS":
+                return FlatMaterialService.GRASS;
+            case "DIRT":
+                return FlatMaterialService.DIRT;
+            case "STONE":
+                return FlatMaterialService.STONE;
+            case "SAND":
+                return FlatMaterialService.SAND;
+            case "WATER":
+                return FlatMaterialService.WATER;
+            case "BEDROCK":
+                return FlatMaterialService.BEDROCK;
+            case "SNOW":
+                return FlatMaterialService.SNOW;
+            case "INVISIBLE":
+                return FlatMaterialService.INVISIBLE;
+            case "INVISIBLE_SOLID":
+                return FlatMaterialService.INVISIBLE_SOLID;
+            case "DESERT_SAND":
+                return FlatMaterialService.DESERT_SAND;
+            case "SWAMP":
+                return FlatMaterialService.SWAMP;
+            case "ICE":
+                return FlatMaterialService.ICE;
+            default:
+                log.warn("Unknown material name for '{}': {}, using default: {}", paramName, name, defaultValue);
+                return defaultValue;
+        }
+    }
+
+    /**
+     * Apply ground type materials if groundType parameter is present.
+     * This allows direct specification of ground type in builder parameters.
+     */
+    private void applyGroundTypeIfPresent() {
+        if (parameters == null || !parameters.containsKey("groundType")) {
+            return;
+        }
+
+        String groundTypeStr = parameters.get("groundType");
+        if (groundTypeStr == null || groundTypeStr.isBlank()) {
+            return;
+        }
+
+        try {
+            de.mhus.nimbus.world.generator.composer.biome.GroundType groundType =
+                de.mhus.nimbus.world.generator.composer.biome.GroundType.valueOf(groundTypeStr.toUpperCase());
+            groundType.applyToParameters(parameters);
+            log.debug("Applied ground type: {}", groundType);
+        } catch (IllegalArgumentException e) {
+            log.warn("Invalid ground type '{}', using defaults", groundTypeStr);
         }
     }
 

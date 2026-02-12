@@ -35,10 +35,10 @@ public class HexGridBuilderService {
         builderRegistry.put("island", IslandBuilder.class);
         builderRegistry.put("coast", CoastBuilder.class);
         builderRegistry.put("mountain", MountainBuilder.class);
-//        builderRegistry.put("plains", PlainsBuilder.class);
-//        builderRegistry.put("desert", DesertBuilder.class);
-//        builderRegistry.put("forest", ForestBuilder.class);
-//        builderRegistry.put("swamp", SwampBuilder.class);
+        builderRegistry.put("swamp", SwampBuilder.class);
+        builderRegistry.put("forest", ForestBuilder.class);
+        builderRegistry.put("desert", DesertBuilder.class);
+        builderRegistry.put("plains", PlainsBuilder.class);
 
         // Manipulator builders
         manipulatorRegistry.put("g_edgeblender", EdgeBlenderBuilder.class);

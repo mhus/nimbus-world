@@ -1,0 +1,30 @@
+{
+  "name": "Desert Dunes Test",
+  "worldId": "simple-test-desert-dunes",
+  "continents": [
+    {
+      "continentId": "main-continent",
+      "name": "Main Continent",
+      "biomeType": "MOUNTAINS",
+      "minNeighbors": 2,
+      "parameters": {}
+    }
+  ],
+  "features": [
+    {
+      "featureType": "biome",
+      "name": "central-desert",
+      "title": "Central Desert",
+      "type": "DESERT",
+      "shape": "CIRCLE",
+      "size": "LARGE",
+      "continentId": "main-continent",
+      "positions": [
+        {"direction": "E", "distanceFrom": 0, "anchor": "origin", "priority": 10}
+      ],
+      "parameters": {
+        "terrain": "DUNES"
+      }
+    }
+  ]
+}
