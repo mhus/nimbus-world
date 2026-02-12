@@ -41,24 +41,17 @@ public class CompositionResult {
     private int generatedWHexGrids;
 
     /**
-     * Returns all WHexGrids from the fill result (if filling was enabled).
-     * Note: FilledHexGrid has been replaced by central FeatureHexGrid registry.
+     * WHexGrids created from Central Registry by HexCompositeBuilder.
+     * These are created from FeatureHexGrids and ready for persistence.
      */
-    public List<de.mhus.nimbus.world.shared.world.WHexGrid> getAllGrids() {
-        if (fillResult != null) {
-            return fillResult.getAllGrids();
-        }
-        return new ArrayList<>();
-    }
+    private List<de.mhus.nimbus.world.shared.world.WHexGrid> wHexGrids;
 
     /**
-     * Returns all WHexGrids from placement result
+     * Returns all WHexGrids created during composition.
+     * Same as getAllGrids().
      */
     public List<de.mhus.nimbus.world.shared.world.WHexGrid> getWHexGrids() {
-        if (biomePlacementResult != null) {
-            return biomePlacementResult.getHexGrids();
-        }
-        return new ArrayList<>();
+        return wHexGrids != null ? wHexGrids : new ArrayList<>();
     }
 
     /**

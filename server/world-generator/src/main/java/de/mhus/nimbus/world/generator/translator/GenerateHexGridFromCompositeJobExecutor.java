@@ -99,34 +99,36 @@ public class GenerateHexGridFromCompositeJobExecutor implements JobExecutor {
             // Override worldId with the one from job context (defensive programming)
             composition.setWorldId(job.getWorldId());
 
-            log.info("Loaded enriched composition: name='{}', worldId='{}', filledHexGrids={}",
+            log.info("Loaded enriched composition: name='{}', worldId='{}', featureHexGrids={}",
                     composition.getName(),
                     composition.getWorldId(),
-                    composition.getFilledHexGrids() != null ? composition.getFilledHexGrids().size() : 0);
+                    composition.getFeatureHexGridRegistry() != null ? composition.getFeatureHexGridRegistry().size() : 0);
 
-            // Step 3: Create WHexGrids from FilledHexGrids in composition
-            // The composition already contains fully composed FilledHexGrids with WHexGrid instances
-            // We just need to persist them to the database
+            // Step 3: Create WHexGrids from FeatureHexGrids in Central Registry
+            // The composition contains FeatureHexGrids in the central registry
+            // We create WHexGrids from them and persist to the database
 
-            if (composition.getFilledHexGrids() == null || composition.getFilledHexGrids().isEmpty()) {
-                log.warn("No FilledHexGrids found in composition - falling back to Feature-based approach");
-                return JobResult.failure("No FilledHexGrids found in composition");
+            if (composition.getFeatureHexGridRegistry() == null || composition.getFeatureHexGridRegistry().isEmpty()) {
+                log.warn("No FeatureHexGrids found in Central Registry");
+                return JobResult.failure("No FeatureHexGrids found in composition - cannot generate WHexGrids");
             }
 
             int createdGrids = 0;
             int updatedGrids = 0;
             Set<String> allCoordinateStrings = new HashSet<>();
 
-            // Process all FilledHexGrids from composition
-            for (var filledHexGrid : composition.getFilledHexGrids()) {
-                HexVector2 coord = filledHexGrid.getCoordinate();
+            // Process all FeatureHexGrids from Central Registry
+            for (var featureHexGrid : composition.getFeatureHexGridRegistry().values()) {
+                HexVector2 coord = featureHexGrid.getCoordinate();
                 String position = coord.getQ() + ";" + coord.getR();
                 allCoordinateStrings.add(position);
 
-                // Get WHexGrid from FilledHexGrid (already has all parameters)
-                de.mhus.nimbus.world.shared.world.WHexGrid sourceGrid = filledHexGrid.getHexGrid();
+                // Create WHexGrid from FeatureHexGrid
+                de.mhus.nimbus.world.shared.world.WHexGrid sourceGrid = createWHexGridFromFeatureHexGrid(
+                    featureHexGrid, composition.getWorldId());
+
                 if (sourceGrid == null || sourceGrid.getParameters() == null) {
-                    log.warn("FilledHexGrid at {} has no WHexGrid or parameters, skipping", position);
+                    log.warn("Failed to create WHexGrid from FeatureHexGrid at {}, skipping", position);
                     continue;
                 }
 
@@ -275,12 +277,12 @@ public class GenerateHexGridFromCompositeJobExecutor implements JobExecutor {
             // Build success result
             Map<String, Object> resultData = new HashMap<>();
             resultData.put("coordinates", coordinatesStr);
-            resultData.put("gridCount", composition.getFilledHexGrids().size());
+            resultData.put("gridCount", composition.getFeatureHexGridRegistry().size());
             resultData.put("createdGrids", createdGrids);
             resultData.put("updatedGrids", updatedGrids);
 
             log.info("GenerateHexGridFromComposite completed: gridCount={}, created={}, updated={}",
-                    composition.getFilledHexGrids().size(), createdGrids, updatedGrids);
+                    composition.getFeatureHexGridRegistry().size(), createdGrids, updatedGrids);
 
             return JobResult.success(resultData);
 
@@ -396,5 +398,40 @@ public class GenerateHexGridFromCompositeJobExecutor implements JobExecutor {
             case WEST -> HexVector2.builder().q(q - 1).r(r).build();
             case NORTH_WEST -> HexVector2.builder().q(q).r(r - 1).build();
         };
+    }
+
+    /**
+     * Creates a WHexGrid from a FeatureHexGrid (from Central Registry).
+     * This method is analogous to HexCompositeBuilder.createWHexGridFromFeatureHexGrid.
+     */
+    private de.mhus.nimbus.world.shared.world.WHexGrid createWHexGridFromFeatureHexGrid(
+        de.mhus.nimbus.world.generator.composer.feature.FeatureHexGrid featureHexGrid,
+        String worldId) {
+
+        HexVector2 coord = featureHexGrid.getCoordinate();
+
+        // Create public HexGrid data
+        de.mhus.nimbus.generated.types.HexGrid publicData = new de.mhus.nimbus.generated.types.HexGrid();
+        publicData.setPosition(coord);
+        publicData.setName(featureHexGrid.getName());
+        publicData.setDescription(featureHexGrid.getDescription());
+
+        // Copy all parameters from FeatureHexGrid
+        Map<String, String> parameters = new HashMap<>();
+        if (featureHexGrid.getParameters() != null) {
+            parameters.putAll(featureHexGrid.getParameters());
+        }
+
+        // Add debug text overlay with coordinates
+        String coordText = coord.getQ() + "," + coord.getR();
+        parameters.put("debugText", coordText);
+
+        return de.mhus.nimbus.world.shared.world.WHexGrid.builder()
+            .worldId(worldId)
+            .position(de.mhus.nimbus.shared.utils.TypeUtil.toStringHexCoord(coord.getQ(), coord.getR()))
+            .publicData(publicData)
+            .parameters(parameters)
+            .enabled(true)
+            .build();
     }
 }

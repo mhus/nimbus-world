@@ -26,7 +26,6 @@ public class TownDebugOverlayHelper {
      * - Adds a TextOverlay with the slot name below the cross
      *
      * @param creator The HexGridCompositeImageCreator to add overlays to
-     * @param hexGrids Map of hex coordinates to WHexGrid objects containing g_village parameters
      */
     public static void addVillageSlotOverlays(HexGridCompositeImageCreator creator,
                                                Map<de.mhus.nimbus.generated.types.HexVector2,

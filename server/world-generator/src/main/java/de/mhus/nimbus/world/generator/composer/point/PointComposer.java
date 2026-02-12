@@ -182,16 +182,11 @@ public class PointComposer {
             }
         }
 
-        // Build hex grid map
+        // NOTE: WHexGrids are no longer available at this stage
+        // They will be created later by HexGridGenerator from Central Registry
+        // For now, use empty map (PointComposer should work with Central Registry instead)
         Map<String, WHexGrid> hexGridMap = new HashMap<>();
-        if (placementResult.getHexGrids() != null) {
-            for (WHexGrid grid : placementResult.getHexGrids()) {
-                if (grid.getPublicData() != null && grid.getPublicData().getPosition() != null) {
-                    String coordKey = TypeUtil.toStringHexCoord(grid.getPublicData().getPosition());
-                    hexGridMap.put(coordKey, grid);
-                }
-            }
-        }
+        List<WHexGrid> hexGrids = new ArrayList<>();
 
         return ComposeContext.builder()
             .composition(composition)
@@ -200,8 +195,8 @@ public class PointComposer {
             .biomeMap(biomeMap)
             .biomeCenterMap(biomeCenterMap)
             .coordinateToBiomeMap(coordinateToBiomeMap)
-            .hexGrids(placementResult.getHexGrids())
-            .hexGridMap(hexGridMap)
+            .hexGrids(hexGrids)  // Empty - WHexGrids created later by HexGridGenerator
+            .hexGridMap(hexGridMap)  // Empty
             .build();
     }
 

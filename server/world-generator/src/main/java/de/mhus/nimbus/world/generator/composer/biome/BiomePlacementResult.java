@@ -1,7 +1,6 @@
 package de.mhus.nimbus.world.generator.composer.biome;
 
 import de.mhus.nimbus.world.generator.composer.build.HexComposition;
-import de.mhus.nimbus.world.shared.world.WHexGrid;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -10,7 +9,9 @@ import lombok.NoArgsConstructor;
 import java.util.List;
 
 /**
- * Result of biome composition process
+ * Result of biome composition process.
+ * Note: WHexGrids are no longer included here - they are created later by HexGridGenerator
+ * from FeatureHexGrids in the Central Registry.
  */
 @Data
 @Builder
@@ -18,7 +19,7 @@ import java.util.List;
 @AllArgsConstructor
 public class BiomePlacementResult {
     /**
-     * The original prepared composition
+     * The original prepared composition (contains FeatureHexGrids in Central Registry)
      */
     private HexComposition composition;
 
@@ -26,11 +27,6 @@ public class BiomePlacementResult {
      * Successfully placed biomes
      */
     private List<PlacedBiome> placedBiomes;
-
-    /**
-     * Generated HexGrids with configuration
-     */
-    private List<WHexGrid> hexGrids;
 
     /**
      * Number of retries needed

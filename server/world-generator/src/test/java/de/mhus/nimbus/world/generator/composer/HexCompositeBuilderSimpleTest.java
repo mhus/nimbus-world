@@ -7,6 +7,7 @@ import de.mhus.nimbus.shared.utils.TypeUtil;
 import de.mhus.nimbus.world.generator.composer.biome.BiomeType;
 import de.mhus.nimbus.world.generator.composer.build.CompositionResult;
 import de.mhus.nimbus.world.generator.composer.biome.Continent;
+import de.mhus.nimbus.world.generator.composer.build.MapFlatProvider;
 import de.mhus.nimbus.world.generator.composer.image.CrossOverlay;
 import de.mhus.nimbus.world.generator.composer.flow.FlowComposer;
 import de.mhus.nimbus.world.generator.composer.build.HexCompositeBuilder;
@@ -107,27 +108,38 @@ public class HexCompositeBuilderSimpleTest {
 
     @Test
     public void testSimpleRoad() throws Exception {
-        simpleContinentTest("road");
+        var res = simpleContinentTest("road");
+        var hexGridString = new ObjectMapper().writeValueAsString(res.getWHexGrids());
+        assertTrue(hexGridString.contains("g_road"), "HexGrids should contain road parameters");
     }
 
     @Test
     public void testSimpleRiverRoad() throws Exception {
-        simpleContinentTest("river-road");
+        var res = simpleContinentTest("river-road");
+        var hexGridString = new ObjectMapper().writeValueAsString(res.getWHexGrids());
+        assertTrue(hexGridString.contains("g_road"), "HexGrids should contain road parameters");
+        assertTrue(hexGridString.contains("g_river"), "HexGrids should contain river parameters");
     }
 
     @Test
     public void testSimpleWall() throws Exception {
-        simpleContinentTest("wall");
+        var res = simpleContinentTest("wall");
+        var hexGridString = new ObjectMapper().writeValueAsString(res.getWHexGrids());
+        assertTrue(hexGridString.contains("g_wall"), "HexGrids should contain wall parameters");
     }
 
     @Test
     public void testSimpleSmallTown() throws Exception {
-        simpleContinentTest("small-town");
+        var res = simpleContinentTest("small-town");
+        var hexGridString = new ObjectMapper().writeValueAsString(res.getWHexGrids());
+        assertTrue(hexGridString.contains("g_village"), "HexGrids should contain village parameters");
     }
 
     @Test
     public void testSimpleVillagePoint() throws Exception {
-        simpleContinentTest("village-point");
+        var res = simpleContinentTest("village-point");
+        var hexGridString = new ObjectMapper().writeValueAsString(res.getWHexGrids());
+        assertTrue(hexGridString.contains("g_village"), "HexGrids should contain village parameters");
     }
 
     public CompositionResult simpleContinentTest(String name) throws Exception {
@@ -221,7 +233,8 @@ public class HexCompositeBuilderSimpleTest {
         Map<String, WHexGrid> grids = new HashMap<>();
         HexGridFillResult fillResult = result.getFillResult();
 
-        var allGrids = fillResult.getAllGrids(); // Now returns List<WHexGrid>
+        // Get WHexGrids from CompositionResult (created from Central Registry)
+        var allGrids = result.getWHexGrids(); // Returns List<WHexGrid> from CompositionResult
         var index = new HexGridIndex(allGrids);
 
         // ===== PHASE 1: CREATE ALL - Initialize all WFlats with base terrain =====
@@ -283,10 +296,10 @@ public class HexCompositeBuilderSimpleTest {
 
         // Create composite image
         log.info("Creating %s composite image...".formatted(name));
-        createCompositeImage(flats, fillResult, composition, "continent-test-%s".formatted(name));
+        createCompositeImage(flats, allGrids, fillResult, composition, "continent-test-%s".formatted(name));
 
         // Export generated model
-        exportGeneratedModel(fillResult, result.getFlowCompositionResult(), "continent-test-%s".formatted(name));
+        exportGeneratedModel(result, "continent-test-%s".formatted(name));
 
         // Export the processed input composition model
         log.info("Registry size before export: {}", composition.getFeatureHexGridRegistry() != null ? composition.getFeatureHexGridRegistry().size() : "NULL");
@@ -512,12 +525,12 @@ public class HexCompositeBuilderSimpleTest {
     /**
      * Adds text overlays showing coordinates and biome names for all grids.
      */
-    private void addCoordinateTextOverlays(HexGridCompositeImageCreator creator, Map<HexVector2, WFlat> flats,
-                                           HexGridFillResult fillResult, int hexGridSize) {
-        // Build map of coordinate to biome name
+    private void addCoordinateTextOverlays(HexGridCompositeImageCreator creator, List<WHexGrid> allGrids, int hexGridSize) {
+        // Build map of coordinate to biome name using WHexGrid list
         Map<String, String> coordToBiomeName = new HashMap<>();
-        if (fillResult != null && fillResult.getAllGrids() != null) {
-            for (WHexGrid hexGrid : fillResult.getAllGrids()) {
+        if (allGrids != null) {
+            for (WHexGrid hexGrid : allGrids) {
+                if (hexGrid == null) continue;
                 HexVector2 coord = hexGrid.getPublicData().getPosition();
                 String coordKey = coord.getQ() + "," + coord.getR();
                 String biomeName = null;
@@ -541,8 +554,10 @@ public class HexCompositeBuilderSimpleTest {
             }
         }
 
-        for (Map.Entry<HexVector2, WFlat> entry : flats.entrySet()) {
-            HexVector2 coord = entry.getKey();
+        for (WHexGrid hexGrid : allGrids) {
+            if (hexGrid == null || hexGrid.getPublicData() == null) continue;
+
+            HexVector2 coord = hexGrid.getPublicData().getPosition();
             String coordText = coord.getQ() + "," + coord.getR();
 
             // Calculate center position of hex grid in world coordinates
@@ -621,18 +636,20 @@ public class HexCompositeBuilderSimpleTest {
 
     /**
      * Adds village slot overlays (cross + slot name) to the composite image creator.
-     * Extracts WHexGrids from fillResult and uses VillageDebugOverlayHelper to create overlays.
+     * Extracts WHexGrids from flats and uses VillageDebugOverlayHelper to create overlays.
      */
-    private void addVillageSlotOverlays(HexGridCompositeImageCreator creator, HexGridFillResult fillResult, int hexGridSize) {
-        if (fillResult == null || fillResult.getAllGrids() == null) {
+    private void addVillageSlotOverlays(HexGridCompositeImageCreator creator, List<WHexGrid> allGrids, int hexGridSize) {
+        if (allGrids == null) {
             return;
         }
 
-        // Extract WHexGrids from fillResult and create a map by coordinate
+        // Create a map by coordinate from WHexGrid list
         Map<HexVector2, WHexGrid> hexGrids = new HashMap<>();
-        for (WHexGrid hexGrid : fillResult.getAllGrids()) {
-            HexVector2 coord = hexGrid.getPublicData().getPosition();
-            hexGrids.put(coord, hexGrid);
+        for (WHexGrid hexGrid : allGrids) {
+            if (hexGrid != null && hexGrid.getPublicData() != null) {
+                HexVector2 coord = hexGrid.getPublicData().getPosition();
+                hexGrids.put(coord, hexGrid);
+            }
         }
 
         // Use VillageDebugOverlayHelper to add village slot overlays
@@ -679,6 +696,7 @@ public class HexCompositeBuilderSimpleTest {
     }
 
     private void createCompositeImage(Map<String, WFlat> flats,
+                                     List<WHexGrid> allGrids,
                                      HexGridFillResult fillResult,
                                      HexComposition composition,
                                      String name) throws Exception {
@@ -693,7 +711,7 @@ public class HexCompositeBuilderSimpleTest {
 
         // Use the HexGridCompositeImageCreator helper class with builder pattern
         HexGridCompositeImageCreator creator = HexGridCompositeImageCreator.builder()
-            .flats(flatsByCoord)
+            .flatProvider(new MapFlatProvider(flatsByCoord))
             .hexGridSize(HEX_GRID_SIZE)  // Use HEX_GRID_SIZE (400)
             .outputDirectory(outputDir.toString())
             .imageName(name)
@@ -701,13 +719,13 @@ public class HexCompositeBuilderSimpleTest {
             .build();
 
         // Add coordinate and biome name text overlays for all grids
-        addCoordinateTextOverlays(creator, flatsByCoord, fillResult, HEX_GRID_SIZE);
+        addCoordinateTextOverlays(creator, allGrids, HEX_GRID_SIZE);
 
         // Add point overlays (cross + name)
         addPointOverlays(creator, composition, flatsByCoord, HEX_GRID_SIZE);
 
         // Add village slot overlays (cross + slot name)
-        addVillageSlotOverlays(creator, fillResult, HEX_GRID_SIZE);
+        addVillageSlotOverlays(creator, allGrids, HEX_GRID_SIZE);
 
         // Add debug overlays for grid 0;0
         // addDebugOverlaysForGrid00(creator, flatsByCoord);
@@ -727,10 +745,12 @@ public class HexCompositeBuilderSimpleTest {
         log.info("- Total: {}", fillResult.getTotalGridCount());
     }
 
-    private void exportGeneratedModel(HexGridFillResult fillResult,
-                                     FlowComposer.FlowCompositionResult flowResult,
+    private void exportGeneratedModel(CompositionResult result,
                                      String name) throws Exception {
         File outputFile = outputDir.resolve(name + "-generated-model.json").toFile();
+
+        HexGridFillResult fillResult = result.getFillResult();
+        FlowComposer.FlowCompositionResult flowResult = result.getFlowCompositionResult();
 
         Map<String, Object> model = new HashMap<>();
         model.put("totalGrids", fillResult.getTotalGridCount());
@@ -746,7 +766,7 @@ public class HexCompositeBuilderSimpleTest {
 
         // Add grid list
         List<Map<String, Object>> grids = new ArrayList<>();
-        for (WHexGrid hexGrid : fillResult.getAllGrids()) {
+        for (WHexGrid hexGrid : result.getWHexGrids()) {
             Map<String, Object> gridInfo = new HashMap<>();
             HexVector2 coord = hexGrid.getPublicData().getPosition();
             gridInfo.put("coordinate", coord.getQ() + "," + coord.getR());

@@ -112,16 +112,13 @@ public class BiomeComposer {
                 .build();
         }
 
-        // Generate WHexGrids for all placed biomes
-        List<WHexGrid> hexGrids = generateHexGrids(context.getPlacedBiomes(), worldId);
-
-        // Configure HexGrids for all placed biomes - register in central composition registry
+        // Configure FeatureHexGrids for all placed biomes - register in central composition registry
+        // WHexGrids will be created later by HexGridGenerator from these FeatureHexGrids
         configureHexGridsForPlacedBiomes(context.getPlacedBiomes(), prepared);
 
         return BiomePlacementResult.builder()
             .composition(prepared)
             .placedBiomes(context.getPlacedBiomes())
-            .hexGrids(hexGrids)
             .retries(totalRetries)
             .success(true)
             .build();
@@ -579,129 +576,10 @@ public class BiomeComposer {
     }
 
     /**
-     * Generates WHexGrid instances for placed biomes
+     * NOTE: WHexGrid creation removed - now handled by HexGridGenerator
+     * which converts FeatureHexGrids from Central Registry to WHexGrids.
+     * This ensures consistent architecture with Flow handling.
      */
-    private List<WHexGrid> generateHexGrids(List<PlacedBiome> placedBiomes, String worldId) {
-        List<WHexGrid> hexGrids = new ArrayList<>();
-
-        for (PlacedBiome placed : placedBiomes) {
-            for (HexVector2 coord : placed.getCoordinates()) {
-                WHexGrid hexGrid = createHexGrid(coord, placed, worldId);
-                hexGrids.add(hexGrid);
-            }
-        }
-
-        log.debug("Generated {} HexGrids from {} biomes", hexGrids.size(), placedBiomes.size());
-        return hexGrids;
-    }
-
-    /**
-     * Creates WHexGrids for a biome with given coordinates.
-     * Used by fillers to create WHexGrids for filler biomes.
-     *
-     * @param biome The biome
-     * @param coordinates List of coordinates
-     * @param worldId World ID
-     * @return List of WHexGrids
-     */
-    public List<WHexGrid> createWHexGridsForBiome(Biome biome, List<HexVector2> coordinates, String worldId) {
-        List<WHexGrid> hexGrids = new ArrayList<>();
-
-        for (HexVector2 coord : coordinates) {
-            // Create public HexGrid data
-            HexGrid publicData = new HexGrid();
-            publicData.setPosition(coord);
-
-            // Set name from biome - use biome's name as technical name
-            if (biome.getName() != null && !biome.getName().isBlank()) {
-                publicData.setName(biome.getName());
-            } else {
-                publicData.setName("hex_" + coord.getQ() + "_" + coord.getR());
-            }
-
-            // Set title from biome - use biome's title as display name
-            if (biome.getTitle() != null && !biome.getTitle().isBlank()) {
-                publicData.setTitle(biome.getTitle());
-            }
-
-            publicData.setDescription("Part of " + biome.getType() + " biome");
-
-            // Copy parameters from biome
-            Map<String, String> parameters = new HashMap<>();
-            if (biome.getParameters() != null) {
-                parameters.putAll(biome.getParameters());
-            }
-
-            // Add biome type as parameter
-            parameters.put("biome", biome.getType().getDefaultBuilder());
-            parameters.put("biomeName", biome.getName());
-
-            // Add biome title if available
-            if (biome.getTitle() != null && !biome.getTitle().isBlank()) {
-                parameters.put("biomeTitle", biome.getTitle());
-            }
-
-            WHexGrid hexGrid = WHexGrid.builder()
-                .worldId(worldId)
-                .position(TypeUtil.toStringHexCoord(coord.getQ(), coord.getR()))
-                .publicData(publicData)
-                .parameters(parameters)
-                .enabled(true)
-                .build();
-
-            hexGrids.add(hexGrid);
-        }
-
-        return hexGrids;
-    }
-
-    /**
-     * Creates a single WHexGrid for a coordinate
-     */
-    private WHexGrid createHexGrid(HexVector2 coord, PlacedBiome placed, String worldId) {
-        Biome biome = placed.getBiome();
-
-        // Create public HexGrid data
-        HexGrid publicData = new HexGrid();
-        publicData.setPosition(coord);
-
-        // Set name from biome - use biome's name as technical name
-        if (biome.getName() != null && !biome.getName().isBlank()) {
-            publicData.setName(biome.getName());
-        } else {
-            publicData.setName("hex_" + coord.getQ() + "_" + coord.getR());
-        }
-
-        // Set title from biome - use biome's title as display name
-        if (biome.getTitle() != null && !biome.getTitle().isBlank()) {
-            publicData.setTitle(biome.getTitle());
-        }
-
-        publicData.setDescription("Part of " + biome.getType() + " biome");
-
-        // Copy parameters from biome (includes p_color from applyDefaults)
-        Map<String, String> parameters = new HashMap<>();
-        if (biome.getParameters() != null) {
-            parameters.putAll(biome.getParameters());
-        }
-
-        // Add biome type as parameter (use builderName for consistency with HexGridBuilderService)
-        parameters.put("biome", biome.getType().getDefaultBuilder());
-        parameters.put("biomeName", biome.getName());
-
-        // Add biome title if available
-        if (biome.getTitle() != null && !biome.getTitle().isBlank()) {
-            parameters.put("biomeTitle", biome.getTitle());
-        }
-
-        return WHexGrid.builder()
-            .worldId(worldId)
-            .position(TypeUtil.toStringHexCoord(coord.getQ(), coord.getR()))
-            .publicData(publicData)
-            .parameters(parameters)
-            .enabled(true)
-            .build();
-    }
 
     /**
      * Returns random int in range [from, to] inclusive

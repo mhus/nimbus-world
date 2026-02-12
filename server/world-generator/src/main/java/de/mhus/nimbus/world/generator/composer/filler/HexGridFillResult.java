@@ -70,13 +70,7 @@ public class HexGridFillResult {
     private String errorMessage;
 
     /**
-     * Gets all WHexGrid instances from the placement result.
-     * Replaces the old getAllGrids() method that returned FilledHexGrid.
+     * NOTE: getAllGrids() was removed.
+     * WHexGrids are now in CompositionResult, use result.getAllGrids() instead.
      */
-    public List<WHexGrid> getAllGrids() {
-        if (placementResult == null) {
-            return List.of();
-        }
-        return placementResult.getHexGrids();
-    }
 }

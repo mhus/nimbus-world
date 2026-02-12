@@ -371,19 +371,21 @@ public class HexCompositeBuilder {
             log.debug("Found {} FeatureHexGrids in central registry", allFeatureHexGrids.size());
 
             // Create WHexGrids from FeatureHexGrids
+            // NOTE: WHexGrids are no longer stored in BiomePlacementResult
+            List<de.mhus.nimbus.world.shared.world.WHexGrid> allWHexGrids = new ArrayList<>();
             for (FeatureHexGrid featureHexGrid : allFeatureHexGrids.values()) {
                 de.mhus.nimbus.world.shared.world.WHexGrid wHexGrid = createWHexGridFromFeatureHexGrid(
                     featureHexGrid, worldId);
-                placementResult.getHexGrids().add(wHexGrid);
+                allWHexGrids.add(wHexGrid);
             }
 
-            log.debug("Created {} WHexGrids from central registry", placementResult.getHexGrids().size());
+            log.debug("Created {} WHexGrids from central registry", allWHexGrids.size());
 
             // Set totalGrids to initial biome grids (before fillers)
             resultBuilder.totalGrids(initialBiomeGridCount);
 
             // Calculate number of filler grids
-            int totalWHexGrids = placementResult.getHexGrids().size();
+            int totalWHexGrids = allWHexGrids.size();
             int fillerGridCount = totalWHexGrids - initialBiomeGridCount;
 
             // Create HexGridFillResult for backward compatibility
@@ -402,7 +404,7 @@ public class HexCompositeBuilder {
                 // Create fill result with statistics (grids are in central registry)
                 fillResult = HexGridFillResult.builder()
                     .placementResult(placementResult)
-                    .totalGridCount(placementResult.getHexGrids().size())
+                    .totalGridCount(allWHexGrids.size())
                     .oceanFillCount(oceanAdded)
                     .landFillCount(mountainAdded + lowlandAdded)
                     .coastFillCount(coastAdded)
@@ -457,7 +459,7 @@ public class HexCompositeBuilder {
             log.debug("Step 8: Syncing parameters from central registry to WHexGrids");
             HexGridParameterSync parameterSync = new HexGridParameterSync();
             int syncedCount = parameterSync.syncParametersToWHexGrids(
-                composition, placementResult, placementResult.getHexGrids());
+                composition, placementResult, allWHexGrids);
             log.debug("Synced parameters to {} WHexGrids", syncedCount);
 
             // WHexGrid persistence happens later in GenerateHexGridFromCompositeJobExecutor (Day3)
@@ -470,12 +472,13 @@ public class HexCompositeBuilder {
                 structureResult.getPlacedCount(),
                 pointResult.getComposedPoints(),
                 flowResult.getComposedFlows(),
-                placementResult.getHexGrids().size(),
+                allWHexGrids.size(),
                 fillResult != null ? fillResult.getTotalGridCount() : 0,
                 warnings.size());
 
             return resultBuilder
                 .success(true)
+                .wHexGrids(allWHexGrids)  // Store WHexGrids in result for tests and persistence
                 .build();
 
         } catch (Exception e) {

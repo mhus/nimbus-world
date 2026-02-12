@@ -7,14 +7,17 @@ import de.mhus.nimbus.world.generator.composer.biome.PlacedBiome;
 import de.mhus.nimbus.world.generator.composer.biome.BiomePlacementResult;
 import de.mhus.nimbus.world.generator.composer.biome.BiomeType;
 import de.mhus.nimbus.world.generator.composer.build.FilledHexGrid;
+import de.mhus.nimbus.world.generator.composer.build.HexComposition;
+import de.mhus.nimbus.world.generator.composer.feature.FeatureHexGrid;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.*;
 
 /**
- * Fills empty hex grids between biomes with land or ocean
- * Adds an ocean ring around all biomes to prevent open edges
+ * Fills empty hex grids between biomes with land or ocean.
+ * Adds an ocean ring around all biomes to prevent open edges.
+ * NOTE: Now works with Central FeatureHexGrid Registry instead of WHexGrids.
  */
 @Slf4j
 public class HexGridFiller {
@@ -38,17 +41,19 @@ public class HexGridFiller {
                 .build();
         }
 
+        HexComposition composition = placementResult.getComposition();
         List<FilledHexGrid> allGrids = new ArrayList<>();
 
-        // First, add all biome grids
+        // First, add all biome grids from Central Registry
         Map<String, FilledHexGrid> gridMap = new HashMap<>();
         for (PlacedBiome placed : placementResult.getPlacedBiomes()) {
             for (HexVector2 coord : placed.getCoordinates()) {
-                WHexGrid hexGrid = findHexGrid(placementResult.getHexGrids(), coord);
-                if (hexGrid != null) {
+                // Get FeatureHexGrid from Central Registry
+                FeatureHexGrid featureGrid = composition.getFeatureHexGrid(coord);
+                if (featureGrid != null) {
                     FilledHexGrid filled = FilledHexGrid.builder()
                         .coordinate(coord)
-                        .hexGrid(hexGrid)
+                        .hexGrid(null)  // WHexGrid will be created later by HexGridGenerator
                         .isFiller(false)
                         .biome(placed)
                         .build();
@@ -99,11 +104,12 @@ public class HexGridFiller {
                 FillerType fillerType = determineFillerType(coord, gridMap, oceanRingWidth,
                     minQ, maxQ, minR, maxR);
 
-                // Create filler hex grid
-                WHexGrid fillerGrid = createFillerHexGrid(coord, fillerType, worldId);
+                // Create FeatureHexGrid in Central Registry (not WHexGrid!)
+                createFillerFeatureHexGrid(coord, fillerType, composition);
+
                 FilledHexGrid filled = FilledHexGrid.builder()
                     .coordinate(coord)
-                    .hexGrid(fillerGrid)
+                    .hexGrid(null)  // WHexGrid will be created later by HexGridGenerator
                     .fillerType(fillerType)
                     .isFiller(true)
                     .build();
@@ -208,7 +214,11 @@ public class HexGridFiller {
     /**
      * Creates a WHexGrid for a filler coordinate
      */
-    private WHexGrid createFillerHexGrid(HexVector2 coord, FillerType fillerType, String worldId) {
+    /**
+     * Creates a FeatureHexGrid for filler in Central Registry.
+     * WHexGrid will be created later by HexGridGenerator.
+     */
+    private void createFillerFeatureHexGrid(HexVector2 coord, FillerType fillerType, HexComposition composition) {
         String name = switch (fillerType) {
             case OCEAN -> "Ocean";
             case LAND -> "Plains";
@@ -222,25 +232,32 @@ public class HexGridFiller {
             case COAST -> BiomeType.COAST.getBuilderName();
         };
 
-        // Create public HexGrid data
-        HexGrid publicData = new HexGrid();
-        publicData.setPosition(coord);
-        publicData.setName(name + " [" + coord.getQ() + "," + coord.getR() + "]");
-        publicData.setDescription("Auto-filled " + fillerType.name().toLowerCase());
+        // Get or create FeatureHexGrid in Central Registry
+        FeatureHexGrid featureGrid = composition.getOrCreateFeatureHexGrid(coord);
 
-        // Parameters
-        Map<String, String> parameters = new HashMap<>();
-        parameters.put("biome", biomeParam);
-        parameters.put("filler", "true");
-        parameters.put("fillerType", fillerType.name().toLowerCase());
+        // Set properties
+        if (featureGrid.getName() == null) {
+            featureGrid.setName(name + " [" + coord.getQ() + "," + coord.getR() + "]");
+        }
+        if (featureGrid.getDescription() == null) {
+            featureGrid.setDescription("Auto-filled " + fillerType.name().toLowerCase());
+        }
 
-        return WHexGrid.builder()
-            .worldId(worldId)
-            .position(TypeUtil.toStringHexCoord(coord.getQ(), coord.getR()))
-            .publicData(publicData)
-            .parameters(parameters)
-            .enabled(true)
-            .build();
+        // Add parameters (only if not already present - don't overwrite biome parameters)
+        if (!featureGrid.getParameters().containsKey("biome")) {
+            featureGrid.addParameter("biome", biomeParam);
+        }
+        featureGrid.addParameter("filler", "true");
+        featureGrid.addParameter("fillerType", fillerType.name().toLowerCase());
+    }
+
+    /**
+     * @deprecated WHexGrids are no longer created by filler - use createFillerFeatureHexGrid instead
+     */
+    @Deprecated
+    private WHexGrid createFillerHexGrid(HexVector2 coord, FillerType fillerType, String worldId) {
+        // This method is no longer used - fillers now create FeatureHexGrids in Central Registry
+        throw new UnsupportedOperationException("Use createFillerFeatureHexGrid instead");
     }
 
     /**
@@ -272,14 +289,13 @@ public class HexGridFiller {
     /**
      * Finds a hex grid by coordinate
      */
+    /**
+     * @deprecated No longer needed - use composition.findFeatureHexGrid() instead
+     */
+    @Deprecated
     private WHexGrid findHexGrid(List<WHexGrid> hexGrids, HexVector2 coord) {
-        return hexGrids.stream()
-            .filter(grid -> {
-                HexVector2 pos = grid.getPublicData().getPosition();
-                return pos.getQ() == coord.getQ() && pos.getR() == coord.getR();
-            })
-            .findFirst()
-            .orElse(null);
+        // No longer used - work with Central Registry instead
+        throw new UnsupportedOperationException("Use composition.findFeatureHexGrid() instead");
     }
 
     /**

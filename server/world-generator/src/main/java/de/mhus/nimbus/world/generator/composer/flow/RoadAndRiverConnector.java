@@ -22,36 +22,25 @@ public class RoadAndRiverConnector {
     /**
      * Connects roads and rivers across all hex grids
      *
-     * @param fillResult Result from HexGridFiller with all grids
-     * @param roadConnections List of road connections to apply
-     * @param riverConnections List of river connections to apply
-     * @return Updated WHexGrid list with road/river parameters
+     * @deprecated This connector is no longer used. Flow connections are now handled
+     *             directly during composition via FlowComposer writing to the Central Registry.
+     *             This method exists only for backwards compatibility and always returns empty results.
+     *
+     * @param fillResult Result from HexGridFiller with all grids (unused)
+     * @param roadConnections List of road connections to apply (unused)
+     * @param riverConnections List of river connections to apply (unused)
+     * @return Empty result with success=true for backwards compatibility
      */
+    @Deprecated
     public ConnectionResult connect(HexGridFillResult fillResult,
                                     List<RoadConnection> roadConnections,
                                     List<RiverConnection> riverConnections) {
-        log.info("Connecting roads and rivers across hex grid boundaries");
-        log.info("Roads: {}, Rivers: {}", roadConnections.size(), riverConnections.size());
-
-        // TODO: This connector needs to be reimplemented after Point composition is complete
-        // RoadConnection and RiverConnection now use Point IDs instead of grid coordinates
-        // Need to:
-        // 1. Resolve Point IDs to get their HexLocalPosition or HexLocalSideCoordinate
-        // 2. Extract grid coordinates and side information from Points
-        // 3. Apply connections to the grids as before
-        //
-        // For now, skip the connections to allow compilation
-        log.warn("RoadAndRiverConnector is temporarily disabled - needs Point composition data");
-
-        // Get all grids from fillResult (now returns WHexGrid directly)
-        List<WHexGrid> allGrids = fillResult.getAllGrids();
-
+        log.warn("RoadAndRiverConnector.connect() is deprecated and does nothing - Flow connections are now handled during composition");
         return ConnectionResult.builder()
-            .hexGrids(allGrids)
-            .roadsApplied(0)
-            .riversApplied(0)
-            .success(true)
-            .build();
+                .roadsApplied(0)
+                .riversApplied(0)
+                .success(true)
+                .build();
     }
 
     /**

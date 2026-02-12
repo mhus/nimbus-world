@@ -56,11 +56,12 @@ public class BiomeComposerTest {
         // Verify
         assertTrue(result.isSuccess(), "Composition should succeed");
         assertNotNull(result.getPlacedBiomes());
-        assertNotNull(result.getHexGrids());
+        // WHexGrids are no longer in BiomePlacementResult - they're created later by HexGridGenerator
+        assertNotNull(result.getComposition().getFeatureHexGridRegistry());
 
-        log.info("Placed {} biomes resulting in {} hexGrids",
+        log.info("Placed {} biomes resulting in {} FeatureHexGrids (WHexGrids created later by HexGridGenerator)",
             result.getPlacedBiomes().size(),
-            result.getHexGrids().size());
+            result.getComposition().getFeatureHexGridRegistry().size());
 
         // Log details
         for (PlacedBiome placed : result.getPlacedBiomes()) {
@@ -86,7 +87,8 @@ public class BiomeComposerTest {
         assertTrue(result.isSuccess(), "Composition should succeed");
         assertEquals(5, result.getPlacedBiomes().size(), "Should place all 5 biomes");
 
-        log.info("Total hexGrids created: {}", result.getHexGrids().size());
+        log.info("Total FeatureHexGrids created: {} (WHexGrids will be created later by HexGridGenerator)",
+            result.getComposition().getFeatureHexGridRegistry().size());
 
         // Visualize
         visualizeComposition(result, "complex-composition");
