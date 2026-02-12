@@ -118,19 +118,7 @@ public class WorkflowContext {
      * @param parameters the parameters for the job
      */
     public void enqueueJob(String executor, String type, Map<String, String> parameters) {
-        jobQueue.add(new Job(executor, type, null, null, parameters));
-    }
-
-    /**
-     * Enqueue a job for execution. The job will be executed after the current workflow step is completed.
-     *
-     * @param executor the job executor to use for this job
-     * @param type the job type
-     * @param location the location of the job to execute. See LocationService
-     * @param parameters the parameters for the job
-     */
-    public void enqueueJob(String executor, String type, String location, Map<String, String> parameters) {
-        jobQueue.add(new Job(executor, type, location, null, parameters));
+        enqueueJob(new Job(getWorldId(), executor, type, null, null, parameters));
     }
 
     /**
@@ -143,7 +131,11 @@ public class WorkflowContext {
      * @param parameters the parameters for the job
      */
     public void enqueueJob(String executor, String type, String location, String titleSuffix, Map<String, String> parameters) {
-        jobQueue.add(new Job(executor, type, location, titleSuffix, parameters));
+        enqueueJob(new Job(getWorldId(), executor, type, location, titleSuffix, parameters));
+    }
+
+    public void enqueueJob(Job job) {
+        jobQueue.add(job);
     }
 
     /**
@@ -257,6 +249,6 @@ public class WorkflowContext {
         return getEvent().getData().get(JobExecutor.PREVIOUS_JOB_ERROR_MESSAGE);
     }
 
-    public record Job(String executor, String type, String location, String titleSuffix, Map<String, String> parameters) {
+    public record Job(String worldId, String executor, String type, String location, String titleSuffix, Map<String, String> parameters) {
     }
 }

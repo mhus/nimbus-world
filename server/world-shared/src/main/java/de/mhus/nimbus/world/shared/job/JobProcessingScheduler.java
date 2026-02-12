@@ -90,7 +90,7 @@ public class JobProcessingScheduler {
                 }
 
                 try {
-                    processJob(job);
+                    jobService.processJob(job);
                     processed++;
                 } catch (Exception e) {
                     log.error("Error processing job: {}", job.getId(), e);
@@ -110,99 +110,4 @@ public class JobProcessingScheduler {
         }
     }
 
-    private void processJob(WJob job) {
-        log.debug("Processing job: id={} world={} executor={} type={}",
-                job.getId(), job.getWorldId(), job.getExecutor(), job.getType());
-
-        jobService.markJobRunning(job.getId());
-
-        JobExecutor executor = executorRegistry.getExecutor(job.getExecutor())
-                .orElseThrow(() -> new IllegalStateException(
-                        "Executor not found: " + job.getExecutor()));
-
-        try {
-            JobExecutor.JobResult result = executor.execute(job);
-
-            if (result.async()) {
-                jobService.markJobAsync(job.getId(), result.resultData());
-            } else
-            if (result.successful()) {
-                jobService.markJobCompleted(job.getId(), result.resultData());
-                scheduleNextJob(job, job.getOnSuccess(), result.resultData(), null);
-            } else {
-                jobService.markJobFailed(job.getId(), result.errorMessage());
-                scheduleNextJob(job, job.getOnError(), null, result.errorMessage());
-            }
-
-        } catch (JobExecutionException e) {
-            log.error("Job execution failed: id={} error={}", job.getId(), e.getMessage());
-            jobService.markJobFailed(job.getId(), e.getMessage());
-            scheduleNextJob(job, job.getOnError(), null, e.getMessage());
-        } catch (Exception e) {
-            log.error("Unexpected error during job execution: id={}", job.getId(), e);
-            String errorMessage = "Internal error: " + e.getClass().getSimpleName() + ": " + e.getMessage();
-            jobService.markJobFailed(job.getId(), errorMessage);
-            scheduleNextJob(job, job.getOnError(), null, errorMessage);
-        }
-    }
-
-    /**
-     * Schedule a follow-up job based on the completion of the current job.
-     * Automatically adds previousJobId, previousJobResult, and previousJobErrorMessage as parameters.
-     *
-     * @param completedJob The job that just completed
-     * @param nextJobConfig Configuration for the next job (can be null)
-     * @param result Result data from the completed job (null if failed)
-     * @param errorMessage Error message from the completed job (null if successful)
-     */
-    private void scheduleNextJob(WJob completedJob, NextJob nextJobConfig, String result, String errorMessage) {
-        if (nextJobConfig == null) {
-            log.debug("No follow-up job configured for job: {}", completedJob.getId());
-            return;
-        }
-
-        if (nextJobConfig.getExecutor() == null || nextJobConfig.getExecutor().isBlank()) {
-            log.warn("Follow-up job has no executor defined for job: {}", completedJob.getId());
-            return;
-        }
-
-        try {
-            // Merge user-defined parameters with automatic parameters
-            java.util.Map<String, String> parameters = new java.util.HashMap<>(
-                    nextJobConfig.getParameters() != null ? nextJobConfig.getParameters() : java.util.Map.of()
-            );
-
-            // Add automatic parameters from the completed job
-            parameters.put(JobExecutor.PREVIOUS_JOB_ID, completedJob.getId());
-            if (result != null) {
-                parameters.put(JobExecutor.PREVIOUS_JOB_RESULT, result);
-            }
-            if (errorMessage != null) {
-                parameters.put(JobExecutor.PREVIOUS_JOB_ERROR_MESSAGE, errorMessage);
-            }
-
-            // Create the next job with the same worldId
-            String nextJobTitle = "Follow-up: " + (nextJobConfig.getType() != null ? nextJobConfig.getType() : nextJobConfig.getExecutor());
-            WJob nextJob = jobService.createJob(
-                    completedJob.getWorldId(),
-                    nextJobConfig.getExecutor(),
-                    nextJobTitle,
-                    nextJobConfig.getType() != null ? nextJobConfig.getType() : nextJobConfig.getExecutor(),
-                    parameters,
-                    nextJobConfig.getLocation(),
-                    "job:" + completedJob.getId(), // parent reference
-                    5,
-                    0,
-                    null,
-                    null
-            );
-
-            log.info("Scheduled follow-up job: nextJobId={} previousJobId={} executor={}",
-                    nextJob.getId(), completedJob.getId(), nextJobConfig.getExecutor());
-
-        } catch (Exception e) {
-            log.error("Failed to schedule follow-up job for completed job: {} - error: {}",
-                    completedJob.getId(), e.getMessage(), e);
-        }
-    }
 }

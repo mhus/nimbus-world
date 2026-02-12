@@ -135,4 +135,14 @@ public class WWorkflowJournalService {
         log.info("Clearing workflow journal: worldId={}, workflowId={}", worldId, workflowId);
         repository.deleteByWorldIdAndWorkflowId(worldId, workflowId);
     }
+
+    public void migrateWorkflowJournalToWorld(String worldId, String workflowId, String newWorldId) {
+        repository.findByWorldIdAndWorkflowIdOrderByCreatedAtAsc(worldId, workflowId)
+                .forEach(entry -> {
+                    entry.setWorldId(newWorldId);
+                    repository.save(entry);
+                    log.debug("Migrated journal entry id={} to new worldId={}", entry.getId(), newWorldId);
+                });
+    }
+
 }

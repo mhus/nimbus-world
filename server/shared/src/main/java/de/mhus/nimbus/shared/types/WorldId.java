@@ -198,6 +198,13 @@ public class WorldId implements Comparable<WorldId> {
         return new WorldId(regionId + ":" + worldName);
     }
 
+    public String getCollectionRegion() {
+        parseId();
+        if (isRegionCollection() || isPublicRegion()) return worldName;
+        if (isCollection()) return null;
+        return regionId;
+    }
+
     public boolean isInstanceOrZone() {
         return isInstance() || isZone();
     }
