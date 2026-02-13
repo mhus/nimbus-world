@@ -430,6 +430,30 @@ public class PointComposer {
                     log.debug("Configured VillagePoint {} on grid {}", point.getName(), gridCoord);
                 }
 
+                // If this is a MountainPoint, configure the HexGrid with mountain data
+                if (point instanceof MountainPoint mountainPoint) {
+                    mountainPoint.configureHexGrid(gridCoord, context.getHexGridSize(), context);
+                    log.debug("Configured MountainPoint {} on grid {}", point.getName(), gridCoord);
+                }
+
+                // If this is a SpikesPoint, configure the HexGrid with spikes data
+                if (point instanceof SpikesPoint spikesPoint) {
+                    spikesPoint.configureHexGrid(gridCoord, context.getHexGridSize(), context);
+                    log.debug("Configured SpikesPoint {} on grid {}", point.getName(), gridCoord);
+                }
+
+                // If this is a MountainFacePoint, configure the HexGrid with mountain face data
+                if (point instanceof MountainFacePoint mountainFacePoint) {
+                    mountainFacePoint.configureHexGrid(gridCoord, context.getHexGridSize(), context);
+                    log.debug("Configured MountainFacePoint {} on grid {}", point.getName(), gridCoord);
+                }
+
+                // If this is a LakesPoint, configure the HexGrid with lakes data
+                if (point instanceof LakesPoint lakesPoint) {
+                    lakesPoint.configureHexGrid(gridCoord, context.getHexGridSize(), context);
+                    log.debug("Configured LakesPoint {} on grid {}", point.getName(), gridCoord);
+                }
+
                 return true;
             }
         }
@@ -462,6 +486,30 @@ public class PointComposer {
                 if (point instanceof VillagePoint villagePoint) {
                     villagePoint.configureHexGrid(gridCoord, context.getHexGridSize(), context);
                     log.debug("Configured VillagePoint {} on grid {}", point.getName(), gridCoord);
+                }
+
+                // If this is a MountainPoint, configure the HexGrid with mountain data
+                if (point instanceof MountainPoint mountainPoint) {
+                    mountainPoint.configureHexGrid(gridCoord, context.getHexGridSize(), context);
+                    log.debug("Configured MountainPoint {} on grid {}", point.getName(), gridCoord);
+                }
+
+                // If this is a SpikesPoint, configure the HexGrid with spikes data
+                if (point instanceof SpikesPoint spikesPoint) {
+                    spikesPoint.configureHexGrid(gridCoord, context.getHexGridSize(), context);
+                    log.debug("Configured SpikesPoint {} on grid {}", point.getName(), gridCoord);
+                }
+
+                // If this is a MountainFacePoint, configure the HexGrid with mountain face data
+                if (point instanceof MountainFacePoint mountainFacePoint) {
+                    mountainFacePoint.configureHexGrid(gridCoord, context.getHexGridSize(), context);
+                    log.debug("Configured MountainFacePoint {} on grid {}", point.getName(), gridCoord);
+                }
+
+                // If this is a LakesPoint, configure the HexGrid with lakes data
+                if (point instanceof LakesPoint lakesPoint) {
+                    lakesPoint.configureHexGrid(gridCoord, context.getHexGridSize(), context);
+                    log.debug("Configured LakesPoint {} on grid {}", point.getName(), gridCoord);
                 }
 
                 return true;

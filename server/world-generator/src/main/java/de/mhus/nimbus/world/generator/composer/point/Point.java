@@ -49,7 +49,11 @@ import java.util.Map;
     @JsonSubTypes.Type(value = EdgePoint.class, name = "edge"),
     @JsonSubTypes.Type(value = OceanEdgePoint.class, name = "ocean-edge"),
     @JsonSubTypes.Type(value = TownConnectionPoint.class, name = "village-connection"),
-    @JsonSubTypes.Type(value = VillagePoint.class, name = "village-point")
+    @JsonSubTypes.Type(value = VillagePoint.class, name = "village-point"),
+    @JsonSubTypes.Type(value = MountainPoint.class, name = "mountain-point"),
+    @JsonSubTypes.Type(value = SpikesPoint.class, name = "spikes-point"),
+    @JsonSubTypes.Type(value = MountainFacePoint.class, name = "mountain-face-point"),
+    @JsonSubTypes.Type(value = LakesPoint.class, name = "lakes-point")
 })
 public abstract class Point extends Feature {
 

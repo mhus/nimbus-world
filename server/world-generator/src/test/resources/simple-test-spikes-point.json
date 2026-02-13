@@ -1,0 +1,51 @@
+{
+  "name": "Simple Spikes Point Test",
+  "worldId": "simple-test-spikes-point",
+  "continents": [
+    {
+      "continentId": "main-continent",
+      "name": "Main Continent",
+      "biomeType": "PLAINS",
+      "minNeighbors": 1,
+      "parameters": {
+        "g_offset": "5",
+        "g_roughness": "0.3"
+      }
+    }
+  ],
+  "features": [
+    {
+      "featureType": "plains-biome",
+      "name": "central-plains",
+      "title": "Central Plains",
+      "type": "PLAINS",
+      "shape": "CIRCLE",
+      "size": "MEDIUM",
+      "continentId": "main-continent",
+      "positions": [
+        {
+          "anchor": "origin",
+          "priority": 10
+        }
+      ],
+      "parameters": {
+      }
+    },
+    {
+      "featureType": "spikes-point",
+      "name": "test-spikes",
+      "title": "Test Crystal Spikes",
+      "biomeId": "central-plains",
+      "biomeDistance": "CENTER",
+      "density": "MEDIUM",
+      "amount": "NORMAL",
+      "minHeight": 15,
+      "maxHeight": 40,
+      "minWidth": 1,
+      "maxWidth": 3,
+      "distributionRadius": 80,
+      "material": "ice",
+      "taperFactor": 0.7
+    }
+  ]
+}

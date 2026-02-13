@@ -1,0 +1,47 @@
+{
+  "name": "Simple Mountain Face Point Test",
+  "worldId": "simple-test-mountain-face-point",
+  "continents": [
+    {
+      "continentId": "main-continent",
+      "name": "Main Continent",
+      "biomeType": "PLAINS",
+      "minNeighbors": 1,
+      "parameters": {
+        "g_offset": "5",
+        "g_roughness": "0.3"
+      }
+    }
+  ],
+  "features": [
+    {
+      "featureType": "plains-biome",
+      "name": "central-plains",
+      "title": "Central Plains",
+      "type": "PLAINS",
+      "shape": "CIRCLE",
+      "size": "MEDIUM",
+      "continentId": "main-continent",
+      "positions": [
+        {
+          "anchor": "origin",
+          "priority": 10
+        }
+      ],
+      "parameters": {
+      }
+    },
+    {
+      "featureType": "mountain-face-point",
+      "name": "test-cliff",
+      "title": "Test Mountain Face",
+      "biomeId": "central-plains",
+      "biomeDistance": "CENTER",
+      "dimension": "MEDIUM",
+      "baseHeight": 64,
+      "faceHeight": 50,
+      "recursionDepth": 2,
+      "material": "stone"
+    }
+  ]
+}

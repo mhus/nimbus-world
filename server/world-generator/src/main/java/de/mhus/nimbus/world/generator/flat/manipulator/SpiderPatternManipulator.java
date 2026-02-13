@@ -12,7 +12,7 @@ import java.util.Random;
 /**
  * Spider pattern manipulator.
  * Creates recursive branching patterns radiating from center.
- * Useful for river systems, canyon networks, or erosion patterns.
+ * Useful for river systems, canyon networks, mountain faces, or erosion patterns.
  * Based on ShapeFactory.cpp Case 12 + doBackgroundSpider.
  * <p>
  * Parameters:
@@ -21,10 +21,11 @@ import java.util.Random;
  * - branches: Number of main branches (default: 6, range: 3-12)
  * - length: Length of main branches (default: 40, range: 10-min(sizeX,sizeZ)/2)
  * - heightDelta: Height change along branches (default: -10, range: -50 to 50)
- *   Negative=carve (rivers/canyons), Positive=raise (ridges)
+ *   Negative=carve (rivers/canyons), Positive=raise (ridges/mountain faces)
  * - subBranches: Sub-branches per main branch (default: 3, range: 0-5)
  * - recursionDepth: How many levels deep (default: 2, range: 1-4)
  * - seed: Random seed (default: System.currentTimeMillis())
+ * - material: Material ID to use (optional, if not set material is not changed)
  */
 @Component
 @Slf4j
@@ -39,6 +40,7 @@ public class SpiderPatternManipulator implements FlatManipulator {
     public static final String PARAM_SUB_BRANCHES = "subBranches";
     public static final String PARAM_RECURSION_DEPTH = "recursionDepth";
     public static final String PARAM_SEED = "seed";
+    public static final String PARAM_MATERIAL = "material";
 
     private static final int DEFAULT_BRANCHES = 6;
     private static final int DEFAULT_LENGTH = 40;
@@ -68,6 +70,7 @@ public class SpiderPatternManipulator implements FlatManipulator {
         int subBranches = parseIntParameter(parameters, PARAM_SUB_BRANCHES, DEFAULT_SUB_BRANCHES);
         int depth = parseIntParameter(parameters, PARAM_RECURSION_DEPTH, DEFAULT_RECURSION_DEPTH);
         long seed = parseLongParameter(parameters, PARAM_SEED, System.currentTimeMillis());
+        Integer material = parseIntParameterOptional(parameters, PARAM_MATERIAL);
 
         // Validate and clamp parameters
         branches = Math.max(3, Math.min(12, branches));
@@ -82,6 +85,11 @@ public class SpiderPatternManipulator implements FlatManipulator {
 
         // Setup FlatPainter
         FlatPainter painter = new FlatPainter(flat);
+
+        // Set material if provided
+        if (material != null) {
+            painter.setColumnPainter((flatParam, xParam, zParam, levelParam, defParam) -> material);
+        }
 
         // Calculate absolute center coordinates
         int absoluteCenterX = x + centerX;
@@ -205,6 +213,19 @@ public class SpiderPatternManipulator implements FlatManipulator {
             log.warn("Invalid long parameter '{}': {}, using default: {}",
                     name, parameters.get(name), defaultValue);
             return defaultValue;
+        }
+    }
+
+    private Integer parseIntParameterOptional(Map<String, String> parameters, String name) {
+        if (parameters == null || !parameters.containsKey(name)) {
+            return null;
+        }
+        try {
+            return Integer.parseInt(parameters.get(name));
+        } catch (NumberFormatException e) {
+            log.warn("Invalid integer parameter '{}': {}, ignoring",
+                    name, parameters.get(name));
+            return null;
         }
     }
 }

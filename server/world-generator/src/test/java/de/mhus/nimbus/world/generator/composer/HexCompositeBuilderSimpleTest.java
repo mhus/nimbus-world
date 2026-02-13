@@ -142,6 +142,42 @@ public class HexCompositeBuilderSimpleTest {
         assertTrue(hexGridString.contains("g_village"), "HexGrids should contain village parameters");
     }
 
+    @Test
+    public void testSimpleMountainPoint() throws Exception {
+        log.info("=== Testing MountainPoint ===");
+        var res = simpleContinentTest("mountain-point");
+        var hexGridString = new ObjectMapper().writeValueAsString(res.getWHexGrids());
+        assertTrue(hexGridString.contains("g_mountain"), "HexGrids should contain mountain parameters");
+        assertTrue(hexGridString.contains("mountainName"), "HexGrids should contain mountain configuration");
+    }
+
+    @Test
+    public void testSimpleSpikesPoint() throws Exception {
+        log.info("=== Testing SpikesPoint ===");
+        var res = simpleContinentTest("spikes-point");
+        var hexGridString = new ObjectMapper().writeValueAsString(res.getWHexGrids());
+        assertTrue(hexGridString.contains("g_spikes"), "HexGrids should contain spikes parameters");
+        assertTrue(hexGridString.contains("spikesName"), "HexGrids should contain spikes configuration");
+    }
+
+    @Test
+    public void testSimpleMountainFacePoint() throws Exception {
+        log.info("=== Testing MountainFacePoint ===");
+        var res = simpleContinentTest("mountain-face-point");
+        var hexGridString = new ObjectMapper().writeValueAsString(res.getWHexGrids());
+        assertTrue(hexGridString.contains("g_mountain_face"), "HexGrids should contain mountain face parameters");
+        assertTrue(hexGridString.contains("faceName"), "HexGrids should contain mountain face configuration");
+    }
+
+    @Test
+    public void testSimpleLakesPoint() throws Exception {
+        log.info("=== Testing LakesPoint ===");
+        var res = simpleContinentTest("lakes-point");
+        var hexGridString = new ObjectMapper().writeValueAsString(res.getWHexGrids());
+        assertTrue(hexGridString.contains("g_lakes"), "HexGrids should contain lakes parameters");
+        assertTrue(hexGridString.contains("lakesName"), "HexGrids should contain lakes configuration");
+    }
+
     // ============= Biome Type Tests =============
 
     @Test

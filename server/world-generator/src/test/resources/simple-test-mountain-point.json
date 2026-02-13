@@ -1,0 +1,48 @@
+{
+  "name": "Simple Mountain Point Test",
+  "worldId": "simple-test-mountain-point",
+  "continents": [
+    {
+      "continentId": "main-continent",
+      "name": "Main Continent",
+      "biomeType": "PLAINS",
+      "minNeighbors": 1,
+      "parameters": {
+        "g_offset": "5",
+        "g_roughness": "0.3"
+      }
+    }
+  ],
+  "features": [
+    {
+      "featureType": "plains-biome",
+      "name": "central-plains",
+      "title": "Central Plains",
+      "type": "PLAINS",
+      "shape": "CIRCLE",
+      "size": "MEDIUM",
+      "continentId": "main-continent",
+      "positions": [
+        {
+          "anchor": "origin",
+          "priority": 10
+        }
+      ],
+      "parameters": {
+      }
+    },
+    {
+      "featureType": "mountain-point",
+      "name": "test-mountain",
+      "title": "Test Mountain Peak",
+      "biomeId": "central-plains",
+      "biomeDistance": "CENTER",
+      "radius": 100,
+      "peakHeight": 80,
+      "baseHeight": 64,
+      "material": "stone",
+      "roughness": 0.6,
+      "crater": false
+    }
+  ]
+}

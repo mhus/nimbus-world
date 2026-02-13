@@ -47,7 +47,12 @@ Feature (abstract base)
     ├── PositionPoint (standard)
     ├── EdgePoint
     ├── OceanEdgePoint
-    └── TownConnectionPoint
+    ├── TownConnectionPoint
+    ├── VillagePoint
+    ├── MountainPoint
+    ├── SpikesPoint
+    ├── MountainFacePoint
+    └── LakesPoint
 ```
 
 ### Jackson Polymorphic Deserialization
@@ -90,6 +95,11 @@ Der **discriminator** `featureType` bestimmt die konkrete Klasse beim Deserialis
 | `edge` | EdgePoint | Point |
 | `ocean-edge` | OceanEdgePoint | Point |
 | `town-connection` | TownConnectionPoint | Point |
+| `village-point` | VillagePoint | Point |
+| `mountain-point` | MountainPoint | Point |
+| `spikes-point` | SpikesPoint | Point |
+| `mountain-face-point` | MountainFacePoint | Point |
+| `lakes-point` | LakesPoint | Point |
 
 ## 3. Root Class: HexComposition
 
@@ -786,6 +796,224 @@ private Direction oceanDirection;       // Direction to ocean
 **Purpose**: Externe Connection Points für Towns (automatisch generiert).
 
 **Special Behavior**: Diese Points werden automatisch vom System generiert und sollten nicht manuell definiert werden.
+
+#### VillagePoint
+
+**Feature Type**: `village-point`
+**Java Class**: `de.mhus.nimbus.world.generator.composer.point.VillagePoint`
+**Parent**: `Point`
+
+**Purpose**: Platziert ein kleines Dorf an einem bestimmten Punkt mit konfigurierbarem Stil und Größe.
+
+**Key Properties**:
+```java
+private String biomeId;                 // Biome, in dem das Dorf platziert wird
+private BiomeDistance biomeDistance;    // Abstand vom Biome-Zentrum
+private Direction direction;            // Richtung vom Biome-Zentrum
+private TownSize villageSize;           // HAMLET, SMALL_VILLAGE, VILLAGE, TOWN, LARGE_TOWN
+private String villageStyle;            // Baustil (z.B. "medieval", "fantasy")
+private Integer baseLevel;              // Terrain-Basishöhe (default: 95)
+```
+
+**Example JSON**:
+```json
+{
+  "featureType": "village-point",
+  "name": "small-hamlet",
+  "title": "Small Hamlet in the Valley",
+  "biomeId": "green-hills",
+  "direction": "N",
+  "biomeDistance": "NORMAL",
+  "villageSize": "HAMLET",
+  "villageStyle": "medieval",
+  "baseLevel": 95
+}
+```
+
+#### MountainPoint
+
+**Feature Type**: `mountain-point`
+**Java Class**: `de.mhus.nimbus.world.generator.composer.point.MountainPoint`
+**Parent**: `Point`
+
+**Purpose**: Erstellt einen einzelnen Berggipfel mit radialem Höhenverlauf an einem bestimmten Punkt.
+
+**Key Properties**:
+```java
+private String biomeId;                 // Biome, in dem der Berg platziert wird
+private BiomeDistance biomeDistance;    // Abstand vom Biome-Zentrum
+private Direction direction;            // Richtung vom Biome-Zentrum
+private Integer radius;                 // Radius des Berges in Blöcken (default: 150)
+private Integer peakHeight;             // Höhe der Bergspitze über baseHeight (default: 100)
+private Integer baseHeight;             // Basishöhe des Berges (default: 64)
+private Long seed;                      // Seed für Zufallsgenerierung
+private String material;                // Material-ID (z.B. "stone", "granite")
+private Double roughness;               // Rauheit des Geländes 0.0-1.0 (default: 0.5)
+private Boolean crater;                 // Krater am Gipfel (default: false)
+```
+
+**Example JSON**:
+```json
+{
+  "featureType": "mountain-point",
+  "name": "lonely-mountain",
+  "title": "The Lonely Mountain",
+  "biomeId": "central-plains",
+  "direction": "E",
+  "biomeDistance": "FAR",
+  "radius": 200,
+  "peakHeight": 120,
+  "baseHeight": 70,
+  "material": "stone",
+  "roughness": 0.7,
+  "crater": false
+}
+```
+
+#### SpikesPoint
+
+**Feature Type**: `spikes-point`
+**Java Class**: `de.mhus.nimbus.world.generator.composer.point.SpikesPoint`
+**Parent**: `Point`
+
+**Purpose**: Erstellt ein Feld von spitzen Formationen (Kristalle, Eiszapfen, etc.) mit konfigurierbarer Dichte.
+
+**Key Properties**:
+```java
+private String biomeId;                 // Biome, in dem die Spikes platziert werden
+private BiomeDistance biomeDistance;    // Abstand vom Biome-Zentrum
+private Direction direction;            // Richtung vom Biome-Zentrum
+private Density density;                // LOW, MEDIUM, HIGH - Minimaler Abstand zwischen Spikes
+private Amount amount;                  // FEW, NORMAL, MANY - Anzahl der Spikes
+private Integer minHeight;              // Minimale Spike-Höhe (default: 10)
+private Integer maxHeight;              // Maximale Spike-Höhe (default: 50)
+private Integer minWidth;               // Minimale Spike-Breite (default: 1)
+private Integer maxWidth;               // Maximale Spike-Breite (default: 3)
+private Integer distributionRadius;     // Verteilungsradius in Blöcken (default: 100)
+private String material;                // Material-ID (z.B. "ice", "crystal")
+private Double taperFactor;             // Verjüngungsfaktor 0.0-1.0 (default: 0.5)
+```
+
+**Density Enum**:
+- `LOW`: minDistance = 20 Blöcke
+- `MEDIUM`: minDistance = 12 Blöcke [Default]
+- `HIGH`: minDistance = 8 Blöcke
+
+**Amount Enum**:
+- `FEW`: spikesCount = distributionRadius / 25
+- `NORMAL`: spikesCount = distributionRadius / 15 [Default]
+- `MANY`: spikesCount = distributionRadius / 8
+
+**Example JSON**:
+```json
+{
+  "featureType": "spikes-point",
+  "name": "crystal-field",
+  "title": "Crystal Spike Field",
+  "biomeId": "frozen-wastes",
+  "direction": "NW",
+  "biomeDistance": "CENTER",
+  "density": "MEDIUM",
+  "amount": "NORMAL",
+  "minHeight": 15,
+  "maxHeight": 40,
+  "minWidth": 1,
+  "maxWidth": 3,
+  "distributionRadius": 80,
+  "material": "ice",
+  "taperFactor": 0.7
+}
+```
+
+#### MountainFacePoint
+
+**Feature Type**: `mountain-face-point`
+**Java Class**: `de.mhus.nimbus.world.generator.composer.point.MountainFacePoint`
+**Parent**: `Point`
+
+**Purpose**: Erstellt eine Klippenwand mit verzweigten Graten (Spider Pattern) an einem bestimmten Punkt.
+
+**Key Properties**:
+```java
+private String biomeId;                 // Biome, in dem die Klippenwand platziert wird
+private BiomeDistance biomeDistance;    // Abstand vom Biome-Zentrum
+private Direction direction;            // Richtung vom Biome-Zentrum
+private Dimension dimension;            // SMALL, MEDIUM, LARGE - Größe der Klippenwand
+private Integer baseHeight;             // Basishöhe der Klippenwand (default: 64)
+private Integer faceHeight;             // Höhe der Klippenwand (default: 40)
+private Integer recursionDepth;         // Rekursionstiefe für Verzweigungen (default: 2)
+private String material;                // Material-ID (z.B. "stone", "granite")
+private Integer branches;               // Anzahl der Hauptäste (auto-calculated from dimension)
+private Integer branchLength;           // Länge der Hauptäste (auto-calculated from dimension)
+private Integer subBranches;            // Anzahl der Unteräste (auto-calculated from dimension)
+```
+
+**Dimension Enum**:
+- `SMALL`: branches=3-4, branchLength=30-40, subBranches=2-3
+- `MEDIUM`: branches=5-6, branchLength=50-70, subBranches=3-4 [Default]
+- `LARGE`: branches=7-9, branchLength=80-120, subBranches=4-5
+
+**Example JSON**:
+```json
+{
+  "featureType": "mountain-face-point",
+  "name": "cliff-wall",
+  "title": "Great Cliff Face",
+  "biomeId": "highlands",
+  "direction": "S",
+  "biomeDistance": "NORMAL",
+  "dimension": "LARGE",
+  "baseHeight": 70,
+  "faceHeight": 60,
+  "recursionDepth": 3,
+  "material": "stone"
+}
+```
+
+#### LakesPoint
+
+**Feature Type**: `lakes-point`
+**Java Class**: `de.mhus.nimbus.world.generator.composer.point.LakesPoint`
+**Parent**: `Point`
+
+**Purpose**: Erstellt ein Seen-System mit einem Hauptsee und mehreren kleineren Seen an einem bestimmten Punkt.
+
+**Key Properties**:
+```java
+private String biomeId;                 // Biome, in dem die Seen platziert werden
+private BiomeDistance biomeDistance;    // Abstand vom Biome-Zentrum
+private Direction direction;            // Richtung vom Biome-Zentrum
+private Integer mainLakeRadius;         // Radius des Hauptsees in Blöcken (default: 35)
+private Integer mainLakeDepth;          // Tiefe des Hauptsees in Blöcken (default: 25)
+private Integer smallLakes;             // Anzahl kleiner Seen (default: 6)
+private Integer smallLakeMinRadius;     // Min. Radius kleiner Seen (default: 8)
+private Integer smallLakeMaxRadius;     // Max. Radius kleiner Seen (default: 15)
+private Integer scatterDistance;        // Verteilungsabstand vom Hauptsee (default: 50)
+```
+
+**Behavior**:
+- Findet den niedrigsten Punkt im Gebiet als Wasser-Oberfläche
+- Prüft, ob über Meeresspiegel (überspringt Seen unterhalb)
+- Erstellt Vertiefungen vom Wasser-Niveau nach unten
+- Platziert Wasser-Extra-Blocks auf Oberflächen-Niveau
+
+**Example JSON**:
+```json
+{
+  "featureType": "lakes-point",
+  "name": "twin-lakes",
+  "title": "Twin Lakes",
+  "biomeId": "mountain-valley",
+  "direction": "CENTER",
+  "biomeDistance": "NEAR",
+  "mainLakeRadius": 45,
+  "mainLakeDepth": 30,
+  "smallLakes": 8,
+  "smallLakeMinRadius": 10,
+  "smallLakeMaxRadius": 20,
+  "scatterDistance": 60
+}
+```
 
 ## 5. Common Concepts
 
@@ -1668,6 +1896,28 @@ DIRECT_BEHIND (1, 1), NEAR (1, 10), FAR (10, 20);
 ### FeatureStatus
 `NEW`, `COMPOSED`, `CREATED`
 
+### TownSize (für Village/Town Größen)
+- `HAMLET`: 1x1 slots (sehr klein)
+- `SMALL_VILLAGE`: 3x3 slots
+- `VILLAGE`: 5x5 slots
+- `TOWN`: 7x7 slots
+- `LARGE_TOWN`: 9x9 slots
+
+### Density (SpikesPoint)
+- `LOW`: minDistance = 20 Blöcke
+- `MEDIUM`: minDistance = 12 Blöcke
+- `HIGH`: minDistance = 8 Blöcke
+
+### Amount (SpikesPoint)
+- `FEW`: spikesCount = distributionRadius / 25
+- `NORMAL`: spikesCount = distributionRadius / 15
+- `MANY`: spikesCount = distributionRadius / 8
+
+### Dimension (MountainFacePoint)
+- `SMALL`: branches=3-4, branchLength=30-40, subBranches=2-3
+- `MEDIUM`: branches=5-6, branchLength=50-70, subBranches=3-4
+- `LARGE`: branches=7-9, branchLength=80-120, subBranches=4-5
+
 ## 10. Migration Notes for AI Translators
 
 ### Key Considerations
@@ -1729,6 +1979,10 @@ DIRECT_BEHIND (1, 1), NEAR (1, 10), FAR (10, 20);
 
 ---
 
-**Version**: 1.0.0
-**Last Updated**: 2026-02-05
+**Version**: 1.1.0
+**Last Updated**: 2026-02-13
 **Author**: Generated from source code analysis
+**Changelog**:
+- Added 5 new Point types: VillagePoint, MountainPoint, SpikesPoint, MountainFacePoint, LakesPoint
+- Added Density, Amount, and Dimension enums
+- Added TownSize enum reference

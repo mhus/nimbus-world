@@ -1,0 +1,48 @@
+{
+  "name": "Simple Lakes Point Test",
+  "worldId": "simple-test-lakes-point",
+  "continents": [
+    {
+      "continentId": "main-continent",
+      "name": "Main Continent",
+      "biomeType": "PLAINS",
+      "minNeighbors": 1,
+      "parameters": {
+        "g_offset": "5",
+        "g_roughness": "0.3"
+      }
+    }
+  ],
+  "features": [
+    {
+      "featureType": "plains-biome",
+      "name": "central-plains",
+      "title": "Central Plains",
+      "type": "PLAINS",
+      "shape": "CIRCLE",
+      "size": "MEDIUM",
+      "continentId": "main-continent",
+      "positions": [
+        {
+          "anchor": "origin",
+          "priority": 10
+        }
+      ],
+      "parameters": {
+      }
+    },
+    {
+      "featureType": "lakes-point",
+      "name": "test-lakes",
+      "title": "Test Lake System",
+      "biomeId": "central-plains",
+      "biomeDistance": "CENTER",
+      "mainLakeRadius": 40,
+      "mainLakeDepth": 20,
+      "smallLakes": 5,
+      "smallLakeMinRadius": 10,
+      "smallLakeMaxRadius": 20,
+      "scatterDistance": 60
+    }
+  ]
+}

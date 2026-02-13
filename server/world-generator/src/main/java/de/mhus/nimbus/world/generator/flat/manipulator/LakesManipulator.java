@@ -12,17 +12,25 @@ import java.util.Random;
 
 /**
  * Lakes manipulator.
- * Creates a main lake with multiple smaller lakes using quadratic depression.
+ * Creates a main lake with multiple smaller lakes on the existing terrain.
+ * Lakes are placed at the lowest point in their area and extend downward.
+ * Water blocks (extra blocks) are placed one level below the water surface.
  * Based on ShapeFactory.cpp Case 46 + Case 42.
  * <p>
  * Parameters:
  * - mainLakeRadius: Radius of main lake (default: 35, range: 10-min(sizeX,sizeZ)/2)
- * - mainLakeDepth: Depth below ocean level (default: 25, range: 5-50)
+ * - mainLakeDepth: Depth of lake depression (default: 25, range: 5-50)
  * - smallLakes: Number of small lakes (default: 6, range: 2-15)
  * - smallLakeMinRadius: Min radius of small lakes (default: 8, range: 5-mainRadius/2)
  * - smallLakeMaxRadius: Max radius of small lakes (default: 15, range: smallMinRadius-mainRadius)
  * - scatterDistance: How far small lakes scatter (default: 50, range: mainRadius-sizeX)
  * - seed: Random seed (default: System.currentTimeMillis())
+ *
+ * Lake placement rules:
+ * - Lakes are never below sea level (if placement would be below seaLevel, lake is skipped)
+ * - Lake surface is at the lowest point within the lake area
+ * - Lake extends at least 1 block down from surface for water volume
+ * - Water extra blocks are placed one level below the lake surface
  */
 @Component
 @Slf4j
@@ -78,17 +86,24 @@ public class LakesManipulator implements FlatManipulator {
         // Setup FlatPainter
         FlatPainter painter = new FlatPainter(flat);
 
-        // Get ocean level
-        int oceanLevel = flat.getSeaLevel();
+        // Get sea level
+        int seaLevel = flat.getSeaLevel();
 
         // Calculate center coordinates
         int centerX = x + sizeX / 2;
         int centerZ = z + sizeZ / 2;
 
-        // Draw main lake with quadratic depression
-        drawLake(painter, flat, centerX, centerZ, mainRadius, mainDepth, oceanLevel);
+        // Draw main lake with new terrain-based logic
+        boolean mainLakeCreated = drawLake(painter, flat, centerX, centerZ, mainRadius, mainDepth, seaLevel);
+
+        if (mainLakeCreated) {
+            log.debug("Main lake created at ({}, {})", centerX, centerZ);
+        } else {
+            log.debug("Main lake skipped (would be below sea level)");
+        }
 
         // Draw small lakes scattered around
+        int smallLakesCreated = 0;
         for (int i = 0; i < smallCount; i++) {
             // Use polar coordinates for natural scattering
             double angle = random.nextDouble() * 2 * Math.PI;
@@ -105,46 +120,81 @@ public class LakesManipulator implements FlatManipulator {
             int smallRadius = smallMinRadius + random.nextInt(smallMaxRadius - smallMinRadius + 1);
             int smallDepth = (mainDepth / 2) + random.nextInt(mainDepth / 3);
 
-            drawLake(painter, flat, lakeX, lakeZ, smallRadius, smallDepth, oceanLevel);
+            boolean created = drawLake(painter, flat, lakeX, lakeZ, smallRadius, smallDepth, seaLevel);
+            if (created) {
+                smallLakesCreated++;
+            }
         }
+
+        log.debug("Created {} small lakes out of {} attempts", smallLakesCreated, smallCount);
 
         // Smooth lake edges for natural appearance
         painter.soften(x, z, x + sizeX - 1, z + sizeZ - 1, 1, 0.5);
 
-        // Set water material for areas below ocean level
-        for (int localZ = 0; localZ < sizeZ; localZ++) {
-            for (int localX = 0; localX < sizeX; localX++) {
-                int xi = x + localX;
-                int zi = z + localZ;
-                int level = flat.getLevel(xi, zi);
-
-                if (level <= oceanLevel) {
-                    flat.setColumn(xi, zi, FlatMaterialService.SAND);
-                }
-            }
-        }
-
-        log.info("Lakes manipulation completed: mainRadius={}, mainDepth={}, smallLakes={}",
-                mainRadius, mainDepth, smallCount);
+        log.info("Lakes manipulation completed: mainRadius={}, mainDepth={}, smallLakes created={}/{}, " +
+                "mainLake={}", mainRadius, mainDepth, smallLakesCreated, smallCount,
+                mainLakeCreated ? "created" : "skipped");
     }
 
     /**
-     * Draw a single lake with quadratic depth falloff.
-     * Depression is deeper in center, gradually becoming shallower towards edges.
+     * Draw a single lake on existing terrain.
+     *
+     * Algorithm:
+     * 1. Find the lowest point within the lake area (this becomes the water surface)
+     * 2. Check if this point is above sea level (if not, skip lake)
+     * 3. Create depression extending downward from the lowest point
+     * 4. Place water extra blocks one level below the water surface
      *
      * @param painter FlatPainter instance
      * @param flat WFlat instance
      * @param centerX Center X coordinate
      * @param centerZ Center Z coordinate
      * @param radius Lake radius
-     * @param depth Maximum depth below ocean level
-     * @param oceanLevel Ocean level
+     * @param depth Maximum depth of lake depression
+     * @param seaLevel Sea level (lakes must be above this)
+     * @return true if lake was created, false if skipped (would be below sea level)
      */
-    private void drawLake(FlatPainter painter, WFlat flat,
-                         int centerX, int centerZ, int radius,
-                         int depth, int oceanLevel) {
-        // Quadratic falloff - depth decreases with square of distance
-        // Formula: lakeLevel = oceanLevel - depth * (1 - distance/radius)^2
+    private boolean drawLake(FlatPainter painter, WFlat flat,
+                            int centerX, int centerZ, int radius,
+                            int depth, int seaLevel) {
+
+        // Step 1: Find the lowest point in the lake area
+        int lowestLevel = Integer.MAX_VALUE;
+        for (int dz = -radius; dz <= radius; dz++) {
+            for (int dx = -radius; dx <= radius; dx++) {
+                double distance = Math.sqrt(dx * dx + dz * dz);
+                if (distance <= radius) {
+                    int xi = centerX + dx;
+                    int zi = centerZ + dz;
+
+                    // Check bounds
+                    if (xi >= 0 && xi < flat.getSizeX() && zi >= 0 && zi < flat.getSizeZ()) {
+                        int level = flat.getLevel(xi, zi);
+                        lowestLevel = Math.min(lowestLevel, level);
+                    }
+                }
+            }
+        }
+
+        // If no valid point found
+        if (lowestLevel == Integer.MAX_VALUE) {
+            return false;
+        }
+
+        // Step 2: Check if lowest point is above sea level
+        if (lowestLevel <= seaLevel) {
+            log.debug("Lake at ({}, {}) would be at or below sea level ({}), skipping",
+                centerX, centerZ, lowestLevel);
+            return false;
+        }
+
+        // The water surface will be at the lowest point
+        int waterSurfaceLevel = lowestLevel;
+
+        // Ensure we dig at least 1 block down for water volume
+        int minLakeBottom = waterSurfaceLevel - 1;
+
+        // Step 3: Create lake depression with quadratic falloff
         for (int dz = -radius; dz <= radius; dz++) {
             for (int dx = -radius; dx <= radius; dx++) {
                 double distance = Math.sqrt(dx * dx + dz * dz);
@@ -153,18 +203,63 @@ public class LakesManipulator implements FlatManipulator {
                     int xi = centerX + dx;
                     int zi = centerZ + dz;
 
+                    // Check bounds
+                    if (xi < 0 || xi >= flat.getSizeX() || zi < 0 || zi >= flat.getSizeZ()) {
+                        continue;
+                    }
+
                     // Quadratic falloff: depth is maximum at center, zero at edge
                     double depthFactor = Math.pow(1.0 - distance / radius, 2);
-                    int lakeLevel = oceanLevel - (int) (depth * depthFactor);
+                    int targetDepth = (int) (depth * depthFactor);
 
-                    // Clamp to valid range
-                    lakeLevel = Math.max(0, Math.min(255, lakeLevel));
+                    // Calculate target level (dig down from water surface)
+                    int targetLevel = waterSurfaceLevel - targetDepth;
+
+                    // Ensure at least 1 block deep in center
+                    if (distance < radius * 0.3) {
+                        targetLevel = Math.min(targetLevel, minLakeBottom);
+                    }
+
+                    // Don't go below sea level
+                    targetLevel = Math.max(targetLevel, seaLevel + 1);
 
                     // Use LOWER painter to only lower terrain (create depression)
-                    painter.paint(xi, zi, lakeLevel, FlatPainter.LOWER);
+                    painter.paint(xi, zi, targetLevel, FlatPainter.LOWER);
+
+                    // Set sand material for lake bottom
+                    flat.setColumn(xi, zi, FlatMaterialService.SAND);
                 }
             }
         }
+
+        // Step 4: Place water extra blocks one level below water surface
+        for (int dz = -radius; dz <= radius; dz++) {
+            for (int dx = -radius; dx <= radius; dx++) {
+                double distance = Math.sqrt(dx * dx + dz * dz);
+
+                if (distance <= radius) {
+                    int xi = centerX + dx;
+                    int zi = centerZ + dz;
+
+                    // Check bounds
+                    if (xi < 0 || xi >= flat.getSizeX() || zi < 0 || zi >= flat.getSizeZ()) {
+                        continue;
+                    }
+
+                    // Check if this position is below water surface (i.e., is part of the lake)
+                    int currentLevel = flat.getLevel(xi, zi);
+                    if (currentLevel < waterSurfaceLevel) {
+                        // Place water extra block at water surface level
+                        flat.setExtraBlock(xi, zi, waterSurfaceLevel, "WATER");
+                    }
+                }
+            }
+        }
+
+        log.debug("Created lake at ({}, {}) with surface level {} (radius: {}, depth: {})",
+            centerX, centerZ, waterSurfaceLevel, radius, depth);
+
+        return true;
     }
 
     // Parameter parsing helper methods

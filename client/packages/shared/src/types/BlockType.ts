@@ -83,7 +83,7 @@ export interface BlockType {
    * Modifiers map: status → BlockModifier
    *
    * Defines visual and behavioral properties for each status.
-   * Status 0 (DEFAULT) should always be present.
+   * Status 'default' (legacy: 0) must always be present.
    *
    * @example
    * modifiers: {

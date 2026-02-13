@@ -50,6 +50,10 @@ public class HexGridBuilderService {
         manipulatorRegistry.put("g_sidewall", SideWallBuilder.class);
         manipulatorRegistry.put("g_plot", PlotBuilder.class);
         manipulatorRegistry.put("g_village", VillageBuilder.class);
+        manipulatorRegistry.put("g_mountain", SingleMountainBuilder.class);
+        manipulatorRegistry.put("g_spikes", SingleSpikesBuilder.class);
+        manipulatorRegistry.put("g_mountain_face", SingleMountainFaceBuilder.class);
+        manipulatorRegistry.put("g_lakes", LakesBuilder.class);
     }
 
     /**
@@ -99,6 +103,10 @@ public class HexGridBuilderService {
      * Create a pipeline of builders for a hex grid.
      * The pipeline consists of:
      * 1. Main builder (from g_builder parameter)
+     * 1.5. SingleMountainBuilder (if g_mountain parameter exists, after main builder in GROUND step)
+     * 1.6. SingleSpikesBuilder (if g_spikes parameter exists, after main builder in GROUND step)
+     * 1.7. SingleMountainFaceBuilder (if g_mountain_face parameter exists, after main builder in GROUND step)
+     * 1.8. LakesBuilder (if g_lakes parameter exists, after main builder in GROUND step)
      * 2. MultiEdgeBlenderBuilder (always, blends edges with neighbors for seamless transitions)
      * 3. RiverBuilder (if river parameter exists)
      * 4. RoadBuilder (if road parameter exists)
@@ -147,6 +155,46 @@ public class HexGridBuilderService {
                 }
             } else {
                 log.warn("No g_builder parameter found on hex grid: {}", grid.getPosition());
+            }
+
+            // 1.5. SingleMountainBuilder (if g_mountain parameter exists)
+            // Executed after main builder to create mountain peaks on top of terrain
+            if (gridParams.containsKey("g_mountain") && !gridParams.get("g_mountain").isBlank()) {
+                Optional<HexGridBuilder> mountainBuilder = createManipulator("g_mountain", builderParams);
+                if (mountainBuilder.isPresent()) {
+                    pipeline.add(mountainBuilder.get());
+                    log.debug("Added SingleMountainBuilder to pipeline");
+                }
+            }
+
+            // 1.6. SingleSpikesBuilder (if g_spikes parameter exists)
+            // Executed after main builder to create spike formations on top of terrain
+            if (gridParams.containsKey("g_spikes") && !gridParams.get("g_spikes").isBlank()) {
+                Optional<HexGridBuilder> spikesBuilder = createManipulator("g_spikes", builderParams);
+                if (spikesBuilder.isPresent()) {
+                    pipeline.add(spikesBuilder.get());
+                    log.debug("Added SingleSpikesBuilder to pipeline");
+                }
+            }
+
+            // 1.7. SingleMountainFaceBuilder (if g_mountain_face parameter exists)
+            // Executed after main builder to create cliff faces with branching ridges
+            if (gridParams.containsKey("g_mountain_face") && !gridParams.get("g_mountain_face").isBlank()) {
+                Optional<HexGridBuilder> mountainFaceBuilder = createManipulator("g_mountain_face", builderParams);
+                if (mountainFaceBuilder.isPresent()) {
+                    pipeline.add(mountainFaceBuilder.get());
+                    log.debug("Added SingleMountainFaceBuilder to pipeline");
+                }
+            }
+
+            // 1.8. LakesBuilder (if g_lakes parameter exists)
+            // Executed after main builder to create lake systems with main and small lakes
+            if (gridParams.containsKey("g_lakes") && !gridParams.get("g_lakes").isBlank()) {
+                Optional<HexGridBuilder> lakesBuilder = createManipulator("g_lakes", builderParams);
+                if (lakesBuilder.isPresent()) {
+                    pipeline.add(lakesBuilder.get());
+                    log.debug("Added LakesBuilder to pipeline");
+                }
             }
         }
 
