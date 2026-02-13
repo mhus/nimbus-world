@@ -4,7 +4,6 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.shared.utils.TypeUtil;
-import de.mhus.nimbus.world.generator.composer.biome.BiomeType;
 import de.mhus.nimbus.world.generator.composer.build.CompositionResult;
 import de.mhus.nimbus.world.generator.composer.biome.Continent;
 import de.mhus.nimbus.world.generator.composer.build.MapFlatProvider;
@@ -39,7 +38,6 @@ import de.mhus.nimbus.world.shared.world.WWorld;
 import de.mhus.nimbus.generated.types.WorldInfo;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 
 import java.awt.*;
 import java.io.File;
@@ -96,7 +94,7 @@ public abstract class HexCompositeBuilderAbstract {
         setupFlatCreateService();
     }
 
-    public CompositionResult simpleContinentTest(String name) throws Exception {
+    public CompositionResult composite(String name) throws Exception {
         log.info("=== Testing %s System ===".formatted(name));
 
         // Load composition from JSON file
