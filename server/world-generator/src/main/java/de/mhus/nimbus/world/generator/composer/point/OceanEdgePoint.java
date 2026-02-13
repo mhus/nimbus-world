@@ -40,6 +40,17 @@ public class OceanEdgePoint extends Point {
     private Direction oceanDirection;
 
     @Override
+    public void initPosition(Area biome, ComposeContext context) {
+        super.initPosition(biome, context);
+        de.mhus.nimbus.world.shared.world.HexLocalEdgeVector edgeVector = composePosition(biome, context);
+        if (edgeVector != null) {
+            setHexLocalPosition(null);
+            setHexLocalEdgeVector(edgeVector);
+        }
+        // Otherwise: parent already set center fallback — point lands at biome center
+    }
+
+    @Override
     public de.mhus.nimbus.generated.types.HexVector2 selectGridCoordinate(Area biome, ComposeContext context) {
         // Find edge coordinates (coordinates at biome boundary)
         List<de.mhus.nimbus.generated.types.HexVector2> coordinates = biome.getAssignedCoordinates();

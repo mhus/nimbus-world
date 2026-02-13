@@ -28,6 +28,16 @@ import lombok.EqualsAndHashCode;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class PositionPoint extends Point {
 
+    @Override
+    public void initPosition(Area biome, ComposeContext context) {
+        super.initPosition(biome, context);
+        HexLocalPosition position = composePosition(biome, context);
+        if (position != null) {
+            setHexLocalPosition(position);
+        }
+        // Otherwise: parent already set center fallback
+    }
+
     /**
      * Composes the position for this regular point.
      * Uses biome-relative positioning logic from the Point base class.

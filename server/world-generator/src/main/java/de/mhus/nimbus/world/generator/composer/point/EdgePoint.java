@@ -3,6 +3,7 @@ package de.mhus.nimbus.world.generator.composer.point;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import de.mhus.nimbus.world.generator.composer.area.Area;
 import de.mhus.nimbus.world.generator.composer.build.ComposeContext;
+import de.mhus.nimbus.world.shared.world.HexLocalEdgeVector;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -43,6 +44,17 @@ public class EdgePoint extends Point {
      * If set, ensures the edge point borders this specific biome.
      */
     private String neighborBiomeId;
+
+    @Override
+    public void initPosition(Area biome, ComposeContext context) {
+        super.initPosition(biome, context);
+        HexLocalEdgeVector edgeVector = composePosition(biome, context);
+        if (edgeVector != null) {
+            setHexLocalPosition(null);
+            setHexLocalEdgeVector(edgeVector);
+        }
+        // Otherwise: parent already set center fallback
+    }
 
     /**
      * Composes the position for this edge point.

@@ -101,18 +101,25 @@ public class PointComposer {
 
             // Initialize point positions
             for (Point point : points) {
-                initializePointPosition(point, context);
+                boolean initialized = initializePointPosition(point, context);
+                if (!initialized) {
+                    failedPoints++;
+                    errors.add("Point " + point.getName() + ": biome '" + point.getBiomeId() + "' not found");
+                }
             }
 
-            // Iteratively solve positions
-            boolean converged = iterativelySolvePositions(points, constraintGraph, context);
+            // Iteratively solve positions (only for initialized points)
+            List<Point> initializedPoints = points.stream()
+                .filter(p -> p.getGridCoordinate() != null)
+                .toList();
+            boolean converged = iterativelySolvePositions(initializedPoints, constraintGraph, context);
 
             if (!converged) {
                 log.warn("Point positioning did not fully converge after {} iterations", MAX_ITERATIONS);
             }
 
-            // Calculate absolute positions and finalize
-            for (Point point : points) {
+            // Calculate absolute positions and finalize (only initialized points)
+            for (Point point : initializedPoints) {
                 try {
                     boolean success = finalizePointPosition(point, context);
                     if (success) {
@@ -120,7 +127,7 @@ public class PointComposer {
                         log.debug("Composed point '{}': {}", point.getName(), point.getPlacedPositionString());
                     } else {
                         failedPoints++;
-                        errors.add("Point " + point.getName() + ": could not finalize position");
+                        errors.add("Point " + point.getName() + ": finalization failed unexpectedly");
                         log.warn("Failed to compose point: {}", point.getName());
                     }
                 } catch (Exception e) {
@@ -294,68 +301,19 @@ public class PointComposer {
     }
 
     /**
-     * Initializes point position based on its type and constraints.
+     * Initializes point position using polymorphic dispatch.
+     * Returns false only if the biome does not exist (the only valid failure case).
      */
-    private void initializePointPosition(Point point, ComposeContext context) {
+    private boolean initializePointPosition(Point point, ComposeContext context) {
         Area biome = getBiomeForPoint(point, context);
         if (biome == null) {
-            log.warn("Cannot initialize point {}: no biome found", point.getName());
-            return;
+            log.warn("Point '{}': biome '{}' not found — skipping",
+                point.getName(), point.getBiomeId());
+            return false;
         }
 
-        // Let point select its preferred grid coordinate (default: biome center, but subclasses can override)
-        HexVector2 gridCoordinate = point.selectGridCoordinate(biome, context);
-        if (gridCoordinate == null) {
-            log.warn("Cannot initialize point {}: could not select grid coordinate", point.getName());
-            return;
-        }
-
-        // Set gridCoordinate and biome for all point types
-        point.setGridCoordinate(gridCoordinate);
-        point.setBiome(biome.getName());
-
-        // Call subclass-specific compose method to get local position
-        if (point instanceof PositionPoint positionPoint) {
-            de.mhus.nimbus.world.shared.world.HexLocalPosition hexLocalPosition =
-                positionPoint.composePosition(biome, context);
-            if (hexLocalPosition != null) {
-                point.setHexLocalPosition(hexLocalPosition);
-                log.debug("Initialized PositionPoint {} at grid {} with local position {}",
-                    point.getName(), gridCoordinate, hexLocalPosition);
-                return;
-            }
-        } else if (point instanceof OceanEdgePoint oceanEdgePoint) {
-            de.mhus.nimbus.world.shared.world.HexLocalEdgeVector hexLocalEdgeVector =
-                oceanEdgePoint.composePosition(biome, context);
-            if (hexLocalEdgeVector != null) {
-                point.setHexLocalEdgeVector(hexLocalEdgeVector);
-                log.debug("Initialized OceanEdgePoint {} at grid {} with edge vector {}",
-                    point.getName(), gridCoordinate, hexLocalEdgeVector);
-                return;
-            }
-        } else if (point instanceof EdgePoint edgePoint) {
-            de.mhus.nimbus.world.shared.world.HexLocalEdgeVector hexLocalEdgeVector =
-                edgePoint.composePosition(biome, context);
-            if (hexLocalEdgeVector != null) {
-                point.setHexLocalEdgeVector(hexLocalEdgeVector);
-                log.debug("Initialized EdgePoint {} at grid {} with edge vector {}",
-                    point.getName(), gridCoordinate, hexLocalEdgeVector);
-                return;
-            }
-        }
-
-        // Fallback: Initialize at center (0,0) with default divider
-        de.mhus.nimbus.generated.types.HexVector2 centerHexPos =
-            de.mhus.nimbus.generated.types.HexVector2.builder()
-                .q(0)
-                .r(0)
-                .build();
-        int divider = de.mhus.nimbus.world.shared.util.HexLocalUtil.DEFAULT_POSITION_DIVIDER;
-        int size = context.getHexGridSize() / divider;
-        point.setHexLocalPosition(
-            new de.mhus.nimbus.world.shared.world.HexLocalPosition(centerHexPos, divider, size)
-        );
-        log.debug("Initialized point {} at grid {} with fallback center position", point.getName(), gridCoordinate);
+        point.initPosition(biome, context);
+        return true;
     }
 
     /**
@@ -403,121 +361,99 @@ public class PointComposer {
     private boolean finalizePointPosition(Point point, ComposeContext context) {
         // Check if point has shared HexLocalPosition
         if (point.getHexLocalPosition() != null) {
-            de.mhus.nimbus.world.shared.world.HexLocalPosition hexLocalPos = point.getHexLocalPosition();
             HexVector2 gridCoord = point.getGridCoordinate();
 
             if (gridCoord != null) {
-                // Convert HexLocalPosition to absolute lx/lz coordinates
                 de.mhus.nimbus.generated.types.Vector2Int relativePos =
-                    de.mhus.nimbus.world.shared.util.HexLocalUtil.toHexGridLocalCenter(hexLocalPos);
+                    HexLocalUtil.toHexGridLocalCenter(point.getHexLocalPosition());
 
                 int lx = context.getHexGridSize() / 2 + relativePos.getX();
                 int lz = context.getHexGridSize() / 2 + relativePos.getZ();
 
-                // Legacy fields for backward compatibility
                 point.setPlacedCoordinate(gridCoord);
                 point.setPlacedLx(lx);
                 point.setPlacedLz(lz);
                 point.setPlacedInBiome(point.getBiome());
                 point.setStatus(FeatureStatus.COMPOSED);
+                configureHexGridForPoint(point, gridCoord, context);
 
                 log.debug("Finalized point {} at grid {} with lx={}, lz={}",
                     point.getName(), gridCoord, lx, lz);
-
-                // If this is a VillagePoint, configure the HexGrid with village data
-                if (point instanceof VillagePoint villagePoint) {
-                    villagePoint.configureHexGrid(gridCoord, context.getHexGridSize(), context);
-                    log.debug("Configured VillagePoint {} on grid {}", point.getName(), gridCoord);
-                }
-
-                // If this is a MountainPoint, configure the HexGrid with mountain data
-                if (point instanceof MountainPoint mountainPoint) {
-                    mountainPoint.configureHexGrid(gridCoord, context.getHexGridSize(), context);
-                    log.debug("Configured MountainPoint {} on grid {}", point.getName(), gridCoord);
-                }
-
-                // If this is a SpikesPoint, configure the HexGrid with spikes data
-                if (point instanceof SpikesPoint spikesPoint) {
-                    spikesPoint.configureHexGrid(gridCoord, context.getHexGridSize(), context);
-                    log.debug("Configured SpikesPoint {} on grid {}", point.getName(), gridCoord);
-                }
-
-                // If this is a MountainFacePoint, configure the HexGrid with mountain face data
-                if (point instanceof MountainFacePoint mountainFacePoint) {
-                    mountainFacePoint.configureHexGrid(gridCoord, context.getHexGridSize(), context);
-                    log.debug("Configured MountainFacePoint {} on grid {}", point.getName(), gridCoord);
-                }
-
-                // If this is a LakesPoint, configure the HexGrid with lakes data
-                if (point instanceof LakesPoint lakesPoint) {
-                    lakesPoint.configureHexGrid(gridCoord, context.getHexGridSize(), context);
-                    log.debug("Configured LakesPoint {} on grid {}", point.getName(), gridCoord);
-                }
-
                 return true;
             }
         }
 
         // Check if point has shared HexLocalEdgeVector
         if (point.getHexLocalEdgeVector() != null) {
-            de.mhus.nimbus.world.shared.world.HexLocalEdgeVector edgeVector = point.getHexLocalEdgeVector();
             HexVector2 gridCoord = point.getGridCoordinate();
 
             if (gridCoord != null) {
-                // Convert HexLocalEdgeVector to absolute lx/lz coordinates
                 de.mhus.nimbus.generated.types.Vector2Int relativePos =
-                    de.mhus.nimbus.world.shared.util.HexLocalUtil.toHexgridLocalCenter(
-                        edgeVector, context.getHexGridSize());
+                    HexLocalUtil.toHexgridLocalCenter(
+                        point.getHexLocalEdgeVector(), context.getHexGridSize());
 
                 int lx = context.getHexGridSize() / 2 + relativePos.getX();
                 int lz = context.getHexGridSize() / 2 + relativePos.getZ();
 
-                // Legacy fields for backward compatibility
                 point.setPlacedCoordinate(gridCoord);
                 point.setPlacedLx(lx);
                 point.setPlacedLz(lz);
                 point.setPlacedInBiome(point.getBiome());
                 point.setStatus(FeatureStatus.COMPOSED);
+                configureHexGridForPoint(point, gridCoord, context);
 
                 log.debug("Finalized edge point {} at grid {} with lx={}, lz={}",
                     point.getName(), gridCoord, lx, lz);
-
-                // If this is a VillagePoint, configure the HexGrid with village data
-                if (point instanceof VillagePoint villagePoint) {
-                    villagePoint.configureHexGrid(gridCoord, context.getHexGridSize(), context);
-                    log.debug("Configured VillagePoint {} on grid {}", point.getName(), gridCoord);
-                }
-
-                // If this is a MountainPoint, configure the HexGrid with mountain data
-                if (point instanceof MountainPoint mountainPoint) {
-                    mountainPoint.configureHexGrid(gridCoord, context.getHexGridSize(), context);
-                    log.debug("Configured MountainPoint {} on grid {}", point.getName(), gridCoord);
-                }
-
-                // If this is a SpikesPoint, configure the HexGrid with spikes data
-                if (point instanceof SpikesPoint spikesPoint) {
-                    spikesPoint.configureHexGrid(gridCoord, context.getHexGridSize(), context);
-                    log.debug("Configured SpikesPoint {} on grid {}", point.getName(), gridCoord);
-                }
-
-                // If this is a MountainFacePoint, configure the HexGrid with mountain face data
-                if (point instanceof MountainFacePoint mountainFacePoint) {
-                    mountainFacePoint.configureHexGrid(gridCoord, context.getHexGridSize(), context);
-                    log.debug("Configured MountainFacePoint {} on grid {}", point.getName(), gridCoord);
-                }
-
-                // If this is a LakesPoint, configure the HexGrid with lakes data
-                if (point instanceof LakesPoint lakesPoint) {
-                    lakesPoint.configureHexGrid(gridCoord, context.getHexGridSize(), context);
-                    log.debug("Configured LakesPoint {} on grid {}", point.getName(), gridCoord);
-                }
-
                 return true;
             }
         }
 
-        log.warn("Cannot finalize point {}: no position data", point.getName());
-        return false;
+        // Last resort: point has gridCoordinate but no position data
+        // Create center fallback (should not happen after initPosition, but be safe)
+        HexVector2 gridCoord = point.getGridCoordinate();
+        if (gridCoord == null) {
+            gridCoord = HexVector2.builder().q(0).r(0).build();
+            point.setGridCoordinate(gridCoord);
+        }
+        log.warn("Point '{}': no position data after init, creating center fallback at ({},{})",
+            point.getName(), gridCoord.getQ(), gridCoord.getR());
+
+        int divider = HexLocalUtil.DEFAULT_POSITION_DIVIDER;
+        int size = context.getHexGridSize() / divider;
+        point.setHexLocalPosition(new de.mhus.nimbus.world.shared.world.HexLocalPosition(
+            HexVector2.builder().q(0).r(0).build(), divider, size));
+
+        de.mhus.nimbus.generated.types.Vector2Int relativePos =
+            HexLocalUtil.toHexGridLocalCenter(point.getHexLocalPosition());
+        int lx = context.getHexGridSize() / 2 + relativePos.getX();
+        int lz = context.getHexGridSize() / 2 + relativePos.getZ();
+
+        point.setPlacedCoordinate(gridCoord);
+        point.setPlacedLx(lx);
+        point.setPlacedLz(lz);
+        point.setPlacedInBiome(point.getBiome());
+        point.setStatus(FeatureStatus.COMPOSED);
+        configureHexGridForPoint(point, gridCoord, context);
+
+        return true;
+    }
+
+    /**
+     * Configures HexGrid for point types that need it.
+     */
+    private void configureHexGridForPoint(Point point, HexVector2 gridCoord, ComposeContext context) {
+        int hexGridSize = context.getHexGridSize();
+        if (point instanceof VillagePoint vp) {
+            vp.configureHexGrid(gridCoord, hexGridSize, context);
+        } else if (point instanceof MountainPoint mp) {
+            mp.configureHexGrid(gridCoord, hexGridSize, context);
+        } else if (point instanceof SpikesPoint sp) {
+            sp.configureHexGrid(gridCoord, hexGridSize, context);
+        } else if (point instanceof MountainFacePoint mfp) {
+            mfp.configureHexGrid(gridCoord, hexGridSize, context);
+        } else if (point instanceof LakesPoint lp) {
+            lp.configureHexGrid(gridCoord, hexGridSize, context);
+        }
     }
 
     // ========== Helper Methods ==========

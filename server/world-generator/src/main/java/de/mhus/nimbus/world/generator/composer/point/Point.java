@@ -17,6 +17,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
 import java.util.Map;
@@ -37,6 +38,7 @@ import java.util.Map;
  *
  * Example: Minas Tirith, Mount Doom, Village Centers, Quest Markers
  */
+@Slf4j
 @Data
 @SuperBuilder
 @NoArgsConstructor
@@ -251,6 +253,35 @@ public abstract class Point extends Feature {
             case WEST -> HexVector2.builder().q(center.getQ() - 1).r(center.getR()).build();
             case NORTH_WEST -> HexVector2.builder().q(center.getQ()).r(center.getR() - 1).build();
         };
+    }
+
+    /**
+     * Initializes this point's position within a biome.
+     * Always succeeds — uses fallbacks if exact positioning fails.
+     * Subclasses override for custom positioning logic.
+     *
+     * @param biome The biome this point belongs to
+     * @param context The compose context
+     */
+    public void initPosition(Area biome, ComposeContext context) {
+        // 1. Grid coordinate (already polymorphic via selectGridCoordinate)
+        HexVector2 gridCoordinate = selectGridCoordinate(biome, context);
+        if (gridCoordinate == null) {
+            gridCoordinate = biome.getPlacedCenter();
+            log.warn("Point '{}': selectGridCoordinate null, using biome center", getName());
+        }
+        if (gridCoordinate == null) {
+            gridCoordinate = HexVector2.builder().q(0).r(0).build();
+            log.warn("Point '{}': biome center null, using origin", getName());
+        }
+        setGridCoordinate(gridCoordinate);
+        setBiome(biome.getName());
+
+        // 2. Default: Center-Position (subclasses override this)
+        int divider = de.mhus.nimbus.world.shared.util.HexLocalUtil.DEFAULT_POSITION_DIVIDER;
+        int size = context.getHexGridSize() / divider;
+        setHexLocalPosition(new de.mhus.nimbus.world.shared.world.HexLocalPosition(
+            HexVector2.builder().q(0).r(0).build(), divider, size));
     }
 
     /**
