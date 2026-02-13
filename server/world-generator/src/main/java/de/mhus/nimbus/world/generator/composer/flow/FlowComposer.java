@@ -789,6 +789,15 @@ public class FlowComposer {
         };
         List<Integer> routeLevels = flow.calculateRouteLevels(route, rawLevelAt, SEA_LEVEL);
 
+        // Pre-compute random edge numerators (1, 2, or 3) for each grid-to-grid transition.
+        // Seeded from flow name so results are deterministic.
+        // edgeNumerators[j] is the numerator for the edge between route[j] and route[j+1].
+        Random edgeRandom = new Random(flow.getName().hashCode());
+        int[] edgeNumerators = new int[route.size()]; // index j = transition from j to j+1
+        for (int j = 0; j < route.size() - 1; j++) {
+            edgeNumerators[j] = edgeRandom.nextInt(3) + 1; // 1, 2, or 3
+        }
+
         for (int i = 0; i < route.size(); i++) {
             HexVector2 coord = route.get(i);
             EDGE fromSide = null;
@@ -807,8 +816,8 @@ public class FlowComposer {
                 // But we need the ENTRY side of THIS grid, which is the opposite!
                 EDGE directionFromPrev = RoadAndRiverConnector.determineSide(prev, coord);
                 fromSide = RoadAndRiverConnector.getOppositeSide(directionFromPrev);
-                // Generate HexLocal position string (use center position /2 for now)
-                fromPosition = edgeToHexLocalPosition(fromSide, 2);
+                // Generate HexLocal position string with same numerator as the exit of previous grid
+                fromPosition = edgeToHexLocalPosition(fromSide, edgeNumerators[i - 1]);
             } else if (i == 0) {
                 // First segment
                 if (flow.isClosedLoop() && route.size() > 1) {
@@ -854,15 +863,15 @@ public class FlowComposer {
             if (i < route.size() - 1) {
                 HexVector2 next = route.get(i + 1);
                 toSide = RoadAndRiverConnector.determineSide(coord, next);
-                // Generate HexLocal position string (use center position /2 for now)
-                toPosition = edgeToHexLocalPosition(toSide, 2);
+                // Generate HexLocal position string with pre-computed numerator for this transition
+                toPosition = edgeToHexLocalPosition(toSide, edgeNumerators[i]);
             } else if (i == route.size() - 1) {
                 // Last segment
                 if (flow.isClosedLoop() && route.size() > 1) {
                     // Closed loop: connect last segment back to first
                     HexVector2 first = route.get(0);
                     toSide = RoadAndRiverConnector.determineSide(coord, first);
-                    toPosition = edgeToHexLocalPosition(toSide, 2);
+                    toPosition = edgeToHexLocalPosition(toSide, edgeNumerators[0]);
                     log.debug("Closed loop: last segment connects to first ({})", toSide);
                 } else if (flow.getEndPointFeature() != null) {
                     // End is a Point - use Point's HexLocal position
