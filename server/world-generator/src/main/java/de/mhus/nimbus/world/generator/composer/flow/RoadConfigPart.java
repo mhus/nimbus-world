@@ -33,10 +33,11 @@ public class RoadConfigPart {
     private Integer plazaSize;
     private String plazaMaterial;
 
-    // ROUTE fields - either side-based OR position-based
+    // ROUTE fields - either side-based, position-string-based, OR coordinate-based
     private EDGE side;           // Side-based route (NE, NW, etc.)
-    private Integer routeLx;     // Position-based route x
-    private Integer routeLz;     // Position-based route z
+    private String position;     // HexLocal position string (e.g., "<NE 2>" or "<0;0>")
+    private Integer routeLx;     // Coordinate-based route x (deprecated, use position)
+    private Integer routeLz;     // Coordinate-based route z (deprecated, use position)
     private Integer width;
     private Integer level;       // Deprecated: use fromLevel/toLevel instead
     private Integer fromLevel;   // Level when entering this position
@@ -117,6 +118,23 @@ public class RoadConfigPart {
             .routeLz(lz)
             .width(width)
             .level(fromLevel)  // Backward compatibility: use fromLevel as default
+            .fromLevel(fromLevel)
+            .toLevel(toLevel)
+            .type(type)
+            .build();
+    }
+
+    /**
+     * Creates a ROUTE part using a HexLocal position string with fromLevel/toLevel.
+     * Used for Point endpoints where the position is already in HexLocal format.
+     */
+    public static RoadConfigPart createRoutePositionStringPartWithLevels(String position, Integer width,
+                                                                          Integer fromLevel, Integer toLevel, String type) {
+        return RoadConfigPart.builder()
+            .partType(PartType.ROUTE)
+            .position(position)
+            .width(width)
+            .level(fromLevel)  // Backward compatibility
             .fromLevel(fromLevel)
             .toLevel(toLevel)
             .type(type)

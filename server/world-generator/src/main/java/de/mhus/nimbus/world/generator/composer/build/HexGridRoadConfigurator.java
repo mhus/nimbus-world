@@ -445,8 +445,12 @@ public class HexGridRoadConfigurator {
             for (RoadConfigPart part : routeParts) {
                 Map<String, Object> entry = new HashMap<>();
 
-                // Side-based routing - convert to HexLocal edge format
-                if (part.getSide() != null) {
+                // Priority 1: HexLocal position string (e.g., "<NE 2>" or "<0;0>")
+                if (part.getPosition() != null && !part.getPosition().isEmpty()) {
+                    entry.put("position", part.getPosition());
+                }
+                // Priority 2: Side-based routing - convert to HexLocal edge format
+                else if (part.getSide() != null) {
                     String sideKey = part.getSide().name();
                     // Skip duplicates
                     if (addedSides.contains(sideKey)) {
@@ -457,13 +461,13 @@ public class HexGridRoadConfigurator {
                     entry.put("position", String.format("<%s 2>", edgeShort));  // Default to middle (2/4)
                     addedSides.add(sideKey);
                 }
-                // Position-based routing - convert to HexLocal format
+                // Priority 3: Position-based routing - convert to HexLocal format
                 else if (part.getRouteLx() != null && part.getRouteLz() != null) {
                     // Convert lx/lz to HexLocal format: "<256;256>"
                     entry.put("position", String.format("<%d;%d>", part.getRouteLx(), part.getRouteLz()));
                 }
                 else {
-                    log.warn("RoadConfigPart has neither side nor lx/lz at grid {}", grid.getPositionKey());
+                    log.warn("RoadConfigPart has neither position, side nor lx/lz at grid {}", grid.getPositionKey());
                     continue;
                 }
 

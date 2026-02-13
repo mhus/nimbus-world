@@ -1206,9 +1206,21 @@ public class FlowComposer {
                 Integer fromLevel = segment.getFromLevel();
                 Integer toLevel = segment.getToLevel();
 
-                // Create ROUTE parts for entry point (fromSide or fromLx/fromLz)
-                if (segment.hasFromCoordinates()) {
-                    // Use lx/lz coordinates (Point endpoint)
+                // Create ROUTE parts for entry point (priority: position > lx/lz > side)
+                if (segment.hasFromPosition()) {
+                    // Use HexLocal position string (Point endpoint or grid-to-grid transition)
+                    RoadConfigPart part = RoadConfigPart.createRoutePositionStringPartWithLevels(
+                        segment.getFromPosition(),
+                        segment.getWidth(),
+                        fromLevel,
+                        toLevel,
+                        segment.getType()
+                    );
+                    centralGrid.addRoadConfigPart(part);
+                    log.debug("Added position-string route part (from) '{}' with levels {}/{}",
+                        segment.getFromPosition(), fromLevel, toLevel);
+                } else if (segment.hasFromCoordinates()) {
+                    // Use lx/lz coordinates (Point endpoint, deprecated)
                     RoadConfigPart part = RoadConfigPart.createRoutePositionPartWithLevels(
                         segment.getFromLx(),
                         segment.getFromLz(),
@@ -1221,7 +1233,7 @@ public class FlowComposer {
                     log.debug("Added position-based route part (from) at lx={}, lz={} with levels {}/{}",
                         segment.getFromLx(), segment.getFromLz(), fromLevel, toLevel);
                 } else if (segment.getFromSide() != null) {
-                    // Use SIDE (Biome endpoint)
+                    // Use SIDE (Biome endpoint, legacy fallback)
                     RoadConfigPart part = RoadConfigPart.createRouteSidePartWithLevels(
                         segment.getFromSide(),
                         segment.getWidth(),
@@ -1234,9 +1246,21 @@ public class FlowComposer {
                         segment.getFromSide(), fromLevel, toLevel);
                 }
 
-                // Create ROUTE parts for exit point (toSide or toLx/toLz)
-                if (segment.hasToCoordinates()) {
-                    // Use lx/lz coordinates (Point endpoint)
+                // Create ROUTE parts for exit point (priority: position > lx/lz > side)
+                if (segment.hasToPosition()) {
+                    // Use HexLocal position string (Point endpoint or grid-to-grid transition)
+                    RoadConfigPart part = RoadConfigPart.createRoutePositionStringPartWithLevels(
+                        segment.getToPosition(),
+                        segment.getWidth(),
+                        fromLevel,
+                        toLevel,
+                        segment.getType()
+                    );
+                    centralGrid.addRoadConfigPart(part);
+                    log.debug("Added position-string route part (to) '{}' with levels {}/{}",
+                        segment.getToPosition(), fromLevel, toLevel);
+                } else if (segment.hasToCoordinates()) {
+                    // Use lx/lz coordinates (Point endpoint, deprecated)
                     RoadConfigPart part = RoadConfigPart.createRoutePositionPartWithLevels(
                         segment.getToLx(),
                         segment.getToLz(),
@@ -1249,7 +1273,7 @@ public class FlowComposer {
                     log.debug("Added position-based route part (to) at lx={}, lz={} with levels {}/{}",
                         segment.getToLx(), segment.getToLz(), fromLevel, toLevel);
                 } else if (segment.getToSide() != null && !segment.getToSide().equals(segment.getFromSide())) {
-                    // Use SIDE (Biome endpoint)
+                    // Use SIDE (Biome endpoint, legacy fallback)
                     RoadConfigPart part = RoadConfigPart.createRouteSidePartWithLevels(
                         segment.getToSide(),
                         segment.getWidth(),

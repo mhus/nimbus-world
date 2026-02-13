@@ -8,8 +8,10 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.ToIntFunction;
 
 @Data
 @SuperBuilder
@@ -42,6 +44,36 @@ public class Road extends Flow {
     }
 
     // Note: configureHexGrids() was removed - roads write directly to central registry
+
+    /**
+     * Pre-calculates levels for the entire road route.
+     * - Start/End: terrain level of that grid
+     * - Intermediate edges: average of two adjacent grid terrain levels
+     * - Minimum: seaLevel + 1 (roads must be above water)
+     * - No monotonic constraint — roads can go uphill and downhill
+     */
+    @Override
+    public List<Integer> calculateRouteLevels(List<HexVector2> route,
+            ToIntFunction<HexVector2> rawLevelAt, int seaLevel) {
+        int minLevel = seaLevel + 1;
+        List<Integer> levels = new ArrayList<>(route.size());
+
+        for (int i = 0; i < route.size(); i++) {
+            int lvl;
+            if (i == 0 || i == route.size() - 1) {
+                // Start / End: use this grid's terrain level
+                lvl = rawLevelAt.applyAsInt(route.get(i));
+            } else {
+                // Intermediate: edge level = average of previous and current grid
+                int prevTerrain = rawLevelAt.applyAsInt(route.get(i - 1));
+                int currTerrain = rawLevelAt.applyAsInt(route.get(i));
+                lvl = (prevTerrain + currTerrain) / 2;
+            }
+            levels.add(Math.max(minLevel, lvl));
+        }
+
+        return levels;
+    }
 
     /**
      * Overrides Flow.calculateSegmentLevel() to ensure roads never go below level 1.
