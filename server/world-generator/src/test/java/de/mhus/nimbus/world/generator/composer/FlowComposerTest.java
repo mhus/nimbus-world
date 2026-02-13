@@ -81,7 +81,7 @@ public class FlowComposerTest {
 
         // Verify biome placement
         assertEquals(2, result.getTotalBiomes(), "Should have 2 biomes");
-        assertEquals(3, result.getTotalGrids(), "Should have 4 grids");
+        assertEquals(3, result.getTotalGrids(), "Should have 3 grids");
 
         // Verify flow composition
         assertEquals(1, result.getTotalFlows(), "Should have 1 flow");

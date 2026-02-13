@@ -16,6 +16,8 @@ import lombok.experimental.SuperBuilder;
 
 import java.util.List;
 import java.util.Map;
+import java.util.function.Predicate;
+import java.util.function.ToIntFunction;
 
 @Data
 @SuperBuilder
@@ -287,6 +289,57 @@ public abstract class Flow extends Feature {
 
     // Note: getHexGrids(), setHexGrids(), addHexGrid() and findHexGrid() were removed
     // Flows now write directly to central registry via composition.getOrCreateFeatureHexGrid()
+
+    /**
+     * Selects the next step towards the goal from the given neighbors.
+     * Default: greedy — pick neighbor closest to goal.
+     * Subclasses override for custom routing (e.g., river downhill preference).
+     *
+     * @param current Current position
+     * @param goal Target position
+     * @param neighbors Available neighbor coordinates
+     * @param terrainLevelAt Returns terrain level for a coordinate
+     * @param isLowPriorityBiome Returns true for Ocean/Coast/Island biomes
+     */
+    public HexVector2 selectNextStep(HexVector2 current, HexVector2 goal,
+            List<HexVector2> neighbors,
+            ToIntFunction<HexVector2> terrainLevelAt,
+            Predicate<HexVector2> isLowPriorityBiome) {
+        if (neighbors == null || neighbors.isEmpty()) return null;
+        HexVector2 best = null;
+        int bestDist = Integer.MAX_VALUE;
+        for (HexVector2 n : neighbors) {
+            int dist = hexDistance(n, goal);
+            if (dist < bestDist) { bestDist = dist; best = n; }
+        }
+        return best;
+    }
+
+    /** Maximum routing steps (segments) for this flow. */
+    public int getMaxRoutingSteps() { return 50; }
+
+    /**
+     * Pre-calculates levels for the entire route (two-pass approach).
+     * Returns null by default, meaning per-segment calculation is used instead.
+     * Override in River for downhill-constrained, monotonically decreasing level calculation.
+     *
+     * @param route Ordered list of coordinates for the flow route
+     * @param rawLevelAt Returns the raw (unconstrained) level at a coordinate
+     * @param seaLevel Minimum allowed level (sea level floor)
+     * @return List of levels (one per route coordinate), or null to use per-segment calculation
+     */
+    public List<Integer> calculateRouteLevels(List<HexVector2> route,
+            ToIntFunction<HexVector2> rawLevelAt, int seaLevel) {
+        return null; // Default: use per-segment calculation
+    }
+
+    /** Hex distance utility (cube coordinate formula). */
+    public static int hexDistance(HexVector2 a, HexVector2 b) {
+        int dq = Math.abs(a.getQ() - b.getQ());
+        int dr = Math.abs(a.getR() - b.getR());
+        int ds = Math.abs((a.getQ() + a.getR()) - (b.getQ() + b.getR()));
+        return (dq + dr + ds) / 2;
+    }
 
     /**
      * Calculates the level for a flow segment based on levelMode.
