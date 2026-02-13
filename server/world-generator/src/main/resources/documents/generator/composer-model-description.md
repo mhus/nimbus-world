@@ -481,6 +481,7 @@ private List<Feature> features;   // Nested features
 **Key Properties**:
 ```java
 private String style;                           // "medieval", "modern", "fantasy"
+private BiomeType biomeType;                    // Optional: controls builder + terrain parameters (e.g., PLAINS, FOREST)
 private List<District> districts;               // District definitions
 private List<TownConnectionPoint> externalConnectionPoints; // External roads
 private int baseLevel;                          // Terrain base level (default: 95)
@@ -517,6 +518,7 @@ public class District {
   "name": "small-town",
   "title": "Small Town",
   "style": "medieval",
+  "biomeType": "PLAINS",
   "baseLevel": 95,
   "fillEmptySlots": true,
   "buildingTendency": 0.7,
@@ -532,6 +534,7 @@ public class District {
           "placeType": "building",
           "name": "town-hall",
           "kind": "town_hall",
+          "levelOffset": 2,
           "connectionPoint": false
         },
         {
@@ -1316,6 +1319,19 @@ public class District {
 
 ### 6.3 Place Types
 
+**Common Place Fields** (inherited by all place types):
+```java
+private String name;                // Technical unique name
+private boolean connectionPoint;    // Is this a connection point? (default: false)
+private int levelOffset;            // Level offset relative to baseLevel (default: 0)
+```
+
+`levelOffset` allows individual places to be raised or lowered relative to the town's `baseLevel`.
+The actual place level is computed as: `baseLevel + levelOffset`.
+- Positive values raise the place (e.g., castle on a hill: `levelOffset: 3`)
+- Negative values lower it (e.g., canal: `levelOffset: -2`)
+- Default: 0 (same level as baseLevel)
+
 #### BuildingPlace
 
 **Type**: `building`
@@ -1336,6 +1352,7 @@ private boolean connectionPoint;    // Is this a connection point for external r
   "name": "town-hall",
   "kind": "town_hall",
   "style": "medieval",
+  "levelOffset": 2,
   "connectionPoint": false
 }
 ```
@@ -1441,6 +1458,14 @@ private boolean connectionPoint;    // Is this a connection point for external r
 ```
 
 ### 6.5 Town Configuration Options
+
+**biomeType**: Controls the terrain builder and default parameters for the town (optional)
+- When set, overrides the builder from StructureType and applies biome-specific terrain parameters
+- When null, falls back to StructureType defaults (mountain builder)
+- Valid values: Any `BiomeType` enum value (e.g., `PLAINS`, `FOREST`, `MOUNTAINS`)
+```json
+{ "biomeType": "PLAINS" }
+```
 
 **baseLevel**: Terrain base level (default: 95)
 ```json
