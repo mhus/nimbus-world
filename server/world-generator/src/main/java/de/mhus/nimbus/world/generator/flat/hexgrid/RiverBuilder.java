@@ -49,6 +49,17 @@ public class RiverBuilder extends HexGridBuilder {
 
     private static final ObjectMapper objectMapper = new ObjectMapper();
     private static final int DEFAULT_CURVATURE = 30;  // Default maximum lateral offset for curves
+    /**
+     * Extra pixels added to hexGridSize when computing edge endpoint coordinates.
+     * Pushes endpoints slightly beyond the grid boundary so adjacent river segments
+     * overlap in the blending buffer zone and connect seamlessly.
+     */
+    private static final int GRID_EDGE_OVERLAP = 18;
+    /**
+     * Minimum drawing radius for river circles, ensuring thin rivers
+     * produce continuous coverage without pixel gaps on diagonal paths.
+     */
+    private static final double MIN_DRAW_RADIUS = 1.5;
 
     @Override
     public void buildFlat() {
@@ -245,15 +256,17 @@ public class RiverBuilder extends HexGridBuilder {
      * @return absolute coordinates [lx, lz] in WFlat coordinate system
      */
     private int[] getEndpointCoordinate(RiverEndpoint endpoint, int sizeX, int sizeZ) {
-        // Assume hexGridSize equals WFlat size (standard case)
-        int hexGridSize = sizeX;  // or could use Math.max(sizeX, sizeZ)
+        // Use inflated hexGridSize so edge positions extend slightly beyond the
+        // actual grid boundary into the blending buffer zone. This ensures adjacent
+        // grids' river segments overlap and connect without gaps.
+        int hexGridSize = sizeX + GRID_EDGE_OVERLAP;
 
         // Parse position string and get relative coordinates
         de.mhus.nimbus.generated.types.Vector2Int relativePos =
             de.mhus.nimbus.world.shared.util.HexLocalUtil.toHexgridLocalCenter(
                 endpoint.getPosition(), hexGridSize);
 
-        // Convert to absolute WFlat coordinates
+        // Convert to absolute WFlat coordinates (center offset stays at actual sizeX/2)
         int lx = sizeX / 2 + relativePos.getX();
         int lz = sizeZ / 2 + relativePos.getZ();
 
@@ -270,12 +283,17 @@ public class RiverBuilder extends HexGridBuilder {
                                    int level, String groupId) {
         int halfWidth = width / 2;
 
+        // Effective drawing radius: at least MIN_DRAW_RADIUS so thin rivers
+        // produce overlapping circles without gaps on diagonal paths
+        double effectiveRadius = Math.max(MIN_DRAW_RADIUS, halfWidth);
+        int drawRadius = (int) Math.ceil(effectiveRadius);
+
         // Get water block definition from material palette
         String waterBlockDef = getWaterBlockDef(flat);
 
         // Draw river bed and water surface
-        for (int dx = -halfWidth; dx <= halfWidth; dx++) {
-            for (int dz = -halfWidth; dz <= halfWidth; dz++) {
+        for (int dx = -drawRadius; dx <= drawRadius; dx++) {
+            for (int dz = -drawRadius; dz <= drawRadius; dz++) {
                 int x = centerX + dx;
                 int z = centerZ + dz;
 
@@ -286,16 +304,17 @@ public class RiverBuilder extends HexGridBuilder {
 
                 // Calculate distance from center for depth variation
                 double distanceFromCenter = Math.sqrt(dx * dx + dz * dz);
-                double maxDistance = halfWidth;
 
                 // River bed level - deeper in the center, shallower at edges
                 int bedLevel;
-                if (distanceFromCenter <= maxDistance) {
-                    // Smooth depth gradient from center to edge
-                    double depthFactor = 1.0 - (distanceFromCenter / maxDistance);
+                if (distanceFromCenter <= effectiveRadius) {
+                    // Smooth depth gradient based on configured width (not effective radius)
+                    double depthFactor = halfWidth > 0
+                        ? Math.max(0.0, 1.0 - (distanceFromCenter / halfWidth))
+                        : 1.0;
                     bedLevel = level - (int) (depth * depthFactor);
                 } else {
-                    // Outside river width
+                    // Outside drawing radius
                     continue;
                 }
 

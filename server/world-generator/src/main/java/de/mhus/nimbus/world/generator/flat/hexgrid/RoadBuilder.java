@@ -63,6 +63,13 @@ public class RoadBuilder extends HexGridBuilder {
 
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
+    /**
+     * Extra pixels added to hexGridSize when computing edge endpoint coordinates.
+     * Pushes endpoints slightly beyond the grid boundary so adjacent road segments
+     * overlap in the blending buffer zone and connect seamlessly.
+     */
+    private static final int GRID_EDGE_OVERLAP = 24;
+
     // Legacy parameters (kept for backward compatibility)
     private static final int DEFAULT_CURVATURE = 10;  // Default maximum lateral offset for curves
     private static final double DEFAULT_WAVES = 1.5;  // Default number of sine wave cycles
@@ -210,8 +217,8 @@ public class RoadBuilder extends HexGridBuilder {
      * Chooses between TerrainPathFinder (terrain-adaptive) and StraightPathFinder (elevated/deep).
      */
     private void buildRoadToCenter(WFlat flat, Road road, int centerX, int centerZ, int centerLevel) {
-        // Get start coordinates from position string
-        int[] startCoords = getAbsoluteCoordinates(road.getPosition(), flat.getSizeX(), flat.getSizeZ());
+        // Get start coordinates from position string (with edge overlap for grid transitions)
+        int[] startCoords = getAbsoluteCoordinates(road.getPosition(), flat.getSizeX(), flat.getSizeZ(), GRID_EDGE_OVERLAP);
         int startX = startCoords[0];
         int startZ = startCoords[1];
 
@@ -385,9 +392,6 @@ public class RoadBuilder extends HexGridBuilder {
     }
 
     /**
-     * Get the center coordinate of a side.
-     */
-    /**
      * Get absolute WFlat coordinates from HexLocal position string.
      * Uses HexLocalUtil to parse the position and convert to absolute coordinates.
      *
@@ -397,14 +401,29 @@ public class RoadBuilder extends HexGridBuilder {
      * @return absolute coordinates [lx, lz] in WFlat coordinate system
      */
     private int[] getAbsoluteCoordinates(String position, int sizeX, int sizeZ) {
-        // Assume hexGridSize equals WFlat size (standard case)
-        int hexGridSize = sizeX;  // or could use Math.max(sizeX, sizeZ)
+        return getAbsoluteCoordinates(position, sizeX, sizeZ, 0);
+    }
+
+    /**
+     * Get absolute WFlat coordinates from HexLocal position string with optional edge overlap.
+     * The edgeOverlap inflates the hexGridSize so edge positions extend beyond the grid boundary
+     * into the blending buffer zone, ensuring adjacent grids' road segments connect.
+     *
+     * @param position the position in HexLocal format (e.g., "<NE2/4>" or "<0;0>")
+     * @param sizeX WFlat width
+     * @param sizeZ WFlat height
+     * @param edgeOverlap extra pixels to add to hexGridSize for edge overlap
+     * @return absolute coordinates [lx, lz] in WFlat coordinate system
+     */
+    private int[] getAbsoluteCoordinates(String position, int sizeX, int sizeZ, int edgeOverlap) {
+        // Inflate hexGridSize so edge positions extend into the blending buffer zone
+        int hexGridSize = sizeX + edgeOverlap;
 
         // Parse position string and get relative coordinates
         de.mhus.nimbus.generated.types.Vector2Int relativePos =
             de.mhus.nimbus.world.shared.util.HexLocalUtil.toHexgridLocalCenter(position, hexGridSize);
 
-        // Convert to absolute WFlat coordinates
+        // Convert to absolute WFlat coordinates (center offset stays at actual sizeX/2)
         int lx = sizeX / 2 + relativePos.getX();
         int lz = sizeZ / 2 + relativePos.getZ();
 
