@@ -178,6 +178,17 @@ public class HexCompositeBuilderSimpleTest {
         assertTrue(hexGridString.contains("lakesName"), "HexGrids should contain lakes configuration");
     }
 
+    @Test
+    public void testTightPlacement() throws Exception {
+        log.info("=== Testing Tight Placement (5 small biomes close together, tests jitter) ===");
+        var res = simpleContinentTest("tight-placement");
+        assertTrue(res.isSuccess(), "Tight placement should succeed thanks to jitter tolerance");
+        assertTrue(res.getTotalBiomes() >= 5, "All 5 biomes should be placed, got: " + res.getTotalBiomes());
+        log.info("Tight placement: {} biomes placed with {} retries",
+            res.getTotalBiomes(),
+            res.getBiomePlacementResult() != null ? res.getBiomePlacementResult().getRetries() : "N/A");
+    }
+
     // ============= Biome Type Tests =============
 
     @Test

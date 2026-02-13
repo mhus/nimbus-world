@@ -23,15 +23,28 @@ public class BiomeComposer {
     private static final int[] DIRECTION_ANGLES = {0, 60, 120, 180, 240, 300}; // NE, E, SE, SW, W, NW (pointy-top hex)
 
     /**
+     * Composes biomes with default placement tolerance (start=1, increment=1, max=3).
+     */
+    public BiomePlacementResult compose(HexComposition prepared, String worldId, long seed) {
+        return compose(prepared, worldId, seed, 1, 1, 3);
+    }
+
+    /**
      * Composes biomes from a prepared composition
      *
      * @param prepared The prepared composition with concrete ranges
      * @param worldId The world ID for generated HexGrids
      * @param seed Random seed for reproducible generation
+     * @param placementToleranceStart Starting jitter tolerance in hex distance
+     * @param placementToleranceIncrement Tolerance increase per retry
+     * @param maxPlacementTolerance Maximum jitter tolerance
      * @return Result with placed biomes and generated HexGrids
      */
-    public BiomePlacementResult compose(HexComposition prepared, String worldId, long seed) {
-        log.debug("Starting biome composition with seed: {}", seed);
+    public BiomePlacementResult compose(HexComposition prepared, String worldId, long seed,
+                                         int placementToleranceStart, int placementToleranceIncrement,
+                                         int maxPlacementTolerance) {
+        log.debug("Starting biome composition with seed: {}, tolerance: start={}, increment={}, max={}",
+            seed, placementToleranceStart, placementToleranceIncrement, maxPlacementTolerance);
 
         CompositionContext context = new CompositionContext(seed);
 
@@ -41,6 +54,13 @@ public class BiomeComposer {
         // Try multiple times to place all biomes
         while (totalRetries < context.getMaxTotalRetries() && !success) {
             context.reset();
+
+            // Calculate placement tolerance for this attempt
+            int tolerance = Math.min(
+                placementToleranceStart + placementToleranceIncrement * totalRetries,
+                maxPlacementTolerance);
+            context.setPlacementTolerance(tolerance);
+            log.debug("Composition attempt {}: placementTolerance={}", totalRetries + 1, tolerance);
 
             try {
                 // Separate normal and enclosed biomes
@@ -154,6 +174,7 @@ public class BiomeComposer {
 
                 // Calculate target position with randomization
                 HexVector2 targetCenter = calculateTargetPosition(position, anchor, context.getRandom());
+                targetCenter = applyPlacementJitter(targetCenter, context.getPlacementTolerance(), context.getRandom());
 
                 // Generate coordinates for this biome (use calculated values)
                 int size = randomInRange(biome.getCalculatedSizeFrom(), biome.getCalculatedSizeTo(), context.getRandom());
@@ -237,10 +258,12 @@ public class BiomeComposer {
             // Add some randomization to avoid exact center
             int offsetQ = context.getRandom().nextInt(5) - 2; // -2 to +2
             int offsetR = context.getRandom().nextInt(5) - 2;
-            HexVector2 targetCenter = HexVector2.builder()
-                .q(centroid.getQ() + offsetQ)
-                .r(centroid.getR() + offsetR)
-                .build();
+            HexVector2 targetCenter = applyPlacementJitter(
+                HexVector2.builder()
+                    .q(centroid.getQ() + offsetQ)
+                    .r(centroid.getR() + offsetR)
+                    .build(),
+                context.getPlacementTolerance(), context.getRandom());
 
             // Generate coordinates for this biome
             int size = randomInRange(biome.getCalculatedSizeFrom(), biome.getCalculatedSizeTo(), context.getRandom());
@@ -679,6 +702,25 @@ public class BiomeComposer {
 
         log.debug("Registered {} biomes with their HexGrids in central composition registry",
             placedBiomes.size());
+    }
+
+    /**
+     * Applies random jitter offset to a target position.
+     * Shifts the target by up to ±tolerance hexes in Q and R.
+     *
+     * @param target Original target position
+     * @param tolerance Maximum offset in hex distance (0 = no jitter)
+     * @param random Random generator
+     * @return Jittered position
+     */
+    private HexVector2 applyPlacementJitter(HexVector2 target, int tolerance, Random random) {
+        if (tolerance <= 0) return target;
+        int offsetQ = random.nextInt(2 * tolerance + 1) - tolerance;
+        int offsetR = random.nextInt(2 * tolerance + 1) - tolerance;
+        return HexVector2.builder()
+            .q(target.getQ() + offsetQ)
+            .r(target.getR() + offsetR)
+            .build();
     }
 
     /**

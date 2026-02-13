@@ -86,6 +86,24 @@ public class HexCompositeBuilder {
     private final int oceanBorderRings = 1;
 
     /**
+     * Starting placement tolerance (jitter) in hex distance for the first composition attempt.
+     */
+    @Builder.Default
+    private final int placementToleranceStart = 1;
+
+    /**
+     * Increment of placement tolerance per composition retry.
+     */
+    @Builder.Default
+    private final int placementToleranceIncrement = 1;
+
+    /**
+     * Maximum placement tolerance (jitter) in hex distance.
+     */
+    @Builder.Default
+    private final int maxPlacementTolerance = 3;
+
+    /**
      * Executes the complete composition pipeline.
      *
      * Pipeline phases:
@@ -170,7 +188,8 @@ public class HexCompositeBuilder {
             // Step 3: Compose biomes (positioning only)
             log.debug("Step 3: Composing biomes (positioning)");
             BiomeComposer biomeComposer = new BiomeComposer();
-            BiomePlacementResult placementResult = biomeComposer.compose(composition, worldId, seed);
+            BiomePlacementResult placementResult = biomeComposer.compose(composition, worldId, seed,
+                placementToleranceStart, placementToleranceIncrement, maxPlacementTolerance);
 
             if (!placementResult.isSuccess()) {
                 return resultBuilder

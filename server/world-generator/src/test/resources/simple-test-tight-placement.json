@@ -1,0 +1,99 @@
+{
+  // 5 kleine Biome sehr nah zusammen - testet Placement Tolerance (Jitter)
+  "name": "Tight Placement Test",
+  "worldId": "tight-placement-test",
+  "continents": [
+    {
+      "continentId": "tight-continent",
+      "name": "Tight Continent",
+      "biomeType": "PLAINS",
+      "minNeighbors": 2,
+      "parameters": {
+        "g_offset": "10",
+        "g_roughness": "0.5"
+      }
+    }
+  ],
+  "features": [
+    {
+      "featureType": "biome",
+      "name": "center-plains",
+      "title": "Center Plains",
+      "type": "PLAINS",
+      "shape": "CIRCLE",
+      "sizeFrom": 2,
+      "sizeTo": 3,
+      "continentId": "tight-continent",
+      "positions": [
+        {"direction": "NE", "distanceFrom": 0, "distanceTo": 0, "anchor": "origin", "priority": 10}
+      ],
+      "parameters": {
+        "g_asl": "10"
+      }
+    },
+    {
+      "featureType": "biome",
+      "name": "north-forest",
+      "title": "North Forest",
+      "type": "FOREST",
+      "shape": "CIRCLE",
+      "sizeFrom": 2,
+      "sizeTo": 3,
+      "continentId": "tight-continent",
+      "positions": [
+        {"direction": "NE", "distanceFrom": 1, "distanceTo": 2, "anchor": "center-plains", "priority": 10}
+      ],
+      "parameters": {
+        "g_asl": "10"
+      }
+    },
+    {
+      "featureType": "biome",
+      "name": "east-desert",
+      "title": "East Desert",
+      "type": "DESERT",
+      "shape": "CIRCLE",
+      "sizeFrom": 2,
+      "sizeTo": 3,
+      "continentId": "tight-continent",
+      "positions": [
+        {"direction": "E", "distanceFrom": 1, "distanceTo": 2, "anchor": "center-plains", "priority": 10}
+      ],
+      "parameters": {
+        "g_asl": "10"
+      }
+    },
+    {
+      "featureType": "biome",
+      "name": "south-swamp",
+      "title": "South Swamp",
+      "type": "SWAMP",
+      "shape": "CIRCLE",
+      "sizeFrom": 2,
+      "sizeTo": 3,
+      "continentId": "tight-continent",
+      "positions": [
+        {"direction": "SE", "distanceFrom": 1, "distanceTo": 2, "anchor": "center-plains", "priority": 10}
+      ],
+      "parameters": {
+        "g_asl": "10"
+      }
+    },
+    {
+      "featureType": "biome",
+      "name": "west-marsh",
+      "title": "West Marsh",
+      "type": "MARSH",
+      "shape": "CIRCLE",
+      "sizeFrom": 2,
+      "sizeTo": 3,
+      "continentId": "tight-continent",
+      "positions": [
+        {"direction": "SW", "distanceFrom": 1, "distanceTo": 2, "anchor": "center-plains", "priority": 10}
+      ],
+      "parameters": {
+        "g_asl": "10"
+      }
+    }
+  ]
+}
