@@ -70,7 +70,7 @@
       "featureType": "point",
       "name": "red-river-source",
       "title": "Red River Source",
-      "direction": "W",
+      "biomeSide": "W",
       "snap": {
         "mode": "EDGE",
         "target": "central-mountains"
@@ -82,8 +82,8 @@
       "title": "Red River Confluence with White River",
       "direction": "E",
       "snap": {
-        "mode": "EDGE",
-        "target": "central-mountains"
+        "mode": "INSIDE",
+        "target": "east-region"
       }
     },
     {
