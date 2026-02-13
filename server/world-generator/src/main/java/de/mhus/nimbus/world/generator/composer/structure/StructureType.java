@@ -28,7 +28,7 @@ public enum StructureType {
     /**
      * Small town (40-60 buildings, 5-7 hexes, cross pattern)
      */
-    TOWN(Town.class, "island", Map.of(
+    TOWN(Town.class, "mountain", Map.of(
         "g_offset", "1",
         "default_level", "95",
         "default_material", "1",
@@ -38,7 +38,7 @@ public enum StructureType {
     /**
      * Large town (60-100 buildings, 7-12 hexes)
      */
-    LARGE_TOWN(Town.class, "island", Map.of(
+    LARGE_TOWN(Town.class, "mountain", Map.of(
         "g_offset", "1",
         "default_level", "95",
         "default_material", "1",
@@ -48,7 +48,7 @@ public enum StructureType {
     /**
      * City (100+ buildings, 12+ hexes)
      */
-    CITY(Town.class, "island", Map.of(
+    CITY(Town.class, "mountain", Map.of(
         "g_offset", "1",
         "default_level", "95",
         "default_material", "1",

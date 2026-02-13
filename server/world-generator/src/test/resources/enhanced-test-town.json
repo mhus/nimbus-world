@@ -1,0 +1,608 @@
+/*
+  Grosse komplexe Stadt "Kronenburg" mit:
+  - 5 Districts (Royal, Temple, Merchant, Craftsmen, Residential)
+  - Umgebende Biome: Plains, Forest, Mountains
+  - 6 Roads: Hauptstrassen und Handelswege
+  - 2 Village-Points als Aussenposten
+  - 1 River durch die Stadt
+
+  Layout:
+                     northern-forest
+                          |
+                     north-gate (Point)
+                          |
+         farmlands --- KRONENBURG --- east-hills
+              |        (5 Districts)      |
+         west-village                 east-village
+              |                           |
+         south-gate (Point) --- trade-crossroads (Point)
+              |                           |
+         southern-plains            mountain-pass (Point)
+                                          |
+                                    eastern-mountains
+
+  Roads (7 total):
+  ┌────────────────────┬──────────────────┬──────────────────┬───────────────┬───────┐
+  │       Road         │       Von        │       Nach       │   Waypoint    │ Type  │
+  ├────────────────────┼──────────────────┼──────────────────┼───────────────┼───────┤
+  │ north-highway      │ north-gate       │ kronenburg-n     │ -             │highway│
+  ├────────────────────┼──────────────────┼──────────────────┼───────────────┼───────┤
+  │ west-trade-road    │ west-village     │ kronenburg-w     │ -             │street │
+  ├────────────────────┼──────────────────┼──────────────────┼───────────────┼───────┤
+  │ east-trade-road    │ kronenburg-e     │ east-village     │ -             │street │
+  ├────────────────────┼──────────────────┼──────────────────┼───────────────┼───────┤
+  │ south-highway      │ kronenburg-s     │ trade-crossroads │ south-gate    │highway│
+  ├────────────────────┼──────────────────┼──────────────────┼───────────────┼───────┤
+  │ mountain-trail     │ trade-crossroads │ mountain-pass    │ -             │path   │
+  ├────────────────────┼──────────────────┼──────────────────┼───────────────┼───────┤
+  │ western-loop       │ trade-crossroads │ west-village     │ -             │street │
+  ├────────────────────┼──────────────────┼──────────────────┼───────────────┼───────┤
+  │ highland-path      │ mountain-pass    │ east-village     │ -             │path   │
+  └────────────────────┴──────────────────┴──────────────────┴───────────────┴───────┘
+
+  Kreuzungen:
+  - kronenburg: 4 Roads treffen sich (north, west, east, south) -> auto-plaza
+  - trade-crossroads: 3 Roads treffen sich (south-highway, mountain-trail, western-loop) -> auto-plaza
+  - west-village: 2 Roads (west-trade-road, western-loop)
+  - east-village: 2 Roads (east-trade-road, highland-path)
+  - mountain-pass: 2 Roads (mountain-trail, highland-path)
+*/
+{
+  "name": "Enhanced Test Town - Kronenburg",
+  "worldId": "enhanced-test-town",
+  "continents": [
+    {
+      "continentId": "main-continent",
+      "name": "Central Realm",
+      "biomeType": "MOUNTAINS",
+      "minNeighbors": 2,
+      "parameters": {
+        "g_offset": "10",
+        "g_roughness": "0.7"
+      }
+    }
+  ],
+  "features": [
+
+    /* ============================================
+       BIOMES - Surrounding landscape
+       ============================================ */
+
+    {
+      "featureType": "biome",
+      "name": "farmlands",
+      "title": "Fertile Farmlands",
+      "type": "PLAINS",
+      "shape": "CIRCLE",
+      "size": "WIDE",
+      "continentId": "main-continent",
+      "positions": [
+        {"direction": "W", "distanceFrom": 0, "anchor": "origin", "priority": 10}
+      ],
+      "parameters": {
+        "g_asl": "50",
+        "g_offset": "3"
+      }
+    },
+
+    {
+      "featureType": "biome",
+      "name": "northern-forest",
+      "title": "Northern Forest",
+      "type": "FOREST",
+      "shape": "CIRCLE",
+      "size": "LARGE",
+      "continentId": "main-continent",
+      "positions": [
+        {"direction": "N", "distanceFrom": 3, "distanceTo": 5, "anchor": "farmlands", "priority": 9}
+      ],
+      "parameters": {
+        "g_asl": "55",
+        "g_offset": "5"
+      }
+    },
+
+    {
+      "featureType": "biome",
+      "name": "east-hills",
+      "title": "Eastern Hills",
+      "type": "PLAINS",
+      "shape": "CIRCLE",
+      "size": "LARGE",
+      "continentId": "main-continent",
+      "positions": [
+        {"direction": "E", "distanceFrom": 3, "distanceTo": 5, "anchor": "farmlands", "priority": 9}
+      ],
+      "parameters": {
+        "g_asl": "60",
+        "g_offset": "8"
+      }
+    },
+
+    {
+      "featureType": "mountain-biome",
+      "name": "eastern-mountains",
+      "title": "Eastern Mountains",
+      "type": "MOUNTAINS",
+      "height": "MEDIUM_PEAKS",
+      "shape": "CIRCLE",
+      "size": "MEDIUM",
+      "continentId": "main-continent",
+      "positions": [
+        {"direction": "SE", "distanceFrom": 3, "distanceTo": 5, "anchor": "east-hills", "priority": 8}
+      ],
+      "parameters": {
+        "g_asl": "100",
+        "g_offset": "25"
+      }
+    },
+
+    {
+      "featureType": "biome",
+      "name": "southern-plains",
+      "title": "Southern Plains",
+      "type": "PLAINS",
+      "shape": "CIRCLE",
+      "size": "LARGE",
+      "continentId": "main-continent",
+      "positions": [
+        {"direction": "S", "distanceFrom": 3, "distanceTo": 5, "anchor": "farmlands", "priority": 8}
+      ],
+      "parameters": {
+        "g_asl": "45",
+        "g_offset": "4"
+      }
+    },
+
+    /* ============================================
+       TOWN - Kronenburg (5 Districts)
+       ============================================ */
+
+    {
+      "featureType": "town",
+      "name": "kronenburg",
+      "title": "Kronenburg",
+      "style": "medieval",
+      "biomeType": "PLAINS",
+      "baseLevel": 95,
+      "fillEmptySlots": true,
+      "buildingTendency": 0.8,
+      "fillRate": 0.8,
+      "debug": true,
+      "shape": "CIRCLE",
+      "size": "MEDIUM",
+      "continentId": "main-continent",
+      "positions": [
+        {"direction": "E", "distanceFrom": 1, "distanceTo": 2, "anchor": "farmlands", "priority": 10}
+      ],
+      "districts": [
+        {
+          "name": "royal",
+          "title": "Royal District",
+          "slots": "BIG",
+          "places": [
+            {
+              "placeType": "building",
+              "name": "castle",
+              "kind": "tower",
+              "levelOffset": 3,
+              "connectionPoint": false
+            },
+            {
+              "placeType": "free",
+              "name": "throne-plaza",
+              "kind": "PLAZA",
+              "connectionPoint": true
+            },
+            {
+              "placeType": "road",
+              "name": "kings-avenue",
+              "kind": "STREET",
+              "connectionPoint": true
+            }
+          ]
+        },
+        {
+          "name": "temple",
+          "title": "Temple District",
+          "direction": "N",
+          "anchorDistrict": "royal",
+          "slots": "MEDIUM",
+          "places": [
+            {
+              "placeType": "building",
+              "name": "cathedral",
+              "kind": "church",
+              "levelOffset": 2,
+              "connectionPoint": false
+            },
+            {
+              "placeType": "building",
+              "name": "monastery",
+              "kind": "church",
+              "connectionPoint": false
+            },
+            {
+              "placeType": "free",
+              "name": "sacred-garden",
+              "kind": "GARDEN",
+              "connectionPoint": false
+            },
+            {
+              "placeType": "road",
+              "name": "pilgrim-road",
+              "kind": "STREET",
+              "connectionPoint": true
+            }
+          ]
+        },
+        {
+          "name": "merchant",
+          "title": "Merchant Quarter",
+          "direction": "E",
+          "anchorDistrict": "royal",
+          "slots": "SMALL",
+          "fillRate": 0.9,
+          "places": [
+            {
+              "placeType": "building",
+              "name": "grand-market",
+              "kind": "warehouse",
+              "connectionPoint": false
+            },
+            {
+              "placeType": "building",
+              "name": "bank",
+              "kind": "shop",
+              "connectionPoint": false
+            },
+            {
+              "placeType": "building",
+              "name": "trading-post",
+              "kind": "shop",
+              "connectionPoint": false
+            },
+            {
+              "placeType": "free",
+              "name": "market-plaza",
+              "kind": "PLAZA",
+              "connectionPoint": true
+            },
+            {
+              "placeType": "road",
+              "name": "trade-street",
+              "kind": "STREET",
+              "connectionPoint": true
+            }
+          ]
+        },
+        {
+          "name": "craftsmen",
+          "title": "Craftsmen Quarter",
+          "direction": "W",
+          "anchorDistrict": "royal",
+          "slots": "SMALL",
+          "places": [
+            {
+              "placeType": "building",
+              "name": "blacksmith",
+              "kind": "workshop",
+              "connectionPoint": false
+            },
+            {
+              "placeType": "building",
+              "name": "carpenter",
+              "kind": "workshop",
+              "connectionPoint": false
+            },
+            {
+              "placeType": "building",
+              "name": "tannery",
+              "kind": "workshop",
+              "connectionPoint": false
+            },
+            {
+              "placeType": "free",
+              "name": "guild-square",
+              "kind": "SQUARE",
+              "connectionPoint": true
+            },
+            {
+              "placeType": "road",
+              "name": "artisan-lane",
+              "kind": "TRAIL",
+              "connectionPoint": true
+            }
+          ]
+        },
+        {
+          "name": "residential",
+          "title": "Residential Quarter",
+          "direction": "S",
+          "anchorDistrict": "royal",
+          "slots": "TINY",
+          "fillRate": 0.7,
+          "places": [
+            {
+              "placeType": "building",
+              "name": "tavern",
+              "kind": "tavern",
+              "connectionPoint": false
+            },
+            {
+              "placeType": "building",
+              "name": "inn",
+              "kind": "tavern",
+              "style": "rustic",
+              "connectionPoint": false
+            },
+            {
+              "placeType": "free",
+              "name": "town-park",
+              "kind": "PARK",
+              "connectionPoint": false
+            },
+            {
+              "placeType": "river",
+              "name": "city-canal",
+              "kind": "CANAL",
+              "connectionPoint": true
+            },
+            {
+              "placeType": "wall",
+              "name": "south-wall",
+              "kind": "STONE_WALL",
+              "connectionPoint": false
+            },
+            {
+              "placeType": "road",
+              "name": "south-road",
+              "kind": "STREET",
+              "connectionPoint": true
+            }
+          ]
+        }
+      ],
+      "parameters": {
+      }
+    },
+
+    /* ============================================
+       VILLAGE POINTS - Outposts
+       ============================================ */
+
+    {
+      "featureType": "village-point",
+      "name": "west-village",
+      "title": "Western Village",
+      "biomeId": "farmlands",
+      "biomeDistance": "CENTER",
+      "style": "medieval",
+      "baseLevel": 95,
+      "fillEmptySlots": true,
+      "buildingTendency": 0.6,
+      "fillRate": 0.6,
+      "debug": true,
+      "district": {
+        "name": "village-center",
+        "title": "Village Center",
+        "slots": "MEDIUM",
+        "places": [
+          {
+            "placeType": "free",
+            "name": "village-square",
+            "kind": "PLAZA",
+            "connectionPoint": true
+          },
+          {
+            "placeType": "building",
+            "name": "village-tavern",
+            "kind": "tavern",
+            "connectionPoint": false
+          },
+          {
+            "placeType": "building",
+            "name": "village-shop",
+            "kind": "shop",
+            "connectionPoint": false
+          },
+          {
+            "placeType": "road",
+            "name": "village-road",
+            "kind": "TRAIL",
+            "connectionPoint": true
+          }
+        ]
+      }
+    },
+
+    {
+      "featureType": "village-point",
+      "name": "east-village",
+      "title": "Eastern Village",
+      "biomeId": "east-hills",
+      "biomeDistance": "CENTER",
+      "style": "medieval",
+      "baseLevel": 95,
+      "fillEmptySlots": true,
+      "buildingTendency": 0.5,
+      "fillRate": 0.5,
+      "debug": true,
+      "district": {
+        "name": "hill-center",
+        "title": "Hill Settlement",
+        "slots": "SMALL",
+        "places": [
+          {
+            "placeType": "free",
+            "name": "hill-plaza",
+            "kind": "SQUARE",
+            "connectionPoint": true
+          },
+          {
+            "placeType": "building",
+            "name": "watchtower",
+            "kind": "tower",
+            "connectionPoint": false
+          },
+          {
+            "placeType": "road",
+            "name": "hill-road",
+            "kind": "TRAIL",
+            "connectionPoint": true
+          }
+        ]
+      }
+    },
+
+    /* ============================================
+       POINTS - Road endpoints and intersections
+       ============================================ */
+
+    {
+      "featureType": "point",
+      "name": "north-gate",
+      "title": "Northern Gate",
+      "snap": {
+        "mode": "INSIDE",
+        "target": "northern-forest"
+      }
+    },
+
+    {
+      "featureType": "point",
+      "name": "south-gate",
+      "title": "Southern Gate",
+      "biomeSide": "S",
+      "snap": {
+        "mode": "EDGE",
+        "target": "farmlands"
+      }
+    },
+
+    {
+      "featureType": "point",
+      "name": "trade-crossroads",
+      "title": "Trade Crossroads",
+      "biomeSide": "SE",
+      "snap": {
+        "mode": "EDGE",
+        "target": "farmlands"
+      }
+    },
+
+    {
+      "featureType": "point",
+      "name": "mountain-pass",
+      "title": "Mountain Pass",
+      "snap": {
+        "mode": "INSIDE",
+        "target": "eastern-mountains"
+      }
+    },
+
+    /* ============================================
+       ROADS - Connecting everything
+       ============================================ */
+
+    {
+      "featureType": "road",
+      "name": "north-highway",
+      "title": "Northern Highway",
+      "type": "ROAD",
+      "startPointId": "north-gate",
+      "endPointId": "kronenburg-n",
+      "levelMode": "ADJUST_MEAN",
+      "meanLevelOffset": 1,
+      "widthBlocks": 3,
+      "roadType": "highway",
+      "parameters": {
+      }
+    },
+    {
+      "featureType": "road",
+      "name": "west-trade-road",
+      "title": "Western Trade Road",
+      "type": "ROAD",
+      "startPointId": "west-village",
+      "endPointId": "kronenburg-w",
+      "levelMode": "ADJUST_MEAN",
+      "meanLevelOffset": 1,
+      "widthBlocks": 2,
+      "roadType": "street",
+      "parameters": {
+      }
+    },
+    {
+      "featureType": "road",
+      "name": "east-trade-road",
+      "title": "Eastern Trade Road",
+      "type": "ROAD",
+      "startPointId": "kronenburg-e",
+      "endPointId": "east-village",
+      "levelMode": "ADJUST_MEAN",
+      "meanLevelOffset": 1,
+      "widthBlocks": 2,
+      "roadType": "street",
+      "parameters": {
+      }
+    },
+    {
+      "featureType": "road",
+      "name": "south-highway",
+      "title": "Southern Highway",
+      "type": "ROAD",
+      "startPointId": "kronenburg-s",
+      "endPointId": "trade-crossroads",
+      "waypointIds": [ "south-gate" ],
+      "levelMode": "ADJUST_MEAN",
+      "meanLevelOffset": 1,
+      "widthBlocks": 3,
+      "roadType": "highway",
+      "parameters": {
+      }
+    },
+    {
+      "featureType": "road",
+      "name": "mountain-trail",
+      "title": "Mountain Trail",
+      "type": "ROAD",
+      "startPointId": "trade-crossroads",
+      "endPointId": "mountain-pass",
+      "levelMode": "ADJUST_MEAN",
+      "meanLevelOffset": 1,
+      "widthBlocks": 1,
+      "roadType": "path",
+      "parameters": {
+      }
+    },
+    {
+      "featureType": "road",
+      "name": "western-loop",
+      "title": "Western Loop Road",
+      "type": "ROAD",
+      "startPointId": "trade-crossroads",
+      "endPointId": "west-village",
+      "levelMode": "ADJUST_MEAN",
+      "meanLevelOffset": 1,
+      "widthBlocks": 2,
+      "roadType": "street",
+      "parameters": {
+      }
+    },
+    {
+      "featureType": "road",
+      "name": "highland-path",
+      "title": "Highland Path",
+      "type": "ROAD",
+      "startPointId": "mountain-pass",
+      "endPointId": "east-village",
+      "levelMode": "ADJUST_MEAN",
+      "meanLevelOffset": 1,
+      "widthBlocks": 1,
+      "roadType": "path",
+      "parameters": {
+      }
+    }
+  ]
+}

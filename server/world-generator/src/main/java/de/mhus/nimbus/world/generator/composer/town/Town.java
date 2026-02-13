@@ -2,6 +2,7 @@ package de.mhus.nimbus.world.generator.composer.town;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import de.mhus.nimbus.generated.types.HexVector2;
+import de.mhus.nimbus.world.generator.composer.biome.BiomeType;
 import de.mhus.nimbus.world.generator.composer.build.BuildContext;
 import de.mhus.nimbus.world.generator.composer.build.BuildFeature;
 import de.mhus.nimbus.world.generator.composer.build.CompositionResult;
@@ -35,29 +36,37 @@ public class Town extends Structure implements BuildFeature {
     private Map<String, String> parameters;
 
     /**
-     * Building style that determines the type of buildings in the village.
+     * Building style that determines the type of buildings in the town.
      * Examples: "medieval", "modern", "fantasy", "ancient", "industrial"
      * This style affects the visual appearance and building types.
      */
     private String style;
 
     /**
-     * List of districts that make up this village.
-     * Each district represents one grid in the village with specific slot configuration.
-     * Districts are positioned using axial hex coordinates relative to village origin.
+     * Biome type that controls the terrain builder and default parameters for this town.
+     * When set, overrides the builder from StructureType and applies biome-specific
+     * terrain parameters (e.g., PLAINS for flat terrain, FOREST for wooded areas).
+     * If null, falls back to StructureType defaults.
+     */
+    private BiomeType biomeType;
+
+    /**
+     * List of districts that make up this town.
+     * Each district represents one grid in the town with specific slot configuration.
+     * Districts are positioned using axial hex coordinates relative to town origin.
      */
     private List<District> districts;
 
     /**
-     * List of external connection points for this village.
-     * These synthetic points are placed in neighboring grids outside the village
+     * List of external connection points for this town.
+     * These synthetic points are placed in neighboring grids outside the town
      * to provide entry/exit points for external roads.
-     * Generated automatically by VillageExternalConnectionGenerator.
+     * Generated automatically by TownExternalConnectionGenerator.
      */
     private List<TownConnectionPoint> externalConnectionPoints;
 
     /**
-     * Internal: Designed district grids from VillageDesigner.
+     * Internal: Designed district grids from TownDesigner.
      * Stored to allow connecting external connection points after design phase.
      * Not serialized to JSON (transient for design-time only).
      */
@@ -65,7 +74,7 @@ public class Town extends Structure implements BuildFeature {
     private transient List<DistrictGrid> designedDistrictGrids;
 
     /**
-     * Base level for village terrain (typically 95)
+     * Base level for town terrain (typically 95)
      */
     @Builder.Default
     private int baseLevel = 95;
@@ -113,10 +122,10 @@ public class Town extends Structure implements BuildFeature {
     @Builder.Default
     private boolean debug = false;
 
-    // Note: Village uses Structure.Composed (no Village-specific calculated fields yet)
+    // Note: Town uses Structure.Composed (no Town-specific calculated fields yet)
 
     /**
-     * Applies village-specific default configuration from StructureType
+     * Applies town-specific default configuration from StructureType
      */
     @Override
     protected void applyStructureDefaults(Map<String, String> defaults) {
@@ -124,32 +133,35 @@ public class Town extends Structure implements BuildFeature {
             parameters = new HashMap<>();
         }
 
-        // Apply defaults from StructureType enum
+        // StructureType defaults as base
         if (defaults != null) {
             defaults.forEach(parameters::putIfAbsent);
         }
 
-        // Set default builder
-        if (getType() != null) {
+        // BiomeType overrides builder and brings its own parameters
+        if (biomeType != null) {
+            parameters.put("g_builder", biomeType.getDefaultBuilder());
+            biomeType.getDefaultParameters().forEach(parameters::putIfAbsent);
+        } else if (getType() != null) {
             parameters.putIfAbsent("g_builder", getType().getDefaultBuilder());
         }
     }
 
     /**
-     * Builds this village internally.
-     * Creates ALL HexGrids with complete parameters, with RELATIVE coordinates to village origin (0,0).
+     * Builds this town internally.
+     * Creates ALL HexGrids with complete parameters, with RELATIVE coordinates to town origin (0,0).
      * The parent Composer will later transform these relative coordinates to absolute world coordinates.
      *
      * Implements BuildFeature interface for cascaded composites.
      *
-     * TODO: Implement new village building logic based on style instead of templateName.
+     * TODO: Implement new town building logic based on style instead of templateName.
      *
      * @param context Build context
-     * @return CompositionResult with village design information
+     * @return CompositionResult with town design information
      */
     @Override
     public CompositionResult build(BuildContext context) {
-        // TODO: Implement new village building logic
+        // TODO: Implement new town building logic
         // For now: Return empty successful result
 
         if (style == null || style.isBlank()) {
@@ -158,7 +170,7 @@ public class Town extends Structure implements BuildFeature {
         }
 
         try {
-            // TODO: New village building logic will be implemented here
+            // TODO: New town building logic will be implemented here
             // Will use 'style' instead of 'templateName'
 
             // For now: Return successful result without building anything
@@ -171,20 +183,20 @@ public class Town extends Structure implements BuildFeature {
                 .build();
 
         } catch (Exception e) {
-            return CompositionResult.failed("Village build failed: " + e.getMessage());
+            return CompositionResult.failed("Town build failed: " + e.getMessage());
         }
     }
 
     /**
-     * Configures HexGrids for this village with buildings and streets.
-     * Creates FeatureHexGrid configurations for each village grid.
-     * Uses VillageDesigner to generate the village layout and attaches configuration as g_village parameter.
+     * Configures HexGrids for this town with buildings and streets.
+     * Creates FeatureHexGrid configurations for each town grid.
+     * Uses TownDesigner to generate the town layout and attaches configuration as g_town parameter.
      *
-     * @param coordinates Grid coordinates (not used for villages, districts define positions)
+     * @param coordinates Grid coordinates (not used for towns, districts define positions)
      * @param hexGridSize Size of each hex grid from world configuration
      */
     public void configureHexGrids(List<HexVector2> coordinates, int hexGridSize) {
-        log.debug("Configuring HexGrids for village '{}' with {} districts (hexGridSize: {})",
+        log.debug("Configuring HexGrids for town '{}' with {} districts (hexGridSize: {})",
             getName(), districts != null ? districts.size() : 0, hexGridSize);
 
         // Clear existing configurations
@@ -194,7 +206,7 @@ public class Town extends Structure implements BuildFeature {
 
         // Check if districts are defined
         if (districts == null || districts.isEmpty()) {
-            log.warn("Village '{}' has no districts defined, creating fallback grids", getName());
+            log.warn("Town '{}' has no districts defined, creating fallback grids", getName());
             createFallbackGrids(coordinates);
             return;
         }
@@ -202,20 +214,20 @@ public class Town extends Structure implements BuildFeature {
         // Create BuildingIndex (TODO: Load from external source)
         BuildingIndex buildingIndex = new BuildingIndex();
         // TODO: Load buildings from file/database
-        log.debug("Created BuildingIndex for village '{}' (currently empty)", getName());
+        log.debug("Created BuildingIndex for town '{}' (currently empty)", getName());
 
-        // Design the village using VillageDesigner
+        // Design the town using TownDesigner
         TownDesigner designer = new TownDesigner(buildingIndex);
         TownDesignResult designResult;
 
         try {
-            log.debug("Starting village design for '{}' with hexGridSize: {}", getName(), hexGridSize);
+            log.debug("Starting town design for '{}' with hexGridSize: {}", getName(), hexGridSize);
             designResult = designer.design(this, hexGridSize);
 
             if (!designResult.isSuccess()) {
-                log.error("Village design failed for '{}': {}", getName(), designResult.getErrors());
+                log.error("Town design failed for '{}': {}", getName(), designResult.getErrors());
                 // Still create grids with basic parameters as fallback
-                log.warn("Creating fallback grids for village '{}'", getName());
+                log.warn("Creating fallback grids for town '{}'", getName());
                 createFallbackGridsFromDistricts();
                 return;
             }
@@ -223,23 +235,23 @@ public class Town extends Structure implements BuildFeature {
             // Store designed district grids for later use (connecting external points)
             this.designedDistrictGrids = designResult.getDistrictGrids();
 
-            log.debug("Village design successful: {} districts", designResult.getDistrictCount());
+            log.debug("Town design successful: {} districts", designResult.getDistrictCount());
 
         } catch (Exception e) {
-            log.error("Exception during village design for '{}'", getName(), e);
-            log.warn("Creating fallback grids for village '{}'", getName());
+            log.error("Exception during town design for '{}'", getName(), e);
+            log.warn("Creating fallback grids for town '{}'", getName());
             createFallbackGridsFromDistricts();
             return;
         }
 
-        log.debug("Village design successful: {} districts, {} places",
+        log.debug("Town design successful: {} districts, {} places",
             designResult.getDistrictCount(), designResult.getTotalPlaceCount());
 
         // Create FeatureHexGrid for each DistrictGrid with configuration
         for (DistrictGrid districtGrid : designResult.getDistrictGrids()) {
             HexVector2 relativePos = districtGrid.getGridPosition();
 
-            // Find the corresponding absolute coordinate (coordinates are relative to village center)
+            // Find the corresponding absolute coordinate (coordinates are relative to town center)
             // For now, we assume coordinates list matches districtGrids order
             // TODO: Proper coordinate mapping
 
@@ -256,15 +268,15 @@ public class Town extends Structure implements BuildFeature {
                 .description("District '" + districtGrid.getTitle() + "' of " + getName())
                 .build();
 
-            // Add g_village parameter with configuration
+            // Add g_town parameter with configuration
             featureHexGrid.addParameter("g_village", configJson);
 
             // Add basic structure parameters
-            featureHexGrid.addParameter("structure", "village");
+            featureHexGrid.addParameter("structure", "town");
             featureHexGrid.addParameter("structureName", getName());
             featureHexGrid.addParameter("districtName", districtGrid.getName());
 
-            // Copy village parameters to grid
+            // Copy town parameters to grid
             if (parameters != null) {
                 featureHexGrid.getParameters().putAll(parameters);
             }
@@ -277,14 +289,14 @@ public class Town extends Structure implements BuildFeature {
                 districtGrid.getPlacedPlaces().size(), districtGrid.getStreets().size());
         }
 
-        log.debug("Village '{}' configured: {} grids created", getName(), getHexGrids().size());
+        log.debug("Town '{}' configured: {} grids created", getName(), getHexGrids().size());
     }
 
     /**
      * Creates fallback grids when design fails
      */
     private void createFallbackGrids(List<HexVector2> coordinates) {
-        log.warn("Creating {} fallback grids for village '{}'", coordinates.size(), getName());
+        log.warn("Creating {} fallback grids for town '{}'", coordinates.size(), getName());
         for (HexVector2 coord : coordinates) {
             FeatureHexGrid featureHexGrid = FeatureHexGrid.builder()
                 .coordinate(coord)
@@ -292,7 +304,7 @@ public class Town extends Structure implements BuildFeature {
                 .description("Fallback grid for " + getName())
                 .build();
 
-            featureHexGrid.addParameter("structure", "village");
+            featureHexGrid.addParameter("structure", "town");
             featureHexGrid.addParameter("structureName", getName());
 
             addHexGrid(featureHexGrid);
@@ -308,10 +320,10 @@ public class Town extends Structure implements BuildFeature {
             return;
         }
 
-        log.warn("Creating {} fallback grids from districts for village '{}'",
+        log.warn("Creating {} fallback grids from districts for town '{}'",
             districts.size(), getName());
 
-        // Resolve district positions using VillageDesigner
+        // Resolve district positions using TownDesigner
         Map<String, HexVector2> districtPositions = TownDesigner.resolveDistrictPositions(districts);
 
         for (District district : districts) {
@@ -327,13 +339,13 @@ public class Town extends Structure implements BuildFeature {
                 .description("Fallback grid for district " + district.getName())
                 .build();
 
-            featureHexGrid.addParameter("structure", "village");
+            featureHexGrid.addParameter("structure", "town");
             featureHexGrid.addParameter("structureName", getName());
             featureHexGrid.addParameter("districtName", district.getName());
 
-            // Add minimal g_village parameter
+            // Add minimal g_town parameter
             String minimalConfig = String.format(
-                "{\"villageName\":\"%s\",\"districtName\":\"%s\",\"baseLevel\":%d,\"places\":[],\"streets\":[]}",
+                "{\"townName\":\"%s\",\"districtName\":\"%s\",\"baseLevel\":%d,\"places\":[],\"streets\":[]}",
                 getName(), district.getName(), baseLevel);
             featureHexGrid.addParameter("g_village", minimalConfig);
 
@@ -342,7 +354,7 @@ public class Town extends Structure implements BuildFeature {
     }
 
     /**
-     * Creates VillageGridConfig from DistrictGrid
+     * Creates TownGridConfig from DistrictGrid
      */
     private TownGridConfig createGridConfig(DistrictGrid districtGrid) {
         // Convert PlacedPlaces to config
@@ -412,6 +424,7 @@ public class Town extends Structure implements BuildFeature {
             .kind(kind)
             .oversized(placedPlace.isOversized())
             .connectionPoint(place.isConnectionPoint())
+            .level(baseLevel + place.getLevelOffset())
             .build();
     }
 
@@ -439,28 +452,28 @@ public class Town extends Structure implements BuildFeature {
                 new com.fasterxml.jackson.databind.ObjectMapper();
             return mapper.writeValueAsString(config);
         } catch (Exception e) {
-            log.error("Failed to serialize VillageGridConfig to JSON", e);
+            log.error("Failed to serialize TownGridConfig to JSON", e);
             return "{}";
         }
     }
 
     /**
-     * Connects external connection points to internal village connection points.
+     * Connects external connection points to internal town connection points.
      * This method is called after external connection points have been generated
-     * by VillageExternalConnectionGenerator (HexCompositeBuilder Step 4c).
+     * by TownExternalConnectionGenerator (HexCompositeBuilder Step 4c).
      *
-     * Creates street segments from internal connection points to the village boundary,
+     * Creates street segments from internal connection points to the town boundary,
      * connecting to external connection points in neighboring grids.
      *
      * @param hexGridSize The size of hex grids for coordinate calculations
      */
     public void connectExternalConnectionPoints(int hexGridSize) {
         if (externalConnectionPoints == null || externalConnectionPoints.isEmpty()) {
-            log.debug("No external connection points to connect for village '{}'", getName());
+            log.debug("No external connection points to connect for town '{}'", getName());
             return;
         }
 
-        log.debug("Connecting {} external connection points for village '{}'",
+        log.debug("Connecting {} external connection points for town '{}'",
             externalConnectionPoints.size(), getName());
 
         // For each external connection point, find the corresponding internal connection point
@@ -469,11 +482,11 @@ public class Town extends Structure implements BuildFeature {
             connectExternalPoint(externalPoint, hexGridSize);
         }
 
-        log.debug("External connection point routing complete for village '{}'", getName());
+        log.debug("External connection point routing complete for town '{}'", getName());
     }
 
     /**
-     * Connects a single external connection point to the village.
+     * Connects a single external connection point to the town.
      *
      * @param externalPoint The external connection point to connect
      * @param hexGridSize The size of hex grids

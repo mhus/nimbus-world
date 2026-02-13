@@ -77,6 +77,7 @@ public class TownGridConfig {
         private String kind; // e.g., "house", "PARK", "STREET"
         private boolean oversized;
         private boolean connectionPoint;
+        private int level; // Computed: baseLevel + place.levelOffset
     }
 
     /**

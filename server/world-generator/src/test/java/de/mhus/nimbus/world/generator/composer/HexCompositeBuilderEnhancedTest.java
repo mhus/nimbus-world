@@ -34,4 +34,9 @@ public class HexCompositeBuilderEnhancedTest extends HexCompositeBuilderAbstract
         composite("enhanced-test-roads");
     }
 
+    @Test
+    public void testEnhancedTown() throws Exception {
+        composite("enhanced-test-town");
+    }
+
 }

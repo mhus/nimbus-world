@@ -49,4 +49,13 @@ public abstract class Place {
      */
     @Builder.Default
     private boolean connectionPoint = false;
+
+    /**
+     * Level offset relative to the town's baseLevel.
+     * The actual place level is calculated as: baseLevel + levelOffset.
+     * Positive values raise the place (e.g., castle on a hill),
+     * negative values lower it (e.g., cellar, canal).
+     */
+    @Builder.Default
+    private int levelOffset = 0;
 }
