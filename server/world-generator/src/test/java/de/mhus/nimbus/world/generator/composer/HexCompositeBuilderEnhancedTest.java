@@ -29,4 +29,9 @@ public class HexCompositeBuilderEnhancedTest extends HexCompositeBuilderAbstract
         composite("enhanced-test-rivers");
     }
 
+    @Test
+    public void testEnhancedRoads() throws Exception {
+        composite("enhanced-test-roads");
+    }
+
 }

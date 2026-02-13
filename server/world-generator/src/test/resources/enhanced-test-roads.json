@@ -1,0 +1,213 @@
+/*
+5 Roads mit 3 Kreuzungspunkten:
+  ┌──────────────────┬──────────────────┬──────────────────┬───────────────┬───────┐
+  │       Road       │       Von        │       Nach       │   Waypoint    │ Grids │
+  ├──────────────────┼──────────────────┼──────────────────┼───────────────┼───────┤
+  │ west-road        │ western-village  │ crossroads       │ -             │ 3     │
+  ├──────────────────┼──────────────────┼──────────────────┼───────────────┼───────┤
+  │ mountain-highway │ crossroads       │ eastern-village  │ mountain-pass │ 7     │
+  ├──────────────────┼──────────────────┼──────────────────┼───────────────┼───────┤
+  │ northern-trail   │ crossroads       │ northern-outpost │ -             │ 5     │
+  ├──────────────────┼──────────────────┼──────────────────┼───────────────┼───────┤
+  │ southern-route   │ crossroads       │ southern-market  │ -             │ 3     │
+  ├──────────────────┼──────────────────┼──────────────────┼───────────────┼───────┤
+  │ highland-path    │ northern-outpost │ mountain-pass    │ -             │ 2     │
+  └──────────────────┴──────────────────┴──────────────────┴───────────────┴───────┘
+  Kreuzungen:
+  - crossroads (0,-1): 4 Roads treffen sich
+  - mountain-pass (3,0): 2 Roads treffen sich
+  - northern-outpost (4,-1): 2 Roads treffen sich
+*/
+{
+  "name": "Simple Test World First",
+  "worldId": "simple-test-first",
+  "continents": [
+    {
+      "continentId": "main-continent",
+      "name": "Main Continent",
+      "biomeType": "MOUNTAINS",
+      "minNeighbors": 2,
+      "parameters": {
+        "g_offset": "10",
+        "g_roughness": "0.8"
+      }
+    }
+  ],
+  "features": [
+    {
+      "featureType": "biome",
+      "name": "west-region",
+      "title": "Western Plains",
+      "type": "PLAINS",
+      "shape": "CIRCLE",
+      "size": "LARGE",
+      "continentId": "main-continent",
+      "positions": [
+        {"direction": "W", "distanceFrom": 0, "anchor": "origin", "priority": 10}
+      ],
+      "parameters": {
+      }
+    },
+    {
+      "featureType": "biome",
+      "name": "east-region",
+      "title": "Eastern Forest",
+      "type": "FOREST",
+      "shape": "CIRCLE",
+      "size": "LARGE",
+      "continentId": "main-continent",
+      "positions": [
+        {"direction": "E", "distanceFrom": 3, "distanceTo": 3, "anchor": "central-mountains", "priority": 10}
+      ],
+      "parameters": {
+      }
+    },
+    {
+      "featureType": "mountain-biome",
+      "name": "central-mountains",
+      "title": "Central Mountains",
+      "type": "MOUNTAINS",
+      "height": "MEDIUM_PEAKS",
+      "shape": "CIRCLE",
+      "size": "MEDIUM",
+      "continentId": "main-continent",
+      "positions": [
+        {"direction": "E", "distanceFrom": 3, "distanceTo": 3, "anchor": "west-region", "priority": 10}
+      ],
+      "parameters": {
+      }
+    },
+
+    {
+      "featureType": "point",
+      "name": "mountain-pass",
+      "title": "Mountain Pass",
+      "snap": {
+        "mode": "INSIDE",
+        "target": "central-mountains"
+      }
+    },
+    {
+      "featureType": "point",
+      "name": "crossroads",
+      "title": "Central Crossroads",
+      "biomeSide": "E",
+      "snap": {
+        "mode": "EDGE",
+        "target": "west-region"
+      }
+    },
+    {
+      "featureType": "point",
+      "name": "western-village",
+      "title": "Western Village",
+      "biomeSide": "W",
+      "snap": {
+        "mode": "INSIDE",
+        "target": "west-region"
+      }
+    },
+    {
+      "featureType": "point",
+      "name": "eastern-village",
+      "title": "Eastern Village",
+      "biomeSide": "E",
+      "snap": {
+        "mode": "INSIDE",
+        "target": "east-region"
+      }
+    },
+    {
+      "featureType": "point",
+      "name": "northern-outpost",
+      "title": "Northern Outpost",
+      "biomeSide": "NE",
+      "snap": {
+        "mode": "EDGE",
+        "target": "central-mountains"
+      }
+    },
+    {
+      "featureType": "point",
+      "name": "southern-market",
+      "title": "Southern Market",
+      "biomeSide": "SW",
+      "snap": {
+        "mode": "INSIDE",
+        "target": "west-region"
+      }
+    },
+
+    {
+      "featureType": "road",
+      "name": "west-road",
+      "title": "Western Village Road",
+      "type": "ROAD",
+      "startPointId": "western-village",
+      "endPointId": "crossroads",
+      "levelMode": "ADJUST_MEAN",
+      "meanLevelOffset": 1,
+      "widthBlocks": 2,
+      "roadType": "street",
+      "parameters": {
+      }
+    },
+    {
+      "featureType": "road",
+      "name": "mountain-highway",
+      "title": "Mountain Highway",
+      "type": "ROAD",
+      "startPointId": "crossroads",
+      "endPointId": "eastern-village",
+      "waypointIds": [ "mountain-pass" ],
+      "levelMode": "ADJUST_MEAN",
+      "meanLevelOffset": 1,
+      "widthBlocks": 3,
+      "roadType": "highway",
+      "parameters": {
+      }
+    },
+    {
+      "featureType": "road",
+      "name": "northern-trail",
+      "title": "Northern Trail",
+      "type": "ROAD",
+      "startPointId": "crossroads",
+      "endPointId": "northern-outpost",
+      "levelMode": "ADJUST_MEAN",
+      "meanLevelOffset": 1,
+      "widthBlocks": 1,
+      "roadType": "path",
+      "parameters": {
+      }
+    },
+    {
+      "featureType": "road",
+      "name": "southern-route",
+      "title": "Southern Trade Route",
+      "type": "ROAD",
+      "startPointId": "crossroads",
+      "endPointId": "southern-market",
+      "levelMode": "ADJUST_MEAN",
+      "meanLevelOffset": 1,
+      "widthBlocks": 2,
+      "roadType": "street",
+      "parameters": {
+      }
+    },
+    {
+      "featureType": "road",
+      "name": "highland-path",
+      "title": "Highland Path",
+      "type": "ROAD",
+      "startPointId": "northern-outpost",
+      "endPointId": "mountain-pass",
+      "levelMode": "ADJUST_MEAN",
+      "meanLevelOffset": 1,
+      "widthBlocks": 1,
+      "roadType": "path",
+      "parameters": {
+      }
+    }
+  ]
+}
