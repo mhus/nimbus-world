@@ -573,7 +573,9 @@ public class FlowComposer {
         path.add(start);
 
         HexVector2 current = start;
-        HexVector2 previous = null; // Prevent immediate backtracking
+        // Track all visited positions to prevent cycles (not just immediate backtrack)
+        Set<String> visited = new HashSet<>();
+        visited.add(current.getQ() + "," + current.getR());
 
         // Get deviation tendencies
         DeviationTendency tendLeft = flow.getTendLeft();
@@ -589,10 +591,21 @@ public class FlowComposer {
         while (!current.equals(goal)) {
             List<HexVector2> neighbors = getHexNeighbors(current);
 
-            // Prevent backtracking to previous position
-            if (previous != null) {
-                final HexVector2 prev = previous;
-                neighbors.removeIf(n -> n.getQ() == prev.getQ() && n.getR() == prev.getR());
+            // If goal is a direct neighbor, go straight to it (skip routing/deviation)
+            boolean goalIsNeighbor = neighbors.stream()
+                    .anyMatch(n -> n.getQ() == goal.getQ() && n.getR() == goal.getR());
+            if (goalIsNeighbor) {
+                path.add(goal);
+                break;
+            }
+
+            // Remove already visited positions to prevent cycles
+            neighbors.removeIf(n -> visited.contains(n.getQ() + "," + n.getR()));
+
+            if (neighbors.isEmpty()) {
+                log.warn("Flow '{}' stuck at ({},{}) — all neighbors visited",
+                    flow.getName(), current.getQ(), current.getR());
+                break;
             }
 
             HexVector2 next;
@@ -609,7 +622,7 @@ public class FlowComposer {
             }
 
             path.add(next);
-            previous = current;
+            visited.add(next.getQ() + "," + next.getR());
             current = next;
 
             if (path.size() > maxSteps) {
