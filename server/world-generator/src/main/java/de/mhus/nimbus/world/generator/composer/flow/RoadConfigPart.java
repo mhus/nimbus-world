@@ -30,6 +30,7 @@ public class RoadConfigPart {
     private Integer centerLx;
     private Integer centerLz;
     private Integer centerLevel;
+    private String centerPosition;  // HexLocal position string (e.g., "<-1;1>")
     private Integer plazaSize;
     private String plazaMaterial;
 
@@ -53,6 +54,20 @@ public class RoadConfigPart {
             .partType(PartType.CENTER)
             .centerLx(lx)
             .centerLz(lz)
+            .centerLevel(level)
+            .plazaSize(plazaSize)
+            .plazaMaterial(plazaMaterial)
+            .build();
+    }
+
+    /**
+     * Creates a CENTER part with a HexLocal position string instead of lx/lz coordinates.
+     */
+    public static RoadConfigPart createCenterPositionPart(String position, Integer level,
+                                                           Integer plazaSize, String plazaMaterial) {
+        return RoadConfigPart.builder()
+            .partType(PartType.CENTER)
+            .centerPosition(position)
             .centerLevel(level)
             .plazaSize(plazaSize)
             .plazaMaterial(plazaMaterial)

@@ -392,11 +392,15 @@ public class HexGridRoadConfigurator {
                 if (centerPart.getCenterLevel() != null) {
                     roadConfig.put("level", centerPart.getCenterLevel());
                 }
-                if (centerPart.getCenterLx() != null) {
-                    roadConfig.put("lx", centerPart.getCenterLx());
-                }
-                if (centerPart.getCenterLz() != null) {
-                    roadConfig.put("lz", centerPart.getCenterLz());
+                if (centerPart.getCenterPosition() != null) {
+                    roadConfig.put("position", centerPart.getCenterPosition());
+                } else {
+                    if (centerPart.getCenterLx() != null) {
+                        roadConfig.put("lx", centerPart.getCenterLx());
+                    }
+                    if (centerPart.getCenterLz() != null) {
+                        roadConfig.put("lz", centerPart.getCenterLz());
+                    }
                 }
                 if (centerPart.getPlazaSize() != null) {
                     roadConfig.put("plazaSize", centerPart.getPlazaSize());
@@ -409,11 +413,15 @@ public class HexGridRoadConfigurator {
                 if (existingRoadConfig.containsKey("level")) {
                     roadConfig.put("level", existingRoadConfig.get("level"));
                 }
-                if (existingRoadConfig.containsKey("lx")) {
-                    roadConfig.put("lx", existingRoadConfig.get("lx"));
-                }
-                if (existingRoadConfig.containsKey("lz")) {
-                    roadConfig.put("lz", existingRoadConfig.get("lz"));
+                if (existingRoadConfig.containsKey("position")) {
+                    roadConfig.put("position", existingRoadConfig.get("position"));
+                } else {
+                    if (existingRoadConfig.containsKey("lx")) {
+                        roadConfig.put("lx", existingRoadConfig.get("lx"));
+                    }
+                    if (existingRoadConfig.containsKey("lz")) {
+                        roadConfig.put("lz", existingRoadConfig.get("lz"));
+                    }
                 }
                 if (existingRoadConfig.containsKey("plazaSize")) {
                     roadConfig.put("plazaSize", existingRoadConfig.get("plazaSize"));
@@ -422,7 +430,16 @@ public class HexGridRoadConfigurator {
                     roadConfig.put("plazaMaterial", existingRoadConfig.get("plazaMaterial"));
                 }
             } else {
-                // No CENTER part or existing config - check if level is needed
+                // No CENTER part or existing config - auto-random center position
+                String[] innerPositions = {"<0;0>", "<-1;1>", "<0;1>", "<1;0>", "<1;-1>", "<0;-1>", "<-1;0>"};
+                Random rng = new Random(grid.getPositionKey().hashCode());
+                roadConfig.put("position", innerPositions[rng.nextInt(innerPositions.length)]);
+
+                // Auto-plaza when >2 route segments meet
+                if (routeParts.size() > 2) {
+                    roadConfig.put("plazaSize", 10 + rng.nextInt(11)); // 10-20
+                }
+
                 // Only write level if route parts don't have fromLevel/toLevel
                 boolean hasFromToLevels = routeParts.stream()
                     .allMatch(p -> p.getFromLevel() != null && p.getToLevel() != null);
