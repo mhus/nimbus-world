@@ -212,7 +212,7 @@
       "description" : "Part of PLAINS biome"
     } ]
   }, {
-    "featureType" : "village",
+    "featureType" : "town",
     "featureId" : "b32f02f0-ccff-4215-a085-19fee76fbc4f",
     "name" : "test-village",
     "title" : "Test Village",

@@ -120,14 +120,12 @@ public class FlowComposerTest {
 
         assertTrue(totalSegments > 0, "Should have flow segments in hexGrids");
 
-        // Verify WHexGrid generation
-        assertNotNull(result.getGenerationResult(), "Should have generation result");
-        assertTrue(result.getGenerationResult().isSuccess(), "HexGrid generation should succeed");
-        assertTrue(result.getGeneratedWHexGrids() > 0, "Should have created grids");
+        // Verify central registry contains grids (WHexGrid creation is now separate)
+        assertFalse(composition.getFeatureHexGridRegistry().isEmpty(),
+            "Central registry should contain grids");
 
-        log.info("Generated {} WHexGrids from {} features",
-            result.getGeneratedWHexGrids(),
-            result.getGenerationResult().getTotalFeatures());
+        log.info("Central registry contains {} FeatureHexGrids",
+            composition.getFeatureHexGridRegistry().size());
 
         // Verify feature status
         assertEquals(FeatureStatus.CREATED, road.getStatus(),
@@ -174,8 +172,9 @@ public class FlowComposerTest {
 
         log.info("River '{}' has {} hexGrids", river.getName(), riverHexGrids.size());
 
-        // Verify WHexGrid generation
-        assertTrue(result.getGenerationResult().isSuccess(), "HexGrid generation should succeed");
+        // Verify central registry contains grids (WHexGrid creation is now separate)
+        assertFalse(composition.getFeatureHexGridRegistry().isEmpty(),
+            "Central registry should contain grids");
 
         log.info("=== River test completed successfully ===");
     }

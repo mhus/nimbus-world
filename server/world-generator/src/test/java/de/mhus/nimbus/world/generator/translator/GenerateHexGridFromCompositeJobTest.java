@@ -161,10 +161,10 @@ public class GenerateHexGridFromCompositeJobTest {
     public void testGenerateHexGridsWithExistingGrids() throws Exception {
         log.info("=== Starting HexGrid Generation Test with Existing Grids ===");
 
-        // Simulate some existing grids
-        existingHexGridKeys.add("test-valley-001:0;0");
-        existingHexGridKeys.add("test-valley-001:0;1");
-        existingHexGridKeys.add("test-valley-001:1;0");
+        // Simulate some existing grids (use TEST_WORLD_ID since executor overrides worldId from job)
+        existingHexGridKeys.add(TEST_WORLD_ID + ":0;0");
+        existingHexGridKeys.add(TEST_WORLD_ID + ":0;1");
+        existingHexGridKeys.add(TEST_WORLD_ID + ":1;0");
 
         log.info("Simulating {} existing grids", existingHexGridKeys.size());
 
@@ -443,41 +443,34 @@ public class GenerateHexGridFromCompositeJobTest {
 
         log.info("Composition document found: {}", compositionDoc.getName());
 
-        // CRITICAL CHECK AFTER APPLY: Parse enrichedCompositionJson and verify all grids
+        // CRITICAL CHECK AFTER APPLY: Parse composition JSON (direct model) and verify all grids
         log.info("=== Verifying composition after Apply (before Generate) ===");
 
-        JsonNode compositionContent = objectMapper.readTree(compositionDoc.getContent());
-        String enrichedCompositionJson = compositionContent.get("enrichedCompositionJson").asText();
-        JsonNode compositionNode = objectMapper.readTree(enrichedCompositionJson);
+        JsonNode compositionNode = objectMapper.readTree(compositionDoc.getContent());
 
-        // Count all FeatureHexGrids and check for duplicates and g_builder
+        // Count all FeatureHexGrids from the top-level featureHexGrids list
         Map<String, Integer> compositionCoordinateCounts = new HashMap<>();
         List<String> compositionGridsWithoutBuilder = new ArrayList<>();
         int totalFeatureHexGrids = 0;
 
-        JsonNode features = compositionNode.get("features");
-        if (features != null && features.isArray()) {
-            for (JsonNode feature : features) {
-                JsonNode hexGrids = feature.get("hexGrids");
-                if (hexGrids != null && hexGrids.isArray()) {
-                    for (JsonNode hexGrid : hexGrids) {
-                        totalFeatureHexGrids++;
+        JsonNode featureHexGridsList = compositionNode.get("featureHexGrids");
+        if (featureHexGridsList != null && featureHexGridsList.isArray()) {
+            for (JsonNode hexGrid : featureHexGridsList) {
+                totalFeatureHexGrids++;
 
-                        JsonNode coordinate = hexGrid.get("coordinate");
-                        int q = coordinate.get("q").asInt();
-                        int r = coordinate.get("r").asInt();
-                        String position = q + ";" + r;
+                JsonNode coordinate = hexGrid.get("coordinate");
+                int q = coordinate.get("q").asInt();
+                int r = coordinate.get("r").asInt();
+                String position = q + ";" + r;
 
-                        // Count occurrences
-                        compositionCoordinateCounts.put(position,
-                                compositionCoordinateCounts.getOrDefault(position, 0) + 1);
+                // Count occurrences
+                compositionCoordinateCounts.put(position,
+                        compositionCoordinateCounts.getOrDefault(position, 0) + 1);
 
-                        // Check for g_builder
-                        JsonNode parameters = hexGrid.get("parameters");
-                        if (parameters == null || !parameters.has("g_builder")) {
-                            compositionGridsWithoutBuilder.add(position);
-                        }
-                    }
+                // Check for g_builder
+                JsonNode parameters = hexGrid.get("parameters");
+                if (parameters == null || !parameters.has("g_builder")) {
+                    compositionGridsWithoutBuilder.add(position);
                 }
             }
         }
@@ -500,8 +493,8 @@ public class GenerateHexGridFromCompositeJobTest {
         assertTrue(compositionGridsWithoutBuilder.isEmpty(),
                 "After Apply, all FeatureHexGrids must have g_builder. Missing in: " + compositionGridsWithoutBuilder);
 
-        log.info("✓ All {} FeatureHexGrids in composition have g_builder", totalFeatureHexGrids);
-        log.info("✓ Composition has {} unique coordinates", compositionCoordinateCounts.size());
+        log.info("All {} FeatureHexGrids in composition have g_builder", totalFeatureHexGrids);
+        log.info("Composition has {} unique coordinates", compositionCoordinateCounts.size());
 
         // STEP 2: Generate hex grids from composed model
         log.info("STEP 2: Generating hex grids from composition...");
@@ -537,7 +530,10 @@ public class GenerateHexGridFromCompositeJobTest {
         // CRITICAL VALIDATIONS:
         // 1. All grids should have been created (not just updated)
         assertTrue(createdGrids > 0, "Should have created at least one grid");
-        assertEquals(gridCount, totalGrids, "Grid count should match total grids from composition");
+        // gridCount is the total registry size (biomes + fillers + orphans),
+        // totalGrids is only the initial biome count. Grid count should be >= totalGrids.
+        assertTrue(gridCount >= totalGrids,
+                "Grid count (%d) should be >= total initial biome grids (%d)".formatted(gridCount, totalGrids));
 
         // 2. Each coordinate should appear only ONCE
         Map<String, Integer> coordinateCounts = new HashMap<>();
@@ -649,39 +645,74 @@ public class GenerateHexGridFromCompositeJobTest {
     }
 
     /**
-     * Load test document with enriched composition JSON
+     * Enriches a HexComposition JSON by extracting hexGrids from features and adding them
+     * as top-level featureHexGrids array. This is needed because old JSON fixtures have
+     * hexGrids nested in features[].featureComposed.hexGrids[], but the executor expects
+     * a top-level featureHexGrids list for populating the central registry.
+     *
+     * Deduplicates by coordinate (last writer wins for same q,r).
+     */
+    private String enrichCompositionJsonWithFeatureHexGrids(String rawJson) throws Exception {
+        com.fasterxml.jackson.databind.node.ObjectNode root =
+                (com.fasterxml.jackson.databind.node.ObjectNode) objectMapper.readTree(rawJson);
+
+        // Collect all hexGrids from features, deduplicating by coordinate
+        Map<String, JsonNode> uniqueGrids = new LinkedHashMap<>();
+
+        JsonNode features = root.get("features");
+        if (features != null && features.isArray()) {
+            for (JsonNode feature : features) {
+                JsonNode featureComposed = feature.get("featureComposed");
+                if (featureComposed == null) continue;
+                JsonNode hexGrids = featureComposed.get("hexGrids");
+                if (hexGrids == null || !hexGrids.isArray()) continue;
+                for (JsonNode hexGrid : hexGrids) {
+                    JsonNode coordinate = hexGrid.get("coordinate");
+                    if (coordinate == null) continue;
+                    int q = coordinate.get("q").asInt();
+                    int r = coordinate.get("r").asInt();
+                    String key = q + "," + r;
+                    uniqueGrids.put(key, hexGrid);
+                }
+            }
+        }
+
+        // Add featureHexGrids array to root
+        com.fasterxml.jackson.databind.node.ArrayNode featureHexGridsArray =
+                objectMapper.createArrayNode();
+        for (JsonNode grid : uniqueGrids.values()) {
+            featureHexGridsArray.add(grid);
+        }
+        root.set("featureHexGrids", featureHexGridsArray);
+
+        log.info("Enriched composition JSON with {} featureHexGrids (from {} features)",
+                uniqueGrids.size(), features != null ? features.size() : 0);
+
+        return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(root);
+    }
+
+    /**
+     * Load test document with composition JSON (direct model format, not wrapped).
      */
     private void loadTestDocument() throws Exception {
         log.info("Loading test document from: {}", GENERATED_JSON_FILE);
 
         // Load generated JSON from resources
         ClassPathResource resource = new ClassPathResource(GENERATED_JSON_FILE);
-        String enrichedCompositionJson = new String(
+        String rawJson = new String(
                 resource.getInputStream().readAllBytes(),
                 StandardCharsets.UTF_8);
 
-        log.info("Loaded enriched composition JSON: {} characters", enrichedCompositionJson.length());
+        log.info("Loaded composition JSON: {} characters", rawJson.length());
 
-        // Create document content (wrapped like ApplyTranslatedInstructionJobExecutor does)
-        Map<String, Object> documentContent = new HashMap<>();
-        documentContent.put("enrichedCompositionJson", enrichedCompositionJson);
-        documentContent.put("compositionResult", Map.of(
-                "success", true,
-                "totalGrids", 50,
-                "totalBiomes", 3,
-                "totalStructures", 1,
-                "totalPoints", 2,
-                "totalFlows", 1
-        ));
-
-        String content = objectMapper.writerWithDefaultPrettyPrinter()
-                .writeValueAsString(documentContent);
+        // Enrich with featureHexGrids from features' hexGrids
+        String content = enrichCompositionJsonWithFeatureHexGrids(rawJson);
 
         WorldId worldId = WorldId.of(TEST_WORLD_ID).orElseThrow();
         String collection = "generator_composed";
         String documentName = "test-composition";
 
-        // Create document
+        // Create document with direct model JSON (as ApplyTranslatedInstructionJobExecutor does)
         WDocument document = WDocument.builder()
                 .id(UUID.randomUUID().toString())
                 .worldId(worldId.getId())
@@ -700,7 +731,7 @@ public class GenerateHexGridFromCompositeJobTest {
     }
 
     /**
-     * Load village test document with enriched composition JSON
+     * Load village test document with composition JSON (direct model format).
      * @return the documentId of the created document
      */
     private String loadVillageTestDocument() throws Exception {
@@ -709,33 +740,21 @@ public class GenerateHexGridFromCompositeJobTest {
 
         // Load village generated JSON from resources
         ClassPathResource resource = new ClassPathResource(villageJsonFile);
-        String enrichedCompositionJson = new String(
+        String rawJson = new String(
                 resource.getInputStream().readAllBytes(),
                 StandardCharsets.UTF_8);
 
-        log.info("Loaded village enriched composition JSON: {} characters", enrichedCompositionJson.length());
+        log.info("Loaded village composition JSON: {} characters", rawJson.length());
 
-        // Create document content (wrapped like ApplyTranslatedInstructionJobExecutor does)
-        Map<String, Object> documentContent = new HashMap<>();
-        documentContent.put("enrichedCompositionJson", enrichedCompositionJson);
-        documentContent.put("compositionResult", Map.of(
-                "success", true,
-                "totalGrids", 10,
-                "totalBiomes", 1,
-                "totalStructures", 1,
-                "totalPoints", 0,
-                "totalFlows", 0
-        ));
-
-        String content = objectMapper.writerWithDefaultPrettyPrinter()
-                .writeValueAsString(documentContent);
+        // Enrich with featureHexGrids from features' hexGrids
+        String content = enrichCompositionJsonWithFeatureHexGrids(rawJson);
 
         WorldId worldId = WorldId.of("test:village").orElseThrow();
         String collection = "generator_composed";
         String documentName = "village-composition";
         String documentId = "village-composition-id";
 
-        // Create document
+        // Create document with direct model JSON
         WDocument document = WDocument.builder()
                 .id(UUID.randomUUID().toString())
                 .worldId(worldId.getId())
@@ -755,7 +774,9 @@ public class GenerateHexGridFromCompositeJobTest {
     }
 
     /**
-     * Load genesis day2 prepared document with enriched composition JSON
+     * Load genesis day2 prepared document with composition JSON (direct model format).
+     * The genesis-day2-prepared.json has a wrapper with enrichedCompositionJson;
+     * we extract the inner composition JSON, enrich it, and store as direct content.
      * @return the documentId of the created document
      */
     private String loadGenesisDay2PreparedDocument() throws Exception {
@@ -770,41 +791,21 @@ public class GenerateHexGridFromCompositeJobTest {
 
         log.info("Loaded genesis document JSON: {} characters", documentJson.length());
 
-        // Parse the document to extract enrichedCompositionJson
+        // Parse the document to extract enrichedCompositionJson from wrapper
         JsonNode documentNode = objectMapper.readTree(documentJson);
-        String enrichedCompositionJson = documentNode.get("enrichedCompositionJson").asText();
+        String rawCompositionJson = documentNode.get("enrichedCompositionJson").asText();
 
-        log.info("Extracted enriched composition JSON: {} characters", enrichedCompositionJson.length());
+        log.info("Extracted composition JSON: {} characters", rawCompositionJson.length());
 
-        // Create document content (wrapped like ApplyTranslatedInstructionJobExecutor does)
-        Map<String, Object> documentContent = new HashMap<>();
-        documentContent.put("enrichedCompositionJson", enrichedCompositionJson);
-
-        // Extract compositionResult if available
-        if (documentNode.has("compositionResult")) {
-            documentContent.put("compositionResult", objectMapper.convertValue(
-                    documentNode.get("compositionResult"), Map.class));
-        } else {
-            documentContent.put("compositionResult", Map.of(
-                    "success", true,
-                    "totalGrids", 27,
-                    "totalBiomes", 3,
-                    "totalStructures", 1,
-                    "totalPoints", 2,
-                    "totalFlows", 1,
-                    "filledGrids", 69
-            ));
-        }
-
-        String content = objectMapper.writerWithDefaultPrettyPrinter()
-                .writeValueAsString(documentContent);
+        // Enrich with featureHexGrids from features' hexGrids
+        String content = enrichCompositionJsonWithFeatureHexGrids(rawCompositionJson);
 
         WorldId worldId = WorldId.of("ymir:hello1").orElseThrow();
         String collection = "generator_composed";
         String documentName = "genesis-composition";
         String documentId = "genesis-day2-prepared-id";
 
-        // Create document
+        // Create document with direct model JSON
         WDocument document = WDocument.builder()
                 .id(UUID.randomUUID().toString())
                 .worldId(worldId.getId())
@@ -1026,19 +1027,35 @@ public class GenerateHexGridFromCompositeJobTest {
 
         log.info("Loaded translated JSON: {} characters", translatedJson.length());
 
+        // Extract compositionJson from wrapper and fix legacy featureType "village" → "town"
+        JsonNode wrapperNode = objectMapper.readTree(translatedJson);
+        String compositionJsonStr = wrapperNode.get("compositionJson").asText();
+        compositionJsonStr = compositionJsonStr.replace("\"featureType\": \"village\"",
+                "\"featureType\": \"town\"");
+
+        // Store the raw composition JSON as document content
+        // (ApplyTranslatedInstructionJobExecutor expects direct HexComposition JSON)
         WorldId worldId = WorldId.of("ymir:hello1").orElseThrow();
         String collection = "generator_translations";
         String documentName = "genesis-day2-translated";
         String documentId = "genesis-day2-translated-id";
 
-        // Create document
+        // Add metadata with instructionsDocumentId (extracted from wrapper)
+        Map<String, String> metadata = new HashMap<>();
+        JsonNode metaNode = wrapperNode.get("compositionMetadata");
+        if (metaNode != null && metaNode.has("instructionsDocumentId")) {
+            metadata.put("instructionsDocumentId", metaNode.get("instructionsDocumentId").asText());
+        }
+
+        // Create document with raw composition JSON
         WDocument document = WDocument.builder()
                 .id(UUID.randomUUID().toString())
                 .worldId(worldId.getId())
                 .collection(collection)
                 .name(documentName)
                 .documentId(documentId)
-                .content(translatedJson)
+                .content(compositionJsonStr)
+                .metadata(metadata)
                 .build();
         document.touchCreate();
 

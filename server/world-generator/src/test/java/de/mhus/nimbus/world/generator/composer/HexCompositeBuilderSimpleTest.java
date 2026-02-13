@@ -395,8 +395,10 @@ public class HexCompositeBuilderSimpleTest {
         Map<String, WHexGrid> grids = new HashMap<>();
         HexGridFillResult fillResult = result.getFillResult();
 
-        // Get WHexGrids from CompositionResult (created from Central Registry)
-        var allGrids = result.getWHexGrids(); // Returns List<WHexGrid> from CompositionResult
+        // Create WHexGrids from Central Registry (compose() no longer creates them)
+        var allGrids = HexCompositeBuilder.createWHexGridsFromRegistry(composition,
+            "continent-test-%s".formatted(name));
+        result.setWHexGrids(allGrids); // Store for individual test assertions
         var index = new HexGridIndex(allGrids);
 
         // ===== PHASE 1: CREATE ALL - Initialize all WFlats with base terrain =====

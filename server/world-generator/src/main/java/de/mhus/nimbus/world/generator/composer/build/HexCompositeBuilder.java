@@ -88,24 +88,39 @@ public class HexCompositeBuilder {
     /**
      * Executes the complete composition pipeline.
      *
-     * Steps:
-     * 1. Initialize composition (applyDefaults)
-     * 2. Prepare composition (HexCompositionPreparer)
-     * 3. Compose biomes (BiomeComposer) - positioning only, no WHexGrids yet
-     * 3.5. Compose structures (StructureComposer) - villages, towns, etc. as multi-grid composites
-     * 4. Fill gaps with ocean/land/coast (Fillers) - optional, creates PlacedBiomes only
-     * 5. Compose points - precise locations within biomes (PointComposer)
-     * 6. Compose flows - roads/rivers/walls (FlowComposer)
-     * 6b. Fill ocean gaps for flows - creates PlacedBiomes for flow gaps
-     * 7. Convert PlacedBiomes to WHexGrids - happens AFTER all compositions (biomes, points, flows)
-     * 8. Sync parameters from FeatureHexGrids to WHexGrids (HexGridParameterSync)
+     * Pipeline phases:
+     * Phase A: Komposition (Feature-Design + Positionierung)
+     *   Step 1:   Initialize composition (applyDefaults)
+     *   Step 2:   Prepare composition (HexCompositionPreparer)
+     *   Step 3:   Compose biomes (BiomeComposer) - positioning only
+     *   Step 3.5: Compose structures (StructureComposer) - villages, towns, etc.
      *
-     * Note: WHexGrid persistence to database happens later in GenerateHexGridFromCompositeJobExecutor (Day3).
-     * For tests that need WHexGrid persistence, use HexCompositeTestHelper.generateAndSaveWHexGrids().
+     * Phase B: Gap Filling
+     *   Step 4.1: MountainFiller
+     *   Step 4.2: LowlandFiller
+     *   Step 4.3: ContinentFiller
+     *   Step 4.4: CoastFiller
+     *   Step 4.5: OceanFiller
      *
-     * Architecture: During composition (Steps 1-6), all data is stored in FeatureHexGrids
-     * (Feature.featureComposed.hexGrids). WHexGrids are only created at the end (Step 7)
-     * to ensure all composition data (biomes, points, flows) is included.
+     * Phase C: Central Registry vollständig befüllen
+     *   Step 5a:  Register ALL PlacedBiomes (incl. fillers) in Central Registry
+     *   Step 5b:  Register Structure HexGrids in Central Registry (populateCentralRegistry)
+     *
+     * Phase D: Verbindungen + Feature-Platzierung
+     *   Step 6:   Village external connection generation
+     *   Step 6.5: Village internal connection linking
+     *   Step 7:   Compose Points (PointComposer writes g_mountain, g_lakes etc.)
+     *   Step 8:   Compose Flows (FlowComposer writes FlowSegments)
+     *
+     * Phase E: Orphan-Handling
+     *   Step 9:   OrphanGridFiller (always Coast or Ocean)
+     *
+     * Phase F: Parameter-Aufbereitung
+     *   Step 10a: Convert FlowSegments → ConfigParts
+     *   Step 10b: Configure roads/rivers/walls (HexGridRoadConfigurator)
+     *
+     * After Phase F the Central Registry is complete.
+     * WHexGrid creation happens SEPARATELY in GenerateHexGridFromCompositeJobExecutor.
      *
      * @return CompositionResult with all intermediate results and statistics
      */
@@ -133,6 +148,10 @@ public class HexCompositeBuilder {
                     .build();
             }
 
+            // ============================================================
+            // Phase A: Komposition (Feature-Design + Positionierung)
+            // ============================================================
+
             // Step 1: Initialize composition (apply defaults to all features)
             log.debug("Step 1: Initializing composition");
             composition.initialize();
@@ -148,7 +167,7 @@ public class HexCompositeBuilder {
                     .build();
             }
 
-            // Step 3: Compose biomes (positioning only, no WHexGrids yet)
+            // Step 3: Compose biomes (positioning only)
             log.debug("Step 3: Composing biomes (positioning)");
             BiomeComposer biomeComposer = new BiomeComposer();
             BiomePlacementResult placementResult = biomeComposer.compose(composition, worldId, seed);
@@ -161,7 +180,7 @@ public class HexCompositeBuilder {
                     .build();
             }
 
-            log.debug("Placed {} biomes (positioning complete, WHexGrids not yet created)",
+            log.debug("Placed {} biomes (positioning complete)",
                 placementResult.getPlacedBiomes().size());
 
             resultBuilder.biomePlacementResult(placementResult);
@@ -170,7 +189,6 @@ public class HexCompositeBuilder {
             // Step 3.5: Compose structures (villages, towns, etc.)
             log.debug("Step 3.5: Composing structures");
 
-            // Create ComposeContext for structure composition
             ComposeContext structureContext = ComposeContext.builder()
                 .composition(composition)
                 .world(world)
@@ -192,17 +210,18 @@ public class HexCompositeBuilder {
             resultBuilder.totalStructures(structureResult.getPlacedCount());
 
             // Track biome grid count before fillers
-            int initialBiomeCount = placementResult.getPlacedBiomes().size();
             int initialBiomeGridCount = placementResult.getPlacedBiomes().stream()
                 .mapToInt(PlacedBiome::getActualSize)
                 .sum();
 
-            // Step 4: Fill gaps with specialized fillers (optional)
-            HexGridFillResult fillResult = null;
+            // ============================================================
+            // Phase B: Gap Filling
+            // ============================================================
+
             int mountainAdded = 0, lowlandAdded = 0, continentAdded = 0, coastAdded = 0, oceanAdded = 0;
 
             if (fillGaps) {
-                log.debug("Step 4: Filling gaps with MountainFiller, LowlandFiller, CoastFiller (coastRings={})", oceanBorderRings);
+                log.debug("Phase B: Filling gaps (coastRings={})", oceanBorderRings);
 
                 // Helper to build GridIndex from PlacedBiomes
                 java.util.function.Supplier<Set<String>> buildGridIndex = () -> {
@@ -215,58 +234,72 @@ public class HexCompositeBuilder {
                     return coords;
                 };
 
-                // Execute fillers in sequence, rebuilding GridIndex each time
-
-                // 1. MountainFiller
+                // Step 4.1: MountainFiller
                 Set<String> gridIndex = buildGridIndex.get();
                 MountainFiller mountainFiller = new MountainFiller();
                 mountainAdded = mountainFiller.fill(composition, gridIndex, placementResult);
-                log.debug("MountainFiller: added {} PlacedBiomes", mountainAdded);
+                log.debug("Step 4.1 MountainFiller: added {} PlacedBiomes", mountainAdded);
 
-                // 2. LowlandFiller
+                // Step 4.2: LowlandFiller
                 gridIndex = buildGridIndex.get();
                 LowlandFiller lowlandFiller = new LowlandFiller();
                 lowlandAdded = lowlandFiller.fill(composition, gridIndex, placementResult);
-                log.debug("LowlandFiller: added {} PlacedBiomes", lowlandAdded);
+                log.debug("Step 4.2 LowlandFiller: added {} PlacedBiomes", lowlandAdded);
 
-                // 2.5. ContinentFiller (fills gaps between biomes on same continent)
+                // Step 4.3: ContinentFiller
                 gridIndex = buildGridIndex.get();
                 ContinentFiller continentFiller = new ContinentFiller();
                 continentAdded = continentFiller.fill(composition, gridIndex, placementResult);
-                log.debug("ContinentFiller: added {} grids", continentAdded);
+                log.debug("Step 4.3 ContinentFiller: added {} grids", continentAdded);
 
-                // 3. CoastFiller
+                // Step 4.4: CoastFiller
                 gridIndex = buildGridIndex.get();
                 CoastFiller coastFiller = new CoastFiller(oceanBorderRings);
                 coastAdded = coastFiller.fill(composition, gridIndex, placementResult);
-                log.debug("CoastFiller: added {} PlacedBiomes", coastAdded);
+                log.debug("Step 4.4 CoastFiller: added {} PlacedBiomes", coastAdded);
 
-                // 4. OceanFiller (ensures all regions are connected)
+                // Step 4.5: OceanFiller
                 gridIndex = buildGridIndex.get();
                 OceanFiller oceanFiller = new OceanFiller();
                 oceanAdded = oceanFiller.fill(composition, gridIndex, placementResult);
-                log.debug("OceanFiller: added {} PlacedBiomes", oceanAdded);
+                log.debug("Step 4.5 OceanFiller: added {} PlacedBiomes", oceanAdded);
 
                 int totalFillerBiomes = mountainAdded + lowlandAdded + continentAdded + coastAdded + oceanAdded;
-
-                log.debug("Filling complete: added {} filler grids (Mountain: {}, Lowland: {}, Continent: {}, Coast: {}, Ocean: {})",
+                log.debug("Phase B complete: added {} filler grids (Mountain: {}, Lowland: {}, Continent: {}, Coast: {}, Ocean: {})",
                     totalFillerBiomes, mountainAdded, lowlandAdded, continentAdded, coastAdded, oceanAdded);
-
-                // Note: FeatureHexGrid configuration is now done in Step 6d by BiomeComposer.configureHexGridsForPlacedBiomes()
-                // This registers all PlacedBiomes (including fillers) in the central FeatureHexGrid registry
             } else {
-                log.debug("Step 4: Skipping gap filling (disabled)");
+                log.debug("Phase B: Skipping gap filling (disabled)");
             }
 
-            // Step 4c: Generate external connection points for villages
-            log.debug("Step 4c: Generating external connection points for villages");
+            // ============================================================
+            // Phase C: Central Registry vollständig befüllen
+            // ============================================================
+
+            // Step 5a: Register ALL PlacedBiomes (including fillers) in central FeatureHexGrid registry
+            log.debug("Step 5a: Registering all biomes (including fillers) in central registry");
+            BiomeComposer biomeComposerForFillers = new BiomeComposer();
+            biomeComposerForFillers.configureHexGridsForPlacedBiomes(
+                placementResult.getPlacedBiomes(), composition);
+            log.debug("Registered all biomes (including fillers) in central FeatureHexGrid registry");
+
+            // Step 5b: Register Structure HexGrids in central registry
+            log.debug("Step 5b: Populating central registry with Structure HexGrids");
+            populateCentralRegistry(composition);
+            log.debug("Central registry populated with Structure HexGrids");
+
+            // ============================================================
+            // Phase D: Verbindungen + Feature-Platzierung
+            // ============================================================
+
+            // Step 6: Generate external connection points for villages
+            log.debug("Step 6: Generating external connection points for villages");
             TownExternalConnectionGenerator villageConnGenerator = new TownExternalConnectionGenerator();
             TownExternalConnectionGenerator.GenerationResult villageConnResult =
                     villageConnGenerator.generateExternalConnections(composition, placementResult);
             log.debug("Generated {} external connection points for villages", villageConnResult.getTotalPoints());
 
-            // Step 4d: Connect external connection points to village internal points
-            log.debug("Step 4d: Connecting external connection points to village interiors");
+            // Step 6.5: Connect external connection points to village internal points
+            log.debug("Step 6.5: Connecting external connection points to village interiors");
             int connectedVillages = 0;
             for (Feature feature : composition.getFeatures()) {
                 if (feature instanceof Town village) {
@@ -278,8 +311,8 @@ public class HexCompositeBuilder {
             }
             log.debug("Connected external points for {} villages", connectedVillages);
 
-            // Step 5: Compose points (place Points within biomes)
-            log.debug("Step 5: Composing points");
+            // Step 7: Compose points (place Points within biomes)
+            log.debug("Step 7: Composing points");
             PointComposer pointComposer = new PointComposer();
             PointComposer.PointCompositionResult pointResult = pointComposer.composePoints(
                 composition, placementResult, world);
@@ -295,16 +328,8 @@ public class HexCompositeBuilder {
             resultBuilder.pointCompositionResult(pointResult);
             resultBuilder.totalPoints(pointResult.getComposedPoints());
 
-            // Step 5b: Register ALL PlacedBiomes (including fillers) in central FeatureHexGrid registry
-            // MUST happen BEFORE FlowComposer, so that FlowComposer can add RoadConfigParts to filler grids
-            log.debug("Step 5b: Registering all biomes (including fillers) in central registry");
-            BiomeComposer biomeComposerForFillers = new BiomeComposer();
-            biomeComposerForFillers.configureHexGridsForPlacedBiomes(
-                placementResult.getPlacedBiomes(), composition);
-            log.debug("Registered all biomes (including fillers) in central FeatureHexGrid registry");
-
-            // Step 6: Compose flows (roads, rivers, walls)
-            log.debug("Step 6: Composing flows");
+            // Step 8: Compose flows (roads, rivers, walls)
+            log.debug("Step 8: Composing flows");
             FlowComposer flowComposer = new FlowComposer();
             FlowComposer.FlowCompositionResult flowResult = flowComposer.composeFlows(
                 composition, placementResult);
@@ -320,91 +345,56 @@ public class HexCompositeBuilder {
             resultBuilder.flowCompositionResult(flowResult);
             resultBuilder.totalFlows(flowResult.getComposedFlows());
 
-            // Step 6b: Fill ocean gaps where flows cross empty space
-            if (fillGaps && flowResult.getComposedFlows() > 0) {
-                log.debug("Step 6b: Filling ocean gaps where flows cross empty space");
+            // ============================================================
+            // Phase E: Orphan-Handling
+            // ============================================================
 
-                // Rebuild grid index (includes all grids added so far)
-                Set<String> gridIndex = new java.util.HashSet<>();
-                for (PlacedBiome placed : placementResult.getPlacedBiomes()) {
-                    for (de.mhus.nimbus.generated.types.HexVector2 coord : placed.getCoordinates()) {
-                        gridIndex.add(TypeUtil.toStringHexCoord(coord.getQ(), coord.getR()));
-                    }
-                }
-
-                OceanFiller oceanFlowFiller = new OceanFiller();
-                int flowGapsFilled = oceanFlowFiller.fillFlowGaps(composition, gridIndex, placementResult);
-
-                if (flowGapsFilled > 0) {
-                    log.debug("OceanFiller.fillFlowGaps: added {} ocean PlacedBiomes (WHexGrids will be created in Step 7)", flowGapsFilled);
-                } else {
-                    log.debug("No flow gaps to fill - all flow grids already exist");
-                }
-            }
-
-            // Step 6c: Fill orphan grids (grids used by features but not assigned to any biome)
-            log.debug("Step 6c: Filling orphan grids");
+            // Step 9: Fill orphan grids (always Coast or Ocean)
+            log.debug("Step 9: Filling orphan grids");
             OrphanGridFiller orphanGridFiller = new OrphanGridFiller();
             int orphansAdded = orphanGridFiller.fill(composition, placementResult);
             if (orphansAdded > 0) {
-                log.debug("OrphanGridFiller: assigned {} orphan grids to biomes", orphansAdded);
+                log.debug("OrphanGridFiller: assigned {} orphan grids as Coast/Ocean", orphansAdded);
             } else {
                 log.debug("No orphan grids found");
             }
 
-            // Note: Registering biomes in central registry was moved to Step 5b (before FlowComposer)
-            // so that FlowComposer can add RoadConfigParts to all grids including fillers
+            // ============================================================
+            // Phase F: Parameter-Aufbereitung
+            // ============================================================
 
-            // Step 7: Convert FeatureHexGrids to WHexGrids (after all compositions)
-            // FeatureHexGrids are now managed centrally in composition.featureHexGridRegistry
-            // They contain accumulated data from all features (biomes, points, flows)
-            log.debug("Step 7: Converting FeatureHexGrids from central registry to WHexGrids");
+            // Step 10a: Convert FlowSegments to ConfigParts
+            log.info("Step 10a: Converting FlowSegments to ConfigParts");
+            int convertedFlows = flowComposer.convertAllFlowSegmentsToConfigParts(composition, placementResult);
+            log.info("Converted FlowSegments for {} flows", convertedFlows);
 
-            // Use FeatureHexGrids from central registry (single source of truth, no duplicates)
-            Map<String, FeatureHexGrid> allFeatureHexGrids = composition.getFeatureHexGridRegistry();
-
-            if (allFeatureHexGrids == null || allFeatureHexGrids.isEmpty()) {
-                log.warn("No FeatureHexGrids found in central registry - composition might be incomplete");
-                allFeatureHexGrids = new HashMap<>();
+            // Step 10b: Configure road/river/wall parameters from RoadConfigParts
+            log.debug("Step 10b: Configuring road/river/wall parameters");
+            HexGridRoadConfigurator roadConfigurator = new HexGridRoadConfigurator();
+            HexGridRoadConfigurator.RoadConfigurationResult roadResult =
+                roadConfigurator.configureRoads(composition, placementResult);
+            log.debug("Road configuration: configured={}/{} grids, {} total segments",
+                roadResult.getConfiguredGrids(), roadResult.getTotalGrids(),
+                roadResult.getTotalSegments());
+            if (!roadResult.isSuccess()) {
+                log.warn("Road configuration had errors: {}", roadResult.getErrors());
             }
 
-            log.debug("Found {} FeatureHexGrids in central registry", allFeatureHexGrids.size());
+            // ============================================================
+            // Build result — Central Registry is now complete
+            // WHexGrid creation happens SEPARATELY in GenerateHexGridFromCompositeJobExecutor
+            // ============================================================
 
-            // Create WHexGrids from FeatureHexGrids
-            // NOTE: WHexGrids are no longer stored in BiomePlacementResult
-            List<de.mhus.nimbus.world.shared.world.WHexGrid> allWHexGrids = new ArrayList<>();
-            for (FeatureHexGrid featureHexGrid : allFeatureHexGrids.values()) {
-                de.mhus.nimbus.world.shared.world.WHexGrid wHexGrid = createWHexGridFromFeatureHexGrid(
-                    featureHexGrid, worldId);
-                allWHexGrids.add(wHexGrid);
-            }
+            int registryGridCount = composition.getFeatureHexGridRegistry() != null
+                ? composition.getFeatureHexGridRegistry().size() : 0;
+            int fillerGridCount = registryGridCount - initialBiomeGridCount;
 
-            log.debug("Created {} WHexGrids from central registry", allWHexGrids.size());
-
-            // Set totalGrids to initial biome grids (before fillers)
             resultBuilder.totalGrids(initialBiomeGridCount);
 
-            // Calculate number of filler grids
-            int totalWHexGrids = allWHexGrids.size();
-            int fillerGridCount = totalWHexGrids - initialBiomeGridCount;
-
-            // Create HexGridFillResult for backward compatibility
             if (fillGaps) {
-                // Filler information is already set in FeatureHexGrids by BiomeComposer
-                // and copied to WHexGrids by createWHexGridFromFeatureHexGrid()
-                log.debug("All {} FeatureHexGrids have filler information set by BiomeComposer", allFeatureHexGrids.size());
-
-                // Points are ASPEKTE - they don't create separate grids, they only add
-                // parameters to existing grids in the central registry
-
-                // No need to store separate FilledHexGrids - all data is in central FeatureHexGrid registry
-                log.debug("All grid data stored in central FeatureHexGrid registry ({} grids)",
-                    allFeatureHexGrids.size());
-
-                // Create fill result with statistics (grids are in central registry)
-                fillResult = HexGridFillResult.builder()
+                HexGridFillResult fillResult = HexGridFillResult.builder()
                     .placementResult(placementResult)
-                    .totalGridCount(allWHexGrids.size())
+                    .totalGridCount(registryGridCount)
                     .oceanFillCount(oceanAdded)
                     .landFillCount(mountainAdded + lowlandAdded)
                     .coastFillCount(coastAdded)
@@ -416,69 +406,21 @@ public class HexCompositeBuilder {
 
                 resultBuilder.fillResult(fillResult);
                 resultBuilder.filledGrids(fillerGridCount);
-            } else {
-                // Even without fillGaps, all grids are already in central registry
-                // No filler grids, so isFiller remains false (default) for all grids
-                log.debug("All grid data stored in central FeatureHexGrid registry ({} grids, no fillers)",
-                    allFeatureHexGrids.size());
             }
 
-            // Step 7.5: Populate central registry with Structure HexGrids
-            // Biomes are already registered by BiomeComposer
-            // Flows write directly to central registry (no transfer needed)
-            // Structures need to be transferred from their local storage to central registry
-            log.debug("Step 7.5: Populating central registry with Structure HexGrids");
-            populateCentralRegistry(composition);
-            log.debug("Central registry populated with Structure HexGrids");
-
-            // Step 7.5a: Convert FlowSegments to ConfigParts (AFTER flowSegments are in central registry)
-            // Now that Flow.hexGrids have been transferred to central registry, we can convert
-            // the flowSegments to RoadConfigParts/RiverConfigParts
-            log.info("Step 7.5a: Converting FlowSegments to ConfigParts");
-            int convertedFlows = flowComposer.convertAllFlowSegmentsToConfigParts(composition, placementResult);
-            log.info("Converted FlowSegments for {} flows", convertedFlows);
-
-            // Note: Step 7.5b (Merge Flow Aspects) was removed
-            // Flows now write directly to central registry, no merge needed
-
-            // Step 7.6: Configure road/river/wall parameters from RoadConfigParts
-            // Must run AFTER populateCentralRegistry() so HexGridRoadConfigurator
-            // works with the complete central registry
-            log.debug("Step 7.6: Configuring road/river/wall parameters");
-            HexGridRoadConfigurator roadConfigurator = new HexGridRoadConfigurator();
-            HexGridRoadConfigurator.RoadConfigurationResult roadResult =
-                roadConfigurator.configureRoads(composition, placementResult);
-            log.debug("Road configuration: configured={}/{} grids, {} total segments",
-                roadResult.getConfiguredGrids(), roadResult.getTotalGrids(),
-                roadResult.getTotalSegments());
-            if (!roadResult.isSuccess()) {
-                log.warn("Road configuration had errors: {}", roadResult.getErrors());
-            }
-
-            // Step 8: Sync parameters from central registry to WHexGrids
-            log.debug("Step 8: Syncing parameters from central registry to WHexGrids");
-            HexGridParameterSync parameterSync = new HexGridParameterSync();
-            int syncedCount = parameterSync.syncParametersToWHexGrids(
-                composition, placementResult, allWHexGrids);
-            log.debug("Synced parameters to {} WHexGrids", syncedCount);
-
-            // WHexGrid persistence happens later in GenerateHexGridFromCompositeJobExecutor (Day3)
-            // For tests, use HexCompositeTestHelper.generateAndSaveWHexGrids()
-
-            // Success!
+            // Pipeline complete
             log.debug("=== HexComposite Pipeline Complete ===");
-            log.debug("Summary: biomes={}, structures={}, points={}, flows={}, grids={}, filled={}, warnings={}",
+            log.debug("Summary: biomes={}, structures={}, points={}, flows={}, registryGrids={}, filled={}, warnings={}",
                 placementResult.getPlacedBiomes().size(),
                 structureResult.getPlacedCount(),
                 pointResult.getComposedPoints(),
                 flowResult.getComposedFlows(),
-                allWHexGrids.size(),
-                fillResult != null ? fillResult.getTotalGridCount() : 0,
+                registryGridCount,
+                fillerGridCount,
                 warnings.size());
 
             return resultBuilder
                 .success(true)
-                .wHexGrids(allWHexGrids)  // Store WHexGrids in result for tests and persistence
                 .build();
 
         } catch (Exception e) {
@@ -629,14 +571,43 @@ public class HexCompositeBuilder {
     // Flows now write directly to central registry, no merge needed
 
     /**
+     * Creates WHexGrids from the central FeatureHexGrid registry of a composition.
+     * This is the standard way to convert composed data to final WHexGrid format
+     * after compose() has completed.
+     *
+     * In production, this is called by GenerateHexGridFromCompositeJobExecutor.
+     * In tests, call this after compose() to get WHexGrids for visualization/assertions.
+     *
+     * @param composition The composition with populated central registry
+     * @param worldId The world ID
+     * @return List of WHexGrids created from the central registry
+     */
+    public static List<de.mhus.nimbus.world.shared.world.WHexGrid> createWHexGridsFromRegistry(
+        HexComposition composition, String worldId) {
+
+        Map<String, FeatureHexGrid> registry = composition.getFeatureHexGridRegistry();
+        if (registry == null || registry.isEmpty()) {
+            log.warn("No FeatureHexGrids found in central registry");
+            return new ArrayList<>();
+        }
+
+        List<de.mhus.nimbus.world.shared.world.WHexGrid> result = new ArrayList<>();
+        for (FeatureHexGrid featureHexGrid : registry.values()) {
+            result.add(convertFeatureHexGridToWHexGrid(featureHexGrid, worldId));
+        }
+
+        log.debug("Created {} WHexGrids from central registry", result.size());
+        return result;
+    }
+
+    /**
      * Creates a WHexGrid from a FeatureHexGrid, preserving all accumulated composition data.
-     * This is the correct way to convert composed data to final WHexGrid format.
      *
      * @param featureHexGrid The FeatureHexGrid with accumulated data from all features
      * @param worldId The world ID
      * @return WHexGrid with all parameters and data from the FeatureHexGrid
      */
-    private de.mhus.nimbus.world.shared.world.WHexGrid createWHexGridFromFeatureHexGrid(
+    private static de.mhus.nimbus.world.shared.world.WHexGrid convertFeatureHexGridToWHexGrid(
         FeatureHexGrid featureHexGrid, String worldId) {
 
         de.mhus.nimbus.generated.types.HexVector2 coord = featureHexGrid.getCoordinate();

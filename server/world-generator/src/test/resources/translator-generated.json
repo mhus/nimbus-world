@@ -2447,7 +2447,7 @@
       "description" : "Flow segment for silver-stream"
     } ]
   }, {
-    "featureType" : "village",
+    "featureType" : "town",
     "featureId" : "ce673299-e15f-4905-833b-61891c01848a",
     "name" : "riverside",
     "title" : "Riverside",

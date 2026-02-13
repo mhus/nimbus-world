@@ -40,8 +40,8 @@ class BiomeTypeTest {
         assertInstanceOf(ForestBiome.class, biome);
         assertEquals(BiomeType.FOREST, biome.getType());
         assertNotNull(biome.getParameters());
-        assertEquals("mountain", biome.getParameters().get("g_builder"));
-        assertEquals("2", biome.getParameters().get("g_offset"));
+        assertEquals("forest", biome.getParameters().get("g_builder"));
+        assertEquals("5", biome.getParameters().get("g_offset"));
         assertEquals("forest", biome.getParameters().get("g_flora"));
         assertEquals("0.8", biome.getParameters().get("flora_density"));
     }
@@ -54,8 +54,8 @@ class BiomeTypeTest {
         assertInstanceOf(PlainsBiome.class, biome);
         assertEquals(BiomeType.PLAINS, biome.getType());
         assertNotNull(biome.getParameters());
-        assertEquals("mountain", biome.getParameters().get("g_builder"));
-        assertEquals("1", biome.getParameters().get("g_offset"));
+        assertEquals("plains", biome.getParameters().get("g_builder"));
+        assertEquals("5", biome.getParameters().get("g_offset"));
     }
 
     @Test
@@ -66,8 +66,8 @@ class BiomeTypeTest {
         assertInstanceOf(DesertBiome.class, biome);
         assertEquals(BiomeType.DESERT, biome.getType());
         assertNotNull(biome.getParameters());
-        assertEquals("mountain", biome.getParameters().get("g_builder"));
-        assertEquals("5", biome.getParameters().get("g_offset"));
+        assertEquals("desert", biome.getParameters().get("g_builder"));
+        assertEquals("15", biome.getParameters().get("g_offset"));
         assertEquals("desert", biome.getParameters().get("g_flora"));
         assertEquals("0.3", biome.getParameters().get("cactus_density"));
     }
@@ -80,9 +80,9 @@ class BiomeTypeTest {
         assertInstanceOf(SwampBiome.class, biome);
         assertEquals(BiomeType.SWAMP, biome.getType());
         assertNotNull(biome.getParameters());
-        assertEquals("coast", biome.getParameters().get("g_builder"));
-        assertEquals("1", biome.getParameters().get("g_offset"));
-        assertEquals("true", biome.getParameters().get("g_water"));
+        assertEquals("swamp", biome.getParameters().get("g_builder"));
+        assertEquals("10", biome.getParameters().get("g_offset"));
+        assertEquals("3", biome.getParameters().get("swampDepth"));
     }
 
     @Test
@@ -120,16 +120,16 @@ class BiomeTypeTest {
 
     @Test
     void testDefaultParameters_MultipleBuildersSameClass() {
-        // Test that different biome types can use same builder with different parameters
+        // Test that different biome types use their own builders and parameters
         Biome forest = BiomeType.FOREST.createInstance();
         Biome mountains = BiomeType.MOUNTAINS.createInstance();
 
-        // Both use MountainBuilder
-        assertEquals("mountain", forest.getParameters().get("g_builder"));
+        // Each uses its own builder
+        assertEquals("forest", forest.getParameters().get("g_builder"));
         assertEquals("mountain", mountains.getParameters().get("g_builder"));
 
-        // But with different offsets
-        assertEquals("2", forest.getParameters().get("g_offset"));  // Flat hills
+        // With different offsets
+        assertEquals("5", forest.getParameters().get("g_offset"));   // DENSE forest
         assertEquals("30", mountains.getParameters().get("g_offset"));  // High peaks
 
         // Different classes
@@ -152,10 +152,10 @@ class BiomeTypeTest {
     @Test
     void testGetDefaultBuilder() {
         assertEquals("mountain", BiomeType.MOUNTAINS.getDefaultBuilder());
-        assertEquals("mountain", BiomeType.FOREST.getDefaultBuilder());
-        assertEquals("mountain", BiomeType.PLAINS.getDefaultBuilder());
-        assertEquals("mountain", BiomeType.DESERT.getDefaultBuilder());
-        assertEquals("coast", BiomeType.SWAMP.getDefaultBuilder());
+        assertEquals("forest", BiomeType.FOREST.getDefaultBuilder());
+        assertEquals("plains", BiomeType.PLAINS.getDefaultBuilder());
+        assertEquals("desert", BiomeType.DESERT.getDefaultBuilder());
+        assertEquals("swamp", BiomeType.SWAMP.getDefaultBuilder());
         assertEquals("coast", BiomeType.COAST.getDefaultBuilder());
         assertEquals("island", BiomeType.ISLAND.getDefaultBuilder());
         assertEquals("ocean", BiomeType.OCEAN.getDefaultBuilder());
