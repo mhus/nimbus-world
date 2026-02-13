@@ -320,7 +320,24 @@ public class FlowComposer {
             }
         }
 
-        // TODO: Resolve waypoints if needed
+        // Resolve waypoints to coordinates
+        if (flow.getWaypointIds() != null && !flow.getWaypointIds().isEmpty()) {
+            List<HexVector2> waypointCoords = new ArrayList<>();
+            for (String waypointId : flow.getWaypointIds()) {
+                HexVector2 waypointCoord = findFeatureCoordinate(waypointId, placementResult, prepared);
+                if (waypointCoord != null) {
+                    waypointCoords.add(waypointCoord);
+                    log.debug("Flow '{}' waypoint '{}' resolved to ({},{})",
+                        flow.getName(), waypointId, waypointCoord.getQ(), waypointCoord.getR());
+                } else {
+                    log.warn("Flow '{}': waypoint '{}' not found, skipping", flow.getName(), waypointId);
+                }
+            }
+            if (!waypointCoords.isEmpty()) {
+                flow.setWaypoints(waypointCoords);
+                log.debug("Flow '{}': resolved {} waypoints", flow.getName(), waypointCoords.size());
+            }
+        }
 
         return flow.getStartPoint() != null;
     }
@@ -427,10 +444,33 @@ public class FlowComposer {
             return route;
         }
 
-        // Use pathfinding to find route (with deviation support)
-        List<HexVector2> path = findPath(flow, start, end, gridMap);
-        if (path != null && !path.isEmpty()) {
-            route.addAll(path);
+        // Build list of waypoints to route through: start → waypoint1 → ... → end
+        List<HexVector2> targets = new ArrayList<>();
+        if (flow.getWaypoints() != null) {
+            targets.addAll(flow.getWaypoints());
+        }
+        targets.add(end);
+
+        // Single Random for the entire route — so waypoint segments get different deviation patterns
+        Random routeRandom = new Random(flow.getName().hashCode());
+
+        // Route segment by segment through each waypoint
+        HexVector2 current = start;
+        for (HexVector2 target : targets) {
+            List<HexVector2> segment = findPath(flow, current, target, gridMap, routeRandom);
+            if (segment == null || segment.isEmpty()) {
+                log.warn("Flow '{}': no path from ({},{}) to ({},{})",
+                    flow.getName(), current.getQ(), current.getR(), target.getQ(), target.getR());
+                break;
+            }
+            // Avoid duplicate coordinate at segment boundary
+            if (!route.isEmpty() && !segment.isEmpty()
+                    && route.get(route.size() - 1).getQ() == segment.get(0).getQ()
+                    && route.get(route.size() - 1).getR() == segment.get(0).getR()) {
+                segment = segment.subList(1, segment.size());
+            }
+            route.addAll(segment);
+            current = target;
         }
 
         return route;
@@ -528,13 +568,12 @@ public class FlowComposer {
      * Rivers prefer downhill with fallback; roads use greedy closest-to-goal.
      */
     private List<HexVector2> findPath(Flow flow, HexVector2 start, HexVector2 goal,
-                                      Map<String, Biome> gridMap) {
+                                      Map<String, Biome> gridMap, Random random) {
         List<HexVector2> path = new ArrayList<>();
         path.add(start);
 
         HexVector2 current = start;
         HexVector2 previous = null; // Prevent immediate backtracking
-        Random random = new Random(flow.getName().hashCode()); // Deterministic based on flow name
 
         // Get deviation tendencies
         DeviationTendency tendLeft = flow.getTendLeft();
@@ -599,6 +638,12 @@ public class FlowComposer {
         HexVector2 bestStep = flow.selectNextStep(current, goal, neighbors, terrainLevelAt, isLowPriorityBiome);
         if (bestStep == null) return null;
 
+        // Don't deviate when goal is a direct neighbor — go straight to it
+        int currentDistance = Flow.hexDistance(current, goal);
+        if (currentDistance <= 1) {
+            return bestStep;
+        }
+
         // Determine if we should deviate
         double leftProb = tendLeft != null ? tendLeft.getProbability() : 0.0;
         double rightProb = tendRight != null ? tendRight.getProbability() : 0.0;
@@ -620,8 +665,14 @@ public class FlowComposer {
         // Find the neighbor that represents deviation
         HexVector2 deviatedStep = findDeviatedNeighbor(current, bestStep, neighbors, deviateLeft);
 
+        // Validate deviated step is in the allowed neighbors list (which has 'previous' filtered out)
+        boolean isValidNeighbor = neighbors.stream()
+                .anyMatch(n -> n.getQ() == deviatedStep.getQ() && n.getR() == deviatedStep.getR());
+        if (!isValidNeighbor) {
+            return bestStep;
+        }
+
         // If deviated step would take us further from goal than we already are, use best step instead
-        int currentDistance = Flow.hexDistance(current, goal);
         int deviatedDistance = Flow.hexDistance(deviatedStep, goal);
 
         if (deviatedDistance > currentDistance + 1) {
