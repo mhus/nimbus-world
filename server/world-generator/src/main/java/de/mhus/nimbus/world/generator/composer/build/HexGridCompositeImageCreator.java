@@ -285,9 +285,10 @@ public class HexGridCompositeImageCreator {
                                      HexVector2 coord, WFlat flat,
                                      CartesianBounds bounds) throws IOException {
         // Calculate cartesian center position
+        // Flip Z so North (max worldZ) is at image top (Y=0)
         double[] cartesian = HexMathUtil.hexToCartesian(coord, hexGridSize);
         double hexCenterX = cartesian[0] - bounds.minX;
-        double hexCenterZ = cartesian[1] - bounds.minZ;
+        double hexCenterZ = bounds.maxZ - cartesian[1];
 
         // Create flat images
         FlatLevelImageCreator levelCreator = new FlatLevelImageCreator(flat);
@@ -352,7 +353,7 @@ public class HexGridCompositeImageCreator {
         for (HexVector2 coord : provider.getCoordinates()) {
             double[] cartesian = HexMathUtil.hexToCartesian(coord, hexGridSize);
             double hexCenterX = cartesian[0] - bounds.minX;
-            double hexCenterZ = cartesian[1] - bounds.minZ;
+            double hexCenterZ = bounds.maxZ - cartesian[1];
 
             // Draw hexagon outline
             Polygon hexagon = createHexagonPolygon(hexCenterX, hexCenterZ, hexGridSize);

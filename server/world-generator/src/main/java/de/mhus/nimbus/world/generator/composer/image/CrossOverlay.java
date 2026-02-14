@@ -28,9 +28,9 @@ public class CrossOverlay implements ImageOverlay {
 
     @Override
     public void paint(Graphics2D g, HexGridCompositeImageCreator.CartesianBounds bounds) {
-        // Transform world coordinates to image coordinates
+        // Transform world coordinates to image coordinates (Z flipped: North at top)
         int imageX = (int) Math.round(x - bounds.getMinX());
-        int imageZ = (int) Math.round(z - bounds.getMinZ());
+        int imageZ = (int) Math.round(bounds.getMaxZ() - z);
 
         g.setColor(color);
         g.setStroke(new BasicStroke(strokeWidth));

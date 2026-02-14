@@ -29,11 +29,11 @@ public class LineOverlay implements ImageOverlay {
 
     @Override
     public void paint(Graphics2D g, HexGridCompositeImageCreator.CartesianBounds bounds) {
-        // Transform world coordinates to image coordinates
+        // Transform world coordinates to image coordinates (Z flipped: North at top)
         int imageX1 = (int) Math.round(x1 - bounds.getMinX());
-        int imageZ1 = (int) Math.round(z1 - bounds.getMinZ());
+        int imageZ1 = (int) Math.round(bounds.getMaxZ() - z1);
         int imageX2 = (int) Math.round(x2 - bounds.getMinX());
-        int imageZ2 = (int) Math.round(z2 - bounds.getMinZ());
+        int imageZ2 = (int) Math.round(bounds.getMaxZ() - z2);
 
         g.setColor(color);
         g.setStroke(new BasicStroke(strokeWidth));

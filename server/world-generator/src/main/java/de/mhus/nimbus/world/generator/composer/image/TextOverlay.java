@@ -452,9 +452,9 @@ public class TextOverlay implements ImageOverlay {
             return;
         }
 
-        // Transform world coordinates to image coordinates
+        // Transform world coordinates to image coordinates (Z flipped: North at top)
         int imageX = (int) Math.round(x - bounds.getMinX());
-        int imageY = (int) Math.round(y - bounds.getMinZ());
+        int imageY = (int) Math.round(bounds.getMaxZ() - y);
 
         g.setColor(color);
 
