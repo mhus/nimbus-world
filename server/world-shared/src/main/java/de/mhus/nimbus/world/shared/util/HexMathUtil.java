@@ -27,12 +27,16 @@ public class HexMathUtil {
     public static final double SQRT_3 = Math.sqrt(3.0);
 
     /**
-     * Converts hex coordinates to cartesian coordinates (center position).
+     * Converts hex coordinates to cartesian world coordinates (center position).
      * Uses pointy-top hexagon orientation.
+     *
+     * Z-axis is negated so that hex NORTH (r-) maps to world North (z+)
+     * and hex SOUTH (r+) maps to world South (z-). This ensures consistent
+     * orientation between the hex grid and the 3D world.
      *
      * @param hex The hex vector with q and r coordinates
      * @param gridSize The diameter of the hexagon in blocks
-     * @return Array with [x, z] center coordinates
+     * @return Array with [x, z] center coordinates in world space
      */
     public static double[] hexToCartesian(HexVector2 hex, int gridSize) {
         if (hex == null) {
@@ -44,7 +48,7 @@ public class HexMathUtil {
 
         double radius = gridSize / 2.0;
         double x = radius * SQRT_3 * (hex.getQ() + hex.getR() / 2.0);
-        double z = radius * 1.5 * hex.getR();
+        double z = -(radius * 1.5 * hex.getR());
 
         return new double[]{x, z};
     }
@@ -150,8 +154,9 @@ public class HexMathUtil {
     }
 
     /**
-     * Converts world/flat coordinates to hex axial coordinates (q, r).
+     * Converts world coordinates to hex axial coordinates (q, r).
      * Uses proper hex coordinate conversion with rounding.
+     * Inverse of hexToCartesian (accounts for negated Z-axis).
      *
      * @param flatPos The world position (x, z)
      * @param hexGridSize The diameter of the hexagon in blocks (size, not radius)
@@ -162,8 +167,8 @@ public class HexMathUtil {
         int z = flatPos.getZ();
         double radius = hexGridSize / 2.0;
 
-        double q = (SQRT_3 / 3.0 * x - 1.0 / 3.0 * z) / radius;
-        double r = (2.0 / 3.0 * z) / radius;
+        double q = (SQRT_3 / 3.0 * x + 1.0 / 3.0 * z) / radius;
+        double r = -(2.0 / 3.0 * z) / radius;
 
         int rq = (int) Math.round(q);
         int rr = (int) Math.round(r);

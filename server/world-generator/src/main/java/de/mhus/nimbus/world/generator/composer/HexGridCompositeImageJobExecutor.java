@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.shared.types.WorldId;
+import de.mhus.nimbus.shared.utils.TypeUtil;
 import de.mhus.nimbus.world.generator.composer.build.HexComposition;
 import de.mhus.nimbus.world.generator.composer.build.HexGridCompositeImageCreator;
 import de.mhus.nimbus.world.generator.composer.image.CrossOverlay;
@@ -251,7 +252,7 @@ public class HexGridCompositeImageJobExecutor implements JobExecutor {
                 Map<String, de.mhus.nimbus.world.generator.composer.feature.FeatureHexGrid> registry =
                     composition.getFeatureHexGridRegistry();
                 for (de.mhus.nimbus.world.generator.composer.feature.FeatureHexGrid grid : composition.getFeatureHexGrids()) {
-                    String key = grid.getCoordinate().getQ() + "," + grid.getCoordinate().getR();
+                    String key =  TypeUtil.toStringHexCoord(grid.getCoordinate());
                     registry.put(key, grid);
                 }
                 log.info("Converted {} FeatureHexGrids from list to registry after deserialization",
@@ -296,7 +297,7 @@ public class HexGridCompositeImageJobExecutor implements JobExecutor {
         Map<String, String> coordToBiomeName = new HashMap<>();
         if (composition.getFeatureHexGridRegistry() != null) {
             for (var featureGrid : composition.getFeatureHexGridRegistry().values()) {
-                String coordKey = featureGrid.getCoordinate().getQ() + "," + featureGrid.getCoordinate().getR();
+                String coordKey = TypeUtil.toStringHexCoord(featureGrid.getCoordinate());
                 String biomeName = null;
 
                 // Get biome name from parameters
@@ -319,7 +320,7 @@ public class HexGridCompositeImageJobExecutor implements JobExecutor {
         }
 
         for (HexVector2 coord : flatProvider.getCoordinates()) {
-            String coordText = coord.getQ() + "," + coord.getR();
+            String coordText = TypeUtil.toStringHexCoord(coord);
 
             // Calculate center position of hex grid in world coordinates
             double[] hexCenter = HexMathUtil.hexToCartesian(coord, flatSize);
@@ -332,7 +333,7 @@ public class HexGridCompositeImageJobExecutor implements JobExecutor {
             creator.addOverlay(coordOverlay);
 
             // Add biome name below coordinates if available
-            String coordKey = coord.getQ() + "," + coord.getR();
+            String coordKey = TypeUtil.toStringHexCoord(coord);
             String biomeName = coordToBiomeName.get(coordKey);
             if (biomeName != null) {
                 int biomeTextWidth = biomeName.length() * (5 + 1) * 2;

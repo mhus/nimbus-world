@@ -80,9 +80,9 @@ class HexMathUtilTest {
             );
         } else {
             System.out.println("SUCCESS: Result is q=" + result.getQ() + ", r=" + result.getR() + " which is CORRECT");
-            // The correct hex should be q=0, r=1
-            assertThat(result.getQ()).isEqualTo(0);
-            assertThat(result.getR()).isEqualTo(1);
+            // After Z-axis fix (hexToCartesian negates Z): hex (1,-1) has center at z=+300, near chunk z=352-384
+            assertThat(result.getQ()).isEqualTo(1);
+            assertThat(result.getR()).isEqualTo(-1);
         }
     }
 
@@ -95,9 +95,10 @@ class HexMathUtilTest {
         System.out.println("\n=== Testing multiple chunk positions ===");
 
         int[][] testCases = {
-                {1, 11, 0, 1},  // cx=1, cz=11 should be hex (0, 1)
-                {0, 0, 0, 0},   // cx=0, cz=0 should be hex (0, 0)
-                {5, 5, 0, 1},   // cx=5, cz=5 should be hex (0, 1)
+                // After Z-axis fix (hexToCartesian negates Z), hex centers have moved
+                {1, 11, 1, -1}, // cx=1, cz=11 → worldZ~368, hex (1,-1) center at z=+300
+                {0, 0, 0, 0},   // cx=0, cz=0 → worldZ~0, hex (0,0) center at z=0
+                {5, 5, 1, -1},  // cx=5, cz=5 → worldZ~176, hex (1,-1) center at z=+300
         };
 
         for (int[] testCase : testCases) {

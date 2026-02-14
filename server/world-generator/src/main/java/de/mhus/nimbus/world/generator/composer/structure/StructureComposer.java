@@ -150,7 +150,7 @@ public class StructureComposer {
 
             // Create a virtual "village" biome for this grid
             Biome villageBiome = Biome.builder()
-                .name(village.getName() + "-grid-" + absolutePos.getQ() + "," + absolutePos.getR())
+                .name(village.getName() + "-grid-" + absolutePos.getQ() + ";" + absolutePos.getR())
                 .title(village.getTitle() + " Grid")
                 .type(BiomeType.TOWN)
                 .build();
@@ -171,7 +171,7 @@ public class StructureComposer {
             // Add to placement result so it's included in the world
             placementResult.getPlacedBiomes().add(placedGrid);
 
-            log.debug("Created PlacedBiome for district at absolute position [{},{}]",
+            log.debug("Created PlacedBiome for district at absolute position [{};{}]",
                 absolutePos.getQ(), absolutePos.getR());
         }
 

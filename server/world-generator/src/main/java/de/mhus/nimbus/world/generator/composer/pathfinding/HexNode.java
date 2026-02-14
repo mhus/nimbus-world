@@ -92,7 +92,7 @@ public class HexNode {
      * @return Unique key string
      */
     public String getKey() {
-        return district.getName() + ":" + q + "," + r;
+        return district.getName() + ":" + q + ";" + r;
     }
 
     /**

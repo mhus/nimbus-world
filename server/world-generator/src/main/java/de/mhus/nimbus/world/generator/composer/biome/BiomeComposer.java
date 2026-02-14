@@ -535,7 +535,7 @@ public class BiomeComposer {
         // Add scattered hexes within radius
         int radius = Math.max(2, size / 2);
         Set<String> used = new HashSet<>();
-        used.add(center.getQ() + "," + center.getR());
+        used.add(TypeUtil.toStringHexCoord(center));
 
         int attempts = 0;
         while (coords.size() < size && attempts < size * 10) {
@@ -546,7 +546,7 @@ public class BiomeComposer {
 
             if (!candidates.isEmpty()) {
                 HexVector2 candidate = candidates.get(random.nextInt(candidates.size()));
-                String key = candidate.getQ() + "," + candidate.getR();
+                String key = TypeUtil.toStringHexCoord(candidate);
 
                 if (!used.contains(key)) {
                     coords.add(candidate);
@@ -649,7 +649,7 @@ public class BiomeComposer {
 
                 // Set name and description if not already set
                 if (featureHexGrid.getName() == null) {
-                    featureHexGrid.setName(biome.getName() + " [" + coord.getQ() + "," + coord.getR() + "]");
+                    featureHexGrid.setName(biome.getName() + " [" + coord.getQ() + ";" + coord.getR() + "]");
                 }
                 if (featureHexGrid.getDescription() == null) {
                     featureHexGrid.setDescription("Part of " + (biome.getType() != null ? biome.getType().name() : "unknown") + " biome");

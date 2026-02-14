@@ -2,6 +2,7 @@ package de.mhus.nimbus.world.generator.composer.build;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import de.mhus.nimbus.shared.utils.TypeUtil;
 import de.mhus.nimbus.world.generator.composer.area.Composite;
 import de.mhus.nimbus.world.generator.composer.biome.Biome;
 import de.mhus.nimbus.world.generator.composer.biome.Continent;
@@ -47,7 +48,7 @@ public class HexComposition implements BuildFeature {
     /**
      * Central registry for all FeatureHexGrids across all features.
      * Prevents duplicate grids at the same coordinate.
-     * Key: coordinate string "q,r"
+     * Key: coordinate string "q;r"
      * Value: FeatureHexGrid
      */
     // Central registry for all FeatureHexGrids (single source of truth during composition)
@@ -107,7 +108,7 @@ public class HexComposition implements BuildFeature {
             throw new IllegalArgumentException("Coordinate cannot be null");
         }
 
-        String key = coordinate.getQ() + "," + coordinate.getR();
+        String key = TypeUtil.toStringHexCoord(coordinate);
         return featureHexGridRegistry.computeIfAbsent(key, k ->
             de.mhus.nimbus.world.generator.composer.feature.FeatureHexGrid.builder()
                 .coordinate(coordinate)
@@ -127,7 +128,7 @@ public class HexComposition implements BuildFeature {
             return null;
         }
 
-        String key = coordinate.getQ() + "," + coordinate.getR();
+        String key = TypeUtil.toStringHexCoord(coordinate);
         return featureHexGridRegistry.get(key);
     }
 

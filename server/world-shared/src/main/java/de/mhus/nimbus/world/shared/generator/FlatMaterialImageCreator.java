@@ -50,6 +50,8 @@ public class FlatMaterialImageCreator {
                     rgb = getBlockColor(blockTypeId);
                 }
 
+                // Note: image Y=0 is top of screen. localZ=0 is South (min world Z).
+                // So South is at the top of the image. Flip can be added later if needed.
                 image.setRGB(x, z, rgb);
             }
         }

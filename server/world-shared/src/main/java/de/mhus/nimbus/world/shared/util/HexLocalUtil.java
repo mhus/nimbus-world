@@ -225,14 +225,15 @@ public class HexLocalUtil {
         double radius = hexGridSize / 2.0;
 
         // Define corner positions for POINTY-TOP hexagon (outer hex grid)
-        // Corners: N, NE, SE, S, SW, NW
+        // Z+ = North (matching world convention), Z- = South
+        // Corners: N, NE, SE, S, SW, NW (clockwise from top)
         double[][] corners = {
-            {0, -radius},           // N  (0)
-            {radius * sqrt3 / 2, -radius / 2},   // NE (1)
-            {radius * sqrt3 / 2, radius / 2},    // SE (2)
-            {0, radius},            // S  (3)
-            {-radius * sqrt3 / 2, radius / 2},   // SW (4)
-            {-radius * sqrt3 / 2, -radius / 2}   // NW (5)
+            {0, radius},            // N  (0) - top, z+
+            {radius * sqrt3 / 2, radius / 2},    // NE (1)
+            {radius * sqrt3 / 2, -radius / 2},   // SE (2)
+            {0, -radius},           // S  (3) - bottom, z-
+            {-radius * sqrt3 / 2, -radius / 2},  // SW (4)
+            {-radius * sqrt3 / 2, radius / 2}    // NW (5)
         };
 
         // Determine start and end corners for each edge (North to South direction)

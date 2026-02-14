@@ -300,7 +300,7 @@ public class Town extends Structure implements BuildFeature {
         for (HexVector2 coord : coordinates) {
             FeatureHexGrid featureHexGrid = FeatureHexGrid.builder()
                 .coordinate(coord)
-                .name(getName() + " [" + coord.getQ() + "," + coord.getR() + "]")
+                .name(getName() + " [" + coord.getQ() + ";" + coord.getR() + "]")
                 .description("Fallback grid for " + getName())
                 .build();
 

@@ -650,7 +650,7 @@ public class HexCompositeBuilder {
         }
 
         // Add debug text overlay with coordinates
-        String coordText = coord.getQ() + "," + coord.getR();
+        String coordText = TypeUtil.toStringHexCoord(coord);
         parameters.put("debugText", coordText);
 
         // TODO: Convert riverConfigParts, roadConfigParts, wallConfigParts to JSON parameters

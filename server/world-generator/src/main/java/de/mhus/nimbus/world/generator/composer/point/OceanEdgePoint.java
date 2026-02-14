@@ -1,6 +1,7 @@
 package de.mhus.nimbus.world.generator.composer.point;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import de.mhus.nimbus.shared.utils.TypeUtil;
 import de.mhus.nimbus.world.generator.composer.area.Area;
 import de.mhus.nimbus.world.generator.composer.build.ComposeContext;
 import de.mhus.nimbus.world.generator.composer.biome.PlacedBiome;
@@ -320,7 +321,7 @@ public class OceanEdgePoint extends Point {
                         .r(neighbor[1])
                         .build();
 
-                String key = neighborCoord.getQ() + "," + neighborCoord.getR();
+                String key = TypeUtil.toStringHexCoord(neighborCoord);
                 if (checked.contains(key)) {
                     continue;
                 }

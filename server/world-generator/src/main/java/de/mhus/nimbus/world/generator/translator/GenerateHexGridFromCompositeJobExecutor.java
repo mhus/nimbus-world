@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.shared.types.WorldId;
+import de.mhus.nimbus.shared.utils.TypeUtil;
 import de.mhus.nimbus.world.generator.composer.build.HexComposition;
 import de.mhus.nimbus.world.shared.job.JobExecutionException;
 import de.mhus.nimbus.world.shared.job.JobExecutor;
@@ -123,7 +124,7 @@ public class GenerateHexGridFromCompositeJobExecutor implements JobExecutor {
             // Process all FeatureHexGrids from Central Registry
             for (var featureHexGrid : composition.getFeatureHexGridRegistry().values()) {
                 HexVector2 coord = featureHexGrid.getCoordinate();
-                String position = coord.getQ() + ";" + coord.getR();
+                String position = TypeUtil.toStringHexCoord(coord);
                 allCoordinateStrings.add(position);
 
                 // Create WHexGrid from FeatureHexGrid
@@ -146,6 +147,7 @@ public class GenerateHexGridFromCompositeJobExecutor implements JobExecutor {
                 if (existingOpt.isPresent()) {
                     // Update existing grid with parameters and publicData from FilledHexGrid
                     wHexGrid = existingOpt.get();
+                    wHexGrid.getPublicData().setTitle(sourceGrid.getPublicData().getTitle());
                     wHexGrid.setParameters(new HashMap<>(params));
 
                     // Update publicData (name, title) from sourceGrid
@@ -233,16 +235,12 @@ public class GenerateHexGridFromCompositeJobExecutor implements JobExecutor {
                 boolean modified = false;
 
                 // Parse coordinate from position string
-                String[] parts = position.split(";");
-                HexVector2 coord = HexVector2.builder()
-                        .q(Integer.parseInt(parts[0]))
-                        .r(Integer.parseInt(parts[1]))
-                        .build();
+                HexVector2 coord = TypeUtil.parseHexCoord(position);
 
                 // For each hex side, check if neighbor exists and add edge_flat parameter
                 for (de.mhus.nimbus.world.shared.world.WHexGrid.EDGE side : de.mhus.nimbus.world.shared.world.WHexGrid.EDGE.values()) {
                     HexVector2 neighborCoord = getNeighborCoordinate(coord, side);
-                    String neighborPosition = neighborCoord.getQ() + ";" + neighborCoord.getR();
+                    String neighborPosition = TypeUtil.toStringHexCoord(neighborCoord);
 
                     // Check if neighbor grid exists in our composition
                     if (allCoordinateStrings.contains(neighborPosition)) {
@@ -344,7 +342,7 @@ public class GenerateHexGridFromCompositeJobExecutor implements JobExecutor {
                 Map<String, de.mhus.nimbus.world.generator.composer.feature.FeatureHexGrid> registry =
                     composition.getFeatureHexGridRegistry();
                 for (de.mhus.nimbus.world.generator.composer.feature.FeatureHexGrid grid : composition.getFeatureHexGrids()) {
-                    String key = grid.getCoordinate().getQ() + "," + grid.getCoordinate().getR();
+                    String key = TypeUtil.toStringHexCoord(grid.getCoordinate());
                     registry.put(key, grid);
                 }
                 log.info("Converted {} FeatureHexGrids from list to registry after deserialization",
@@ -432,6 +430,7 @@ public class GenerateHexGridFromCompositeJobExecutor implements JobExecutor {
         de.mhus.nimbus.generated.types.HexGrid publicData = new de.mhus.nimbus.generated.types.HexGrid();
         publicData.setPosition(coord);
         publicData.setName(featureHexGrid.getName());
+        publicData.setTitle(featureHexGrid.getName()); // For now, set title same as name - can be customized later
         publicData.setDescription(featureHexGrid.getDescription());
 
         // Copy all parameters from FeatureHexGrid
@@ -441,7 +440,7 @@ public class GenerateHexGridFromCompositeJobExecutor implements JobExecutor {
         }
 
         // Add debug text overlay with coordinates
-        String coordText = coord.getQ() + "," + coord.getR();
+        String coordText = TypeUtil.toStringHexCoord(coord);
         parameters.put("debugText", coordText);
 
         return de.mhus.nimbus.world.shared.world.WHexGrid.builder()

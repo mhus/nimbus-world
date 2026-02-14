@@ -299,7 +299,7 @@ public class HexGridGenerator {
      * Generates default name for a HexGrid
      */
     private String generateDefaultName(HexVector2 coord, Feature feature) {
-        return feature.getName() + " [" + coord.getQ() + "," + coord.getR() + "]";
+        return feature.getName() + " [" + coord.getQ() + ";" + coord.getR() + "]";
     }
 
     /**

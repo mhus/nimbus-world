@@ -650,15 +650,32 @@ public class FlatExportService {
         int myLevel = flat.getLevel(localX, localZ);
 
         // === CORNER SMOOTHING (only for y == level) ===
+        // Block offsets array: 24 floats = 8 corners × 3 (X, Y, Z)
+        //
+        // 3D engine corner layout (index → corner → world direction):
+        //   Bottom:
+        //     0- 2: bottom front left  (SW)  -X, -Z
+        //     3- 5: bottom front right (SE)  +X, -Z
+        //     6- 8: bottom back left   (NW)  -X, +Z
+        //     9-11: bottom back right  (NE)  +X, +Z
+        //   Top:
+        //    12-14: top front left     (SW)  -X, -Z
+        //    15-17: top front right    (SE)  +X, -Z
+        //    18-20: top back left      (NW)  -X, +Z
+        //    21-23: top back right     (NE)  +X, +Z
+        //
+        // Each triplet: [X, Y, Z] offset. Only Y (index 1,4,7,10,13,16,19,22) is used here.
+        //
+        // IMPORTANT: The 3D engine mirrors the back corners (NW/NE) relative to
+        // the flat neighbor calculation. The NW array position receives the NE offset
+        // and vice versa.
         if (smoothCorners && y == level) {
-            // Initialize offsets array (24 values for 8 corners × XYZ)
-            // Default all to 0
             List<Float> offsets = new ArrayList<>(24);
             for (int i = 0; i < 24; i++) {
                 offsets.add(0.0f);
             }
 
-            // Calculate all corner offsets
+            // Calculate corner Y offsets from neighbor height differences
             // Top Front Left (SW) - neighbors: West(-X,0), South(0,-Z), SW(-X,-Z)
             float swOffset = calculateCornerOffset(flat, localX, localZ, myLevel, -1, 0, 0, -1, -1, -1, materialDef, extraBlocksCache);
 
@@ -671,11 +688,11 @@ public class FlatExportService {
             // Top Back Right (NE) - neighbors: East(+X,0), North(0,+Z), NE(+X,+Z)
             float neOffset = calculateCornerOffset(flat, localX, localZ, myLevel, 1, 0, 0, 1, 1, 1, materialDef, extraBlocksCache);
 
-            // Set offsets (NW and NE are swapped to fix north-facing direction)
-            offsets.set(13, swOffset);  // SW - indices 12,13,14
-            offsets.set(16, seOffset);  // SE - indices 15,16,17
-            offsets.set(19, neOffset);  // NW - indices 18,19,20 (swapped: uses NE offset)
-            offsets.set(22, nwOffset);  // NE - indices 21,22,23 (swapped: uses NW offset)
+            // Assign Y offsets (NW/NE swapped to match 3D engine back-corner mirroring)
+            offsets.set(13, swOffset);  // top front left  Y (SW)
+            offsets.set(16, seOffset);  // top front right Y (SE)
+            offsets.set(19, neOffset);  // top back left   Y (NW position ← NE offset)
+            offsets.set(22, nwOffset);  // top back right  Y (NE position ← NW offset)
 
             // Set offsets on block
             block.setOffsets(offsets);
@@ -683,67 +700,6 @@ public class FlatExportService {
             log.trace("Applied corner smoothing to block at ({},{}) with offsets SW:{}, SE:{}, NW:{}, NE:{}",
                     localX, localZ, swOffset, seOffset, nwOffset, neOffset);
         }
-
-//        // === FACE VISIBILITY OPTIMIZATION ===
-//        if (optimizeFaces) {
-//            // Check if already fixed (FIXED bit set = 64)
-//            Integer existingFaceVis = block.getFaceVisibility();
-//            if (existingFaceVis != null && (existingFaceVis & 64) != 0) {
-//                // FIXED bit is set, don't modify
-//                return false;
-//            }
-//
-//            // FaceFlag bits (set bit = visible face):
-//            // TOP = 1, BOTTOM = 2, LEFT = 4, RIGHT = 8, FRONT = 16, BACK = 32
-//            int faceVisibility = 0;
-//
-//            // TOP: visible if y == level (not visible if below level / nextBlock)
-//            if (y == level) {
-//                faceVisibility |= 1;  // TOP visible
-//            }
-//            // BOTTOM never visible (y >= lowestSiblingLevel means block below)
-//            // Don't set BOTTOM bit (2)
-//
-//            // Check neighbors for side visibility
-//            // Get neighbor levels
-//            int westLevel = getNeighborLevel(flat, localX - 1, localZ, myLevel);
-//            int eastLevel = getNeighborLevel(flat, localX + 1, localZ, myLevel);
-//            int southLevel = getNeighborLevel(flat, localX, localZ - 1, myLevel);
-//            int northLevel = getNeighborLevel(flat, localX, localZ + 1, myLevel);
-//
-//            // LEFT (West): visible if neighbor is lower
-//            if (westLevel < y) {
-//                faceVisibility |= 4;  // LEFT visible
-//            }
-//
-//            // RIGHT (East): visible if neighbor is lower
-//            if (eastLevel < y) {
-//                faceVisibility |= 8;  // RIGHT visible
-//            }
-//
-//            // FRONT (South): visible if neighbor is lower (swapped: uses northLevel)
-//            if (northLevel < y) {
-//                faceVisibility |= 16;  // FRONT visible
-//            }
-//
-//            // BACK (North): visible if neighbor is lower (swapped: uses southLevel)
-//            if (southLevel < y) {
-//                faceVisibility |= 32;  // BACK visible
-//            }
-//
-//            // Don't export block if no faces are visible
-//            if (faceVisibility == 0) {
-//                log.debug("Block at ({},{},{}) has no visible faces (faceVisibility=0), skipping export",
-//                        block.getPosition().getX(), y, block.getPosition().getZ());
-//                return false;  // Signal to skip this block
-//            }
-//
-//            // Set faceVisibility on block
-//            block.setFaceVisibility(faceVisibility);
-//
-//            log.trace("Applied face visibility to block at ({},{},{}): visibility={} (binary: {})",
-//                    localX, y, localZ, faceVisibility, Integer.toBinaryString(faceVisibility));
-//        }
 
         return true;  // Block should be exported
     }
@@ -875,16 +831,6 @@ public class FlatExportService {
     }
 
     /**
-     * Get neighbor level from flat, or myLevel if out of bounds.
-     */
-    private int getNeighborLevel(WFlat flat, int x, int z, int myLevel) {
-        if (x < 0 || z < 0 || x >= flat.getSizeX() || z >= flat.getSizeZ()) {
-            return myLevel;
-        }
-        return flat.getLevel(x, z);
-    }
-
-    /**
      * Get effective neighbor level from flat, considering both base level and extraBlocks.
      * Only considers extraBlocks in the range of myLevel-1 to myLevel+1.
      * ExtraBlocks outside this range are not relevant for offset calculation.
@@ -1009,44 +955,4 @@ public class FlatExportService {
         return cache;
     }
 
-//    /**
-//     * Calculate faceVisibility for NOT_SET column fill blocks.
-//     * Shows ONLY ONE face - the one pointing outward from the flat edge.
-//     *
-//     * Logic: Determine which edge of the flat this block is on and show the outward-facing side:
-//     * - West edge (localX = 0) → show LEFT face (4)
-//     * - East edge (localX = sizeX-1) → show RIGHT face (8)
-//     * - South edge (localZ = 0) → show FRONT face (16)
-//     * - North edge (localZ = sizeZ-1) → show BACK face (32)
-//     *
-//     * @param flat The flat terrain data
-//     * @param localX Column X coordinate (within flat)
-//     * @param localZ Column Z coordinate (within flat)
-//     * @param myLevel This column's level (unused but kept for consistency)
-//     * @return Face visibility bitmask (only one bit set)
-//     */
-//    private int calculateNotSetFaceVisibility(WFlat flat, int localX, int localZ, int myLevel) {
-//        int sizeX = flat.getSizeX();
-//        int sizeZ = flat.getSizeZ();
-//
-//        // Determine which edge of the flat this block is on
-//        // Priority: West, East, South, North if on multiple edges (corners)
-//
-//        if (localX == 0) {
-//            // West edge → show RIGHT face (outward)
-//            return 8;
-//        } else if (localX == sizeX - 1) {
-//            // East edge → show LEFT face (outward)
-//            return 4;
-//        } else if (localZ == 0) {
-//            // South edge → show FRONT face (outward)
-//            return 16;
-//        } else if (localZ == sizeZ - 1) {
-//            // North edge → show BACK face (outward)
-//            return 32;
-//        }
-//
-//        // Not on any edge → show all side faces (LEFT | RIGHT | FRONT | BACK)
-//        return 4 | 8 | 16 | 32;  // = 60
-//    }
 }

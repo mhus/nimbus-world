@@ -2,6 +2,7 @@ package de.mhus.nimbus.world.generator.composer.flow;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.generated.types.HexVector2;
+import de.mhus.nimbus.shared.utils.TypeUtil;
 import de.mhus.nimbus.world.generator.composer.build.ConnectionResult;
 import de.mhus.nimbus.world.generator.composer.filler.HexGridFillResult;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
@@ -275,7 +276,7 @@ public class RoadAndRiverConnector {
      * Creates coordinate key
      */
     private String coordKey(HexVector2 coord) {
-        return coord.getQ() + "," + coord.getR();
+        return TypeUtil.toStringHexCoord(coord);
     }
 
     /**

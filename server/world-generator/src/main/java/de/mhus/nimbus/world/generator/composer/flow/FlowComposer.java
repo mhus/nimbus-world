@@ -1,6 +1,7 @@
 package de.mhus.nimbus.world.generator.composer.flow;
 
 import de.mhus.nimbus.generated.types.HexVector2;
+import de.mhus.nimbus.shared.utils.TypeUtil;
 import de.mhus.nimbus.world.generator.composer.feature.Feature;
 import de.mhus.nimbus.world.generator.composer.feature.FeatureHexGrid;
 import de.mhus.nimbus.world.generator.composer.feature.FeatureStatus;
@@ -575,7 +576,7 @@ public class FlowComposer {
         HexVector2 current = start;
         // Track all visited positions to prevent cycles (not just immediate backtrack)
         Set<String> visited = new HashSet<>();
-        visited.add(current.getQ() + "," + current.getR());
+        visited.add(TypeUtil.toStringHexCoord(current));
 
         // Get deviation tendencies
         DeviationTendency tendLeft = flow.getTendLeft();
@@ -600,7 +601,7 @@ public class FlowComposer {
             }
 
             // Remove already visited positions to prevent cycles
-            neighbors.removeIf(n -> visited.contains(n.getQ() + "," + n.getR()));
+            neighbors.removeIf(n -> visited.contains(TypeUtil.toStringHexCoord(n)));
 
             if (neighbors.isEmpty()) {
                 log.warn("Flow '{}' stuck at ({},{}) — all neighbors visited",
@@ -622,7 +623,7 @@ public class FlowComposer {
             }
 
             path.add(next);
-            visited.add(next.getQ() + "," + next.getR());
+            visited.add(TypeUtil.toStringHexCoord(next));
             current = next;
 
             if (path.size() > maxSteps) {
@@ -1712,7 +1713,7 @@ public class FlowComposer {
      * Creates coordinate key
      */
     private String coordKey(HexVector2 coord) {
-        return coord.getQ() + "," + coord.getR();
+        return TypeUtil.toStringHexCoord(coord);
     }
 
     /**
