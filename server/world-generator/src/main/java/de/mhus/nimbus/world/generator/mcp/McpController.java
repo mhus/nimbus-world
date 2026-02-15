@@ -1,6 +1,7 @@
 package de.mhus.nimbus.world.generator.mcp;
 
 import de.mhus.nimbus.generated.types.Block;
+import de.mhus.nimbus.generated.types.ChunkData;
 import de.mhus.nimbus.shared.engine.EngineMapper;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.shared.dto.CreateLayerRequest;
@@ -13,6 +14,8 @@ import de.mhus.nimbus.world.shared.rest.BaseEditorController;
 import de.mhus.nimbus.world.shared.session.WSessionService;
 import de.mhus.nimbus.world.shared.world.WBlockType;
 import de.mhus.nimbus.world.shared.world.WBlockTypeService;
+import de.mhus.nimbus.world.shared.world.WChunk;
+import de.mhus.nimbus.world.shared.world.WChunkService;
 import de.mhus.nimbus.world.shared.world.WWorld;
 import de.mhus.nimbus.world.shared.world.WWorldService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -50,6 +53,7 @@ public class McpController extends BaseEditorController {
     private final WLayerTerrainRepository terrainRepository;
     private final WWorldService worldService;
     private final WBlockTypeService blockTypeService;
+    private final WChunkService chunkService;
     private final EngineMapper engineMapper;
     private final McpJobExecutor mcpJobExecutor;
     private final JobExecutorRegistry executorRegistry;
@@ -459,6 +463,73 @@ public class McpController extends BaseEditorController {
                 )
         ));
 
+        // Chunk inspection tools
+        tools.add(createToolDescriptor(
+                "get_chunk_data",
+                "Get chunk storage data including blocks for a specific chunk position",
+                Map.of(
+                        "worldId", Map.of(
+                                "type", "string",
+                                "description", "World ID",
+                                "required", true
+                        ),
+                        "cx", Map.of(
+                                "type", "integer",
+                                "description", "Chunk X coordinate",
+                                "required", true
+                        ),
+                        "cz", Map.of(
+                                "type", "integer",
+                                "description", "Chunk Z coordinate",
+                                "required", true
+                        )
+                )
+        ));
+
+        tools.add(createToolDescriptor(
+                "list_terrain_chunk_keys",
+                "List chunk keys (cx:cz) that have terrain data for a specific layer",
+                Map.of(
+                        "worldId", Map.of(
+                                "type", "string",
+                                "description", "World ID",
+                                "required", true
+                        ),
+                        "layerName", Map.of(
+                                "type", "string",
+                                "description", "Layer name",
+                                "required", true
+                        )
+                )
+        ));
+
+        tools.add(createToolDescriptor(
+                "get_terrain_chunk_data",
+                "Get terrain chunk storage data including blocks for a specific layer and chunk position",
+                Map.of(
+                        "worldId", Map.of(
+                                "type", "string",
+                                "description", "World ID",
+                                "required", true
+                        ),
+                        "layerName", Map.of(
+                                "type", "string",
+                                "description", "Layer name",
+                                "required", true
+                        ),
+                        "cx", Map.of(
+                                "type", "integer",
+                                "description", "Chunk X coordinate",
+                                "required", true
+                        ),
+                        "cz", Map.of(
+                                "type", "integer",
+                                "description", "Chunk Z coordinate",
+                                "required", true
+                        )
+                )
+        ));
+
         // Job execution tools
         tools.add(createToolDescriptor(
                 "execute_job_world_scoped",
@@ -550,6 +621,9 @@ public class McpController extends BaseEditorController {
         endpoints.put("GET /generator/mcp/worlds/{worldId}/jobs/{jobId}/status", "Get job status (world-scoped)");
         endpoints.put("POST /generator/mcp/jobs/execute", "Execute job synchronously (dynamic world selection)");
         endpoints.put("GET /generator/mcp/jobs/{jobId}/status", "Get job status (dynamic)");
+        endpoints.put("GET /generator/mcp/worlds/{worldId}/chunks/data?cx=&cz=", "Get chunk storage data with blocks");
+        endpoints.put("GET /generator/mcp/worlds/{worldId}/layers/{layerName}/terrain", "List terrain chunk keys for layer");
+        endpoints.put("GET /generator/mcp/worlds/{worldId}/layers/{layerName}/terrain/data?cx=&cz=", "Get terrain chunk data with blocks");
         endpoints.put("GET /generator/mcp/readme/search", "Search README documents");
         endpoints.put("GET /generator/mcp/readme/{name}", "Get specific README document");
         response.put("endpoints", endpoints);
@@ -975,6 +1049,226 @@ public class McpController extends BaseEditorController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "Failed to add blocks: " + e.getMessage()));
         }
+    }
+
+    // ==================== CHUNK INSPECTION OPERATIONS ====================
+
+    /**
+     * Get chunk storage data including blocks for a specific chunk position.
+     * GET /generator/mcp/worlds/{worldId}/chunks/data?cx=0&cz=0
+     */
+    @GetMapping("/worlds/{worldId}/chunks/data")
+    @Operation(summary = "Get chunk storage data with blocks",
+               description = "Loads WChunk metadata and the actual ChunkData from storage including all blocks and height data. " +
+                             "Useful for debugging missing or incorrect blocks.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Chunk data found"),
+            @ApiResponse(responseCode = "400", description = "Invalid parameters"),
+            @ApiResponse(responseCode = "404", description = "Chunk not found")
+    })
+    public ResponseEntity<?> getChunkData(
+            @Parameter(description = "World ID") @PathVariable String worldId,
+            @Parameter(description = "Chunk X coordinate") @RequestParam int cx,
+            @Parameter(description = "Chunk Z coordinate") @RequestParam int cz) {
+
+        log.debug("MCP: Get chunk data: worldId={}, cx={}, cz={}", worldId, cx, cz);
+
+        var wid = WorldId.of(worldId).orElseThrow(
+                () -> new IllegalStateException("Invalid worldId: " + worldId)
+        );
+
+        String chunkKey = cx + ":" + cz;
+
+        // Load WChunk metadata
+        Optional<WChunk> chunkOpt = chunkService.find(wid, chunkKey);
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("chunkKey", chunkKey);
+        result.put("cx", cx);
+        result.put("cz", cz);
+
+        if (chunkOpt.isEmpty()) {
+            result.put("exists", false);
+            result.put("message", "No WChunk entity found for this position");
+            return ResponseEntity.ok(result);
+        }
+
+        WChunk chunk = chunkOpt.get();
+        result.put("exists", true);
+        result.put("metadata", toChunkMetadataDto(chunk));
+
+        // Load actual ChunkData from storage
+        Optional<ChunkData> chunkDataOpt = chunkService.loadChunkData(wid, chunkKey, false);
+        if (chunkDataOpt.isEmpty()) {
+            result.put("storageDataLoaded", false);
+            result.put("message", "WChunk entity exists but storage data could not be loaded");
+            return ResponseEntity.ok(result);
+        }
+
+        ChunkData chunkData = chunkDataOpt.get();
+        result.put("storageDataLoaded", true);
+
+        // Block summary
+        List<Block> blocks = chunkData.getBlocks();
+        result.put("blockCount", blocks != null ? blocks.size() : 0);
+
+        // Convert blocks to DTOs
+        if (blocks != null && !blocks.isEmpty()) {
+            List<Map<String, Object>> blockDtos = blocks.stream()
+                    .map(this::toChunkBlockDto)
+                    .collect(Collectors.toList());
+            result.put("blocks", blockDtos);
+
+            // Block type summary
+            Map<String, Long> blockTypeCounts = blocks.stream()
+                    .filter(b -> b.getBlockTypeId() != null)
+                    .collect(Collectors.groupingBy(Block::getBlockTypeId, Collectors.counting()));
+            result.put("blockTypeSummary", blockTypeCounts);
+        } else {
+            result.put("blocks", List.of());
+            result.put("blockTypeSummary", Map.of());
+        }
+
+        // Height data summary
+        Map<String, int[]> heightData = chunkData.getHeightData();
+        result.put("heightDataEntries", heightData != null ? heightData.size() : 0);
+
+        return ResponseEntity.ok(result);
+    }
+
+    /**
+     * List chunk keys that have terrain data for a specific layer (lightweight - only keys).
+     * GET /generator/mcp/worlds/{worldId}/layers/{layerName}/terrain
+     */
+    @GetMapping("/worlds/{worldId}/layers/{layerName}/terrain")
+    @Operation(summary = "List terrain chunk keys for a layer (lightweight)",
+               description = "Returns only the chunk keys (cx:cz) that have terrain data for this layer. " +
+                             "Use get_terrain_chunk_data to load actual block data for a specific chunk.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Success"),
+            @ApiResponse(responseCode = "400", description = "Invalid parameters"),
+            @ApiResponse(responseCode = "404", description = "Layer not found")
+    })
+    public ResponseEntity<?> listTerrainChunkKeys(
+            @Parameter(description = "World ID") @PathVariable String worldId,
+            @Parameter(description = "Layer name") @PathVariable String layerName) {
+
+        log.debug("MCP: List terrain chunk keys: worldId={}, layerName={}", worldId, layerName);
+
+        var wid = WorldId.of(worldId).orElseThrow(
+                () -> new IllegalStateException("Invalid worldId: " + worldId)
+        );
+
+        Optional<WLayer> layerOpt = layerService.findLayer(worldId, layerName);
+        if (layerOpt.isEmpty()) {
+            return notFound("layer not found: " + layerName);
+        }
+
+        WLayer layer = layerOpt.get();
+        List<String> chunkKeys = layerService.findChunkKeysByLayerDataId(layer.getLayerDataId());
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("layerName", layer.getName());
+        result.put("layerType", layer.getLayerType().name());
+        result.put("layerDataId", layer.getLayerDataId());
+        result.put("chunkKeys", chunkKeys);
+        result.put("count", chunkKeys.size());
+
+        return ResponseEntity.ok(result);
+    }
+
+    /**
+     * Get terrain chunk storage data including blocks for a specific layer and chunk position.
+     * GET /generator/mcp/worlds/{worldId}/layers/{layerName}/terrain/data?cx=0&cz=0
+     */
+    @GetMapping("/worlds/{worldId}/layers/{layerName}/terrain/data")
+    @Operation(summary = "Get terrain chunk storage data with blocks",
+               description = "Loads WLayerTerrain metadata and the actual LayerChunkData from storage " +
+                             "including all blocks. Useful for debugging missing or incorrect blocks in layers.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Terrain data found"),
+            @ApiResponse(responseCode = "400", description = "Invalid parameters"),
+            @ApiResponse(responseCode = "404", description = "Layer not found")
+    })
+    public ResponseEntity<?> getTerrainChunkData(
+            @Parameter(description = "World ID") @PathVariable String worldId,
+            @Parameter(description = "Layer name") @PathVariable String layerName,
+            @Parameter(description = "Chunk X coordinate") @RequestParam int cx,
+            @Parameter(description = "Chunk Z coordinate") @RequestParam int cz) {
+
+        log.debug("MCP: Get terrain chunk data: worldId={}, layerName={}, cx={}, cz={}", worldId, layerName, cx, cz);
+
+        var wid = WorldId.of(worldId).orElseThrow(
+                () -> new IllegalStateException("Invalid worldId: " + worldId)
+        );
+
+        Optional<WLayer> layerOpt = layerService.findLayer(worldId, layerName);
+        if (layerOpt.isEmpty()) {
+            return notFound("layer not found: " + layerName);
+        }
+
+        WLayer layer = layerOpt.get();
+        String chunkKey = cx + ":" + cz;
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("layerName", layer.getName());
+        result.put("layerType", layer.getLayerType().name());
+        result.put("layerDataId", layer.getLayerDataId());
+        result.put("chunkKey", chunkKey);
+        result.put("cx", cx);
+        result.put("cz", cz);
+
+        // Check WLayerTerrain entity
+        Optional<WLayerTerrain> terrainOpt = terrainRepository
+                .findByWorldIdAndLayerDataIdAndChunkKey(worldId, layer.getLayerDataId(), chunkKey);
+
+        if (terrainOpt.isEmpty()) {
+            result.put("exists", false);
+            result.put("message", "No WLayerTerrain entity found for this layer/chunk combination");
+            return ResponseEntity.ok(result);
+        }
+
+        WLayerTerrain terrain = terrainOpt.get();
+        result.put("exists", true);
+        result.put("metadata", toTerrainMetadataDto(terrain));
+
+        // Load actual LayerChunkData from storage
+        Optional<LayerChunkData> chunkDataOpt = layerService.loadTerrainChunk(worldId, layer.getLayerDataId(), chunkKey);
+        if (chunkDataOpt.isEmpty()) {
+            result.put("storageDataLoaded", false);
+            result.put("message", "WLayerTerrain entity exists but storage data could not be loaded");
+            return ResponseEntity.ok(result);
+        }
+
+        LayerChunkData chunkData = chunkDataOpt.get();
+        result.put("storageDataLoaded", true);
+
+        // Block summary
+        List<LayerBlock> blocks = chunkData.getBlocks();
+        result.put("blockCount", blocks != null ? blocks.size() : 0);
+
+        // Convert blocks to DTOs
+        if (blocks != null && !blocks.isEmpty()) {
+            List<Map<String, Object>> blockDtos = blocks.stream()
+                    .map(this::toLayerBlockDto)
+                    .collect(Collectors.toList());
+            result.put("blocks", blockDtos);
+
+            // Block type summary
+            Map<String, Long> blockTypeCounts = blocks.stream()
+                    .filter(b -> b.getBlock() != null && b.getBlock().getBlockTypeId() != null)
+                    .collect(Collectors.groupingBy(b -> b.getBlock().getBlockTypeId(), Collectors.counting()));
+            result.put("blockTypeSummary", blockTypeCounts);
+        } else {
+            result.put("blocks", List.of());
+            result.put("blockTypeSummary", Map.of());
+        }
+
+        // Height data summary
+        Map<String, int[]> heightData = chunkData.getHeightData();
+        result.put("heightDataEntries", heightData != null ? heightData.size() : 0);
+
+        return ResponseEntity.ok(result);
     }
 
     // ==================== ASSET OPERATIONS ====================
@@ -1619,6 +1913,58 @@ public class McpController extends BaseEditorController {
     }
 
     // ==================== HELPER METHODS & DTOS ====================
+
+    private Map<String, Object> toChunkMetadataDto(WChunk chunk) {
+        Map<String, Object> dto = new HashMap<>();
+        dto.put("id", chunk.getId());
+        dto.put("worldId", chunk.getWorldId());
+        dto.put("chunk", chunk.getChunk());
+        dto.put("hex", chunk.getHex());
+        dto.put("storageId", chunk.getStorageId());
+        dto.put("compressed", chunk.isCompressed());
+        dto.put("blockCount", chunk.getBlockCount());
+        dto.put("chunkSize", chunk.getChunkSize());
+        dto.put("hasInfoServer", chunk.getInfoServer() != null && !chunk.getInfoServer().isEmpty());
+        dto.put("createdAt", chunk.getCreatedAt());
+        dto.put("updatedAt", chunk.getUpdatedAt());
+        return dto;
+    }
+
+    private Map<String, Object> toChunkBlockDto(Block block) {
+        Map<String, Object> dto = new HashMap<>();
+        if (block.getPosition() != null) {
+            dto.put("x", (int) block.getPosition().getX());
+            dto.put("y", (int) block.getPosition().getY());
+            dto.put("z", (int) block.getPosition().getZ());
+        }
+        dto.put("blockTypeId", block.getBlockTypeId());
+        if (block.getFaceVisibility() != null) {
+            dto.put("faceVisibility", block.getFaceVisibility());
+        }
+        if (block.getStatus() != 0) {
+            dto.put("status", block.getStatus());
+        }
+        if (block.getOffsets() != null) {
+            dto.put("offsets", block.getOffsets());
+        }
+        if (block.getMetadata() != null) {
+            dto.put("hasMetadata", true);
+        }
+        return dto;
+    }
+
+    private Map<String, Object> toTerrainMetadataDto(WLayerTerrain terrain) {
+        Map<String, Object> dto = new HashMap<>();
+        dto.put("id", terrain.getId());
+        dto.put("worldId", terrain.getWorldId());
+        dto.put("layerDataId", terrain.getLayerDataId());
+        dto.put("chunkKey", terrain.getChunkKey());
+        dto.put("storageId", terrain.getStorageId());
+        dto.put("compressed", terrain.isCompressed());
+        dto.put("createdAt", terrain.getCreatedAt());
+        dto.put("updatedAt", terrain.getUpdatedAt());
+        return dto;
+    }
 
     private Map<String, Object> toWorldDto(WWorld world) {
         Map<String, Object> dto = new HashMap<>();

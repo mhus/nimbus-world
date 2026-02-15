@@ -60,6 +60,7 @@ public class SpikesManipulator implements FlatManipulator {
         int baseHeight = parseIntParameter(parameters, "baseHeight", DEFAULT_BASE_HEIGHT);
         long seed = parseLongParameter(parameters, "seed", System.currentTimeMillis());
         double taperFactor = parseDoubleParameter(parameters, "taperFactor", DEFAULT_TAPER_FACTOR);
+        int material = parseIntParameter(parameters, "material", -1); // Default none
 
         // Initialize random generator
         Random random = new Random(seed);
@@ -90,9 +91,10 @@ public class SpikesManipulator implements FlatManipulator {
             // Random dimensions for this spike
             int spikeHeight = minHeight + random.nextInt(maxHeight - minHeight + 1);
             int spikeWidth = minWidth + random.nextInt(maxWidth - minWidth + 1);
+            String group = "spike_" + (pos.x + flat.getMountX()) + "," + (pos.z + flat.getMountZ()); // Unique group name for this spike
 
             // Create the spike
-            createSpike(flat, pos.x, pos.z, baseHeight, spikeHeight, spikeWidth, taperFactor, random);
+            createSpike(flat, pos.x, pos.z, baseHeight, spikeHeight, spikeWidth, taperFactor, random, group, material);
         }
 
         log.info("Spikes manipulation completed: {} spikes created, density={}, amount={}",
@@ -151,8 +153,8 @@ public class SpikesManipulator implements FlatManipulator {
      * Create a single spike at the specified position
      */
     private void createSpike(WFlat flat, int centerX, int centerZ,
-                            int baseHeight, int height, int baseWidth,
-                            double taperFactor, Random random) {
+                             int baseHeight, int height, int baseWidth,
+                             double taperFactor, Random random, String group, int material) {
         // Build spike layer by layer from bottom to top
         for (int layer = 0; layer < height; layer++) {
             // Calculate width at this height using taper factor
@@ -169,7 +171,7 @@ public class SpikesManipulator implements FlatManipulator {
             int currentHeight = baseHeight + layer;
 
             // Draw the layer as a circle/square
-            drawSpikeLayer(flat, centerX, centerZ, currentWidth, currentHeight);
+            drawSpikeLayer(flat, centerX, centerZ, currentWidth, currentHeight, group, material);
         }
 
         log.debug("Created spike at ({},{}) with height={}, baseWidth={}",
@@ -179,7 +181,7 @@ public class SpikesManipulator implements FlatManipulator {
     /**
      * Draw a single layer of a spike
      */
-    private void drawSpikeLayer(WFlat flat, int centerX, int centerZ, int radius, int height) {
+    private void drawSpikeLayer(WFlat flat, int centerX, int centerZ, int radius, int height, String group, int material) {
         // Use diamond/circular pattern
         for (int dx = -radius; dx <= radius; dx++) {
             for (int dz = -radius; dz <= radius; dz++) {
@@ -197,7 +199,10 @@ public class SpikesManipulator implements FlatManipulator {
                         int currentLevel = flat.getLevel(x, z);
                         if (height > currentLevel) {
                             flat.setLevel(x, z, height);
-                            // Material is set by SingleSpikesBuilder
+                            flat.setGroup(x, z, group);
+                            if (material >= 0) {
+                                flat.setColumn(x, z, material);
+                            }
                         }
                     }
                 }

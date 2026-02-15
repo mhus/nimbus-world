@@ -93,38 +93,15 @@ public class SingleSpikesBuilder extends HexGridBuilder {
         manipulatorParams.put("baseHeight", String.valueOf(config.getBaseHeight()));
         manipulatorParams.put("seed", String.valueOf(config.getSeed()));
         manipulatorParams.put("taperFactor", String.valueOf(config.getTaperFactor()));
+        manipulatorParams.put("material", String.valueOf(material));
 
         // Create SpikesManipulator and apply
         SpikesManipulator manipulator = new SpikesManipulator();
         manipulator.manipulate(flat, regionStartX, regionStartZ, regionSizeX, regionSizeZ, manipulatorParams);
 
-        // Apply material to all spikes (SpikesManipulator sets level but not column)
-        applyMaterialToSpikes(flat, config.getBaseHeight(), material);
-
         log.info("Spike field built: name='{}', density={}, amount={}, material={}",
             config.getSpikesName(), config.getDensity(), config.getAmount(),
             config.getMaterial());
-    }
-
-    /**
-     * Apply material to all blocks that are part of spikes (above base height)
-     */
-    private void applyMaterialToSpikes(WFlat flat, int baseHeight, int material) {
-        int spikesFound = 0;
-
-        for (int x = 0; x < flat.getSizeX(); x++) {
-            for (int z = 0; z < flat.getSizeZ(); z++) {
-                int level = flat.getLevel(x, z);
-
-                // If block is significantly above base height, it's part of a spike
-                if (level > baseHeight + 2) {
-                    flat.setColumn(x, z, material);
-                    spikesFound++;
-                }
-            }
-        }
-
-        log.debug("Applied material to {} spike blocks", spikesFound);
     }
 
     /**
