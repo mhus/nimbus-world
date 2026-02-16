@@ -407,41 +407,23 @@ public class HexGridEdgeBlender {
         /**
          * Get first corner of the hex side (in local flat coordinates).
          * Uses actual hexagon geometry based on radius.
-         * Flat-top hexagon: EAST/WEST are vertical sides at ±30° angles.
+         * Pointy-top hex corner angles (North = Z+, East = X+):
+         *   N=90°, NE=30°, SE=330°, S=270°, SW=210°, NW=150°
          */
         private int[] getCorner1ForSide(WHexGrid.EDGE side) {
-            int sizeX = flat.getSizeX();
-            int sizeZ = flat.getSizeZ();
-            double centerX = sizeX / 2.0;
-            double centerZ = sizeZ / 2.0;
-            double radius = sizeX / 2.0;
+            double centerX = flat.getSizeX() / 2.0;
+            double centerZ = flat.getSizeZ() / 2.0;
+            double radius = flat.getSizeX() / 2.0;
 
-            // Pointy-top hexagon (EAST/WEST are vertical sides)
-            // Image coordinates: X right, Z down
-            // Corners at: 30° (right-down), 90° (down), 150° (left-down),
-            //             210° (left-up), 270° (up), 330° (right-up)
             double angle;
             switch (side) {
-                case NORTH_EAST:
-                    angle = Math.toRadians(270); // Top corner
-                    break;
-                case EAST:
-                    angle = Math.toRadians(330); // Right-upper corner
-                    break;
-                case SOUTH_EAST:
-                    angle = Math.toRadians(30);  // Right-lower corner
-                    break;
-                case SOUTH_WEST:
-                    angle = Math.toRadians(150); // Left-lower corner
-                    break;
-                case WEST:
-                    angle = Math.toRadians(210); // Left-upper corner
-                    break;
-                case NORTH_WEST:
-                    angle = Math.toRadians(270); // Top corner
-                    break;
-                default:
-                    return new int[]{0, 0};
+                case NORTH_EAST: angle = Math.toRadians(90);  break; // N
+                case EAST:       angle = Math.toRadians(30);  break; // NE
+                case SOUTH_EAST: angle = Math.toRadians(330); break; // SE
+                case SOUTH_WEST: angle = Math.toRadians(210); break; // SW
+                case WEST:       angle = Math.toRadians(150); break; // NW
+                case NORTH_WEST: angle = Math.toRadians(90);  break; // N
+                default: return new int[]{0, 0};
             }
 
             int x = (int) Math.round(centerX + radius * Math.cos(angle));
@@ -451,39 +433,21 @@ public class HexGridEdgeBlender {
 
         /**
          * Get second corner of the hex side (in local flat coordinates).
-         * Uses actual hexagon geometry based on radius.
-         * Flat-top hexagon: EAST/WEST are vertical sides at ±30° angles.
          */
         private int[] getCorner2ForSide(WHexGrid.EDGE side) {
-            int sizeX = flat.getSizeX();
-            int sizeZ = flat.getSizeZ();
-            double centerX = sizeX / 2.0;
-            double centerZ = sizeZ / 2.0;
-            double radius = sizeX / 2.0;
+            double centerX = flat.getSizeX() / 2.0;
+            double centerZ = flat.getSizeZ() / 2.0;
+            double radius = flat.getSizeX() / 2.0;
 
-            // Second corner for each side
             double angle;
             switch (side) {
-                case NORTH_EAST:
-                    angle = Math.toRadians(330); // Right-upper corner
-                    break;
-                case EAST:
-                    angle = Math.toRadians(30);  // Right-lower corner
-                    break;
-                case SOUTH_EAST:
-                    angle = Math.toRadians(90);  // Bottom corner
-                    break;
-                case SOUTH_WEST:
-                    angle = Math.toRadians(90);  // Bottom corner
-                    break;
-                case WEST:
-                    angle = Math.toRadians(150); // Left-lower corner
-                    break;
-                case NORTH_WEST:
-                    angle = Math.toRadians(210); // Left-upper corner
-                    break;
-                default:
-                    return new int[]{0, 0};
+                case NORTH_EAST: angle = Math.toRadians(30);  break; // NE
+                case EAST:       angle = Math.toRadians(330); break; // SE
+                case SOUTH_EAST: angle = Math.toRadians(270); break; // S
+                case SOUTH_WEST: angle = Math.toRadians(270); break; // S
+                case WEST:       angle = Math.toRadians(210); break; // SW
+                case NORTH_WEST: angle = Math.toRadians(150); break; // NW
+                default: return new int[]{0, 0};
             }
 
             int x = (int) Math.round(centerX + radius * Math.cos(angle));
@@ -610,28 +574,29 @@ public class HexGridEdgeBlender {
             int neighborZ = worldZ - neighborFlat.getMountZ();
 
             // Apply offset to compensate for 15-pixel border gap
+            // North = Z+, South = Z-, East = X+, West = X-
             switch (direction) {
                 case NORTH_EAST:
                     neighborX += gap;
-                    neighborZ -= gap;
+                    neighborZ += gap;
                     break;
                 case EAST:
                     neighborX += gap;
                     break;
                 case SOUTH_EAST:
                     neighborX += gap;
-                    neighborZ += gap;
+                    neighborZ -= gap;
                     break;
                 case SOUTH_WEST:
                     neighborX -= gap;
-                    neighborZ += gap;
+                    neighborZ -= gap;
                     break;
                 case WEST:
                     neighborX -= gap;
                     break;
                 case NORTH_WEST:
                     neighborX -= gap;
-                    neighborZ -= gap;
+                    neighborZ += gap;
                     break;
             }
 
@@ -800,138 +765,6 @@ public class HexGridEdgeBlender {
             }
 
             return pixelsWritten > 0;
-        }
-
-        /**
-         * Check if a point in the neighbor flat is on the side that faces us.
-         * Uses a simplified border-based check (points within 15 pixels of the edge).
-         */
-        private boolean isOnNeighborSide(int nx, int nz, WHexGrid.EDGE side) {
-            final int BORDER = 15;
-            int sizeX = neighborFlat.getSizeX();
-            int sizeZ = neighborFlat.getSizeZ();
-
-            switch (side) {
-                case EAST:
-                    return nx >= sizeX - BORDER;
-                case WEST:
-                    return nx < BORDER;
-                case NORTH_EAST:
-                    return nz < sizeZ / 2 && nx >= sizeX / 2;
-                case NORTH_WEST:
-                    return nz < sizeZ / 2 && nx < sizeX / 2;
-                case SOUTH_EAST:
-                    return nz >= sizeZ / 2 && nx >= sizeX / 2;
-                case SOUTH_WEST:
-                    return nz >= sizeZ / 2 && nx < sizeX / 2;
-                default:
-                    return false;
-            }
-        }
-
-        /**
-         * Blend a single point from the neighbor into our flat.
-         * Sets the point at the given position and blends inward with interpolation.
-         */
-        private void blendPoint(int startX, int startZ, int neighborHeight, int neighborMaterial) {
-            // Get inward direction for blending
-            int[] inwardDir = getInwardDirection(direction);
-
-            // Blend from the border point inward for 'width' pixels
-            for (int depth = 0; depth <= width; depth++) {
-                int x = startX + inwardDir[0] * depth;
-                int z = startZ + inwardDir[1] * depth;
-
-                // Check bounds
-                if (x < 0 || x >= flat.getSizeX() || z < 0 || z >= flat.getSizeZ()) {
-                    break;
-                }
-
-                // Get current values
-                int currentHeight = flat.getLevel(x, z);
-                int currentMaterial = flat.getColumn(x, z);
-
-                // Calculate blend factor (1.0 at border edge, 0.0 at full depth)
-                float baseFactor = depth == 0 ? 1.0f : 1.0f - (depth / (float) width);
-
-                // Add random variation (±10%) for more natural transitions
-                float randomVariation = (random.nextFloat() - 0.5f) * 0.2f;
-                float blendFactor = Math.max(0.0f, Math.min(1.0f, baseFactor + randomVariation));
-
-                // At depth 0 (border edge), always use neighbor data
-                if (depth == 0) {
-                    flat.setLevel(x, z, neighborHeight);
-                    flat.setColumn(x, z, neighborMaterial);
-                } else {
-                    // Check if we've reached the hex interior (non-mutable area)
-                    if (currentMaterial != WFlat.MATERIAL_NOT_SET &&
-                        currentMaterial != WFlat.MATERIAL_NOT_SET_MUTABLE) {
-                        // Blend with existing interior height
-                        int heightVariation = random.nextInt(3) - 1; // -1, 0, +1
-                        int blendedHeight = Math.round(neighborHeight * blendFactor + currentHeight * (1.0f - blendFactor)) + heightVariation;
-                        blendedHeight = Math.max(0, Math.min(255, blendedHeight));
-                        flat.setLevel(x, z, blendedHeight);
-
-                        // Material blending: probabilistic selection
-                        if (random.nextFloat() < blendFactor) {
-                            flat.setColumn(x, z, neighborMaterial);
-                        }
-                        // else keep current material
-                    } else {
-                        // Still in border/empty area
-                        int heightVariation = random.nextInt(3) - 1;
-                        int blendedHeight = Math.round(neighborHeight * blendFactor + currentHeight * (1.0f - blendFactor)) + heightVariation;
-                        blendedHeight = Math.max(0, Math.min(255, blendedHeight));
-                        flat.setLevel(x, z, blendedHeight);
-                        flat.setColumn(x, z, neighborMaterial);
-                    }
-                }
-            }
-        }
-
-        /**
-         * Get inward direction vector for blending.
-         * Returns [dx, dz] pointing from the side into the flat interior.
-         */
-        private int[] getInwardDirection(WHexGrid.EDGE side) {
-            switch (side) {
-                case EAST:
-                    return new int[]{-1, 0}; // From right edge, blend left
-                case WEST:
-                    return new int[]{1, 0}; // From left edge, blend right
-                case NORTH_EAST:
-                    return new int[]{-1, 1}; // From top-right, blend to bottom-left
-                case NORTH_WEST:
-                    return new int[]{1, 1}; // From top-left, blend to bottom-right
-                case SOUTH_EAST:
-                    return new int[]{-1, -1}; // From bottom-right, blend to top-left
-                case SOUTH_WEST:
-                    return new int[]{1, -1}; // From bottom-left, blend to top-right
-                default:
-                    return new int[]{0, 0};
-            }
-        }
-
-        /**
-         * Get the mirrored side (opposite side on neighbor).
-         */
-        private WHexGrid.EDGE getMirroredSide(WHexGrid.EDGE direction) {
-            switch (direction) {
-                case NORTH_WEST:
-                    return WHexGrid.EDGE.SOUTH_EAST;
-                case NORTH_EAST:
-                    return WHexGrid.EDGE.SOUTH_WEST;
-                case EAST:
-                    return WHexGrid.EDGE.WEST;
-                case SOUTH_EAST:
-                    return WHexGrid.EDGE.NORTH_WEST;
-                case SOUTH_WEST:
-                    return WHexGrid.EDGE.NORTH_EAST;
-                case WEST:
-                    return WHexGrid.EDGE.EAST;
-                default:
-                    return direction;
-            }
         }
     }
 }

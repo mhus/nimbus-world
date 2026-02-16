@@ -99,7 +99,7 @@ public class FlatHexGridCreateJobExecutor implements JobExecutor {
                 int hexQ = getRequiredIntParameter(job, "hexQ");
                 int hexR = getRequiredIntParameter(job, "hexR");
 
-                int border = getOptionalIntParameter(job, "border", 30); // Optional border size for grid mode
+                int border = getOptionalIntParameter(job, "border", 15); // Optional border size for grid mode
 
                 log.info("Creating HexGrid flat (grid mode): worldId={}, layerName={}, flatId={}, hex=({},{}), title={}, description={}, palette={}",
                         worldId, layerName, flatId, hexQ, hexR, title, description, paletteName);

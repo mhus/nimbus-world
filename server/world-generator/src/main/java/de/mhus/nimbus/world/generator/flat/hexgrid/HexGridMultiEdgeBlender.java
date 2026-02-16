@@ -249,35 +249,37 @@ public class HexGridMultiEdgeBlender {
     /**
      * Get both corners of a hex side in world coordinates.
      * Returns array with [corner1, corner2] where each corner is [worldX, worldZ].
-     * Calculates both corners at once to avoid duplicate flat parsing and hex center calculation.
+     *
+     * Pointy-top hex corner angles (North = Z+, East = X+):
+     *   N=90°, NE=30°, SE=330°, S=270°, SW=210°, NW=150°
      */
     private int[][] getHexSideCorners(WHexGrid.EDGE side, WFlat flat) {
         double angle1, angle2;
 
         switch (side) {
             case NORTH_EAST:
-                angle1 = Math.toRadians(270);  // Top
-                angle2 = Math.toRadians(330);  // Top-right
+                angle1 = Math.toRadians(90);   // N
+                angle2 = Math.toRadians(30);   // NE
                 break;
             case EAST:
-                angle1 = Math.toRadians(330);  // Top-right
-                angle2 = Math.toRadians(30);   // Bottom-right
+                angle1 = Math.toRadians(30);   // NE
+                angle2 = Math.toRadians(330);  // SE
                 break;
             case SOUTH_EAST:
-                angle1 = Math.toRadians(30);   // Bottom-right
-                angle2 = Math.toRadians(90);   // Bottom
+                angle1 = Math.toRadians(330);  // SE
+                angle2 = Math.toRadians(270);  // S
                 break;
             case SOUTH_WEST:
-                angle1 = Math.toRadians(150);  // Bottom-left
-                angle2 = Math.toRadians(90);   // Bottom
+                angle1 = Math.toRadians(210);  // SW
+                angle2 = Math.toRadians(270);  // S
                 break;
             case WEST:
-                angle1 = Math.toRadians(210);  // Top-left
-                angle2 = Math.toRadians(150);  // Bottom-left
+                angle1 = Math.toRadians(150);  // NW
+                angle2 = Math.toRadians(210);  // SW
                 break;
             case NORTH_WEST:
-                angle1 = Math.toRadians(270);  // Top
-                angle2 = Math.toRadians(210);  // Top-left
+                angle1 = Math.toRadians(90);   // N
+                angle2 = Math.toRadians(150);  // NW
                 break;
             default:
                 return new int[][]{{0, 0}, {0, 0}};

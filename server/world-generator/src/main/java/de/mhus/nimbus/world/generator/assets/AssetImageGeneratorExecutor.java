@@ -44,6 +44,7 @@ import java.util.Optional;
  *     <li>size (optional) - Image size in pixels (default: 16x16, format: "16x16")</li>
  *     <li>quality (optional) - Image quality: "standard" or "hd" (default: "standard")</li>
  *     <li>style (optional) - Image style: "vivid" or "natural" (default: "vivid")</li>
+ *     <li>crop (optional) - Square crop preset: "squareTop", "squareCenter", "squareBottom". Uses image width as height. Skipped if image is wider than tall.</li>
  *     <li>cropBorder (optional) - Crop pixels from each side before resize (default: 0, e.g., "70" crops 70px from each side)</li>
  *     <li>resize (optional) - Resize image to requested size if different (default: true)</li>
  *     <li>transparency (optional) - Make color transparent: "false" (default), "true"/"black", "white", "blue", "red", "green"</li>
@@ -56,6 +57,7 @@ import java.util.Optional;
  *     <li>Generate image with AI</li>
  *     <li>Archive original image</li>
  *     <li>Crop border if cropBorder > 0</li>
+ *     <li>Square crop if crop preset is set (squareTop/squareCenter/squareBottom)</li>
  *     <li>Resize to target size if resize=true</li>
  *     <li>Make color transparent if transparency != "false"</li>
  *     <li>Save to assets</li>
@@ -137,6 +139,7 @@ public class AssetImageGeneratorExecutor implements JobExecutor {
             boolean generateDescription = Boolean.parseBoolean(job.getParameters().getOrDefault("generateDescription", "true"));
             boolean overwrite = Boolean.parseBoolean(job.getParameters().getOrDefault("overwrite", "false"));
             int cropBorder = Integer.parseInt(job.getParameters().getOrDefault("cropBorder", "0"));
+            String crop = job.getParameters().get("crop"); // squareTop, squareCenter, squareBottom
             String transparency = job.getParameters().getOrDefault("transparency", "false");
 
             // Find unique path if requested path already exists (unless overwrite=true)
@@ -189,6 +192,11 @@ public class AssetImageGeneratorExecutor implements JobExecutor {
             // Crop border if requested
             if (cropBorder > 0) {
                 image = cropImageBorder(image, cropBorder, uniquePath);
+            }
+
+            // Square crop if preset is set
+            if (crop != null && !crop.isBlank()) {
+                image = cropSquare(image, crop, uniquePath);
             }
 
             // Resize image if needed and requested
@@ -515,6 +523,91 @@ public class AssetImageGeneratorExecutor implements JobExecutor {
             log.error("Failed to crop image: {}x{} with border {}px",
                     image.getWidth(), image.getHeight(), borderSize, e);
             throw new JobExecutionException("Failed to crop image: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Crop image to a square using the width as the side length.
+     * The crop position is determined by the preset: squareTop, squareCenter, squareBottom.
+     * <p>
+     * If the image is wider than tall (width > height), the crop is skipped
+     * because the image is already wider than a square crop would produce.
+     *
+     * @param image Original image
+     * @param preset Crop preset: "squareTop", "squareCenter", "squareBottom"
+     * @param path Asset path for logging
+     * @return Cropped square image, or original if skipped
+     * @throws JobExecutionException if crop fails
+     */
+    private AiImage cropSquare(AiImage image, String preset, String path)
+            throws JobExecutionException {
+
+        try {
+            byte[] originalBytes = image.getBytes();
+            if (originalBytes == null || originalBytes.length == 0) {
+                throw new JobExecutionException("Cannot square crop: no image bytes available");
+            }
+
+            ByteArrayInputStream inputStream = new ByteArrayInputStream(originalBytes);
+            BufferedImage originalImage = ImageIO.read(inputStream);
+
+            if (originalImage == null) {
+                throw new JobExecutionException("Cannot square crop: failed to decode image");
+            }
+
+            int imgWidth = originalImage.getWidth();
+            int imgHeight = originalImage.getHeight();
+
+            // Skip if image is wider than tall — already wider than a square
+            if (imgWidth >= imgHeight) {
+                log.info("Skipping square crop '{}': image is wider than tall ({}x{}) for path: {}",
+                        preset, imgWidth, imgHeight, path);
+                return image;
+            }
+
+            int squareSize = imgWidth;
+
+            // Calculate Y offset based on preset
+            int yOffset;
+            switch (preset.toLowerCase()) {
+                case "squaretop":
+                    yOffset = 0;
+                    break;
+                case "squarecenter":
+                    yOffset = (imgHeight - squareSize) / 2;
+                    break;
+                case "squarebottom":
+                    yOffset = imgHeight - squareSize;
+                    break;
+                default:
+                    log.warn("Unknown crop preset '{}', skipping square crop for path: {}", preset, path);
+                    return image;
+            }
+
+            log.info("Square cropping '{}': {}x{} -> {}x{} (yOffset={}) for path: {}",
+                    preset, imgWidth, imgHeight, squareSize, squareSize, yOffset, path);
+
+            BufferedImage croppedImage = originalImage.getSubimage(0, yOffset, squareSize, squareSize);
+
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+            String format = getImageFormat(image.getMimeType());
+            ImageIO.write(croppedImage, format, outputStream);
+            byte[] croppedBytes = outputStream.toByteArray();
+
+            return AiImage.builder()
+                    .bytes(croppedBytes)
+                    .mimeType(image.getMimeType())
+                    .width(squareSize)
+                    .height(squareSize)
+                    .revisedPrompt(image.getRevisedPrompt())
+                    .build();
+
+        } catch (JobExecutionException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("Failed to square crop image with preset '{}': {}x{}",
+                    preset, image.getWidth(), image.getHeight(), e);
+            throw new JobExecutionException("Failed to square crop image: " + e.getMessage(), e);
         }
     }
 

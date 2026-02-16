@@ -1,8 +1,11 @@
 package de.mhus.nimbus.world.generator.composer;
 
+import de.mhus.nimbus.shared.utils.TypeUtil;
+import de.mhus.nimbus.world.shared.util.HexMathUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -26,7 +29,17 @@ public class HexCompositeBuilderEnhancedTest extends HexCompositeBuilderAbstract
 
     @Test
     public void testEnhancedRivers() throws Exception {
-        composite("enhanced-test-rivers");
+        var result = composite("enhanced-test-rivers");
+        for (var flatEntry : result.getFillResult().getFlats().entrySet()) {
+            var coordinateStr = flatEntry.getKey().split("_");
+            var coordinate = TypeUtil.parseHexCoord(coordinateStr[1] + ";" + coordinateStr[2]);
+            var flat = flatEntry.getValue();
+            var center = HexMathUtil.hexToCartesian(coordinate, 400);
+            var mountX = (int)Math.floor(center[0] - flat.getSizeX()/2.0);
+            var mountZ = (int)Math.floor(center[1] - flat.getSizeZ()/2.0);
+            assertEquals(mountX, flat.getMountX());
+            assertEquals(mountZ, flat.getMountZ());
+        }
     }
 
     @Test

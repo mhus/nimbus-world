@@ -31,7 +31,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class FlatCreateService {
 
-    private static final int HEX_BORDER = 4; // Because of small borders around the hexagons
+    private static final int HEX_BORDER = 0; // Because of small borders around the hexagons
     private final WWorldService worldService;
     private final WFlatService flatService;
     private final WLayerService layerService;
@@ -481,8 +481,8 @@ public class FlatCreateService {
         // Radius = gridSize / 2
         // Height (point to point) = 2 * radius = gridSize
         // Width (flat side to flat side) = sqrt(3) * radius = gridSize * sqrt(3) / 2
-        int sizeX = (int) Math.ceil(gridSize * HexMathUtil.SQRT_3 / 2.0) + 30;  // +30: +10 safety margin + 20 border (10 per side)
-        int sizeZ = gridSize + border;  // +30: +10 safety margin + 20 border (10 per side)
+        int sizeX = (int) Math.floor(gridSize * HexMathUtil.SQRT_3 / 2.0) + border * 2;  // +30: +10 safety margin + 20 border (15 per side)
+        int sizeZ = gridSize + border * 2;  // +30: +15 safety margin + 20 border (10 per side)
 
         // Calculate mount position (top-left corner of bounding box)
         // Border is already included in sizeX/sizeZ (+30 pixels)
@@ -556,7 +556,7 @@ public class FlatCreateService {
         }
 
         // Get ocean level and block from world
-        int oceanLevel = world.getSeaLevel() == null ? 60 : world.getSeaLevel();
+        int oceanLevel = world.getSeaLevel() == null ? 50 : world.getSeaLevel();
         String oceanBlockId = world.getSeaBlockType() == null ? "n:o" : world.getSeaBlockType();
 
         // Build WFlat instance (without persisting yet)
@@ -601,13 +601,6 @@ public class FlatCreateService {
 
         log.debug("Loading {} chunks for layer import", requiredChunkKeys.size());
 
-        // Load all required chunks at once
-        java.util.Map<String, LayerChunkData> chunkCache = new java.util.HashMap<>();
-        for (String chunkKey : requiredChunkKeys) {
-            Optional<LayerChunkData> chunkDataOpt = layerService.loadTerrainChunk(layer.getWorldId(), layer.getLayerDataId(), chunkKey);
-            chunkDataOpt.ifPresent(data -> chunkCache.put(chunkKey, data));
-        }
-
         int hexCellsSet = 0;
         int outsideCellsImported = 0;
 
@@ -622,10 +615,10 @@ public class FlatCreateService {
                 int worldX = mountX + localX;
                 int worldZ = mountZ + localZ;
 
-                // Adjust coordinates for hex grid check: hex is positioned 10 pixels into the flat
-                // to allow for a 10-pixel border on each side for connections
-                int hexCheckX = worldX + gapX;
-                int hexCheckZ = worldZ + gapZ;
+                // Adjust coordinates for hex grid check: hex is positioned 'border' pixels into the flat
+                // to allow for a 'border'-pixel border on each side for connections
+                int hexCheckX = worldX;
+                int hexCheckZ = worldZ;
 
                 // Check if this position is inside the HexGrid
                 boolean isInHex = HexMathUtil.isPointInHex(hexCheckX, hexCheckZ, hexCenterX, hexCenterZ, gridSize + HEX_BORDER); // test
@@ -699,7 +692,7 @@ public class FlatCreateService {
         // Radius = gridSize / 2
         // Height (point to point) = 2 * radius = gridSize
         // Width (flat side to flat side) = sqrt(3) * radius = gridSize * sqrt(3) / 2
-        int sizeX = (int) Math.ceil(gridSize * HexMathUtil.SQRT_3 / 2.0) + 30;  // +30: +10 safety margin + 20 border (10 per side)
+        int sizeX = (int) Math.floor(gridSize * HexMathUtil.SQRT_3 / 2.0) + 30;  // +30: +10 safety margin + 20 border (10 per side)
         int sizeZ = gridSize + 30;  // +30: +10 safety margin + 20 border (10 per side)
 
         // Calculate mount position (top-left corner of bounding box)
@@ -1244,8 +1237,8 @@ public class FlatCreateService {
         double minZ = Math.min(line1Z, line2Z) - borderSize;
         double maxZ = Math.max(line1Z, line2Z) + borderSize;
 
-        int sizeX = (int) Math.ceil(maxX - minX);
-        int sizeZ = (int) Math.ceil(maxZ - minZ);
+        int sizeX = (int) Math.floor(maxX - minX);
+        int sizeZ = (int) Math.floor(maxZ - minZ);
         int mountX = (int) Math.floor(minX);
         int mountZ = (int) Math.floor(minZ);
 

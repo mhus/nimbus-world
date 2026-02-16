@@ -1,6 +1,7 @@
 package de.mhus.nimbus.world.generator.flat;
 
 import de.mhus.nimbus.generated.types.Block;
+import de.mhus.nimbus.generated.types.BlockMetadata;
 import de.mhus.nimbus.generated.types.BlockTypeType;
 import de.mhus.nimbus.generated.types.ChunkData;
 import de.mhus.nimbus.generated.types.Vector3Int;
@@ -215,17 +216,17 @@ public class FlatExportService {
     private boolean isOneAroundSet(WFlat flat, int localX, int localZ) {
         for (int i = -1; i <= 1; i++) {
             int columnMaterial = flat.getColumnRobust(localX + i, localZ-1);
-            if (columnMaterial != WFlat.MATERIAL_NOT_SET && columnMaterial != WFlat.MATERIAL_NOT_SET_MUTABLE)
+            if (columnMaterial != WFlat.MATERIAL_OUT_OF_BOUND && columnMaterial != WFlat.MATERIAL_NOT_SET && columnMaterial != WFlat.MATERIAL_NOT_SET_MUTABLE)
                 return true;
             columnMaterial = flat.getColumnRobust(localX + i, localZ+1);
-            if (columnMaterial != WFlat.MATERIAL_NOT_SET && columnMaterial != WFlat.MATERIAL_NOT_SET_MUTABLE)
+            if (columnMaterial != WFlat.MATERIAL_OUT_OF_BOUND && columnMaterial != WFlat.MATERIAL_NOT_SET && columnMaterial != WFlat.MATERIAL_NOT_SET_MUTABLE)
                 return true;
         }
         int columnMaterial = flat.getColumnRobust(localX-1, localZ);
-        if (columnMaterial != WFlat.MATERIAL_NOT_SET && columnMaterial != WFlat.MATERIAL_NOT_SET_MUTABLE)
+        if (columnMaterial != WFlat.MATERIAL_OUT_OF_BOUND && columnMaterial != WFlat.MATERIAL_NOT_SET && columnMaterial != WFlat.MATERIAL_NOT_SET_MUTABLE)
             return true;
         columnMaterial = flat.getColumnRobust(localX+1, localZ);
-        if (columnMaterial != WFlat.MATERIAL_NOT_SET && columnMaterial != WFlat.MATERIAL_NOT_SET_MUTABLE)
+        if (columnMaterial != WFlat.MATERIAL_OUT_OF_BOUND && columnMaterial != WFlat.MATERIAL_NOT_SET && columnMaterial != WFlat.MATERIAL_NOT_SET_MUTABLE)
             return true;
         return false;
     }
@@ -287,12 +288,17 @@ public class FlatExportService {
             // Fill down from existingLevel-1 to lowestSiblingLevel
             for (int y = existingLevel - 1; y >= lowestSiblingLevel; y--) {
                 // Create new block with same type as top block
+
+                BlockMetadata metadata = BlockMetadata.builder()
+                        .title("ns")
+                        .build();
                 Block block = Block.builder()
                         .position(Vector3Int.builder()
                                 .x(worldX)
                                 .y(y)
                                 .z(worldZ)
                                 .build())
+                        .metadata(metadata)
                         .build();
 
                 topBlockDef.fillBlock(block);
@@ -522,6 +528,7 @@ public class FlatExportService {
 
         // Fill from level down to lowestSiblingLevel
         // do not start at level, start at 255 - there could be extra blocks above
+        boolean hasGround = false;
         for (int y = 255; y >= lowestSiblingLevel; y--) {
             // Get block definition for this Y level
             String blockDefString = columnDef.getBlockAt(flat, level, y, extraBlocks);
@@ -532,10 +539,22 @@ public class FlatExportService {
             }
 
             if ("core:water".equals(blockDefString) || "w:5000".equals(blockDefString) || "n:o".equals(blockDefString)) {
-                if (y != 60) {
-                    log.warn("Filling block at ({},{},{}) with definition: {}", worldX, y, worldZ, blockDefString);
+                if (y != flat.getSeaLevel()) {
+                    if ( y < flat.getSeaLevel()) {
+                        log.warn("Skip ocean block below sea level at ({},{},{}) with definition: {}", worldX, y, worldZ, blockDefString);
+                        continue;
+                    }
+                    log.warn("Switch ocean to water block at ({},{},{}) with definition: {}", worldX, y, worldZ, blockDefString);
+                    blockDefString = "n:w";
+                } else {
+                    blockDefString = "n:o";
                 }
-                blockDefString = "n:o";
+            } else
+            if ("n:w".equals(blockDefString) && y < flat.getSeaLevel()) {
+                log.warn("Skip water block below sea level at ({},{},{}) with definition: {}", worldX, y, worldZ, blockDefString);
+                continue;
+            } else {
+                hasGround = true;
             }
 
             // Create block with position
@@ -582,6 +601,24 @@ public class FlatExportService {
 
             chunkData.getBlocks().add(layerBlock);
         }
+//        if (!hasGround) { // paranoid check !!!
+//            log.warn("No GROUND blocks found for column at ({},{}) with level {} and lowestSiblingLevel {}, create default block",
+//                    worldX, worldZ, level, lowestSiblingLevel);
+//            // Create block with position
+//            Block block = Block.builder()
+//                    .position(Vector3Int.builder()
+//                            .x(worldX)
+//                            .y(flat.getSeaLevel()-10)
+//                            .z(worldZ)
+//                            .build())
+//                    .blockTypeId("n:s")
+//                    .build();
+//            // Wrap in LayerBlock and add to chunk
+//            LayerBlock layerBlock = LayerBlock.builder()
+//                    .block(block)
+//                    .build();
+//            chunkData.getBlocks().add(layerBlock);
+//        }
     }
 
     /**

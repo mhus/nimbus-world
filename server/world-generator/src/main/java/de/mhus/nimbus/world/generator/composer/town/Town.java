@@ -228,8 +228,7 @@ public class Town extends Structure implements BuildFeature {
                 log.error("Town design failed for '{}': {}", getName(), designResult.getErrors());
                 // Still create grids with basic parameters as fallback
                 log.warn("Creating fallback grids for town '{}'", getName());
-                createFallbackGridsFromDistricts();
-                return;
+                throw new RuntimeException("Town design failed: " + designResult.getErrors());
             }
 
             // Store designed district grids for later use (connecting external points)
@@ -240,8 +239,7 @@ public class Town extends Structure implements BuildFeature {
         } catch (Exception e) {
             log.error("Exception during town design for '{}'", getName(), e);
             log.warn("Creating fallback grids for town '{}'", getName());
-            createFallbackGridsFromDistricts();
-            return;
+            throw new RuntimeException("Town design failed for '" + getName() + "': " + e.getMessage(), e);
         }
 
         log.debug("Town design successful: {} districts, {} places",
@@ -311,47 +309,47 @@ public class Town extends Structure implements BuildFeature {
         }
     }
 
-    /**
-     * Creates fallback grids from district positions when design fails
-     */
-    private void createFallbackGridsFromDistricts() {
-        if (districts == null || districts.isEmpty()) {
-            log.warn("No districts to create fallback grids from");
-            return;
-        }
-
-        log.warn("Creating {} fallback grids from districts for town '{}'",
-            districts.size(), getName());
-
-        // Resolve district positions using TownDesigner
-        Map<String, HexVector2> districtPositions = TownDesigner.resolveDistrictPositions(districts);
-
-        for (District district : districts) {
-            HexVector2 position = districtPositions.get(district.getName());
-            if (position == null) {
-                log.warn("District '{}' could not be positioned, skipping fallback", district.getName());
-                continue;
-            }
-
-            FeatureHexGrid featureHexGrid = FeatureHexGrid.builder()
-                .coordinate(position)
-                .name(getName() + " - " + district.getName())
-                .description("Fallback grid for district " + district.getName())
-                .build();
-
-            featureHexGrid.addParameter("structure", "town");
-            featureHexGrid.addParameter("structureName", getName());
-            featureHexGrid.addParameter("districtName", district.getName());
-
-            // Add minimal g_town parameter
-            String minimalConfig = String.format(
-                "{\"townName\":\"%s\",\"districtName\":\"%s\",\"baseLevel\":%d,\"places\":[],\"streets\":[]}",
-                getName(), district.getName(), baseLevel);
-            featureHexGrid.addParameter("g_village", minimalConfig);
-
-            addHexGrid(featureHexGrid);
-        }
-    }
+//    /**
+//     * Creates fallback grids from district positions when design fails
+//     */
+//    private void createFallbackGridsFromDistricts() {
+//        if (districts == null || districts.isEmpty()) {
+//            log.warn("No districts to create fallback grids from");
+//            return;
+//        }
+//
+//        log.warn("Creating {} fallback grids from districts for town '{}'",
+//            districts.size(), getName());
+//
+//        // Resolve district positions using TownDesigner
+//        Map<String, HexVector2> districtPositions = TownDesigner.resolveDistrictPositions(districts);
+//
+//        for (District district : districts) {
+//            HexVector2 position = districtPositions.get(district.getName());
+//            if (position == null) {
+//                log.warn("District '{}' could not be positioned, skipping fallback", district.getName());
+//                continue;
+//            }
+//
+//            FeatureHexGrid featureHexGrid = FeatureHexGrid.builder()
+//                .coordinate(position)
+//                .name(getName() + " - " + district.getName())
+//                .description("Fallback grid for district " + district.getName())
+//                .build();
+//
+//            featureHexGrid.addParameter("structure", "town");
+//            featureHexGrid.addParameter("structureName", getName());
+//            featureHexGrid.addParameter("districtName", district.getName());
+//
+//            // Add minimal g_town parameter
+//            String minimalConfig = String.format(
+//                "{\"townName\":\"%s\",\"districtName\":\"%s\",\"baseLevel\":%d,\"places\":[],\"streets\":[]}",
+//                getName(), district.getName(), baseLevel);
+//            featureHexGrid.addParameter("g_village", minimalConfig);
+//
+//            addHexGrid(featureHexGrid);
+//        }
+//    }
 
     /**
      * Creates TownGridConfig from DistrictGrid

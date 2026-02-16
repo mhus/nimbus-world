@@ -121,38 +121,30 @@ public class HexGridEdgeFiller {
         log.debug("Filled {} points with bedrock on side {}", filledCount, direction);
     }
 
+    // Pointy-top hex corner angles (North = Z+, East = X+):
+    //   N=90°, NE=30°, SE=330°, S=270°, SW=210°, NW=150°
+    // Each EDGE side connects two adjacent corners (clockwise):
+    //   NORTH_EAST: N→NE, EAST: NE→SE, SOUTH_EAST: SE→S
+    //   SOUTH_WEST: SW→S, WEST: NW→SW, NORTH_WEST: N→NW
+
     /**
      * Get first corner of the hex side (in local flat coordinates).
      */
     private int[] getCorner1ForSide(WHexGrid.EDGE side) {
         int sizeX = flat.getSizeX();
-        int sizeZ = flat.getSizeZ();
         double centerX = sizeX / 2.0;
-        double centerZ = sizeZ / 2.0;
+        double centerZ = flat.getSizeZ() / 2.0;
         double radius = sizeX / 2.0;
 
         double angle;
         switch (side) {
-            case NORTH_EAST:
-                angle = Math.toRadians(270); // Top corner
-                break;
-            case EAST:
-                angle = Math.toRadians(330); // Right-upper corner
-                break;
-            case SOUTH_EAST:
-                angle = Math.toRadians(30);  // Right-lower corner
-                break;
-            case SOUTH_WEST:
-                angle = Math.toRadians(150); // Left-lower corner
-                break;
-            case WEST:
-                angle = Math.toRadians(210); // Left-upper corner
-                break;
-            case NORTH_WEST:
-                angle = Math.toRadians(270); // Top corner
-                break;
-            default:
-                return new int[]{0, 0};
+            case NORTH_EAST: angle = Math.toRadians(90);  break; // N
+            case EAST:       angle = Math.toRadians(30);  break; // NE
+            case SOUTH_EAST: angle = Math.toRadians(330); break; // SE
+            case SOUTH_WEST: angle = Math.toRadians(210); break; // SW
+            case WEST:       angle = Math.toRadians(150); break; // NW
+            case NORTH_WEST: angle = Math.toRadians(90);  break; // N
+            default: return new int[]{0, 0};
         }
 
         int x = (int) Math.round(centerX + radius * Math.cos(angle));
@@ -165,33 +157,19 @@ public class HexGridEdgeFiller {
      */
     private int[] getCorner2ForSide(WHexGrid.EDGE side) {
         int sizeX = flat.getSizeX();
-        int sizeZ = flat.getSizeZ();
         double centerX = sizeX / 2.0;
-        double centerZ = sizeZ / 2.0;
+        double centerZ = flat.getSizeZ() / 2.0;
         double radius = sizeX / 2.0;
 
         double angle;
         switch (side) {
-            case NORTH_EAST:
-                angle = Math.toRadians(330); // Right-upper corner
-                break;
-            case EAST:
-                angle = Math.toRadians(30);  // Right-lower corner
-                break;
-            case SOUTH_EAST:
-                angle = Math.toRadians(90);  // Bottom corner
-                break;
-            case SOUTH_WEST:
-                angle = Math.toRadians(90);  // Bottom corner
-                break;
-            case WEST:
-                angle = Math.toRadians(150); // Left-lower corner
-                break;
-            case NORTH_WEST:
-                angle = Math.toRadians(210); // Left-upper corner
-                break;
-            default:
-                return new int[]{0, 0};
+            case NORTH_EAST: angle = Math.toRadians(30);  break; // NE
+            case EAST:       angle = Math.toRadians(330); break; // SE
+            case SOUTH_EAST: angle = Math.toRadians(270); break; // S
+            case SOUTH_WEST: angle = Math.toRadians(270); break; // S
+            case WEST:       angle = Math.toRadians(210); break; // SW
+            case NORTH_WEST: angle = Math.toRadians(150); break; // NW
+            default: return new int[]{0, 0};
         }
 
         int x = (int) Math.round(centerX + radius * Math.cos(angle));
@@ -234,36 +212,40 @@ public class HexGridEdgeFiller {
             int[] area = getAreaForSide(direction);
             int[] neighborArea = getAreaForSide(direction.getOpposite());
 
+            int startGapX = direction == WHexGrid.EDGE.EAST ? gapX : 0;
+            int endGapX = direction == WHexGrid.EDGE.EAST ? gapX : 0;
+
             int filledCount = 0;
-            for (int z = area[1]; z < area[3]; z++) {
-                for (int x = area[0]; x < area[2]; x++) {
+            for (int z = area[1]-startGapX; z <= area[3]+endGapX; z++) {
+                for (int x = area[0]; x <= area[2]; x++) {
                     // Direct mapping (no mirroring)
                     var neighborX = neighborArea[0] + (x - area[0]);
                     var neighborZ = neighborArea[1] + (z - area[1]);
 
                     // Apply offset to compensate for 15-pixel border gap
+                    // North = +Z, South = -Z in local flat coordinates
                     switch (direction) {
                         case NORTH_EAST:
                             neighborX += gapX;
-                            neighborZ -= gapZ;
+                            neighborZ += gapZ;
                             break;
                         case EAST:
-                            neighborX += gapX;
+                            neighborX += gapX - 1;
                             break;
                         case SOUTH_EAST:
                             neighborX += gapX;
-                            neighborZ += gapZ;
+                            neighborZ -= gapZ;
                             break;
                         case SOUTH_WEST:
                             neighborX -= gapX;
-                            neighborZ += gapZ;
+                            neighborZ -= gapZ;
                             break;
                         case WEST:
-                            neighborX -= gapX;
+                            neighborX -= gapX - 1;
                             break;
                         case NORTH_WEST:
                             neighborX -= gapX;
-                            neighborZ -= gapZ;
+                            neighborZ += gapZ;
                             break;
                     }
 
@@ -273,11 +255,11 @@ public class HexGridEdgeFiller {
                         continue;
                     }
                     // Only fill if material is not set (==0)
-                    int currentMaterial = flat.getColumn(x, z);
+                    int currentMaterial = flat.getColumnRobust(x, z);
                     if (currentMaterial == WFlat.MATERIAL_NOT_SET || currentMaterial == WFlat.MATERIAL_NOT_SET_MUTABLE) {
-                        flat.setLevel(x, z, 200); // Set some level to mark as filled
+                        // flat.setLevel(x, z, 200); // Set some level to mark as filled
                         // Get corresponding point from neighbor
-                        var neighborLevel = neighborFlat.getLevel(neighborX, neighborZ);
+                        var neighborLevel = neighborFlat.getLevelRobust(neighborX, neighborZ);
                         if (neighborLevel > 0) {
                             flat.setLevel(x, z, neighborLevel);
                             filledCount++;
@@ -289,62 +271,58 @@ public class HexGridEdgeFiller {
             log.debug("Filled {} points from neighbor on side {}", filledCount, direction);
         }
 
+        /**
+         * Get bounding box [x1, z1, x2, z2] for the border region of a hex side.
+         * The area extends from the hex edge outward to the flat boundary.
+         * North = +Z (high localZ), South = -Z (low localZ).
+         */
         private int[] getAreaForSide(WHexGrid.EDGE direction) {
             int sizeX = flat.getSizeX();
             int sizeZ = flat.getSizeZ();
-            int[] corner1 = getCorner1ForSide(direction); // x,z
-            int[] corner2 = getCorner2ForSide(direction); // x,z
+            int[] corner1 = getCorner1ForSide(direction);
+            int[] corner2 = getCorner2ForSide(direction);
 
             switch (direction) {
                 case NORTH_EAST:
-                    return new int[]{corner1[0], 0, sizeX, corner2[1]};
-                case EAST:
-                    return new int[]{corner1[0], corner1[1], sizeX, corner2[1]};
-                case SOUTH_EAST:
+                    // Upper-right: from corners to (sizeX, sizeZ)
                     return new int[]{Math.min(corner1[0], corner2[0]), Math.min(corner1[1], corner2[1]), sizeX, sizeZ};
+                case EAST:
+                    // Right side: between NE and SE corners to sizeX
+                    return new int[]{Math.min(corner1[0], corner2[0]), Math.min(corner1[1], corner2[1]), sizeX, Math.max(corner1[1], corner2[1])};
+                case SOUTH_EAST:
+                    // Lower-right: from (minCornerX, 0) to (sizeX, maxCornerZ)
+                    return new int[]{Math.min(corner1[0], corner2[0]), 0, sizeX, Math.max(corner1[1], corner2[1])};
                 case SOUTH_WEST:
-                    return new int[]{0, corner1[1], corner2[0], sizeZ};
-                case WEST:
-                    return new int[]{0, corner1[1], corner2[0], corner2[1]};
-                case NORTH_WEST:
+                    // Lower-left: from (0, 0) to corners
                     return new int[]{0, 0, Math.max(corner1[0], corner2[0]), Math.max(corner1[1], corner2[1])};
+                case WEST:
+                    // Left side: between NW and SW corners from 0
+                    return new int[]{0, Math.min(corner1[1], corner2[1]), Math.max(corner1[0], corner2[0]), Math.max(corner1[1], corner2[1])};
+                case NORTH_WEST:
+                    // Upper-left: from (0, minCornerZ) to (maxCornerX, sizeZ)
+                    return new int[]{0, Math.min(corner1[1], corner2[1]), Math.max(corner1[0], corner2[0]), sizeZ};
                 default:
                     return new int[]{0, 0, sizeX, sizeZ};
             }
         }
 
-        /**
-         * Get first corner of the hex side (in local flat coordinates).
-         */
+        // Pointy-top hex corner angles (North = Z+, East = X+):
+        //   N=90°, NE=30°, SE=330°, S=270°, SW=210°, NW=150°
+
         private int[] getCorner1ForSide(WHexGrid.EDGE side) {
-            int sizeX = flat.getSizeX();
-            int sizeZ = flat.getSizeZ();
-            double centerX = sizeX / 2.0;
-            double centerZ = sizeZ / 2.0;
+            double centerX = flat.getSizeX() / 2.0;
+            double centerZ = flat.getSizeZ() / 2.0;
             double radius = context.getWorld().getPublicData().getHexGridSize() / 2.0;
 
             double angle;
             switch (side) {
-                case NORTH_EAST:
-                    angle = Math.toRadians(270); // Top corner
-                    break;
-                case EAST:
-                    angle = Math.toRadians(330); // Right-upper corner
-                    break;
-                case SOUTH_EAST:
-                    angle = Math.toRadians(30);  // Right-lower corner
-                    break;
-                case SOUTH_WEST:
-                    angle = Math.toRadians(150); // Left-lower corner
-                    break;
-                case WEST:
-                    angle = Math.toRadians(210); // Left-upper corner
-                    break;
-                case NORTH_WEST:
-                    angle = Math.toRadians(270); // Top corner
-                    break;
-                default:
-                    return new int[]{0, 0};
+                case NORTH_EAST: angle = Math.toRadians(90);  break; // N
+                case EAST:       angle = Math.toRadians(30);  break; // NE
+                case SOUTH_EAST: angle = Math.toRadians(330); break; // SE
+                case SOUTH_WEST: angle = Math.toRadians(210); break; // SW
+                case WEST:       angle = Math.toRadians(150); break; // NW
+                case NORTH_WEST: angle = Math.toRadians(90);  break; // N
+                default: return new int[]{0, 0};
             }
 
             int x = (int) Math.round(centerX + radius * Math.cos(angle));
@@ -352,38 +330,20 @@ public class HexGridEdgeFiller {
             return new int[]{x, z};
         }
 
-        /**
-         * Get second corner of the hex side (in local flat coordinates).
-         */
         private int[] getCorner2ForSide(WHexGrid.EDGE side) {
-            int sizeX = flat.getSizeX();
-            int sizeZ = flat.getSizeZ();
-            double centerX = sizeX / 2.0;
-            double centerZ = sizeZ / 2.0;
+            double centerX = flat.getSizeX() / 2.0;
+            double centerZ = flat.getSizeZ() / 2.0;
             double radius = context.getWorld().getPublicData().getHexGridSize() / 2.0;
 
             double angle;
             switch (side) {
-                case NORTH_EAST:
-                    angle = Math.toRadians(330); // Right-upper corner
-                    break;
-                case EAST:
-                    angle = Math.toRadians(30);  // Right-lower corner
-                    break;
-                case SOUTH_EAST:
-                    angle = Math.toRadians(90);  // Bottom corner
-                    break;
-                case SOUTH_WEST:
-                    angle = Math.toRadians(90);  // Bottom corner
-                    break;
-                case WEST:
-                    angle = Math.toRadians(150); // Left-lower corner
-                    break;
-                case NORTH_WEST:
-                    angle = Math.toRadians(210); // Left-upper corner
-                    break;
-                default:
-                    return new int[]{0, 0};
+                case NORTH_EAST: angle = Math.toRadians(30);  break; // NE
+                case EAST:       angle = Math.toRadians(330); break; // SE
+                case SOUTH_EAST: angle = Math.toRadians(270); break; // S
+                case SOUTH_WEST: angle = Math.toRadians(270); break; // S
+                case WEST:       angle = Math.toRadians(210); break; // SW
+                case NORTH_WEST: angle = Math.toRadians(150); break; // NW
+                default: return new int[]{0, 0};
             }
 
             int x = (int) Math.round(centerX + radius * Math.cos(angle));

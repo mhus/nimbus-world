@@ -1,0 +1,4079 @@
+{
+  "compositionId" : "571287c4-7717-4b82-8ca9-e7f3548c0839",
+  "name" : "mistfall-reach",
+  "title" : "Mistfall Reach",
+  "worldId" : "ymir:Mist",
+  "features" : [ {
+    "featureType" : "mountain-biome",
+    "featureId" : "4d2ef422-560a-402a-bed6-a050f8a0a059",
+    "name" : "stoneveil-mountains",
+    "title" : "Stoneveil Mountains",
+    "status" : "PREPARED",
+    "enabled" : true,
+    "shape" : "CIRCLE",
+    "size" : "MEDIUM",
+    "positions" : [ {
+      "anchor" : "origin",
+      "priority" : 10
+    } ],
+    "continentId" : "main-continent",
+    "areaComposed" : {
+      "calculatedSizeFrom" : 3,
+      "calculatedSizeTo" : 7,
+      "placedCenter" : {
+        "q" : 1,
+        "r" : 0
+      },
+      "assignedCoordinates" : [ {
+        "q" : 1,
+        "r" : 0
+      }, {
+        "q" : 0,
+        "r" : 1
+      }, {
+        "q" : 1,
+        "r" : 0
+      }, {
+        "q" : 2,
+        "r" : 0
+      } ],
+      "preparedPositions" : [ {
+        "original" : {
+          "anchor" : "origin",
+          "priority" : 10
+        },
+        "direction" : null,
+        "directionAngle" : 0,
+        "distanceFrom" : 0,
+        "distanceTo" : 0,
+        "anchor" : "origin",
+        "priority" : 10
+      } ],
+      "sizeQ" : null,
+      "sizeR" : null,
+      "minQ" : null,
+      "maxQ" : null,
+      "minR" : null,
+      "maxR" : null
+    },
+    "type" : "MOUNTAINS",
+    "parameters" : {
+      "g_roughness" : "0.8",
+      "sandMaterial" : "4",
+      "dirtMaterial" : "2",
+      "p_color" : "#8B7355",
+      "grassMaterial" : "1",
+      "g_asl" : "100",
+      "g_offset" : "30",
+      "g_frequency" : "0.8",
+      "stoneMaterial" : "3",
+      "snowMaterial" : "7",
+      "g_builder" : "mountain"
+    },
+    "height" : "MEDIUM_PEAKS",
+    "groundType" : "DEFAULT",
+    "preparedPositions" : [ {
+      "original" : {
+        "anchor" : "origin",
+        "priority" : 10
+      },
+      "direction" : null,
+      "directionAngle" : 0,
+      "distanceFrom" : 0,
+      "distanceTo" : 0,
+      "anchor" : "origin",
+      "priority" : 10
+    } ],
+    "assignedCoordinates" : [ {
+      "q" : 1,
+      "r" : 0
+    }, {
+      "q" : 0,
+      "r" : 1
+    }, {
+      "q" : 1,
+      "r" : 0
+    }, {
+      "q" : 2,
+      "r" : 0
+    } ],
+    "calculatedSizeTo" : 7,
+    "calculatedSizeFrom" : 3,
+    "placedCenter" : {
+      "q" : 1,
+      "r" : 0
+    }
+  }, {
+    "featureType" : "swamp-biome",
+    "featureId" : "63411807-0bc1-427a-9e27-e397ff6e4f94",
+    "name" : "whispering-marsh",
+    "title" : "Whispering Marsh",
+    "status" : "PREPARED",
+    "enabled" : true,
+    "shape" : "CIRCLE",
+    "size" : "LARGE",
+    "positions" : [ {
+      "direction" : "S",
+      "anchor" : "stoneveil-mountains",
+      "priority" : 9,
+      "distanceFrom" : 1,
+      "distanceTo" : 3
+    } ],
+    "continentId" : "main-continent",
+    "areaComposed" : {
+      "calculatedSizeFrom" : 7,
+      "calculatedSizeTo" : 15,
+      "placedCenter" : {
+        "q" : 2,
+        "r" : 2
+      },
+      "assignedCoordinates" : [ {
+        "q" : 2,
+        "r" : 2
+      }, {
+        "q" : 1,
+        "r" : 3
+      }, {
+        "q" : 2,
+        "r" : 2
+      }, {
+        "q" : 3,
+        "r" : 2
+      }, {
+        "q" : 3,
+        "r" : 3
+      }, {
+        "q" : 2,
+        "r" : 4
+      }, {
+        "q" : 1,
+        "r" : 4
+      }, {
+        "q" : 0,
+        "r" : 4
+      }, {
+        "q" : 1,
+        "r" : 3
+      }, {
+        "q" : 2,
+        "r" : 2
+      } ],
+      "preparedPositions" : [ {
+        "original" : {
+          "direction" : "S",
+          "anchor" : "stoneveil-mountains",
+          "priority" : 9,
+          "distanceFrom" : 1,
+          "distanceTo" : 3
+        },
+        "direction" : "S",
+        "directionAngle" : 150,
+        "distanceFrom" : 1,
+        "distanceTo" : 3,
+        "anchor" : "stoneveil-mountains",
+        "priority" : 9
+      } ],
+      "sizeQ" : null,
+      "sizeR" : null,
+      "minQ" : null,
+      "maxQ" : null,
+      "minR" : null,
+      "maxR" : null
+    },
+    "type" : "SWAMP",
+    "parameters" : {
+      "swampDepth" : "3",
+      "sandMaterial" : "4",
+      "dirtMaterial" : "11",
+      "p_color" : "#2F4F2F",
+      "grassMaterial" : "11",
+      "g_asl" : "5",
+      "g_offset" : "10",
+      "g_frequency" : "0.7",
+      "stoneMaterial" : "2",
+      "snowMaterial" : "7",
+      "g_builder" : "swamp"
+    },
+    "depth" : "MEDIUM",
+    "groundType" : "SWAMPY",
+    "preparedPositions" : [ {
+      "original" : {
+        "direction" : "S",
+        "anchor" : "stoneveil-mountains",
+        "priority" : 9,
+        "distanceFrom" : 1,
+        "distanceTo" : 3
+      },
+      "direction" : "S",
+      "directionAngle" : 150,
+      "distanceFrom" : 1,
+      "distanceTo" : 3,
+      "anchor" : "stoneveil-mountains",
+      "priority" : 9
+    } ],
+    "assignedCoordinates" : [ {
+      "q" : 2,
+      "r" : 2
+    }, {
+      "q" : 1,
+      "r" : 3
+    }, {
+      "q" : 2,
+      "r" : 2
+    }, {
+      "q" : 3,
+      "r" : 2
+    }, {
+      "q" : 3,
+      "r" : 3
+    }, {
+      "q" : 2,
+      "r" : 4
+    }, {
+      "q" : 1,
+      "r" : 4
+    }, {
+      "q" : 0,
+      "r" : 4
+    }, {
+      "q" : 1,
+      "r" : 3
+    }, {
+      "q" : 2,
+      "r" : 2
+    } ],
+    "calculatedSizeTo" : 15,
+    "calculatedSizeFrom" : 7,
+    "placedCenter" : {
+      "q" : 2,
+      "r" : 2
+    }
+  }, {
+    "featureType" : "forest-biome",
+    "featureId" : "ddb73a1f-e2a0-42c5-856c-cf25ea578e45",
+    "name" : "greywillow-grove",
+    "title" : "Greywillow Grove",
+    "status" : "PREPARED",
+    "enabled" : true,
+    "shape" : "CIRCLE",
+    "size" : "MEDIUM",
+    "positions" : [ {
+      "direction" : "W",
+      "anchor" : "whispering-marsh",
+      "priority" : 8,
+      "distanceFrom" : 4,
+      "distanceTo" : 8
+    } ],
+    "continentId" : "main-continent",
+    "areaComposed" : {
+      "calculatedSizeFrom" : 3,
+      "calculatedSizeTo" : 7,
+      "placedCenter" : {
+        "q" : -4,
+        "r" : 3
+      },
+      "assignedCoordinates" : [ {
+        "q" : -4,
+        "r" : 3
+      }, {
+        "q" : -5,
+        "r" : 4
+      }, {
+        "q" : -4,
+        "r" : 3
+      }, {
+        "q" : -3,
+        "r" : 3
+      }, {
+        "q" : -3,
+        "r" : 4
+      } ],
+      "preparedPositions" : [ {
+        "original" : {
+          "direction" : "W",
+          "anchor" : "whispering-marsh",
+          "priority" : 8,
+          "distanceFrom" : 4,
+          "distanceTo" : 8
+        },
+        "direction" : "W",
+        "directionAngle" : 240,
+        "distanceFrom" : 4,
+        "distanceTo" : 8,
+        "anchor" : "whispering-marsh",
+        "priority" : 8
+      } ],
+      "sizeQ" : null,
+      "sizeR" : null,
+      "minQ" : null,
+      "maxQ" : null,
+      "minR" : null,
+      "maxR" : null
+    },
+    "type" : "FOREST",
+    "parameters" : {
+      "dirtRatio" : "0.3",
+      "sandMaterial" : "4",
+      "p_color" : "#228B22",
+      "g_offset" : "5",
+      "stoneMaterial" : "3",
+      "snowMaterial" : "7",
+      "g_flora" : "forest",
+      "flora_density" : "0.8",
+      "dirtMaterial" : "2",
+      "grassMaterial" : "1",
+      "g_asl" : "20",
+      "g_frequency" : "0.6",
+      "g_builder" : "forest"
+    },
+    "density" : "DENSE",
+    "groundType" : "DEFAULT",
+    "preparedPositions" : [ {
+      "original" : {
+        "direction" : "W",
+        "anchor" : "whispering-marsh",
+        "priority" : 8,
+        "distanceFrom" : 4,
+        "distanceTo" : 8
+      },
+      "direction" : "W",
+      "directionAngle" : 240,
+      "distanceFrom" : 4,
+      "distanceTo" : 8,
+      "anchor" : "whispering-marsh",
+      "priority" : 8
+    } ],
+    "assignedCoordinates" : [ {
+      "q" : -4,
+      "r" : 3
+    }, {
+      "q" : -5,
+      "r" : 4
+    }, {
+      "q" : -4,
+      "r" : 3
+    }, {
+      "q" : -3,
+      "r" : 3
+    }, {
+      "q" : -3,
+      "r" : 4
+    } ],
+    "calculatedSizeTo" : 7,
+    "calculatedSizeFrom" : 3,
+    "placedCenter" : {
+      "q" : -4,
+      "r" : 3
+    }
+  }, {
+    "featureType" : "composite",
+    "featureId" : "b4f08a3a-1871-4f17-88cf-53e429720688",
+    "name" : "mirehold-isles-cluster",
+    "title" : "Mirehold Isles",
+    "status" : "PREPARED",
+    "enabled" : true,
+    "shape" : "CIRCLE",
+    "size" : "LARGE",
+    "positions" : [ {
+      "anchor" : "whispering-marsh",
+      "priority" : 7
+    } ],
+    "continentId" : "main-continent",
+    "areaComposed" : {
+      "calculatedSizeFrom" : 7,
+      "calculatedSizeTo" : 15,
+      "placedCenter" : null,
+      "assignedCoordinates" : null,
+      "preparedPositions" : [ {
+        "original" : {
+          "anchor" : "whispering-marsh",
+          "priority" : 7
+        },
+        "direction" : null,
+        "directionAngle" : 0,
+        "distanceFrom" : 0,
+        "distanceTo" : 0,
+        "anchor" : "whispering-marsh",
+        "priority" : 7
+      } ],
+      "sizeQ" : null,
+      "sizeR" : null,
+      "minQ" : null,
+      "maxQ" : null,
+      "minR" : null,
+      "maxR" : null
+    },
+    "features" : [ {
+      "featureType" : "island-biome",
+      "name" : "mirehold-isle-1",
+      "title" : "Mirehold Isle 1",
+      "shape" : "CIRCLE",
+      "size" : "SMALL",
+      "positions" : [ {
+        "direction" : "NW",
+        "anchor" : "mirehold-isles-cluster",
+        "priority" : 5,
+        "distanceFrom" : 1,
+        "distanceTo" : 2
+      } ],
+      "areaComposed" : {
+        "calculatedSizeFrom" : 1,
+        "calculatedSizeTo" : 3,
+        "placedCenter" : null,
+        "assignedCoordinates" : null,
+        "preparedPositions" : [ {
+          "original" : {
+            "direction" : "NW",
+            "anchor" : "mirehold-isles-cluster",
+            "priority" : 5,
+            "distanceFrom" : 1,
+            "distanceTo" : 2
+          },
+          "direction" : "NW",
+          "directionAngle" : 300,
+          "distanceFrom" : 1,
+          "distanceTo" : 2,
+          "anchor" : "mirehold-isles-cluster",
+          "priority" : 5
+        } ],
+        "sizeQ" : null,
+        "sizeR" : null,
+        "minQ" : null,
+        "maxQ" : null,
+        "minR" : null,
+        "maxR" : null
+      },
+      "type" : "ISLAND",
+      "preparedPositions" : [ {
+        "original" : {
+          "direction" : "NW",
+          "anchor" : "mirehold-isles-cluster",
+          "priority" : 5,
+          "distanceFrom" : 1,
+          "distanceTo" : 2
+        },
+        "direction" : "NW",
+        "directionAngle" : 300,
+        "distanceFrom" : 1,
+        "distanceTo" : 2,
+        "anchor" : "mirehold-isles-cluster",
+        "priority" : 5
+      } ],
+      "calculatedSizeTo" : 3,
+      "calculatedSizeFrom" : 1
+    }, {
+      "featureType" : "island-biome",
+      "name" : "mirehold-isle-2",
+      "title" : "Mirehold Isle 2",
+      "shape" : "CIRCLE",
+      "size" : "SMALL",
+      "positions" : [ {
+        "direction" : "E",
+        "anchor" : "mirehold-isles-cluster",
+        "priority" : 5,
+        "distanceFrom" : 1,
+        "distanceTo" : 2
+      } ],
+      "areaComposed" : {
+        "calculatedSizeFrom" : 1,
+        "calculatedSizeTo" : 3,
+        "placedCenter" : null,
+        "assignedCoordinates" : null,
+        "preparedPositions" : [ {
+          "original" : {
+            "direction" : "E",
+            "anchor" : "mirehold-isles-cluster",
+            "priority" : 5,
+            "distanceFrom" : 1,
+            "distanceTo" : 2
+          },
+          "direction" : "E",
+          "directionAngle" : 60,
+          "distanceFrom" : 1,
+          "distanceTo" : 2,
+          "anchor" : "mirehold-isles-cluster",
+          "priority" : 5
+        } ],
+        "sizeQ" : null,
+        "sizeR" : null,
+        "minQ" : null,
+        "maxQ" : null,
+        "minR" : null,
+        "maxR" : null
+      },
+      "type" : "ISLAND",
+      "preparedPositions" : [ {
+        "original" : {
+          "direction" : "E",
+          "anchor" : "mirehold-isles-cluster",
+          "priority" : 5,
+          "distanceFrom" : 1,
+          "distanceTo" : 2
+        },
+        "direction" : "E",
+        "directionAngle" : 60,
+        "distanceFrom" : 1,
+        "distanceTo" : 2,
+        "anchor" : "mirehold-isles-cluster",
+        "priority" : 5
+      } ],
+      "calculatedSizeTo" : 3,
+      "calculatedSizeFrom" : 1
+    }, {
+      "featureType" : "island-biome",
+      "name" : "mirehold-isle-3",
+      "title" : "Mirehold Isle 3",
+      "shape" : "CIRCLE",
+      "size" : "SMALL",
+      "positions" : [ {
+        "direction" : "S",
+        "anchor" : "mirehold-isles-cluster",
+        "priority" : 5,
+        "distanceFrom" : 1,
+        "distanceTo" : 2
+      } ],
+      "areaComposed" : {
+        "calculatedSizeFrom" : 1,
+        "calculatedSizeTo" : 3,
+        "placedCenter" : null,
+        "assignedCoordinates" : null,
+        "preparedPositions" : [ {
+          "original" : {
+            "direction" : "S",
+            "anchor" : "mirehold-isles-cluster",
+            "priority" : 5,
+            "distanceFrom" : 1,
+            "distanceTo" : 2
+          },
+          "direction" : "S",
+          "directionAngle" : 150,
+          "distanceFrom" : 1,
+          "distanceTo" : 2,
+          "anchor" : "mirehold-isles-cluster",
+          "priority" : 5
+        } ],
+        "sizeQ" : null,
+        "sizeR" : null,
+        "minQ" : null,
+        "maxQ" : null,
+        "minR" : null,
+        "maxR" : null
+      },
+      "type" : "ISLAND",
+      "preparedPositions" : [ {
+        "original" : {
+          "direction" : "S",
+          "anchor" : "mirehold-isles-cluster",
+          "priority" : 5,
+          "distanceFrom" : 1,
+          "distanceTo" : 2
+        },
+        "direction" : "S",
+        "directionAngle" : 150,
+        "distanceFrom" : 1,
+        "distanceTo" : 2,
+        "anchor" : "mirehold-isles-cluster",
+        "priority" : 5
+      } ],
+      "calculatedSizeTo" : 3,
+      "calculatedSizeFrom" : 1
+    }, {
+      "featureType" : "island-biome",
+      "name" : "mirehold-isle-4",
+      "title" : "Mirehold Isle 4",
+      "shape" : "CIRCLE",
+      "size" : "SMALL",
+      "positions" : [ {
+        "direction" : "SW",
+        "anchor" : "mirehold-isle-1",
+        "priority" : 5,
+        "distanceFrom" : 1,
+        "distanceTo" : 2
+      } ],
+      "areaComposed" : {
+        "calculatedSizeFrom" : 1,
+        "calculatedSizeTo" : 3,
+        "placedCenter" : null,
+        "assignedCoordinates" : null,
+        "preparedPositions" : [ {
+          "original" : {
+            "direction" : "SW",
+            "anchor" : "mirehold-isle-1",
+            "priority" : 5,
+            "distanceFrom" : 1,
+            "distanceTo" : 2
+          },
+          "direction" : "SW",
+          "directionAngle" : 180,
+          "distanceFrom" : 1,
+          "distanceTo" : 2,
+          "anchor" : "mirehold-isle-1",
+          "priority" : 5
+        } ],
+        "sizeQ" : null,
+        "sizeR" : null,
+        "minQ" : null,
+        "maxQ" : null,
+        "minR" : null,
+        "maxR" : null
+      },
+      "type" : "ISLAND",
+      "preparedPositions" : [ {
+        "original" : {
+          "direction" : "SW",
+          "anchor" : "mirehold-isle-1",
+          "priority" : 5,
+          "distanceFrom" : 1,
+          "distanceTo" : 2
+        },
+        "direction" : "SW",
+        "directionAngle" : 180,
+        "distanceFrom" : 1,
+        "distanceTo" : 2,
+        "anchor" : "mirehold-isle-1",
+        "priority" : 5
+      } ],
+      "calculatedSizeTo" : 3,
+      "calculatedSizeFrom" : 1
+    }, {
+      "featureType" : "island-biome",
+      "name" : "mirehold-isle-5",
+      "title" : "Mirehold Isle 5",
+      "shape" : "CIRCLE",
+      "size" : "SMALL",
+      "positions" : [ {
+        "direction" : "SE",
+        "anchor" : "mirehold-isle-2",
+        "priority" : 5,
+        "distanceFrom" : 1,
+        "distanceTo" : 2
+      } ],
+      "areaComposed" : {
+        "calculatedSizeFrom" : 1,
+        "calculatedSizeTo" : 3,
+        "placedCenter" : null,
+        "assignedCoordinates" : null,
+        "preparedPositions" : [ {
+          "original" : {
+            "direction" : "SE",
+            "anchor" : "mirehold-isle-2",
+            "priority" : 5,
+            "distanceFrom" : 1,
+            "distanceTo" : 2
+          },
+          "direction" : "SE",
+          "directionAngle" : 120,
+          "distanceFrom" : 1,
+          "distanceTo" : 2,
+          "anchor" : "mirehold-isle-2",
+          "priority" : 5
+        } ],
+        "sizeQ" : null,
+        "sizeR" : null,
+        "minQ" : null,
+        "maxQ" : null,
+        "minR" : null,
+        "maxR" : null
+      },
+      "type" : "ISLAND",
+      "preparedPositions" : [ {
+        "original" : {
+          "direction" : "SE",
+          "anchor" : "mirehold-isle-2",
+          "priority" : 5,
+          "distanceFrom" : 1,
+          "distanceTo" : 2
+        },
+        "direction" : "SE",
+        "directionAngle" : 120,
+        "distanceFrom" : 1,
+        "distanceTo" : 2,
+        "anchor" : "mirehold-isle-2",
+        "priority" : 5
+      } ],
+      "calculatedSizeTo" : 3,
+      "calculatedSizeFrom" : 1
+    } ],
+    "areas" : [ {
+      "featureType" : "island-biome",
+      "name" : "mirehold-isle-1",
+      "title" : "Mirehold Isle 1",
+      "shape" : "CIRCLE",
+      "size" : "SMALL",
+      "positions" : [ {
+        "direction" : "NW",
+        "anchor" : "mirehold-isles-cluster",
+        "priority" : 5,
+        "distanceFrom" : 1,
+        "distanceTo" : 2
+      } ],
+      "areaComposed" : {
+        "calculatedSizeFrom" : 1,
+        "calculatedSizeTo" : 3,
+        "placedCenter" : null,
+        "assignedCoordinates" : null,
+        "preparedPositions" : [ {
+          "original" : {
+            "direction" : "NW",
+            "anchor" : "mirehold-isles-cluster",
+            "priority" : 5,
+            "distanceFrom" : 1,
+            "distanceTo" : 2
+          },
+          "direction" : "NW",
+          "directionAngle" : 300,
+          "distanceFrom" : 1,
+          "distanceTo" : 2,
+          "anchor" : "mirehold-isles-cluster",
+          "priority" : 5
+        } ],
+        "sizeQ" : null,
+        "sizeR" : null,
+        "minQ" : null,
+        "maxQ" : null,
+        "minR" : null,
+        "maxR" : null
+      },
+      "type" : "ISLAND",
+      "preparedPositions" : [ {
+        "original" : {
+          "direction" : "NW",
+          "anchor" : "mirehold-isles-cluster",
+          "priority" : 5,
+          "distanceFrom" : 1,
+          "distanceTo" : 2
+        },
+        "direction" : "NW",
+        "directionAngle" : 300,
+        "distanceFrom" : 1,
+        "distanceTo" : 2,
+        "anchor" : "mirehold-isles-cluster",
+        "priority" : 5
+      } ],
+      "calculatedSizeTo" : 3,
+      "calculatedSizeFrom" : 1
+    }, {
+      "featureType" : "island-biome",
+      "name" : "mirehold-isle-2",
+      "title" : "Mirehold Isle 2",
+      "shape" : "CIRCLE",
+      "size" : "SMALL",
+      "positions" : [ {
+        "direction" : "E",
+        "anchor" : "mirehold-isles-cluster",
+        "priority" : 5,
+        "distanceFrom" : 1,
+        "distanceTo" : 2
+      } ],
+      "areaComposed" : {
+        "calculatedSizeFrom" : 1,
+        "calculatedSizeTo" : 3,
+        "placedCenter" : null,
+        "assignedCoordinates" : null,
+        "preparedPositions" : [ {
+          "original" : {
+            "direction" : "E",
+            "anchor" : "mirehold-isles-cluster",
+            "priority" : 5,
+            "distanceFrom" : 1,
+            "distanceTo" : 2
+          },
+          "direction" : "E",
+          "directionAngle" : 60,
+          "distanceFrom" : 1,
+          "distanceTo" : 2,
+          "anchor" : "mirehold-isles-cluster",
+          "priority" : 5
+        } ],
+        "sizeQ" : null,
+        "sizeR" : null,
+        "minQ" : null,
+        "maxQ" : null,
+        "minR" : null,
+        "maxR" : null
+      },
+      "type" : "ISLAND",
+      "preparedPositions" : [ {
+        "original" : {
+          "direction" : "E",
+          "anchor" : "mirehold-isles-cluster",
+          "priority" : 5,
+          "distanceFrom" : 1,
+          "distanceTo" : 2
+        },
+        "direction" : "E",
+        "directionAngle" : 60,
+        "distanceFrom" : 1,
+        "distanceTo" : 2,
+        "anchor" : "mirehold-isles-cluster",
+        "priority" : 5
+      } ],
+      "calculatedSizeTo" : 3,
+      "calculatedSizeFrom" : 1
+    }, {
+      "featureType" : "island-biome",
+      "name" : "mirehold-isle-3",
+      "title" : "Mirehold Isle 3",
+      "shape" : "CIRCLE",
+      "size" : "SMALL",
+      "positions" : [ {
+        "direction" : "S",
+        "anchor" : "mirehold-isles-cluster",
+        "priority" : 5,
+        "distanceFrom" : 1,
+        "distanceTo" : 2
+      } ],
+      "areaComposed" : {
+        "calculatedSizeFrom" : 1,
+        "calculatedSizeTo" : 3,
+        "placedCenter" : null,
+        "assignedCoordinates" : null,
+        "preparedPositions" : [ {
+          "original" : {
+            "direction" : "S",
+            "anchor" : "mirehold-isles-cluster",
+            "priority" : 5,
+            "distanceFrom" : 1,
+            "distanceTo" : 2
+          },
+          "direction" : "S",
+          "directionAngle" : 150,
+          "distanceFrom" : 1,
+          "distanceTo" : 2,
+          "anchor" : "mirehold-isles-cluster",
+          "priority" : 5
+        } ],
+        "sizeQ" : null,
+        "sizeR" : null,
+        "minQ" : null,
+        "maxQ" : null,
+        "minR" : null,
+        "maxR" : null
+      },
+      "type" : "ISLAND",
+      "preparedPositions" : [ {
+        "original" : {
+          "direction" : "S",
+          "anchor" : "mirehold-isles-cluster",
+          "priority" : 5,
+          "distanceFrom" : 1,
+          "distanceTo" : 2
+        },
+        "direction" : "S",
+        "directionAngle" : 150,
+        "distanceFrom" : 1,
+        "distanceTo" : 2,
+        "anchor" : "mirehold-isles-cluster",
+        "priority" : 5
+      } ],
+      "calculatedSizeTo" : 3,
+      "calculatedSizeFrom" : 1
+    }, {
+      "featureType" : "island-biome",
+      "name" : "mirehold-isle-4",
+      "title" : "Mirehold Isle 4",
+      "shape" : "CIRCLE",
+      "size" : "SMALL",
+      "positions" : [ {
+        "direction" : "SW",
+        "anchor" : "mirehold-isle-1",
+        "priority" : 5,
+        "distanceFrom" : 1,
+        "distanceTo" : 2
+      } ],
+      "areaComposed" : {
+        "calculatedSizeFrom" : 1,
+        "calculatedSizeTo" : 3,
+        "placedCenter" : null,
+        "assignedCoordinates" : null,
+        "preparedPositions" : [ {
+          "original" : {
+            "direction" : "SW",
+            "anchor" : "mirehold-isle-1",
+            "priority" : 5,
+            "distanceFrom" : 1,
+            "distanceTo" : 2
+          },
+          "direction" : "SW",
+          "directionAngle" : 180,
+          "distanceFrom" : 1,
+          "distanceTo" : 2,
+          "anchor" : "mirehold-isle-1",
+          "priority" : 5
+        } ],
+        "sizeQ" : null,
+        "sizeR" : null,
+        "minQ" : null,
+        "maxQ" : null,
+        "minR" : null,
+        "maxR" : null
+      },
+      "type" : "ISLAND",
+      "preparedPositions" : [ {
+        "original" : {
+          "direction" : "SW",
+          "anchor" : "mirehold-isle-1",
+          "priority" : 5,
+          "distanceFrom" : 1,
+          "distanceTo" : 2
+        },
+        "direction" : "SW",
+        "directionAngle" : 180,
+        "distanceFrom" : 1,
+        "distanceTo" : 2,
+        "anchor" : "mirehold-isle-1",
+        "priority" : 5
+      } ],
+      "calculatedSizeTo" : 3,
+      "calculatedSizeFrom" : 1
+    }, {
+      "featureType" : "island-biome",
+      "name" : "mirehold-isle-5",
+      "title" : "Mirehold Isle 5",
+      "shape" : "CIRCLE",
+      "size" : "SMALL",
+      "positions" : [ {
+        "direction" : "SE",
+        "anchor" : "mirehold-isle-2",
+        "priority" : 5,
+        "distanceFrom" : 1,
+        "distanceTo" : 2
+      } ],
+      "areaComposed" : {
+        "calculatedSizeFrom" : 1,
+        "calculatedSizeTo" : 3,
+        "placedCenter" : null,
+        "assignedCoordinates" : null,
+        "preparedPositions" : [ {
+          "original" : {
+            "direction" : "SE",
+            "anchor" : "mirehold-isle-2",
+            "priority" : 5,
+            "distanceFrom" : 1,
+            "distanceTo" : 2
+          },
+          "direction" : "SE",
+          "directionAngle" : 120,
+          "distanceFrom" : 1,
+          "distanceTo" : 2,
+          "anchor" : "mirehold-isle-2",
+          "priority" : 5
+        } ],
+        "sizeQ" : null,
+        "sizeR" : null,
+        "minQ" : null,
+        "maxQ" : null,
+        "minR" : null,
+        "maxR" : null
+      },
+      "type" : "ISLAND",
+      "preparedPositions" : [ {
+        "original" : {
+          "direction" : "SE",
+          "anchor" : "mirehold-isle-2",
+          "priority" : 5,
+          "distanceFrom" : 1,
+          "distanceTo" : 2
+        },
+        "direction" : "SE",
+        "directionAngle" : 120,
+        "distanceFrom" : 1,
+        "distanceTo" : 2,
+        "anchor" : "mirehold-isle-2",
+        "priority" : 5
+      } ],
+      "calculatedSizeTo" : 3,
+      "calculatedSizeFrom" : 1
+    } ],
+    "flows" : [ ],
+    "preparedPositions" : [ {
+      "original" : {
+        "anchor" : "whispering-marsh",
+        "priority" : 7
+      },
+      "direction" : null,
+      "directionAngle" : 0,
+      "distanceFrom" : 0,
+      "distanceTo" : 0,
+      "anchor" : "whispering-marsh",
+      "priority" : 7
+    } ],
+    "calculatedSizeTo" : 15,
+    "calculatedSizeFrom" : 7
+  }, {
+    "featureType" : "point",
+    "featureId" : "d179a43b-4394-465f-b444-6d2efb3e7037",
+    "name" : "duskwater-source",
+    "title" : "Duskwater Source",
+    "status" : "COMPOSED",
+    "enabled" : true,
+    "biomeId" : "stoneveil-mountains",
+    "direction" : "S",
+    "biomeDistance" : "NORMAL",
+    "precomposed" : false,
+    "pointComposed" : {
+      "gridCoordinate" : {
+        "q" : 1,
+        "r" : 0
+      },
+      "biome" : "stoneveil-mountains",
+      "hexLocalPosition" : {
+        "position" : {
+          "q" : -2,
+          "r" : 2
+        },
+        "divider" : 5,
+        "size" : 80
+      },
+      "hexLocalEdgeVector" : null,
+      "preparedPositions" : null,
+      "placedCoordinate" : {
+        "q" : 1,
+        "r" : 0
+      },
+      "placedLx" : 61,
+      "placedLz" : 280,
+      "placedInBiome" : "stoneveil-mountains"
+    },
+    "placedCoordinate" : {
+      "q" : 1,
+      "r" : 0
+    },
+    "hexLocalPosition" : {
+      "position" : {
+        "q" : -2,
+        "r" : 2
+      },
+      "divider" : 5,
+      "size" : 80
+    },
+    "gridCoordinate" : {
+      "q" : 1,
+      "r" : 0
+    },
+    "placedLx" : 61,
+    "placedLz" : 280,
+    "biome" : "stoneveil-mountains",
+    "placedInBiome" : "stoneveil-mountains"
+  }, {
+    "featureType" : "point",
+    "featureId" : "0ceb5b10-6bcc-457e-850e-814d86c45a78",
+    "name" : "duskwater-end",
+    "title" : "Duskwater End",
+    "status" : "COMPOSED",
+    "enabled" : true,
+    "biomeId" : "whispering-marsh",
+    "direction" : "S",
+    "biomeDistance" : "FAR",
+    "precomposed" : false,
+    "pointComposed" : {
+      "gridCoordinate" : {
+        "q" : 2,
+        "r" : 2
+      },
+      "biome" : "whispering-marsh",
+      "hexLocalPosition" : {
+        "position" : {
+          "q" : -3,
+          "r" : 3
+        },
+        "divider" : 5,
+        "size" : 80
+      },
+      "hexLocalEdgeVector" : null,
+      "preparedPositions" : null,
+      "placedCoordinate" : {
+        "q" : 2,
+        "r" : 2
+      },
+      "placedLx" : -8,
+      "placedLz" : 320,
+      "placedInBiome" : "whispering-marsh"
+    },
+    "placedCoordinate" : {
+      "q" : 2,
+      "r" : 2
+    },
+    "hexLocalPosition" : {
+      "position" : {
+        "q" : -3,
+        "r" : 3
+      },
+      "divider" : 5,
+      "size" : 80
+    },
+    "gridCoordinate" : {
+      "q" : 2,
+      "r" : 2
+    },
+    "placedLx" : -8,
+    "placedLz" : 320,
+    "biome" : "whispering-marsh",
+    "placedInBiome" : "whispering-marsh"
+  }, {
+    "featureType" : "point",
+    "featureId" : "add682d0-d93f-40ac-9dd4-0385e0036a1a",
+    "name" : "duskwater-waypoint",
+    "title" : "Duskwater Waypoint",
+    "status" : "PREPARED",
+    "enabled" : true,
+    "biomeId" : "mirehold-isles-cluster",
+    "biomeDistance" : "CENTER",
+    "precomposed" : false
+  }, {
+    "featureType" : "river",
+    "featureId" : "17645676-efb9-427e-81ff-b756d6144245",
+    "name" : "duskwater-river",
+    "title" : "Duskwater",
+    "status" : "COMPOSED",
+    "enabled" : true,
+    "type" : "RIVER",
+    "startPointId" : "duskwater-source",
+    "endPointId" : "duskwater-end",
+    "waypointIds" : [ "duskwater-waypoint" ],
+    "width" : "MEDIUM",
+    "widthBlocks" : 4,
+    "levelMode" : "ADJUST_MEAN",
+    "meanLevelOffset" : -2,
+    "tendLeft" : "MODERATE",
+    "tendRight" : "MODERATE",
+    "flowComposed" : {
+      "calculatedWidthBlocks" : 4,
+      "startPoint" : {
+        "q" : 1,
+        "r" : 0
+      },
+      "endPoint" : {
+        "q" : 2,
+        "r" : 2
+      },
+      "waypoints" : null,
+      "route" : [ {
+        "q" : 1,
+        "r" : 0
+      }, {
+        "q" : 2,
+        "r" : -1
+      }, {
+        "q" : 3,
+        "r" : -1
+      }, {
+        "q" : 2,
+        "r" : 0
+      }, {
+        "q" : 2,
+        "r" : 1
+      }, {
+        "q" : 2,
+        "r" : 2
+      } ],
+      "startPointFeature" : {
+        "pointType" : "point",
+        "featureId" : "d179a43b-4394-465f-b444-6d2efb3e7037",
+        "name" : "duskwater-source",
+        "title" : "Duskwater Source",
+        "status" : "COMPOSED",
+        "enabled" : true,
+        "biomeId" : "stoneveil-mountains",
+        "direction" : "S",
+        "biomeDistance" : "NORMAL",
+        "precomposed" : false,
+        "pointComposed" : {
+          "gridCoordinate" : {
+            "q" : 1,
+            "r" : 0
+          },
+          "biome" : "stoneveil-mountains",
+          "hexLocalPosition" : {
+            "position" : {
+              "q" : -2,
+              "r" : 2
+            },
+            "divider" : 5,
+            "size" : 80
+          },
+          "hexLocalEdgeVector" : null,
+          "preparedPositions" : null,
+          "placedCoordinate" : {
+            "q" : 1,
+            "r" : 0
+          },
+          "placedLx" : 61,
+          "placedLz" : 280,
+          "placedInBiome" : "stoneveil-mountains"
+        },
+        "placedCoordinate" : {
+          "q" : 1,
+          "r" : 0
+        },
+        "hexLocalPosition" : {
+          "position" : {
+            "q" : -2,
+            "r" : 2
+          },
+          "divider" : 5,
+          "size" : 80
+        },
+        "gridCoordinate" : {
+          "q" : 1,
+          "r" : 0
+        },
+        "placedLx" : 61,
+        "placedLz" : 280,
+        "biome" : "stoneveil-mountains",
+        "placedInBiome" : "stoneveil-mountains"
+      },
+      "endPointFeature" : {
+        "pointType" : "point",
+        "featureId" : "0ceb5b10-6bcc-457e-850e-814d86c45a78",
+        "name" : "duskwater-end",
+        "title" : "Duskwater End",
+        "status" : "COMPOSED",
+        "enabled" : true,
+        "biomeId" : "whispering-marsh",
+        "direction" : "S",
+        "biomeDistance" : "FAR",
+        "precomposed" : false,
+        "pointComposed" : {
+          "gridCoordinate" : {
+            "q" : 2,
+            "r" : 2
+          },
+          "biome" : "whispering-marsh",
+          "hexLocalPosition" : {
+            "position" : {
+              "q" : -3,
+              "r" : 3
+            },
+            "divider" : 5,
+            "size" : 80
+          },
+          "hexLocalEdgeVector" : null,
+          "preparedPositions" : null,
+          "placedCoordinate" : {
+            "q" : 2,
+            "r" : 2
+          },
+          "placedLx" : -8,
+          "placedLz" : 320,
+          "placedInBiome" : "whispering-marsh"
+        },
+        "placedCoordinate" : {
+          "q" : 2,
+          "r" : 2
+        },
+        "hexLocalPosition" : {
+          "position" : {
+            "q" : -3,
+            "r" : 3
+          },
+          "divider" : 5,
+          "size" : 80
+        },
+        "gridCoordinate" : {
+          "q" : 2,
+          "r" : 2
+        },
+        "placedLx" : -8,
+        "placedLz" : 320,
+        "biome" : "whispering-marsh",
+        "placedInBiome" : "whispering-marsh"
+      }
+    },
+    "depth" : 3,
+    "level" : 85,
+    "startPointFeature" : {
+      "pointType" : "point",
+      "featureId" : "d179a43b-4394-465f-b444-6d2efb3e7037",
+      "name" : "duskwater-source",
+      "title" : "Duskwater Source",
+      "status" : "COMPOSED",
+      "enabled" : true,
+      "biomeId" : "stoneveil-mountains",
+      "direction" : "S",
+      "biomeDistance" : "NORMAL",
+      "precomposed" : false,
+      "pointComposed" : {
+        "gridCoordinate" : {
+          "q" : 1,
+          "r" : 0
+        },
+        "biome" : "stoneveil-mountains",
+        "hexLocalPosition" : {
+          "position" : {
+            "q" : -2,
+            "r" : 2
+          },
+          "divider" : 5,
+          "size" : 80
+        },
+        "hexLocalEdgeVector" : null,
+        "preparedPositions" : null,
+        "placedCoordinate" : {
+          "q" : 1,
+          "r" : 0
+        },
+        "placedLx" : 61,
+        "placedLz" : 280,
+        "placedInBiome" : "stoneveil-mountains"
+      },
+      "placedCoordinate" : {
+        "q" : 1,
+        "r" : 0
+      },
+      "hexLocalPosition" : {
+        "position" : {
+          "q" : -2,
+          "r" : 2
+        },
+        "divider" : 5,
+        "size" : 80
+      },
+      "gridCoordinate" : {
+        "q" : 1,
+        "r" : 0
+      },
+      "placedLx" : 61,
+      "placedLz" : 280,
+      "biome" : "stoneveil-mountains",
+      "placedInBiome" : "stoneveil-mountains"
+    },
+    "calculatedWidthBlocks" : 4,
+    "startPoint" : {
+      "q" : 1,
+      "r" : 0
+    },
+    "endPoint" : {
+      "q" : 2,
+      "r" : 2
+    },
+    "endPointFeature" : {
+      "pointType" : "point",
+      "featureId" : "0ceb5b10-6bcc-457e-850e-814d86c45a78",
+      "name" : "duskwater-end",
+      "title" : "Duskwater End",
+      "status" : "COMPOSED",
+      "enabled" : true,
+      "biomeId" : "whispering-marsh",
+      "direction" : "S",
+      "biomeDistance" : "FAR",
+      "precomposed" : false,
+      "pointComposed" : {
+        "gridCoordinate" : {
+          "q" : 2,
+          "r" : 2
+        },
+        "biome" : "whispering-marsh",
+        "hexLocalPosition" : {
+          "position" : {
+            "q" : -3,
+            "r" : 3
+          },
+          "divider" : 5,
+          "size" : 80
+        },
+        "hexLocalEdgeVector" : null,
+        "preparedPositions" : null,
+        "placedCoordinate" : {
+          "q" : 2,
+          "r" : 2
+        },
+        "placedLx" : -8,
+        "placedLz" : 320,
+        "placedInBiome" : "whispering-marsh"
+      },
+      "placedCoordinate" : {
+        "q" : 2,
+        "r" : 2
+      },
+      "hexLocalPosition" : {
+        "position" : {
+          "q" : -3,
+          "r" : 3
+        },
+        "divider" : 5,
+        "size" : 80
+      },
+      "gridCoordinate" : {
+        "q" : 2,
+        "r" : 2
+      },
+      "placedLx" : -8,
+      "placedLz" : 320,
+      "biome" : "whispering-marsh",
+      "placedInBiome" : "whispering-marsh"
+    },
+    "maxRoutingSteps" : 50,
+    "route" : [ {
+      "q" : 1,
+      "r" : 0
+    }, {
+      "q" : 2,
+      "r" : -1
+    }, {
+      "q" : 3,
+      "r" : -1
+    }, {
+      "q" : 2,
+      "r" : 0
+    }, {
+      "q" : 2,
+      "r" : 1
+    }, {
+      "q" : 2,
+      "r" : 2
+    } ]
+  }, {
+    "featureType" : "town",
+    "featureId" : "7d9c8d90-cc45-4f99-a6a7-1e9a28fee7c3",
+    "name" : "fenwatch",
+    "title" : "Fenwatch",
+    "status" : "PREPARED",
+    "enabled" : true,
+    "shape" : "CIRCLE",
+    "size" : "SMALL",
+    "positions" : [ {
+      "anchor" : "mirehold-isle-1",
+      "priority" : 6
+    } ],
+    "continentId" : "main-continent",
+    "areaComposed" : {
+      "calculatedSizeFrom" : 1,
+      "calculatedSizeTo" : 3,
+      "placedCenter" : null,
+      "assignedCoordinates" : null,
+      "preparedPositions" : [ {
+        "original" : {
+          "anchor" : "mirehold-isle-1",
+          "priority" : 6
+        },
+        "direction" : null,
+        "directionAngle" : 0,
+        "distanceFrom" : 0,
+        "distanceTo" : 0,
+        "anchor" : "mirehold-isle-1",
+        "priority" : 6
+      } ],
+      "sizeQ" : null,
+      "sizeR" : null,
+      "minQ" : null,
+      "maxQ" : null,
+      "minR" : null,
+      "maxR" : null
+    },
+    "style" : "medieval",
+    "biomeType" : "SWAMP",
+    "districts" : [ {
+      "name" : "center",
+      "title" : "Fenwatch Center",
+      "slots" : "SMALL",
+      "places" : [ {
+        "placeType" : "free",
+        "name" : "village-square",
+        "connectionPoint" : false,
+        "levelOffset" : 0,
+        "kind" : "PLAZA"
+      }, {
+        "placeType" : "building",
+        "name" : "watch-house",
+        "connectionPoint" : false,
+        "levelOffset" : 0,
+        "kind" : "house"
+      }, {
+        "placeType" : "building",
+        "name" : "fisher-hut",
+        "connectionPoint" : false,
+        "levelOffset" : 0,
+        "kind" : "house"
+      }, {
+        "placeType" : "road",
+        "name" : "main-path",
+        "connectionPoint" : false,
+        "levelOffset" : 0,
+        "kind" : "TRAIL"
+      } ]
+    } ],
+    "externalConnectionPoints" : [ {
+      "pointType" : "village-connection",
+      "featureId" : "fenwatch-n",
+      "name" : "fenwatch-n",
+      "title" : "Connection N",
+      "biomeId" : "coast-ring-0",
+      "precomposed" : true,
+      "pointComposed" : {
+        "gridCoordinate" : {
+          "q" : 0,
+          "r" : -1
+        },
+        "biome" : "coast-ring-0",
+        "hexLocalPosition" : null,
+        "hexLocalEdgeVector" : {
+          "side" : "SOUTH_WEST",
+          "numerator" : 2,
+          "denominator" : 4
+        },
+        "preparedPositions" : null,
+        "placedCoordinate" : {
+          "q" : 0,
+          "r" : -1
+        },
+        "placedLx" : 0,
+        "placedLz" : 0,
+        "placedInBiome" : "coast-ring-0"
+      },
+      "villageId" : "fenwatch",
+      "externalDirection" : "N",
+      "neighborGridCoordinate" : {
+        "q" : 0,
+        "r" : -1
+      },
+      "placedInNeighborGrid" : true,
+      "gridDistance" : 1,
+      "placedCoordinate" : {
+        "q" : 0,
+        "r" : -1
+      },
+      "hexLocalEdgeVector" : {
+        "side" : "SOUTH_WEST",
+        "numerator" : 2,
+        "denominator" : 4
+      },
+      "gridCoordinate" : {
+        "q" : 0,
+        "r" : -1
+      },
+      "placedLx" : 0,
+      "placedLz" : 0,
+      "biome" : "coast-ring-0",
+      "placedInBiome" : "coast-ring-0"
+    }, {
+      "pointType" : "village-connection",
+      "featureId" : "fenwatch-s",
+      "name" : "fenwatch-s",
+      "title" : "Connection S",
+      "biomeId" : "stoneveil-mountains",
+      "precomposed" : true,
+      "pointComposed" : {
+        "gridCoordinate" : {
+          "q" : 0,
+          "r" : 1
+        },
+        "biome" : "stoneveil-mountains",
+        "hexLocalPosition" : null,
+        "hexLocalEdgeVector" : {
+          "side" : "NORTH_EAST",
+          "numerator" : 2,
+          "denominator" : 4
+        },
+        "preparedPositions" : null,
+        "placedCoordinate" : {
+          "q" : 0,
+          "r" : 1
+        },
+        "placedLx" : 0,
+        "placedLz" : 0,
+        "placedInBiome" : "stoneveil-mountains"
+      },
+      "villageId" : "fenwatch",
+      "externalDirection" : "S",
+      "neighborGridCoordinate" : {
+        "q" : 0,
+        "r" : 1
+      },
+      "placedInNeighborGrid" : true,
+      "gridDistance" : 1,
+      "placedCoordinate" : {
+        "q" : 0,
+        "r" : 1
+      },
+      "hexLocalEdgeVector" : {
+        "side" : "NORTH_EAST",
+        "numerator" : 2,
+        "denominator" : 4
+      },
+      "gridCoordinate" : {
+        "q" : 0,
+        "r" : 1
+      },
+      "placedLx" : 0,
+      "placedLz" : 0,
+      "biome" : "stoneveil-mountains",
+      "placedInBiome" : "stoneveil-mountains"
+    } ],
+    "baseLevel" : 95,
+    "fillEmptySlots" : true,
+    "buildingTendency" : 0.7,
+    "fillRate" : 0.75,
+    "debug" : false,
+    "preparedPositions" : [ {
+      "original" : {
+        "anchor" : "mirehold-isle-1",
+        "priority" : 6
+      },
+      "direction" : null,
+      "directionAngle" : 0,
+      "distanceFrom" : 0,
+      "distanceTo" : 0,
+      "anchor" : "mirehold-isle-1",
+      "priority" : 6
+    } ],
+    "calculatedSizeTo" : 3,
+    "calculatedSizeFrom" : 1
+  }, {
+    "featureType" : "village-connection",
+    "featureId" : "fenwatch-n",
+    "name" : "fenwatch-n",
+    "title" : "Connection N",
+    "biomeId" : "coast-ring-0",
+    "precomposed" : true,
+    "pointComposed" : {
+      "gridCoordinate" : {
+        "q" : 0,
+        "r" : -1
+      },
+      "biome" : "coast-ring-0",
+      "hexLocalPosition" : null,
+      "hexLocalEdgeVector" : {
+        "side" : "SOUTH_WEST",
+        "numerator" : 2,
+        "denominator" : 4
+      },
+      "preparedPositions" : null,
+      "placedCoordinate" : {
+        "q" : 0,
+        "r" : -1
+      },
+      "placedLx" : 0,
+      "placedLz" : 0,
+      "placedInBiome" : "coast-ring-0"
+    },
+    "villageId" : "fenwatch",
+    "externalDirection" : "N",
+    "neighborGridCoordinate" : {
+      "q" : 0,
+      "r" : -1
+    },
+    "placedInNeighborGrid" : true,
+    "gridDistance" : 1,
+    "placedCoordinate" : {
+      "q" : 0,
+      "r" : -1
+    },
+    "hexLocalEdgeVector" : {
+      "side" : "SOUTH_WEST",
+      "numerator" : 2,
+      "denominator" : 4
+    },
+    "gridCoordinate" : {
+      "q" : 0,
+      "r" : -1
+    },
+    "placedLx" : 0,
+    "placedLz" : 0,
+    "biome" : "coast-ring-0",
+    "placedInBiome" : "coast-ring-0"
+  }, {
+    "featureType" : "village-connection",
+    "featureId" : "fenwatch-s",
+    "name" : "fenwatch-s",
+    "title" : "Connection S",
+    "biomeId" : "stoneveil-mountains",
+    "precomposed" : true,
+    "pointComposed" : {
+      "gridCoordinate" : {
+        "q" : 0,
+        "r" : 1
+      },
+      "biome" : "stoneveil-mountains",
+      "hexLocalPosition" : null,
+      "hexLocalEdgeVector" : {
+        "side" : "NORTH_EAST",
+        "numerator" : 2,
+        "denominator" : 4
+      },
+      "preparedPositions" : null,
+      "placedCoordinate" : {
+        "q" : 0,
+        "r" : 1
+      },
+      "placedLx" : 0,
+      "placedLz" : 0,
+      "placedInBiome" : "stoneveil-mountains"
+    },
+    "villageId" : "fenwatch",
+    "externalDirection" : "S",
+    "neighborGridCoordinate" : {
+      "q" : 0,
+      "r" : 1
+    },
+    "placedInNeighborGrid" : true,
+    "gridDistance" : 1,
+    "placedCoordinate" : {
+      "q" : 0,
+      "r" : 1
+    },
+    "hexLocalEdgeVector" : {
+      "side" : "NORTH_EAST",
+      "numerator" : 2,
+      "denominator" : 4
+    },
+    "gridCoordinate" : {
+      "q" : 0,
+      "r" : 1
+    },
+    "placedLx" : 0,
+    "placedLz" : 0,
+    "biome" : "stoneveil-mountains",
+    "placedInBiome" : "stoneveil-mountains"
+  } ],
+  "continents" : [ {
+    "continentId" : "main-continent",
+    "biomeType" : "PLAINS",
+    "minNeighbors" : 2,
+    "name" : "Main Continent"
+  } ],
+  "featureHexGrids" : [ {
+    "coordinate" : {
+      "q" : 0,
+      "r" : 0
+    },
+    "parameters" : {
+      "biomeType" : "MOUNTAINS",
+      "sandMaterial" : "4",
+      "p_color" : "#8B7355",
+      "g_offset" : "20",
+      "stoneMaterial" : "3",
+      "snowMaterial" : "7",
+      "sourceMountain" : "stoneveil-mountains",
+      "g_roughness" : "0.8",
+      "fillerType" : "mountain",
+      "biome" : "mountain",
+      "filler" : "true",
+      "dirtMaterial" : "2",
+      "grassMaterial" : "1",
+      "g_asl" : "80",
+      "g_frequency" : "0.7",
+      "biomeName" : "stoneveil-mountains-slopes",
+      "g_builder" : "mountain"
+    },
+    "areas" : { },
+    "flowSegments" : [ ],
+    "roadConfigParts" : [ ],
+    "riverConfigParts" : [ ],
+    "wallConfigParts" : [ ],
+    "name" : "stoneveil-mountains-slopes [0;0]",
+    "description" : "Part of MOUNTAINS biome",
+    "sourceBiomeName" : "stoneveil-mountains-slopes",
+    "filler" : true
+  }, {
+    "coordinate" : {
+      "q" : 0,
+      "r" : 1
+    },
+    "parameters" : {
+      "biomeType" : "MOUNTAINS",
+      "sandMaterial" : "4",
+      "p_color" : "#8B7355",
+      "g_offset" : "30",
+      "stoneMaterial" : "3",
+      "snowMaterial" : "7",
+      "g_roughness" : "0.8",
+      "biome" : "mountain",
+      "dirtMaterial" : "2",
+      "grassMaterial" : "1",
+      "g_asl" : "100",
+      "g_frequency" : "0.8",
+      "biomeName" : "stoneveil-mountains",
+      "g_builder" : "mountain"
+    },
+    "areas" : { },
+    "flowSegments" : [ ],
+    "roadConfigParts" : [ ],
+    "riverConfigParts" : [ ],
+    "wallConfigParts" : [ ],
+    "name" : "stoneveil-mountains [0;1]",
+    "description" : "Part of MOUNTAINS biome",
+    "sourceBiomeName" : "stoneveil-mountains",
+    "sourceBiomeId" : "4d2ef422-560a-402a-bed6-a050f8a0a059",
+    "filler" : false
+  }, {
+    "coordinate" : {
+      "q" : 0,
+      "r" : 2
+    },
+    "parameters" : {
+      "biomeType" : "MOUNTAINS",
+      "sandMaterial" : "4",
+      "p_color" : "#8B7355",
+      "g_offset" : "20",
+      "stoneMaterial" : "3",
+      "snowMaterial" : "7",
+      "sourceMountain" : "stoneveil-mountains",
+      "g_roughness" : "0.8",
+      "fillerType" : "mountain",
+      "biome" : "mountain",
+      "filler" : "true",
+      "dirtMaterial" : "2",
+      "grassMaterial" : "1",
+      "g_asl" : "80",
+      "g_frequency" : "0.7",
+      "biomeName" : "stoneveil-mountains-slopes",
+      "g_builder" : "mountain"
+    },
+    "areas" : { },
+    "flowSegments" : [ ],
+    "roadConfigParts" : [ ],
+    "riverConfigParts" : [ ],
+    "wallConfigParts" : [ ],
+    "name" : "stoneveil-mountains-slopes [0;2]",
+    "description" : "Part of MOUNTAINS biome",
+    "sourceBiomeName" : "stoneveil-mountains-slopes",
+    "filler" : true
+  }, {
+    "coordinate" : {
+      "q" : 2,
+      "r" : 0
+    },
+    "parameters" : {
+      "g_river" : "{\"groupId\":\"17645676-efb9-427e-81ff-b756d6144245\",\"from\":[{\"depth\":3,\"level\":89,\"width\":4,\"position\":\"<NE 3/4>\"}],\"to\":[{\"depth\":3,\"level\":89,\"width\":4,\"position\":\"<SE 2/4>\"}]}",
+      "biomeType" : "MOUNTAINS",
+      "sandMaterial" : "4",
+      "p_color" : "#8B7355",
+      "g_offset" : "30",
+      "stoneMaterial" : "3",
+      "snowMaterial" : "7",
+      "g_roughness" : "0.8",
+      "biome" : "mountain",
+      "dirtMaterial" : "2",
+      "grassMaterial" : "1",
+      "g_asl" : "100",
+      "g_frequency" : "0.8",
+      "biomeName" : "stoneveil-mountains",
+      "g_builder" : "mountain"
+    },
+    "areas" : { },
+    "flowSegments" : [ {
+      "flowType" : "RIVER",
+      "fromSide" : "NORTH_EAST",
+      "toSide" : "SOUTH_EAST",
+      "fromPosition" : "<NE 3/4>",
+      "toPosition" : "<SE 2/4>",
+      "width" : 4,
+      "level" : 89,
+      "fromLevel" : 89,
+      "toLevel" : 89,
+      "depth" : 3,
+      "flowFeatureId" : "17645676-efb9-427e-81ff-b756d6144245"
+    } ],
+    "roadConfigParts" : [ ],
+    "riverConfigParts" : [ {
+      "partType" : "FROM",
+      "side" : null,
+      "position" : "<NE 3/4>",
+      "lx" : null,
+      "lz" : null,
+      "width" : 4,
+      "depth" : 3,
+      "level" : 89,
+      "groupId" : "17645676-efb9-427e-81ff-b756d6144245"
+    }, {
+      "partType" : "TO",
+      "side" : null,
+      "position" : "<SE 2/4>",
+      "lx" : null,
+      "lz" : null,
+      "width" : 4,
+      "depth" : 3,
+      "level" : 89,
+      "groupId" : "17645676-efb9-427e-81ff-b756d6144245"
+    } ],
+    "wallConfigParts" : [ ],
+    "name" : "stoneveil-mountains [2;0]",
+    "description" : "Part of MOUNTAINS biome",
+    "sourceBiomeName" : "stoneveil-mountains",
+    "sourceBiomeId" : "4d2ef422-560a-402a-bed6-a050f8a0a059",
+    "filler" : false
+  }, {
+    "coordinate" : {
+      "q" : 0,
+      "r" : 3
+    },
+    "parameters" : {
+      "enableLakes" : "true",
+      "continentId" : "main-continent",
+      "biomeType" : "PLAINS",
+      "dirtRatio" : "0.1",
+      "lakeDepth" : "4",
+      "biome" : "plains",
+      "continentFiller" : "true",
+      "g_asl" : "15",
+      "g_offset" : "5",
+      "biomeName" : "continent-filler-main-continent",
+      "g_builder" : "plains"
+    },
+    "areas" : { },
+    "flowSegments" : [ ],
+    "roadConfigParts" : [ ],
+    "riverConfigParts" : [ ],
+    "wallConfigParts" : [ ],
+    "name" : "continent-filler-main-continent [0;3]",
+    "description" : "Part of PLAINS biome",
+    "sourceBiomeName" : "continent-filler-main-continent",
+    "filler" : false
+  }, {
+    "coordinate" : {
+      "q" : 2,
+      "r" : 1
+    },
+    "parameters" : {
+      "g_river" : "{\"groupId\":\"17645676-efb9-427e-81ff-b756d6144245\",\"from\":[{\"depth\":3,\"level\":89,\"width\":4,\"position\":\"<NW 2/4>\"}],\"to\":[{\"depth\":3,\"level\":50,\"width\":4,\"position\":\"<SE 1/4>\"}]}",
+      "biomeType" : "MOUNTAINS",
+      "sandMaterial" : "4",
+      "p_color" : "#8B7355",
+      "g_offset" : "20",
+      "stoneMaterial" : "3",
+      "snowMaterial" : "7",
+      "sourceMountain" : "stoneveil-mountains",
+      "g_roughness" : "0.8",
+      "fillerType" : "mountain",
+      "biome" : "mountain",
+      "filler" : "true",
+      "dirtMaterial" : "2",
+      "grassMaterial" : "1",
+      "g_asl" : "80",
+      "g_frequency" : "0.7",
+      "biomeName" : "stoneveil-mountains-slopes",
+      "g_builder" : "mountain"
+    },
+    "areas" : { },
+    "flowSegments" : [ {
+      "flowType" : "RIVER",
+      "fromSide" : "NORTH_WEST",
+      "toSide" : "SOUTH_EAST",
+      "fromPosition" : "<NW 2/4>",
+      "toPosition" : "<SE 1/4>",
+      "width" : 4,
+      "level" : 89,
+      "fromLevel" : 89,
+      "toLevel" : 50,
+      "depth" : 3,
+      "flowFeatureId" : "17645676-efb9-427e-81ff-b756d6144245"
+    } ],
+    "roadConfigParts" : [ ],
+    "riverConfigParts" : [ {
+      "partType" : "FROM",
+      "side" : null,
+      "position" : "<NW 2/4>",
+      "lx" : null,
+      "lz" : null,
+      "width" : 4,
+      "depth" : 3,
+      "level" : 89,
+      "groupId" : "17645676-efb9-427e-81ff-b756d6144245"
+    }, {
+      "partType" : "TO",
+      "side" : null,
+      "position" : "<SE 1/4>",
+      "lx" : null,
+      "lz" : null,
+      "width" : 4,
+      "depth" : 3,
+      "level" : 50,
+      "groupId" : "17645676-efb9-427e-81ff-b756d6144245"
+    } ],
+    "wallConfigParts" : [ ],
+    "name" : "stoneveil-mountains-slopes [2;1]",
+    "description" : "Part of MOUNTAINS biome",
+    "sourceBiomeName" : "stoneveil-mountains-slopes",
+    "filler" : true
+  }, {
+    "coordinate" : {
+      "q" : 4,
+      "r" : 0
+    },
+    "parameters" : {
+      "biomeType" : "COAST",
+      "fillerType" : "coast",
+      "biome" : "coast",
+      "filler" : "true",
+      "p_color" : "#F0E68C",
+      "coastRing" : "0",
+      "biomeName" : "coast-ring-0",
+      "g_builder" : "coast"
+    },
+    "areas" : { },
+    "flowSegments" : [ ],
+    "roadConfigParts" : [ ],
+    "riverConfigParts" : [ ],
+    "wallConfigParts" : [ ],
+    "name" : "coast-ring-0 [4;0]",
+    "description" : "Part of COAST biome",
+    "sourceBiomeName" : "coast-ring-0",
+    "fillerType" : "COAST",
+    "filler" : true
+  }, {
+    "coordinate" : {
+      "q" : 0,
+      "r" : 4
+    },
+    "parameters" : {
+      "biomeType" : "SWAMP",
+      "sandMaterial" : "4",
+      "p_color" : "#2F4F2F",
+      "g_offset" : "10",
+      "stoneMaterial" : "2",
+      "snowMaterial" : "7",
+      "swampDepth" : "3",
+      "biome" : "swamp",
+      "dirtMaterial" : "11",
+      "grassMaterial" : "11",
+      "g_asl" : "5",
+      "g_frequency" : "0.7",
+      "biomeName" : "whispering-marsh",
+      "g_builder" : "swamp"
+    },
+    "areas" : { },
+    "flowSegments" : [ ],
+    "roadConfigParts" : [ ],
+    "riverConfigParts" : [ ],
+    "wallConfigParts" : [ ],
+    "name" : "whispering-marsh [0;4]",
+    "description" : "Part of SWAMP biome",
+    "sourceBiomeName" : "whispering-marsh",
+    "sourceBiomeId" : "63411807-0bc1-427a-9e27-e397ff6e4f94",
+    "filler" : false
+  }, {
+    "coordinate" : {
+      "q" : 2,
+      "r" : 2
+    },
+    "parameters" : {
+      "g_river" : "{\"groupId\":\"17645676-efb9-427e-81ff-b756d6144245\",\"from\":[{\"depth\":3,\"level\":50,\"width\":4,\"position\":\"<NW 1/4>\"}],\"to\":[{\"depth\":3,\"level\":50,\"width\":4,\"position\":\"<-3;3#80>\"}]}",
+      "biomeType" : "SWAMP",
+      "sandMaterial" : "4",
+      "p_color" : "#2F4F2F",
+      "g_offset" : "10",
+      "stoneMaterial" : "2",
+      "snowMaterial" : "7",
+      "swampDepth" : "3",
+      "biome" : "swamp",
+      "dirtMaterial" : "11",
+      "grassMaterial" : "11",
+      "g_asl" : "5",
+      "g_frequency" : "0.7",
+      "biomeName" : "whispering-marsh",
+      "g_builder" : "swamp"
+    },
+    "areas" : { },
+    "flowSegments" : [ {
+      "flowType" : "RIVER",
+      "fromSide" : "NORTH_WEST",
+      "fromPosition" : "<NW 1/4>",
+      "toPosition" : "<-3;3#80>",
+      "toLx" : -8,
+      "toLz" : 320,
+      "width" : 4,
+      "level" : 50,
+      "fromLevel" : 50,
+      "toLevel" : 50,
+      "depth" : 3,
+      "flowFeatureId" : "17645676-efb9-427e-81ff-b756d6144245"
+    } ],
+    "roadConfigParts" : [ ],
+    "riverConfigParts" : [ {
+      "partType" : "FROM",
+      "side" : null,
+      "position" : "<NW 1/4>",
+      "lx" : null,
+      "lz" : null,
+      "width" : 4,
+      "depth" : 3,
+      "level" : 50,
+      "groupId" : "17645676-efb9-427e-81ff-b756d6144245"
+    }, {
+      "partType" : "TO",
+      "side" : null,
+      "position" : "<-3;3#80>",
+      "lx" : null,
+      "lz" : null,
+      "width" : 4,
+      "depth" : 3,
+      "level" : 50,
+      "groupId" : "17645676-efb9-427e-81ff-b756d6144245"
+    } ],
+    "wallConfigParts" : [ ],
+    "name" : "whispering-marsh [2;2]",
+    "description" : "Part of SWAMP biome",
+    "sourceBiomeName" : "whispering-marsh",
+    "sourceBiomeId" : "63411807-0bc1-427a-9e27-e397ff6e4f94",
+    "filler" : false
+  }, {
+    "coordinate" : {
+      "q" : -4,
+      "r" : -1
+    },
+    "parameters" : {
+      "biomeType" : "COAST",
+      "fillerType" : "coast",
+      "biome" : "coast",
+      "filler" : "true",
+      "p_color" : "#F0E68C",
+      "coastRing" : "0",
+      "biomeName" : "coast-ring-0",
+      "g_builder" : "coast"
+    },
+    "areas" : { },
+    "flowSegments" : [ ],
+    "roadConfigParts" : [ ],
+    "riverConfigParts" : [ ],
+    "wallConfigParts" : [ ],
+    "name" : "coast-ring-0 [-4;-1]",
+    "description" : "Part of COAST biome",
+    "sourceBiomeName" : "coast-ring-0",
+    "fillerType" : "COAST",
+    "filler" : true
+  }, {
+    "coordinate" : {
+      "q" : 4,
+      "r" : 1
+    },
+    "parameters" : {
+      "biomeType" : "COAST",
+      "fillerType" : "coast",
+      "biome" : "coast",
+      "filler" : "true",
+      "p_color" : "#F0E68C",
+      "coastRing" : "0",
+      "biomeName" : "coast-ring-0",
+      "g_builder" : "coast"
+    },
+    "areas" : { },
+    "flowSegments" : [ ],
+    "roadConfigParts" : [ ],
+    "riverConfigParts" : [ ],
+    "wallConfigParts" : [ ],
+    "name" : "coast-ring-0 [4;1]",
+    "description" : "Part of COAST biome",
+    "sourceBiomeName" : "coast-ring-0",
+    "fillerType" : "COAST",
+    "filler" : true
+  }, {
+    "coordinate" : {
+      "q" : 0,
+      "r" : 5
+    },
+    "parameters" : {
+      "biomeType" : "COAST",
+      "fillerType" : "coast",
+      "biome" : "coast",
+      "filler" : "true",
+      "p_color" : "#F0E68C",
+      "coastRing" : "0",
+      "biomeName" : "coast-ring-0",
+      "g_builder" : "coast"
+    },
+    "areas" : { },
+    "flowSegments" : [ ],
+    "roadConfigParts" : [ ],
+    "riverConfigParts" : [ ],
+    "wallConfigParts" : [ ],
+    "name" : "coast-ring-0 [0;5]",
+    "description" : "Part of COAST biome",
+    "sourceBiomeName" : "coast-ring-0",
+    "fillerType" : "COAST",
+    "filler" : true
+  }, {
+    "coordinate" : {
+      "q" : 2,
+      "r" : 3
+    },
+    "parameters" : {
+      "enableLakes" : "true",
+      "continentId" : "main-continent",
+      "biomeType" : "PLAINS",
+      "dirtRatio" : "0.1",
+      "lakeDepth" : "4",
+      "biome" : "plains",
+      "continentFiller" : "true",
+      "g_asl" : "15",
+      "g_offset" : "5",
+      "biomeName" : "continent-filler-main-continent",
+      "g_builder" : "plains"
+    },
+    "areas" : { },
+    "flowSegments" : [ ],
+    "roadConfigParts" : [ ],
+    "riverConfigParts" : [ ],
+    "wallConfigParts" : [ ],
+    "name" : "continent-filler-main-continent [2;3]",
+    "description" : "Part of PLAINS biome",
+    "sourceBiomeName" : "continent-filler-main-continent",
+    "filler" : false
+  }, {
+    "coordinate" : {
+      "q" : 4,
+      "r" : 2
+    },
+    "parameters" : {
+      "biomeType" : "COAST",
+      "fillerType" : "coast",
+      "biome" : "coast",
+      "filler" : "true",
+      "p_color" : "#F0E68C",
+      "coastRing" : "0",
+      "biomeName" : "coast-ring-0",
+      "g_builder" : "coast"
+    },
+    "areas" : { },
+    "flowSegments" : [ ],
+    "roadConfigParts" : [ ],
+    "riverConfigParts" : [ ],
+    "wallConfigParts" : [ ],
+    "name" : "coast-ring-0 [4;2]",
+    "description" : "Part of COAST biome",
+    "sourceBiomeName" : "coast-ring-0",
+    "fillerType" : "COAST",
+    "filler" : true
+  }, {
+    "coordinate" : {
+      "q" : 2,
+      "r" : 4
+    },
+    "parameters" : {
+      "biomeType" : "SWAMP",
+      "sandMaterial" : "4",
+      "p_color" : "#2F4F2F",
+      "g_offset" : "10",
+      "stoneMaterial" : "2",
+      "snowMaterial" : "7",
+      "swampDepth" : "3",
+      "biome" : "swamp",
+      "dirtMaterial" : "11",
+      "grassMaterial" : "11",
+      "g_asl" : "5",
+      "g_frequency" : "0.7",
+      "biomeName" : "whispering-marsh",
+      "g_builder" : "swamp"
+    },
+    "areas" : { },
+    "flowSegments" : [ ],
+    "roadConfigParts" : [ ],
+    "riverConfigParts" : [ ],
+    "wallConfigParts" : [ ],
+    "name" : "whispering-marsh [2;4]",
+    "description" : "Part of SWAMP biome",
+    "sourceBiomeName" : "whispering-marsh",
+    "sourceBiomeId" : "63411807-0bc1-427a-9e27-e397ff6e4f94",
+    "filler" : false
+  }, {
+    "coordinate" : {
+      "q" : 2,
+      "r" : 5
+    },
+    "parameters" : {
+      "biomeType" : "COAST",
+      "fillerType" : "coast",
+      "biome" : "coast",
+      "filler" : "true",
+      "p_color" : "#F0E68C",
+      "coastRing" : "0",
+      "biomeName" : "coast-ring-0",
+      "g_builder" : "coast"
+    },
+    "areas" : { },
+    "flowSegments" : [ ],
+    "roadConfigParts" : [ ],
+    "riverConfigParts" : [ ],
+    "wallConfigParts" : [ ],
+    "name" : "coast-ring-0 [2;5]",
+    "description" : "Part of COAST biome",
+    "sourceBiomeName" : "coast-ring-0",
+    "fillerType" : "COAST",
+    "filler" : true
+  }, {
+    "coordinate" : {
+      "q" : 4,
+      "r" : 3
+    },
+    "parameters" : {
+      "biomeType" : "COAST",
+      "fillerType" : "coast",
+      "biome" : "coast",
+      "filler" : "true",
+      "p_color" : "#F0E68C",
+      "coastRing" : "0",
+      "biomeName" : "coast-ring-0",
+      "g_builder" : "coast"
+    },
+    "areas" : { },
+    "flowSegments" : [ ],
+    "roadConfigParts" : [ ],
+    "riverConfigParts" : [ ],
+    "wallConfigParts" : [ ],
+    "name" : "coast-ring-0 [4;3]",
+    "description" : "Part of COAST biome",
+    "sourceBiomeName" : "coast-ring-0",
+    "fillerType" : "COAST",
+    "filler" : true
+  }, {
+    "coordinate" : {
+      "q" : 4,
+      "r" : 4
+    },
+    "parameters" : {
+      "biomeType" : "COAST",
+      "fillerType" : "coast",
+      "biome" : "coast",
+      "filler" : "true",
+      "p_color" : "#F0E68C",
+      "coastRing" : "0",
+      "biomeName" : "coast-ring-0",
+      "g_builder" : "coast"
+    },
+    "areas" : { },
+    "flowSegments" : [ ],
+    "roadConfigParts" : [ ],
+    "riverConfigParts" : [ ],
+    "wallConfigParts" : [ ],
+    "name" : "coast-ring-0 [4;4]",
+    "description" : "Part of COAST biome",
+    "sourceBiomeName" : "coast-ring-0",
+    "fillerType" : "COAST",
+    "filler" : true
+  }, {
+    "coordinate" : {
+      "q" : 3,
+      "r" : -1
+    },
+    "parameters" : {
+      "g_river" : "{\"groupId\":\"17645676-efb9-427e-81ff-b756d6144245\",\"from\":[{\"depth\":3,\"level\":89,\"width\":4,\"position\":\"<W 3/4>\"}],\"to\":[{\"depth\":3,\"level\":89,\"width\":4,\"position\":\"<SW 3/4>\"}]}",
+      "biomeType" : "MOUNTAINS",
+      "sandMaterial" : "4",
+      "p_color" : "#8B7355",
+      "g_offset" : "20",
+      "stoneMaterial" : "3",
+      "snowMaterial" : "7",
+      "sourceMountain" : "stoneveil-mountains",
+      "g_roughness" : "0.8",
+      "fillerType" : "mountain",
+      "biome" : "mountain",
+      "filler" : "true",
+      "dirtMaterial" : "2",
+      "grassMaterial" : "1",
+      "g_asl" : "80",
+      "g_frequency" : "0.7",
+      "biomeName" : "stoneveil-mountains-slopes",
+      "g_builder" : "mountain"
+    },
+    "areas" : { },
+    "flowSegments" : [ {
+      "flowType" : "RIVER",
+      "fromSide" : "WEST",
+      "toSide" : "SOUTH_WEST",
+      "fromPosition" : "<W 3/4>",
+      "toPosition" : "<SW 3/4>",
+      "width" : 4,
+      "level" : 89,
+      "fromLevel" : 89,
+      "toLevel" : 89,
+      "depth" : 3,
+      "flowFeatureId" : "17645676-efb9-427e-81ff-b756d6144245"
+    } ],
+    "roadConfigParts" : [ ],
+    "riverConfigParts" : [ {
+      "partType" : "FROM",
+      "side" : null,
+      "position" : "<W 3/4>",
+      "lx" : null,
+      "lz" : null,
+      "width" : 4,
+      "depth" : 3,
+      "level" : 89,
+      "groupId" : "17645676-efb9-427e-81ff-b756d6144245"
+    }, {
+      "partType" : "TO",
+      "side" : null,
+      "position" : "<SW 3/4>",
+      "lx" : null,
+      "lz" : null,
+      "width" : 4,
+      "depth" : 3,
+      "level" : 89,
+      "groupId" : "17645676-efb9-427e-81ff-b756d6144245"
+    } ],
+    "wallConfigParts" : [ ],
+    "name" : "stoneveil-mountains-slopes [3;-1]",
+    "description" : "Part of MOUNTAINS biome",
+    "sourceBiomeName" : "stoneveil-mountains-slopes",
+    "filler" : true
+  }, {
+    "coordinate" : {
+      "q" : -5,
+      "r" : 4
+    },
+    "parameters" : {
+      "biomeType" : "FOREST",
+      "dirtRatio" : "0.3",
+      "sandMaterial" : "4",
+      "p_color" : "#228B22",
+      "g_offset" : "5",
+      "stoneMaterial" : "3",
+      "snowMaterial" : "7",
+      "g_flora" : "forest",
+      "flora_density" : "0.8",
+      "biome" : "forest",
+      "dirtMaterial" : "2",
+      "grassMaterial" : "1",
+      "g_asl" : "20",
+      "g_frequency" : "0.6",
+      "biomeName" : "greywillow-grove",
+      "g_builder" : "forest"
+    },
+    "areas" : { },
+    "flowSegments" : [ ],
+    "roadConfigParts" : [ ],
+    "riverConfigParts" : [ ],
+    "wallConfigParts" : [ ],
+    "name" : "greywillow-grove [-5;4]",
+    "description" : "Part of FOREST biome",
+    "sourceBiomeName" : "greywillow-grove",
+    "sourceBiomeId" : "ddb73a1f-e2a0-42c5-856c-cf25ea578e45",
+    "filler" : false
+  }, {
+    "coordinate" : {
+      "q" : -3,
+      "r" : 5
+    },
+    "parameters" : {
+      "biomeType" : "COAST",
+      "fillerType" : "coast",
+      "biome" : "coast",
+      "filler" : "true",
+      "p_color" : "#F0E68C",
+      "coastRing" : "0",
+      "biomeName" : "coast-ring-0",
+      "g_builder" : "coast"
+    },
+    "areas" : { },
+    "flowSegments" : [ ],
+    "roadConfigParts" : [ ],
+    "riverConfigParts" : [ ],
+    "wallConfigParts" : [ ],
+    "name" : "coast-ring-0 [-3;5]",
+    "description" : "Part of COAST biome",
+    "sourceBiomeName" : "coast-ring-0",
+    "fillerType" : "COAST",
+    "filler" : true
+  }, {
+    "coordinate" : {
+      "q" : 3,
+      "r" : -2
+    },
+    "parameters" : {
+      "biomeType" : "COAST",
+      "fillerType" : "coast",
+      "biome" : "coast",
+      "filler" : "true",
+      "p_color" : "#F0E68C",
+      "coastRing" : "0",
+      "biomeName" : "coast-ring-0",
+      "g_builder" : "coast"
+    },
+    "areas" : { },
+    "flowSegments" : [ ],
+    "roadConfigParts" : [ ],
+    "riverConfigParts" : [ ],
+    "wallConfigParts" : [ ],
+    "name" : "coast-ring-0 [3;-2]",
+    "description" : "Part of COAST biome",
+    "sourceBiomeName" : "coast-ring-0",
+    "fillerType" : "COAST",
+    "filler" : true
+  }, {
+    "coordinate" : {
+      "q" : -5,
+      "r" : 3
+    },
+    "parameters" : {
+      "enableLakes" : "true",
+      "continentId" : "main-continent",
+      "biomeType" : "PLAINS",
+      "dirtRatio" : "0.1",
+      "lakeDepth" : "4",
+      "biome" : "plains",
+      "continentFiller" : "true",
+      "g_asl" : "15",
+      "g_offset" : "5",
+      "biomeName" : "continent-filler-main-continent",
+      "g_builder" : "plains"
+    },
+    "areas" : { },
+    "flowSegments" : [ ],
+    "roadConfigParts" : [ ],
+    "riverConfigParts" : [ ],
+    "wallConfigParts" : [ ],
+    "name" : "continent-filler-main-continent [-5;3]",
+    "description" : "Part of PLAINS biome",
+    "sourceBiomeName" : "continent-filler-main-continent",
+    "filler" : false
+  }, {
+    "coordinate" : {
+      "q" : -5,
+      "r" : 5
+    },
+    "parameters" : {
+      "biomeType" : "COAST",
+      "fillerType" : "coast",
+      "biome" : "coast",
+      "filler" : "true",
+      "p_color" : "#F0E68C",
+      "coastRing" : "0",
+      "biomeName" : "coast-ring-0",
+      "g_builder" : "coast"
+    },
+    "areas" : { },
+    "flowSegments" : [ ],
+    "roadConfigParts" : [ ],
+    "riverConfigParts" : [ ],
+    "wallConfigParts" : [ ],
+    "name" : "coast-ring-0 [-5;5]",
+    "description" : "Part of COAST biome",
+    "sourceBiomeName" : "coast-ring-0",
+    "fillerType" : "COAST",
+    "filler" : true
+  }, {
+    "coordinate" : {
+      "q" : -2,
+      "r" : 3
+    },
+    "parameters" : {
+      "enableLakes" : "true",
+      "continentId" : "main-continent",
+      "biomeType" : "PLAINS",
+      "dirtRatio" : "0.1",
+      "lakeDepth" : "4",
+      "biome" : "plains",
+      "continentFiller" : "true",
+      "g_asl" : "15",
+      "g_offset" : "5",
+      "biomeName" : "continent-filler-main-continent",
+      "g_builder" : "plains"
+    },
+    "areas" : { },
+    "flowSegments" : [ ],
+    "roadConfigParts" : [ ],
+    "riverConfigParts" : [ ],
+    "wallConfigParts" : [ ],
+    "name" : "continent-filler-main-continent [-2;3]",
+    "description" : "Part of PLAINS biome",
+    "sourceBiomeName" : "continent-filler-main-continent",
+    "filler" : false
+  }, {
+    "coordinate" : {
+      "q" : -4,
+      "r" : 1
+    },
+    "parameters" : {
+      "enableLakes" : "true",
+      "continentId" : "main-continent",
+      "biomeType" : "PLAINS",
+      "dirtRatio" : "0.1",
+      "lakeDepth" : "4",
+      "biome" : "plains",
+      "continentFiller" : "true",
+      "g_asl" : "15",
+      "g_offset" : "5",
+      "biomeName" : "continent-filler-main-continent",
+      "g_builder" : "plains"
+    },
+    "areas" : { },
+    "flowSegments" : [ ],
+    "roadConfigParts" : [ ],
+    "riverConfigParts" : [ ],
+    "wallConfigParts" : [ ],
+    "name" : "continent-filler-main-continent [-4;1]",
+    "description" : "Part of PLAINS biome",
+    "sourceBiomeName" : "continent-filler-main-continent",
+    "filler" : false
+  }, {
+    "coordinate" : {
+      "q" : -2,
+      "r" : 2
+    },
+    "parameters" : {
+      "enableLakes" : "true",
+      "continentId" : "main-continent",
+      "biomeType" : "PLAINS",
+      "dirtRatio" : "0.1",
+      "lakeDepth" : "4",
+      "biome" : "plains",
+      "continentFiller" : "true",
+      "g_asl" : "15",
+      "g_offset" : "5",
+      "biomeName" : "continent-filler-main-continent",
+      "g_builder" : "plains"
+    },
+    "areas" : { },
+    "flowSegments" : [ ],
+    "roadConfigParts" : [ ],
+    "riverConfigParts" : [ ],
+    "wallConfigParts" : [ ],
+    "name" : "continent-filler-main-continent [-2;2]",
+    "description" : "Part of PLAINS biome",
+    "sourceBiomeName" : "continent-filler-main-continent",
+    "filler" : false
+  }, {
+    "coordinate" : {
+      "q" : -4,
+      "r" : 0
+    },
+    "parameters" : {
+      "enableLakes" : "true",
+      "continentId" : "main-continent",
+      "biomeType" : "PLAINS",
+      "dirtRatio" : "0.1",
+      "lakeDepth" : "4",
+      "biome" : "plains",
+      "continentFiller" : "true",
+      "g_asl" : "15",
+      "g_offset" : "5",
+      "biomeName" : "continent-filler-main-continent",
+      "g_builder" : "plains"
+    },
+    "areas" : { },
+    "flowSegments" : [ ],
+    "roadConfigParts" : [ ],
+    "riverConfigParts" : [ ],
+    "wallConfigParts" : [ ],
+    "name" : "continent-filler-main-continent [-4;0]",
+    "description" : "Part of PLAINS biome",
+    "sourceBiomeName" : "continent-filler-main-continent",
+    "filler" : false
+  }, {
+    "coordinate" : {
+      "q" : -2,
+      "r" : 5
+    },
+    "parameters" : {
+      "biomeType" : "COAST",
+      "fillerType" : "coast",
+      "biome" : "coast",
+      "filler" : "true",
+      "p_color" : "#F0E68C",
+      "coastRing" : "0",
+      "biomeName" : "coast-ring-0",
+      "g_builder" : "coast"
+    },
+    "areas" : { },
+    "flowSegments" : [ ],
+    "roadConfigParts" : [ ],
+    "riverConfigParts" : [ ],
+    "wallConfigParts" : [ ],
+    "name" : "coast-ring-0 [-2;5]",
+    "description" : "Part of COAST biome",
+    "sourceBiomeName" : "coast-ring-0",
+    "fillerType" : "COAST",
+    "filler" : true
+  }, {
+    "coordinate" : {
+      "q" : -6,
+      "r" : 1
+    },
+    "parameters" : {
+      "biomeType" : "COAST",
+      "fillerType" : "coast",
+      "biome" : "coast",
+      "filler" : "true",
+      "p_color" : "#F0E68C",
+      "coastRing" : "0",
+      "biomeName" : "coast-ring-0",
+      "g_builder" : "coast"
+    },
+    "areas" : { },
+    "flowSegments" : [ ],
+    "roadConfigParts" : [ ],
+    "riverConfigParts" : [ ],
+    "wallConfigParts" : [ ],
+    "name" : "coast-ring-0 [-6;1]",
+    "description" : "Part of COAST biome",
+    "sourceBiomeName" : "coast-ring-0",
+    "fillerType" : "COAST",
+    "filler" : true
+  }, {
+    "coordinate" : {
+      "q" : -4,
+      "r" : 3
+    },
+    "parameters" : {
+      "biomeType" : "FOREST",
+      "dirtRatio" : "0.3",
+      "sandMaterial" : "4",
+      "p_color" : "#228B22",
+      "g_offset" : "5",
+      "stoneMaterial" : "3",
+      "snowMaterial" : "7",
+      "g_flora" : "forest",
+      "flora_density" : "0.8",
+      "biome" : "forest",
+      "dirtMaterial" : "2",
+      "grassMaterial" : "1",
+      "g_asl" : "20",
+      "g_frequency" : "0.6",
+      "biomeName" : "greywillow-grove",
+      "g_builder" : "forest"
+    },
+    "areas" : { },
+    "flowSegments" : [ ],
+    "roadConfigParts" : [ ],
+    "riverConfigParts" : [ ],
+    "wallConfigParts" : [ ],
+    "name" : "greywillow-grove [-4;3]",
+    "description" : "Part of FOREST biome",
+    "sourceBiomeName" : "greywillow-grove",
+    "sourceBiomeId" : "ddb73a1f-e2a0-42c5-856c-cf25ea578e45",
+    "filler" : false
+  }, {
+    "coordinate" : {
+      "q" : -3,
+      "r" : -1
+    },
+    "parameters" : {
+      "biomeType" : "COAST",
+      "fillerType" : "coast",
+      "biome" : "coast",
+      "filler" : "true",
+      "p_color" : "#F0E68C",
+      "coastRing" : "0",
+      "biomeName" : "coast-ring-0",
+      "g_builder" : "coast"
+    },
+    "areas" : { },
+    "flowSegments" : [ ],
+    "roadConfigParts" : [ ],
+    "riverConfigParts" : [ ],
+    "wallConfigParts" : [ ],
+    "name" : "coast-ring-0 [-3;-1]",
+    "description" : "Part of COAST biome",
+    "sourceBiomeName" : "coast-ring-0",
+    "fillerType" : "COAST",
+    "filler" : true
+  }, {
+    "coordinate" : {
+      "q" : -6,
+      "r" : 0
+    },
+    "parameters" : {
+      "biomeType" : "COAST",
+      "fillerType" : "coast",
+      "biome" : "coast",
+      "filler" : "true",
+      "p_color" : "#F0E68C",
+      "coastRing" : "0",
+      "biomeName" : "coast-ring-0",
+      "g_builder" : "coast"
+    },
+    "areas" : { },
+    "flowSegments" : [ ],
+    "roadConfigParts" : [ ],
+    "riverConfigParts" : [ ],
+    "wallConfigParts" : [ ],
+    "name" : "coast-ring-0 [-6;0]",
+    "description" : "Part of COAST biome",
+    "sourceBiomeName" : "coast-ring-0",
+    "fillerType" : "COAST",
+    "filler" : true
+  }, {
+    "coordinate" : {
+      "q" : -2,
+      "r" : 4
+    },
+    "parameters" : {
+      "enableLakes" : "true",
+      "continentId" : "main-continent",
+      "biomeType" : "PLAINS",
+      "dirtRatio" : "0.1",
+      "lakeDepth" : "4",
+      "biome" : "plains",
+      "continentFiller" : "true",
+      "g_asl" : "15",
+      "g_offset" : "5",
+      "biomeName" : "continent-filler-main-continent",
+      "g_builder" : "plains"
+    },
+    "areas" : { },
+    "flowSegments" : [ ],
+    "roadConfigParts" : [ ],
+    "riverConfigParts" : [ ],
+    "wallConfigParts" : [ ],
+    "name" : "continent-filler-main-continent [-2;4]",
+    "description" : "Part of PLAINS biome",
+    "sourceBiomeName" : "continent-filler-main-continent",
+    "filler" : false
+  }, {
+    "coordinate" : {
+      "q" : -4,
+      "r" : 2
+    },
+    "parameters" : {
+      "enableLakes" : "true",
+      "continentId" : "main-continent",
+      "biomeType" : "PLAINS",
+      "dirtRatio" : "0.1",
+      "lakeDepth" : "4",
+      "biome" : "plains",
+      "continentFiller" : "true",
+      "g_asl" : "15",
+      "g_offset" : "5",
+      "biomeName" : "continent-filler-main-continent",
+      "g_builder" : "plains"
+    },
+    "areas" : { },
+    "flowSegments" : [ ],
+    "roadConfigParts" : [ ],
+    "riverConfigParts" : [ ],
+    "wallConfigParts" : [ ],
+    "name" : "continent-filler-main-continent [-4;2]",
+    "description" : "Part of PLAINS biome",
+    "sourceBiomeName" : "continent-filler-main-continent",
+    "filler" : false
+  }, {
+    "coordinate" : {
+      "q" : -2,
+      "r" : 1
+    },
+    "parameters" : {
+      "enableLakes" : "true",
+      "continentId" : "main-continent",
+      "biomeType" : "PLAINS",
+      "dirtRatio" : "0.1",
+      "lakeDepth" : "4",
+      "biome" : "plains",
+      "continentFiller" : "true",
+      "g_asl" : "15",
+      "g_offset" : "5",
+      "biomeName" : "continent-filler-main-continent",
+      "g_builder" : "plains"
+    },
+    "areas" : { },
+    "flowSegments" : [ ],
+    "roadConfigParts" : [ ],
+    "riverConfigParts" : [ ],
+    "wallConfigParts" : [ ],
+    "name" : "continent-filler-main-continent [-2;1]",
+    "description" : "Part of PLAINS biome",
+    "sourceBiomeName" : "continent-filler-main-continent",
+    "filler" : false
+  }, {
+    "coordinate" : {
+      "q" : -2,
+      "r" : 0
+    },
+    "parameters" : {
+      "biomeType" : "COAST",
+      "fillerType" : "coast",
+      "biome" : "coast",
+      "filler" : "true",
+      "p_color" : "#F0E68C",
+      "coastRing" : "0",
+      "biomeName" : "coast-ring-0",
+      "g_builder" : "coast"
+    },
+    "areas" : { },
+    "flowSegments" : [ ],
+    "roadConfigParts" : [ ],
+    "riverConfigParts" : [ ],
+    "wallConfigParts" : [ ],
+    "name" : "coast-ring-0 [-2;0]",
+    "description" : "Part of COAST biome",
+    "sourceBiomeName" : "coast-ring-0",
+    "fillerType" : "COAST",
+    "filler" : true
+  }, {
+    "coordinate" : {
+      "q" : 2,
+      "r" : -2
+    },
+    "parameters" : {
+      "biomeType" : "COAST",
+      "fillerType" : "coast",
+      "biome" : "coast",
+      "filler" : "true",
+      "p_color" : "#F0E68C",
+      "coastRing" : "0",
+      "biomeName" : "coast-ring-0",
+      "g_builder" : "coast"
+    },
+    "areas" : { },
+    "flowSegments" : [ ],
+    "roadConfigParts" : [ ],
+    "riverConfigParts" : [ ],
+    "wallConfigParts" : [ ],
+    "name" : "coast-ring-0 [2;-2]",
+    "description" : "Part of COAST biome",
+    "sourceBiomeName" : "coast-ring-0",
+    "fillerType" : "COAST",
+    "filler" : true
+  }, {
+    "coordinate" : {
+      "q" : 2,
+      "r" : -1
+    },
+    "parameters" : {
+      "g_river" : "{\"groupId\":\"17645676-efb9-427e-81ff-b756d6144245\",\"from\":[{\"depth\":3,\"level\":89,\"width\":4,\"position\":\"<SW 3/4>\"}],\"to\":[{\"depth\":3,\"level\":89,\"width\":4,\"position\":\"<E 3/4>\"}]}",
+      "biomeType" : "MOUNTAINS",
+      "sandMaterial" : "4",
+      "p_color" : "#8B7355",
+      "g_offset" : "20",
+      "stoneMaterial" : "3",
+      "snowMaterial" : "7",
+      "sourceMountain" : "stoneveil-mountains",
+      "g_roughness" : "0.8",
+      "fillerType" : "mountain",
+      "biome" : "mountain",
+      "filler" : "true",
+      "dirtMaterial" : "2",
+      "grassMaterial" : "1",
+      "g_asl" : "80",
+      "g_frequency" : "0.7",
+      "biomeName" : "stoneveil-mountains-slopes",
+      "g_builder" : "mountain"
+    },
+    "areas" : { },
+    "flowSegments" : [ {
+      "flowType" : "RIVER",
+      "fromSide" : "SOUTH_WEST",
+      "toSide" : "EAST",
+      "fromPosition" : "<SW 3/4>",
+      "toPosition" : "<E 3/4>",
+      "width" : 4,
+      "level" : 89,
+      "fromLevel" : 89,
+      "toLevel" : 89,
+      "depth" : 3,
+      "flowFeatureId" : "17645676-efb9-427e-81ff-b756d6144245"
+    } ],
+    "roadConfigParts" : [ ],
+    "riverConfigParts" : [ {
+      "partType" : "FROM",
+      "side" : null,
+      "position" : "<SW 3/4>",
+      "lx" : null,
+      "lz" : null,
+      "width" : 4,
+      "depth" : 3,
+      "level" : 89,
+      "groupId" : "17645676-efb9-427e-81ff-b756d6144245"
+    }, {
+      "partType" : "TO",
+      "side" : null,
+      "position" : "<E 3/4>",
+      "lx" : null,
+      "lz" : null,
+      "width" : 4,
+      "depth" : 3,
+      "level" : 89,
+      "groupId" : "17645676-efb9-427e-81ff-b756d6144245"
+    } ],
+    "wallConfigParts" : [ ],
+    "name" : "stoneveil-mountains-slopes [2;-1]",
+    "description" : "Part of MOUNTAINS biome",
+    "sourceBiomeName" : "stoneveil-mountains-slopes",
+    "filler" : true
+  }, {
+    "coordinate" : {
+      "q" : 1,
+      "r" : 0
+    },
+    "parameters" : {
+      "g_river" : "{\"groupId\":\"17645676-efb9-427e-81ff-b756d6144245\",\"from\":[{\"depth\":3,\"level\":114,\"width\":4,\"position\":\"<-2;2#80>\"}],\"to\":[{\"depth\":3,\"level\":89,\"width\":4,\"position\":\"<NE 3/4>\"}]}",
+      "biomeType" : "MOUNTAINS",
+      "sandMaterial" : "4",
+      "p_color" : "#8B7355",
+      "g_offset" : "30",
+      "stoneMaterial" : "3",
+      "snowMaterial" : "7",
+      "g_roughness" : "0.8",
+      "biome" : "mountain",
+      "dirtMaterial" : "2",
+      "grassMaterial" : "1",
+      "g_asl" : "100",
+      "g_frequency" : "0.8",
+      "biomeName" : "stoneveil-mountains",
+      "g_builder" : "mountain"
+    },
+    "areas" : { },
+    "flowSegments" : [ {
+      "flowType" : "RIVER",
+      "toSide" : "NORTH_EAST",
+      "fromPosition" : "<-2;2#80>",
+      "toPosition" : "<NE 3/4>",
+      "fromLx" : 61,
+      "fromLz" : 280,
+      "width" : 4,
+      "level" : 114,
+      "fromLevel" : 114,
+      "toLevel" : 89,
+      "depth" : 3,
+      "flowFeatureId" : "17645676-efb9-427e-81ff-b756d6144245"
+    } ],
+    "roadConfigParts" : [ ],
+    "riverConfigParts" : [ {
+      "partType" : "FROM",
+      "side" : null,
+      "position" : "<-2;2#80>",
+      "lx" : null,
+      "lz" : null,
+      "width" : 4,
+      "depth" : 3,
+      "level" : 114,
+      "groupId" : "17645676-efb9-427e-81ff-b756d6144245"
+    }, {
+      "partType" : "TO",
+      "side" : null,
+      "position" : "<NE 3/4>",
+      "lx" : null,
+      "lz" : null,
+      "width" : 4,
+      "depth" : 3,
+      "level" : 89,
+      "groupId" : "17645676-efb9-427e-81ff-b756d6144245"
+    } ],
+    "wallConfigParts" : [ ],
+    "name" : "stoneveil-mountains [1;0]",
+    "description" : "Part of MOUNTAINS biome",
+    "sourceBiomeName" : "stoneveil-mountains",
+    "sourceBiomeId" : "4d2ef422-560a-402a-bed6-a050f8a0a059",
+    "filler" : false
+  }, {
+    "coordinate" : {
+      "q" : 1,
+      "r" : 1
+    },
+    "parameters" : {
+      "biomeType" : "MOUNTAINS",
+      "sandMaterial" : "4",
+      "p_color" : "#8B7355",
+      "g_offset" : "20",
+      "stoneMaterial" : "3",
+      "snowMaterial" : "7",
+      "sourceMountain" : "stoneveil-mountains",
+      "g_roughness" : "0.8",
+      "fillerType" : "mountain",
+      "biome" : "mountain",
+      "filler" : "true",
+      "dirtMaterial" : "2",
+      "grassMaterial" : "1",
+      "g_asl" : "80",
+      "g_frequency" : "0.7",
+      "biomeName" : "stoneveil-mountains-slopes",
+      "g_builder" : "mountain"
+    },
+    "areas" : { },
+    "flowSegments" : [ ],
+    "roadConfigParts" : [ ],
+    "riverConfigParts" : [ ],
+    "wallConfigParts" : [ ],
+    "name" : "stoneveil-mountains-slopes [1;1]",
+    "description" : "Part of MOUNTAINS biome",
+    "sourceBiomeName" : "stoneveil-mountains-slopes",
+    "filler" : true
+  }, {
+    "coordinate" : {
+      "q" : 1,
+      "r" : 2
+    },
+    "parameters" : {
+      "enableLakes" : "true",
+      "continentId" : "main-continent",
+      "biomeType" : "PLAINS",
+      "dirtRatio" : "0.1",
+      "lakeDepth" : "4",
+      "biome" : "plains",
+      "continentFiller" : "true",
+      "g_asl" : "15",
+      "g_offset" : "5",
+      "biomeName" : "continent-filler-main-continent",
+      "g_builder" : "plains"
+    },
+    "areas" : { },
+    "flowSegments" : [ ],
+    "roadConfigParts" : [ ],
+    "riverConfigParts" : [ ],
+    "wallConfigParts" : [ ],
+    "name" : "continent-filler-main-continent [1;2]",
+    "description" : "Part of PLAINS biome",
+    "sourceBiomeName" : "continent-filler-main-continent",
+    "filler" : false
+  }, {
+    "coordinate" : {
+      "q" : 3,
+      "r" : 0
+    },
+    "parameters" : {
+      "biomeType" : "MOUNTAINS",
+      "sandMaterial" : "4",
+      "p_color" : "#8B7355",
+      "g_offset" : "20",
+      "stoneMaterial" : "3",
+      "snowMaterial" : "7",
+      "sourceMountain" : "stoneveil-mountains",
+      "g_roughness" : "0.8",
+      "fillerType" : "mountain",
+      "biome" : "mountain",
+      "filler" : "true",
+      "dirtMaterial" : "2",
+      "grassMaterial" : "1",
+      "g_asl" : "80",
+      "g_frequency" : "0.7",
+      "biomeName" : "stoneveil-mountains-slopes",
+      "g_builder" : "mountain"
+    },
+    "areas" : { },
+    "flowSegments" : [ ],
+    "roadConfigParts" : [ ],
+    "riverConfigParts" : [ ],
+    "wallConfigParts" : [ ],
+    "name" : "stoneveil-mountains-slopes [3;0]",
+    "description" : "Part of MOUNTAINS biome",
+    "sourceBiomeName" : "stoneveil-mountains-slopes",
+    "filler" : true
+  }, {
+    "coordinate" : {
+      "q" : 3,
+      "r" : 1
+    },
+    "parameters" : {
+      "enableLakes" : "true",
+      "continentId" : "main-continent",
+      "biomeType" : "PLAINS",
+      "dirtRatio" : "0.1",
+      "lakeDepth" : "4",
+      "biome" : "plains",
+      "continentFiller" : "true",
+      "g_asl" : "15",
+      "g_offset" : "5",
+      "biomeName" : "continent-filler-main-continent",
+      "g_builder" : "plains"
+    },
+    "areas" : { },
+    "flowSegments" : [ ],
+    "roadConfigParts" : [ ],
+    "riverConfigParts" : [ ],
+    "wallConfigParts" : [ ],
+    "name" : "continent-filler-main-continent [3;1]",
+    "description" : "Part of PLAINS biome",
+    "sourceBiomeName" : "continent-filler-main-continent",
+    "filler" : false
+  }, {
+    "coordinate" : {
+      "q" : 1,
+      "r" : 3
+    },
+    "parameters" : {
+      "biomeType" : "SWAMP",
+      "sandMaterial" : "4",
+      "p_color" : "#2F4F2F",
+      "g_offset" : "10",
+      "stoneMaterial" : "2",
+      "snowMaterial" : "7",
+      "swampDepth" : "3",
+      "biome" : "swamp",
+      "dirtMaterial" : "11",
+      "grassMaterial" : "11",
+      "g_asl" : "5",
+      "g_frequency" : "0.7",
+      "biomeName" : "whispering-marsh",
+      "g_builder" : "swamp"
+    },
+    "areas" : { },
+    "flowSegments" : [ ],
+    "roadConfigParts" : [ ],
+    "riverConfigParts" : [ ],
+    "wallConfigParts" : [ ],
+    "name" : "whispering-marsh [1;3]",
+    "description" : "Part of SWAMP biome",
+    "sourceBiomeName" : "whispering-marsh",
+    "sourceBiomeId" : "63411807-0bc1-427a-9e27-e397ff6e4f94",
+    "filler" : false
+  }, {
+    "coordinate" : {
+      "q" : 1,
+      "r" : 4
+    },
+    "parameters" : {
+      "biomeType" : "SWAMP",
+      "sandMaterial" : "4",
+      "p_color" : "#2F4F2F",
+      "g_offset" : "10",
+      "stoneMaterial" : "2",
+      "snowMaterial" : "7",
+      "swampDepth" : "3",
+      "biome" : "swamp",
+      "dirtMaterial" : "11",
+      "grassMaterial" : "11",
+      "g_asl" : "5",
+      "g_frequency" : "0.7",
+      "biomeName" : "whispering-marsh",
+      "g_builder" : "swamp"
+    },
+    "areas" : { },
+    "flowSegments" : [ ],
+    "roadConfigParts" : [ ],
+    "riverConfigParts" : [ ],
+    "wallConfigParts" : [ ],
+    "name" : "whispering-marsh [1;4]",
+    "description" : "Part of SWAMP biome",
+    "sourceBiomeName" : "whispering-marsh",
+    "sourceBiomeId" : "63411807-0bc1-427a-9e27-e397ff6e4f94",
+    "filler" : false
+  }, {
+    "coordinate" : {
+      "q" : 3,
+      "r" : 2
+    },
+    "parameters" : {
+      "biomeType" : "SWAMP",
+      "sandMaterial" : "4",
+      "p_color" : "#2F4F2F",
+      "g_offset" : "10",
+      "stoneMaterial" : "2",
+      "snowMaterial" : "7",
+      "swampDepth" : "3",
+      "biome" : "swamp",
+      "dirtMaterial" : "11",
+      "grassMaterial" : "11",
+      "g_asl" : "5",
+      "g_frequency" : "0.7",
+      "biomeName" : "whispering-marsh",
+      "g_builder" : "swamp"
+    },
+    "areas" : { },
+    "flowSegments" : [ ],
+    "roadConfigParts" : [ ],
+    "riverConfigParts" : [ ],
+    "wallConfigParts" : [ ],
+    "name" : "whispering-marsh [3;2]",
+    "description" : "Part of SWAMP biome",
+    "sourceBiomeName" : "whispering-marsh",
+    "sourceBiomeId" : "63411807-0bc1-427a-9e27-e397ff6e4f94",
+    "filler" : false
+  }, {
+    "coordinate" : {
+      "q" : 1,
+      "r" : 5
+    },
+    "parameters" : {
+      "biomeType" : "COAST",
+      "fillerType" : "coast",
+      "biome" : "coast",
+      "filler" : "true",
+      "p_color" : "#F0E68C",
+      "coastRing" : "0",
+      "biomeName" : "coast-ring-0",
+      "g_builder" : "coast"
+    },
+    "areas" : { },
+    "flowSegments" : [ ],
+    "roadConfigParts" : [ ],
+    "riverConfigParts" : [ ],
+    "wallConfigParts" : [ ],
+    "name" : "coast-ring-0 [1;5]",
+    "description" : "Part of COAST biome",
+    "sourceBiomeName" : "coast-ring-0",
+    "fillerType" : "COAST",
+    "filler" : true
+  }, {
+    "coordinate" : {
+      "q" : 3,
+      "r" : 3
+    },
+    "parameters" : {
+      "biomeType" : "SWAMP",
+      "sandMaterial" : "4",
+      "p_color" : "#2F4F2F",
+      "g_offset" : "10",
+      "stoneMaterial" : "2",
+      "snowMaterial" : "7",
+      "swampDepth" : "3",
+      "biome" : "swamp",
+      "dirtMaterial" : "11",
+      "grassMaterial" : "11",
+      "g_asl" : "5",
+      "g_frequency" : "0.7",
+      "biomeName" : "whispering-marsh",
+      "g_builder" : "swamp"
+    },
+    "areas" : { },
+    "flowSegments" : [ ],
+    "roadConfigParts" : [ ],
+    "riverConfigParts" : [ ],
+    "wallConfigParts" : [ ],
+    "name" : "whispering-marsh [3;3]",
+    "description" : "Part of SWAMP biome",
+    "sourceBiomeName" : "whispering-marsh",
+    "sourceBiomeId" : "63411807-0bc1-427a-9e27-e397ff6e4f94",
+    "filler" : false
+  }, {
+    "coordinate" : {
+      "q" : 3,
+      "r" : 4
+    },
+    "parameters" : {
+      "enableLakes" : "true",
+      "continentId" : "main-continent",
+      "biomeType" : "PLAINS",
+      "dirtRatio" : "0.1",
+      "lakeDepth" : "4",
+      "biome" : "plains",
+      "continentFiller" : "true",
+      "g_asl" : "15",
+      "g_offset" : "5",
+      "biomeName" : "continent-filler-main-continent",
+      "g_builder" : "plains"
+    },
+    "areas" : { },
+    "flowSegments" : [ ],
+    "roadConfigParts" : [ ],
+    "riverConfigParts" : [ ],
+    "wallConfigParts" : [ ],
+    "name" : "continent-filler-main-continent [3;4]",
+    "description" : "Part of PLAINS biome",
+    "sourceBiomeName" : "continent-filler-main-continent",
+    "filler" : false
+  }, {
+    "coordinate" : {
+      "q" : 3,
+      "r" : 5
+    },
+    "parameters" : {
+      "biomeType" : "COAST",
+      "fillerType" : "coast",
+      "biome" : "coast",
+      "filler" : "true",
+      "p_color" : "#F0E68C",
+      "coastRing" : "0",
+      "biomeName" : "coast-ring-0",
+      "g_builder" : "coast"
+    },
+    "areas" : { },
+    "flowSegments" : [ ],
+    "roadConfigParts" : [ ],
+    "riverConfigParts" : [ ],
+    "wallConfigParts" : [ ],
+    "name" : "coast-ring-0 [3;5]",
+    "description" : "Part of COAST biome",
+    "sourceBiomeName" : "coast-ring-0",
+    "fillerType" : "COAST",
+    "filler" : true
+  }, {
+    "coordinate" : {
+      "q" : -4,
+      "r" : 5
+    },
+    "parameters" : {
+      "biomeType" : "COAST",
+      "fillerType" : "coast",
+      "biome" : "coast",
+      "filler" : "true",
+      "p_color" : "#F0E68C",
+      "coastRing" : "0",
+      "biomeName" : "coast-ring-0",
+      "g_builder" : "coast"
+    },
+    "areas" : { },
+    "flowSegments" : [ ],
+    "roadConfigParts" : [ ],
+    "riverConfigParts" : [ ],
+    "wallConfigParts" : [ ],
+    "name" : "coast-ring-0 [-4;5]",
+    "description" : "Part of COAST biome",
+    "sourceBiomeName" : "coast-ring-0",
+    "fillerType" : "COAST",
+    "filler" : true
+  }, {
+    "coordinate" : {
+      "q" : -6,
+      "r" : 3
+    },
+    "parameters" : {
+      "biomeType" : "COAST",
+      "fillerType" : "coast",
+      "biome" : "coast",
+      "filler" : "true",
+      "p_color" : "#F0E68C",
+      "coastRing" : "0",
+      "biomeName" : "coast-ring-0",
+      "g_builder" : "coast"
+    },
+    "areas" : { },
+    "flowSegments" : [ ],
+    "roadConfigParts" : [ ],
+    "riverConfigParts" : [ ],
+    "wallConfigParts" : [ ],
+    "name" : "coast-ring-0 [-6;3]",
+    "description" : "Part of COAST biome",
+    "sourceBiomeName" : "coast-ring-0",
+    "fillerType" : "COAST",
+    "filler" : true
+  }, {
+    "coordinate" : {
+      "q" : -6,
+      "r" : 2
+    },
+    "parameters" : {
+      "biomeType" : "COAST",
+      "fillerType" : "coast",
+      "biome" : "coast",
+      "filler" : "true",
+      "p_color" : "#F0E68C",
+      "coastRing" : "0",
+      "biomeName" : "coast-ring-0",
+      "g_builder" : "coast"
+    },
+    "areas" : { },
+    "flowSegments" : [ ],
+    "roadConfigParts" : [ ],
+    "riverConfigParts" : [ ],
+    "wallConfigParts" : [ ],
+    "name" : "coast-ring-0 [-6;2]",
+    "description" : "Part of COAST biome",
+    "sourceBiomeName" : "coast-ring-0",
+    "fillerType" : "COAST",
+    "filler" : true
+  }, {
+    "coordinate" : {
+      "q" : -4,
+      "r" : 4
+    },
+    "parameters" : {
+      "enableLakes" : "true",
+      "continentId" : "main-continent",
+      "biomeType" : "PLAINS",
+      "dirtRatio" : "0.1",
+      "lakeDepth" : "4",
+      "biome" : "plains",
+      "continentFiller" : "true",
+      "g_asl" : "15",
+      "g_offset" : "5",
+      "biomeName" : "continent-filler-main-continent",
+      "g_builder" : "plains"
+    },
+    "areas" : { },
+    "flowSegments" : [ ],
+    "roadConfigParts" : [ ],
+    "riverConfigParts" : [ ],
+    "wallConfigParts" : [ ],
+    "name" : "continent-filler-main-continent [-4;4]",
+    "description" : "Part of PLAINS biome",
+    "sourceBiomeName" : "continent-filler-main-continent",
+    "filler" : false
+  }, {
+    "coordinate" : {
+      "q" : -6,
+      "r" : 5
+    },
+    "parameters" : {
+      "biomeType" : "COAST",
+      "fillerType" : "coast",
+      "biome" : "coast",
+      "filler" : "true",
+      "p_color" : "#F0E68C",
+      "coastRing" : "0",
+      "biomeName" : "coast-ring-0",
+      "g_builder" : "coast"
+    },
+    "areas" : { },
+    "flowSegments" : [ ],
+    "roadConfigParts" : [ ],
+    "riverConfigParts" : [ ],
+    "wallConfigParts" : [ ],
+    "name" : "coast-ring-0 [-6;5]",
+    "description" : "Part of COAST biome",
+    "sourceBiomeName" : "coast-ring-0",
+    "fillerType" : "COAST",
+    "filler" : true
+  }, {
+    "coordinate" : {
+      "q" : -6,
+      "r" : 4
+    },
+    "parameters" : {
+      "biomeType" : "COAST",
+      "fillerType" : "coast",
+      "biome" : "coast",
+      "filler" : "true",
+      "p_color" : "#F0E68C",
+      "coastRing" : "0",
+      "biomeName" : "coast-ring-0",
+      "g_builder" : "coast"
+    },
+    "areas" : { },
+    "flowSegments" : [ ],
+    "roadConfigParts" : [ ],
+    "riverConfigParts" : [ ],
+    "wallConfigParts" : [ ],
+    "name" : "coast-ring-0 [-6;4]",
+    "description" : "Part of COAST biome",
+    "sourceBiomeName" : "coast-ring-0",
+    "fillerType" : "COAST",
+    "filler" : true
+  }, {
+    "coordinate" : {
+      "q" : 1,
+      "r" : -2
+    },
+    "parameters" : {
+      "biomeType" : "COAST",
+      "fillerType" : "coast",
+      "biome" : "coast",
+      "filler" : "true",
+      "p_color" : "#F0E68C",
+      "coastRing" : "0",
+      "biomeName" : "coast-ring-0",
+      "g_builder" : "coast"
+    },
+    "areas" : { },
+    "flowSegments" : [ ],
+    "roadConfigParts" : [ ],
+    "riverConfigParts" : [ ],
+    "wallConfigParts" : [ ],
+    "name" : "coast-ring-0 [1;-2]",
+    "description" : "Part of COAST biome",
+    "sourceBiomeName" : "coast-ring-0",
+    "fillerType" : "COAST",
+    "filler" : true
+  }, {
+    "coordinate" : {
+      "q" : 1,
+      "r" : -1
+    },
+    "parameters" : {
+      "biomeType" : "MOUNTAINS",
+      "sandMaterial" : "4",
+      "p_color" : "#8B7355",
+      "g_offset" : "20",
+      "stoneMaterial" : "3",
+      "snowMaterial" : "7",
+      "sourceMountain" : "stoneveil-mountains",
+      "g_roughness" : "0.8",
+      "fillerType" : "mountain",
+      "biome" : "mountain",
+      "filler" : "true",
+      "dirtMaterial" : "2",
+      "grassMaterial" : "1",
+      "g_asl" : "80",
+      "g_frequency" : "0.7",
+      "biomeName" : "stoneveil-mountains-slopes",
+      "g_builder" : "mountain"
+    },
+    "areas" : { },
+    "flowSegments" : [ ],
+    "roadConfigParts" : [ ],
+    "riverConfigParts" : [ ],
+    "wallConfigParts" : [ ],
+    "name" : "stoneveil-mountains-slopes [1;-1]",
+    "description" : "Part of MOUNTAINS biome",
+    "sourceBiomeName" : "stoneveil-mountains-slopes",
+    "filler" : true
+  }, {
+    "coordinate" : {
+      "q" : -5,
+      "r" : -1
+    },
+    "parameters" : {
+      "biomeType" : "COAST",
+      "fillerType" : "coast",
+      "biome" : "coast",
+      "filler" : "true",
+      "p_color" : "#F0E68C",
+      "coastRing" : "0",
+      "biomeName" : "coast-ring-0",
+      "g_builder" : "coast"
+    },
+    "areas" : { },
+    "flowSegments" : [ ],
+    "roadConfigParts" : [ ],
+    "riverConfigParts" : [ ],
+    "wallConfigParts" : [ ],
+    "name" : "coast-ring-0 [-5;-1]",
+    "description" : "Part of COAST biome",
+    "sourceBiomeName" : "coast-ring-0",
+    "fillerType" : "COAST",
+    "filler" : true
+  }, {
+    "coordinate" : {
+      "q" : -1,
+      "r" : 4
+    },
+    "parameters" : {
+      "enableLakes" : "true",
+      "continentId" : "main-continent",
+      "biomeType" : "PLAINS",
+      "dirtRatio" : "0.1",
+      "lakeDepth" : "4",
+      "biome" : "plains",
+      "continentFiller" : "true",
+      "g_asl" : "15",
+      "g_offset" : "5",
+      "biomeName" : "continent-filler-main-continent",
+      "g_builder" : "plains"
+    },
+    "areas" : { },
+    "flowSegments" : [ ],
+    "roadConfigParts" : [ ],
+    "riverConfigParts" : [ ],
+    "wallConfigParts" : [ ],
+    "name" : "continent-filler-main-continent [-1;4]",
+    "description" : "Part of PLAINS biome",
+    "sourceBiomeName" : "continent-filler-main-continent",
+    "filler" : false
+  }, {
+    "coordinate" : {
+      "q" : -3,
+      "r" : 2
+    },
+    "parameters" : {
+      "enableLakes" : "true",
+      "continentId" : "main-continent",
+      "biomeType" : "PLAINS",
+      "dirtRatio" : "0.1",
+      "lakeDepth" : "4",
+      "biome" : "plains",
+      "continentFiller" : "true",
+      "g_asl" : "15",
+      "g_offset" : "5",
+      "biomeName" : "continent-filler-main-continent",
+      "g_builder" : "plains"
+    },
+    "areas" : { },
+    "flowSegments" : [ ],
+    "roadConfigParts" : [ ],
+    "riverConfigParts" : [ ],
+    "wallConfigParts" : [ ],
+    "name" : "continent-filler-main-continent [-3;2]",
+    "description" : "Part of PLAINS biome",
+    "sourceBiomeName" : "continent-filler-main-continent",
+    "filler" : false
+  }, {
+    "coordinate" : {
+      "q" : -5,
+      "r" : 0
+    },
+    "parameters" : {
+      "enableLakes" : "true",
+      "continentId" : "main-continent",
+      "biomeType" : "PLAINS",
+      "dirtRatio" : "0.1",
+      "lakeDepth" : "4",
+      "biome" : "plains",
+      "continentFiller" : "true",
+      "g_asl" : "15",
+      "g_offset" : "5",
+      "biomeName" : "continent-filler-main-continent",
+      "g_builder" : "plains"
+    },
+    "areas" : { },
+    "flowSegments" : [ ],
+    "roadConfigParts" : [ ],
+    "riverConfigParts" : [ ],
+    "wallConfigParts" : [ ],
+    "name" : "continent-filler-main-continent [-5;0]",
+    "description" : "Part of PLAINS biome",
+    "sourceBiomeName" : "continent-filler-main-continent",
+    "filler" : false
+  }, {
+    "coordinate" : {
+      "q" : -1,
+      "r" : 3
+    },
+    "parameters" : {
+      "enableLakes" : "true",
+      "continentId" : "main-continent",
+      "biomeType" : "PLAINS",
+      "dirtRatio" : "0.1",
+      "lakeDepth" : "4",
+      "biome" : "plains",
+      "continentFiller" : "true",
+      "g_asl" : "15",
+      "g_offset" : "5",
+      "biomeName" : "continent-filler-main-continent",
+      "g_builder" : "plains"
+    },
+    "areas" : { },
+    "flowSegments" : [ ],
+    "roadConfigParts" : [ ],
+    "riverConfigParts" : [ ],
+    "wallConfigParts" : [ ],
+    "name" : "continent-filler-main-continent [-1;3]",
+    "description" : "Part of PLAINS biome",
+    "sourceBiomeName" : "continent-filler-main-continent",
+    "filler" : false
+  }, {
+    "coordinate" : {
+      "q" : -3,
+      "r" : 1
+    },
+    "parameters" : {
+      "enableLakes" : "true",
+      "continentId" : "main-continent",
+      "biomeType" : "PLAINS",
+      "dirtRatio" : "0.1",
+      "lakeDepth" : "4",
+      "biome" : "plains",
+      "continentFiller" : "true",
+      "g_asl" : "15",
+      "g_offset" : "5",
+      "biomeName" : "continent-filler-main-continent",
+      "g_builder" : "plains"
+    },
+    "areas" : { },
+    "flowSegments" : [ ],
+    "roadConfigParts" : [ ],
+    "riverConfigParts" : [ ],
+    "wallConfigParts" : [ ],
+    "name" : "continent-filler-main-continent [-3;1]",
+    "description" : "Part of PLAINS biome",
+    "sourceBiomeName" : "continent-filler-main-continent",
+    "filler" : false
+  }, {
+    "coordinate" : {
+      "q" : -5,
+      "r" : 2
+    },
+    "parameters" : {
+      "enableLakes" : "true",
+      "continentId" : "main-continent",
+      "biomeType" : "PLAINS",
+      "dirtRatio" : "0.1",
+      "lakeDepth" : "4",
+      "biome" : "plains",
+      "continentFiller" : "true",
+      "g_asl" : "15",
+      "g_offset" : "5",
+      "biomeName" : "continent-filler-main-continent",
+      "g_builder" : "plains"
+    },
+    "areas" : { },
+    "flowSegments" : [ ],
+    "roadConfigParts" : [ ],
+    "riverConfigParts" : [ ],
+    "wallConfigParts" : [ ],
+    "name" : "continent-filler-main-continent [-5;2]",
+    "description" : "Part of PLAINS biome",
+    "sourceBiomeName" : "continent-filler-main-continent",
+    "filler" : false
+  }, {
+    "coordinate" : {
+      "q" : -3,
+      "r" : 4
+    },
+    "parameters" : {
+      "biomeType" : "FOREST",
+      "dirtRatio" : "0.3",
+      "sandMaterial" : "4",
+      "p_color" : "#228B22",
+      "g_offset" : "5",
+      "stoneMaterial" : "3",
+      "snowMaterial" : "7",
+      "g_flora" : "forest",
+      "flora_density" : "0.8",
+      "biome" : "forest",
+      "dirtMaterial" : "2",
+      "grassMaterial" : "1",
+      "g_asl" : "20",
+      "g_frequency" : "0.6",
+      "biomeName" : "greywillow-grove",
+      "g_builder" : "forest"
+    },
+    "areas" : { },
+    "flowSegments" : [ ],
+    "roadConfigParts" : [ ],
+    "riverConfigParts" : [ ],
+    "wallConfigParts" : [ ],
+    "name" : "greywillow-grove [-3;4]",
+    "description" : "Part of FOREST biome",
+    "sourceBiomeName" : "greywillow-grove",
+    "sourceBiomeId" : "ddb73a1f-e2a0-42c5-856c-cf25ea578e45",
+    "filler" : false
+  }, {
+    "coordinate" : {
+      "q" : -1,
+      "r" : 5
+    },
+    "parameters" : {
+      "biomeType" : "COAST",
+      "fillerType" : "coast",
+      "biome" : "coast",
+      "filler" : "true",
+      "p_color" : "#F0E68C",
+      "coastRing" : "0",
+      "biomeName" : "coast-ring-0",
+      "g_builder" : "coast"
+    },
+    "areas" : { },
+    "flowSegments" : [ ],
+    "roadConfigParts" : [ ],
+    "riverConfigParts" : [ ],
+    "wallConfigParts" : [ ],
+    "name" : "coast-ring-0 [-1;5]",
+    "description" : "Part of COAST biome",
+    "sourceBiomeName" : "coast-ring-0",
+    "fillerType" : "COAST",
+    "filler" : true
+  }, {
+    "coordinate" : {
+      "q" : -5,
+      "r" : 1
+    },
+    "parameters" : {
+      "enableLakes" : "true",
+      "continentId" : "main-continent",
+      "biomeType" : "PLAINS",
+      "dirtRatio" : "0.1",
+      "lakeDepth" : "4",
+      "biome" : "plains",
+      "continentFiller" : "true",
+      "g_asl" : "15",
+      "g_offset" : "5",
+      "biomeName" : "continent-filler-main-continent",
+      "g_builder" : "plains"
+    },
+    "areas" : { },
+    "flowSegments" : [ ],
+    "roadConfigParts" : [ ],
+    "riverConfigParts" : [ ],
+    "wallConfigParts" : [ ],
+    "name" : "continent-filler-main-continent [-5;1]",
+    "description" : "Part of PLAINS biome",
+    "sourceBiomeName" : "continent-filler-main-continent",
+    "filler" : false
+  }, {
+    "coordinate" : {
+      "q" : -3,
+      "r" : 3
+    },
+    "parameters" : {
+      "biomeType" : "FOREST",
+      "dirtRatio" : "0.3",
+      "sandMaterial" : "4",
+      "p_color" : "#228B22",
+      "g_offset" : "5",
+      "stoneMaterial" : "3",
+      "snowMaterial" : "7",
+      "g_flora" : "forest",
+      "flora_density" : "0.8",
+      "biome" : "forest",
+      "dirtMaterial" : "2",
+      "grassMaterial" : "1",
+      "g_asl" : "20",
+      "g_frequency" : "0.6",
+      "biomeName" : "greywillow-grove",
+      "g_builder" : "forest"
+    },
+    "areas" : { },
+    "flowSegments" : [ ],
+    "roadConfigParts" : [ ],
+    "riverConfigParts" : [ ],
+    "wallConfigParts" : [ ],
+    "name" : "greywillow-grove [-3;3]",
+    "description" : "Part of FOREST biome",
+    "sourceBiomeName" : "greywillow-grove",
+    "sourceBiomeId" : "ddb73a1f-e2a0-42c5-856c-cf25ea578e45",
+    "filler" : false
+  }, {
+    "coordinate" : {
+      "q" : -1,
+      "r" : 0
+    },
+    "parameters" : {
+      "biomeType" : "COAST",
+      "fillerType" : "coast",
+      "biome" : "coast",
+      "filler" : "true",
+      "p_color" : "#F0E68C",
+      "coastRing" : "0",
+      "biomeName" : "coast-ring-0",
+      "g_builder" : "coast"
+    },
+    "areas" : { },
+    "flowSegments" : [ ],
+    "roadConfigParts" : [ ],
+    "riverConfigParts" : [ ],
+    "wallConfigParts" : [ ],
+    "name" : "coast-ring-0 [-1;0]",
+    "description" : "Part of COAST biome",
+    "sourceBiomeName" : "coast-ring-0",
+    "fillerType" : "COAST",
+    "filler" : true
+  }, {
+    "coordinate" : {
+      "q" : -3,
+      "r" : 0
+    },
+    "parameters" : {
+      "biomeType" : "COAST",
+      "fillerType" : "coast",
+      "biome" : "coast",
+      "filler" : "true",
+      "p_color" : "#F0E68C",
+      "coastRing" : "0",
+      "biomeName" : "coast-ring-0",
+      "g_builder" : "coast"
+    },
+    "areas" : { },
+    "flowSegments" : [ ],
+    "roadConfigParts" : [ ],
+    "riverConfigParts" : [ ],
+    "wallConfigParts" : [ ],
+    "name" : "coast-ring-0 [-3;0]",
+    "description" : "Part of COAST biome",
+    "sourceBiomeName" : "coast-ring-0",
+    "fillerType" : "COAST",
+    "filler" : true
+  }, {
+    "coordinate" : {
+      "q" : -1,
+      "r" : 2
+    },
+    "parameters" : {
+      "biomeType" : "MOUNTAINS",
+      "sandMaterial" : "4",
+      "p_color" : "#8B7355",
+      "g_offset" : "20",
+      "stoneMaterial" : "3",
+      "snowMaterial" : "7",
+      "sourceMountain" : "stoneveil-mountains",
+      "g_roughness" : "0.8",
+      "fillerType" : "mountain",
+      "biome" : "mountain",
+      "filler" : "true",
+      "dirtMaterial" : "2",
+      "grassMaterial" : "1",
+      "g_asl" : "80",
+      "g_frequency" : "0.7",
+      "biomeName" : "stoneveil-mountains-slopes",
+      "g_builder" : "mountain"
+    },
+    "areas" : { },
+    "flowSegments" : [ ],
+    "roadConfigParts" : [ ],
+    "riverConfigParts" : [ ],
+    "wallConfigParts" : [ ],
+    "name" : "stoneveil-mountains-slopes [-1;2]",
+    "description" : "Part of MOUNTAINS biome",
+    "sourceBiomeName" : "stoneveil-mountains-slopes",
+    "filler" : true
+  }, {
+    "coordinate" : {
+      "q" : -1,
+      "r" : 1
+    },
+    "parameters" : {
+      "biomeType" : "MOUNTAINS",
+      "sandMaterial" : "4",
+      "p_color" : "#8B7355",
+      "g_offset" : "20",
+      "stoneMaterial" : "3",
+      "snowMaterial" : "7",
+      "sourceMountain" : "stoneveil-mountains",
+      "g_roughness" : "0.8",
+      "fillerType" : "mountain",
+      "biome" : "mountain",
+      "filler" : "true",
+      "dirtMaterial" : "2",
+      "grassMaterial" : "1",
+      "g_asl" : "80",
+      "g_frequency" : "0.7",
+      "biomeName" : "stoneveil-mountains-slopes",
+      "g_builder" : "mountain"
+    },
+    "areas" : { },
+    "flowSegments" : [ ],
+    "roadConfigParts" : [ ],
+    "riverConfigParts" : [ ],
+    "wallConfigParts" : [ ],
+    "name" : "stoneveil-mountains-slopes [-1;1]",
+    "description" : "Part of MOUNTAINS biome",
+    "sourceBiomeName" : "stoneveil-mountains-slopes",
+    "filler" : true
+  }, {
+    "coordinate" : {
+      "q" : 4,
+      "r" : -1
+    },
+    "parameters" : {
+      "biomeType" : "COAST",
+      "fillerType" : "coast",
+      "biome" : "coast",
+      "filler" : "true",
+      "p_color" : "#F0E68C",
+      "coastRing" : "0",
+      "biomeName" : "coast-ring-0",
+      "g_builder" : "coast"
+    },
+    "areas" : { },
+    "flowSegments" : [ ],
+    "roadConfigParts" : [ ],
+    "riverConfigParts" : [ ],
+    "wallConfigParts" : [ ],
+    "name" : "coast-ring-0 [4;-1]",
+    "description" : "Part of COAST biome",
+    "sourceBiomeName" : "coast-ring-0",
+    "fillerType" : "COAST",
+    "filler" : true
+  }, {
+    "coordinate" : {
+      "q" : 4,
+      "r" : -2
+    },
+    "parameters" : {
+      "biomeType" : "COAST",
+      "fillerType" : "coast",
+      "biome" : "coast",
+      "filler" : "true",
+      "p_color" : "#F0E68C",
+      "coastRing" : "0",
+      "biomeName" : "coast-ring-0",
+      "g_builder" : "coast"
+    },
+    "areas" : { },
+    "flowSegments" : [ ],
+    "roadConfigParts" : [ ],
+    "riverConfigParts" : [ ],
+    "wallConfigParts" : [ ],
+    "name" : "coast-ring-0 [4;-2]",
+    "description" : "Part of COAST biome",
+    "sourceBiomeName" : "coast-ring-0",
+    "fillerType" : "COAST",
+    "filler" : true
+  }, {
+    "coordinate" : {
+      "q" : 0,
+      "r" : -1
+    },
+    "parameters" : {
+      "biomeType" : "COAST",
+      "fillerType" : "coast",
+      "biome" : "coast",
+      "filler" : "true",
+      "p_color" : "#F0E68C",
+      "coastRing" : "0",
+      "biomeName" : "coast-ring-0",
+      "g_builder" : "coast"
+    },
+    "areas" : { },
+    "flowSegments" : [ ],
+    "roadConfigParts" : [ ],
+    "riverConfigParts" : [ ],
+    "wallConfigParts" : [ ],
+    "name" : "coast-ring-0 [0;-1]",
+    "description" : "Part of COAST biome",
+    "sourceBiomeName" : "coast-ring-0",
+    "fillerType" : "COAST",
+    "filler" : true
+  } ],
+  "version" : "1.0.0",
+  "createdAt" : "2026-02-14T20:33:36.611839Z",
+  "updatedAt" : "2026-02-14T20:33:36.613438Z",
+  "description" : "A small fantasy world featuring the Stoneveil Mountains, the Whispering Marsh, and the Greywillow Grove."
+}

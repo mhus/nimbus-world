@@ -38,6 +38,7 @@ public class WFlat implements Identifiable {
     public static final int MATERIAL_NOT_SET = 0;
     public static final int MATERIAL_NOT_SET_MUTABLE = 255;
     public static final int LEVEL_NOT_SET = 0;
+    public static final int MATERIAL_OUT_OF_BOUND = -1;
     private static final int MAX_SIZE = 650; // 600 + borders
 
     @Id
@@ -135,6 +136,12 @@ public class WFlat implements Identifiable {
         return Byte.toUnsignedInt(levels[x + z * sizeX]);
     }
 
+    public int getLevelRobust(int x, int z) {
+        if (x < 0 || z < 0 || x >= sizeX || z >= sizeZ)
+            return -1;
+        return Byte.toUnsignedInt(levels[x + z * sizeX]);
+    }
+
     public boolean setColumn(int x, int z, int definition) {
         if (x < 0 || z < 0 || x >= sizeX || z >= sizeZ)
             throw new IllegalArgumentException("Coordinates out of range");
@@ -159,7 +166,7 @@ public class WFlat implements Identifiable {
 
     public int getColumnRobust(int x, int z) {
         if (x < 0 || z < 0 || x >= sizeX || z >= sizeZ)
-            return 0;
+            return -1;
         return Byte.toUnsignedInt(columns[x + z * sizeX]);
     }
 

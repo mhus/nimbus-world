@@ -184,6 +184,7 @@ public abstract class HexCompositeBuilderAbstract {
         Map<String, WFlat> flats = new HashMap<>();
         Map<String, WHexGrid> grids = new HashMap<>();
         HexGridFillResult fillResult = result.getFillResult();
+        fillResult.setFlats(flats);
 
         // Create WHexGrids from Central Registry (compose() no longer creates them)
         var allGrids = HexCompositeBuilder.createWHexGridsFromRegistry(composition,

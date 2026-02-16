@@ -286,7 +286,8 @@ public class Day3Generation extends MethodBasedWorkflow {
     private String getNextPhase(String currentPhase) {
         return switch (currentPhase) {
             case "createAll" -> "groundAll";
-            case "groundAll" -> "blenderAll";
+//            case "groundAll" -> "blenderAll";
+            case "groundAll" -> "terrainAll"; // TODO skip blender TEST!!!
             case "blenderAll" -> "terrainAll";
             case "terrainAll" -> "fillerAll";
             case "fillerAll" -> "exportAll";
