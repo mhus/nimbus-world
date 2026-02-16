@@ -249,72 +249,28 @@ public class HexGridMultiEdgeBlender {
     /**
      * Get both corners of a hex side in world coordinates.
      * Returns array with [corner1, corner2] where each corner is [worldX, worldZ].
-     *
-     * Pointy-top hex corner angles (North = Z+, East = X+):
-     *   N=90°, NE=30°, SE=330°, S=270°, SW=210°, NW=150°
+     * Uses integer-based corners from {@link HexMathUtil#getCornersForSide}.
      */
     private int[][] getHexSideCorners(WHexGrid.EDGE side, WFlat flat) {
-        double angle1, angle2;
-
-        switch (side) {
-            case NORTH_EAST:
-                angle1 = Math.toRadians(90);   // N
-                angle2 = Math.toRadians(30);   // NE
-                break;
-            case EAST:
-                angle1 = Math.toRadians(30);   // NE
-                angle2 = Math.toRadians(330);  // SE
-                break;
-            case SOUTH_EAST:
-                angle1 = Math.toRadians(330);  // SE
-                angle2 = Math.toRadians(270);  // S
-                break;
-            case SOUTH_WEST:
-                angle1 = Math.toRadians(210);  // SW
-                angle2 = Math.toRadians(270);  // S
-                break;
-            case WEST:
-                angle1 = Math.toRadians(150);  // NW
-                angle2 = Math.toRadians(210);  // SW
-                break;
-            case NORTH_WEST:
-                angle1 = Math.toRadians(90);   // N
-                angle2 = Math.toRadians(150);  // NW
-                break;
-            default:
-                return new int[][]{{0, 0}, {0, 0}};
-        }
-
-        return new int[][]{
-            getHexCorner(flat, angle1),
-            getHexCorner(flat, angle2)
-        };
-    }
-
-    /**
-     * Calculate hex corner position in world coordinates.
-     * @param flat The flat to get hex center from
-     * @param angleRadians Angle in radians for the corner
-     * @return Corner position in world coordinates [worldX, worldZ]
-     */
-    private int[] getHexCorner(WFlat flat, double angleRadians) {
         int gridSize = context.getWorld().getPublicData().getHexGridSize();
-        double radius = gridSize / 2.0;
 
-        // Get hex coordinates directly from flat.hexGrid
         HexVector2 hexVec = flat.getHexGrid();
         if (hexVec == null) {
             log.error("Flat {} has no hexGrid set", flat.getFlatId());
-            return new int[]{0, 0};
+            return new int[][]{{0, 0}, {0, 0}};
         }
 
-        // Get hex center in world coordinates (without borders)
+        // Get hex center in world coordinates
         double[] worldCenter = HexMathUtil.hexToCartesian(hexVec, gridSize);
+        int centerX = (int) Math.round(worldCenter[0]);
+        int centerZ = (int) Math.round(worldCenter[1]);
 
-        // Calculate corner in world coordinates
-        int worldCornerX = (int) Math.round(worldCenter[0] + radius * Math.cos(angleRadians));
-        int worldCornerZ = (int) Math.round(worldCenter[1] + radius * Math.sin(angleRadians));
+        // Get integer-based corner positions relative to center
+        int[][] corners = HexMathUtil.getCornersForSide(side, gridSize);
 
-        return new int[]{worldCornerX, worldCornerZ};
+        return new int[][]{
+            {centerX + corners[0][0], centerZ + corners[0][1]},
+            {centerX + corners[1][0], centerZ + corners[1][1]}
+        };
     }
 }

@@ -21,7 +21,6 @@ public class HexLocalUtil {
 
     public static final int DEFAULT_EDGE_DIVIDER = 4;
     public static final int DEFAULT_POSITION_DIVIDER = 5;
-    private static final double sqrt3 = Math.sqrt(3);
 
 
     public enum LOCAL_TYPE {
@@ -168,10 +167,16 @@ public class HexLocalUtil {
     /**
      * Return the coordinate from center in local hex grid coordinates.
      * Converts hexagonal coordinates (q, r) to cartesian coordinates (x, z)
-     * using FLAT-TOP hexagon geometry.
+     * using FLAT-TOP hexagon geometry with integer-based dimensions.
      *
      * IMPORTANT: Local hex grids use FLAT-TOP orientation (W/E sides vertical),
      * unlike the outer hex grid which uses pointy-top (N/S corners vertical).
+     *
+     * Flat-top is the 90° rotation of pointy-top, so x/z roles are swapped:
+     * - localGridWidth = pos.size() = 2*R (vertex-to-vertex horizontal extent)
+     * - localGridHeight = getGridWidth(localGridWidth) (edge-to-edge vertical extent)
+     * - Column spacing: (q * 3 * localGridWidth) / 4
+     * - Row spacing: r * localGridHeight, with stagger for odd q
      *
      * @param pos the local hex position with hex coordinates (q, r)
      * @return Cartesian coordinates relative to grid center. Could be outside the hex grid!
@@ -179,29 +184,28 @@ public class HexLocalUtil {
     public static Vector2Int toHexGridLocalCenter(HexLocalPosition pos) {
         int q = pos.position().getQ();
         int r = pos.position().getR();
-        double slotSize = pos.size(); // Size = inter-center distance between neighboring slots
+        int localGridWidth = pos.size(); // Flat-top: size = width = 2*R (vertex-to-vertex)
 
-        // Flat-top hexagon: convert axial (q, r) to cartesian (x, z)
-        // Standard flat-top formula produces neighbor distance = size * sqrt(3)
-        // We want neighbor distance = slotSize, so: size = slotSize / sqrt(3)
-        double size = slotSize / sqrt3;
+        // Derive integer height from width (same formula as pointy-top getGridWidth)
+        int localGridHeight = HexMathUtil.getGridWidth(localGridWidth);
 
-        // Standard flat-top formula:
-        //   x = size * 3/2 * q
-        //   z = size * sqrt(3)/2 * q + size * sqrt(3) * r
-        // Simplified: z = size * sqrt(3) * (r + q/2)
-        double x = size * 3.0/2.0 * q;
-        double z = size * sqrt3 * (r + q / 2.0);
+        // Flat-top cartesian: analogous to pointy-top hexToCartesian with x/z swapped
+        int x = (q * 3 * localGridWidth) / 4;
+        int z = r * localGridHeight;
+        if (q % 2 != 0) {
+            z += localGridHeight / 2;
+        }
 
-        return TypeUtil.vector2int((int) Math.round(x), (int) Math.round(z));
+        return TypeUtil.vector2int(x, z);
     }
 
     /**
      * Return the coordinate from center in local hex grid coordinates.
      * The coordinate is at one of the edges of the hex grid.
      *
-     * IMPORTANT: This method uses POINTY-TOP geometry for the OUTER hex grid edges.
-     * This is different from the local hex positions which use flat-top geometry.
+     * IMPORTANT: This method uses POINTY-TOP geometry for the OUTER hex grid edges
+     * with integer-based dimensions from {@link HexMathUtil#getGridWidth(int)},
+     * consistent with {@link HexMathUtil#isPointInHex} and {@link HexMathUtil#hexToCartesian}.
      *
      * Each side is measured from North to South (not clockwise):
      * - NW: from N corner to NW corner
@@ -222,18 +226,21 @@ public class HexLocalUtil {
      * @return The coordinate relative to hex center. Range: [-hexGridSize/2, +hexGridSize/2]
      */
     public static Vector2Int toHexgridLocalCenter(HexLocalEdgeVector edge, int hexGridSize) {
-        double radius = hexGridSize / 2.0;
+        int gridWidth = HexMathUtil.getGridWidth(hexGridSize);
+        int halfWidth = gridWidth / 2;
+        int halfHeight = hexGridSize / 2;
+        int quarterHeight = hexGridSize / 4;
 
-        // Define corner positions for POINTY-TOP hexagon (outer hex grid)
-        // Z+ = North (matching world convention), Z- = South
-        // Corners: N, NE, SE, S, SW, NW (clockwise from top)
-        double[][] corners = {
-            {0, radius},            // N  (0) - top, z+
-            {radius * sqrt3 / 2, radius / 2},    // NE (1)
-            {radius * sqrt3 / 2, -radius / 2},   // SE (2)
-            {0, -radius},           // S  (3) - bottom, z-
-            {-radius * sqrt3 / 2, -radius / 2},  // SW (4)
-            {-radius * sqrt3 / 2, radius / 2}    // NW (5)
+        // Pointy-top hex corners using integer dimensions
+        // Consistent with HexMathUtil.isPointInHex edge constraints
+        // Z+ = North, Z- = South
+        int[][] corners = {
+            {0, halfHeight},              // N  (0) - top vertex
+            {halfWidth, quarterHeight},    // NE (1)
+            {halfWidth, -quarterHeight},   // SE (2)
+            {0, -halfHeight},             // S  (3) - bottom vertex
+            {-halfWidth, -quarterHeight},  // SW (4)
+            {-halfWidth, quarterHeight}    // NW (5)
         };
 
         // Determine start and end corners for each edge (North to South direction)
@@ -261,17 +268,12 @@ public class HexLocalUtil {
                 throw new IllegalArgumentException("Unknown edge: " + edge.side());
         }
 
-        // Interpolate between start and end corner
+        // Interpolate between integer corners
         double t = (double) edge.numerator() / edge.denominator();
-        double x = corners[startCorner][0] + t * (corners[endCorner][0] - corners[startCorner][0]);
-        double z = corners[startCorner][1] + t * (corners[endCorner][1] - corners[startCorner][1]);
+        int x = (int) Math.round(corners[startCorner][0] + t * (corners[endCorner][0] - corners[startCorner][0]));
+        int z = (int) Math.round(corners[startCorner][1] + t * (corners[endCorner][1] - corners[startCorner][1]));
 
-        // Return coordinates relative to center (can be negative)
-        // Caller must add WFlat.width/2 to get absolute coordinates
-        int relX = (int) Math.round(x);
-        int relZ = (int) Math.round(z);
-
-        return TypeUtil.vector2int(relX, relZ);
+        return TypeUtil.vector2int(x, z);
     }
 
     /**

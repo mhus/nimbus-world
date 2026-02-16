@@ -35,39 +35,61 @@ public class HexMathUtil {
      * orientation between the hex grid and the 3D world.
      *
      * @param hex The hex vector with q and r coordinates
-     * @param gridSize The diameter of the hexagon in blocks
+     * @param gridHeight The diameter of the hexagon in blocks
      * @return Array with [x, z] center coordinates in world space
      */
-    public static double[] hexToCartesian(HexVector2 hex, int gridSize) {
+    public static double[] hexToCartesian(HexVector2 hex, int gridHeight) {
         if (hex == null) {
             throw new IllegalArgumentException("HexVector2 cannot be null");
         }
-        if (gridSize <= 0) {
+        if (gridHeight <= 0) {
             throw new IllegalArgumentException("Grid size must be positive");
         }
+        if (gridHeight % 2 != 0) {
+            throw new IllegalArgumentException("Grid height must be even for proper hex dimensions");
+        }
 
-        double radius = gridSize / 2.0;
-        double x = radius * SQRT_3 * (hex.getQ() + hex.getR() / 2.0);
-        double z = -(radius * 1.5 * hex.getR());
-
+        int gridWidth = getGridWidth(gridHeight);
+        int x = hex.getQ() * gridWidth;
+        if (hex.getR() % 2 != 0) {
+            x += gridWidth / 2; // Offset for odd rows
+        }
+        int z =  (hex.getR() * 3 * gridHeight) / 4;
         return new double[]{x, z};
+    }
+
+    public static int getGridWidth(int gridHeight) {
+        int radius = gridHeight / 2;
+        int width = (int)Math.floor(radius * SQRT_3);
+        if (width % 2 != 0) {
+            width++; // Ensure width is even for proper staggering
+        }
+        return width;
+    }
+
+    public static int getGridRadius(int gridHeight) {
+        return gridHeight / 2;
     }
 
     /**
      * Tests if a cartesian point is inside a pointy-top hexagon.
-     * Uses exact geometric calculation based on the 6 edges of the hexagon.
+     * Uses integer-based dimensions from {@link #getGridWidth(int)} to avoid
+     * floating-point rounding errors and stay consistent with {@link #hexToCartesian}.
      *
-     * For a pointy-top hexagon with circumradius R (gridSize/2):
-     * - Height (vertical span) = 2R
-     * - Width (horizontal span) = R * sqrt(3)
-     * - 6 vertices at precise positions
-     * - 6 edges define the boundary
+     * For a pointy-top hexagon with gridHeight H and gridWidth W = getGridWidth(H):
+     * - Height (vertical span) = H, vertices at (0, ±H/2)
+     * - Width (horizontal span) = W, flat edges at ±W/2
+     * - Upper-right vertex at (W/2, H/4)
+     *
+     * Two constraints (using absolute values due to 6-fold symmetry):
+     * 1. |dx| <= W/2 (left/right flat edges)
+     * 2. H * |dx| + 2W * |dz| <= W * H (4 diagonal edges)
      *
      * @param x The x coordinate of the point to test
      * @param z The z coordinate of the point to test
      * @param hexCenterX The x coordinate of the hex center
      * @param hexCenterZ The z coordinate of the hex center
-     * @param gridSize The diameter of the hexagon in blocks
+     * @param gridSize The diameter (height) of the hexagon in blocks
      * @return true if the point is inside the hexagon
      */
     public static boolean isPointInHex(double x, double z, double hexCenterX, double hexCenterZ, int gridSize) {
@@ -75,42 +97,22 @@ public class HexMathUtil {
             throw new IllegalArgumentException("Grid size must be positive");
         }
 
-        double radius = gridSize / 2.0;
+        int gridWidth = getGridWidth(gridSize);
+        int halfWidth = gridWidth / 2;
 
-        // Transform to hex-relative coordinates
         double dx = x - hexCenterX;
         double dz = z - hexCenterZ;
+        double adx = Math.abs(dx);
+        double adz = Math.abs(dz);
 
-        // For pointy-top hexagon, we check against 6 edges:
-        // - 2 vertical edges (left and right)
-        // - 4 diagonal edges (top-left, top-right, bottom-left, bottom-right)
-
-        // Width from center to vertical edge (inradius/apothem)
-        double halfWidth = radius * SQRT_3 / 2.0;
-
-        // Check vertical edges (simple x-coordinate test)
-        if (Math.abs(dx) > halfWidth) {
-            return false; // Outside left or right edge
+        // Constraint 1: left/right flat edges
+        if (adx > halfWidth) {
+            return false;
         }
 
-        // Check diagonal edges
-        // For pointy-top hexagon, the 4 diagonal edges have slope ±2/sqrt(3)
-        // Top edges: z < -R/2 region
-        // Bottom edges: z > R/2 region
-
-        double absDz = Math.abs(dz);
-        double absDx = Math.abs(dx);
-
-        // The diagonal constraint is: |z| <= R - (2/sqrt(3)) * |x|
-        // Rearranged: 2 * |z| + (2*sqrt(3)) * |x| / sqrt(3) <= 2 * R
-        // Simplified: 2 * |z| + 2 * |x| <= 2 * R
-        // Or: |z| + |x| / sqrt(3) <= R
-
-        // Using the precise formula for the diagonal edges:
-        // Point is inside if: |dz| <= radius - |dx| * (2.0 / SQRT_3) / 2.0
-        // Simplified: |dz| <= radius - |dx| / SQRT_3
-
-        return absDz <= radius - absDx / SQRT_3;
+        // Constraint 2: diagonal edges
+        // Derived from edge between top vertex (0, gridSize/2) and upper-right vertex (gridWidth/2, gridSize/4)
+        return gridSize * adx + 2.0 * gridWidth * adz <= (double) gridWidth * gridSize;
     }
 
     /**
@@ -154,9 +156,49 @@ public class HexMathUtil {
     }
 
     /**
+     * Returns the two corner positions for a pointy-top hex edge, relative to hex center.
+     * Uses integer-based dimensions from {@link #getGridWidth(int)}.
+     *
+     * Corner order follows the spec (North-to-South direction per side):
+     * NE: N→NE, E: NE→SE, SE: SE→S, SW: SW→S, W: NW→SW, NW: N→NW
+     *
+     * @param side The hex edge
+     * @param hexGridSize The hex diameter (gridHeight)
+     * @return int[2][2] where [0] is start corner {x, z} and [1] is end corner {x, z}, relative to center
+     */
+    public static int[][] getCornersForSide(WHexGrid.EDGE side, int hexGridSize) {
+        int gridWidth = getGridWidth(hexGridSize);
+        int halfWidth = gridWidth / 2;
+        int halfHeight = hexGridSize / 2;
+        int quarterHeight = hexGridSize / 4;
+
+        // Pointy-top corners (relative to center):
+        // N=(0, halfHeight), NE=(halfWidth, quarterHeight), SE=(halfWidth, -quarterHeight)
+        // S=(0, -halfHeight), SW=(-halfWidth, -quarterHeight), NW=(-halfWidth, quarterHeight)
+        switch (side) {
+            case NORTH_EAST:
+                return new int[][]{{0, halfHeight}, {halfWidth, quarterHeight}};
+            case EAST:
+                return new int[][]{{halfWidth, quarterHeight}, {halfWidth, -quarterHeight}};
+            case SOUTH_EAST:
+                return new int[][]{{halfWidth, -quarterHeight}, {0, -halfHeight}};
+            case SOUTH_WEST:
+                return new int[][]{{-halfWidth, -quarterHeight}, {0, -halfHeight}};
+            case WEST:
+                return new int[][]{{-halfWidth, quarterHeight}, {-halfWidth, -quarterHeight}};
+            case NORTH_WEST:
+                return new int[][]{{0, halfHeight}, {-halfWidth, quarterHeight}};
+            default:
+                throw new IllegalArgumentException("Unknown edge: " + side);
+        }
+    }
+
+    /**
      * Converts world coordinates to hex axial coordinates (q, r).
-     * Uses proper hex coordinate conversion with rounding.
-     * Inverse of hexToCartesian (accounts for negated Z-axis).
+     * Exact inverse of {@link #hexToCartesian} using the same integer-based
+     * {@link #getGridWidth(int)} dimensions. Determines the correct hex by
+     * testing candidates with {@link #isPointInHex} rather than floating-point
+     * cube-coordinate rounding, ensuring voxel-exact results.
      *
      * @param flatPos The world position (x, z)
      * @param hexGridSize The diameter of the hexagon in blocks (size, not radius)
@@ -165,82 +207,44 @@ public class HexMathUtil {
     public static HexVector2 flatToHex(Vector2Int flatPos, int hexGridSize) {
         int x = flatPos.getX();
         int z = flatPos.getZ();
-        double radius = hexGridSize / 2.0;
+        int gridWidth = getGridWidth(hexGridSize);
+        int halfWidth = gridWidth / 2;
 
-        double q = (SQRT_3 / 3.0 * x + 1.0 / 3.0 * z) / radius;
-        double r = -(2.0 / 3.0 * z) / radius;
+        // Row height from hexToCartesian: z = r * 3 * hexGridSize / 4
+        double rowHeight = 3.0 * hexGridSize / 4.0;
 
-        int rq = (int) Math.round(q);
-        int rr = (int) Math.round(r);
-        int rs = (int) Math.round(-q - r);
+        // Estimate row from z coordinate
+        int r0 = (int) Math.floor(z / rowHeight);
 
-        double q_diff = Math.abs(rq - q);
-        double r_diff = Math.abs(rr - r);
-        double s_diff = Math.abs(rs + q + r);
+        // Test 4 candidates (2 rows x 2 columns) using hexToCartesian + isPointInHex
+        HexVector2 best = null;
+        double bestDist = Double.MAX_VALUE;
 
-        if (q_diff > r_diff && q_diff > s_diff) {
-            rq = -rr - rs;
-        } else if (r_diff > s_diff) {
-            rr = -rq - rs;
-        }
+        for (int r = r0; r <= r0 + 1; r++) {
+            // Account for row stagger: hexToCartesian offsets odd rows by halfWidth
+            int xOffset = (r % 2 != 0) ? halfWidth : 0;
+            int q0 = (int) Math.floor((double) (x - xOffset) / gridWidth);
 
-        return HexVector2.builder().q(rq).r(rr).build();
-    }
-
-    /**
-     * Checks if the given chunk (cx, cz) is the dominant chunk for the specified hex coordinate.
-     * A chunk is dominant for a hex if the hex has the largest overlapping area with that chunk
-     * compared to all other hexes that overlap the chunk.
-     *
-     * @param chunkSize The size of chunks in blocks
-     * @param gridSize The diameter of the hexagon in blocks
-     * @param cx Chunk X coordinate
-     * @param cz Chunk Z coordinate
-     * @param hexCoordinate The hex coordinate to test
-     * @return true if this chunk is the dominant chunk for the given hex, false otherwise
-     */
-    public static boolean isDominantChunkForHexGrid(int chunkSize, int gridSize, int cx, int cz, HexVector2 hexCoordinate) {
-        if (hexCoordinate == null) {
-            throw new IllegalArgumentException("hexCoordinate cannot be null");
-        }
-        if (chunkSize <= 0 || gridSize <= 0) {
-            throw new IllegalArgumentException("chunkSize and gridSize must be positive");
-        }
-
-        // Get all hexes overlapping the chunk
-        HexVector2[] hexes = getHexesForChunk(gridSize, chunkSize, cx, cz);
-
-        // Rectangle (chunk) bounds
-        double minX = cx * chunkSize;
-        double minZ = cz * chunkSize;
-        double maxX = (cx + 1) * chunkSize;
-        double maxZ = (cz + 1) * chunkSize;
-
-        // For each hex, estimate overlap area by sampling points in the chunk
-        int sampleStep = Math.max(1, chunkSize / 8); // sample grid granularity
-        HexVector2 bestHex = hexes[0];
-        int maxCount = -1;
-
-        for (HexVector2 hex : hexes) {
-            double[] hexCenter = hexToCartesian(hex, gridSize);
-            int count = 0;
-            for (double x = minX; x < maxX; x += sampleStep) {
-                for (double z = minZ; z < maxZ; z += sampleStep) {
-                    if (isPointInHex(x, z, hexCenter[0], hexCenter[1], gridSize)) {
-                        count++;
-                    }
+            for (int q = q0; q <= q0 + 1; q++) {
+                HexVector2 candidate = HexVector2.builder().q(q).r(r).build();
+                double[] center = hexToCartesian(candidate, hexGridSize);
+                if (isPointInHex(x, z, center[0], center[1], hexGridSize)) {
+                    return candidate;
+                }
+                // Track nearest center as fallback for boundary points
+                double dx = x - center[0];
+                double dz = z - center[1];
+                double dist = dx * dx + dz * dz;
+                if (dist < bestDist) {
+                    bestDist = dist;
+                    best = candidate;
                 }
             }
-            if (count > maxCount) {
-                maxCount = count;
-                bestHex = hex;
-            }
         }
 
-        // Check if the dominant hex matches the provided hex coordinate
-        return bestHex.getQ() == hexCoordinate.getQ() &&
-               bestHex.getR() == hexCoordinate.getR();
+        return best;
     }
+
 
     /**
      * Internal iterator implementation for lazy position generation.
@@ -322,64 +326,6 @@ public class HexMathUtil {
         }
     }
 
-    /**
-     * Calculates the world coordinate bounds of all hexagons within a specified range from a center hex.
-     *
-     * @param gridSize  The diameter of each hexagon in blocks (size, not radius)
-     * @param centerHex The center hex coordinates
-     * @param range     The range (in hexes) from the center to include
-     * @return Array of Vector2Pair representing the world coordinates of the hex corners
-     */
-    public static Vector2[] getHexAreaBounds(int gridSize, HexVector2 centerHex, int range) {
-        java.util.List<Vector2> bounds = new java.util.ArrayList<>();
-        double radius = gridSize / 2.0;
-        for (int dq = -range; dq <= range; dq++) {
-            for (int dr = Math.max(-range, -dq - range); dr <= Math.min(range, -dq + range); dr++) {
-                int q = centerHex.getQ() + dq;
-                int r = centerHex.getR() + dr;
-                // Berechne die Weltkoordinaten der Hex-Ecken
-                double centerX = radius * (Math.sqrt(3) * q + Math.sqrt(3) / 2 * r);
-                double centerZ = radius * (3.0 / 2 * r);
-                for (int i = 0; i < 6; i++) {
-                    double angle = Math.PI / 3 * i;
-                    double x = centerX + radius * Math.cos(angle);
-                    double z = centerZ + radius * Math.sin(angle);
-                    bounds.add(Vector2.builder().x(x).z(z).build());
-                }
-            }
-        }
-        return bounds.toArray(new Vector2[bounds.size()]);
-    }
-
-    /**
-     * Calculates the hex coordinate for a given chunk in the world.
-     * This allocates one exact hex coordinate per chunk.
-     *
-     * @param world
-     * @param cx
-     * @param cz
-     * @return
-     */
-    public static HexVector2 getHexForChunk(WWorld world, int cx, int cz) {
-        int hexSize = world.getPublicData().getHexGridSize();
-        int chunkSize = world.getPublicData().getChunkSize();
-        return getHexForChunk(hexSize, chunkSize, cx, cz);
-    }
-
-    public static HexVector2 getHexForChunk(int hexSize, int chunkSize, int cx, int cz) {
-        // Berechne Weltkoordinaten des Chunk-Zentrums für genauere Hex-Zuordnung
-        int worldX = cx * chunkSize + chunkSize / 2;
-        int worldZ = cz * chunkSize + chunkSize / 2;
-        // Use flatToHex for proper axial coordinate conversion
-        return flatToHex(
-                de.mhus.nimbus.generated.types.Vector2Int.builder()
-                        .x(worldX)
-                        .z(worldZ)
-                        .build(),
-                hexSize
-        );
-    }
-
     public static HexVector2[] getHexesForChunk(WWorld world, int cx, int cz) {
         int hexSize = world.getPublicData().getHexGridSize();
         int chunkSize = world.getPublicData().getChunkSize();
@@ -405,7 +351,7 @@ public class HexMathUtil {
                             .build(),
                     hexSize
             );
-            String key = hex.getQ() + "," + hex.getR();
+            String key = hex.getQ() + ";" + hex.getR();
             if (!uniqueHexes.contains(key)) {
                 uniqueHexes.add(key);
                 result.add(hex);
@@ -438,7 +384,7 @@ public class HexMathUtil {
                             .build(),
                     hexSize
             );
-            String key = hex.getQ() + "," + hex.getR();
+            String key = hex.getQ() + ";" + hex.getR();
             if (!uniqueHexes.contains(key)) {
                 uniqueHexes.add(key);
                 result.add(hex);
@@ -446,79 +392,6 @@ public class HexMathUtil {
             }
         }
         return result.toArray(new HexVector2[result.size()]);
-    }
-
-    /**
-     * Calculates up to three intersection lines (Vector2Pair) between a chunk (rectangle)
-     * and the corresponding hexagon (hex tile) on the x,z plane.
-     * Returns an array with 1 to 3 Vector2Pair objects representing the intersection lines.
-     *
-     * @param world The world instance
-     * @param cx Chunk X coordinate
-     * @param cz Chunk Z coordinate
-     * @return Array with 1 to 3 Vector2Pair (each representing an intersection line)
-     */
-    public Vector2Pair[] getHexChunkIntersectionLines(WWorld world, int cx, int cz) {
-        int hexSize = world.getPublicData().getHexGridSize();
-        int chunkSize = world.getPublicData().getChunkSize();
-        double minX = cx * chunkSize;
-        double minZ = cz * chunkSize;
-        double maxX = (cx + 1) * chunkSize;
-        double maxZ = (cz + 1) * chunkSize;
-        double[][] chunkCorners = new double[][] {
-            {minX, minZ},
-            {maxX, minZ},
-            {maxX, maxZ},
-            {minX, maxZ}
-        };
-        // Use getDominantHexForChunk for correct hex coordinate calculation
-        HexVector2 hex = getDominantHexForChunk(world, cx, cz);
-        double[] hexCenter = hexToCartesian(hex, hexSize);
-        double radius = hexSize / 2.0;
-        double[][] hexCorners = new double[6][2];
-        for (int i = 0; i < 6; i++) {
-            double angle = Math.PI / 180 * (60 * i - 30);
-            hexCorners[i][0] = hexCenter[0] + radius * Math.cos(angle);
-            hexCorners[i][1] = hexCenter[1] + radius * Math.sin(angle);
-        }
-        java.util.List<Vector2> intersections = new java.util.ArrayList<>();
-        for (int ci = 0; ci < 4; ci++) {
-            double[] c1 = chunkCorners[ci];
-            double[] c2 = chunkCorners[(ci + 1) % 4];
-            for (int hi = 0; hi < 6; hi++) {
-                double[] h1 = hexCorners[hi];
-                double[] h2 = hexCorners[(hi + 1) % 6];
-                double[] p = intersectSegments(c1, c2, h1, h2);
-                if (p != null) {
-                    intersections.add(Vector2.builder().x(p[0]).z(p[1]).build());
-                }
-            }
-        }
-        java.util.List<Vector2Pair> result = new java.util.ArrayList<>();
-        for (int i = 0; i + 1 < intersections.size(); i += 2) {
-            result.add(Vector2Pair.builder().a(intersections.get(i)).b(intersections.get(i + 1)).build());
-            if (result.size() == 3) break;
-        }
-        return result.toArray(new Vector2Pair[result.size()]);
-    }
-
-    // Helper function: intersection point of two line segments (2D)
-    private static double[] intersectSegments(double[] p1, double[] p2, double[] q1, double[] q2) {
-        double s1_x = p2[0] - p1[0];
-        double s1_z = p2[1] - p1[1];
-        double s2_x = q2[0] - q1[0];
-        double s2_z = q2[1] - q1[1];
-        double denom = (-s2_x * s1_z + s1_x * s2_z);
-        if (denom == 0) return null; // parallel
-        double s = (-s1_z * (p1[0] - q1[0]) + s1_x * (p1[1] - q1[1])) / denom;
-        double t = ( s2_x * (p1[1] - q1[1]) - s2_z * (p1[0] - q1[0])) / denom;
-        if (s >= 0 && s <= 1 && t >= 0 && t <= 1) {
-            // Schnittpunkt innerhalb beider Segmente
-            double ix = p1[0] + (t * s1_x);
-            double iz = p1[1] + (t * s1_z);
-            return new double[] {ix, iz};
-        }
-        return null;
     }
 
     /**

@@ -481,7 +481,7 @@ public class FlatCreateService {
         // Radius = gridSize / 2
         // Height (point to point) = 2 * radius = gridSize
         // Width (flat side to flat side) = sqrt(3) * radius = gridSize * sqrt(3) / 2
-        int sizeX = (int) Math.floor(gridSize * HexMathUtil.SQRT_3 / 2.0) + border * 2;  // +30: +10 safety margin + 20 border (15 per side)
+        int sizeX = HexMathUtil.getGridWidth(gridSize) + border * 2;
         int sizeZ = gridSize + border * 2;  // +30: +15 safety margin + 20 border (10 per side)
 
         // Calculate mount position (top-left corner of bounding box)
@@ -604,7 +604,7 @@ public class FlatCreateService {
         int hexCellsSet = 0;
         int outsideCellsImported = 0;
 
-        int gapX = (sizeX - (int)Math.floor(gridSize*HexMathUtil.SQRT_3/2.0) ) / 2;
+        int gapX = (sizeX - HexMathUtil.getGridWidth(gridSize)) / 2;
         int gapZ = (sizeZ - gridSize) / 2;
 
         // Process each cell in the flat
@@ -692,7 +692,7 @@ public class FlatCreateService {
         // Radius = gridSize / 2
         // Height (point to point) = 2 * radius = gridSize
         // Width (flat side to flat side) = sqrt(3) * radius = gridSize * sqrt(3) / 2
-        int sizeX = (int) Math.floor(gridSize * HexMathUtil.SQRT_3 / 2.0) + 30;  // +30: +10 safety margin + 20 border (10 per side)
+        int sizeX = HexMathUtil.getGridWidth(gridSize) + 30;
         int sizeZ = gridSize + 30;  // +30: +10 safety margin + 20 border (10 per side)
 
         // Calculate mount position (top-left corner of bounding box)
@@ -867,7 +867,7 @@ public class FlatCreateService {
             }
         }
 
-        int gapX = (sizeX - (int)Math.floor(gridSize*HexMathUtil.SQRT_3/2.0) ) / 2;
+        int gapX = (sizeX - HexMathUtil.getGridWidth(gridSize)) / 2;
         int gapZ = (sizeZ - gridSize) / 2;
 
         // Step 2: Set positions OUTSIDE HexGrid to material 0 (UNKNOWN_PROTECTED)
@@ -1071,7 +1071,7 @@ public class FlatCreateService {
         double centerZ = center[1];
 
         // Calculate bounding box for pointy-top hexagon with 15-pixel border on each side
-        int sizeX = (int) Math.floor(gridSize * HexMathUtil.SQRT_3 / 2.0) + 30; // 400: 346 + 30 = 376 (even)
+        int sizeX = HexMathUtil.getGridWidth(gridSize) + 30;
         if (sizeX % 2 != 0) {
             sizeX++; // Ensure even size for symmetry
         }
