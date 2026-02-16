@@ -19,22 +19,26 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
+ * Parameters:
+ *   - "compositionId" (required) - ID of the composition document
+ *   - "phases" (optional) - Comma-separated list of phases to execute in order.
+ *     Default: "createAll,groundAll,blenderAll,terrainAll,fillerAll,exportAll,imagesAll,compositeImages"
  *
- * Bis zu bestimmter Phase:
- *   Map.of(
- *       "compositionId", "...",
- *       "targetPhase", "groundAll"  // Stoppt nach groundAll
- *   )
- *   Mögliche Werte für targetPhase:
- *   - "createAll" - Nur Grids erstellen
- *   - "groundAll" - Bis Ground-Manipulation
- *   - "blenderAll" - Bis Blender-Manipulation
- *   - "terrainAll" - Bis Terrain-Manipulation
- *   - "fillerAll" - Bis Filler-Manipulation
- *   - "exportAll" - Bis Export zu Layers
- *   - "imagesAll" - Bis Export einzelner Grid-Images
- *   - "compositeImages" - Vollständig inklusive Gesamtbildern (Default)
+ *   Example: Skip blender phase:
+ *     Map.of("compositionId", "...", "phases", "createAll,groundAll,terrainAll,fillerAll,exportAll,imagesAll,compositeImages")
  *
+ *   Example: Only create and ground:
+ *     Map.of("compositionId", "...", "phases", "createAll,groundAll")
+ *
+ *   Available phases:
+ *   - "createAll" - Create all hex grids
+ *   - "groundAll" - Apply ground manipulation
+ *   - "blenderAll" - Apply blender manipulation
+ *   - "terrainAll" - Apply terrain manipulation
+ *   - "fillerAll" - Apply filler manipulation
+ *   - "exportAll" - Export grids to layers
+ *   - "imagesAll" - Export individual grid images
+ *   - "compositeImages" - Create composite images of entire world
  */
 @Service
 @Slf4j
@@ -62,23 +66,34 @@ public class Day3Generation extends MethodBasedWorkflow {
             throw new WorkflowException(null, "composition document not found: " + compositionId);
         }
 
-        // Optional targetPhase parameter - defaults to COMPOSITE_IMAGES (complete workflow including composite images)
-        String targetPhaseParam = params.get(GenesisConst.TARGET_PHASE);
-        Day3Phase targetPhase = Day3Phase.COMPOSITE_IMAGES; // Default: run to completion including composite images
-
-        if (!Strings.isBlank(targetPhaseParam)) {
-            Day3Phase parsed = Day3Phase.fromPhaseName(targetPhaseParam);
-            if (parsed != null) {
-                targetPhase = parsed;
-                log.info("Target phase set to: {} ({})", targetPhase.getPhaseName(), targetPhase.getDescription());
-            } else {
-                log.warn("Invalid targetPhase parameter '{}', using default (COMPOSITE_IMAGES)", targetPhaseParam);
+        // Optional phases parameter - comma-separated list of phases to execute in order
+        // Default: all phases (createAll,groundAll,blenderAll,terrainAll,fillerAll,exportAll,imagesAll,compositeImages)
+        String phasesParam = params.get(GenesisConst.PHASES);
+        String phases;
+        if (Strings.isBlank(phasesParam)) {
+            phases = GenesisConst.DEFAULT_PHASES;
+        } else {
+            // Validate all phase names
+            List<String> phaseList = Arrays.stream(phasesParam.split(","))
+                    .map(String::trim)
+                    .filter(s -> !s.isEmpty())
+                    .toList();
+            for (String phaseName : phaseList) {
+                if (Day3Phase.fromPhaseName(phaseName) == null) {
+                    throw new WorkflowException(null, "Unknown phase: " + phaseName
+                            + ". Valid phases: " + GenesisConst.DEFAULT_PHASES);
+                }
             }
+            if (phaseList.isEmpty()) {
+                throw new WorkflowException(null, "phases parameter must not be empty");
+            }
+            phases = String.join(",", phaseList);
+            log.info("Custom phases configured: {}", phases);
         }
 
         return Map.of(
                 GenesisConst.COMPOSITION_ID, compositionId,
-                GenesisConst.TARGET_PHASE, targetPhase.getPhaseName()
+                GenesisConst.PHASES, phases
         );
     }
 
@@ -117,11 +132,13 @@ public class Day3Generation extends MethodBasedWorkflow {
             flatIds.add(null);
         }
 
-        // Store processing state - start with createAll phase
+        // Store processing state - start with first configured phase
+        String phases = (String) context.getParameters().get(GenesisConst.PHASES);
+        String firstPhase = phases.split(",")[0];
         Day3ProcessingState state = Day3ProcessingState.builder()
                 .coordinates(hexCoordinates)
                 .flatIds(flatIds)
-                .currentPhase("createAll")
+                .currentPhase(firstPhase)
                 .currentIndex(0)
                 .build();
         context.addRecord(state);
@@ -135,30 +152,21 @@ public class Day3Generation extends MethodBasedWorkflow {
         int index = state.getCurrentIndex();
         int total = state.getCoordinates().size();
 
-        // Get target phase from workflow parameters
-        String targetPhaseParam = (String) context.getParameters().get(GenesisConst.TARGET_PHASE);
-        Day3Phase targetPhase = Day3Phase.fromPhaseName(targetPhaseParam);
-        Day3Phase currentPhaseEnum = Day3Phase.fromPhaseName(phase);
+        // Get configured phases from workflow parameters
+        List<String> phases = Arrays.asList(((String) context.getParameters().get(GenesisConst.PHASES)).split(","));
 
         // Check if current phase is complete
         if (index >= total) {
-            // Check if we've reached the target phase
-            if (targetPhase != null && currentPhaseEnum != null &&
-                currentPhaseEnum.ordinal() >= targetPhase.ordinal()) {
-                log.info("Target phase '{}' completed for {} hexgrids", targetPhase.getPhaseName(), total);
-                context.doComplete("Processed " + total + " hexgrids up to phase: " + targetPhase.getPhaseName());
+            // Find next phase in configured list
+            int phaseIndex = phases.indexOf(phase);
+            if (phaseIndex < 0 || phaseIndex >= phases.size() - 1) {
+                // Last phase or unknown phase - all done
+                log.info("All configured phases completed for {} hexgrids (phases: {})", total, phases);
+                context.doComplete("Processed " + total + " hexgrids through phases: " + String.join(",", phases));
                 return;
             }
 
-            // Move to next phase
-            String nextPhase = getNextPhase(phase);
-            if (nextPhase == null) {
-                // All phases complete
-                log.info("All phases completed for {} hexgrids", total);
-                context.doComplete("Processed " + total + " hexgrids through all phases");
-                return;
-            }
-
+            String nextPhase = phases.get(phaseIndex + 1);
             log.info("Phase '{}' completed, moving to phase '{}'", phase, nextPhase);
             state.setCurrentPhase(nextPhase);
             state.setCurrentIndex(0);
@@ -281,21 +289,6 @@ public class Day3Generation extends MethodBasedWorkflow {
             }
             default -> throw new WorkflowException(null, "Unknown phase: " + phase);
         }
-    }
-
-    private String getNextPhase(String currentPhase) {
-        return switch (currentPhase) {
-            case "createAll" -> "groundAll";
-//            case "groundAll" -> "blenderAll";
-            case "groundAll" -> "terrainAll"; // TODO skip blender TEST!!!
-            case "blenderAll" -> "terrainAll";
-            case "terrainAll" -> "fillerAll";
-            case "fillerAll" -> "exportAll";
-            case "exportAll" -> "imagesAll";
-            case "imagesAll" -> "compositeImages";
-            case "compositeImages" -> null; // All phases complete
-            default -> throw new IllegalStateException("Unknown phase: " + currentPhase);
-        };
     }
 
     @OnSuccess("createFlat")

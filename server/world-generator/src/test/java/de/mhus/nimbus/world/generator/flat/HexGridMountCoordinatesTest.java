@@ -30,13 +30,13 @@ class HexGridMountCoordinatesTest {
      */
     private int[] calculateMountPosition(int q, int r) {
         HexVector2 hexVec = HexVector2.builder().q(q).r(r).build();
-        double[] center = HexMathUtil.hexToCartesian(hexVec, GRID_SIZE);
-        double centerX = center[0];
-        double centerZ = center[1];
+        int[] center = HexMathUtil.hexToCartesian(hexVec, GRID_SIZE);
+        int centerX = center[0];
+        int centerZ = center[1];
 
-        // Corrected formula: use Math.round and no -10 offset
-        int mountX = (int) Math.round(centerX - SIZE_X / 2.0);
-        int mountZ = (int) Math.round(centerZ - SIZE_Z / 2.0);
+        // Corrected formula: no -10 offset
+        int mountX = centerX - SIZE_X / 2;
+        int mountZ = centerZ - SIZE_Z / 2;
 
         return new int[]{mountX, mountZ};
     }
@@ -59,9 +59,9 @@ class HexGridMountCoordinatesTest {
         // Grid 1;0 should be one hex to the right
         int[] mount = calculateMountPosition(1, 0);
 
-        // Expected center: (200 * sqrt(3) * (1 + 0/2), 200 * 1.5 * 0) = (346.41, 0)
-        // Expected mount: (346.41 - 188, 0 - 215) = (158.41, -215) rounded to (158, -215)
-        System.out.printf("Grid 1;0: centerX=346.41, centerZ=0, mount=(%d, %d)%n",
+        // Offset coordinates: x = 1*346 = 346, z = 0
+        // Expected mount: (346 - 188, 0 - 215) = (158, -215)
+        System.out.printf("Grid 1;0: centerX=346, centerZ=0, mount=(%d, %d)%n",
                 mount[0], mount[1]);
 
         assertEquals(158, mount[0], "Grid 1;0 mountX should be 158");
@@ -70,16 +70,16 @@ class HexGridMountCoordinatesTest {
 
     @Test
     void testGrid_0_1_MountCoordinates() {
-        // Grid 0;1 should be one hex down and to the right (pointy-top hex)
+        // Grid 0;1 should be one hex down and to the right (pointy-top hex, odd-r stagger)
         int[] mount = calculateMountPosition(0, 1);
 
-        // Expected center: (200 * sqrt(3) * (0 + 1/2), -(200 * 1.5 * 1)) = (173.21, -300)
-        // Expected mount: (173.21 - 188, -300 - 215) = (-14.79, -515) rounded to (-15, -515)
-        System.out.printf("Grid 0;1: centerX=173.21, centerZ=-300, mount=(%d, %d)%n",
+        // Offset coordinates: x = 0*346 + 173 (odd row offset) = 173, z = 1*300 = 300
+        // Expected mount: (173 - 188, 300 - 215) = (-15, 85)
+        System.out.printf("Grid 0;1: centerX=173, centerZ=300, mount=(%d, %d)%n",
                 mount[0], mount[1]);
 
         assertEquals(-15, mount[0], "Grid 0;1 mountX should be -15");
-        assertEquals(-515, mount[1], "Grid 0;1 mountZ should be -515");
+        assertEquals(85, mount[1], "Grid 0;1 mountZ should be 85");
     }
 
     @Test
@@ -87,13 +87,13 @@ class HexGridMountCoordinatesTest {
         // Grid 1;1
         int[] mount = calculateMountPosition(1, 1);
 
-        // Expected center: (200 * sqrt(3) * (1 + 1/2), -(200 * 1.5 * 1)) = (519.62, -300)
-        // Expected mount: (519.62 - 188, -300 - 215) = (331.62, -515) rounded to (332, -515)
-        System.out.printf("Grid 1;1: centerX=519.62, centerZ=-300, mount=(%d, %d)%n",
+        // Offset coordinates: x = 1*346 + 173 (odd row offset) = 519, z = 1*300 = 300
+        // Expected mount: (519 - 188, 300 - 215) = (331, 85)
+        System.out.printf("Grid 1;1: centerX=519, centerZ=300, mount=(%d, %d)%n",
                 mount[0], mount[1]);
 
-        assertEquals(332, mount[0], "Grid 1;1 mountX should be 332");
-        assertEquals(-515, mount[1], "Grid 1;1 mountZ should be -515");
+        assertEquals(331, mount[0], "Grid 1;1 mountX should be 331");
+        assertEquals(85, mount[1], "Grid 1;1 mountZ should be 85");
     }
 
     @Test
@@ -101,9 +101,9 @@ class HexGridMountCoordinatesTest {
         // Grid -1;0 should be one hex to the left
         int[] mount = calculateMountPosition(-1, 0);
 
-        // Expected center: (200 * sqrt(3) * (-1 + 0/2), 200 * 1.5 * 0) = (-346.41, 0)
-        // Expected mount: (-346.41 - 188, 0 - 215) = (-534.41, -215) rounded to (-534, -215)
-        System.out.printf("Grid -1;0: centerX=-346.41, centerZ=0, mount=(%d, %d)%n",
+        // Offset coordinates: x = -1*346 = -346, z = 0
+        // Expected mount: (-346 - 188, 0 - 215) = (-534, -215)
+        System.out.printf("Grid -1;0: centerX=-346, centerZ=0, mount=(%d, %d)%n",
                 mount[0], mount[1]);
 
         assertEquals(-534, mount[0], "Grid -1;0 mountX should be -534");
@@ -112,16 +112,16 @@ class HexGridMountCoordinatesTest {
 
     @Test
     void testGrid_0_Minus1_MountCoordinates() {
-        // Grid 0;-1 should be one hex up and to the left
+        // Grid 0;-1 should be one hex up (odd-r stagger, odd row gets +halfWidth offset)
         int[] mount = calculateMountPosition(0, -1);
 
-        // Expected center: (200 * sqrt(3) * (0 + (-1)/2), -(200 * 1.5 * (-1))) = (-173.21, 300)
-        // Expected mount: (-173.21 - 188, 300 - 215) = (-361.21, 85) rounded to (-361, 85)
-        System.out.printf("Grid 0;-1: centerX=-173.21, centerZ=300, mount=(%d, %d)%n",
+        // Offset coordinates: x = 0*346 + 173 (odd row offset) = 173, z = -1*300 = -300
+        // Expected mount: (173 - 188, -300 - 215) = (-15, -515)
+        System.out.printf("Grid 0;-1: centerX=173, centerZ=-300, mount=(%d, %d)%n",
                 mount[0], mount[1]);
 
-        assertEquals(-361, mount[0], "Grid 0;-1 mountX should be -361");
-        assertEquals(85, mount[1], "Grid 0;-1 mountZ should be 85");
+        assertEquals(-15, mount[0], "Grid 0;-1 mountX should be -15");
+        assertEquals(-515, mount[1], "Grid 0;-1 mountZ should be -515");
     }
 
     @Test
@@ -159,17 +159,17 @@ class HexGridMountCoordinatesTest {
     void testHexToCartesianFormula() {
         // Verify the hex-to-cartesian conversion formula
         HexVector2 hex = HexVector2.builder().q(1).r(1).build();
-        double[] center = HexMathUtil.hexToCartesian(hex, GRID_SIZE);
+        int[] center = HexMathUtil.hexToCartesian(hex, GRID_SIZE);
 
-        // Expected: x = 200 * sqrt(3) * (1 + 1/2) = 200 * 1.732 * 1.5 = 519.62
-        //           z = -(200 * 1.5 * 1) = -300
-        double expectedX = 200 * SQRT_3 * 1.5;
-        double expectedZ = -(200 * 1.5);
+        // Expected: x = q * gridWidth + halfWidth (odd row offset) = 1*346 + 173 = 519
+        //           z = r * 3 * gridSize / 4 = 1 * 3 * 400 / 4 = 300
+        int expectedX = HexMathUtil.getGridWidth(GRID_SIZE) + HexMathUtil.getGridWidth(GRID_SIZE) / 2;
+        int expectedZ = 3 * GRID_SIZE / 4;
 
-        System.out.printf("Hex 1;1 cartesian: (%.2f, %.2f), expected: (%.2f, %.2f)%n",
+        System.out.printf("Hex 1;1 cartesian: (%d, %d), expected: (%d, %d)%n",
                 center[0], center[1], expectedX, expectedZ);
 
-        assertEquals(expectedX, center[0], 0.01, "Hex-to-cartesian X should match formula");
-        assertEquals(expectedZ, center[1], 0.01, "Hex-to-cartesian Z should match formula");
+        assertEquals(expectedX, center[0], "Hex-to-cartesian X should match formula");
+        assertEquals(expectedZ, center[1], "Hex-to-cartesian Z should match formula");
     }
 }

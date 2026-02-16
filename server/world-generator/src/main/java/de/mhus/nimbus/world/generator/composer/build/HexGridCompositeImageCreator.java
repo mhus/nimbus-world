@@ -224,12 +224,12 @@ public class HexGridCompositeImageCreator {
      * Calculates cartesian bounds for all hex grids.
      */
     private CartesianBounds calculateCartesianBounds(FlatProvider provider) {
-        double minX = Double.MAX_VALUE, maxX = Double.MIN_VALUE;
-        double minZ = Double.MAX_VALUE, maxZ = Double.MIN_VALUE;
+        int minX = Integer.MAX_VALUE, maxX = Integer.MIN_VALUE;
+        int minZ = Integer.MAX_VALUE, maxZ = Integer.MIN_VALUE;
 
         for (HexVector2 coord : provider.getCoordinates()) {
-            double[] cartesian = HexMathUtil.hexToCartesian(coord, hexGridSize);
-            double halfSize = hexGridSize / 2.0;
+            int[] cartesian = HexMathUtil.hexToCartesian(coord, hexGridSize);
+            int halfSize = hexGridSize / 2;
 
             minX = Math.min(minX, cartesian[0] - halfSize);
             maxX = Math.max(maxX, cartesian[0] + halfSize);
@@ -286,9 +286,9 @@ public class HexGridCompositeImageCreator {
                                      CartesianBounds bounds) throws IOException {
         // Calculate cartesian center position
         // Flip Z so North (max worldZ) is at image top (Y=0)
-        double[] cartesian = HexMathUtil.hexToCartesian(coord, hexGridSize);
-        double hexCenterX = cartesian[0] - bounds.minX;
-        double hexCenterZ = bounds.maxZ - cartesian[1];
+        int[] cartesian = HexMathUtil.hexToCartesian(coord, hexGridSize);
+        int hexCenterX = cartesian[0] - bounds.minX;
+        int hexCenterZ = bounds.maxZ - cartesian[1];
 
         // Create flat images
         FlatLevelImageCreator levelCreator = new FlatLevelImageCreator(flat);
@@ -308,10 +308,10 @@ public class HexGridCompositeImageCreator {
         int hexGridRadius = hexGridSize / 2;
 
         // Iterate over the area where the hex might be (use hexGridRadius for bounds)
-        int startX = Math.max(0, (int)(hexCenterX - hexGridRadius));
-        int endX = Math.min(levelImage.getWidth(), (int)(hexCenterX + hexGridRadius));
-        int startZ = Math.max(0, (int)(hexCenterZ - hexGridRadius));
-        int endZ = Math.min(levelImage.getHeight(), (int)(hexCenterZ + hexGridRadius));
+        int startX = Math.max(0,(hexCenterX - hexGridRadius));
+        int endX = Math.min(levelImage.getWidth(), (hexCenterX + hexGridRadius));
+        int startZ = Math.max(0, (hexCenterZ - hexGridRadius));
+        int endZ = Math.min(levelImage.getHeight(), (hexCenterZ + hexGridRadius));
 
         for (int z = startZ; z < endZ; z++) {
             for (int x = startX; x < endX; x++) {
@@ -351,9 +351,9 @@ public class HexGridCompositeImageCreator {
         g.setStroke(new BasicStroke(gridLineWidth));
 
         for (HexVector2 coord : provider.getCoordinates()) {
-            double[] cartesian = HexMathUtil.hexToCartesian(coord, hexGridSize);
-            double hexCenterX = cartesian[0] - bounds.minX;
-            double hexCenterZ = bounds.maxZ - cartesian[1];
+            int[] cartesian = HexMathUtil.hexToCartesian(coord, hexGridSize);
+            int hexCenterX = cartesian[0] - bounds.minX;
+            int hexCenterZ = bounds.maxZ - cartesian[1];
 
             // Draw hexagon outline
             Polygon hexagon = createHexagonPolygon(hexCenterX, hexCenterZ, hexGridSize);
@@ -451,9 +451,9 @@ public class HexGridCompositeImageCreator {
     @Data
     @AllArgsConstructor
     public static class CartesianBounds {
-        private final double minX;
-        private final double maxX;
-        private final double minZ;
-        private final double maxZ;
+        private final int minX;
+        private final int maxX;
+        private final int minZ;
+        private final int maxZ;
     }
 }

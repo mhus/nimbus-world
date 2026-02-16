@@ -81,9 +81,9 @@ public class HexGridExpandManipulator implements FlatManipulator {
         log.debug("Using hexGridSize={} from world", gridSize);
 
         // Calculate hex center in cartesian coordinates
-        double[] hexCenter = HexMathUtil.hexToCartesian(hexGridPos, gridSize);
-        double hexCenterX = hexCenter[0];
-        double hexCenterZ = hexCenter[1];
+        int[] hexCenter = HexMathUtil.hexToCartesian(hexGridPos, gridSize);
+        int hexCenterX = hexCenter[0];
+        int hexCenterZ = hexCenter[1];
 
         log.debug("Hex center in cartesian: ({}, {})", hexCenterX, hexCenterZ);
 

@@ -261,9 +261,9 @@ public class HexGridMultiEdgeBlender {
         }
 
         // Get hex center in world coordinates
-        double[] worldCenter = HexMathUtil.hexToCartesian(hexVec, gridSize);
-        int centerX = (int) Math.round(worldCenter[0]);
-        int centerZ = (int) Math.round(worldCenter[1]);
+        int[] worldCenter = HexMathUtil.hexToCartesian(hexVec, gridSize);
+        int centerX = worldCenter[0];
+        int centerZ = worldCenter[1];
 
         // Get integer-based corner positions relative to center
         int[][] corners = HexMathUtil.getCornersForSide(side, gridSize);

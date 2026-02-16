@@ -516,9 +516,9 @@ public abstract class HexCompositeBuilderAbstract {
             String coordText = coord.getQ() + "," + coord.getR();
 
             // Calculate center position of hex grid in world coordinates
-            double[] hexCenter = HexMathUtil.hexToCartesian(coord, hexGridSize);
-            int centerX = (int) Math.floor(hexCenter[0]);
-            int centerY = (int) Math.floor(hexCenter[1]);
+            int[] hexCenter = HexMathUtil.hexToCartesian(coord, hexGridSize);
+            int centerX = hexCenter[0];
+            int centerY = hexCenter[1];
 
             // Create coordinate text overlay centered on grid (white color, scale 3)
             int coordTextWidth = coordText.length() * (5 + 1) * 3; // Approximate width
@@ -640,9 +640,9 @@ public abstract class HexCompositeBuilderAbstract {
         int lz = flatSizeZ / 2 + relativePos.getZ();
 
         // Convert to absolute world coordinates
-        double[] hexCenter = HexMathUtil.hexToCartesian(gridCoord, hexGridSize);
-        int mountX = (int) Math.floor(hexCenter[0] - hexGridSize / 2.0);
-        int mountZ = (int) Math.floor(hexCenter[1] - hexGridSize / 2.0);
+        int[] hexCenter = HexMathUtil.hexToCartesian(gridCoord, hexGridSize);
+        int mountX = hexCenter[0] - hexGridSize / 2;
+        int mountZ = hexCenter[1] - hexGridSize / 2;
 
         int worldX = mountX + lx;
         int worldZ = mountZ + lz;

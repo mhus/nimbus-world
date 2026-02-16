@@ -472,9 +472,9 @@ public class FlatCreateService {
 
         // Calculate hexagon center in cartesian coordinates
         HexVector2 hexVec = HexVector2.builder().q(hexQ).r(hexR).build();
-        double[] center = HexMathUtil.hexToCartesian(hexVec, gridSize);
-        double centerX = center[0];
-        double centerZ = center[1];
+        int[] center = HexMathUtil.hexToCartesian(hexVec, gridSize);
+        int centerX = center[0];
+        int centerZ = center[1];
 
         // Calculate bounding box for pointy-top hexagon with 10-pixel border on each side
         // gridSize is the diameter (not radius!)
@@ -580,9 +580,9 @@ public class FlatCreateService {
         // Calculate hex center in cartesian coordinates
         de.mhus.nimbus.generated.types.HexVector2 hexPosition =
                 de.mhus.nimbus.generated.types.HexVector2.builder().q(hexQ).r(hexR).build();
-        double[] hexCenter = HexMathUtil.hexToCartesian(hexPosition, gridSize);
-        double hexCenterX = hexCenter[0];
-        double hexCenterZ = hexCenter[1];
+        int[] hexCenter = HexMathUtil.hexToCartesian(hexPosition, gridSize);
+        int hexCenterX = hexCenter[0];
+        int hexCenterZ = hexCenter[1];
 
         log.debug("Hex center in cartesian: ({}, {})", hexCenterX, hexCenterZ);
 
@@ -683,9 +683,9 @@ public class FlatCreateService {
 
         // Calculate hexagon center in cartesian coordinates
         HexVector2 hexVec = HexVector2.builder().q(hexQ).r(hexR).build();
-        double[] center = HexMathUtil.hexToCartesian(hexVec, gridSize);
-        double centerX = center[0];
-        double centerZ = center[1];
+        int[] center = HexMathUtil.hexToCartesian(hexVec, gridSize);
+        int centerX = center[0];
+        int centerZ = center[1];
 
         // Calculate bounding box for pointy-top hexagon with 10-pixel border on each side
         // gridSize is the diameter (not radius!)
@@ -793,9 +793,9 @@ public class FlatCreateService {
         // Calculate hex center in cartesian coordinates
         de.mhus.nimbus.generated.types.HexVector2 hexPosition =
                 de.mhus.nimbus.generated.types.HexVector2.builder().q(hexQ).r(hexR).build();
-        double[] hexCenter = HexMathUtil.hexToCartesian(hexPosition, gridSize);
-        double hexCenterX = hexCenter[0];
-        double hexCenterZ = hexCenter[1];
+        int[] hexCenter = HexMathUtil.hexToCartesian(hexPosition, gridSize);
+        int hexCenterX = hexCenter[0];
+        int hexCenterZ = hexCenter[1];
 
         log.debug("Hex center in cartesian: ({}, {})", hexCenterX, hexCenterZ);
 
@@ -1066,9 +1066,9 @@ public class FlatCreateService {
 
         // Calculate hexagon center in cartesian coordinates
         HexVector2 hexVec = HexVector2.builder().q(hexQ).r(hexR).build();
-        double[] center = HexMathUtil.hexToCartesian(hexVec, gridSize);
-        double centerX = center[0];
-        double centerZ = center[1];
+        int[] center = HexMathUtil.hexToCartesian(hexVec, gridSize);
+        int centerX = center[0];
+        int centerZ = center[1];
 
         // Calculate bounding box for pointy-top hexagon with 15-pixel border on each side
         int sizeX = HexMathUtil.getGridWidth(gridSize) + 30;
@@ -1201,8 +1201,8 @@ public class FlatCreateService {
         HexVector2 hex1 = HexVector2.builder().q(hexQ).r(hexR).build();
         HexVector2 hex2 = HexMathUtil.getNeighborPosition(hex1, border);
 
-        double[] center1 = HexMathUtil.hexToCartesian(hex1, gridSize);
-        double[] center2 = HexMathUtil.hexToCartesian(hex2, gridSize);
+        int[] center1 = HexMathUtil.hexToCartesian(hex1, gridSize);
+        int[] center2 = HexMathUtil.hexToCartesian(hex2, gridSize);
 
         // Calculate border line endpoints (midpoint between the two hex centers)
         double midX = (center1[0] + center2[0]) / 2.0;

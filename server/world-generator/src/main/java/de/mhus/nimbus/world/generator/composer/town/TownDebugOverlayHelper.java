@@ -97,9 +97,9 @@ public class TownDebugOverlayHelper {
                 // Calculate hex center in world coordinates
                 // IMPORTANT: Use flatSize here, not hexGridSize, because HexGridCompositeImageCreator
                 // positions flats using flatSize
-                double[] hexCenter = de.mhus.nimbus.world.shared.util.HexMathUtil.hexToCartesian(coord, flatSize);
-                double hexCenterX = hexCenter[0];
-                double hexCenterZ = hexCenter[1];
+                int[] hexCenter = de.mhus.nimbus.world.shared.util.HexMathUtil.hexToCartesian(coord, flatSize);
+                int hexCenterX = hexCenter[0];
+                int hexCenterZ = hexCenter[1];
 
                 // Add overlays for each slot
                 for (TownGridConfig.PlacedPlaceConfig place : config.getPlaces()) {

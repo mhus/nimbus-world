@@ -38,7 +38,7 @@ public class HexMathUtil {
      * @param gridHeight The diameter of the hexagon in blocks
      * @return Array with [x, z] center coordinates in world space
      */
-    public static double[] hexToCartesian(HexVector2 hex, int gridHeight) {
+    public static int[] hexToCartesian(HexVector2 hex, int gridHeight) {
         if (hex == null) {
             throw new IllegalArgumentException("HexVector2 cannot be null");
         }
@@ -55,7 +55,7 @@ public class HexMathUtil {
             x += gridWidth / 2; // Offset for odd rows
         }
         int z =  (hex.getR() * 3 * gridHeight) / 4;
-        return new double[]{x, z};
+        return new int[]{x, z};
     }
 
     public static int getGridWidth(int gridHeight) {
@@ -105,14 +105,20 @@ public class HexMathUtil {
         double adx = Math.abs(dx);
         double adz = Math.abs(dz);
 
-        // Constraint 1: left/right flat edges
-        if (adx > halfWidth) {
-            return false;
-        }
+        // Strictly outside
+        if (adx > halfWidth) return false;
+        double lhs = gridSize * adx + 2.0 * gridWidth * adz;
+        double rhs = (double) gridWidth * gridSize;
+        if (lhs > rhs) return false;
 
-        // Constraint 2: diagonal edges
-        // Derived from edge between top vertex (0, gridSize/2) and upper-right vertex (gridWidth/2, gridSize/4)
-        return gridSize * adx + 2.0 * gridWidth * adz <= (double) gridWidth * gridSize;
+        // Strictly inside (neither constraint at equality)
+        if (adx < halfWidth && lhs < rhs) return true;
+
+        // On boundary: half-open rule (like rectangles [left, right))
+        // Exclude points on "positive" side → they belong to the neighbor
+        if (dx > 0) return false;
+        if (dx == 0 && dz >= 0) return false;
+        return true;  // dx < 0, or (dx == 0 && dz < 0) → belongs to this hex
     }
 
     /**
@@ -134,22 +140,40 @@ public class HexMathUtil {
         return new HexPositionIterator(hex, gridSize);
     }
 
+    /**
+     * Returns the neighbor hex position in offset coordinates (odd-r stagger).
+     * The neighbor offsets depend on whether the current row is even or odd,
+     * matching the stagger layout used by {@link #hexToCartesian}.
+     *
+     * Even row (r%2==0): odd neighbor rows are staggered RIGHT by halfWidth.
+     * Odd row (r%2!=0): even neighbor rows have NO stagger.
+     */
     public static HexVector2 getNeighborPosition(HexVector2 position, WHexGrid.EDGE nabor) {
         int q = position.getQ();
         int r = position.getR();
+        boolean evenRow = (r % 2 == 0);
+
         switch (nabor) {
-            case NORTH_EAST:
-                return HexVector2.builder().q(q + 1).r(r - 1).build();
             case EAST:
                 return HexVector2.builder().q(q + 1).r(r).build();
-            case SOUTH_EAST:
-                return HexVector2.builder().q(q).r(r + 1).build();
-            case SOUTH_WEST:
-                return HexVector2.builder().q(q - 1).r(r + 1).build();
             case WEST:
                 return HexVector2.builder().q(q - 1).r(r).build();
+            case NORTH_EAST:
+                return evenRow
+                        ? HexVector2.builder().q(q).r(r + 1).build()
+                        : HexVector2.builder().q(q + 1).r(r + 1).build();
             case NORTH_WEST:
-                return HexVector2.builder().q(q).r(r - 1).build();
+                return evenRow
+                        ? HexVector2.builder().q(q - 1).r(r + 1).build()
+                        : HexVector2.builder().q(q).r(r + 1).build();
+            case SOUTH_EAST:
+                return evenRow
+                        ? HexVector2.builder().q(q).r(r - 1).build()
+                        : HexVector2.builder().q(q + 1).r(r - 1).build();
+            case SOUTH_WEST:
+                return evenRow
+                        ? HexVector2.builder().q(q - 1).r(r - 1).build()
+                        : HexVector2.builder().q(q).r(r - 1).build();
             default:
                 throw new IllegalArgumentException("Unknown nabor direction: " + nabor);
         }
@@ -218,7 +242,7 @@ public class HexMathUtil {
 
         // Test 4 candidates (2 rows x 2 columns) using hexToCartesian + isPointInHex
         HexVector2 best = null;
-        double bestDist = Double.MAX_VALUE;
+        int bestDist = Integer.MAX_VALUE;
 
         for (int r = r0; r <= r0 + 1; r++) {
             // Account for row stagger: hexToCartesian offsets odd rows by halfWidth
@@ -227,14 +251,14 @@ public class HexMathUtil {
 
             for (int q = q0; q <= q0 + 1; q++) {
                 HexVector2 candidate = HexVector2.builder().q(q).r(r).build();
-                double[] center = hexToCartesian(candidate, hexGridSize);
+                int[] center = hexToCartesian(candidate, hexGridSize);
                 if (isPointInHex(x, z, center[0], center[1], hexGridSize)) {
                     return candidate;
                 }
                 // Track nearest center as fallback for boundary points
-                double dx = x - center[0];
-                double dz = z - center[1];
-                double dist = dx * dx + dz * dz;
+                int dx = x - center[0];
+                int dz = z - center[1];
+                int dist = dx * dx + dz * dz;
                 if (dist < bestDist) {
                     bestDist = dist;
                     best = candidate;
@@ -250,8 +274,8 @@ public class HexMathUtil {
      * Internal iterator implementation for lazy position generation.
      */
     private static class HexPositionIterator implements Iterator<Vector2Int> {
-        private final double hexCenterX;
-        private final double hexCenterZ;
+        private final int hexCenterX;
+        private final int hexCenterZ;
         private final int gridSize;
         private final int minX;
         private final int maxX;
@@ -264,18 +288,18 @@ public class HexMathUtil {
         private boolean hasSearchedNext;
 
         HexPositionIterator(HexVector2 hex, int gridSize) {
-            double[] center = hexToCartesian(hex, gridSize);
+            int[] center = hexToCartesian(hex, gridSize);
             this.hexCenterX = center[0];
             this.hexCenterZ = center[1];
             this.gridSize = gridSize;
 
             // Calculate bounding box
             // gridSize is diameter, so radius = gridSize / 2
-            double radius = gridSize / 2.0;
-            this.minX = (int) Math.floor(hexCenterX - radius);
-            this.maxX = (int) Math.ceil(hexCenterX + radius);
-            this.minZ = (int) Math.floor(hexCenterZ - radius);
-            this.maxZ = (int) Math.ceil(hexCenterZ + radius);
+            int radius = gridSize / 2;
+            this.minX = hexCenterX - radius;
+            this.maxX = hexCenterX + radius;
+            this.minZ = hexCenterZ - radius;
+            this.maxZ = hexCenterZ + radius;
 
             // Start iteration
             this.currentX = minX;
@@ -418,7 +442,7 @@ public class HexMathUtil {
         HexVector2 bestHex = hexes[0];
         int maxCount = -1;
         for (HexVector2 hex : hexes) {
-            double[] hexCenter = hexToCartesian(hex, hexSize);
+            int[] hexCenter = hexToCartesian(hex, hexSize);
             int count = 0;
             for (double x = minX; x < maxX; x += sampleStep) {
                 for (double z = minZ; z < maxZ; z += sampleStep) {
@@ -455,17 +479,17 @@ public class HexMathUtil {
         java.util.Set<String> dominantChunks = new java.util.HashSet<>();
 
         // Get the hex center in world coordinates
-        double[] hexCenter = hexToCartesian(hexCoord, gridSize);
-        double hexCenterX = hexCenter[0];
-        double hexCenterZ = hexCenter[1];
+        int[] hexCenter = hexToCartesian(hexCoord, gridSize);
+        int hexCenterX = hexCenter[0];
+        int hexCenterZ = hexCenter[1];
 
         // Calculate bounding box for the hex (conservative estimate)
         // gridSize is diameter, so radius = gridSize / 2
-        double radius = gridSize / 2.0;
-        int minX = (int) Math.floor(hexCenterX - radius);
-        int maxX = (int) Math.ceil(hexCenterX + radius);
-        int minZ = (int) Math.floor(hexCenterZ - radius);
-        int maxZ = (int) Math.ceil(hexCenterZ + radius);
+        int radius = gridSize / 2;
+        int minX = hexCenterX - radius;
+        int maxX = hexCenterX + radius;
+        int minZ = hexCenterZ - radius;
+        int maxZ = hexCenterZ + radius;
 
         // Calculate chunk range that could overlap with this hex
         int minCx = Math.floorDiv(minX, chunkSize);
@@ -504,7 +528,7 @@ public class HexMathUtil {
 
                 // Calculate overlap for each hex
                 for (HexVector2 candidateHex : overlappingHexes) {
-                    double[] candidateCenter = hexToCartesian(candidateHex, gridSize);
+                    int[] candidateCenter = hexToCartesian(candidateHex, gridSize);
                     int overlap = 0;
 
                     for (double x = chunkMinX; x < chunkMaxX; x += sampleStep) {
@@ -560,7 +584,7 @@ public class HexMathUtil {
         HexVector2 bestHex = hexes[0];
         int maxCount = -1;
         for (HexVector2 hex : hexes) {
-            double[] hexCenter = hexToCartesian(hex, hexSize);
+            int[] hexCenter = hexToCartesian(hex, hexSize);
             int count = 0;
             for (double x = minX; x < maxX; x += sampleStep) {
                 for (double z = minZ; z < maxZ; z += sampleStep) {

@@ -114,7 +114,7 @@ class HexMathUtilTest {
                 HexVector2.builder().q(0).r(1).build()
         };
 
-        double[][] centers = new double[3][];
+        int[][] centers = new int[3][];
         for (int i = 0; i < hexagons.length; i++) {
             centers[i] = HexMathUtil.hexToCartesian(hexagons[i], gridSize);
         }
@@ -171,7 +171,7 @@ class HexMathUtilTest {
                 gridSize
         );
 
-        double[] hexCenter = HexMathUtil.hexToCartesian(expectedHex, gridSize);
+        int[] hexCenter = HexMathUtil.hexToCartesian(expectedHex, gridSize);
         boolean isInHex = HexMathUtil.isPointInHex(x, z, hexCenter[0], hexCenter[1], gridSize);
 
         // flatToHex must return a hex that contains the point
@@ -200,7 +200,7 @@ class HexMathUtilTest {
                     }
 
                     HexVector2 hex = HexVector2.builder().q(q).r(r).build();
-                    double[] cart = HexMathUtil.hexToCartesian(hex, gridSize);
+                    int[] cart = HexMathUtil.hexToCartesian(hex, gridSize);
                     Vector2Int pos = Vector2Int.builder()
                             .x((int) Math.round(cart[0]))
                             .z((int) Math.round(cart[1]))
@@ -214,6 +214,29 @@ class HexMathUtilTest {
                         .as("r roundtrip for q=" + q + ", r=" + r + ", gridSize=" + gridSize)
                         .isEqualTo(r);
                 }
+            }
+        }
+    }
+
+    @Test
+    void testHexToCartesianAndBack_negativeAndTransitionCoordinates() {
+        int gridSize = 400;
+        // Teste Übergänge: -2, -1, 0, 1, 2 für q und r
+        for (int q = -2; q <= 2; q++) {
+            for (int r = -2; r <= 2; r++) {
+                HexVector2 hex = HexVector2.builder().q(q).r(r).build();
+                int[] cart = HexMathUtil.hexToCartesian(hex, gridSize);
+                Vector2Int pos = Vector2Int.builder()
+                        .x((int) Math.round(cart[0]))
+                        .z((int) Math.round(cart[1]))
+                        .build();
+                HexVector2 back = HexMathUtil.flatToHex(pos, gridSize);
+                assertThat(back.getQ())
+                    .as("q roundtrip for q=" + q + ", r=" + r)
+                    .isEqualTo(q);
+                assertThat(back.getR())
+                    .as("r roundtrip for q=" + q + ", r=" + r)
+                    .isEqualTo(r);
             }
         }
     }

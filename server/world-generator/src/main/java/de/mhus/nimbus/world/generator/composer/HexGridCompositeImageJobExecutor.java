@@ -323,9 +323,9 @@ public class HexGridCompositeImageJobExecutor implements JobExecutor {
             String coordText = TypeUtil.toStringHexCoord(coord);
 
             // Calculate center position of hex grid in world coordinates
-            double[] hexCenter = HexMathUtil.hexToCartesian(coord, flatSize);
-            int centerX = (int) Math.floor(hexCenter[0]);
-            int centerY = (int) Math.floor(hexCenter[1]);
+            int[] hexCenter = HexMathUtil.hexToCartesian(coord, flatSize);
+            int centerX = hexCenter[0];
+            int centerY = hexCenter[1];
 
             // Create coordinate text overlay centered on grid (white color, scale 3)
             int coordTextWidth = coordText.length() * (5 + 1) * 3;
@@ -432,9 +432,9 @@ public class HexGridCompositeImageJobExecutor implements JobExecutor {
         int lz = flatSizeZ / 2 + relativePos.getZ();
 
         // Convert to absolute world coordinates
-        double[] hexCenter = HexMathUtil.hexToCartesian(gridCoord, flatSize);
-        int mountX = (int) Math.floor(hexCenter[0] - flatSize / 2.0);
-        int mountZ = (int) Math.floor(hexCenter[1] - flatSize / 2.0);
+        int[] hexCenter = HexMathUtil.hexToCartesian(gridCoord, flatSize);
+        int mountX = hexCenter[0] - flatSize / 2;
+        int mountZ = hexCenter[1] - flatSize / 2;
 
         int worldX = mountX + lx;
         int worldZ = mountZ + lz;
