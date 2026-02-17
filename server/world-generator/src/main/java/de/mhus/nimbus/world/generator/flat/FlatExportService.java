@@ -535,10 +535,11 @@ public class FlatExportService {
                 worldZ - flat.getMountZ()
         );
 
-        // Fill from level down to lowestSiblingLevel
+        // Fill from level down to lowestSiblingLevel (or level if lower than all siblings)
         // do not start at level, start at 255 - there could be extra blocks above
         boolean hasGround = false;
-        for (int y = 255; y >= lowestSiblingLevel; y--) {
+        int lowestY = Math.min(lowestSiblingLevel, level);
+        for (int y = 255; y >= lowestY; y--) {
             // Get block definition for this Y level
             String blockDefString = columnDef.getBlockAt(flat, level, y, extraBlocks);
 
