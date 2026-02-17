@@ -36,6 +36,9 @@ public class InitSetupProvider {
     @Value("${world.init.always:false}")
     private boolean alwaysRun;
 
+    @Value("${world.init.enabled:true}")
+    private boolean initEnabled;
+
     private final ObjectMapper objectMapper;
     private final RUserService userService;
     private final RCharacterService characterService;
@@ -44,6 +47,10 @@ public class InitSetupProvider {
 
     @PostConstruct
     public void init() {
+        if (!initEnabled) {
+            log.debug("Init setup is disabled, skipping initialization.");
+            return;
+        }
         importRegions();
         importUsers();
         importCharacters();
