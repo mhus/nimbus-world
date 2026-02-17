@@ -705,35 +705,55 @@ public class FlatExportService {
         // the flat neighbor calculation. The NW array position receives the NE offset
         // and vice versa.
         if (smoothCorners && y == level) {
-            List<Float> offsets = new ArrayList<>(24);
-            for (int i = 0; i < 24; i++) {
-                offsets.add(0.0f);
+            // Skip corner smoothing for blocks at the flat/hex edge.
+            // At flat transitions, offsets calculated from one flat's data don't match
+            // the neighboring flat's blocks, creating visual gaps.
+            // If any of the 8 surrounding columns is NOT_SET, NOT_SET_MUTABLE, or OUT_OF_BOUND,
+            // this block is near the edge and all offsets stay at 0.
+            boolean nearEdge = false;
+            for (int dx = -1; dx <= 1 && !nearEdge; dx++) {
+                for (int dz = -1; dz <= 1 && !nearEdge; dz++) {
+                    if (dx == 0 && dz == 0) continue;
+                    int neighborMat = getEffectiveNeighborMaterial(flat, localX + dx, localZ + dz);
+                    if (neighborMat == WFlat.MATERIAL_NOT_SET
+                            || neighborMat == WFlat.MATERIAL_NOT_SET_MUTABLE
+                            || neighborMat == WFlat.MATERIAL_OUT_OF_BOUND) {
+                        nearEdge = true;
+                    }
+                }
             }
 
-            // Calculate corner Y offsets from neighbor height differences
-            // Top Front Left (SW) - neighbors: West(-X,0), South(0,-Z), SW(-X,-Z)
-            float swOffset = calculateCornerOffset(flat, localX, localZ, myLevel, -1, 0, 0, -1, -1, -1, materialDef, extraBlocksCache);
+            if (!nearEdge) {
+                List<Float> offsets = new ArrayList<>(24);
+                for (int i = 0; i < 24; i++) {
+                    offsets.add(0.0f);
+                }
 
-            // Top Front Right (SE) - neighbors: East(+X,0), South(0,-Z), SE(+X,-Z)
-            float seOffset = calculateCornerOffset(flat, localX, localZ, myLevel, 1, 0, 0, -1, 1, -1, materialDef, extraBlocksCache);
+                // Calculate corner Y offsets from neighbor height differences
+                // Top Front Left (SW) - neighbors: West(-X,0), South(0,-Z), SW(-X,-Z)
+                float swOffset = calculateCornerOffset(flat, localX, localZ, myLevel, -1, 0, 0, -1, -1, -1, materialDef, extraBlocksCache);
 
-            // Top Back Left (NW) - neighbors: West(-X,0), North(0,+Z), NW(-X,+Z)
-            float nwOffset = calculateCornerOffset(flat, localX, localZ, myLevel, -1, 0, 0, 1, -1, 1, materialDef, extraBlocksCache);
+                // Top Front Right (SE) - neighbors: East(+X,0), South(0,-Z), SE(+X,-Z)
+                float seOffset = calculateCornerOffset(flat, localX, localZ, myLevel, 1, 0, 0, -1, 1, -1, materialDef, extraBlocksCache);
 
-            // Top Back Right (NE) - neighbors: East(+X,0), North(0,+Z), NE(+X,+Z)
-            float neOffset = calculateCornerOffset(flat, localX, localZ, myLevel, 1, 0, 0, 1, 1, 1, materialDef, extraBlocksCache);
+                // Top Back Left (NW) - neighbors: West(-X,0), North(0,+Z), NW(-X,+Z)
+                float nwOffset = calculateCornerOffset(flat, localX, localZ, myLevel, -1, 0, 0, 1, -1, 1, materialDef, extraBlocksCache);
 
-            // Assign Y offsets (NW/NE swapped to match 3D engine back-corner mirroring)
-            offsets.set(13, swOffset);  // top front left  Y (SW)
-            offsets.set(16, seOffset);  // top front right Y (SE)
-            offsets.set(19, neOffset);  // top back left   Y (NW position ← NE offset)
-            offsets.set(22, nwOffset);  // top back right  Y (NE position ← NW offset)
+                // Top Back Right (NE) - neighbors: East(+X,0), North(0,+Z), NE(+X,+Z)
+                float neOffset = calculateCornerOffset(flat, localX, localZ, myLevel, 1, 0, 0, 1, 1, 1, materialDef, extraBlocksCache);
 
-            // Set offsets on block
-            block.setOffsets(offsets);
+                // Assign Y offsets (NW/NE swapped to match 3D engine back-corner mirroring)
+                offsets.set(13, swOffset);  // top front left  Y (SW)
+                offsets.set(16, seOffset);  // top front right Y (SE)
+                offsets.set(19, neOffset);  // top back left   Y (NW position ← NE offset)
+                offsets.set(22, nwOffset);  // top back right  Y (NE position ← NW offset)
 
-            log.trace("Applied corner smoothing to block at ({},{}) with offsets SW:{}, SE:{}, NW:{}, NE:{}",
-                    localX, localZ, swOffset, seOffset, nwOffset, neOffset);
+                // Set offsets on block
+                block.setOffsets(offsets);
+
+                log.trace("Applied corner smoothing to block at ({},{}) with offsets SW:{}, SE:{}, NW:{}, NE:{}",
+                        localX, localZ, swOffset, seOffset, nwOffset, neOffset);
+            }
         }
 
         return true;  // Block should be exported
