@@ -75,7 +75,9 @@ public class AdminCreatorService {
             return;
         }
         log.debug("Admin character '{}' not found in region '{}', creating it", settingCharacterName.get(), region.getName());
-        characterService.createCharacter(settingAdminUsername.get(), region.getName(), settingCharacterName.get(), "Admin character");
+        var created = characterService.createCharacter(settingAdminUsername.get(), region.getName(), settingCharacterName.get(), "Admin character");
+        created.getPublicData().setThirdPersonModelId("n:wizard");
+        characterService.updateCharater(created);
     }
 
 }
