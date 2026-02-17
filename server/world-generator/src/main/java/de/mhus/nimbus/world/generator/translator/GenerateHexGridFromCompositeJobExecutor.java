@@ -237,21 +237,22 @@ public class GenerateHexGridFromCompositeJobExecutor implements JobExecutor {
                 // Parse coordinate from position string
                 HexVector2 coord = TypeUtil.parseHexCoord(position);
 
-                // For each hex side, check if neighbor exists and add edge_flat parameter
-                for (de.mhus.nimbus.world.shared.world.WHexGrid.EDGE side : de.mhus.nimbus.world.shared.world.WHexGrid.EDGE.values()) {
-                    HexVector2 neighborCoord = getNeighborCoordinate(coord, side);
-                    String neighborPosition = TypeUtil.toStringHexCoord(neighborCoord);
-
-                    // Check if neighbor grid exists in our composition
-                    if (allCoordinateStrings.contains(neighborPosition)) {
-                        // Generate flat ID using naming convention: genesis_{q}_{r}
-                        String neighborFlatId = "genesis_" + neighborCoord.getQ() + "_" + neighborCoord.getR();
-                        String paramKey = "g_edge_flat_" + side.name().toLowerCase();
-                        grid.getParameters().put(paramKey, neighborFlatId);
-                        modified = true;
-                        log.trace("Set {} = {} for grid at {}", paramKey, neighborFlatId, position);
-                    }
-                }
+// Note: In the actual BLENDER builder, it calculates neighbor flat IDs based on the center flat's coordinates.
+//                // For each hex side, check if neighbor exists and add edge_flat parameter
+//                for (de.mhus.nimbus.world.shared.world.WHexGrid.EDGE side : de.mhus.nimbus.world.shared.world.WHexGrid.EDGE.values()) {
+//                    HexVector2 neighborCoord = getNeighborCoordinate(coord, side);
+//                    String neighborPosition = TypeUtil.toStringHexCoord(neighborCoord);
+//
+//                    // Check if neighbor grid exists in our composition
+//                    if (allCoordinateStrings.contains(neighborPosition)) {
+//                        // Generate flat ID using naming convention: genesis_{q}_{r}
+//                        String neighborFlatId = "genesis_" + neighborCoord.getQ() + "_" + neighborCoord.getR();
+//                        String paramKey = "g_edge_flat_" + side.name().toLowerCase();
+//                        grid.getParameters().put(paramKey, neighborFlatId);
+//                        modified = true;
+//                        log.trace("Set {} = {} for grid at {}", paramKey, neighborFlatId, position);
+//                    }
+//                }
 
                 // Add edge blending parameters (if not already set)
                 // These control how edges are blended with neighbors

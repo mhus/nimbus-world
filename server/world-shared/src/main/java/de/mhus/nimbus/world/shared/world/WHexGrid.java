@@ -78,6 +78,28 @@ public class WHexGrid implements Identifiable {
             };
         }
 
+        public int getDeltaQ() {
+            return switch (this) {
+                case NORTH_EAST -> 1;
+                case EAST -> 1;
+                case SOUTH_EAST -> 0;
+                case SOUTH_WEST -> -1;
+                case WEST -> -1;
+                case NORTH_WEST -> 0;
+            };
+        }
+
+        public int getDeltaR() {
+            return switch (this) {
+                case NORTH_EAST -> -1;
+                case EAST -> 0;
+                case SOUTH_EAST -> 1;
+                case SOUTH_WEST -> 1;
+                case WEST -> 0;
+                case NORTH_WEST -> -1;
+            };
+        }
+
         public CORNER[] getAdjacentCorners() {
             return switch (this) {
                 case NORTH_EAST -> new CORNER[]{CORNER.NORTH, CORNER.NORTH_EAST};

@@ -403,20 +403,21 @@ public abstract class HexCompositeBuilderAbstract {
             HexVector2 coord = TypeUtil.parseHexCoord(hexGrid.getPosition());
 
             // Set neighbor flat IDs for each side
-            int neighborsForThisGrid = 0;
-            for (WHexGrid.EDGE side : WHexGrid.EDGE.values()) {
-                HexVector2 neighborPos = HexMathUtil.getNeighborPosition(coord, side);
-                String neighborFlatKey = "genesis_" + neighborPos.getQ() + "_" + neighborPos.getR();
-                WFlat neighborFlat = flats.get(neighborFlatKey);
-                if (neighborFlat != null) {
-                    String paramKey = "g_edge_flat_" + side.name().toLowerCase();
-                    hexGrid.getParameters().put(paramKey, neighborFlat.getFlatId());
-                    neighborsForThisGrid++;
-                }
-            }
-            if (neighborsForThisGrid > 0) {
-                totalNeighbors += neighborsForThisGrid;
-            }
+// Note: In the actual BLENDER builder, it calculates neighbor flat IDs based on the center flat's coordinates.
+//            int neighborsForThisGrid = 0;
+//            for (WHexGrid.EDGE side : WHexGrid.EDGE.values()) {
+//                HexVector2 neighborPos = HexMathUtil.getNeighborPosition(coord, side);
+//                String neighborFlatKey = "genesis_" + neighborPos.getQ() + "_" + neighborPos.getR();
+//                WFlat neighborFlat = flats.get(neighborFlatKey);
+//                if (neighborFlat != null) {
+//                    String paramKey = "g_edge_flat_" + side.name().toLowerCase();
+//                    hexGrid.getParameters().put(paramKey, neighborFlat.getFlatId());
+//                    neighborsForThisGrid++;
+//                }
+//            }
+//            if (neighborsForThisGrid > 0) {
+//                totalNeighbors += neighborsForThisGrid;
+//            }
 
         }
         log.info("Setup blender parameters: {} neighbor edges configured for {} grids", totalNeighbors, grids.size());
