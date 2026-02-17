@@ -136,6 +136,17 @@ public class ChunkSenderService {
                     } catch (Exception e) {
                         log.error("Failed to send binary chunk, falling back to text: cx={}, cz={}",
                                 coord.cx(), coord.cz(), e);
+                        // Decompress server-side for JSON fallback (base64-encoded c field is not valid gzip for client)
+                        var fallbackData = chunkService.loadChunkData(session.getWorldId(), chunkKey, false);
+                        if (fallbackData.isPresent()) {
+                            var cd = fallbackData.get();
+                            dto.setB(cd.getBlocks());
+                            dto.setH(cd.getHeightData());
+                            dto.setDeny(cd.getDeny());
+                            dto.setBackdrop(chunkService.convertBackdrop(cd.getBackdrop()));
+                            dto.setA(cd.getA());
+                            dto.setC(null);
+                        }
                         responseChunks.add(objectMapper.valueToTree(dto));
                     }
                 } else {

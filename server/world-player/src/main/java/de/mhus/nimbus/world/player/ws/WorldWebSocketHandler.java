@@ -28,6 +28,10 @@ public class WorldWebSocketHandler extends TextWebSocketHandler {
     public void afterConnectionEstablished(WebSocketSession webSocketSession) throws Exception {
         tracker.increment();
 
+        // Allow large binary messages for compressed chunk data (default 8KB is too small)
+        webSocketSession.setBinaryMessageSizeLimit(512 * 1024); // 512KB
+        webSocketSession.setTextMessageSizeLimit(512 * 1024);   // 512KB
+
         String worldId = extractWorldId(webSocketSession);
         log.info("WebSocket connection established: session={}, worldId={}",
                 webSocketSession.getId(), worldId);
