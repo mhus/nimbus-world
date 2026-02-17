@@ -1,6 +1,7 @@
 package de.mhus.nimbus.world.shared.job;
 
 import de.mhus.nimbus.shared.types.WorldId;
+import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
@@ -49,6 +50,7 @@ public class WJobService {
     }
 
     @Transactional
+    @NotNull
     public WJob createJob(String worldId, String executor, String title, String type,
                           Map<String, String> parameters, String location, String parent, int priority, int maxRetries,
                           NextJob onSuccess, NextJob onError) {

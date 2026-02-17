@@ -343,4 +343,49 @@ class HexAdjacentOverlapTest {
                     .isEqualTo(gridWidth);
         }
     }
+
+    /**
+     * Verify the exact neighbor coordinates for hex (0,0) in offset coordinates.
+     * This ensures getNeighborPosition produces a proper hexagonal ring around the center.
+     */
+    @Test
+    void testNeighborCoordinates_hex00_layout() {
+        int gridSize = 400;
+        HexVector2 center = HexVector2.builder().q(0).r(0).build();
+
+        // Even row (r=0): neighbors in offset coordinates
+        HexVector2 ne = HexMathUtil.getNeighborPosition(center, WHexGrid.EDGE.NORTH_EAST);
+        HexVector2 e  = HexMathUtil.getNeighborPosition(center, WHexGrid.EDGE.EAST);
+        HexVector2 se = HexMathUtil.getNeighborPosition(center, WHexGrid.EDGE.SOUTH_EAST);
+        HexVector2 sw = HexMathUtil.getNeighborPosition(center, WHexGrid.EDGE.SOUTH_WEST);
+        HexVector2 w  = HexMathUtil.getNeighborPosition(center, WHexGrid.EDGE.WEST);
+        HexVector2 nw = HexMathUtil.getNeighborPosition(center, WHexGrid.EDGE.NORTH_WEST);
+
+        // Expected offset coordinates for even row center (0,0)
+        assertThat(ne).as("NE").satisfies(h -> { assertThat(h.getQ()).isEqualTo(0);  assertThat(h.getR()).isEqualTo(1); });
+        assertThat(e).as("E").satisfies(h ->   { assertThat(h.getQ()).isEqualTo(1);  assertThat(h.getR()).isEqualTo(0); });
+        assertThat(se).as("SE").satisfies(h -> { assertThat(h.getQ()).isEqualTo(0);  assertThat(h.getR()).isEqualTo(-1); });
+        assertThat(sw).as("SW").satisfies(h -> { assertThat(h.getQ()).isEqualTo(-1); assertThat(h.getR()).isEqualTo(-1); });
+        assertThat(w).as("W").satisfies(h ->   { assertThat(h.getQ()).isEqualTo(-1); assertThat(h.getR()).isEqualTo(0); });
+        assertThat(nw).as("NW").satisfies(h -> { assertThat(h.getQ()).isEqualTo(-1); assertThat(h.getR()).isEqualTo(1); });
+
+        // Verify proper hexagonal layout: all neighbors equidistant from center
+        int gridWidth = HexMathUtil.getGridWidth(gridSize);
+        int[] centerPos = HexMathUtil.hexToCartesian(center, gridSize);
+
+        for (WHexGrid.EDGE dir : WHexGrid.EDGE.values()) {
+            HexVector2 neighbor = HexMathUtil.getNeighborPosition(center, dir);
+            int[] nPos = HexMathUtil.hexToCartesian(neighbor, gridSize);
+            double dist = Math.sqrt(
+                    Math.pow(nPos[0] - centerPos[0], 2) +
+                    Math.pow(nPos[1] - centerPos[1], 2));
+
+            System.out.printf("  %s → (%d,%d) at world (%d,%d), dist=%.1f%n",
+                    dir, neighbor.getQ(), neighbor.getR(), nPos[0], nPos[1], dist);
+
+            assertThat(dist)
+                    .as("Neighbor %s distance should be ≈ gridWidth=%d", dir, gridWidth)
+                    .isBetween((double) gridWidth - 1, (double) gridWidth + 1);
+        }
+    }
 }

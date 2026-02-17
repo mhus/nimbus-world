@@ -39,6 +39,7 @@ import java.util.stream.Collectors;
  *   - "exportAll" - Export grids to layers
  *   - "imagesAll" - Export individual grid images
  *   - "compositeImages" - Create composite images of entire world
+ *   - "importFlats" - (alternative to createAll) Import pre-created flats by flatId instead of creating them in this workflow. Only executes once, not per grid.
  */
 @Service
 @Slf4j
@@ -78,12 +79,6 @@ public class Day3Generation extends MethodBasedWorkflow {
                     .map(String::trim)
                     .filter(s -> !s.isEmpty())
                     .toList();
-            for (String phaseName : phaseList) {
-                if (Day3Phase.fromPhaseName(phaseName) == null) {
-                    throw new WorkflowException(null, "Unknown phase: " + phaseName
-                            + ". Valid phases: " + GenesisConst.DEFAULT_PHASES);
-                }
-            }
             if (phaseList.isEmpty()) {
                 throw new WorkflowException(null, "phases parameter must not be empty");
             }
@@ -203,6 +198,25 @@ public class Day3Generation extends MethodBasedWorkflow {
                                 "flatId", flatId,
                                 "paletteName", "nimbus"
                         ));
+            }
+            case "importFlats" -> {
+                // use this instead of createAll if you want to import pre-created flats instead of generating them in this workflow
+                // Only execute once (at index 0), not for each grid
+                // Execute directly
+                for (int i = index; i < total; i++) {
+                    Day3ProcessingState.HexCoordinate c = state.getCoordinates().get(i);
+                    String flatId = "genesis_" + c.getQ() + "_" + c.getR();
+                    var flatOpt = flatService.findByWorldAndFlatId(context.getWorldId(), flatId);
+                    if (flatOpt == null) {
+                        throw new WorkflowException(null, "Error checking flat existence: flatService returned null for world " + context.getWorldId() + " and flatId " + flatId);
+                    }
+                    state.getFlatIds().set(i, flatId);
+                }
+
+                // Skip remaining indices - composite images only created once
+                state.setCurrentIndex(total);
+                context.addRecord(state);
+                processNextInPhase(context, state);
             }
             case "groundAll" -> {
                 String flatId = state.getFlatIds().get(index);

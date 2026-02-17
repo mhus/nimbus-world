@@ -268,7 +268,7 @@ public class FlatExportService {
             return;
         }
         BlockDef topBlockDef = topBlockDefOpt.get();
-        if ("5000".equals(topBlockDef.getBlockTypeId())) { // TODO hack for water
+        if ("n:o".equals(topBlockDef.getBlockTypeId()) || "n:w".equals(topBlockDef.getBlockTypeId()) || "5000".equals(topBlockDef.getBlockTypeId()) || "w:5000".equals(topBlockDef.getBlockTypeId())) { // TODO hack for water
             log.debug("Top block is water for NOT_SET column at ({},{}), using bedrock instead", worldX, worldZ);
             topBlockDef = BlockDef.of(flat.getMaterial(FlatMaterialService.BEDROCK).getBlockDef()).orElseThrow();
         }
@@ -345,7 +345,7 @@ public class FlatExportService {
         sb.append(block.getBlockTypeId());
 
         Integer status = block.getStatus();
-        if (status != null && status != 0) {
+        if (status != 0) {
             sb.append("@s:").append(status);
         }
 
@@ -656,8 +656,8 @@ public class FlatExportService {
         }
 
         // Check if modifier (status) is 0 or null
-        Integer status = block.getStatus();
-        if (status != null && status != 0) {
+        int status = block.getStatus();
+        if (status != 0) {
             return true;  // Modified block, export block
         }
 
@@ -743,6 +743,9 @@ public class FlatExportService {
      * 7. At least one lower (and none higher) → lowerOffsets.one or lowerOffsets.two (based on maximum difference)
      * 8. All same → 0.0
      *
+     * If any neighbor material is NOT_SET or OUT_OF_BOUND, we cannot determine offsets reliably, return 0.0
+     * If any neighbor is NOT_SET, we cannot determine offsets reliably, return 0.0
+     *
      * @param flat The flat terrain data
      * @param localX Current column X
      * @param localZ Current column Z
@@ -776,6 +779,25 @@ public class FlatExportService {
         int neighbor1Level = getEffectiveNeighborLevel(flat, localX + dx1, localZ + dz1, myLevel, extraBlocksCache);
         int neighbor2Level = getEffectiveNeighborLevel(flat, localX + dx2, localZ + dz2, myLevel, extraBlocksCache);
         int neighbor3Level = getEffectiveNeighborLevel(flat, localX + dx3, localZ + dz3, myLevel, extraBlocksCache);
+
+        int neighbor1Material = getEffectiveNeighborMaterial(flat, localX + dx1, localZ + dz1);
+        int neighbor2Material = getEffectiveNeighborMaterial(flat, localX + dx2, localZ + dz2);
+        int neighbor3Material = getEffectiveNeighborMaterial(flat, localX + dx3, localZ + dz3);
+
+        boolean oneNotSetMaterial = neighbor1Material == WFlat.MATERIAL_NOT_SET || neighbor2Material == WFlat.MATERIAL_NOT_SET || neighbor3Material == WFlat.MATERIAL_NOT_SET
+                || neighbor1Material == WFlat.MATERIAL_NOT_SET_MUTABLE || neighbor2Material == WFlat.MATERIAL_NOT_SET_MUTABLE || neighbor3Material == WFlat.MATERIAL_NOT_SET_MUTABLE
+                || neighbor1Material == WFlat.MATERIAL_OUT_OF_BOUND || neighbor2Material == WFlat.MATERIAL_OUT_OF_BOUND || neighbor3Material == WFlat.MATERIAL_OUT_OF_BOUND;
+
+        if (oneNotSetMaterial) {
+            // If any neighbor material is NOT_SET or OUT_OF_BOUND, we cannot determine offsets reliably, return 0.0
+            return 0.0f;
+        }
+
+        boolean oneNotSet = neighbor1Level == WFlat.LEVEL_NOT_SET || neighbor2Level == WFlat.LEVEL_NOT_SET || neighbor3Level == WFlat.LEVEL_NOT_SET;
+        if (oneNotSet) {
+            // If any neighbor is NOT_SET, we cannot determine offsets reliably, return 0.0
+            return 0.0f;
+        }
 
         int diff1 = neighbor1Level - myLevel;
         int diff2 = neighbor2Level - myLevel;
@@ -893,6 +915,24 @@ public class FlatExportService {
         }
 
         return highestRelevantY;
+    }
+
+    /**
+     * Get effective neighbor column material from flat
+     * Only considers extraBlocks in the range of myLevel-1 to myLevel+1.
+     * ExtraBlocks outside this range are not relevant for offset calculation.
+     *
+     * @param flat The flat terrain data
+     * @param x Column X coordinate
+     * @param z Column Z coordinate
+     * @return Effective highest level within relevant range (myLevel-1 to myLevel+1)
+     */
+    private int getEffectiveNeighborMaterial(WFlat flat, int x, int z) {
+        if (x < 0 || z < 0 || x >= flat.getSizeX() || z >= flat.getSizeZ()) {
+            return WFlat.MATERIAL_OUT_OF_BOUND;
+        }
+
+        return flat.getColumn(x, z);
     }
 
     /**

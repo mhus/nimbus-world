@@ -124,7 +124,7 @@ public class WorkflowService {
                     type.isBlank() ? executor : type);
         }
 
-        jobService.createJob(
+        var job = jobService.createJob(
                 context.getWorldId(),
                 executor,
                 title,
@@ -137,6 +137,8 @@ public class WorkflowService {
                 onSuccess,
                 onError
         );
+        context.addRecord(new CreateJobRecord(job.getId(), executor, type, location, parameters));
+
     }
 
     private void fireStartEvent(String workflowName, String worldId, String workflowId) {

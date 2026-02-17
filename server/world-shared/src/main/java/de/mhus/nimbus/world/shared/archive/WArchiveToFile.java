@@ -24,15 +24,15 @@ public class WArchiveToFile implements WArchiveService {
 
     @Override
     public void archive(String path, InputStream stream) throws IOException {
-        path = normalzePath(path);
-        var date = new java.text.SimpleDateFormat("yyyy/MM/dd/HH-mm-ss-SSS").format(new java.util.Date());
+        path = normalizePath(path).replace("/", "_");
+        var date = new java.text.SimpleDateFormat("yyyy/MM/dd/HH-mm-ss-SSS_").format(new java.util.Date());
         File target = new File(archivePath + "/" + date + "/" + path);
         target.getParentFile().mkdirs();
         log.info("Archive to file {}", target.getAbsolutePath());
         java.nio.file.Files.copy(stream, target.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
     }
 
-    private String normalzePath(String path) {
+    private String normalizePath(String path) {
         path = path.replace('\\', '/').replaceAll("//+", "/").replaceAll("/\\./", "/");
         if (path.startsWith("/")) path = path.substring(1);
         return path;

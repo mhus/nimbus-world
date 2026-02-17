@@ -67,8 +67,8 @@ public class HexDebugWorkflow extends MethodBasedWorkflow {
 
         Map<String, Object> result = new HashMap<>();
         result.put("coordinate", coordinate);
-        if (params.containsKey(GenesisConst.TARGET_PHASE)) {
-            result.put(GenesisConst.TARGET_PHASE, params.get(GenesisConst.TARGET_PHASE));
+        if (params.containsKey(GenesisConst.PHASES)) {
+            result.put(GenesisConst.PHASES, params.get(GenesisConst.PHASES));
         }
         return result;
     }
@@ -97,20 +97,15 @@ public class HexDebugWorkflow extends MethodBasedWorkflow {
                 String.valueOf(FlatMaterialService.SAND),
                 "debug-center"));
 
-        // 6 neighbors: level=50, base=GRASS, circles=SAND/STONE/DIRT
-        int[][] neighborOffsets = {
-                { 1, -1}, // NE
-                { 1,  0}, // E
-                { 0,  1}, // SE
-                {-1,  1}, // SW
-                {-1,  0}, // W
-                { 0, -1}  // NW
-        };
+        // 6 neighbors using offset-coordinate neighbor lookup
+        HexVector2 centerHex = HexVector2.builder().q(centerQ).r(centerR).build();
+        de.mhus.nimbus.world.shared.world.WHexGrid.EDGE[] directions = de.mhus.nimbus.world.shared.world.WHexGrid.EDGE.values();
         String[] neighborNames = {"NE", "E", "SE", "SW", "W", "NW"};
 
-        for (int i = 0; i < neighborOffsets.length; i++) {
-            int nq = centerQ + neighborOffsets[i][0];
-            int nr = centerR + neighborOffsets[i][1];
+        for (int i = 0; i < directions.length; i++) {
+            HexVector2 neighbor = de.mhus.nimbus.world.shared.util.HexMathUtil.getNeighborPosition(centerHex, directions[i]);
+            int nq = neighbor.getQ();
+            int nr = neighbor.getR();
             grids.add(createDebugHexGrid(nq, nr,
                     "150",
                     String.valueOf(FlatMaterialService.GRASS),
@@ -164,9 +159,9 @@ public class HexDebugWorkflow extends MethodBasedWorkflow {
         // Build Day3 parameters
         Map<String, String> day3Params = new HashMap<>();
         day3Params.put(GenesisConst.COMPOSITION_ID, documentId);
-        String targetPhase = (String) context.getParameters().get(GenesisConst.TARGET_PHASE);
+        String targetPhase = (String) context.getParameters().get(GenesisConst.PHASES);
         if (targetPhase != null) {
-            day3Params.put(GenesisConst.TARGET_PHASE, targetPhase);
+            day3Params.put(GenesisConst.PHASES, targetPhase);
         }
 
         // Start Day3 Generation workflow
