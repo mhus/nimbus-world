@@ -445,12 +445,25 @@ public class FlatExportService {
             if (neighborX >= 0 && neighborX < flat.getSizeX() &&
                 neighborZ >= 0 && neighborZ < flat.getSizeZ()) {
 
-                // Check if neighbor column is defined
-//                if (flat.isColumnSet(neighborX, neighborZ)) {
-                if (flat.getLevelRobust(neighborX, neighborZ) > WFlat.LEVEL_NOT_SET) {
-                    int neighborLevel = flat.getLevel(neighborX, neighborZ);
-                    if (neighborLevel < lowestLevel) {
-                        lowestLevel = neighborLevel;
+                int columnMaterial = flat.getColumnRobust(neighborX, neighborZ);
+                if (columnMaterial != WFlat.MATERIAL_OUT_OF_BOUND &&
+                    columnMaterial != WFlat.MATERIAL_NOT_SET &&
+                    columnMaterial != WFlat.MATERIAL_NOT_SET_MUTABLE) {
+                    // Column is SET - use flat level (reliable)
+                    if (flat.getLevelRobust(neighborX, neighborZ) > WFlat.LEVEL_NOT_SET) {
+                        int neighborLevel = flat.getLevel(neighborX, neighborZ);
+                        if (neighborLevel < lowestLevel) {
+                            lowestLevel = neighborLevel;
+                            foundSibling = true;
+                        }
+                    }
+                } else {
+                    // Column is NOT_SET - flat level is unreliable, use actual chunk data
+                    int worldNX = flat.getMountX() + neighborX;
+                    int worldNZ = flat.getMountZ() + neighborZ;
+                    int existingLevel = findHighestBlockAtPosition(chunkData, worldNX, worldNZ);
+                    if (existingLevel != -1 && existingLevel < lowestLevel) {
+                        lowestLevel = existingLevel;
                         foundSibling = true;
                     }
                 }
@@ -875,6 +888,15 @@ public class FlatExportService {
 
         // At least one higher (and none lower)
         if (anyHigher && !anyLower) {
+            // Count how many neighbors are actually higher
+            int higherCount = (n1Higher ? 1 : 0) + (n2Higher ? 1 : 0) + (n3Higher ? 1 : 0);
+
+            // If only 1 of 3 neighbors is higher, skip offset to avoid artifacts
+            // on the other two faces where the neighbor is at the same level
+            if (higherCount <= 1) {
+                return 0.0f;
+            }
+
             // Find the minimum positive difference
             int minHigherDiff = Integer.MAX_VALUE;
             if (diff1 > 0 && diff1 < minHigherDiff) minHigherDiff = diff1;
@@ -890,6 +912,14 @@ public class FlatExportService {
 
         // At least one lower (and none higher)
         if (anyLower && !anyHigher) {
+            // Count how many neighbors are actually lower
+            int lowerCount = (n1Lower ? 1 : 0) + (n2Lower ? 1 : 0) + (n3Lower ? 1 : 0);
+
+            // If only 1 of 3 neighbors is lower, skip offset to avoid artifacts
+            if (lowerCount <= 1) {
+                return 0.0f;
+            }
+
             // Find the maximum negative difference (closest to 0, i.e. least negative)
             int maxLowerDiff = Integer.MIN_VALUE;
             if (diff1 < 0 && diff1 > maxLowerDiff) maxLowerDiff = diff1;
