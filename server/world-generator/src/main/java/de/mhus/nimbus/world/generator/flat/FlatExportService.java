@@ -29,9 +29,11 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * Service for exporting WFlat to WLayer GROUND type.
@@ -49,6 +51,13 @@ public class FlatExportService {
     private final WDirtyChunkService dirtyChunkService;
     private final WBlockTypeService blockTypeService;
     private final WChunkService chunkService;
+
+    // Check all 8 neighbors
+    static final int[][] SIBLING_OFFSETS = {
+            {-1, -1}, {0, -1}, {1, -1},
+            {-1, 0},           {1, 0},
+            {-1, 1},  {0, 1},  {1, 1}
+    };
 
     /**
      * Export WFlat to a WLayer of type GROUND.
@@ -215,19 +224,13 @@ public class FlatExportService {
 
     private boolean isOneAroundSet(WFlat flat, int localX, int localZ) {
         for (int i = -1; i <= 1; i++) {
-            int columnMaterial = flat.getColumnRobust(localX + i, localZ-1);
-            if (columnMaterial != WFlat.MATERIAL_OUT_OF_BOUND && columnMaterial != WFlat.MATERIAL_NOT_SET && columnMaterial != WFlat.MATERIAL_NOT_SET_MUTABLE)
-                return true;
-            columnMaterial = flat.getColumnRobust(localX + i, localZ+1);
-            if (columnMaterial != WFlat.MATERIAL_OUT_OF_BOUND && columnMaterial != WFlat.MATERIAL_NOT_SET && columnMaterial != WFlat.MATERIAL_NOT_SET_MUTABLE)
-                return true;
+            for (int j = -1; j <= 1; j++) {
+                if (i == 0 && j == 0) continue; // skip self
+                int columnMaterial = flat.getColumnRobust(localX + i, localZ + j);
+                if (columnMaterial != WFlat.MATERIAL_OUT_OF_BOUND && columnMaterial != WFlat.MATERIAL_NOT_SET && columnMaterial != WFlat.MATERIAL_NOT_SET_MUTABLE)
+                    return true;
+            }
         }
-        int columnMaterial = flat.getColumnRobust(localX-1, localZ);
-        if (columnMaterial != WFlat.MATERIAL_OUT_OF_BOUND && columnMaterial != WFlat.MATERIAL_NOT_SET && columnMaterial != WFlat.MATERIAL_NOT_SET_MUTABLE)
-            return true;
-        columnMaterial = flat.getColumnRobust(localX+1, localZ);
-        if (columnMaterial != WFlat.MATERIAL_OUT_OF_BOUND && columnMaterial != WFlat.MATERIAL_NOT_SET && columnMaterial != WFlat.MATERIAL_NOT_SET_MUTABLE)
-            return true;
         return false;
     }
 
@@ -244,17 +247,21 @@ public class FlatExportService {
         int existingLevel = findHighestGroundBlockAtPosition(chunkData, worldX, worldZ, worldId);
         if (existingLevel == -1) {
             log.debug("No GROUND type blocks found at ({},{}) for NOT_SET column", worldX, worldZ);
-            // exidently no GROUND blocks fake it:
+            // no GROUND blocks fake it:
             existingLevel = flat.getLevel(localX, localZ);
+            if (existingLevel == WFlat.LEVEL_NOT_SET) {
+                existingLevel = findLowestSiblingLevel(flat, localX, localZ, chunkData, world);
+            }
+            if (existingLevel == WFlat.LEVEL_NOT_SET) {
+                existingLevel = world.getGroundLevel();
+            }
             topBlockDefString = flat.getMaterial(FlatMaterialService.BEDROCK).getBlockDef();
-        }
-
-        // Get the block type from the highest existing GROUND block BEFORE deleting
-        if (Strings.isBlank(topBlockDefString)) {
+        } else {
+            // Get the block type from the highest existing GROUND block BEFORE deleting
             topBlockDefString = getBlockDefAtPosition(chunkData, worldX, worldZ, existingLevel);
-        }
-        if (Strings.isBlank(topBlockDefString)) {
-            topBlockDefString = flat.getMaterial(FlatMaterialService.BEDROCK).getBlockDef();
+            if (Strings.isBlank(topBlockDefString)) {
+                topBlockDefString = flat.getMaterial(FlatMaterialService.BEDROCK).getBlockDef();
+            }
         }
         if (Strings.isBlank(topBlockDefString)) {
             log.debug("Could not determine top block definition for NOT_SET column at ({},{}), using default", worldX, worldZ);
@@ -273,14 +280,15 @@ public class FlatExportService {
             topBlockDef = BlockDef.of(flat.getMaterial(FlatMaterialService.BEDROCK).getBlockDef()).orElseThrow();
         }
 
-        // Delete all blocks BELOW the top block (keep only the top block)
-        deleteBlocksBelowLevel(layerChunkData, worldX, worldZ, existingLevel);
+        Set<Integer> blockLevels = getBlocksAtLevel(layerChunkData, worldX, worldZ);
 
         // Find lowest sibling level (from neighbors)
         int lowestSiblingLevel = findLowestSiblingLevel(flat, localX, localZ, chunkData, world);
-        if (lowestSiblingLevel == WFlat.LEVEL_NOT_SET)
-            return; // do not fill down if no siblings
-
+        if (lowestSiblingLevel == WFlat.LEVEL_NOT_SET) {
+            if (blockLevels.isEmpty())
+                return; // do not fill down if no siblings
+            lowestSiblingLevel = blockLevels.stream().min(Integer::compareTo).orElse(WFlat.LEVEL_NOT_SET);
+        }
         // If neighbors are lower, fill down to avoid gaps
         if (lowestSiblingLevel < existingLevel) {
             // Determine which sides need filling (which neighbors are lowest)
@@ -288,6 +296,9 @@ public class FlatExportService {
             // Fill down from existingLevel-1 to lowestSiblingLevel
             for (int y = existingLevel - 1; y >= lowestSiblingLevel; y--) {
                 // Create new block with same type as top block
+                if (blockLevels.contains(y)) {
+                    continue; // ignore existing blocks, do not overwrite
+                }
 
                 BlockMetadata metadata = BlockMetadata.builder()
                         .title("ns")
@@ -385,16 +396,20 @@ public class FlatExportService {
      * Delete all blocks below a specific level in a column.
      * Keeps blocks at and above the specified level.
      */
-    private void deleteBlocksBelowLevel(LayerChunkData chunkData, int worldX, int worldZ, int keepLevel) {
-        chunkData.getBlocks().removeIf(layerBlock -> {
+    private Set<Integer> getBlocksAtLevel(LayerChunkData chunkData, int worldX, int worldZ) {
+        final Set<Integer> result = new HashSet<>();
+        chunkData.getBlocks().forEach(layerBlock -> {
             Block block = layerBlock.getBlock();
             if (block == null || block.getPosition() == null) {
-                return false;
+                return;
             }
             Vector3Int pos = block.getPosition();
             // Remove if same X,Z and Y < keepLevel
-            return pos.getX() == worldX && pos.getZ() == worldZ && pos.getY() < keepLevel;
+            if ( pos.getX() == worldX && pos.getZ() == worldZ) {
+                result.add(pos.getY());
+            }
         });
+        return result;
     }
 
     /**
@@ -422,14 +437,7 @@ public class FlatExportService {
         int lowestLevel = Integer.MAX_VALUE;
         boolean foundSibling = false;
 
-        // Check all 8 neighbors
-        int[][] offsets = {
-                {-1, -1}, {0, -1}, {1, -1},
-                {-1, 0},           {1, 0},
-                {-1, 1},  {0, 1},  {1, 1}
-        };
-
-        for (int[] offset : offsets) {
+        for (int[] offset : SIBLING_OFFSETS) {
             int neighborX = localX + offset[0];
             int neighborZ = localZ + offset[1];
 
@@ -438,7 +446,8 @@ public class FlatExportService {
                 neighborZ >= 0 && neighborZ < flat.getSizeZ()) {
 
                 // Check if neighbor column is defined
-                if (flat.isColumnSet(neighborX, neighborZ)) {
+//                if (flat.isColumnSet(neighborX, neighborZ)) {
+                if (flat.getLevelRobust(neighborX, neighborZ) > WFlat.LEVEL_NOT_SET) {
                     int neighborLevel = flat.getLevel(neighborX, neighborZ);
                     if (neighborLevel < lowestLevel) {
                         lowestLevel = neighborLevel;
