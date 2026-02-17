@@ -320,15 +320,15 @@ public class WorkflowService {
         return !journalService.getWorkflowJournalRecordsForType(worldId, workflowId, StartRecord.class.getCanonicalName()).isEmpty();
     }
 
-    public void migrateWorkflowToWorld(WorkflowContext context, String newWorldId, String newStatus) {
+    public void emigrateToWorld(WorkflowContext context, String newWorldId, String newStatus) {
         if (WorldId.of(newWorldId).orElseThrow().isCollection()) {
             throw new IllegalArgumentException("Cannot migrate workflow to a collection world: " + newWorldId);
         }
         worldService.getByWorldId(newWorldId).orElseThrow();
 
         var jobId = context.getLastJournalRecord(JobIdRecord.class);
-        journalService.migrateWorkflowJournalToWorld(context.getWorldId(), context.getWorkflowId(), newWorldId);
-        jobId.ifPresent(jobIdRecord -> jobService.migrateJobToWorld(context.getWorldId(), jobIdRecord.getJobId(), newWorldId));
+        journalService.emigrateToWorld(context.getWorldId(), context.getWorkflowId(), newWorldId);
+        jobId.ifPresent(jobIdRecord -> jobService.emigrateToWorld(context.getWorldId(), jobIdRecord.getJobId(), newWorldId));
         var newContext = loadWorkflowContext(newWorldId, context.getWorkflowId(), context.getWorkflowName(), context.getEvent());
         newContext.updateWorkflowStatus(newStatus);
 
@@ -347,4 +347,5 @@ public class WorkflowService {
                 null
         );
     }
+
 }

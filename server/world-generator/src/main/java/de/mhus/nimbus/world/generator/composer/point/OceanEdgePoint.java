@@ -143,32 +143,11 @@ public class OceanEdgePoint extends Point {
      * Finds the edge that leads to an ocean or coast neighbor.
      */
     private de.mhus.nimbus.world.shared.world.WHexGrid.EDGE findOceanEdge(de.mhus.nimbus.generated.types.HexVector2 coord, ComposeContext context) {
-        int q = coord.getQ();
-        int r = coord.getR();
+        log.info("OceanEdgePoint {}: Checking neighbors of grid ({},{}) to find ocean/coast edge", getName(), coord.getQ(), coord.getR());
 
-        log.info("OceanEdgePoint {}: Checking neighbors of grid ({},{}) to find ocean/coast edge", getName(), q, r);
-
-        // Check each of the 6 neighbors
-        // Array: {dq, dr, edge}
-        Object[][] neighbors = {
-            {1, -1, de.mhus.nimbus.world.shared.world.WHexGrid.EDGE.NORTH_EAST},  // NE
-            {1, 0, de.mhus.nimbus.world.shared.world.WHexGrid.EDGE.EAST},         // E
-            {0, 1, de.mhus.nimbus.world.shared.world.WHexGrid.EDGE.SOUTH_EAST},   // SE
-            {-1, 1, de.mhus.nimbus.world.shared.world.WHexGrid.EDGE.SOUTH_WEST},  // SW
-            {-1, 0, de.mhus.nimbus.world.shared.world.WHexGrid.EDGE.WEST},        // W
-            {0, -1, de.mhus.nimbus.world.shared.world.WHexGrid.EDGE.NORTH_WEST}   // NW
-        };
-
-        for (Object[] neighbor : neighbors) {
-            int dq = (int) neighbor[0];
-            int dr = (int) neighbor[1];
-            de.mhus.nimbus.world.shared.world.WHexGrid.EDGE edge = (de.mhus.nimbus.world.shared.world.WHexGrid.EDGE) neighbor[2];
-
+        for (de.mhus.nimbus.world.shared.world.WHexGrid.EDGE edge : de.mhus.nimbus.world.shared.world.WHexGrid.EDGE.values()) {
             de.mhus.nimbus.generated.types.HexVector2 neighborCoord =
-                de.mhus.nimbus.generated.types.HexVector2.builder()
-                    .q(q + dq)
-                    .r(r + dr)
-                    .build();
+                de.mhus.nimbus.world.shared.util.HexMathUtil.getNeighborPosition(coord, edge);
 
             Area neighborBiome = getBiomeAt(neighborCoord, context);
             if (neighborBiome == null) {
@@ -189,7 +168,7 @@ public class OceanEdgePoint extends Point {
             }
         }
 
-        log.warn("OceanEdgePoint {}: No ocean/coast neighbor found for grid ({},{})", getName(), q, r);
+        log.warn("OceanEdgePoint {}: No ocean/coast neighbor found for grid ({},{})", getName(), coord.getQ(), coord.getR());
         return null;
     }
 
@@ -232,25 +211,9 @@ public class OceanEdgePoint extends Point {
 
     private boolean isAtBiomeEdge(de.mhus.nimbus.generated.types.HexVector2 coord, Area biome, ComposeContext context) {
         // Check all 6 neighbors - if any neighbor is not in this biome, this is an edge
-        int q = coord.getQ();
-        int r = coord.getR();
-
-        // Hex neighbors: NE, E, SE, SW, W, NW
-        int[][] neighbors = {
-            {q+1, r-1},  // NE
-            {q+1, r},    // E
-            {q, r+1},    // SE
-            {q-1, r+1},  // SW
-            {q-1, r},    // W
-            {q, r-1}     // NW
-        };
-
-        for (int[] neighbor : neighbors) {
+        for (de.mhus.nimbus.world.shared.world.WHexGrid.EDGE edge : de.mhus.nimbus.world.shared.world.WHexGrid.EDGE.values()) {
             de.mhus.nimbus.generated.types.HexVector2 neighborCoord =
-                de.mhus.nimbus.generated.types.HexVector2.builder()
-                    .q(neighbor[0])
-                    .r(neighbor[1])
-                    .build();
+                de.mhus.nimbus.world.shared.util.HexMathUtil.getNeighborPosition(coord, edge);
 
             // Check if neighbor is in this biome
             boolean inBiome = biome.getAssignedCoordinates().stream()
@@ -269,21 +232,9 @@ public class OceanEdgePoint extends Point {
      * Checks if a coordinate has any ocean or coast neighbor.
      */
     private boolean hasOceanCoastNeighbor(de.mhus.nimbus.generated.types.HexVector2 coord, ComposeContext context) {
-        int[][] neighbors = {
-            {coord.getQ()+1, coord.getR()-1},  // NE
-            {coord.getQ()+1, coord.getR()},    // E
-            {coord.getQ(), coord.getR()+1},    // SE
-            {coord.getQ()-1, coord.getR()+1},  // SW
-            {coord.getQ()-1, coord.getR()},    // W
-            {coord.getQ(), coord.getR()-1}     // NW
-        };
-
-        for (int[] neighbor : neighbors) {
+        for (de.mhus.nimbus.world.shared.world.WHexGrid.EDGE edge : de.mhus.nimbus.world.shared.world.WHexGrid.EDGE.values()) {
             de.mhus.nimbus.generated.types.HexVector2 neighborCoord =
-                de.mhus.nimbus.generated.types.HexVector2.builder()
-                    .q(neighbor[0])
-                    .r(neighbor[1])
-                    .build();
+                de.mhus.nimbus.world.shared.util.HexMathUtil.getNeighborPosition(coord, edge);
 
             Area neighborBiome = getBiomeAt(neighborCoord, context);
             if (neighborBiome instanceof Biome) {
@@ -305,21 +256,9 @@ public class OceanEdgePoint extends Point {
 
         // For each coord in the biome, check its neighbors
         for (de.mhus.nimbus.generated.types.HexVector2 coord : biome.getAssignedCoordinates()) {
-            int[][] neighbors = {
-                {coord.getQ()+1, coord.getR()-1},  // NE
-                {coord.getQ()+1, coord.getR()},    // E
-                {coord.getQ(), coord.getR()+1},    // SE
-                {coord.getQ()-1, coord.getR()+1},  // SW
-                {coord.getQ()-1, coord.getR()},    // W
-                {coord.getQ(), coord.getR()-1}     // NW
-            };
-
-            for (int[] neighbor : neighbors) {
+            for (de.mhus.nimbus.world.shared.world.WHexGrid.EDGE edge : de.mhus.nimbus.world.shared.world.WHexGrid.EDGE.values()) {
                 de.mhus.nimbus.generated.types.HexVector2 neighborCoord =
-                    de.mhus.nimbus.generated.types.HexVector2.builder()
-                        .q(neighbor[0])
-                        .r(neighbor[1])
-                        .build();
+                    de.mhus.nimbus.world.shared.util.HexMathUtil.getNeighborPosition(coord, edge);
 
                 String key = TypeUtil.toStringHexCoord(neighborCoord);
                 if (checked.contains(key)) {

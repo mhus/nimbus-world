@@ -25,8 +25,8 @@ public class WArchiveToFile implements WArchiveService {
     @Override
     public void archive(String path, InputStream stream) throws IOException {
         path = normalizePath(path).replace("/", "_");
-        var date = new java.text.SimpleDateFormat("yyyy/MM/dd/HH-mm-ss-SSS_").format(new java.util.Date());
-        File target = new File(archivePath + "/" + date + "/" + path);
+        var date = new java.text.SimpleDateFormat("yyyy/MM/dd/HH-mm-ss-SSS").format(new java.util.Date());
+        File target = new File(archivePath + "/" + date + "_" + path);
         target.getParentFile().mkdirs();
         log.info("Archive to file {}", target.getAbsolutePath());
         java.nio.file.Files.copy(stream, target.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);

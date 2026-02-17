@@ -136,13 +136,29 @@ public class WWorkflowJournalService {
         repository.deleteByWorldIdAndWorkflowId(worldId, workflowId);
     }
 
-    public void migrateWorkflowJournalToWorld(String worldId, String workflowId, String newWorldId) {
+    public void emigrateToWorld(String worldId, String workflowId, String newWorldId) {
         repository.findByWorldIdAndWorkflowIdOrderByCreatedAtAsc(worldId, workflowId)
                 .forEach(entry -> {
                     entry.setWorldId(newWorldId);
                     repository.save(entry);
                     log.debug("Migrated journal entry id={} to new worldId={}", entry.getId(), newWorldId);
                 });
+    }
+
+    public void compact(String worldId, String workflowId, int maxSize, String type) {
+        if (maxSize < 1) {
+            throw new IllegalArgumentException("maxSize must be at least 1");
+        }
+        var journal = getWorkflowJournalRecords(worldId, workflowId).stream().filter(e -> e.getType().equals(type)).toList();
+        if (journal.size() > maxSize) {
+            int toDelete = journal.size() - maxSize;
+            log.info("Compacting workflow journal: worldId={}, workflowId={}, type={}, currentSize={}, maxSize={}, toDelete={}",
+                    worldId, workflowId, type, journal.size(), maxSize, toDelete);
+            journal.stream().limit(toDelete).forEach(e -> {
+                log.debug("Deleting journal entry id={} to compact workflow journal", e.getId());
+                repository.delete(e);
+            });
+        }
     }
 
 }

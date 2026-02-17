@@ -43,17 +43,18 @@ class HexLocalUtilTest {
         int divider = 3;
         int slotSize = HEX_GRID_SIZE / divider;
 
-        // Ring 1 positions: <0;1>, <1;0>, <1;-1>, <0;-1>, <-1;0>, <-1;1>
+        // Ring 1 positions in flat-top offset coordinates (odd-q stagger) for even q=0:
+        // Neighbors: (1,0), (1,-1), (0,1), (0,-1), (-1,0), (-1,-1)
         HexVector2[] ring1 = {
-            TypeUtil.hexVector2(0, 1),   // SE
-            TypeUtil.hexVector2(1, 0),   // E
-            TypeUtil.hexVector2(1, -1),  // NE
-            TypeUtil.hexVector2(0, -1),  // NW
-            TypeUtil.hexVector2(-1, 0),  // W
-            TypeUtil.hexVector2(-1, 1)   // SW
+            TypeUtil.hexVector2(0, 1),   // Top
+            TypeUtil.hexVector2(1, 0),   // Right-Top
+            TypeUtil.hexVector2(1, -1),  // Right-Bottom
+            TypeUtil.hexVector2(0, -1),  // Bottom
+            TypeUtil.hexVector2(-1, 0),  // Left-Top
+            TypeUtil.hexVector2(-1, -1)  // Left-Bottom
         };
 
-        String[] directions = {"SE", "E", "NE", "NW", "W", "SW"};
+        String[] directions = {"Top", "Right-Top", "Right-Bottom", "Bottom", "Left-Top", "Left-Bottom"};
 
         for (int i = 0; i < ring1.length; i++) {
             HexLocalPosition localPos = new HexLocalPosition(ring1[i], divider, slotSize);
@@ -148,13 +149,14 @@ class HexLocalUtilTest {
         int divider = 3;
         int slotSize = HEX_GRID_SIZE / divider;
 
+        // Flat-top offset coordinates (odd-q stagger) for even q=0
         HexVector2[] ring1 = {
             TypeUtil.hexVector2(0, 1),
             TypeUtil.hexVector2(1, 0),
             TypeUtil.hexVector2(1, -1),
             TypeUtil.hexVector2(0, -1),
             TypeUtil.hexVector2(-1, 0),
-            TypeUtil.hexVector2(-1, 1)
+            TypeUtil.hexVector2(-1, -1)
         };
 
         System.out.println("\n=== Testing hex neighbor distances (divider 3) ===");

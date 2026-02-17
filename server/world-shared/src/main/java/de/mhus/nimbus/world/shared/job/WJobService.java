@@ -403,7 +403,7 @@ public class WJobService {
         }
     }
 
-    public void migrateJobToWorld(String worldId, String jobId, String newWorldId) {
+    public void emigrateToWorld(String worldId, String jobId, String newWorldId) {
         jobRepository.findById(jobId).ifPresent(job -> {
             if (job.getWorldId().equals(worldId)) {
                 job.setWorldId(newWorldId);

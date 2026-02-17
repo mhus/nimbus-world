@@ -241,20 +241,14 @@ public class OrphanGridFiller {
     }
 
     /**
-     * Gets all 6 neighbors of a hex coordinate.
+     * Gets all 6 neighbors of a hex coordinate using offset coordinates.
      */
     private List<HexVector2> getNeighbors(HexVector2 coord) {
-        int q = coord.getQ();
-        int r = coord.getR();
-
-        return List.of(
-            HexVector2.builder().q(q + 1).r(r).build(),
-            HexVector2.builder().q(q - 1).r(r).build(),
-            HexVector2.builder().q(q).r(r + 1).build(),
-            HexVector2.builder().q(q).r(r - 1).build(),
-            HexVector2.builder().q(q + 1).r(r - 1).build(),
-            HexVector2.builder().q(q - 1).r(r + 1).build()
-        );
+        List<HexVector2> neighbors = new ArrayList<>();
+        for (de.mhus.nimbus.world.shared.world.WHexGrid.EDGE edge : de.mhus.nimbus.world.shared.world.WHexGrid.EDGE.values()) {
+            neighbors.add(de.mhus.nimbus.world.shared.util.HexMathUtil.getNeighborPosition(coord, edge));
+        }
+        return neighbors;
     }
 
     /**

@@ -12,7 +12,6 @@ import de.mhus.nimbus.world.shared.workflow.WorkflowContext;
 import de.mhus.nimbus.world.shared.workflow.WorkflowException;
 import de.mhus.nimbus.world.shared.workflow.WorkflowJobExecutor;
 import de.mhus.nimbus.world.shared.workflow.WorkflowService;
-import de.mhus.nimbus.world.shared.world.WDocument;
 import de.mhus.nimbus.world.shared.world.WDocumentService;
 import de.mhus.nimbus.world.shared.world.WWorldService;
 import lombok.RequiredArgsConstructor;
@@ -169,7 +168,7 @@ public class GenesisWorkflow extends MethodBasedWorkflow {
                 .getValue();
 
         log.info("Migrate workflow {} to the new worldId {}", context.getWorkflowId(), newWorldId);
-        workflowService.migrateWorkflowToWorld(context, newWorldId, "migrateToNewWorld");
+        workflowService.emigrateToWorld(context, newWorldId, "migrateToNewWorld");
     }
 
     @OnSuccess("migrateToNewWorld")

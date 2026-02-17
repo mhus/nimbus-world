@@ -400,20 +400,10 @@ public class GenerateHexGridFromCompositeJobExecutor implements JobExecutor {
 
     /**
      * Get neighbor coordinate for a given hex side.
-     * Uses axial coordinate system (q, r).
+     * Uses offset coordinates (odd-r stagger) via HexMathUtil.getNeighborPosition.
      */
     private HexVector2 getNeighborCoordinate(HexVector2 coord, de.mhus.nimbus.world.shared.world.WHexGrid.EDGE side) {
-        int q = coord.getQ();
-        int r = coord.getR();
-
-        return switch (side) {
-            case NORTH_EAST -> HexVector2.builder().q(q + 1).r(r - 1).build();
-            case EAST -> HexVector2.builder().q(q + 1).r(r).build();
-            case SOUTH_EAST -> HexVector2.builder().q(q).r(r + 1).build();
-            case SOUTH_WEST -> HexVector2.builder().q(q - 1).r(r + 1).build();
-            case WEST -> HexVector2.builder().q(q - 1).r(r).build();
-            case NORTH_WEST -> HexVector2.builder().q(q).r(r - 1).build();
-        };
+        return de.mhus.nimbus.world.shared.util.HexMathUtil.getNeighborPosition(coord, side);
     }
 
     /**
