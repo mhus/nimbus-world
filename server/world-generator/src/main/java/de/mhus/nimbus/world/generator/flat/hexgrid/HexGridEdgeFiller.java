@@ -150,13 +150,16 @@ public class HexGridEdgeFiller {
                     var neighborX = neighborArea[0] + (x - area[0]);
                     var neighborZ = neighborArea[1] + (z - area[1]);
 
+                    // Offset to map from our border area to the corresponding position
+                    // in the neighbor flat. With half-open hex boundary, gaps are symmetric
+                    // (gapX on both EAST and WEST sides), so no -1 correction needed.
                     switch (direction) {
                         case NORTH_EAST:
                             neighborX += gapX;
                             neighborZ += gapZ;
                             break;
                         case EAST:
-                            neighborX += gapX - 1;
+                            neighborX += gapX;
                             break;
                         case SOUTH_EAST:
                             neighborX += gapX;
@@ -167,7 +170,7 @@ public class HexGridEdgeFiller {
                             neighborZ -= gapZ;
                             break;
                         case WEST:
-                            neighborX -= gapX - 1;
+                            neighborX -= gapX;
                             break;
                         case NORTH_WEST:
                             neighborX -= gapX;
