@@ -124,7 +124,7 @@ public class OceanBuilder extends HexGridBuilder {
         int blendDepth = 30;  // Depth of blending zone in blocks
 
         // Calculate edge coordinates based on hex side
-        EdgeCoordinates edgeCoords = getEdgeCoordinates(side, flat.getSizeX(), flat.getSizeZ());
+        HexFlatUtil.EdgeCoordinates edgeCoords = HexFlatUtil.getEdgeCoordinates(side, flat.getSizeX(), flat.getSizeZ());
 
         // Iterate over the edge and blend
         for (int step = 0; step < edgeCoords.length; step++) {
@@ -165,61 +165,6 @@ public class OceanBuilder extends HexGridBuilder {
         }
 
         log.trace("Blended edge {} with noise over {} blocks depth", side, blendDepth);
-    }
-
-    /**
-     * Helper class to calculate edge coordinates for a hex side.
-     */
-    private EdgeCoordinates getEdgeCoordinates(WHexGrid.EDGE side, int sizeX, int sizeZ) {
-        if (side == WHexGrid.EDGE.NORTH_EAST) {
-            return new EdgeCoordinates(sizeX / 2, 0, sizeX - 1, sizeZ / 4, 1, 1);
-        } else if (side == WHexGrid.EDGE.EAST) {
-            return new EdgeCoordinates(sizeX - 1, sizeZ / 4, sizeX - 1, 3 * sizeZ / 4, 0, 1);
-        } else if (side == WHexGrid.EDGE.SOUTH_EAST) {
-            return new EdgeCoordinates(sizeX - 1, 3 * sizeZ / 4, sizeX / 2, sizeZ - 1, -1, 1);
-        } else if (side == WHexGrid.EDGE.SOUTH_WEST) {
-            return new EdgeCoordinates(sizeX / 2, sizeZ - 1, 0, 3 * sizeZ / 4, -1, -1);
-        } else if (side == WHexGrid.EDGE.WEST) {
-            return new EdgeCoordinates(0, 3 * sizeZ / 4, 0, sizeZ / 4, 0, -1);
-        } else if (side == WHexGrid.EDGE.NORTH_WEST) {
-            return new EdgeCoordinates(0, sizeZ / 4, sizeX / 2, 0, 1, -1);
-        } else {
-            throw new IllegalArgumentException("Unknown side: " + side);
-        }
-    }
-
-    /**
-     * Helper class for edge coordinate calculations.
-     */
-    private static class EdgeCoordinates {
-        private final int startX, startZ, endX, endZ, dirX, dirZ;
-        public final int length;
-
-        public EdgeCoordinates(int startX, int startZ, int endX, int endZ, int dirX, int dirZ) {
-            this.startX = startX;
-            this.startZ = startZ;
-            this.endX = endX;
-            this.endZ = endZ;
-            this.dirX = dirX;
-            this.dirZ = dirZ;
-            this.length = Math.max(Math.abs(endX - startX), Math.abs(endZ - startZ)) + 1;
-        }
-
-        public int[] getPosition(int step) {
-            float t = (float) step / (length - 1);
-            int x = Math.round(startX + (endX - startX) * t);
-            int z = Math.round(startZ + (endZ - startZ) * t);
-            return new int[]{x, z};
-        }
-
-        public int[] getPositionAtDistance(int step, int distance) {
-            int[] edgePos = getPosition(step);
-            // Move inward perpendicular to the edge
-            // Perpendicular direction is (-dirZ, dirX) for moving inward
-            int perpX = -dirZ;
-            int perpZ = dirX;
-            return new int[]{edgePos[0] + perpX * distance, edgePos[1] + perpZ * distance};
-        }
     }
 
 }

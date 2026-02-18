@@ -69,15 +69,12 @@ public class HexGridEdgeFiller {
         log.trace("Filling side {} with bedrock", direction);
 
         int hexGridSize = context.getHexGridSize();
-        int centerX = flat.getSizeX() / 2;
-        int centerZ = flat.getSizeZ() / 2;
 
-        // Get integer-based corner positions relative to center
-        int[][] corners = HexMathUtil.getCornersForSide(direction, hexGridSize);
-        int x1 = centerX + corners[0][0];
-        int z1 = centerZ + corners[0][1];
-        int x2 = centerX + corners[1][0];
-        int z2 = centerZ + corners[1][1];
+        int[][] sideCorners = HexFlatUtil.getHexSideCornersLocal(direction, flat.getSizeX(), flat.getSizeZ(), hexGridSize);
+        int x1 = sideCorners[0][0];
+        int z1 = sideCorners[0][1];
+        int x2 = sideCorners[1][0];
+        int z2 = sideCorners[1][1];
 
         // Walk along the edge line
         int dx = x2 - x1;
@@ -204,14 +201,12 @@ public class HexGridEdgeFiller {
             int sizeX = flat.getSizeX();
             int sizeZ = flat.getSizeZ();
             int hexGridSize = context.getHexGridSize();
-            int centerX = sizeX / 2;
-            int centerZ = sizeZ / 2;
 
-            int[][] corners = HexMathUtil.getCornersForSide(direction, hexGridSize);
-            int cx1 = centerX + corners[0][0];
-            int cz1 = centerZ + corners[0][1];
-            int cx2 = centerX + corners[1][0];
-            int cz2 = centerZ + corners[1][1];
+            int[][] sideCorners = HexFlatUtil.getHexSideCornersLocal(direction, sizeX, sizeZ, hexGridSize);
+            int cx1 = sideCorners[0][0];
+            int cz1 = sideCorners[0][1];
+            int cx2 = sideCorners[1][0];
+            int cz2 = sideCorners[1][1];
 
             switch (direction) {
                 case NORTH_EAST:

@@ -1,8 +1,6 @@
 package de.mhus.nimbus.world.generator.flat.hexgrid;
 
-import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.world.shared.generator.WFlat;
-import de.mhus.nimbus.world.shared.util.HexMathUtil;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
 import lombok.extern.slf4j.Slf4j;
 
@@ -61,7 +59,8 @@ public class HexGridMultiEdgeBlender {
      */
     private void blendEdge(WHexGrid.EDGE direction, int range) {
         // Get edge corners in world coordinates (both at once to avoid duplicate calculation)
-        int[][] corners = getHexSideCorners(direction, centerFlat);
+        int[][] corners = HexFlatUtil.getHexSideCornersWorld(direction, centerFlat.getHexGrid(),
+                context.getWorld().getPublicData().getHexGridSize());
         int[] corner1World = corners[0];
         int[] corner2World = corners[1];
 
@@ -246,31 +245,4 @@ public class HexGridMultiEdgeBlender {
         private int writeCount = 0;
     }
 
-    /**
-     * Get both corners of a hex side in world coordinates.
-     * Returns array with [corner1, corner2] where each corner is [worldX, worldZ].
-     * Uses integer-based corners from {@link HexMathUtil#getCornersForSide}.
-     */
-    private int[][] getHexSideCorners(WHexGrid.EDGE side, WFlat flat) {
-        int gridSize = context.getWorld().getPublicData().getHexGridSize();
-
-        HexVector2 hexVec = flat.getHexGrid();
-        if (hexVec == null) {
-            log.error("Flat {} has no hexGrid set", flat.getFlatId());
-            return new int[][]{{0, 0}, {0, 0}};
-        }
-
-        // Get hex center in world coordinates
-        int[] worldCenter = HexMathUtil.hexToCartesian(hexVec, gridSize);
-        int centerX = worldCenter[0];
-        int centerZ = worldCenter[1];
-
-        // Get integer-based corner positions relative to center
-        int[][] corners = HexMathUtil.getCornersForSide(side, gridSize);
-
-        return new int[][]{
-            {centerX + corners[0][0], centerZ + corners[0][1]},
-            {centerX + corners[1][0], centerZ + corners[1][1]}
-        };
-    }
 }

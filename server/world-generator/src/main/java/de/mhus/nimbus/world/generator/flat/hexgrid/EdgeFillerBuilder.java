@@ -43,38 +43,24 @@ public class EdgeFillerBuilder extends HexGridBuilder {
 
         try {
             HashMap<WHexGrid.EDGE, String> sideFlats = new HashMap<>();
-            String centerFlatId = flat.getFlatId();
-            String[] parts = centerFlatId.split("_");
-            if (parts.length == 3) {
-                try {
-                    String prefix = parts[0];
-                    int centerQ = Integer.parseInt(parts[1]);
-                    int centerR = Integer.parseInt(parts[2]);
-                    for (var side : WHexGrid.EDGE.values()) {
-                        int neighborQ = centerQ + side.getDeltaQ();
-                        int neighborR = centerR + side.getDeltaR();
-                        String neighborFlatId = prefix + "_" + neighborQ + "_" + neighborR;
-                        sideFlats.put(side, neighborFlatId);
-                        log.debug("Calculated side flat for {}: {}", side, neighborFlatId);
-                    }
-                } catch (NumberFormatException e) {
-                    log.warn("Failed to parse flat coordinates from flatId: {}", centerFlatId);
+            // Note: parameters come from HexGridBuilderService which already strips the "g_" prefix
+            for (var side : WHexGrid.EDGE.values()) {
+                String key = "edge_flat_" + side.name().toLowerCase();
+                String flatId = parameters.get(key);
+                if (flatId != null) {
+                    sideFlats.put(side, flatId);
+                    log.trace("Found side flat for {}: {}", side, flatId);
                 }
             }
             if (sideFlats.isEmpty()) {
-                // Note: parameters come from HexGridBuilderService which already strips the "g_" prefix
-                for (var side : WHexGrid.EDGE.values()) {
-                    String key = "edge_flat_" + side.name().toLowerCase();
-                    String flatId = parameters.get(key);
-                    if (flatId != null) {
-                        sideFlats.put(side, flatId);
-                        log.debug("Found side flat for {}: {}", side, flatId);
-                    }
+                sideFlats.putAll(HexFlatUtil.getNeighborFlatIds(flat.getFlatId()));
+                if (!sideFlats.isEmpty()) {
+                    log.debug("Calculated side flats from flatId: {}", sideFlats);
                 }
             }
 
             if (sideFlats.isEmpty()) {
-                log.debug("No side flats defined for filling in flat: {}", flat.getFlatId());
+                log.warn("No side flats defined for filling in flat: {}", flat.getFlatId());
                 return;
             }
 

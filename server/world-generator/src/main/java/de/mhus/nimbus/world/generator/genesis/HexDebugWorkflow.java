@@ -101,22 +101,24 @@ public class HexDebugWorkflow extends MethodBasedWorkflow {
         HexVector2 centerHex = HexVector2.builder().q(centerQ).r(centerR).build();
         de.mhus.nimbus.world.shared.world.WHexGrid.EDGE[] directions = de.mhus.nimbus.world.shared.world.WHexGrid.EDGE.values();
         String[] neighborNames = {"NE", "E", "SE", "SW", "W", "NW"};
+        String[] neighborBases = {String.valueOf(FlatMaterialService.GRASS), String.valueOf(FlatMaterialService.SAND), String.valueOf(FlatMaterialService.STONE),
+                String.valueOf(FlatMaterialService.DIRT), String.valueOf(FlatMaterialService.BEDROCK), String.valueOf(FlatMaterialService.SNOW)};
 
         for (int i = 0; i < directions.length; i++) {
             HexVector2 neighbor = de.mhus.nimbus.world.shared.util.HexMathUtil.getNeighborPosition(centerHex, directions[i]);
             int nq = neighbor.getQ();
             int nr = neighbor.getR();
             grids.add(createDebugHexGrid(nq, nr,
-                    "150",
-                    String.valueOf(FlatMaterialService.GRASS),
-                    String.valueOf(FlatMaterialService.DIRT),
-                    String.valueOf(FlatMaterialService.STONE),
-                    String.valueOf(FlatMaterialService.SAND),
+                    "" + (140 - i*10),
 //                    String.valueOf(FlatMaterialService.GRASS),
-//                    String.valueOf(FlatMaterialService.SAND),
-//                    String.valueOf(FlatMaterialService.STONE),
 //                    String.valueOf(FlatMaterialService.DIRT),
-                    "debug-" + neighborNames[i]));
+//                    String.valueOf(FlatMaterialService.STONE),
+//                    String.valueOf(FlatMaterialService.SAND),
+                    neighborBases[i],
+                    String.valueOf(FlatMaterialService.SAND),
+                    String.valueOf(FlatMaterialService.STONE),
+                    String.valueOf(FlatMaterialService.DIRT),
+                    "debug-" + i + "-" + neighborNames[i]));
         }
 
         // Build composition
