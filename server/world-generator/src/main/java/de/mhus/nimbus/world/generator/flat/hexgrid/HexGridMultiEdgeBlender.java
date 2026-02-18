@@ -217,6 +217,11 @@ public class HexGridMultiEdgeBlender {
             // Try all flats to find which one contains this coordinate
             boolean found = false;
             for (WFlat flat : allFlats) {
+                // Skip chunk-backed flats - they are read-only sources for blending
+                if (flat.getId() == null) {
+                    continue;
+                }
+
                 int localX = worldX - flat.getMountX();
                 int localZ = worldZ - flat.getMountZ();
 

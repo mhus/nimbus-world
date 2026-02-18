@@ -104,7 +104,16 @@ public class MultiEdgeBlenderBuilder extends HexGridBuilder {
                     loadedNeighbors.put(side, neighborFlat);
                     log.debug("Loaded neighbor flat for side {}: {}", side, neighborFlatId);
                 } else {
-                    log.warn("Neighbor flat not found: {} for side {}", neighborFlatId, side);
+                    log.debug("Neighbor flat not found: {} for side {}, trying chunk data", neighborFlatId, side);
+                    var worldIdObj = de.mhus.nimbus.shared.types.WorldId.of(context.getWorld().getWorldId()).orElse(null);
+                    if (worldIdObj != null && context.getChunkService() != null) {
+                        WFlat chunkFlat = HexFlatUtil.createChunkBackedFlat(
+                                centerFlat, side, context.getChunkService(), worldIdObj, context.getWorld());
+                        if (chunkFlat != null) {
+                            loadedNeighbors.put(side, chunkFlat);
+                            log.debug("Created chunk-backed flat for side {}", side);
+                        }
+                    }
                 }
             }
         }
@@ -122,9 +131,13 @@ public class MultiEdgeBlenderBuilder extends HexGridBuilder {
                 centerFlat, loadedNeighbors, width, range, context);
         multiEdgeBlender.blendAllEdges();
 
-        // Save all modified neighbor flats (but NOT the center flat)
+        // Save all modified neighbor flats (but NOT the center flat and NOT chunk-backed flats)
         for (var entry : loadedNeighbors.entrySet()) {
             WFlat neighborFlat = entry.getValue();
+            if (neighborFlat.getId() == null) {
+                log.debug("Skipping save for chunk-backed flat on side {}", entry.getKey());
+                continue;
+            }
             context.getFlatService().update(neighborFlat);
             log.debug("Saved modified neighbor flat for side {}: {}", entry.getKey(), neighborFlat.getFlatId());
         }

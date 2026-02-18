@@ -43,8 +43,16 @@ public class HexGridEdgeBlender {
         for (var side : sideFlats.entrySet()) {
             var neighborFlat = context.getFlatService().findByWorldAndFlatId(context.getWorld().getWorldId(), side.getValue());
             if (neighborFlat == null) {
-                log.warn("Neighbor flat not found: {} for side {}", side.getValue(), side.getKey());
-                continue;
+                log.debug("Neighbor flat not found: {} for side {}, trying chunk data", side.getValue(), side.getKey());
+                var worldId = de.mhus.nimbus.shared.types.WorldId.of(context.getWorld().getWorldId()).orElse(null);
+                if (worldId != null && context.getChunkService() != null) {
+                    neighborFlat = HexFlatUtil.createChunkBackedFlat(
+                            flat, side.getKey(), context.getChunkService(), worldId, context.getWorld());
+                }
+                if (neighborFlat == null) {
+                    log.warn("No data available for neighbor {} on side {}", side.getValue(), side.getKey());
+                    continue;
+                }
             }
             blendSide(side.getKey(), neighborFlat);
         }

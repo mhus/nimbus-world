@@ -243,25 +243,36 @@ public class FlatExportService {
     private void handleNotSetColumn(ChunkData chunkData, LayerChunkData layerChunkData, int worldX, int worldZ,
                                     WFlat flat, int localX, int localZ, WWorld world, String worldId,
                                     Map<String, Optional<ChunkData>> blockChunks, WorldId worldIdObj) {
-        // Find highest existing GROUND type block at this position
+        // Determine existing level: prefer flat level (from edge blending/filling) over stale chunk data
         String topBlockDefString = null;
-        int existingLevel = findHighestGroundBlockAtPosition(chunkData, worldX, worldZ, worldId);
+        int existingLevel = -1;
+
+        // First: check if flat has a valid level (set by edge blending/filling)
+        int flatLevel = flat.getLevelRobust(localX, localZ);
+        if (flatLevel > 0) {
+            existingLevel = flatLevel;
+            topBlockDefString = flat.getMaterial(FlatMaterialService.BEDROCK) != null
+                    ? flat.getMaterial(FlatMaterialService.BEDROCK).getBlockDef() : "n:b";
+        }
+
+        // Fallback: check chunk data for existing GROUND blocks
         if (existingLevel == -1) {
-            log.debug("No GROUND type blocks found at ({},{}) for NOT_SET column", worldX, worldZ);
-            // no GROUND blocks fake it:
-            existingLevel = flat.getLevel(localX, localZ);
-            if (existingLevel == WFlat.LEVEL_NOT_SET) {
+            existingLevel = findHighestGroundBlockAtPosition(chunkData, worldX, worldZ, worldId);
+            if (existingLevel == -1) {
+                log.debug("No level found at ({},{}) for NOT_SET column", worldX, worldZ);
                 existingLevel = findLowestSiblingLevel(flat, localX, localZ, chunkData, world, blockChunks, worldIdObj);
-            }
-            if (existingLevel == WFlat.LEVEL_NOT_SET) {
-                existingLevel = world.getGroundLevel();
-            }
-            topBlockDefString = flat.getMaterial(FlatMaterialService.BEDROCK).getBlockDef();
-        } else {
-            // Get the block type from the highest existing GROUND block BEFORE deleting
-            topBlockDefString = getBlockDefAtPosition(chunkData, worldX, worldZ, existingLevel);
-            if (Strings.isBlank(topBlockDefString)) {
-                topBlockDefString = flat.getMaterial(FlatMaterialService.BEDROCK).getBlockDef();
+                if (existingLevel == WFlat.LEVEL_NOT_SET) {
+                    existingLevel = world.getGroundLevel();
+                }
+                topBlockDefString = flat.getMaterial(FlatMaterialService.BEDROCK) != null
+                        ? flat.getMaterial(FlatMaterialService.BEDROCK).getBlockDef() : "n:b";
+            } else {
+                // Get the block type from the highest existing GROUND block
+                topBlockDefString = getBlockDefAtPosition(chunkData, worldX, worldZ, existingLevel);
+                if (Strings.isBlank(topBlockDefString)) {
+                    topBlockDefString = flat.getMaterial(FlatMaterialService.BEDROCK) != null
+                            ? flat.getMaterial(FlatMaterialService.BEDROCK).getBlockDef() : "n:b";
+                }
             }
         }
         if (Strings.isBlank(topBlockDefString)) {
@@ -460,13 +471,22 @@ public class FlatExportService {
                         }
                     }
                 } else {
-                    // Column is NOT_SET - flat level is unreliable, use actual chunk data (cross-chunk)
-                    int worldNX = flat.getMountX() + neighborX;
-                    int worldNZ = flat.getMountZ() + neighborZ;
-                    int existingLevel = findHighestBlockAtPositionCrossChunk(worldNX, worldNZ, world, blockChunks, worldIdObj);
-                    if (existingLevel != -1 && existingLevel < lowestLevel) {
-                        lowestLevel = existingLevel;
-                        foundSibling = true;
+                    // Column is NOT_SET - prefer flat level (from edge blending/filling) over chunk data
+                    int neighborFlatLevel = flat.getLevelRobust(neighborX, neighborZ);
+                    if (neighborFlatLevel > 0) {
+                        if (neighborFlatLevel < lowestLevel) {
+                            lowestLevel = neighborFlatLevel;
+                            foundSibling = true;
+                        }
+                    } else {
+                        // Flat has no level - fall back to chunk data
+                        int worldNX = flat.getMountX() + neighborX;
+                        int worldNZ = flat.getMountZ() + neighborZ;
+                        int existingLevel = findHighestBlockAtPositionCrossChunk(worldNX, worldNZ, world, blockChunks, worldIdObj);
+                        if (existingLevel != -1 && existingLevel < lowestLevel) {
+                            lowestLevel = existingLevel;
+                            foundSibling = true;
+                        }
                     }
                 }
             } else {

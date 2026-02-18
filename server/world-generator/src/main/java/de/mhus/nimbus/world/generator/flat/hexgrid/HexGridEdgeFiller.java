@@ -40,11 +40,11 @@ public class HexGridEdgeFiller {
                 if (neighborFlat != null) {
                     fillSideWithNeighbor(side, neighborFlat);
                 } else {
-                    log.warn("Neighbor flat not found: {} for side {}", neighborFlatId, side);
-                    fillSideWithBedrock(side);
+                    log.warn("Neighbor flat not found: {} for side {}, trying chunk data", neighborFlatId, side);
+                    fillSideWithChunkOrBedrock(side);
                 }
             } else {
-                fillSideWithBedrock(side);
+                fillSideWithChunkOrBedrock(side);
             }
         }
 
@@ -62,8 +62,26 @@ public class HexGridEdgeFiller {
     }
 
     /**
+     * Try to fill a side with chunk data. Falls back to bedrock if no chunk data available.
+     */
+    private void fillSideWithChunkOrBedrock(WHexGrid.EDGE direction) {
+        if (context.getChunkService() != null) {
+            var worldId = de.mhus.nimbus.shared.types.WorldId.of(context.getWorld().getWorldId()).orElse(null);
+            if (worldId != null) {
+                WFlat chunkFlat = HexFlatUtil.createChunkBackedFlat(
+                        flat, direction, context.getChunkService(), worldId, context.getWorld());
+                if (chunkFlat != null) {
+                    fillSideWithNeighbor(direction, chunkFlat);
+                    return;
+                }
+            }
+        }
+        fillSideWithBedrock(direction);
+    }
+
+    /**
      * Fill a side with bedrock at ground level.
-     * Used when there's no neighboring grid.
+     * Used when there's no neighboring grid and no chunk data.
      */
     private void fillSideWithBedrock(WHexGrid.EDGE direction) {
         log.trace("Filling side {} with bedrock", direction);

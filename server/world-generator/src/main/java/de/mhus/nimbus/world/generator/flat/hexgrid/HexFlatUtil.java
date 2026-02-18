@@ -1,12 +1,22 @@
 package de.mhus.nimbus.world.generator.flat.hexgrid;
 
+import de.mhus.nimbus.generated.types.ChunkData;
 import de.mhus.nimbus.generated.types.HexVector2;
+import de.mhus.nimbus.shared.types.WorldId;
+import de.mhus.nimbus.shared.utils.TypeUtil;
+import de.mhus.nimbus.world.shared.generator.WFlat;
 import de.mhus.nimbus.world.shared.util.HexMathUtil;
+import de.mhus.nimbus.world.shared.world.WChunkService;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
+import de.mhus.nimbus.world.shared.world.WWorld;
 import lombok.experimental.UtilityClass;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 
 /**
  * Utility for hex flat calculations.
@@ -16,6 +26,7 @@ import java.util.Map;
  * and hex side corner lookups for flat operations.
  */
 @UtilityClass
+@Slf4j
 public class HexFlatUtil {
 
     /**
@@ -139,6 +150,110 @@ public class HexFlatUtil {
             {worldCenter[0] + corners[0][0], worldCenter[1] + corners[0][1]},
             {worldCenter[0] + corners[1][0], worldCenter[1] + corners[1][1]}
         };
+    }
+
+    /**
+     * Create a WFlat backed by chunk data for a missing neighbor position.
+     * Uses the center flat as a template for dimensions, calculates the neighbor's
+     * mount position from hex geometry, and fills levels/columns from chunk heightData.
+     *
+     * @param centerFlat   The existing center flat (template for size)
+     * @param side         The neighbor direction
+     * @param chunkService Service to load chunk data
+     * @param worldId      World identifier
+     * @param world        World configuration (chunk size, hex grid size)
+     * @return A WFlat populated with chunk data, or null if no chunk data is available
+     */
+    public static WFlat createChunkBackedFlat(WFlat centerFlat, WHexGrid.EDGE side,
+                                               WChunkService chunkService, WorldId worldId, WWorld world) {
+        HexVector2 centerHex = centerFlat.getHexGrid();
+        if (centerHex == null) {
+            log.warn("Center flat {} has no hexGrid set, cannot create chunk-backed neighbor", centerFlat.getFlatId());
+            return null;
+        }
+
+        int hexGridSize = world.getPublicData().getHexGridSize();
+
+        // Calculate neighbor mount position using hex center offset
+        int[] centerHexWorld = HexMathUtil.hexToCartesian(centerHex, hexGridSize);
+        HexVector2 neighborHex = HexMathUtil.getNeighborPosition(centerHex, side);
+        int[] neighborHexWorld = HexMathUtil.hexToCartesian(neighborHex, hexGridSize);
+
+        int offsetX = neighborHexWorld[0] - centerHexWorld[0];
+        int offsetZ = neighborHexWorld[1] - centerHexWorld[1];
+
+        int neighborMountX = centerFlat.getMountX() + offsetX;
+        int neighborMountZ = centerFlat.getMountZ() + offsetZ;
+        int sizeX = centerFlat.getSizeX();
+        int sizeZ = centerFlat.getSizeZ();
+
+        // Determine which chunks cover the neighbor area
+        int chunkSize = world.getPublicData().getChunkSize();
+        Set<String> chunkKeys = new HashSet<>();
+        int minCx = world.getChunkX(neighborMountX);
+        int maxCx = world.getChunkX(neighborMountX + sizeX - 1);
+        int minCz = world.getChunkZ(neighborMountZ);
+        int maxCz = world.getChunkZ(neighborMountZ + sizeZ - 1);
+        for (int cx = minCx; cx <= maxCx; cx++) {
+            for (int cz = minCz; cz <= maxCz; cz++) {
+                chunkKeys.add(TypeUtil.toStringChunkCoord(cx, cz));
+            }
+        }
+
+        // Load height data from all relevant chunks
+        Map<String, int[]> allHeightData = new HashMap<>();
+        for (String chunkKey : chunkKeys) {
+            Optional<ChunkData> chunkDataOpt = chunkService.loadChunkData(worldId, chunkKey, false);
+            if (chunkDataOpt.isPresent() && chunkDataOpt.get().getHeightData() != null) {
+                allHeightData.putAll(chunkDataOpt.get().getHeightData());
+            }
+        }
+
+        if (allHeightData.isEmpty()) {
+            log.debug("No chunk data available for neighbor {} of flat {}", side, centerFlat.getFlatId());
+            return null;
+        }
+
+        // Fill levels and columns arrays from chunk heightData
+        byte[] levels = new byte[sizeX * sizeZ];
+        byte[] columns = new byte[sizeX * sizeZ];
+        int filledCount = 0;
+
+        for (int lx = 0; lx < sizeX; lx++) {
+            for (int lz = 0; lz < sizeZ; lz++) {
+                int worldX = neighborMountX + lx;
+                int worldZ = neighborMountZ + lz;
+                String key = worldX + "," + worldZ;
+                int[] heightData = allHeightData.get(key);
+                if (heightData != null && heightData.length >= 3) {
+                    int groundLevel = heightData[2];
+                    levels[lx + lz * sizeX] = (byte) Math.min(255, Math.max(0, groundLevel));
+                    columns[lx + lz * sizeX] = 6; // BEDROCK material (non-zero = column is SET)
+                    filledCount++;
+                }
+            }
+        }
+
+        if (filledCount == 0) {
+            log.debug("No height data found in chunks for neighbor {} of flat {}", side, centerFlat.getFlatId());
+            return null;
+        }
+
+        log.debug("Created chunk-backed flat for {} neighbor of {}: mount=({},{}), size=({},{}), filled={}/{}",
+                side, centerFlat.getFlatId(), neighborMountX, neighborMountZ, sizeX, sizeZ,
+                filledCount, sizeX * sizeZ);
+
+        return WFlat.builder()
+                .flatId("chunk-backed-" + side.name().toLowerCase())
+                .mountX(neighborMountX)
+                .mountZ(neighborMountZ)
+                .sizeX(sizeX)
+                .sizeZ(sizeZ)
+                .levels(levels)
+                .columns(columns)
+                .seaLevel(centerFlat.getSeaLevel())
+                .hexGrid(neighborHex)
+                .build();
     }
 
     /**
