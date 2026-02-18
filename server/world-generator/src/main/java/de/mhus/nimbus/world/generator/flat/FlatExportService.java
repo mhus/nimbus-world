@@ -762,14 +762,14 @@ public class FlatExportService {
         // the flat neighbor calculation. The NW array position receives the NE offset
         // and vice versa.
         if (smoothCorners && y == level) {
-            // Skip corner smoothing for blocks at the flat/hex edge.
+            // Skip corner smoothing for blocks near the flat/hex edge.
             // At flat transitions, offsets calculated from one flat's data don't match
             // the neighboring flat's blocks, creating visual gaps.
-            // If any of the 8 surrounding columns is NOT_SET, NOT_SET_MUTABLE, or OUT_OF_BOUND,
-            // this block is near the edge and all offsets stay at 0.
+            // Check radius 2 to account for the overlap zone between adjacent flats
+            // where blocks from one flat may be overwritten by another flat's export.
             boolean nearEdge = false;
-            for (int dx = -1; dx <= 1 && !nearEdge; dx++) {
-                for (int dz = -1; dz <= 1 && !nearEdge; dz++) {
+            for (int dx = -2; dx <= 2 && !nearEdge; dx++) {
+                for (int dz = -2; dz <= 2 && !nearEdge; dz++) {
                     if (dx == 0 && dz == 0) continue;
                     int neighborMat = getEffectiveNeighborMaterial(flat, localX + dx, localZ + dz);
                     if (neighborMat == WFlat.MATERIAL_NOT_SET
