@@ -4,6 +4,7 @@ import de.mhus.nimbus.shared.service.SSettingsService;
 import de.mhus.nimbus.shared.settings.SettingBoolean;
 import de.mhus.nimbus.shared.settings.SettingString;
 import de.mhus.nimbus.shared.types.PlayerUser;
+import de.mhus.nimbus.shared.user.SectorRoles;
 import de.mhus.nimbus.world.shared.region.RCharacterService;
 import de.mhus.nimbus.world.shared.region.RRegion;
 import de.mhus.nimbus.world.shared.region.RRegionService;
@@ -60,7 +61,9 @@ public class AdminCreatorService {
         var data = new PlayerUser();
         data.setUserId(settingAdminUsername.get());
         data.setTitle("Admin");
-        userService.createUser(data, settingAdminEmail.get());
+        var newUser = userService.createUser(data, settingAdminEmail.get());
+        newUser.addSectorRole(SectorRoles.ADMIN);
+        newUser.addSectorRole(SectorRoles.PLAYER);
     }
 
     private void checkRegions() {

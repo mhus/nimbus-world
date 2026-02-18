@@ -46,7 +46,7 @@
             :stroke="hex.strokeColor"
             :stroke-width="2 / scale"
             class="cursor-pointer transition-opacity hover:opacity-80"
-            @click.stop="handleHexClick(hex)"
+            @dblclick.stop="handleHexClick(hex)"
           />
           <text
             v-if="hex.label"
@@ -68,7 +68,7 @@
     <div class="mt-4 flex gap-4 text-sm">
       <div class="flex items-center gap-2">
         <div class="w-4 h-4 rounded" style="background-color: #d1d5db;"></div>
-        <span>Empty (click to create)</span>
+        <span>Empty (click twice to create)</span>
       </div>
     </div>
   </div>
@@ -113,7 +113,7 @@ const panStart = ref({ x: 0, y: 0 });
  */
 const hexToPixel = (q: number, r: number): { x: number; y: number } => {
   const x = HEX_SIZE * (Math.sqrt(3) * q + Math.sqrt(3) / 2 * r);
-  const y = HEX_SIZE * (3 / 2 * r);
+  const y = -(HEX_SIZE * (3 / 2 * r));
   return { x, y };
 };
 
