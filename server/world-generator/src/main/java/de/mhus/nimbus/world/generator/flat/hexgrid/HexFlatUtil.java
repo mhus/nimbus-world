@@ -10,9 +10,10 @@ import java.util.Map;
 
 /**
  * Utility for hex flat calculations.
- * Flat coordinates use a Z-flipped coordinate system compared to the 3D world.
- * In the 3D world (HexMathUtil), NORTH = r+1, but in the flat system, NORTH = r-1.
- * Uses odd-r offset coordinates where Q offsets depend on row parity.
+ * Flat coordinates use the same hex coordinate system as the 3D world (HexMathUtil):
+ * NORTH = r+1, SOUTH = r-1, with odd-r offset stagger for Q.
+ * Provides neighbor ID resolution, edge coordinate calculations,
+ * and hex side corner lookups for flat operations.
  */
 @UtilityClass
 public class HexFlatUtil {
@@ -52,9 +53,9 @@ public class HexFlatUtil {
 
     /**
      * Get the [dq, dr] delta for a neighbor in the flat coordinate system.
-     * Z-flipped compared to HexMathUtil.getNeighborPosition():
-     * - NORTH directions use r-1 (instead of r+1 in 3D)
-     * - SOUTH directions use r+1 (instead of r-1 in 3D)
+     * Uses the same odd-r offset hex coordinates as {@link HexMathUtil#getNeighborPosition}:
+     * - NORTH directions use r+1
+     * - SOUTH directions use r-1
      * - EAST/WEST are unchanged (horizontal, no R delta)
      * Q offset depends on row parity (odd-r stagger).
      */
@@ -64,10 +65,10 @@ public class HexFlatUtil {
         return switch (side) {
             case EAST -> new int[]{1, 0};
             case WEST -> new int[]{-1, 0};
-            case NORTH_EAST -> evenRow ? new int[]{0, -1} : new int[]{1, -1};
-            case NORTH_WEST -> evenRow ? new int[]{-1, -1} : new int[]{0, -1};
-            case SOUTH_EAST -> evenRow ? new int[]{0, 1} : new int[]{1, 1};
-            case SOUTH_WEST -> evenRow ? new int[]{-1, 1} : new int[]{0, 1};
+            case NORTH_EAST -> evenRow ? new int[]{0, 1} : new int[]{1, 1};
+            case NORTH_WEST -> evenRow ? new int[]{-1, 1} : new int[]{0, 1};
+            case SOUTH_EAST -> evenRow ? new int[]{0, -1} : new int[]{1, -1};
+            case SOUTH_WEST -> evenRow ? new int[]{-1, -1} : new int[]{0, -1};
         };
     }
 

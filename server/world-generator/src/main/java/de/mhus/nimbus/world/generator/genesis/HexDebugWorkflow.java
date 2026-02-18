@@ -181,10 +181,22 @@ public class HexDebugWorkflow extends MethodBasedWorkflow {
     public void onDay3Success(WorkflowContext context) throws WorkflowException {
         log.info("Debug hex generation completed successfully");
 
+        // Start Day3 Generation workflow
+        context.updateWorkflowStatus("waitForDirtyChunks");
+        context.enqueueJob(
+                WaitForDirtyChunksJobExecutor.EXECUTOR_NAME,
+                "",
+                null,
+                "Wait",
+                Map.of()
+        );
+    }
+
+    @OnSuccess("waitForDirtyChunks")
+    public void onWaitForDirtyChunksSuccess(WorkflowContext context) throws WorkflowException {
         String compositionDocId = context.getLastJournalRecord(CompositionDocIdRecord.class)
                 .orElseThrow(() -> new WorkflowException(null, "compositionDocId not found"))
                 .getValue();
-
         context.doComplete(Map.of(
                 "compositionDocId", compositionDocId
         ));

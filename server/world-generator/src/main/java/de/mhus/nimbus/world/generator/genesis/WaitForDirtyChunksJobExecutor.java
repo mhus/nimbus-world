@@ -32,7 +32,7 @@ import java.util.concurrent.TimeUnit;
 @RequiredArgsConstructor
 public class WaitForDirtyChunksJobExecutor implements JobExecutor {
 
-    private static final String EXECUTOR_NAME = "wait-for-dirty-chunks";
+    public static final String EXECUTOR_NAME = "wait-for-dirty-chunks";
     private static final int DEFAULT_TIMEOUT_MINUTES = 60;
 
     private final WDirtyChunkService dirtyChunkService;
