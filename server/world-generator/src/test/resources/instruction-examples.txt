@@ -1,0 +1,75 @@
+Create a small fantasy world called "Mistfall Reach" with the following spatial definitions:
+
+  1. A mountain range called "Stoneveil Mountains"
+    - featureType: mountain-biome
+    - shape: CIRCLE
+    - size: MEDIUM
+    - positioned at the origin
+  2. A large swamp region called "Whispering Marsh"
+    - featureType: swamp-biome
+    - biomeType: SWAMP
+    - shape: CIRCLE
+    - size: LARGE
+    - positioned SOUTH of "Stoneveil Mountains"
+    - distance: 1–3
+  3. Several swamp islands called "Mirehold Isles"
+    - featureType: island-biome
+    - biomeType: ISLAND
+    - shape: CIRCLE
+    - size: MEDIUM
+    - enclosedBy: "Whispering Marsh"
+  4. A dense forest called "Greywillow Grove"
+    - featureType: forest-biome
+    - biomeType: FOREST
+    - density: DENSE
+    - shape: CIRCLE
+    - size: MEDIUM
+    - positioned WEST of "Whispering Marsh"
+    - distance: 5–10
+  5. A river called "Duskwater"
+    - featureType: river
+    - starts at point "Duskwater Source" inside "Stoneveil Mountains" (direction: S)
+    - passes through waypoint "Duskwater Waypoint" near "Mirehold Isles"
+    - ends at point "Duskwater End" on the SOUTH side of "Whispering Marsh"
+    - widthBlocks: 5
+    - depth: 3
+    - levelMode: ADJUST_MEAN
+    - meanLevelOffset: -2
+    - tendency: MODERATE curves on both sides
+  6. A road called "Mountain Road"
+    - featureType: road
+    - roadType: street
+    - starts at point "Fenwatch Crossroads" near "Mirehold Isles"
+    - ends at point "Mountain Gate" on the SE side of "Stoneveil Mountains"
+    - widthBlocks: 2
+    - levelMode: ADJUST_MEAN
+    - meanLevelOffset: 1
+  7. A trail called "Greywillow Trail"
+    - featureType: road
+    - roadType: path
+    - starts at point "Fenwatch Crossroads" (same as Mountain Road start)
+    - ends at point "Greywillow Path End" on the E side of "Greywillow Grove"
+    - widthBlocks: 1
+    - levelMode: ADJUST_MEAN
+    - meanLevelOffset: 1
+  8. A small town called "Fenwatch"
+    - featureType: town
+    - style: medieval
+    - shape: CIRCLE
+    - size: SMALL
+    - continent: main-continent
+    - locatedOn: "Mirehold Isles"
+    - district "Fenwatch Center":
+        - slots: SMALL
+      - places: a trail connection point ("main-path"), a tavern ("marsh-tavern"), a garden ("village-green")
+
+  All land biomes belong to continent "Main Continent" (biomeType: PLAINS, minNeighbors: 2).
+
+---
+
+Create a small fantasy world called “Mistfall Reach” with the following spatial definitions:
+1.	A mountain range called “Stoneveil Mountains” 	•	featureType: mountain-biome 	•	shape: CIRCLE 	•	size: MEDIUM 	•	positioned at the origin
+2.	A large swamp region called “Whispering Marsh” 	•	featureType: biome 	•	biomeType: SWAMP 	•	shape: OVAL 	•	size: LARGE 	•	positioned SOUTH of “Stoneveil Mountains” 	•	distance: CLOSE
+3.	Several swamp islands called “Mirehold Isles” 	•	featureType: biome-cluster 	•	biomeType: SWAMP_ISLAND 	•	shape: CIRCLE 	•	size: SMALL 	•	count: 5–8 	•	enclosedBy: “Whispering Marsh” 	•	distribution: SCATTERED
+4.	A river called “Duskwater” 	•	featureType: river 	•	startsFrom: “Stoneveil Mountains” 	•	flowsDirection: SOUTH 	•	passesThrough: “Whispering Marsh” 	•	splitsAround: “Mirehold Isles” 	•	endsIn: “Whispering Marsh”
+5.	A small town called “Fenwatch” 	•	featureType: settlement 	•	settlementType: VILLAGE 	•	size: SMALL 	•	locatedOn: one of “Mirehold Isles” 	•	near: branch of “Duskwater”

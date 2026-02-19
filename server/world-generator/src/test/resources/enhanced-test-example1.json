@@ -125,6 +125,51 @@
       "tendRight": "MODERATE"
     },
     {
+      "featureType": "point",
+      "name": "fenwatch-crossroads",
+      "title": "Fenwatch Crossroads",
+      "biomeId": "mirehold-isles",
+      "biomeDistance": "NEAR"
+    },
+    {
+      "featureType": "point",
+      "name": "mountain-gate",
+      "title": "Mountain Gate",
+      "biomeId": "stoneveil-mountains",
+      "biomeSide": "SE"
+    },
+    {
+      "featureType": "point",
+      "name": "grove-path-end",
+      "title": "Greywillow Path End",
+      "biomeId": "greywillow-grove",
+      "biomeSide": "E"
+    },
+    {
+      "featureType": "road",
+      "name": "mountain-road",
+      "title": "Mountain Road",
+      "type": "ROAD",
+      "startPointId": "fenwatch-crossroads",
+      "endPointId": "mountain-gate",
+      "levelMode": "ADJUST_MEAN",
+      "meanLevelOffset": 1,
+      "widthBlocks": 2,
+      "roadType": "street"
+    },
+    {
+      "featureType": "road",
+      "name": "grove-trail",
+      "title": "Greywillow Trail",
+      "type": "ROAD",
+      "startPointId": "fenwatch-crossroads",
+      "endPointId": "grove-path-end",
+      "levelMode": "ADJUST_MEAN",
+      "meanLevelOffset": 1,
+      "widthBlocks": 1,
+      "roadType": "path"
+    },
+    {
       "featureType": "town",
       "name": "fenwatch",
       "title": "Fenwatch",
