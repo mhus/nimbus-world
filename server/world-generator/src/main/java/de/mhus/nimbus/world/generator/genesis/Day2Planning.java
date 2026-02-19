@@ -87,11 +87,32 @@ public class Day2Planning extends MethodBasedWorkflow {
             throw new WorkflowException(null, "composition document not found: " + compositionDocumentId);
         }
 
+        // Store result data for later completion
+        context.addRecord(Day2PlanningState.builder()
+                .compositionDocumentId(compositionDocumentId)
+                .totalGrids(totalGrids)
+                .build());
+
+        // Create schema image before completing
+        context.updateWorkflowStatus("createSchemaImage");
+        context.enqueueJob("hex-grid-schema-image", "", "",
+                "Create Schema Image",
+                Map.of("compositionId", compositionDocumentId));
+    }
+
+    @OnSuccess("createSchemaImage")
+    public void onCreateSchemaImageSuccess(WorkflowContext context) throws WorkflowException {
+        log.info("Schema image created successfully");
+
+        // Retrieve stored composition result
+        var state = context.getLastJournalRecord(Day2PlanningState.class)
+                .orElseThrow(() -> new WorkflowException(null, "Planning state not found in journal"));
+
         // Complete with composition ID in result message
         // The composition ID will be passed to Day3Generation as a workflow parameter by the orchestrator
         context.doComplete(Map.of(
-                "documentId", compositionDocumentId,
-                "totalGrids", totalGrids
+                "documentId", state.getCompositionDocumentId(),
+                "totalGrids", state.getTotalGrids()
         ));
     }
 

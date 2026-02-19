@@ -1,7 +1,11 @@
 package de.mhus.nimbus.world.generator.composer.build;
 
 import de.mhus.nimbus.generated.types.HexVector2;
+import de.mhus.nimbus.world.generator.composer.feature.Feature;
 import de.mhus.nimbus.world.generator.composer.feature.FeatureHexGrid;
+import de.mhus.nimbus.world.generator.composer.flow.Flow;
+import de.mhus.nimbus.world.generator.composer.flow.FlowType;
+import de.mhus.nimbus.world.generator.composer.point.Point;
 import de.mhus.nimbus.world.shared.util.HexMathUtil;
 import lombok.Builder;
 import lombok.Data;
@@ -42,6 +46,16 @@ public class HexGridSchemaImageCreator {
     private static final Color TEXT_COLOR = Color.WHITE;
     private static final Color TEXT_SHADOW_COLOR = new Color(0, 0, 0, 180);
     private static final int PADDING = 40;
+
+    // Flow colors
+    private static final Color RIVER_COLOR = new Color(30, 144, 255);
+    private static final Color ROAD_COLOR = new Color(205, 133, 63);
+    private static final Color WALL_COLOR = new Color(169, 169, 169);
+    private static final Color DEFAULT_FLOW_COLOR = new Color(255, 165, 0);
+
+    // Point colors
+    private static final Color POINT_COLOR = Color.RED;
+    private static final Color POINT_LABEL_COLOR = Color.YELLOW;
 
     private final HexComposition composition;
 
@@ -113,6 +127,12 @@ public class HexGridSchemaImageCreator {
                 if (hexGrid.getCoordinate() == null) continue;
                 drawHexagonOutline(g, hexGrid.getCoordinate(), bounds);
             }
+
+            // Draw flows (roads, rivers, walls) as lines between hex centers
+            drawFlows(g, bounds);
+
+            // Draw points as cross markers
+            drawPoints(g, bounds);
 
             // Draw labels on top of everything
             if (drawLabels || drawCoordinates) {
@@ -284,6 +304,144 @@ public class HexGridSchemaImageCreator {
         g.drawString(east, imageWidth - fm.stringWidth(east) - 5 + 1, imageHeight / 2 + fm.getAscent() / 2 + 1);
         g.setColor(Color.YELLOW);
         g.drawString(east, imageWidth - fm.stringWidth(east) - 5, imageHeight / 2 + fm.getAscent() / 2);
+    }
+
+    /**
+     * Draws all flows (roads, rivers, walls) from the composition as lines along their routes.
+     */
+    private void drawFlows(Graphics2D g, CartesianBounds bounds) {
+        if (composition.getFeatures() == null) return;
+
+        List<Flow> flows = composition.getFeatures().stream()
+                .filter(f -> f instanceof Flow)
+                .map(f -> (Flow) f)
+                .filter(f -> f.getFlowComposed() != null && f.getFlowComposed().getRoute() != null)
+                .toList();
+
+        if (flows.isEmpty()) return;
+
+        log.debug("Drawing {} flows on schema image", flows.size());
+
+        Stroke originalStroke = g.getStroke();
+
+        for (Flow flow : flows) {
+            List<HexVector2> route = flow.getFlowComposed().getRoute();
+            if (route.size() < 2) continue;
+
+            Color flowColor = getFlowColor(flow.getType());
+            float lineWidth = getFlowLineWidth(flow.getType());
+
+            g.setColor(flowColor);
+            g.setStroke(new BasicStroke(lineWidth, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+
+            // Draw route as connected line segments between hex centers
+            for (int i = 0; i < route.size() - 1; i++) {
+                int[] from = hexToImageCoords(route.get(i), bounds);
+                int[] to = hexToImageCoords(route.get(i + 1), bounds);
+                g.drawLine(from[0], from[1], to[0], to[1]);
+            }
+
+            // Draw flow name at midpoint of route
+            HexVector2 midCoord = route.get(route.size() / 2);
+            int[] mid = hexToImageCoords(midCoord, bounds);
+
+            int fontSize = Math.max(9, hexGridSize / 30);
+            Font flowFont = new Font("SansSerif", Font.ITALIC, fontSize);
+            g.setFont(flowFont);
+            FontMetrics fm = g.getFontMetrics();
+
+            String flowLabel = flow.getName() != null ? flow.getName() : flow.getType().name();
+            int textWidth = fm.stringWidth(flowLabel);
+            // Offset label slightly above the line
+            int labelY = mid[1] - fontSize;
+
+            g.setColor(TEXT_SHADOW_COLOR);
+            g.drawString(flowLabel, mid[0] - textWidth / 2 + 1, labelY + 1);
+            g.setColor(flowColor);
+            g.drawString(flowLabel, mid[0] - textWidth / 2, labelY);
+        }
+
+        g.setStroke(originalStroke);
+        log.debug("Drew {} flows", flows.size());
+    }
+
+    /**
+     * Draws all points from the composition as cross markers at their grid coordinates.
+     */
+    private void drawPoints(Graphics2D g, CartesianBounds bounds) {
+        if (composition.getFeatures() == null) return;
+
+        List<Point> points = composition.getFeatures().stream()
+                .filter(f -> f instanceof Point)
+                .map(f -> (Point) f)
+                .filter(p -> p.getPointComposed() != null && p.getPointComposed().getGridCoordinate() != null)
+                .toList();
+
+        if (points.isEmpty()) return;
+
+        log.debug("Drawing {} points on schema image", points.size());
+
+        int crossSize = Math.max(8, hexGridSize / 20);
+        float crossWidth = Math.max(2.0f, hexGridSize / 100.0f);
+        Stroke originalStroke = g.getStroke();
+
+        for (Point point : points) {
+            HexVector2 gridCoord = point.getPointComposed().getGridCoordinate();
+            int[] center = hexToImageCoords(gridCoord, bounds);
+
+            // Draw cross
+            g.setColor(POINT_COLOR);
+            g.setStroke(new BasicStroke(crossWidth, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+            g.drawLine(center[0] - crossSize, center[1], center[0] + crossSize, center[1]);
+            g.drawLine(center[0], center[1] - crossSize, center[0], center[1] + crossSize);
+
+            // Draw point name
+            int fontSize = Math.max(9, hexGridSize / 30);
+            Font pointFont = new Font("SansSerif", Font.BOLD, fontSize);
+            g.setFont(pointFont);
+            FontMetrics fm = g.getFontMetrics();
+
+            String pointLabel = point.getName() != null ? point.getName() : "point";
+            int textWidth = fm.stringWidth(pointLabel);
+            int labelY = center[1] + crossSize + fm.getAscent() + 2;
+
+            g.setColor(TEXT_SHADOW_COLOR);
+            g.drawString(pointLabel, center[0] - textWidth / 2 + 1, labelY + 1);
+            g.setColor(POINT_LABEL_COLOR);
+            g.drawString(pointLabel, center[0] - textWidth / 2, labelY);
+        }
+
+        g.setStroke(originalStroke);
+        log.debug("Drew {} points", points.size());
+    }
+
+    /**
+     * Converts a hex coordinate to image pixel coordinates (with Z-flip and padding).
+     */
+    private int[] hexToImageCoords(HexVector2 coord, CartesianBounds bounds) {
+        int[] cartesian = HexMathUtil.hexToCartesian(coord, hexGridSize);
+        int imgX = cartesian[0] - bounds.minX + PADDING;
+        int imgZ = bounds.maxZ - cartesian[1] + PADDING;
+        return new int[]{imgX, imgZ};
+    }
+
+    private Color getFlowColor(FlowType type) {
+        if (type == null) return DEFAULT_FLOW_COLOR;
+        return switch (type) {
+            case RIVER -> RIVER_COLOR;
+            case ROAD -> ROAD_COLOR;
+            case WALL, SIDEWALL -> WALL_COLOR;
+        };
+    }
+
+    private float getFlowLineWidth(FlowType type) {
+        float base = Math.max(3.0f, hexGridSize / 60.0f);
+        if (type == null) return base;
+        return switch (type) {
+            case RIVER -> base * 1.5f;
+            case ROAD -> base;
+            case WALL, SIDEWALL -> base * 0.8f;
+        };
     }
 
     private Color parseColor(FeatureHexGrid hexGrid) {

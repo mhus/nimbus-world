@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
  * Parameters:
  *   - "compositionId" (required) - ID of the composition document
  *   - "phases" (optional) - Comma-separated list of phases to execute in order.
- *     Default: "createAll,groundAll,blenderAll,terrainAll,fillerAll,exportAll,imagesAll,compositeImages"
+ *     Default: "createAll,groundAll,blenderAll,terrainAll,fillerAll,exportAll,imagesAll,compositeImages,waitForChunks"
  *
  *   Example: Skip blender phase:
  *     Map.of("compositionId", "...", "phases", "createAll,groundAll,terrainAll,fillerAll,exportAll,imagesAll,compositeImages")
@@ -31,6 +31,7 @@ import java.util.stream.Collectors;
  *     Map.of("compositionId", "...", "phases", "createAll,groundAll")
  *
  *   Available phases:
+ *   - "schemaImage" - Create schematic overview image showing biome layout
  *   - "createAll" - Create all hex grids
  *   - "groundAll" - Apply ground manipulation
  *   - "blenderAll" - Apply blender manipulation
@@ -40,6 +41,7 @@ import java.util.stream.Collectors;
  *   - "imagesAll" - Export individual grid images
  *   - "compositeImages" - Create composite images of entire world
  *   - "importFlats" - (alternative to createAll) Import pre-created flats by flatId instead of creating them in this workflow. Only executes once, not per grid.
+ *   - "waitForChunks" - Wait until all dirty chunks for the world have been processed. Only executes once, not per grid.
  */
 @Service
 @Slf4j
@@ -178,6 +180,22 @@ public class Day3Generation extends MethodBasedWorkflow {
         log.info("Processing phase '{}' for {}", phase, gridLabel);
 
         switch (phase) {
+            case "schemaImage" -> {
+                // Only execute once (at index 0), not for each grid
+                if (index == 0) {
+                    String compositionId = (String) context.getParameters().get(GenesisConst.COMPOSITION_ID);
+                    context.updateWorkflowStatus("createSchemaImage");
+                    context.enqueueJob("hex-grid-schema-image", "", "",
+                            "Create Schema Image",
+                            Map.of(
+                                    "compositionId", compositionId
+                            ));
+                } else {
+                    state.setCurrentIndex(total);
+                    context.addRecord(state);
+                    processNextInPhase(context, state);
+                }
+            }
             case "createAll" -> {
                 String flatId = "genesis_" + coord.getQ() + "_" + coord.getR();
                 // delete if exists
@@ -301,8 +319,30 @@ public class Day3Generation extends MethodBasedWorkflow {
                     processNextInPhase(context, state);
                 }
             }
+            case "waitForChunks" -> {
+                // Only execute once (at index 0), not for each grid
+                if (index == 0) {
+                    context.updateWorkflowStatus("waitForDirtyChunks");
+                    context.enqueueJob(
+                            WaitForDirtyChunksJobExecutor.EXECUTOR_NAME,
+                            "", null,
+                            "Wait for Dirty Chunks",
+                            Map.of()
+                    );
+                } else {
+                    state.setCurrentIndex(total);
+                    context.addRecord(state);
+                    processNextInPhase(context, state);
+                }
+            }
             default -> throw new WorkflowException(null, "Unknown phase: " + phase);
         }
+    }
+
+    @OnSuccess("createSchemaImage")
+    public void onCreateSchemaImageSuccess(WorkflowContext context) throws WorkflowException {
+        log.info("Schema image created successfully");
+        advanceToNextInPhase(context);
     }
 
     @OnSuccess("createFlat")
@@ -343,6 +383,12 @@ public class Day3Generation extends MethodBasedWorkflow {
     @OnSuccess("createCompositeImages")
     public void onCreateCompositeImagesSuccess(WorkflowContext context) throws WorkflowException {
         log.info("Composite images created successfully");
+        advanceToNextInPhase(context);
+    }
+
+    @OnSuccess("waitForDirtyChunks")
+    public void onWaitForDirtyChunksSuccess(WorkflowContext context) throws WorkflowException {
+        log.info("All dirty chunks cleared");
         advanceToNextInPhase(context);
     }
 
