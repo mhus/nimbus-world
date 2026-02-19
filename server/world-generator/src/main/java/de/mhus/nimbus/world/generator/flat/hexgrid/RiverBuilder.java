@@ -54,7 +54,7 @@ public class RiverBuilder extends HexGridBuilder {
      * Pushes endpoints slightly beyond the grid boundary so adjacent river segments
      * overlap in the blending buffer zone and connect seamlessly.
      */
-    private static final int GRID_EDGE_OVERLAP = 18;
+    private static final int GRID_EDGE_OVERLAP = 28;
     /**
      * Minimum drawing radius for river circles, ensuring thin rivers
      * produce continuous coverage without pixel gaps on diagonal paths.
@@ -186,6 +186,8 @@ public class RiverBuilder extends HexGridBuilder {
         // Calculate perpendicular direction for lateral offset
         double[] perpDir = calculatePerpendicularDirection(dx, dz);
 
+        int lastX = -1, lastZ = -1; // Track last drawn position for logging
+
         // Draw river along the curved path
         for (int step = 0; step <= steps; step++) {
             double t = steps > 0 ? (double) step / steps : 0.0;
@@ -209,8 +211,14 @@ public class RiverBuilder extends HexGridBuilder {
             int depth = (int) (from.getDepth() + t * (to.getDepth() - from.getDepth()));
             int level = (int) (from.getLevel() + t * (to.getLevel() - from.getLevel()));
 
+            if (lastX != -1 && lastZ != -1) {
+                drawRiverLine(flat, lastX, lastZ, x, z, depth, level, groupId); // Log line drawing for debugging
+            }
             // Draw river segment with width and depth
             drawRiverSegment(flat, x, z, width, depth, level, groupId);
+
+            lastX = x;
+            lastZ = z;
         }
     }
 
@@ -271,6 +279,68 @@ public class RiverBuilder extends HexGridBuilder {
         int lz = sizeZ / 2 + relativePos.getZ();
 
         return new int[]{lx, lz};
+    }
+
+    /**
+     * Draw a line between two points. Draw it like no empty edges are allowed, this means
+     * the next puxel position is on one of the neighboring sides never diagonal.
+     * This is important to avoid gaps in the river when drawing thin rivers on diagonal paths.
+     *
+     * @param flat The WFlat to modify
+     * @param x1 Point 1
+     * @param z1 Point 1
+     * @param x2 Point 2
+     * @param z2 Point 2
+     * @param depth Depth for this segment
+     * @param level Water level for this segment
+     * @param groupId Group ID for logging and debugging
+     */
+    private void drawRiverLine(WFlat flat, int x1, int z1, int x2, int z2, int depth, int level, String groupId) {
+        int dx = Math.abs(x2 - x1);
+        int dz = Math.abs(z2 - z1);
+        int sx = Integer.compare(x2, x1);
+        int sz = Integer.compare(z2, z1);
+
+        String waterBlockDef = getWaterBlockDef(flat);
+        int bedLevel = level - depth;
+
+        int x = x1;
+        int z = z1;
+
+        // 4-connected Bresenham: total steps = |dx| + |dz|, one axis per step
+        int steps = dx + dz;
+        int err = dx - dz;
+
+        for (int i = 0; i <= steps; i++) {
+            // Set water and lower terrain at current position (bounds check)
+            if (x >= 0 && x < flat.getSizeX() && z >= 0 && z < flat.getSizeZ()) {
+                // Lower terrain if river bed is below current terrain, like drawRiverSegment
+                int currentLevel = flat.getLevel(x, z);
+                if (bedLevel < currentLevel) {
+                    flat.setLevel(x, z, bedLevel);
+                    flat.setColumn(x, z, FlatMaterialService.SAND);
+                    if (groupId != null) {
+                        flat.setGroup(x, z, groupId);
+                    }
+                }
+                // Set water surface extra block at water level
+                flat.setExtraBlock(x, level, z, waterBlockDef);
+                if (groupId != null) {
+                    flat.setGroup(x, level, z, groupId);
+                }
+            }
+
+            if (i == steps) break;
+
+            // Step in exactly one direction: positive err favors x, negative favors z
+            if (err > 0 || (err == 0 && dx >= dz)) {
+                x += sx;
+                err -= 2 * dz;
+            } else {
+                z += sz;
+                err += 2 * dx;
+            }
+        }
     }
 
     /**

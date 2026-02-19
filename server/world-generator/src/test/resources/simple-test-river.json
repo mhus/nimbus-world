@@ -85,7 +85,7 @@
       "depth": 4,
       "levelMode": "ADJUST_MEAN",
       "meanLevelOffset": -2,
-      "widthBlocks": 10,
+      "widthBlocks": 1,
       "tendLeft": "SLIGHT",
       "tendRight": "MODERATE",
       "force": false,
