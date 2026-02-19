@@ -8,6 +8,7 @@ import de.mhus.nimbus.world.generator.composer.area.AreaShape;
 import de.mhus.nimbus.world.generator.composer.build.CompositionContext;
 import de.mhus.nimbus.world.generator.composer.build.HexComposition;
 import de.mhus.nimbus.world.generator.composer.structure.PreparedPosition;
+import de.mhus.nimbus.world.shared.util.HexMathUtil;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
 import lombok.extern.slf4j.Slf4j;
 
@@ -490,16 +491,8 @@ public class BiomeComposer {
             }
             // else: continue straight
 
-            // Calculate direction delta
-            int[] delta = getHexDirectionDelta(direction);
-            int dq = delta[0];
-            int dr = delta[1];
-
-            // Add next hex
-            current = HexVector2.builder()
-                .q(current.getQ() + dq)
-                .r(current.getR() + dr)
-                .build();
+            // Move to next hex using odd-r offset neighbor
+            current = HexMathUtil.getNeighborPosition(current, DIRECTION_EDGES[direction]);
 
             coords.add(current);
         }
@@ -508,20 +501,10 @@ public class BiomeComposer {
     }
 
     /**
-     * Gets the q,r delta for a given hex direction (0-5).
-     * 0=N, 1=NE, 2=E, 3=S, 4=SW, 5=W
+     * Maps direction index (0-5) to EDGE for odd-r offset neighbor lookup.
+     * 0=SOUTH_EAST, 1=SOUTH_WEST, 2=WEST, 3=NORTH_WEST, 4=NORTH_EAST, 5=EAST
      */
-    private int[] getHexDirectionDelta(int direction) {
-        return switch (direction % 6) {
-            case 0 -> new int[]{0, -1};   // N
-            case 1 -> new int[]{1, -1};   // NE
-            case 2 -> new int[]{1, 0};    // E
-            case 3 -> new int[]{0, 1};    // S
-            case 4 -> new int[]{-1, 1};   // SW
-            case 5 -> new int[]{-1, 0};   // W
-            default -> new int[]{0, 0};
-        };
-    }
+    private static final WHexGrid.EDGE[] DIRECTION_EDGES = WHexGrid.EDGE.values();
 
     /**
      * Generates scattered hexes around center
@@ -559,7 +542,7 @@ public class BiomeComposer {
     }
 
     /**
-     * Gets all hexes in a ring around center
+     * Gets all hexes in a ring around center using odd-r offset coordinates.
      */
     private List<HexVector2> getHexRing(HexVector2 center, int radius) {
         List<HexVector2> ring = new ArrayList<>();
@@ -569,17 +552,27 @@ public class BiomeComposer {
             return ring;
         }
 
-        // Hex ring algorithm
-        int q = center.getQ() - radius;
-        int r = center.getR() + radius;
+        // Walk directions for a ring: after starting at WEST, walk these edges
+        WHexGrid.EDGE[] walkDirections = {
+            WHexGrid.EDGE.NORTH_EAST,
+            WHexGrid.EDGE.EAST,
+            WHexGrid.EDGE.SOUTH_EAST,
+            WHexGrid.EDGE.SOUTH_WEST,
+            WHexGrid.EDGE.WEST,
+            WHexGrid.EDGE.NORTH_WEST
+        };
 
-        int[][] directions = {{1, -1}, {1, 0}, {0, 1}, {-1, 1}, {-1, 0}, {0, -1}};
+        // Start at position 'radius' steps WEST from center
+        HexVector2 current = center;
+        for (int i = 0; i < radius; i++) {
+            current = HexMathUtil.getNeighborPosition(current, WHexGrid.EDGE.WEST);
+        }
 
-        for (int[] dir : directions) {
+        // Walk around the ring
+        for (WHexGrid.EDGE direction : walkDirections) {
             for (int step = 0; step < radius; step++) {
-                ring.add(HexVector2.builder().q(q).r(r).build());
-                q += dir[0];
-                r += dir[1];
+                ring.add(current);
+                current = HexMathUtil.getNeighborPosition(current, direction);
             }
         }
 

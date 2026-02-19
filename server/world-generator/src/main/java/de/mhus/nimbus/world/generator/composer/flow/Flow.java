@@ -333,12 +333,24 @@ public abstract class Flow extends Feature {
         return null; // Default: use per-segment calculation
     }
 
-    /** Hex distance utility (cube coordinate formula). */
+    /**
+     * Hex distance utility for odd-r offset coordinates.
+     * Converts to cube coordinates first, then uses cube distance formula.
+     */
     public static int hexDistance(HexVector2 a, HexVector2 b) {
-        int dq = Math.abs(a.getQ() - b.getQ());
-        int dr = Math.abs(a.getR() - b.getR());
-        int ds = Math.abs((a.getQ() + a.getR()) - (b.getQ() + b.getR()));
-        return (dq + dr + ds) / 2;
+        // Convert odd-r offset to cube coordinates: cube_q = col - floor(row / 2)
+        int aCubeQ = a.getQ() - (a.getR() - (a.getR() & 1)) / 2;
+        int aCubeR = a.getR();
+        int aCubeS = -aCubeQ - aCubeR;
+
+        int bCubeQ = b.getQ() - (b.getR() - (b.getR() & 1)) / 2;
+        int bCubeR = b.getR();
+        int bCubeS = -bCubeQ - bCubeR;
+
+        return Math.max(Math.max(
+            Math.abs(aCubeQ - bCubeQ),
+            Math.abs(aCubeR - bCubeR)),
+            Math.abs(aCubeS - bCubeS));
     }
 
     /**

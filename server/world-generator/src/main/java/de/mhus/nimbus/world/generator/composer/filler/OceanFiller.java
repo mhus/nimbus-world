@@ -12,6 +12,8 @@ import de.mhus.nimbus.world.generator.composer.biome.BiomeType;
 import de.mhus.nimbus.world.generator.composer.flow.River;
 import de.mhus.nimbus.world.generator.composer.flow.Road;
 import de.mhus.nimbus.world.generator.composer.flow.Wall;
+import de.mhus.nimbus.world.shared.util.HexMathUtil;
+import de.mhus.nimbus.world.shared.world.WHexGrid;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.*;
@@ -307,38 +309,20 @@ public class OceanFiller {
     }
 
     /**
-     * Calculates hex distance between two coordinates.
+     * Calculates hex distance for odd-r offset coordinates.
      */
     private int hexDistance(HexVector2 a, HexVector2 b) {
-        int dq = Math.abs(a.getQ() - b.getQ());
-        int dr = Math.abs(a.getR() - b.getR());
-        int ds = Math.abs((a.getQ() + a.getR()) - (b.getQ() + b.getR()));
-        return (dq + dr + ds) / 2;
+        return Flow.hexDistance(a, b);
     }
 
     /**
-     * Gets all 6 neighbors of a hex coordinate.
+     * Gets all 6 neighbors of a hex coordinate using odd-r offset coordinates.
      */
     private List<HexVector2> getNeighbors(HexVector2 coord) {
         List<HexVector2> neighbors = new ArrayList<>();
-
-        // Hex directions (axial coordinates)
-        int[][] directions = {
-            {0, -1},  // N
-            {1, -1},  // NE
-            {1, 0},   // E
-            {0, 1},   // SE
-            {-1, 1},  // SW
-            {-1, 0}   // W
-        };
-
-        for (int[] dir : directions) {
-            neighbors.add(HexVector2.builder()
-                .q(coord.getQ() + dir[0])
-                .r(coord.getR() + dir[1])
-                .build());
+        for (WHexGrid.EDGE edge : WHexGrid.EDGE.values()) {
+            neighbors.add(HexMathUtil.getNeighborPosition(coord, edge));
         }
-
         return neighbors;
     }
 

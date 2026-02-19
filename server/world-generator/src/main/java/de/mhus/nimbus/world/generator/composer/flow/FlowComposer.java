@@ -14,6 +14,7 @@ import de.mhus.nimbus.world.generator.composer.biome.Biome;
 import de.mhus.nimbus.world.generator.composer.biome.BiomePlacementResult;
 import de.mhus.nimbus.world.generator.composer.biome.BiomeType;
 import de.mhus.nimbus.world.generator.composer.point.Point;
+import de.mhus.nimbus.world.shared.util.HexMathUtil;
 import de.mhus.nimbus.world.shared.world.WHexGrid.EDGE;
 import lombok.Builder;
 import lombok.Data;
@@ -522,7 +523,7 @@ public class FlowComposer {
 
     /**
      * Creates a hexagonal ring around a center point at the given radius.
-     * Uses pointy-top hex coordinate system.
+     * Uses odd-r offset hex coordinate system via HexMathUtil.getNeighborPosition().
      *
      * @param center Center coordinate
      * @param radius Ring radius (distance from center)
@@ -531,32 +532,27 @@ public class FlowComposer {
     private List<HexVector2> createHexRing(HexVector2 center, int radius) {
         List<HexVector2> ring = new ArrayList<>();
 
-        // Hex direction vectors (pointy-top)
-        int[][] directions = {
-            {1, -1},  // NE
-            {1, 0},   // E
-            {0, 1},   // SE
-            {-1, 1},  // SW
-            {-1, 0},  // W
-            {0, -1}   // NW
+        // Walk directions for a ring: after starting at WEST, walk these edges
+        EDGE[] walkDirections = {
+            EDGE.NORTH_EAST,
+            EDGE.EAST,
+            EDGE.SOUTH_EAST,
+            EDGE.SOUTH_WEST,
+            EDGE.WEST,
+            EDGE.NORTH_WEST
         };
 
-        // Start at a point 'radius' steps away in direction 4 (W)
-        int q = center.getQ() - radius;
-        int r = center.getR();
+        // Start at position 'radius' steps WEST from center
+        HexVector2 current = center;
+        for (int i = 0; i < radius; i++) {
+            current = HexMathUtil.getNeighborPosition(current, EDGE.WEST);
+        }
 
         // Walk around the ring
-        for (int i = 0; i < 6; i++) {
-            // Walk 'radius' steps in direction i
+        for (EDGE direction : walkDirections) {
             for (int j = 0; j < radius; j++) {
-                ring.add(HexVector2.builder()
-                    .q(q)
-                    .r(r)
-                    .build());
-
-                // Move in direction i
-                q += directions[i][0];
-                r += directions[i][1];
+                ring.add(current);
+                current = HexMathUtil.getNeighborPosition(current, direction);
             }
         }
 
@@ -704,71 +700,59 @@ public class FlowComposer {
 
     /**
      * Finds a neighbor that deviates left or right from the best step.
+     * Uses odd-r offset coordinates via HexMathUtil.
      */
     private HexVector2 findDeviatedNeighbor(HexVector2 current, HexVector2 bestStep,
                                             List<HexVector2> neighbors, boolean deviateLeft) {
-        // Find the direction of bestStep relative to current
-        int bestDq = bestStep.getQ() - current.getQ();
-        int bestDr = bestStep.getR() - current.getR();
-
-        // Hex directions in order (pointy-top): NE, E, SE, SW, W, NW
-        int[][] directions = {
-            {1, -1},  // NE
-            {1, 0},   // E
-            {0, 1},   // SE
-            {-1, 1},  // SW
-            {-1, 0},  // W
-            {0, -1}   // NW
+        // EDGE ordering for clockwise rotation
+        EDGE[] clockwiseOrder = {
+            EDGE.NORTH_EAST,
+            EDGE.EAST,
+            EDGE.SOUTH_EAST,
+            EDGE.SOUTH_WEST,
+            EDGE.WEST,
+            EDGE.NORTH_WEST
         };
+
+        // Find which EDGE direction corresponds to bestStep
+        EDGE bestEdge;
+        try {
+            bestEdge = RoadAndRiverConnector.determineSide(current, bestStep);
+        } catch (IllegalArgumentException e) {
+            return bestStep;
+        }
 
         // Find current direction index
         int currentDirIndex = -1;
-        for (int i = 0; i < directions.length; i++) {
-            if (directions[i][0] == bestDq && directions[i][1] == bestDr) {
+        for (int i = 0; i < clockwiseOrder.length; i++) {
+            if (clockwiseOrder[i] == bestEdge) {
                 currentDirIndex = i;
                 break;
             }
         }
 
         if (currentDirIndex == -1) {
-            // Couldn't find direction, return best step
             return bestStep;
         }
 
         // Rotate left (counter-clockwise) or right (clockwise)
         int deviatedIndex;
         if (deviateLeft) {
-            deviatedIndex = (currentDirIndex - 1 + directions.length) % directions.length;
+            deviatedIndex = (currentDirIndex - 1 + clockwiseOrder.length) % clockwiseOrder.length;
         } else {
-            deviatedIndex = (currentDirIndex + 1) % directions.length;
+            deviatedIndex = (currentDirIndex + 1) % clockwiseOrder.length;
         }
 
-        int[] deviatedDir = directions[deviatedIndex];
-        return HexVector2.builder()
-            .q(current.getQ() + deviatedDir[0])
-            .r(current.getR() + deviatedDir[1])
-            .build();
+        return HexMathUtil.getNeighborPosition(current, clockwiseOrder[deviatedIndex]);
     }
 
     /**
-     * Gets all 6 hex neighbors for a coordinate.
+     * Gets all 6 hex neighbors for a coordinate using odd-r offset coordinates.
      */
     private List<HexVector2> getHexNeighbors(HexVector2 coord) {
-        int[][] directions = {
-            {1, -1},  // NE
-            {1, 0},   // E
-            {0, 1},   // SE
-            {-1, 1},  // SW
-            {-1, 0},  // W
-            {0, -1}   // NW
-        };
-
         List<HexVector2> neighbors = new ArrayList<>();
-        for (int[] dir : directions) {
-            neighbors.add(HexVector2.builder()
-                .q(coord.getQ() + dir[0])
-                .r(coord.getR() + dir[1])
-                .build());
+        for (EDGE edge : EDGE.values()) {
+            neighbors.add(HexMathUtil.getNeighborPosition(coord, edge));
         }
         return neighbors;
     }
@@ -1872,34 +1856,13 @@ public class FlowComposer {
             biomeCoords.add(coordKey(coord));
         }
 
-        // Check each direction
-        EDGE[] sides = {
-            EDGE.NORTH_EAST,
-            EDGE.EAST,
-            EDGE.SOUTH_EAST,
-            EDGE.SOUTH_WEST,
-            EDGE.WEST,
-            EDGE.NORTH_WEST
-        };
-
-        int[][] directions = {
-            {1, -1},  // NE
-            {1, 0},   // E
-            {0, 1},   // SE
-            {-1, 1},  // SW
-            {-1, 0},  // W
-            {0, -1}   // NW
-        };
-
-        for (int i = 0; i < sides.length; i++) {
-            HexVector2 neighbor = HexVector2.builder()
-                .q(grid.getCoordinate().getQ() + directions[i][0])
-                .r(grid.getCoordinate().getR() + directions[i][1])
-                .build();
+        // Check each direction using odd-r offset coordinates
+        for (EDGE side : EDGE.values()) {
+            HexVector2 neighbor = HexMathUtil.getNeighborPosition(grid.getCoordinate(), side);
 
             // Side is exposed if neighbor is not in biome
             if (!biomeCoords.contains(coordKey(neighbor))) {
-                exposedSides.add(sides[i]);
+                exposedSides.add(side);
             }
         }
 

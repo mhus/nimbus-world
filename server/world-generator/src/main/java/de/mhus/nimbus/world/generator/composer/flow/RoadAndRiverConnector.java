@@ -5,6 +5,7 @@ import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.shared.utils.TypeUtil;
 import de.mhus.nimbus.world.generator.composer.build.ConnectionResult;
 import de.mhus.nimbus.world.generator.composer.filler.HexGridFillResult;
+import de.mhus.nimbus.world.shared.util.HexMathUtil;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
 import de.mhus.nimbus.world.shared.world.WHexGrid.EDGE;
 import lombok.Data;
@@ -242,34 +243,39 @@ public class RoadAndRiverConnector {
     }
 
     /**
-     * Calculates neighbor grid coordinate based on direction
+     * Calculates neighbor grid coordinate based on direction.
+     * Uses odd-r offset coordinates via HexMathUtil.
      */
     public static HexVector2 getNeighborCoordinate(HexVector2 coord, EDGE side) {
-        return switch (side) {
-            case NORTH_EAST -> HexVector2.builder().q(coord.getQ() + 1).r(coord.getR() - 1).build();
-            case EAST -> HexVector2.builder().q(coord.getQ() + 1).r(coord.getR()).build();
-            case SOUTH_EAST -> HexVector2.builder().q(coord.getQ()).r(coord.getR() + 1).build();
-            case SOUTH_WEST -> HexVector2.builder().q(coord.getQ() - 1).r(coord.getR() + 1).build();
-            case WEST -> HexVector2.builder().q(coord.getQ() - 1).r(coord.getR()).build();
-            case NORTH_WEST -> HexVector2.builder().q(coord.getQ()).r(coord.getR() - 1).build();
-        };
+        return HexMathUtil.getNeighborPosition(coord, side);
     }
 
     /**
-     * Determines which side to use based on grid direction
+     * Determines which EDGE side connects 'from' to 'to' in odd-r offset coordinates.
+     * The neighbor delta depends on the row parity of 'from'.
      */
     public static EDGE determineSide(HexVector2 from, HexVector2 to) {
         int dq = to.getQ() - from.getQ();
         int dr = to.getR() - from.getR();
+        boolean evenRow = (from.getR() % 2 == 0);
 
-        if (dq == 1 && dr == -1) return EDGE.NORTH_EAST;
         if (dq == 1 && dr == 0) return EDGE.EAST;
-        if (dq == 0 && dr == 1) return EDGE.SOUTH_EAST;
-        if (dq == -1 && dr == 1) return EDGE.SOUTH_WEST;
         if (dq == -1 && dr == 0) return EDGE.WEST;
-        if (dq == 0 && dr == -1) return EDGE.NORTH_WEST;
 
-        throw new IllegalArgumentException("Invalid hex direction: dq=" + dq + ", dr=" + dr);
+        if (evenRow) {
+            if (dq == 0 && dr == 1) return EDGE.NORTH_EAST;
+            if (dq == -1 && dr == 1) return EDGE.NORTH_WEST;
+            if (dq == 0 && dr == -1) return EDGE.SOUTH_EAST;
+            if (dq == -1 && dr == -1) return EDGE.SOUTH_WEST;
+        } else {
+            if (dq == 1 && dr == 1) return EDGE.NORTH_EAST;
+            if (dq == 0 && dr == 1) return EDGE.NORTH_WEST;
+            if (dq == 1 && dr == -1) return EDGE.SOUTH_EAST;
+            if (dq == 0 && dr == -1) return EDGE.SOUTH_WEST;
+        }
+
+        throw new IllegalArgumentException("Invalid hex direction from (" + from.getQ() + "," + from.getR()
+            + ") to (" + to.getQ() + "," + to.getR() + "): dq=" + dq + ", dr=" + dr);
     }
 
     /**

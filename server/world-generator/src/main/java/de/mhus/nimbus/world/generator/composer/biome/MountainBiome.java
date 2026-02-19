@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.shared.utils.TypeUtil;
 import de.mhus.nimbus.world.generator.composer.feature.FeatureHexGrid;
+import de.mhus.nimbus.world.shared.util.HexMathUtil;
 import de.mhus.nimbus.world.shared.world.WHexGrid.EDGE;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -174,15 +175,15 @@ public class MountainBiome extends Biome {
 
             List<Map<String, Object>> ridgeEntries = new ArrayList<>();
 
-            // Check all 6 hex neighbors
-            for (int dir = 0; dir < 6; dir++) {
-                HexVector2 neighbor = getHexNeighbor(coord, dir);
+            // Check all 6 hex neighbors using odd-r offset coordinates
+            for (EDGE edge : EDGE.values()) {
+                HexVector2 neighbor = HexMathUtil.getNeighborPosition(coord, edge);
                 String neighborKey = TypeUtil.toStringHexCoord(neighbor.getQ(), neighbor.getR());
 
                 // If neighbor is part of this mountain, add ridge entry
                 if (coordSet.contains(neighborKey)) {
                     Map<String, Object> entry = new HashMap<>();
-                    entry.put("side", getDirectionSide(dir).name());
+                    entry.put("side", edge.name());
                     entry.put("level", ridgeLevel);
                     ridgeEntries.add(entry);
                 }
@@ -208,48 +209,6 @@ public class MountainBiome extends Biome {
         */
     }
 
-    /**
-     * Gets the hex neighbor in the specified direction.
-     * Directions: 0=N, 1=NE, 2=E, 3=SE, 4=SW, 5=W
-     */
-    private HexVector2 getHexNeighbor(HexVector2 coord, int direction) {
-        int[] delta = getHexDirectionDelta(direction);
-        return HexVector2.builder()
-            .q(coord.getQ() + delta[0])
-            .r(coord.getR() + delta[1])
-            .build();
-    }
-
-    /**
-     * Gets the q,r delta for a hex direction.
-     * Directions: 0=N, 1=NE, 2=E, 3=SE, 4=SW, 5=W
-     */
-    private int[] getHexDirectionDelta(int direction) {
-        return switch (direction % 6) {
-            case 0 -> new int[]{0, -1};   // N
-            case 1 -> new int[]{1, -1};   // NE
-            case 2 -> new int[]{1, 0};    // E
-            case 3 -> new int[]{0, 1};    // SE
-            case 4 -> new int[]{-1, 1};   // SW
-            case 5 -> new int[]{-1, 0};   // W
-            default -> new int[]{0, 0};
-        };
-    }
-
-    /**
-     * Maps hex direction to WHexGrid.SIDE enum.
-     * Hex directions: 0=N(top), 1=NE(top-right), 2=E(right), 3=S(bottom), 4=SW(bottom-left), 5=W(left)
-     * SIDE values: NORTH_EAST, EAST, SOUTH_EAST, SOUTH_WEST, WEST, NORTH_WEST (6 sides of hexagon)
-     */
-    private EDGE getDirectionSide(int direction) {
-        return switch (direction % 6) {
-            case 0 -> EDGE.NORTH_WEST;  // N (top) -> NORTH_WEST side
-            case 1 -> EDGE.NORTH_EAST;  // NE (top-right)
-            case 2 -> EDGE.EAST;        // E (right)
-            case 3 -> EDGE.SOUTH_EAST;  // S (bottom) -> SOUTH_EAST side
-            case 4 -> EDGE.SOUTH_WEST;  // SW (bottom-left)
-            case 5 -> EDGE.WEST;        // W (left)
-            default -> EDGE.NORTH_EAST;
-        };
-    }
+    // getHexNeighbor, getHexDirectionDelta, getDirectionSide replaced by
+    // HexMathUtil.getNeighborPosition() and direct EDGE iteration above
 }
