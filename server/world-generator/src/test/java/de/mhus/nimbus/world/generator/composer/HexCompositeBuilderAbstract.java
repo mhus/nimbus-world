@@ -12,6 +12,7 @@ import de.mhus.nimbus.world.generator.composer.flow.FlowComposer;
 import de.mhus.nimbus.world.generator.composer.build.HexCompositeBuilder;
 import de.mhus.nimbus.world.generator.composer.build.HexComposition;
 import de.mhus.nimbus.world.generator.composer.build.HexGridCompositeImageCreator;
+import de.mhus.nimbus.world.generator.composer.build.HexGridSchemaImageCreator;
 import de.mhus.nimbus.world.generator.composer.filler.HexGridFillResult;
 import de.mhus.nimbus.world.generator.composer.point.Point;
 import de.mhus.nimbus.world.generator.composer.image.TextOverlay;
@@ -82,6 +83,7 @@ public abstract class HexCompositeBuilderAbstract {
 
     private Path outputDir;
     private de.mhus.nimbus.world.generator.flat.FlatCreateService flatCreateService;
+    private HexComposition lastComposition;
 
     @BeforeEach
     public void setup() throws Exception {
@@ -263,6 +265,9 @@ public abstract class HexCompositeBuilderAbstract {
             composition.setFeatureHexGrids(new ArrayList<>(composition.getFeatureHexGridRegistry().values()));
         }
         exportInputComposition(composition, "simple-continent-test-%s".formatted(name));
+
+        // Store enriched composition for createSchemaImage()
+        this.lastComposition = composition;
 
         log.info("=== Simple Content Test %s Completed ===".formatted(name));
         log.info("Images saved to: {}", outputDir.toAbsolutePath());
@@ -810,4 +815,43 @@ public abstract class HexCompositeBuilderAbstract {
 
         log.info("FlatCreateService initialized with mocked dependencies");
     }
+
+
+    public void createSchemaImage(CompositionResult result, String name) throws Exception {
+        if (lastComposition == null) {
+            log.warn("No composition available for schema image");
+            return;
+        }
+
+        // Strip -schema.png suffix if present, HexGridSchemaImageCreator appends it
+        String imageName = name;
+        if (imageName.endsWith(".png")) {
+            imageName = imageName.substring(0, imageName.length() - 4);
+        }
+        if (imageName.endsWith("-schema")) {
+            imageName = imageName.substring(0, imageName.length() - 7);
+        }
+
+        HexGridSchemaImageCreator creator = HexGridSchemaImageCreator.builder()
+                .composition(lastComposition)
+                .hexGridSize(HEX_GRID_SIZE)
+                .outputDirectory(outputDir.toString())
+                .imageName(imageName)
+                .drawLabels(true)
+                .drawCoordinates(true)
+                .build();
+
+        HexGridSchemaImageCreator.SchemaImageResult schemaResult = creator.createSchemaImage();
+
+        if (!schemaResult.isSuccess()) {
+            log.error("Failed to create schema image: {}", schemaResult.getErrorMessage());
+            return;
+        }
+
+        log.info("Created schema image: {}x{} pixels, {} grids rendered, file: {}",
+            schemaResult.getImageWidth(), schemaResult.getImageHeight(),
+            schemaResult.getRenderedGridCount(),
+            schemaResult.getOutputFile() != null ? schemaResult.getOutputFile().getAbsolutePath() : "not saved");
+    }
+
 }

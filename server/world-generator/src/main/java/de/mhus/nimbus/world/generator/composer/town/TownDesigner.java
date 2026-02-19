@@ -1429,7 +1429,7 @@ public class TownDesigner {
                 if (roll < village.getBuildingTendency()) {
                     // Create building place (house)
                     newPlace = BuildingPlace.builder()
-                        .name("filled-house-" + candidate.getSlotIndex())
+                        .name("/house-" + candidate.getSlotIndex())
                         .kind("house")
                         .connectionPoint(false)
                         .build();
@@ -1439,7 +1439,7 @@ public class TownDesigner {
                     FreePlace.FreeKind kind = random.nextBoolean() ?
                         FreePlace.FreeKind.PLAZA : FreePlace.FreeKind.SQUARE;
                     newPlace = FreePlace.builder()
-                        .name("filled-" + kind.name().toLowerCase() + "-" + candidate.getSlotIndex())
+                        .name("/" + kind.name().toLowerCase() + "-" + candidate.getSlotIndex())
                         .kind(kind)
                         .connectionPoint(false)
                         .build();
@@ -1450,7 +1450,7 @@ public class TownDesigner {
                 FreePlace.FreeKind kind = random.nextBoolean() ?
                     FreePlace.FreeKind.PARK : FreePlace.FreeKind.GARDEN;
                 newPlace = FreePlace.builder()
-                    .name("filled-" + kind.name().toLowerCase() + "-" + candidate.getSlotIndex())
+                    .name("/" + kind.name().toLowerCase() + "-" + candidate.getSlotIndex())
                     .kind(kind)
                     .connectionPoint(false)
                     .build();

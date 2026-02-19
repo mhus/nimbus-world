@@ -17,11 +17,11 @@ import java.util.*;
  * Fills gaps between biomes that belong to the same continent.
  * Creates cohesive landmasses instead of isolated island biomes.
  *
- * Process:
- * 1. For each empty coordinate within the bounding box
- * 2. Check if it has neighbors from the same continent
- * 3. If enough neighbors (minNeighbors), fill with continent's biome type
- * 4. Otherwise leave empty for coast/ocean filler
+ * Uses a convex hull algorithm to determine the continent boundary:
+ * 1. Collect all land biome coordinates for the continent
+ * 2. Convert to float coordinates respecting hex stagger
+ * 3. Compute the convex hull (Andrew's monotone chain)
+ * 4. Fill empty cells inside the hull with the continent's biome type
  *
  * This runs BEFORE CoastFiller and OceanFiller to ensure
  * continents are filled first.
@@ -30,7 +30,7 @@ import java.util.*;
 public class ContinentFiller {
 
     /**
-     * Fills gaps between biomes on the same continent
+     * Fills gaps between biomes on the same continent.
      *
      * @param composition The composition with continent definitions
      * @param existingCoords Set of existing coordinate keys (q:r)
@@ -43,13 +43,11 @@ public class ContinentFiller {
 
         log.debug("Starting ContinentFiller");
 
-        // If no continents defined, skip filling
         if (composition.getContinents() == null || composition.getContinents().isEmpty()) {
             log.debug("No continents defined, skipping continent filling");
             return 0;
         }
 
-        // Build continent lookup map
         Map<String, Continent> continentMap = new HashMap<>();
         for (Continent continent : composition.getContinents()) {
             continentMap.put(continent.getContinentId(), continent);
@@ -57,19 +55,15 @@ public class ContinentFiller {
                 continent.getContinentId(), continent.getBiomeType());
         }
 
-        // Track fills per continent
         Map<String, List<HexVector2>> continentFills = new HashMap<>();
 
-        // Process each continent separately
         for (Continent continent : composition.getContinents()) {
             String continentId = continent.getContinentId();
 
-            // Find all coordinates of biomes belonging to this continent
             List<HexVector2> allContinentCoords = new ArrayList<>();
             for (PlacedBiome placed : placementResult.getPlacedBiomes()) {
                 if (continentId.equals(placed.getBiome().getContinentId())) {
                     BiomeType type = placed.getBiome().getType();
-                    // Skip ocean/coast/island biomes
                     if (type != BiomeType.OCEAN && type != BiomeType.COAST && type != BiomeType.ISLAND) {
                         allContinentCoords.addAll(placed.getCoordinates());
                     }
@@ -81,57 +75,19 @@ public class ContinentFiller {
                 continue;
             }
 
-            log.debug("Continent '{}': computing hull for {} biome grids", continentId, allContinentCoords.size());
+            log.debug("Continent '{}': computing convex hull for {} biome grids", continentId, allContinentCoords.size());
 
-            // Calculate center of all coordinates
-            int centerQ = 0, centerR = 0;
-            for (HexVector2 coord : allContinentCoords) {
-                centerQ += coord.getQ();
-                centerR += coord.getR();
-            }
-            centerQ /= allContinentCoords.size();
-            centerR /= allContinentCoords.size();
+            // Compute convex hull of all biome coordinates
+            List<double[]> hull = computeConvexHull(allContinentCoords);
 
-            log.debug("Continent center: q={}, r={}", centerQ, centerR);
-
-            // Find outermost points in 6 directions (every 60 degrees)
-            // Hex directions: NE (30°), E (90°), SE (150°), SW (210°), W (270°), NW (330°)
-            Map<Integer, HexVector2> boundaryPoints = new HashMap<>();
-
-            for (int angle = 0; angle < 360; angle += 60) {
-                HexVector2 farthest = null;
-                double maxDist = 0;
-
-                for (HexVector2 coord : allContinentCoords) {
-                    // Calculate distance from center in this direction
-                    int dq = coord.getQ() - centerQ;
-                    int dr = coord.getR() - centerR;
-
-                    // Convert to angle and distance
-                    double coordAngle = Math.toDegrees(Math.atan2(dr, dq));
-                    if (coordAngle < 0) coordAngle += 360;
-
-                    // Check if this coordinate is roughly in our angle direction (±30°)
-                    double angleDiff = Math.abs(coordAngle - angle);
-                    if (angleDiff > 180) angleDiff = 360 - angleDiff;
-
-                    if (angleDiff <= 45) {  // Wider tolerance for hex
-                        double dist = Math.sqrt(dq * dq + dr * dr);
-                        if (dist > maxDist) {
-                            maxDist = dist;
-                            farthest = coord;
-                        }
-                    }
-                }
-
-                if (farthest != null) {
-                    boundaryPoints.put(angle, farthest);
-                }
+            if (hull.size() < 3) {
+                log.debug("Continent '{}': hull has only {} vertices, skipping fill", continentId, hull.size());
+                continue;
             }
 
-            log.debug("Found {} boundary points for continent '{}'", boundaryPoints.size(), continentId);
+            log.debug("Continent '{}': convex hull has {} vertices", continentId, hull.size());
 
-            // Calculate bounding box to limit search area
+            // Bounding box for iteration
             int minQ = Integer.MAX_VALUE, maxQ = Integer.MIN_VALUE;
             int minR = Integer.MAX_VALUE, maxR = Integer.MIN_VALUE;
             for (HexVector2 coord : allContinentCoords) {
@@ -141,20 +97,19 @@ public class ContinentFiller {
                 maxR = Math.max(maxR, coord.getR());
             }
 
-            // Fill all coordinates within the hull
+            // Fill empty cells inside the convex hull
             List<HexVector2> fills = new ArrayList<>();
             for (int q = minQ; q <= maxQ; q++) {
                 for (int r = minR; r <= maxR; r++) {
                     HexVector2 coord = HexVector2.builder().q(q).r(r).build();
                     String key = TypeUtil.toStringHexCoord(coord);
 
-                    // Skip if already filled
                     if (existingCoords.contains(key)) {
                         continue;
                     }
 
-                    // Check if point is inside the hull using raycasting
-                    if (isInsideHull(coord, centerQ, centerR, boundaryPoints)) {
+                    double[] point = hexToFloat(coord);
+                    if (isInsideConvexHull(point, hull)) {
                         fills.add(coord);
                         existingCoords.add(key);
                     }
@@ -163,7 +118,7 @@ public class ContinentFiller {
 
             if (!fills.isEmpty()) {
                 continentFills.put(continentId, fills);
-                log.debug("Continent '{}': filled {} grids within hull", continentId, fills.size());
+                log.debug("Continent '{}': filled {} grids within convex hull", continentId, fills.size());
             }
         }
 
@@ -179,13 +134,9 @@ public class ContinentFiller {
                 continue;
             }
 
-            // Create a filler biome for this continent
             Biome continentBiome = createContinentFillerBiome(continent);
-
-            // Configure hex grids with biome parameters
             continentBiome.configureHexGrids(coords);
 
-            // Calculate center of filled area
             HexVector2 center = calculateCenter(coords);
 
             PlacedBiome placedFiller = PlacedBiome.builder()
@@ -206,10 +157,94 @@ public class ContinentFiller {
         return totalFilled;
     }
 
+    /**
+     * Converts offset hex coordinates (odd-r stagger) to float coordinates
+     * that respect the actual hex geometry for geometric calculations.
+     *
+     * x accounts for the half-cell stagger on odd rows.
+     * z uses the 3/4 row height ratio of pointy-top hexagons.
+     */
+    private double[] hexToFloat(HexVector2 hex) {
+        double x = hex.getQ() + (hex.getR() % 2 != 0 ? 0.5 : 0);
+        double z = hex.getR() * 0.75;
+        return new double[]{x, z};
+    }
 
     /**
-     * Creates a filler biome for a continent
+     * Computes the convex hull of hex coordinates using Andrew's monotone chain algorithm.
+     * Returns hull vertices in counter-clockwise order.
      */
+    private List<double[]> computeConvexHull(List<HexVector2> coords) {
+        List<double[]> points = new ArrayList<>();
+        Set<String> seen = new HashSet<>();
+        for (HexVector2 coord : coords) {
+            String key = coord.getQ() + ":" + coord.getR();
+            if (seen.add(key)) {
+                points.add(hexToFloat(coord));
+            }
+        }
+
+        points.sort((a, b) -> {
+            int cmp = Double.compare(a[0], b[0]);
+            return cmp != 0 ? cmp : Double.compare(a[1], b[1]);
+        });
+
+        int n = points.size();
+        if (n < 3) return new ArrayList<>(points);
+
+        // Lower hull
+        List<double[]> lower = new ArrayList<>();
+        for (double[] p : points) {
+            while (lower.size() >= 2 && cross(lower.get(lower.size() - 2), lower.get(lower.size() - 1), p) <= 0) {
+                lower.removeLast();
+            }
+            lower.add(p);
+        }
+
+        // Upper hull
+        List<double[]> upper = new ArrayList<>();
+        for (int i = n - 1; i >= 0; i--) {
+            double[] p = points.get(i);
+            while (upper.size() >= 2 && cross(upper.get(upper.size() - 2), upper.get(upper.size() - 1), p) <= 0) {
+                upper.removeLast();
+            }
+            upper.add(p);
+        }
+
+        // Concatenate, removing duplicate endpoints
+        lower.removeLast();
+        upper.removeLast();
+        lower.addAll(upper);
+        return lower;
+    }
+
+    /**
+     * Cross product of vectors OA and OB.
+     * Positive = counter-clockwise turn, negative = clockwise, zero = collinear.
+     */
+    private double cross(double[] o, double[] a, double[] b) {
+        return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
+    }
+
+    /**
+     * Tests if a point is inside a convex polygon (hull vertices in CCW order).
+     * A point is inside if it is on the left side (or on) every edge.
+     */
+    private boolean isInsideConvexHull(double[] point, List<double[]> hull) {
+        int n = hull.size();
+        if (n < 3) return false;
+
+        for (int i = 0; i < n; i++) {
+            double[] a = hull.get(i);
+            double[] b = hull.get((i + 1) % n);
+            double cp = (b[0] - a[0]) * (point[1] - a[1]) - (b[1] - a[1]) * (point[0] - a[0]);
+            if (cp < -0.01) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     private Biome createContinentFillerBiome(Continent continent) {
         Biome biome = new Biome();
         biome.setName("continent-filler-" + continent.getContinentId());
@@ -217,29 +252,24 @@ public class ContinentFiller {
         biome.setType(continent.getBiomeType());
         biome.setContinentId(continent.getContinentId());
 
-        // Copy continent parameters
         Map<String, String> parameters = new HashMap<>();
         if (continent.getParameters() != null) {
             parameters.putAll(continent.getParameters());
         }
 
-        // Apply defaults from biome type
         if (continent.getBiomeType() != null) {
             BiomeType biomeType = continent.getBiomeType();
 
-            // Set default builder if not specified
             if (!parameters.containsKey("g_builder")) {
                 parameters.put("g_builder", biomeType.getDefaultBuilder());
             }
 
-            // Apply default parameters from biome type
             Map<String, String> defaults = biomeType.getDefaultParameters();
             if (defaults != null) {
                 defaults.forEach(parameters::putIfAbsent);
             }
         }
 
-        // Mark as continent filler
         parameters.put("continentFiller", "true");
         parameters.put("continentId", continent.getContinentId());
 
@@ -249,9 +279,6 @@ public class ContinentFiller {
         return biome;
     }
 
-    /**
-     * Calculates center of coordinates
-     */
     private HexVector2 calculateCenter(List<HexVector2> coords) {
         if (coords.isEmpty()) {
             return HexVector2.builder().q(0).r(0).build();
@@ -269,55 +296,4 @@ public class ContinentFiller {
             .r(sumR / coords.size())
             .build();
     }
-
-    /**
-     * Checks if a point is inside the hull defined by boundary points.
-     * Uses distance-based check: point should be closer to center than all boundary points.
-     */
-    private boolean isInsideHull(HexVector2 point, int centerQ, int centerR, Map<Integer, HexVector2> boundaryPoints) {
-        int dq = point.getQ() - centerQ;
-        int dr = point.getR() - centerR;
-        double pointDist = Math.sqrt(dq * dq + dr * dr);
-
-        // Calculate angle of point from center
-        double pointAngle = Math.toDegrees(Math.atan2(dr, dq));
-        if (pointAngle < 0) pointAngle += 360;
-
-        // Find the two nearest boundary points (before and after this angle)
-        HexVector2 nearestBoundary = null;
-        double minAngleDiff = 360;
-
-        for (Map.Entry<Integer, HexVector2> entry : boundaryPoints.entrySet()) {
-            double angleDiff = Math.abs(pointAngle - entry.getKey());
-            if (angleDiff > 180) angleDiff = 360 - angleDiff;
-
-            if (angleDiff < minAngleDiff) {
-                minAngleDiff = angleDiff;
-                nearestBoundary = entry.getValue();
-            }
-        }
-
-        if (nearestBoundary == null) {
-            return false;
-        }
-
-        // Point is inside if it's closer to center than the nearest boundary point
-        int bdq = nearestBoundary.getQ() - centerQ;
-        int bdr = nearestBoundary.getR() - centerR;
-        double boundaryDist = Math.sqrt(bdq * bdq + bdr * bdr);
-
-        return pointDist <= boundaryDist + 1; // +1 for tolerance
-    }
-
-    /**
-     * Gets all 6 neighbors of a hex coordinate using offset coordinates.
-     */
-    private List<HexVector2> getNeighbors(HexVector2 coord) {
-        List<HexVector2> neighbors = new ArrayList<>();
-        for (de.mhus.nimbus.world.shared.world.WHexGrid.EDGE edge : de.mhus.nimbus.world.shared.world.WHexGrid.EDGE.values()) {
-            neighbors.add(de.mhus.nimbus.world.shared.util.HexMathUtil.getNeighborPosition(coord, edge));
-        }
-        return neighbors;
-    }
-
 }

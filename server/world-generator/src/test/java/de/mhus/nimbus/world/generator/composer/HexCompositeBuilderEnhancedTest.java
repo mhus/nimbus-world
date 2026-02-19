@@ -1,6 +1,7 @@
 package de.mhus.nimbus.world.generator.composer;
 
 import de.mhus.nimbus.shared.utils.TypeUtil;
+import de.mhus.nimbus.world.generator.composer.build.CompositionResult;
 import de.mhus.nimbus.world.shared.util.HexMathUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
@@ -54,7 +55,8 @@ public class HexCompositeBuilderEnhancedTest extends HexCompositeBuilderAbstract
 
     @Test
     public void testEnhancedExample1() throws Exception {
-        composite("enhanced-test-example1");
+        var result = composite("enhanced-test-example1");
+        createSchemaImage(result, "enhanced-test-example1-schema.png");
     }
 
 }
