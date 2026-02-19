@@ -166,7 +166,7 @@ public class WFlat implements Identifiable {
 
     public int getColumnRobust(int x, int z) {
         if (x < 0 || z < 0 || x >= sizeX || z >= sizeZ)
-            return -1;
+            return MATERIAL_OUT_OF_BOUND;
         return Byte.toUnsignedInt(columns[x + z * sizeX]);
     }
 

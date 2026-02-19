@@ -693,16 +693,14 @@ public class FlatExportService {
      * Only applies to GROUND type blocks with modifier 0 and shape 1 (CUBE).
      * - Corner smoothing: Adjusts Y offsets of 4 top corners based on neighbor heights
      * - Face visibility: Sets faceVisibility to hide non-visible block faces
-     *
-     * @return true if block should be exported, false if block should be skipped (no visible faces)
      */
-    private boolean applyBlockOptimizations(Block block, WFlat flat, int localX, int localZ,
+    private void applyBlockOptimizations(Block block, WFlat flat, int localX, int localZ,
                                         int level, int y,
                                         Map<String, WBlockType> blockTypeCache, WorldId wid,
                                         boolean smoothCorners, WFlat.MaterialDefinition materialDef,
                                         Map<String, String[]> extraBlocksCache) {
         if (block == null || block.getBlockTypeId() == null || wid == null) {
-            return true;  // No optimization, export block
+            return;  // No optimization, export block
         }
 
         // Get or cache block type
@@ -712,30 +710,30 @@ public class FlatExportService {
         );
 
         if (blockType == null || blockType.getPublicData() == null) {
-            return true;  // Not optimizable, export block
+            return;  // Not optimizable, export block
         }
 
         var publicData = blockType.getPublicData();
 
         // Check if GROUND type
         if (publicData.getType() != BlockTypeType.GROUND) {
-            return true;  // Not GROUND, export block
+            return;  // Not GROUND, export block
         }
 
         // Check if modifier (status) is 0 or null
         int status = block.getStatus();
         if (status != 0) {
-            return true;  // Modified block, export block
+            return;  // Modified block, export block
         }
 
         // Check if shape is CUBE (shape 1)
         // Shape is stored in modifiers map, get modifier 0
         if (publicData.getModifiers() == null) {
-            return true;  // No modifiers, export block
+            return;  // No modifiers, export block
         }
         var modifier0 = publicData.getModifiers().get(0);
         if (modifier0 == null || modifier0.getVisibility() == null || modifier0.getVisibility().getShape() == null || modifier0.getVisibility().getShape() != 1) {
-            return true;  // Not CUBE, export block
+            return;  // Not CUBE, export block
         }
 
         // Get current level
@@ -762,58 +760,39 @@ public class FlatExportService {
         // the flat neighbor calculation. The NW array position receives the NE offset
         // and vice versa.
         if (smoothCorners && y == level) {
-            // Skip corner smoothing for blocks near the flat/hex edge.
-            // At flat transitions, offsets calculated from one flat's data don't match
-            // the neighboring flat's blocks, creating visual gaps.
-            // Check radius 2 to account for the overlap zone between adjacent flats
-            // where blocks from one flat may be overwritten by another flat's export.
-            boolean nearEdge = false;
-            for (int dx = -2; dx <= 2 && !nearEdge; dx++) {
-                for (int dz = -2; dz <= 2 && !nearEdge; dz++) {
-                    if (dx == 0 && dz == 0) continue;
-                    int neighborMat = getEffectiveNeighborMaterial(flat, localX + dx, localZ + dz);
-                    if (neighborMat == WFlat.MATERIAL_NOT_SET
-                            || neighborMat == WFlat.MATERIAL_NOT_SET_MUTABLE
-                            || neighborMat == WFlat.MATERIAL_OUT_OF_BOUND) {
-                        nearEdge = true;
-                    }
-                }
+
+            List<Float> offsets = new ArrayList<>(24);
+            for (int i = 0; i < 24; i++) {
+                offsets.add(0.0f);
             }
 
-            if (!nearEdge) {
-                List<Float> offsets = new ArrayList<>(24);
-                for (int i = 0; i < 24; i++) {
-                    offsets.add(0.0f);
-                }
+            // Calculate corner Y offsets from neighbor height differences
+            // Top Front Left (SW) - neighbors: West(-X,0), South(0,-Z), SW(-X,-Z)
+            float swOffset = calculateCornerOffset(flat, localX, localZ, myLevel, -1, 0, 0, -1, -1, -1, materialDef, extraBlocksCache);
 
-                // Calculate corner Y offsets from neighbor height differences
-                // Top Front Left (SW) - neighbors: West(-X,0), South(0,-Z), SW(-X,-Z)
-                float swOffset = calculateCornerOffset(flat, localX, localZ, myLevel, -1, 0, 0, -1, -1, -1, materialDef, extraBlocksCache);
+            // Top Front Right (SE) - neighbors: East(+X,0), South(0,-Z), SE(+X,-Z)
+            float seOffset = calculateCornerOffset(flat, localX, localZ, myLevel, 1, 0, 0, -1, 1, -1, materialDef, extraBlocksCache);
 
-                // Top Front Right (SE) - neighbors: East(+X,0), South(0,-Z), SE(+X,-Z)
-                float seOffset = calculateCornerOffset(flat, localX, localZ, myLevel, 1, 0, 0, -1, 1, -1, materialDef, extraBlocksCache);
+            // Top Back Left (NW) - neighbors: West(-X,0), North(0,+Z), NW(-X,+Z)
+            float nwOffset = calculateCornerOffset(flat, localX, localZ, myLevel, -1, 0, 0, 1, -1, 1, materialDef, extraBlocksCache);
 
-                // Top Back Left (NW) - neighbors: West(-X,0), North(0,+Z), NW(-X,+Z)
-                float nwOffset = calculateCornerOffset(flat, localX, localZ, myLevel, -1, 0, 0, 1, -1, 1, materialDef, extraBlocksCache);
+            // Top Back Right (NE) - neighbors: East(+X,0), North(0,+Z), NE(+X,+Z)
+            float neOffset = calculateCornerOffset(flat, localX, localZ, myLevel, 1, 0, 0, 1, 1, 1, materialDef, extraBlocksCache);
 
-                // Top Back Right (NE) - neighbors: East(+X,0), North(0,+Z), NE(+X,+Z)
-                float neOffset = calculateCornerOffset(flat, localX, localZ, myLevel, 1, 0, 0, 1, 1, 1, materialDef, extraBlocksCache);
+            // Assign Y offsets (NW/NE swapped to match 3D engine back-corner mirroring)
+            offsets.set(13, swOffset);  // top front left  Y (SW)
+            offsets.set(16, seOffset);  // top front right Y (SE)
+            offsets.set(19, neOffset);  // top back left   Y (NW position ← NE offset)
+            offsets.set(22, nwOffset);  // top back right  Y (NE position ← NW offset)
 
-                // Assign Y offsets (NW/NE swapped to match 3D engine back-corner mirroring)
-                offsets.set(13, swOffset);  // top front left  Y (SW)
-                offsets.set(16, seOffset);  // top front right Y (SE)
-                offsets.set(19, neOffset);  // top back left   Y (NW position ← NE offset)
-                offsets.set(22, nwOffset);  // top back right  Y (NE position ← NW offset)
+            // Set offsets on block
+            block.setOffsets(offsets);
 
-                // Set offsets on block
-                block.setOffsets(offsets);
-
-                log.trace("Applied corner smoothing to block at ({},{}) with offsets SW:{}, SE:{}, NW:{}, NE:{}",
-                        localX, localZ, swOffset, seOffset, nwOffset, neOffset);
-            }
+            log.trace("Applied corner smoothing to block at ({},{}) with offsets SW:{}, SE:{}, NW:{}, NE:{}",
+                    localX, localZ, swOffset, seOffset, nwOffset, neOffset);
         }
 
-        return true;  // Block should be exported
+
     }
 
     /**
@@ -867,9 +846,9 @@ public class FlatExportService {
         int neighbor2Level = getEffectiveNeighborLevel(flat, localX + dx2, localZ + dz2, myLevel, extraBlocksCache);
         int neighbor3Level = getEffectiveNeighborLevel(flat, localX + dx3, localZ + dz3, myLevel, extraBlocksCache);
 
-        int neighbor1Material = getEffectiveNeighborMaterial(flat, localX + dx1, localZ + dz1);
-        int neighbor2Material = getEffectiveNeighborMaterial(flat, localX + dx2, localZ + dz2);
-        int neighbor3Material = getEffectiveNeighborMaterial(flat, localX + dx3, localZ + dz3);
+        int neighbor1Material = flat.getColumnRobust(localX + dx1, localZ + dz1);
+        int neighbor2Material = flat.getColumnRobust(localX + dx2, localZ + dz2);
+        int neighbor3Material = flat.getColumnRobust(localX + dx3, localZ + dz3);
 
         boolean oneNotSetMaterial = neighbor1Material == WFlat.MATERIAL_NOT_SET || neighbor2Material == WFlat.MATERIAL_NOT_SET || neighbor3Material == WFlat.MATERIAL_NOT_SET
                 || neighbor1Material == WFlat.MATERIAL_NOT_SET_MUTABLE || neighbor2Material == WFlat.MATERIAL_NOT_SET_MUTABLE || neighbor3Material == WFlat.MATERIAL_NOT_SET_MUTABLE
@@ -998,6 +977,11 @@ public class FlatExportService {
             return myLevel;
         }
 
+        var material = flat.getColumnRobust(x, z);
+        if (material == WFlat.MATERIAL_NOT_SET || material == WFlat.MATERIAL_NOT_SET_MUTABLE || material == WFlat.MATERIAL_OUT_OF_BOUND) {
+            return myLevel;
+        }
+
         int baseLevel = flat.getLevel(x, z);
 
         // Get extraBlocks from cache
@@ -1019,24 +1003,6 @@ public class FlatExportService {
         }
 
         return highestRelevantY;
-    }
-
-    /**
-     * Get effective neighbor column material from flat
-     * Only considers extraBlocks in the range of myLevel-1 to myLevel+1.
-     * ExtraBlocks outside this range are not relevant for offset calculation.
-     *
-     * @param flat The flat terrain data
-     * @param x Column X coordinate
-     * @param z Column Z coordinate
-     * @return Effective highest level within relevant range (myLevel-1 to myLevel+1)
-     */
-    private int getEffectiveNeighborMaterial(WFlat flat, int x, int z) {
-        if (x < 0 || z < 0 || x >= flat.getSizeX() || z >= flat.getSizeZ()) {
-            return WFlat.MATERIAL_OUT_OF_BOUND;
-        }
-
-        return flat.getColumn(x, z);
     }
 
     /**
