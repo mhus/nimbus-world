@@ -92,23 +92,24 @@ public class PositionPoint extends Point {
         int q = 0;
         int r = 0;
 
+        // North = r+ = Z+ in 3D world. No exceptions.
         switch (side) {
             case N:  // North
-                r = -distance;
+                r = distance;
                 break;
             case NE: // North-East
                 q = distance;
-                r = -distance;
+                r = distance;
                 break;
             case E:  // East
                 q = distance;
                 break;
             case SE: // South-East
-                r = distance;
+                r = -distance;
                 break;
             case S:  // South
                 q = -distance;
-                r = distance;
+                r = -distance;
                 break;
             case SW: // South-West
                 q = -distance;
@@ -117,7 +118,7 @@ public class PositionPoint extends Point {
                 q = -distance;
                 break;
             case NW: // North-West
-                r = -distance;
+                r = distance;
                 break;
             default:
                 // CENTER or unknown - stay at center
@@ -161,32 +162,33 @@ public class PositionPoint extends Point {
         int q = 0;
         int r = 0;
 
+        // North = r+ = Z+ in 3D world. No exceptions.
         switch (getDirection()) {
-            case Direction.N:  // North: r decreases
-                r = -distance;
+            case Direction.N:  // North: r increases
+                r = distance;
                 break;
-            case Direction.NE: // North-East: q increases, r decreases (diagonal)
+            case Direction.NE: // North-East: q increases, r increases
                 q = distance;
-                r = -distance;
+                r = distance;
                 break;
             case Direction.E:  // East: q increases
                 q = distance;
                 break;
-            case Direction.SE: // South-East: r increases
-                r = distance;
+            case Direction.SE: // South-East: r decreases
+                r = -distance;
                 break;
-            case Direction.S:  // South: q decreases, r increases (diagonal)
+            case Direction.S:  // South: q decreases, r decreases
                 q = -distance;
-                r = distance;
+                r = -distance;
                 break;
             case Direction.SW: // South-West: q decreases
                 q = -distance;
                 break;
-            case Direction.W:  // West: q decreases (mirrored to East)
+            case Direction.W:  // West: q decreases
                 q = -distance;
                 break;
-            case Direction.NW: // North-West: r decreases (mirrored to SE)
-                r = -distance;
+            case Direction.NW: // North-West: r increases
+                r = distance;
                 break;
             default:
                 // CENTER or unknown - stay at 0,0
@@ -247,23 +249,24 @@ public class PositionPoint extends Point {
         int offsetR = 0;
 
         if (direction != null) {
+            // North = r+ = Z+ in 3D world. No exceptions.
             switch (direction) {
                 case N:  // North
-                    offsetR = -distance;
+                    offsetR = distance;
                     break;
                 case NE: // North-East
                     offsetQ = distance;
-                    offsetR = -distance;
+                    offsetR = distance;
                     break;
                 case E:  // East
                     offsetQ = distance;
                     break;
                 case SE: // South-East
-                    offsetR = distance;
+                    offsetR = -distance;
                     break;
                 case S:  // South
                     offsetQ = -distance;
-                    offsetR = distance;
+                    offsetR = -distance;
                     break;
                 case SW: // South-West
                     offsetQ = -distance;
@@ -272,7 +275,7 @@ public class PositionPoint extends Point {
                     offsetQ = -distance;
                     break;
                 case NW: // North-West
-                    offsetR = -distance;
+                    offsetR = distance;
                     break;
                 default:
                     // No offset

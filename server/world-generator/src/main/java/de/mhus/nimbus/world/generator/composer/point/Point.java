@@ -244,15 +244,7 @@ public abstract class Point extends Feature {
      * Gets a grid coordinate at the specified edge relative to center.
      */
     private HexVector2 getGridAtEdge(HexVector2 center, de.mhus.nimbus.world.shared.world.WHexGrid.EDGE edge) {
-        // Offset by 1 grid in the direction of the edge
-        return switch (edge) {
-            case NORTH_EAST -> HexVector2.builder().q(center.getQ() + 1).r(center.getR() - 1).build();
-            case EAST -> HexVector2.builder().q(center.getQ() + 1).r(center.getR()).build();
-            case SOUTH_EAST -> HexVector2.builder().q(center.getQ()).r(center.getR() + 1).build();
-            case SOUTH_WEST -> HexVector2.builder().q(center.getQ() - 1).r(center.getR() + 1).build();
-            case WEST -> HexVector2.builder().q(center.getQ() - 1).r(center.getR()).build();
-            case NORTH_WEST -> HexVector2.builder().q(center.getQ()).r(center.getR() - 1).build();
-        };
+        return de.mhus.nimbus.world.shared.util.HexMathUtil.getNeighborPosition(center, edge);
     }
 
     /**

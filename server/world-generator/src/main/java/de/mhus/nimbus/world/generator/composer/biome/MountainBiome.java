@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.shared.utils.TypeUtil;
 import de.mhus.nimbus.world.generator.composer.feature.FeatureHexGrid;
-import de.mhus.nimbus.world.generator.composer.util.HexComposeUtil;
+import de.mhus.nimbus.world.shared.util.HexMathUtil;
 import de.mhus.nimbus.world.shared.world.WHexGrid.EDGE;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -177,7 +177,7 @@ public class MountainBiome extends Biome {
 
             // Check all 6 hex neighbors using odd-r offset coordinates
             for (EDGE edge : EDGE.values()) {
-                HexVector2 neighbor = HexComposeUtil.getNeighborPosition(coord, edge);
+                HexVector2 neighbor = HexMathUtil.getNeighborPosition(coord, edge);
                 String neighborKey = TypeUtil.toStringHexCoord(neighbor.getQ(), neighbor.getR());
 
                 // If neighbor is part of this mountain, add ridge entry
@@ -210,5 +210,5 @@ public class MountainBiome extends Biome {
     }
 
     // getHexNeighbor, getHexDirectionDelta, getDirectionSide replaced by
-    // HexComposeUtil.getNeighborPosition() and direct EDGE iteration above
+    // HexMathUtil.getNeighborPosition() and direct EDGE iteration above
 }

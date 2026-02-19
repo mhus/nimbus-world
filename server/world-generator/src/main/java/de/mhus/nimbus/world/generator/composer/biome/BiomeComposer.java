@@ -8,7 +8,7 @@ import de.mhus.nimbus.world.generator.composer.area.AreaShape;
 import de.mhus.nimbus.world.generator.composer.build.CompositionContext;
 import de.mhus.nimbus.world.generator.composer.build.HexComposition;
 import de.mhus.nimbus.world.generator.composer.structure.PreparedPosition;
-import de.mhus.nimbus.world.generator.composer.util.HexComposeUtil;
+import de.mhus.nimbus.world.shared.util.HexMathUtil;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
 import lombok.extern.slf4j.Slf4j;
 
@@ -367,9 +367,10 @@ public class BiomeComposer {
      * Calculates hex coordinate offset for given angle and distance
      */
     private HexVector2 calculateHexOffset(int angle, int distance) {
-        // Pointy-top hex directions (axial coordinates, spike points up)
-        // 0° (NE): (1, -1), 60° (E): (1, 0), 120° (SE): (0, 1)
-        // 180° (SW): (-1, 1), 240° (W): (-1, 0), 300° (NW): (0, -1)
+        // Pointy-top hex directions in odd-r offset coordinates.
+        // North = r+ = Z+ in 3D world. No exceptions.
+        // 0° (NE): (1, 1), 60° (E): (1, 0), 120° (SE): (0, -1)
+        // 180° (SW): (-1, -1), 240° (W): (-1, 0), 300° (NW): (0, 1)
 
         // Find closest hex direction
         int closestAngle = 0;
@@ -383,15 +384,15 @@ public class BiomeComposer {
             }
         }
 
-        // Get direction unit vector for pointy-top hex
+        // Get direction unit vector for pointy-top hex (North = r+)
         int dq = 0, dr = 0;
         switch (closestAngle) {
-            case 0:   dq = 1;  dr = -1; break; // NE (top-right)
-            case 60:  dq = 1;  dr = 0;  break; // E (right)
-            case 120: dq = 0;  dr = 1;  break; // SE (bottom-right)
-            case 180: dq = -1; dr = 1;  break; // SW (bottom-left)
-            case 240: dq = -1; dr = 0;  break; // W (left)
-            case 300: dq = 0;  dr = -1; break; // NW (top-left)
+            case 0:   dq = 1;  dr = 1;  break; // NE (north-east, r+ = north)
+            case 60:  dq = 1;  dr = 0;  break; // E  (east)
+            case 120: dq = 0;  dr = -1; break; // SE (south-east, r- = south)
+            case 180: dq = -1; dr = -1; break; // SW (south-west, r- = south)
+            case 240: dq = -1; dr = 0;  break; // W  (west)
+            case 300: dq = 0;  dr = 1;  break; // NW (north-west, r+ = north)
         }
 
         return HexVector2.builder()
@@ -492,7 +493,7 @@ public class BiomeComposer {
             // else: continue straight
 
             // Move to next hex using odd-r offset neighbor
-            current = HexComposeUtil.getNeighborPosition(current, DIRECTION_EDGES[direction]);
+            current = HexMathUtil.getNeighborPosition(current, DIRECTION_EDGES[direction]);
 
             coords.add(current);
         }
@@ -565,14 +566,14 @@ public class BiomeComposer {
         // Start at position 'radius' steps WEST from center
         HexVector2 current = center;
         for (int i = 0; i < radius; i++) {
-            current = HexComposeUtil.getNeighborPosition(current, WHexGrid.EDGE.WEST);
+            current = HexMathUtil.getNeighborPosition(current, WHexGrid.EDGE.WEST);
         }
 
         // Walk around the ring
         for (WHexGrid.EDGE direction : walkDirections) {
             for (int step = 0; step < radius; step++) {
                 ring.add(current);
-                current = HexComposeUtil.getNeighborPosition(current, direction);
+                current = HexMathUtil.getNeighborPosition(current, direction);
             }
         }
 

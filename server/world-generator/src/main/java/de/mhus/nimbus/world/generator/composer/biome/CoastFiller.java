@@ -3,7 +3,7 @@ package de.mhus.nimbus.world.generator.composer.biome;
 import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.shared.utils.TypeUtil;
 import de.mhus.nimbus.world.generator.composer.build.HexComposition;
-import de.mhus.nimbus.world.generator.composer.util.HexComposeUtil;
+import de.mhus.nimbus.world.shared.util.HexMathUtil;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
 import lombok.extern.slf4j.Slf4j;
 
@@ -133,7 +133,7 @@ public class CoastFiller {
     private List<HexVector2> getNeighbors(HexVector2 coord) {
         List<HexVector2> neighbors = new ArrayList<>();
         for (WHexGrid.EDGE edge : WHexGrid.EDGE.values()) {
-            neighbors.add(HexComposeUtil.getNeighborPosition(coord, edge));
+            neighbors.add(HexMathUtil.getNeighborPosition(coord, edge));
         }
         return neighbors;
     }

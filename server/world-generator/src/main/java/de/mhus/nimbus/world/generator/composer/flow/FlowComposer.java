@@ -14,7 +14,7 @@ import de.mhus.nimbus.world.generator.composer.biome.Biome;
 import de.mhus.nimbus.world.generator.composer.biome.BiomePlacementResult;
 import de.mhus.nimbus.world.generator.composer.biome.BiomeType;
 import de.mhus.nimbus.world.generator.composer.point.Point;
-import de.mhus.nimbus.world.generator.composer.util.HexComposeUtil;
+import de.mhus.nimbus.world.shared.util.HexMathUtil;
 import de.mhus.nimbus.world.shared.world.WHexGrid.EDGE;
 import lombok.Builder;
 import lombok.Data;
@@ -523,7 +523,7 @@ public class FlowComposer {
 
     /**
      * Creates a hexagonal ring around a center point at the given radius.
-     * Uses odd-r offset hex coordinate system via HexComposeUtil.getNeighborPosition().
+     * Uses odd-r offset hex coordinate system via HexMathUtil.getNeighborPosition().
      *
      * @param center Center coordinate
      * @param radius Ring radius (distance from center)
@@ -545,14 +545,14 @@ public class FlowComposer {
         // Start at position 'radius' steps WEST from center
         HexVector2 current = center;
         for (int i = 0; i < radius; i++) {
-            current = HexComposeUtil.getNeighborPosition(current, EDGE.WEST);
+            current = HexMathUtil.getNeighborPosition(current, EDGE.WEST);
         }
 
         // Walk around the ring
         for (EDGE direction : walkDirections) {
             for (int j = 0; j < radius; j++) {
                 ring.add(current);
-                current = HexComposeUtil.getNeighborPosition(current, direction);
+                current = HexMathUtil.getNeighborPosition(current, direction);
             }
         }
 
@@ -700,7 +700,7 @@ public class FlowComposer {
 
     /**
      * Finds a neighbor that deviates left or right from the best step.
-     * Uses odd-r offset coordinates via HexComposeUtil.
+     * Uses odd-r offset coordinates via HexMathUtil.
      */
     private HexVector2 findDeviatedNeighbor(HexVector2 current, HexVector2 bestStep,
                                             List<HexVector2> neighbors, boolean deviateLeft) {
@@ -743,7 +743,7 @@ public class FlowComposer {
             deviatedIndex = (currentDirIndex + 1) % clockwiseOrder.length;
         }
 
-        return HexComposeUtil.getNeighborPosition(current, clockwiseOrder[deviatedIndex]);
+        return HexMathUtil.getNeighborPosition(current, clockwiseOrder[deviatedIndex]);
     }
 
     /**
@@ -752,7 +752,7 @@ public class FlowComposer {
     private List<HexVector2> getHexNeighbors(HexVector2 coord) {
         List<HexVector2> neighbors = new ArrayList<>();
         for (EDGE edge : EDGE.values()) {
-            neighbors.add(HexComposeUtil.getNeighborPosition(coord, edge));
+            neighbors.add(HexMathUtil.getNeighborPosition(coord, edge));
         }
         return neighbors;
     }
@@ -1858,7 +1858,7 @@ public class FlowComposer {
 
         // Check each direction using odd-r offset coordinates
         for (EDGE side : EDGE.values()) {
-            HexVector2 neighbor = HexComposeUtil.getNeighborPosition(grid.getCoordinate(), side);
+            HexVector2 neighbor = HexMathUtil.getNeighborPosition(grid.getCoordinate(), side);
 
             // Side is exposed if neighbor is not in biome
             if (!biomeCoords.contains(coordKey(neighbor))) {

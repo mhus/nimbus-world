@@ -197,7 +197,7 @@ public class HexGridSchemaImageCreator {
         HexVector2 coord = hexGrid.getCoordinate();
         int[] cartesian = HexMathUtil.hexToCartesian(coord, hexGridSize);
 
-        // Flip Z: North (Z-) at top of image
+        // Flip Z: North (Z+) at top of image
         int hexCenterX = cartesian[0] - bounds.minX + PADDING;
         int hexCenterZ = bounds.maxZ - cartesian[1] + PADDING;
 

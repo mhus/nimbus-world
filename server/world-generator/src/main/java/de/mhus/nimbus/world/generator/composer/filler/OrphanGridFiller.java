@@ -246,7 +246,7 @@ public class OrphanGridFiller {
     private List<HexVector2> getNeighbors(HexVector2 coord) {
         List<HexVector2> neighbors = new ArrayList<>();
         for (de.mhus.nimbus.world.shared.world.WHexGrid.EDGE edge : de.mhus.nimbus.world.shared.world.WHexGrid.EDGE.values()) {
-            neighbors.add(de.mhus.nimbus.world.generator.composer.util.HexComposeUtil.getNeighborPosition(coord, edge));
+            neighbors.add(de.mhus.nimbus.world.shared.util.HexMathUtil.getNeighborPosition(coord, edge));
         }
         return neighbors;
     }

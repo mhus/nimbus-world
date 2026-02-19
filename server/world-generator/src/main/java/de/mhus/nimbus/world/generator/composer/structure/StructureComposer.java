@@ -254,23 +254,24 @@ public class StructureComposer {
         int q = center.getQ();
         int r = center.getR();
 
+        // North = r+ = Z+ in 3D world. No exceptions.
         switch (direction.toUpperCase()) {
             case "N":
-                r -= distance;
+                r += distance;
                 break;
             case "NE":
                 q += distance;
-                r -= distance;
+                r += distance;
                 break;
             case "E":
                 q += distance;
                 break;
             case "SE":
-                r += distance;
+                r -= distance;
                 break;
             case "S":
                 q -= distance;
-                r += distance;
+                r -= distance;
                 break;
             case "SW":
                 q -= distance;
@@ -279,7 +280,7 @@ public class StructureComposer {
                 q -= distance;
                 break;
             case "NW":
-                r -= distance;
+                r += distance;
                 break;
             case "CENTER":
             default:

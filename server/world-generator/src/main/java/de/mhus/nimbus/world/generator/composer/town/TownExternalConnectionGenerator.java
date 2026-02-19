@@ -316,16 +316,16 @@ public class TownExternalConnectionGenerator {
      * @return Array [dq, dr]
      */
     private int[] getAxialOffset(Direction direction) {
-        // Pointy-top hexagon offsets (district grids use pointy-top orientation)
+        // Pointy-top hexagon offsets. North = r+ = Z+ in 3D world.
         switch (direction) {
-            case N:  return new int[]{0, -1};
-            case NE: return new int[]{1, -1};
+            case N:  return new int[]{0, 1};
+            case NE: return new int[]{1, 1};
             case E:  return new int[]{1, 0};
-            case SE: return new int[]{1, 1};
-            case S:  return new int[]{0, 1};
-            case SW: return new int[]{-1, 1};
+            case SE: return new int[]{1, -1};
+            case S:  return new int[]{0, -1};
+            case SW: return new int[]{-1, -1};
             case W:  return new int[]{-1, 0};
-            case NW: return new int[]{-1, -1};
+            case NW: return new int[]{-1, 1};
             default: return new int[]{0, 0};
         }
     }
