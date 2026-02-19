@@ -870,15 +870,15 @@ public class FlatExportService {
         int diff3 = neighbor3Level - myLevel;
 
         boolean n1Lower = diff1 < 0;
-        boolean n1Same = diff1 == 0;
+        // boolean n1Same = diff1 == 0;
         boolean n1Higher = diff1 > 0;
 
         boolean n2Lower = diff2 < 0;
-        boolean n2Same = diff2 == 0;
+        // boolean n2Same = diff2 == 0;
         boolean n2Higher = diff2 > 0;
 
         boolean n3Lower = diff3 < 0;
-        boolean n3Same = diff3 == 0;
+        // boolean n3Same = diff3 == 0;
         boolean n3Higher = diff3 > 0;
 
         boolean anyHigher = n1Higher || n2Higher || n3Higher;

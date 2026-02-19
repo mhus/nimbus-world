@@ -112,11 +112,11 @@ public abstract class HexCompositeBuilderAbstract {
         assertNotNull(composition.getContinents(), "Should have continent definitions: %s".formatted(name));
         assertFalse(composition.getContinents().isEmpty(), "Should have at least one continent: %s".formatted(name));
 
-        Continent mainContinent = composition.getContinents().get(0);
-        log.info("Continent: {} (type={}, landLevel={}, landOffset={})",
-            mainContinent.getName(), mainContinent.getBiomeType(),
-            mainContinent.getParameters().get("g_asl"),
-            mainContinent.getParameters().get("g_offset"));
+//        Continent mainContinent = composition.getContinents().get(0);
+//        log.info("Continent: {} (type={}, landLevel={}, landOffset={})",
+//            mainContinent.getName(), mainContinent.getBiomeType(),
+//            mainContinent.getParameters().get("g_asl"),
+//            mainContinent.getParameters().get("g_offset"));
 
         // Create test world with publicData for hexGridSize
         WWorld testWorld = new WWorld();

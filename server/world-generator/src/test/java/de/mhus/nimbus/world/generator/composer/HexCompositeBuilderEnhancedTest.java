@@ -52,4 +52,9 @@ public class HexCompositeBuilderEnhancedTest extends HexCompositeBuilderAbstract
         composite("enhanced-test-town");
     }
 
+    @Test
+    public void testEnhancedExample1() throws Exception {
+        composite("enhanced-test-example1");
+    }
+
 }

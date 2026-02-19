@@ -1,0 +1,170 @@
+{
+  "name": "mistfall-reach",
+  "worldId": "mistfall-reach",
+  "title": "Mistfall Reach",
+  "description": "A small fantasy world with mountains, swamps, and forests.",
+  "version": "1.0.0",
+  "continents": [
+    {
+      "continentId": "main-continent",
+      "name": "Main Continent",
+      "biomeType": "PLAINS",
+      "minNeighbors": 2
+    }
+  ],
+  "features": [
+    {
+      "featureType": "mountain-biome",
+      "name": "stoneveil-mountains",
+      "title": "Stoneveil Mountains",
+      "type": "MOUNTAINS",
+      "height": "MEDIUM_PEAKS",
+      "shape": "CIRCLE",
+      "size": "MEDIUM",
+      "continentId": "main-continent",
+      "positions": [
+        {
+          "anchor": "origin",
+          "priority": 10
+        }
+      ]
+    },
+    {
+      "featureType": "swamp-biome",
+      "name": "whispering-marsh",
+      "title": "Whispering Marsh",
+      "type": "SWAMP",
+      "depth": "MEDIUM",
+      "shape": "CIRCLE",
+      "size": "LARGE",
+      "continentId": "main-continent",
+      "positions": [
+        {
+          "anchor": "stoneveil-mountains",
+          "direction": "S",
+          "distanceFrom": 1,
+          "distanceTo": 3,
+          "priority": 9
+        }
+      ]
+    },
+    {
+      "featureType": "island-biome",
+      "name": "mirehold-isles",
+      "title": "Mirehold Isles",
+      "type": "ISLAND",
+      "shape": "CIRCLE",
+      "size": "MEDIUM",
+      "continentId": "main-continent",
+      "positions": [
+        {
+          "anchor": "whispering-marsh",
+          "distanceFrom": 0,
+          "distanceTo": 0,
+          "priority": 8
+        }
+      ]
+    },
+    {
+      "featureType": "forest-biome",
+      "name": "greywillow-grove",
+      "title": "Greywillow Grove",
+      "type": "FOREST",
+      "density": "DENSE",
+      "shape": "CIRCLE",
+      "size": "MEDIUM",
+      "continentId": "main-continent",
+      "positions": [
+        {
+          "anchor": "whispering-marsh",
+          "direction": "W",
+          "distanceFrom": 5,
+          "distanceTo": 10,
+          "priority": 7
+        }
+      ]
+    },
+    {
+      "featureType": "point",
+      "name": "duskwater-source",
+      "title": "Duskwater Source",
+      "biomeId": "stoneveil-mountains",
+      "direction": "S",
+      "biomeDistance": "NORMAL"
+    },
+    {
+      "featureType": "point",
+      "name": "duskwater-waypoint",
+      "title": "Duskwater Waypoint",
+      "biomeId": "mirehold-isles",
+      "biomeDistance": "NEAR"
+    },
+    {
+      "featureType": "point",
+      "name": "duskwater-end",
+      "title": "Duskwater End",
+      "biomeId": "whispering-marsh",
+      "biomeSide": "S",
+      "sideOffset": 0.5
+    },
+    {
+      "featureType": "river",
+      "name": "duskwater-river",
+      "title": "Duskwater",
+      "type": "RIVER",
+      "startPointId": "duskwater-source",
+      "endPointId": "duskwater-end",
+      "waypointIds": [
+        "duskwater-waypoint"
+      ],
+      "widthBlocks": 5,
+      "depth": 3,
+      "levelMode": "ADJUST_MEAN",
+      "meanLevelOffset": -2,
+      "tendLeft": "MODERATE",
+      "tendRight": "MODERATE"
+    },
+    {
+      "featureType": "town",
+      "name": "fenwatch",
+      "title": "Fenwatch",
+      "style": "medieval",
+      "shape": "CIRCLE",
+      "size": "SMALL",
+      "continentId": "main-continent",
+      "positions": [
+        {
+          "anchor": "mirehold-isles",
+          "distanceFrom": 0,
+          "distanceTo": 0,
+          "priority": 6
+        }
+      ],
+      "districts": [
+        {
+          "name": "center",
+          "title": "Fenwatch Center",
+          "slots": "SMALL",
+          "places": [
+            {
+              "placeType": "road",
+              "name": "main-path",
+              "kind": "TRAIL",
+              "connectionPoint": true
+            },
+            {
+              "placeType": "building",
+              "name": "marsh-tavern",
+              "kind": "tavern"
+            },
+            {
+              "placeType": "free",
+              "name": "village-green",
+              "kind": "GARDEN"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
