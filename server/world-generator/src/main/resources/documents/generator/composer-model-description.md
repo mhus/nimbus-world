@@ -1067,7 +1067,7 @@ Defines positioning of features relative to anchors.
 ```java
 public class RelativePosition {
     private Direction direction;        // N, NE, E, SE, S, SW, W, NW
-    private DistanceRange distance;     // ADJACENT, NEAR, NORMAL, FAR, VERY_FAR
+    private DistanceRange distance;     // DIRECT_BEHIND, NEAR, NORMAL, FAR
     private String anchor;              // Name of anchor feature (or "origin")
     private int priority;               // Priority (higher = more important, default: 5)
     private Integer distanceFrom;       // Explicit distance min
@@ -1898,7 +1898,7 @@ private boolean connectionPoint;    // Is this a connection point for external r
 `N`, `NE`, `E`, `SE`, `S`, `SW`, `W`, `NW`
 
 ### DistanceRange
-DIRECT_BEHIND (1, 1), NEAR (1, 10), FAR (10, 20);
+DIRECT_BEHIND (1, 1), NEAR (1, 5), NORMAL(5, 10), FAR (10, 20);
 
 ### BiomeDistance
 `CENTER` (0), `NEAR` (1), `NORMAL` (2), `FAR` (3), `VERY_FAR` (4)
