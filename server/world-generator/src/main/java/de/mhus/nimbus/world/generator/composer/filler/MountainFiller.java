@@ -7,7 +7,7 @@ import de.mhus.nimbus.world.generator.composer.biome.PlacedBiome;
 import de.mhus.nimbus.world.generator.composer.biome.BiomePlacementResult;
 import de.mhus.nimbus.world.generator.composer.biome.BiomeType;
 import de.mhus.nimbus.world.generator.composer.biome.MountainBiome;
-import de.mhus.nimbus.world.shared.util.HexMathUtil;
+import de.mhus.nimbus.world.generator.composer.util.HexComposeUtil;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
 import lombok.extern.slf4j.Slf4j;
 
@@ -158,7 +158,7 @@ public class MountainFiller {
     private List<HexVector2> getNeighbors(HexVector2 coord) {
         List<HexVector2> neighbors = new ArrayList<>();
         for (WHexGrid.EDGE edge : WHexGrid.EDGE.values()) {
-            neighbors.add(HexMathUtil.getNeighborPosition(coord, edge));
+            neighbors.add(HexComposeUtil.getNeighborPosition(coord, edge));
         }
         return neighbors;
     }

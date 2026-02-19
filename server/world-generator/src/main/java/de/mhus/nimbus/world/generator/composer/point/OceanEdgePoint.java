@@ -147,7 +147,7 @@ public class OceanEdgePoint extends Point {
 
         for (de.mhus.nimbus.world.shared.world.WHexGrid.EDGE edge : de.mhus.nimbus.world.shared.world.WHexGrid.EDGE.values()) {
             de.mhus.nimbus.generated.types.HexVector2 neighborCoord =
-                de.mhus.nimbus.world.shared.util.HexMathUtil.getNeighborPosition(coord, edge);
+                de.mhus.nimbus.world.generator.composer.util.HexComposeUtil.getNeighborPosition(coord, edge);
 
             Area neighborBiome = getBiomeAt(neighborCoord, context);
             if (neighborBiome == null) {
@@ -213,7 +213,7 @@ public class OceanEdgePoint extends Point {
         // Check all 6 neighbors - if any neighbor is not in this biome, this is an edge
         for (de.mhus.nimbus.world.shared.world.WHexGrid.EDGE edge : de.mhus.nimbus.world.shared.world.WHexGrid.EDGE.values()) {
             de.mhus.nimbus.generated.types.HexVector2 neighborCoord =
-                de.mhus.nimbus.world.shared.util.HexMathUtil.getNeighborPosition(coord, edge);
+                de.mhus.nimbus.world.generator.composer.util.HexComposeUtil.getNeighborPosition(coord, edge);
 
             // Check if neighbor is in this biome
             boolean inBiome = biome.getAssignedCoordinates().stream()
@@ -234,7 +234,7 @@ public class OceanEdgePoint extends Point {
     private boolean hasOceanCoastNeighbor(de.mhus.nimbus.generated.types.HexVector2 coord, ComposeContext context) {
         for (de.mhus.nimbus.world.shared.world.WHexGrid.EDGE edge : de.mhus.nimbus.world.shared.world.WHexGrid.EDGE.values()) {
             de.mhus.nimbus.generated.types.HexVector2 neighborCoord =
-                de.mhus.nimbus.world.shared.util.HexMathUtil.getNeighborPosition(coord, edge);
+                de.mhus.nimbus.world.generator.composer.util.HexComposeUtil.getNeighborPosition(coord, edge);
 
             Area neighborBiome = getBiomeAt(neighborCoord, context);
             if (neighborBiome instanceof Biome) {
@@ -258,7 +258,7 @@ public class OceanEdgePoint extends Point {
         for (de.mhus.nimbus.generated.types.HexVector2 coord : biome.getAssignedCoordinates()) {
             for (de.mhus.nimbus.world.shared.world.WHexGrid.EDGE edge : de.mhus.nimbus.world.shared.world.WHexGrid.EDGE.values()) {
                 de.mhus.nimbus.generated.types.HexVector2 neighborCoord =
-                    de.mhus.nimbus.world.shared.util.HexMathUtil.getNeighborPosition(coord, edge);
+                    de.mhus.nimbus.world.generator.composer.util.HexComposeUtil.getNeighborPosition(coord, edge);
 
                 String key = TypeUtil.toStringHexCoord(neighborCoord);
                 if (checked.contains(key)) {

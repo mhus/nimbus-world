@@ -8,7 +8,7 @@ import de.mhus.nimbus.world.generator.composer.area.AreaShape;
 import de.mhus.nimbus.world.generator.composer.build.CompositionContext;
 import de.mhus.nimbus.world.generator.composer.build.HexComposition;
 import de.mhus.nimbus.world.generator.composer.structure.PreparedPosition;
-import de.mhus.nimbus.world.shared.util.HexMathUtil;
+import de.mhus.nimbus.world.generator.composer.util.HexComposeUtil;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
 import lombok.extern.slf4j.Slf4j;
 
@@ -492,7 +492,7 @@ public class BiomeComposer {
             // else: continue straight
 
             // Move to next hex using odd-r offset neighbor
-            current = HexMathUtil.getNeighborPosition(current, DIRECTION_EDGES[direction]);
+            current = HexComposeUtil.getNeighborPosition(current, DIRECTION_EDGES[direction]);
 
             coords.add(current);
         }
@@ -565,14 +565,14 @@ public class BiomeComposer {
         // Start at position 'radius' steps WEST from center
         HexVector2 current = center;
         for (int i = 0; i < radius; i++) {
-            current = HexMathUtil.getNeighborPosition(current, WHexGrid.EDGE.WEST);
+            current = HexComposeUtil.getNeighborPosition(current, WHexGrid.EDGE.WEST);
         }
 
         // Walk around the ring
         for (WHexGrid.EDGE direction : walkDirections) {
             for (int step = 0; step < radius; step++) {
                 ring.add(current);
-                current = HexMathUtil.getNeighborPosition(current, direction);
+                current = HexComposeUtil.getNeighborPosition(current, direction);
             }
         }
 

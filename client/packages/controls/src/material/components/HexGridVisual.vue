@@ -109,11 +109,13 @@ const isPanning = ref(false);
 const panStart = ref({ x: 0, y: 0 });
 
 /**
- * Convert hex coordinates to pixel coordinates (pointy-top)
+ * Convert hex coordinates to pixel coordinates (odd-r offset, pointy-top)
+ * Odd rows are shifted right by half a hex width.
  */
 const hexToPixel = (q: number, r: number): { x: number; y: number } => {
-  const x = HEX_SIZE * (Math.sqrt(3) * q + Math.sqrt(3) / 2 * r);
-  const y = -(HEX_SIZE * (3 / 2 * r));
+  const isOddRow = Math.abs(r) % 2 !== 0;
+  const x = HEX_SIZE * Math.sqrt(3) * (q + (isOddRow ? 0.5 : 0));
+  const y = -(HEX_SIZE * (3 / 2) * r);
   return { x, y };
 };
 
@@ -132,17 +134,30 @@ const getHexPoints = (centerX: number, centerY: number): string => {
 };
 
 /**
- * Get all neighbor positions
+ * Get all neighbor positions (odd-r offset coordinates)
+ * Neighbor offsets differ for even and odd rows.
  */
 const getNeighbors = (q: number, r: number): Array<{ q: number; r: number }> => {
-  return [
-    { q: q + 1, r: r },
-    { q: q + 1, r: r - 1 },
-    { q: q, r: r - 1 },
-    { q: q - 1, r: r },
-    { q: q - 1, r: r + 1 },
-    { q: q, r: r + 1 },
-  ];
+  const isOddRow = Math.abs(r) % 2 !== 0;
+  if (isOddRow) {
+    return [
+      { q: q + 1, r: r },     // East
+      { q: q + 1, r: r - 1 }, // NE
+      { q: q,     r: r - 1 }, // NW
+      { q: q - 1, r: r },     // West
+      { q: q,     r: r + 1 }, // SW
+      { q: q + 1, r: r + 1 }, // SE
+    ];
+  } else {
+    return [
+      { q: q + 1, r: r },     // East
+      { q: q,     r: r - 1 }, // NE
+      { q: q - 1, r: r - 1 }, // NW
+      { q: q - 1, r: r },     // West
+      { q: q - 1, r: r + 1 }, // SW
+      { q: q,     r: r + 1 }, // SE
+    ];
+  }
 };
 
 /**
@@ -338,12 +353,35 @@ const endPan = () => {
 };
 
 /**
- * Wheel zoom
+ * Wheel zoom centered on mouse position
  */
 const handleWheel = (event: WheelEvent) => {
+  const svgEl = event.currentTarget as SVGSVGElement;
+  const rect = svgEl.getBoundingClientRect();
+
+  // Mouse position as fraction of SVG element (0..1)
+  const mouseXFraction = (event.clientX - rect.left) / rect.width;
+  const mouseYFraction = (event.clientY - rect.top) / rect.height;
+
+  // Mouse position in SVG coordinate space
+  const mouseSvgX = viewBox.value.x + mouseXFraction * viewBox.value.width;
+  const mouseSvgY = viewBox.value.y + mouseYFraction * viewBox.value.height;
+
+  // Apply zoom
   const delta = event.deltaY > 0 ? 0.9 : 1.1;
   scale.value = Math.max(0.2, Math.min(5, scale.value * delta));
-  updateViewBox();
+
+  // New dimensions
+  const newWidth = 1200 / scale.value;
+  const newHeight = 600 / scale.value;
+
+  // Adjust viewBox so the SVG point under the mouse stays at the same screen position
+  viewBox.value = {
+    x: mouseSvgX - mouseXFraction * newWidth,
+    y: mouseSvgY - mouseYFraction * newHeight,
+    width: newWidth,
+    height: newHeight
+  };
 };
 
 onMounted(() => {
