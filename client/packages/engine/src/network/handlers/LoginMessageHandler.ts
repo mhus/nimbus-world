@@ -47,15 +47,12 @@ export class LoginMessageHandler extends MessageHandler<LoginResponseData | Logi
       // Debug log the response structure
       logger.debug('Login response data', { data: successData });
 
-      // Generate player entity ID from username and sessionId
-      // Format: @{username}_{sessionId}
+      // Use player ID from server (format: @userId:characterId)
       if (this.appContext.playerInfo) {
-        const username = successData.userId || 'player';
-        const sessionId = successData.sessionId || 'unknown';
-        this.appContext.playerInfo.playerId = `@${username}_${sessionId}`;
-        this.appContext.playerInfo.title = successData.title || username;
+        this.appContext.playerInfo.playerId = successData.playerId;
+        this.appContext.playerInfo.title = successData.title || successData.userId;
 
-        logger.debug('Player ID generated', {
+        logger.debug('Player ID set from server', {
           playerId: this.appContext.playerInfo.playerId,
           displayName: this.appContext.playerInfo.title,
         });

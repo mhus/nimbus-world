@@ -114,6 +114,7 @@ public class LoginHandler implements MessageHandler {
 
         if (success) {
             data.put("userId", session.getPlayer().user().getUserId());
+            data.put("playerId", session.getEntityId());
             data.put("title", session.getTitle());
             data.put("sessionId", sessionId);
 

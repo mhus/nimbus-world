@@ -290,6 +290,13 @@ export class EntityService {
    * If entity doesn't exist, it will be loaded automatically
    */
   async setEntityPathway(pathway: EntityPathway): Promise<void> {
+    // Skip pathways for the current player (already managed locally by PlayerService)
+    const playerId = this.appContext.playerInfo?.playerId;
+    if (playerId && pathway.entityId === playerId) {
+      logger.debug('Skipping own player pathway from server', { entityId: pathway.entityId });
+      return;
+    }
+
     this.entityPathwayCache.set(pathway.entityId, pathway);
 
     // Check if entity exists

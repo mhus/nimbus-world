@@ -106,6 +106,8 @@ export class PlayerService {
   }
 
   // Third-person model rendering
+  private playerAvatarEntityId?: string;
+  private playerAvatarClientEntity?: any;
   private thirdPersonMesh?: any; // AbstractMesh from Babylon.js
   private thirdPersonAnimations?: any[]; // AnimationGroup[]
 
@@ -417,8 +419,7 @@ export class PlayerService {
    * Called every frame
    */
   private updateAvatar(): void {
-    const playerAvatarEntityId = (this as any).playerAvatarEntityId;
-    if (!playerAvatarEntityId || !this.entityRenderService) {
+    if (!this.playerAvatarEntityId || !this.entityRenderService) {
       return; // Avatar not loaded yet
     }
 
@@ -430,14 +431,14 @@ export class PlayerService {
 
     // Update entity transform via EntityRenderService
     this.entityRenderService.updateEntityTransform(
-      playerAvatarEntityId,
+      this.playerAvatarEntityId,
       this.playerEntity.position,
       { y: cameraYaw, p: 0 }
     );
 
     // Update pose (EntityRenderService checks if it changed internally)
     this.entityRenderService.updateEntityPose(
-      playerAvatarEntityId,
+      this.playerAvatarEntityId,
       currentPose,
       this.getPlayerSpeed()
     );
@@ -1084,12 +1085,10 @@ export class PlayerService {
       return;
     }
 
-    const playerAvatarEntityId = (this as any).playerAvatarEntityId;
-
     // If already loaded, just show it via EntityRenderService
-    if (playerAvatarEntityId && this.entityRenderService) {
+    if (this.playerAvatarEntityId && this.entityRenderService) {
       // Show entity via visibility event
-      this.entityRenderService.setEntityVisibility(playerAvatarEntityId, true);
+      this.entityRenderService.setEntityVisibility(this.playerAvatarEntityId, true);
       logger.debug('Third-person model shown via EntityRenderService');
       return;
     }
@@ -1102,13 +1101,12 @@ export class PlayerService {
    * Hide third-person model
    */
   private hideThirdPersonModel(): void {
-    const playerAvatarEntityId = (this as any).playerAvatarEntityId;
-    if (!playerAvatarEntityId || !this.entityRenderService) {
+    if (!this.playerAvatarEntityId || !this.entityRenderService) {
       return;
     }
 
     // Hide entity via visibility event
-    this.entityRenderService.setEntityVisibility(playerAvatarEntityId, false);
+    this.entityRenderService.setEntityVisibility(this.playerAvatarEntityId, false);
     logger.debug('Third-person model hidden via EntityRenderService');
   }
 
@@ -1139,9 +1137,12 @@ export class PlayerService {
         return;
       }
 
+      // Use real player ID from AppContext.PlayerInfo
+      const avatarEntityId = this.appContext.playerInfo?.playerId || '@player_avatar';
+
       // Create Entity for player avatar
       const playerAvatarEntity: any = {
-        id: '@player_avatar', // Special ID for player avatar
+        id: avatarEntityId,
         name: this.playerEntity.playerInfo.title,
         model: modelId,
         modelModifier: {},
@@ -1194,12 +1195,12 @@ export class PlayerService {
       logger.debug('Player avatar transform set');
 
       // Store entity ID and ClientEntity for later updates
-      (this as any).playerAvatarEntityId = '@player_avatar';
-      (this as any).playerAvatarClientEntity = clientEntity;
+      this.playerAvatarEntityId = avatarEntityId;
+      this.playerAvatarClientEntity = clientEntity;
 
       // Initially hide in ego-mode (if we're starting in ego-mode)
       if (this.isEgoView()) {
-        this.entityRenderService.setEntityVisibility('@player_avatar', false);
+        this.entityRenderService.setEntityVisibility(avatarEntityId, false);
         logger.debug('Player avatar initially hidden (ego-mode)');
       }
 
