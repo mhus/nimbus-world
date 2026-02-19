@@ -1,11 +1,13 @@
 package de.mhus.nimbus.world.generator.composer.build;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.world.generator.composer.feature.Feature;
 import de.mhus.nimbus.world.generator.composer.feature.FeatureHexGrid;
 import de.mhus.nimbus.world.generator.composer.flow.Flow;
 import de.mhus.nimbus.world.generator.composer.flow.FlowType;
 import de.mhus.nimbus.world.generator.composer.point.Point;
+import de.mhus.nimbus.world.generator.composer.town.TownGridConfig;
 import de.mhus.nimbus.world.shared.util.HexMathUtil;
 import lombok.Builder;
 import lombok.Data;
@@ -56,6 +58,13 @@ public class HexGridSchemaImageCreator {
     // Point colors
     private static final Color POINT_COLOR = Color.RED;
     private static final Color POINT_LABEL_COLOR = Color.YELLOW;
+
+    // Structure colors
+    private static final Color STRUCTURE_LABEL_COLOR = new Color(255, 165, 0); // Orange
+    private static final Color TOWN_SLOT_CROSS_COLOR = new Color(255, 80, 80);
+    private static final Color TOWN_SLOT_LABEL_COLOR = new Color(255, 255, 100);
+
+    private static final ObjectMapper objectMapper = new ObjectMapper();
 
     private final HexComposition composition;
 
@@ -133,6 +142,9 @@ public class HexGridSchemaImageCreator {
 
             // Draw points as cross markers
             drawPoints(g, bounds);
+
+            // Draw town slot markers (crosses + slot names from g_village)
+            drawTownSlots(g, hexGrids, bounds);
 
             // Draw labels on top of everything
             if (drawLabels || drawCoordinates) {
@@ -233,18 +245,36 @@ public class HexGridSchemaImageCreator {
         g.setFont(font);
         FontMetrics fm = g.getFontMetrics();
 
-        int lineY = hexCenterZ;
+        // Count lines to center vertically
+        int totalLines = 0;
+        String biomeName = drawLabels ? getBiomeLabel(hexGrid) : null;
+        String structureLabel = drawLabels ? getStructureLabel(hexGrid) : null;
+        if (biomeName != null) totalLines++;
+        if (structureLabel != null) totalLines++;
+        if (drawCoordinates) totalLines++;
+
+        int lineY = hexCenterZ - (totalLines * fm.getHeight()) / 2 + fm.getAscent();
 
         // Draw biome name
-        if (drawLabels) {
-            String biomeName = getBiomeLabel(hexGrid);
-            if (biomeName != null) {
-                int textWidth = fm.stringWidth(biomeName);
-                int textX = hexCenterX - textWidth / 2;
-                int textY = lineY - fm.getHeight() / 2;
-                drawTextWithShadow(g, biomeName, textX, textY, fm);
-                lineY += fm.getHeight();
-            }
+        if (biomeName != null) {
+            int textWidth = fm.stringWidth(biomeName);
+            int textX = hexCenterX - textWidth / 2;
+            drawTextWithShadow(g, biomeName, textX, lineY, fm);
+            lineY += fm.getHeight();
+        }
+
+        // Draw structure label (e.g. "fenwatch [TOWN]")
+        if (structureLabel != null) {
+            Font structFont = new Font("SansSerif", Font.ITALIC, Math.max(9, fontSize - 2));
+            g.setFont(structFont);
+            FontMetrics structFm = g.getFontMetrics();
+
+            int textWidth = structFm.stringWidth(structureLabel);
+            int textX = hexCenterX - textWidth / 2;
+            drawTextWithShadow(g, structureLabel, textX, lineY, structFm, STRUCTURE_LABEL_COLOR);
+            lineY += structFm.getHeight();
+
+            g.setFont(font);
         }
 
         // Draw coordinates
@@ -263,11 +293,13 @@ public class HexGridSchemaImageCreator {
     }
 
     private void drawTextWithShadow(Graphics2D g, String text, int x, int y, FontMetrics fm) {
-        // Shadow
+        drawTextWithShadow(g, text, x, y, fm, TEXT_COLOR);
+    }
+
+    private void drawTextWithShadow(Graphics2D g, String text, int x, int y, FontMetrics fm, Color color) {
         g.setColor(TEXT_SHADOW_COLOR);
         g.drawString(text, x + 1, y + 1);
-        // Text
-        g.setColor(TEXT_COLOR);
+        g.setColor(color);
         g.drawString(text, x, y);
     }
 
@@ -416,6 +448,77 @@ public class HexGridSchemaImageCreator {
     }
 
     /**
+     * Draws town/village slot markers (crosses + slot names) for all hex grids
+     * that have a g_village parameter. Same data as TownDebugOverlayHelper uses
+     * for the composite image.
+     */
+    private void drawTownSlots(Graphics2D g, List<FeatureHexGrid> hexGrids, CartesianBounds bounds) {
+        int slotCount = 0;
+        int crossSize = Math.max(6, hexGridSize / 30);
+        float crossWidth = Math.max(1.5f, hexGridSize / 150.0f);
+        int fontSize = Math.max(8, hexGridSize / 35);
+        Font slotFont = new Font("SansSerif", Font.PLAIN, fontSize);
+
+        Stroke originalStroke = g.getStroke();
+
+        for (FeatureHexGrid hexGrid : hexGrids) {
+            if (hexGrid.getCoordinate() == null || hexGrid.getParameters() == null) continue;
+
+            String villageParam = hexGrid.getParameters().get("g_village");
+            if (villageParam == null || villageParam.isBlank()) continue;
+
+            try {
+                TownGridConfig config = objectMapper.readValue(villageParam, TownGridConfig.class);
+                if (config.getPlaces() == null || config.getPlaces().isEmpty()) continue;
+
+                HexVector2 coord = hexGrid.getCoordinate();
+                int[] hexCenter = HexMathUtil.hexToCartesian(coord, hexGridSize);
+
+                for (TownGridConfig.PlacedPlaceConfig place : config.getPlaces()) {
+                    // localX/localZ in hex grid space (0..hexGridSize), center at hexGridSize/2
+                    double worldX = hexCenter[0] - hexGridSize / 2.0 + place.getLocalX();
+                    double worldZ = hexCenter[1] - hexGridSize / 2.0 + place.getLocalZ();
+
+                    // Convert world coordinates to image coordinates (Z-flip + padding)
+                    int imgX = (int) Math.round(worldX - bounds.minX + PADDING);
+                    int imgZ = (int) Math.round(bounds.maxZ - worldZ + PADDING);
+
+                    // Draw cross
+                    g.setColor(TOWN_SLOT_CROSS_COLOR);
+                    g.setStroke(new BasicStroke(crossWidth, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                    g.drawLine(imgX - crossSize, imgZ, imgX + crossSize, imgZ);
+                    g.drawLine(imgX, imgZ - crossSize, imgX, imgZ + crossSize);
+
+                    // Draw slot name
+                    String slotName = place.getName();
+                    if (slotName != null && !slotName.isEmpty()) {
+                        g.setFont(slotFont);
+                        FontMetrics fm = g.getFontMetrics();
+                        int textWidth = fm.stringWidth(slotName);
+                        int labelX = imgX - textWidth / 2;
+                        int labelY = imgZ + crossSize + fm.getAscent() + 1;
+
+                        g.setColor(TEXT_SHADOW_COLOR);
+                        g.drawString(slotName, labelX + 1, labelY + 1);
+                        g.setColor(TOWN_SLOT_LABEL_COLOR);
+                        g.drawString(slotName, labelX, labelY);
+                    }
+
+                    slotCount++;
+                }
+            } catch (Exception e) {
+                log.warn("Failed to parse g_village for grid [{},{}]: {}",
+                    hexGrid.getCoordinate().getQ(), hexGrid.getCoordinate().getR(), e.getMessage());
+            }
+        }
+
+        g.setStroke(originalStroke);
+        if (slotCount > 0) {
+            log.debug("Drew {} town slot markers on schema image", slotCount);
+        }
+    }
+
+    /**
      * Converts a hex coordinate to image pixel coordinates (with Z-flip and padding).
      */
     private int[] hexToImageCoords(HexVector2 coord, CartesianBounds bounds) {
@@ -472,6 +575,24 @@ public class HexGridSchemaImageCreator {
             }
         }
         return hexGrid.getName();
+    }
+
+    /**
+     * Returns a structure label if this hex has a structure placed on it.
+     * Reads "structureName" and "structure" from the parameters.
+     * Example: "fenwatch [TOWN]"
+     */
+    private String getStructureLabel(FeatureHexGrid hexGrid) {
+        if (hexGrid.getParameters() == null) return null;
+
+        String structureType = hexGrid.getParameters().get("structure");
+        if (structureType == null || structureType.isBlank()) return null;
+
+        String structureName = hexGrid.getParameters().get("structureName");
+        if (structureName != null && !structureName.isBlank()) {
+            return structureName + " [" + structureType.toUpperCase() + "]";
+        }
+        return "[" + structureType.toUpperCase() + "]";
     }
 
     /**
