@@ -447,13 +447,12 @@ public class HexGridCompositeImageJobExecutor implements JobExecutor {
      */
     private void addVillageSlotOverlays(HexGridCompositeImageCreator creator,
                                        Map<HexVector2, WHexGrid> hexGridsByCoord,
-                                       int flatSize) {
+                                       int hexGridSize) {
         if (hexGridsByCoord.isEmpty()) {
             return;
         }
 
-        // Use VillageDebugOverlayHelper to add village slot overlays
-        TownDebugOverlayHelper.addVillageSlotOverlaysFromHexGrids(creator, hexGridsByCoord, flatSize);
+        TownDebugOverlayHelper.addVillageSlotOverlaysFromHexGrids(creator, hexGridsByCoord, hexGridSize);
         log.info("Added village slot overlays for {} grids", hexGridsByCoord.size());
     }
 

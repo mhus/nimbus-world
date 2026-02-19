@@ -1,9 +1,11 @@
 package de.mhus.nimbus.world.generator.composer.town;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.world.generator.composer.build.HexGridCompositeImageCreator;
 import de.mhus.nimbus.world.generator.composer.image.CrossOverlay;
 import de.mhus.nimbus.world.generator.composer.image.TextOverlay;
+import de.mhus.nimbus.world.shared.world.WHexGrid;
 import lombok.extern.slf4j.Slf4j;
 
 import java.awt.*;
@@ -56,15 +58,14 @@ public class TownDebugOverlayHelper {
      * - Adds a CrossOverlay at the slot center
      * - Adds a TextOverlay with the slot name below the cross
      *
-     * @param creator The HexGridCompositeImageCreator to add overlays to
-     * @param hexGrids Map of hex coordinates to WHexGrid objects containing g_village parameters
-     * @param flatSize Size of each flat in pixels (used for positioning in the composite image)
+     * @param creator     The HexGridCompositeImageCreator to add overlays to
+     * @param hexGrids    Map of hex coordinates to WHexGrid objects containing g_village parameters
+     * @param hexGridSize Height of the hex grid in pixels (radius=hexGridSize/2, hexGridWidth=HexMathUtil.getGridWidth(hexGridSize))
      */
     public static void addVillageSlotOverlaysFromHexGrids(
             HexGridCompositeImageCreator creator,
-            Map<de.mhus.nimbus.generated.types.HexVector2,
-                    de.mhus.nimbus.world.shared.world.WHexGrid> hexGrids,
-            int flatSize) {
+            Map<HexVector2, WHexGrid> hexGrids,
+            int hexGridSize) {
 
         if (creator == null || hexGrids == null) {
             return;
@@ -72,13 +73,11 @@ public class TownDebugOverlayHelper {
 
         int addedOverlays = 0;
 
-        for (Map.Entry<de.mhus.nimbus.generated.types.HexVector2,
-                de.mhus.nimbus.world.shared.world.WHexGrid> entry : hexGrids.entrySet()) {
+        for (Map.Entry<HexVector2, WHexGrid> entry : hexGrids.entrySet()) {
 
-            de.mhus.nimbus.generated.types.HexVector2 coord = entry.getKey();
-            de.mhus.nimbus.world.shared.world.WHexGrid hexGrid = entry.getValue();
+            HexVector2 coord = entry.getKey();
+            WHexGrid hexGrid = entry.getValue();
 
-            // Check if this grid has a g_village parameter
             String villageParam = hexGrid.getParameters() != null ?
                     hexGrid.getParameters().get("g_village") : null;
 
@@ -87,47 +86,33 @@ public class TownDebugOverlayHelper {
             }
 
             try {
-                // Parse village configuration
                 TownGridConfig config = objectMapper.readValue(villageParam, TownGridConfig.class);
 
                 if (config.getPlaces() == null || config.getPlaces().isEmpty()) {
                     continue;
                 }
 
-                // Calculate hex center in world coordinates
-                // IMPORTANT: Use flatSize here, not hexGridSize, because HexGridCompositeImageCreator
-                // positions flats using flatSize
-                int[] hexCenter = de.mhus.nimbus.world.shared.util.HexMathUtil.hexToCartesian(coord, flatSize);
-                int hexCenterX = hexCenter[0];
-                int hexCenterZ = hexCenter[1];
+                // Hex center in the same coordinate system as HexGridCompositeImageCreator bounds
+                int[] hexCenter = de.mhus.nimbus.world.shared.util.HexMathUtil.hexToCartesian(coord, hexGridSize);
 
-                // Add overlays for each slot
                 for (TownGridConfig.PlacedPlaceConfig place : config.getPlaces()) {
-                    // Calculate world coordinates for this slot
-                    // IMPORTANT: In VillageBuilder, localX/localZ are calculated using:
-                    //   int localX = flat.getSizeX() / 2 + relativePos.getX()
-                    // where relativePos comes from HexLocalUtil.toHexGridLocalCenter() which uses hexGridSize (not flatSize)
-                    // Since hexGridSize = flatSize - 30, and the border is split evenly, we need to add 15 pixels
-                    // to account for the difference: (flatSize - hexGridSize) / 2 = 15
-                    double worldX = hexCenterX - flatSize / 2.0 + place.getLocalX() + 15; // TODO calculate hexGrid Size X and Z and not flat size
-                    double worldZ = hexCenterZ - flatSize / 2.0 + place.getLocalZ() + 15;
+                    // localX/localZ are in hex grid space (0..hexGridSize), center at hexGridSize/2.
+                    // Calculated in TownDesigner as: localX = hexGridSize / 2 + relativePos.getX()
+                    // World coordinate = hex top-left + local offset
+                    double worldX = hexCenter[0] - hexGridSize / 2.0 + place.getLocalX();
+                    double worldZ = hexCenter[1] - hexGridSize / 2.0 + place.getLocalZ();
 
-                    // Add CrossOverlay at slot center
                     creator.addOverlay(new CrossOverlay(worldX, worldZ, 15, Color.RED, 3.0f));
 
-                    // Add TextOverlay with slot name below the cross
                     String slotName = place.getName();
                     if (slotName != null && !slotName.isEmpty()) {
                         TextOverlay textOverlay = new TextOverlay(slotName, (int) worldX, (int) worldZ + 20, Color.YELLOW, 2);
-
-                        // Center the text horizontally
                         int textWidth = textOverlay.getTextWidth();
                         textOverlay.setX((int) worldX - textWidth / 2);
-
                         creator.addOverlay(textOverlay);
                     }
 
-                    addedOverlays += 2; // Cross + Text
+                    addedOverlays += 2;
                 }
 
                 log.debug("Added {} overlays for village district '{}' at [{},{}]",
