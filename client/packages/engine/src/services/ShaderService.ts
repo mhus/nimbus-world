@@ -320,7 +320,7 @@ export class ShaderService {
    * Register custom wind shader code with Babylon.js
    */
   private registerWindShaderCode(): void {
-    // Vertex shader with arc-based static wind bending
+    // Vertex shader with arc-based wind bending + oscillation
     Effect.ShadersStore['windVertexShader'] = `
       precision highp float;
 
@@ -331,13 +331,14 @@ export class ShaderService {
       attribute vec4 color;
 
       // Wind per-vertex
-      attribute float windHeight;     // Height from pivot in blocks (= block.level)
-      attribute float windLeafiness;  // For later (leaf movement)
+      attribute float windHeight;     // Height from pivot in blocks (level starts at 0)
+      attribute float windLeafiness;  // Oscillation amplitude (0=none, 1=strong)
       attribute float windStability;  // Stability (0=flexible, 1=rigid)
 
       // Uniforms
       uniform mat4 worldViewProjection;
       uniform mat4 world;
+      uniform float time;
       uniform vec2 windDirection;
       uniform float windStrength;
 
@@ -350,8 +351,19 @@ export class ShaderService {
         vec3 pos = position;
 
         float h = windHeight;
-        float bendFactor = windStrength * (1.0 - windStability);
-        float theta = bendFactor * 0.3;
+        float flex = 1.0 - windStability;
+
+        // 1. Static bending: proportional to windStrength
+        float thetaBend = windStrength * flex * 0.3;
+
+        // 2. Oscillation: leafiness controls amplitude, saturates at higher wind
+        //    Phase shift from world position for variety between trees
+        vec4 worldPos = world * vec4(position, 1.0);
+        float phase = worldPos.x * 0.1 + worldPos.z * 0.13;
+        float oscWind = sqrt(windStrength);  // saturates: grows fast at low wind, flattens at high
+        float thetaOsc = windLeafiness * oscWind * flex * sin(time * 2.0 + phase) * 0.15;
+
+        float theta = thetaBend + thetaOsc;
 
         if (h > 0.0 && abs(theta) > 0.001) {
           vec2 windDir = length(windDirection) > 0.01
@@ -431,6 +443,7 @@ export class ShaderService {
         uniforms: [
           'worldViewProjection',
           'world',
+          'time',
           'windDirection',
           'windStrength',
           'textureSampler',
@@ -469,6 +482,14 @@ export class ShaderService {
 
     // Store material for automatic updates
     this.windMaterials.push(material);
+
+    // Update time uniform every frame
+    let totalTime = 0;
+    const scene = this.scene;
+    scene.onBeforeRenderObservable.add(() => {
+      totalTime += scene.getEngine().getDeltaTime() / 1000.0;
+      material.setFloat('time', totalTime);
+    });
 
     // If EnvironmentService is already connected, update this material immediately
     if (this.environmentService) {
