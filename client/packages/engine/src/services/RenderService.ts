@@ -353,6 +353,8 @@ export class RenderService {
         // Check if this material group needs wind attributes
         // Derive from materialKey which already resolves effect from both texture and visibility level
         const needsWind = materialKey.includes(`eff:${BlockEffect.WIND}`);
+        const needsUndulation = materialKey.includes(`eff:${BlockEffect.UNDULATION}`);
+        const needsWindAttributes = needsWind || needsUndulation;
 
         const faceData: FaceData = {
           positions: [],
@@ -360,7 +362,7 @@ export class RenderService {
           uvs: [],
           normals: [],
           // Only initialize wind-specific attributes if needed
-          ...(needsWind && {
+          ...(needsWindAttributes && {
             colors: [],
             windLeafiness: [],
             windStability: [],

@@ -45,6 +45,20 @@ const QUALITY_PRESETS = {
 } as const;
 
 /**
+ * Undulation parameters for underwater wave effect
+ */
+export interface UndulationParameters {
+  /** Wave amplitude (0-1) */
+  undulationStrength: number;
+
+  /** Wave speed (0-5) */
+  undulationFrequency: number;
+
+  /** Spatial phase spread (0-5) */
+  undulationWavelength: number;
+}
+
+/**
  * Wind parameters for environment
  */
 export interface WindParameters {
@@ -176,6 +190,9 @@ export class EnvironmentService {
   // Wind parameters
   private windParameters: WindParameters;
 
+  // Undulation parameters
+  private undulationParameters: UndulationParameters;
+
   // Shadow system
   private shadowGenerator: ShadowGenerator | CascadedShadowGenerator | null = null;
   private shadowEnabled: boolean = false;
@@ -214,6 +231,13 @@ export class EnvironmentService {
       windGustStrength: 0.15, // 15% gust strength
       windSwayFactor: 1.0, // 100% sway factor (neutral)
       time: 0, // Initialize time
+    };
+
+    // Initialize undulation parameters with defaults
+    this.undulationParameters = {
+      undulationStrength: 0.3,
+      undulationFrequency: 1.0,
+      undulationWavelength: 1.0,
     };
 
     // Initialize World Time configuration with defaults
@@ -948,6 +972,71 @@ export class EnvironmentService {
    */
   getWindSwayFactor(): number {
     return this.windParameters.windSwayFactor;
+  }
+
+  // ============================================
+  // Undulation Parameter Management
+  // ============================================
+
+  /**
+   * Get current undulation parameters
+   */
+  getUndulationParameters(): UndulationParameters {
+    return { ...this.undulationParameters };
+  }
+
+  /**
+   * Set undulation strength (clamped to 0-1)
+   * @param strength Wave amplitude (0-1)
+   */
+  setUndulationStrength(strength: number): void {
+    this.undulationParameters.undulationStrength = Math.max(0, Math.min(1, strength));
+    logger.debug('Undulation strength set', {
+      strength: this.undulationParameters.undulationStrength.toFixed(2),
+    });
+  }
+
+  /**
+   * Get undulation strength
+   */
+  getUndulationStrength(): number {
+    return this.undulationParameters.undulationStrength;
+  }
+
+  /**
+   * Set undulation frequency (clamped to 0-5)
+   * @param frequency Wave speed (0-5)
+   */
+  setUndulationFrequency(frequency: number): void {
+    this.undulationParameters.undulationFrequency = Math.max(0, Math.min(5, frequency));
+    logger.debug('Undulation frequency set', {
+      frequency: this.undulationParameters.undulationFrequency.toFixed(2),
+    });
+  }
+
+  /**
+   * Get undulation frequency
+   */
+  getUndulationFrequency(): number {
+    return this.undulationParameters.undulationFrequency;
+  }
+
+  /**
+   * Set undulation wavelength (clamped to 0-5)
+   * @param wavelength Spatial phase spread (0-5)
+   */
+  setUndulationWavelength(wavelength: number): void {
+    this.undulationParameters.undulationWavelength = Math.max(0, Math.min(5, wavelength));
+    logger.debug('Undulation wavelength set', {
+      wavelength: this.undulationParameters.undulationWavelength.toFixed(2),
+    });
+  }
+
+  /**
+   * Get undulation wavelength
+   */
+  getUndulationWavelength(): number {
+    return this.undulationParameters.undulationWavelength;
   }
 
   // ============================================

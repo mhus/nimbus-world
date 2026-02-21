@@ -118,7 +118,9 @@ export class MaterialService {
     const textureDef = TextureHelper.normalizeTexture(texture);
 
     // Check for effect (texture.effect or visibility.effect)
-    const finalEffect = textureDef.effect ?? modifier.visibility?.effect ?? BlockEffect.NONE;
+    // Server may deliver effect as string ("0", "2") - normalize to number
+    const rawEffect = textureDef.effect ?? modifier.visibility?.effect ?? BlockEffect.NONE;
+    const finalEffect = Number(rawEffect);
 
     // Build key based on MATERIAL PROPERTIES, not texture path
     // This allows grouping blocks with different textures but same material properties

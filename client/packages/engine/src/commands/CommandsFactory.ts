@@ -52,6 +52,7 @@ import {SpawnEntityCommand} from "./SpawnEntityCommand";
 import {SetEntityStatusCommand} from "./SetEntityStatusCommand";
 import {ToggleEntityPathwaysCommand} from "./ToggleEntityPathwaysCommand";
 import {WindDirectionCommand, WindGustStrengthCommand, WindStrengthCommand, WindSwayFactorCommand} from "./wind";
+import {UndulationStrengthCommand, UndulationFrequencyCommand, UndulationWavelengthCommand} from "./undulation";
 import {
     AmbientLightDiffuseCommand,
     AmbientLightGroundColorCommand,
@@ -228,6 +229,11 @@ export class CommandsFactory {
         commandService.registerHandler(new WindStrengthCommand(appContext));
         commandService.registerHandler(new WindGustStrengthCommand(appContext));
         commandService.registerHandler(new WindSwayFactorCommand(appContext));
+
+        // Register undulation commands
+        commandService.registerHandler(new UndulationStrengthCommand(appContext));
+        commandService.registerHandler(new UndulationFrequencyCommand(appContext));
+        commandService.registerHandler(new UndulationWavelengthCommand(appContext));
 
         // Register ambient light commands
         commandService.registerHandler(new AmbientLightIntensityCommand(appContext));

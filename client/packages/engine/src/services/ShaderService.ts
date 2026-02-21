@@ -25,7 +25,7 @@ import {
   Vector3,
   Color3,
 } from '@babylonjs/core';
-import type { EnvironmentService, WindParameters } from './EnvironmentService';
+import type { EnvironmentService, WindParameters, UndulationParameters } from './EnvironmentService';
 import { loadTextureUrlWithCredentials } from '../utils/ImageLoader';
 
 const logger = getLogger('ShaderService');
@@ -55,6 +55,9 @@ export class ShaderService {
   // Wind shader materials for automatic parameter updates
   private windMaterials: ShaderMaterial[] = [];
 
+  // Undulation shader materials for automatic parameter updates
+  private undulationMaterials: ShaderMaterial[] = [];
+
   constructor(private appContext: AppContext) {
     logger.debug('ShaderService initialized');
   }
@@ -81,6 +84,9 @@ export class ShaderService {
     // Register flipbox shader
     this.registerFlipboxShader();
 
+    // Register undulation shader
+    this.registerUndulationShader();
+
     logger.debug('ShaderService initialized with scene');
   }
 
@@ -98,12 +104,25 @@ export class ShaderService {
       this.updateWindMaterials(params);
     }
 
+    // Update existing undulation materials with current parameters
+    if (this.undulationMaterials.length > 0) {
+      const params = environmentService.getUndulationParameters();
+      logger.debug('Initial undulation parameters', params);
+      this.updateUndulationMaterials(params);
+    }
+
     // Setup automatic updates every frame
     if (this.scene) {
       this.scene.onBeforeRenderObservable.add(() => {
-        if (this.environmentService && this.windMaterials.length > 0) {
-          const params = this.environmentService.getWindParameters();
-          this.updateWindMaterials(params);
+        if (this.environmentService) {
+          if (this.windMaterials.length > 0) {
+            const params = this.environmentService.getWindParameters();
+            this.updateWindMaterials(params);
+          }
+          if (this.undulationMaterials.length > 0) {
+            const params = this.environmentService.getUndulationParameters();
+            this.updateUndulationMaterials(params);
+          }
         }
       });
     }
@@ -178,6 +197,7 @@ export class ShaderService {
   clear(): void {
     this.effects.clear();
     this.windMaterials = [];
+    this.undulationMaterials = [];
     logger.debug('Shader effects cleared');
   }
 
@@ -520,6 +540,208 @@ export class ShaderService {
     material.setVector2('windDirection', new Vector2(params.windDirection.x, params.windDirection.z));
     material.setFloat('windStrength', params.windStrength);
     material.setFloat('windGustStrength', params.windGustStrength);
+  }
+
+  // ============================================
+  // Undulation Shader Implementation
+  // ============================================
+
+  /**
+   * Register undulation shader effect
+   */
+  private registerUndulationShader(): void {
+    this.registerUndulationShaderCode();
+
+    const undulationEffect: ShaderEffect = {
+      name: 'undulation',
+      createMaterial: (params?: Record<string, any>) => {
+        return this.createUndulationMaterial(params?.texture, params?.name);
+      },
+    };
+
+    this.registerEffect(undulationEffect);
+  }
+
+  /**
+   * Register custom undulation shader code with Babylon.js
+   */
+  private registerUndulationShaderCode(): void {
+    // Vertex shader with wave-based undulation
+    // Unlike wind (height-dependent bending from base), undulation displaces
+    // all vertices uniformly. The wave distortion comes from phase differences
+    // at different vertex world positions, stretching/compressing the block.
+    Effect.ShadersStore['undulationVertexShader'] = `
+      precision highp float;
+
+      // Attributes
+      attribute vec3 position;
+      attribute vec3 normal;
+      attribute vec2 uv;
+      attribute vec4 color;
+
+      // Uniforms
+      uniform mat4 worldViewProjection;
+      uniform mat4 world;
+      uniform float time;
+      uniform float undulationStrength;
+      uniform float undulationFrequency;
+      uniform float undulationWavelength;
+
+      // Varyings to fragment shader
+      varying vec2 vUV;
+      varying vec4 vColor;
+      varying vec3 vNormal;
+
+      void main(void) {
+        vec3 pos = position;
+
+        if (undulationStrength > 0.001) {
+          // Phase from exact vertex world position (not block center)
+          // Different vertices get different phases, distorting block width
+          vec4 worldPos = world * vec4(position, 1.0);
+          float phase = (worldPos.x * 1.3 + worldPos.z * 1.7) * undulationWavelength;
+          float theta = undulationStrength * sin(time * undulationFrequency + phase);
+
+          // Uniform displacement - no height dependency
+          // All vertices move equally; wave distortion comes from per-vertex phase
+          pos.x += sin(theta);
+          pos.z += sin(theta) * 0.7;     // slightly offset for organic effect
+          pos.y += (cos(theta) - 1.0);
+        }
+
+        gl_Position = worldViewProjection * vec4(pos, 1.0);
+        vUV = uv;
+        vColor = color;
+        vNormal = normalize((world * vec4(normal, 0.0)).xyz);
+      }
+    `;
+
+    // Fragment shader - texture + alpha test
+    Effect.ShadersStore['undulationFragmentShader'] = `
+      precision highp float;
+
+      // Varyings from vertex shader
+      varying vec2 vUV;
+      varying vec4 vColor;
+      varying vec3 vNormal;
+
+      // Uniforms
+      uniform sampler2D textureSampler;
+
+      void main(void) {
+        // Sample texture from atlas
+        vec4 texColor = texture2D(textureSampler, vUV);
+
+        // Alpha test: discard transparent pixels (alpha < 0.5)
+        if (texColor.a < 0.5) {
+          discard;
+        }
+
+        gl_FragColor = vec4(texColor.rgb, 1.0);
+      }
+    `;
+
+    logger.debug('Undulation shader code registered with Babylon.js');
+  }
+
+  /**
+   * Create undulation shader material
+   */
+  private createUndulationMaterial(texture: Texture | undefined, name: string = 'undulationMaterial'): ShaderMaterial | null {
+    if (!this.scene) {
+      logger.error('Cannot create undulation material: Scene not initialized');
+      return null;
+    }
+
+    logger.debug('Creating undulation material', { name });
+
+    const material = new ShaderMaterial(
+      name,
+      this.scene,
+      {
+        vertex: 'undulation',
+        fragment: 'undulation',
+      },
+      {
+        attributes: [
+          'position',
+          'normal',
+          'uv',
+          'color',
+        ],
+        uniforms: [
+          'worldViewProjection',
+          'world',
+          'time',
+          'undulationStrength',
+          'undulationFrequency',
+          'undulationWavelength',
+          'textureSampler',
+        ],
+        samplers: ['textureSampler'],
+      }
+    );
+
+    material.onError = (effect, errors) => {
+      logger.error('Undulation shader compilation error', { name, errors });
+    };
+
+    material.onCompiled = () => {
+      logger.debug('Undulation shader compiled successfully', { name });
+    };
+
+    // Set texture if provided
+    if (texture) {
+      material.setTexture('textureSampler', texture);
+      logger.debug('Undulation material texture set', { name, hasTexture: !!texture, textureReady: texture.isReady() });
+    } else {
+      logger.warn('Undulation material created without texture', { name });
+    }
+
+    // Set default undulation parameters
+    material.setFloat('undulationStrength', 0.3);
+    material.setFloat('undulationFrequency', 1.0);
+    material.setFloat('undulationWavelength', 1.0);
+
+    // Configure material properties
+    material.backFaceCulling = false;
+
+    // Store material for automatic updates
+    this.undulationMaterials.push(material);
+
+    // Update time uniform every frame
+    let totalTime = 0;
+    const scene = this.scene;
+    scene.onBeforeRenderObservable.add(() => {
+      totalTime += scene.getEngine().getDeltaTime() / 1000.0;
+      material.setFloat('time', totalTime);
+    });
+
+    // If EnvironmentService is already connected, update this material immediately
+    if (this.environmentService) {
+      const params = this.environmentService.getUndulationParameters();
+      this.updateSingleUndulationMaterial(material, params);
+    }
+
+    return material;
+  }
+
+  /**
+   * Update all undulation materials with new parameters
+   */
+  private updateUndulationMaterials(params: UndulationParameters): void {
+    for (const material of this.undulationMaterials) {
+      this.updateSingleUndulationMaterial(material, params);
+    }
+  }
+
+  /**
+   * Update a single undulation material with undulation parameters
+   */
+  private updateSingleUndulationMaterial(material: ShaderMaterial, params: UndulationParameters): void {
+    material.setFloat('undulationStrength', params.undulationStrength);
+    material.setFloat('undulationFrequency', params.undulationFrequency);
+    material.setFloat('undulationWavelength', params.undulationWavelength);
   }
 
   // ============================================

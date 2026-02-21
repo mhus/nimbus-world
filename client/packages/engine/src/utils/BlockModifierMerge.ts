@@ -14,6 +14,37 @@ import {BlockModifier, BlockType, Block, BlockStatus, SeasonStatus, Vector3} fro
 import type { AppContext } from '../AppContext.js';
 
 /**
+ * Normalize a BlockEffect value that may be a number, numeric string, or enum name string.
+ * Server may deliver effect as: 2, "2", "WIND", "WATER" (legacy for UNDULATION), etc.
+ * Returns the numeric BlockEffect value, or undefined if NONE/invalid.
+ */
+// Explicit name-to-number map (independent of runtime enum, survives stale Vite cache)
+const EFFECT_NAME_MAP: Record<string, number> = {
+  'NONE': 0,
+  'UNDULATION': 1,
+  'WATER': 1,       // legacy alias
+  'WIND': 2,
+};
+
+function normalizeEffect(value: any): number | undefined {
+  if (value === undefined || value === null) return undefined;
+
+  // Try numeric conversion first (handles 2, "2", 0, "0")
+  const num = Number(value);
+  if (!isNaN(num)) {
+    return num || undefined; // 0 (NONE) → undefined
+  }
+
+  // Try name lookup (handles "WIND", "UNDULATION", "WATER", etc.)
+  const mapped = EFFECT_NAME_MAP[String(value).toUpperCase()];
+  if (mapped !== undefined) {
+    return mapped || undefined; // 0 (NONE) → undefined
+  }
+
+  return undefined;
+}
+
+/**
  * Deep merge two objects field by field
  * Only merges defined fields (skips undefined)
  *
@@ -79,6 +110,12 @@ function mergeVisibility(target: any, source: any): any {
     };
   }
 
+  // Normalize effect to number (server may deliver as number, numeric string, or enum name)
+  // e.g.: 2, "2", "WIND", "WATER" (legacy), "UNDULATION"
+  if (result.effect !== undefined) {
+    result.effect = normalizeEffect(result.effect);
+  }
+
   // Apply VisibilityModifier.effect and effectParameters to textures
   if (result.textures && (result.effect !== undefined || result.effectParameters !== undefined)) {
     const defaultEffect = result.effect;
@@ -86,6 +123,11 @@ function mergeVisibility(target: any, source: any): any {
 
     for (const key in result.textures) {
       let texture = result.textures[key];
+
+      // Normalize texture-level effect too
+      if (typeof texture === 'object' && texture !== null && texture.effect !== undefined) {
+        texture.effect = normalizeEffect(texture.effect);
+      }
 
       // If texture is a string and we have default effect/effectParameters, convert to object
       if (typeof texture === 'string' && (defaultEffect !== undefined || defaultEffectParameters !== undefined)) {

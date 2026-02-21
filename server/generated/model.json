@@ -3801,12 +3801,12 @@
       } ]
     }, {
       "name" : "BlockEffect",
-      "values" : [ "NONE", "WATER", "WIND" ],
+      "values" : [ "NONE", "UNDULATION", "WIND" ],
       "enumValues" : [ {
         "name" : "NONE",
         "value" : "0"
       }, {
-        "name" : "WATER",
+        "name" : "UNDULATION",
         "value" : "1"
       }, {
         "name" : "WIND",

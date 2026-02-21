@@ -6,7 +6,7 @@ package de.mhus.nimbus.generated.types;
 
 public enum BlockEffect implements de.mhus.nimbus.types.TsEnum {
     NONE(0),
-    WATER(1),
+    UNDULATION(1),
     WIND(2);
 
     @lombok.Getter

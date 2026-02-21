@@ -115,7 +115,7 @@
             class="select select-bordered select-sm w-full"
           >
             <option :value="0">NONE</option>
-            <option :value="1">WATER</option>
+            <option :value="1">UNDULATION</option>
             <option :value="2">WIND</option>
           </select>
         </div>
@@ -628,7 +628,7 @@
                   class="select select-bordered select-xs w-full"
                 >
                   <option :value="0">NONE</option>
-                  <option :value="1">WATER</option>
+                  <option :value="1">UNDULATION</option>
                   <option :value="2">WIND</option>
                 </select>
               </div>
