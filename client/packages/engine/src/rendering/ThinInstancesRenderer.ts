@@ -82,9 +82,12 @@ export class ThinInstancesRenderer extends BlockRenderer {
       logger.debug('Using scaling from visibility', { scaling });
     }
 
-    // Get wind parameters from modifier (if available)
+    // Get effect from visibility modifier
+    const effect = modifier.visibility.effect;
+
+    // Get wind parameters from modifier (if available, not used for undulation)
     let wind: { leafiness: number; stability: number; leverUp: number; leverDown: number } | undefined;
-    if (modifier.wind) {
+    if (modifier.wind && effect !== 1) {
       wind = {
         leafiness: modifier.wind.leafiness ?? 0.5,
         stability: modifier.wind.stability ?? 0.5,
@@ -133,6 +136,7 @@ export class ThinInstancesRenderer extends BlockRenderer {
             offset,
             scaling,
             wind,
+            effect,
           },
           chunkKey
         );

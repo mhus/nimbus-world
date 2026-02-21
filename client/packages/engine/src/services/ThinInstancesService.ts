@@ -44,6 +44,7 @@ interface ThinInstanceConfig {
     leverUp: number;
     leverDown: number;
   }; // Optional wind parameters
+  effect?: number; // BlockEffect value (1=UNDULATION, 2=WIND)
 }
 
 /**
@@ -146,7 +147,7 @@ export class ThinInstancesService {
    */
   async createInstances(config: ThinInstanceConfig, chunkKey: string): Promise<{ mesh: Mesh; disposable: IDisposable }> {
     // Get or create material first (to load texture and get dimensions)
-    const materialResult = await this.getMaterial(config.texturePath);
+    const materialResult = await this.getMaterial(config.texturePath, config.effect);
     const material = materialResult.material;
     const aspectRatio = materialResult.aspectRatio;
 
@@ -158,8 +159,11 @@ export class ThinInstancesService {
     mesh.isVisible = true;
     mesh.material = material;
 
-    // Create instance data buffer: matrix (16 floats) + wind params (4 floats) = 20 floats per instance
-    const instanceData = new Float32Array(20 * config.instanceCount);
+    // Undulation uses only matrix (16 floats), Wind uses matrix + windParams (20 floats)
+    const isUndulation = config.effect === 1;
+    const floatsPerInstance = isUndulation ? 16 : 20;
+
+    const instanceData = new Float32Array(floatsPerInstance * config.instanceCount);
     const m = Matrix.Identity();
 
     let index = 0;
@@ -196,47 +200,47 @@ export class ThinInstancesService {
       );
 
       // Copy matrix to buffer (floats 0-15)
-      m.copyToArray(instanceData, index * 20);
+      m.copyToArray(instanceData, index * floatsPerInstance);
 
-      // Add wind parameters (floats 16-19) with random variation if wind is configured
-      if (config.wind) {
-        // Leafiness with ±20% variation
-        instanceData[index * 20 + 16] = config.wind.leafiness * (0.8 + Math.random() * 0.4);
-        // Stability with ±20% variation
-        instanceData[index * 20 + 17] = config.wind.stability * (0.8 + Math.random() * 0.4);
-        // Lever values without variation (consistent geometry)
-        instanceData[index * 20 + 18] = config.wind.leverUp;
-        instanceData[index * 20 + 19] = config.wind.leverDown;
-      } else {
-        // No wind: set all to 0.0 (wind disabled in shader)
-        instanceData[index * 20 + 16] = 0.0;
-        instanceData[index * 20 + 17] = 0.0;
-        instanceData[index * 20 + 18] = 0.0;
-        instanceData[index * 20 + 19] = 0.0;
+      // Add wind parameters (floats 16-19) only for wind instances
+      if (!isUndulation) {
+        if (config.wind) {
+          // Leafiness with ±20% variation
+          instanceData[index * floatsPerInstance + 16] = config.wind.leafiness * (0.8 + Math.random() * 0.4);
+          // Stability with ±20% variation
+          instanceData[index * floatsPerInstance + 17] = config.wind.stability * (0.8 + Math.random() * 0.4);
+          // Lever values without variation (consistent geometry)
+          instanceData[index * floatsPerInstance + 18] = config.wind.leverUp;
+          instanceData[index * floatsPerInstance + 19] = config.wind.leverDown;
+        } else {
+          // No wind: set all to 0.0 (wind disabled in shader)
+          instanceData[index * floatsPerInstance + 16] = 0.0;
+          instanceData[index * floatsPerInstance + 17] = 0.0;
+          instanceData[index * floatsPerInstance + 18] = 0.0;
+          instanceData[index * floatsPerInstance + 19] = 0.0;
+        }
       }
 
       index++;
     }
 
-    // Extract matrix data (every 20 floats, first 16 values)
+    // Set matrix buffer
     const matricesData = new Float32Array(16 * config.instanceCount);
     for (let i = 0; i < config.instanceCount; i++) {
       for (let j = 0; j < 16; j++) {
-        matricesData[i * 16 + j] = instanceData[i * 20 + j];
+        matricesData[i * 16 + j] = instanceData[i * floatsPerInstance + j];
       }
     }
-
-    // Set matrix buffer
     mesh.thinInstanceSetBuffer('matrix', matricesData, 16);
 
-    // Set wind parameters buffer if wind is configured
-    if (config.wind) {
+    // Set wind parameters buffer only for wind instances
+    if (!isUndulation && config.wind) {
       const windData = new Float32Array(4 * config.instanceCount);
       for (let i = 0; i < config.instanceCount; i++) {
-        windData[i * 4 + 0] = instanceData[i * 20 + 16];
-        windData[i * 4 + 1] = instanceData[i * 20 + 17];
-        windData[i * 4 + 2] = instanceData[i * 20 + 18];
-        windData[i * 4 + 3] = instanceData[i * 20 + 19];
+        windData[i * 4 + 0] = instanceData[i * floatsPerInstance + 16];
+        windData[i * 4 + 1] = instanceData[i * floatsPerInstance + 17];
+        windData[i * 4 + 2] = instanceData[i * floatsPerInstance + 18];
+        windData[i * 4 + 3] = instanceData[i * floatsPerInstance + 19];
       }
       mesh.thinInstanceSetBuffer('windParams', windData, 4);
     }
@@ -270,27 +274,42 @@ export class ThinInstancesService {
   /**
    * Get or create material with optional Y-axis billboard shader
    * Returns material and aspect ratio of the texture
+   *
+   * @param texturePath Path to texture
+   * @param effect BlockEffect value (1=UNDULATION, 2=WIND, default=WIND)
    */
-  private async getMaterial(texturePath: string): Promise<{ material: StandardMaterial; aspectRatio: number }> {
+  private async getMaterial(texturePath: string, effect?: number): Promise<{ material: StandardMaterial; aspectRatio: number }> {
+    // Cache key includes effect type
+    const cacheKey = `${texturePath}:${effect ?? 0}`;
+
     // Check cache
-    const cachedMaterial = this.materialCache.get(texturePath);
+    const cachedMaterial = this.materialCache.get(cacheKey);
     if (cachedMaterial) {
-      logger.debug('Using cached material', { texturePath });
+      logger.debug('Using cached material', { texturePath, effect });
       // Get aspect ratio from cached texture
       const texture = cachedMaterial.diffuseTexture as Texture;
       const aspectRatio = texture ? texture.getSize().width / texture.getSize().height : 1;
       return { material: cachedMaterial, aspectRatio };
     }
 
-    logger.debug('🎨 Creating material for thin instances', { texturePath });
+    logger.debug('Creating material for thin instances', { texturePath, effect });
 
     // Try to use shader service first
-    if (this.shaderService && typeof (this.shaderService as any).createThinInstanceMaterial === 'function') {
+    if (this.shaderService) {
       try {
-        const material = await (this.shaderService as any).createThinInstanceMaterial(texturePath);
+        let material: any = null;
+
+        if (effect === 1 && typeof (this.shaderService as any).createThinInstanceUndulationMaterial === 'function') {
+          // UNDULATION effect
+          material = await (this.shaderService as any).createThinInstanceUndulationMaterial(texturePath);
+        } else if (typeof (this.shaderService as any).createThinInstanceMaterial === 'function') {
+          // WIND effect (default)
+          material = await (this.shaderService as any).createThinInstanceMaterial(texturePath);
+        }
+
         if (material) {
-          this.materialCache.set(texturePath, material);
-          logger.debug('✅ Shader material created', { texturePath });
+          this.materialCache.set(cacheKey, material);
+          logger.debug('Shader material created', { texturePath, effect });
           // Get aspect ratio from shader material's texture
           const texture = material.getEffect()?.getTexture('textureSampler') as Texture;
           const aspectRatio = texture ? texture.getSize().width / texture.getSize().height : 1;
@@ -310,7 +329,7 @@ export class ThinInstancesService {
       const material = new StandardMaterial(`thinInstance_${texturePath}`, this.scene);
       material.backFaceCulling = false;
       material.specularColor.set(0, 0, 0);
-      this.materialCache.set(texturePath, material);
+      this.materialCache.set(cacheKey, material);
       return { material, aspectRatio: 1 };
     }
 
@@ -347,7 +366,7 @@ export class ThinInstancesService {
     material.specularColor.set(0, 0, 0); // No specular
 
     // Cache material
-    this.materialCache.set(texturePath, material);
+    this.materialCache.set(cacheKey, material);
 
     logger.debug('Material created with texture', { texturePath, aspectRatio });
 

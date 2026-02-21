@@ -52,6 +52,9 @@ export class ShaderService {
   private scene?: Scene;
   private environmentService?: EnvironmentService;
 
+  // Shared time accumulator for all shader materials (incremented per frame)
+  private shaderTime: number = 0;
+
   // Wind shader materials for automatic parameter updates
   private windMaterials: ShaderMaterial[] = [];
 
@@ -87,6 +90,9 @@ export class ShaderService {
     // Register undulation shader
     this.registerUndulationShader();
 
+    // Register thin instance undulation shader
+    this.registerThinInstanceUndulationShader();
+
     logger.debug('ShaderService initialized with scene');
   }
 
@@ -113,7 +119,11 @@ export class ShaderService {
 
     // Setup automatic updates every frame
     if (this.scene) {
+      const scene = this.scene;
       this.scene.onBeforeRenderObservable.add(() => {
+        // Accumulate shared shader time
+        this.shaderTime += scene.getEngine().getDeltaTime() / 1000.0;
+
         if (this.environmentService) {
           if (this.windMaterials.length > 0) {
             const params = this.environmentService.getWindParameters();
@@ -198,6 +208,7 @@ export class ShaderService {
     this.effects.clear();
     this.windMaterials = [];
     this.undulationMaterials = [];
+    this.shaderTime = 0;
     logger.debug('Shader effects cleared');
   }
 
@@ -540,6 +551,8 @@ export class ShaderService {
     material.setVector2('windDirection', new Vector2(params.windDirection.x, params.windDirection.z));
     material.setFloat('windStrength', params.windStrength);
     material.setFloat('windGustStrength', params.windGustStrength);
+    material.setFloat('windSwayFactor', params.windSwayFactor);
+    material.setFloat('time', this.shaderTime);
   }
 
   // ============================================
@@ -731,17 +744,20 @@ export class ShaderService {
    */
   private updateUndulationMaterials(params: UndulationParameters): void {
     for (const material of this.undulationMaterials) {
-      this.updateSingleUndulationMaterial(material, params);
+      this.updateSingleUndulationMaterial(material, params, this.shaderTime);
     }
   }
 
   /**
    * Update a single undulation material with undulation parameters
    */
-  private updateSingleUndulationMaterial(material: ShaderMaterial, params: UndulationParameters): void {
+  private updateSingleUndulationMaterial(material: ShaderMaterial, params: UndulationParameters, time?: number): void {
     material.setFloat('undulationStrength', params.undulationStrength);
     material.setFloat('undulationFrequency', params.undulationFrequency);
     material.setFloat('undulationWavelength', params.undulationWavelength);
+    if (time !== undefined) {
+      material.setFloat('time', time);
+    }
   }
 
   // ============================================
@@ -1286,7 +1302,10 @@ export class ShaderService {
         // Apply billboard rotation to vertex position
         vec3 rotatedPos = billboardRotation * position;
 
-        // Wind animation (only if windLeafiness > 0.0, only affects top vertices)
+        // Transform to world space first (before wind displacement)
+        vec4 worldPosition = world * vec4(rotatedPos, 1.0);
+
+        // Wind animation in WORLD space (avoids scaling issues with small scalingX/Z)
         if (windLeafiness > 0.0) {
           float heightFactor = clamp(rotatedPos.y / 2.0, 0.0, 1.0); // 0 at bottom, 1 at top
 
@@ -1322,13 +1341,10 @@ export class ShaderService {
               leverFactor = smoothstep(windLeverDown * 0.1, 1.0, heightFactor);
             }
 
-            // Apply wind displacement (more at top, scaled by lever factor)
-            rotatedPos += windDir * totalWave * leverFactor;
+            // Apply wind displacement in WORLD space (not affected by instance scaling)
+            worldPosition.xyz += windDir * totalWave * leverFactor;
           }
         }
-
-        // Transform to world space
-        vec4 worldPosition = world * vec4(rotatedPos, 1.0);
 
         // Transform to clip space
         gl_Position = viewProjection * worldPosition;
@@ -1456,6 +1472,197 @@ export class ShaderService {
       return material;
     } catch (error) {
       logger.error('Failed to create thin instance material', { texturePath, error });
+      return null;
+    }
+  }
+
+  // ============================================
+  // Thin Instance Undulation Shader Implementation
+  // ============================================
+
+  /**
+   * Register thin instance undulation shader code
+   */
+  private registerThinInstanceUndulationShader(): void {
+    // Vertex shader for thin instances with Y-axis billboard and undulation
+    Effect.ShadersStore['thinInstanceUndulationVertexShader'] = `
+      precision highp float;
+
+      attribute vec3 position;
+      attribute vec3 normal;
+      attribute vec2 uv;
+
+      uniform mat4 viewProjection;
+      uniform mat4 view;
+      uniform vec3 cameraPosition;
+      uniform float time;
+      uniform float undulationStrength;
+      uniform float undulationFrequency;
+      uniform float undulationWavelength;
+
+      varying vec2 vUV;
+      varying vec3 vNormal;
+
+      #ifdef INSTANCES
+        attribute vec4 world0;
+        attribute vec4 world1;
+        attribute vec4 world2;
+        attribute vec4 world3;
+      #else
+        uniform mat4 world;
+      #endif
+
+      void main(void) {
+        #ifdef INSTANCES
+          mat4 world = mat4(world0, world1, world2, world3);
+        #endif
+
+        vec3 instancePos = vec3(world[3][0], world[3][1], world[3][2]);
+
+        // Y-Axis Billboard (identical to wind shader)
+        vec3 toCamera = cameraPosition - instancePos;
+        toCamera.y = 0.0;
+        vec3 forward = normalize(toCamera);
+        vec3 up = vec3(0.0, 1.0, 0.0);
+        vec3 right = normalize(cross(up, forward));
+        forward = cross(right, up);
+        mat3 billboardRotation = mat3(right, up, forward);
+
+        vec3 rotatedPos = billboardRotation * position;
+
+        // Transform to world space first (before undulation displacement)
+        vec4 worldPosition = world * vec4(rotatedPos, 1.0);
+
+        // Undulation displacement in WORLD space (avoids scaling issues with small scalingX/Z)
+        if (undulationStrength > 0.001) {
+          float phase = (worldPosition.x * 1.3 + worldPosition.z * 1.7) * undulationWavelength;
+          float theta = undulationStrength * sin(time * undulationFrequency + phase);
+          worldPosition.x += sin(theta);
+          worldPosition.z += sin(theta) * 0.7;
+          worldPosition.y += (cos(theta) - 1.0);
+        }
+
+        gl_Position = viewProjection * worldPosition;
+        vUV = uv;
+        vNormal = normalize((world * vec4(normal, 0.0)).xyz);
+      }
+    `;
+
+    // Fragment shader (identical to thinInstanceWindFragmentShader)
+    Effect.ShadersStore['thinInstanceUndulationFragmentShader'] = `
+      precision highp float;
+
+      varying vec2 vUV;
+      varying vec3 vNormal;
+
+      uniform sampler2D textureSampler;
+      uniform vec3 lightDirection;
+
+      void main(void) {
+        vec4 texColor = texture2D(textureSampler, vUV);
+
+        // Alpha test
+        if (texColor.a < 0.5) {
+          discard;
+        }
+
+        // Simple diffuse lighting
+        float diffuse = max(dot(vNormal, -lightDirection), 0.3);
+        vec3 finalColor = texColor.rgb * diffuse;
+
+        gl_FragColor = vec4(finalColor, texColor.a);
+      }
+    `;
+
+    logger.debug('Thin instance undulation shader registered');
+  }
+
+  /**
+   * Create material for thin instances with Y-axis billboard and undulation animation
+   *
+   * @param texturePath Path to texture
+   * @returns Material with Y-axis billboard and undulation shader
+   */
+  async createThinInstanceUndulationMaterial(texturePath: string): Promise<ShaderMaterial | null> {
+    if (!this.scene) {
+      logger.error('Scene not initialized');
+      return null;
+    }
+
+    const networkService = this.appContext.services.network;
+    if (!networkService) {
+      logger.error('NetworkService not available');
+      return null;
+    }
+
+    try {
+      // Load texture with credentials
+      const url = networkService.getAssetUrl(texturePath);
+      const blobUrl = await loadTextureUrlWithCredentials(url);
+      const texture = new Texture(blobUrl, this.scene);
+      texture.hasAlpha = true;
+
+      texture.onLoadObservable.addOnce(() => {
+        texture.updateSamplingMode(Texture.NEAREST_SAMPLINGMODE);
+      });
+
+      // Create shader material
+      const material = new ShaderMaterial(
+        `thinInstanceUndulation_${texturePath}`,
+        this.scene,
+        {
+          vertex: 'thinInstanceUndulation',
+          fragment: 'thinInstanceUndulation',
+        },
+        {
+          attributes: ['position', 'normal', 'uv'],
+          uniforms: [
+            'viewProjection',
+            'view',
+            'world',
+            'cameraPosition',
+            'time',
+            'undulationStrength',
+            'undulationFrequency',
+            'undulationWavelength',
+            'lightDirection',
+          ],
+          defines: ['#define INSTANCES'],
+        }
+      );
+
+      // Set texture
+      material.setTexture('textureSampler', texture);
+
+      // Set initial undulation parameters
+      if (this.environmentService) {
+        const params = this.environmentService.getUndulationParameters();
+        material.setFloat('undulationStrength', params.undulationStrength);
+        material.setFloat('undulationFrequency', params.undulationFrequency);
+        material.setFloat('undulationWavelength', params.undulationWavelength);
+      } else {
+        material.setFloat('undulationStrength', 0.3);
+        material.setFloat('undulationFrequency', 1.0);
+        material.setFloat('undulationWavelength', 1.0);
+      }
+
+      // Set light direction
+      material.setVector3('lightDirection', new Vector3(0.5, -1, 0.5));
+
+      // Set time uniform
+      material.setFloat('time', 0);
+
+      // Add to undulation materials for automatic updates (time + parameters)
+      this.undulationMaterials.push(material);
+
+      // Disable backface culling
+      material.backFaceCulling = false;
+
+      logger.debug('Thin instance undulation material created', { texturePath });
+
+      return material;
+    } catch (error) {
+      logger.error('Failed to create thin instance undulation material', { texturePath, error });
       return null;
     }
   }
