@@ -341,6 +341,7 @@ export class ShaderService {
       uniform float time;
       uniform vec2 windDirection;
       uniform float windStrength;
+      uniform float windGustStrength;
 
       // Varyings to fragment shader
       varying vec2 vUV;
@@ -357,11 +358,12 @@ export class ShaderService {
         float thetaBend = windStrength * flex * 0.3;
 
         // 2. Oscillation: leafiness controls amplitude, saturates at higher wind
-        //    Phase shift from world position for variety between trees
+        //    Phase from block center (floor + 0.5), not vertex position, so trunk stays uniform width
         vec4 worldPos = world * vec4(position, 1.0);
-        float phase = worldPos.x * 0.1 + worldPos.z * 0.13;
-        float oscWind = sqrt(windStrength);  // saturates: grows fast at low wind, flattens at high
-        float thetaOsc = windLeafiness * oscWind * flex * sin(time * 2.0 + phase) * 0.15;
+        vec2 blockCenter = floor(worldPos.xz) + 0.5;
+        float phase = (blockCenter.x * 1.3 + blockCenter.y * 1.7) * windGustStrength;
+        float oscWind = sqrt(windStrength);
+        float thetaOsc = windLeafiness * oscWind * flex * sin(time * 2.0 + phase) * 0.5;
 
         float theta = thetaBend + thetaOsc;
 
@@ -446,6 +448,7 @@ export class ShaderService {
           'time',
           'windDirection',
           'windStrength',
+          'windGustStrength',
           'textureSampler',
           'lightDirection',
         ],
@@ -473,6 +476,7 @@ export class ShaderService {
     // Set default wind parameters (will be updated from EnvironmentService)
     material.setVector2('windDirection', new Vector2(1.0, 0.0));
     material.setFloat('windStrength', 0.8);
+    material.setFloat('windGustStrength', 0.4);
 
     // Set light direction (from above-front)
     material.setVector3('lightDirection', new Vector3(0.5, 1.0, 0.5));
@@ -515,6 +519,7 @@ export class ShaderService {
   private updateSingleWindMaterial(material: ShaderMaterial, params: WindParameters): void {
     material.setVector2('windDirection', new Vector2(params.windDirection.x, params.windDirection.z));
     material.setFloat('windStrength', params.windStrength);
+    material.setFloat('windGustStrength', params.windGustStrength);
   }
 
   // ============================================
