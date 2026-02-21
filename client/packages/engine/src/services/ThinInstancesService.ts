@@ -159,14 +159,22 @@ export class ThinInstancesService {
     mesh.isVisible = true;
     mesh.material = material;
 
-    // Undulation uses only matrix (16 floats), Wind uses matrix + windParams (20 floats)
-    const isUndulation = config.effect === 1;
-    const floatsPerInstance = isUndulation ? 16 : 20;
+    // Set wind parameters as uniforms on the material (not per-instance buffers)
+    // BabylonJS only binds world0-3 for thin instances, custom buffers are ignored
+    if (config.wind && config.effect !== 1) {
+      const mat = material as any;
+      if (mat.setFloat) {
+        mat.setFloat('windLeafiness', config.wind.leafiness);
+        mat.setFloat('windStability', config.wind.stability);
+        mat.setFloat('windLeverUp', config.wind.leverUp);
+        mat.setFloat('windLeverDown', config.wind.leverDown);
+      }
+    }
 
-    const instanceData = new Float32Array(floatsPerInstance * config.instanceCount);
+    // All instances use only 16 floats (matrix) - wind/undulation use uniforms
+    const matricesData = new Float32Array(16 * config.instanceCount);
     const m = Matrix.Identity();
 
-    let index = 0;
     const blockX = config.blockPosition.x;
     const blockY = config.blockPosition.y;
     const blockZ = config.blockPosition.z;
@@ -200,50 +208,11 @@ export class ThinInstancesService {
       );
 
       // Copy matrix to buffer (floats 0-15)
-      m.copyToArray(instanceData, index * floatsPerInstance);
-
-      // Add wind parameters (floats 16-19) only for wind instances
-      if (!isUndulation) {
-        if (config.wind) {
-          // Leafiness with ±20% variation
-          instanceData[index * floatsPerInstance + 16] = config.wind.leafiness * (0.8 + Math.random() * 0.4);
-          // Stability with ±20% variation
-          instanceData[index * floatsPerInstance + 17] = config.wind.stability * (0.8 + Math.random() * 0.4);
-          // Lever values without variation (consistent geometry)
-          instanceData[index * floatsPerInstance + 18] = config.wind.leverUp;
-          instanceData[index * floatsPerInstance + 19] = config.wind.leverDown;
-        } else {
-          // No wind: set all to 0.0 (wind disabled in shader)
-          instanceData[index * floatsPerInstance + 16] = 0.0;
-          instanceData[index * floatsPerInstance + 17] = 0.0;
-          instanceData[index * floatsPerInstance + 18] = 0.0;
-          instanceData[index * floatsPerInstance + 19] = 0.0;
-        }
-      }
-
-      index++;
+      m.copyToArray(matricesData, i * 16);
     }
 
     // Set matrix buffer
-    const matricesData = new Float32Array(16 * config.instanceCount);
-    for (let i = 0; i < config.instanceCount; i++) {
-      for (let j = 0; j < 16; j++) {
-        matricesData[i * 16 + j] = instanceData[i * floatsPerInstance + j];
-      }
-    }
     mesh.thinInstanceSetBuffer('matrix', matricesData, 16);
-
-    // Set wind parameters buffer only for wind instances
-    if (!isUndulation && config.wind) {
-      const windData = new Float32Array(4 * config.instanceCount);
-      for (let i = 0; i < config.instanceCount; i++) {
-        windData[i * 4 + 0] = instanceData[i * floatsPerInstance + 16];
-        windData[i * 4 + 1] = instanceData[i * floatsPerInstance + 17];
-        windData[i * 4 + 2] = instanceData[i * floatsPerInstance + 18];
-        windData[i * 4 + 3] = instanceData[i * floatsPerInstance + 19];
-      }
-      mesh.thinInstanceSetBuffer('windParams', windData, 4);
-    }
 
     // Store group data
     const group: ThinInstanceGroup = {
@@ -292,31 +261,28 @@ export class ThinInstancesService {
       return { material: cachedMaterial, aspectRatio };
     }
 
-    logger.debug('Creating material for thin instances', { texturePath, effect });
-
     // Try to use shader service first
     if (this.shaderService) {
       try {
         let material: any = null;
 
         if (effect === 1 && typeof (this.shaderService as any).createThinInstanceUndulationMaterial === 'function') {
-          // UNDULATION effect
           material = await (this.shaderService as any).createThinInstanceUndulationMaterial(texturePath);
         } else if (typeof (this.shaderService as any).createThinInstanceMaterial === 'function') {
-          // WIND effect (default)
           material = await (this.shaderService as any).createThinInstanceMaterial(texturePath);
         }
 
         if (material) {
           this.materialCache.set(cacheKey, material);
-          logger.debug('Shader material created', { texturePath, effect });
           // Get aspect ratio from shader material's texture
           const texture = material.getEffect()?.getTexture('textureSampler') as Texture;
           const aspectRatio = texture ? texture.getSize().width / texture.getSize().height : 1;
           return { material, aspectRatio };
+        } else {
+          logger.warn('Shader material creation returned null', { texturePath, effect });
         }
       } catch (error) {
-        logger.warn('Failed to create shader material, using fallback', { error });
+        logger.warn('Failed to create shader material, using fallback', { texturePath, error });
       }
     }
 

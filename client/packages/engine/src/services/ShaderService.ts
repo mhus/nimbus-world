@@ -135,6 +135,8 @@ export class ShaderService {
           }
         }
       });
+    } else {
+      logger.warn('Scene is null in setEnvironmentService, per-frame callback NOT registered');
     }
   }
 
@@ -1225,6 +1227,9 @@ export class ShaderService {
    */
   private registerThinInstanceWindShader(): void {
     // Vertex shader for thin instances with Y-axis billboard and wind
+    // Wind parameters are uniforms (not per-instance attributes) because
+    // BabylonJS doesn't bind custom thinInstance buffers to ShaderMaterial attributes.
+    // Per-instance variation is derived from instancePos hash.
     Effect.ShadersStore['thinInstanceWindVertexShader'] = `
       precision highp float;
 
@@ -1243,6 +1248,12 @@ export class ShaderService {
       uniform float windGustStrength;
       uniform float windSwayFactor;
 
+      // Wind parameters (per-material uniforms, set from block modifier)
+      uniform float windLeafiness;
+      uniform float windStability;
+      uniform float windLeverUp;
+      uniform float windLeverDown;
+
       // Varyings to fragment shader
       varying vec2 vUV;
       varying vec3 vNormal;
@@ -1252,10 +1263,14 @@ export class ShaderService {
         attribute vec4 world1;
         attribute vec4 world2;
         attribute vec4 world3;
-        attribute vec4 windParams; // (leafiness, stability, leverUp, leverDown)
       #else
         uniform mat4 world;
       #endif
+
+      // Hash function for per-instance variation from position
+      float hash(vec2 p) {
+        return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+      }
 
       void main(void) {
         // Reconstruct world matrix from thin instance attributes
@@ -1266,38 +1281,19 @@ export class ShaderService {
         // Get instance position (from matrix translation)
         vec3 instancePos = vec3(world[3][0], world[3][1], world[3][2]);
 
-        // Get wind parameters (per-instance or defaults)
-        #ifdef INSTANCES
-          float windLeafiness = windParams.x;
-          float windStability = windParams.y;
-          float windLeverUp = windParams.z;
-          float windLeverDown = windParams.w;
-        #else
-          float windLeafiness = 0.5;
-          float windStability = 0.5;
-          float windLeverUp = 0.0;
-          float windLeverDown = 0.0;
-        #endif
+        // Per-instance variation (+-20%) derived from position hash
+        float instanceHash = hash(instancePos.xz);
+        float leafVar = windLeafiness * (0.8 + instanceHash * 0.4);
+        float stabVar = windStability * (0.8 + hash(instancePos.zx) * 0.4);
 
         // Y-Axis Billboard transformation
-        // Calculate direction from instance to camera (XZ plane only)
         vec3 toCamera = cameraPosition - instancePos;
-        toCamera.y = 0.0; // Ignore Y component (stay vertical)
+        toCamera.y = 0.0;
         vec3 forward = normalize(toCamera);
-
-        // Calculate right vector (perpendicular to forward in XZ plane)
         vec3 up = vec3(0.0, 1.0, 0.0);
         vec3 right = normalize(cross(up, forward));
-
-        // Reconstruct forward to ensure orthogonality
         forward = cross(right, up);
-
-        // Build billboard rotation matrix (Y-axis only)
-        mat3 billboardRotation = mat3(
-          right,
-          up,
-          forward
-        );
+        mat3 billboardRotation = mat3(right, up, forward);
 
         // Apply billboard rotation to vertex position
         vec3 rotatedPos = billboardRotation * position;
@@ -1306,50 +1302,35 @@ export class ShaderService {
         vec4 worldPosition = world * vec4(rotatedPos, 1.0);
 
         // Wind animation in WORLD space (avoids scaling issues with small scalingX/Z)
-        if (windLeafiness > 0.0) {
-          float heightFactor = clamp(rotatedPos.y / 2.0, 0.0, 1.0); // 0 at bottom, 1 at top
+        if (leafVar > 0.0) {
+          float heightFactor = clamp(rotatedPos.y / 2.0, 0.0, 1.0);
 
           if (heightFactor > 0.0) {
-            // Base sway wave modulated by leafiness (flutter)
             float baseWave = sin(time * windSwayFactor + instancePos.x * 0.1 + instancePos.z * 0.1) * windStrength;
-
-            // Leaf flutter (high frequency, affected by leafiness)
-            float flutter = sin(time * windSwayFactor * 5.0 + instancePos.x * 0.3 + instancePos.z * 0.3) * windLeafiness * 0.2;
-
-            // Gust effect
+            float flutter = sin(time * windSwayFactor * 5.0 + instancePos.x * 0.3 + instancePos.z * 0.3) * leafVar * 0.2;
             float gustWave = sin(time * windSwayFactor * 2.3 + instancePos.x * 0.1) * windGustStrength;
             gustWave *= sin(time * windSwayFactor * 0.7);
 
-            // Combine waves with stability factor (0 = full movement, 1 = no movement)
-            float totalWave = ((baseWave + gustWave * 0.5) * 0.3 + flutter) * (1.0 - windStability * 0.7);
+            float totalWave = ((baseWave + gustWave * 0.5) * 0.3 + flutter) * (1.0 - stabVar * 0.7);
 
-            // Wind direction
             vec3 windDir = vec3(windDirection.x, 0.0, windDirection.y);
             if (length(windDir) > 0.01) {
               windDir = normalize(windDir);
             }
 
-            // Lever effect: Adjust height-based bending
-            // leverUp extends the top part, leverDown moves pivot point
             float leverFactor = heightFactor;
             if (windLeverUp > 0.0) {
-              // Extend bending to higher parts
               leverFactor = pow(heightFactor, 1.0 / (1.0 + windLeverUp * 0.5));
             }
             if (windLeverDown > 0.0) {
-              // Lower the pivot point
               leverFactor = smoothstep(windLeverDown * 0.1, 1.0, heightFactor);
             }
 
-            // Apply wind displacement in WORLD space (not affected by instance scaling)
             worldPosition.xyz += windDir * totalWave * leverFactor;
           }
         }
 
-        // Transform to clip space
         gl_Position = viewProjection * worldPosition;
-
-        // Pass to fragment shader
         vUV = uv;
         vNormal = normalize((world * vec4(normal, 0.0)).xyz);
       }
@@ -1368,13 +1349,11 @@ export class ShaderService {
       void main(void) {
         vec4 texColor = texture2D(textureSampler, vUV);
 
-        // Alpha test
         if (texColor.a < 0.5) {
           discard;
         }
 
-        // Simple diffuse lighting
-        float diffuse = max(dot(vNormal, -lightDirection), 0.3); // Min 0.3 ambient
+        float diffuse = max(dot(vNormal, -lightDirection), 0.3);
         vec3 finalColor = texColor.rgb * diffuse;
 
         gl_FragColor = vec4(finalColor, texColor.a);
@@ -1434,6 +1413,10 @@ export class ShaderService {
             'windStrength',
             'windGustStrength',
             'windSwayFactor',
+            'windLeafiness',
+            'windStability',
+            'windLeverUp',
+            'windLeverDown',
             'lightDirection',
           ],
           defines: ['#define INSTANCES'],
@@ -1443,28 +1426,32 @@ export class ShaderService {
       // Set texture
       material.setTexture('textureSampler', texture);
 
-      // Set initial wind parameters
+      // Set initial global wind parameters
       if (this.environmentService) {
         const windParams = this.environmentService.getWindParameters();
         this.setWindParametersOnMaterial(material, windParams);
       } else {
-        // Default wind parameters
         material.setVector2('windDirection', new Vector2(1, 0));
         material.setFloat('windStrength', 0.5);
         material.setFloat('windGustStrength', 0.3);
         material.setFloat('windSwayFactor', 1.0);
       }
 
+      // Set default per-block wind parameters (will be overwritten by ThinInstancesService)
+      material.setFloat('windLeafiness', 0.5);
+      material.setFloat('windStability', 0.5);
+      material.setFloat('windLeverUp', 0.0);
+      material.setFloat('windLeverDown', 0.0);
+
       // Set light direction
       material.setVector3('lightDirection', new Vector3(0.5, -1, 0.5));
 
-      // Set time uniform (will be updated in render loop)
+      // Set time uniform
       material.setFloat('time', 0);
 
       // Add to wind materials for automatic updates
       this.windMaterials.push(material);
 
-      // Disable backface culling
       material.backFaceCulling = false;
 
       logger.debug('Thin instance wind material created', { texturePath });
