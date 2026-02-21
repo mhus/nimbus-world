@@ -3801,10 +3801,13 @@
       } ]
     }, {
       "name" : "BlockEffect",
-      "values" : [ "NONE", "WIND" ],
+      "values" : [ "NONE", "WATER", "WIND" ],
       "enumValues" : [ {
         "name" : "NONE",
         "value" : "0"
+      }, {
+        "name" : "WATER",
+        "value" : "1"
       }, {
         "name" : "WIND",
         "value" : "2"
@@ -7839,6 +7842,13 @@
         "comment" : null
       }, {
         "name" : "userId",
+        "type" : "string",
+        "optional" : false,
+        "visibility" : null,
+        "javaTypeHint" : null,
+        "comment" : null
+      }, {
+        "name" : "playerId",
         "type" : "string",
         "optional" : false,
         "visibility" : null,

@@ -52,8 +52,7 @@ interface FaceData {
   // Wind attributes (per-vertex)
   windLeafiness?: number[];
   windStability?: number[];
-  windLeverUp?: number[];
-  windLeverDown?: number[];
+  windHeight?: number[];
 }
 
 /**
@@ -352,14 +351,8 @@ export class RenderService {
         const isFaceLevelGroup = items.length > 0 && 'textureKey' in items[0];
 
         // Check if this material group needs wind attributes
-        let needsWind = false;
-        if (isFaceLevelGroup) {
-          const firstFace = items[0] as unknown as FaceDescriptor;
-          needsWind = firstFace?.clientBlock?.currentModifier?.visibility?.effect === BlockEffect.WIND;
-        } else {
-          const firstBlock = items[0] as unknown as ClientBlock;
-          needsWind = firstBlock?.currentModifier?.visibility?.effect === BlockEffect.WIND;
-        }
+        // Derive from materialKey which already resolves effect from both texture and visibility level
+        const needsWind = materialKey.includes(`eff:${BlockEffect.WIND}`);
 
         const faceData: FaceData = {
           positions: [],
@@ -371,8 +364,7 @@ export class RenderService {
             colors: [],
             windLeafiness: [],
             windStability: [],
-            windLeverUp: [],
-            windLeverDown: [],
+            windHeight: [],
           }),
         };
 
@@ -472,8 +464,7 @@ export class RenderService {
             colors: faceData.colors?.length ?? 0,
             windLeafiness: faceData.windLeafiness?.length ?? 0,
             windStability: faceData.windStability?.length ?? 0,
-            windLeverUp: faceData.windLeverUp?.length ?? 0,
-            windLeverDown: faceData.windLeverDown?.length ?? 0,
+            windHeight: faceData.windHeight?.length ?? 0,
           });
 
           const meshName = `${chunkKey}_${materialKey}`;
@@ -987,12 +978,8 @@ export class RenderService {
       const buffer = new VertexBuffer(this.scene.getEngine(), faceData.windStability, 'windStability', false, false, 1, false);
       mesh.setVerticesBuffer(buffer);
     }
-    if (faceData.windLeverUp && faceData.windLeverUp.length > 0) {
-      const buffer = new VertexBuffer(this.scene.getEngine(), faceData.windLeverUp, 'windLeverUp', false, false, 1, false);
-      mesh.setVerticesBuffer(buffer);
-    }
-    if (faceData.windLeverDown && faceData.windLeverDown.length > 0) {
-      const buffer = new VertexBuffer(this.scene.getEngine(), faceData.windLeverDown, 'windLeverDown', false, false, 1, false);
+    if (faceData.windHeight && faceData.windHeight.length > 0) {
+      const buffer = new VertexBuffer(this.scene.getEngine(), faceData.windHeight, 'windHeight', false, false, 1, false);
       mesh.setVerticesBuffer(buffer);
     }
 

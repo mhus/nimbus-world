@@ -79,23 +79,55 @@ export abstract class BlockRenderer {
 
     // Add wind attributes (per-vertex, 1 value per vertex)
     // Only add if arrays exist (indicates wind shader is used for this material group)
-    if (faceData.windLeafiness && faceData.windStability && faceData.windLeverUp && faceData.windLeverDown) {
+    if (faceData.windLeafiness && faceData.windStability && faceData.windHeight) {
       const windLeafiness = modifier.wind?.leafiness ?? 0.5;
       const windStability = modifier.wind?.stability ?? 0.5;
-      let windLeverUp = modifier.wind?.leverUp ?? 0.0;
-      let windLeverDown = modifier.wind?.leverDown ?? 0.0;
+      const level = block.level ?? 0;
+      const blockY = block.position?.y ?? 0;
 
-      // Multiply lever values with block.level if set
-      if (block.level !== undefined) {
-        windLeverUp *= block.level;
-        windLeverDown *= block.level;
-      }
-
+      // Calculate windHeight per vertex from actual Y position
+      // windHeight = level + (vertexY - blockY), where vertexY - blockY is 0..1 within the block
+      const posStartIndex = faceData.positions.length - vertexCount * 3;
       for (let i = 0; i < vertexCount; i++) {
+        const vertexY = faceData.positions[posStartIndex + i * 3 + 1]; // Y component
+        const relativeY = vertexY - blockY; // 0 at bottom, ~1 at top
+        const windHeight = level + relativeY;
         faceData.windLeafiness.push(windLeafiness);
         faceData.windStability.push(windStability);
-        faceData.windLeverUp.push(windLeverUp);
-        faceData.windLeverDown.push(windLeverDown);
+        faceData.windHeight.push(windHeight);
+      }
+    }
+  }
+
+  /**
+   * Add wind attributes with per-vertex windHeight values
+   * Used by CubeRenderer to set different windHeight for top/bottom vertices
+   *
+   * @param faceData - Face data to add attributes to
+   * @param modifier - Block modifier containing wind properties
+   * @param windHeights - Array of windHeight values (one per vertex)
+   */
+  protected addWindAttributesPerVertex(
+    faceData: any,
+    modifier: BlockModifier,
+    windHeights: number[]
+  ): void {
+    // Add vertex colors (white by default, RGBA format: 4 values per vertex)
+    if (faceData.colors) {
+      for (let i = 0; i < windHeights.length; i++) {
+        faceData.colors.push(1.0, 1.0, 1.0, 1.0);
+      }
+    }
+
+    // Add wind attributes with per-vertex windHeight
+    if (faceData.windLeafiness && faceData.windStability && faceData.windHeight) {
+      const windLeafiness = modifier.wind?.leafiness ?? 0.5;
+      const windStability = modifier.wind?.stability ?? 0.5;
+
+      for (let i = 0; i < windHeights.length; i++) {
+        faceData.windLeafiness.push(windLeafiness);
+        faceData.windStability.push(windStability);
+        faceData.windHeight.push(windHeights[i]);
       }
     }
   }

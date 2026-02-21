@@ -26,8 +26,7 @@ interface FaceData {
   // Wind attributes (per-vertex)
   windLeafiness?: number[];
   windStability?: number[];
-  windLeverUp?: number[];
-  windLeverDown?: number[];
+  windHeight?: number[];
 }
 
 /**
@@ -236,7 +235,13 @@ export class CubeRenderer extends BlockRenderer {
     // Render visible faces (with or without material)
     let facesRendered = 0;
 
-    // Top face (y = y + size)
+    // Calculate per-vertex windHeight from block.level
+    // Level starts at 0 (root block): bottomH = level, topH = level + 1
+    const level = block.block.level ?? 0;
+    const bottomH = level;
+    const topH = level + 1;
+
+    // Top face (y = y + size) - all vertices at top height
     if (isTopVisible) {
       const texture = textures[topIndex] ? this.normalizeTexture(textures[topIndex]) : null;
       await this.addFace(
@@ -246,12 +251,13 @@ export class CubeRenderer extends BlockRenderer {
         modifier,
         block.block,
         renderContext,
-        false  // reverseWinding
+        false,  // reverseWinding
+        [topH, topH, topH, topH]
       );
       facesRendered++;
     }
 
-    // Bottom face (y = y)
+    // Bottom face (y = y) - all vertices at bottom height
     if (isBottomVisible) {
       const texture = textures[bottomIndex] ? this.normalizeTexture(textures[bottomIndex]) : null;
       await this.addFace(
@@ -261,12 +267,13 @@ export class CubeRenderer extends BlockRenderer {
         modifier,
         block.block,
         renderContext,
-        false  // reverseWinding
+        false,  // reverseWinding
+        [bottomH, bottomH, bottomH, bottomH]
       );
       facesRendered++;
     }
 
-    // Left face (x = x)
+    // Left face (x = x) - bottom-bottom, bottom-bottom, top-top, top-top
     if (isLeftVisible) {
       const texture = textures[leftIndex] ? this.normalizeTexture(textures[leftIndex]) : null;
       await this.addFace(
@@ -276,7 +283,8 @@ export class CubeRenderer extends BlockRenderer {
         modifier,
         block.block,
         renderContext,
-        true  // Reverse winding order
+        true,  // Reverse winding order
+        [bottomH, bottomH, topH, topH]
       );
       facesRendered++;
     }
@@ -291,7 +299,8 @@ export class CubeRenderer extends BlockRenderer {
         modifier,
         block.block,
         renderContext,
-        true  // Reverse winding order
+        true,  // Reverse winding order
+        [bottomH, bottomH, topH, topH]
       );
       facesRendered++;
     }
@@ -306,7 +315,8 @@ export class CubeRenderer extends BlockRenderer {
         modifier,
         block.block,
         renderContext,
-        true  // Reverse winding order
+        true,  // Reverse winding order
+        [bottomH, bottomH, topH, topH]
       );
       facesRendered++;
     }
@@ -321,7 +331,8 @@ export class CubeRenderer extends BlockRenderer {
         modifier,
         block.block,
         renderContext,
-        true  // Reverse winding order
+        true,  // Reverse winding order
+        [bottomH, bottomH, topH, topH]
       );
       facesRendered++;
     }
@@ -345,6 +356,7 @@ export class CubeRenderer extends BlockRenderer {
    * @param modifier - Block modifier (contains wind properties)
    * @param renderContext - Render context
    * @param reverseWinding - Reverse triangle winding order for backface culling
+   * @param windHeights - Per-vertex windHeight values (4 values, one per corner)
    */
   private async addFace(
     corner0: number[],
@@ -356,7 +368,8 @@ export class CubeRenderer extends BlockRenderer {
     modifier: BlockModifier,
     block: Block,
     renderContext : RenderContext,
-    reverseWinding: boolean = false
+    reverseWinding: boolean = false,
+    windHeights?: number[]
   ): Promise<void> {
       const faceData = renderContext.faceData;
     // Add 4 vertices (positions)
@@ -421,8 +434,12 @@ export class CubeRenderer extends BlockRenderer {
       faceData.indices.push(i0, i2, i3);  // Triangle 2
     }
 
-    // Add wind attributes and colors (uses helper from base class)
-    this.addWindAttributesAndColors(faceData, modifier, block, 4);
+    // Add wind attributes and colors (uses per-vertex windHeight from base class)
+    if (windHeights) {
+      this.addWindAttributesPerVertex(faceData, modifier, windHeights);
+    } else {
+      this.addWindAttributesAndColors(faceData, modifier, block, 4);
+    }
 
     renderContext.vertexOffset += 4;  // 4 vertices added
   }
@@ -457,6 +474,11 @@ export class CubeRenderer extends BlockRenderer {
     const textureIndex = this.getTextureIndexForFace(textures, textureKey);
     const texture = textures[textureIndex] ? this.normalizeTexture(textures[textureIndex]) : null;
 
+    // Calculate per-vertex windHeight from block.level
+    const level = block.block.level ?? 0;
+    const bottomH = level - 1;
+    const topH = level;
+
     // Render the requested face
     switch (textureKey) {
       case 1: // TOP
@@ -467,7 +489,8 @@ export class CubeRenderer extends BlockRenderer {
           modifier,
           block.block,
           renderContext,
-          false
+          false,
+          [topH, topH, topH, topH]
         );
         break;
       case 2: // BOTTOM
@@ -478,7 +501,8 @@ export class CubeRenderer extends BlockRenderer {
           modifier,
           block.block,
           renderContext,
-          false
+          false,
+          [bottomH, bottomH, bottomH, bottomH]
         );
         break;
       case 3: // LEFT
@@ -489,7 +513,8 @@ export class CubeRenderer extends BlockRenderer {
           modifier,
           block.block,
           renderContext,
-          true
+          true,
+          [bottomH, bottomH, topH, topH]
         );
         break;
       case 4: // RIGHT
@@ -500,7 +525,8 @@ export class CubeRenderer extends BlockRenderer {
           modifier,
           block.block,
           renderContext,
-          true
+          true,
+          [bottomH, bottomH, topH, topH]
         );
         break;
       case 5: // FRONT
@@ -511,7 +537,8 @@ export class CubeRenderer extends BlockRenderer {
           modifier,
           block.block,
           renderContext,
-          true
+          true,
+          [bottomH, bottomH, topH, topH]
         );
         break;
       case 6: // BACK
@@ -522,7 +549,8 @@ export class CubeRenderer extends BlockRenderer {
           modifier,
           block.block,
           renderContext,
-          true
+          true,
+          [bottomH, bottomH, topH, topH]
         );
         break;
     }

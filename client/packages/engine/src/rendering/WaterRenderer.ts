@@ -331,23 +331,17 @@ export class WaterRenderer extends BlockRenderer {
 
     // Add wind attributes (per-vertex, 1 value per vertex)
     // Only add if arrays exist (indicates wind shader is used for this material group)
-    if (faceData.windLeafiness && faceData.windStability && faceData.windLeverUp && faceData.windLeverDown) {
+    if (faceData.windLeafiness && faceData.windStability && faceData.windHeight) {
       const windLeafiness = modifier.wind?.leafiness ?? 0.5;
       const windStability = modifier.wind?.stability ?? 0.5;
-      let windLeverUp = modifier.wind?.leverUp ?? 0.0;
-      let windLeverDown = modifier.wind?.leverDown ?? 0.0;
-
-      // Multiply lever values with block.level if set
-      if (block.level !== undefined) {
-        windLeverUp *= block.level;
-        windLeverDown *= block.level;
-      }
+      // Default windHeight: block center (level + 0.5)
+      // Level starts at 0 (root block)
+      const windHeight = block.level !== undefined ? (block.level + 0.5) : 0.0;
 
       for (let i = 0; i < 4; i++) {
         faceData.windLeafiness.push(windLeafiness);
         faceData.windStability.push(windStability);
-        faceData.windLeverUp.push(windLeverUp);
-        faceData.windLeverDown.push(windLeverDown);
+        faceData.windHeight.push(windHeight);
       }
     }
 

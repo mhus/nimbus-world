@@ -320,7 +320,7 @@ export class ShaderService {
    * Register custom wind shader code with Babylon.js
    */
   private registerWindShaderCode(): void {
-    // Vertex shader with lighting and physical wind animation
+    // Vertex shader with arc-based static wind bending
     Effect.ShadersStore['windVertexShader'] = `
       precision highp float;
 
@@ -330,20 +330,16 @@ export class ShaderService {
       attribute vec2 uv;
       attribute vec4 color;
 
-      // Wind properties (per-vertex)
-      attribute float windLeafiness;
-      attribute float windStability;
-      attribute float windLeverUp;
-      attribute float windLeverDown;
+      // Wind per-vertex
+      attribute float windHeight;     // Height from pivot in blocks (= block.level)
+      attribute float windLeafiness;  // For later (leaf movement)
+      attribute float windStability;  // Stability (0=flexible, 1=rigid)
 
       // Uniforms
       uniform mat4 worldViewProjection;
       uniform mat4 world;
-      uniform float time;
       uniform vec2 windDirection;
       uniform float windStrength;
-      uniform float windGustStrength;
-      uniform float windSwayFactor;
 
       // Varyings to fragment shader
       varying vec2 vUV;
@@ -353,67 +349,22 @@ export class ShaderService {
       void main(void) {
         vec3 pos = position;
 
-        // Get world position for phase shift
-        vec4 worldPos = world * vec4(position, 1.0);
+        float h = windHeight;
+        float bendFactor = windStrength * (1.0 - windStability);
+        float theta = bendFactor * 0.3;
 
-        // Base sway wave (smooth sinusoidal)
-        float baseWave = sin(time * windSwayFactor + worldPos.x * 0.01 + worldPos.z * 0.01) * windStrength;
+        if (h > 0.0 && abs(theta) > 0.001) {
+          vec2 windDir = length(windDirection) > 0.01
+            ? normalize(windDirection)
+            : vec2(1.0, 0.0);
 
-        // Gust effect (faster, irregular pulses)
-        float gustWave = sin(time * windSwayFactor * 2.3 + worldPos.x * 0.01) * windGustStrength;
-        gustWave *= sin(time * windSwayFactor * 0.7); // Modulate gust intensity
-
-        // Secondary wave for more organic movement (leafiness effect)
-        float leafiness = max(windLeafiness, 0.5);
-        float leafWave = sin(time * windSwayFactor * 1.7 + worldPos.y * 0.01) * leafiness;
-
-        // Combine all waves
-        float totalWave = baseWave + gustWave * 0.5 + leafWave * 0.3;
-
-        // Stability reduces movement (1.0 = stable/no movement, 0.0 = unstable/full movement)
-        float stabilityFactor = 1.0 - windStability;
-
-        // Shear direction (normalized wind direction in XZ plane)
-        vec3 shearDir = vec3(windDirection.x, 0.0, windDirection.y);
-        if (length(shearDir) > 0.01) {
-          shearDir = normalize(shearDir);
+          float horizDisp = h * sin(theta);
+          pos.x += horizDisp * windDir.x;
+          pos.z += horizDisp * windDir.y;
+          pos.y += h * (cos(theta) - 1.0);
         }
 
-        // Pivot Y: base of the lever
-        float pivotY = -windLeverDown;
-
-        // Block height
-        float blockHeight = 1.0;
-
-        // Normalized height within block (0.0 at bottom, 1.0 at top)
-        float h = clamp((position.y - pivotY) / (pivotY + blockHeight + windLeverUp), 0.0, 1.0);
-
-        // Total height from pivot to top of this vertex
-        float heightFromPivot = position.y - pivotY;
-
-        // Calculate lever length for this vertex
-        float leverAtThisHeight = mix(windLeverDown, windLeverUp, h);
-
-        // Horizontal displacement at this height
-        float horizontalDisp = totalWave * leverAtThisHeight * stabilityFactor * 0.05;
-
-        // Apply horizontal shearing
-        pos += shearDir * horizontalDisp * h;
-
-        // Vertical compression (physics: when bent horizontally, becomes shorter)
-        float horizontalDispTotal = abs(horizontalDisp * h);
-        float compressionFactor = (horizontalDispTotal * horizontalDispTotal) / (2.0 * max(heightFromPivot, 0.1));
-        pos.y -= compressionFactor;
-
-        // Vertical leafiness movement (additional up/down movement for leaves)
-        float verticalLeafWave = sin(time * windSwayFactor * 2.1 + worldPos.x * 0.015 + worldPos.z * 0.015) * leafiness;
-        verticalLeafWave += cos(time * windSwayFactor * 1.3 + worldPos.z * 0.02) * leafiness * 0.5;
-        pos.y += verticalLeafWave * 0.02 * h;
-
-        // Transform to clip space
         gl_Position = worldViewProjection * vec4(pos, 1.0);
-
-        // Pass to fragment shader
         vUV = uv;
         vColor = color;
         vNormal = normalize((world * vec4(normal, 0.0)).xyz);
@@ -473,19 +424,15 @@ export class ShaderService {
           'normal',
           'uv',
           'color',
+          'windHeight',
           'windLeafiness',
           'windStability',
-          'windLeverUp',
-          'windLeverDown',
         ],
         uniforms: [
           'worldViewProjection',
           'world',
-          'time',
           'windDirection',
           'windStrength',
-          'windGustStrength',
-          'windSwayFactor',
           'textureSampler',
           'lightDirection',
         ],
@@ -513,8 +460,6 @@ export class ShaderService {
     // Set default wind parameters (will be updated from EnvironmentService)
     material.setVector2('windDirection', new Vector2(1.0, 0.0));
     material.setFloat('windStrength', 0.8);
-    material.setFloat('windGustStrength', 0.4);
-    material.setFloat('windSwayFactor', 2.0);
 
     // Set light direction (from above-front)
     material.setVector3('lightDirection', new Vector3(0.5, 1.0, 0.5));
@@ -524,14 +469,6 @@ export class ShaderService {
 
     // Store material for automatic updates
     this.windMaterials.push(material);
-
-    // Update time uniform every frame
-    let totalTime = 0;
-    const scene = this.scene; // Capture scene reference for closure
-    scene.onBeforeRenderObservable.add(() => {
-      totalTime += scene.getEngine().getDeltaTime() / 1000.0;
-      material.setFloat('time', totalTime);
-    });
 
     // If EnvironmentService is already connected, update this material immediately
     if (this.environmentService) {
@@ -557,8 +494,6 @@ export class ShaderService {
   private updateSingleWindMaterial(material: ShaderMaterial, params: WindParameters): void {
     material.setVector2('windDirection', new Vector2(params.windDirection.x, params.windDirection.z));
     material.setFloat('windStrength', params.windStrength);
-    material.setFloat('windGustStrength', params.windGustStrength);
-    material.setFloat('windSwayFactor', params.windSwayFactor);
   }
 
   // ============================================

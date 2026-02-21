@@ -450,6 +450,9 @@ export enum BlockEffect {
   /** No effect */
   NONE = 0,
 
+  /** Water effect */
+  WATER = 1,
+
   /** Wind effect */
   WIND = 2,
 }
