@@ -2,7 +2,10 @@ package de.mhus.nimbus.world.generator.modelbuilder;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.generated.types.Vector3Int;
+import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.shared.layer.WLayer;
+import de.mhus.nimbus.world.shared.world.WAnything;
+import de.mhus.nimbus.world.shared.world.WAnythingService;
 import de.mhus.nimbus.world.shared.world.WWorld;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,6 +29,7 @@ public class ModelBuilderService {
 
     private final List<ModelPartBuilder> partBuilders;
     private final ObjectMapper objectMapper;
+    private final WAnythingService anythingService;
     private Map<String, ModelPartBuilder> partBuilderMap;
 
     private synchronized void initializePartBuildersIfNeeded() {
@@ -57,6 +61,38 @@ public class ModelBuilderService {
         } catch (Exception e) {
             throw new ModelBuilderException("Failed to parse model JSON: " + e.getMessage(), e);
         }
+    }
+
+    /**
+     * Load a model from WAnythingService by collection and name (region-scoped),
+     * then build it.
+     *
+     * @param world        the world
+     * @param layer        the target layer
+     * @param collection   WAnything collection name
+     * @param name         WAnything entity name
+     * @param startPos     starting cursor position
+     * @param parameterMap parameter substitution map ($1, $2, ...)
+     * @return ModelBuilderContext with blockCount and chunkDataMap
+     */
+    public ModelBuilderContext buildModel(WWorld world, WLayer layer, String collection, String name,
+                          Vector3Int startPos, Map<String, String> parameterMap) throws ModelBuilderException {
+        WorldId regionWorldId = WorldId.of(world.getWorldId())
+                .orElseThrow(() -> new ModelBuilderException("Invalid worldId: " + world.getWorldId()))
+                .toRegionCollection();
+
+        WAnything entity = anythingService.findByWorldIdAndCollectionAndName(
+                regionWorldId.getId(), collection, name)
+                .orElseThrow(() -> new ModelBuilderException(
+                        "Model not found: collection=" + collection + ", name=" + name
+                                + ", worldId=" + regionWorldId.getId()));
+
+        ModelBuilderModel model = entity.getDataAs(ModelBuilderModel.class)
+                .orElseThrow(() -> new ModelBuilderException(
+                        "Failed to convert WAnything data to ModelBuilderModel: collection=" + collection
+                                + ", name=" + name));
+
+        return buildModel(world, layer, model, startPos, parameterMap);
     }
 
     /**

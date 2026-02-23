@@ -29,7 +29,7 @@ class ModelBuilderServiceTest {
                 new LogModelPartBuilder(),
                 new LeafModelPartBuilder()
         );
-        service = new ModelBuilderService(builders, new ObjectMapper());
+        service = new ModelBuilderService(builders, new ObjectMapper(), null);
 
         // Real WWorld with chunkSize 16
         WorldInfo worldInfo = new WorldInfo();
@@ -207,7 +207,7 @@ class ModelBuilderServiceTest {
             }
         };
 
-        ModelBuilderService svc = new ModelBuilderService(List.of(levelSetter), new ObjectMapper());
+        ModelBuilderService svc = new ModelBuilderService(List.of(levelSetter), new ObjectMapper(), null);
 
         ModelBuilderModel model = ModelBuilderModel.builder()
                 .definitions(List.of(
