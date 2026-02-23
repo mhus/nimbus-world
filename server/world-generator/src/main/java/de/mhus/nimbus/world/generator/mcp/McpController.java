@@ -15,6 +15,8 @@ import de.mhus.nimbus.world.shared.session.WSessionService;
 import de.mhus.nimbus.world.shared.world.BlockUtil;
 import de.mhus.nimbus.world.shared.world.WBlockType;
 import de.mhus.nimbus.world.shared.world.WBlockTypeService;
+import de.mhus.nimbus.world.shared.world.WAnything;
+import de.mhus.nimbus.world.shared.world.WAnythingService;
 import de.mhus.nimbus.world.shared.world.WChunk;
 import de.mhus.nimbus.world.shared.world.WChunkService;
 import de.mhus.nimbus.world.shared.world.WWorld;
@@ -65,6 +67,7 @@ public class McpController extends BaseEditorController {
     private final de.mhus.nimbus.world.shared.world.WDocumentService documentService;
     private final WFlatService flatService;
     private final WEditCacheService editCacheService;
+    private final WAnythingService anythingService;
 
     // ==================== MCP PROTOCOL ====================
 
@@ -686,6 +689,110 @@ public class McpController extends BaseEditorController {
                 )
         ));
 
+        // WAnything tools
+        tools.add(createToolDescriptor(
+                "list_anything",
+                "List WAnything entities by worldId and collection. Returns name, title, type, and enabled status.",
+                Map.of(
+                        "worldId", Map.of(
+                                "type", "string",
+                                "description", "World ID or region collection (e.g. '@region:ymir')",
+                                "required", true
+                        ),
+                        "collection", Map.of(
+                                "type", "string",
+                                "description", "Collection name (e.g. 'flora-models')",
+                                "required", true
+                        )
+                )
+        ));
+
+        tools.add(createToolDescriptor(
+                "get_anything",
+                "Get a single WAnything entity by worldId, collection, and name. Returns full data.",
+                Map.of(
+                        "worldId", Map.of(
+                                "type", "string",
+                                "description", "World ID or region collection (e.g. '@region:ymir')",
+                                "required", true
+                        ),
+                        "collection", Map.of(
+                                "type", "string",
+                                "description", "Collection name",
+                                "required", true
+                        ),
+                        "name", Map.of(
+                                "type", "string",
+                                "description", "Entity name",
+                                "required", true
+                        )
+                )
+        ));
+
+        tools.add(createToolDescriptor(
+                "create_anything",
+                "Create a new WAnything entity scoped by worldId. Data can be any JSON object.",
+                Map.of(
+                        "worldId", Map.of(
+                                "type", "string",
+                                "description", "World ID or region collection (e.g. '@region:ymir')",
+                                "required", true
+                        ),
+                        "collection", Map.of(
+                                "type", "string",
+                                "description", "Collection name",
+                                "required", true
+                        ),
+                        "name", Map.of(
+                                "type", "string",
+                                "description", "Unique entity name within collection",
+                                "required", true
+                        ),
+                        "title", Map.of(
+                                "type", "string",
+                                "description", "Display title",
+                                "required", false
+                        ),
+                        "description", Map.of(
+                                "type", "string",
+                                "description", "Description",
+                                "required", false
+                        ),
+                        "type", Map.of(
+                                "type", "string",
+                                "description", "Type category within collection",
+                                "required", false
+                        ),
+                        "data", Map.of(
+                                "type", "object",
+                                "description", "Arbitrary JSON data payload",
+                                "required", true
+                        )
+                )
+        ));
+
+        tools.add(createToolDescriptor(
+                "delete_anything",
+                "Delete a WAnything entity by worldId, collection, and name.",
+                Map.of(
+                        "worldId", Map.of(
+                                "type", "string",
+                                "description", "World ID or region collection (e.g. '@region:ymir')",
+                                "required", true
+                        ),
+                        "collection", Map.of(
+                                "type", "string",
+                                "description", "Collection name",
+                                "required", true
+                        ),
+                        "name", Map.of(
+                                "type", "string",
+                                "description", "Entity name",
+                                "required", true
+                        )
+                )
+        ));
+
         Map<String, Object> response = new HashMap<>();
         response.put("server", serverInfo);
         response.put("tools", tools);
@@ -719,6 +826,10 @@ public class McpController extends BaseEditorController {
         endpoints.put("GET /generator/mcp/worlds/{worldId}/flats", "List flats for a world");
         endpoints.put("GET /generator/mcp/worlds/{worldId}/flats/{flatId}", "Get flat metadata (mountX, mountZ, sizeX, sizeZ, materials)");
         endpoints.put("GET /generator/mcp/worlds/{worldId}/flats/{flatId}/data?x=&z=", "Get flat column data at world position (level, column material, extraBlocks)");
+        endpoints.put("GET /generator/mcp/anything?worldId=&collection=", "List WAnything entities");
+        endpoints.put("GET /generator/mcp/anything/one?worldId=&collection=&name=", "Get single WAnything entity");
+        endpoints.put("POST /generator/mcp/anything", "Create WAnything entity");
+        endpoints.put("DELETE /generator/mcp/anything?worldId=&collection=&name=", "Delete WAnything entity");
         response.put("endpoints", endpoints);
 
         return ResponseEntity.ok(response);
@@ -2482,6 +2593,143 @@ public class McpController extends BaseEditorController {
         return dto;
     }
 
+    // ==================== WANYTHING OPERATIONS ====================
+
+    @GetMapping("/anything")
+    @Operation(summary = "List WAnything entities by worldId and collection")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "List of entities"),
+            @ApiResponse(responseCode = "400", description = "Missing parameters")
+    })
+    public ResponseEntity<?> listAnything(
+            @RequestParam String worldId,
+            @RequestParam String collection) {
+        log.debug("MCP: List anything: worldId={}, collection={}", worldId, collection);
+
+        if (Strings.isBlank(worldId) || Strings.isBlank(collection)) {
+            return bad("worldId and collection are required");
+        }
+
+        List<WAnything> entities = anythingService.findByWorldIdAndCollection(worldId, collection);
+        var dtos = entities.stream().map(e -> Map.of(
+                "id", e.getId(),
+                "name", e.getName(),
+                "title", e.getTitle() != null ? e.getTitle() : "",
+                "type", e.getType() != null ? e.getType() : "",
+                "enabled", e.isEnabled()
+        )).toList();
+
+        return ResponseEntity.ok(Map.of(
+                "worldId", worldId,
+                "collection", collection,
+                "count", dtos.size(),
+                "entities", dtos
+        ));
+    }
+
+    @GetMapping("/anything/one")
+    @Operation(summary = "Get single WAnything entity by worldId, collection, and name")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Entity found"),
+            @ApiResponse(responseCode = "400", description = "Missing parameters"),
+            @ApiResponse(responseCode = "404", description = "Entity not found")
+    })
+    public ResponseEntity<?> getAnything(
+            @RequestParam String worldId,
+            @RequestParam String collection,
+            @RequestParam String name) {
+        log.debug("MCP: Get anything: worldId={}, collection={}, name={}", worldId, collection, name);
+
+        if (Strings.isBlank(worldId) || Strings.isBlank(collection) || Strings.isBlank(name)) {
+            return bad("worldId, collection, and name are required");
+        }
+
+        Optional<WAnything> entity = anythingService.findByWorldIdAndCollectionAndName(worldId, collection, name);
+        if (entity.isEmpty()) {
+            return notFound("Entity not found: worldId=" + worldId
+                    + ", collection=" + collection + ", name=" + name);
+        }
+        WAnything e = entity.get();
+        Map<String, Object> dto = new HashMap<>();
+        dto.put("id", e.getId());
+        dto.put("worldId", e.getWorldId() != null ? e.getWorldId() : "");
+        dto.put("regionId", e.getRegionId() != null ? e.getRegionId() : "");
+        dto.put("collection", e.getCollection());
+        dto.put("name", e.getName());
+        dto.put("title", e.getTitle() != null ? e.getTitle() : "");
+        dto.put("description", e.getDescription() != null ? e.getDescription() : "");
+        dto.put("type", e.getType() != null ? e.getType() : "");
+        dto.put("data", e.getData());
+        dto.put("enabled", e.isEnabled());
+        return ResponseEntity.ok(dto);
+    }
+
+    @PostMapping("/anything")
+    @Operation(summary = "Create a new WAnything entity")
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "Entity created"),
+            @ApiResponse(responseCode = "400", description = "Missing parameters"),
+            @ApiResponse(responseCode = "409", description = "Entity already exists")
+    })
+    public ResponseEntity<?> createAnything(@RequestBody CreateAnythingRequest request) {
+        log.debug("MCP: Create anything: worldId={}, collection={}, name={}",
+                request.worldId(), request.collection(), request.name());
+
+        if (Strings.isBlank(request.worldId()) || Strings.isBlank(request.collection()) || Strings.isBlank(request.name())) {
+            return bad("worldId, collection, and name are required");
+        }
+        if (request.data() == null) {
+            return bad("data is required");
+        }
+
+        try {
+            WAnything entity = anythingService.createWithWorldId(
+                    request.worldId(),
+                    request.collection(),
+                    request.name(),
+                    request.title(),
+                    request.description(),
+                    request.type(),
+                    request.data()
+            );
+
+            return ResponseEntity.status(HttpStatus.CREATED).body(Map.of(
+                    "id", entity.getId(),
+                    "worldId", entity.getWorldId() != null ? entity.getWorldId() : "",
+                    "regionId", entity.getRegionId() != null ? entity.getRegionId() : "",
+                    "collection", entity.getCollection(),
+                    "name", entity.getName()
+            ));
+        } catch (IllegalStateException e) {
+            return conflict(e.getMessage());
+        }
+    }
+
+    @DeleteMapping("/anything")
+    @Operation(summary = "Delete a WAnything entity by worldId, collection, and name")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Entity deleted"),
+            @ApiResponse(responseCode = "400", description = "Missing parameters")
+    })
+    public ResponseEntity<?> deleteAnything(
+            @RequestParam String worldId,
+            @RequestParam String collection,
+            @RequestParam String name) {
+        log.debug("MCP: Delete anything: worldId={}, collection={}, name={}", worldId, collection, name);
+
+        if (Strings.isBlank(worldId) || Strings.isBlank(collection) || Strings.isBlank(name)) {
+            return bad("worldId, collection, and name are required");
+        }
+
+        anythingService.deleteByWorldIdAndCollectionAndName(worldId, collection, name);
+        return ResponseEntity.ok(Map.of(
+                "deleted", true,
+                "worldId", worldId,
+                "collection", collection,
+                "name", name
+        ));
+    }
+
     // Request DTOs
     // CreateLayerRequest moved to de.mhus.nimbus.world.shared.dto package
 
@@ -2534,5 +2782,15 @@ public class McpController extends BaseEditorController {
             String type,
             Boolean solid,
             Double autoJump
+    ) {}
+
+    public record CreateAnythingRequest(
+            String worldId,
+            String collection,
+            String name,
+            String title,
+            String description,
+            String type,
+            Object data
     ) {}
 }

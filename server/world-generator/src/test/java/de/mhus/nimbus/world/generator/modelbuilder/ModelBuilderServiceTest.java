@@ -287,4 +287,36 @@ class ModelBuilderServiceTest {
 
         System.out.println(ModelBuilderDump.dump(ctx));
     }
+
+    @Test
+    void buildFromDescriptor_blockStack_paintsVertically() throws ModelBuilderException {
+        Vector3Int startPos = Vector3Int.builder().x(5).y(10).z(5).build();
+        ModelBuilderContext ctx = service.buildFromDescriptor(world, layer, "block:n:g,n:w", null, startPos);
+
+        assertThat(ctx.getBlockCount()).isEqualTo(2);
+        assertThat(ctx.getChunkDataMap()).isNotEmpty();
+
+        LayerChunkData chunkData = ctx.getChunkDataMap().get("0:0");
+        assertThat(chunkData).isNotNull();
+        assertThat(chunkData.getBlocks()).hasSize(2);
+
+        var blocks = chunkData.getBlocks().stream()
+                .sorted((a, b) -> Integer.compare(a.getBlock().getPosition().getY(), b.getBlock().getPosition().getY()))
+                .toList();
+        assertThat(blocks.get(0).getBlock().getPosition().getY()).isEqualTo(10);
+        assertThat(blocks.get(0).getBlock().getBlockTypeId()).isEqualTo("n:g");
+        assertThat(blocks.get(1).getBlock().getPosition().getY()).isEqualTo(11);
+        assertThat(blocks.get(1).getBlock().getBlockTypeId()).isEqualTo("n:w");
+    }
+
+    @Test
+    void buildFromDescriptor_singleBlock() throws ModelBuilderException {
+        Vector3Int startPos = Vector3Int.builder().x(0).y(5).z(0).build();
+        ModelBuilderContext ctx = service.buildFromDescriptor(world, layer, "block:n:g", null, startPos);
+
+        assertThat(ctx.getBlockCount()).isEqualTo(1);
+        var block = ctx.getChunkDataMap().get("0:0").getBlocks().get(0).getBlock();
+        assertThat(block.getBlockTypeId()).isEqualTo("n:g");
+        assertThat(block.getPosition().getY()).isEqualTo(5);
+    }
 }

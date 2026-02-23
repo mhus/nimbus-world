@@ -25,7 +25,7 @@ import java.util.regex.Pattern;
 @Slf4j
 public class ModelBuilderService {
 
-    private static final Pattern PARAM_PATTERN = Pattern.compile("\\$(\\d+)");
+    private static final Pattern PARAM_PATTERN = Pattern.compile("\\$(\\w+)");
 
     private final List<ModelPartBuilder> partBuilders;
     private final ObjectMapper objectMapper;
@@ -175,6 +175,50 @@ public class ModelBuilderService {
         }
 
         log.info("Model built: {} blocks placed into {} chunks", context.getBlockCount(), context.getChunkDataMap().size());
+        return context;
+    }
+
+    /**
+     * Build from a descriptor string. Dispatches to block stacking or model loading.
+     *
+     * @param world      the world
+     * @param layer      the target layer
+     * @param descriptor descriptor string (e.g. "block:m:log,m:top" or "model:tree,log=m:birch_log")
+     * @param collection WAnything collection name (used for model descriptors)
+     * @param startPos   starting cursor position
+     * @return ModelBuilderContext with blockCount and chunkDataMap
+     */
+    public ModelBuilderContext buildFromDescriptor(WWorld world, WLayer layer, String descriptor,
+                                                   String collection, Vector3Int startPos) throws ModelBuilderException {
+        WAnythingDescriptor parsed = WAnythingDescriptor.parse(descriptor);
+        return switch (parsed) {
+            case WAnythingDescriptor.BlockStack blockStack -> buildBlockStack(world, layer, blockStack, startPos);
+            case WAnythingDescriptor.ModelRef modelRef -> buildModel(world, layer, collection, modelRef.name(), startPos, modelRef.parameters());
+        };
+    }
+
+    private ModelBuilderContext buildBlockStack(WWorld world, WLayer layer,
+                                                WAnythingDescriptor.BlockStack blockStack,
+                                                Vector3Int startPos) throws ModelBuilderException {
+        ModelBuilderContext context = ModelBuilderContext.builder()
+                .world(world)
+                .layer(layer)
+                .position(Vector3Int.builder()
+                        .x(startPos.getX())
+                        .y(startPos.getY())
+                        .z(startPos.getZ())
+                        .build())
+                .random(new Random())
+                .blockCount(0)
+                .build();
+
+        for (String blockType : blockStack.blockTypes()) {
+            context.setBlockType(blockType);
+            context.paintAtCursor();
+            context.incrementY();
+        }
+
+        log.debug("BlockStack built: {} blocks", context.getBlockCount());
         return context;
     }
 
