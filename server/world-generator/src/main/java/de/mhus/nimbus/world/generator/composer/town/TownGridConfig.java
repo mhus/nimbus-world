@@ -41,7 +41,8 @@ public class TownGridConfig {
     private String districtTitle;
 
     /**
-     * Base level for terrain
+     * Relative level offset for terrain. Resolved to absolute level
+     * by VillageBuilder at build time (terrainLevel + baseLevel).
      */
     private int baseLevel;
 

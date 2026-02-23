@@ -54,10 +54,12 @@ public class VillagePoint extends Point {
     private District district;
 
     /**
-     * Base level for village terrain (typically 95)
+     * Relative level offset for village terrain.
+     * Added to the actual terrain level at build time by VillageBuilder.
+     * Default 0 means the village is at terrain level.
      */
     @lombok.Builder.Default
-    private int baseLevel = 95;
+    private int baseLevel = 0;
 
     /**
      * Whether to automatically fill empty slots with additional places.

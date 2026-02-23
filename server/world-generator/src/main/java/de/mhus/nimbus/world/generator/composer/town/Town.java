@@ -74,10 +74,12 @@ public class Town extends Structure implements BuildFeature {
     private transient List<DistrictGrid> designedDistrictGrids;
 
     /**
-     * Base level for town terrain (typically 95)
+     * Relative level offset for town terrain.
+     * Added to the actual terrain level at build time by VillageBuilder.
+     * Default 0 means the town is at terrain level.
      */
     @Builder.Default
-    private int baseLevel = 95;
+    private int baseLevel = 0;
 
     /**
      * Whether to automatically fill empty slots with additional places.

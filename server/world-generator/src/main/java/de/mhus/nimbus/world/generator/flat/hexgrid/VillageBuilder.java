@@ -60,6 +60,25 @@ public class VillageBuilder extends HexGridBuilder {
                 config.getPlaces() != null ? config.getPlaces().size() : 0,
                 config.getStreets() != null ? config.getStreets().size() : 0);
 
+            // Resolve relative baseLevel to absolute terrain level.
+            // Config baseLevel is a relative offset (default 0 = terrain level).
+            int terrainLevel = flat.getLevel(flat.getSizeX() / 2, flat.getSizeZ() / 2);
+            int relativeOffset = config.getBaseLevel();
+            int absoluteLevel = terrainLevel + relativeOffset;
+            log.debug("Resolving village level: terrain={} + offset={} = {}",
+                terrainLevel, relativeOffset, absoluteLevel);
+            config.setBaseLevel(absoluteLevel);
+            if (config.getStreets() != null) {
+                for (TownGridConfig.StreetSegmentConfig street : config.getStreets()) {
+                    street.setLevel(street.getLevel() + terrainLevel);
+                }
+            }
+            if (config.getPlaces() != null) {
+                for (TownGridConfig.PlacedPlaceConfig place : config.getPlaces()) {
+                    place.setLevel(place.getLevel() + terrainLevel);
+                }
+            }
+
             // Convert hexagonal coordinates to cartesian for all places
             convertHexToCartesian(config, flat, hexGridSize);
 

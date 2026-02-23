@@ -460,43 +460,51 @@ public class RoadBuilder extends HexGridBuilder {
 
         int effectiveHalfWidth;
         if (isTrail) {
-            // TRAIL: Use oversampling for natural width variation in curves
+            // TRAIL: Bounding-box scan with perpendicular distance check
+            // Guarantees gap-free pixel coverage at any angle
             double halfWidth = width / 2.0;
             effectiveHalfWidth = (int) Math.ceil(halfWidth);
-            int samples = (int) Math.ceil(width * 1.5);  // Oversample for natural look
-            for (int i = 0; i <= samples; i++) {
-                double t = (i / (double) samples) * 2.0 - 1.0;  // -1.0 to 1.0
-                double offset = t * halfWidth;
+            double halfWidthThreshold = halfWidth + 0.5;
+            for (int dx = -effectiveHalfWidth - 1; dx <= effectiveHalfWidth + 1; dx++) {
+                for (int dz = -effectiveHalfWidth - 1; dz <= effectiveHalfWidth + 1; dz++) {
+                    double perpDist = dx * perpX + dz * perpZ;
+                    if (Math.abs(perpDist) > halfWidthThreshold) continue;
 
-                // Calculate actual position using perpendicular offset
-                int x = (int) Math.round(centerX + offset * perpX);
-                int z = (int) Math.round(centerZ + offset * perpZ);
+                    int x = centerX + dx;
+                    int z = centerZ + dz;
 
-                // Create position key for duplicate checking
-                String posKey = x + "," + z;
-                if (drawnPositions.contains(posKey)) {
-                    continue;  // Skip if already drawn
+                    // Create position key for duplicate checking
+                    String posKey = x + "," + z;
+                    if (drawnPositions.contains(posKey)) {
+                        continue;  // Skip if already drawn
+                    }
+                    drawnPositions.add(posKey);
+
+                    drawRoadBlock(flat, x, z, level, perpDist, centerMaterial, borderMaterial, bridgeMaterial, waterBlockDef);
                 }
-                drawnPositions.add(posKey);
-
-                drawRoadBlock(flat, x, z, level, offset, centerMaterial, borderMaterial, bridgeMaterial, waterBlockDef);
             }
         } else {
-            // STREET/ROAD: Exact width - draw exactly 'width' blocks perpendicular to direction
+            // STREET/ROAD: Bounding-box scan with perpendicular distance check
+            // Guarantees gap-free pixel coverage at any angle
             effectiveHalfWidth = width / 2;
-            for (int perpOffset = -effectiveHalfWidth; perpOffset <= effectiveHalfWidth; perpOffset++) {
-                // Calculate actual position using perpendicular offset
-                int x = (int) Math.round(centerX + perpOffset * perpX);
-                int z = (int) Math.round(centerZ + perpOffset * perpZ);
+            double halfWidthThreshold = effectiveHalfWidth + 0.5;
+            for (int dx = -effectiveHalfWidth - 1; dx <= effectiveHalfWidth + 1; dx++) {
+                for (int dz = -effectiveHalfWidth - 1; dz <= effectiveHalfWidth + 1; dz++) {
+                    double perpDist = dx * perpX + dz * perpZ;
+                    if (Math.abs(perpDist) > halfWidthThreshold) continue;
 
-                // Create position key for duplicate checking
-                String posKey = x + "," + z;
-                if (drawnPositions.contains(posKey)) {
-                    continue;  // Skip if already drawn
+                    int x = centerX + dx;
+                    int z = centerZ + dz;
+
+                    // Create position key for duplicate checking
+                    String posKey = x + "," + z;
+                    if (drawnPositions.contains(posKey)) {
+                        continue;  // Skip if already drawn
+                    }
+                    drawnPositions.add(posKey);
+
+                    drawRoadBlock(flat, x, z, level, perpDist, centerMaterial, borderMaterial, bridgeMaterial, waterBlockDef);
                 }
-                drawnPositions.add(posKey);
-
-                drawRoadBlock(flat, x, z, level, perpOffset, centerMaterial, borderMaterial, bridgeMaterial, waterBlockDef);
             }
         }
 
