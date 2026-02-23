@@ -64,6 +64,7 @@ public class McpController extends BaseEditorController {
     private final de.mhus.nimbus.world.shared.world.SAssetService assetService;
     private final de.mhus.nimbus.world.shared.world.WDocumentService documentService;
     private final WFlatService flatService;
+    private final WEditCacheService editCacheService;
 
     // ==================== MCP PROTOCOL ====================
 
@@ -491,6 +492,33 @@ public class McpController extends BaseEditorController {
         ));
 
         tools.add(createToolDescriptor(
+                "get_block_at",
+                "Get the block at an exact world position (x, y, z). Automatically calculates the correct chunk.",
+                Map.of(
+                        "worldId", Map.of(
+                                "type", "string",
+                                "description", "World ID",
+                                "required", true
+                        ),
+                        "x", Map.of(
+                                "type", "integer",
+                                "description", "World X coordinate",
+                                "required", true
+                        ),
+                        "y", Map.of(
+                                "type", "integer",
+                                "description", "World Y coordinate",
+                                "required", true
+                        ),
+                        "z", Map.of(
+                                "type", "integer",
+                                "description", "World Z coordinate",
+                                "required", true
+                        )
+                )
+        ));
+
+        tools.add(createToolDescriptor(
                 "list_terrain_chunk_keys",
                 "List chunk keys (cx:cz) that have terrain data for a specific layer",
                 Map.of(
@@ -683,6 +711,7 @@ public class McpController extends BaseEditorController {
         endpoints.put("POST /generator/mcp/jobs/execute", "Execute job synchronously (dynamic world selection)");
         endpoints.put("GET /generator/mcp/jobs/{jobId}/status", "Get job status (dynamic)");
         endpoints.put("GET /generator/mcp/worlds/{worldId}/chunks/data?cx=&cz=", "Get chunk storage data with blocks");
+        endpoints.put("GET /generator/mcp/worlds/{worldId}/blocks/at?x=&y=&z=", "Get block at exact world position");
         endpoints.put("GET /generator/mcp/worlds/{worldId}/layers/{layerName}/terrain", "List terrain chunk keys for layer");
         endpoints.put("GET /generator/mcp/worlds/{worldId}/layers/{layerName}/terrain/data?cx=&cz=", "Get terrain chunk data with blocks");
         endpoints.put("GET /generator/mcp/readme/search", "Search README documents");
@@ -1196,6 +1225,123 @@ public class McpController extends BaseEditorController {
         // Height data summary
         Map<String, int[]> heightData = chunkData.getHeightData();
         result.put("heightDataEntries", heightData != null ? heightData.size() : 0);
+
+        return ResponseEntity.ok(result);
+    }
+
+    /**
+     * Get the block at an exact world position (x, y, z).
+     * GET /generator/mcp/worlds/{worldId}/blocks/at?x=22&y=68&z=-33
+     */
+    @GetMapping("/worlds/{worldId}/blocks/at")
+    @Operation(summary = "Get block at exact world position",
+               description = "Looks up the block at the given world coordinates (x, y, z). " +
+                             "Automatically calculates the correct chunk and searches for the block.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Block lookup result"),
+            @ApiResponse(responseCode = "400", description = "Invalid parameters")
+    })
+    public ResponseEntity<?> getBlockAt(
+            @Parameter(description = "World ID") @PathVariable String worldId,
+            @Parameter(description = "World X coordinate") @RequestParam int x,
+            @Parameter(description = "World Y coordinate") @RequestParam int y,
+            @Parameter(description = "World Z coordinate") @RequestParam int z) {
+
+        log.debug("MCP: Get block at: worldId={}, x={}, y={}, z={}", worldId, x, y, z);
+
+        var wid = WorldId.of(worldId).orElseThrow(
+                () -> new IllegalStateException("Invalid worldId: " + worldId)
+        );
+
+        WWorld world = worldService.getByWorldId(wid).orElseThrow(
+                () -> new IllegalStateException("World not found: " + worldId)
+        );
+        int chunkSize = world.getPublicData().getChunkSize();
+
+        int cx = Math.floorDiv(x, chunkSize);
+        int cz = Math.floorDiv(z, chunkSize);
+        String chunkKey = cx + ":" + cz;
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("x", x);
+        result.put("y", y);
+        result.put("z", z);
+        result.put("chunkSize", chunkSize);
+        result.put("chunkKey", chunkKey);
+        result.put("cx", cx);
+        result.put("cz", cz);
+
+        Optional<ChunkData> chunkDataOpt = chunkService.loadChunkData(wid, chunkKey, false);
+        if (chunkDataOpt.isEmpty()) {
+            result.put("found", false);
+            result.put("message", "Chunk " + chunkKey + " not found or has no storage data");
+            return ResponseEntity.ok(result);
+        }
+
+        ChunkData chunkData = chunkDataOpt.get();
+        List<Block> blocks = chunkData.getBlocks();
+        if (blocks == null || blocks.isEmpty()) {
+            result.put("found", false);
+            result.put("message", "Chunk exists but contains no blocks");
+            return ResponseEntity.ok(result);
+        }
+
+        // Find block at exact position
+        Block match = blocks.stream()
+                .filter(b -> b.getPosition() != null
+                        && (int) b.getPosition().getX() == x
+                        && (int) b.getPosition().getY() == y
+                        && (int) b.getPosition().getZ() == z)
+                .findFirst()
+                .orElse(null);
+
+        if (match != null) {
+            result.put("found", true);
+            result.put("source", "chunk");
+            result.put("block", toChunkBlockDto(match));
+        } else {
+            result.put("found", false);
+            result.put("message", "No block at this position in chunk storage (air or empty)");
+            // Show nearby blocks for context
+            List<Map<String, Object>> nearby = blocks.stream()
+                    .filter(b -> b.getPosition() != null
+                            && Math.abs((int) b.getPosition().getX() - x) <= 1
+                            && Math.abs((int) b.getPosition().getY() - y) <= 1
+                            && Math.abs((int) b.getPosition().getZ() - z) <= 1)
+                    .map(this::toChunkBlockDto)
+                    .collect(Collectors.toList());
+            if (!nearby.isEmpty()) {
+                result.put("nearbyBlocks", nearby);
+            }
+        }
+
+        // Also check EditCache for uncommitted edits at this position
+        List<WEditCache> editCacheEntries = editCacheService.findByWorldIdAndPosition(worldId, x, y, z);
+        if (!editCacheEntries.isEmpty()) {
+            List<Map<String, Object>> cacheBlocks = editCacheEntries.stream()
+                    .map(entry -> {
+                        Map<String, Object> dto = new HashMap<>();
+                        dto.put("layerDataId", entry.getLayerDataId());
+                        dto.put("modelName", entry.getModelName());
+                        dto.put("chunk", entry.getChunk());
+                        dto.put("createdAt", entry.getCreatedAt());
+                        dto.put("modifiedAt", entry.getModifiedAt());
+                        if (entry.getBlock() != null && entry.getBlock().getBlock() != null) {
+                            dto.put("block", toChunkBlockDto(entry.getBlock().getBlock()));
+                        }
+                        if (entry.getBlock() != null && entry.getBlock().getGroup() != null) {
+                            dto.put("group", entry.getBlock().getGroup());
+                        }
+                        return dto;
+                    })
+                    .collect(Collectors.toList());
+            result.put("editCache", cacheBlocks);
+            // If not found in chunk, but found in editCache, mark as found
+            if (!(boolean) result.get("found")) {
+                result.put("found", true);
+                result.put("source", "editCache");
+            }
+        }
 
         return ResponseEntity.ok(result);
     }

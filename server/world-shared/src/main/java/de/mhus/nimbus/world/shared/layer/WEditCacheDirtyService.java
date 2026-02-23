@@ -25,7 +25,6 @@ import java.util.stream.Collectors;
 public class WEditCacheDirtyService {
 
     private final WEditCacheDirtyRepository dirtyRepository;
-    private final WEditCacheRepository cacheRepository;
     private final WEditCacheService cacheService;
     private final WDirtyChunkService dirtyChunkService;
     private final WorldRedisLockService lockService;

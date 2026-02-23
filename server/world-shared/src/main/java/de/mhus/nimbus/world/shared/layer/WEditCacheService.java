@@ -321,6 +321,14 @@ public class WEditCacheService {
         return Optional.of(results.get(0));
     }
 
+    /**
+     * Find all cached blocks at exact world coordinates (across all layers and models).
+     */
+    @Transactional(readOnly = true)
+    public List<WEditCache> findByWorldIdAndPosition(String worldId, int x, int y, int z) {
+        return repository.findByWorldIdAndXAndYAndZ(worldId, x, y, z);
+    }
+
     @Transactional(readOnly = true)
     public boolean existsByWorldIdAndChunk(String id, String chunkKey) {
         return repository.existsByWorldIdAndChunk(id, chunkKey);

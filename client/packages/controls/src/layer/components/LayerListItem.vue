@@ -9,6 +9,9 @@
           <p class="text-base-content/70 text-sm mt-1">
             ID: {{ layer.id }}
           </p>
+          <p class="text-base-content/70 text-sm">
+            Data ID: {{ layer.layerDataId }}
+          </p>
         </div>
         <button
           class="btn btn-ghost btn-sm btn-square"

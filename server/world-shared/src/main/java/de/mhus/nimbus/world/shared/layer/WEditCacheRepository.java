@@ -85,6 +85,17 @@ public interface WEditCacheRepository extends MongoRepository<WEditCache, String
     long countByWorldIdAndLayerDataId(String worldId, String layerDataId);
 
     /**
+     * Find all cached blocks at exact world coordinates (across all layers and models).
+     *
+     * @param worldId World identifier
+     * @param x X coordinate
+     * @param y Y coordinate
+     * @param z Z coordinate
+     * @return List of cached blocks at this position
+     */
+    List<WEditCache> findByWorldIdAndXAndYAndZ(String worldId, int x, int y, int z);
+
+    /**
      * Check existence of cached blocks for a specific world and chunk.
      * @param id
      * @param chunkKey

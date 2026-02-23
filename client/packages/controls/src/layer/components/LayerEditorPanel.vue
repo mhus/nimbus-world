@@ -8,6 +8,16 @@
       <!-- Error Alert -->
       <ErrorAlert v-if="errorMessage" :message="errorMessage" class="mb-4" />
 
+      <!-- Read-only IDs in edit mode -->
+      <div v-if="isEditMode && props.layer" class="grid grid-cols-2 gap-4 mb-4 text-sm text-base-content/70">
+        <div>
+          <span class="font-semibold">ID:</span> {{ props.layer.id }}
+        </div>
+        <div>
+          <span class="font-semibold">Layer Data ID:</span> {{ props.layer.layerDataId }}
+        </div>
+      </div>
+
       <form @submit.prevent="handleSave" class="space-y-4">
         <!-- Name -->
         <div class="form-control">

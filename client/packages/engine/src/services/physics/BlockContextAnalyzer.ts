@@ -250,7 +250,7 @@ export class BlockContextAnalyzer {
         if (blockInfo.block) {
           blocks.push(blockInfo);
 
-          const physics = blockInfo.block.currentModifier.physics;
+          const physics = blockInfo.block.currentModifier?.physics;
           if (physics?.solid) {
             hasSolid = true;
           }
@@ -306,7 +306,7 @@ export class BlockContextAnalyzer {
             const blockInfo = this.getBlock(pos.x, feetY + dy, pos.z);
             if (blockInfo.block) {
               blocks.push(blockInfo);
-              if (blockInfo.block.currentModifier.physics?.solid) {
+              if (blockInfo.block.currentModifier?.physics?.solid) {
                 hasSolid = true;
               }
             }
@@ -321,7 +321,7 @@ export class BlockContextAnalyzer {
             const blockInfo = this.getBlock(pos.x, feetY + dy, pos.z);
             if (blockInfo.block) {
               blocks.push(blockInfo);
-              if (blockInfo.block.currentModifier.physics?.solid) {
+              if (blockInfo.block.currentModifier?.physics?.solid) {
                 hasSolid = true;
               }
             }
@@ -335,7 +335,7 @@ export class BlockContextAnalyzer {
           const blockInfo = this.getBlock(pos.x, feetY + dy, pos.z);
           if (blockInfo.block) {
             blocks.push(blockInfo);
-            if (blockInfo.block.currentModifier.physics?.solid) {
+            if (blockInfo.block.currentModifier?.physics?.solid) {
               hasSolid = true;
             }
           }
@@ -366,7 +366,7 @@ export class BlockContextAnalyzer {
         const blockInfo = this.getBlock(pos.x + frontOffset.x, feetY + dy, pos.z + frontOffset.z);
         if (blockInfo.block) {
           blocks.push(blockInfo);
-          if (blockInfo.block.currentModifier.physics?.solid) {
+          if (blockInfo.block.currentModifier?.physics?.solid) {
             hasSolid = true;
           }
         }
@@ -395,7 +395,7 @@ export class BlockContextAnalyzer {
       if (blockInfo.block) {
         blocks.push(blockInfo);
 
-        const physics = blockInfo.block.currentModifier.physics;
+        const physics = blockInfo.block.currentModifier?.physics;
         if (physics?.solid) hasSolid = true;
         if (physics?.autoOrientationY !== undefined) {
           hasAutoRotationY = true;
@@ -441,7 +441,7 @@ export class BlockContextAnalyzer {
       if (blockInfo.block) {
         blocks.push(blockInfo);
 
-        const physics = blockInfo.block.currentModifier.physics;
+        const physics = blockInfo.block.currentModifier?.physics;
         if (physics?.solid) hasSolid = true;
         if (physics?.climbable) hasClimbable = true;
 
@@ -483,7 +483,7 @@ export class BlockContextAnalyzer {
       if (blockInfo.block) {
         blocks.push(blockInfo);
 
-        const physics = blockInfo.block.currentModifier.physics;
+        const physics = blockInfo.block.currentModifier?.physics;
         if (physics?.solid) {
           hasSolid = true;
           hasGround = true;
@@ -564,7 +564,7 @@ export class BlockContextAnalyzer {
       if (blockInfo.block) {
         blocks.push(blockInfo);
 
-        if (blockInfo.block.currentModifier.physics?.solid) {
+        if (blockInfo.block.currentModifier?.physics?.solid) {
           hasSolid = true;
           maxY = Math.min(maxY, headY);
         }
