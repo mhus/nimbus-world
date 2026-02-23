@@ -121,7 +121,7 @@ public class ForestBiome extends Biome {
         }
 
         // Set parameters based on density
-        getParameters().put("flora_density", String.valueOf(density.getFloraDensity()));
+        getParameters().put("gf_density", String.valueOf(density.getFloraDensity()));
         getParameters().put("g_asl", String.valueOf(density.getAboveSeaLevel()));
         getParameters().put("g_offset", String.valueOf(density.getLandOffset()));
         getParameters().put("g_frequency", String.valueOf(density.getFrequency()));

@@ -32,7 +32,7 @@ import java.util.HashMap;
  *   "size": "LARGE",
  *   "terrain": "BADLANDS",
  *   "parameters": {
- *     "cactus_density": "0.1"  // Even less vegetation
+ *     "gf_density": "0.1"  // Even less vegetation
  *   }
  * }
  * </pre>
@@ -124,7 +124,7 @@ public class DesertBiome extends Biome {
         getParameters().put("g_frequency", String.valueOf(terrain.getFrequency()));
         getParameters().put("dirtRatio", String.valueOf(terrain.getDirtRatio()));
         getParameters().put("stoneRatio", String.valueOf(terrain.getStoneRatio()));
-        getParameters().put("cactus_density", String.valueOf(terrain.getCactusDensity()));
+        getParameters().put("gf_density", String.valueOf(terrain.getCactusDensity()));
 
         log.debug("Applied DesertBiome defaults for '{}': terrain={}, landOffset={}, landLevel={}, stoneRatio={}, cactusDensity={}",
             getName(), terrain, terrain.getLandOffset(), terrain.getAboveSeaLevel(), terrain.getStoneRatio(), terrain.getCactusDensity());

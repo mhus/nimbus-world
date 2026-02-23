@@ -37,6 +37,7 @@ import java.util.UUID;
  * 6. Execute Day1WorldCreate workflow to create world
  * 7. Execute Day2Planning workflow to plan world composition
  * 8. Execute Day3Generation workflow to generate terrain
+ * 9. Execute Day4FloraFauna workflow to generate flora (and later fauna)
  *
  * Parameters:
  * - instructions: Textual description of the world to generate
@@ -224,6 +225,26 @@ public class GenesisWorkflow extends MethodBasedWorkflow {
     @OnSuccess("day3Generation")
     public void onDay3Success(WorkflowContext context) throws WorkflowException {
         log.info("Day3 completed successfully");
+
+        String compositionDocId = context.getLastJournalRecord(CompositionDocIdRecord.class)
+                .orElseThrow(() -> new WorkflowException(null, "compositionDocId not found"))
+                .getValue();
+
+        log.info("Starting Day4 (Flora/Fauna) with composition: {}", compositionDocId);
+
+        context.updateWorkflowStatus("day4FloraFauna");
+        context.enqueueJob(
+            WorkflowJobExecutor.NAME,
+            "genesis-day4-flora-fauna",
+            locationService.getApplicationServiceName(),
+            "Day4: Flora & Fauna",
+            Map.of(GenesisConst.COMPOSITION_ID, compositionDocId)
+        );
+    }
+
+    @OnSuccess("day4FloraFauna")
+    public void onDay4Success(WorkflowContext context) throws WorkflowException {
+        log.info("Day4 completed successfully");
 
         String newWorldId = context.getLastJournalRecord(NewWorldIdRecord.class)
                 .orElseThrow(() -> new WorkflowException(null, "newWorldId not found"))

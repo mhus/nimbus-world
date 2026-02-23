@@ -23,8 +23,8 @@ public enum BiomeType implements TsEnum {
         "g_offset", "5",
         "g_asl", "20",
         "dirtRatio", "0.3",
-        "g_flora", "forest",
-        "flora_density", "0.8"
+        "gf_flora", "forest",
+        "gf_density", "0.8"
     )),
 
     PLAINS(PlainsBiome.class, "plains", Map.of(
@@ -32,7 +32,9 @@ public enum BiomeType implements TsEnum {
         "g_asl", "15",
         "dirtRatio", "0.1",
         "enableLakes", "true",
-        "lakeDepth", "4"
+        "lakeDepth", "4",
+        "gf_flora", "plains",
+        "gf_density", "0.3"
     )),
 
     DESERT(DesertBiome.class, "desert", Map.of(
@@ -40,32 +42,46 @@ public enum BiomeType implements TsEnum {
         "g_asl", "30",
         "dirtRatio", "0.05",
         "stoneRatio", "0.3",
-        "g_flora", "desert",
-        "cactus_density", "0.3"
+        "gf_flora", "desert",
+        "gf_density", "0.3"
     )),
 
-    SWAMP(SwampBiome.class, "swamp", Map.of(
-        "g_offset", "10",
-        "g_asl", "5",
-        "swampDepth", "3"
+    SWAMP(SwampBiome.class, "swamp", Map.ofEntries(
+        Map.entry("g_offset", "10"),
+        Map.entry("g_asl", "5"),
+        Map.entry("swampDepth", "3"),
+        Map.entry("gf_flora", "swamp"),
+        Map.entry("gf_density", "0.3"),
+        Map.entry("gf_water_flora", "swamp_water"),
+        Map.entry("gf_water_density", "0.5")
     )),
 
-    MARSH(MarshBiome.class, "swamp", Map.of(
-        "g_offset", "5",
-        "g_asl", "2",
-        "swampDepth", "3",
-        "grassMaterial", "DIRT"
+    MARSH(MarshBiome.class, "swamp", Map.ofEntries(
+        Map.entry("g_offset", "5"),
+        Map.entry("g_asl", "2"),
+        Map.entry("swampDepth", "3"),
+        Map.entry("grassMaterial", "DIRT"),
+        Map.entry("gf_flora", "marsh"),
+        Map.entry("gf_density", "0.2"),
+        Map.entry("gf_water_flora", "marsh_water"),
+        Map.entry("gf_water_density", "0.4")
     )),
 
     TOWN(Biome.class, "island", Map.of(
         "g_offset", "1"
     )),
 
-    COAST(CoastBiome.class, "coast", Map.of()),
+    COAST(CoastBiome.class, "coast", Map.of(
+        "gf_sea_flora", "coast_sea",
+        "gf_sea_density", "0.2"
+    )),
 
     ISLAND(IslandBiome.class, "island", Map.of()),
 
-    OCEAN(OceanBiome.class, "ocean", Map.of());
+    OCEAN(OceanBiome.class, "ocean", Map.of(
+        "gf_sea_flora", "ocean",
+        "gf_sea_density", "0.4"
+    ));
 
     private final Class<? extends Biome> biomeClass;
     private final String defaultBuilder;

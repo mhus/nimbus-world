@@ -42,8 +42,8 @@ class BiomeTypeTest {
         assertNotNull(biome.getParameters());
         assertEquals("forest", biome.getParameters().get("g_builder"));
         assertEquals("5", biome.getParameters().get("g_offset"));
-        assertEquals("forest", biome.getParameters().get("g_flora"));
-        assertEquals("0.8", biome.getParameters().get("flora_density"));
+        assertEquals("forest", biome.getParameters().get("gf_flora"));
+        assertEquals("0.8", biome.getParameters().get("gf_density"));
     }
 
     @Test
@@ -68,8 +68,8 @@ class BiomeTypeTest {
         assertNotNull(biome.getParameters());
         assertEquals("desert", biome.getParameters().get("g_builder"));
         assertEquals("15", biome.getParameters().get("g_offset"));
-        assertEquals("desert", biome.getParameters().get("g_flora"));
-        assertEquals("0.3", biome.getParameters().get("cactus_density"));
+        assertEquals("desert", biome.getParameters().get("gf_flora"));
+        assertEquals("0.3", biome.getParameters().get("gf_density"));
     }
 
     @Test
