@@ -12,7 +12,7 @@ import lombok.experimental.UtilityClass;
 @UtilityClass
 public class BlockUtil {
 
-    public final static String AIR_BLOCK_TYPE = "n:a"; // Standard AIR block type identifier
+    public final static String AIR_BLOCK_TYPE = "n:0"; // Standard AIR block type identifier
     public final static String DEFAULT_STATUS = "default"; // Default block status
 
     /**
@@ -26,24 +26,7 @@ public class BlockUtil {
         if (blockTypeId == null || blockTypeId.isEmpty()) {
             return true;
         }
-        return "0".equals(blockTypeId) || "w/0".equals(blockTypeId) || "air".equals(blockTypeId) || "w/air".equals(blockTypeId);
-    }
-
-    /**
-     * Generate position key for Redis hash storage.
-     * Format: "x:y:z" (e.g., "15:64:23")
-     *
-     * @param position Vector3 position
-     * @return Position key string
-     */
-    public static String positionKey(Vector3Int position) {
-        if (position == null) {
-            return "0:0:0";
-        }
-        return String.format("%d:%d:%d",
-                position.getX(),
-                position.getY(),
-                position.getZ());
+        return "n:0".equals(blockTypeId) || "0".equals(blockTypeId) || "w:0".equals(blockTypeId) || "w/0".equals(blockTypeId);
     }
 
     /**
@@ -59,11 +42,11 @@ public class BlockUtil {
     /**
      * Extract collection from blockId.
      * Format: "{collection}:{key}" (e.g., "core:stone" → "core", "w:123" → "w")
-     * If no collection prefix, defaults to "w".
+     * If no collection prefix, defaults to "r".
      */
     public static String extractCollectionFromBlockId(String blockId) {
         if (blockId == null || !blockId.contains(":")) {
-            return "w";  // default collection
+            return "r";  // default collection
         }
         String[] parts = blockId.split(":", 2);
         String group = parts[0].toLowerCase();
@@ -71,7 +54,7 @@ public class BlockUtil {
         if (group.matches("^[a-z0-9_-]+$")) {
             return group;
         }
-        return "w";
+        return "r";
     }
 
     /**
@@ -101,7 +84,7 @@ public class BlockUtil {
     public static String toChunkKey(WWorld world, Vector3 position) {
         int cx = world.getChunkX(position.getX());
         int cz = world.getChunkZ(position.getZ());
-        return (int)cx + ":" + (int)cz;
+        return cx + ":" + cz;
     }
 
     public static Block createAirBlock(int x, int y, int z) {
