@@ -5,6 +5,7 @@
       :key="blockType.id"
       :block-type="blockType"
       @edit="emit('edit', $event)"
+      @duplicate="emit('duplicate', $event)"
       @delete="emit('delete', $event)"
     />
   </div>
@@ -23,6 +24,7 @@ defineProps<Props>();
 
 const emit = defineEmits<{
   (e: 'edit', blockType: BlockType): void;
+  (e: 'duplicate', blockType: BlockType): void;
   (e: 'delete', blockType: BlockType): void;
 }>();
 </script>

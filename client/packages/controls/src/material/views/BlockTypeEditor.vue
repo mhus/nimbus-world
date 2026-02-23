@@ -40,6 +40,7 @@
       :block-types="blockTypes"
       :loading="loading"
       @edit="openEditDialog"
+      @duplicate="openDuplicateDialog"
       @delete="handleDelete"
     />
 
@@ -182,6 +183,24 @@ const handleSearch = (query: string) => {
  */
 const openCreateDialog = () => {
   selectedBlockType.value = null;
+  isEditorOpen.value = true;
+};
+
+/**
+ * Open editor as duplicate (create mode, pre-filled with copied data, ID cleared)
+ */
+const openDuplicateDialog = async (blockType: BlockType) => {
+  if (!blockTypesComposable.value || !currentWorldId.value) return;
+
+  // Reload from server to get fresh data
+  const freshBlockType = await blockTypesComposable.value.getBlockType(blockType.id!);
+  const source = freshBlockType || blockType;
+
+  // Deep copy and clear ID so the editor opens in create mode
+  const copy: BlockType = JSON.parse(JSON.stringify(source));
+  copy.id = '';
+
+  selectedBlockType.value = copy;
   isEditorOpen.value = true;
 };
 

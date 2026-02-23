@@ -144,6 +144,16 @@
                             Edit
                           </button>
                           <button
+                            class="btn btn-sm btn-outline"
+                            @click="duplicateModifier(status)"
+                            title="Duplicate this modifier as a new status"
+                          >
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                            </svg>
+                            Duplicate
+                          </button>
+                          <button
                             class="btn btn-sm btn-ghost btn-square text-error"
                             @click="removeStatus(status)"
                             :disabled="status === 'default'"
@@ -387,7 +397,7 @@ const emit = defineEmits<{
 
 const { createBlockType, updateBlockType } = useBlockTypes(props.worldId);
 
-const isCreate = computed(() => !props.blockType);
+const isCreate = computed(() => !props.blockType || !props.blockType.id);
 const saving = ref(false);
 const showJsonEditor = ref(false);
 
@@ -518,6 +528,15 @@ const closeAddStatusDialog = () => {
   newStatusId.value = '';
 };
 
+// Create a new modifier by copying the 'default' modifier as template
+const createModifierFromDefault = (): any => {
+  const defaultModifier = formData.value.modifiers?.['default'];
+  if (defaultModifier) {
+    return JSON.parse(JSON.stringify(defaultModifier));
+  }
+  return { visibility: { shape: 1, textures: {} } };
+};
+
 // Select a known status from quick action buttons
 const selectStatus = (statusId: string) => {
   if (formData.value.modifiers?.[statusId] !== undefined) {
@@ -528,10 +547,7 @@ const selectStatus = (statusId: string) => {
     formData.value.modifiers = {};
   }
 
-  formData.value.modifiers[statusId] = {
-    visibility: { shape: 1, textures: {} }
-  };
-
+  formData.value.modifiers[statusId] = createModifierFromDefault();
   closeAddStatusDialog();
 };
 
@@ -553,10 +569,7 @@ const confirmAddStatus = () => {
     formData.value.modifiers = {};
   }
 
-  formData.value.modifiers[statusId] = {
-    visibility: { shape: 1, textures: {} }
-  };
-
+  formData.value.modifiers[statusId] = createModifierFromDefault();
   closeAddStatusDialog();
 };
 
@@ -613,6 +626,34 @@ const editModifier = (status: string) => {
     status,
     modifier: formData.value.modifiers[status]
   });
+};
+
+// Duplicate modifier - copy this modifier to a new status
+const duplicateModifier = async (sourceStatus: string) => {
+  const modifier = formData.value.modifiers?.[sourceStatus];
+  if (!modifier) return;
+
+  const newId = await showInput(
+    'Duplicate Modifier',
+    `New status name for the copy of "${sourceStatus}":`,
+    ''
+  );
+
+  if (!newId) return;
+
+  const trimmedId = newId.trim();
+  if (!trimmedId) return;
+
+  if (formData.value.modifiers?.[trimmedId] !== undefined) {
+    alert('Status already exists');
+    return;
+  }
+
+  if (!formData.value.modifiers) {
+    formData.value.modifiers = {};
+  }
+
+  formData.value.modifiers[trimmedId] = JSON.parse(JSON.stringify(modifier));
 };
 
 // Handle save
