@@ -15,11 +15,15 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static java.util.OptionalInt.empty;
+import static java.util.OptionalInt.of;
+
 /**
  * Service for building 3D models from JSON definitions.
  * Resolves steps against definitions, merges and substitutes parameters,
  * and delegates execution to registered ModelPartBuilder implementations.
  */
+@SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -195,6 +199,46 @@ public class ModelBuilderService {
             case WAnythingDescriptor.BlockStack blockStack -> buildBlockStack(world, layer, blockStack, startPos);
             case WAnythingDescriptor.ModelRef modelRef -> buildModel(world, layer, collection, modelRef.name(), startPos, modelRef.parameters());
         };
+    }
+
+    /**
+     * Resolve the maximum height (in blocks) for a descriptor.
+     * <ul>
+     *   <li>For block stacks: returns the number of blocks (fixed height)</li>
+     *   <li>For model refs: returns metadata.heightTo if present, otherwise empty (= unbounded)</li>
+     * </ul>
+     *
+     * @param world      the world (for region-scoped model lookup)
+     * @param descriptor descriptor string
+     * @param collection WAnything collection name for model lookup
+     * @return maximum height in blocks, or empty if unbounded/unknown
+     */
+    public OptionalInt resolveDescriptorMaxHeight(WWorld world, String descriptor, String collection) {
+        try {
+            WAnythingDescriptor parsed = WAnythingDescriptor.parse(descriptor);
+            return switch (parsed) {
+                case WAnythingDescriptor.BlockStack bs -> of(bs.blockTypes().size());
+                case WAnythingDescriptor.ModelRef mr -> resolveModelMaxHeight(world, collection, mr.name());
+            };
+        } catch (Exception e) {
+            log.debug("Cannot resolve descriptor height for '{}': {}", descriptor, e.getMessage());
+            return empty();
+        }
+    }
+
+    private OptionalInt resolveModelMaxHeight(WWorld world, String collection, String name) {
+        WorldId regionWorldId = WorldId.of(world.getWorldId()).orElse(null);
+        if (regionWorldId == null) return empty();
+
+        WAnything entity = anythingService.findByWorldIdAndCollectionAndName(
+                regionWorldId.toRegionCollection().getId(), collection, name).orElse(null);
+        if (entity == null) return empty();
+
+        ModelBuilderModel model = entity.getDataAs(ModelBuilderModel.class).orElse(null);
+        if (model == null) return empty();
+
+        Integer heightTo = model.getMetadataInt("heightTo");
+        return heightTo != null ? of(heightTo) : empty();
     }
 
     private ModelBuilderContext buildBlockStack(WWorld world, WLayer layer,

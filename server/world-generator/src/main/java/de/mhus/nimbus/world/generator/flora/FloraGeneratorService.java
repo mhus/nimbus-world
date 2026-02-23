@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.OptionalInt;
 import java.util.Random;
 
 /**
@@ -32,6 +33,7 @@ import java.util.Random;
  * Reads flora configuration from WHexGrid parameters (set by the composer/biome),
  * loads flora descriptors from WAnything, and builds them using ModelBuilderService.
  * Supports three flora categories: LAND, WATER (freshwater), and SEA (marine).
+ * For underwater positions, respects heightTo metadata to prevent plants from growing above water.
  */
 @Service
 @RequiredArgsConstructor
@@ -39,7 +41,7 @@ import java.util.Random;
 public class FloraGeneratorService {
 
     private static final String FLORA_COLLECTION = "flora";
-    private static final String FLORA_MODELS_COLLECTION = "flora_models";
+    private static final String FLORA_MODELS_COLLECTION = "flora-models";
     private static final String FLORA_LAYER_NAME = "flora";
     private static final String GROUND_LAYER_NAME = "ground";
 
@@ -89,6 +91,7 @@ public class FloraGeneratorService {
                 .toRegionCollection();
 
         Map<String, List<WAnything>> floraEntriesCache = new HashMap<>();
+        Map<String, OptionalInt> descriptorHeightCache = new HashMap<>();
 
         WLayer floraLayer = layerService.findByWorldIdAndName(worldId, FLORA_LAYER_NAME)
                 .orElseThrow(() -> new ModelBuilderException("Flora layer not found for world: " + worldId));
@@ -131,9 +134,20 @@ public class FloraGeneratorService {
 
             if (floraEntries.isEmpty()) continue;
 
-            WAnything floraEntry = floraEntries.get(random.nextInt(floraEntries.size()));
-            String descriptor = floraEntry.getName();
+            // For underwater positions, filter entries by available height
+            int availableHeight = category != FloraCategory.LAND
+                    ? heightInfo.waterLevel() - heightInfo.groundLevel()
+                    : Integer.MAX_VALUE;
 
+            WAnything floraEntry = selectFloraEntry(
+                    world, floraEntries, availableHeight, category, descriptorHeightCache, random);
+            if (floraEntry == null) continue;
+
+            String descriptor = getDescriptor(floraEntry);
+            if (descriptor == null) {
+                log.warn("Flora entry '{}' has no descriptor", floraEntry.getName());
+                continue;
+            }
             Vector3Int startPos = Vector3Int.builder()
                     .x(flatPos.getX())
                     .y(heightInfo.groundLevel() + 1)
@@ -174,6 +188,39 @@ public class FloraGeneratorService {
         return totalBlockCount;
     }
 
+    /**
+     * Select a flora entry that fits the available height.
+     * For LAND positions, any entry is accepted.
+     * For underwater positions (WATER/SEA), entries with a known heightTo that exceeds
+     * the available height are skipped. Entries without heightTo are always accepted.
+     */
+    private WAnything selectFloraEntry(WWorld world, List<WAnything> entries,
+                                        int availableHeight, FloraCategory category,
+                                        Map<String, OptionalInt> heightCache,
+                                        Random random) {
+        if (category == FloraCategory.LAND) {
+            return entries.get(random.nextInt(entries.size()));
+        }
+
+        // Build list of candidates that fit the available height
+        List<WAnything> candidates = new ArrayList<>();
+        for (WAnything entry : entries) {
+            String descriptor = getDescriptor(entry);
+            if (descriptor == null) continue;
+            OptionalInt maxHeight = heightCache.computeIfAbsent(descriptor, d ->
+                    modelBuilderService.resolveDescriptorMaxHeight(world, d, FLORA_MODELS_COLLECTION));
+
+            // If heightTo is known and exceeds available height, skip this entry
+            if (maxHeight.isPresent() && maxHeight.getAsInt() > availableHeight) {
+                continue;
+            }
+            candidates.add(entry);
+        }
+
+        if (candidates.isEmpty()) return null;
+        return candidates.get(random.nextInt(candidates.size()));
+    }
+
     private HeightInfo getHeightInfo(String worldId, WLayer groundLayer,
                                      int worldX, int worldZ,
                                      int chunkSize, int defaultGroundLevel,
@@ -211,6 +258,18 @@ public class FloraGeneratorService {
 
         int fallbackLevel = maxY > Integer.MIN_VALUE ? maxY : defaultGroundLevel;
         return new HeightInfo(fallbackLevel, fallbackLevel);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static String getDescriptor(WAnything entry) {
+        Object data = entry.getData();
+        if (data instanceof Map<?, ?> map) {
+            Object descriptor = map.get("descriptor");
+            if (descriptor instanceof String str && !str.isBlank()) {
+                return str;
+            }
+        }
+        return null;
     }
 
     private static double parseDouble(String value, double defaultValue) {

@@ -24,6 +24,29 @@ public class ModelBuilderModel {
     private List<StepDefinition> definitions;
 
     /**
+     * Arbitrary metadata for the model (e.g. height constraints).
+     * Known keys:
+     * <ul>
+     *   <li>{@code heightFrom} (Integer) - minimum height of the model in blocks</li>
+     *   <li>{@code heightTo} (Integer) - maximum height of the model in blocks</li>
+     * </ul>
+     */
+    private Map<String, Object> metadata;
+
+    /**
+     * Get an integer value from metadata, or null if not present.
+     */
+    public Integer getMetadataInt(String key) {
+        if (metadata == null) return null;
+        Object value = metadata.get(key);
+        if (value instanceof Number number) return number.intValue();
+        if (value instanceof String str) {
+            try { return Integer.parseInt(str); } catch (NumberFormatException e) { return null; }
+        }
+        return null;
+    }
+
+    /**
      * A single execution step referencing a definition by name.
      */
     @Data
