@@ -48,7 +48,7 @@ export function normalizeBlockTypeIds(ids: (number | string)[]): string[] {
  */
 export function isAirBlockTypeId(id: number | string): boolean {
   const normalized = normalizeBlockTypeId(id);
-  return normalized === '0' || normalized === 'w/0' || normalized === 'w:air' || normalized === 'air' || normalized === '';
+  return normalized === '0' || normalized === 'n:0' || normalized === '';
 }
 
 /**
@@ -61,7 +61,7 @@ export function parseBlockTypeId(id: string | number): { group: string; name: st
   const normalized = normalizeBlockTypeId(id);
 
   // Check if ID contains '/'
-  const colonIndex = normalized.indexOf('/');
+  const colonIndex = normalized.indexOf(':');
 
   if (colonIndex === -1) {
     // No group specified, use default 'w'

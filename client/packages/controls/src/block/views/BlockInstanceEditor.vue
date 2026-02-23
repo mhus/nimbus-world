@@ -1068,7 +1068,7 @@ async function loadBlock() {
       originalBlock.value = JSON.parse(JSON.stringify(block));
 
       // Load BlockType details if blockTypeId is set
-      if (block.blockTypeId && block.blockTypeId !== 'air') {
+      if (block.blockTypeId && block.blockTypeId !== 'n:0') {
         await loadBlockTypeDetails(block.blockTypeId);
       } else {
         loadedBlockType.value = null;
