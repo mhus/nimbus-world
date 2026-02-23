@@ -155,7 +155,7 @@ const hasPreviousPage = computed(() => blockTypesComposable.value?.hasPreviousPa
 const isEditorOpen = ref(false);
 const selectedBlockType = ref<BlockType | null>(null);
 const isModifierEditorOpen = ref(false);
-const editingModifier = ref<{ blockType: BlockType; status: number; modifier: any } | null>(null);
+const editingModifier = ref<{ blockType: BlockType; status: string; modifier: any } | null>(null);
 const blockTypeEditorRef = ref<any>(null);
 
 // Delete confirmation
@@ -252,7 +252,7 @@ const confirmDeleteAction = async () => {
 /**
  * Handle edit modifier
  */
-const handleEditModifier = (data: { blockType: BlockType; status: number; modifier: any }) => {
+const handleEditModifier = (data: { blockType: BlockType; status: string; modifier: any }) => {
   editingModifier.value = data;
   isModifierEditorOpen.value = true;
 };

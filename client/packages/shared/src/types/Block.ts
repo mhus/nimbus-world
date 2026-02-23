@@ -348,19 +348,19 @@ export interface Block {
   faceVisibility?: number; // javaType: Integer
 
   /**
-   * Current status (0-255)
+   * Current status of the block (optional)
    *
    * Status determines which modifier is active for this block instance.
    * References modifiers in Block.modifiers or BlockType.modifiers.
    *
    * Standard status values:
-   * - 0: DEFAULT (always required in BlockType)
-   * - 1: OPEN
-   * - 2: CLOSED
-   * - 10-17: Seasonal (WINTER, SPRING, SUMMER, AUTUMN)
-   * - 100+: Custom world-specific states
+   * - default: DEFAULT (always required in BlockType)
+   * - open: OPEN
+   * - closed: CLOSED
+   * - winter, spring, summer, autumn: Seasonal (WINTER, SPRING, SUMMER, AUTUMN)
+   * Default is 'default'
    */
-  status?: number; // javaType: int
+  status?: string; // javaType: String
 
   /**
    * Instance-specific modifiers map: status → BlockModifier
@@ -372,10 +372,10 @@ export interface Block {
    *
    * @example
    * modifiers: {
-   *   1: { visibility: { shape: Shape.CUBE, textures: {...} } }  // custom open state
+   *   open: { visibility: { shape: Shape.CUBE, textures: {...} } }  // custom open state
    * }
    */
-  modifiers?: Record<number, BlockModifier>; // javaType: java.util.Map<Integer,BlockModifier>
+  modifiers?: Record<string, BlockModifier>; // javaType: java.util.Map<String,BlockModifier>
 
   /**
    * Block-specific metadata (optional)

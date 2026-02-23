@@ -95,7 +95,7 @@ import AudioEditor from '@editors/AudioEditor.vue';
 
 interface Props {
   modifier: BlockModifier;
-  statusNumber: number;
+  statusNumber: string;
   worldId: string;
 }
 

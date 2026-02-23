@@ -47,7 +47,7 @@ export interface WorldInfo {
   worldIcon?: string;
 
   /** World status (0=default,  etc. - this will control the default status vision of the blocks.) */
-  status?: number; // javaType: byte
+  status?: string; // javaType: String
 
   /** Season status identifier (e.g., 'spring', 'summer', 'autumn', 'winter') */
   seasonStatus: SeasonStatus; // javaType: byte

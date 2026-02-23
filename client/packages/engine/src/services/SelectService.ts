@@ -348,9 +348,9 @@ export class SelectService {
     if (!airBlockType) {
       airBlockType = {
         id: '0',
-        initialStatus: 0,
+        initialStatus: 'default',
         modifiers: {
-          0: {
+          'default': {
             visibility: {
               shape: 0, // INVISIBLE
             },

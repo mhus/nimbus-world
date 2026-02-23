@@ -12,6 +12,7 @@ import de.mhus.nimbus.world.shared.job.WJobService;
 import de.mhus.nimbus.world.shared.layer.*;
 import de.mhus.nimbus.world.shared.rest.BaseEditorController;
 import de.mhus.nimbus.world.shared.session.WSessionService;
+import de.mhus.nimbus.world.shared.world.BlockUtil;
 import de.mhus.nimbus.world.shared.world.WBlockType;
 import de.mhus.nimbus.world.shared.world.WBlockTypeService;
 import de.mhus.nimbus.world.shared.world.WChunk;
@@ -1505,7 +1506,7 @@ public class McpController extends BaseEditorController {
                     .title(request.title())
                     .description(request.description())
                     .type(parseBlockTypeType(request.type()))
-                    .initialStatus(0)
+                    .initialStatus(BlockUtil.DEFAULT_STATUS)
                     .modifiers(new HashMap<>())
                     .build();
 
@@ -1521,7 +1522,7 @@ public class McpController extends BaseEditorController {
                             .build())
                     .build();
 
-            publicData.getModifiers().put(0, modifier);
+            publicData.getModifiers().put(BlockUtil.DEFAULT_STATUS, modifier);
 
             // Save using WBlockTypeService
             WBlockType saved = blockTypeService.save(wid, request.blockTypeId(), publicData);
@@ -1588,7 +1589,7 @@ public class McpController extends BaseEditorController {
                     .title(request.title())
                     .description(request.description())
                     .type(parseBlockTypeType(request.type() != null ? request.type() : "DECORATION"))
-                    .initialStatus(0)
+                    .initialStatus(BlockUtil.DEFAULT_STATUS)
                     .modifiers(new HashMap<>())
                     .build();
 
@@ -1613,7 +1614,7 @@ public class McpController extends BaseEditorController {
                             .build())
                     .build();
 
-            publicData.getModifiers().put(0, modifier);
+            publicData.getModifiers().put(BlockUtil.DEFAULT_STATUS, modifier);
 
             // Save using WBlockTypeService
             WBlockType saved = blockTypeService.save(wid, request.blockTypeId(), publicData);
@@ -2004,7 +2005,7 @@ public class McpController extends BaseEditorController {
         if (block.getFaceVisibility() != null) {
             dto.put("faceVisibility", block.getFaceVisibility());
         }
-        if (block.getStatus() != 0) {
+        if (!BlockUtil.isStatusDefault(block.getStatus())) {
             dto.put("status", block.getStatus());
         }
         if (block.getOffsets() != null) {

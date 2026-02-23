@@ -128,15 +128,12 @@
                 <div class="form-control">
                   <label class="label">
                     <span class="label-text font-semibold">Status</span>
-                    <span class="label-text-alt">0-255</span>
                   </label>
                   <input
-                    v-model.number="blockData.status"
-                    type="number"
-                    min="0"
-                    max="255"
+                    v-model="blockData.status"
+                    type="text"
                     class="input input-bordered"
-                    placeholder="0"
+                    placeholder="default"
                   />
                 </div>
 
@@ -477,16 +474,16 @@
             >
               <span class="font-mono text-sm">Status {{ status }}:</span>
               <span class="flex-1 text-sm text-base-content/70">Modifier defined</span>
-              <button class="btn btn-xs btn-ghost" @click="editModifier(Number(status))">
+              <button class="btn btn-xs btn-ghost" @click="editModifier(String(status))">
                 Edit
               </button>
-              <button class="btn btn-xs btn-error btn-ghost" @click="deleteModifier(Number(status))">
+              <button class="btn btn-xs btn-error btn-ghost" @click="deleteModifier(String(status))">
                 Delete
               </button>
             </div>
 
             <button class="btn btn-sm btn-outline w-full" @click="addModifier">
-              + Add Modifier for Status {{ blockData.status ?? 0 }}
+              + Add Modifier for Status {{ blockData.status ?? 'default' }}
             </button>
           </div>
         </div>
@@ -735,7 +732,7 @@ const originalBlock = ref<Block | null>(null);
 const blockData = ref<Block>({
   position: { x: 0, y: 0, z: 0 },
   blockTypeId: '0',
-  status: 0,
+  status: 'default',
   metadata: {},
 });
 
@@ -743,7 +740,7 @@ const blockData = ref<Block>({
 const showModifierDialog = ref(false);
 const showJsonEditor = ref(false);
 const editingModifier = ref<BlockModifier | null>(null);
-const editingStatus = ref<number | null>(null);
+const editingStatus = ref<string | null>(null);
 
 // Confirm dialog state
 const confirmDialog = ref<HTMLDialogElement | null>(null);
@@ -820,7 +817,7 @@ const isFixedMode = computed(() => {
 
 const currentShape = computed(() => {
   // Try to get shape from block's own modifiers first
-  const status = blockData.value.status ?? 0;
+  const status = blockData.value.status ?? 'default';
   if (blockData.value.modifiers?.[status]?.visibility?.shape) {
     return blockData.value.modifiers[status].visibility!.shape;
   }
@@ -964,7 +961,7 @@ function clearBlockType() {
 }
 
 // Load BlockType details
-async function loadBlockTypeDetails(blockTypeId: number) {
+async function loadBlockTypeDetails(blockTypeId: string) {
   try {
     const blockType = await getBlockType(blockTypeId);
     if (blockType) {
@@ -1045,7 +1042,7 @@ async function loadBlock() {
       blockData.value = {
         position: blockCoordinates.value,
         blockTypeId: '',
-        status: 0,
+        status: 'default',
         metadata: {},
       };
       originalBlock.value = null;
@@ -1071,7 +1068,7 @@ async function loadBlock() {
       originalBlock.value = JSON.parse(JSON.stringify(block));
 
       // Load BlockType details if blockTypeId is set
-      if (block.blockTypeId && block.blockTypeId > 0) {
+      if (block.blockTypeId && block.blockTypeId !== 'air') {
         await loadBlockTypeDetails(block.blockTypeId);
       } else {
         loadedBlockType.value = null;
@@ -1096,7 +1093,7 @@ async function loadBlock() {
 
 // Modifier management
 function addModifier() {
-  const status = blockData.value.status ?? 0;
+  const status = blockData.value.status ?? 'default';
   const modifier: BlockModifier = {
     visibility: { shape: 1, textures: {} },
   };
@@ -1106,7 +1103,7 @@ function addModifier() {
   showModifierDialog.value = true;
 }
 
-function editModifier(status: number) {
+function editModifier(status: string) {
   const modifier = blockData.value.modifiers?.[status];
   if (!modifier) return;
 
@@ -1115,7 +1112,7 @@ function editModifier(status: number) {
   showModifierDialog.value = true;
 }
 
-function deleteModifier(status: number) {
+function deleteModifier(status: string) {
   if (blockData.value.modifiers) {
     delete blockData.value.modifiers[status];
 
@@ -1196,7 +1193,7 @@ async function saveBlock(closeAfter: boolean = false) {
       level: blockData.value.level !== undefined && blockData.value.level >= 0
         ? blockData.value.level
         : undefined,
-      status: blockData.value.status || 0,
+      status: blockData.value.status || 'default',
       modifiers: blockData.value.modifiers || undefined,
       // faceVisibility is now always stored as a numeric bitfield on the block
       faceVisibility: blockData.value.faceVisibility,
@@ -1293,7 +1290,7 @@ async function deleteBlock() {
     blockData.value = {
       position: blockCoordinates.value,
       blockTypeId: 'air',
-      status: 0,
+      status: 'default',
       metadata: {},
     };
     originalBlock.value = null;

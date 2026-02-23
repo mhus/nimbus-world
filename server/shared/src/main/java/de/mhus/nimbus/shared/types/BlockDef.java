@@ -1,6 +1,7 @@
 package de.mhus.nimbus.shared.types;
 
 import de.mhus.nimbus.generated.types.Block;
+import de.mhus.nimbus.generated.types.BlockStatus;
 import lombok.Getter;
 import org.apache.logging.log4j.util.Strings;
 
@@ -14,13 +15,13 @@ import java.util.Optional;
 @Getter
 public class BlockDef {
     private String blockTypeId;
-    private int state;
+    private String state;
     private int[] offsets;
     private double[] rotations;
     private Integer level;
     private Integer faceVisibility;
 
-    private BlockDef(String blockTypeId, int state, int[] offsets, double[] rotations, Integer level, Integer faceVisibility) {
+    private BlockDef(String blockTypeId, String state, int[] offsets, double[] rotations, Integer level, Integer faceVisibility) {
         this.blockTypeId = blockTypeId;
         this.state = state;
         this.offsets = offsets;
@@ -51,7 +52,7 @@ public class BlockDef {
         }
     }
 
-    public static BlockDef value(String blockId, int state, int[] offsets, double[] rotations, Integer level, Integer faceVisibility) {
+    public static BlockDef value(String blockId, String state, int[] offsets, double[] rotations, Integer level, Integer faceVisibility) {
         return new BlockDef(blockId, state, offsets, rotations, level, faceVisibility);
     }
 
@@ -62,7 +63,7 @@ public class BlockDef {
             String blockTypeId = parts[0];
             if (!validateBlockTypeId(blockTypeId))
                 return Optional.empty();
-            int state = 0;
+            String state = BlockStatus.DEFAULT.getTsIndex();
             int[] offsets = null;
             double[] rotations = null;
             Integer level = null;
@@ -70,18 +71,7 @@ public class BlockDef {
             for (String part : parts) {
                 if (part.equals(parts[0])) continue; // blockId
                 if (part.startsWith("s:")) {
-                    state = switch (part.substring(2).toLowerCase()) {
-                        case "default" -> 0;
-                        case "open" -> 1;
-                        case "closed" -> 2;
-                        case "locked" -> 3;
-                        case "destroyed" -> 5;
-                        case "winter" -> 10;
-                        case "spring" -> 11;
-                        case "summer" -> 12;
-                        case "autumn" -> 13;
-                        default -> Integer.parseInt(part.substring(2));
-                    };
+                    state = part.substring(2).toLowerCase();
                 } else if (part.startsWith("o:")) {
                     String[] offsetParts = part.substring(2).split(",");
                     offsets = new int[offsetParts.length];

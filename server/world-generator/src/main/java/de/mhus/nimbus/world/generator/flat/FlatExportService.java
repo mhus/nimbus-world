@@ -367,8 +367,8 @@ public class FlatExportService {
         StringBuilder sb = new StringBuilder();
         sb.append(block.getBlockTypeId());
 
-        Integer status = block.getStatus();
-        if (status != 0) {
+        String status = block.getStatus();
+        if (BlockUtil.isStatus(status)) {
             sb.append("@s:").append(status);
         }
 
@@ -721,8 +721,8 @@ public class FlatExportService {
         }
 
         // Check if modifier (status) is 0 or null
-        int status = block.getStatus();
-        if (status != 0) {
+        String status = block.getStatus();
+        if (BlockUtil.isStatusDefault(status)) {
             return;  // Modified block, export block
         }
 

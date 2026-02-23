@@ -103,10 +103,10 @@
                     <span class="label-text font-semibold">Initial Status</span>
                   </label>
                   <input
-                    v-model.number="formData.initialStatus"
-                    type="number"
+                    v-model="formData.initialStatus"
+                    type="text"
                     class="input input-bordered"
-                    placeholder="0"
+                    placeholder="default"
                   />
                 </div>
 
@@ -127,7 +127,7 @@
                             @click="changeStatusId(status)"
                             title="Click to change status ID"
                           >
-                            Status {{ status }}{{ getStatusName(status) }}
+                            Status: {{ status }}
                           </div>
                           <div class="text-sm text-base-content/70">
                             {{ getModifierSummary(status) }}
@@ -146,7 +146,7 @@
                           <button
                             class="btn btn-sm btn-ghost btn-square text-error"
                             @click="removeStatus(status)"
-                            :disabled="status === 0"
+                            :disabled="status === 'default'"
                           >
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -308,14 +308,14 @@
         <!-- Quick action buttons for known statuses -->
         <div class="flex flex-wrap gap-2 mb-4">
           <button
-            v-for="(name, statusId) in knownStatuses"
+            v-for="statusId in knownStatuses"
             :key="statusId"
             class="badge badge-lg badge-outline hover:badge-primary cursor-pointer transition-colors"
             :class="{ 'badge-disabled': formData.modifiers?.[statusId] !== undefined }"
             :disabled="formData.modifiers?.[statusId] !== undefined"
-            @click="selectStatus(Number(statusId))"
+            @click="selectStatus(statusId)"
           >
-            {{ statusId }} ({{ name }})
+            {{ statusId }}
           </button>
         </div>
 
@@ -323,19 +323,16 @@
 
         <div class="form-control">
           <label class="label">
-            <span class="label-text font-semibold">Custom Status ID</span>
+            <span class="label-text font-semibold">Custom Status Name</span>
           </label>
           <input
             v-model="newStatusId"
-            type="number"
+            type="text"
             class="input input-bordered w-full"
-            :placeholder="`e.g., ${suggestedNextStatus}`"
+            placeholder="e.g., my-status"
             @keyup.enter="confirmAddStatus"
             @keyup.esc="closeAddStatusDialog"
           />
-          <label class="label">
-            <span class="label-text-alt">Custom states typically start at 100</span>
-          </label>
         </div>
 
         <div class="mt-6 flex justify-end gap-2">
@@ -385,7 +382,7 @@ const props = defineProps<Props>();
 const emit = defineEmits<{
   (e: 'close'): void;
   (e: 'saved'): void;
-  (e: 'edit-modifier', data: { blockType: BlockType; status: number; modifier: BlockModifier }): void;
+  (e: 'edit-modifier', data: { blockType: BlockType; status: string; modifier: BlockModifier }): void;
 }>();
 
 const { createBlockType, updateBlockType } = useBlockTypes(props.worldId);
@@ -405,17 +402,10 @@ const showAddStatusDialog = ref(false);
 const newStatusId = ref<string>('');
 
 // Known statuses for quick selection
-const knownStatuses: Record<number, string> = {
-  0: 'DEFAULT',
-  1: 'OPEN',
-  2: 'CLOSED',
-  3: 'LOCKED',
-  5: 'DESTROYED',
-  10: 'WINTER',
-  11: 'SPRING',
-  12: 'SUMMER',
-  13: 'AUTUMN',
-};
+const knownStatuses: string[] = [
+  'default', 'open', 'closed', 'locked', 'destroyed',
+  'winter', 'spring', 'summer', 'autumn',
+];
 
 // Input dialog state
 const showInputDialog = ref(false);
@@ -453,12 +443,12 @@ const handleInputCancel = () => {
 const formData = ref<Partial<BlockType>>({
   id: '',
   description: '',
-  initialStatus: 0,
+  initialStatus: 'default',
   modifiers: {},
 });
 
 // Expose method to update modifier from parent
-const updateModifier = (status: number, modifier: BlockModifier) => {
+const updateModifier = (status: string, modifier: BlockModifier) => {
   if (formData.value.modifiers) {
     formData.value.modifiers[status] = modifier;
   }
@@ -478,9 +468,9 @@ const initializeForm = async () => {
     formData.value = {
       id: '', // Must be provided by user
       description: '',
-      initialStatus: 0,
+      initialStatus: 'default',
       modifiers: {
-        0: { visibility: { shape: 1, textures: {} } }, // Default status with CUBE shape
+        'default': { visibility: { shape: 1, textures: {} } }, // Default status with CUBE shape
       },
     };
   }
@@ -490,26 +480,18 @@ onMounted(() => {
   initializeForm();
 });
 
-// Status list
+// Status list - 'default' always first, rest alphabetically
 const statusList = computed(() => {
-  return Object.keys(formData.value.modifiers || {}).map(Number).sort((a, b) => a - b);
+  const keys = Object.keys(formData.value.modifiers || {});
+  return keys.sort((a, b) => {
+    if (a === 'default') return -1;
+    if (b === 'default') return 1;
+    return a.localeCompare(b);
+  });
 });
-
-// Suggested next status for custom statuses
-const suggestedNextStatus = computed(() => {
-  const existingStatuses = statusList.value;
-  if (existingStatuses.length === 0) return 100;
-  const maxStatus = Math.max(...existingStatuses);
-  return maxStatus >= 100 ? maxStatus + 1 : 100;
-});
-
-// Get status name from BlockStatus enum
-const getStatusName = (status: number): string => {
-  return knownStatuses[status] ? ` (${knownStatuses[status]})` : '';
-};
 
 // Get modifier summary
-const getModifierSummary = (status: number): string => {
+const getModifierSummary = (status: string): string => {
   const modifier = formData.value.modifiers?.[status];
   if (!modifier) return 'Empty';
 
@@ -537,7 +519,7 @@ const closeAddStatusDialog = () => {
 };
 
 // Select a known status from quick action buttons
-const selectStatus = (statusId: number) => {
+const selectStatus = (statusId: string) => {
   if (formData.value.modifiers?.[statusId] !== undefined) {
     return; // Already exists
   }
@@ -555,15 +537,15 @@ const selectStatus = (statusId: number) => {
 
 // Confirm adding custom status from input field
 const confirmAddStatus = () => {
-  const statusId = parseInt(newStatusId.value, 10);
+  const statusId = newStatusId.value.trim();
 
-  if (isNaN(statusId)) {
-    alert('Please enter a valid number');
+  if (!statusId) {
+    alert('Please enter a status name');
     return;
   }
 
   if (formData.value.modifiers && formData.value.modifiers[statusId]) {
-    alert('Status ID already exists');
+    alert('Status already exists');
     return;
   }
 
@@ -579,28 +561,23 @@ const confirmAddStatus = () => {
 };
 
 // Change status ID
-const changeStatusId = async (oldStatus: number) => {
-  if (oldStatus === 0) {
+const changeStatusId = async (oldStatus: string) => {
+  if (oldStatus === 'default') {
     return;
   }
 
   const newStatusIdStr = await showInput(
     'Change Status ID',
-    `Change status ID from ${oldStatus} to:`,
-    oldStatus.toString()
+    `Change status ID from "${oldStatus}" to:`,
+    oldStatus
   );
 
   if (newStatusIdStr === null) return; // Cancelled
 
-  const newStatusId = parseInt(newStatusIdStr, 10);
+  const newId = newStatusIdStr.trim();
+  if (!newId || newId === oldStatus) return;
 
-  if (isNaN(newStatusId)) {
-    return;
-  }
-
-  if (newStatusId === oldStatus) return; // No change
-
-  if (formData.value.modifiers && formData.value.modifiers[newStatusId]) {
+  if (formData.value.modifiers && formData.value.modifiers[newId]) {
     return;
   }
 
@@ -609,16 +586,16 @@ const changeStatusId = async (oldStatus: number) => {
   }
 
   // Copy modifier to new status ID
-  formData.value.modifiers[newStatusId] = formData.value.modifiers[oldStatus];
+  formData.value.modifiers[newId] = formData.value.modifiers[oldStatus];
 
   // Delete old status
   delete formData.value.modifiers[oldStatus];
 };
 
 // Remove status
-const removeStatus = (status: number) => {
-  if (status === 0) {
-    alert('Cannot remove status 0 (default status)');
+const removeStatus = (status: string) => {
+  if (status === 'default') {
+    alert('Cannot remove default status');
     return;
   }
 
@@ -628,7 +605,7 @@ const removeStatus = (status: number) => {
 };
 
 // Edit modifier - emit event to parent
-const editModifier = (status: number) => {
+const editModifier = (status: string) => {
   if (!formData.value.modifiers) return;
 
   emit('edit-modifier', {
@@ -646,7 +623,7 @@ const handleSave = async () => {
   }
 
   if (!formData.value.modifiers || Object.keys(formData.value.modifiers).length === 0) {
-    alert('At least one modifier (status 0) is required');
+    alert('At least one modifier (status "default") is required');
     return;
   }
 

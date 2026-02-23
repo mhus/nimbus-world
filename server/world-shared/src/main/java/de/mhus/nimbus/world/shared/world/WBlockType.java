@@ -21,7 +21,7 @@ import java.time.Instant;
  * BlockTypes are templates that define how blocks look and behave.
  */
 @Document(collection = "w_blocktypes")
-@ActualSchemaVersion("1.0.0")
+@ActualSchemaVersion("1.1.0")
 @CompoundIndexes({
         @CompoundIndex(name = "blockId_idx", def = "{ 'blockId': 1 }", unique = true)
 })

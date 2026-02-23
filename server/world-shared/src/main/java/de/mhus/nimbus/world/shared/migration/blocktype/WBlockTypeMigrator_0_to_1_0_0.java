@@ -1,4 +1,4 @@
-package de.mhus.nimbus.world.shared.migration;
+package de.mhus.nimbus.world.shared.migration.blocktype;
 
 import de.mhus.nimbus.shared.persistence.SchemaMigrator;
 import de.mhus.nimbus.shared.types.SchemaVersion;

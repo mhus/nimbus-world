@@ -28,7 +28,7 @@ public class WorldInfo {
     @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
     private String worldIcon;
     @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
-    private byte status;
+    private String status;
     @com.fasterxml.jackson.annotation.JsonProperty("seasonStatus")
     private byte seasonStatus;
     @com.fasterxml.jackson.annotation.JsonProperty("seasonProgress")

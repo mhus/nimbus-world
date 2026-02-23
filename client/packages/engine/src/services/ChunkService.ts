@@ -381,14 +381,19 @@ export class ChunkService {
     }
   }
 
-  private processStatusData(chunkData: ChunkDataTransferObject): Map<string, number> {
-      const statusData = new Map<string, number>();
+  private processStatusData(chunkData: ChunkDataTransferObject): Map<string, string> {
+      const statusData = new Map<string, string>();
       // Extract status from blocks instead of non-existent 's' property
       for (const block of chunkData.b || []) {
         if (block.status !== undefined) {
           const posKey = getBlockPositionKey(block.position.x, block.position.y, block.position.z);
           statusData.set(posKey, block.status);
         }
+      }
+      if (chunkData.s) {
+          for (const [p, s] of Object.entries(chunkData.s)) {
+              statusData.set(p, s);
+          }
       }
       return statusData;
   }
@@ -413,7 +418,7 @@ export class ChunkService {
     const clientBlocksMap = new Map<string, ClientBlock>();
     const blockTypeService = this.appContext.services.blockType;
     const statusData = this.processStatusData(chunkData);
-    const chunkSize = this.appContext.worldInfo?.chunkSize || 16;
+    const chunkSize = this.appContext.worldInfo?.chunkSize || 32;
     const deny = chunkData.deny ?? false;
 
     // Pre-load all BlockType groups needed for this chunk
@@ -554,7 +559,7 @@ export class ChunkService {
             block,
             chunk: { cx: chunkData.cx, cz: chunkData.cz },
             blockType: ERROR_BLOCK_TYPE,
-            currentModifier: ERROR_BLOCK_TYPE.modifiers[0],
+            currentModifier: ERROR_BLOCK_TYPE.modifiers['default'],
             isVisible: true,
             isDirty: false,
             lastUpdate: Date.now(),
@@ -687,7 +692,7 @@ export class ChunkService {
           block,
           chunk: itemChunkCoord, // Use calculated chunk coords, not chunkData coords
           blockType,
-          currentModifier: block.modifiers?.[0] || blockType.modifiers[0],
+          currentModifier: block.modifiers?.['default'] || blockType.modifiers['default'],
           isVisible: true,
           isDirty: false,
           lastUpdate: Date.now(),
@@ -767,7 +772,7 @@ export class ChunkService {
    * @returns Chunk or undefined if not loaded
    */
   getChunkForBlockPosition(pos : Vector3): ClientChunk | undefined {
-    const chunkSize = this.appContext.worldInfo?.chunkSize || 16;
+    const chunkSize = this.appContext.worldInfo?.chunkSize || 32;
     const { cx, cz } = worldToChunk(pos.x, pos.z, chunkSize);
     return this.chunks.get(getChunkKey(cx, cz));
   }
@@ -780,7 +785,7 @@ export class ChunkService {
    * @returns Chunk or undefined if not loaded
    */
   getChunkForBlock(x: number, z: number): ClientChunk | undefined {
-    const chunkSize = this.appContext.worldInfo?.chunkSize || 16;
+    const chunkSize = this.appContext.worldInfo?.chunkSize || 32;
     const { cx, cz } = worldToChunk(x, z, chunkSize);
     return this.chunks.get(getChunkKey(cx, cz));
   }
@@ -805,7 +810,7 @@ export class ChunkService {
    * @returns ClientBlock or undefined if not found
    */
   getBlockAt(x: number, y: number, z: number): ClientBlock | undefined {
-    const chunkSize = this.appContext.worldInfo?.chunkSize || 16;
+    const chunkSize = this.appContext.worldInfo?.chunkSize || 32;
     const chunkCoord = worldToChunk(x, z, chunkSize);
     const chunk = this.getChunk(chunkCoord.cx, chunkCoord.cz);
 
@@ -836,7 +841,7 @@ export class ChunkService {
         block.blockTypeId = normalizeBlockTypeId(block.blockTypeId);
       }
 
-      const chunkSize = this.appContext.worldInfo?.chunkSize || 16;
+      const chunkSize = this.appContext.worldInfo?.chunkSize || 32;
       const blockTypeService = this.appContext.services.blockType;
 
       if (!blockTypeService) {
@@ -886,7 +891,7 @@ export class ChunkService {
         );
 
         // Handle deletion (blockTypeId: '0')
-        if (block.blockTypeId === '0') {
+        if (block.blockTypeId === '0' || block.blockTypeId === 'n:0') {
           const wasDeleted = clientChunk.data.data.delete(posKey);
           if (wasDeleted) {
             logger.debug('Block deleted', { position: block.position });
@@ -991,7 +996,7 @@ export class ChunkService {
         itemCount: items.length,
       });
 
-      const chunkSize = this.appContext.worldInfo?.chunkSize || 16;
+      const chunkSize = this.appContext.worldInfo?.chunkSize || 32;
       const blockTypeService = this.appContext.services.blockType;
       const itemService = this.appContext.services.item;
 
@@ -1006,7 +1011,7 @@ export class ChunkService {
       }
 
       // Preload BlockType 1 (ITEM)
-      await blockTypeService.preloadBlockTypes([1]);
+      await blockTypeService.preloadBlockTypes(["n:1"]);
 
       // Track affected chunks for re-rendering
       const affectedChunks = new Set<string>();
@@ -1032,7 +1037,7 @@ export class ChunkService {
           const existingBlock = clientChunk.data.data.get(posKey);
 
           // Only delete if an item exists at this position
-          if (existingBlock && existingBlock.block.blockTypeId === '1') {
+          if (existingBlock && existingBlock.block.blockTypeId === 'n:1') {
             const wasDeleted = clientChunk.data.data.delete(posKey);
             if (wasDeleted) {
               logger.debug('Item deleted', {
@@ -1072,7 +1077,7 @@ export class ChunkService {
 
         // Check if position is AIR or already has an item
         const isAir = !existingBlock;
-        const isItem = existingBlock && existingBlock.block.blockTypeId === '1';
+        const isItem = existingBlock && existingBlock.block.blockTypeId === 'n:1';
 
         if (!isAir && !isItem) {
           logger.debug('Item add/update ignored - position occupied by non-item block', {
@@ -1084,7 +1089,7 @@ export class ChunkService {
         }
 
         // Get BlockType 1 (ITEM)
-        const blockType = await blockTypeService.getBlockType('1');
+        const blockType = await blockTypeService.getBlockType('n:1');
         if (!blockType) {
           logger.warn('BlockType 1 (ITEM) not found');
           continue;

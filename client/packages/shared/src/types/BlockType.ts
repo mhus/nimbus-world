@@ -9,26 +9,20 @@ import type { BlockModifier } from './BlockModifier';
 
 /**
  * Block status values
- * 0 = default status
- * 1-9 = standard states (open, closed, locked, destroyed, etc.)
- * 10-17 = seasonal states
- * 100+ = custom world-specific states
  */
 export enum BlockStatus {
-  DEFAULT = 0,
-  OPEN = 1,
-  CLOSED = 2,
-  LOCKED = 3,
-  DESTROYED = 5,
+  DEFAULT = 'default',
+  OPEN = 'open',
+  CLOSED = 'closed',
+  LOCKED = 'locked',
+  DESTROYED = 'destroyed',
 
   // Seasonal states
-  WINTER = 10,
-  SPRING = 11,
-  SUMMER = 12,
-  AUTUMN = 13,
+  WINTER = 'winter',
+  SPRING = 'spring',
+  SUMMER = 'summer',
+  AUTUMN = 'autumn',
 
-  // Custom states start at 100
-  CUSTOM_START = 100,
 }
 
 export enum BlockTypeType {
@@ -72,7 +66,7 @@ export interface BlockType {
    * Initial status for new block instances
    * @default 0 (BlockStatus.DEFAULT)
    */
-  initialStatus?: number; // javaType: int
+  initialStatus?: string; // javaType: String
 
   /**
    * Detailed description of the block type to be used by AI systems.
@@ -87,10 +81,10 @@ export interface BlockType {
    *
    * @example
    * modifiers: {
-   *   0: { visibility: { shape: Shape.CUBE }, ... },  // default
-   *   1: { visibility: { shape: Shape.CUBE }, ... },  // open
-   *   2: { visibility: { shape: Shape.CUBE }, ... }   // closed
+   *   default: { visibility: { shape: Shape.CUBE }, ... },  // default
+   *   open: { visibility: { shape: Shape.CUBE }, ... },  // open
+   *   closed: { visibility: { shape: Shape.CUBE }, ... }   // closed
    * }
    */
-  modifiers: Record<number, BlockModifier>; // javaType: java.util.Map<Integer,BlockModifier>
+  modifiers: Record<string, BlockModifier>; // javaType: java.util.Map<String,BlockModifier>
 }

@@ -2820,18 +2820,18 @@
         "comment" : "// javaType: Integer"
       }, {
         "name" : "status",
-        "type" : "number",
+        "type" : "string",
         "optional" : true,
         "visibility" : null,
-        "javaTypeHint" : "int",
-        "comment" : "// javaType: int"
+        "javaTypeHint" : "String",
+        "comment" : "// javaType: String"
       }, {
         "name" : "modifiers",
-        "type" : "Record<number, BlockModifier>",
+        "type" : "Record<string, BlockModifier>",
         "optional" : true,
         "visibility" : null,
-        "javaTypeHint" : "java.util.Map<Integer,BlockModifier>",
-        "comment" : "// javaType: java.util.Map<Integer,BlockModifier>"
+        "javaTypeHint" : "java.util.Map<String,BlockModifier>",
+        "comment" : "// javaType: java.util.Map<String,BlockModifier>"
       }, {
         "name" : "metadata",
         "type" : "BlockMetadata",
@@ -4797,11 +4797,11 @@
         "comment" : null
       }, {
         "name" : "initialStatus",
-        "type" : "number",
+        "type" : "string",
         "optional" : true,
         "visibility" : null,
-        "javaTypeHint" : "int",
-        "comment" : "// javaType: int"
+        "javaTypeHint" : "String",
+        "comment" : "// javaType: String"
       }, {
         "name" : "description",
         "type" : "string",
@@ -4811,47 +4811,44 @@
         "comment" : null
       }, {
         "name" : "modifiers",
-        "type" : "Record<number, BlockModifier>",
+        "type" : "Record<string, BlockModifier>",
         "optional" : false,
         "visibility" : null,
-        "javaTypeHint" : "java.util.Map<Integer,BlockModifier>",
-        "comment" : "// javaType: java.util.Map<Integer,BlockModifier>"
+        "javaTypeHint" : "java.util.Map<String,BlockModifier>",
+        "comment" : "// javaType: java.util.Map<String,BlockModifier>"
       } ],
       "methods" : [ ]
     } ],
     "enums" : [ {
       "name" : "BlockStatus",
-      "values" : [ "DEFAULT", "OPEN", "CLOSED", "LOCKED", "DESTROYED", "WINTER", "SPRING", "SUMMER", "AUTUMN", "CUSTOM_START" ],
+      "values" : [ "DEFAULT", "OPEN", "CLOSED", "LOCKED", "DESTROYED", "WINTER", "SPRING", "SUMMER", "AUTUMN" ],
       "enumValues" : [ {
         "name" : "DEFAULT",
-        "value" : "0"
+        "value" : "default"
       }, {
         "name" : "OPEN",
-        "value" : "1"
+        "value" : "open"
       }, {
         "name" : "CLOSED",
-        "value" : "2"
+        "value" : "closed"
       }, {
         "name" : "LOCKED",
-        "value" : "3"
+        "value" : "locked"
       }, {
         "name" : "DESTROYED",
-        "value" : "5"
+        "value" : "destroyed"
       }, {
         "name" : "WINTER",
-        "value" : "10"
+        "value" : "winter"
       }, {
         "name" : "SPRING",
-        "value" : "11"
+        "value" : "spring"
       }, {
         "name" : "SUMMER",
-        "value" : "12"
+        "value" : "summer"
       }, {
         "name" : "AUTUMN",
-        "value" : "13"
-      }, {
-        "name" : "CUSTOM_START",
-        "value" : "100"
+        "value" : "autumn"
       } ]
     }, {
       "name" : "BlockTypeType",
@@ -5230,11 +5227,11 @@
         "comment" : null
       }, {
         "name" : "status",
-        "type" : "number",
+        "type" : "string",
         "optional" : true,
         "visibility" : null,
-        "javaTypeHint" : "byte",
-        "comment" : "// javaType: byte"
+        "javaTypeHint" : "String",
+        "comment" : "// javaType: String"
       }, {
         "name" : "seasonStatus",
         "type" : "SeasonStatus",

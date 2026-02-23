@@ -85,6 +85,15 @@ public class WBlockTypeService {
         if (worldId.isInstanceOrZone()) {
             throw new IllegalArgumentException("Cannot save block type to instance or zone world");
         }
+        if (!BlockUtil.isStatus(publicData.getInitialStatus())) {
+            throw new IllegalArgumentException("Invalid initial status: " + publicData.getInitialStatus());
+        }
+        if (!publicData.getModifiers().containsKey(BlockUtil.DEFAULT_STATUS)) {
+            throw  new IllegalArgumentException("publicData.modifiers must contain default status");
+        }
+        if (publicData.getModifiers().keySet().stream().anyMatch(k -> !BlockUtil.isStatus(k))) {
+            throw new IllegalArgumentException("publicData.modifiers keys must be valid block statuses");
+        }
         var collection = WorldCollection.of(worldId.mainWorld(), blockId);
         var entityOpt = repository.findByWorldIdAndBlockId(collection.worldId().getId(), collection.path());
         WBlockType entity = null;
@@ -115,19 +124,6 @@ public class WBlockTypeService {
         return saved;
     }
 
-    @Transactional
-    public List<WBlockType> saveAll(WorldId worldId, List<WBlockType> entities) {
-        if (worldId.isInstanceOrZone()) {
-            throw new IllegalArgumentException("Cannot save backdrop to instance or zone world");
-        }
-        final List<WBlockType> saved = new ArrayList<>();
-        entities.forEach(e -> {
-            e.removeWorldPrefix();
-            saved.add(save(worldId, e.getBlockId(), e.getPublicData()));
-        });
-        return saved;
-    }
-
     /**
      * Update a block type.
      * Filters out instances and zones.
@@ -139,6 +135,18 @@ public class WBlockTypeService {
             updater.accept(entity);
             entity.touchUpdate();
             entity.removeWorldPrefix();
+
+            var publicData = entity.getPublicData();
+            if (!BlockUtil.isStatus(publicData.getInitialStatus())) {
+                throw new IllegalArgumentException("Invalid initial status: " + publicData.getInitialStatus());
+            }
+            if (!publicData.getModifiers().containsKey(BlockUtil.DEFAULT_STATUS)) {
+                throw  new IllegalArgumentException("publicData.modifiers must contain default status");
+            }
+            if (publicData.getModifiers().keySet().stream().anyMatch(k -> !BlockUtil.isStatus(k))) {
+                throw new IllegalArgumentException("publicData.modifiers keys must be valid block statuses");
+            }
+
             WBlockType saved = repository.save(entity);
             log.debug("Updated WBlockType: {}", blockId);
             return saved;

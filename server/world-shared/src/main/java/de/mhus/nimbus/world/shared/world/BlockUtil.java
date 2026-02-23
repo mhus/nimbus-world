@@ -12,6 +12,9 @@ import lombok.experimental.UtilityClass;
 @UtilityClass
 public class BlockUtil {
 
+    public final static String AIR_BLOCK_TYPE = "n:a"; // Standard AIR block type identifier
+    public final static String DEFAULT_STATUS = "default"; // Default block status
+
     /**
      * Check if block type represents AIR (empty space).
      * AIR types: "0", "w/0", null, empty string
@@ -115,5 +118,14 @@ public class BlockUtil {
 
     public static String positionKey(int worldX, int worldZ) {
         return worldX + "," + worldZ;
+    }
+
+    public static boolean isStatus(String status) {
+        if (status == null) return false;
+        return status.matches("^[a-z0-9_-]*$");
+    }
+
+    public static boolean isStatusDefault(String status) {
+        return status == null || status.isEmpty() || DEFAULT_STATUS.equals(status) || "0".equals(status); // legacy support for "0" as default status
     }
 }

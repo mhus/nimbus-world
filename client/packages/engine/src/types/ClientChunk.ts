@@ -43,7 +43,7 @@ export interface ClientChunkData {
   /** Record of height position key(x,z) -> HeightData */
   hightData: Record<string, HeightData>;
 
-  statusData: Map<string, number>;
+  statusData: Map<string, string>;
 
   /** Backdrop data for chunk edges (with defaults applied) */
   backdrop?: {

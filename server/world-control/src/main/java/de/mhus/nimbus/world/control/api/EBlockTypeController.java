@@ -1,8 +1,10 @@
 package de.mhus.nimbus.world.control.api;
 
+import de.mhus.nimbus.generated.types.BlockStatus;
 import de.mhus.nimbus.generated.types.BlockType;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.shared.rest.BaseEditorController;
+import de.mhus.nimbus.world.shared.world.BlockUtil;
 import de.mhus.nimbus.world.shared.world.WBlockType;
 import de.mhus.nimbus.world.shared.world.WBlockTypeService;
 import de.mhus.nimbus.world.shared.world.WorldCollection;
@@ -528,8 +530,10 @@ public class EBlockTypeController extends BaseEditorController {
             }
 
             // Set initialStatus from Block's status if present
-            if (block.getStatus() != 0) {
+            if (block.getStatus() != null) {
                 blockType.setInitialStatus(block.getStatus());
+            } else {
+                blockType.setInitialStatus(BlockUtil.DEFAULT_STATUS);
             }
 
             log.debug("Converted Block to BlockType: {} modifiers",

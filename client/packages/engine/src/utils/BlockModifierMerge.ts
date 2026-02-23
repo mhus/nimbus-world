@@ -212,9 +212,9 @@ export function mergeBlockModifier(
   appContext: AppContext,
   block: Block,
   blockType: BlockType,
-  overwriteStatus?: number
+  overwriteStatus?: string
 ): BlockModifier {
-  // Status is determined from BlockType.initialStatus (default: 0)
+  // Status is determined from BlockType.initialStatus (default: 'default')
   const status = calculateStatus(appContext, block, blockType, overwriteStatus);
 
   // Check if block has instance-specific modifiers
@@ -265,8 +265,8 @@ export function mergeBlockModifier(
  */
 function performModifierMerge(
   blockType: BlockType,
-  status: number,
-  blockModifiers: { [status: number]: BlockModifier } | null
+  status: string,
+  blockModifiers: { [status: string]: BlockModifier } | null
 ): BlockModifier {
   // Start with default modifier
   let result: BlockModifier = {
@@ -277,12 +277,12 @@ function performModifierMerge(
   };
 
   // Priority 3: Merge BlockType default status (0) as base
-  if (blockType.modifiers[0]) {
-    result = deepMergeModifiers(result, blockType.modifiers[0]);
+  if (blockType.modifiers['default']) {
+    result = deepMergeModifiers(result, blockType.modifiers['default']);
   }
 
   // Priority 2: Merge BlockType status-specific modifiers
-  if (status !== 0 && blockType.modifiers[status]) {
+  if (status !== 'default' && blockType.modifiers[status]) {
     result = deepMergeModifiers(result, blockType.modifiers[status]);
   }
 
@@ -314,11 +314,11 @@ export function calculateStatus(
   appContext: AppContext,
   block: Block,
   blockType: BlockType,
-  overwriteStatus?: number
-): number {
+  overwriteStatus?: string
+): string {
   // TODO: seasonalStatus if seasonal status is defined in block modifier
 
-  let newStatus: number;
+  let newStatus: string;
   // Use overwriteStatus if provided
   if (overwriteStatus !== undefined) {
     newStatus = overwriteStatus;
@@ -327,18 +327,21 @@ export function calculateStatus(
     newStatus = block.status;
   } else {
     // Fallback to BlockType's initialStatus or default to 0
-    newStatus = blockType.initialStatus ?? 0;
+    newStatus = blockType.initialStatus ?? 'default';
   }
 
   // World status override: if current status is 0 (default) and world status is non-zero
   // and a modifier exists for that world status either on block instance or block type.
   const worldStatus = appContext.worldInfo?.status;
   if (
-    newStatus === 0 &&
+    newStatus === 'default' &&
     worldStatus !== undefined &&
-    worldStatus !== 0 &&
+    worldStatus !== 'default' &&
     (block.modifiers?.[worldStatus] !== undefined || blockType.modifiers[worldStatus] !== undefined)
   ) {
+      if (worldStatus === '0') {
+          return 'default'; // legacy support for numeric "0" as default status, normalize to "default"
+      }
     return worldStatus; // world status takes precedence
   }
 
@@ -380,7 +383,10 @@ export function calculateStatus(
       }
     }
   }
-  return newStatus;
+    if (newStatus === '0') {
+        newStatus = 'default'; // legacy support for numeric "0" as default status, normalize to "default"
+    }
+    return newStatus;
 }
 
 /*
