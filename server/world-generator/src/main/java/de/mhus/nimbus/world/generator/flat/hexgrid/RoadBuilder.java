@@ -74,6 +74,9 @@ public class RoadBuilder extends HexGridBuilder {
     private static final int DEFAULT_CURVATURE = 10;  // Default maximum lateral offset for curves
     private static final double DEFAULT_WAVES = 1.5;  // Default number of sine wave cycles
 
+    // Maximum extra blocks to extend road width when cutting through higher terrain
+    private static final int MAX_TERRAIN_EXTENSION = 4;
+
     // New pathfinding parameters
     private static final int DEFAULT_MAX_SLOPE = 1;  // Maximum elevation change per block
     private static final int DEFAULT_TERRAIN_THRESHOLD = 5;  // Distance from terrain to trigger TerrainPathFinder
@@ -455,9 +458,11 @@ public class RoadBuilder extends HexGridBuilder {
         // Use a set to track unique positions (avoid duplicates)
         Set<String> drawnPositions = new HashSet<>();
 
+        int effectiveHalfWidth;
         if (isTrail) {
             // TRAIL: Use oversampling for natural width variation in curves
             double halfWidth = width / 2.0;
+            effectiveHalfWidth = (int) Math.ceil(halfWidth);
             int samples = (int) Math.ceil(width * 1.5);  // Oversample for natural look
             for (int i = 0; i <= samples; i++) {
                 double t = (i / (double) samples) * 2.0 - 1.0;  // -1.0 to 1.0
@@ -478,8 +483,8 @@ public class RoadBuilder extends HexGridBuilder {
             }
         } else {
             // STREET/ROAD: Exact width - draw exactly 'width' blocks perpendicular to direction
-            int halfWidth = width / 2;
-            for (int perpOffset = -halfWidth; perpOffset <= halfWidth; perpOffset++) {
+            effectiveHalfWidth = width / 2;
+            for (int perpOffset = -effectiveHalfWidth; perpOffset <= effectiveHalfWidth; perpOffset++) {
                 // Calculate actual position using perpendicular offset
                 int x = (int) Math.round(centerX + perpOffset * perpX);
                 int z = (int) Math.round(centerZ + perpOffset * perpZ);
@@ -492,6 +497,47 @@ public class RoadBuilder extends HexGridBuilder {
                 drawnPositions.add(posKey);
 
                 drawRoadBlock(flat, x, z, level, perpOffset, centerMaterial, borderMaterial, bridgeMaterial, waterBlockDef);
+            }
+        }
+
+        // Extend road width where adjacent terrain is higher than road level.
+        // This ensures players can walk on roads that cut through elevated terrain.
+        extendRoadForHigherTerrain(flat, centerX, centerZ, level, effectiveHalfWidth,
+            perpX, perpZ, centerMaterial, borderMaterial, bridgeMaterial, waterBlockDef, drawnPositions);
+    }
+
+    /**
+     * Extend road width on both sides where adjacent terrain is higher than road level.
+     * When a road cuts through elevated terrain, the road needs to be wider so players
+     * can walk on it without being blocked by the terrain wall at the road edge.
+     */
+    private void extendRoadForHigherTerrain(WFlat flat, int centerX, int centerZ, int level,
+                                             int effectiveHalfWidth, double perpX, double perpZ,
+                                             int centerMaterial, int borderMaterial, int bridgeMaterial,
+                                             String waterBlockDef, Set<String> drawnPositions) {
+        // Extend on negative perpendicular side
+        for (int ext = effectiveHalfWidth + 1; ext <= effectiveHalfWidth + MAX_TERRAIN_EXTENSION; ext++) {
+            int x = (int) Math.round(centerX + (-ext) * perpX);
+            int z = (int) Math.round(centerZ + (-ext) * perpZ);
+            if (x < 0 || x >= flat.getSizeX() || z < 0 || z >= flat.getSizeZ()) break;
+            if (flat.getLevel(x, z) <= level) break;
+            String posKey = x + "," + z;
+            if (!drawnPositions.contains(posKey)) {
+                drawnPositions.add(posKey);
+                drawRoadBlock(flat, x, z, level, -ext, centerMaterial, borderMaterial, bridgeMaterial, waterBlockDef);
+            }
+        }
+
+        // Extend on positive perpendicular side
+        for (int ext = effectiveHalfWidth + 1; ext <= effectiveHalfWidth + MAX_TERRAIN_EXTENSION; ext++) {
+            int x = (int) Math.round(centerX + ext * perpX);
+            int z = (int) Math.round(centerZ + ext * perpZ);
+            if (x < 0 || x >= flat.getSizeX() || z < 0 || z >= flat.getSizeZ()) break;
+            if (flat.getLevel(x, z) <= level) break;
+            String posKey = x + "," + z;
+            if (!drawnPositions.contains(posKey)) {
+                drawnPositions.add(posKey);
+                drawRoadBlock(flat, x, z, level, ext, centerMaterial, borderMaterial, bridgeMaterial, waterBlockDef);
             }
         }
     }

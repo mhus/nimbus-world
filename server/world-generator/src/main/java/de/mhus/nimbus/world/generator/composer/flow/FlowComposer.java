@@ -828,13 +828,17 @@ public class FlowComposer {
         int segmentCount = 0;
         Integer previousToLevel = null; // Track TO level from previous segment (becomes FROM of next segment)
 
-        // Pre-calculate route levels if flow supports it (rivers use two-pass approach)
-        Integer fixedLevelForRoute = getFlowFixedLevel(flow);
+        // Pre-calculate route levels if flow supports it (rivers use two-pass approach).
+        // rawLevelAt provides the terrain mean height at each coordinate, so that
+        // calculateRouteLevels() can average/constrain based on actual terrain.
+        // This ensures roads follow biome terrain (e.g., higher in mountains, lower at coast).
         ToIntFunction<HexVector2> rawLevelAt = coord -> {
             Biome biome = gridMap.get(coordKey(coord));
-            return flow.calculateSegmentLevel(
-                getBiomeLandLevel(biome), getBiomeLandOffset(biome),
-                null, null, null, fixedLevelForRoute);
+            Integer landLevel = getBiomeLandLevel(biome);
+            Integer landOffset = getBiomeLandOffset(biome);
+            int land = landLevel != null ? landLevel : 70;
+            int offset = landOffset != null ? landOffset : 0;
+            return land + offset / 2; // terrain mean height
         };
         List<Integer> routeLevels = flow.calculateRouteLevels(route, rawLevelAt, SEA_LEVEL);
 
@@ -1305,43 +1309,45 @@ public class FlowComposer {
                 }
 
                 // Create ROUTE parts for exit point (priority: position > lx/lz > side)
+                // For TO parts: the road starts at the EXIT edge (toLevel) and goes to center.
+                // So fromLevel=toLevel (exit edge level) and toLevel=fromLevel (for center averaging).
                 if (segment.hasToPosition()) {
                     // Use HexLocal position string (Point endpoint or grid-to-grid transition)
                     RoadConfigPart part = RoadConfigPart.createRoutePositionStringPartWithLevels(
                         segment.getToPosition(),
                         segment.getWidth(),
-                        fromLevel,
                         toLevel,
+                        fromLevel,
                         segment.getType()
                     );
                     centralGrid.addRoadConfigPart(part);
                     log.debug("Added position-string route part (to) '{}' with levels {}/{}",
-                        segment.getToPosition(), fromLevel, toLevel);
+                        segment.getToPosition(), toLevel, fromLevel);
                 } else if (segment.hasToCoordinates()) {
                     // Use lx/lz coordinates (Point endpoint, deprecated)
                     RoadConfigPart part = RoadConfigPart.createRoutePositionPartWithLevels(
                         segment.getToLx(),
                         segment.getToLz(),
                         segment.getWidth(),
-                        fromLevel,
                         toLevel,
+                        fromLevel,
                         segment.getType()
                     );
                     centralGrid.addRoadConfigPart(part);
                     log.debug("Added position-based route part (to) at lx={}, lz={} with levels {}/{}",
-                        segment.getToLx(), segment.getToLz(), fromLevel, toLevel);
+                        segment.getToLx(), segment.getToLz(), toLevel, fromLevel);
                 } else if (segment.getToSide() != null && !segment.getToSide().equals(segment.getFromSide())) {
                     // Use SIDE (Biome endpoint, legacy fallback)
                     RoadConfigPart part = RoadConfigPart.createRouteSidePartWithLevels(
                         segment.getToSide(),
                         segment.getWidth(),
-                        fromLevel,
                         toLevel,
+                        fromLevel,
                         segment.getType()
                     );
                     centralGrid.addRoadConfigPart(part);
                     log.debug("Added SIDE-based route part (to) at {} with levels {}/{}",
-                        segment.getToSide(), fromLevel, toLevel);
+                        segment.getToSide(), toLevel, fromLevel);
                 }
             }
         }
