@@ -532,6 +532,14 @@ export class MaterialService {
       // Create Babylon.js Texture from blob URL
       const texture = new Texture(blobUrl, this.scene);
 
+      // Default wrap mode to CLAMP for original textures to prevent edge bleeding
+      if (!textureDef.uvMapping?.wrapU) {
+        texture.wrapU = Texture.CLAMP_ADDRESSMODE;
+      }
+      if (!textureDef.uvMapping?.wrapV) {
+        texture.wrapV = Texture.CLAMP_ADDRESSMODE;
+      }
+
       // Apply UV mapping transformations if defined
       if (textureDef.uvMapping) {
         this.applyUVMapping(texture, textureDef.uvMapping);

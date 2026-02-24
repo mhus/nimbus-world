@@ -5,7 +5,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.shared.storage.StorageService;
 import de.mhus.nimbus.shared.types.SchemaVersion;
 import de.mhus.nimbus.shared.types.WorldId;
+import de.mhus.nimbus.generated.types.HexVector2;
+import de.mhus.nimbus.world.shared.util.HexMathUtil;
 import de.mhus.nimbus.world.shared.world.StorageProvider;
+import de.mhus.nimbus.world.shared.world.WHexGrid;
+import de.mhus.nimbus.world.shared.world.WWorld;
 import de.mhus.nimbus.world.shared.world.WWorldService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -344,17 +348,10 @@ public class WLayerService implements StorageProvider {
     // ==================== TERRAIN LAYER OPERATIONS ====================
 
     /**
-     * Save terrain chunk data.
-     *
-     * @param worldId     World identifier
-     * @param layerDataId Layer data ID
-     * @param chunkKey    Chunk key
-     * @param data        Layer chunk data
-     * @return Saved terrain entity
+     * Core logic for saving terrain chunk data (without dirty marking).
      */
-    @Transactional
-    public WLayerTerrain saveTerrainChunk(String worldId, String layerDataId,
-                                          String chunkKey, LayerChunkData data) {
+    private WLayerTerrain saveTerrainChunkCore(String worldId, String layerDataId,
+                                                String chunkKey, LayerChunkData data) {
         if (data == null) {
             throw new IllegalArgumentException("LayerChunkData is required");
         }
@@ -420,12 +417,40 @@ public class WLayerService implements StorageProvider {
         }
 
         entity.touchUpdate();
-        WLayerTerrain saved = terrainRepository.save(entity);
+        return terrainRepository.save(entity);
+    }
 
-        // Mark chunk as dirty
+    /**
+     * Save terrain chunk data and mark the chunk as dirty.
+     *
+     * @param worldId     World identifier
+     * @param layerDataId Layer data ID
+     * @param chunkKey    Chunk key
+     * @param data        Layer chunk data
+     * @return Saved terrain entity
+     */
+    @Transactional
+    public WLayerTerrain saveTerrainChunk(String worldId, String layerDataId,
+                                          String chunkKey, LayerChunkData data) {
+        WLayerTerrain saved = saveTerrainChunkCore(worldId, layerDataId, chunkKey, data);
         dirtyChunkService.markChunkDirty(worldId, chunkKey, "terrain_layer_updated");
-
         return saved;
+    }
+
+    /**
+     * Save terrain chunk data without marking the chunk as dirty.
+     * Use for batch operations where dirty marking happens separately at the end.
+     *
+     * @param worldId     World identifier
+     * @param layerDataId Layer data ID
+     * @param chunkKey    Chunk key
+     * @param data        Layer chunk data
+     * @return Saved terrain entity
+     */
+    @Transactional
+    public WLayerTerrain saveTerrainChunkSilent(String worldId, String layerDataId,
+                                                 String chunkKey, LayerChunkData data) {
+        return saveTerrainChunkCore(worldId, layerDataId, chunkKey, data);
     }
 
     /**
@@ -470,10 +495,9 @@ public class WLayerService implements StorageProvider {
     }
 
     /**
-     * Delete terrain chunk.
+     * Core logic for deleting terrain chunk (without dirty marking).
      */
-    @Transactional
-    public boolean deleteTerrainChunk(String worldId, String layerDataId, String chunkKey) {
+    private boolean deleteTerrainChunkCore(String worldId, String layerDataId, String chunkKey) {
         Optional<WLayerTerrain> terrainOpt = terrainRepository
                 .findByWorldIdAndLayerDataIdAndChunkKey(worldId, layerDataId, chunkKey);
 
@@ -495,11 +519,39 @@ public class WLayerService implements StorageProvider {
         // Delete entity
         terrainRepository.delete(terrain);
 
-        // Mark chunk as dirty
-        dirtyChunkService.markChunkDirty(terrain.getWorldId(), chunkKey, "terrain_chunk_deleted");
-
         log.debug("Deleted terrain chunk: layerDataId={} chunkKey={}", layerDataId, chunkKey);
         return true;
+    }
+
+    /**
+     * Delete terrain chunk and mark it as dirty.
+     *
+     * @param worldId     World identifier
+     * @param layerDataId Layer data ID
+     * @param chunkKey    Chunk key
+     * @return true if deleted
+     */
+    @Transactional
+    public boolean deleteTerrainChunk(String worldId, String layerDataId, String chunkKey) {
+        boolean deleted = deleteTerrainChunkCore(worldId, layerDataId, chunkKey);
+        if (deleted) {
+            dirtyChunkService.markChunkDirty(worldId, chunkKey, "terrain_chunk_deleted");
+        }
+        return deleted;
+    }
+
+    /**
+     * Delete terrain chunk without marking it as dirty.
+     * Use for batch operations where dirty marking happens separately at the end.
+     *
+     * @param worldId     World identifier
+     * @param layerDataId Layer data ID
+     * @param chunkKey    Chunk key
+     * @return true if deleted
+     */
+    @Transactional
+    public boolean deleteTerrainChunkSilent(String worldId, String layerDataId, String chunkKey) {
+        return deleteTerrainChunkCore(worldId, layerDataId, chunkKey);
     }
 
     /**
@@ -1936,6 +1988,128 @@ public class WLayerService implements StorageProvider {
             case 3 -> new int[]{z, -x};         // 270° clockwise (= 90° counter-clockwise)
             default -> new int[]{x, z};
         };
+    }
+
+    // ==================== HEX GRID OPERATIONS ====================
+
+    /**
+     * Clear all terrain data for a layer within a hex grid area.
+     * Chunks fully inside the hex are deleted entirely.
+     * Chunks partially overlapping are filtered to keep only blocks outside the hex.
+     * Does NOT mark chunks as dirty (use markHexGridDirty separately).
+     *
+     * @param worldId World identifier
+     * @param layer   The layer to clear terrain from
+     * @param hexGrid The hex grid defining the area to clear
+     * @return Set of chunk keys that were affected
+     */
+    public Set<String> clearTerrainInHexGrid(String worldId, WLayer layer, WHexGrid hexGrid) {
+        WWorld world = worldService.getByWorldId(worldId)
+                .orElseThrow(() -> new IllegalArgumentException("World not found: " + worldId));
+
+        int chunkSize = world.getPublicData().getChunkSize();
+        int gridSize = world.getPublicData().getHexGridSize();
+
+        HexVector2 hexPos = hexGrid.getPublicData().getPosition();
+        int[] hexCenter = HexMathUtil.hexToCartesian(hexPos, gridSize);
+        int hexCenterX = hexCenter[0];
+        int hexCenterZ = hexCenter[1];
+
+        Set<String> affectedChunkKeys = hexGrid.getAffectedChunkKeys(world);
+        Set<String> clearedChunkKeys = new HashSet<>();
+
+        for (String chunkKey : affectedChunkKeys) {
+            String[] parts = chunkKey.split(":");
+            if (parts.length != 2) continue;
+
+            int cx = Integer.parseInt(parts[0]);
+            int cz = Integer.parseInt(parts[1]);
+
+            // Test all 4 corners of the chunk
+            int minX = cx * chunkSize;
+            int maxX = (cx + 1) * chunkSize - 1;
+            int minZ = cz * chunkSize;
+            int maxZ = (cz + 1) * chunkSize - 1;
+
+            boolean c1 = HexMathUtil.isPointInHex(minX, minZ, hexCenterX, hexCenterZ, gridSize);
+            boolean c2 = HexMathUtil.isPointInHex(maxX, minZ, hexCenterX, hexCenterZ, gridSize);
+            boolean c3 = HexMathUtil.isPointInHex(minX, maxZ, hexCenterX, hexCenterZ, gridSize);
+            boolean c4 = HexMathUtil.isPointInHex(maxX, maxZ, hexCenterX, hexCenterZ, gridSize);
+
+            if (c1 && c2 && c3 && c4) {
+                // Entire chunk inside hex → delete whole chunk
+                deleteTerrainChunkCore(worldId, layer.getLayerDataId(), chunkKey);
+                clearedChunkKeys.add(chunkKey);
+            } else {
+                // Partial overlap or hex crosses through chunk → filter blocks
+                boolean changed = clearPartialChunkInHex(worldId, layer.getLayerDataId(), chunkKey,
+                        hexCenterX, hexCenterZ, gridSize);
+                if (changed) {
+                    clearedChunkKeys.add(chunkKey);
+                }
+            }
+        }
+
+        log.debug("Cleared terrain in hex grid: worldId={} layer={} hexPos={} clearedChunks={}",
+                worldId, layer.getName(), hexGrid.getPosition(), clearedChunkKeys.size());
+        return clearedChunkKeys;
+    }
+
+    /**
+     * Filter blocks in a terrain chunk, keeping only blocks outside the hex area.
+     *
+     * @return true if the chunk was modified
+     */
+    private boolean clearPartialChunkInHex(String worldId, String layerDataId, String chunkKey,
+                                            int hexCenterX, int hexCenterZ, int gridSize) {
+        Optional<LayerChunkData> chunkDataOpt = loadTerrainChunk(worldId, layerDataId, chunkKey);
+        if (chunkDataOpt.isEmpty()) return false;
+
+        LayerChunkData chunkData = chunkDataOpt.get();
+        if (chunkData.getBlocks() == null || chunkData.getBlocks().isEmpty()) return false;
+
+        int originalSize = chunkData.getBlocks().size();
+
+        // Keep only blocks that are NOT inside the hex
+        List<LayerBlock> remaining = chunkData.getBlocks().stream()
+                .filter(block -> {
+                    if (block.getBlock() == null || block.getBlock().getPosition() == null) return true;
+                    var pos = block.getBlock().getPosition();
+                    return !HexMathUtil.isPointInHex(pos.getX(), pos.getZ(),
+                            hexCenterX, hexCenterZ, gridSize);
+                })
+                .collect(Collectors.toList());
+
+        if (remaining.size() == originalSize) {
+            return false; // Nothing changed
+        }
+
+        if (remaining.isEmpty()) {
+            // All blocks were inside hex → delete chunk
+            deleteTerrainChunkCore(worldId, layerDataId, chunkKey);
+        } else {
+            // Save filtered chunk
+            LayerChunkData filtered = LayerChunkData.builder()
+                    .blocks(remaining)
+                    .build();
+            saveTerrainChunkCore(worldId, layerDataId, chunkKey, filtered);
+        }
+        return true;
+    }
+
+    /**
+     * Mark all chunks affected by a hex grid as dirty.
+     *
+     * @param worldId World identifier
+     * @param hexGrid The hex grid whose chunks should be marked dirty
+     */
+    public void markHexGridDirty(String worldId, WHexGrid hexGrid) {
+        WWorld world = worldService.getByWorldId(worldId)
+                .orElseThrow(() -> new IllegalArgumentException("World not found: " + worldId));
+        Set<String> chunkKeys = hexGrid.getAffectedChunkKeys(world);
+        if (!chunkKeys.isEmpty()) {
+            dirtyChunkService.markChunksDirty(worldId, new ArrayList<>(chunkKeys), "hex_grid_regenerated");
+        }
     }
 
     // ==================== HELPER METHODS ====================

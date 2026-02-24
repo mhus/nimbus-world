@@ -75,7 +75,7 @@ export class BillboardRenderer extends BlockRenderer {
     let pivotOffsetY = 0;
     let pivotOffsetZ = 0;
 
-    if (block.offsets && block.offsets.length >= 3) {
+    if (block.offsets && block.offsets.length > 0) {
       pivotOffsetX = block.offsets[0] || 0;
       pivotOffsetY = block.offsets[1] || 0;
       pivotOffsetZ = block.offsets[2] || 0;
@@ -138,11 +138,12 @@ export class BillboardRenderer extends BlockRenderer {
     ];
 
     // UV coordinates (full texture)
+    // Babylon.js UV: (0,0) = bottom-left, (1,1) = top-right
     const uvs = [
-      0, 1, // left-bottom
-      1, 1, // right-bottom
-      1, 0, // right-top
-      0, 0, // left-top
+      0, 0, // left-bottom
+      1, 0, // right-bottom
+      1, 1, // right-top
+      0, 1, // left-top
     ];
 
     // Normals (pointing forward)

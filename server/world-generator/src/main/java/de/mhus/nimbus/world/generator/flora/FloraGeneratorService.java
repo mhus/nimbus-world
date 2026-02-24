@@ -9,7 +9,6 @@ import de.mhus.nimbus.world.generator.modelbuilder.ModelBuilderException;
 import de.mhus.nimbus.world.generator.modelbuilder.ModelBuilderService;
 import de.mhus.nimbus.world.shared.layer.LayerBlock;
 import de.mhus.nimbus.world.shared.layer.LayerChunkData;
-import de.mhus.nimbus.world.shared.layer.WDirtyChunkService;
 import de.mhus.nimbus.world.shared.layer.WLayer;
 import de.mhus.nimbus.world.shared.layer.WLayerService;
 import de.mhus.nimbus.world.shared.world.WAnything;
@@ -50,7 +49,6 @@ public class FloraGeneratorService {
     private final WHexGridRepository hexGridRepository;
     private final WAnythingService anythingService;
     private final WLayerService layerService;
-    private final WDirtyChunkService dirtyChunkService;
     private final ModelBuilderService modelBuilderService;
 
     private record HeightInfo(int groundLevel, int waterLevel) {}
@@ -72,18 +70,10 @@ public class FloraGeneratorService {
                 .orElseThrow(() -> new ModelBuilderException("HexGrid not found: " + position));
 
         Map<String, String> params = hexGrid.getParameters();
-        String landFloraType = params.get("gf_flora");
-        double landDensity = parseDouble(params.get("gf_density"), 0.1);
-        String waterFloraType = params.get("gf_water_flora");
-        double waterDensity = parseDouble(params.get("gf_water_density"), 0.1);
-        String seaFloraType = params.get("gf_sea_flora");
-        double seaDensity = parseDouble(params.get("gf_sea_density"), 0.1);
+        String floraType = params.get("gf_flora");
+        double density = parseDouble(params.get("gf_density"), 0.02);
 
-        boolean hasLand = landFloraType != null && !landFloraType.isBlank();
-        boolean hasWater = waterFloraType != null && !waterFloraType.isBlank();
-        boolean hasSea = seaFloraType != null && !seaFloraType.isBlank();
-
-        if (!hasLand && !hasWater && !hasSea) {
+        if (floraType == null || floraType.isBlank()) {
             log.info("No flora configured for hex {},{}", hexQ, hexR);
             return 0;
         }
@@ -91,13 +81,20 @@ public class FloraGeneratorService {
         WorldId regionWorldId = WorldId.of(worldId).orElseThrow()
                 .toRegionCollection();
 
-        Map<String, FloraTypeDefinition> floraTypeCache = new HashMap<>();
+        FloraTypeDefinition floraDef = loadFloraTypeDefinition(regionWorldId.getId(), floraType);
+        if (floraDef == null || floraDef.getPlants() == null || floraDef.getPlants().isEmpty()) {
+            log.info("Flora type '{}' has no plants for hex {},{}", floraType, hexQ, hexR);
+            return 0;
+        }
 
         WLayer floraLayer = layerService.findByWorldIdAndName(worldId, FLORA_LAYER_NAME)
                 .orElseThrow(() -> new ModelBuilderException("Flora layer not found for world: " + worldId));
 
         WLayer groundLayer = layerService.findByWorldIdAndName(worldId, GROUND_LAYER_NAME)
                 .orElse(null);
+
+        // Clear existing flora in this hex grid before generating new flora
+        layerService.clearTerrainInHexGrid(worldId, floraLayer, hexGrid);
 
         int chunkSize = world.getPublicData().getChunkSize();
         int defaultGroundLevel = world.getGroundLevel();
@@ -117,21 +114,7 @@ public class FloraGeneratorService {
             FloraCategory category = FloraCategory.determine(
                     heightInfo.groundLevel(), heightInfo.waterLevel(), seaLevel);
 
-            String floraType;
-            double density;
-            switch (category) {
-                case WATER -> { floraType = waterFloraType; density = waterDensity; }
-                case SEA -> { floraType = seaFloraType; density = seaDensity; }
-                default -> { floraType = landFloraType; density = landDensity; }
-            }
-
-            if (floraType == null || floraType.isBlank()) continue;
             if (random.nextDouble() >= density) continue;
-
-            FloraTypeDefinition floraDef = floraTypeCache.computeIfAbsent(floraType, type ->
-                    loadFloraTypeDefinition(regionWorldId.getId(), type));
-
-            if (floraDef == null || floraDef.getPlants() == null || floraDef.getPlants().isEmpty()) continue;
 
             int waterDepth = heightInfo.waterLevel() - heightInfo.groundLevel();
 
@@ -151,14 +134,12 @@ public class FloraGeneratorService {
         }
 
         for (Map.Entry<String, LayerChunkData> entry : allChunkData.entrySet()) {
-            layerService.saveTerrainChunk(worldId, floraLayer.getLayerDataId(),
+            layerService.saveTerrainChunkSilent(worldId, floraLayer.getLayerDataId(),
                     entry.getKey(), entry.getValue());
         }
 
-        if (!allChunkData.isEmpty()) {
-            dirtyChunkService.markChunksDirty(worldId,
-                    new ArrayList<>(allChunkData.keySet()), "flora_generation");
-        }
+        // Mark all hex grid chunks as dirty (covers both cleared and newly generated chunks)
+        layerService.markHexGridDirty(worldId, hexGrid);
 
         log.info("Generated flora for hex {},{}: {} blocks in {} chunks",
                 hexQ, hexR, totalBlockCount, allChunkData.size());

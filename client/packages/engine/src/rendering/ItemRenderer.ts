@@ -152,11 +152,12 @@ export class ItemRenderer extends BlockRenderer {
     ];
 
     // UV coordinates (full texture)
+    // Babylon.js UV: (0,0) = bottom-left, (1,1) = top-right
     const uvs = [
-      0, 1, // left-bottom
-      1, 1, // right-bottom
-      1, 0, // right-top
-      0, 0, // left-top
+      0, 0, // left-bottom
+      1, 0, // right-bottom
+      1, 1, // right-top
+      0, 1, // left-top
     ];
 
     // Normals (pointing forward)
