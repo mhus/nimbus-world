@@ -11,13 +11,24 @@
  * - Supports offset, scaling transformations
  */
 
-import { Mesh, MeshBuilder, Texture, Vector2, Color3 } from '@babylonjs/core';
+import { Mesh, MeshBuilder, Texture, Vector2, Color3, type IDisposable } from '@babylonjs/core';
 import { WaterMaterial } from '@babylonjs/materials';
 import { getLogger, TextureHelper, Shape } from '@nimbus/shared';
 import type { ClientBlock } from '../types';
 import { BlockRenderer } from './BlockRenderer';
 import type { RenderContext } from '../services/RenderService';
 import { RENDERING_GROUPS } from '../config/renderingGroups';
+
+/**
+ * Disposable wrapper for WaterMaterial and its render targets
+ */
+class WaterMaterialDisposable implements IDisposable {
+  constructor(private material: WaterMaterial) {}
+
+  dispose(): void {
+    this.material.dispose(true, true);
+  }
+}
 
 const logger = getLogger('OceanRenderer');
 
@@ -218,16 +229,18 @@ export class OceanRenderer extends BlockRenderer {
 
     // Setup WaterMaterial only once (when mesh is first created)
     if (!plane.material) {
-      await this.setupWaterMaterial(
+      const waterMaterial = await this.setupWaterMaterial(
         plane,
         sharedMeshName,
         bumpTexturePath,
         waterColor,
         renderContext
       );
+      // Track WaterMaterial for disposal (has expensive render targets)
+      renderContext.resourcesToDispose.add(new WaterMaterialDisposable(waterMaterial));
     }
 
-    renderContext.resourcesToDispose.add(plane);
+    // Mesh is already tracked by getOrCreateMesh() - no extra add() needed
 
     logger.debug('Ocean block added to shared mesh', {
       sharedMeshName,
@@ -253,7 +266,7 @@ export class OceanRenderer extends BlockRenderer {
     bumpTexturePath: string,
     waterColor: Color3,
     renderContext: RenderContext
-  ): Promise<void> {
+  ): Promise<WaterMaterial> {
     const scene = renderContext.renderService.materialService.scene;
 
     // Create WaterMaterial with render target size
@@ -304,5 +317,7 @@ export class OceanRenderer extends BlockRenderer {
       waterColor,
       chunkMeshesInRenderList: chunkMeshes.size,
     });
+
+    return waterMaterial;
   }
 }

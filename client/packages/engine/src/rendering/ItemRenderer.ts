@@ -12,13 +12,24 @@
  * - transparencyMode: ALPHA_TEST (sharp cutout edges, cannot be overridden)
  */
 
-import { Vector3, Mesh, VertexData, Texture, MeshBuilder, StandardMaterial, Color3 } from '@babylonjs/core';
+import { Vector3, Mesh, VertexData, Texture, MeshBuilder, StandardMaterial, Color3, type IDisposable } from '@babylonjs/core';
 import { AdvancedDynamicTexture, TextBlock, Control } from '@babylonjs/gui';
 import { getLogger, TextureHelper, TransparencyMode } from '@nimbus/shared';
 import type { ClientBlock } from '../types';
 import { BlockRenderer } from './BlockRenderer';
 import type { RenderContext } from '../services/RenderService';
 import { RENDERING_GROUPS } from '../config/renderingGroups';
+
+/**
+ * Disposable wrapper for item material and its textures
+ */
+class ItemMaterialDisposable implements IDisposable {
+  constructor(private material: StandardMaterial) {}
+
+  dispose(): void {
+    this.material.dispose(true, true);
+  }
+}
 
 const logger = getLogger('ItemRenderer');
 
@@ -266,8 +277,9 @@ export class ItemRenderer extends BlockRenderer {
     // Apply material (already created above to get aspect ratio)
     mesh.material = material;
 
-    // Register mesh for automatic disposal when chunk is unloaded
+    // Register mesh and material for automatic disposal when chunk is unloaded
     renderContext.resourcesToDispose.addMesh(mesh);
+    renderContext.resourcesToDispose.add(new ItemMaterialDisposable(material));
 
     logger.debug('Item mesh created', {
       meshName,
@@ -334,13 +346,8 @@ export class ItemRenderer extends BlockRenderer {
     labelPlane.renderingGroupId = RENDERING_GROUPS.SELECTION_OVERLAY;
     labelPlane.alwaysSelectAsActiveMesh = true;
 
-    // Create a transparent material to prevent depth issues
-    const labelMaterial = new StandardMaterial(`${mesh.name}_label_mat`, scene);
-    labelMaterial.disableDepthWrite = true; // Don't write to depth buffer
-    labelMaterial.disableColorWrite = true; // Don't write color (GUI texture will)
-    labelPlane.material = labelMaterial;
-
     // Create GUI texture for the label with high resolution for crisp text
+    // CreateForMesh creates its own material on the labelPlane
     const guiTexture = AdvancedDynamicTexture.CreateForMesh(labelPlane, 256, 64);
 
     // Create text block
@@ -356,8 +363,9 @@ export class ItemRenderer extends BlockRenderer {
 
     guiTexture.addControl(textBlock);
 
-    // Register label plane for disposal
+    // Register label plane and GUI texture for disposal
     renderContext.resourcesToDispose.addMesh(labelPlane);
+    renderContext.resourcesToDispose.add(guiTexture);
 
     logger.debug('Item label created', {
       meshName: mesh.name,

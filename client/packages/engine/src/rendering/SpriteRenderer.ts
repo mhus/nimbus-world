@@ -28,11 +28,18 @@ const logger = getLogger('SpriteRenderer');
  * Disposable wrapper for sprite cleanup
  */
 class SpriteDisposable implements IDisposable {
-  constructor(private sprites: Sprite[]) {}
+  constructor(
+    private sprites: Sprite[],
+    private spriteService: any
+  ) {}
 
   dispose(): void {
     for (const sprite of this.sprites) {
       sprite.dispose();
+    }
+    // Unregister disposed sprites from wind animation
+    if (this.spriteService) {
+      this.spriteService.unregisterSprites(this.sprites);
     }
     logger.debug('Sprites disposed', { count: this.sprites.length });
   }
@@ -142,7 +149,7 @@ export class SpriteRenderer extends BlockRenderer {
 
       // Register sprites for disposal
       if (sprites.length > 0) {
-        const disposable = new SpriteDisposable(sprites);
+        const disposable = new SpriteDisposable(sprites, spriteService);
         renderContext.resourcesToDispose.add(disposable);
       }
     }

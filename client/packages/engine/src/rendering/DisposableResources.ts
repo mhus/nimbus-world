@@ -23,6 +23,7 @@ const logger = getLogger('DisposableResources');
 export class DisposableResources {
   private resources: IDisposable[] = [];
   private namedResources: Map<string, IDisposable> = new Map();
+  private _disposed = false;
 
   /**
    * Get or create a named resource
@@ -36,6 +37,16 @@ export class DisposableResources {
    * @returns Existing or newly created resource
    */
   getOrCreate<T extends IDisposable>(name: string, factory: () => T): T {
+    if (this._disposed) {
+      logger.warn('getOrCreate called after disposal, resource will be disposed immediately', { name });
+      const resource = factory();
+      try {
+        resource.dispose();
+      } catch (error) {
+        logger.warn('Failed to dispose late named resource', { error });
+      }
+      return resource;
+    }
     if (!this.namedResources.has(name)) {
       const resource = factory();
       this.namedResources.set(name, resource);
@@ -62,6 +73,15 @@ export class DisposableResources {
    * @param resource Disposable resource to track
    */
   add(resource: IDisposable): void {
+    if (this._disposed) {
+      logger.warn('Resource added after disposal, disposing immediately');
+      try {
+        resource.dispose();
+      } catch (error) {
+        logger.warn('Failed to dispose late resource', { error });
+      }
+      return;
+    }
     this.resources.push(resource);
   }
 
@@ -99,6 +119,8 @@ export class DisposableResources {
    * Disposes all resources, then clears the tracking arrays.
    */
   dispose(): void {
+    this._disposed = true;
+
     // Dispose all resources
     for (const resource of this.resources) {
       try {

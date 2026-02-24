@@ -11,12 +11,23 @@
  * - Supports scaling, rotation transformations
  */
 
-import { Vector3, Mesh, VertexData, Texture } from '@babylonjs/core';
+import { Vector3, Mesh, VertexData, Texture, type IDisposable, type StandardMaterial } from '@babylonjs/core';
 import { getLogger, TextureHelper } from '@nimbus/shared';
 import type { ClientBlock } from '../types';
 import { BlockRenderer } from './BlockRenderer';
 import type { RenderContext } from '../services/RenderService';
 import { RENDERING_GROUPS } from '../config/renderingGroups';
+
+/**
+ * Disposable wrapper for billboard material and its textures
+ */
+class BillboardMaterialDisposable implements IDisposable {
+  constructor(private material: StandardMaterial) {}
+
+  dispose(): void {
+    this.material.dispose(true, true); // forceDisposeEffect=true, forceDisposeTextures=true
+  }
+}
 
 const logger = getLogger('BillboardRenderer');
 
@@ -262,8 +273,9 @@ export class BillboardRenderer extends BlockRenderer {
       );
     }
 
-    // Register mesh for automatic disposal when chunk is unloaded
+    // Register mesh and material for automatic disposal when chunk is unloaded
     renderContext.resourcesToDispose.addMesh(mesh);
+    renderContext.resourcesToDispose.add(new BillboardMaterialDisposable(material));
 
     logger.debug('Billboard mesh created', {
       meshName,

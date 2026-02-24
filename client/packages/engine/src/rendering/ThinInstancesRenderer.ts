@@ -141,8 +141,7 @@ export class ThinInstancesRenderer extends BlockRenderer {
           chunkKey
         );
 
-        // Register mesh and disposable for cleanup
-        renderContext.resourcesToDispose.addMesh(result.mesh);
+        // Register disposable for cleanup (handles mesh dispose + instanceGroups cleanup)
         renderContext.resourcesToDispose.add(result.disposable);
 
         totalInstancesCreated += instanceCount;

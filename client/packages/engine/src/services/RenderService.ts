@@ -1098,13 +1098,24 @@ export class RenderService {
    * when chunks are unloaded. This method only disposes chunk meshes.
    */
   dispose(): void {
-    // Dispose chunk meshes
+    // Dispose chunk meshes (Track A: batched material groups)
     for (const meshMap of this.chunkMeshes.values()) {
       for (const mesh of meshMap.values()) {
         mesh.dispose();
       }
     }
     this.chunkMeshes.clear();
+
+    // Dispose separate meshes/sprites (Track B: via DisposableResources)
+    const chunkService = this.appContext.services.chunk;
+    if (chunkService) {
+      for (const chunk of chunkService.getAllChunks()) {
+        if (chunk.data.resourcesToDispose) {
+          chunk.data.resourcesToDispose.dispose();
+          chunk.data.resourcesToDispose = undefined as any;
+        }
+      }
+    }
 
     logger.debug('RenderService disposed');
   }

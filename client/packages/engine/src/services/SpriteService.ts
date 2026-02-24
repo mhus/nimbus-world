@@ -297,22 +297,16 @@ export class SpriteService {
   }
 
   /**
-   * Remove sprites that have been disposed
-   * Call this when chunks are unloaded
+   * Unregister specific sprites from wind animation
+   * Called by SpriteDisposable when sprites are disposed
    */
-  removeDisposedSprites(): void {
+  unregisterSprites(sprites: Sprite[]): void {
+    const spriteSet = new Set(sprites);
     const beforeCount = this.spriteData.length;
-    this.spriteData = this.spriteData.filter((data) => {
-      try {
-        // Check if sprite still exists (no isDisposed() method on Sprite)
-        return data.sprite && data.sprite.position !== undefined;
-      } catch {
-        return false;
-      }
-    });
+    this.spriteData = this.spriteData.filter((data) => !spriteSet.has(data.sprite));
     const removed = beforeCount - this.spriteData.length;
     if (removed > 0) {
-      logger.debug('Removed disposed sprites from animation', { count: removed });
+      logger.debug('Unregistered sprites from wind animation', { count: removed });
     }
   }
 
