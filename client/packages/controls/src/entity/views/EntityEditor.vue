@@ -13,6 +13,26 @@
       <h2 class="text-2xl font-bold">
         {{ isNew ? 'Create New Entity' : 'Edit Entity' }}
       </h2>
+      <div class="flex gap-2">
+        <button
+          v-if="!isNew && entityData"
+          type="button"
+          class="btn btn-outline btn-sm"
+          @click="showJsonEditor = true"
+        >
+          <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+          </svg>
+          Source
+        </button>
+        <button type="button" class="btn btn-ghost" @click="handleBack">
+          Cancel
+        </button>
+        <button type="button" class="btn btn-primary" :disabled="saving" @click="handleSave">
+          <span v-if="saving" class="loading loading-spinner loading-sm"></span>
+          <span v-else>{{ isNew ? 'Create' : 'Save' }}</span>
+        </button>
+      </div>
     </div>
 
     <!-- Error State -->
@@ -34,7 +54,7 @@
       <div class="card bg-base-100 shadow-xl">
         <div class="card-body">
           <h3 class="card-title">Basic Information</h3>
-          <form @submit.prevent="handleSave" class="space-y-4">
+          <div class="space-y-4">
             <!-- Entity ID -->
             <div class="form-control">
               <label class="label">
@@ -81,23 +101,12 @@
                 />
               </label>
             </div>
-
-            <!-- Action Buttons -->
-            <div class="card-actions justify-end mt-6">
-              <button type="button" class="btn btn-ghost" @click="handleBack">
-                Cancel
-              </button>
-              <button type="submit" class="btn btn-primary" :disabled="saving">
-                <span v-if="saving" class="loading loading-spinner loading-sm"></span>
-                <span v-else>{{ isNew ? 'Create' : 'Save' }}</span>
-              </button>
-            </div>
-          </form>
+          </div>
         </div>
       </div>
 
       <!-- Entity Properties Card -->
-      <div v-if="!isNew && entityData" class="card bg-base-100 shadow-xl">
+      <div v-if="entityData" class="card bg-base-100 shadow-xl">
         <div class="card-body">
           <h3 class="card-title">Entity Properties</h3>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -177,53 +186,6 @@
               <span class="label-text text-sm">Notify Collision</span>
             </label>
           </div>
-
-          <div class="card-actions justify-end mt-4">
-            <button
-              type="button"
-              class="btn btn-sm btn-primary"
-              @click="handleSavePublicData"
-              :disabled="saving"
-            >
-              <span v-if="saving" class="loading loading-spinner loading-xs"></span>
-              <span v-else>Save Properties</span>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Advanced JSON Editor (Collapsible) -->
-      <div v-if="!isNew" class="card bg-base-100 shadow-xl">
-        <div class="card-body">
-          <div class="flex items-center justify-between">
-            <h3 class="card-title">Advanced (JSON)</h3>
-            <button
-              type="button"
-              class="btn btn-sm btn-ghost"
-              @click="showJsonEditor = !showJsonEditor"
-            >
-              {{ showJsonEditor ? 'Hide' : 'Show' }}
-            </button>
-          </div>
-          <div v-if="showJsonEditor" class="mt-4">
-            <textarea
-              v-model="publicDataJson"
-              class="textarea textarea-bordered font-mono text-sm w-full"
-              rows="15"
-              placeholder="Full entity JSON"
-            ></textarea>
-            <div class="card-actions justify-end mt-4">
-              <button
-                type="button"
-                class="btn btn-sm btn-warning"
-                @click="handleSaveJson"
-                :disabled="saving"
-              >
-                <span v-if="saving" class="loading loading-spinner loading-xs"></span>
-                <span v-else">Save from JSON (Advanced)</span>
-              </button>
-            </div>
-          </div>
         </div>
       </div>
     </div>
@@ -235,6 +197,13 @@
       </svg>
       <span>{{ successMessage }}</span>
     </div>
+
+    <!-- JSON Editor Dialog -->
+    <JsonEditorDialog
+      v-model:is-open="showJsonEditor"
+      :model-value="entityData"
+      @apply="handleJsonApply"
+    />
   </div>
 </template>
 
@@ -242,6 +211,7 @@
 import { ref, computed, onMounted } from 'vue';
 import { useWorld } from '@/composables/useWorld';
 import { entityService, type EntityData } from '../services/EntityService';
+import JsonEditorDialog from '@components/JsonEditorDialog.vue';
 
 const props = defineProps<{
   entity: EntityData | 'new';
@@ -268,7 +238,6 @@ const formData = ref({
 });
 
 const entityData = ref<any>(null);
-const publicDataJson = ref('{}');
 const showJsonEditor = ref(false);
 
 const loadEntity = () => {
@@ -292,7 +261,6 @@ const loadEntity = () => {
       notifyOnCollision: false,
       healthMax: 100,
     };
-    publicDataJson.value = JSON.stringify(entityData.value, null, 2);
     return;
   }
 
@@ -303,7 +271,6 @@ const loadEntity = () => {
     enabled: entity.enabled,
   };
   entityData.value = entity.publicData || {};
-  publicDataJson.value = JSON.stringify(entity.publicData, null, 2);
 };
 
 const handleSave = async () => {
@@ -318,16 +285,9 @@ const handleSave = async () => {
 
   try {
     if (isNew.value) {
-      let publicData;
-      try {
-        publicData = JSON.parse(publicDataJson.value);
-      } catch {
-        publicData = { id: formData.value.entityId, model: formData.value.modelId };
-      }
-
       await entityService.createEntity(currentWorldId.value, {
         entityId: formData.value.entityId,
-        publicData,
+        publicData: entityData.value,
         modelId: formData.value.modelId,
       });
       successMessage.value = 'Entity created successfully';
@@ -335,8 +295,9 @@ const handleSave = async () => {
       await entityService.updateEntity(currentWorldId.value, formData.value.entityId, {
         modelId: formData.value.modelId,
         enabled: formData.value.enabled,
+        publicData: entityData.value,
       });
-      successMessage.value = 'Entity updated successfully';
+      successMessage.value = 'Entity saved successfully';
     }
 
     setTimeout(() => {
@@ -350,60 +311,8 @@ const handleSave = async () => {
   }
 };
 
-const handleSavePublicData = async () => {
-  if (!currentWorldId.value) {
-    error.value = 'No world selected';
-    return;
-  }
-
-  saving.value = true;
-  error.value = null;
-  successMessage.value = null;
-
-  try {
-    // Update publicData from form fields
-    await entityService.updateEntity(currentWorldId.value, formData.value.entityId, {
-      publicData: entityData.value,
-    });
-    // Sync JSON view
-    publicDataJson.value = JSON.stringify(entityData.value, null, 2);
-    successMessage.value = 'Entity properties updated successfully';
-  } catch (e) {
-    error.value = e instanceof Error ? e.message : 'Failed to save properties';
-    console.error('[EntityEditor] Failed to save properties:', e);
-  } finally {
-    saving.value = false;
-  }
-};
-
-const handleSaveJson = async () => {
-  if (!currentWorldId.value) {
-    error.value = 'No world selected';
-    return;
-  }
-
-  saving.value = true;
-  error.value = null;
-  successMessage.value = null;
-
-  try {
-    const publicData = JSON.parse(publicDataJson.value);
-    await entityService.updateEntity(currentWorldId.value, formData.value.entityId, {
-      publicData,
-    });
-    // Sync form fields
-    entityData.value = publicData;
-    successMessage.value = 'Entity data updated from JSON successfully';
-  } catch (e) {
-    if (e instanceof SyntaxError) {
-      error.value = 'Invalid JSON format';
-    } else {
-      error.value = e instanceof Error ? e.message : 'Failed to save JSON data';
-    }
-    console.error('[EntityEditor] Failed to save JSON data:', e);
-  } finally {
-    saving.value = false;
-  }
+const handleJsonApply = (jsonData: any) => {
+  entityData.value = jsonData;
 };
 
 const handleBack = () => {

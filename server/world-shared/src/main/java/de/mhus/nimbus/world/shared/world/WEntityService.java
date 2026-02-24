@@ -1,6 +1,7 @@
 package de.mhus.nimbus.world.shared.world;
 
 import de.mhus.nimbus.generated.types.Entity;
+import de.mhus.nimbus.generated.types.Vector3;
 import de.mhus.nimbus.shared.types.WorldId;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -8,6 +9,8 @@ import org.apache.logging.log4j.util.Strings;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -23,6 +26,7 @@ import java.util.function.Consumer;
 public class WEntityService {
 
     private final WEntityRepository repository;
+    private final WWorldService worldService;
 
     /**
      * Find entity by entityId.
@@ -109,6 +113,7 @@ public class WEntityService {
 
         entity.setPublicData(publicData);
         entity.setModelId(modelId);
+        computeAffectedChunks(entity);
         entity.touchUpdate();
 
         WEntity saved = repository.save(entity);
@@ -119,6 +124,7 @@ public class WEntityService {
     @Transactional
     public List<WEntity> saveAll(List<WEntity> entities) {
         entities.forEach(e -> {
+            computeAffectedChunks(e);
             if (e.getCreatedAt() == null) {
                 e.touchCreate();
             }
@@ -141,6 +147,7 @@ public class WEntityService {
 
         return repository.findByWorldIdAndEntityId(worldId.getId(), entityId).map(entity -> {
             updater.accept(entity);
+            computeAffectedChunks(entity);
             entity.touchUpdate();
             WEntity saved = repository.save(entity);
             log.debug("Updated WEntity: world={}, entityId={}", worldId, entityId);
@@ -176,6 +183,54 @@ public class WEntityService {
     }
 
     /**
+     * Delete all entities whose entityId starts with the given prefix.
+     * Used to clean up generated entities (e.g., fauna) before regeneration.
+     *
+     * @param worldId the world identifier (must not be instance or collection)
+     * @param prefix  the entityId prefix to match
+     * @return number of deleted entities
+     */
+    @Transactional
+    public int deleteByEntityIdPrefix(WorldId worldId, String prefix) {
+        if (worldId.isInstance() || worldId.isCollection()) {
+            throw new IllegalArgumentException("worldId must be a world id (no instance, no collection)");
+        }
+        var lookupWorld = worldId.withoutInstance();
+        List<WEntity> entities = repository.findByWorldIdAndEntityIdStartingWith(
+                lookupWorld.getId(), prefix);
+        if (!entities.isEmpty()) {
+            repository.deleteAll(entities);
+            log.debug("Deleted {} WEntities with prefix '{}' in world {}", entities.size(), prefix, worldId);
+        }
+        return entities.size();
+    }
+
+    /**
+     * Delete all entities with a given source that have any of the specified affected chunks.
+     * Used to clean up generated entities in specific hex grid areas before regeneration.
+     *
+     * @param worldId   the world identifier (must not be instance or collection)
+     * @param source    the source identifier (e.g., "fauna-generator")
+     * @param chunkKeys collection of chunk keys to match against affectedChunks
+     * @return number of deleted entities
+     */
+    @Transactional
+    public int deleteBySourceAndAffectedChunks(WorldId worldId, String source, Collection<String> chunkKeys) {
+        if (worldId.isInstance() || worldId.isCollection()) {
+            throw new IllegalArgumentException("worldId must be a world id (no instance, no collection)");
+        }
+        var lookupWorld = worldId.withoutInstance();
+        List<WEntity> entities = repository.findByWorldIdAndSourceAndAffectedChunksIn(
+                lookupWorld.getId(), source, chunkKeys);
+        if (!entities.isEmpty()) {
+            repository.deleteAll(entities);
+            log.debug("Deleted {} WEntities with source '{}' in {} chunks in world {}",
+                    entities.size(), source, chunkKeys.size(), worldId);
+        }
+        return entities.size();
+    }
+
+    /**
      * Find all entities for specific world with optional query filter.
      * Filters out instances.
      */
@@ -193,6 +248,40 @@ public class WEntityService {
         }
 
         return all;
+    }
+
+    /**
+     * Compute affected chunks for an entity based on its position and the world's chunk size.
+     * Includes the chunk at the entity's position and all direct neighbors (3x3 grid).
+     */
+    private void computeAffectedChunks(WEntity entity) {
+        Vector3 pos = entity.getPosition();
+        if (pos == null || entity.getWorldId() == null) {
+            entity.setAffectedChunks(new ArrayList<>());
+            return;
+        }
+        int chunkSize = getChunkSize(entity.getWorldId());
+        if (chunkSize <= 0) {
+            entity.setAffectedChunks(new ArrayList<>());
+            return;
+        }
+        int cx = Math.floorDiv((int) pos.getX(), chunkSize);
+        int cz = Math.floorDiv((int) pos.getZ(), chunkSize);
+
+        List<String> chunks = new ArrayList<>(9);
+        for (int dx = -1; dx <= 1; dx++) {
+            for (int dz = -1; dz <= 1; dz++) {
+                chunks.add((cx + dx) + ":" + (cz + dz));
+            }
+        }
+        entity.setAffectedChunks(chunks);
+    }
+
+    private int getChunkSize(String worldId) {
+        return worldService.getByWorldId(worldId)
+                .filter(w -> w.getPublicData() != null)
+                .map(w -> w.getPublicData().getChunkSize())
+                .orElse(0);
     }
 
     private List<WEntity> filterByQuery(List<WEntity> entities, String query) {

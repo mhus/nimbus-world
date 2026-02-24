@@ -16,6 +16,8 @@ import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -113,6 +115,21 @@ public class WEntity implements Identifiable {
      * Stored as Map for flexibility.
      */
     private Map<String, Object> behaviorConfig;
+
+    /**
+     * Identifies the creator/generator of this entity (e.g., "fauna-generator", "flora-generator").
+     * Used to selectively delete generated entities before regeneration.
+     */
+    @Indexed
+    private String source;
+
+    /**
+     * Chunks affected by this entity (the chunk at position + all direct neighbors).
+     * Automatically computed from position and world chunk size on save/update.
+     */
+    @Indexed
+    @Builder.Default
+    private List<String> affectedChunks = new ArrayList<>();
 
     private Instant createdAt;
     private Instant updatedAt;

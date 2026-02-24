@@ -23,4 +23,8 @@ public interface WEntityRepository extends MongoRepository<WEntity, String> {
     boolean existsByWorldIdAndEntityId(String worldId, String entityId);
 
     void deleteByWorldIdAndEntityId(String worldId, String entityId);
+
+    List<WEntity> findByWorldIdAndEntityIdStartingWith(String worldId, String entityIdPrefix);
+
+    List<WEntity> findByWorldIdAndSourceAndAffectedChunksIn(String worldId, String source, java.util.Collection<String> chunkKeys);
 }

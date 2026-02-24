@@ -130,11 +130,17 @@ public class WorldId implements Comparable<WorldId> {
         return zone != null;
     }
 
+    @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         WorldId worldId = (WorldId) o;
         return id.equals(worldId.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return id.hashCode();
     }
 
     @Override

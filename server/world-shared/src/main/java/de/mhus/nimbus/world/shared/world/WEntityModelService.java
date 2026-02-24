@@ -121,7 +121,8 @@ public class WEntityModelService {
         if (!worldId.isCollection()) {
             throw new IllegalArgumentException("worldId must be a collection id");
         }
-        return repository.findByWorldIdAndModelId(worldId.getId(), modelId).map(entity -> {
+        var collection = WorldCollection.of(worldId, modelId);
+        return repository.findByWorldIdAndModelId(collection.worldId().getId(), collection.path()).map(entity -> {
             updater.accept(entity);
             entity.touchUpdate();
             entity.removeWorldPrefix();

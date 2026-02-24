@@ -87,7 +87,7 @@ public class Day1WorldCreate extends MethodBasedWorkflow  {
                 worldId.getId(),
                 "ground",
                 LayerType.GROUND,
-                10,
+                100,
                 true,
                 List.of(),
                 true
@@ -96,7 +96,7 @@ public class Day1WorldCreate extends MethodBasedWorkflow  {
                 worldId.getId(),
                 "flora",
                 LayerType.GROUND,
-                20,
+                10,
                 true,
                 List.of(),
                 false
@@ -105,7 +105,7 @@ public class Day1WorldCreate extends MethodBasedWorkflow  {
                 worldId.getId(),
                 "structures",
                 LayerType.MODEL,
-                25,
+                20,
                 true,
                 List.of(),
                 false

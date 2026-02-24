@@ -13,6 +13,26 @@
       <h2 class="text-2xl font-bold">
         {{ isNew ? 'Create New Entity Model' : 'Edit Entity Model' }}
       </h2>
+      <div class="flex gap-2">
+        <button
+          v-if="!isNew && modelData"
+          type="button"
+          class="btn btn-outline btn-sm"
+          @click="showJsonEditor = true"
+        >
+          <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+          </svg>
+          Source
+        </button>
+        <button type="button" class="btn btn-ghost" @click="handleBack">
+          Cancel
+        </button>
+        <button type="button" class="btn btn-primary" :disabled="saving" @click="handleSave">
+          <span v-if="saving" class="loading loading-spinner loading-sm"></span>
+          <span v-else>{{ isNew ? 'Create' : 'Save' }}</span>
+        </button>
+      </div>
     </div>
 
     <!-- Error State -->
@@ -34,7 +54,7 @@
       <div class="card bg-base-100 shadow-xl">
         <div class="card-body">
           <h3 class="card-title">Basic Information</h3>
-          <form @submit.prevent="handleSave" class="space-y-4">
+          <div class="space-y-4">
             <!-- Model ID -->
             <div class="form-control">
               <label class="label">
@@ -64,23 +84,12 @@
                 />
               </label>
             </div>
-
-            <!-- Action Buttons -->
-            <div class="card-actions justify-end mt-6">
-              <button type="button" class="btn btn-ghost" @click="handleBack">
-                Cancel
-              </button>
-              <button type="submit" class="btn btn-primary" :disabled="saving">
-                <span v-if="saving" class="loading loading-spinner loading-sm"></span>
-                <span v-else>{{ isNew ? 'Create' : 'Save' }}</span>
-              </button>
-            </div>
-          </form>
+          </div>
         </div>
       </div>
 
       <!-- Model Properties Card -->
-      <div v-if="!isNew && modelData" class="card bg-base-100 shadow-xl">
+      <div v-if="modelData" class="card bg-base-100 shadow-xl">
         <div class="card-body">
           <h3 class="card-title">Model Properties</h3>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -230,23 +239,100 @@
               />
             </div>
           </div>
+        </div>
+      </div>
 
-          <div class="card-actions justify-end mt-4">
+      <!-- Pose Mapping Card -->
+      <div v-if="modelData" class="card bg-base-100 shadow-xl">
+        <div class="card-body">
+          <h3 class="card-title">Pose Mapping</h3>
+          <p class="text-sm text-base-content/70 mb-4">Map entity poses to animation configurations</p>
+
+          <div class="space-y-3">
+            <div
+              v-for="pose in poseMappingList"
+              :key="pose"
+              class="border border-base-300 rounded-lg p-3"
+            >
+              <div class="flex items-center justify-between mb-2">
+                <span class="badge badge-primary">{{ pose }}</span>
+                <button
+                  type="button"
+                  class="btn btn-ghost btn-square btn-xs text-error"
+                  @click="removePose(pose)"
+                >
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
+                <div class="form-control">
+                  <label class="label py-1">
+                    <span class="label-text-alt">Animation Name</span>
+                  </label>
+                  <input
+                    v-model="modelData.poseMapping[pose].animationName"
+                    type="text"
+                    class="input input-bordered input-sm"
+                    placeholder="e.g. idle_anim"
+                  />
+                </div>
+                <div class="form-control">
+                  <label class="label py-1">
+                    <span class="label-text-alt">Speed Multiplier</span>
+                  </label>
+                  <input
+                    v-model.number="modelData.poseMapping[pose].speedMultiplier"
+                    type="number"
+                    step="0.1"
+                    class="input input-bordered input-sm"
+                    placeholder="1.0"
+                  />
+                </div>
+                <div class="form-control">
+                  <label class="label py-1">
+                    <span class="label-text-alt">Loop</span>
+                  </label>
+                  <input
+                    v-model="modelData.poseMapping[pose].loop"
+                    type="checkbox"
+                    class="toggle toggle-sm toggle-success mt-1"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Add Pose -->
+          <div class="flex gap-2 mt-4">
+            <select v-model="newPoseKey" class="select select-bordered select-sm flex-1">
+              <option value="">-- Add Pose --</option>
+              <option
+                v-for="pose in availablePoses"
+                :key="pose"
+                :value="pose"
+              >
+                {{ pose }}
+              </option>
+            </select>
             <button
               type="button"
-              class="btn btn-sm btn-primary"
-              @click="handleSavePublicData"
-              :disabled="saving"
+              class="btn btn-outline btn-sm"
+              :disabled="!newPoseKey"
+              @click="addPose"
             >
-              <span v-if="saving" class="loading loading-spinner loading-xs"></span>
-              <span v-else>Save Properties</span>
+              <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+              </svg>
+              Add
             </button>
           </div>
         </div>
       </div>
 
       <!-- Dimensions Card -->
-      <div v-if="!isNew && modelData" class="card bg-base-100 shadow-xl">
+      <div v-if="modelData" class="card bg-base-100 shadow-xl">
         <div class="card-body">
           <h3 class="card-title">Collision Dimensions</h3>
           <p class="text-sm text-base-content/70 mb-4">Define collision box dimensions for different movement states</p>
@@ -381,18 +467,6 @@
               </div>
             </div>
           </div>
-
-          <div class="card-actions justify-end mt-4">
-            <button
-              type="button"
-              class="btn btn-sm btn-primary"
-              @click="handleSavePublicData"
-              :disabled="saving"
-            >
-              <span v-if="saving" class="loading loading-spinner loading-xs"></span>
-              <span v-else>Save All Properties</span>
-            </button>
-          </div>
         </div>
       </div>
     </div>
@@ -404,6 +478,13 @@
       </svg>
       <span>{{ successMessage }}</span>
     </div>
+
+    <!-- JSON Editor Dialog -->
+    <JsonEditorDialog
+      v-model:is-open="showJsonEditor"
+      :model-value="modelData"
+      @apply="handleJsonApply"
+    />
   </div>
 </template>
 
@@ -411,6 +492,7 @@
 import { ref, computed, onMounted } from 'vue';
 import { useWorld } from '@/composables/useWorld';
 import { entityModelService, type EntityModelData } from '../services/EntityModelService';
+import JsonEditorDialog from '@components/JsonEditorDialog.vue';
 
 const props = defineProps<{
   entityModel: EntityModelData | 'new';
@@ -436,6 +518,26 @@ const formData = ref({
 });
 
 const modelData = ref<any>(null);
+const showJsonEditor = ref(false);
+const newPoseKey = ref('');
+
+const ALL_POSES = [
+  'IDLE', 'WALK', 'RUN', 'SPRINT', 'CROUCH', 'JUMP', 'SWIM', 'FLY', 'DEATH',
+  'WALK_SLOW', 'CLAPPING', 'ROLL', 'ATTACK', 'OUT_OF_WATER', 'SWIMMING_FAST',
+  'SWIMMING_IMPULSIVE', 'SWIMMING', 'HIT_RECEIVED', 'HIT_RECEIVED_STRONG',
+  'KICK_LEFT', 'KICK_RIGHT', 'PUNCH_LEFT', 'PUNCH_RIGHT',
+  'RUN_BACKWARD', 'RUN_LEFT', 'RUN_RIGHT', 'WAVE', 'FALL',
+];
+
+const poseMappingList = computed(() => {
+  if (!modelData.value?.poseMapping) return [];
+  return Object.keys(modelData.value.poseMapping).sort();
+});
+
+const availablePoses = computed(() => {
+  const used = new Set(poseMappingList.value);
+  return ALL_POSES.filter(p => !used.has(p));
+});
 
 const loadEntityModel = () => {
   if (isNew.value) {
@@ -469,6 +571,7 @@ const loadEntityModel = () => {
   if (!modelData.value.scale) modelData.value.scale = { x: 1, y: 1, z: 1 };
   if (!modelData.value.positionOffset) modelData.value.positionOffset = { x: 0, y: 0, z: 0 };
   if (!modelData.value.rotationOffset) modelData.value.rotationOffset = { x: 0, y: 0, z: 0 };
+  if (!modelData.value.poseMapping) modelData.value.poseMapping = {};
   if (!modelData.value.dimensions) modelData.value.dimensions = {};
 };
 
@@ -480,6 +583,22 @@ const ensureDimension = (state: string) => {
     modelData.value.dimensions[state] = { height: 1.8, width: 0.6, footprint: 0.6 };
   }
   return modelData.value.dimensions[state];
+};
+
+const addPose = () => {
+  if (!newPoseKey.value || !modelData.value) return;
+  if (!modelData.value.poseMapping) modelData.value.poseMapping = {};
+  modelData.value.poseMapping[newPoseKey.value] = {
+    animationName: '',
+    speedMultiplier: 1.0,
+    loop: true,
+  };
+  newPoseKey.value = '';
+};
+
+const removePose = (pose: string) => {
+  if (!modelData.value?.poseMapping) return;
+  delete modelData.value.poseMapping[pose];
 };
 
 const handleSave = async () => {
@@ -494,23 +613,17 @@ const handleSave = async () => {
 
   try {
     if (isNew.value) {
-      let publicData;
-      try {
-        publicData = JSON.parse(publicDataJson.value);
-      } catch {
-        publicData = { id: formData.value.modelId, displayName: formData.value.modelId };
-      }
-
       await entityModelService.createEntityModel(currentWorldId.value, {
         modelId: formData.value.modelId,
-        publicData,
+        publicData: modelData.value,
       });
       successMessage.value = 'Entity model created successfully';
     } else {
       await entityModelService.updateEntityModel(currentWorldId.value, formData.value.modelId, {
         enabled: formData.value.enabled,
+        publicData: modelData.value,
       });
-      successMessage.value = 'Entity model updated successfully';
+      successMessage.value = 'Entity model saved successfully';
     }
 
     setTimeout(() => {
@@ -524,28 +637,14 @@ const handleSave = async () => {
   }
 };
 
-const handleSavePublicData = async () => {
-  if (!currentWorldId.value) {
-    error.value = 'No world selected';
-    return;
-  }
-
-  saving.value = true;
-  error.value = null;
-  successMessage.value = null;
-
-  try {
-    // Update publicData from form fields
-    await entityModelService.updateEntityModel(currentWorldId.value, formData.value.modelId, {
-      publicData: modelData.value,
-    });
-    successMessage.value = 'Model properties updated successfully';
-  } catch (e) {
-    error.value = e instanceof Error ? e.message : 'Failed to save properties';
-    console.error('[EntityModelEditor] Failed to save properties:', e);
-  } finally {
-    saving.value = false;
-  }
+const handleJsonApply = (jsonData: any) => {
+  modelData.value = jsonData;
+  // Ensure required objects exist after JSON edit
+  if (!modelData.value.scale) modelData.value.scale = { x: 1, y: 1, z: 1 };
+  if (!modelData.value.positionOffset) modelData.value.positionOffset = { x: 0, y: 0, z: 0 };
+  if (!modelData.value.rotationOffset) modelData.value.rotationOffset = { x: 0, y: 0, z: 0 };
+  if (!modelData.value.poseMapping) modelData.value.poseMapping = {};
+  if (!modelData.value.dimensions) modelData.value.dimensions = {};
 };
 
 const handleBack = () => {
