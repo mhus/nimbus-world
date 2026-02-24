@@ -169,8 +169,8 @@ public class FaunaGeneratorService {
                 // Create entities for each individual in the group
                 for (int i = 0; i < groupSize; i++) {
                     String shortId = UUID.randomUUID().toString().substring(0, 8);
-                    String entityId = "gf-" + hexQ + ";" + hexR + "-" + animal.getName()
-                            + "-" + groupIdx + "-" + shortId;
+                    String entityId = "gf_" + hexQ + "_" + hexR + "_" + animal.getName()
+                            + "_" + groupIdx + "_" + shortId;
 
                     Entity publicData = Entity.builder()
                             .id(entityId)
