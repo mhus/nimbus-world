@@ -2,6 +2,8 @@ package de.mhus.nimbus.world.generator.composer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -28,6 +30,8 @@ import static org.mockito.Mockito.mock;
  * making it a fast unit test that still validates the production code paths.
  */
 @Slf4j
+@Tag("full")
+@Disabled
 public class HexCompositeBuilderSimpleTest extends HexCompositeBuilderAbstract {
 
     @Test

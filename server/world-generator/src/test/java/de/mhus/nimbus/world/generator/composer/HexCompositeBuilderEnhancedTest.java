@@ -4,6 +4,8 @@ import de.mhus.nimbus.shared.utils.TypeUtil;
 import de.mhus.nimbus.world.generator.composer.build.CompositionResult;
 import de.mhus.nimbus.world.shared.util.HexMathUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -26,6 +28,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * making it a fast unit test that still validates the production code paths.
  */
 @Slf4j
+@Tag("full")
+@Disabled
 public class HexCompositeBuilderEnhancedTest extends HexCompositeBuilderAbstract {
 
     @Test

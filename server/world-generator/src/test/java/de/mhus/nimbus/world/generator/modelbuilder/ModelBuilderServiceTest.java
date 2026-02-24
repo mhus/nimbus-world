@@ -291,7 +291,7 @@ class ModelBuilderServiceTest {
     @Test
     void buildFromDescriptor_blockStack_paintsVertically() throws ModelBuilderException {
         Vector3Int startPos = Vector3Int.builder().x(5).y(10).z(5).build();
-        ModelBuilderContext ctx = service.buildFromDescriptor(world, layer, "block:n:g,n:w", null, startPos);
+        ModelBuilderContext ctx = service.buildFromDescriptor(world, layer, "block:n:g,n:w", null, startPos, null);
 
         assertThat(ctx.getBlockCount()).isEqualTo(2);
         assertThat(ctx.getChunkDataMap()).isNotEmpty();
@@ -312,7 +312,7 @@ class ModelBuilderServiceTest {
     @Test
     void buildFromDescriptor_singleBlock() throws ModelBuilderException {
         Vector3Int startPos = Vector3Int.builder().x(0).y(5).z(0).build();
-        ModelBuilderContext ctx = service.buildFromDescriptor(world, layer, "block:n:g", null, startPos);
+        ModelBuilderContext ctx = service.buildFromDescriptor(world, layer, "block:n:g", null, startPos, null);
 
         assertThat(ctx.getBlockCount()).isEqualTo(1);
         var block = ctx.getChunkDataMap().get("0:0").getBlocks().get(0).getBlock();

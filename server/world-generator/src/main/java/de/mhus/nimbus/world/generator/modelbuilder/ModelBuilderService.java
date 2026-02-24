@@ -185,60 +185,81 @@ public class ModelBuilderService {
     /**
      * Build from a descriptor string. Dispatches to block stacking or model loading.
      *
-     * @param world      the world
-     * @param layer      the target layer
-     * @param descriptor descriptor string (e.g. "block:m:log,m:top" or "model:tree,log=m:birch_log")
-     * @param collection WAnything collection name (used for model descriptors)
-     * @param startPos   starting cursor position
+     * @param world                the world
+     * @param layer                the target layer
+     * @param descriptor           descriptor string (e.g. "block:m:log,m:top" or "model:tree,log=m:birch_log")
+     * @param collection           WAnything collection name (used for model descriptors)
+     * @param startPos             starting cursor position
+     * @param additionalParameters extra parameters merged into model parameters (may be null)
      * @return ModelBuilderContext with blockCount and chunkDataMap
      */
     public ModelBuilderContext buildFromDescriptor(WWorld world, WLayer layer, String descriptor,
-                                                   String collection, Vector3Int startPos) throws ModelBuilderException {
+                                                   String collection, Vector3Int startPos,
+                                                   Map<String, String> additionalParameters) throws ModelBuilderException {
         WAnythingDescriptor parsed = WAnythingDescriptor.parse(descriptor);
         return switch (parsed) {
             case WAnythingDescriptor.BlockStack blockStack -> buildBlockStack(world, layer, blockStack, startPos);
-            case WAnythingDescriptor.ModelRef modelRef -> buildModel(world, layer, collection, modelRef.name(), startPos, modelRef.parameters());
+            case WAnythingDescriptor.ModelRef modelRef -> {
+                Map<String, String> mergedParams = new HashMap<>(modelRef.parameters());
+                if (additionalParameters != null) {
+                    mergedParams.putAll(additionalParameters);
+                }
+                yield buildModel(world, layer, collection, modelRef.name(), startPos, mergedParams);
+            }
         };
     }
 
     /**
-     * Resolve the maximum height (in blocks) for a descriptor.
+     * Resolve flora placement constraints for a descriptor.
      * <ul>
-     *   <li>For block stacks: returns the number of blocks (fixed height)</li>
-     *   <li>For model refs: returns metadata.heightTo if present, otherwise empty (= unbounded)</li>
+     *   <li>For block stacks: maxHeight = number of blocks, no water constraints</li>
+     *   <li>For model refs: reads maxHeight/minWater/maxWater from metadata</li>
      * </ul>
      *
      * @param world      the world (for region-scoped model lookup)
      * @param descriptor descriptor string
      * @param collection WAnything collection name for model lookup
-     * @return maximum height in blocks, or empty if unbounded/unknown
+     * @return flora constraints (any field may be empty = unconstrained)
      */
-    public OptionalInt resolveDescriptorMaxHeight(WWorld world, String descriptor, String collection) {
+    public FloraConstraints resolveDescriptorConstraints(WWorld world, String descriptor, String collection) {
         try {
             WAnythingDescriptor parsed = WAnythingDescriptor.parse(descriptor);
             return switch (parsed) {
-                case WAnythingDescriptor.BlockStack bs -> of(bs.blockTypes().size());
-                case WAnythingDescriptor.ModelRef mr -> resolveModelMaxHeight(world, collection, mr.name());
+                case WAnythingDescriptor.BlockStack bs ->
+                        new FloraConstraints(of(bs.blockTypes().size()), empty(), empty(),
+                                true, true, true, false);
+                case WAnythingDescriptor.ModelRef mr ->
+                        resolveModelConstraints(world, collection, mr.name());
             };
         } catch (Exception e) {
-            log.debug("Cannot resolve descriptor height for '{}': {}", descriptor, e.getMessage());
-            return empty();
+            log.debug("Cannot resolve descriptor constraints for '{}': {}", descriptor, e.getMessage());
+            return FloraConstraints.UNCONSTRAINED;
         }
     }
 
-    private OptionalInt resolveModelMaxHeight(WWorld world, String collection, String name) {
+    private FloraConstraints resolveModelConstraints(WWorld world, String collection, String name) {
         WorldId regionWorldId = WorldId.of(world.getWorldId()).orElse(null);
-        if (regionWorldId == null) return empty();
+        if (regionWorldId == null) return FloraConstraints.UNCONSTRAINED;
 
         WAnything entity = anythingService.findByWorldIdAndCollectionAndName(
                 regionWorldId.toRegionCollection().getId(), collection, name).orElse(null);
-        if (entity == null) return empty();
+        if (entity == null) return FloraConstraints.UNCONSTRAINED;
 
         ModelBuilderModel model = entity.getDataAs(ModelBuilderModel.class).orElse(null);
-        if (model == null) return empty();
+        if (model == null) return FloraConstraints.UNCONSTRAINED;
 
-        Integer heightTo = model.getMetadataInt("heightTo");
-        return heightTo != null ? of(heightTo) : empty();
+        Integer maxHeight = model.getMetadataInt("maxHeight");
+        Integer minWater = model.getMetadataInt("minWater");
+        Integer maxWater = model.getMetadataInt("maxWater");
+        boolean land = model.getMetadataBoolean("land", true);
+        boolean water = model.getMetadataBoolean("water", true);
+        boolean sea = model.getMetadataBoolean("sea", true);
+        boolean emerse = model.getMetadataBoolean("emerse", false);
+        return new FloraConstraints(
+                maxHeight != null ? of(maxHeight) : empty(),
+                minWater != null ? of(minWater) : empty(),
+                maxWater != null ? of(maxWater) : empty(),
+                land, water, sea, emerse);
     }
 
     private ModelBuilderContext buildBlockStack(WWorld world, WLayer layer,

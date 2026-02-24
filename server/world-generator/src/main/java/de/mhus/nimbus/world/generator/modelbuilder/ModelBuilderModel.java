@@ -24,11 +24,16 @@ public class ModelBuilderModel {
     private List<StepDefinition> definitions;
 
     /**
-     * Arbitrary metadata for the model (e.g. height constraints).
+     * Arbitrary metadata for the model (e.g. placement constraints).
      * Known keys:
      * <ul>
-     *   <li>{@code heightFrom} (Integer) - minimum height of the model in blocks</li>
-     *   <li>{@code heightTo} (Integer) - maximum height of the model in blocks</li>
+     *   <li>{@code maxHeight} (Integer) - maximum height of the model in blocks</li>
+     *   <li>{@code minWater} (Integer) - minimum water depth required for placement</li>
+     *   <li>{@code maxWater} (Integer) - maximum water depth allowed for placement</li>
+     *   <li>{@code land} (Boolean) - plant can grow on LAND positions (default true)</li>
+     *   <li>{@code water} (Boolean) - plant can grow in WATER positions (default true)</li>
+     *   <li>{@code sea} (Boolean) - plant can grow in SEA positions (default true)</li>
+     *   <li>{@code emerse} (Boolean) - plant can grow above water surface (default false)</li>
      * </ul>
      */
     private Map<String, Object> metadata;
@@ -44,6 +49,17 @@ public class ModelBuilderModel {
             try { return Integer.parseInt(str); } catch (NumberFormatException e) { return null; }
         }
         return null;
+    }
+
+    /**
+     * Get a boolean value from metadata, or the given default if not present.
+     */
+    public boolean getMetadataBoolean(String key, boolean defaultValue) {
+        if (metadata == null) return defaultValue;
+        Object value = metadata.get(key);
+        if (value instanceof Boolean bool) return bool;
+        if (value instanceof String str) return Boolean.parseBoolean(str);
+        return defaultValue;
     }
 
     /**
