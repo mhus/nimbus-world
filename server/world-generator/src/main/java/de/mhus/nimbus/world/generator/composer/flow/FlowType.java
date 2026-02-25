@@ -15,7 +15,7 @@ import java.util.Map;
 public enum FlowType {
     ROAD(Road.class, Map.of(
         "default_level", "95",
-        "default_roadType", "cobblestone",
+        "default_roadType", "trail", // street, trail
         "default_width", "4"
     )),
 

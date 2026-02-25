@@ -189,7 +189,7 @@ public class VillageBuilder extends HexGridBuilder {
                 return FlatMaterialService.STREET;
             case "path":
             case "trail":
-                return FlatMaterialService.TRACK;
+                return FlatMaterialService.TRAIL;
             case "alley":
                 return FlatMaterialService.STREET;
             default:

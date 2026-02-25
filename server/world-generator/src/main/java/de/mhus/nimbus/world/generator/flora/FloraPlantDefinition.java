@@ -41,6 +41,10 @@ public class FloraPlantDefinition {
     private Integer minWater;
     private Integer maxWater;
 
+    private String groundGroupPrefix;
+    private String onlyGround;
+    private String excludedGround;
+
     @Builder.Default
     private double weight = 1.0;
     private Integer clusterCount;

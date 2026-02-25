@@ -443,9 +443,9 @@ public class RoadBuilder extends HexGridBuilder {
                                   String type, double dirX, double dirZ) {
         // Determine material based on type
         boolean isTrail = type.equalsIgnoreCase("trail") || type.equalsIgnoreCase("path");
-        int centerMaterial = type.equalsIgnoreCase("track") ? FlatMaterialService.TRACK : FlatMaterialService.STREET;
-        int borderMaterial = type.equalsIgnoreCase("track") ? FlatMaterialService.TRACK_BORDER : FlatMaterialService.STREET_BORDER;
-        int bridgeMaterial = type.equalsIgnoreCase("track") ? FlatMaterialService.TRACK_BRIDGE : FlatMaterialService.STREET_BRIDGE;
+        int centerMaterial = type.equalsIgnoreCase("trail") ? FlatMaterialService.TRAIL : FlatMaterialService.STREET;
+        int borderMaterial = type.equalsIgnoreCase("trail") ? FlatMaterialService.TRAIL_BORDER : FlatMaterialService.STREET_BORDER;
+        int bridgeMaterial = type.equalsIgnoreCase("trail") ? FlatMaterialService.TRAIL_BRIDGE : FlatMaterialService.STREET_BRIDGE;
 
         // Get water block definition
         String waterBlockDef = getWaterBlockDef(flat);
@@ -455,7 +455,7 @@ public class RoadBuilder extends HexGridBuilder {
         double perpX = -dirZ;
         double perpZ = dirX;
 
-        // Use a set to track unique positions (avoid duplicates)
+        // Use a set to trail unique positions (avoid duplicates)
         Set<String> drawnPositions = new HashSet<>();
 
         int effectiveHalfWidth;
@@ -667,7 +667,7 @@ public class RoadBuilder extends HexGridBuilder {
     /**
      * Determine the material for the plaza.
      * If plazaMaterial is specified, use it. Otherwise, use the best material from routes.
-     * street is better than trail/track.
+     * street is better than trail.
      */
     private String determinePlazaMaterial(RoadConfiguration config) {
         // If explicitly specified, use that
@@ -676,7 +676,7 @@ public class RoadBuilder extends HexGridBuilder {
         }
 
         // Otherwise, find the best material from routes
-        // street is better than trail/track
+        // street is better than trail
         boolean hasStreet = false;
         for (Road road : config.getRoute()) {
             if ("street".equalsIgnoreCase(road.getType())) {
@@ -685,7 +685,7 @@ public class RoadBuilder extends HexGridBuilder {
             }
         }
 
-        return hasStreet ? "street" : "track";
+        return hasStreet ? "street" : "trail";
     }
 
     /**
@@ -726,7 +726,7 @@ public class RoadBuilder extends HexGridBuilder {
     private void fillCenterPoint(WFlat flat, int centerX, int centerZ, int centerLevel, RoadConfiguration config) {
         // Determine material and maximum width from roads
         String plazaMaterial = determinePlazaMaterial(config);
-        int material = plazaMaterial.equalsIgnoreCase("track") ? FlatMaterialService.TRACK : FlatMaterialService.STREET;
+        int material = plazaMaterial.equalsIgnoreCase("trail") ? FlatMaterialService.TRAIL : FlatMaterialService.STREET;
 
         // Get water block definition
         String waterBlockDef = getWaterBlockDef(flat);
@@ -786,7 +786,7 @@ public class RoadBuilder extends HexGridBuilder {
         log.debug("Building plaza at ({}, {}) with size {} and material {}", centerX, centerZ, plazaSize, plazaMaterial);
 
         // Determine material based on type
-        int material = plazaMaterial.equalsIgnoreCase("track") ? FlatMaterialService.TRACK : FlatMaterialService.STREET;
+        int material = plazaMaterial.equalsIgnoreCase("trail") ? FlatMaterialService.TRAIL : FlatMaterialService.STREET;
 
         // Get water block definition
         String waterBlockDef = getWaterBlockDef(flat);
@@ -829,15 +829,15 @@ public class RoadBuilder extends HexGridBuilder {
     }
 
     /**
-     * Clear all STREET_BRIDGE and TRACK_BRIDGE extra blocks from the flat.
+     * Clear all STREET_BRIDGE and TRAIL_BRIDGE extra blocks from the flat.
      * This removes previous bridges before building new roads.
      */
     private void clearBridgeExtraBlocks(WFlat flat) {
         // Get bridge block definitions from material palette
         String streetBridgeDef = getBridgeBlockDef(flat, FlatMaterialService.STREET_BRIDGE);
-        String trackBridgeDef = getBridgeBlockDef(flat, FlatMaterialService.TRACK_BRIDGE);
+        String trailBridgeDef = getBridgeBlockDef(flat, FlatMaterialService.TRAIL_BRIDGE);
 
-        if (streetBridgeDef == null && trackBridgeDef == null) {
+        if (streetBridgeDef == null && trailBridgeDef == null) {
             log.warn("No bridge block definitions found in material palette, skipping clear");
             return;
         }
@@ -845,7 +845,7 @@ public class RoadBuilder extends HexGridBuilder {
         // Iterate through all extra blocks and remove bridge blocks
         flat.getExtraBlocks().entrySet().removeIf(entry -> {
             String blockDef = entry.getValue();
-            return streetBridgeDef.equals(blockDef) || trackBridgeDef.equals(blockDef);
+            return streetBridgeDef.equals(blockDef) || trailBridgeDef.equals(blockDef);
         });
 
         log.debug("Cleared all bridge extra blocks");

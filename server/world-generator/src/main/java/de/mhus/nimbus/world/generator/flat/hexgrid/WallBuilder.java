@@ -273,9 +273,9 @@ public class WallBuilder extends HexGridBuilder {
         return material == FlatMaterialService.STREET
                 || material == FlatMaterialService.STREET_BORDER
                 || material == FlatMaterialService.STREET_BRIDGE
-                || material == FlatMaterialService.TRACK
-                || material == FlatMaterialService.TRACK_BORDER
-                || material == FlatMaterialService.TRACK_BRIDGE;
+                || material == FlatMaterialService.TRAIL
+                || material == FlatMaterialService.TRAIL_BORDER
+                || material == FlatMaterialService.TRAIL_BRIDGE;
     }
 
     /**

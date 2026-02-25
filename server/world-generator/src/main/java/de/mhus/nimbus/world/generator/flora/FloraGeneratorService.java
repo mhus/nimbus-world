@@ -21,11 +21,14 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import org.apache.logging.log4j.util.Strings;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 
 /**
  * Service for generating flora on a single hex grid.
@@ -125,6 +128,13 @@ public class FloraGeneratorService {
 
             FloraPlantDefinition plant = selectPlant(floraDef, waterDepth, category, random);
             if (plant == null) continue;
+
+            // Ground block check
+            LayerBlock groundBlock = findGroundBlock(worldId, groundLayer,
+                    flatPos.getX(), heightInfo.groundLevel(), flatPos.getZ(),
+                    chunkSize, groundChunkCache);
+            if (groundBlock == null) continue;
+            if (!fitsGround(plant, groundBlock, category)) continue;
 
             String group = "gf_" + toHex(hexQ) + "_" + toHex(hexR) + "_" + plant.getName() + "_" + floraIndex;
             floraIndex++;
@@ -228,6 +238,13 @@ public class FloraGeneratorService {
                 FloraConstraints constraints = plant.toConstraints();
                 if (!constraints.fitsPosition(clusterWaterDepth, clusterCategory)) continue;
 
+                // Ground block check for cluster position
+                LayerBlock clusterGroundBlock = findGroundBlock(worldId, groundLayer,
+                        clusterX, clusterHeight.groundLevel(), clusterZ,
+                        chunkSize, groundChunkCache);
+                if (clusterGroundBlock == null) continue;
+                if (!fitsGround(plant, clusterGroundBlock, clusterCategory)) continue;
+
                 Vector3Int clusterPos = Vector3Int.builder()
                         .x(clusterX)
                         .y(clusterHeight.groundLevel() + 1)
@@ -316,6 +333,63 @@ public class FloraGeneratorService {
         }
 
         return context;
+    }
+
+    private LayerBlock findGroundBlock(String worldId, WLayer groundLayer,
+                                        int worldX, int groundY, int worldZ,
+                                        int chunkSize, Map<String, LayerChunkData> groundChunkCache) {
+        if (groundLayer == null) return null;
+
+        int cx = Math.floorDiv(worldX, chunkSize);
+        int cz = Math.floorDiv(worldZ, chunkSize);
+        String chunkKey = cx + ":" + cz;
+
+        LayerChunkData chunkData = groundChunkCache.computeIfAbsent(chunkKey, key ->
+                layerService.loadTerrainChunk(worldId,
+                        groundLayer.getLayerDataId(), key).orElse(null));
+
+        if (chunkData == null) return null;
+
+        for (LayerBlock lb : chunkData.getBlocks()) {
+            var pos = lb.getBlock().getPosition();
+            if (pos.getX() == worldX && pos.getY() == groundY && pos.getZ() == worldZ) {
+                return lb;
+            }
+        }
+        return null;
+    }
+
+    private boolean fitsGround(FloraPlantDefinition plant, LayerBlock groundBlock, FloraCategory category) {
+        // 1. Group check
+        String groundGroup = groundBlock.getGroup();
+        String prefix = plant.getGroundGroupPrefix();
+        if (category == FloraCategory.LAND) {
+            if (Strings.isNotBlank(prefix)) {
+                if (Strings.isBlank(groundGroup) || !groundGroup.startsWith(prefix)) return false;
+            } else {
+                if (Strings.isNotBlank(groundGroup)) return false;
+            }
+        } else {
+            // WATER/SEA: only check when prefix is defined
+            if (Strings.isNotBlank(prefix)) {
+                if (Strings.isBlank(groundGroup) || !groundGroup.startsWith(prefix)) return false;
+            }
+        }
+
+        // 2. onlyGround check
+        String blockType = groundBlock.getBlock().getBlockTypeId();
+        if (Strings.isNotBlank(plant.getOnlyGround())) {
+            Set<String> allowed = Set.of(plant.getOnlyGround().split(","));
+            if (!allowed.contains(blockType)) return false;
+        }
+
+        // 3. excludedGround check
+        if (Strings.isNotBlank(plant.getExcludedGround())) {
+            Set<String> excluded = Set.of(plant.getExcludedGround().split(","));
+            if (excluded.contains(blockType)) return false;
+        }
+
+        return true;
     }
 
     private HeightInfo getHeightInfo(String worldId, WLayer groundLayer,

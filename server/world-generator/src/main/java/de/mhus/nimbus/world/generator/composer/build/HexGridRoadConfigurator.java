@@ -455,6 +455,9 @@ public class HexGridRoadConfigurator {
                 }
             }
 
+            // Capture groupId from route parts
+            String groupId = null;
+
             // Build route array from ROUTE parts
             List<Map<String, Object>> route = new ArrayList<>();
             Set<String> addedSides = new HashSet<>();
@@ -507,11 +510,19 @@ public class HexGridRoadConfigurator {
                     entry.put("type", part.getType());
                 }
 
+                // Capture groupId from first part that has one
+                if (groupId == null && part.getGroupId() != null) {
+                    groupId = part.getGroupId();
+                }
+
                 route.add(entry);
             }
 
             if (!route.isEmpty()) {
                 roadConfig.put("route", route);
+            }
+            if (groupId != null) {
+                roadConfig.put("groupId", groupId);
             }
 
             // Convert to JSON string

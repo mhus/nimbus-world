@@ -1262,6 +1262,9 @@ public class FlowComposer {
 
             convertedGrids++;
 
+            // Build groupId once per flow (all segments of the same flow share the same groupId)
+            String roadGroupId = buildGroupId("road", flow.getName(), flow.getFeatureId());
+
             // Convert each FlowSegment to RoadConfigPart
             for (FlowSegment segment : flowRoadSegments) {
                 // Get fromLevel and toLevel from segment
@@ -1278,6 +1281,7 @@ public class FlowComposer {
                         toLevel,
                         segment.getType()
                     );
+                    part.setGroupId(roadGroupId);
                     centralGrid.addRoadConfigPart(part);
                     log.debug("Added position-string route part (from) '{}' with levels {}/{}",
                         segment.getFromPosition(), fromLevel, toLevel);
@@ -1291,6 +1295,7 @@ public class FlowComposer {
                         toLevel,
                         segment.getType()
                     );
+                    part.setGroupId(roadGroupId);
                     centralGrid.addRoadConfigPart(part);
                     log.debug("Added position-based route part (from) at lx={}, lz={} with levels {}/{}",
                         segment.getFromLx(), segment.getFromLz(), fromLevel, toLevel);
@@ -1303,6 +1308,7 @@ public class FlowComposer {
                         toLevel,
                         segment.getType()
                     );
+                    part.setGroupId(roadGroupId);
                     centralGrid.addRoadConfigPart(part);
                     log.debug("Added SIDE-based route part (from) at {} with levels {}/{}",
                         segment.getFromSide(), fromLevel, toLevel);
@@ -1320,6 +1326,7 @@ public class FlowComposer {
                         fromLevel,
                         segment.getType()
                     );
+                    part.setGroupId(roadGroupId);
                     centralGrid.addRoadConfigPart(part);
                     log.debug("Added position-string route part (to) '{}' with levels {}/{}",
                         segment.getToPosition(), toLevel, fromLevel);
@@ -1333,6 +1340,7 @@ public class FlowComposer {
                         fromLevel,
                         segment.getType()
                     );
+                    part.setGroupId(roadGroupId);
                     centralGrid.addRoadConfigPart(part);
                     log.debug("Added position-based route part (to) at lx={}, lz={} with levels {}/{}",
                         segment.getToLx(), segment.getToLz(), toLevel, fromLevel);
@@ -1345,6 +1353,7 @@ public class FlowComposer {
                         fromLevel,
                         segment.getType()
                     );
+                    part.setGroupId(roadGroupId);
                     centralGrid.addRoadConfigPart(part);
                     log.debug("Added SIDE-based route part (to) at {} with levels {}/{}",
                         segment.getToSide(), toLevel, fromLevel);
@@ -1401,9 +1410,13 @@ public class FlowComposer {
 
             convertedGrids++;
 
+            // Build groupId once per flow (all segments of the same flow share the same groupId)
+            String riverFeatureId = flow.getFeatureId() != null ? flow.getFeatureId() : river.getFeatureId();
+            String riverGroupId = buildGroupId("river", flow.getName(), riverFeatureId);
+
             // Convert each FlowSegment to RiverConfigPart
             for (FlowSegment segment : flowRiverSegments) {
-                String groupId = segment.getFlowFeatureId() != null ? segment.getFlowFeatureId() : river.getFeatureId();
+                String groupId = riverGroupId;
 
                 // Get FROM and TO levels (fallback to deprecated 'level' if not set)
                 Integer fromLevel = segment.getFromLevel() != null ? segment.getFromLevel() : segment.getLevel();
@@ -1941,5 +1954,30 @@ public class FlowComposer {
         }
 
         return null;
+    }
+
+    /**
+     * Builds a groupId in the format: prefix_normalizedName_uuidPart.
+     * Example: "river_mississippi_a1b2c3d4" or "road_mainstreet_e5f67890"
+     *
+     * @param prefix "river" or "road"
+     * @param name Flow name from the definition (will be normalized)
+     * @param featureId UUID-based featureId (first 8 chars used)
+     * @return formatted groupId
+     */
+    private String buildGroupId(String prefix, String name, String featureId) {
+        String normalizedName = normalizeName(name != null ? name : "unknown");
+        String uuidPart = featureId != null && featureId.length() >= 8
+            ? featureId.substring(0, 8)
+            : UUID.randomUUID().toString().substring(0, 8);
+        return prefix + "_" + normalizedName + "_" + uuidPart;
+    }
+
+    /**
+     * Normalizes a name to only contain a-zA-Z0-9_-. characters.
+     * All other characters are replaced with underscore.
+     */
+    private String normalizeName(String name) {
+        return name.toLowerCase().replaceAll("[^a-z0-9_.\\-]", "_");
     }
 }

@@ -45,6 +45,9 @@ public class RoadConfigPart {
     private Integer toLevel;     // Level when exiting this position
     private String type;         // "street", "trail", etc.
 
+    // Group ID for road grouping (e.g., "road_mainstreet_a1b2c3d4")
+    private String groupId;
+
     /**
      * Creates a CENTER part for plaza configuration
      */

@@ -34,9 +34,9 @@ public class FlatMaterialService {
     public static final int STREET = 20;
     public static final int STREET_BORDER = 21;
     public static final int STREET_BRIDGE = 22;
-    public static final int TRACK = 23;
-    public static final int TRACK_BORDER = 24;
-    public static final int TRACK_BRIDGE = 25;
+    public static final int TRAIL = 23;
+    public static final int TRAIL_BORDER = 24;
+    public static final int TRAIL_BRIDGE = 25;
 
     public static final int UNKNOWN_PROTECTED = 0;
     public static final int UNKNOWN_NOT_PROTECTED = 255;
@@ -60,9 +60,9 @@ public class FlatMaterialService {
                     STREET, "n:s@s:default||false",
                     STREET_BORDER, "n:s@s:default||false",
                     STREET_BRIDGE, "n:s@s:default||false",
-                    TRACK, "n:s@s:default||false",
-                    TRACK_BORDER, "n:s@s:default||false",
-                    TRACK_BRIDGE, "n:s@s:default||false"
+                    TRAIL, "n:s@s:default||false",
+                    TRAIL_BORDER, "n:s@s:default||false",
+                    TRAIL_BRIDGE, "n:s@s:default||false"
             ),
             PALETTE_LEGACY, CastUtil.mapIntegerOfString(
                     GRASS, "w:310@s:default||true",        // old world
@@ -78,9 +78,9 @@ public class FlatMaterialService {
                     STREET, "n:s@s:default||false",
                     STREET_BORDER, "w:553@s:default||false",
                     STREET_BRIDGE, "w:553@s:default||false",
-                    TRACK, "w:553@s:default||false",
-                    TRACK_BORDER, "w:553@s:default||false",
-                    TRACK_BRIDGE, "w:553@s:default||false"
+                    TRAIL, "w:553@s:default||false",
+                    TRAIL_BORDER, "w:553@s:default||false",
+                    TRAIL_BRIDGE, "w:553@s:default||false"
             )
     );
 
