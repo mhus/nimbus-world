@@ -77,10 +77,12 @@ public class ModelBuilderService {
      * @param name         WAnything entity name
      * @param startPos     starting cursor position
      * @param parameterMap parameter substitution map ($1, $2, ...)
+     * @param group        group identifier for all blocks (set on LayerBlock.group)
      * @return ModelBuilderContext with blockCount and chunkDataMap
      */
     public ModelBuilderContext buildModel(WWorld world, WLayer layer, String collection, String name,
-                          Vector3Int startPos, Map<String, String> parameterMap) throws ModelBuilderException {
+                          Vector3Int startPos, Map<String, String> parameterMap,
+                          String group) throws ModelBuilderException {
         WorldId regionWorldId = WorldId.of(world.getWorldId())
                 .orElseThrow(() -> new ModelBuilderException("Invalid worldId: " + world.getWorldId()))
                 .toRegionCollection();
@@ -96,7 +98,7 @@ public class ModelBuilderService {
                         "Failed to convert WAnything data to ModelBuilderModel: collection=" + collection
                                 + ", name=" + name));
 
-        return buildModel(world, layer, model, startPos, parameterMap);
+        return buildModel(world, layer, model, startPos, parameterMap, group);
     }
 
     /**
@@ -107,11 +109,13 @@ public class ModelBuilderService {
      * @param model    the model definition
      * @param startPos starting cursor position
      * @param parameterMap parameter substitution map ($1, $2, ...)
+     * @param group        group identifier for all blocks (set on LayerBlock.group)
      * @return ModelBuilderContext with blockCount and chunkDataMap
      */
     public ModelBuilderContext buildModel(WWorld world, WLayer layer, ModelBuilderModel model,
-                          Vector3Int startPos, Map<String, String> parameterMap) throws ModelBuilderException {
-        return buildModel(world, layer, model, startPos, parameterMap, new Random());
+                          Vector3Int startPos, Map<String, String> parameterMap,
+                          String group) throws ModelBuilderException {
+        return buildModel(world, layer, model, startPos, parameterMap, new Random(), group);
     }
 
     /**
@@ -124,11 +128,12 @@ public class ModelBuilderService {
      * @param startPos     starting cursor position
      * @param parameterMap parameter substitution map ($1, $2, ...)
      * @param random       random instance for stochastic decisions
+     * @param group        group identifier for all blocks (set on LayerBlock.group)
      * @return ModelBuilderContext with blockCount and chunkDataMap
      */
     public ModelBuilderContext buildModel(WWorld world, WLayer layer, ModelBuilderModel model,
                           Vector3Int startPos, Map<String, String> parameterMap,
-                          Random random) throws ModelBuilderException {
+                          Random random, String group) throws ModelBuilderException {
         initializePartBuildersIfNeeded();
 
         if (model.getSteps() == null || model.getSteps().isEmpty()) {
@@ -154,6 +159,9 @@ public class ModelBuilderService {
                         .build())
                 .random(random)
                 .blockCount(0)
+                .group(group)
+                .fillBlockLevel(true)
+                .startY(startPos.getY())
                 .build();
 
         // Execute steps
@@ -191,20 +199,22 @@ public class ModelBuilderService {
      * @param collection           WAnything collection name (used for model descriptors)
      * @param startPos             starting cursor position
      * @param additionalParameters extra parameters merged into model parameters (may be null)
+     * @param group                group identifier for all blocks (set on LayerBlock.group)
      * @return ModelBuilderContext with blockCount and chunkDataMap
      */
     public ModelBuilderContext buildFromDescriptor(WWorld world, WLayer layer, String descriptor,
                                                    String collection, Vector3Int startPos,
-                                                   Map<String, String> additionalParameters) throws ModelBuilderException {
+                                                   Map<String, String> additionalParameters,
+                                                   String group) throws ModelBuilderException {
         WAnythingDescriptor parsed = WAnythingDescriptor.parse(descriptor);
         return switch (parsed) {
-            case WAnythingDescriptor.BlockStack blockStack -> buildBlockStack(world, layer, blockStack, startPos);
+            case WAnythingDescriptor.BlockStack blockStack -> buildBlockStack(world, layer, blockStack, startPos, group);
             case WAnythingDescriptor.ModelRef modelRef -> {
                 Map<String, String> mergedParams = new HashMap<>(modelRef.parameters());
                 if (additionalParameters != null) {
                     mergedParams.putAll(additionalParameters);
                 }
-                yield buildModel(world, layer, collection, modelRef.name(), startPos, mergedParams);
+                yield buildModel(world, layer, collection, modelRef.name(), startPos, mergedParams, group);
             }
         };
     }
@@ -264,7 +274,7 @@ public class ModelBuilderService {
 
     private ModelBuilderContext buildBlockStack(WWorld world, WLayer layer,
                                                 WAnythingDescriptor.BlockStack blockStack,
-                                                Vector3Int startPos) throws ModelBuilderException {
+                                                Vector3Int startPos, String group) throws ModelBuilderException {
         ModelBuilderContext context = ModelBuilderContext.builder()
                 .world(world)
                 .layer(layer)
@@ -275,6 +285,9 @@ public class ModelBuilderService {
                         .build())
                 .random(new Random())
                 .blockCount(0)
+                .group(group)
+                .fillBlockLevel(true)
+                .startY(startPos.getY())
                 .build();
 
         for (String blockType : blockStack.blockTypes()) {

@@ -31,6 +31,14 @@ public class ModelBuilderContext {
     private int blockCount;
 
     @Builder.Default
+    private String group = null;
+
+    @Builder.Default
+    private boolean fillBlockLevel = false;
+
+    private int startY;
+
+    @Builder.Default
     private Integer level = null;
 
     @Builder.Default
@@ -74,6 +82,18 @@ public class ModelBuilderContext {
         position.setZ(position.getZ() + delta);
     }
 
+    // --- Group ---
+
+    /**
+     * Set the group. Updates the current painter if present.
+     */
+    public void setGroup(String group) {
+        this.group = group;
+        if (painter != null) {
+            painter.setGroupId(group);
+        }
+    }
+
     // --- Level ---
 
     /**
@@ -108,6 +128,7 @@ public class ModelBuilderContext {
         EditBlockPainter p = new EditBlockPainter();
         p.setBlockDef(blockDef);
         p.setLevel(level);
+        p.setGroupId(group);
         p.setWriteTarget(writeTarget);
         return p;
     }
@@ -117,6 +138,7 @@ public class ModelBuilderContext {
      */
     public void paintAtCursor() {
         if (painter != null) {
+            applyAutoLevel(painter, position.getY());
             painter.paint(position.getX(), position.getY(), position.getZ());
             blockCount++;
         }
@@ -127,6 +149,7 @@ public class ModelBuilderContext {
      */
     public void paintAt(int x, int y, int z) {
         if (painter != null) {
+            applyAutoLevel(painter, y);
             painter.paint(x, y, z);
             blockCount++;
         }
@@ -137,6 +160,7 @@ public class ModelBuilderContext {
      */
     public void paintAtCursor(EditBlockPainter p) {
         if (p != null) {
+            applyAutoLevel(p, position.getY());
             p.paint(position.getX(), position.getY(), position.getZ());
             blockCount++;
         }
@@ -147,8 +171,15 @@ public class ModelBuilderContext {
      */
     public void paintAt(EditBlockPainter p, int x, int y, int z) {
         if (p != null) {
+            applyAutoLevel(p, y);
             p.paint(x, y, z);
             blockCount++;
+        }
+    }
+
+    private void applyAutoLevel(EditBlockPainter p, int y) {
+        if (fillBlockLevel) {
+            p.setLevel(y - startY);
         }
     }
 
