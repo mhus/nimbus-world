@@ -13,6 +13,7 @@ package de.mhus.nimbus.generated.types;
 public class Entity {
     private String id;
     private String name;
+    private String gender;
     private String model;
     @com.fasterxml.jackson.annotation.JsonProperty("modelModifier")
     private java.util.Map<String, String> modelModifier;

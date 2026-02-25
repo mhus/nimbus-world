@@ -250,10 +250,10 @@ public class FloraGeneratorService {
             String key = entry.getKey();
             String value = entry.getValue();
             if (value == null) continue;
-            if (key.startsWith("g_")) {
-                context.put(key.substring(2), value);
-            } else if (key.startsWith("gf_")) {
+            if (key.startsWith("gf_")) {
                 context.put(key.substring(3), value);
+            } else if (key.startsWith("g_")) {
+                context.put(key.substring(2), value);
             }
         }
         return context;

@@ -1381,6 +1381,13 @@
         "javaTypeHint" : null,
         "comment" : null
       }, {
+        "name" : "gender",
+        "type" : "string",
+        "optional" : false,
+        "visibility" : null,
+        "javaTypeHint" : null,
+        "comment" : null
+      }, {
         "name" : "model",
         "type" : "string",
         "optional" : false,

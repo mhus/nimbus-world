@@ -50,6 +50,7 @@ public class FaunaGeneratorService {
     private final WAnythingService anythingService;
     private final WLayerService layerService;
     private final WEntityService entityService;
+    private final FaunaNameService nameService;
 
     private record HeightInfo(int groundLevel, int waterLevel) {}
 
@@ -141,9 +142,16 @@ public class FaunaGeneratorService {
             }
 
             int totalAmount = randomRange(random, animal.getAmountMin(), animal.getAmountMax());
-            int groupCount = randomRange(random, animal.getGroupsMin(), animal.getGroupsMax());
+            if (totalAmount <= 0) continue;
 
-            if (totalAmount <= 0 || groupCount <= 0) continue;
+            // For LONER each animal is its own group
+            int groupCount;
+            if (animal.getGroupType() == FaunaGroupType.LONER) {
+                groupCount = totalAmount;
+            } else {
+                groupCount = randomRange(random, animal.getGroupsMin(), animal.getGroupsMax());
+            }
+            if (groupCount <= 0) continue;
 
             // Distribute individuals across groups
             int basePerGroup = totalAmount / groupCount;
@@ -178,15 +186,20 @@ public class FaunaGeneratorService {
                         .z(groupPosition.z)
                         .build();
 
+                // Generate gender and name assignments for this group
+                List<AnimalIdentity> identities = generateGroupIdentities(animal, groupSize, random);
+
                 // Create entities for each individual in the group
                 for (int i = 0; i < groupSize; i++) {
+                    AnimalIdentity identity = identities.get(i);
                     String shortId = UUID.randomUUID().toString().substring(0, 8);
                     String entityId = "gf_" + hexQ + "_" + hexR + "_" + animal.getName()
                             + "_" + groupIdx + "_" + shortId;
 
                     Entity publicData = Entity.builder()
                             .id(entityId)
-                            .name(entityId)
+                            .name(identity.displayName())
+                            .gender(identity.gender().name())
                             .model(animal.getModel())
                             .solid(true)
                             .interactive(true)
@@ -272,10 +285,10 @@ public class FaunaGeneratorService {
             String key = entry.getKey();
             String value = entry.getValue();
             if (value == null) continue;
-            if (key.startsWith("g_")) {
-                context.put(key.substring(2), value);
-            } else if (key.startsWith("gf_")) {
+            if (key.startsWith("gf_")) {
                 context.put(key.substring(3), value);
+            } else if (key.startsWith("g_")) {
+                context.put(key.substring(2), value);
             }
         }
         return context;
@@ -360,6 +373,80 @@ public class FaunaGeneratorService {
 
         int fallbackLevel = maxY > Integer.MIN_VALUE ? maxY : defaultGroundLevel;
         return new HeightInfo(fallbackLevel, fallbackLevel);
+    }
+
+    private record AnimalIdentity(FaunaGender gender, String displayName) {}
+
+    /**
+     * Generate gender and display name assignments for all animals in a group,
+     * based on the animal definition's group type.
+     */
+    private List<AnimalIdentity> generateGroupIdentities(
+            FaunaAnimalDefinition animal, int groupSize, Random random) {
+
+        FaunaGroupType groupType = animal.getGroupType();
+        List<AnimalIdentity> identities = new ArrayList<>();
+
+        switch (groupType) {
+            case LONER, MIXED -> {
+                for (int i = 0; i < groupSize; i++) {
+                    FaunaGender gender = pickRandomGender(animal, random);
+                    String firstName = nameService.randomNameForGender(gender, random);
+                    String lastName = nameService.differentNameForGender(gender, firstName, random);
+                    identities.add(new AnimalIdentity(gender, firstName + " " + lastName));
+                }
+            }
+            case HERD -> {
+                FaunaGender herdGender = pickRandomGender(animal, random);
+                for (int i = 0; i < groupSize; i++) {
+                    String firstName = nameService.randomNameForGender(herdGender, random);
+                    String lastName = nameService.differentNameForGender(herdGender, firstName, random);
+                    identities.add(new AnimalIdentity(herdGender, firstName + " " + lastName));
+                }
+            }
+            case HAREM -> {
+                // Leader is always male, rest female
+                String maleFirstName = nameService.randomMasculineName(random);
+                String maleSurname = nameService.differentNameForGender(FaunaGender.M, maleFirstName, random);
+                identities.add(new AnimalIdentity(FaunaGender.M, maleFirstName + " " + maleSurname));
+
+                for (int i = 1; i < groupSize; i++) {
+                    String femFirstName = nameService.randomFeminineName(random);
+                    identities.add(new AnimalIdentity(FaunaGender.W, femFirstName + " " + maleSurname));
+                }
+            }
+        }
+
+        return identities;
+    }
+
+    /**
+     * Pick a random gender from the allowed genders using configured weights.
+     */
+    private FaunaGender pickRandomGender(FaunaAnimalDefinition animal, Random random) {
+        List<FaunaGender> allowed = animal.getGenders();
+        if (allowed == null || allowed.isEmpty()) return FaunaGender.D;
+        if (allowed.size() == 1) return allowed.getFirst();
+
+        double totalWeight = 0;
+        double[] weights = new double[allowed.size()];
+        for (int i = 0; i < allowed.size(); i++) {
+            double w = switch (allowed.get(i)) {
+                case M -> animal.getWeightM();
+                case W -> animal.getWeightW();
+                case D -> animal.getWeightD();
+            };
+            weights[i] = w;
+            totalWeight += w;
+        }
+
+        double roll = random.nextDouble() * totalWeight;
+        double cumulative = 0;
+        for (int i = 0; i < allowed.size(); i++) {
+            cumulative += weights[i];
+            if (roll < cumulative) return allowed.get(i);
+        }
+        return allowed.getLast();
     }
 
     private Map<String, Object> buildBehaviorConfig(FaunaAnimalDefinition animal) {

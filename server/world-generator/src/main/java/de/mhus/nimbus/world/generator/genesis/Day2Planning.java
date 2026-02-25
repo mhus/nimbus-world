@@ -93,11 +93,41 @@ public class Day2Planning extends MethodBasedWorkflow {
                 .totalGrids(totalGrids)
                 .build());
 
-        // Create schema image before completing
+        // Fill missing flora/fauna values with random biome-appropriate data
+        context.updateWorkflowStatus("fillModelRandomValues");
+        context.enqueueJob("generator-fill-model-random-values", "", "",
+                "Fill Flora/Fauna Values",
+                Map.of("documentId", compositionDocumentId,
+                       "worldId", context.getWorldId()));
+    }
+
+    @OnSuccess("fillModelRandomValues")
+    public void onFillModelRandomValuesSuccess(WorkflowContext context) throws WorkflowException {
+        // Update compositionDocumentId with the enriched document
+        var enrichedDocumentId = context.getJobResultString("documentId")
+                .orElseThrow(() -> new WorkflowException(null,
+                        "FillModelWithRandomValues job result does not contain 'documentId'."));
+
+        log.info("Flora/fauna values filled: enrichedDocumentId={}", enrichedDocumentId);
+
+        // Verify enriched document exists
+        if (documentService.findByDocumentId(WorldId.of(context.getWorldId()).orElseThrow(), enrichedDocumentId).isEmpty()) {
+            throw new WorkflowException(null, "enriched composition document not found: " + enrichedDocumentId);
+        }
+
+        // Update state with enriched document ID
+        var state = context.getLastJournalRecord(Day2PlanningState.class)
+                .orElseThrow(() -> new WorkflowException(null, "Planning state not found in journal"));
+        context.addRecord(Day2PlanningState.builder()
+                .compositionDocumentId(enrichedDocumentId)
+                .totalGrids(state.getTotalGrids())
+                .build());
+
+        // Create schema image
         context.updateWorkflowStatus("createSchemaImage");
         context.enqueueJob("hex-grid-schema-image", "", "",
                 "Create Schema Image",
-                Map.of("compositionId", compositionDocumentId));
+                Map.of("compositionId", enrichedDocumentId));
     }
 
     @OnSuccess("createSchemaImage")

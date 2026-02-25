@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -67,6 +68,26 @@ public class FaunaAnimalDefinition {
 
     /** SpEL condition expression evaluated against generation context (e.g. "random > 0.5") */
     private String when;
+
+    /** Allowed genders for this animal type. Default: all (M, W, D). */
+    @Builder.Default
+    private List<FaunaGender> genders = List.of(FaunaGender.M, FaunaGender.W, FaunaGender.D);
+
+    /** Group formation type. Default: MIXED. */
+    @Builder.Default
+    private FaunaGroupType groupType = FaunaGroupType.MIXED;
+
+    /** Gender distribution weight for male (default 45). */
+    @Builder.Default
+    private double weightM = 45;
+
+    /** Gender distribution weight for female (default 45). */
+    @Builder.Default
+    private double weightW = 45;
+
+    /** Gender distribution weight for diverse (default 10). */
+    @Builder.Default
+    private double weightD = 10;
 
     /**
      * Check if this animal can spawn at the given category.

@@ -184,7 +184,10 @@ export interface Entity {
   /** Display name of the entity */
   name: string;
 
-  /** Reference to EntityModel (by ID) - das Modell definiert nur die Darstellung und auch das visuelle Verhalten, z.b. beim Laufen */
+  /** M (Male), F (Female), D (Diverse)  */
+  gender: string;
+
+    /** Reference to EntityModel (by ID) - das Modell definiert nur die Darstellung und auch das visuelle Verhalten, z.b. beim Laufen */
   model: string; // EntityModel ID
 
   /** Custom modifiers for this instance (overrides/extends model defaults) */
