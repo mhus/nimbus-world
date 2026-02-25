@@ -197,18 +197,35 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
     }
 
     /**
+     * Periodic diagnostic counter — logs state every 60 ticks (~1 minute).
+     */
+    private long diagnosticCounter = 0;
+
+    /**
      * Simulate entities for a single world.
      */
     private void simulateWorld(WorldId worldId, Map<String, SimulationState> simulationStates, long currentTime) {
         Set<ChunkCoordinate> activeChunks = multiWorldChunkService.getActiveChunks(worldId);
 
+        boolean diagnosticTick = (diagnosticCounter++ % 60 == 0);
+
         if (activeChunks.isEmpty()) {
-            log.trace("World {}: No active chunks, skipping simulation", worldId);
+            if (diagnosticTick && !simulationStates.isEmpty()) {
+                log.info("World {}: DIAG no active chunks, {} entities in memory but not simulated",
+                        worldId, simulationStates.size());
+            }
             return;
+        }
+
+        if (diagnosticTick) {
+            log.info("World {}: DIAG {} active chunks, {} entities loaded",
+                    worldId, activeChunks.size(), simulationStates.size());
         }
 
         List<EntityPathway> newPathways = new ArrayList<>();
         WWorld world = worldService.getByWorldId(worldId).get();
+        int skippedOwnership = 0;
+        int skippedNoPathway = 0;
 
         for (Map.Entry<String, SimulationState> entry : simulationStates.entrySet()) {
             String entityId = entry.getKey();
@@ -216,21 +233,15 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
             WEntity entity = state.getEntity();
 
             try {
-                // Check if entity is in an active chunk
+                // Entity is in worldSimulationStates → it was loaded by onChunksActivated.
+                // No need to re-check chunk activity here; unloading is handled by onChunksDeactivated.
                 String entityChunk = BlockUtil.toChunkKey(world, entity.getPosition());
-                if (entityChunk == null || !multiWorldChunkService.isChunkActive(worldId, entityChunk)) {
-                    if (ownershipService.isOwnedByThisPod(worldId, entityId)) {
-                        ownershipService.releaseEntity(worldId, entityId);
-                        log.trace("World {}: Released entity {} (chunk {} no longer active)",
-                                worldId, entityId, entityChunk);
-                    }
-                    continue;
-                }
 
                 // Try to claim ownership if not already owned
                 if (!ownershipService.isOwnedByThisPod(worldId, entityId)) {
                     boolean claimed = ownershipService.claimEntity(worldId, entityId, entityChunk);
                     if (!claimed) {
+                        skippedOwnership++;
                         continue;
                     }
                     log.debug("World {}: Claimed entity {} in chunk {}", worldId, entityId, entityChunk);
@@ -238,11 +249,20 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
 
                 // Simulate entity
                 Optional<EntityPathway> pathway = simulateEntity(entity, state, currentTime, worldId);
-                pathway.ifPresent(newPathways::add);
+                if (pathway.isPresent()) {
+                    newPathways.add(pathway.get());
+                } else {
+                    skippedNoPathway++;
+                }
 
             } catch (Exception e) {
                 log.error("World {}: Error simulating entity {}: {}", worldId, entityId, e.getMessage(), e);
             }
+        }
+
+        if (diagnosticTick) {
+            log.info("World {}: DIAG tick result: {} pathways, skipped: {} ownership, {} no-pathway",
+                    worldId, newPathways.size(), skippedOwnership, skippedNoPathway);
         }
 
         // Publish pathways to Redis

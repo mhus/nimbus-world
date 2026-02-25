@@ -81,8 +81,8 @@ public class UserMovementUpdateHandler implements MessageHandler {
 
             // Calculate chunk coordinates from world position
             if (x != null && z != null) {
-                cx = (int) Math.floor(x / 16);  // chunkSize = 16
-                cz = (int) Math.floor(z / 16);
+                cx = (int) Math.floor(x / session.getChunkSize());
+                cz = (int) Math.floor(z / session.getChunkSize());
             }
         }
 

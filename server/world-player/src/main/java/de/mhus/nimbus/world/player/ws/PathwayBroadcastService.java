@@ -15,6 +15,8 @@ import de.mhus.nimbus.world.player.session.SessionPingConsumer;
 import de.mhus.nimbus.world.shared.redis.PathwayBroadcastMessage;
 import de.mhus.nimbus.world.shared.redis.WorldRedisMessagingService;
 import de.mhus.nimbus.world.shared.redis.WorldRedisService;
+import de.mhus.nimbus.world.shared.world.WWorldService;
+import de.mhus.nimbus.shared.types.WorldId;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
@@ -51,6 +53,7 @@ public class PathwayBroadcastService implements SessionPingConsumer, SessionClos
     private final EngineMapper engineMapper;
     private final PathwayBroadcastSettings properties;
     private final StringRedisTemplate redisTemplate;
+    private final WWorldService worldService;
 
     private static final String CACHE_KEY_PREFIX = "pathway:";
 
@@ -200,6 +203,14 @@ public class PathwayBroadcastService implements SessionPingConsumer, SessionClos
      */
     private void publishPathways(String worldId, List<PathwayBroadcastMessage.PathwayContainer> containers) {
         try {
+            // Get chunkSize from world configuration
+            var world = worldService.getByWorldId(WorldId.unchecked(worldId));
+            if (world.isEmpty()) {
+                log.warn("World not found for pathway publish: {}", worldId);
+                return;
+            }
+            int chunkSize = world.get().getPublicData().getChunkSize();
+
             // Determine affected chunks from pathways
             Set<ChunkCoordinate> affectedChunks = new HashSet<>();
 
@@ -207,8 +218,8 @@ public class PathwayBroadcastService implements SessionPingConsumer, SessionClos
                 EntityPathway pathway = container.getPathway();
                 for (Waypoint wp : pathway.getWaypoints()) {
                     Vector3 pos = wp.getTarget();
-                    int cx = (int) Math.floor(pos.getX() / 16);
-                    int cz = (int) Math.floor(pos.getZ() / 16);
+                    int cx = (int) Math.floor(pos.getX() / chunkSize);
+                    int cz = (int) Math.floor(pos.getZ() / chunkSize);
                     affectedChunks.add(new ChunkCoordinate(cx, cz));
                 }
             }
@@ -287,6 +298,9 @@ public class PathwayBroadcastService implements SessionPingConsumer, SessionClos
             }
 
             // 2. Player pathways via existing cache (key pattern: pathway:{worldId}:{sessionId})
+            var world = worldService.getByWorldId(WorldId.unchecked(worldId));
+            int chunkSize = world.isPresent() ? world.get().getPublicData().getChunkSize() : 16;
+
             String pattern = CACHE_KEY_PREFIX + worldId + ":*";
             Set<String> keys = redisTemplate.keys(pattern);
 
@@ -295,7 +309,7 @@ public class PathwayBroadcastService implements SessionPingConsumer, SessionClos
                     String json = redisTemplate.opsForValue().get(key);
                     if (json != null) {
                         EntityPathway pathway = engineMapper.readValue(json, EntityPathway.class);
-                        if (pathwayAffectsChunk(pathway, cx, cz)) {
+                        if (pathwayAffectsChunk(pathway, cx, cz, chunkSize)) {
                             pathways.add(pathway);
                         }
                     }
@@ -315,15 +329,15 @@ public class PathwayBroadcastService implements SessionPingConsumer, SessionClos
     /**
      * Check if pathway affects a specific chunk (used for player pathways).
      */
-    private boolean pathwayAffectsChunk(EntityPathway pathway, int cx, int cz) {
+    private boolean pathwayAffectsChunk(EntityPathway pathway, int cx, int cz, int chunkSize) {
         if (pathway.getWaypoints() == null) return false;
 
         for (Waypoint waypoint : pathway.getWaypoints()) {
             if (waypoint.getTarget() != null) {
                 double x = waypoint.getTarget().getX();
                 double z = waypoint.getTarget().getZ();
-                int waypointCx = (int) Math.floor(x / 16);
-                int waypointCz = (int) Math.floor(z / 16);
+                int waypointCx = (int) Math.floor(x / chunkSize);
+                int waypointCz = (int) Math.floor(z / chunkSize);
                 if (waypointCx == cx && waypointCz == cz) {
                     return true;
                 }

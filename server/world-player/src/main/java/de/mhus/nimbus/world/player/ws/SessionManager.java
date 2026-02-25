@@ -9,6 +9,7 @@ import de.mhus.nimbus.world.player.session.SessionAuthenticatedConsumer;
 import de.mhus.nimbus.world.player.session.SessionClosedConsumer;
 import de.mhus.nimbus.world.shared.session.WSessionService;
 import de.mhus.nimbus.world.shared.session.WSessionStatus;
+import de.mhus.nimbus.world.shared.world.WWorldService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,6 +34,7 @@ public class SessionManager {
     private final WSessionService wSessionService;
     private final LocationService locationService;
     private final de.mhus.nimbus.world.shared.client.WorldClientService worldClientService;
+    private final WWorldService worldService;
 
     @Autowired
     @Lazy
@@ -52,10 +54,12 @@ public class SessionManager {
 
     public SessionManager(WSessionService wSessionService,
                          LocationService locationService,
-                         de.mhus.nimbus.world.shared.client.WorldClientService worldClientService) {
+                         de.mhus.nimbus.world.shared.client.WorldClientService worldClientService,
+                         WWorldService worldService) {
         this.wSessionService = wSessionService;
         this.locationService = locationService;
         this.worldClientService = worldClientService;
+        this.worldService = worldService;
     }
 
     private final Map<String, PlayerSession> sessionsByWebSocketId = new ConcurrentHashMap<>();
@@ -273,6 +277,11 @@ public class SessionManager {
         session.setClientType(clientType);
         session.setStatus(PlayerSession.SessionStatus.AUTHENTICATED);
         session.setSessionId(worldSession.getId());
+
+        // Set chunkSize from world configuration
+        worldService.getByWorldId(worldId).ifPresent(world ->
+                session.setChunkSize(world.getPublicData().getChunkSize()));
+
 
         // register session
         wSessionService.updateStatus(worldSessionId, WSessionStatus.RUNNING);

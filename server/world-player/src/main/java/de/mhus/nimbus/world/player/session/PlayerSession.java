@@ -70,6 +70,7 @@ public class PlayerSession {
     private boolean positionChanged;
     private Integer currentChunkX;
     private Integer currentChunkZ;
+    private int chunkSize = 16;
 
     public PlayerSession(WebSocketSession webSocketSession) {
         this.webSocketSession = webSocketSession;
@@ -157,8 +158,8 @@ public class PlayerSession {
 
         // Update chunk coordinates
         if (position != null) {
-            this.currentChunkX = (int) Math.floor(position.getX() / 16);
-            this.currentChunkZ = (int) Math.floor(position.getZ() / 16);
+            this.currentChunkX = (int) Math.floor(position.getX() / chunkSize);
+            this.currentChunkZ = (int) Math.floor(position.getZ() / chunkSize);
         }
     }
 

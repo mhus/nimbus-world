@@ -90,50 +90,39 @@ public class PathwayBroadcastListener {
                 containers.add(container);
             }
 
-            // Broadcast pathways per chunk
+            // Group all pathways by originating session
+            Map<String, List<EntityPathway>> pathwaysByOriginSession = new HashMap<>();
+            for (PathwayBroadcastMessage.PathwayContainer container : containers) {
+                String originSessionId = container.getSessionId() != null ? container.getSessionId() : "none";
+                pathwaysByOriginSession
+                    .computeIfAbsent(originSessionId, k -> new ArrayList<>())
+                    .add(container.getPathway());
+            }
+
+            // Broadcast per affected chunk (affectedChunks already correctly computed by world-life)
             for (JsonNode chunkNode : affectedChunks) {
                 int cx = chunkNode.has("cx") ? chunkNode.get("cx").asInt() : 0;
                 int cz = chunkNode.has("cz") ? chunkNode.get("cz").asInt() : 0;
 
-                // Collect all pathways for this chunk (grouped by originating session)
-                // We need to send them grouped because BroadcastService only accepts one originatingSessionId
-                Map<String, List<EntityPathway>> pathwaysByOriginSession = new HashMap<>();
-
-                for (PathwayBroadcastMessage.PathwayContainer container : containers) {
-                    EntityPathway pathway = container.getPathway();
-
-                    // Check if pathway affects this chunk
-                    if (!pathwayAffectsChunk(pathway, cx, cz)) {
-                        continue;
-                    }
-
-                    // Group by originating sessionId
-                    String originSessionId = container.getSessionId() != null ? container.getSessionId() : "none";
-                    pathwaysByOriginSession
-                        .computeIfAbsent(originSessionId, k -> new ArrayList<>())
-                        .add(pathway);
-                }
-
-                // Broadcast each group separately (different origin sessions)
                 for (Map.Entry<String, List<EntityPathway>> entry : pathwaysByOriginSession.entrySet()) {
                     String originSessionId = entry.getKey().equals("none") ? null : entry.getKey();
                     List<EntityPathway> pathways = entry.getValue();
 
-                    // Convert pathways array to JsonNode
                     JsonNode pathwaysArray = objectMapper.valueToTree(pathways);
 
-                    // Broadcast to all sessions in this chunk (excluding originating session)
                     int sentCount = broadcastService.broadcastToWorld(
-                            worldId,          // worldId from topic
-                            "e.p",            // messageType
-                            pathwaysArray,    // data (pathways ARRAY)
-                            originSessionId,  // originatingSessionId - will be filtered out!
-                            cx,               // chunk X
-                            cz                // chunk Z
+                            worldId,
+                            "e.p",
+                            pathwaysArray,
+                            originSessionId,
+                            cx,
+                            cz
                     );
 
-                    log.trace("Broadcasted {} pathways to {} sessions for chunk ({}, {}) [origin={}]",
-                            pathways.size(), sentCount, cx, cz, originSessionId);
+                    if (sentCount > 0) {
+                        log.debug("Sent {} NPC pathways to {} clients for chunk ({}, {}) in world {}",
+                                pathways.size(), sentCount, cx, cz, worldId);
+                    }
                 }
             }
 
@@ -143,27 +132,6 @@ public class PathwayBroadcastListener {
         } catch (Exception e) {
             log.error("Failed to handle pathway update from topic {}: {}", topic, message, e);
         }
-    }
-
-    /**
-     * Check if pathway affects a specific chunk.
-     * Pathway affects chunk if any waypoint is in that chunk.
-     */
-    private boolean pathwayAffectsChunk(EntityPathway pathway, int cx, int cz) {
-        if (pathway.getWaypoints() == null) return false;
-
-        for (de.mhus.nimbus.generated.types.Waypoint waypoint : pathway.getWaypoints()) {
-            if (waypoint.getTarget() != null) {
-                double x = waypoint.getTarget().getX();
-                double z = waypoint.getTarget().getZ();
-                int waypointCx = (int) Math.floor(x / 16);
-                int waypointCz = (int) Math.floor(z / 16);
-                if (waypointCx == cx && waypointCz == cz) {
-                    return true;
-                }
-            }
-        }
-        return false;
     }
 
     /**
