@@ -69,6 +69,9 @@ export class EntityRenderService {
   // Track warned missing poses to avoid spam (entityId:pose -> true)
   private warnedMissingPoses: Set<string> = new Set();
 
+  // Track entities currently being created to prevent duplicate mesh creation
+  private entitiesBeingCreated: Set<string> = new Set();
+
   constructor(scene: Scene, appContext: AppContext, entityService: EntityService, modelService: ModelService) {
     this.scene = scene;
     this.appContext = appContext;
@@ -155,9 +158,20 @@ export class EntityRenderService {
         return;
       }
 
+      // Check if entity is currently being created (prevent duplicate mesh from race condition)
+      if (this.entitiesBeingCreated.has(entityId)) {
+        logger.debug('Entity creation already in progress, skipping', { entityId });
+        return;
+      }
+
       // Entity doesn't exist yet, create it
       logger.debug('Creating new entity', { entityId });
-      await this.createEntity(entityId);
+      this.entitiesBeingCreated.add(entityId);
+      try {
+        await this.createEntity(entityId);
+      } finally {
+        this.entitiesBeingCreated.delete(entityId);
+      }
 
       // Draw pathway lines if enabled
       if (this._showPathways) {
