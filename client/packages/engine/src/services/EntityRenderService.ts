@@ -380,7 +380,13 @@ export class EntityRenderService {
         }
       }
 
-      logger.debug('Entity created and rendered', { entityId, modelPath });
+      // Check initial visibility - entity may be out of range or in unloaded chunk
+      if (!clientEntity.visible) {
+        rotationNode.setEnabled(false);
+        logger.debug('Entity created but hidden (not visible)', { entityId });
+      } else {
+        logger.debug('Entity created and rendered', { entityId, modelPath });
+      }
     } catch (error) {
       throw ExceptionHandler.handleAndRethrow(error, 'EntityRenderService.createEntity', { entityId });
     }

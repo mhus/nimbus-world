@@ -434,8 +434,36 @@ export class EntityService {
       });
     }
 
+    // Check initial visibility based on distance and chunk state
+    this.updateEntityVisibilityCheck(clientEntity);
+
     // Emit pathway event
     this.emit('pathway', pathway);
+  }
+
+  /**
+   * Check and update entity visibility based on distance to player and chunk state
+   */
+  private updateEntityVisibilityCheck(clientEntity: ClientEntity): void {
+    const playerService = this.appContext.services.player;
+    if (!playerService) return;
+
+    const playerPos = playerService.getPosition();
+    const pos = clientEntity.currentPosition;
+
+    const distance = Math.sqrt(
+      Math.pow(pos.x - playerPos.x, 2) +
+      Math.pow(pos.y - playerPos.y, 2) +
+      Math.pow(pos.z - playerPos.z, 2)
+    );
+
+    const chunkLoaded = this.isChunkLoadedAtPosition(pos);
+    const shouldBeVisible = distance <= this._visibilityRadius && chunkLoaded;
+
+    if (clientEntity.visible !== shouldBeVisible) {
+      clientEntity.visible = shouldBeVisible;
+      this.emit('visibility', { entityId: clientEntity.id, visible: shouldBeVisible });
+    }
   }
 
   /**
