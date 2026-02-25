@@ -231,6 +231,23 @@ public class WEntityService {
     }
 
     /**
+     * Find all enabled entities that have any of the specified affected chunks.
+     * Used for chunk-based entity loading in world-life.
+     *
+     * @param worldId   the world identifier (must not be instance or collection)
+     * @param chunkKeys collection of chunk keys to match against affectedChunks
+     * @return list of enabled entities in the specified chunks
+     */
+    @Transactional(readOnly = true)
+    public List<WEntity> findEnabledByChunks(WorldId worldId, Collection<String> chunkKeys) {
+        if (worldId.isCollection()) {
+            throw new IllegalArgumentException("worldId must not be a collection id");
+        }
+        var lookupWorld = worldId.withoutInstance();
+        return repository.findByWorldIdAndEnabledAndAffectedChunksIn(lookupWorld.getId(), true, chunkKeys);
+    }
+
+    /**
      * Find all entities for specific world with optional query filter.
      * Filters out instances.
      */

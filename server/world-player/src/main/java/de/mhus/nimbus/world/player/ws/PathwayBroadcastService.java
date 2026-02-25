@@ -14,6 +14,7 @@ import de.mhus.nimbus.world.player.session.SessionClosedConsumer;
 import de.mhus.nimbus.world.player.session.SessionPingConsumer;
 import de.mhus.nimbus.world.shared.redis.PathwayBroadcastMessage;
 import de.mhus.nimbus.world.shared.redis.WorldRedisMessagingService;
+import de.mhus.nimbus.world.shared.redis.WorldRedisService;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
@@ -46,6 +47,7 @@ public class PathwayBroadcastService implements SessionPingConsumer, SessionClos
 
     private final SessionManager sessionManager;
     private final WorldRedisMessagingService redisMessaging;
+    private final WorldRedisService worldRedisService;
     private final EngineMapper engineMapper;
     private final PathwayBroadcastSettings properties;
     private final StringRedisTemplate redisTemplate;
@@ -260,7 +262,8 @@ public class PathwayBroadcastService implements SessionPingConsumer, SessionClos
 
     /**
      * Get cached pathways for a specific chunk.
-     * Returns all cached pathways from sessions that have positions in the chunk.
+     * Uses chunk-entity index for NPC pathways (O(1) lookup per entity)
+     * and player pathway cache for player pathways.
      *
      * @param worldId World ID
      * @param cx Chunk X coordinate
@@ -271,7 +274,19 @@ public class PathwayBroadcastService implements SessionPingConsumer, SessionClos
         List<EntityPathway> pathways = new ArrayList<>();
 
         try {
-            // Scan all pathway cache keys for this world
+            // 1. NPC pathways via chunk-entity index
+            String chunkKey = cx + ":" + cz;
+            Set<String> entityIds = worldRedisService.getSetMembers(worldId, "chunk-entities:" + chunkKey);
+
+            for (String entityId : entityIds) {
+                Optional<String> json = worldRedisService.getValue(worldId, "npc-pathway:" + entityId);
+                if (json.isPresent()) {
+                    EntityPathway pathway = engineMapper.readValue(json.get(), EntityPathway.class);
+                    pathways.add(pathway);
+                }
+            }
+
+            // 2. Player pathways via existing cache (key pattern: pathway:{worldId}:{sessionId})
             String pattern = CACHE_KEY_PREFIX + worldId + ":*";
             Set<String> keys = redisTemplate.keys(pattern);
 
@@ -280,8 +295,6 @@ public class PathwayBroadcastService implements SessionPingConsumer, SessionClos
                     String json = redisTemplate.opsForValue().get(key);
                     if (json != null) {
                         EntityPathway pathway = engineMapper.readValue(json, EntityPathway.class);
-
-                        // Check if pathway affects this chunk
                         if (pathwayAffectsChunk(pathway, cx, cz)) {
                             pathways.add(pathway);
                         }
@@ -289,8 +302,8 @@ public class PathwayBroadcastService implements SessionPingConsumer, SessionClos
                 }
             }
 
-            log.debug("Found {} cached pathways for chunk ({}, {}) in world {}",
-                    pathways.size(), cx, cz, worldId);
+            log.debug("Found {} cached pathways for chunk ({}, {}) in world {} ({} NPC, rest player)",
+                    pathways.size(), cx, cz, worldId, entityIds.size());
 
         } catch (Exception e) {
             log.error("Failed to get cached pathways for chunk ({}, {})", cx, cz, e);
@@ -300,7 +313,7 @@ public class PathwayBroadcastService implements SessionPingConsumer, SessionClos
     }
 
     /**
-     * Check if pathway affects a specific chunk.
+     * Check if pathway affects a specific chunk (used for player pathways).
      */
     private boolean pathwayAffectsChunk(EntityPathway pathway, int cx, int cz) {
         if (pathway.getWaypoints() == null) return false;

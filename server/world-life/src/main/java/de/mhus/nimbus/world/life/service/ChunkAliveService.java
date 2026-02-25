@@ -21,15 +21,28 @@ import java.util.function.Consumer;
 public class ChunkAliveService {
 
     /**
+     * Listener for chunk activation/deactivation delta events.
+     */
+    public interface ChunkChangeListener {
+        void onChunksAdded(Set<ChunkCoordinate> added);
+        void onChunksRemoved(Set<ChunkCoordinate> removed);
+    }
+
+    /**
      * Currently active chunks (being viewed by at least one client).
      * Thread-safe set backed by ConcurrentHashMap.
      */
     private final Set<ChunkCoordinate> activeChunks = ConcurrentHashMap.newKeySet();
 
     /**
-     * Listeners notified when active chunks change.
+     * Legacy listeners notified with full snapshot when active chunks change.
      */
     private final List<Consumer<Set<ChunkCoordinate>>> changeListeners = new CopyOnWriteArrayList<>();
+
+    /**
+     * Delta listeners notified with added/removed chunk sets.
+     */
+    private final List<ChunkChangeListener> deltaListeners = new CopyOnWriteArrayList<>();
 
     /**
      * Add chunks to active set.
@@ -51,6 +64,7 @@ public class ChunkAliveService {
 
         if (!added.isEmpty()) {
             log.debug("Added {} chunks to active set, total active: {}", added.size(), activeChunks.size());
+            notifyDeltaListenersAdded(added);
             notifyListeners();
         }
     }
@@ -75,6 +89,7 @@ public class ChunkAliveService {
 
         if (!removed.isEmpty()) {
             log.debug("Removed {} chunks from active set, total active: {}", removed.size(), activeChunks.size());
+            notifyDeltaListenersRemoved(removed);
             notifyListeners();
         }
     }
@@ -103,6 +118,12 @@ public class ChunkAliveService {
         log.info("Chunk refresh: {} active, {} added, {} removed",
                 activeChunks.size(), added.size(), removed.size());
 
+        if (!removed.isEmpty()) {
+            notifyDeltaListenersRemoved(removed);
+        }
+        if (!added.isEmpty()) {
+            notifyDeltaListenersAdded(added);
+        }
         if (!added.isEmpty() || !removed.isEmpty()) {
             notifyListeners();
         }
@@ -177,6 +198,45 @@ public class ChunkAliveService {
     public void removeChangeListener(Consumer<Set<ChunkCoordinate>> listener) {
         if (changeListeners.remove(listener)) {
             log.debug("Removed chunk change listener, total listeners: {}", changeListeners.size());
+        }
+    }
+
+    /**
+     * Register a delta listener for chunk add/remove events.
+     */
+    public void addDeltaListener(ChunkChangeListener listener) {
+        if (listener != null) {
+            deltaListeners.add(listener);
+            log.debug("Added chunk delta listener, total delta listeners: {}", deltaListeners.size());
+        }
+    }
+
+    /**
+     * Remove a delta listener.
+     */
+    public void removeDeltaListener(ChunkChangeListener listener) {
+        if (deltaListeners.remove(listener)) {
+            log.debug("Removed chunk delta listener, total delta listeners: {}", deltaListeners.size());
+        }
+    }
+
+    private void notifyDeltaListenersAdded(Set<ChunkCoordinate> added) {
+        for (ChunkChangeListener listener : deltaListeners) {
+            try {
+                listener.onChunksAdded(added);
+            } catch (Exception e) {
+                log.error("Error notifying chunk delta listener (added)", e);
+            }
+        }
+    }
+
+    private void notifyDeltaListenersRemoved(Set<ChunkCoordinate> removed) {
+        for (ChunkChangeListener listener : deltaListeners) {
+            try {
+                listener.onChunksRemoved(removed);
+            } catch (Exception e) {
+                log.error("Error notifying chunk delta listener (removed)", e);
+            }
         }
     }
 

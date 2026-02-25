@@ -5,7 +5,9 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
+import java.util.Collections;
 import java.util.Optional;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -27,6 +29,29 @@ public class WorldRedisService {
         String namespaced = ns(worldId, key);
         Boolean res = redis.delete(namespaced);
         return Boolean.TRUE.equals(res);
+    }
+
+    public void addToSet(String worldId, String key, String... members) {
+        if (members == null || members.length == 0) return;
+        String namespaced = ns(worldId, key);
+        redis.opsForSet().add(namespaced, members);
+    }
+
+    public void removeFromSet(String worldId, String key, String... members) {
+        if (members == null || members.length == 0) return;
+        String namespaced = ns(worldId, key);
+        redis.opsForSet().remove(namespaced, (Object[]) members);
+    }
+
+    public Set<String> getSetMembers(String worldId, String key) {
+        String namespaced = ns(worldId, key);
+        Set<String> members = redis.opsForSet().members(namespaced);
+        return members != null ? members : Collections.emptySet();
+    }
+
+    public void setExpire(String worldId, String key, Duration ttl) {
+        String namespaced = ns(worldId, key);
+        redis.expire(namespaced, ttl);
     }
 
     private String ns(String worldId, String key) {

@@ -27,4 +27,6 @@ public interface WEntityRepository extends MongoRepository<WEntity, String> {
     List<WEntity> findByWorldIdAndEntityIdStartingWith(String worldId, String entityIdPrefix);
 
     List<WEntity> findByWorldIdAndSourceAndAffectedChunksIn(String worldId, String source, java.util.Collection<String> chunkKeys);
+
+    List<WEntity> findByWorldIdAndEnabledAndAffectedChunksIn(String worldId, boolean enabled, java.util.Collection<String> chunkKeys);
 }

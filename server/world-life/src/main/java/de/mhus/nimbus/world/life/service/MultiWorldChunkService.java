@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * Service that manages ChunkAliveService and ChunkTTLTracker instances per world.
@@ -17,6 +18,14 @@ import java.util.concurrent.ConcurrentHashMap;
 @Service
 @Slf4j
 public class MultiWorldChunkService {
+
+    /**
+     * Listener for world-scoped chunk activation/deactivation events.
+     */
+    public interface WorldChunkChangeListener {
+        void onChunksActivated(WorldId worldId, Set<ChunkCoordinate> added);
+        void onChunksDeactivated(WorldId worldId, Set<ChunkCoordinate> removed);
+    }
 
     /**
      * ChunkAliveService instances per world.
@@ -31,6 +40,21 @@ public class MultiWorldChunkService {
     private final Map<String, ChunkTTLTracker> ttlTrackers = new ConcurrentHashMap<>();
 
     /**
+     * Registered world-scoped chunk change listeners.
+     */
+    private final List<WorldChunkChangeListener> worldChunkChangeListeners = new CopyOnWriteArrayList<>();
+
+    /**
+     * Register a world chunk change listener.
+     */
+    public void addWorldChunkChangeListener(WorldChunkChangeListener listener) {
+        if (listener != null) {
+            worldChunkChangeListeners.add(listener);
+            log.debug("Added WorldChunkChangeListener, total: {}", worldChunkChangeListeners.size());
+        }
+    }
+
+    /**
      * Get or create ChunkAliveService for a world.
      *
      * @param worldId World ID
@@ -39,7 +63,31 @@ public class MultiWorldChunkService {
     public ChunkAliveService getChunkAliveService(WorldId worldId) {
         return chunkAliveServices.computeIfAbsent(worldId.getId(), wid -> {
             log.info("Creating ChunkAliveService for world: {}", wid);
-            return new ChunkAliveService();
+            ChunkAliveService service = new ChunkAliveService();
+            service.addDeltaListener(new ChunkAliveService.ChunkChangeListener() {
+                @Override
+                public void onChunksAdded(Set<ChunkCoordinate> added) {
+                    for (WorldChunkChangeListener l : worldChunkChangeListeners) {
+                        try {
+                            l.onChunksActivated(worldId, added);
+                        } catch (Exception e) {
+                            log.error("Error notifying WorldChunkChangeListener (activated) for world {}", worldId, e);
+                        }
+                    }
+                }
+
+                @Override
+                public void onChunksRemoved(Set<ChunkCoordinate> removed) {
+                    for (WorldChunkChangeListener l : worldChunkChangeListeners) {
+                        try {
+                            l.onChunksDeactivated(worldId, removed);
+                        } catch (Exception e) {
+                            log.error("Error notifying WorldChunkChangeListener (deactivated) for world {}", worldId, e);
+                        }
+                    }
+                }
+            });
+            return service;
         });
     }
 
@@ -134,8 +182,8 @@ public class MultiWorldChunkService {
      * @param worldId World ID
      */
     public void removeWorld(WorldId worldId) {
-        ChunkAliveService removed = chunkAliveServices.remove(worldId);
-        ttlTrackers.remove(worldId);
+        ChunkAliveService removed = chunkAliveServices.remove(worldId.getId());
+        ttlTrackers.remove(worldId.getId());
 
         if (removed != null) {
             log.info("Removed chunk tracking for world: {}", worldId);
