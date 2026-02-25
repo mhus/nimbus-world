@@ -167,7 +167,7 @@
       "levelMode": "ADJUST_MEAN",
       "meanLevelOffset": 1,
       "widthBlocks": 1,
-      "roadType": "path"
+      "roadType": "trail"
     },
     {
       "featureType": "town",

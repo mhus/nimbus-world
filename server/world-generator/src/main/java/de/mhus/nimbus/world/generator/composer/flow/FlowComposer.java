@@ -1133,7 +1133,7 @@ public class FlowComposer {
 
         // Type-specific attributes
         if (flow instanceof Road road) {
-            builder.type(road.getRoadType());
+            builder.type(road.getRoadType() != null ? road.getRoadType().getValue() : null);
             builder.level(fromLevel != null ? fromLevel : road.getLevel()); // Deprecated field for backward compatibility
         } else if (flow instanceof River river) {
             builder.depth(river.getDepth());
@@ -1263,7 +1263,10 @@ public class FlowComposer {
             convertedGrids++;
 
             // Build groupId once per flow (all segments of the same flow share the same groupId)
-            String roadGroupId = buildGroupId("road", flow.getName(), flow.getFeatureId());
+            // Prefix is the roadType (street/trail) instead of generic "road"
+            String roadPrefix = (flow instanceof Road road && road.getRoadType() != null)
+                ? road.getRoadType().getValue() : "road";
+            String roadGroupId = buildGroupId(roadPrefix, flow.getName(), flow.getFeatureId());
 
             // Convert each FlowSegment to RoadConfigPart
             for (FlowSegment segment : flowRoadSegments) {

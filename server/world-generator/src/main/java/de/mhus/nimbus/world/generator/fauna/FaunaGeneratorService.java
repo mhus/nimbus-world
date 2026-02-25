@@ -4,6 +4,7 @@ import de.mhus.nimbus.generated.types.Entity;
 import de.mhus.nimbus.generated.types.Vector2Int;
 import de.mhus.nimbus.generated.types.Vector3;
 import de.mhus.nimbus.shared.types.WorldId;
+import de.mhus.nimbus.world.generator.modelbuilder.ConditionEvaluator;
 import de.mhus.nimbus.world.shared.layer.LayerChunkData;
 import de.mhus.nimbus.world.shared.layer.WLayer;
 import de.mhus.nimbus.world.shared.layer.WLayerService;
@@ -18,6 +19,7 @@ import de.mhus.nimbus.world.shared.world.WWorldService;
 import de.mhus.nimbus.world.shared.layer.LayerBlock;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.logging.log4j.util.Strings;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -75,6 +77,9 @@ public class FaunaGeneratorService {
             return 0;
         }
 
+        // Extract hex grid context parameters (g_* -> builder, gf_* -> fauna, density etc.)
+        Map<String, String> hexContext = extractHexContext(params);
+
         WorldId wid = WorldId.of(worldId).orElseThrow();
         WorldId regionWorldId = wid.toRegionCollection();
 
@@ -128,6 +133,13 @@ public class FaunaGeneratorService {
         List<WEntity> allEntities = new ArrayList<>();
 
         for (FaunaAnimalDefinition animal : faunaDef.getAnimals()) {
+            if (Strings.isNotBlank(animal.getWhen())) {
+                Map<String, Object> conditionVars = buildFaunaConditionContext(
+                        hexQ, hexR, seaLevel, landPositions.size(),
+                        waterPositions.size(), seaPositions.size(), random, hexContext);
+                if (!ConditionEvaluator.evaluate(animal.getWhen(), conditionVars)) continue;
+            }
+
             int totalAmount = randomRange(random, animal.getAmountMin(), animal.getAmountMax());
             int groupCount = randomRange(random, animal.getGroupsMin(), animal.getGroupsMax());
 
@@ -231,6 +243,42 @@ public class FaunaGeneratorService {
             log.info("Deleted {} fauna entities in hex grid {}", deleted, hexGrid.getPosition());
         }
         return deleted;
+    }
+
+    private Map<String, Object> buildFaunaConditionContext(
+            int hexQ, int hexR, Integer seaLevel,
+            int landCount, int waterCount, int seaCount,
+            Random random, Map<String, String> hexContext) {
+        Map<String, Object> vars = new HashMap<>();
+        vars.putAll(hexContext);
+        vars.put("hexQ", hexQ);
+        vars.put("hexR", hexR);
+        if (seaLevel != null) vars.put("seaLevel", seaLevel);
+        vars.put("landCount", landCount);
+        vars.put("waterCount", waterCount);
+        vars.put("seaCount", seaCount);
+        vars.put("random", random.nextDouble());
+        return vars;
+    }
+
+    /**
+     * Extract hex grid parameters as context map.
+     * Strips known prefixes: g_ and gf_ (e.g. g_builder -> builder, gf_fauna -> fauna).
+     */
+    private static Map<String, String> extractHexContext(Map<String, String> params) {
+        Map<String, String> context = new HashMap<>();
+        if (params == null) return context;
+        for (var entry : params.entrySet()) {
+            String key = entry.getKey();
+            String value = entry.getValue();
+            if (value == null) continue;
+            if (key.startsWith("g_")) {
+                context.put(key.substring(2), value);
+            } else if (key.startsWith("gf_")) {
+                context.put(key.substring(3), value);
+            }
+        }
+        return context;
     }
 
     private FaunaTypeDefinition loadFaunaTypeDefinition(String regionWorldId, String faunaType) {

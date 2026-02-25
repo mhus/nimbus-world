@@ -515,7 +515,7 @@
       "levelMode": "ADJUST_MEAN",
       "meanLevelOffset": 1,
       "widthBlocks": 3,
-      "roadType": "highway",
+      "roadType": "street",
       "parameters": {
       }
     },
@@ -558,7 +558,7 @@
       "levelMode": "ADJUST_MEAN",
       "meanLevelOffset": 1,
       "widthBlocks": 3,
-      "roadType": "highway",
+      "roadType": "street",
       "parameters": {
       }
     },
@@ -572,7 +572,7 @@
       "levelMode": "ADJUST_MEAN",
       "meanLevelOffset": 1,
       "widthBlocks": 1,
-      "roadType": "path",
+      "roadType": "trail",
       "parameters": {
       }
     },
@@ -600,7 +600,7 @@
       "levelMode": "ADJUST_MEAN",
       "meanLevelOffset": 1,
       "widthBlocks": 1,
-      "roadType": "path",
+      "roadType": "trail",
       "parameters": {
       }
     }

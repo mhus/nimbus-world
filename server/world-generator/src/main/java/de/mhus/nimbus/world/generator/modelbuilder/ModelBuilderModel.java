@@ -77,6 +77,8 @@ public class ModelBuilderModel {
         private String definition;
         /** Optional parameter overrides (merged on top of definition defaults) */
         private Map<String, Object> parameters;
+        /** SpEL condition expression - step is skipped when this evaluates to false */
+        private String when;
     }
 
     /**

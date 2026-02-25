@@ -9,6 +9,7 @@ import de.mhus.nimbus.world.shared.world.WAnythingService;
 import de.mhus.nimbus.world.shared.world.WWorld;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.logging.log4j.util.Strings;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -175,6 +176,25 @@ public class ModelBuilderService {
 
             // Resolve the step: merge parameters and substitute $N
             ResolvedStep resolvedStep = resolveStep(step, definition, parameterMap);
+
+            // Evaluate when-condition if present
+            if (Strings.isNotBlank(step.getWhen())) {
+                Map<String, Object> stepVars = new HashMap<>(resolvedStep.getParameters());
+                if (parameterMap != null) {
+                    for (var entry : parameterMap.entrySet()) {
+                        stepVars.putIfAbsent(entry.getKey(), entry.getValue());
+                    }
+                }
+                stepVars.put("x", context.getPosition().getX());
+                stepVars.put("y", context.getPosition().getY());
+                stepVars.put("z", context.getPosition().getZ());
+                stepVars.put("level", context.getPosition().getY() - context.getStartY());
+                stepVars.put("random", context.getRandom().nextDouble());
+                if (!ConditionEvaluator.evaluate(step.getWhen(), stepVars)) {
+                    log.debug("Skipping step '{}': condition '{}' not met", step.getStep(), step.getWhen());
+                    continue;
+                }
+            }
 
             // Find the builder
             ModelPartBuilder builder = partBuilderMap.get(resolvedStep.getType());

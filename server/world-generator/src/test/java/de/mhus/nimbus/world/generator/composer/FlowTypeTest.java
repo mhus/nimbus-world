@@ -4,6 +4,7 @@ import de.mhus.nimbus.world.generator.composer.flow.Flow;
 import de.mhus.nimbus.world.generator.composer.flow.FlowType;
 import de.mhus.nimbus.world.generator.composer.flow.River;
 import de.mhus.nimbus.world.generator.composer.flow.Road;
+import de.mhus.nimbus.world.generator.composer.flow.RoadType;
 import de.mhus.nimbus.world.generator.composer.flow.Wall;
 import org.junit.jupiter.api.Test;
 
@@ -24,7 +25,7 @@ class FlowTypeTest {
 
         Road road = (Road) flow;
         assertEquals(95, road.getLevel());
-        assertEquals("cobblestone", road.getRoadType());
+        assertEquals(RoadType.TRAIL, road.getRoadType());
         assertEquals(4, road.getEffectiveWidthBlocks());
     }
 
@@ -62,7 +63,7 @@ class FlowTypeTest {
 
         assertNotNull(defaults);
         assertEquals("95", defaults.get("default_level"));
-        assertEquals("cobblestone", defaults.get("default_roadType"));
+        assertEquals("trail", defaults.get("default_roadType"));
         assertEquals("4", defaults.get("default_width"));
     }
 
@@ -112,7 +113,7 @@ class FlowTypeTest {
         assertEquals(80, road.getLevel());
 
         // But null values should get defaults
-        assertEquals("cobblestone", road.getRoadType());
+        assertEquals(RoadType.TRAIL, road.getRoadType());
     }
 
     @Test
@@ -133,7 +134,7 @@ class FlowTypeTest {
 
         // After apply defaults
         assertEquals(95, road.getLevel());
-        assertEquals("cobblestone", road.getRoadType());
+        assertEquals(RoadType.TRAIL, road.getRoadType());
         assertEquals(4, road.getWidthBlocks());
     }
 
@@ -191,7 +192,7 @@ class FlowTypeTest {
         assertEquals("biome1", road.getStartPointId());
         assertEquals("biome2", road.getEndPointId());
         assertEquals(95, road.getLevel());
-        assertEquals("cobblestone", road.getRoadType());
+        assertEquals(RoadType.TRAIL, road.getRoadType());
     }
 
     @Test

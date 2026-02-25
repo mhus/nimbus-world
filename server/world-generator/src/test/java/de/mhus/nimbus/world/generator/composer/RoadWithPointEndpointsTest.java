@@ -18,6 +18,7 @@ import de.mhus.nimbus.world.generator.composer.biome.PlainsBiome;
 import de.mhus.nimbus.world.generator.composer.point.PointComposer;
 import de.mhus.nimbus.world.generator.composer.point.PositionPoint;
 import de.mhus.nimbus.world.generator.composer.flow.Road;
+import de.mhus.nimbus.world.generator.composer.flow.RoadType;
 import de.mhus.nimbus.world.generator.composer.point.SnapConfig;
 import de.mhus.nimbus.world.generator.composer.point.SnapMode;
 import de.mhus.nimbus.world.shared.world.WWorld;
@@ -179,7 +180,7 @@ public class RoadWithPointEndpointsTest {
 
         // Road connecting both cities
         Road road = Road.builder()
-            .roadType("street")
+            .roadType(RoadType.STREET)
             .level(100)
             .build();
         road.setName("road-between-cities");

@@ -602,7 +602,7 @@
         "ithilien"
       ],
       "endPointId": "morannon",
-      "roadType": "paved",
+      "roadType": "street",
       "level": 95,
       "widthBlocks": 6,
       "width": "MEDIUM",

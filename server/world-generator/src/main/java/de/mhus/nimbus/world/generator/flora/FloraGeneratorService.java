@@ -3,6 +3,7 @@ package de.mhus.nimbus.world.generator.flora;
 import de.mhus.nimbus.generated.types.Vector2Int;
 import de.mhus.nimbus.generated.types.Vector3Int;
 import de.mhus.nimbus.shared.types.WorldId;
+import de.mhus.nimbus.world.generator.modelbuilder.ConditionEvaluator;
 import de.mhus.nimbus.world.generator.modelbuilder.FloraConstraints;
 import de.mhus.nimbus.world.generator.modelbuilder.ModelBuilderContext;
 import de.mhus.nimbus.world.generator.modelbuilder.ModelBuilderException;
@@ -85,6 +86,9 @@ public class FloraGeneratorService {
             return 0;
         }
 
+        // Extract hex grid context parameters (g_* without prefix) for conditions and model building
+        Map<String, String> hexContext = extractHexContext(params);
+
         WorldId regionWorldId = WorldId.of(worldId).orElseThrow()
                 .toRegionCollection();
 
@@ -126,8 +130,19 @@ public class FloraGeneratorService {
 
             int waterDepth = heightInfo.waterLevel() - heightInfo.groundLevel();
 
-            FloraPlantDefinition plant = selectPlant(floraDef, waterDepth, category, random);
+            Map<String, Object> conditionVars = buildFloraConditionContext(
+                    heightInfo, category, waterDepth,
+                    flatPos.getX(), flatPos.getZ(), seaLevel, random, hexContext);
+
+            FloraPlantDefinition plant = selectPlant(floraDef, waterDepth, category, random, conditionVars);
             if (plant == null) continue;
+
+            // Enrich plant parameters with hex grid context for model building
+            if (!hexContext.isEmpty()) {
+                Map<String, String> mergedParams = new HashMap<>(hexContext);
+                if (plant.getParameters() != null) mergedParams.putAll(plant.getParameters());
+                plant = plant.toBuilder().parameters(mergedParams).build();
+            }
 
             // Ground block check
             LayerBlock groundBlock = findGroundBlock(worldId, groundLayer,
@@ -175,17 +190,22 @@ public class FloraGeneratorService {
     }
 
     /**
-     * Select a plant from the flora type definition that fits the position constraints.
+     * Select a plant from the flora type definition that fits the position constraints
+     * and whose optional when-condition evaluates to true.
      * Uses weight-based random selection among all fitting candidates.
      */
     private FloraPlantDefinition selectPlant(FloraTypeDefinition floraDef, int waterDepth,
-                                              FloraCategory category, Random random) {
+                                              FloraCategory category, Random random,
+                                              Map<String, Object> conditionVars) {
         List<FloraPlantDefinition> candidates = new ArrayList<>();
         double totalWeight = 0;
 
         for (FloraPlantDefinition plant : floraDef.getPlants()) {
             FloraConstraints constraints = plant.toConstraints();
             if (!constraints.fitsPosition(waterDepth, category)) continue;
+            if (Strings.isNotBlank(plant.getWhen())) {
+                if (!ConditionEvaluator.evaluate(plant.getWhen(), conditionVars)) continue;
+            }
             candidates.add(plant);
             totalWeight += plant.getWeight();
         }
@@ -199,6 +219,44 @@ public class FloraGeneratorService {
             if (roll < cumulative) return candidate;
         }
         return candidates.getLast();
+    }
+
+    private Map<String, Object> buildFloraConditionContext(
+            HeightInfo heightInfo, FloraCategory category,
+            int waterDepth, int worldX, int worldZ,
+            Integer seaLevel, Random random, Map<String, String> hexContext) {
+        Map<String, Object> vars = new HashMap<>();
+        // Hex grid context parameters (e.g. builder, flora, density)
+        vars.putAll(hexContext);
+        vars.put("groundLevel", heightInfo.groundLevel());
+        vars.put("waterLevel", heightInfo.waterLevel());
+        vars.put("waterDepth", waterDepth);
+        vars.put("category", category.name());
+        vars.put("worldX", worldX);
+        vars.put("worldZ", worldZ);
+        if (seaLevel != null) vars.put("seaLevel", seaLevel);
+        vars.put("random", random.nextDouble());
+        return vars;
+    }
+
+    /**
+     * Extract hex grid parameters as context map.
+     * Strips known prefixes: g_ and gf_ (e.g. g_builder -> builder, gf_density -> density).
+     */
+    private static Map<String, String> extractHexContext(Map<String, String> params) {
+        Map<String, String> context = new HashMap<>();
+        if (params == null) return context;
+        for (var entry : params.entrySet()) {
+            String key = entry.getKey();
+            String value = entry.getValue();
+            if (value == null) continue;
+            if (key.startsWith("g_")) {
+                context.put(key.substring(2), value);
+            } else if (key.startsWith("gf_")) {
+                context.put(key.substring(3), value);
+            }
+        }
+        return context;
     }
 
     /**

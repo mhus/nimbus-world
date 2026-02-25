@@ -14,6 +14,7 @@ import de.mhus.nimbus.world.generator.composer.build.HexComposition;
 import de.mhus.nimbus.world.generator.composer.area.RelativePosition;
 import de.mhus.nimbus.world.generator.composer.flow.River;
 import de.mhus.nimbus.world.generator.composer.flow.Road;
+import de.mhus.nimbus.world.generator.composer.flow.RoadType;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
 import de.mhus.nimbus.world.shared.world.WHexGridRepository;
 import lombok.extern.slf4j.Slf4j;
@@ -212,7 +213,7 @@ public class FlowComposerTest {
         // Road connecting forest to mountains
         Road road = Road.builder()
             .waypointIds(new ArrayList<>())
-            .roadType("cobblestone")
+            .roadType(RoadType.STREET)
             .level(95)
             .build();
         road.setName("main-road");

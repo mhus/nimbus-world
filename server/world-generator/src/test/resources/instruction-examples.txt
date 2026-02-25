@@ -46,7 +46,7 @@ Create a small fantasy world called "Mistfall Reach" with the following spatial 
     - meanLevelOffset: 1
   7. A trail called "Greywillow Trail"
     - featureType: road
-    - roadType: path
+    - roadType: trail
     - starts at point "Fenwatch Crossroads" (same as Mountain Road start)
     - ends at point "Greywillow Path End" on the E side of "Greywillow Grove"
     - widthBlocks: 1

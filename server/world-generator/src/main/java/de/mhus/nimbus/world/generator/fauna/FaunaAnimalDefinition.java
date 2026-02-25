@@ -65,6 +65,9 @@ public class FaunaAnimalDefinition {
     /** Optional behavior-specific configuration */
     private Map<String, Object> behaviorConfig;
 
+    /** SpEL condition expression evaluated against generation context (e.g. "random > 0.5") */
+    private String when;
+
     /**
      * Check if this animal can spawn at the given category.
      */

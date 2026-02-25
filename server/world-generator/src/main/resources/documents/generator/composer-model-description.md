@@ -629,7 +629,7 @@ private Map<String, String> parameters; // Custom parameters
 
 **Additional Properties**:
 ```java
-private String roadType;                // "street", "highway", "trail"
+private RoadType roadType;              // STREET, TRAIL
 ```
 
 **Example JSON**:

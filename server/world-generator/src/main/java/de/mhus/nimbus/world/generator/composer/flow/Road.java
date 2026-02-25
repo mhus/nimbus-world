@@ -22,7 +22,7 @@ import java.util.function.ToIntFunction;
 public class Road extends Flow {
     // Note: waypointIds, startPointId, and endPointId are inherited from Flow
 
-    private String roadType;
+    private RoadType roadType;
     private Integer level;
 
     // Note: Road uses Flow.Composed (no Road-specific calculated fields yet)
@@ -36,7 +36,7 @@ public class Road extends Flow {
             level = Integer.parseInt(defaults.get("default_level"));
         }
         if (roadType == null && defaults.containsKey("default_roadType")) {
-            roadType = defaults.get("default_roadType");
+            roadType = RoadType.fromString(defaults.get("default_roadType"));
         }
         if (getWidthBlocks() == null && defaults.containsKey("default_width")) {
             setWidthBlocks(Integer.parseInt(defaults.get("default_width")));

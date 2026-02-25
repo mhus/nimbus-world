@@ -17,7 +17,7 @@ import java.util.OptionalInt;
  * and optional clustering parameters.
  */
 @Data
-@Builder
+@Builder(toBuilder = true)
 @NoArgsConstructor
 @AllArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -50,6 +50,9 @@ public class FloraPlantDefinition {
     private Integer clusterCount;
     @Builder.Default
     private int clusterSpread = 2;
+
+    /** SpEL condition expression evaluated against placement context (e.g. "groundLevel > 50") */
+    private String when;
 
     /**
      * Convert the inline constraint fields to a {@link FloraConstraints} record.
