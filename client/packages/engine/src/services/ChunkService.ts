@@ -86,8 +86,8 @@ export class ChunkService {
   private chunks = new Map<string, ClientChunk>();
   private eventListeners: Map<string, EventListener[]> = new Map();
 
-  private renderDistance: number;
-  private unloadDistance: number;
+  private highDensityDistance: number;
+  private lowDensityDistance: number;
 
   // Track if initial chunks are loaded (to enable physics)
   private initialChunksLoaded: boolean = false;
@@ -97,12 +97,12 @@ export class ChunkService {
     private appContext: AppContext
   ) {
     // Load render and unload distance from config (from URL query parameters)
-    this.renderDistance = appContext.config?.renderDistance ?? 1;
-    this.unloadDistance = appContext.config?.unloadDistance ?? 2;
+    this.highDensityDistance = appContext.config?.renderDistance ?? 1;
+    this.lowDensityDistance = appContext.config?.unloadDistance ?? 2;
 
     logger.info('ChunkService initialized', {
-      renderDistance: this.renderDistance,
-      unloadDistance: this.unloadDistance,
+      highDensityDistance: this.highDensityDistance,
+      lowDensityDistance: this.lowDensityDistance,
     });
 
   }
@@ -119,8 +119,8 @@ export class ChunkService {
       const d = {
           cx: cx,
           cz: cz,
-          hr: this.renderDistance,
-          lr: this.unloadDistance
+          hr: this.highDensityDistance,
+          lr: this.lowDensityDistance
       }
     try {
       // Send registration message (send all coords, not just new ones)
@@ -180,7 +180,7 @@ export class ChunkService {
           Math.abs(chunk.data.transfer.cz - playerCz)
         );
 
-        if (distance > this.unloadDistance) {
+        if (distance > this.lowDensityDistance) {
           chunksToUnload.push({ key, chunk, distance });
         }
       }
@@ -1153,17 +1153,17 @@ export class ChunkService {
   }
 
   /**
-   * Get current render distance
+   * Get high density distance (render distance in chunks)
    */
-  getRenderDistance(): number {
-    return this.renderDistance;
+  getHighDensityDistance(): number {
+    return this.highDensityDistance;
   }
 
   /**
-   * Get current unload distance
+   * Get low density distance (unload distance in chunks)
    */
-  getUnloadDistance(): number {
-    return this.unloadDistance;
+  getLowDensityDistance(): number {
+    return this.lowDensityDistance;
   }
 
   /**

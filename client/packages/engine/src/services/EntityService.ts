@@ -73,7 +73,7 @@ export interface EntityServiceConfig {
   /** Visibility radius in blocks (entities beyond this distance from player are hidden) */
   visibilityRadius?: number;
 
-  /** Factor applied to ChunkService.unloadDistance * chunkSize to determine entity unload radius */
+  /** Factor applied to ChunkService.highDensityDistance * chunkSize to determine entity unload radius */
   entityUnloadDistanceFactor?: number;
 }
 
@@ -107,7 +107,7 @@ export class EntityService {
   // Cache cleanup
   private cleanupInterval?: NodeJS.Timeout;
 
-  // Visibility radius (renderDistance * chunkSize)
+  // Visibility radius (highDensityDistance * chunkSize)
   private _visibilityRadius: number;
 
   // Unload radius - entities beyond this distance are completely removed from cache
@@ -145,8 +145,8 @@ export class EntityService {
     const chunkService = appContext.services.chunk;
     if (chunkService) {
       const chunkSize = appContext.worldInfo?.chunkSize || 16;
-      this._visibilityRadius = chunkService.getRenderDistance() * chunkSize;
-      this._entityUnloadRadius = chunkService.getRenderDistance() * this.config.entityUnloadDistanceFactor * chunkSize;
+      this._visibilityRadius = chunkService.getHighDensityDistance() * chunkSize;
+      this._entityUnloadRadius = chunkService.getHighDensityDistance() * this.config.entityUnloadDistanceFactor * chunkSize;
     } else {
       this._visibilityRadius = this.config.visibilityRadius;
       this._entityUnloadRadius = this._visibilityRadius * this.config.entityUnloadDistanceFactor;

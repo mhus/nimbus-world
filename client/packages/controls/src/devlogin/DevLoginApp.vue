@@ -830,10 +830,10 @@ const handleLogin = async () => {
     // Append view distance parameters to jumpUrl (for session login only)
     let jumpUrl = response.jumpUrl;
     if (loginType.value === 'session') {
-      const renderDistance = viewDistance.value - 1;
-      const unloadDistance = viewDistance.value;
+      const highDensityDistance = viewDistance.value - 1;
+      const lowDensityDistance = viewDistance.value;
       const separator = jumpUrl.includes('?') ? '&' : '?';
-      jumpUrl = `${jumpUrl}${separator}renderDistance=${renderDistance}&unloadDistance=${unloadDistance}`;
+      jumpUrl = `${jumpUrl}${separator}renderDistance=${highDensityDistance}&unloadDistance=${lowDensityDistance}`;
     }
 
     // Redirect to jump URL
