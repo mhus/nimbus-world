@@ -123,6 +123,19 @@
               />
             </div>
 
+            <!-- Gender -->
+            <div class="form-control">
+              <label class="label">
+                <span class="label-text font-medium">Gender</span>
+              </label>
+              <select v-model="entityData.gender" class="select select-bordered select-sm">
+                <option value="">None</option>
+                <option value="M">M (Male)</option>
+                <option value="W">W (Female)</option>
+                <option value="D">D (Diverse)</option>
+              </select>
+            </div>
+
             <!-- Movement Type -->
             <div class="form-control">
               <label class="label">
