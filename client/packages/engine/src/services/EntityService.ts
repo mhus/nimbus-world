@@ -72,6 +72,9 @@ export interface EntityServiceConfig {
 
   /** Visibility radius in blocks (entities beyond this distance from player are hidden) */
   visibilityRadius?: number;
+
+  /** Factor applied to ChunkService.unloadDistance * chunkSize to determine entity unload radius */
+  entityUnloadDistanceFactor?: number;
 }
 
 /**
@@ -104,8 +107,11 @@ export class EntityService {
   // Cache cleanup
   private cleanupInterval?: NodeJS.Timeout;
 
-  // Visibility radius
+  // Visibility radius (renderDistance * chunkSize)
   private _visibilityRadius: number;
+
+  // Unload radius - entities beyond this distance are completely removed from cache
+  private _entityUnloadRadius: number;
 
   // Collision check radius
   private _collisionCheckRadius: number = 10; // blocks
@@ -132,14 +138,28 @@ export class EntityService {
       cacheCleanupInterval: config?.cacheCleanupInterval ?? 60000, // 1 minute
       updateInterval: config?.updateInterval ?? 100, // 100ms update loop
       visibilityRadius: config?.visibilityRadius ?? 50, // 50 blocks
+      entityUnloadDistanceFactor: config?.entityUnloadDistanceFactor ?? 10,
     };
 
-    this._visibilityRadius = this.config.visibilityRadius;
+    // Derive visibility and unload radius from ChunkService distances * chunkSize
+    const chunkService = appContext.services.chunk;
+    if (chunkService) {
+      const chunkSize = appContext.worldInfo?.chunkSize || 16;
+      this._visibilityRadius = chunkService.getRenderDistance() * chunkSize;
+      this._entityUnloadRadius = chunkService.getRenderDistance() * this.config.entityUnloadDistanceFactor * chunkSize;
+    } else {
+      this._visibilityRadius = this.config.visibilityRadius;
+      this._entityUnloadRadius = this._visibilityRadius * this.config.entityUnloadDistanceFactor;
+    }
 
     // Initialize physics controller
     this.physicsController = new EntityPhysicsController();
 
-    logger.debug('EntityService initialized', { config: this.config });
+    logger.debug('EntityService initialized', {
+      config: this.config,
+      visibilityRadius: this._visibilityRadius,
+      entityUnloadRadius: this._entityUnloadRadius,
+    });
 
     // Start cache cleanup
     this.startCacheCleanup();
@@ -163,10 +183,17 @@ export class EntityService {
 
     // Listen for chunk unload events
     chunkService.on('chunk:unloaded', (data: { cx: number; cz: number }) => {
-      // Get chunk size from world info
       const worldInfo = this.appContext.worldInfo;
       if (worldInfo && worldInfo.chunkSize) {
         this.onChunkUnloaded(data.cx, data.cz, worldInfo.chunkSize);
+      }
+    });
+
+    // Listen for chunk loaded events - restore visibility for entities in loaded chunks
+    chunkService.on('chunk:loaded', (chunk: any) => {
+      const worldInfo = this.appContext.worldInfo;
+      if (worldInfo && worldInfo.chunkSize) {
+        this.onChunkLoaded(chunk.data.transfer.cx, chunk.data.transfer.cz, worldInfo.chunkSize);
       }
     });
 
@@ -295,6 +322,16 @@ export class EntityService {
     if (playerId && pathway.entityId === playerId) {
       logger.debug('Skipping own player pathway from server', { entityId: pathway.entityId });
       return;
+    }
+
+    // Check if pathway is within unload radius - skip loading if completely out of scope
+    const playerService = this.appContext.services.player;
+    if (playerService) {
+      const playerPos = playerService.getPosition();
+      if (!this.hasWaypointInRange(pathway, playerPos, this._entityUnloadRadius)) {
+        logger.info('Pathway out of scope, skipping', { entityId: pathway.entityId });
+        return;
+      }
     }
 
     this.entityPathwayCache.set(pathway.entityId, pathway);
@@ -675,9 +712,20 @@ export class EntityService {
       // Update physics controller with player position
       this.physicsController.setPlayerPosition(playerPos);
 
-      // Update all entities
+      // Update all entities, collect entities to unload
+      const entitiesToUnload: string[] = [];
+
       for (const clientEntity of this.entityCache.values()) {
-        this.updateEntity_internal(clientEntity, currentTime, deltaTime, playerPos);
+        const shouldUnload = this.updateEntity_internal(clientEntity, currentTime, deltaTime, playerPos);
+        if (shouldUnload) {
+          entitiesToUnload.push(clientEntity.id);
+        }
+      }
+
+      // Unload entities that are beyond unload radius
+      for (const entityId of entitiesToUnload) {
+        this.removeEntity(entityId);
+        logger.debug('Entity unloaded (beyond unload radius)', { entityId });
       }
     } catch (error) {
       ExceptionHandler.handle(error, 'EntityService.update');
@@ -686,20 +734,21 @@ export class EntityService {
 
   /**
    * Update single entity (position interpolation and visibility)
+   * @returns true if the entity should be completely unloaded from cache
    */
   private updateEntity_internal(
     clientEntity: ClientEntity,
     currentTime: number,
     deltaTime: number,
     playerPos: { x: number; y: number; z: number }
-  ): void {
+  ): boolean {
     // Update lastAccess
     clientEntity.lastAccess = currentTime;
 
     // Get pathway
     const pathway = this.entityPathwayCache.get(clientEntity.id);
     if (!pathway || pathway.waypoints.length === 0) {
-      return;
+      return false;
     }
 
     // Check if entity has physics enabled
@@ -715,14 +764,24 @@ export class EntityService {
       this.updateEntityWaypoint(clientEntity, pathway, currentTime);
     }
 
-    // Check visibility based on distance to player
+    // Check distance to player
     const distance = Math.sqrt(
       Math.pow(clientEntity.currentPosition.x - playerPos.x, 2) +
       Math.pow(clientEntity.currentPosition.y - playerPos.y, 2) +
       Math.pow(clientEntity.currentPosition.z - playerPos.z, 2)
     );
 
-    const shouldBeVisible = distance <= this._visibilityRadius;
+    // Check if entity should be completely unloaded:
+    // Current position beyond unload radius AND no pathway waypoint within range
+    if (distance > this._entityUnloadRadius) {
+      if (!this.hasWaypointInRange(pathway, playerPos, this._entityUnloadRadius)) {
+        return true;
+      }
+    }
+
+    // Check visibility based on distance to player AND chunk existence
+    const chunkLoaded = this.isChunkLoadedAtPosition(clientEntity.currentPosition);
+    const shouldBeVisible = distance <= this._visibilityRadius && chunkLoaded;
 
     // Update visibility if changed
     if (clientEntity.visible !== shouldBeVisible) {
@@ -734,6 +793,8 @@ export class EntityService {
     if (shouldBeVisible) {
       this.checkProximityNotification(clientEntity, distance);
     }
+
+    return false;
   }
 
   /**
@@ -982,6 +1043,87 @@ export class EntityService {
     } catch (error) {
       ExceptionHandler.handle(error, 'EntityService.onChunkUnloaded', { chunkX, chunkZ });
     }
+  }
+
+  /**
+   * Handle chunk load - restore visibility for entities in this chunk
+   * Makes entities visible again when their chunk is loaded
+   */
+  private onChunkLoaded(chunkX: number, chunkZ: number, chunkSize: number): void {
+    try {
+      const playerService = this.appContext.services.player;
+      if (!playerService) return;
+
+      const playerPos = playerService.getPosition();
+      let restoredCount = 0;
+
+      for (const clientEntity of this.entityCache.values()) {
+        const pos = clientEntity.currentPosition;
+
+        const entityChunkX = Math.floor(pos.x / chunkSize);
+        const entityChunkZ = Math.floor(pos.z / chunkSize);
+
+        if (entityChunkX === chunkX && entityChunkZ === chunkZ) {
+          if (!clientEntity.visible) {
+            // Check distance before making visible
+            const distance = Math.sqrt(
+              Math.pow(pos.x - playerPos.x, 2) +
+              Math.pow(pos.y - playerPos.y, 2) +
+              Math.pow(pos.z - playerPos.z, 2)
+            );
+
+            if (distance <= this._visibilityRadius) {
+              clientEntity.visible = true;
+              this.emit('visibility', { entityId: clientEntity.id, visible: true });
+              restoredCount++;
+            }
+          }
+        }
+      }
+
+      if (restoredCount > 0) {
+        logger.debug('Entities restored due to chunk load', {
+          chunkX,
+          chunkZ,
+          restoredCount,
+        });
+      }
+    } catch (error) {
+      ExceptionHandler.handle(error, 'EntityService.onChunkLoaded', { chunkX, chunkZ });
+    }
+  }
+
+  /**
+   * Check if the chunk at a world position is currently loaded
+   */
+  private isChunkLoadedAtPosition(position: { x: number; y: number; z: number }): boolean {
+    const chunkService = this.appContext.services.chunk;
+    if (!chunkService) return false;
+
+    const chunkSize = this.appContext.worldInfo?.chunkSize || 16;
+    const cx = Math.floor(position.x / chunkSize);
+    const cz = Math.floor(position.z / chunkSize);
+
+    return chunkService.getChunk(cx, cz) !== undefined;
+  }
+
+  /**
+   * Check if any waypoint in a pathway is within the given radius from a position
+   */
+  private hasWaypointInRange(
+    pathway: EntityPathway,
+    playerPos: { x: number; y: number; z: number },
+    radius: number
+  ): boolean {
+    const radiusSq = radius * radius;
+    for (const waypoint of pathway.waypoints) {
+      const dx = waypoint.target.x - playerPos.x;
+      const dz = waypoint.target.z - playerPos.z;
+      if (dx * dx + dz * dz <= radiusSq) {
+        return true;
+      }
+    }
+    return false;
   }
 
   /**

@@ -314,14 +314,15 @@ export function createEntity(
   controlledBy: string = 'server'
 ): Entity {
   return {
-    id,
+      id,
     name,
     model: modelId,
     modelModifier: {},
     movementType,
     controlledBy,
     solid: true,
-    interactive: false,
+    gender: "",
+    interactive: false
   };
 }
 

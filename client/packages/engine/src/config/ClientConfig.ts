@@ -52,7 +52,7 @@ export interface ClientConfig {
 
   /**
    * Unload distance for chunks (in chunks)
-   * Loaded from URL query parameter 'unloadDistance', defaults to 2
+   * Loaded from URL query parameter 'unloadDistance', defaults to 10
    */
   unloadDistance: number;
 }

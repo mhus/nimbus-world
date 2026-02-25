@@ -26,7 +26,7 @@ class WaterMaterialDisposable implements IDisposable {
   constructor(private material: WaterMaterial) {}
 
   dispose(): void {
-    this.material.dispose(true, true);
+    this.material.dispose(true);
   }
 }
 
