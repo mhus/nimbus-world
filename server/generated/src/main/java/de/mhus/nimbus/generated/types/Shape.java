@@ -22,7 +22,7 @@ public enum Shape implements de.mhus.nimbus.types.TsEnum {
     SPRITE(14),
     FLAME(15),
     OCEAN(16),
-    OCEAN_COAST(17),
+    CAMPFIRE(17),
     OCEAN_MAELSTROM(18),
     RIVER(19),
     RIVER_WATERFALL(20),

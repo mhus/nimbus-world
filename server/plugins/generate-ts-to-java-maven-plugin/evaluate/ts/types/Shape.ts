@@ -56,8 +56,8 @@ export enum Shape {
   /** Ocean water (flat) */
   OCEAN = 16,
 
-  /** Ocean coast variation */
-  OCEAN_COAST = 17,
+  /** Campfire smoke effect */
+  CAMPFIRE = 17,
 
   /** Ocean maelstrom variation */
   OCEAN_MAELSTROM = 18,
@@ -115,7 +115,7 @@ export const ShapeNames: Record<Shape, string> = {
   [Shape.FLAME]: 'flame',
   [Shape.FLIPBOX]: 'flipbox',
   [Shape.OCEAN]: 'ocean',
-  [Shape.OCEAN_COAST]: 'ocean_coast',
+  [Shape.CAMPFIRE]: 'campfire',
   [Shape.OCEAN_MAELSTROM]: 'ocean_maelstrom',
   [Shape.RIVER]: 'river',
   [Shape.RIVER_WATERFALL]: 'river_waterfall',
