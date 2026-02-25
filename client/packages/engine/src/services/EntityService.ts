@@ -388,7 +388,7 @@ export class EntityService {
           y: firstWaypoint.rotation.y,
           p: firstWaypoint.rotation.p ?? 0,
         };
-        clientEntity.currentPose = firstWaypoint.pose ?? 0;
+        clientEntity.currentPose = this.normalizePose(firstWaypoint.pose);
       }
 
       logger.debug('Entity waypoint pathway set', {
@@ -850,6 +850,23 @@ export class EntityService {
   }
 
   /**
+   * Normalize pose value from server to numeric ENTITY_POSES.
+   * Server may send: numeric (1), numeric string ("1"), or enum name ("WALK").
+   */
+  private normalizePose(pose: any): number {
+    if (typeof pose === 'number') return pose;
+    if (typeof pose === 'string') {
+      // Try numeric string first ("0", "1", ...)
+      const num = Number(pose);
+      if (!isNaN(num)) return num;
+      // Try enum name ("IDLE", "WALK", ...)
+      const enumValue = ENTITY_POSES[pose as keyof typeof ENTITY_POSES];
+      if (enumValue !== undefined) return enumValue;
+    }
+    return ENTITY_POSES.IDLE;
+  }
+
+  /**
    * Interpolate entity position from pathway waypoints
    */
   private interpolatePosition(
@@ -883,7 +900,7 @@ export class EntityService {
       return {
         position: { x: lastWaypoint.target.x, y: lastWaypoint.target.y, z: lastWaypoint.target.z },
         rotation: { y: lastWaypoint.rotation.y, p: lastWaypoint.rotation.p ?? 0 },
-        pose: lastWaypoint.pose ?? pathway.idlePose ?? 0,
+        pose: this.normalizePose(lastWaypoint.pose ?? pathway.idlePose ?? 0),
         waypointIndex: waypoints.length - 1,
         velocity: 0, // Not moving (past last waypoint)
       };
@@ -910,7 +927,7 @@ export class EntityService {
     };
 
     // Use target pose when close to target
-    const pose = clampedT > 0.5 ? (to.pose ?? pathway.idlePose ?? 0) : (from.pose ?? pathway.idlePose ?? 0);
+    const pose = this.normalizePose(clampedT > 0.5 ? (to.pose ?? pathway.idlePose ?? 0) : (from.pose ?? pathway.idlePose ?? 0));
 
     // Calculate velocity (distance between waypoints / time between waypoints)
     const dx = to.target.x - from.target.x;

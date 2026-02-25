@@ -1,7 +1,7 @@
 package de.mhus.nimbus.world.life.redis;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.generated.types.EntityPathway;
+import de.mhus.nimbus.shared.engine.EngineMapper;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.life.model.ChunkCoordinate;
 import de.mhus.nimbus.world.shared.redis.PathwayBroadcastMessage;
@@ -37,7 +37,7 @@ public class PathwayPublisher {
 
     private final WorldRedisMessagingService redisMessaging;
     private final WorldRedisService worldRedisService;
-    private final ObjectMapper objectMapper;
+    private final EngineMapper engineMapper;
 
     /**
      * Publish entity pathways to Redis for distribution to clients.
@@ -72,7 +72,7 @@ public class PathwayPublisher {
                     .build();
 
             // Serialize and publish via Pub/Sub (unchanged)
-            String json = objectMapper.writeValueAsString(message);
+            String json = engineMapper.writeValueAsString(message);
             redisMessaging.publish(worldId.getId(), "e.p", json);
 
             // Cache individual pathways and update chunk-entity index
@@ -124,7 +124,7 @@ public class PathwayPublisher {
 
     private void cacheIndividualPathway(WorldId worldId, EntityPathway pathway) {
         try {
-            String json = objectMapper.writeValueAsString(pathway);
+            String json = engineMapper.writeValueAsString(pathway);
             worldRedisService.putValue(worldId.getId(), NPC_PATHWAY_PREFIX + pathway.getEntityId(), json, NPC_PATHWAY_TTL);
         } catch (Exception e) {
             log.error("World {}: Failed to cache pathway for entity {}", worldId, pathway.getEntityId(), e);

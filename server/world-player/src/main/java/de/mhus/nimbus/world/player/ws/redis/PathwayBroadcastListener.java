@@ -1,8 +1,8 @@
 package de.mhus.nimbus.world.player.ws.redis;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.generated.types.EntityPathway;
+import de.mhus.nimbus.shared.engine.EngineMapper;
 import de.mhus.nimbus.world.player.ws.BroadcastService;
 import de.mhus.nimbus.world.player.ws.SessionManager;
 import de.mhus.nimbus.world.shared.redis.PathwayBroadcastMessage;
@@ -44,7 +44,7 @@ public class PathwayBroadcastListener {
     private final WorldRedisMessagingService redisMessaging;
     private final BroadcastService broadcastService;
     private final SessionManager sessionManager;
-    private final ObjectMapper objectMapper;
+    private final EngineMapper engineMapper;
 
     @PostConstruct
     public void subscribeToPathwayUpdates() {
@@ -68,7 +68,7 @@ public class PathwayBroadcastListener {
                 return;
             }
 
-            JsonNode data = objectMapper.readTree(message);
+            JsonNode data = engineMapper.readTree(message);
 
             JsonNode containersNode = data.get("containers");
             JsonNode affectedChunks = data.get("affectedChunks");
@@ -86,7 +86,7 @@ public class PathwayBroadcastListener {
             // Parse containers
             List<PathwayBroadcastMessage.PathwayContainer> containers = new ArrayList<>();
             for (JsonNode containerNode : containersNode) {
-                PathwayBroadcastMessage.PathwayContainer container = objectMapper.treeToValue(containerNode, PathwayBroadcastMessage.PathwayContainer.class);
+                PathwayBroadcastMessage.PathwayContainer container = engineMapper.treeToValue(containerNode, PathwayBroadcastMessage.PathwayContainer.class);
                 containers.add(container);
             }
 
@@ -108,7 +108,7 @@ public class PathwayBroadcastListener {
                     String originSessionId = entry.getKey().equals("none") ? null : entry.getKey();
                     List<EntityPathway> pathways = entry.getValue();
 
-                    JsonNode pathwaysArray = objectMapper.valueToTree(pathways);
+                    JsonNode pathwaysArray = engineMapper.valueToTree(pathways);
 
                     int sentCount = broadcastService.broadcastToWorld(
                             worldId,
