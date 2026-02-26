@@ -36,17 +36,12 @@ class CampfireDisposable implements IDisposable {
   ) {}
 
   dispose(): void {
-    // Remove render observer
     if (this.observer) {
       this.scene.onBeforeRenderObservable.remove(this.observer);
       this.observer = null;
     }
-
-    // Stop and dispose particle system
     this.particleSystem.stop();
     this.particleSystem.dispose();
-
-    // Dispose procedural texture (loaded textures belong to MaterialService cache)
     if (this.proceduralTexture) {
       this.proceduralTexture.dispose();
       this.proceduralTexture = null;
@@ -68,21 +63,11 @@ export class CampfireRenderer extends BlockRenderer {
     const modifier = clientBlock.currentModifier;
 
     if (!modifier || !modifier.visibility) {
-      logger.warn('CampfireRenderer: No visibility modifier', { block });
-      return;
-    }
-
-    const shape = modifier.visibility.shape ?? Shape.CUBE;
-    if (shape !== Shape.CAMPFIRE) {
-      logger.warn('CampfireRenderer: Not a CAMPFIRE shape', { shape, block });
       return;
     }
 
     const scene = renderContext.renderService.scene;
     const pos = block.position;
-
-    // Emitter position: block center, slightly above
-    const emitterPos = new Vector3(pos.x + 0.5, pos.y + 0.8, pos.z + 0.5);
 
     // Parse intensity from effectParameters (default 1.0, max 5.0)
     let intensity = 1.0;
@@ -116,7 +101,7 @@ export class CampfireRenderer extends BlockRenderer {
             textureLoaded = true;
           }
         } catch (error) {
-          logger.warn('CampfireRenderer: Failed to load texture, using procedural', { error });
+          logger.warn('Failed to load texture, using procedural', { error });
         }
       }
     }
@@ -126,8 +111,13 @@ export class CampfireRenderer extends BlockRenderer {
       ps.particleTexture = proceduralTexture;
     }
 
-    // Emitter
-    ps.emitter = emitterPos;
+    // Offset from block offsets (XYZ)
+    const offsetX = block.offsets?.[0] ?? 0;
+    const offsetY = block.offsets?.[1] ?? 0;
+    const offsetZ = block.offsets?.[2] ?? 0;
+
+    // Emitter: block center + offset
+    ps.emitter = new Vector3(pos.x + 0.5 + offsetX, pos.y + 0.3 + offsetY, pos.z + 0.5 + offsetZ);
     ps.minEmitBox = new Vector3(-0.15, 0, -0.15);
     ps.maxEmitBox = new Vector3(0.15, 0, 0.15);
 
@@ -142,21 +132,15 @@ export class CampfireRenderer extends BlockRenderer {
     ps.maxLifeTime = 3.5;
 
     // Size: grows over time (smoke expands)
-    ps.minSize = 0.4;
-    ps.maxSize = 1.0;
-    ps.addSizeGradient(0.0, 0.4);
-    ps.addSizeGradient(0.5, 1.0);
-    ps.addSizeGradient(1.0, 1.8);
+    ps.addSizeGradient(0.0, 0.3, 0.5);
+    ps.addSizeGradient(0.4, 0.8, 1.2);
+    ps.addSizeGradient(1.0, 1.5, 2.0);
 
-    // Color: gray smoke
-    ps.color1 = new Color4(0.4, 0.4, 0.4, 0.25);
-    ps.color2 = new Color4(0.5, 0.5, 0.5, 0.20);
-    ps.colorDead = new Color4(0.3, 0.3, 0.3, 0.0);
-
-    // Alpha gradient: fade in, sustain, fade out
-    ps.addColorGradient(0.0, new Color4(0.4, 0.4, 0.4, 0.0));
-    ps.addColorGradient(0.15, new Color4(0.4, 0.4, 0.4, 0.25));
-    ps.addColorGradient(0.6, new Color4(0.45, 0.45, 0.45, 0.15));
+    // Color gradient: gray smoke, fade in -> sustain -> fade out
+    ps.addColorGradient(0.0, new Color4(0.5, 0.5, 0.5, 0.0));
+    ps.addColorGradient(0.1, new Color4(0.45, 0.45, 0.45, 0.6));
+    ps.addColorGradient(0.4, new Color4(0.4, 0.4, 0.4, 0.4));
+    ps.addColorGradient(0.7, new Color4(0.35, 0.35, 0.35, 0.2));
     ps.addColorGradient(1.0, new Color4(0.3, 0.3, 0.3, 0.0));
 
     // Blend mode: standard (not additive like fire)
@@ -182,10 +166,8 @@ export class CampfireRenderer extends BlockRenderer {
     if (envService) {
       observer = scene.onBeforeRenderObservable.add(() => {
         const wind = envService.getWindParameters();
-        const gravityX = -wind.windDirection.x * wind.windStrength * 2.0;
-        const gravityZ = -wind.windDirection.z * wind.windStrength * 2.0;
-        ps.gravity.x = gravityX;
-        ps.gravity.z = gravityZ;
+        ps.gravity.x = -wind.windDirection.x * wind.windStrength * 2.0;
+        ps.gravity.z = -wind.windDirection.z * wind.windStrength * 2.0;
       });
     }
 
@@ -198,8 +180,6 @@ export class CampfireRenderer extends BlockRenderer {
       position: `${pos.x},${pos.y},${pos.z}`,
       intensity,
       emitRate: ps.emitRate,
-      maxParticles,
-      textureType: textureLoaded ? 'loaded' : 'procedural',
     });
   }
 
@@ -219,10 +199,10 @@ export class CampfireRenderer extends BlockRenderer {
         const alpha = Math.max(0, 1 - dist);
 
         const index = (y * textureSize + x) * 4;
-        textureData[index] = 255;     // R
-        textureData[index + 1] = 255; // G
-        textureData[index + 2] = 255; // B
-        textureData[index + 3] = Math.floor(alpha * 255); // A
+        textureData[index] = 255;
+        textureData[index + 1] = 255;
+        textureData[index + 2] = 255;
+        textureData[index + 3] = Math.floor(alpha * 255);
       }
     }
 

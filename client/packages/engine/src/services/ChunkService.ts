@@ -891,7 +891,7 @@ export class ChunkService {
         );
 
         // Handle deletion (blockTypeId: '0')
-        if (block.blockTypeId === '0' || block.blockTypeId === 'n:0') {
+        if (block.blockTypeId === 'air' || block.blockTypeId === '0' || block.blockTypeId === 'n:0') {
           const wasDeleted = clientChunk.data.data.delete(posKey);
           if (wasDeleted) {
             logger.debug('Block deleted', { position: block.position });

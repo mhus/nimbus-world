@@ -294,9 +294,10 @@ export class MaterialService {
       // Create material based on effect
       let material: Material | null = null;
 
-      // Check for effect (e.g., WIND)
-      if (props.effect !== BlockEffect.NONE && this.shaderService) {
-        const effectName = BlockEffect[props.effect].toLowerCase();
+      // Check for effect (e.g., WIND) - unknown/legacy effects are treated as NONE
+      const effectEnumName = BlockEffect[props.effect];
+      if (props.effect !== BlockEffect.NONE && effectEnumName && this.shaderService) {
+        const effectName = effectEnumName.toLowerCase();
 
         if (this.shaderService.hasEffect(effectName)) {
           // Effects use atlas texture
