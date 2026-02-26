@@ -4,6 +4,7 @@ import de.mhus.nimbus.generated.types.*;
 import de.mhus.nimbus.shared.types.BlockDef;
 import de.mhus.nimbus.world.generator.blocks.ManipulatorContext;
 import de.mhus.nimbus.world.generator.blocks.generator.EditCachePainter;
+import de.mhus.nimbus.world.shared.world.BlockUtil;
 import de.mhus.nimbus.world.shared.world.WBlockType;
 import de.mhus.nimbus.world.shared.world.WBlockTypeService;
 import lombok.RequiredArgsConstructor;
@@ -228,12 +229,12 @@ public class RoughBlockPainterProvider implements BlockPainterProvider {
             blockTypeCache.put(cacheKey, blockType);
         }
 
-        // Check if modifier[0].visibility.shape == CUBE (1)
+        // Check if default modifier's visibility.shape == CUBE (1)
         if (blockType.getModifiers() == null) {
             return false;
         }
 
-        BlockModifier modifier0 = blockType.getModifiers().get(0);
+        BlockModifier modifier0 = blockType.getModifiers().get(BlockUtil.DEFAULT_STATUS);
         if (modifier0 == null || modifier0.getVisibility() == null) {
             return false;
         }

@@ -722,16 +722,16 @@ public class FlatExportService {
 
         // Check if modifier (status) is 0 or null
         String status = block.getStatus();
-        if (BlockUtil.isStatusDefault(status)) {
-            return;  // Modified block, export block
+        if (!BlockUtil.isStatusDefault(status)) {
+            return;  // Modified block, skip corner smoothing
         }
 
         // Check if shape is CUBE (shape 1)
-        // Shape is stored in modifiers map, get modifier 0
+        // Shape is stored in modifiers map, get default modifier
         if (publicData.getModifiers() == null) {
             return;  // No modifiers, export block
         }
-        var modifier0 = publicData.getModifiers().get(0);
+        var modifier0 = publicData.getModifiers().get(BlockUtil.DEFAULT_STATUS);
         if (modifier0 == null || modifier0.getVisibility() == null || modifier0.getVisibility().getShape() == null || modifier0.getVisibility().getShape() != 1) {
             return;  // Not CUBE, export block
         }
