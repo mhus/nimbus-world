@@ -13,8 +13,7 @@ export interface WLayerModel {
   sizeX: number;
   sizeY: number;
   sizeZ: number;
-  style: string;
-  kind: string;
+  parameters: Record<string, string>;
   layerDataId: string;
   mountX: number;
   mountY: number;

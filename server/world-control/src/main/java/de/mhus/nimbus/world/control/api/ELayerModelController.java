@@ -218,6 +218,7 @@ public class ELayerModelController extends BaseEditorController {
                     .order(request.order() != null ? request.order() : 100)
                     .content(List.of())
                     .groups(request.groups() != null ? request.groups() : Map.of())
+                    .parameters(request.parameters() != null ? request.parameters() : Map.of())
                     .build();
 
             model.touchCreate();
@@ -338,6 +339,10 @@ public class ELayerModelController extends BaseEditorController {
         }
         if (request.groups() != null) {
             model.setGroups(request.groups());
+            changed = true;
+        }
+        if (request.parameters() != null) {
+            model.setParameters(request.parameters());
             changed = true;
         }
 
@@ -851,6 +856,7 @@ public class ELayerModelController extends BaseEditorController {
                 model.getReferenceModelId(),
                 model.getOrder(),
                 model.getGroups(),
+                model.getParameters(),
                 model.getCreatedAt(),
                 model.getUpdatedAt()
         );

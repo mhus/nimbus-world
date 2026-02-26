@@ -79,8 +79,8 @@ public class WLayerModel implements Identifiable {
     private int sizeY;
     private int sizeZ;
 
-    private String style;
-    private String kind;
+    @Builder.Default
+    private Map<String, String> parameters = new HashMap<>();
 
     /**
      * References WLayer.layerDataId (1:1 relationship).

@@ -238,6 +238,53 @@
           </label>
         </div>
 
+        <!-- Parameters -->
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text">Parameters</span>
+          </label>
+          <div class="space-y-2">
+            <div v-for="(value, key) in formData.parameters" :key="key" class="flex gap-2">
+              <input
+                :value="key"
+                type="text"
+                class="input input-bordered flex-1"
+                placeholder="Key"
+                @input="updateParameterKey(key as string, ($event.target as HTMLInputElement).value)"
+              />
+              <input
+                :value="value"
+                type="text"
+                class="input input-bordered flex-1"
+                placeholder="Value"
+                @input="updateParameterValue(key as string, ($event.target as HTMLInputElement).value)"
+              />
+              <button
+                type="button"
+                class="btn btn-ghost btn-square"
+                @click="removeParameter(key as string)"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <button
+              type="button"
+              class="btn btn-sm btn-outline"
+              @click="addParameter"
+            >
+              <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+              </svg>
+              Add Parameter
+            </button>
+          </div>
+          <label class="label">
+            <span class="label-text-alt">Key-value metadata (e.g. style, kind)</span>
+          </label>
+        </div>
+
         <!-- Action Buttons -->
         <div class="modal-action">
           <button
@@ -779,7 +826,8 @@ const formData = ref<Partial<LayerModelDto>>({
   rotation: 0,
   referenceModelId: undefined,
   order: 100,
-  groups: {}
+  groups: {},
+  parameters: {}
 });
 
 const errorMessage = ref('');
@@ -856,6 +904,50 @@ const updateGroupId = (groupName: string, newId: number) => {
 };
 
 /**
+ * Add a new parameter
+ */
+const addParameter = () => {
+  const params = formData.value.parameters || {};
+  let idx = 1;
+  while (params[`key${idx}`] !== undefined) idx++;
+  formData.value.parameters = {
+    ...params,
+    [`key${idx}`]: ''
+  };
+};
+
+/**
+ * Remove a parameter
+ */
+const removeParameter = (key: string) => {
+  const params = { ...formData.value.parameters };
+  delete params[key];
+  formData.value.parameters = params;
+};
+
+/**
+ * Update parameter key
+ */
+const updateParameterKey = (oldKey: string, newKey: string) => {
+  if (oldKey === newKey) return;
+  const params = { ...formData.value.parameters };
+  const value = params[oldKey];
+  delete params[oldKey];
+  params[newKey] = value;
+  formData.value.parameters = params;
+};
+
+/**
+ * Update parameter value
+ */
+const updateParameterValue = (key: string, newValue: string) => {
+  formData.value.parameters = {
+    ...formData.value.parameters,
+    [key]: newValue
+  };
+};
+
+/**
  * Handle save
  */
 const handleSave = async () => {
@@ -891,7 +983,8 @@ const handleSave = async () => {
         rotation: formData.value.rotation,
         referenceModelId: formData.value.referenceModelId || undefined,
         order: formData.value.order,
-        groups: formData.value.groups
+        groups: formData.value.groups,
+        parameters: formData.value.parameters
       };
       await layerModelService.updateModel(props.worldId, props.layerId, props.model.id, updateData);
       logger.info('Updated model', { modelId: props.model.id });
@@ -910,7 +1003,8 @@ const handleSave = async () => {
         rotation: formData.value.rotation,
         referenceModelId: formData.value.referenceModelId || undefined,
         order: formData.value.order,
-        groups: formData.value.groups
+        groups: formData.value.groups,
+        parameters: formData.value.parameters
       };
       const id = await layerModelService.createModel(props.worldId, props.layerId, createData);
       logger.info('Created model', { modelId: id });

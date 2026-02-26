@@ -47,6 +47,9 @@ public record UpdateLayerModelRequest(
         Integer order,
 
         @TypeScript(optional = true)
-        Map<String, String> groups
+        Map<String, String> groups,
+
+        @TypeScript(optional = true)
+        Map<String, String> parameters
 ) {
 }

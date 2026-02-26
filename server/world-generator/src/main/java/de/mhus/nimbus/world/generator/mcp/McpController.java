@@ -471,6 +471,69 @@ public class McpController extends BaseEditorController {
                 )
         ));
 
+        // Layer model import
+        tools.add(createToolDescriptor(
+                "import_layer_model",
+                "Import a WLayerModel from JSON (e.g. schematic-tool output) into a MODEL layer. Creates a new model with blocks, metadata, and parameters.",
+                Map.of(
+                        "worldId", Map.of(
+                                "type", "string",
+                                "description", "World ID",
+                                "required", true
+                        ),
+                        "layerId", Map.of(
+                                "type", "string",
+                                "description", "Layer ID (must be MODEL type)",
+                                "required", true
+                        ),
+                        "name", Map.of(
+                                "type", "string",
+                                "description", "Model name (technical identifier, defaults to layer name)",
+                                "required", false
+                        ),
+                        "title", Map.of(
+                                "type", "string",
+                                "description", "Display title",
+                                "required", false
+                        ),
+                        "mountX", Map.of(
+                                "type", "number",
+                                "description", "Mount point X coordinate",
+                                "required", false
+                        ),
+                        "mountY", Map.of(
+                                "type", "number",
+                                "description", "Mount point Y coordinate",
+                                "required", false
+                        ),
+                        "mountZ", Map.of(
+                                "type", "number",
+                                "description", "Mount point Z coordinate",
+                                "required", false
+                        ),
+                        "parameters", Map.of(
+                                "type", "object",
+                                "description", "Key-value metadata (e.g. style, kind)",
+                                "required", false
+                        ),
+                        "blocks", Map.of(
+                                "type", "array",
+                                "description", "Array of blocks (same format as add_layer_blocks)",
+                                "required", false,
+                                "items", Map.of(
+                                        "type", "object",
+                                        "properties", Map.of(
+                                                "x", Map.of("type", "number", "description", "X coordinate"),
+                                                "y", Map.of("type", "number", "description", "Y coordinate"),
+                                                "z", Map.of("type", "number", "description", "Z coordinate"),
+                                                "blockId", Map.of("type", "string", "description", "Block type ID"),
+                                                "group", Map.of("type", "string", "description", "Group (optional)")
+                                        )
+                                )
+                        )
+                )
+        ));
+
         // Chunk inspection tools
         tools.add(createToolDescriptor(
                 "get_chunk_data",
@@ -813,6 +876,7 @@ public class McpController extends BaseEditorController {
         endpoints.put("POST /generator/mcp/worlds/{worldId}/layers", "Create layer");
         endpoints.put("GET /generator/mcp/worlds/{worldId}/layers/{layerId}/blocks", "Get layer blocks");
         endpoints.put("POST /generator/mcp/worlds/{worldId}/layers/{layerId}/blocks", "Add layer blocks");
+        endpoints.put("POST /generator/mcp/worlds/{worldId}/layers/{layerId}/models/import", "Import WLayerModel from JSON");
         endpoints.put("POST /generator/mcp/worlds/{worldId}/jobs/execute", "Execute job synchronously (world-scoped)");
         endpoints.put("GET /generator/mcp/worlds/{worldId}/jobs/{jobId}/status", "Get job status (world-scoped)");
         endpoints.put("POST /generator/mcp/jobs/execute", "Execute job synchronously (dynamic world selection)");
@@ -1252,6 +1316,115 @@ public class McpController extends BaseEditorController {
             log.error("MCP: Failed to add blocks to layer", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "Failed to add blocks: " + e.getMessage()));
+        }
+    }
+
+    // ==================== LAYER MODEL IMPORT ====================
+
+    /**
+     * Import a WLayerModel from JSON (e.g. from schematic-tool output).
+     * Creates a new model on a MODEL layer with all blocks, metadata, and parameters.
+     * POST /generator/mcp/worlds/{worldId}/layers/{layerId}/models/import
+     */
+    @PostMapping("/worlds/{worldId}/layers/{layerId}/models/import")
+    @Operation(summary = "Import a WLayerModel from JSON (e.g. schematic-tool output)")
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "Model imported"),
+            @ApiResponse(responseCode = "400", description = "Invalid request or not a MODEL layer"),
+            @ApiResponse(responseCode = "404", description = "Layer not found")
+    })
+    public ResponseEntity<?> importLayerModel(
+            @Parameter(description = "World ID") @PathVariable String worldId,
+            @Parameter(description = "Layer ID") @PathVariable String layerId,
+            @RequestBody ImportLayerModelRequest request) {
+
+        log.debug("MCP: Import layer model: worldId={}, layerId={}", worldId, layerId);
+
+        var wid = WorldId.of(worldId).orElseThrow(
+                () -> new IllegalStateException("Invalid worldId: " + worldId)
+        );
+
+        var validation = validateId(layerId, "layerId");
+        if (validation != null) return validation;
+
+        Optional<WLayer> layerOpt = layerService.findById(layerId);
+        if (layerOpt.isEmpty() || !layerOpt.get().getWorldId().equals(worldId)) {
+            return notFound("layer not found");
+        }
+
+        WLayer layer = layerOpt.get();
+        if (layer.getLayerType() != LayerType.MODEL) {
+            return bad("operation only supported for MODEL layers");
+        }
+
+        try {
+            // Ensure layerDataId exists
+            if (layer.getLayerDataId() == null) {
+                layer.setLayerDataId(UUID.randomUUID().toString());
+                layer.touchUpdate();
+                layerService.save(layer);
+            }
+
+            // Build model from request
+            WLayerModel model = WLayerModel.builder()
+                    .worldId(worldId)
+                    .layerDataId(layer.getLayerDataId())
+                    .name(request.name() != null ? request.name() : layer.getName())
+                    .title(request.title())
+                    .licenseSource(request.licenseSource())
+                    .licenseType(request.licenseType())
+                    .licenseAuthor(request.licenseAuthor())
+                    .mountX(request.mountX() != null ? request.mountX() : 0)
+                    .mountY(request.mountY() != null ? request.mountY() : 0)
+                    .mountZ(request.mountZ() != null ? request.mountZ() : 0)
+                    .rotation(request.rotation() != null ? request.rotation() : 0)
+                    .order(request.order() != null ? request.order() : 100)
+                    .sizeX(request.sizeX() != null ? request.sizeX() : 0)
+                    .sizeY(request.sizeY() != null ? request.sizeY() : 0)
+                    .sizeZ(request.sizeZ() != null ? request.sizeZ() : 0)
+                    .groups(request.groups() != null ? request.groups() : new HashMap<>())
+                    .parameters(request.parameters() != null ? request.parameters() : new HashMap<>())
+                    .content(new ArrayList<>())
+                    .build();
+
+            // Convert blocks if provided
+            if (request.blocks() != null && !request.blocks().isEmpty()) {
+                List<LayerBlock> blocks = request.blocks().stream()
+                        .map(b -> {
+                            de.mhus.nimbus.generated.types.Vector3Int pos = new de.mhus.nimbus.generated.types.Vector3Int();
+                            pos.setX(b.x());
+                            pos.setY(b.y());
+                            pos.setZ(b.z());
+
+                            de.mhus.nimbus.generated.types.Block block = de.mhus.nimbus.generated.types.Block.builder()
+                                    .position(pos)
+                                    .blockTypeId(b.blockId())
+                                    .build();
+
+                            return LayerBlock.builder()
+                                    .block(block)
+                                    .group(b.group())
+                                    .build();
+                        })
+                        .collect(Collectors.toList());
+                model.setContent(blocks);
+            }
+
+            model.touchCreate();
+            WLayerModel saved = modelRepository.save(model);
+
+            log.info("MCP: Imported layer model: id={}, name={}, blocks={}, worldId={}, layerDataId={}",
+                    saved.getId(), saved.getName(), saved.getContent().size(), worldId, saved.getLayerDataId());
+
+            return ResponseEntity.status(HttpStatus.CREATED).body(Map.of(
+                    "id", saved.getId(),
+                    "name", saved.getName() != null ? saved.getName() : "",
+                    "blocks", saved.getContent().size()
+            ));
+        } catch (Exception e) {
+            log.error("MCP: Failed to import layer model", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Failed to import model: " + e.getMessage()));
         }
     }
 
@@ -2792,5 +2965,24 @@ public class McpController extends BaseEditorController {
             String description,
             String type,
             Object data
+    ) {}
+
+    public record ImportLayerModelRequest(
+            String name,
+            String title,
+            String licenseSource,
+            String licenseType,
+            String licenseAuthor,
+            Integer mountX,
+            Integer mountY,
+            Integer mountZ,
+            Integer rotation,
+            Integer order,
+            Integer sizeX,
+            Integer sizeY,
+            Integer sizeZ,
+            Map<String, String> groups,
+            Map<String, String> parameters,
+            List<BlockRequest> blocks
     ) {}
 }

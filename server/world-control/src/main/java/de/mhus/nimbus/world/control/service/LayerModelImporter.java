@@ -112,6 +112,8 @@ public class LayerModelImporter {
             int finalOrder = order != null ? order : sourceModel.getOrder();
             Map<String, String> finalGroups = groups != null ? groups :
                     (sourceModel.getGroups() != null ? sourceModel.getGroups() : new HashMap<>());
+            Map<String, String> finalParameters = sourceModel.getParameters() != null ?
+                    sourceModel.getParameters() : new HashMap<>();
 
             // Content must come from source model
             List<LayerBlock> content = sourceModel.getContent();
@@ -136,6 +138,11 @@ public class LayerModelImporter {
             // Set groups separately if needed
             if (!finalGroups.isEmpty()) {
                 layerService.updateModel(created.getId(), model -> model.setGroups(finalGroups));
+            }
+
+            // Set parameters separately if needed
+            if (!finalParameters.isEmpty()) {
+                layerService.updateModel(created.getId(), model -> model.setParameters(finalParameters));
             }
 
             log.info("Imported layer model: id={} name={} blocks={} worldId={} layerDataId={}",

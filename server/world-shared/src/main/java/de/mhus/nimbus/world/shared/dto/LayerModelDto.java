@@ -50,6 +50,9 @@ public record LayerModelDto(
         Map<String, String> groups,
 
         @TypeScript(optional = true)
+        Map<String, String> parameters,
+
+        @TypeScript(optional = true)
         Instant createdAt,
 
         @TypeScript(optional = true)
