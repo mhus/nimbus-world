@@ -1,6 +1,7 @@
 package de.mhus.nimbus.world.generator.genesis;
 
 import de.mhus.nimbus.shared.types.WorldId;
+import de.mhus.nimbus.world.generator.structures.HexGridStructurePlacerJobExecutor;
 import de.mhus.nimbus.world.shared.generator.WFlatService;
 import de.mhus.nimbus.world.shared.workflow.MethodBasedWorkflow;
 import de.mhus.nimbus.world.shared.workflow.OnSuccess;
@@ -41,6 +42,7 @@ import java.util.stream.Collectors;
  *   - "imagesAll" - Export individual grid images
  *   - "compositeImages" - Create composite images of entire world
  *   - "importFlats" - (alternative to createAll) Import pre-created flats by flatId instead of creating them in this workflow. Only executes once, not per grid.
+ *   - "structuresAll" - Place structures (buildings) for each hex grid based on g_village configuration
  *   - "waitForChunks" - Wait until all dirty chunks for the world have been processed. Only executes once, not per grid.
  */
 @Service
@@ -319,6 +321,16 @@ public class Day3Generation extends MethodBasedWorkflow {
                     processNextInPhase(context, state);
                 }
             }
+            case "structuresAll" -> {
+                context.updateWorkflowStatus("placeStructures");
+                context.enqueueJob(
+                        HexGridStructurePlacerJobExecutor.EXECUTOR_NAME, "", "",
+                        "Structures for " + gridLabel,
+                        Map.of(
+                                "hexQ", String.valueOf(coord.getQ()),
+                                "hexR", String.valueOf(coord.getR())
+                        ));
+            }
             case "waitForChunks" -> {
                 // Only execute once (at index 0), not for each grid
                 if (index == 0) {
@@ -383,6 +395,11 @@ public class Day3Generation extends MethodBasedWorkflow {
     @OnSuccess("createCompositeImages")
     public void onCreateCompositeImagesSuccess(WorkflowContext context) throws WorkflowException {
         log.info("Composite images created successfully");
+        advanceToNextInPhase(context);
+    }
+
+    @OnSuccess("placeStructures")
+    public void onPlaceStructuresSuccess(WorkflowContext context) throws WorkflowException {
         advanceToNextInPhase(context);
     }
 

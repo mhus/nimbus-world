@@ -113,7 +113,7 @@ public class WLayerModel implements Identifiable {
     /**
      * Reference to another layer model.
      * If this is set first the referenced model will be rendered and then this model on top.
-     * e.g. r:LayerName:ModelName
+     * e.g. @region:earth616/mansionhouse-0a6c16bf
      */
     @TypeScript(optional = true)
     private String referenceModelId;
