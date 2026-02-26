@@ -17,4 +17,5 @@ export interface CreateLayerModelRequest {
   referenceModelId?: string;
   order?: number;
   groups?: Record<string, string>;
+  parameters?: Record<string, string>;
 }

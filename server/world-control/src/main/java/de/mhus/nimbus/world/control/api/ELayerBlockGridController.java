@@ -25,7 +25,7 @@ public class ELayerBlockGridController {
 
     private final WLayerRepository layerRepository;
     private final WLayerTerrainRepository terrainRepository;
-    private final WLayerModelRepository modelRepository;
+    private final WLayerService layerService;
     private final WWorldRepository worldRepository;
     private final StorageService storageService;
 
@@ -322,7 +322,7 @@ public class ELayerBlockGridController {
         }
 
         // Load model
-        Optional<WLayerModel> modelOpt = modelRepository.findById(modelId);
+        Optional<WLayerModel> modelOpt = layerService.loadModelById(modelId);
         if (modelOpt.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
@@ -404,7 +404,7 @@ public class ELayerBlockGridController {
         }
 
         // Load model
-        Optional<WLayerModel> modelOpt = modelRepository.findById(modelId);
+        Optional<WLayerModel> modelOpt = layerService.loadModelById(modelId);
         if (modelOpt.isEmpty()) {
             return ResponseEntity.notFound().build();
         }

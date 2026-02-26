@@ -118,7 +118,7 @@
         </div>
 
         <!-- Groups (only for GROUND layers) -->
-        <div v-if="formData.layerType === 'GROUND'" class="form-control">
+        <div v-if="String(formData.layerType).toUpperCase() === 'GROUND'" class="form-control">
           <label class="label">
             <span class="label-text">Groups</span>
           </label>
@@ -181,9 +181,9 @@
         </div>
 
         <!-- Model Management (only for MODEL layers and edit mode) -->
-        <div v-if="isEditMode && formData.layerType === 'MODEL'" class="divider">Layer Models</div>
+        <div v-if="isEditMode && String(formData.layerType).toUpperCase() === 'MODEL'" class="divider">Layer Models</div>
 
-        <div v-if="isEditMode && formData.layerType === 'MODEL'" class="space-y-4">
+        <div v-if="isEditMode && String(formData.layerType).toUpperCase() === 'MODEL'" class="space-y-4">
           <div class="flex justify-between items-center">
             <h4 class="font-semibold">Models in this Layer</h4>
             <div class="flex gap-2">
@@ -220,9 +220,9 @@
         </div>
 
         <!-- Terrain Import (only for GROUND layers and edit mode) -->
-        <div v-if="isEditMode && formData.layerType === 'GROUND'" class="divider">Import Model to Terrain</div>
+        <div v-if="isEditMode && String(formData.layerType).toUpperCase() === 'GROUND'" class="divider">Import Model to Terrain</div>
 
-        <div v-if="isEditMode && formData.layerType === 'GROUND'" class="space-y-4">
+        <div v-if="isEditMode && String(formData.layerType).toUpperCase() === 'GROUND'" class="space-y-4">
           <div class="flex justify-between items-center">
             <h4 class="font-semibold">Import Model into Terrain</h4>
             <button
@@ -742,7 +742,7 @@ const openGridEditor = () => {
 
 // Load models when layer is MODEL type
 onMounted(() => {
-  if (isEditMode.value && props.layer?.layerType === 'MODEL' && props.layer?.layerDataId) {
+  if (isEditMode.value && String(props.layer?.layerType).toUpperCase() === 'MODEL' && props.layer?.layerDataId) {
     loadModels();
   }
 });

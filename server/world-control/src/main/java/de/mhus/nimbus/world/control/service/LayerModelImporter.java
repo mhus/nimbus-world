@@ -105,9 +105,11 @@ public class LayerModelImporter {
             // Apply overrides or use values from source model
             String finalName = name != null ? name : sourceModel.getName();
             String finalTitle = title != null ? title : sourceModel.getTitle();
-            int finalMountX = mountX != null ? mountX : sourceModel.getMountX();
-            int finalMountY = mountY != null ? mountY : sourceModel.getMountY();
-            int finalMountZ = mountZ != null ? mountZ : sourceModel.getMountZ();
+            // Default mount to (0,0,0) — block positions are already relative to the model center.
+            // The original mount from the source (e.g. schematic origin offset) should not be used.
+            int finalMountX = mountX != null ? mountX : 0;
+            int finalMountY = mountY != null ? mountY : 0;
+            int finalMountZ = mountZ != null ? mountZ : 0;
             int finalRotation = rotation != null ? rotation : sourceModel.getRotation();
             int finalOrder = order != null ? order : sourceModel.getOrder();
             Map<String, String> finalGroups = groups != null ? groups :

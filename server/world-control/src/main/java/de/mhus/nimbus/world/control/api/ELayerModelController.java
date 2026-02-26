@@ -7,7 +7,6 @@ import de.mhus.nimbus.world.shared.dto.UpdateLayerModelRequest;
 import de.mhus.nimbus.world.shared.layer.LayerBlock;
 import de.mhus.nimbus.world.shared.layer.WLayer;
 import de.mhus.nimbus.world.shared.layer.WLayerModel;
-import de.mhus.nimbus.world.shared.layer.WLayerModelRepository;
 import de.mhus.nimbus.world.shared.layer.WLayerService;
 import de.mhus.nimbus.world.shared.rest.BaseEditorController;
 import io.swagger.v3.oas.annotations.Operation;
@@ -41,7 +40,6 @@ import java.util.stream.Collectors;
 public class ELayerModelController extends BaseEditorController {
 
     private final WLayerService layerService;
-    private final WLayerModelRepository modelRepository;
 
     /**
      * Get single Layer Model by ID.
@@ -76,7 +74,7 @@ public class ELayerModelController extends BaseEditorController {
             return notFound("layer not found");
         }
 
-        Optional<WLayerModel> opt = modelRepository.findById(id);
+        Optional<WLayerModel> opt = layerService.findModelSummaryById(id);
         if (opt.isEmpty()) {
             log.warn("Model not found: id={}", id);
             return notFound("model not found");
@@ -139,8 +137,8 @@ public class ELayerModelController extends BaseEditorController {
             ));
         }
 
-        // Get all models for this layerDataId (sorted by order)
-        List<WLayerModel> allModels = modelRepository.findByLayerDataIdOrderByOrder(layerDataId);
+        // Get all models for this layerDataId (sorted by order, without content)
+        List<WLayerModel> allModels = layerService.listModelSummaries(layerDataId);
         log.debug("Found {} models for layerDataId={}", allModels.size(), layerDataId);
 
         // Convert to DTOs
@@ -223,7 +221,7 @@ public class ELayerModelController extends BaseEditorController {
 
             model.touchCreate();
 
-            WLayerModel saved = modelRepository.save(model);
+            WLayerModel saved = layerService.saveModel(model);
 
             // Transfer model to terrain if layer type is MODEL
             if (layer.getLayerType() == de.mhus.nimbus.world.shared.layer.LayerType.MODEL) {
@@ -279,7 +277,8 @@ public class ELayerModelController extends BaseEditorController {
             return notFound("layer not found");
         }
 
-        Optional<WLayerModel> opt = modelRepository.findById(id);
+        // Load full model (with content) for update - content must be preserved
+        Optional<WLayerModel> opt = layerService.loadModelById(id);
         if (opt.isEmpty()) {
             log.warn("Model not found for update: id={}", id);
             return notFound("model not found");
@@ -351,7 +350,7 @@ public class ELayerModelController extends BaseEditorController {
         }
 
         model.touchUpdate();
-        WLayerModel updated = modelRepository.save(model);
+        WLayerModel updated = layerService.saveModel(model);
 
         // Transfer model to terrain if layer type is MODEL
         WLayer layer = layerOpt.get();
@@ -405,8 +404,8 @@ public class ELayerModelController extends BaseEditorController {
             return notFound("layer not found");
         }
 
-        // Verify model exists
-        Optional<WLayerModel> modelOpt = modelRepository.findById(id);
+        // Verify model exists (summary only - no content needed for validation)
+        Optional<WLayerModel> modelOpt = layerService.findModelSummaryById(id);
         if (modelOpt.isEmpty()) {
             log.warn("Model not found for sync: id={}", id);
             return notFound("model not found");
@@ -483,8 +482,8 @@ public class ELayerModelController extends BaseEditorController {
             return notFound("layer not found");
         }
 
-        // Verify model exists
-        Optional<WLayerModel> modelOpt = modelRepository.findById(id);
+        // Verify model exists (summary only - no content needed for validation)
+        Optional<WLayerModel> modelOpt = layerService.findModelSummaryById(id);
         if (modelOpt.isEmpty()) {
             log.warn("Model not found for transform: id={}", id);
             return notFound("model not found");
@@ -571,8 +570,8 @@ public class ELayerModelController extends BaseEditorController {
             return notFound("layer not found");
         }
 
-        // Verify model exists
-        Optional<WLayerModel> modelOpt = modelRepository.findById(id);
+        // Verify model exists (summary only - no content needed for validation)
+        Optional<WLayerModel> modelOpt = layerService.findModelSummaryById(id);
         if (modelOpt.isEmpty()) {
             log.warn("Model not found for transform: id={}", id);
             return notFound("model not found");
@@ -659,8 +658,8 @@ public class ELayerModelController extends BaseEditorController {
             return notFound("layer not found");
         }
 
-        // Verify model exists
-        Optional<WLayerModel> modelOpt = modelRepository.findById(id);
+        // Verify model exists (summary only - no content needed for validation)
+        Optional<WLayerModel> modelOpt = layerService.findModelSummaryById(id);
         if (modelOpt.isEmpty()) {
             log.warn("Model not found for transform: id={}", id);
             return notFound("model not found");
@@ -745,8 +744,8 @@ public class ELayerModelController extends BaseEditorController {
             return notFound("source layer not found");
         }
 
-        // Verify source model exists
-        Optional<WLayerModel> sourceModelOpt = modelRepository.findById(id);
+        // Verify source model exists (summary only - copyModel loads full data internally)
+        Optional<WLayerModel> sourceModelOpt = layerService.findModelSummaryById(id);
         if (sourceModelOpt.isEmpty()) {
             log.warn("Source model not found for copy: id={}", id);
             return notFound("source model not found");
@@ -819,7 +818,7 @@ public class ELayerModelController extends BaseEditorController {
             return notFound("layer not found");
         }
 
-        Optional<WLayerModel> opt = modelRepository.findById(id);
+        Optional<WLayerModel> opt = layerService.findModelSummaryById(id);
         if (opt.isEmpty()) {
             log.warn("Model not found for deletion: id={}", id);
             return notFound("model not found");
@@ -831,7 +830,7 @@ public class ELayerModelController extends BaseEditorController {
             return notFound("model not found");
         }
 
-        modelRepository.delete(model);
+        layerService.deleteModelById(id);
 
         log.info("Deleted layer model: id={}", id);
         return ResponseEntity.noContent().build();

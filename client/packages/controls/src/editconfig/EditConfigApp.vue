@@ -301,7 +301,7 @@
               </div>
 
               <!-- Model Selection for MODEL layers -->
-              <div v-if="selectedLayerInfo?.layerType === 'MODEL'" class="mt-2">
+              <div v-if="String(selectedLayerInfo?.layerType).toUpperCase() === 'MODEL'" class="mt-2">
                 <label class="label py-1">
                   <span class="label-text-alt text-xs">Select Model</span>
                 </label>
@@ -590,7 +590,7 @@ async function fetchModels() {
     layerName: layerInfo?.name
   });
 
-  if (!layerInfo || layerInfo.layerType !== 'MODEL' || !layerInfo.id) {
+  if (!layerInfo || String(layerInfo.layerType).toUpperCase() !== 'MODEL' || !layerInfo.id) {
     console.log('[Models] Not fetching - layer not MODEL type or missing id');
     availableModels.value = [];
     return;
@@ -818,7 +818,8 @@ watch(() => editState.value.selectedLayer, (newLayer) => {
   const layerInfo = selectedLayerInfo.value;
 
   // If it's a GROUND layer, load groups from WLayer
-  if (layerInfo && layerInfo.layerType === 'GROUND' && layerInfo.groups) {
+  const lt = String(layerInfo?.layerType).toUpperCase();
+  if (layerInfo && lt === 'GROUND' && layerInfo.groups) {
     // Convert Record<string, string> (groupId -> title) to Array<{name, id}>
     // Mapping is now: groupId -> title (optional)
     availableGroups.value = Object.entries(layerInfo.groups).map(([id, title]) => ({
@@ -826,7 +827,7 @@ watch(() => editState.value.selectedLayer, (newLayer) => {
       id
     }));
     console.log('[Groups] Loaded', availableGroups.value.length, 'groups from GROUND layer');
-  } else if (layerInfo && layerInfo.layerType === 'MODEL') {
+  } else if (layerInfo && lt === 'MODEL') {
     // For MODEL layers, groups will be loaded from the selected model (see watch above)
     // Clear groups here, they'll be populated when model is selected
     availableGroups.value = [];

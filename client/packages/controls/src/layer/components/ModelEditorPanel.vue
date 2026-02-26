@@ -1250,7 +1250,7 @@ const loadLayersForCopyWorld = async () => {
     const layersResponse = await layerService.getLayers(copyFormData.value.targetWorldId, { limit: 1000 });
 
     // Filter only MODEL type layers
-    const modelLayers = layersResponse.layers.filter(layer => layer.layerType === 'MODEL');
+    const modelLayers = layersResponse.layers.filter(layer => String(layer.layerType).toUpperCase() === 'MODEL');
 
     copyAvailableLayers.value = modelLayers;
     logger.info('Loaded MODEL layers for copy world', {
@@ -1379,7 +1379,7 @@ const loadModelsForWorld = async () => {
     const layersResponse = await layerService.getLayers(referenceSearch.value.worldId, { limit: 1000 });
 
     // Filter MODEL type layers and load their models
-    const modelLayers = layersResponse.layers.filter(layer => layer.layerType === 'MODEL');
+    const modelLayers = layersResponse.layers.filter(layer => String(layer.layerType).toUpperCase() === 'MODEL');
 
     const allModels: LayerModelDto[] = [];
     for (const layer of modelLayers) {

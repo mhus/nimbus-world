@@ -27,9 +27,9 @@
         <!-- Layer Type Badge -->
         <div :class="[
           'badge',
-          layer.layerType === 'GROUND' ? 'badge-success' : 'badge-info'
+          String(layer.layerType).toUpperCase() === 'GROUND' ? 'badge-success' : 'badge-info'
         ]">
-          {{ layer.layerType === 'GROUND' ? 'Ground' : 'Model' }}
+          {{ String(layer.layerType).toUpperCase() === 'GROUND' ? 'Ground' : 'Model' }}
         </div>
 
         <!-- Order Badge -->

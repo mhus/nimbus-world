@@ -953,8 +953,15 @@ public class WLayerService implements StorageProvider {
                 log.debug("Following reference: modelId={} -> refId={} refName={} depth={} rotation={}",
                         model.getId(), refModel.getId(), refModel.getName(), depth, currentRotation);
 
+                // At depth 0, don't accumulate the model's own mount here because
+                // transferModelToTerrainChunk() will apply it later. Only accumulate
+                // mount offsets from deeper reference levels (depth > 0).
+                int effectiveMountX = depth == 0 ? 0 : model.getMountX();
+                int effectiveMountY = depth == 0 ? 0 : model.getMountY();
+                int effectiveMountZ = depth == 0 ? 0 : model.getMountZ();
+
                 // Apply current model's rotation to mount offsets before recursing
-                int[] rotatedMount = rotatePosition(model.getMountX(), model.getMountZ(), accumulatedRotation);
+                int[] rotatedMount = rotatePosition(effectiveMountX, effectiveMountZ, accumulatedRotation);
 
                 // Recursively resolve reference with accumulated mount offsets and rotation
                 List<LayerBlock> refBlocks = resolveModelWithReferences(
@@ -962,7 +969,7 @@ public class WLayerService implements StorageProvider {
                         depth + 1,
                         maxDepth,
                         mountXOffset + rotatedMount[0],
-                        mountYOffset + model.getMountY(),
+                        mountYOffset + effectiveMountY,
                         mountZOffset + rotatedMount[1],
                         currentRotation
                 );
@@ -1370,6 +1377,12 @@ public class WLayerService implements StorageProvider {
         if (parsedWorldId.isInstance()) {
             throw new IllegalArgumentException("Cannot create layer for instance worldId");
         }
+        if (Strings.isBlank(name)) {
+            throw new IllegalArgumentException("name is required");
+        }
+        if (modelRepository.existsByLayerDataIdAndName(layerDataId, name)) {
+            throw new IllegalArgumentException("Model with name '" + name + "' already exists in this layer");
+        }
 
         WLayerModel newModel = WLayerModel.builder()
                 .worldId(worldId)
@@ -1624,11 +1637,15 @@ public class WLayerService implements StorageProvider {
         }
 
         WLayerModel source = sourceOpt.get();
+        String copyName = newName != null ? newName : source.getName();
+        if (modelRepository.existsByLayerDataIdAndName(targetLayer.getLayerDataId(), copyName)) {
+            throw new IllegalArgumentException("Model with name '" + copyName + "' already exists in target layer");
+        }
 
         // Create copy with new worldId and layerDataId from target layer
         WLayerModel copy = WLayerModel.builder()
                 .worldId(targetLayer.getWorldId())
-                .name(newName != null ? newName : source.getName())
+                .name(copyName)
                 .title(source.getTitle())
                 .layerDataId(targetLayer.getLayerDataId())
                 .mountX(source.getMountX())
@@ -1688,15 +1705,53 @@ public class WLayerService implements StorageProvider {
 
     /**
      * Get model IDs for a layerDataId.
-     *
-     * NEW CONCEPT: Returns only IDs to avoid heavy memory load.
-     * Load full models step by step using loadModelById.
+     * Uses MongoDB projection to avoid loading the heavy content field.
      */
     @Transactional(readOnly = true)
     public List<String> getModelIds(String layerDataId) {
-        return modelRepository.findByLayerDataIdOrderByOrder(layerDataId).stream()
+        Query query = new Query(Criteria.where("layerDataId").is(layerDataId));
+        query.fields().include("_id");
+        query.with(org.springframework.data.domain.Sort.by("order"));
+        return mongoTemplate.find(query, WLayerModel.class).stream()
                 .map(WLayerModel::getId)
-                .collect(java.util.stream.Collectors.toList());
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * List model summaries for a layerDataId (without content/blocks data).
+     * Returns all metadata fields but excludes the heavy content list.
+     * Sorted by order field.
+     */
+    @Transactional(readOnly = true)
+    public List<WLayerModel> listModelSummaries(String layerDataId) {
+        Query query = new Query(Criteria.where("layerDataId").is(layerDataId));
+        query.fields().exclude("content");
+        query.with(org.springframework.data.domain.Sort.by("order"));
+        return mongoTemplate.find(query, WLayerModel.class);
+    }
+
+    /**
+     * Find a single model by ID without loading the content field.
+     */
+    @Transactional(readOnly = true)
+    public Optional<WLayerModel> findModelSummaryById(String modelId) {
+        Query query = new Query(Criteria.where("_id").is(modelId));
+        query.fields().exclude("content");
+        WLayerModel result = mongoTemplate.findOne(query, WLayerModel.class);
+        return Optional.ofNullable(result);
+    }
+
+    /**
+     * Save a model entity.
+     * For new models (id == null), checks that no duplicate name exists in the same layer.
+     */
+    @Transactional
+    public WLayerModel saveModel(WLayerModel model) {
+        if (model.getId() == null && !Strings.isBlank(model.getName())
+                && modelRepository.existsByLayerDataIdAndName(model.getLayerDataId(), model.getName())) {
+            throw new IllegalArgumentException("Model with name '" + model.getName() + "' already exists in this layer");
+        }
+        return modelRepository.save(model);
     }
 
     /**

@@ -292,7 +292,7 @@ onMounted(async () => {
 
 // Filter only GROUND layers for flat creation
 const groundLayers = computed(() => {
-  return availableLayers.value.filter(layer => layer.layerType === 'GROUND');
+  return availableLayers.value.filter(layer => String(layer.layerType).toUpperCase() === 'GROUND');
 });
 
 const isGridBorderType = computed(() => {

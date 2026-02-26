@@ -19,6 +19,7 @@ export interface LayerModelDto {
   referenceModelId?: string;
   order: number;
   groups: Record<string, string>;
+  parameters?: Record<string, string>;
   createdAt?: Date;
   updatedAt?: Date;
 }
