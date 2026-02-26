@@ -2,6 +2,13 @@ spring:
   application:
     name: WorldGenerator
     host: localhost
+  ai:
+    mcp:
+      server:
+        name: nimbus-generator
+        version: 1.0.0
+        type: SYNC
+        sse-message-endpoint: /mcp/message
   data:
     mongodb:
       uri: ${MONGODB_URI:mongodb://root:example@localhost:27017/world?authSource=admin}
