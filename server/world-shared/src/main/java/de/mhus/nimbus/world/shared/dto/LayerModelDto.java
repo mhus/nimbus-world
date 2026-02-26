@@ -34,6 +34,12 @@ public record LayerModelDto(
 
         String layerDataId,
 
+        int sizeX,
+
+        int sizeY,
+
+        int sizeZ,
+
         int mountX,
 
         int mountY,

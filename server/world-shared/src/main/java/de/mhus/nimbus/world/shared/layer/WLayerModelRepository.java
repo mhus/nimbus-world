@@ -56,4 +56,9 @@ public interface WLayerModelRepository extends MongoRepository<WLayerModel, Stri
      * Check if a model with the given layerDataId and name already exists.
      */
     boolean existsByLayerDataIdAndName(String layerDataId, String name);
+
+    /**
+     * Find a model by layerDataId and name.
+     */
+    Optional<WLayerModel> findByLayerDataIdAndName(String layerDataId, String name);
 }

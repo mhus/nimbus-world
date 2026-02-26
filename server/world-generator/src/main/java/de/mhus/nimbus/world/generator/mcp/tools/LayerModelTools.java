@@ -378,6 +378,58 @@ public class LayerModelTools {
         );
     }
 
+    @Tool(name = "touch_layer_model", description = "Touch a layer model to recalculate sizeX/sizeY/sizeZ from actual block positions")
+    public Map<String, Object> touchLayerModel(
+            @ToolParam(description = "World ID") String worldId,
+            @ToolParam(description = "Layer ID (must be MODEL type)") String layerId,
+            @ToolParam(description = "Model name (optional, touches all models in layer if not specified)", required = false) String modelName) {
+        log.debug("MCP: Touch layer model: worldId={}, layerId={}, modelName={}", worldId, layerId, modelName);
+
+        WorldId.of(worldId).orElseThrow(
+                () -> new McpToolException("Invalid worldId: " + worldId)
+        );
+
+        if (Strings.isBlank(layerId)) {
+            throw new McpToolException("layerId is required");
+        }
+
+        Optional<WLayer> layerOpt = layerService.findById(layerId);
+        if (layerOpt.isEmpty() || !layerOpt.get().getWorldId().equals(worldId)) {
+            throw new McpToolException("layer not found");
+        }
+
+        WLayer layer = layerOpt.get();
+        if (layer.getLayerType() != LayerType.MODEL) {
+            throw new McpToolException("operation only supported for MODEL layers");
+        }
+
+        if (layer.getLayerDataId() == null) {
+            throw new McpToolException("layer has no layerDataId");
+        }
+
+        int touched = 0;
+        if (!Strings.isBlank(modelName)) {
+            Optional<WLayerModel> modelOpt = modelRepository.findByLayerDataIdAndName(layer.getLayerDataId(), modelName);
+            if (modelOpt.isEmpty()) {
+                throw new McpToolException("model not found: " + modelName);
+            }
+            layerService.saveModel(modelOpt.get());
+            touched = 1;
+        } else {
+            // Load only IDs first to avoid heavy memory load, then process one by one
+            List<String> modelIds = layerService.getModelIds(layer.getLayerDataId());
+            for (String modelId : modelIds) {
+                Optional<WLayerModel> modelOpt = modelRepository.findById(modelId);
+                if (modelOpt.isPresent()) {
+                    layerService.saveModel(modelOpt.get());
+                    touched++;
+                }
+            }
+        }
+
+        return Map.of("touched", touched, "layerId", layerId);
+    }
+
     private Map<String, Object> toLayerBlockDto(LayerBlock layerBlock) {
         Map<String, Object> dto = new HashMap<>();
         if (layerBlock.getBlock() != null) {

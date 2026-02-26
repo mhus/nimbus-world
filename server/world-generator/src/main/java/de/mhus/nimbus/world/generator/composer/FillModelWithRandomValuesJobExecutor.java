@@ -274,7 +274,7 @@ public class FillModelWithRandomValuesJobExecutor implements JobExecutor {
         metadata.put("totalGrids", String.valueOf(
                 composition.getFeatureHexGrids() != null ? composition.getFeatureHexGrids().size() : 0));
 
-        documentService.save(wid, COMPOSED_COLLECTION, newDocumentId, doc -> {
+        WDocument saved = documentService.save(wid, COMPOSED_COLLECTION, newDocumentId, doc -> {
             doc.setName(sourceDocumentName);
             doc.setTitle(composition.getName() != null ? composition.getName() : "Enriched Composition");
             doc.setFormat("json");
@@ -284,7 +284,7 @@ public class FillModelWithRandomValuesJobExecutor implements JobExecutor {
             doc.setReadOnly(false);
         });
 
-        return newDocumentId;
+        return saved.getDocumentId();
     }
 
     private String getRequiredParameter(WJob job, String paramName) throws JobExecutionException {

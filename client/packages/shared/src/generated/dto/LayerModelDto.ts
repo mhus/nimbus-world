@@ -12,6 +12,9 @@ export interface LayerModelDto {
   licenseType?: string;
   licenseAuthor?: string;
   layerDataId: string;
+  sizeX: number;
+  sizeY: number;
+  sizeZ: number;
   mountX: number;
   mountY: number;
   mountZ: number;

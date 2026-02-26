@@ -58,18 +58,20 @@ public class StructuresIndex {
         // Check if style exists in index
         Map<String, List<BuildingDefinition>> styleMap = buildings.get(normalizedStyle);
         if (styleMap == null) {
-            log.debug("No buildings found for style: {}", style);
+            log.debug("No buildings found for style='{}' kind='{}' (available styles: {})",
+                style, kind, buildings.keySet());
             return new ArrayList<>();
         }
 
         // Check if kind exists for this style
         List<BuildingDefinition> kindList = styleMap.get(normalizedKind);
         if (kindList == null) {
-            log.debug("No buildings found for style: {}, kind: {}", style, kind);
+            log.debug("No buildings found for style='{}' kind='{}' (available kinds for style: {})",
+                style, kind, styleMap.keySet());
             return new ArrayList<>();
         }
 
-        log.debug("Found {} building(s) for style: {}, kind: {}", kindList.size(), style, kind);
+        log.debug("Found {} building(s) for style='{}' kind='{}'", kindList.size(), style, kind);
         return new ArrayList<>(kindList); // Return copy to prevent external modification
     }
 

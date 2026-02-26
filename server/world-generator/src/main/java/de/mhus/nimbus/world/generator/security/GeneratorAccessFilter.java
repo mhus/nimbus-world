@@ -56,7 +56,7 @@ public class GeneratorAccessFilter extends AccessFilterBase {
         String requestUri = request.getRequestURI();
 
         // MCP endpoints: check MCP token instead of session auth
-        if (requestUri.startsWith("/sse") || requestUri.startsWith("/mcp/")) {
+        if (requestUri.startsWith("/sse") || requestUri.startsWith("/mcp")) {
             String mcpToken = settingMcpToken.get();
 
             if (Strings.isBlank(mcpToken)) {

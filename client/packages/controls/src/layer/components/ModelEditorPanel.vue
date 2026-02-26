@@ -128,6 +128,45 @@
           </label>
         </div>
 
+        <!-- Size (read-only) -->
+        <div v-if="isEditMode" class="form-control">
+          <label class="label">
+            <span class="label-text">Size</span>
+          </label>
+          <div class="grid grid-cols-3 gap-4">
+            <div>
+              <input
+                :value="formData.sizeX"
+                type="number"
+                class="input input-bordered w-full"
+                placeholder="X"
+                disabled
+              />
+            </div>
+            <div>
+              <input
+                :value="formData.sizeY"
+                type="number"
+                class="input input-bordered w-full"
+                placeholder="Y"
+                disabled
+              />
+            </div>
+            <div>
+              <input
+                :value="formData.sizeZ"
+                type="number"
+                class="input input-bordered w-full"
+                placeholder="Z"
+                disabled
+              />
+            </div>
+          </div>
+          <label class="label">
+            <span class="label-text-alt">Bounding box size (calculated from blocks, read-only)</span>
+          </label>
+        </div>
+
         <!-- Rotation -->
         <div class="form-control">
           <label class="label">

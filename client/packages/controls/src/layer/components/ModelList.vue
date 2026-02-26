@@ -12,7 +12,7 @@
               {{ model.title || model.name || 'Unnamed Model' }}
             </h4>
             <div class="text-sm text-base-content/70 space-y-1 mt-1">
-              <div>Mount: ({{ model.mountX }}, {{ model.mountY }}, {{ model.mountZ }})</div>
+              <div>Size: {{ model.sizeX }} x {{ model.sizeY }} x {{ model.sizeZ }} | Mount: ({{ model.mountX }}, {{ model.mountY }}, {{ model.mountZ }})</div>
               <div>Order: {{ model.order }}</div>
               <div v-if="model.rotation !== 0">Rotation: {{ model.rotation * 90 }}°</div>
               <div v-if="model.referenceModelId">

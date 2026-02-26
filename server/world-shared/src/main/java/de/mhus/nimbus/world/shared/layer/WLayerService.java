@@ -1398,7 +1398,7 @@ public class WLayerService implements StorageProvider {
                 .build();
         newModel.touchCreate();
 
-        WLayerModel saved = modelRepository.save(newModel);
+        WLayerModel saved = recalculateAndSave(newModel);
         log.info("Created model: id={} layerDataId={} name={} blocks={}", saved.getId(), layerDataId, name, content.size());
 
         return saved;
@@ -1422,7 +1422,7 @@ public class WLayerService implements StorageProvider {
         updater.accept(model);
         model.touchUpdate();
 
-        WLayerModel saved = modelRepository.save(model);
+        WLayerModel saved = recalculateAndSave(model);
         log.info("Updated model: id={} name={}", modelId, model.getName());
 
         return Optional.of(saved);
@@ -1495,7 +1495,7 @@ public class WLayerService implements StorageProvider {
         model.setMountZ(model.getMountZ() + offsetZ);
 
         model.touchUpdate();
-        WLayerModel saved = modelRepository.save(model);
+        WLayerModel saved = recalculateAndSave(model);
 
         log.info("Auto-adjusted center for model: modelId={} newMount=({},{},{})",
                 modelId, saved.getMountX(), saved.getMountY(), saved.getMountZ());
@@ -1548,7 +1548,7 @@ public class WLayerService implements StorageProvider {
         model.setMountZ(model.getMountZ() + offsetZ);
 
         model.touchUpdate();
-        WLayerModel saved = modelRepository.save(model);
+        WLayerModel saved = recalculateAndSave(model);
 
         log.info("Manual adjusted center for model: modelId={} newMount=({},{},{})",
                 modelId, saved.getMountX(), saved.getMountY(), saved.getMountZ());
@@ -1597,7 +1597,7 @@ public class WLayerService implements StorageProvider {
 
         // Mount point stays the same
         model.touchUpdate();
-        WLayerModel saved = modelRepository.save(model);
+        WLayerModel saved = recalculateAndSave(model);
 
         log.info("Transform moved model: modelId={} offset=({},{},{})",
                 modelId, offsetX, offsetY, offsetZ);
@@ -1659,7 +1659,7 @@ public class WLayerService implements StorageProvider {
                 .build();
 
         copy.touchCreate();
-        WLayerModel saved = modelRepository.save(copy);
+        WLayerModel saved = recalculateAndSave(copy);
 
         log.info("Copied model: sourceId={} targetLayerId={} newId={} newName={}",
                 sourceModelId, targetLayerId, saved.getId(), saved.getName());
@@ -1697,7 +1697,7 @@ public class WLayerService implements StorageProvider {
         entity.setContent(content);
         entity.touchUpdate();
 
-        WLayerModel saved = modelRepository.save(entity);
+        WLayerModel saved = recalculateAndSave(entity);
         log.info("Saved model: layerDataId={} blocks={}", layerDataId, content.size());
 
         return saved;
@@ -1750,6 +1750,41 @@ public class WLayerService implements StorageProvider {
         if (model.getId() == null && !Strings.isBlank(model.getName())
                 && modelRepository.existsByLayerDataIdAndName(model.getLayerDataId(), model.getName())) {
             throw new IllegalArgumentException("Model with name '" + model.getName() + "' already exists in this layer");
+        }
+        return recalculateAndSave(model);
+    }
+
+    /**
+     * Recalculate sizeX/sizeY/sizeZ from actual block positions and save.
+     * Ensures dimensions always reflect the real block extent, not potentially inflated
+     * values from schematic bounding boxes.
+     */
+    private WLayerModel recalculateAndSave(WLayerModel model) {
+        List<LayerBlock> content = model.getContent();
+        if (content != null && !content.isEmpty()) {
+            int minX = Integer.MAX_VALUE, maxX = Integer.MIN_VALUE;
+            int minY = Integer.MAX_VALUE, maxY = Integer.MIN_VALUE;
+            int minZ = Integer.MAX_VALUE, maxZ = Integer.MIN_VALUE;
+            int count = 0;
+
+            for (LayerBlock block : content) {
+                if (block.getBlock() != null && block.getBlock().getPosition() != null) {
+                    de.mhus.nimbus.generated.types.Vector3Int pos = block.getBlock().getPosition();
+                    minX = Math.min(minX, pos.getX());
+                    maxX = Math.max(maxX, pos.getX());
+                    minY = Math.min(minY, pos.getY());
+                    maxY = Math.max(maxY, pos.getY());
+                    minZ = Math.min(minZ, pos.getZ());
+                    maxZ = Math.max(maxZ, pos.getZ());
+                    count++;
+                }
+            }
+
+            if (count > 0) {
+                model.setSizeX(maxX - minX + 1);
+                model.setSizeY(maxY - minY + 1);
+                model.setSizeZ(maxZ - minZ + 1);
+            }
         }
         return modelRepository.save(model);
     }

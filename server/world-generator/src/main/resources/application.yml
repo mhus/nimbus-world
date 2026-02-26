@@ -8,7 +8,7 @@ spring:
         name: nimbus-generator
         version: 1.0.0
         type: SYNC
-        sse-message-endpoint: /mcp/message
+        protocol: STATELESS
   data:
     mongodb:
       uri: ${MONGODB_URI:mongodb://root:example@localhost:27017/world?authSource=admin}
@@ -57,6 +57,7 @@ logging:
   level:
     root: INFO
     de.mhus.nimbus: DEBUG
+    org.apache.tomcat.util.net.NioEndpoint: FATAL
 
 # LangChain4j Configuration
 langchain4j:

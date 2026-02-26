@@ -480,33 +480,33 @@ public class TownDesigner {
                 if (building.getDimensions() != null) {
                     Vector3Int dims = building.getDimensions();
                     int buildingSize = Math.max(dims.getX(), dims.getZ());
-
                     if (buildingSize <= maxSizeWithTolerance) {
                         matchingBuildings.add(building);
                     }
                 }
             }
 
-            // Select random building from matching candidates
-            if (!matchingBuildings.isEmpty()) {
-                BuildingDefinition selected = matchingBuildings.get(random.nextInt(matchingBuildings.size()));
-                placedPlace.setBuildingId(selected.getBuildingId());
-
-                // Mark as oversized if necessary
-                if (selected.getDimensions() != null) {
-                    Vector3Int dims = selected.getDimensions();
-                    int buildingSize = Math.max(dims.getX(), dims.getZ());
-                    placedPlace.setOversized(buildingSize > maxSize);
-                }
-
-                log.debug("Assigned building '{}' to place '{}'{}",
-                    selected.getBuildingId(),
-                    place.getName(),
-                    placedPlace.isOversized() ? " (OVERSIZED)" : "");
-            } else {
-                log.warn("No buildings found that fit size {} (with {}% tolerance) for place '{}'",
-                    maxSize, (int)(OVERSIZE_TOLERANCE * 100), place.getName());
+            if (matchingBuildings.isEmpty()) {
+                log.warn("No buildings fit size {} (max with tolerance: {}) for place '{}'",
+                    maxSize, maxSizeWithTolerance, place.getName());
+                continue;
             }
+
+            BuildingDefinition selected = matchingBuildings.get(random.nextInt(matchingBuildings.size()));
+
+            placedPlace.setBuildingId(selected.getBuildingId());
+
+            // Mark as oversized if necessary
+            if (selected.getDimensions() != null) {
+                Vector3Int dims = selected.getDimensions();
+                int buildingSize = Math.max(dims.getX(), dims.getZ());
+                placedPlace.setOversized(buildingSize > maxSize);
+            }
+
+            log.debug("Assigned building '{}' to place '{}'{}",
+                selected.getBuildingId(),
+                place.getName(),
+                placedPlace.isOversized() ? " (OVERSIZED)" : "");
         }
     }
 

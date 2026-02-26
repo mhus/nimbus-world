@@ -1,5 +1,6 @@
 package de.mhus.nimbus.world.generator.genesis;
 
+import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.generator.structures.HexGridStructurePlacerJobExecutor;
 import de.mhus.nimbus.world.shared.generator.WFlatService;
@@ -8,6 +9,7 @@ import de.mhus.nimbus.world.shared.workflow.OnSuccess;
 import de.mhus.nimbus.world.shared.workflow.WorkflowContext;
 import de.mhus.nimbus.world.shared.workflow.WorkflowException;
 import de.mhus.nimbus.world.shared.world.WDocumentService;
+import de.mhus.nimbus.world.shared.world.WHexGridService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
@@ -52,6 +54,7 @@ public class Day3Generation extends MethodBasedWorkflow {
 
     private final WDocumentService documentService;
     private final WFlatService flatService;
+    private final WHexGridService hexGridService;
 
     @Override
     public String name() {
@@ -322,14 +325,24 @@ public class Day3Generation extends MethodBasedWorkflow {
                 }
             }
             case "structuresAll" -> {
-                context.updateWorkflowStatus("placeStructures");
-                context.enqueueJob(
-                        HexGridStructurePlacerJobExecutor.EXECUTOR_NAME, "", "",
-                        "Structures for " + gridLabel,
-                        Map.of(
-                                "hexQ", String.valueOf(coord.getQ()),
-                                "hexR", String.valueOf(coord.getR())
-                        ));
+                // Only place structures for grids that have g_village defined
+                var hexPos = HexVector2.builder().q(coord.getQ()).r(coord.getR()).build();
+                var hexGridOpt = hexGridService.findByWorldIdAndPosition(context.getWorldId(), hexPos);
+                if (hexGridOpt.isPresent() && !Strings.isBlank(hexGridOpt.get().getParameters().get("g_village"))) {
+                    context.updateWorkflowStatus("placeStructures");
+                    context.enqueueJob(
+                            HexGridStructurePlacerJobExecutor.EXECUTOR_NAME, "", "",
+                            "Structures for " + gridLabel,
+                            Map.of(
+                                    "hexQ", String.valueOf(coord.getQ()),
+                                    "hexR", String.valueOf(coord.getR())
+                            ));
+                } else {
+                    log.info("Skipping structures for {} - no g_village defined", gridLabel);
+                    state.setCurrentIndex(index + 1);
+                    context.addRecord(state);
+                    processNextInPhase(context, state);
+                }
             }
             case "waitForChunks" -> {
                 // Only execute once (at index 0), not for each grid
