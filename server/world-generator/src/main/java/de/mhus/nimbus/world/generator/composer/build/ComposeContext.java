@@ -3,6 +3,7 @@ package de.mhus.nimbus.world.generator.composer.build;
 import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.world.generator.composer.biome.PlacedBiome;
 import de.mhus.nimbus.world.generator.composer.point.Point;
+import de.mhus.nimbus.world.generator.composer.town.StructuresIndex;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
 import de.mhus.nimbus.world.shared.world.WWorld;
 import lombok.Builder;
@@ -28,6 +29,12 @@ public class ComposeContext {
      * The world this composition belongs to.
      */
     private WWorld world;
+
+    /**
+     * Index of available building/structure definitions.
+     * Loaded from the region collection's 'structures' layer.
+     */
+    private StructuresIndex structuresIndex;
 
     /**
      * All placed biomes with their coordinates.

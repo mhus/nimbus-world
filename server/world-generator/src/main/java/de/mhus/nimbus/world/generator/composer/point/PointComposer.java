@@ -10,6 +10,7 @@ import de.mhus.nimbus.world.generator.composer.biome.BiomePlacementResult;
 import de.mhus.nimbus.world.generator.composer.build.ComposeContext;
 import de.mhus.nimbus.world.generator.composer.feature.Feature;
 import de.mhus.nimbus.world.generator.composer.feature.FeatureStatus;
+import de.mhus.nimbus.world.generator.composer.town.StructuresIndex;
 import de.mhus.nimbus.world.shared.util.HexLocalUtil;
 import de.mhus.nimbus.world.shared.world.HexLocalEdgeVector;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
@@ -58,6 +59,13 @@ public class PointComposer {
     public PointCompositionResult composePoints(HexComposition prepared,
                                                 BiomePlacementResult placementResult,
                                                 de.mhus.nimbus.world.shared.world.WWorld world) {
+        return composePoints(prepared, placementResult, world, null);
+    }
+
+    public PointCompositionResult composePoints(HexComposition prepared,
+                                                BiomePlacementResult placementResult,
+                                                de.mhus.nimbus.world.shared.world.WWorld world,
+                                                StructuresIndex structuresIndex) {
         log.debug("Starting point composition");
 
         List<String> errors = new ArrayList<>();
@@ -67,7 +75,7 @@ public class PointComposer {
 
         try {
             // Build compose context
-            ComposeContext context = buildComposeContext(prepared, placementResult, world);
+            ComposeContext context = buildComposeContext(prepared, placementResult, world, structuresIndex);
 
             // Collect all points
             List<Point> allPoints = collectAllPoints(context);
@@ -166,7 +174,8 @@ public class PointComposer {
      */
     private ComposeContext buildComposeContext(HexComposition composition,
                                               BiomePlacementResult placementResult,
-                                              de.mhus.nimbus.world.shared.world.WWorld world) {
+                                              de.mhus.nimbus.world.shared.world.WWorld world,
+                                              StructuresIndex structuresIndex) {
         // Build biome maps
         Map<String, PlacedBiome> biomeMap = new HashMap<>();
         Map<String, HexVector2> biomeCenterMap = new HashMap<>();
@@ -198,6 +207,7 @@ public class PointComposer {
         return ComposeContext.builder()
             .composition(composition)
             .world(world)
+            .structuresIndex(structuresIndex != null ? structuresIndex : new StructuresIndex())
             .placedBiomes(placementResult.getPlacedBiomes())
             .biomeMap(biomeMap)
             .biomeCenterMap(biomeCenterMap)

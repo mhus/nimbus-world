@@ -135,9 +135,10 @@ public class VillagePoint extends Point {
             return;
         }
 
-        // Create BuildingIndex (TODO: Load from external source)
-        BuildingIndex buildingIndex = new BuildingIndex();
-        log.debug("Created BuildingIndex for VillagePoint '{}' (currently empty)", getName());
+        // Get StructuresIndex from context (loaded from region collection)
+        StructuresIndex buildingIndex = context.getStructuresIndex() != null
+                ? context.getStructuresIndex() : new StructuresIndex();
+        log.debug("Using StructuresIndex for VillagePoint '{}' with {} buildings", getName(), buildingIndex.getTotalBuildingCount());
 
         // Design the village using TownDesigner
         TownDesigner designer = new TownDesigner(buildingIndex);

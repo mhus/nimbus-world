@@ -90,6 +90,7 @@ public class GenerateHexGridFromCompositeJobTest {
         applyJobExecutor = new ApplyTranslatedInstructionJobExecutor(
                 documentService,
                 worldService,
+                null,
                 objectMapper
         );
 

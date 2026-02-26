@@ -178,7 +178,7 @@ public class ModelBuilderContext {
     }
 
     private void applyAutoLevel(EditBlockPainter p, int y) {
-        if (fillBlockLevel) {
+        if (fillBlockLevel && level == null) {
             p.setLevel(y - startY);
         }
     }

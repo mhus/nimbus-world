@@ -121,7 +121,7 @@ public class StructureComposer {
         // This will run VillageDesigner and set g_village parameters
         // Pass empty list as coordinates are determined by districts
         log.debug("Calling village.configureHexGrids() for '{}' with hexGridSize: {}", village.getName(), hexGridSize);
-        village.configureHexGrids(new ArrayList<>(), hexGridSize);
+        village.configureHexGrids(new ArrayList<>(), hexGridSize, context.getStructuresIndex());
 
         log.debug("Village '{}' configured {} HexGrids", village.getName(),
             village.getHexGrids() != null ? village.getHexGrids().size() : 0);

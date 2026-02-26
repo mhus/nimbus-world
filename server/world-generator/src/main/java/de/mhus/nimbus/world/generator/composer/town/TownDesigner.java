@@ -48,7 +48,7 @@ public class TownDesigner {
         7, 37   // TINY: 37 slots (but we use 7 from DistrictSlotSize)
     );
 
-    private final BuildingIndex buildingIndex;
+    private final StructuresIndex buildingIndex;
     private final Random random;
 
     /**
@@ -56,7 +56,7 @@ public class TownDesigner {
      *
      * @param buildingIndex Index of available buildings
      */
-    public TownDesigner(BuildingIndex buildingIndex) {
+    public TownDesigner(StructuresIndex buildingIndex) {
         this.buildingIndex = buildingIndex;
         this.random = new Random();
     }

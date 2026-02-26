@@ -197,7 +197,7 @@ public class Town extends Structure implements BuildFeature {
      * @param coordinates Grid coordinates (not used for towns, districts define positions)
      * @param hexGridSize Size of each hex grid from world configuration
      */
-    public void configureHexGrids(List<HexVector2> coordinates, int hexGridSize) {
+    public void configureHexGrids(List<HexVector2> coordinates, int hexGridSize, StructuresIndex structuresIndex) {
         log.debug("Configuring HexGrids for town '{}' with {} districts (hexGridSize: {})",
             getName(), districts != null ? districts.size() : 0, hexGridSize);
 
@@ -213,10 +213,9 @@ public class Town extends Structure implements BuildFeature {
             return;
         }
 
-        // Create BuildingIndex (TODO: Load from external source)
-        BuildingIndex buildingIndex = new BuildingIndex();
-        // TODO: Load buildings from file/database
-        log.debug("Created BuildingIndex for town '{}' (currently empty)", getName());
+        // Use provided StructuresIndex (loaded from region collection)
+        StructuresIndex buildingIndex = structuresIndex != null ? structuresIndex : new StructuresIndex();
+        log.debug("Using StructuresIndex for town '{}' with {} buildings", getName(), buildingIndex.getTotalBuildingCount());
 
         // Design the town using TownDesigner
         TownDesigner designer = new TownDesigner(buildingIndex);

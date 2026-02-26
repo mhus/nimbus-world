@@ -8,6 +8,8 @@ import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.generator.composer.build.CompositionResult;
 import de.mhus.nimbus.world.generator.composer.build.HexCompositeBuilder;
 import de.mhus.nimbus.world.generator.composer.build.HexComposition;
+import de.mhus.nimbus.world.generator.composer.town.StructuresIndex;
+import de.mhus.nimbus.world.generator.composer.town.StructuresService;
 import de.mhus.nimbus.world.shared.job.JobExecutionException;
 import de.mhus.nimbus.world.shared.job.JobExecutor;
 import de.mhus.nimbus.world.shared.job.WJob;
@@ -60,6 +62,7 @@ public class ApplyTranslatedInstructionJobExecutor implements JobExecutor {
 
     private final WDocumentService documentService;
     private final WWorldService worldService;
+    private final StructuresService structuresService;
     private final ObjectMapper objectMapper;
 
     @Override
@@ -129,6 +132,16 @@ public class ApplyTranslatedInstructionJobExecutor implements JobExecutor {
                 log.warn("Could not load world, using null: {}", e.getMessage());
             }
 
+            // Load structures index from region collection
+            StructuresIndex structuresIndex = null;
+            try {
+                structuresIndex = structuresService.findStructuresForWorldId(job.getWorldId());
+                log.info("Loaded StructuresIndex for worldId={}: {} buildings", job.getWorldId(), structuresIndex.getTotalBuildingCount());
+            } catch (Exception e) {
+                log.warn("Failed to load structures index, continuing without: {}", e.getMessage());
+                structuresIndex = new StructuresIndex();
+            }
+
             // Retry loop for composition
             CompositionResult result = null;
             String previousError = null;
@@ -149,6 +162,7 @@ public class ApplyTranslatedInstructionJobExecutor implements JobExecutor {
                             .seed(compositionSeed)
                             .fillGaps(fillGaps)
                             .oceanBorderRings(oceanBorderRings)
+                            .structuresIndex(structuresIndex)
                             .build()
                             .compose();
 

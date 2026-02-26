@@ -194,7 +194,11 @@ public class WorldId implements Comparable<WorldId> {
      */
     public WorldId toRegionCollection() {
         parseId();
-        if (isCollection()) return this;
+        if (isCollection()) {
+            if (isSharedCollection())
+                throw new IllegalStateException("Shared collection cannot be converted to region collection: " + id);
+            return this;
+        }
         return WorldId.of(COLLECTION_REGION, regionId)
                 .orElseThrow(() -> new IllegalArgumentException("Invalid region worldId: " + regionId));
     }

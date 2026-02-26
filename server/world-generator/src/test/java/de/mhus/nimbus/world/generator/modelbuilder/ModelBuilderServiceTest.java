@@ -62,7 +62,7 @@ class ModelBuilderServiceTest {
                 .build();
 
         Vector3Int startPos = Vector3Int.builder().x(5).y(10).z(5).build();
-        ModelBuilderContext ctx = service.buildModel(world, layer, model, startPos, Map.of());
+        ModelBuilderContext ctx = service.buildModel(world, layer, model, startPos, Map.of(), null);
 
         assertThat(ctx.getBlockCount()).isEqualTo(3);
         assertThat(ctx.getChunkDataMap()).isNotEmpty();
@@ -103,7 +103,7 @@ class ModelBuilderServiceTest {
 
         // Start at chunk boundary: x=15 is chunk 0, x=16 would be chunk 1
         Vector3Int startPos = Vector3Int.builder().x(15).y(5).z(0).build();
-        ModelBuilderContext ctx = service.buildModel(world, layer, model, startPos, Map.of());
+        ModelBuilderContext ctx = service.buildModel(world, layer, model, startPos, Map.of(), null);
 
         assertThat(ctx.getBlockCount()).isEqualTo(2);
         // All blocks in chunk "0:0" since x=15 < 16
@@ -126,7 +126,7 @@ class ModelBuilderServiceTest {
                 .build();
 
         Vector3Int startPos = Vector3Int.builder().x(0).y(5).z(0).build();
-        ModelBuilderContext ctx = service.buildModel(world, layer, model, startPos, Map.of("1", "n:s"));
+        ModelBuilderContext ctx = service.buildModel(world, layer, model, startPos, Map.of("1", "n:s"), null);
 
         assertThat(ctx.getBlockCount()).isEqualTo(1);
         var block = ctx.getChunkDataMap().get("0:0").getBlocks().get(0).getBlock();
@@ -152,7 +152,7 @@ class ModelBuilderServiceTest {
                 .build();
 
         Vector3Int startPos = Vector3Int.builder().x(0).y(10).z(0).build();
-        ModelBuilderContext ctx = service.buildModel(world, layer, model, startPos, Map.of());
+        ModelBuilderContext ctx = service.buildModel(world, layer, model, startPos, Map.of(), null);
 
         assertThat(ctx.getBlockCount()).isEqualTo(2);
     }
@@ -165,7 +165,7 @@ class ModelBuilderServiceTest {
 
         Vector3Int startPos = Vector3Int.builder().x(0).y(0).z(0).build();
 
-        assertThatThrownBy(() -> service.buildModel(world, layer, model, startPos, Map.of()))
+        assertThatThrownBy(() -> service.buildModel(world, layer, model, startPos, Map.of(), null))
                 .isInstanceOf(ModelBuilderException.class)
                 .hasMessageContaining("no steps");
     }
@@ -187,7 +187,7 @@ class ModelBuilderServiceTest {
 
         Vector3Int startPos = Vector3Int.builder().x(0).y(0).z(0).build();
 
-        assertThatThrownBy(() -> service.buildModel(world, layer, model, startPos, Map.of()))
+        assertThatThrownBy(() -> service.buildModel(world, layer, model, startPos, Map.of(), null))
                 .isInstanceOf(ModelBuilderException.class)
                 .hasMessageContaining("Invalid blockType");
     }
@@ -223,7 +223,7 @@ class ModelBuilderServiceTest {
                 .build();
 
         Vector3Int startPos = Vector3Int.builder().x(0).y(0).z(0).build();
-        ModelBuilderContext ctx = svc.buildModel(world, layer, model, startPos, Map.of());
+        ModelBuilderContext ctx = svc.buildModel(world, layer, model, startPos, Map.of(), null);
 
         assertThat(ctx.getBlockCount()).isEqualTo(1);
         var block = ctx.getChunkDataMap().get("0:0").getBlocks().get(0).getBlock();
@@ -247,7 +247,7 @@ class ModelBuilderServiceTest {
 
         // x=-5, z=-5 -> chunk -1:-1 (Math.floorDiv)
         Vector3Int startPos = Vector3Int.builder().x(-5).y(10).z(-5).build();
-        ModelBuilderContext ctx = service.buildModel(world, layer, model, startPos, Map.of());
+        ModelBuilderContext ctx = service.buildModel(world, layer, model, startPos, Map.of(), null);
 
         assertThat(ctx.getBlockCount()).isEqualTo(1);
         assertThat(ctx.getChunkDataMap()).containsKey("-1:-1");
@@ -279,7 +279,7 @@ class ModelBuilderServiceTest {
                 .build();
 
         Vector3Int startPos = Vector3Int.builder().x(8).y(0).z(8).build();
-        ModelBuilderContext ctx = service.buildModel(world, layer, model, startPos, Map.of());
+        ModelBuilderContext ctx = service.buildModel(world, layer, model, startPos, Map.of(), null);
 
         // trunk=4 blocks, leaf=sphere radius 2 with density 1.0 -> many blocks
         assertThat(ctx.getBlockCount()).isGreaterThan(4);
@@ -291,7 +291,7 @@ class ModelBuilderServiceTest {
     @Test
     void buildFromDescriptor_blockStack_paintsVertically() throws ModelBuilderException {
         Vector3Int startPos = Vector3Int.builder().x(5).y(10).z(5).build();
-        ModelBuilderContext ctx = service.buildFromDescriptor(world, layer, "block:n:g,n:w", null, startPos, null);
+        ModelBuilderContext ctx = service.buildFromDescriptor(world, layer, "block:n:g,n:w", null, startPos, null, null);
 
         assertThat(ctx.getBlockCount()).isEqualTo(2);
         assertThat(ctx.getChunkDataMap()).isNotEmpty();
@@ -312,7 +312,7 @@ class ModelBuilderServiceTest {
     @Test
     void buildFromDescriptor_singleBlock() throws ModelBuilderException {
         Vector3Int startPos = Vector3Int.builder().x(0).y(5).z(0).build();
-        ModelBuilderContext ctx = service.buildFromDescriptor(world, layer, "block:n:g", null, startPos, null);
+        ModelBuilderContext ctx = service.buildFromDescriptor(world, layer, "block:n:g", null, startPos, null, null);
 
         assertThat(ctx.getBlockCount()).isEqualTo(1);
         var block = ctx.getChunkDataMap().get("0:0").getBlocks().get(0).getBlock();

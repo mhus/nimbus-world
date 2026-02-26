@@ -9,7 +9,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * BuildingIndex provides access to building definitions indexed by style and kind.
+ * StructuresIndex provides access to structure/building definitions indexed by style and kind.
  *
  * The index allows the village builder to search for appropriate buildings
  * based on the village style and building kind (house, tavern, shop, etc.).
@@ -18,7 +18,7 @@ import java.util.stream.Collectors;
  * indexed for fast lookup.
  */
 @Slf4j
-public class BuildingIndex {
+public class StructuresIndex {
 
     /**
      * Internal storage for building definitions.
@@ -30,9 +30,9 @@ public class BuildingIndex {
      * Creates a new BuildingIndex.
      * Initially empty - buildings must be added via addBuilding() or loaded from external sources.
      */
-    public BuildingIndex() {
+    public StructuresIndex() {
         // Initialize empty index
-        log.debug("Created new BuildingIndex");
+        log.debug("Created new StructuresIndex");
     }
 
     /**

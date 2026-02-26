@@ -19,6 +19,7 @@ import de.mhus.nimbus.world.generator.composer.flow.FlowComposer;
 import de.mhus.nimbus.world.generator.composer.point.PointComposer;
 import de.mhus.nimbus.world.generator.composer.structure.StructureComposer;
 import de.mhus.nimbus.world.generator.composer.structure.StructurePlacementResult;
+import de.mhus.nimbus.world.generator.composer.town.StructuresIndex;
 import de.mhus.nimbus.world.generator.composer.town.Town;
 import de.mhus.nimbus.world.generator.composer.town.TownExternalConnectionGenerator;
 import de.mhus.nimbus.world.shared.world.WWorld;
@@ -102,6 +103,12 @@ public class HexCompositeBuilder {
      */
     @Builder.Default
     private final int maxPlacementTolerance = 3;
+
+    /**
+     * Index of available building/structure definitions from the region collection.
+     * If null, an empty StructuresIndex will be used.
+     */
+    private final StructuresIndex structuresIndex;
 
     /**
      * Executes the complete composition pipeline.
@@ -208,9 +215,12 @@ public class HexCompositeBuilder {
             // Step 3.5: Compose structures (villages, towns, etc.)
             log.debug("Step 3.5: Composing structures");
 
+            StructuresIndex effectiveStructuresIndex = structuresIndex != null ? structuresIndex : new StructuresIndex();
+
             ComposeContext structureContext = ComposeContext.builder()
                 .composition(composition)
                 .world(world)
+                .structuresIndex(effectiveStructuresIndex)
                 .build();
 
             StructureComposer structureComposer = new StructureComposer();
@@ -334,7 +344,7 @@ public class HexCompositeBuilder {
             log.debug("Step 7: Composing points");
             PointComposer pointComposer = new PointComposer();
             PointComposer.PointCompositionResult pointResult = pointComposer.composePoints(
-                composition, placementResult, world);
+                composition, placementResult, world, effectiveStructuresIndex);
 
             if (!pointResult.isSuccess()) {
                 warnings.add("Point composition had issues: errors=" + pointResult.getErrors());
