@@ -16,34 +16,40 @@ import java.util.Map;
 public enum BiomeType implements TsEnum {
     MOUNTAINS(MountainBiome.class, "mountain", Map.of(
         "g_offset", "30",
-        "g_roughness", "0.8"
+        "g_roughness", "0.8",
+        "gf_flora", "mountain",
+        "gf_density", "0.1",
+        "gf_fauna", "mountain"
     )),
 
     FOREST(ForestBiome.class, "forest", Map.of(
         "g_offset", "5",
         "g_asl", "20",
         "dirtRatio", "0.3",
-        "gf_flora", "forest",
-        "gf_density", "0.8"
+        "gf_flora", "forest_mixed",
+        "gf_density", "0.8",
+        "gf_fauna", "forest"
     )),
 
-    PLAINS(PlainsBiome.class, "plains", Map.of(
-        "g_offset", "5",
-        "g_asl", "15",
-        "dirtRatio", "0.1",
-        "enableLakes", "true",
-        "lakeDepth", "4",
-        "gf_flora", "plains",
-        "gf_density", "0.3"
+    PLAINS(PlainsBiome.class, "plains", Map.ofEntries(
+        Map.entry("g_offset", "5"),
+        Map.entry("g_asl", "15"),
+        Map.entry("dirtRatio", "0.1"),
+        Map.entry("enableLakes", "true"),
+        Map.entry("lakeDepth", "4"),
+        Map.entry("gf_flora", "plains_flower"),
+        Map.entry("gf_density", "0.3"),
+        Map.entry("gf_fauna", "plains")
     )),
 
-    DESERT(DesertBiome.class, "desert", Map.of(
-        "g_offset", "15",
-        "g_asl", "30",
-        "dirtRatio", "0.05",
-        "stoneRatio", "0.3",
-        "gf_flora", "desert",
-        "gf_density", "0.3"
+    DESERT(DesertBiome.class, "desert", Map.ofEntries(
+        Map.entry("g_offset", "15"),
+        Map.entry("g_asl", "30"),
+        Map.entry("dirtRatio", "0.05"),
+        Map.entry("stoneRatio", "0.3"),
+        Map.entry("gf_flora", "desert"),
+        Map.entry("gf_density", "0.3"),
+        Map.entry("gf_fauna", "desert")
     )),
 
     SWAMP(SwampBiome.class, "swamp", Map.ofEntries(
@@ -52,6 +58,7 @@ public enum BiomeType implements TsEnum {
         Map.entry("swampDepth", "3"),
         Map.entry("gf_flora", "swamp"),
         Map.entry("gf_density", "0.3"),
+        Map.entry("gf_fauna", "swamp"),
         Map.entry("gf_water_flora", "swamp_water"),
         Map.entry("gf_water_density", "0.5")
     )),
@@ -63,22 +70,33 @@ public enum BiomeType implements TsEnum {
         Map.entry("grassMaterial", "DIRT"),
         Map.entry("gf_flora", "marsh"),
         Map.entry("gf_density", "0.2"),
+        Map.entry("gf_fauna", "marsh"),
         Map.entry("gf_water_flora", "marsh_water"),
         Map.entry("gf_water_density", "0.4")
     )),
 
     TOWN(Biome.class, "island", Map.of(
-        "g_offset", "1"
+        "g_offset", "1",
+        "gf_flora", "town",
+        "gf_density", "0.05"
     )),
 
-    COAST(CoastBiome.class, "coast", Map.of(
-        "gf_sea_flora", "coast_sea",
-        "gf_sea_density", "0.2"
+    COAST(CoastBiome.class, "coast", Map.ofEntries(
+        Map.entry("gf_flora", "coast"),
+        Map.entry("gf_density", "0.1"),
+        Map.entry("gf_fauna", "coast"),
+        Map.entry("gf_sea_flora", "coast_sea"),
+        Map.entry("gf_sea_density", "0.2")
     )),
 
-    ISLAND(IslandBiome.class, "island", Map.of()),
+    ISLAND(IslandBiome.class, "island", Map.of(
+        "gf_flora", "island_tropical",
+        "gf_density", "0.3",
+        "gf_fauna", "island"
+    )),
 
     OCEAN(OceanBiome.class, "ocean", Map.of(
+        "gf_fauna", "ocean",
         "gf_sea_flora", "ocean",
         "gf_sea_density", "0.4"
     ));

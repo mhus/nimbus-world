@@ -84,6 +84,9 @@ public class TranslateInstructionJobExecutor implements JobExecutor {
 
             String instructions = loadInstructions(job.getWorldId(), instructionsDocumentId);
 
+            // Build translator context once per job (flora/fauna options from region)
+            TranslatorContext translatorContext = translatorService.buildTranslatorContext(job.getWorldId());
+
             // Retry loop
             String previousError = null;
             CompositionResult result = null;
@@ -93,7 +96,7 @@ public class TranslateInstructionJobExecutor implements JobExecutor {
 
                 try {
                     // Attempt translation
-                    result = translatorService.translateInstructionToComposite(instructions, previousError);
+                    result = translatorService.translateInstructionToComposite(instructions, previousError, translatorContext);
 
                     if (result.isSuccessful()) {
                         // Override worldId with the one from job context (not from instruction/Gemini)

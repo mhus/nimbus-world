@@ -86,7 +86,7 @@ public class AnythingTools {
             @ToolParam(description = "Display title", required = false) String title,
             @ToolParam(description = "Description", required = false) String description,
             @ToolParam(description = "Type category within collection", required = false) String type,
-            @ToolParam(description = "Arbitrary JSON data payload") Object data) {
+            @ToolParam(description = "Arbitrary JSON data payload") Map<String, Object> data) {
         log.debug("MCP: Create anything: worldId={}, collection={}, name={}", worldId, collection, name);
 
         if (Strings.isBlank(worldId) || Strings.isBlank(collection) || Strings.isBlank(name)) {

@@ -1245,6 +1245,33 @@ Custom key-value parameters für Terrain Generation.
 - **Swamp**: `swampDepth` (blocks, default: 3)
 - **Mountain**: `stoneOffset` (blocks, default: 20), `snowOffset` (blocks, default: 50)
 
+**Flora & Fauna Parameters**:
+
+Each biome type has default values for `gf_flora` and `gf_fauna` that control which vegetation and animal definitions are used during generation. These defaults are applied via `putIfAbsent` logic, meaning user-set values in the biome `parameters` take precedence over the defaults.
+
+- `gf_flora`: Name of the flora definition to use (e.g., `"forest"`, `"forest_dense"`, `"plains"`)
+- `gf_fauna`: Name of the fauna definition to use (e.g., `"forest"`, `"plains"`, `"ocean"`)
+- `gf_density`: Flora density (0.0-1.0, controls how much vegetation is placed)
+- `gf_sea_flora`: Name of the sea flora definition (for coastal/ocean biomes)
+- `gf_sea_density`: Sea flora density (for coastal/ocean biomes)
+- `gf_water_flora`: Name of the water flora definition (for swamp/marsh biomes)
+- `gf_water_density`: Water flora density (for swamp/marsh biomes)
+
+The available flora/fauna names depend on the region and are provided dynamically in the prompt. The name must match a WAnything entry in the region's `flora` or `fauna` collection. Variants with a biome prefix are supported (e.g., `forest`, `forest_dense`, `forest_sparse` all belong to the `forest` biome prefix).
+
+**Example with flora/fauna overrides**:
+```json
+{
+  "parameters": {
+    "g_asl": "20",
+    "g_offset": "5",
+    "gf_flora": "forest_dense",
+    "gf_density": "0.9",
+    "gf_fauna": "forest"
+  }
+}
+```
+
 **Example**:
 ```json
 {

@@ -32,6 +32,7 @@ public class JobTools {
             @ToolParam(description = "World ID") String worldId,
             @ToolParam(description = "Executor name to use") String executor,
             @ToolParam(description = "Optional layer name", required = false) String layer,
+            @ToolParam(description = "Optional job type (e.g. workflow name for workflow-job-executor)", required = false) String type,
             @ToolParam(description = "Executor-specific parameters", required = false) Map<String, String> parameters,
             @ToolParam(description = "Timeout in seconds (max 600, default 300)", required = false) Integer timeoutSeconds) {
         log.debug("MCP: Execute job: worldId={}, executor={}", worldId, executor);
@@ -57,6 +58,7 @@ public class JobTools {
             McpJobExecutor.JobExecutionResult result = McpJobExecutor.builder()
                     .worldId(worldId)
                     .layer(layer)
+                    .type(type)
                     .executor(executor)
                     .parameters(parameters)
                     .timeout(timeoutMs)

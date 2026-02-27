@@ -24,6 +24,80 @@ public class DocumentTools {
 
     private final WDocumentService documentService;
 
+    @Tool(name = "list_documents", description = "List documents by worldId and collection. Returns metadata without content.")
+    public Map<String, Object> listDocuments(
+            @ToolParam(description = "World ID (e.g. 'ymir:Mist')") String worldId,
+            @ToolParam(description = "Collection name (e.g. 'generator_instructions', 'generator_translations')") String collection) {
+        log.debug("MCP: List documents: worldId={}, collection={}", worldId, collection);
+
+        if (Strings.isBlank(worldId) || Strings.isBlank(collection)) {
+            throw new McpToolException("worldId and collection are required");
+        }
+
+        WorldId wid = WorldId.of(worldId)
+                .orElseThrow(() -> new McpToolException("Invalid worldId: " + worldId));
+
+        List<WDocument> docs = documentService.findByCollection(wid, collection);
+
+        List<Map<String, Object>> results = docs.stream()
+                .map(doc -> {
+                    Map<String, Object> dto = new HashMap<>();
+                    dto.put("documentId", doc.getDocumentId());
+                    dto.put("name", doc.getName() != null ? doc.getName() : "");
+                    dto.put("title", doc.getTitle() != null ? doc.getTitle() : "");
+                    dto.put("type", doc.getType() != null ? doc.getType() : "");
+                    dto.put("format", doc.getFormat() != null ? doc.getFormat() : "");
+                    dto.put("createdAt", doc.getCreatedAt());
+                    dto.put("updatedAt", doc.getUpdatedAt());
+                    return dto;
+                })
+                .toList();
+
+        return Map.of(
+                "worldId", worldId,
+                "collection", collection,
+                "count", results.size(),
+                "documents", results
+        );
+    }
+
+    @Tool(name = "get_document", description = "Get a document by worldId, collection and documentId. Returns full content.")
+    public Map<String, Object> getDocument(
+            @ToolParam(description = "World ID (e.g. 'ymir:Mist')") String worldId,
+            @ToolParam(description = "Collection name") String collection,
+            @ToolParam(description = "Document ID (UUID)") String documentId) {
+        log.debug("MCP: Get document: worldId={}, collection={}, documentId={}", worldId, collection, documentId);
+
+        if (Strings.isBlank(worldId) || Strings.isBlank(collection) || Strings.isBlank(documentId)) {
+            throw new McpToolException("worldId, collection, and documentId are required");
+        }
+
+        WorldId wid = WorldId.of(worldId)
+                .orElseThrow(() -> new McpToolException("Invalid worldId: " + worldId));
+
+        Optional<WDocument> docOpt = documentService.findByDocumentId(wid, collection, documentId);
+
+        if (docOpt.isEmpty()) {
+            throw new McpToolException("Document not found: worldId=" + worldId
+                    + ", collection=" + collection + ", documentId=" + documentId);
+        }
+
+        WDocument doc = docOpt.get();
+        Map<String, Object> result = new HashMap<>();
+        result.put("documentId", doc.getDocumentId());
+        result.put("worldId", doc.getWorldId());
+        result.put("collection", doc.getCollection());
+        result.put("name", doc.getName() != null ? doc.getName() : "");
+        result.put("title", doc.getTitle() != null ? doc.getTitle() : "");
+        result.put("type", doc.getType() != null ? doc.getType() : "");
+        result.put("format", doc.getFormat() != null ? doc.getFormat() : "");
+        result.put("content", doc.getContent());
+        result.put("metadata", doc.getMetadata());
+        result.put("createdAt", doc.getCreatedAt());
+        result.put("updatedAt", doc.getUpdatedAt());
+        return result;
+    }
+
     @Tool(name = "search_readme", description = "Search README/HowTo documents by title or content. Documents are stored in the Nimbus shared collection under collection 'mcp'.")
     public Map<String, Object> searchReadme(
             @ToolParam(description = "Search query for title or content") String query) {

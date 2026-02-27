@@ -49,6 +49,7 @@ public class McpJobExecutor {
         private String worldId;
         private String layer;
         private String executor;
+        private String type;
         private String title;
         private Map<String, String> parameters = new HashMap<>();
         private long timeoutMs = 300000; // Default: 5 minutes
@@ -65,6 +66,11 @@ public class McpJobExecutor {
 
         public Builder executor(String executor) {
             this.executor = executor;
+            return this;
+        }
+
+        public Builder type(String type) {
+            this.type = type;
             return this;
         }
 
@@ -172,12 +178,26 @@ public class McpJobExecutor {
             ? config.title
             : "MCP Job: " + config.executor;
 
+        // Job type: explicit type, or from parameters._type, or empty
+        String jobType = config.type != null ? config.type : jobParams.getOrDefault("_type", "");
+        jobParams.remove("_type");
+
+        // Location: from parameters._location, or null
+        String location = jobParams.getOrDefault("_location", null);
+        jobParams.remove("_location");
+
         return jobService.createJob(
             config.worldId,
             config.executor,
             jobTitle,
-            "",  // type - not used in MCP jobs
-            jobParams
+            jobType,
+            jobParams,
+            location,
+            null,  // parent
+            5,     // priority
+            0,     // maxRetries
+            null,  // onSuccess
+            null   // onError
         );
     }
 

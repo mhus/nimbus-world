@@ -4,10 +4,14 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.generator.composer.build.HexComposition;
+import de.mhus.nimbus.world.generator.fauna.FaunaIndex;
+import de.mhus.nimbus.world.generator.flora.FloraIndex;
 import de.mhus.nimbus.world.ai.model.AiChat;
 import de.mhus.nimbus.world.ai.model.AiChatException;
 import de.mhus.nimbus.world.ai.model.AiChatOptions;
 import de.mhus.nimbus.world.ai.model.AiModelService;
+import de.mhus.nimbus.world.shared.world.WAnything;
+import de.mhus.nimbus.world.shared.world.WAnythingService;
 import de.mhus.nimbus.world.shared.world.WDocument;
 import de.mhus.nimbus.world.shared.world.WDocumentService;
 import dev.langchain4j.model.input.Prompt;
@@ -44,6 +48,7 @@ public class TranslatorService {
 
     private final AiModelService aiModelService;
     private final WDocumentService documentService;
+    private final WAnythingService anythingService;
     private final ObjectMapper objectMapper;
 
     // Cache for loaded composer model description
@@ -243,6 +248,38 @@ public class TranslatorService {
     }
 
     /**
+     * Build a TranslatorContext for the given worldId.
+     * Loads FloraIndex and FaunaIndex from the region's WAnything entries.
+     *
+     * @param worldId The world ID to resolve region from
+     * @return TranslatorContext with flora and fauna indices
+     */
+    public TranslatorContext buildTranslatorContext(String worldId) {
+        try {
+            WorldId wid = WorldId.of(worldId).orElseThrow();
+            WorldId regionWorldId = wid.toRegionCollection();
+            String regionCollectionId = regionWorldId.getId();
+
+            log.info("Building TranslatorContext for worldId={}, regionCollectionId={}", worldId, regionCollectionId);
+
+            List<WAnything> floraEntities = anythingService.findByWorldIdAndCollection(regionCollectionId, "flora");
+            List<WAnything> faunaEntities = anythingService.findByWorldIdAndCollection(regionCollectionId, "fauna");
+
+            FloraIndex floraIndex = new FloraIndex(floraEntities);
+            FaunaIndex faunaIndex = new FaunaIndex(faunaEntities);
+
+            return TranslatorContext.builder()
+                    .floraIndex(floraIndex)
+                    .faunaIndex(faunaIndex)
+                    .build();
+
+        } catch (Exception e) {
+            log.warn("Failed to build TranslatorContext for worldId={}, proceeding without context", worldId, e);
+            return TranslatorContext.builder().build();
+        }
+    }
+
+    /**
      * Translate textual instructions into Composer Model JSON format.
      * Optionally includes error feedback from a previous translation attempt.
      *
@@ -251,6 +288,20 @@ public class TranslatorService {
      * @return Translation result with JSON or errors
      */
     public TranslationResult translateInstruction(String instruction, String previousError) {
+        return translateInstruction(instruction, previousError, null);
+    }
+
+    /**
+     * Translate textual instructions into Composer Model JSON format.
+     * Optionally includes error feedback from a previous translation attempt
+     * and a translator context with flora/fauna options.
+     *
+     * @param instruction Textual world description
+     * @param previousError Error message from previous translation attempt (optional)
+     * @param context TranslatorContext with flora/fauna indices (optional)
+     * @return Translation result with JSON or errors
+     */
+    public TranslationResult translateInstruction(String instruction, String previousError, TranslatorContext context) {
         log.info("Translating instruction (length: {} chars, has previous error: {})",
                 instruction != null ? instruction.length() : 0,
                 previousError != null);
@@ -293,6 +344,13 @@ public class TranslatorService {
             variables.put("composerModelDescription", cachedComposerModelDescription == null ? "" : cachedComposerModelDescription);
             variables.put("composerModelReadme", cachedComposerModelReadme == null ? "" : cachedComposerModelReadme);
             variables.put("instruction", instruction);
+
+            // Add flora/fauna options section if context is available
+            String floraFaunaOptions = "";
+            if (context != null) {
+                floraFaunaOptions = context.toPromptSection();
+            }
+            variables.put("floraFaunaOptions", floraFaunaOptions);
 
             // Add lessons learned section if available
             String lessonsLearnedSection = "";
@@ -411,7 +469,7 @@ public class TranslatorService {
      * @return Composition result with HexComposition object or errors
      */
     public CompositionResult translateInstructionToComposite(String instruction) {
-        return translateInstructionToComposite(instruction, null);
+        return translateInstructionToComposite(instruction, null, null);
     }
 
     /**
@@ -424,12 +482,28 @@ public class TranslatorService {
      * @return Composition result with HexComposition object or errors
      */
     public CompositionResult translateInstructionToComposite(String instructions, String previousError) {
-        log.info("Translating instruction to HexComposition (length: {} chars, has previous error: {})",
+        return translateInstructionToComposite(instructions, previousError, null);
+    }
+
+    /**
+     * Translate textual instructions into HexComposition object.
+     * Optionally includes error feedback from a previous translation attempt
+     * and a translator context with flora/fauna options.
+     * Does NOT arrange or build the composition - only parses the model structure.
+     *
+     * @param instructions Textual world description
+     * @param previousError Error message from previous translation attempt (optional)
+     * @param context TranslatorContext with flora/fauna indices (optional)
+     * @return Composition result with HexComposition object or errors
+     */
+    public CompositionResult translateInstructionToComposite(String instructions, String previousError, TranslatorContext context) {
+        log.info("Translating instruction to HexComposition (length: {} chars, has previous error: {}, has context: {})",
                 instructions != null ? instructions.length() : 0,
-                previousError != null);
+                previousError != null,
+                context != null);
 
         // Step 1: Translate to JSON
-        TranslationResult translationResult = translateInstruction(instructions, previousError);
+        TranslationResult translationResult = translateInstruction(instructions, previousError, context);
 
         if (translationResult.hasFailed()) {
             log.warn("Translation to JSON failed with {} errors", translationResult.getErrors().size());
