@@ -33,8 +33,7 @@ public class WEntityModelService {
         var lookupWorld = worldId.mainWorld();
         var collection = WorldCollection.of(lookupWorld, modelId);
         lookupWorld = collection.worldId();
-        if (!lookupWorld.isCollection())
-            lookupWorld = lookupWorld.toRegionCollection(); // if the result is a world id, convert to region collection
+        lookupWorld = lookupWorld.toCollection(); // if the result is a world id, convert to region collection
         return repository.findByWorldIdAndModelId(lookupWorld.getId(), collection.path());
     }
 
@@ -54,7 +53,7 @@ public class WEntityModelService {
      */
     @Transactional(readOnly = true)
     public List<WEntityModel> findAllEnabled(WorldId worldId) {
-        var regionWorldId = worldId.toRegionCollection();
+        var regionWorldId = worldId.toCollection();
         return repository.findByWorldIdAndEnabled(regionWorldId.getId(), true);
     }
 
@@ -164,7 +163,7 @@ public class WEntityModelService {
      */
     @Transactional(readOnly = true)
     public List<WEntityModel> findByWorldIdAndQuery(WorldId worldId, String query) {
-        var regionWorldId = worldId.toRegionCollection();
+        var regionWorldId = worldId.toCollection();
         List<WEntityModel> all = repository.findByWorldId(regionWorldId.getId());
 
         // Apply search filter if provided

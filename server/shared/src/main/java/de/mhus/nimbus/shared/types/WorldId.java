@@ -203,6 +203,21 @@ public class WorldId implements Comparable<WorldId> {
                 .orElseThrow(() -> new IllegalArgumentException("Invalid region worldId: " + regionId));
     }
 
+    /**
+     * Converts this WorldId to its corresponding region collection WorldId.
+     * If the WorldId is already a collection, it will be returned as is.
+     * Even if it is another collection type (e.g. public or shared), it will be returned as is.
+     *
+     * @return WorldId for the region collection (@region:regionId)
+     */
+    public WorldId toCollection() {
+        parseId();
+        if (isCollection()) {
+            return this;
+        }
+        return WorldId.of(COLLECTION_REGION, regionId)
+                .orElseThrow(() -> new IllegalArgumentException("Invalid region worldId: " + regionId));
+    }
     public WorldId mainWorld() {
         parseId();
         return new WorldId(regionId + ":" + worldName);
@@ -230,4 +245,5 @@ public class WorldId implements Comparable<WorldId> {
     public boolean isPublicRegion() {
         return id.startsWith(COLLECTION_PUBLIC + ":");
     }
+
 }

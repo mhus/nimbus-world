@@ -73,7 +73,7 @@ public class WEntityModel implements Identifiable {
     public void touchCreate() {
         Instant now = Instant.now();
         createdAt = now;
-        updatedAt = now;
+        touchUpdate();
     }
 
     /**
@@ -81,6 +81,9 @@ public class WEntityModel implements Identifiable {
      */
     public void touchUpdate() {
         updatedAt = Instant.now();
+        if (publicData != null) {
+            publicData.setId(getModelId());
+        }
     }
 
     public WEntityModel appendWorldPrefix() {

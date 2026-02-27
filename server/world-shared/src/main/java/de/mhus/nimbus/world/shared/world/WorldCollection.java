@@ -25,12 +25,14 @@ public record WorldCollection(TYPE type, WorldId worldId, String path) {
             if (pos >= 0) {
                 var group = path.substring(0, pos).toLowerCase();
                 path = path.substring(pos + 1);
-                if (type == TYPE.REGION) {
+                if (type == TYPE.REGION || type == TYPE.PUBLIC) {
                     // could switch if needed
                     if (group.equals("rp")) {
                         type = TYPE.PUBLIC;
-                        worldId = WorldId.of(WorldId.COLLECTION_PUBLIC, worldId.getRegionId()).get();
-                    } else if (!group.equals("r")) {
+                        worldId = WorldId.of(WorldId.COLLECTION_PUBLIC, worldId.getWorldName()).get();
+                    } else if (group.equals("r")) {
+                        worldId = WorldId.of(WorldId.COLLECTION_REGION, worldId.getWorldName()).get();
+                    } else {
                         type = TYPE.SHARED;
                         worldId = WorldId.of(WorldId.COLLECTION_SHARED, group).get();
                     }
