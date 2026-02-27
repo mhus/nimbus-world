@@ -45,7 +45,7 @@ export class SurfaceAnalyzer {
     let cornerHeights: [number, number, number, number] | undefined;
 
     // Auto-derive from offsets (only if shape == CUBE)
-    if (block.currentModifier.visibility?.shape === 1) { // Shape.CUBE = 1
+    if (block.currentModifier?.visibility?.shape === 1) { // Shape.CUBE = 1
       // Try Block.offsets first
       // Minimum length must be 24 for all 8 corners (3 values per corner)
       if (block.block.offsets && block.block.offsets.length >= 23) {
@@ -61,7 +61,7 @@ export class SurfaceAnalyzer {
       }
       // Try VisibilityModifier.offsets
       else if (
-        block.currentModifier.visibility?.offsets &&
+        block.currentModifier?.visibility?.offsets &&
         block.currentModifier.visibility.offsets.length >= 23
       ) {
         const offsets = block.currentModifier.visibility.offsets;

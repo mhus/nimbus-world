@@ -2,14 +2,13 @@ package de.mhus.nimbus.world.generator.translator;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.generator.composer.build.CompositionResult;
 import de.mhus.nimbus.world.generator.composer.build.HexCompositeBuilder;
 import de.mhus.nimbus.world.generator.composer.build.HexComposition;
 import de.mhus.nimbus.world.generator.composer.town.StructuresIndex;
-import de.mhus.nimbus.world.generator.composer.town.StructuresService;
+import de.mhus.nimbus.world.generator.composer.town.StructuresGeneratorService;
 import de.mhus.nimbus.world.shared.job.JobExecutionException;
 import de.mhus.nimbus.world.shared.job.JobExecutor;
 import de.mhus.nimbus.world.shared.job.WJob;
@@ -62,7 +61,7 @@ public class ApplyTranslatedInstructionJobExecutor implements JobExecutor {
 
     private final WDocumentService documentService;
     private final WWorldService worldService;
-    private final StructuresService structuresService;
+    private final StructuresGeneratorService structuresService;
     private final ObjectMapper objectMapper;
 
     @Override

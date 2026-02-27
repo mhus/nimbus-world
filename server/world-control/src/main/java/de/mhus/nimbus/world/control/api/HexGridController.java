@@ -462,15 +462,11 @@ public class HexGridController extends BaseEditorController {
                 return bad("World chunkSize is not configured (value: " + world.getPublicData().getChunkSize() + "). Please configure chunkSize in world settings.");
             }
 
-            // Get all affected chunk keys
-            java.util.Set<String> affectedChunks = hexGrid.getAffectedChunkKeys(world);
+            var affectedChunks = dirtyChunkService.markHexGridDirty(world, hexGrid, "hexgrid_manual_dirty");
 
             if (affectedChunks.isEmpty()) {
                 return bad("No chunks affected by this hex grid");
             }
-
-            // Mark all chunks as dirty
-            dirtyChunkService.markChunksDirty(worldId, new java.util.ArrayList<>(affectedChunks), "hexgrid_manual_dirty");
 
             return ResponseEntity.ok(Map.of(
                     "successful", true,

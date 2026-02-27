@@ -26,6 +26,13 @@ export class DisposableResources {
   private _disposed = false;
 
   /**
+   * Check if resources have been disposed
+   */
+  get isDisposed(): boolean {
+    return this._disposed;
+  }
+
+  /**
    * Get or create a named resource
    *
    * If resource with given name exists, returns it.

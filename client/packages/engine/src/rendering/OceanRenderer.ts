@@ -26,6 +26,9 @@ class WaterMaterialDisposable implements IDisposable {
   constructor(private material: WaterMaterial) {}
 
   dispose(): void {
+    // Clear bumpTexture reference BEFORE dispose to prevent WaterMaterial
+    // from disposing the cached texture (it's shared via MaterialService cache)
+    this.material.bumpTexture = null as any;
     this.material.dispose(true);
   }
 }

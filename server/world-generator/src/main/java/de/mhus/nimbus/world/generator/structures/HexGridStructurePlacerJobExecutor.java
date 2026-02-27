@@ -1,12 +1,14 @@
 package de.mhus.nimbus.world.generator.structures;
 
+import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.world.generator.composer.town.StructuresIndex;
-import de.mhus.nimbus.world.generator.composer.town.StructuresService;
+import de.mhus.nimbus.world.generator.composer.town.StructuresGeneratorService;
 import de.mhus.nimbus.world.shared.generator.WFlat;
 import de.mhus.nimbus.world.shared.generator.WFlatService;
 import de.mhus.nimbus.world.shared.job.JobExecutionException;
 import de.mhus.nimbus.world.shared.job.JobExecutor;
 import de.mhus.nimbus.world.shared.job.WJob;
+import de.mhus.nimbus.world.shared.layer.WLayer;
 import de.mhus.nimbus.world.shared.layer.WLayerService;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
 import de.mhus.nimbus.world.shared.world.WHexGridRepository;
@@ -43,7 +45,7 @@ public class HexGridStructurePlacerJobExecutor implements JobExecutor {
     private final WFlatService wFlatService;
     private final WWorldService worldService;
     private final WLayerService layerService;
-    private final StructuresService structuresService;
+    private final StructuresGeneratorService structuresService;
 
     @Override
     public String getExecutorName() {
@@ -82,6 +84,19 @@ public class HexGridStructurePlacerJobExecutor implements JobExecutor {
                 throw new JobExecutionException("WFlat not found: " + flatId);
             }
 
+            // Clear existing structures in this hex grid before placing new ones
+            // Step 1: Delete WLayerModel documents whose mount point is inside the hex
+            // Step 2: Clear projected terrain chunks for the structures layer in this hex
+            WLayer structuresLayer = layerService.findByWorldIdAndName(worldId, "structures").orElse(null);
+            if (structuresLayer != null) {
+                HexVector2 hexCoord = HexVector2.builder().q(hexQ).r(hexR).build();
+                int cleared = structuresService.clearStructuresInHexGrid(hexCoord, structuresLayer, world);
+                log.info("Cleared {} existing structure models in hex {},{}", cleared, hexQ, hexR);
+
+                layerService.clearTerrainInHexGrid(worldId, structuresLayer, hexGrid);
+                log.info("Cleared terrain chunks for structures layer in hex {},{}", hexQ, hexR);
+            }
+
             // Load structures index from region collection
             StructuresIndex structuresIndex = structuresService.findStructuresForWorldId(worldId);
             log.info("Loaded StructuresIndex: {} buildings", structuresIndex.getTotalBuildingCount());
@@ -103,6 +118,17 @@ public class HexGridStructurePlacerJobExecutor implements JobExecutor {
             if (!result.isSuccess()) {
                 log.warn("Structure placement had errors: {}", result.getErrors());
             }
+
+            // Step 4: Sync new models to terrain (without dirty chunk marking)
+            WLayer currentStructuresLayer = layerService.findByWorldIdAndName(worldId, "structures").orElse(null);
+            if (currentStructuresLayer != null) {
+                HexVector2 hexCoord = HexVector2.builder().q(hexQ).r(hexR).build();
+                structuresService.syncLayerModelsToTerrain(world, currentStructuresLayer, hexCoord);
+            }
+
+            // Step 5: Mark hex grid chunks as dirty for re-rendering
+            layerService.markHexGridDirty(worldId, hexGrid);
+            log.info("Marked hex grid {},{} chunks as dirty for re-rendering", hexQ, hexR);
 
             Map<String, Object> resultData = new HashMap<>();
             resultData.put("hexQ", hexQ);

@@ -1,9 +1,12 @@
 package de.mhus.nimbus.world.generator.composer.town;
 
+import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.shared.layer.WLayer;
 import de.mhus.nimbus.world.shared.layer.WLayerModel;
 import de.mhus.nimbus.world.shared.layer.WLayerService;
+import de.mhus.nimbus.world.shared.util.HexMathUtil;
+import de.mhus.nimbus.world.shared.world.WWorld;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
@@ -24,7 +27,7 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class StructuresService {
+public class StructuresGeneratorService {
 
     private static final String STRUCTURES_LAYER_NAME = "structures";
 
@@ -101,5 +104,65 @@ public class StructuresService {
                 worldId, loaded, skipped, modelSummaries.size());
 
         return index;
+    }
+
+    /**
+     * Removes all structure models from the given layer whose mount point
+     * lies within the specified hex grid cell.
+     *
+     * Uses {@link HexMathUtil#isPointInHex} to determine whether a model's
+     * mountX/mountZ falls inside the hexagon defined by the coordinate and
+     * the world's hexGridSize.
+     *
+     * @param coordinate Hex axial coordinate (q, r) identifying the hex grid cell
+     * @param layer      The world's 'structures' layer (MODEL type)
+     * @param world      The world (needed for hexGridSize)
+     * @return Number of deleted models
+     */
+    public int clearStructuresInHexGrid(HexVector2 coordinate, WLayer layer, WWorld world) {
+        String layerDataId = layer.getLayerDataId();
+        int gridSize = world.getPublicData().getHexGridSize();
+
+        int[] center = HexMathUtil.hexToCartesian(coordinate, gridSize);
+        double hexCenterX = center[0];
+        double hexCenterZ = center[1];
+
+        List<WLayerModel> models = layerService.listModelSummaries(layerDataId);
+
+        int deleted = 0;
+        for (WLayerModel model : models) {
+            if (HexMathUtil.isPointInHex(model.getMountX(), model.getMountZ(), hexCenterX, hexCenterZ, gridSize)) {
+                layerService.deleteModelById(model.getId());
+                deleted++;
+                log.debug("Deleted structure model '{}' (mount={},{}) from hex {}",
+                        model.getName(), model.getMountX(), model.getMountZ(), coordinate);
+            }
+        }
+
+        log.info("Cleared {} structure models in hex ({},{}) for layer {}",
+                deleted, coordinate.getQ(), coordinate.getR(), layer.getName());
+        return deleted;
+    }
+
+    /**
+     * Syncs all models in the given layer to WLayerTerrain chunks.
+     * Uses {@link WLayerService#recreateModelBasedLayer} to project model blocks
+     * into terrain storage without triggering dirty chunk markers.
+     *
+     * @param world      The world
+     * @param layer      The structures layer (MODEL type)
+     * @param coordinate Hex coordinate (for logging context)
+     */
+    public void syncLayerModelsToTerrain(WWorld world, WLayer layer, HexVector2 coordinate) {
+        String worldId = world.getWorldId();
+        String layerDataId = layer.getLayerDataId();
+
+        log.info("Syncing structure models to terrain for hex ({},{}) in layer {}",
+                coordinate.getQ(), coordinate.getR(), layer.getName());
+
+        int chunks = layerService.recreateModelBasedLayer(worldId, layerDataId, false);
+
+        log.info("Synced structure models to terrain: {} chunks recreated for layer {} in hex ({},{})",
+                chunks, layer.getName(), coordinate.getQ(), coordinate.getR());
     }
 }

@@ -69,7 +69,7 @@ export class CollisionDetector {
             return;
         }
 
-        const physics = blockInfo.block.currentModifier.physics;
+        const physics = blockInfo.block.currentModifier?.physics;
         if (!physics?.collisionEvent) {
             return;
         }
@@ -136,7 +136,7 @@ export class CollisionDetector {
         if (movingUp) {
             // Check WALL blocks with UP wall (moving up into block from below)
             for (const blockInfo of context.headBlocks.blocks) {
-                const physics = blockInfo.block?.currentModifier.physics;
+                const physics = blockInfo.block?.currentModifier?.physics;
                 if (!physics) continue;
 
                 // Check if this is a WALL block with UP wall
@@ -170,7 +170,7 @@ export class CollisionDetector {
         } else {
             // Check WALL blocks with DOWN wall (falling/moving down into block from above)
             for (const blockInfo of context.groundBlocks.blocks) {
-                const physics = blockInfo.block?.currentModifier.physics;
+                const physics = blockInfo.block?.currentModifier?.physics;
                 if (!physics) continue;
 
                 // Check if this is a WALL block with DOWN wall
@@ -321,7 +321,7 @@ export class CollisionDetector {
                 const currentBlock = this.chunkService.getBlockAt(currentBlockX, blockY, currentBlockZ);
                 if (!currentBlock) continue;
 
-                const physics = currentBlock.currentModifier.physics;
+                const physics = currentBlock.currentModifier?.physics;
 
                 // Check if current block is a WALL block
                 const isCurrentWall = physics?.solid !== true && physics?.passableFrom !== undefined;
@@ -379,7 +379,7 @@ export class CollisionDetector {
                 const block = this.chunkService.getBlockAt(blockX, blockY, blockZ);
                 if (!block) continue;
 
-                const physics = block.currentModifier.physics;
+                const physics = block.currentModifier?.physics;
 
                 // Check if this is a WALL block (solid=false + passableFrom defined)
                 const isWall = physics?.solid !== true && physics?.passableFrom !== undefined;
@@ -564,7 +564,7 @@ export class CollisionDetector {
 
         // Check if in climbable block (ladder)
         for (const blockInfo of context.currentBlocks.blocks) {
-            if (blockInfo.block?.currentModifier.physics?.climbable) {
+            if (blockInfo.block?.currentModifier?.physics?.climbable) {
                 return true;
             }
         }

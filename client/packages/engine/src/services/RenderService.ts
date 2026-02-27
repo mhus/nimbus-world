@@ -120,6 +120,9 @@ export class RenderService {
   // Each chunk can have multiple meshes (one per material type)
   private chunkMeshes: Map<string, Map<string, Mesh>> = new Map();
 
+  // Render generation per chunk: incremented on each render/unload to cancel stale async renders
+  private chunkRenderGeneration: Map<string, number> = new Map();
+
   constructor(
     scene: Scene,
     appContext: AppContext,
@@ -266,6 +269,10 @@ export class RenderService {
         return;
       }
 
+      // Increment render generation for this chunk (cancels any stale async render)
+      const generation = (this.chunkRenderGeneration.get(chunkKey) ?? 0) + 1;
+      this.chunkRenderGeneration.set(chunkKey, generation);
+
       const clientBlocksMap = clientChunk.data.data;
       const blockCount = clientBlocksMap.size;
 
@@ -350,6 +357,12 @@ export class RenderService {
       const meshMap = new Map<string, Mesh>();
 
       for (const [materialKey, items] of materialGroups) {
+        // Check if this render was superseded by a newer render for the same chunk
+        if (this.chunkRenderGeneration.get(chunkKey) !== generation) {
+          logger.debug('Chunk render superseded, aborting stale render', { cx: chunk.cx, cz: chunk.cz, generation });
+          return;
+        }
+
         // Determine if this is a face-level or block-level group
         const isFaceLevelGroup = items.length > 0 && 'textureKey' in items[0];
 
@@ -552,8 +565,8 @@ export class RenderService {
         }
       }
 
-      // Store chunk meshes
-      if (meshMap.size > 0) {
+      // Store chunk meshes (only if this render is still current)
+      if (meshMap.size > 0 && this.chunkRenderGeneration.get(chunkKey) === generation) {
         this.chunkMeshes.set(chunkKey, meshMap);
 
         // Enable shadow receiving and casting for all chunk meshes
@@ -581,13 +594,31 @@ export class RenderService {
           cz: chunk.cz,
           meshCount: meshMap.size,
         });
+      } else if (this.chunkRenderGeneration.get(chunkKey) !== generation) {
+        // Render was superseded - dispose orphaned meshes
+        for (const mesh of meshMap.values()) {
+          mesh.dispose();
+        }
+        logger.debug('Chunk render superseded after material groups, aborting', { cx: chunk.cx, cz: chunk.cz, generation });
+        return;
       } else {
         logger.debug('Chunk has no chunk mesh blocks', { cx: chunk.cx, cz: chunk.cz });
       }
 
       // 2. Render separate mesh blocks (individual meshes)
       for (const clientBlock of separateMeshBlocks) {
+        // Check if this render was superseded by a newer render for the same chunk
+        if (this.chunkRenderGeneration.get(chunkKey) !== generation) {
+          logger.debug('Chunk render superseded, aborting stale render', { cx: chunk.cx, cz: chunk.cz, generation });
+          return;
+        }
         await this.renderSeparateMeshBlock(clientBlock, chunkKey, resourcesToDispose);
+      }
+
+      // Final check before marking as rendered
+      if (this.chunkRenderGeneration.get(chunkKey) !== generation) {
+        logger.debug('Chunk render superseded, aborting stale render', { cx: chunk.cx, cz: chunk.cz, generation });
+        return;
       }
 
       logger.debug('Chunk fully rendered', {
@@ -1006,6 +1037,9 @@ export class RenderService {
   private unloadChunk(cx: number, cz: number): void {
     const chunkKey = this.getChunkKey(cx, cz);
 
+    // Invalidate any in-progress async render for this chunk
+    this.chunkRenderGeneration.set(chunkKey, (this.chunkRenderGeneration.get(chunkKey) ?? 0) + 1);
+
     // Dispose chunk meshes (batched material groups)
     const meshMap = this.chunkMeshes.get(chunkKey);
     let chunkMeshCount = 0;
@@ -1121,6 +1155,9 @@ export class RenderService {
         }
       }
     }
+
+    // Clear render generation tracking
+    this.chunkRenderGeneration.clear();
 
     logger.debug('RenderService disposed');
   }

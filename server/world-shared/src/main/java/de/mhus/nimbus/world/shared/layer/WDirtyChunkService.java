@@ -1,5 +1,7 @@
 package de.mhus.nimbus.world.shared.layer;
 
+import de.mhus.nimbus.world.shared.world.WHexGrid;
+import de.mhus.nimbus.world.shared.world.WWorld;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -7,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -138,5 +141,15 @@ public class WDirtyChunkService {
     @Transactional(readOnly = true)
     public long countDirtyChunks(String worldId) {
         return dirtyChunkRepository.countByWorldId(worldId);
+    }
+
+    public Set<String> markHexGridDirty(WWorld world, WHexGrid hexGrid, String reason) {
+        // Get all affected chunk keys
+        java.util.Set<String> affectedChunks = hexGrid.getAffectedChunkKeys(world);
+
+        // Mark all chunks as dirty
+        markChunksDirty(world.getWorldId(), new java.util.ArrayList<>(affectedChunks), reason);
+
+        return affectedChunks;
     }
 }
