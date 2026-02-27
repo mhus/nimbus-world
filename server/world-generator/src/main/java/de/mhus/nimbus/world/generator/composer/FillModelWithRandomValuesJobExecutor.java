@@ -33,7 +33,7 @@ import static de.mhus.nimbus.world.generator.translator.TranslateInstructionJobE
  * with random, biome-appropriate values.
  *
  * After composition (HexComposition), grids may lack gf_flora, gf_fauna,
- * gf_density or gf_category values. This executor loads available flora/fauna
+ * gf_density or gf_category_[1..5] values. This executor loads available flora/fauna
  * definitions from the region and assigns matching ones based on the biome type
  * (g_builder parameter).
  *
@@ -106,7 +106,7 @@ public class FillModelWithRandomValuesJobExecutor implements JobExecutor {
             Map<String, FeatureHexGrid> registry = composition.getFeatureHexGridRegistry();
             for (FeatureHexGrid grid : registry.values()) {
                 Map<String, String> params = grid.getParameters();
-                String biomeType = params.get("g_builder");
+                String biomeType = params.get("biome");
                 if (biomeType == null) {
                     continue;
                 }
@@ -162,9 +162,12 @@ public class FillModelWithRandomValuesJobExecutor implements JobExecutor {
                         }
                     }
 
-                    if (params.get("gf_category") == null || params.get("gf_category").isBlank()) {
-                        params.put("gf_category", CATEGORIES[random.nextInt(CATEGORIES.length)]);
-                        categoryFilled++;
+                    for (int i = 1; i <= 5; i++) {
+                        String paramName = "gf_category_" + i;
+                         if (params.get(paramName) == null || params.get(paramName).isBlank()) {
+                            params.put(paramName, CATEGORIES[random.nextInt(CATEGORIES.length)]);
+                            categoryFilled++;
+                        }
                     }
                 }
             }
