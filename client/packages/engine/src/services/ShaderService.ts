@@ -1251,8 +1251,6 @@ export class ShaderService {
       // Wind parameters (per-material uniforms, set from block modifier)
       uniform float windLeafiness;
       uniform float windStability;
-      uniform float windLeverUp;
-      uniform float windLeverDown;
 
       // Varyings to fragment shader
       varying vec2 vUV;
@@ -1318,15 +1316,7 @@ export class ShaderService {
               windDir = normalize(windDir);
             }
 
-            float leverFactor = heightFactor;
-            if (windLeverUp > 0.0) {
-              leverFactor = pow(heightFactor, 1.0 / (1.0 + windLeverUp * 0.5));
-            }
-            if (windLeverDown > 0.0) {
-              leverFactor = smoothstep(windLeverDown * 0.1, 1.0, heightFactor);
-            }
-
-            worldPosition.xyz += windDir * totalWave * leverFactor;
+            worldPosition.xyz += windDir * totalWave * heightFactor;
           }
         }
 
@@ -1415,8 +1405,6 @@ export class ShaderService {
             'windSwayFactor',
             'windLeafiness',
             'windStability',
-            'windLeverUp',
-            'windLeverDown',
             'lightDirection',
           ],
           defines: ['#define INSTANCES'],
@@ -1440,8 +1428,6 @@ export class ShaderService {
       // Set default per-block wind parameters (will be overwritten by ThinInstancesService)
       material.setFloat('windLeafiness', 0.5);
       material.setFloat('windStability', 0.5);
-      material.setFloat('windLeverUp', 0.0);
-      material.setFloat('windLeverDown', 0.0);
 
       // Set light direction
       material.setVector3('lightDirection', new Vector3(0.5, -1, 0.5));

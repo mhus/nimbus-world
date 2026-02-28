@@ -35,36 +35,6 @@
       <span class="label-text-alt">Leafiness: leaf-like wind effect | Stability: rigidity/resistance</span>
     </label>
 
-    <!-- Row 2: Lever Up & Lever Down -->
-    <div class="grid grid-cols-2 gap-2">
-      <div class="form-control">
-        <label class="label">
-          <span class="label-text text-xs">Lever Up</span>
-        </label>
-        <input
-          v-model.number="localValue.leverUp"
-          type="number"
-          step="0.1"
-          class="input input-bordered input-sm"
-          placeholder="Upper lever"
-        />
-      </div>
-      <div class="form-control">
-        <label class="label">
-          <span class="label-text text-xs">Lever Down</span>
-        </label>
-        <input
-          v-model.number="localValue.leverDown"
-          type="number"
-          step="0.1"
-          class="input input-bordered input-sm"
-          placeholder="Lower lever"
-        />
-      </div>
-    </div>
-    <label class="label">
-      <span class="label-text-alt">Lever arms control wind movement amplitude</span>
-    </label>
   </div>
 </template>
 

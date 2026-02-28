@@ -93,8 +93,6 @@ export class FlameRenderer extends BlockRenderer {
     // Get flame properties from wind modifier (used for flame animation)
     const flameStrength = modifier.wind?.stability ?? 1.0;
     const flicker = modifier.wind?.leafiness ?? 0.5;
-    const leverUp = modifier.wind?.leverUp ?? 0.3;
-    const leverDown = modifier.wind?.leverDown ?? 0.1;
 
     // Get color tint (default: orange)
     let colorTint = new Color3(1.0, 0.78, 0.39); // Orange

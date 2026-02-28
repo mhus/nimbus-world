@@ -41,8 +41,6 @@ interface ThinInstanceConfig {
   wind?: {
     leafiness: number;
     stability: number;
-    leverUp: number;
-    leverDown: number;
   }; // Optional wind parameters
   effect?: number; // BlockEffect value (1=UNDULATION, 2=WIND)
 }
@@ -166,8 +164,6 @@ export class ThinInstancesService {
       if (mat.setFloat) {
         mat.setFloat('windLeafiness', config.wind.leafiness);
         mat.setFloat('windStability', config.wind.stability);
-        mat.setFloat('windLeverUp', config.wind.leverUp);
-        mat.setFloat('windLeverDown', config.wind.leverDown);
       }
     }
 

@@ -249,18 +249,6 @@ export class MaterialService {
   }
 
   /**
-   * Check if BlockModifier has wind properties
-   */
-  private hasWindProperties(modifier: BlockModifier): boolean {
-    return !!(
-      (modifier.wind?.leafiness && modifier.wind.leafiness > 0) ||
-      (modifier.wind?.stability && modifier.wind.stability > 0) ||
-      (modifier.wind?.leverUp && modifier.wind.leverUp > 0) ||
-      (modifier.wind?.leverDown && modifier.wind.leverDown > 0)
-    );
-  }
-
-  /**
    * Get or create a material for a block based on BlockModifier and textureIndex
    *
    * NEW IMPLEMENTATION (Property-based grouping):

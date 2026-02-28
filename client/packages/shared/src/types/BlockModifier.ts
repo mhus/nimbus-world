@@ -522,12 +522,6 @@ export interface WindModifier {
 
   /** Stability/rigidity */
   stability?: number;
-
-  /** Upper lever arm */
-  leverUp?: number;
-
-  /** Lower lever arm */
-  leverDown?: number;
 }
 
 /**

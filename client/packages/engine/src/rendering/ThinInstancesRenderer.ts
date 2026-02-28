@@ -86,13 +86,11 @@ export class ThinInstancesRenderer extends BlockRenderer {
     const effect = modifier.visibility.effect;
 
     // Get wind parameters from modifier (if available, not used for undulation)
-    let wind: { leafiness: number; stability: number; leverUp: number; leverDown: number } | undefined;
+    let wind: { leafiness: number; stability: number } | undefined;
     if (modifier.wind && effect !== 1) {
       wind = {
         leafiness: modifier.wind.leafiness ?? 0.5,
         stability: modifier.wind.stability ?? 0.5,
-        leverUp: modifier.wind.leverUp ?? 0.0,
-        leverDown: modifier.wind.leverDown ?? 0.0,
       };
       logger.debug('Using wind parameters from modifier', { wind });
     }

@@ -15,8 +15,6 @@ To enable wind effects for a block, set the `effect` property in the `Visibility
     "textures": { ... }
   },
   "wind": {
-    "leverUp": 4.0,
-    "leverDown": 3.0,
     "leafiness": 1.0,
     "stability": 0.0
   }
@@ -52,8 +50,6 @@ These parameters are set per-block and control individual block behavior:
 |-----------|------|-------|---------|-------------|
 | `leafiness` | float | 0.0 - 1.0 | 0.5 | Amplitude of vertical "leaf flutter" movement |
 | `stability` | float | 0.0 - 1.0 | 0.5 | Resistance to wind (1.0 = no movement, 0.0 = full movement) |
-| `leverUp` | float | 0.0 - 20.0 | 0.0 | Blocks above current block that act as lever extension |
-| `leverDown` | float | 0.0 - 20.0 | 0.0 | Blocks below current block that act as pivot point |
 
 **Example configurations:**
 
@@ -61,8 +57,6 @@ These parameters are set per-block and control individual block behavior:
 // Tall grass (flexible, strong movement)
 {
   "wind": {
-    "leverUp": 2.0,      // Short lever
-    "leverDown": 1.0,    // Low pivot
     "leafiness": 0.9,    // High flutter
     "stability": 0.1     // Very flexible
   }
@@ -71,8 +65,6 @@ These parameters are set per-block and control individual block behavior:
 // Small tree (moderate movement)
 {
   "wind": {
-    "leverUp": 6.0,      // Tall lever
-    "leverDown": 4.0,    // Higher pivot
     "leafiness": 0.6,    // Moderate flutter
     "stability": 0.4     // Moderate stiffness
   }
@@ -81,8 +73,6 @@ These parameters are set per-block and control individual block behavior:
 // Large tree (subtle movement)
 {
   "wind": {
-    "leverUp": 10.0,     // Very tall lever
-    "leverDown": 8.0,    // High pivot
     "leafiness": 0.3,    // Low flutter
     "stability": 0.7     // Stiff trunk
   }
@@ -91,36 +81,15 @@ These parameters are set per-block and control individual block behavior:
 
 ## Physics Model
 
-The wind shader implements a physically-based animation model:
+### 1. Height-Based Displacement (Primary Movement)
 
-### 1. Horizontal Shearing (Primary Movement)
+Blocks bend horizontally based on vertex height:
 
-Blocks bend horizontally like a lever anchored at the pivot point:
-
-- **Pivot Point**: Determined by `leverDown` (blocks below)
-- **Lever Length**: Interpolated between `leverDown` (bottom) and `leverUp` (top)
-- **Displacement**: Higher vertices move more (quadratic relationship with height)
+- **Height Factor**: `clamp(position.y / blockHeight, 0.0, 1.0)` — linear from base (0) to top (1)
+- **Displacement**: Higher vertices move more (linear relationship with height)
 - **Direction**: Follows `windDirection` in XZ plane
 
-**Formula:**
-```glsl
-float h = clamp((position.y - pivotY) / (pivotY + blockHeight + leverUp), 0.0, 1.0);
-float leverAtThisHeight = mix(leverDown, leverUp, h);
-float horizontalDisp = totalWave * leverAtThisHeight * stabilityFactor * 0.05;
-pos += shearDir * horizontalDisp * h;
-```
-
-### 2. Vertical Compression (Secondary Movement)
-
-When bent horizontally, the block compresses vertically (physics: bent rod becomes shorter):
-
-**Formula:**
-```glsl
-float compressionFactor = (horizontalDisp^2) / (2 * heightFromPivot);
-pos.y -= compressionFactor;
-```
-
-### 3. Vertical Leafiness (Tertiary Movement)
+### 2. Vertical Leafiness (Secondary Movement)
 
 Additional up/down oscillation for organic "leaf flutter" effect:
 
@@ -137,7 +106,7 @@ verticalLeafWave += cos(time * swayFactor * 1.3 + worldPos.z * 0.02) * leafiness
 pos.y += verticalLeafWave * 0.02 * h;
 ```
 
-### 4. Wave Composition
+### 3. Wave Composition
 
 Three wave types are combined:
 
@@ -172,8 +141,6 @@ Wind-specific per-vertex attributes must be provided:
 |-----------|------|------|-------------|
 | `windLeafiness` | float | 1 component | Leaf flutter intensity |
 | `windStability` | float | 1 component | Movement damping factor |
-| `windLeverUp` | float | 1 component | Upper lever extension |
-| `windLeverDown` | float | 1 component | Lower pivot point |
 | `color` | vec4 | 4 components | Vertex color (required, set to white) |
 
 **Important**: All renderers must provide these attributes via `BlockRenderer.addWindAttributesAndColors()`.
@@ -197,13 +164,13 @@ if (props.effect === BlockEffect.WIND) {
 
 Wind effects are supported on all batched mesh shapes:
 
-- ✅ **CUBE** (shape: 1)
-- ✅ **CROSS** (shape: 2)
-- ✅ **HASH** (shape: 3)
-- ✅ **SPHERE** (shape: 5)
-- ✅ **CYLINDER** (shape: 9)
-- ✅ **STAIR** (shape: 10)
-- ✅ **STEPS** (shape: 11)
+- **CUBE** (shape: 1)
+- **CROSS** (shape: 2)
+- **HASH** (shape: 3)
+- **SPHERE** (shape: 5)
+- **CYLINDER** (shape: 9)
+- **STAIR** (shape: 10)
+- **STEPS** (shape: 11)
 
 ## Usage in Editor
 
@@ -212,10 +179,7 @@ Wind effects are supported on all batched mesh shapes:
 1. Open block editor
 2. In Visibility section, set:
    - **Global Effect**: Select "WIND"
-   - **(Optional) Effect Parameters**: Not used for wind
 3. In Wind Modifier section (if available), set:
-   - **Lever Up**: 0-20 (default: 0)
-   - **Lever Down**: 0-20 (default: 0)
    - **Leafiness**: 0-1 (default: 0.5)
    - **Stability**: 0-1 (default: 0.5)
 
@@ -233,8 +197,6 @@ Wind effects are supported on all batched mesh shapes:
         }
       },
       "wind": {
-        "leverUp": 4.0,
-        "leverDown": 3.0,
         "leafiness": 1.0,
         "stability": 0.0
       }
@@ -266,8 +228,8 @@ Wind parameters are updated **once per frame** for all materials:
 - **Solution**: Ensure renderer calls `addWindAttributesAndColors()`
 
 ### No wind movement
-- **Cause 1**: Wind parameters too low (windStrength, leverUp/Down)
-- **Solution**: Increase wind strength or lever values
+- **Cause 1**: Wind strength too low
+- **Solution**: Increase wind strength
 
 - **Cause 2**: Stability too high (blocks "frozen")
 - **Solution**: Reduce stability value (closer to 0.0)
@@ -287,24 +249,22 @@ Wind parameters are updated **once per frame** for all materials:
 
 Potential enhancements for the wind shader:
 
-1. **Per-vertex lever values**: Allow different lever lengths per vertex (for curved plants)
-2. **Turbulence noise**: Use 3D noise for more organic wind patterns
-3. **Wind zones**: Different wind parameters for different world regions
-4. **Interaction**: Player movement affects nearby plants
-5. **LOD**: Simplified wind calculations for distant blocks
-6. **Lighting integration**: Add proper directional lighting back (currently disabled for simplicity)
+1. **Turbulence noise**: Use 3D noise for more organic wind patterns
+2. **Wind zones**: Different wind parameters for different world regions
+3. **Interaction**: Player movement affects nearby plants
+4. **LOD**: Simplified wind calculations for distant blocks
+5. **Lighting integration**: Add proper directional lighting back (currently disabled for simplicity)
 
 ## Related Files
 
-- **ShaderService.ts** (lines 318-543): Wind shader definition and material creation
-- **BlockRenderer.ts** (lines 42-79): Helper method for wind attributes
-- **MaterialService.ts** (lines 159, 310-327, 332-340): Material selection and property application
-- **RenderService.ts** (lines 275-302, 620-689): FaceData initialization and vertex buffer creation
+- **ShaderService.ts**: Wind shader definition and material creation
+- **BlockRenderer.ts**: Helper method for wind attributes
+- **MaterialService.ts**: Material selection and property application
+- **RenderService.ts**: FaceData initialization and vertex buffer creation
 - **EnvironmentService.ts**: Wind parameter management
-- **BlockModifier.ts** (lines 466-482, 520-534): Type definitions
+- **BlockModifier.ts**: Type definitions
 
 ## See Also
 
 - `instructions/shape_rendern.md` - General shape rendering documentation
-- `FLIPBOX_SHADER.md` - Similar shader effect documentation (if exists)
 - Babylon.js ShaderMaterial documentation: https://doc.babylonjs.com/features/featuresDeepDive/materials/shaders/shaderMaterial
