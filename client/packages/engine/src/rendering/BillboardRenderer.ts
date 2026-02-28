@@ -19,13 +19,13 @@ import type { RenderContext } from '../services/RenderService';
 import { RENDERING_GROUPS } from '../config/renderingGroups';
 
 /**
- * Disposable wrapper for billboard material and its textures
+ * Disposable wrapper for billboard material (textures are cached/shared and must NOT be disposed)
  */
 class BillboardMaterialDisposable implements IDisposable {
   constructor(private material: StandardMaterial) {}
 
   dispose(): void {
-    this.material.dispose(true, true); // forceDisposeEffect=true, forceDisposeTextures=true
+    this.material.dispose(true, false); // forceDisposeEffect=true, forceDisposeTextures=false (textures are cached in MaterialService)
   }
 }
 
