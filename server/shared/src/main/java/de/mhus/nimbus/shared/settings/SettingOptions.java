@@ -28,7 +28,7 @@ public class SettingOptions implements SettingValue {
     if (service == null || key == null) {
       return defaultValue;
     }
-    if (value != null && System.currentTimeMillis() - lastAccess < CACHE_TIMEOUT) {
+    if (value != null && System.currentTimeMillis() - lastAccess < getCacheTimeout()) {
       return value;
     }
     value = service.getStringValue(key, defaultValue);

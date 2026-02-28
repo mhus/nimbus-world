@@ -25,7 +25,7 @@ public class SettingString implements SettingValue {
     if (service == null || key == null) {
       return defaultValue;
     }
-    if (System.currentTimeMillis() - lastAccess < CACHE_TIMEOUT) {
+    if (System.currentTimeMillis() - lastAccess < getCacheTimeout()) {
         return value;
     }
     value = service.getOrCreateStringValue(key, defaultValue);

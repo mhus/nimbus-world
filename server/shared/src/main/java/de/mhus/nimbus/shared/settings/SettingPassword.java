@@ -24,7 +24,7 @@ public class SettingPassword implements SettingValue {
     if (service == null || key == null) {
       return defaultValue;
     }
-    if (value != null && System.currentTimeMillis() - lastAccess < CACHE_TIMEOUT) {
+    if (value != null && System.currentTimeMillis() - lastAccess < getCacheTimeout()) {
       return value;
     }
     String decrypted = service.getDecryptedPassword(key);

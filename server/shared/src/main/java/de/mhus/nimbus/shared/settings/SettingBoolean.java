@@ -1,10 +1,12 @@
 package de.mhus.nimbus.shared.settings;
 
 import de.mhus.nimbus.shared.service.SSettingsService;
+import lombok.Getter;
 
 public class SettingBoolean implements SettingValue {
 
   private final boolean defaultValue;
+  @Getter
   private final String key;
   private final SSettingsService service;
   private long lastAccess;
@@ -21,7 +23,7 @@ public class SettingBoolean implements SettingValue {
     if (service == null || key == null) {
       return defaultValue;
     }
-    if (value != null && System.currentTimeMillis() - lastAccess < CACHE_TIMEOUT) {
+    if (value != null && System.currentTimeMillis() - lastAccess < getCacheTimeout()) {
       return value;
     }
     value = service.getOrCreateBooleanValue(key, defaultValue);
@@ -35,7 +37,4 @@ public class SettingBoolean implements SettingValue {
     }
   }
 
-  public String getKey() {
-    return key;
-  }
 }

@@ -48,6 +48,7 @@ public class FloraGeneratorService {
     private static final String FLORA_LAYER_NAME = "flora";
     private static final String GROUND_LAYER_NAME = "ground";
     private static final String STACKED_MODEL = "stacked";
+    private static final double DENSITY_DIVIDER = 10.0; // reduce density by this factor to avoid overpopulation
 
     private final WWorldService worldService;
     private final WHexGridRepository hexGridRepository;
@@ -79,7 +80,7 @@ public class FloraGeneratorService {
 
         Map<String, String> params = hexGrid.getParameters();
         String floraType = params.get("gf_flora");
-        double density = parseDouble(params.get("gf_density"), 0.02);
+        double density = parseDouble(params.get("gf_density"), 0.2) / DENSITY_DIVIDER;
 
         if (floraType == null || floraType.isBlank()) {
             log.info("No flora configured for hex {},{}", hexQ, hexR);
@@ -335,7 +336,8 @@ public class FloraGeneratorService {
             }
 
             ModelBuilderContext ctx;
-            if (STACKED_MODEL.equals(plant.getModel())) {
+            if (STACKED_MODEL.equals(plant.getModel())
+                    || (plant.getModel() == null && plant.getBlocks() != null && !plant.getBlocks().isEmpty())) {
                 ctx = buildBlockStack(world, floraLayer, plant.getBlocks(), startPos, group);
             } else {
                 ctx = modelBuilderService.buildModel(world, floraLayer,

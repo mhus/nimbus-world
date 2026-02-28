@@ -148,14 +148,14 @@ public class FillModelWithRandomValuesJobExecutor implements JobExecutor {
                 if (floraSet || faunaSet) {
                     String densityStr = params.get("gf_density");
                     if (densityStr == null || densityStr.isBlank()) {
-                        double density = 0.001 + random.nextDouble() * (0.05 - 0.001);
-                        params.put("gf_density", String.format("%.3f", density));
+                        double density = 0.01 + random.nextDouble() * (0.5 - 0.01);
+                        params.put("gf_density", String.format("%.2f", density));
                         densityFilled++;
                     } else {
                         try {
                             double density = Double.parseDouble(densityStr);
-                            if (density > 0.1) {
-                                params.put("gf_density", "0.1");
+                            if (density > 1) {
+                                params.put("gf_density", "1");
                             }
                         } catch (NumberFormatException e) {
                             log.warn("Invalid gf_density value '{}', keeping as-is", densityStr);

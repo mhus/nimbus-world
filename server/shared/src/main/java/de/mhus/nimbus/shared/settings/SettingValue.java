@@ -1,5 +1,12 @@
 package de.mhus.nimbus.shared.settings;
 
+import de.mhus.nimbus.shared.utils.StaticApplicationProvider;
+import org.springframework.context.support.StaticApplicationContext;
+
 public interface SettingValue {
-    long CACHE_TIMEOUT = 1000 * 60 * 2; // 2 minutes
+
+    default long getCacheTimeout() {
+        return StaticApplicationProvider.getProperty("nimbus.settings.cacheTimeout", 1000 * 60); // 1 minute
+    }
+
 }
