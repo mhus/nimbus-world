@@ -9,12 +9,14 @@
  */
 
 import { Mesh, Scene, Vector3, AnimationGroup } from '@babylonjs/core';
+import type { PBRMaterial } from '@babylonjs/core';
 import { getLogger, ExceptionHandler, type ClientEntity, type EntityPathway } from '@nimbus/shared';
 import type { AppContext } from '../AppContext';
 import type { EntityService } from './EntityService';
 import type { ModelService } from './ModelService';
 import { RENDERING_GROUPS } from '../config/renderingGroups';
 import { EntityLabelRenderer } from '../rendering/EntityLabelRenderer';
+import { ModelModifierService } from './ModelModifierService';
 
 const logger = getLogger('EntityRenderService');
 
@@ -39,6 +41,9 @@ interface RenderedEntity {
 
   /** Current pose ID (to detect changes) */
   currentPose?: number;
+
+  /** Cloned materials from model modifiers (for disposal) */
+  clonedMaterials?: PBRMaterial[];
 }
 
 /**
@@ -322,6 +327,15 @@ export class EntityRenderService {
         animationCount: animations.length,
       });
 
+      // Apply model modifiers (bone scale, material color)
+      const modifierService = new ModelModifierService();
+      const modifierResult = modifierService.applyModifiers(
+        entityId,
+        result,
+        clientEntity.model.modelModifierMapping,
+        clientEntity.entity.modelModifier
+      );
+
       // Apply initial transform to rotation node
       const pos = clientEntity.currentPosition;
       const rot = clientEntity.currentRotation;
@@ -351,6 +365,7 @@ export class EntityRenderService {
         id: entityId,
         mesh: rotationNode as any, // Store rotation node (controls position/rotation)
         animations: animations.length > 0 ? animations : undefined,
+        clonedMaterials: modifierResult.clonedMaterials.length > 0 ? modifierResult.clonedMaterials : undefined,
       };
 
       this.renderedEntities.set(entityId, rendered);
@@ -410,6 +425,13 @@ export class EntityRenderService {
     if (rendered.animations) {
       for (const anim of rendered.animations) {
         anim.dispose();
+      }
+    }
+
+    // Dispose cloned materials from model modifiers
+    if (rendered.clonedMaterials) {
+      for (const mat of rendered.clonedMaterials) {
+        mat.dispose();
       }
     }
 
