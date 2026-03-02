@@ -1145,7 +1145,7 @@ export class PlayerService {
         id: avatarEntityId,
         name: this.playerEntity.playerInfo.title,
         model: modelId,
-        modelModifier: {},
+        modelModifier: this.playerEntity.playerInfo.thirdPersonModelModifiers || {},
         movementType: 'dynamic' as const,
         controlledBy: 'player', // Mark as player-controlled
         solid: false,
