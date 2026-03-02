@@ -6,6 +6,7 @@ import de.mhus.nimbus.generated.types.Rotation;
 import de.mhus.nimbus.generated.types.Vector3;
 import de.mhus.nimbus.shared.types.PlayerData;
 import de.mhus.nimbus.shared.types.WorldId;
+import de.mhus.nimbus.world.player.gameplay.Gameplay;
 import lombok.Data;
 import org.springframework.web.socket.WebSocketSession;
 
@@ -34,6 +35,8 @@ public class PlayerSession {
     private Instant connectedAt;
     private Instant lastPingAt;
     private Instant authenticatedAt;
+
+    private Gameplay gameplay;
 
 
     public boolean isAuthenticated() {

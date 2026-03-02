@@ -113,6 +113,13 @@ public class WWorld implements Identifiable {
     private double noiseFrequency = 0.02; // Frequenz für Rauschfunktion
 
     /**
+     * Name of the Gameplay service to use for this world. See GameplayService
+     * and Gameplay implementations. If not set default gameplay is used.
+     */
+    private String gameplay; // Name des game handlings
+
+
+    /**
      * History of era durations in minutes.
      * Each entry represents the duration of a completed era.
      * Index 0 = Era 1, Index 1 = Era 2, etc.

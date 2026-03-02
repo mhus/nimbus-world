@@ -108,7 +108,7 @@ public class EntityPositionUpdateHandler implements MessageHandler {
 
                     wSessionService.updatePosition(session.getSessionId(), x, y, z, cx, cz, yaw, pitch);
 
-                    log.debug("Stored position in Redis: sessionId={}, pos=({}, {}, {}), chunk=({}, {})",
+                    log.trace("Stored position in Redis: sessionId={}, pos=({}, {}, {}), chunk=({}, {})",
                         session.getSessionId(), x, y, z, cx, cz);
                 } catch (Exception e) {
                     log.error("Failed to store position in Redis for session {}", session.getSessionId(), e);

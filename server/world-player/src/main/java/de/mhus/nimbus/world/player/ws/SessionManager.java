@@ -4,6 +4,7 @@ import de.mhus.nimbus.generated.network.ClientType;
 import de.mhus.nimbus.shared.types.PlayerData;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.shared.utils.LocationService;
+import de.mhus.nimbus.world.player.service.GameplayService;
 import de.mhus.nimbus.world.player.session.PlayerSession;
 import de.mhus.nimbus.world.player.session.SessionAuthenticatedConsumer;
 import de.mhus.nimbus.world.player.session.SessionClosedConsumer;
@@ -51,6 +52,10 @@ public class SessionManager {
     @Autowired
     @Lazy
     private List<SessionAuthenticatedConsumer> sessionAuthenticatedConsumers;
+
+    @Autowired
+    @Lazy
+    private GameplayService gameplayService;
 
     public SessionManager(WSessionService wSessionService,
                          LocationService locationService,
@@ -270,6 +275,12 @@ public class SessionManager {
             session.setStatus(PlayerSession.SessionStatus.DEPRECATED);
             return;
         }
+        var world = worldService.getByWorldId(worldId).orElseThrow();
+        if (!world.isEnabled()) {
+            log.warn("World is not enabled for authentication: worldId={}", worldId);
+            session.setStatus(PlayerSession.SessionStatus.DEPRECATED);
+            return;
+        }
         session.setPlayer(playerData);
         session.setActor(actor);
         session.setTitle(playerData.character().getPublicData().getTitle());
@@ -279,9 +290,10 @@ public class SessionManager {
         session.setSessionId(worldSession.getId());
 
         // Set chunkSize from world configuration
-        worldService.getByWorldId(worldId).ifPresent(world ->
-                session.setChunkSize(world.getPublicData().getChunkSize()));
+        session.setChunkSize(world.getPublicData().getChunkSize());
 
+        // init gameplay for session before registration
+        gameplayService.initSessionGameplay(session, world);
 
         // register session
         wSessionService.updateStatus(worldSessionId, WSessionStatus.RUNNING);

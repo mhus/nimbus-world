@@ -60,7 +60,7 @@ public class AssetController {
         }
         final String finalAssetPath = assetPath; // Make final for lambda
 
-        log.debug("Asset request: worldId={}, path={}", worldId, finalAssetPath);
+        log.trace("Asset request: worldId={}, path={}", worldId, finalAssetPath);
 
         // Find asset in database
         // Try with worldId as regionId first (for main worlds), then fallback to null regionId

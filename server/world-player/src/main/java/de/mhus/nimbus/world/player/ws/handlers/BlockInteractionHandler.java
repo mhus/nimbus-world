@@ -54,7 +54,7 @@ public class BlockInteractionHandler implements MessageHandler {
         int x = data.get("x").asInt();
         int y = data.get("y").asInt();
         int z = data.get("z").asInt();
-        String action = data.get("ac").asText();
+        String userAction = data.get("ac").asText();
 
         // Extract optional fields
         String blockId = data.has("id") ? data.get("id").asText() : null;
@@ -62,15 +62,15 @@ public class BlockInteractionHandler implements MessageHandler {
         JsonNode params = data.has("pa") ? data.get("pa") : null;
 
         // Log interaction for now - implementation will follow later
-        log.trace("Block interaction - Session: {}, Position: ({},{},{}), Action: {}, BlockId: {}, GroupId: {}, Params: {}",
+        log.trace("Block interaction - Session: {}, Position: ({},{},{}), userAction: {}, BlockId: {}, GroupId: {}, Params: {}",
                 session.getWebSocketSession().getId(),
                 x, y, z,
-                action,
+                userAction,
                 blockId,
                 groupId,
                 params != null ? params.toString() : "none");
 
-        gameplay.onPlayerBlockInteraction(session, x, y, z, blockId, groupId, action, params);
+        gameplay.onPlayerBlockInteraction(session, x, y, z, blockId, groupId, userAction, params);
 
     }
 

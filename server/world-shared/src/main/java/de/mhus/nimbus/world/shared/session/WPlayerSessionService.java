@@ -75,7 +75,7 @@ public class WPlayerSessionService {
             session.setPosition(position);
             session.setRotation(rotation);
             session.touchUpdate();
-            log.info("Updated player session position/rotation: id={}, worldId={}, playerId={}, position={}, rotation={}, previousWorldId={}, previousPosition={}",
+            log.trace("Updated player session position/rotation: id={}, worldId={}, playerId={}, position={}, rotation={}, previousWorldId={}, previousPosition={}",
                     session.getId(), worldId, playerId, position, rotation,
                     session.getPreviousWorldId(), session.getPreviousPosition());
         } else {
@@ -92,7 +92,7 @@ public class WPlayerSessionService {
         }
 
         repository.save(session);
-        log.debug("Saved player session to MongoDB: id={}", session.getId());
+        log.trace("Saved player session to MongoDB: id={}", session.getId());
         return session;
     }
 

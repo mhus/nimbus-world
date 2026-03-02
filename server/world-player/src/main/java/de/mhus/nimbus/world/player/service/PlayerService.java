@@ -24,6 +24,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -129,12 +130,12 @@ public class PlayerService implements SessionPingConsumer {
 
     /**
      * Teleport player to target location.
-     * Sets teleportation in session for /teleport redirect.
      * <p>
-     * Format: &lt;worldId&gt;@&lt;position&gt; or worldId@grid:q,r or worldId or @&lt;position&gt; or @grid:q,r or "return"
+     * Format: &lt;worldId&gt;@&lt;position&gt; or worldId@grid:q,r or worldId or @&lt;position&gt; or @grid:q,r or "@return" or "@local:x,y,z"
      * - worldId can be empty, then only position: @&lt;position&gt; or @grid:q,r
      * - worldId can be a full WorldId (without instance part)
-     * - "return" teleports back to previous world using previousWorldId/Position/Rotation
+     * - "@return" teleports back to previous world using previousWorldId/Position/Rotation
+     * - "@local:x,y,z" teleports to specific coordinates in current world
      *
      * @param session PlayerSession
      * @param target  Teleportation target string
@@ -147,11 +148,6 @@ public class PlayerService implements SessionPingConsumer {
             return false;
         }
 
-        // Handle "return" teleportation
-        if ("return".equalsIgnoreCase(target.trim())) {
-            return handleReturnTeleportation(session);
-        }
-
         // Parse target string: <worldId>@<position> or worldId or @<position>
         String worldIdPart = null;
         String positionPart = null;
@@ -160,9 +156,22 @@ public class PlayerService implements SessionPingConsumer {
         if (hashIndex >= 0) {
             // Format: worldId@position or @position
             worldIdPart = target.substring(0, hashIndex);
-            positionPart = target.substring(hashIndex + 1);
+            positionPart = target.substring(hashIndex + 1).trim();
 
-            // Empty worldId part is allowed (e.g., "@grid:1,2")
+            // Handle "@return" teleportation
+            if (positionPart.equals("return")) {
+                return handleReturnTeleportation(session);
+            }
+
+            if (positionPart.startsWith("local:")) {
+                // Local position in current world, e.g. @local:10,20,30
+                positionPart = positionPart.substring("local:".length());
+                List<String> positionArgs = List.of(positionPart.split(","));
+                clientService.sendCommand(session, "teleport", positionArgs);
+                return true;
+            }
+
+            // Empty worldId part is allowed (e.g., "@grid:1,2" or @local:10,20,30), treat as null
             if (worldIdPart.isBlank()) {
                 worldIdPart = null;
             }

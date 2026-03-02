@@ -98,7 +98,7 @@ public abstract class AccessFilterBase extends OncePerRequestFilter {
                                      HttpServletResponse response,
                                      FilterChain filterChain) throws ServletException, IOException {
 
-        log.debug("AccessFilter processing request: {} {} from host: {}, origin: {}",
+        log.trace("AccessFilter processing request: {} {} from host: {}, origin: {}",
                 request.getMethod(), request.getRequestURI(),
                 request.getHeader("Host"), request.getHeader("Origin"));
 
@@ -171,7 +171,7 @@ public abstract class AccessFilterBase extends OncePerRequestFilter {
                                 request.setAttribute(ATTR_SESSION_ID, claims.sessionId());
                                 request.setAttribute(ATTR_CHARACTER_ID, claims.characterId());
 
-                                log.debug("Access validated - userId={}, worldId={}, agent={}, sessionId={}",
+                                log.trace("Access validated - userId={}, worldId={}, agent={}, sessionId={}",
                                         claims.userId(), claims.worldId(), claims.agent(), claims.sessionId());
                             }
                         }
@@ -305,14 +305,14 @@ public abstract class AccessFilterBase extends OncePerRequestFilter {
         Cookie[] cookies = request.getCookies();
 
         if (cookies != null) {
-            log.debug("Found {} cookies in request", cookies.length);
+            log.trace("Found {} cookies in request", cookies.length);
             for (Cookie cookie : cookies) {
-                log.debug("Cookie: name='{}', value='{}...'",
+                log.trace("Cookie: name='{}', value='{}...'",
                         cookie.getName(),
                         cookie.getValue() != null ? cookie.getValue().substring(0, Math.min(20, cookie.getValue().length())) : "null");
 
                 if ("sessionToken".equals(cookie.getName())) {
-                    log.debug("sessionToken cookie found via getCookies()!");
+                    log.trace("sessionToken cookie found via getCookies()!");
                     return cookie.getValue();
                 }
             }
@@ -457,7 +457,7 @@ public abstract class AccessFilterBase extends OncePerRequestFilter {
                 return false;
             }
 
-            log.debug("Redis session validated - sessionId={}, status={}",
+            log.trace("Redis session validated - sessionId={}, status={}",
                     claims.sessionId(), session.getStatus());
             return true;
 
