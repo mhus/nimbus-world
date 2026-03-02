@@ -331,7 +331,7 @@ export class WebInputController implements InputController {
         }
       }
 
-      // Only WALK and SPRINT modes: Jump
+      // WALK and SPRINT modes: Jump
       if (mode === 'walk' || mode === 'sprint') {
         if (this.jumpHandler && !this.jumpHandler.isActive()) {
           logger.info('Activating jump handler');
@@ -342,6 +342,13 @@ export class WebInputController implements InputController {
             hasHandler: !!this.jumpHandler,
             isActive: this.jumpHandler?.isActive()
           });
+        }
+      } else if (mode === 'swim') {
+        // Swim mode: Move up (buoyancy)
+        if (this.moveUpHandler && !this.moveUpHandler.isActive()) {
+          logger.info('Activating moveUp handler for swim');
+          this.moveUpHandler.activate();
+          event.preventDefault();
         }
       } else {
         logger.info('Space key ignored - wrong movement mode', { mode });
@@ -398,21 +405,15 @@ export class WebInputController implements InputController {
       return;
     }
 
-    // Handle Space key dynamically based on movement mode
+    // Handle Space key - deactivate whatever handler was activated on keyDown
     if (event.key === ' ') {
-      const mode = this.playerService.getMovementMode();
-      if (mode === 'walk') {
-        // Walk mode: Jump
-        if (this.jumpHandler && this.jumpHandler.isActive()) {
-          this.jumpHandler.deactivate();
-          event.preventDefault();
-        }
-      } else if (mode === 'fly') {
-        // Fly mode: Move up
-        if (this.moveUpHandler && this.moveUpHandler.isActive()) {
-          this.moveUpHandler.deactivate();
-          event.preventDefault();
-        }
+      if (this.jumpHandler && this.jumpHandler.isActive()) {
+        this.jumpHandler.deactivate();
+        event.preventDefault();
+      }
+      if (this.moveUpHandler && this.moveUpHandler.isActive()) {
+        this.moveUpHandler.deactivate();
+        event.preventDefault();
       }
       return;
     }

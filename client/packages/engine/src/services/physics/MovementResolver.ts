@@ -138,6 +138,11 @@ export class MovementResolver {
     if (entity.movementMode === 'fly' || entity.movementMode === 'free_fly') {
       entity.velocity.y = wishMove.y * this.getMoveSpeed(entity);
     }
+
+    // Swim mode: use wishMove.y for buoyancy (Space key = swim up)
+    if (entity.movementMode === 'swim' && Math.abs(wishMove.y) > 0.001) {
+      entity.velocity.y = wishMove.y * this.getMoveSpeed(entity);
+    }
   }
 
   /**

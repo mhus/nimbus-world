@@ -1,6 +1,5 @@
 package de.mhus.nimbus.world.shared.layer;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.shared.storage.StorageService;
 import de.mhus.nimbus.shared.types.SchemaVersion;
@@ -556,8 +555,10 @@ public class WLayerService implements StorageProvider {
 
     /**
      * Delete all terrain data for a layer.
+     *
+     * @return list of affected chunk keys that were deleted
      */
-    private void deleteTerrainData(String worldId, String layerDataId) {
+    private List<String> deleteTerrainData(String worldId, String layerDataId) {
         List<WLayerTerrain> terrains = terrainRepository.findByWorldIdAndLayerDataId(worldId, layerDataId);
         for (WLayerTerrain terrain : terrains) {
             if (terrain.getStorageId() != null) {
@@ -570,6 +571,7 @@ public class WLayerService implements StorageProvider {
         }
         terrainRepository.deleteByWorldIdAndLayerDataId(worldId, layerDataId);
         log.debug("Deleted terrain data: layerDataId={} count={}", layerDataId, terrains.size());
+        return terrains.stream().map(t -> t.getChunkKey()).toList();
     }
 
     // ==================== TERRAIN GENERATION FROM MODEL ====================
@@ -610,7 +612,7 @@ public class WLayerService implements StorageProvider {
         log.info("Starting recreation of MODEL-based layer: layerDataId={} name={}", layerDataId, layer.getName());
 
         // Step 1: Delete all existing WLayerTerrain chunks for this layer
-        deleteTerrainData(layer.getWorldId(), layerDataId);
+        var deletedChunks = deleteTerrainData(layer.getWorldId(), layerDataId);
         log.debug("Deleted existing terrain data for layer: layerDataId={}", layerDataId);
 
         // Step 2: Load all WLayerModel for this layer (sorted by order)
@@ -664,11 +666,12 @@ public class WLayerService implements StorageProvider {
             }
         }
 
-        log.info("Recreated MODEL-based layer: layerDataId={} name={} chunks={} models={}",
-                layerDataId, layer.getName(), chunksProcessed, models.size());
+        log.info("Recreated MODEL-based layer: layerDataId={} name={} chunks={} deleted={} models={}",
+                layerDataId, layer.getName(), chunksProcessed, deletedChunks.size(), models.size());
 
         // Step 6: Mark chunks as dirty if requested
-        if (markChunksDirty && chunksProcessed > 0) {
+        if (markChunksDirty) {
+            allAffectedChunks.addAll(deletedChunks); // Also mark deleted chunks as dirty
             dirtyChunkService.markChunksDirty(layer.getWorldId(), new ArrayList<>(allAffectedChunks), "model_layer_recreated");
         }
 
