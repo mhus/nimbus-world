@@ -72,7 +72,8 @@ public class CloseSessionCommand implements Command {
                                 playerSession.getWorldId().getId(),
                                 wSession.getPlayerId(),
                                 playerSession.getLastPosition(),
-                                playerSession.getLastRotation()
+                                playerSession.getLastRotation(),
+                                playerSession.serializeGameplay()
                         );
                         log.debug("Persisted session state to MongoDB: sessionId={}, worldId={}, playerId={}",
                                 sessionId, playerSession.getWorldId().getId(), wSession.getPlayerId());

@@ -228,7 +228,8 @@ public class PlayerService implements SessionPingConsumer {
                             session.getWorldId().getId(),
                             playerId,
                             session.getLastPosition(),
-                            session.getLastRotation()
+                            session.getLastRotation(),
+                            session.serializeGameplay()
                     );
 
                     log.info("Saved player session to MongoDB before teleport: playerId={}, worldId={}",
@@ -375,7 +376,8 @@ public class PlayerService implements SessionPingConsumer {
                             session.getWorldId().getId(),
                             playerIdStr,
                             session.getLastPosition(),
-                            session.getLastRotation()
+                            session.getLastRotation(),
+                            session.serializeGameplay()
                     );
 
                     log.info("Saved player session to MongoDB before return teleport: playerId={}, worldId={}",

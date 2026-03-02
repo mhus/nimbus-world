@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -50,7 +51,7 @@ public class WPlayerSessionService {
      */
     @Transactional
     public WPlayerSession updateSession(String worldId, String playerId,
-                                         Vector3 position, Rotation rotation) {
+                                         Vector3 position, Rotation rotation, Map<String, Object> gameplayData) {
         // Validation
         if (worldId == null || worldId.isBlank()) {
             throw new IllegalArgumentException("worldId cannot be null or blank");
@@ -74,6 +75,7 @@ public class WPlayerSessionService {
             session = existingOpt.get();
             session.setPosition(position);
             session.setRotation(rotation);
+            session.setGameplayData(gameplayData);
             session.touchUpdate();
             log.trace("Updated player session position/rotation: id={}, worldId={}, playerId={}, position={}, rotation={}, previousWorldId={}, previousPosition={}",
                     session.getId(), worldId, playerId, position, rotation,

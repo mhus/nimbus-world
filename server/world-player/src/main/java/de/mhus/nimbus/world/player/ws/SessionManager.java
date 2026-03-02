@@ -95,65 +95,6 @@ public class SessionManager {
         return Optional.ofNullable(sessionsBySessionId.get(sessionId));
     }
 
-//    /**
-//     * Update session ID after authentication.
-//     * Creates or updates WSession in Redis based on authentication type.
-//     */
-//    public void setSessionId(PlayerSession session, String sessionId,
-//                              String worldId, String regionId, String userId, String characterId) {
-//        session.setSessionId(sessionId);
-//        sessionsBySessionId.put(sessionId, session);
-//
-//        String playerUrl = locationService.getInternalServerUrl();
-//
-//        if (isUsernamePasswordLogin && applicationDevelopmentEnabled) {
-//            // Username/password login: Create new WSession in Redis
-//            WSession wSession = wSessionService.create(
-//                worldId != null ? worldId : applicationDevelopmentWorldId,
-//                regionId != null ? regionId : applicationDevelopmentRegionId,
-//                userId,
-//                characterId,
-//                null // use default TTL from WorldProperties
-//            );
-//            session.setSessionId(wSession.getId()); // Update to WSession ID
-//            sessionsBySessionId.remove(sessionId); // Remove temporary ID
-//            sessionsBySessionId.put(wSession.getId(), session); // Add with WSession ID
-//
-//            // Update WSession to RUNNING and store player URL
-//            wSessionService.updateStatus(wSession.getId(), WSessionStatus.RUNNING);
-//            wSessionService.updatePlayerUrl(wSession.getId(), playerUrl);
-//
-//            log.info("Created WSession for username/password login: sessionId={}, worldId={}, regionId={}, userId={}, playerUrl={}",
-//                wSession.getId(), worldId, regionId, userId, playerUrl);
-//        } else if (isUsernamePasswordLogin) {
-//            // deny login if not in development mode
-//            log.error("Username/password login is only allowed in development mode.");
-//            throw new RuntimeException("Username/password login not allowed");
-//        } else {
-//            // Token login: Lookup existing WSession in Redis
-//            Optional<WSession> wSession = wSessionService.get(sessionId);
-//            if (wSession.isPresent()) {
-//                // Always update playerUrl (even if already RUNNING - for reconnects or pod changes)
-//                wSessionService.updatePlayerUrl(sessionId, playerUrl);
-//
-//                if (wSession.get().getStatus() == WSessionStatus.WAITING) {
-//                    // Update WSession to RUNNING
-//                    wSessionService.updateStatus(sessionId, WSessionStatus.RUNNING);
-//
-//                    log.info("Updated WSession to RUNNING for token login: sessionId={}, worldId={}, userId={}, playerUrl={}",
-//                        sessionId, wSession.get().getWorldId(), wSession.get().getUserId(), playerUrl);
-//                } else {
-//                    log.debug("WSession already in {} state, updated playerUrl: sessionId={}, playerUrl={}",
-//                        wSession.get().getStatus(), sessionId, playerUrl);
-//                }
-//            } else {
-//                log.warn("WSession not found for token login: sessionId={}", sessionId);
-//            }
-//        }
-//
-//        log.debug("Registered sessionId {} for WebSocket {}", sessionId, session.getWebSocketSession().getId());
-//    }
-
     /**
      * Remove session on disconnect.
      * Updates WSession in Redis to DEPRECATED.

@@ -14,6 +14,7 @@ import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.Instant;
+import java.util.Map;
 
 /**
  * MongoDB Entity for Player Session State.
@@ -56,6 +57,11 @@ public class WPlayerSession {
      * Last known rotation.
      */
     private Rotation rotation;
+
+    /**
+     * Last known gameplay
+     */
+    private Map<String, Object> gameplayData;
 
     /**
      * Previous worldId before teleportation.

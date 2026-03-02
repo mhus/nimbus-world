@@ -3,6 +3,8 @@ package de.mhus.nimbus.world.player.gameplay;
 import com.fasterxml.jackson.databind.JsonNode;
 import de.mhus.nimbus.world.player.session.PlayerSession;
 
+import java.util.Map;
+
 public interface Gameplay {
 
     default String getName() {
@@ -16,4 +18,6 @@ public interface Gameplay {
     void onSessionAuthenticated(PlayerSession session);
 
     void onEntityInteraction(PlayerSession session, String entityId, String action, Long timestamp, JsonNode params);
+
+    Map<String, Object> serialize(PlayerSession session);
 }

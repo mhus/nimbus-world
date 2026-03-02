@@ -7,11 +7,13 @@ import de.mhus.nimbus.generated.types.Vector3;
 import de.mhus.nimbus.shared.types.PlayerData;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.player.gameplay.Gameplay;
+import de.mhus.nimbus.world.player.gameplay.GameplayData;
 import lombok.Data;
 import org.springframework.web.socket.WebSocketSession;
 
 import java.time.Instant;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -37,6 +39,7 @@ public class PlayerSession {
     private Instant authenticatedAt;
 
     private Gameplay gameplay;
+    private GameplayData gameplayData;
 
 
     public boolean isAuthenticated() {
@@ -241,6 +244,13 @@ public class PlayerSession {
         return Math.abs(a.getX() - b.getX()) < threshold &&
                Math.abs(a.getY() - b.getY()) < threshold &&
                Math.abs(a.getZ() - b.getZ()) < threshold;
+    }
+
+    public Map<String, Object> serializeGameplay() {
+        if (gameplay != null) {
+            return gameplay.serialize(this);
+        }
+        return Map.of();
     }
 
     public enum SessionStatus {

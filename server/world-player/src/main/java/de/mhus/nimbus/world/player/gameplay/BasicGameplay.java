@@ -60,6 +60,11 @@ public class BasicGameplay implements Gameplay {
     }
 
     @Override
+    public Map<String, Object> serialize(PlayerSession session) {
+        return Map.of();
+    }
+
+    @Override
     public void onSessionAuthenticated(PlayerSession session) {
 
     }
