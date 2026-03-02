@@ -27,8 +27,8 @@ import java.util.Optional;
 @Document(collection = "w_anything")
 @ActualSchemaVersion("1.0.0")
 @CompoundIndexes({
-        @CompoundIndex(name = "region_world_collection_name_idx",
-                       def = "{ 'regionId': 1, 'worldId': 1, 'collection': 1, 'name': 1 }")
+        @CompoundIndex(name = "world_collection_name_idx",
+                       def = "{ 'worldId': 1, 'collection': 1, 'name': 1 }")
 })
 @Data
 @Builder
@@ -44,13 +44,6 @@ public class WAnything implements Identifiable {
     @Id
     @TypeScript(ignore = true)
     private String id;
-
-    /**
-     * Optional region identifier for scoped search.
-     */
-    @Indexed
-    @TypeScript(optional = true)
-    private String regionId;
 
     /**
      * Optional world identifier for scoped search.

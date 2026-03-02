@@ -67,7 +67,7 @@
 
                 <!-- Empty State (no collections in region at all) -->
                 <div v-else-if="!loading && collections.length === 0 && !searchQuery" class="text-center py-8 text-base-content/60">
-                  No collections found in this region
+                  No collections found for this world
                 </div>
 
                 <!-- No Matches State (search filtered everything out) -->
@@ -98,12 +98,12 @@
 import { ref, onMounted } from 'vue';
 import { Dialog, DialogPanel, DialogTitle, TransitionRoot, TransitionChild } from '@headlessui/vue';
 import { anythingService } from '@/services/AnythingService';
-import { useRegion } from '@/composables/useRegion';
+import { useWorld } from '@/composables/useWorld';
 import { getLogger } from '@nimbus/shared';
 
 const logger = getLogger('CollectionSearchDialog');
 
-const { currentRegionId } = useRegion();
+const { currentWorldId } = useWorld();
 
 const emit = defineEmits<{
   close: [];
@@ -123,7 +123,7 @@ const loadCollections = async () => {
   loading.value = true;
 
   try {
-    const result = await anythingService.getCollections(currentRegionId.value || undefined);
+    const result = await anythingService.getCollections(currentWorldId.value);
     collections.value = result.collections;
     filteredCollections.value = result.collections;
     logger.debug('Loaded collections', { count: result.count });

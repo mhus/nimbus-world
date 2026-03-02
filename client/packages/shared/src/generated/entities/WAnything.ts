@@ -4,7 +4,6 @@
 */
 
 export interface WAnything {
-  regionId?: string;
   worldId?: string;
   collection: string;
   name?: string;

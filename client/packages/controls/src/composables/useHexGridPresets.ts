@@ -52,17 +52,13 @@ export function useHexGridPresets(worldId?: string): UseHexGridPresetsReturn {
     error.value = null;
 
     try {
-      // Extract regionId from worldId to load all presets in the region
+      // Convert worldId to region collection for region-scoped presets
       const parsedWorldId = WorldId.unchecked(targetWorldId);
-      const regionId = parsedWorldId.getRegionId();
-
-      if (!regionId) {
-        throw new Error('Failed to extract regionId from worldId');
-      }
+      const regionWorldId = parsedWorldId.toRegionCollection().toString();
 
       const response = await anythingService.list({
+        worldId: regionWorldId,
         collection: 'hexGridPreset',
-        regionId: regionId,
         enabledOnly: true,
         limit: 100,
       });
@@ -75,7 +71,7 @@ export function useHexGridPresets(worldId?: string): UseHexGridPresetsReturn {
         data: entity.data || {},
       }));
 
-      logger.info('Loaded hex grid presets', { count: presets.value.length, regionId, worldId: targetWorldId });
+      logger.info('Loaded hex grid presets', { count: presets.value.length, regionWorldId, worldId: targetWorldId });
     } catch (err) {
       error.value = 'Failed to load hex grid presets';
       logger.error('Failed to load hex grid presets', { worldId: targetWorldId }, err as Error);

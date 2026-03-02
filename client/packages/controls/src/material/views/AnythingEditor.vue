@@ -2,25 +2,8 @@
   <div class="space-y-4">
     <!-- Header with Selectors and Actions -->
     <div class="flex flex-col gap-4">
-      <!-- Collection, World and Search -->
+      <!-- Collection and Search -->
       <div class="flex flex-col sm:flex-row gap-4 items-stretch sm:items-center">
-        <!-- World Selector (Optional) -->
-        <div class="flex-1">
-          <label class="label">
-            <span class="label-text">World (Optional)</span>
-          </label>
-          <select
-            v-model="selectedWorldId"
-            class="select select-bordered w-full"
-            @change="handleWorldChange"
-          >
-            <option value="">No World Filter</option>
-            <option v-for="world in worlds" :key="world.worldId" :value="world.worldId">
-              {{ world.publicData?.title || world.worldId }}
-            </option>
-          </select>
-        </div>
-
         <!-- Collection Input -->
         <div class="flex-1">
           <label class="label">
@@ -64,7 +47,7 @@
         <div class="flex gap-2 items-end">
           <button
             class="btn btn-primary"
-            :disabled="!collection"
+            :disabled="!collection || !currentWorldId"
             @click="handleSearch"
           >
             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -74,7 +57,7 @@
           </button>
           <button
             class="btn btn-success"
-            :disabled="!collection"
+            :disabled="!collection || !currentWorldId"
             @click="openCreateDialog"
           >
             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -107,7 +90,6 @@
             <th>Title</th>
             <th>Type</th>
             <th>Description</th>
-            <th>Region</th>
             <th>World</th>
             <th>Enabled</th>
             <th>Updated</th>
@@ -123,10 +105,6 @@
               <span v-else class="text-base-content/50">-</span>
             </td>
             <td class="max-w-xs truncate">{{ entity.description || '-' }}</td>
-            <td>
-              <span v-if="entity.regionId" class="badge badge-ghost">{{ entity.regionId }}</span>
-              <span v-else class="text-base-content/50">-</span>
-            </td>
             <td>
               <span v-if="entity.worldId" class="badge badge-ghost">{{ entity.worldId }}</span>
               <span v-else class="text-base-content/50">-</span>
@@ -206,8 +184,7 @@
       v-if="isDialogOpen"
       :entity="selectedEntity"
       :collection="collection"
-      :region-id="currentRegionId"
-      :world-id="selectedWorldId"
+      :world-id="currentWorldId"
       @close="closeDialog"
       @saved="handleSaved"
     />
@@ -222,9 +199,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, watch } from 'vue';
 import type { WAnything } from '@shared/generated/entities/WAnything';
-import { useRegion } from '@/composables/useRegion';
 import { useWorld } from '@/composables/useWorld';
 import { anythingService } from '@/services/AnythingService';
 import LoadingSpinner from '@components/LoadingSpinner.vue';
@@ -232,10 +208,8 @@ import ErrorAlert from '@components/ErrorAlert.vue';
 import AnythingDialog from '@material/components/AnythingDialog.vue';
 import CollectionSearchDialog from '@material/components/CollectionSearchDialog.vue';
 
-const { currentRegionId, loadRegions } = useRegion();
-const { worlds, loadWorlds } = useWorld();
+const { currentWorldId } = useWorld();
 
-const selectedWorldId = ref<string>('');
 const collection = ref<string>('');
 const typeFilter = ref<string>('');
 const entities = ref<WAnything[]>([]);
@@ -266,21 +240,15 @@ const formatDate = (date: Date | string | undefined): string => {
 };
 
 /**
- * Handle world change
- */
-const handleWorldChange = () => {
-  currentPage.value = 1;
-  if (hasSearched.value) {
-    handleSearch();
-  }
-};
-
-/**
  * Handle search
  */
 const handleSearch = async () => {
   if (!collection.value) {
     error.value = 'Collection is required';
+    return;
+  }
+  if (!currentWorldId.value) {
+    error.value = 'Please select a world first';
     return;
   }
 
@@ -291,9 +259,8 @@ const handleSearch = async () => {
   try {
     const offset = (currentPage.value - 1) * pageSize.value;
     const result = await anythingService.list({
+      worldId: currentWorldId.value,
       collection: collection.value,
-      regionId: currentRegionId.value || undefined,
-      worldId: selectedWorldId.value || undefined,
       type: typeFilter.value || undefined,
       enabledOnly: true,
       offset,
@@ -375,16 +342,7 @@ const handleDelete = async (entity: WAnything) => {
   }
 
   try {
-    if (entity.regionId && entity.worldId) {
-      await anythingService.deleteByRegionAndWorld(entity.regionId, entity.worldId, entity.collection, entity.name);
-    } else if (entity.regionId) {
-      await anythingService.deleteByRegion(entity.regionId, entity.collection, entity.name);
-    } else if (entity.worldId) {
-      await anythingService.deleteByWorld(entity.worldId, entity.collection, entity.name);
-    } else {
-      await anythingService.deleteByCollection(entity.collection, entity.name);
-    }
-
+    await anythingService.delete(entity.worldId!, entity.collection, entity.name);
     handleSearch();
   } catch (e: any) {
     error.value = e.message || 'Failed to delete entity';
@@ -411,17 +369,11 @@ const handlePreviousPage = () => {
   }
 };
 
-// Watch for region changes from header
-watch(currentRegionId, () => {
+// Watch for world changes from header
+watch(currentWorldId, () => {
   currentPage.value = 1;
   if (hasSearched.value) {
     handleSearch();
   }
-});
-
-onMounted(async () => {
-  // Load regions and worlds
-  await loadRegions();
-  await loadWorlds('all');
 });
 </script>

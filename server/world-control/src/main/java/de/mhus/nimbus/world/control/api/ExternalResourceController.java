@@ -136,14 +136,12 @@ public class ExternalResourceController extends BaseEditorController {
 
     @GetMapping
     @Operation(summary = "List all external resource definitions")
-    public ResponseEntity<?> list(@RequestParam(required = false) String worldId) {
-        List<WAnything> entities;
-
-        if (worldId != null) {
-            entities = anythingService.findByWorldIdAndCollection(worldId, COLLECTION_NAME);
-        } else {
-            entities = anythingService.findByCollection(COLLECTION_NAME);
+    public ResponseEntity<?> list(@RequestParam String worldId) {
+        if (Strings.isBlank(worldId)) {
+            return bad("World ID is required");
         }
+
+        List<WAnything> entities = anythingService.findByWorldIdAndCollection(worldId, COLLECTION_NAME);
 
         List<ExternalResourceResponse> responses = entities.stream()
                 .map(this::toResponse)

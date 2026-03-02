@@ -1,7 +1,7 @@
 <template>
   <div class="min-h-screen flex flex-col">
     <!-- Header -->
-    <AppHeader title="Nimbus Anything Editor" :show-world-selector="false" :show-region-selector="true" />
+    <AppHeader title="Nimbus Anything Editor" :show-world-selector="true" world-filter="withCollections" :show-region-selector="false" />
 
     <!-- Main Content -->
     <main class="flex-1 container mx-auto px-4 py-6">

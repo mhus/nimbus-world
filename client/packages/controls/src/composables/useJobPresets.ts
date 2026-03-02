@@ -36,13 +36,18 @@ export function useJobPresets(worldId?: string): UseJobPresetsReturn {
   const loadPresets = async (loadWorldId?: string) => {
     const targetWorldId = loadWorldId || worldId;
 
+    if (!targetWorldId) {
+      logger.warn('No worldId provided for loading presets');
+      return;
+    }
+
     loading.value = true;
     error.value = null;
 
     try {
       const response = await anythingService.list({
-        collection: 'jobPreset',
         worldId: targetWorldId,
+        collection: 'jobPreset',
         enabledOnly: true,
         limit: 100,
       });

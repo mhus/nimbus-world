@@ -139,13 +139,8 @@
                       <span class="ml-2 font-medium">{{ collection }}</span>
                     </div>
                     <div>
-                      <span class="text-base-content/60">Region:</span>
-                      <span v-if="regionId" class="ml-2 font-medium">{{ regionId }}</span>
-                      <span v-else class="ml-2 text-warning">Not set</span>
-                    </div>
-                    <div>
                       <span class="text-base-content/60">World:</span>
-                      <span class="ml-2 font-medium">{{ worldId || '-' }}</span>
+                      <span class="ml-2 font-medium">{{ worldId }}</span>
                     </div>
                   </div>
                 </div>
@@ -189,8 +184,7 @@ const logger = getLogger('AnythingDialog');
 const props = defineProps<{
   entity?: WAnything | null;
   collection: string;
-  regionId?: string;
-  worldId?: string;
+  worldId: string;
 }>();
 
 const emit = defineEmits<{
@@ -279,7 +273,6 @@ const handleSave = async () => {
     } else {
       // Create new entity
       await anythingService.create({
-        regionId: props.regionId,
         worldId: props.worldId,
         collection: props.collection,
         name: formData.value.name,

@@ -67,7 +67,6 @@ public class AnythingTools {
         Map<String, Object> dto = new HashMap<>();
         dto.put("id", e.getId());
         dto.put("worldId", e.getWorldId() != null ? e.getWorldId() : "");
-        dto.put("regionId", e.getRegionId() != null ? e.getRegionId() : "");
         dto.put("collection", e.getCollection());
         dto.put("name", e.getName());
         dto.put("title", e.getTitle() != null ? e.getTitle() : "");
@@ -97,14 +96,13 @@ public class AnythingTools {
         }
 
         try {
-            WAnything entity = anythingService.createWithWorldId(
+            WAnything entity = anythingService.create(
                     worldId, collection, name, title, description, type, data
             );
 
             return Map.of(
                     "id", entity.getId(),
                     "worldId", entity.getWorldId() != null ? entity.getWorldId() : "",
-                    "regionId", entity.getRegionId() != null ? entity.getRegionId() : "",
                     "collection", entity.getCollection(),
                     "name", entity.getName()
             );

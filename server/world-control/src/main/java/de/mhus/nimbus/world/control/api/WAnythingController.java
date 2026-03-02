@@ -26,7 +26,8 @@ import java.util.stream.Collectors;
  * REST Controller for WAnythingEntity CRUD operations.
  * Base path: /control/anything
  * <p>
- * Manages arbitrary data storage with flexible scoping by region, world, and collection.
+ * Manages arbitrary data storage scoped by worldId and collection.
+ * Region scoping uses worldId format "@region:regionId".
  */
 @RestController
 @RequestMapping("/control/anything")
@@ -45,7 +46,6 @@ public class WAnythingController extends BaseEditorController {
     // DTOs
     public record AnythingDto(
             String id,
-            String regionId,
             String worldId,
             String collection,
             String name,
@@ -60,7 +60,6 @@ public class WAnythingController extends BaseEditorController {
     }
 
     public record CreateAnythingRequest(
-            String regionId,
             String worldId,
             String collection,
             String name,
@@ -81,117 +80,54 @@ public class WAnythingController extends BaseEditorController {
     }
 
     /**
-     * Get single entity by collection and title.
-     * GET /control/anything/by-collection?collection=...&title=...
-     */
-    @GetMapping("/by-collection")
-    @Operation(summary = "Get entity by collection and title")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Entity found"),
-            @ApiResponse(responseCode = "400", description = "Invalid parameters"),
-            @ApiResponse(responseCode = "404", description = "Entity not found")
-    })
-    public ResponseEntity<?> getByCollection(
-            @Parameter(description = "Collection identifier") @RequestParam String collection,
-            @Parameter(description = "Name identifier") @RequestParam String name) {
-
-        log.debug("GET anything by collection: collection={}, title={}", collection, name);
-
-        if (Strings.isBlank(collection)) return bad("collection required");
-        if (Strings.isBlank(name)) return bad("title required");
-
-        Optional<WAnything> opt = anythingService.findByCollectionAndName(collection, name);
-        if (opt.isEmpty()) {
-            log.warn("Entity not found: collection={}, title={}", collection, name);
-            return notFound("entity not found");
-        }
-
-        log.debug("Returning entity: collection={}, title={}", collection, name);
-        return ResponseEntity.ok(toDto(opt.get()));
-    }
-
-    /**
-     * Get single entity by world, collection, and title.
-     * GET /control/anything/by-world?worldId=...&collection=...&title=...
+     * Get single entity by worldId, collection, and name.
+     * GET /control/anything/by-world?worldId=...&collection=...&name=...
      */
     @GetMapping("/by-world")
-    @Operation(summary = "Get entity by world, collection, and title")
+    @Operation(summary = "Get entity by world, collection, and name")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Entity found"),
             @ApiResponse(responseCode = "400", description = "Invalid parameters"),
             @ApiResponse(responseCode = "404", description = "Entity not found")
     })
     public ResponseEntity<?> getByWorld(
-            @Parameter(description = "World identifier") @RequestParam String worldId,
+            @Parameter(description = "World identifier (supports @region:regionId)") @RequestParam String worldId,
             @Parameter(description = "Collection identifier") @RequestParam String collection,
             @Parameter(description = "Name identifier") @RequestParam String name) {
 
-        log.debug("GET anything by world: worldId={}, collection={}, title={}", worldId, collection, name);
+        log.debug("GET anything: worldId={}, collection={}, name={}", worldId, collection, name);
 
         if (Strings.isBlank(worldId)) return bad("worldId required");
         if (Strings.isBlank(collection)) return bad("collection required");
-        if (Strings.isBlank(name)) return bad("title required");
+        if (Strings.isBlank(name)) return bad("name required");
 
         Optional<WAnything> opt = anythingService.findByWorldIdAndCollectionAndName(worldId, collection, name);
         if (opt.isEmpty()) {
-            log.warn("Entity not found: worldId={}, collection={}, title={}", worldId, collection, name);
+            log.warn("Entity not found: worldId={}, collection={}, name={}", worldId, collection, name);
             return notFound("entity not found");
         }
 
-        log.debug("Returning entity: worldId={}, collection={}, title={}", worldId, collection, name);
         return ResponseEntity.ok(toDto(opt.get()));
     }
 
     /**
-     * Get single entity by region, collection, and title.
-     * GET /control/anything/by-region?regionId=...&collection=...&title=...
-     */
-    @GetMapping("/by-region")
-    @Operation(summary = "Get entity by region, collection, and title")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Entity found"),
-            @ApiResponse(responseCode = "400", description = "Invalid parameters"),
-            @ApiResponse(responseCode = "404", description = "Entity not found")
-    })
-    public ResponseEntity<?> getByRegion(
-            @Parameter(description = "Region identifier") @RequestParam String regionId,
-            @Parameter(description = "Collection identifier") @RequestParam String collection,
-            @Parameter(description = "Name identifier") @RequestParam String name) {
-
-        log.debug("GET anything by region: regionId={}, collection={}, title={}", regionId, collection, name);
-
-        if (Strings.isBlank(regionId)) return bad("regionId required");
-        if (Strings.isBlank(collection)) return bad("collection required");
-        if (Strings.isBlank(name)) return bad("title required");
-
-        Optional<WAnything> opt = anythingService.findByRegionIdAndCollectionAndName(regionId, collection, name);
-        if (opt.isEmpty()) {
-            log.warn("Entity not found: regionId={}, collection={}, title={}", regionId, collection, name);
-            return notFound("entity not found");
-        }
-
-        log.debug("Returning entity: regionId={}, collection={}, title={}", regionId, collection, name);
-        return ResponseEntity.ok(toDto(opt.get()));
-    }
-
-    /**
-     * Get distinct collection names with optional filtering.
-     * GET /control/anything/collections?regionId=...&worldId=...
+     * Get distinct collection names for a world.
+     * GET /control/anything/collections?worldId=...
      */
     @GetMapping("/collections")
     @Operation(summary = "Get distinct collection names")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Success")
+            @ApiResponse(responseCode = "200", description = "Success"),
+            @ApiResponse(responseCode = "400", description = "Invalid parameters")
     })
     public ResponseEntity<?> getCollections(
-            @Parameter(description = "Optional region identifier") @RequestParam(required = false) String regionId,
-            @Parameter(description = "Optional world identifier") @RequestParam(required = false) String worldId) {
+            @Parameter(description = "World identifier (supports @region:regionId)") @RequestParam String worldId) {
 
-        log.debug("GET collections: regionId={}, worldId={}", regionId, worldId);
+        log.debug("GET collections: worldId={}", worldId);
 
-        List<String> collections = anythingService.findDistinctCollections(regionId, worldId);
+        if (Strings.isBlank(worldId)) return bad("worldId required");
 
-        log.debug("Returning {} collections", collections.size());
+        List<String> collections = anythingService.findDistinctCollections(worldId);
 
         return ResponseEntity.ok(Map.of(
                 "collections", collections,
@@ -200,8 +136,8 @@ public class WAnythingController extends BaseEditorController {
     }
 
     /**
-     * List all entities in a collection with optional filters.
-     * GET /control/anything/list?collection=...&worldId=...&regionId=...&type=...&offset=0&limit=50
+     * List all entities in a collection.
+     * GET /control/anything/list?worldId=...&collection=...&type=...&offset=0&limit=50
      */
     @GetMapping("/list")
     @Operation(summary = "List entities with flexible filtering")
@@ -210,17 +146,17 @@ public class WAnythingController extends BaseEditorController {
             @ApiResponse(responseCode = "400", description = "Invalid parameters")
     })
     public ResponseEntity<?> list(
+            @Parameter(description = "World identifier (supports @region:regionId)") @RequestParam String worldId,
             @Parameter(description = "Collection identifier") @RequestParam String collection,
-            @Parameter(description = "Optional world identifier") @RequestParam(required = false) String worldId,
-            @Parameter(description = "Optional region identifier") @RequestParam(required = false) String regionId,
             @Parameter(description = "Optional type filter") @RequestParam(required = false) String type,
             @Parameter(description = "Only enabled entities") @RequestParam(defaultValue = "true") boolean enabledOnly,
             @Parameter(description = "Pagination offset") @RequestParam(defaultValue = "0") int offset,
             @Parameter(description = "Pagination limit") @RequestParam(defaultValue = "50") int limit) {
 
-        log.debug("LIST anything: collection={}, worldId={}, regionId={}, type={}, enabledOnly={}, offset={}, limit={}",
-                collection, worldId, regionId, type, enabledOnly, offset, limit);
+        log.debug("LIST anything: worldId={}, collection={}, type={}, enabledOnly={}, offset={}, limit={}",
+                worldId, collection, type, enabledOnly, offset, limit);
 
+        if (Strings.isBlank(worldId)) return bad("worldId required");
         if (Strings.isBlank(collection)) return bad("collection required");
 
         var validation = validatePagination(offset, limit);
@@ -228,42 +164,16 @@ public class WAnythingController extends BaseEditorController {
 
         List<WAnything> all;
 
-        // Find by scope and type
         if (!Strings.isBlank(type)) {
-            // Filter by type
-            if (worldId != null) {
-                all = anythingService.findByWorldIdAndCollectionAndType(worldId, collection, type);
-            } else
-            if (regionId != null) {
-                all = anythingService.findByRegionIdAndCollectionAndType(regionId, collection, type);
-            } else {
-                all = anythingService.findByCollectionAndType(collection, type);
-            }
+            all = anythingService.findByWorldIdAndCollectionAndType(worldId, collection, type);
         } else if (enabledOnly) {
-            // Find by scope with enabled filter
-            if (worldId != null) {
-                all = anythingService.findByWorldIdAndCollectionAndEnabled(worldId, collection, true);
-            } else
-            if (regionId != null) {
-                all = anythingService.findByRegionIdAndCollectionAndEnabled(regionId, collection, true);
-            } else {
-                all = anythingService.findByCollectionAndEnabled(collection, true);
-            }
+            all = anythingService.findByWorldIdAndCollectionAndEnabled(worldId, collection, true);
         } else {
-            // Find by scope without filters
-            if (worldId != null) {
-                all = anythingService.findByWorldIdAndCollection(worldId, collection);
-            } else
-            if (regionId != null) {
-                all = anythingService.findByRegionIdAndCollection(regionId, collection);
-            } else {
-                all = anythingService.findByCollection(collection);
-            }
+            all = anythingService.findByWorldIdAndCollection(worldId, collection);
         }
 
         int totalCount = all.size();
 
-        // Apply pagination
         List<AnythingDto> entityList = all.stream()
                 .skip(offset)
                 .limit(limit)
@@ -293,37 +203,20 @@ public class WAnythingController extends BaseEditorController {
     })
     public ResponseEntity<?> create(@RequestBody CreateAnythingRequest request) {
 
-        log.debug("CREATE anything: collection={}, title={}, worldId={}, regionId={}",
-                request.collection(), request.name(), request.worldId(), request.regionId());
+        log.debug("CREATE anything: worldId={}, collection={}, name={}",
+                request.worldId(), request.collection(), request.name());
 
-        if (Strings.isBlank(request.collection())) {
-            return bad("collection required");
-        }
-
-        if (Strings.isBlank(request.name())) {
-            return bad("title required");
-        }
+        if (Strings.isBlank(request.worldId())) return bad("worldId required");
+        if (Strings.isBlank(request.collection())) return bad("collection required");
+        if (Strings.isBlank(request.name())) return bad("name required");
 
         try {
-            WAnything saved;
+            WAnything saved = anythingService.create(
+                    request.worldId(), request.collection(),
+                    request.name(), request.title(), request.description(), request.type(), request.data());
 
-            // Create with appropriate scope
-            if (request.worldId() != null) {
-                saved = anythingService.createWithWorldId(
-                        request.worldId(), request.collection(),
-                        request.name(), request.title(), request.description(), request.type(), request.data());
-            } else
-            if (request.regionId() != null) {
-                saved = anythingService.createWithRegionId(
-                        request.regionId(), request.collection(),
-                        request.name(), request.title(), request.description(), request.type(), request.data());
-            } else {
-                saved = anythingService.create(
-                        request.collection(), request.name(),
-                        request.title(), request.description(), request.type(), request.data());
-            }
-
-            log.info("Created entity: collection={}, title={}", request.collection(), request.name());
+            log.info("Created entity: worldId={}, collection={}, name={}",
+                    request.worldId(), request.collection(), request.name());
             return ResponseEntity.status(HttpStatus.CREATED).body(toDto(saved));
 
         } catch (IllegalStateException e) {
@@ -388,78 +281,28 @@ public class WAnythingController extends BaseEditorController {
     }
 
     /**
-     * Delete entity by collection and title.
-     * DELETE /control/anything/by-collection?collection=...&title=...
-     */
-    @DeleteMapping("/by-collection")
-    @Operation(summary = "Delete entity by collection and title")
-    @ApiResponses({
-            @ApiResponse(responseCode = "204", description = "Entity deleted"),
-            @ApiResponse(responseCode = "400", description = "Invalid parameters")
-    })
-    public ResponseEntity<?> deleteByCollection(
-            @Parameter(description = "Collection identifier") @RequestParam String collection,
-            @Parameter(description = "Name identifier") @RequestParam String name) {
-
-        log.debug("DELETE anything by collection: collection={}, title={}", collection, name);
-
-        if (Strings.isBlank(collection)) return bad("collection required");
-        if (Strings.isBlank(name)) return bad("title required");
-
-        anythingService.deleteByCollectionAndName(collection, name);
-        log.info("Deleted entity: collection={}, title={}", collection, name);
-        return ResponseEntity.noContent().build();
-    }
-
-    /**
-     * Delete entity by world, collection, and title.
-     * DELETE /control/anything/by-world?worldId=...&collection=...&title=...
+     * Delete entity by worldId, collection, and name.
+     * DELETE /control/anything/by-world?worldId=...&collection=...&name=...
      */
     @DeleteMapping("/by-world")
-    @Operation(summary = "Delete entity by world, collection, and title")
+    @Operation(summary = "Delete entity by world, collection, and name")
     @ApiResponses({
             @ApiResponse(responseCode = "204", description = "Entity deleted"),
             @ApiResponse(responseCode = "400", description = "Invalid parameters")
     })
     public ResponseEntity<?> deleteByWorld(
-            @Parameter(description = "World identifier") @RequestParam String worldId,
+            @Parameter(description = "World identifier (supports @region:regionId)") @RequestParam String worldId,
             @Parameter(description = "Collection identifier") @RequestParam String collection,
             @Parameter(description = "Name identifier") @RequestParam String name) {
 
-        log.debug("DELETE anything by world: worldId={}, collection={}, title={}", worldId, collection, name);
+        log.debug("DELETE anything: worldId={}, collection={}, name={}", worldId, collection, name);
 
         if (Strings.isBlank(worldId)) return bad("worldId required");
         if (Strings.isBlank(collection)) return bad("collection required");
-        if (Strings.isBlank(name)) return bad("title required");
+        if (Strings.isBlank(name)) return bad("name required");
 
         anythingService.deleteByWorldIdAndCollectionAndName(worldId, collection, name);
-        log.info("Deleted entity: worldId={}, collection={}, title={}", worldId, collection, name);
-        return ResponseEntity.noContent().build();
-    }
-
-    /**
-     * Delete entity by region, collection, and title.
-     * DELETE /control/anything/by-region?regionId=...&collection=...&title=...
-     */
-    @DeleteMapping("/by-region")
-    @Operation(summary = "Delete entity by region, collection, and title")
-    @ApiResponses({
-            @ApiResponse(responseCode = "204", description = "Entity deleted"),
-            @ApiResponse(responseCode = "400", description = "Invalid parameters")
-    })
-    public ResponseEntity<?> deleteByRegion(
-            @Parameter(description = "Region identifier") @RequestParam String regionId,
-            @Parameter(description = "Collection identifier") @RequestParam String collection,
-            @Parameter(description = "Name identifier") @RequestParam String name) {
-
-        log.debug("DELETE anything by region: regionId={}, collection={}, title={}", regionId, collection, name);
-
-        if (Strings.isBlank(regionId)) return bad("regionId required");
-        if (Strings.isBlank(collection)) return bad("collection required");
-        if (Strings.isBlank(name)) return bad("title required");
-
-        anythingService.deleteByRegionIdAndCollectionAndName(regionId, collection, name);
-        log.info("Deleted entity: regionId={}, collection={}, title={}", regionId, collection, name);
+        log.info("Deleted entity: worldId={}, collection={}, name={}", worldId, collection, name);
         return ResponseEntity.noContent().build();
     }
 
@@ -468,7 +311,6 @@ public class WAnythingController extends BaseEditorController {
     private AnythingDto toDto(WAnything entity) {
         return new AnythingDto(
                 entity.getId(),
-                entity.getRegionId(),
                 entity.getWorldId(),
                 entity.getCollection(),
                 entity.getName(),

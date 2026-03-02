@@ -264,8 +264,9 @@ const loadAuthStatus = async () => {
 const loadTemplates = async () => {
   loadingTemplates.value = true;
   try {
+    const regionWorldId = `@region:${regionId.value}`;
     const response = await apiService.get<{ entities: AnythingEntity[] }>(
-      `/control/anything/list?collection=editorShortcuts&regionId=${regionId.value}&enabledOnly=true`
+      `/control/anything/list?worldId=${encodeURIComponent(regionWorldId)}&collection=editorShortcuts&enabledOnly=true`
     );
 
     templates.value = response.entities || [];

@@ -1,19 +1,18 @@
 /**
  * Anything Service
- * Manages WAnything CRUD operations
+ * Manages WAnything CRUD operations.
+ * All operations are scoped by worldId. Region scoping uses worldId format "@region:regionId".
  */
 
 import { apiService } from './ApiService';
 import type { WAnything } from '@nimbus/shared/generated/entities/WAnything';
 import { getLogger } from '@nimbus/shared';
-import { WorldId } from '@nimbus/shared/utils/WorldId';
 
 const logger = getLogger('AnythingService');
 
 export interface ListAnythingParams {
+  worldId: string;
   collection: string;
-  regionId?: string;
-  worldId?: string;
   type?: string;
   enabledOnly?: boolean;
   offset?: number;
@@ -28,8 +27,7 @@ export interface ListAnythingResponse {
 }
 
 export interface CreateAnythingRequest {
-  regionId?: string;
-  worldId?: string;
+  worldId: string;
   collection: string;
   name: string;
   title?: string;
@@ -53,34 +51,29 @@ export interface GetCollectionsResponse {
 
 export class AnythingService {
   /**
-   * Get distinct collection names with optional filtering
+   * Get distinct collection names for a world
    */
-  async getCollections(regionId?: string, worldId?: string): Promise<GetCollectionsResponse> {
-    logger.debug('Getting collections', { regionId, worldId });
+  async getCollections(worldId: string): Promise<GetCollectionsResponse> {
+    logger.debug('Getting collections', { worldId });
 
     const queryParams = new URLSearchParams();
-    if (regionId) queryParams.append('regionId', regionId);
-    if (worldId) queryParams.append('worldId', worldId);
+    queryParams.append('worldId', worldId);
 
-    const queryString = queryParams.toString();
-    const url = `/control/anything/collections${queryString ? '?' + queryString : ''}`;
-
-    const response = await apiService.get<GetCollectionsResponse>(url);
+    const response = await apiService.get<GetCollectionsResponse>(`/control/anything/collections?${queryParams.toString()}`);
     logger.debug('Got collections', { count: response.count });
     return response;
   }
 
   /**
-   * List entities with flexible filtering
+   * List entities with filtering
    */
   async list(params: ListAnythingParams): Promise<ListAnythingResponse> {
     logger.debug('Listing entities', { params });
 
     const queryParams = new URLSearchParams();
+    queryParams.append('worldId', params.worldId);
     queryParams.append('collection', params.collection);
 
-    if (params.regionId) queryParams.append('regionId', params.regionId);
-    if (params.worldId) queryParams.append('worldId', params.worldId);
     if (params.type) queryParams.append('type', params.type);
     if (params.enabledOnly !== undefined) queryParams.append('enabledOnly', String(params.enabledOnly));
     if (params.offset !== undefined) queryParams.append('offset', String(params.offset));
@@ -92,25 +85,10 @@ export class AnythingService {
   }
 
   /**
-   * Get entity by collection and name
+   * Get entity by worldId, collection, and name
    */
-  async getByCollection(collection: string, name: string): Promise<WAnything> {
-    logger.debug('Getting entity by collection', { collection, name });
-
-    const queryParams = new URLSearchParams();
-    queryParams.append('collection', collection);
-    queryParams.append('name', name);
-
-    const response = await apiService.get<WAnything>(`/control/anything/by-collection?${queryParams.toString()}`);
-    logger.debug('Got entity', { name: response.name, collection: response.collection });
-    return response;
-  }
-
-  /**
-   * Get entity by world, collection, and name
-   */
-  async getByWorld(worldId: string, collection: string, name: string): Promise<WAnything> {
-    logger.debug('Getting entity by world', { worldId, collection, name });
+  async get(worldId: string, collection: string, name: string): Promise<WAnything> {
+    logger.debug('Getting entity', { worldId, collection, name });
 
     const queryParams = new URLSearchParams();
     queryParams.append('worldId', worldId);
@@ -123,36 +101,10 @@ export class AnythingService {
   }
 
   /**
-   * Get entity by region, collection, and name
-   */
-  async getByRegion(regionId: string, collection: string, name: string): Promise<WAnything> {
-    logger.debug('Getting entity by region', { regionId, collection, name });
-
-    const queryParams = new URLSearchParams();
-    queryParams.append('regionId', regionId);
-    queryParams.append('collection', collection);
-    queryParams.append('name', name);
-
-    const response = await apiService.get<WAnything>(`/control/anything/by-region?${queryParams.toString()}`);
-    logger.debug('Got entity', { name: response.name, collection: response.collection });
-    return response;
-  }
-
-  /**
    * Create new entity
    */
   async create(request: CreateAnythingRequest): Promise<WAnything> {
     logger.debug('Creating entity', { request });
-
-    // Extract regionId from worldId if not provided
-    if (request.worldId && !request.regionId) {
-      const worldId = WorldId.unchecked(request.worldId);
-      const regionId = worldId.getRegionId();
-      if (regionId) {
-        request.regionId = regionId;
-        logger.debug('Extracted regionId from worldId', { worldId: request.worldId, regionId });
-      }
-    }
 
     const response = await apiService.post<WAnything>('/control/anything', request);
     logger.info('Created entity', { collection: response.collection, name: response.name });
@@ -171,24 +123,10 @@ export class AnythingService {
   }
 
   /**
-   * Delete entity by collection and name
+   * Delete entity by worldId, collection, and name
    */
-  async deleteByCollection(collection: string, name: string): Promise<void> {
-    logger.debug('Deleting entity by collection', { collection, name });
-
-    const queryParams = new URLSearchParams();
-    queryParams.append('collection', collection);
-    queryParams.append('name', name);
-
-    await apiService.delete(`/control/anything/by-collection?${queryParams.toString()}`);
-    logger.info('Deleted entity', { collection, name });
-  }
-
-  /**
-   * Delete entity by world, collection, and name
-   */
-  async deleteByWorld(worldId: string, collection: string, name: string): Promise<void> {
-    logger.debug('Deleting entity by world', { worldId, collection, name });
+  async delete(worldId: string, collection: string, name: string): Promise<void> {
+    logger.debug('Deleting entity', { worldId, collection, name });
 
     const queryParams = new URLSearchParams();
     queryParams.append('worldId', worldId);
@@ -197,37 +135,6 @@ export class AnythingService {
 
     await apiService.delete(`/control/anything/by-world?${queryParams.toString()}`);
     logger.info('Deleted entity', { worldId, collection, name });
-  }
-
-  /**
-   * Delete entity by region, collection, and name
-   */
-  async deleteByRegion(regionId: string, collection: string, name: string): Promise<void> {
-    logger.debug('Deleting entity by region', { regionId, collection, name });
-
-    const queryParams = new URLSearchParams();
-    queryParams.append('regionId', regionId);
-    queryParams.append('collection', collection);
-    queryParams.append('name', name);
-
-    await apiService.delete(`/control/anything/by-region?${queryParams.toString()}`);
-    logger.info('Deleted entity', { regionId, collection, name });
-  }
-
-  /**
-   * Delete entity by region, world, collection, and name
-   */
-  async deleteByRegionAndWorld(regionId: string, worldId: string, collection: string, name: string): Promise<void> {
-    logger.debug('Deleting entity by region and world', { regionId, worldId, collection, name });
-
-    const queryParams = new URLSearchParams();
-    queryParams.append('regionId', regionId);
-    queryParams.append('worldId', worldId);
-    queryParams.append('collection', collection);
-    queryParams.append('name', name);
-
-    await apiService.delete(`/control/anything/by-region?${queryParams.toString()}`);
-    logger.info('Deleted entity', { regionId, worldId, collection, name });
   }
 }
 
