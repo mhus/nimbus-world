@@ -66,7 +66,7 @@ public class ScriptEffectUpdateHandler implements MessageHandler {
         // Publish to Redis for multi-pod broadcasting
         publishToRedis(session, data);
 
-        log.debug("Effect update: effectId={}, session={}, data={}",
+        log.trace("Effect update: effectId={}, session={}, data={}",
                 effectId, session.getSessionId(), data);
     }
 

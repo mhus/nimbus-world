@@ -557,9 +557,6 @@ export interface PhysicsModifier {
   /** Auto-orientation Y axis when standing on(solid)/in(!solid) block - rotates the entity to this Y angle, default: undefined (disabled) */
   autoOrientationY?: number;
 
-  /** Interactive block - player can send a interact command for this block to the server, default: false */
-  interactive?: boolean;
-
   /** Send collision event to server when player collides with this block, default: false */
   collisionEvent?: boolean;
 

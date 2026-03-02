@@ -89,6 +89,10 @@ export class ChunkService {
   private highDensityDistance: number;
   private lowDensityDistance: number;
 
+  // Track last registered chunk position to avoid redundant network messages
+  private lastRegisteredCx: number | undefined;
+  private lastRegisteredCz: number | undefined;
+
   // Track if initial chunks are loaded (to enable physics)
   private initialChunksLoaded: boolean = false;
 
@@ -153,8 +157,12 @@ export class ChunkService {
       const chunkX = playerChunk.cx;
       const chunkZ = playerChunk.cz;
 
-      this.registerChunks(chunkX, chunkZ);
-      this.unloadDistantChunks(playerChunk.cx, playerChunk.cz);
+      if (chunkX !== this.lastRegisteredCx || chunkZ !== this.lastRegisteredCz) {
+        this.lastRegisteredCx = chunkX;
+        this.lastRegisteredCz = chunkZ;
+        this.registerChunks(chunkX, chunkZ);
+        this.unloadDistantChunks(playerChunk.cx, playerChunk.cz);
+      }
     } catch (error) {
       ExceptionHandler.handle(error, 'ChunkService.updateChunksAroundPosition', {
         worldX,

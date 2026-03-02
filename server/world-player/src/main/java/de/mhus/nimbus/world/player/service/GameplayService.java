@@ -32,7 +32,7 @@ public class GameplayService implements SessionAuthenticatedConsumer {
 
     public void onPlayerPlayerInteraction(PlayerSession session, String entityId, String action, Long timestamp, JsonNode params) {
         log.info("Player {} interacted with player {}: action={}, timestamp={}, params={}",
-                session.getPlayer(), entityId, action, timestamp, params);
+                GameplayUtil.toString(session.getPlayer()), entityId, action, timestamp, params);
         if (session.getWorldId() == null) {
             return;
         }
@@ -46,7 +46,7 @@ public class GameplayService implements SessionAuthenticatedConsumer {
 
     public void onPlayerEntityInteraction(PlayerSession session, String entityId, String action, Long timestamp, JsonNode params) {
         log.info("Player {} interacted with entity {}: action={}, timestamp={}, params={}",
-                session.getPlayer(), entityId, action, timestamp, params);
+                GameplayUtil.toString(session.getPlayer()), entityId, action, timestamp, params);
         if (session.getWorldId() == null) {
             return;
         }
@@ -61,7 +61,7 @@ public class GameplayService implements SessionAuthenticatedConsumer {
 
     public void onPlayerBlockInteraction(PlayerSession session, int x, int y, int z, String blockId, String groupId, String userAction, JsonNode params) {
         log.info("Player {} interacted with block at ({}, {}, {}): blockId={}, groupId={}, userAction={}, params={}",
-                session.getPlayer(), x, y, z, blockId, groupId, userAction, params);
+                GameplayUtil.toString(session.getPlayer()), x, y, z, blockId, groupId, userAction, params);
 
         if (session.getWorldId() == null) {
             return;

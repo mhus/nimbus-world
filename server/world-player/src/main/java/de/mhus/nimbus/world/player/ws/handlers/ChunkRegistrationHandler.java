@@ -69,7 +69,7 @@ public class ChunkRegistrationHandler implements MessageHandler {
                 }
             }
 
-            log.debug("Chunk registration (new format): center=({}, {}), loadRange={}, total chunks={}",
+            log.debug("Chunk registration: center=({}, {}), loadRange={}, total chunks={}",
                     centerX, centerZ, lowDensityRange, requestedChunks.size());
 
         } else {

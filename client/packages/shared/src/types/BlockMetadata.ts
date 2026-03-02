@@ -39,4 +39,7 @@ export interface BlockMetadata {
      */
   client?: Record<string, string>;
 
+  /** Interactive block - player can send a interact command for this block to the server, default: false */
+  interactive?: boolean;
+
 }
