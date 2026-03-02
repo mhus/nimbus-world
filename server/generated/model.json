@@ -2241,6 +2241,13 @@
         "visibility" : null,
         "javaTypeHint" : null,
         "comment" : null
+      }, {
+        "name" : "interactive",
+        "type" : "boolean",
+        "optional" : true,
+        "visibility" : null,
+        "javaTypeHint" : null,
+        "comment" : null
       } ],
       "methods" : [ ]
     } ],
@@ -3419,20 +3426,6 @@
         "visibility" : null,
         "javaTypeHint" : null,
         "comment" : null
-      }, {
-        "name" : "leverUp",
-        "type" : "number",
-        "optional" : true,
-        "visibility" : null,
-        "javaTypeHint" : null,
-        "comment" : null
-      }, {
-        "name" : "leverDown",
-        "type" : "number",
-        "optional" : true,
-        "visibility" : null,
-        "javaTypeHint" : null,
-        "comment" : null
       } ],
       "methods" : [ ]
     }, {
@@ -3495,13 +3488,6 @@
       }, {
         "name" : "autoOrientationY",
         "type" : "number",
-        "optional" : true,
-        "visibility" : null,
-        "javaTypeHint" : null,
-        "comment" : null
-      }, {
-        "name" : "interactive",
-        "type" : "boolean",
         "optional" : true,
         "visibility" : null,
         "javaTypeHint" : null,
@@ -3666,6 +3652,13 @@
         "visibility" : null,
         "javaTypeHint" : "java.util.List<AudioDefinition>",
         "comment" : "// javaType: java.util.List<AudioDefinition>"
+      }, {
+        "name" : "interactive",
+        "type" : "boolean",
+        "optional" : true,
+        "visibility" : null,
+        "javaTypeHint" : null,
+        "comment" : null
       } ],
       "methods" : [ ]
     } ],

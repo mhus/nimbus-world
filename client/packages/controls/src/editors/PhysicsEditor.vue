@@ -8,11 +8,6 @@
         </TriStateCheckboxSimple>
       </div>
       <div class="form-control">
-        <TriStateCheckboxSimple v-model="localValue.interactive">
-          Interactive
-        </TriStateCheckboxSimple>
-      </div>
-      <div class="form-control">
         <TriStateCheckboxSimple v-model="localValue.collisionEvent">
           Collision Event
         </TriStateCheckboxSimple>

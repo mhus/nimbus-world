@@ -22,4 +22,6 @@ public class BlockMetadata {
     private java.util.Map<String, String> server;
     @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
     private java.util.Map<String, String> client;
+    @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
+    private java.lang.Boolean interactive;
 }

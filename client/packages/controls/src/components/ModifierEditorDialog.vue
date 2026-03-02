@@ -12,6 +12,13 @@
         </h2>
 
         <div class="space-y-4 overflow-y-auto pr-2 flex-1">
+                <!-- Interactive (BlockModifier level) -->
+                <div class="form-control">
+                  <TriStateCheckboxSimple v-model="modifierData.interactive">
+                    Interactive (player can interact with this block)
+                  </TriStateCheckboxSimple>
+                </div>
+
                 <!-- Visibility Section -->
                 <CollapsibleSection
                   title="Visibility"
@@ -92,6 +99,7 @@ import WindEditor from '@editors/WindEditor.vue';
 import EffectsEditor from '@editors/EffectsEditor.vue';
 import IlluminationEditor from '@editors/IlluminationEditor.vue';
 import AudioEditor from '@editors/AudioEditor.vue';
+import TriStateCheckboxSimple from '@components/TriStateCheckboxSimple.vue';
 
 interface Props {
   modifier: BlockModifier;

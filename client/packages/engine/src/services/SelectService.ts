@@ -40,7 +40,7 @@ export enum SelectMode {
   /** No selection */
   NONE = 'NONE',
 
-  /** Only interactive blocks (block.metadata.interactive OR currentModifier.physics.interactive) */
+  /** Only interactive blocks (block.metadata.interactive OR currentModifier.interactive) */
   INTERACTIVE = 'INTERACTIVE',
 
   /** Any solid block */
@@ -310,9 +310,9 @@ export class SelectService {
         return false;
 
       case SelectMode.INTERACTIVE:
-        // Check currentModifier.physics.interactive (from BlockType or Block modifier)
+        // Check currentModifier.interactive (from BlockType or Block modifier)
         if (isAir) return false;
-        return clientBlock.currentModifier?.physics?.interactive === true;
+        return clientBlock.currentModifier?.interactive === true;
 
       case SelectMode.BLOCK:
         // Any solid block

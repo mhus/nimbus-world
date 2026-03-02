@@ -135,7 +135,6 @@ export function getDefinedProperty(obj: any, prop: string): boolean | undefined 
 export function addPhysicsDefinedTracking(physics: any): any {
   return addDefinedTracking(physics, [
     'solid',
-    'interactive',
     'collisionEvent',
     'autoClimbable'
   ]);
@@ -147,7 +146,6 @@ export function addPhysicsDefinedTracking(physics: any): any {
 export function removePhysicsDefinedTracking(physics: any): any {
   const cleaned = removeDefinedTracking(physics, [
     'solid',
-    'interactive',
     'collisionEvent',
     'autoClimbable'
   ]);
@@ -189,7 +187,9 @@ export function removeEffectsDefinedTracking(effects: any): any {
  * Add defined tracking to entire BlockModifier.
  */
 export function addBlockModifierDefinedTracking(modifier: any): any {
-  const result = { ...modifier };
+  let result = { ...modifier };
+
+  result = addDefinedTracking(result, ['interactive']);
 
   if (result.physics) {
     result.physics = addPhysicsDefinedTracking(result.physics);
@@ -206,7 +206,9 @@ export function addBlockModifierDefinedTracking(modifier: any): any {
  * Remove defined tracking from entire BlockModifier.
  */
 export function removeBlockModifierDefinedTracking(modifier: any): any {
-  const result = { ...modifier };
+  let result = { ...modifier };
+
+  result = removeDefinedTracking(result, ['interactive']);
 
   if (result.physics) {
     result.physics = removePhysicsDefinedTracking(result.physics);

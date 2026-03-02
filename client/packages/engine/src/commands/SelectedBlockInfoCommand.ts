@@ -109,8 +109,8 @@ export class SelectedBlockInfoCommand extends CommandHandler {
       if (mod.physics) {
         lines.push('  Physics:');
         lines.push(`    Solid      : ${mod.physics.solid}`);
-        if (mod.physics.interactive !== undefined) {
-          lines.push(`    Interactive: ${mod.physics.interactive}`);
+        if (mod.interactive !== undefined) {
+          lines.push(`    Interactive: ${mod.interactive}`);
         }
         if (mod.physics.climbable !== undefined) {
           lines.push(`    Climbable  : ${mod.physics.climbable}`);

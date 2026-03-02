@@ -104,7 +104,7 @@ export class BlockInfoCommand extends CommandHandler {
       if (mod.physics) {
         lines.push('  Physics:');
         lines.push(`    Solid             : ${mod.physics.solid ?? false}`);
-        lines.push(`    Interactive       : ${mod.physics.interactive ?? false}`);
+        lines.push(`    Interactive       : ${mod.interactive ?? false}`);
         lines.push(`    CollisionEvent    : ${mod.physics.collisionEvent ?? false}`);
         lines.push(`    AutoClimbable     : ${mod.physics.autoClimbable ?? false}`);
         if (mod.physics.resistance !== undefined) {

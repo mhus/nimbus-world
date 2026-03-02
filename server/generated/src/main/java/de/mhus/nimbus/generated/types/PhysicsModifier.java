@@ -26,8 +26,6 @@ public class PhysicsModifier {
     @com.fasterxml.jackson.annotation.JsonProperty("autoOrientationY")
     @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
     private java.lang.Double autoOrientationY;
-    @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
-    private java.lang.Boolean interactive;
     @com.fasterxml.jackson.annotation.JsonProperty("collisionEvent")
     @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
     private java.lang.Boolean collisionEvent;

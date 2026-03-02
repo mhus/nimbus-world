@@ -656,6 +656,9 @@ export interface BlockModifier {
 
   /** Audio properties */
   audio?: AudioModifier;  // javaType: java.util.List<AudioDefinition>
+
+  /** Interactive block - player can send an interact command for this block to the server, default: false */
+  interactive?: boolean;
 }
 
 /**

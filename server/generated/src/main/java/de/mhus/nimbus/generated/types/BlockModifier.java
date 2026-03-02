@@ -23,4 +23,6 @@ public class BlockModifier {
     private EffectsModifier effects;
     @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
     private java.util.List<AudioDefinition> audio;
+    @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
+    private java.lang.Boolean interactive;
 }

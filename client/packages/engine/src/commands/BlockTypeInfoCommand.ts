@@ -81,7 +81,7 @@ export class BlockTypeInfoCommand extends CommandHandler {
         if (modifier.physics) {
           info.push(`    Physics:`);
           info.push(`      Solid: ${modifier.physics.solid ?? 'N/A'}`);
-          info.push(`      Interactive: ${modifier.physics.interactive ?? 'N/A'}`);
+          info.push(`    Interactive: ${modifier.interactive ?? 'N/A'}`);
           if (modifier.physics.autoClimbable !== undefined) info.push(`      AutoClimbable: ${modifier.physics.autoClimbable}`);
           if (modifier.physics.collisionEvent !== undefined) info.push(`      CollisionEvent: ${modifier.physics.collisionEvent}`);
         }
