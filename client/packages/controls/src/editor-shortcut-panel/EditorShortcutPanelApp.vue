@@ -42,7 +42,7 @@
         <div class="bg-white rounded-lg shadow-md p-6">
           <h2 class="text-2xl font-bold text-gray-800 mb-4">Available Templates</h2>
           <p class="text-sm text-gray-600 mb-4">
-            Templates from collection 'editorShortcuts' for region {{ regionId }}
+            Available shortcut templates
           </p>
 
           <div v-if="loadingTemplates" class="flex justify-center py-8">
@@ -56,17 +56,17 @@
           <div v-else class="space-y-2 max-h-96 overflow-y-auto">
             <div
               v-for="template in templates"
-              :key="template.id"
+              :key="template.name"
               class="border border-gray-200 rounded p-3 hover:bg-gray-50 cursor-pointer transition-colors"
               @click="selectTemplate(template)"
             >
               <div class="flex items-start justify-between">
                 <div class="flex-1">
-                  <h3 class="font-semibold text-gray-800">{{ template.name }}</h3>
+                  <h3 class="font-semibold text-gray-800">{{ template.title || template.name }}</h3>
                   <p v-if="template.description" class="text-sm text-gray-600 mt-1">{{ template.description }}</p>
                   <div v-if="template.data" class="mt-2">
                     <span class="text-xs font-mono bg-gray-100 px-2 py-1 rounded">
-                      {{ template.data.type || 'none' }}
+                      {{ template.data.type || template.type || 'none' }}
                     </span>
                   </div>
                 </div>
@@ -82,7 +82,7 @@
         <div class="bg-white rounded-lg shadow-md p-6">
           <h2 class="text-2xl font-bold text-gray-800 mb-4">Player Shortcut Slots</h2>
           <p class="text-sm text-gray-600 mb-4">
-            Editor shortcuts for player {{ playerId }}
+            Your editor shortcuts
           </p>
 
           <div v-if="loadingPlayer" class="flex justify-center py-8">
@@ -145,6 +145,12 @@
               <span v-else>Save Changes</span>
             </button>
           </div>
+
+          <!-- Save Message -->
+          <div v-if="saveMessage" class="mt-4 p-3 rounded-lg text-center text-sm font-medium transition-all"
+               :class="saveMessage.type === 'success' ? 'bg-green-50 text-green-800 border border-green-200' : 'bg-red-50 text-red-800 border border-red-200'">
+            {{ saveMessage.text }}
+          </div>
         </div>
       </div>
 
@@ -182,21 +188,15 @@
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue';
-import { authService } from '../home/services/AuthService';
 import { apiService } from '@/services/ApiService';
-import type { PlayerInfo } from '@nimbus/shared/types/PlayerInfo';
 import type { ShortcutDefinition } from '@nimbus/shared/types/ShortcutDefinition';
 
-interface AnythingEntity {
-  id: string;
-  regionId: string;
-  worldId: string;
-  collection: string;
+interface ShortcutTemplate {
   name: string;
+  title?: string;
   description?: string;
   type?: string;
   data: any;
-  enabled: boolean;
 }
 
 const loading = ref(true);
@@ -204,15 +204,12 @@ const loadingTemplates = ref(false);
 const loadingPlayer = ref(false);
 const saving = ref(false);
 const error = ref<string | null>(null);
+const saveMessage = ref<{ text: string; type: 'success' | 'error' } | null>(null);
 
-const worldId = ref<string>('');
-const playerId = ref<string>('');
-const regionId = ref<string>('');
-const templates = ref<AnythingEntity[]>([]);
-const playerInfo = ref<PlayerInfo | null>(null);
+const templates = ref<ShortcutTemplate[]>([]);
 const editorShortcuts = ref<Record<string, ShortcutDefinition>>({});
 const originalShortcuts = ref<Record<string, ShortcutDefinition>>({});
-const selectedTemplate = ref<AnythingEntity | null>(null);
+const selectedTemplate = ref<ShortcutTemplate | null>(null);
 
 const hasChanges = computed(() => {
   return JSON.stringify(editorShortcuts.value) !== JSON.stringify(originalShortcuts.value);
@@ -223,53 +220,17 @@ const availableSlotKeys = computed(() => {
 });
 
 /**
- * Load authentication status and extract player info
- */
-const loadAuthStatus = async () => {
-  try {
-    const authStatus = await authService.getStatus();
-
-    if (!authStatus.authenticated) {
-      error.value = 'Not authenticated. Please log in.';
-      return false;
-    }
-
-    if (!authStatus.userId || !authStatus.characterId || !authStatus.worldId) {
-      error.value = 'Missing player information in session.';
-      return false;
-    }
-
-    // Extract regionId from worldId (format: regionId:worldName)
-    const worldParts = authStatus.worldId.split(':');
-    if (worldParts.length < 1) {
-      error.value = 'Invalid worldId format.';
-      return false;
-    }
-
-    worldId.value = authStatus.worldId;
-    regionId.value = worldParts[0];
-    playerId.value = `${authStatus.userId}:${authStatus.characterId}`;
-
-    return true;
-  } catch (err) {
-    console.error('[EditorShortcutPanel] Failed to load auth status:', err);
-    error.value = 'Failed to load authentication status.';
-    return false;
-  }
-};
-
-/**
- * Load templates from WAnything
+ * Load shortcut templates via player shortcut controller.
+ * worldId comes from the session cookie on the server side.
  */
 const loadTemplates = async () => {
   loadingTemplates.value = true;
   try {
-    const regionWorldId = `@region:${regionId.value}`;
-    const response = await apiService.get<{ entities: AnythingEntity[] }>(
-      `/control/anything/list?worldId=${encodeURIComponent(regionWorldId)}&collection=editorShortcuts&enabledOnly=true`
+    const response = await apiService.get<{ templates: ShortcutTemplate[] }>(
+      '/control/player/shortcut/templates'
     );
 
-    templates.value = response.entities || [];
+    templates.value = response.templates || [];
   } catch (err) {
     console.error('[EditorShortcutPanel] Failed to load templates:', err);
     error.value = 'Failed to load shortcut templates.';
@@ -279,17 +240,20 @@ const loadTemplates = async () => {
 };
 
 /**
- * Load player info and shortcuts
+ * Load player shortcuts via player shortcut controller.
+ * worldId and playerId come from the session cookie on the server side.
  */
-const loadPlayerInfo = async () => {
+const loadPlayerShortcuts = async () => {
   loadingPlayer.value = true;
   try {
-    const response = await apiService.get<PlayerInfo>(`/control/player/playerinfo/${worldId.value}/${playerId.value}`);
+    const response = await apiService.get<{ editorShortcuts: Record<string, ShortcutDefinition> }>(
+      '/control/player/shortcut'
+    );
 
-    playerInfo.value = response;
+    const shortcuts = response.editorShortcuts || {};
 
-    // Initialize editorShortcuts with default slots if not present
-    if (!response.editorShortcuts) {
+    // Initialize with default slots if empty
+    if (Object.keys(shortcuts).length === 0) {
       editorShortcuts.value = {
         'slot0': null as any,
         'slot1': null as any,
@@ -323,13 +287,13 @@ const loadPlayerInfo = async () => {
         'click9': null as any,
       };
     } else {
-      editorShortcuts.value = { ...response.editorShortcuts };
+      editorShortcuts.value = { ...shortcuts };
     }
 
     originalShortcuts.value = JSON.parse(JSON.stringify(editorShortcuts.value));
   } catch (err) {
-    console.error('[EditorShortcutPanel] Failed to load player info:', err);
-    error.value = 'Failed to load player information.';
+    console.error('[EditorShortcutPanel] Failed to load shortcuts:', err);
+    error.value = 'Failed to load player shortcuts.';
   } finally {
     loadingPlayer.value = false;
   }
@@ -338,7 +302,7 @@ const loadPlayerInfo = async () => {
 /**
  * Select a template
  */
-const selectTemplate = (template: AnythingEntity) => {
+const selectTemplate = (template: ShortcutTemplate) => {
   selectedTemplate.value = template;
 };
 
@@ -363,33 +327,31 @@ const clearSlot = (slotKey: string) => {
 };
 
 /**
- * Save shortcuts
+ * Save shortcuts via player shortcut controller.
+ * worldId and playerId come from the session cookie on the server side.
  */
 const saveShortcuts = async () => {
   saving.value = true;
   try {
-    if (!playerInfo.value) {
-      error.value = 'No player info loaded.';
-      return;
-    }
-
-    // Update playerInfo with new shortcuts
-    const updatedPlayerInfo: PlayerInfo = {
-      ...playerInfo.value,
-      editorShortcuts: editorShortcuts.value,
-    };
-
-    await apiService.put(`/control/player/playerinfo/${worldId.value}/${playerId.value}`, updatedPlayerInfo);
+    await apiService.put(
+      '/control/player/shortcut',
+      { editorShortcuts: editorShortcuts.value }
+    );
 
     originalShortcuts.value = JSON.parse(JSON.stringify(editorShortcuts.value));
 
-    alert('Shortcuts saved successfully!');
+    showMessage('Shortcuts saved successfully!', 'success');
   } catch (err) {
     console.error('[EditorShortcutPanel] Failed to save shortcuts:', err);
-    alert('Failed to save shortcuts. Please try again.');
+    showMessage('Failed to save shortcuts. Please try again.', 'error');
   } finally {
     saving.value = false;
   }
+};
+
+const showMessage = (text: string, type: 'success' | 'error') => {
+  saveMessage.value = { text, type };
+  setTimeout(() => { saveMessage.value = null; }, 3000);
 };
 
 /**
@@ -398,15 +360,9 @@ const saveShortcuts = async () => {
 onMounted(async () => {
   loading.value = true;
 
-  const authOk = await loadAuthStatus();
-  if (!authOk) {
-    loading.value = false;
-    return;
-  }
-
   await Promise.all([
     loadTemplates(),
-    loadPlayerInfo(),
+    loadPlayerShortcuts(),
   ]);
 
   loading.value = false;
