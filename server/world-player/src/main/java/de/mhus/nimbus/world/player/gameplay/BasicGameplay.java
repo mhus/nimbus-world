@@ -65,7 +65,7 @@ public class BasicGameplay implements Gameplay {
     }
 
     @Override
-    public void onSessionAuthenticated(PlayerSession session) {
+    public void onSessionAuthenticated(PlayerSession session, Map<String, Object> savedGameplayData) {
 
     }
 

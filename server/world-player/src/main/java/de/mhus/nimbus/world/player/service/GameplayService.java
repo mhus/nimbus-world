@@ -6,6 +6,7 @@ import de.mhus.nimbus.world.player.gameplay.EditorGameplay;
 import de.mhus.nimbus.world.player.gameplay.Gameplay;
 import de.mhus.nimbus.world.player.session.PlayerSession;
 import de.mhus.nimbus.world.player.session.SessionAuthenticatedConsumer;
+import de.mhus.nimbus.world.shared.session.WPlayerSessionService;
 import de.mhus.nimbus.world.shared.world.WWorld;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +23,7 @@ import java.util.stream.Collectors;
 public class GameplayService implements SessionAuthenticatedConsumer {
 
     private final List<Gameplay> gameplays;
+    private final WPlayerSessionService playerSessionService;
     private Map<String, Gameplay> gameplayMap;
 
     @PostConstruct
@@ -103,7 +105,7 @@ public class GameplayService implements SessionAuthenticatedConsumer {
 
     /**
      * Handle session authenticated event. This is called after the player has successfully authenticated and the session is ready.
-     * Gameplay implementations can use this to perform any final setup or send initial data to the client.
+     * Loads saved gameplay data from WPlayerSession (MongoDB) and passes it to the gameplay implementation for restoration.
      *
      * @param session The session that was authenticated
      */
@@ -111,10 +113,32 @@ public class GameplayService implements SessionAuthenticatedConsumer {
     public void onSessionAuthenticated(PlayerSession session) {
         var gameplay = session.getGameplay();
         if (gameplay == null) {
-            log.warn("No gameplay set for session {}, cannot handle block interaction", session.getPlayer());
+            log.warn("No gameplay set for session {}, cannot handle session authenticated", session.getPlayer());
             return;
         }
-        gameplay.onSessionAuthenticated(session);
+
+        // Load saved gameplay data from WPlayerSession
+        Map<String, Object> savedGameplayData = null;
+        try {
+            String worldId = session.getWorldId() != null ? session.getWorldId().getId() : null;
+            String playerId = session.getEntityId();
+            if (worldId != null && playerId != null && !playerId.isBlank()) {
+                var playerSessionOpt = playerSessionService.loadSession(worldId, playerId);
+                if (playerSessionOpt.isPresent()) {
+                    savedGameplayData = playerSessionOpt.get().getGameplayData();
+                    log.info("Loaded saved gameplay data for session {}: worldId={}, playerId={}, hasData={}",
+                            session.getSessionId(), worldId, playerId, savedGameplayData != null && !savedGameplayData.isEmpty());
+                } else {
+                    log.info("No saved player session found for worldId={}, playerId={}", worldId, playerId);
+                }
+            } else {
+                log.debug("Cannot load saved gameplay data: worldId={}, playerId={}", worldId, playerId);
+            }
+        } catch (Exception e) {
+            log.error("Failed to load saved gameplay data for session {}: {}", session.getSessionId(), e.getMessage(), e);
+        }
+
+        gameplay.onSessionAuthenticated(session, savedGameplayData);
     }
 
 }

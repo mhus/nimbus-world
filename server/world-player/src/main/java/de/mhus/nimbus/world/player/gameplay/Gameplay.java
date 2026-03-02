@@ -15,7 +15,14 @@ public interface Gameplay {
 
     void onPlayerInteraction(PlayerSession session, String entityId, String userAction, Long timestamp, JsonNode params);
 
-    void onSessionAuthenticated(PlayerSession session);
+    /**
+     * Called after session is authenticated and ready.
+     * Gameplay implementations should initialize GameplayData here, optionally restoring from saved data.
+     *
+     * @param session The authenticated player session
+     * @param savedGameplayData Previously saved gameplay data from WPlayerSession (can be null or empty)
+     */
+    void onSessionAuthenticated(PlayerSession session, Map<String, Object> savedGameplayData);
 
     void onEntityInteraction(PlayerSession session, String entityId, String action, Long timestamp, JsonNode params);
 

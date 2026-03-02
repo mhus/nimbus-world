@@ -292,10 +292,9 @@ public class WPlayerSessionService {
     }
 
     /**
-     * Merge player status data from old session to new session.
-     * Placeholder for future implementation.
-     * This will transfer player state (health, mana, stamina, effects, inventory, etc.)
-     * when the data model is ready.
+     * Merge player gameplay data from old session to new session.
+     * Transfers gameplayData (health, hunger, thirst, stamina, etc.) from the source world session
+     * to the target world session during cross-world teleportation.
      *
      * @param newSession The new target session
      * @param oldSession The old source session
@@ -306,10 +305,16 @@ public class WPlayerSessionService {
             return;
         }
 
-        log.debug("mergePlayerData called but not yet implemented: oldWorldId={}, newWorldId={}, playerId={}",
-                oldSession.getWorldId(), newSession.getWorldId(), newSession.getPlayerId());
-
-        // TODO: Implement player data merge when fields are defined
-        // This will include: health, mana, stamina, effects, inventory, attributes, quest data, etc.
+        // Transfer gameplayData from old to new session
+        if (oldSession.getGameplayData() != null && !oldSession.getGameplayData().isEmpty()) {
+            newSession.setGameplayData(oldSession.getGameplayData());
+            newSession.touchUpdate();
+            repository.save(newSession);
+            log.info("Merged gameplay data from old session (worldId={}) to new session (worldId={}), playerId={}",
+                    oldSession.getWorldId(), newSession.getWorldId(), newSession.getPlayerId());
+        } else {
+            log.debug("No gameplay data to merge: oldWorldId={}, newWorldId={}, playerId={}",
+                    oldSession.getWorldId(), newSession.getWorldId(), newSession.getPlayerId());
+        }
     }
 }
