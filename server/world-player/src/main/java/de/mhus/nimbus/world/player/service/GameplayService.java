@@ -6,7 +6,6 @@ import de.mhus.nimbus.world.player.gameplay.EditorGameplay;
 import de.mhus.nimbus.world.player.gameplay.Gameplay;
 import de.mhus.nimbus.world.player.session.PlayerSession;
 import de.mhus.nimbus.world.player.session.SessionAuthenticatedConsumer;
-import de.mhus.nimbus.world.player.ws.handlers.ServerCommandSender;
 import de.mhus.nimbus.world.shared.session.WPlayerSessionService;
 import de.mhus.nimbus.world.shared.world.WWorld;
 import jakarta.annotation.PostConstruct;
@@ -25,7 +24,7 @@ public class GameplayService implements SessionAuthenticatedConsumer {
 
     private final List<Gameplay> gameplays;
     private final WPlayerSessionService playerSessionService;
-    private final ServerCommandSender serverCommandSender;
+    private final ClientService clientService;
     private Map<String, Gameplay> gameplayMap;
 
     @PostConstruct
@@ -116,7 +115,7 @@ public class GameplayService implements SessionAuthenticatedConsumer {
             log.warn("No gameplay set for session {}, cannot handle shortcut modification", session.getPlayer());
             return;
         }
-        serverCommandSender.sendCommand(session, "shortcutModified", null);
+        clientService.sendCommand(session, "ShortcutModified", List.of());
         gameplay.onShortcutModified(session);
     }
 
@@ -131,7 +130,7 @@ public class GameplayService implements SessionAuthenticatedConsumer {
             log.warn("No gameplay set for session {}, cannot handle wearing modification", session.getPlayer());
             return;
         }
-        // serverCommandSender.sendCommand(session, "wearingModified", null);
+        clientService.sendCommand(session, "WearingModified", List.of());
         gameplay.onWearingModified(session);
     }
 

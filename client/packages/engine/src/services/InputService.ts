@@ -122,13 +122,15 @@ export class InputService {
     // Rotation handler
     this.handlerRegistry.set('rotate', new RotateHandler(this.playerService));
 
+    // Panel handler (available in both editor and viewer mode)
+    this.handlerRegistry.set('panelActivate', new PanelActivateHandler(this.playerService, this.appContext));
+
     // Editor handlers (only in editor mode)
     if (__EDITOR__) {
       this.handlerRegistry.set('editSelectionRotator', new EditSelectionRotatorHandler(this.playerService, this.appContext));
       this.handlerRegistry.set('editorActivate', new EditorActivateHandler(this.playerService, this.appContext));
       this.handlerRegistry.set('blockEditorActivate', new BlockEditorActivateHandler(this.playerService, this.appContext));
       this.handlerRegistry.set('editConfigActivate', new EditConfigActivateHandler(this.playerService, this.appContext));
-      this.handlerRegistry.set('panelActivate', new PanelActivateHandler(this.playerService, this.appContext));
       this.handlerRegistry.set('toggleModelSelector', new ToggleModelSelectorHandler(this.playerService, this.appContext));
     }
 

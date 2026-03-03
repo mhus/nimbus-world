@@ -40,7 +40,7 @@ interface KeyBinding {
  * - T: Toggle shortcuts display
  * - . (Period): Rotate selection mode (Editor only)
  * - / (Slash): Activate selected block editor (Editor only)
- * - p: Open panel navigation (Editor only)
+ * - p: Open panel navigation
  * - F9: Open edit configuration (Editor only)
  * - F10: Open block editor for selected block (Editor only)
  * - Mouse: Look around (when pointer locked)
@@ -191,13 +191,15 @@ export class WebInputController implements InputController {
     this.toggleVisibilityStateHandler = inputService.getHandler('toggleVisibilityState');
     this.rotateHandler = inputService.getHandler('rotate');
 
+    // Panel handler (available in both editor and viewer mode)
+    this.panelActivateHandler = inputService.getHandler('panelActivate');
+
     // Editor handlers (only available in editor mode)
     if (__EDITOR__) {
       this.editSelectionRotatorHandler = inputService.getHandler('editSelectionRotator');
       this.editorActivateHandler = inputService.getHandler('editorActivate');
       this.blockEditorActivateHandler = inputService.getHandler('blockEditorActivate');
       this.editConfigActivateHandler = inputService.getHandler('editConfigActivate');
-      this.panelActivateHandler = inputService.getHandler('panelActivate');
       this.toggleModelSelectorHandler = inputService.getHandler('toggleModelSelector');
     }
 
