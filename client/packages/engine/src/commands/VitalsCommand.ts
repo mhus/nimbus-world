@@ -39,6 +39,11 @@ export class VitalsCommand extends CommandHandler {
       return this.getUsageHelp();
     }
 
+    // Server bulk update: args is an array of VitalsData objects (first element is an object, not a string)
+    if (typeof parameters[0] === 'object' && parameters[0] !== null) {
+      return this.handleBulkUpdate(parameters);
+    }
+
     const subcommand = String(parameters[0]).toLowerCase();
 
     switch (subcommand) {
@@ -59,6 +64,34 @@ export class VitalsCommand extends CommandHandler {
       default:
         return `Unknown subcommand: ${subcommand}\nUse /vitals for help`;
     }
+  }
+
+  /**
+   * Handle bulk update from server: array of VitalsData objects
+   */
+  private handleBulkUpdate(vitals: any[]): string {
+    const playerService = this.appContext.services.player;
+    if (!playerService) {
+      return 'Error: PlayerService not available';
+    }
+
+    for (const v of vitals) {
+      const vital: VitalsData = {
+        type: v.type,
+        current: v.current,
+        max: v.max,
+        extended: v.extended || 0,
+        regenRate: v.regenRate || 0,
+        degenRate: v.degenRate || 0,
+        color: v.color || '#ffffff',
+        name: v.name || v.type,
+        order: v.order || 0,
+      };
+      playerService.setVital(vital);
+    }
+
+    logger.debug('Bulk vitals update', { count: vitals.length });
+    return `Updated ${vitals.length} vitals`;
   }
 
   /**

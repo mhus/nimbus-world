@@ -55,6 +55,9 @@ export enum MessageType {
   SCMD = 'scmd',
   SCMD_RESULT = 'scmd.rs',
 
+  // Simple Interaction (no target)
+  SIMPLE_INTERACTION = 'int',
+
   // Teams
   TEAM_DATA = 't.d',
   TEAM_STATUS = 't.s',

@@ -24,12 +24,12 @@ import java.util.concurrent.ThreadLocalRandom;
 @Slf4j
 public class EffectProcessor {
 
-    private static final double HUNGER_LOW_THRESHOLD = 20.0;
-    private static final double THIRST_LOW_THRESHOLD = 20.0;
-    private static final double HUNGER_DEGEN_ON_ZERO = -1.0;
-    private static final double THIRST_DEGEN_ON_ZERO = -2.0;
-    private static final double HUNGER_LOW_HEALTH_REGEN_FACTOR = 0.5;
-    private static final double THIRST_LOW_STAMINA_REGEN_FACTOR = 0.5;
+    private static final double HUNGER_HIGH_THRESHOLD = 80.0;
+    private static final double THIRST_HIGH_THRESHOLD = 80.0;
+    private static final double HUNGER_DEGEN_ON_MAX = -1.0;
+    private static final double THIRST_DEGEN_ON_MAX = -2.0;
+    private static final double HUNGER_HIGH_HEALTH_REGEN_FACTOR = 0.5;
+    private static final double THIRST_HIGH_STAMINA_REGEN_FACTOR = 0.5;
     private static final double ADRENALINE_COMBAT_IDLE_THRESHOLD = 5.0;
     private static final double ADRENALINE_DECAY_RATE = -0.5;
 
@@ -161,6 +161,7 @@ public class EffectProcessor {
 
     /**
      * Apply hunger/thirst penalties to health and stamina regen.
+     * Hunger/thirst rise from 0 (sated) to max (starving/dehydrated).
      */
     private void applyVitalPenalties(AdventureData data) {
         var hunger = data.getVital("hunger");
@@ -169,27 +170,27 @@ public class EffectProcessor {
         var stamina = data.getVital("stamina");
 
         if (hunger != null && health != null) {
-            if (hunger.getCurrent() <= 0) {
-                // Starving: health degenerates
-                health.setEffectiveRegenRate(health.getEffectiveRegenRate() + HUNGER_DEGEN_ON_ZERO);
-            } else if (hunger.getCurrent() < HUNGER_LOW_THRESHOLD) {
-                // Low hunger: health regen reduced
+            if (hunger.getCurrent() >= hunger.getEffectiveMax()) {
+                // Starving (hunger at max): health degenerates
+                health.setEffectiveRegenRate(health.getEffectiveRegenRate() + HUNGER_DEGEN_ON_MAX);
+            } else if (hunger.getCurrent() > HUNGER_HIGH_THRESHOLD) {
+                // Very hungry: health regen reduced
                 double currentRegen = health.getEffectiveRegenRate();
                 if (currentRegen > 0) {
-                    health.setEffectiveRegenRate(currentRegen * HUNGER_LOW_HEALTH_REGEN_FACTOR);
+                    health.setEffectiveRegenRate(currentRegen * HUNGER_HIGH_HEALTH_REGEN_FACTOR);
                 }
             }
         }
 
         if (thirst != null) {
-            if (thirst.getCurrent() <= 0 && health != null) {
-                // Dehydration: health degenerates faster
-                health.setEffectiveRegenRate(health.getEffectiveRegenRate() + THIRST_DEGEN_ON_ZERO);
-            } else if (thirst.getCurrent() < THIRST_LOW_THRESHOLD && stamina != null) {
-                // Low thirst: stamina regen reduced
+            if (thirst.getCurrent() >= thirst.getEffectiveMax() && health != null) {
+                // Dehydrated (thirst at max): health degenerates faster
+                health.setEffectiveRegenRate(health.getEffectiveRegenRate() + THIRST_DEGEN_ON_MAX);
+            } else if (thirst.getCurrent() > THIRST_HIGH_THRESHOLD && stamina != null) {
+                // Very thirsty: stamina regen reduced
                 double currentRegen = stamina.getEffectiveRegenRate();
                 if (currentRegen > 0) {
-                    stamina.setEffectiveRegenRate(currentRegen * THIRST_LOW_STAMINA_REGEN_FACTOR);
+                    stamina.setEffectiveRegenRate(currentRegen * THIRST_HIGH_STAMINA_REGEN_FACTOR);
                 }
             }
         }

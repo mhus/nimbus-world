@@ -55,6 +55,9 @@ public class VitalValue {
     /** Display order in UI (lower = first) */
     private int order;
 
+    /** Only send to client when percentage drops below this threshold (0.0 - 1.0). 0 = always send. */
+    private double sendThreshold;
+
     /**
      * Reset transient buff accumulators before recalculation.
      */
@@ -115,6 +118,14 @@ public class VitalValue {
      * Create a standard vital value with defaults.
      */
     public static VitalValue of(String type, double base, double baseRegenRate, String color, String displayName, int order) {
+        return of(type, base, baseRegenRate, color, displayName, order, 0);
+    }
+
+    /**
+     * Create a standard vital value with send threshold.
+     * @param sendThreshold Only send to client when percentage drops below this (0.0 = always send)
+     */
+    public static VitalValue of(String type, double base, double baseRegenRate, String color, String displayName, int order, double sendThreshold) {
         var v = VitalValue.builder()
                 .type(type)
                 .base(base)
@@ -123,6 +134,7 @@ public class VitalValue {
                 .color(color)
                 .displayName(displayName)
                 .order(order)
+                .sendThreshold(sendThreshold)
                 .build();
         v.resetBuffs();
         v.recalculate();

@@ -135,6 +135,11 @@ public class BasicGameplay implements Gameplay {
     }
 
     @Override
+    public void onSimpleInteraction(PlayerSession session, String action, String shortcutKey) {
+        log.trace("Simple interaction: action={}, shortcutKey={}, player={}", action, shortcutKey, session.getTitle());
+    }
+
+    @Override
     public void onSessionAuthenticated(PlayerSession session, Map<String, Object> savedGameplayData) {
 
     }

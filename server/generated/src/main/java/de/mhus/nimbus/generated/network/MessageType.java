@@ -33,6 +33,7 @@ public enum MessageType implements de.mhus.nimbus.types.TsEnum {
     CMD_RESULT("cmd.rs"),
     SCMD("scmd"),
     SCMD_RESULT("scmd.rs"),
+    SIMPLE_INTERACTION("int"),
     TEAM_DATA("t.d"),
     TEAM_STATUS("t.s");
 

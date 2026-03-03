@@ -89,10 +89,10 @@ public class AdventureGameplay extends BasicGameplay {
         }
         map.put("vitals", vitalsMap);
 
-        // Serialize combat stats
+        // Serialize combat stats (replace dots in keys - MongoDB does not allow dots in map keys)
         var combatMap = new LinkedHashMap<String, Object>();
         for (var entry : data.getCombatStats().entrySet()) {
-            combatMap.put(entry.getKey(), entry.getValue().toMap());
+            combatMap.put(entry.getKey().replace('.', '_'), entry.getValue().toMap());
         }
         map.put("combatStats", combatMap);
 
@@ -117,6 +117,10 @@ public class AdventureGameplay extends BasicGameplay {
         try {
             ArrayNode vitalsArray = objectMapper.createArrayNode();
             for (var vital : data.getVitals().values()) {
+                // Skip vitals with sendThreshold if percentage has not yet crossed the threshold
+                if (vital.getSendThreshold() > 0 && vital.getPercentage() <= vital.getSendThreshold()) {
+                    continue;
+                }
                 ObjectNode vNode = objectMapper.createObjectNode();
                 vNode.put("type", vital.getType());
                 vNode.put("current", (int) Math.ceil(vital.getCurrent()));
@@ -126,6 +130,14 @@ public class AdventureGameplay extends BasicGameplay {
                 vNode.put("color", vital.getColor());
                 vNode.put("name", vital.getDisplayName());
                 vNode.put("order", vital.getOrder());
+                vitalsArray.add(vNode);
+            }
+            String currentVitalisData = objectMapper.writeValueAsString(vitalsArray);
+            if (!currentVitalisData.equals(data.getLastVitalisData())) {
+                data.setLastVitalisData(currentVitalisData);
+            } else {
+                // No changes in vitals, skip sending update
+                return;
             }
 
             ObjectNode commandData = objectMapper.createObjectNode();
@@ -204,11 +216,11 @@ public class AdventureGameplay extends BasicGameplay {
             restoreLegacyVitals(data, saved);
         }
 
-        // Restore combat stats
+        // Restore combat stats (keys stored with underscores, restore dots for runtime usage)
         Object combatObj = saved.get("combatStats");
         if (combatObj instanceof Map<?, ?> combatMap) {
             for (var entry : ((Map<String, Object>) combatMap).entrySet()) {
-                String key = entry.getKey();
+                String key = entry.getKey().replace('_', '.');
                 if (entry.getValue() instanceof Map<?, ?> sMap) {
                     CombatStat existing = data.getCombatStats().get(key);
                     CombatStat restored = CombatStat.fromMap((Map<String, Object>) sMap);
@@ -242,8 +254,8 @@ public class AdventureGameplay extends BasicGameplay {
      */
     private void restoreLegacyVitals(AdventureData data, Map<String, Object> saved) {
         setVitalCurrent(data, "health",  toDouble(saved.get("health"),  100));
-        setVitalCurrent(data, "hunger",  toDouble(saved.get("hunger"),  100));
-        setVitalCurrent(data, "thirst",  toDouble(saved.get("thirst"),  100));
+        setVitalCurrent(data, "hunger",  toDouble(saved.get("hunger"),  0));
+        setVitalCurrent(data, "thirst",  toDouble(saved.get("thirst"),  0));
         setVitalCurrent(data, "stamina", toDouble(saved.get("stamina"), 100));
 
         setVitalBase(data, "health",  toDouble(saved.get("maxHealth"),  100));

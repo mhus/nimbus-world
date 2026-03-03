@@ -652,6 +652,22 @@ export class NetworkService {
   }
 
   /**
+   * Send a simple interaction without block/entity target
+   * Used when a shortcut fires but nothing is selected
+   * @param action Action type (e.g., 'click')
+   * @param shortcutKey Shortcut key (e.g., 'key1', 'click1')
+   */
+  sendSimpleInteraction(action: string, shortcutKey: string): void {
+    const message: BaseMessage<any> = {
+      i: this.generateMessageId(),
+      t: MessageType.SIMPLE_INTERACTION,
+      d: { ac: action, sc: shortcutKey },
+    };
+    this.send(message);
+    logger.debug('Sent simple interaction', { action, shortcutKey });
+  }
+
+  /**
    * Get API URL for REST calls
    * @private Use specific URL methods instead (getAssetUrl, getEntityModelUrl, etc.)
    */

@@ -62,6 +62,20 @@ public class GameplayService implements SessionAuthenticatedConsumer {
     }
 
 
+    public void onSimpleInteraction(PlayerSession session, String action, String shortcutKey) {
+        log.info("Player {} simple interaction: action={}, shortcutKey={}",
+                GameplayUtil.toString(session.getPlayer()), action, shortcutKey);
+        if (session.getWorldId() == null) {
+            return;
+        }
+        var gameplay = session.getGameplay();
+        if (gameplay == null) {
+            log.warn("No gameplay set for session {}, cannot handle simple interaction", session.getPlayer());
+            return;
+        }
+        gameplay.onSimpleInteraction(session, action, shortcutKey);
+    }
+
     public void onPlayerBlockInteraction(PlayerSession session, int x, int y, int z, String blockId, String groupId, String userAction, JsonNode params) {
         log.info("Player {} interacted with block at ({}, {}, {}): blockId={}, groupId={}, userAction={}, params={}",
                 GameplayUtil.toString(session.getPlayer()), x, y, z, blockId, groupId, userAction, params);

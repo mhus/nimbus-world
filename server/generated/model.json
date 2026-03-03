@@ -7150,6 +7150,25 @@
         "comment" : null
       } ],
       "methods" : [ ]
+    }, {
+      "name" : "SimpleInteractionData",
+      "extendsList" : [ ],
+      "properties" : [ {
+        "name" : "ac",
+        "type" : "string",
+        "optional" : false,
+        "visibility" : null,
+        "javaTypeHint" : null,
+        "comment" : null
+      }, {
+        "name" : "sc",
+        "type" : "string",
+        "optional" : false,
+        "visibility" : null,
+        "javaTypeHint" : null,
+        "comment" : null
+      } ],
+      "methods" : [ ]
     } ],
     "enums" : [ ],
     "classes" : [ ],
@@ -7158,6 +7177,9 @@
       "target" : null
     }, {
       "name" : "InteractionResponseMessage",
+      "target" : null
+    }, {
+      "name" : "SimpleInteractionMessage",
       "target" : null
     } ]
   }, {
@@ -7909,7 +7931,7 @@
     "interfaces" : [ ],
     "enums" : [ {
       "name" : "MessageType",
-      "values" : [ "LOGIN", "LOGIN_RESPONSE", "LOGOUT", "PING", "WORLD_STATUS_UPDATE", "CHUNK_REGISTER", "CHUNK_QUERY", "CHUNK_UPDATE", "BLOCK_UPDATE", "BLOCK_STATUS_UPDATE", "ITEM_BLOCK_UPDATE", "BLOCK_INTERACTION", "ENTITY_UPDATE", "ENTITY_CHUNK_PATHWAY", "ENTITY_POSITION_UPDATE", "ENTITY_INTERACTION", "ENTITY_STATUS_UPDATE", "EFFECT_TRIGGER", "EFFECT_PARAMETER_UPDATE", "USER_MOVEMENT", "PLAYER_TELEPORT", "INTERACTION_REQUEST", "INTERACTION_RESPONSE", "CMD", "CMD_MESSAGE", "CMD_RESULT", "SCMD", "SCMD_RESULT", "TEAM_DATA", "TEAM_STATUS" ],
+      "values" : [ "LOGIN", "LOGIN_RESPONSE", "LOGOUT", "PING", "WORLD_STATUS_UPDATE", "CHUNK_REGISTER", "CHUNK_QUERY", "CHUNK_UPDATE", "BLOCK_UPDATE", "BLOCK_STATUS_UPDATE", "ITEM_BLOCK_UPDATE", "BLOCK_INTERACTION", "ENTITY_UPDATE", "ENTITY_CHUNK_PATHWAY", "ENTITY_POSITION_UPDATE", "ENTITY_INTERACTION", "ENTITY_STATUS_UPDATE", "EFFECT_TRIGGER", "EFFECT_PARAMETER_UPDATE", "USER_MOVEMENT", "PLAYER_TELEPORT", "INTERACTION_REQUEST", "INTERACTION_RESPONSE", "CMD", "CMD_MESSAGE", "CMD_RESULT", "SCMD", "SCMD_RESULT", "SIMPLE_INTERACTION", "TEAM_DATA", "TEAM_STATUS" ],
       "enumValues" : [ {
         "name" : "LOGIN",
         "value" : "login"
@@ -7994,6 +8016,9 @@
       }, {
         "name" : "SCMD_RESULT",
         "value" : "scmd.rs"
+      }, {
+        "name" : "SIMPLE_INTERACTION",
+        "value" : "int"
       }, {
         "name" : "TEAM_DATA",
         "value" : "t.d"

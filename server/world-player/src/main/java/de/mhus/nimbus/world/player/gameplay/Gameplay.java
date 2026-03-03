@@ -28,6 +28,8 @@ public interface Gameplay {
 
     void onItemInteraction(PlayerSession session, String itemId, JsonNode params);
 
+    void onSimpleInteraction(PlayerSession session, String action, String shortcutKey);
+
     Map<String, Object> serialize(PlayerSession session);
 
     void onSessionTick(PlayerSession session, int count);

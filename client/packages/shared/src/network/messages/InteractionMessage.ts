@@ -2,7 +2,7 @@
  * Interaction-related messages
  */
 
-import type { RequestMessage, ResponseMessage } from '../BaseMessage';
+import type { BaseMessage, RequestMessage, ResponseMessage } from '../BaseMessage';
 
 /**
  * Interaction request data
@@ -51,3 +51,19 @@ export type InteractionRequestMessage = RequestMessage<InteractionRequestData>;
 export type InteractionResponseMessage = ResponseMessage<
   InteractionSuccessData | InteractionErrorData
 >;
+
+/**
+ * Simple interaction data (no block/entity target)
+ */
+export interface SimpleInteractionData {
+  /** Action type (e.g., 'click') */
+  ac: string;
+  /** Shortcut key (e.g., 'key1', 'click1') */
+  sc: string;
+}
+
+/**
+ * Simple interaction message (Client -> Server)
+ * Sent when a shortcut is triggered without a block/entity target
+ */
+export type SimpleInteractionMessage = BaseMessage<SimpleInteractionData>;

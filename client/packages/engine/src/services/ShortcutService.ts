@@ -236,6 +236,9 @@ export class ShortcutService {
             interactionTarget.block.block.metadata?.groupId
           );
         }
+      } else {
+        // No block/entity target - send simple interaction so server can still process
+        networkService.sendSimpleInteraction('click', shortcutKey);
       }
 
       // Emit PlayerService event with VISUAL target (always fires)
