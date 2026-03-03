@@ -21,7 +21,11 @@ public class McpToolConfig {
             JobTools jobTools,
             DocumentTools documentTools,
             FlatTools flatTools,
-            AnythingTools anythingTools) {
+            AnythingTools anythingTools,
+            ItemTypeTools itemTypeTools,
+            ItemTools itemTools,
+            ChestTools chestTools,
+            ProgressTools progressTools) {
         return MethodToolCallbackProvider.builder()
                 .toolObjects(
                         worldTools,
@@ -34,7 +38,11 @@ public class McpToolConfig {
                         jobTools,
                         documentTools,
                         flatTools,
-                        anythingTools)
+                        anythingTools,
+                        itemTypeTools,
+                        itemTools,
+                        chestTools,
+                        progressTools)
                 .build();
     }
 }

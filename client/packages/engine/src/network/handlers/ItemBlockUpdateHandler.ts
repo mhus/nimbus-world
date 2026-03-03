@@ -51,7 +51,7 @@ export class ItemBlockUpdateHandler extends MessageHandler<ItemBlockRef[]> {
       count: items.length,
       items: items.map(item => ({
         position: item.position,
-        itemId: item.id,
+        itemId: item.name,
         isDelete: item.texture === '__deleted__',
       })),
     });

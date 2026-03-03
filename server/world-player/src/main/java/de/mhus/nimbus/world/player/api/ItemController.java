@@ -131,8 +131,8 @@ public class ItemController {
         String texture = publicData.getModifier() != null ? publicData.getModifier().getTexture() : null;
 
         return new ItemSearchResult(
-                publicData.getId(),
-                publicData.getName() != null ? publicData.getName() : publicData.getId(),
+                publicData.getName(),
+                publicData.getTitle() != null ? publicData.getTitle() : publicData.getName(),
                 texture
         );
     }

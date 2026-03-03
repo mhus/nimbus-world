@@ -38,15 +38,27 @@
           @click="selectItemType(itemType.type)"
         >
           <div class="card-body p-4">
-            <h3 class="card-title text-sm">{{ itemType.name || itemType.type }}</h3>
-            <p v-if="itemType.description" class="text-xs text-base-content/70 line-clamp-2">
-              {{ itemType.description }}
-            </p>
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 flex-shrink-0 rounded bg-base-300 flex items-center justify-center overflow-hidden">
+                <img
+                  v-if="itemType.modifier?.texture"
+                  :src="getAssetUrl(itemType.modifier.texture)"
+                  :alt="itemType.name || itemType.type"
+                  class="w-10 h-10 object-contain"
+                  style="image-rendering: pixelated;"
+                  @error="onImageError($event)"
+                />
+                <span v-else class="text-base-content/30 text-xs">?</span>
+              </div>
+              <div class="min-w-0 flex-1">
+                <h3 class="card-title text-sm">{{ itemType.name || itemType.type }}</h3>
+                <p v-if="itemType.description" class="text-xs text-base-content/70 line-clamp-2">
+                  {{ itemType.description }}
+                </p>
+              </div>
+            </div>
             <div class="flex flex-wrap gap-1 text-xs text-base-content/50 mt-2">
               <span class="badge badge-xs">{{ itemType.type }}</span>
-              <span v-if="itemType.modifier?.texture" class="badge badge-xs badge-primary">
-                Texture
-              </span>
             </div>
           </div>
         </div>
@@ -65,6 +77,7 @@ import { ref, watch } from 'vue';
 import type { ItemType } from '@nimbus/shared';
 import { searchItemTypes } from '../services/itemTypeApiService';
 import { useWorld } from '@/composables/useWorld';
+import { apiService } from '@/services/ApiService';
 
 const emit = defineEmits<{
   select: [itemTypeId: string];
@@ -78,6 +91,16 @@ const loading = ref(false);
 const error = ref<string | null>(null);
 
 let searchTimeout: NodeJS.Timeout | null = null;
+
+const getAssetUrl = (texturePath: string): string => {
+  if (!texturePath || !currentWorldId.value) return '';
+  return `${apiService.getBaseUrl()}/control/worlds/${currentWorldId.value}/assets/${texturePath}`;
+};
+
+const onImageError = (event: Event) => {
+  const img = event.target as HTMLImageElement;
+  img.style.display = 'none';
+};
 
 async function loadItemTypes(query?: string) {
   if (!currentWorldId.value) {

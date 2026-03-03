@@ -8,7 +8,7 @@ import { ItemRef } from '../../types/ItemRef';
 export enum ChestType {
   REGION,
   WORLD,
-  USER
+  PLAYER
 }
 
 export interface WChest {
@@ -16,8 +16,13 @@ export interface WChest {
   name: string;
   title?: string;
   description?: string;
-  userId?: string;
+  playerId?: string;
   type: ChestType;
+  bank: boolean;
+  pin: string;
+  capacity: number;
+  keyId: string;
+  lockPickingDifficulty: number;
   items: ItemRef[];
   createdAt: Date;
   updatedAt: Date;

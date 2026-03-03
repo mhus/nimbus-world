@@ -63,7 +63,7 @@
                     <span class="label-text font-semibold">Display Name</span>
                   </label>
                   <input
-                    v-model="formData.displayName"
+                    v-model="formData.title"
                     type="text"
                     class="input input-bordered"
                     placeholder="Enter display name..."
@@ -95,7 +95,7 @@
                     <option value="">Select type...</option>
                     <option value="REGION">Region Chest</option>
                     <option value="WORLD">World Chest</option>
-                    <option value="USER">User Chest</option>
+                    <option value="PLAYER">Player Chest</option>
                   </select>
                   <label class="label">
                     <span class="label-text-alt text-base-content/60">
@@ -123,13 +123,13 @@
                   </label>
                 </div>
 
-                <!-- User ID (for USER type) -->
-                <div v-if="formData.type === 'USER'" class="form-control">
+                <!-- Player ID (for PLAYER type) -->
+                <div v-if="formData.type === 'PLAYER'" class="form-control">
                   <label class="label">
-                    <span class="label-text font-semibold">User {{ formData.type === 'USER' ? '*' : '' }}</span>
+                    <span class="label-text font-semibold">Player {{ formData.type === 'PLAYER' ? '*' : '' }}</span>
                   </label>
                   <select
-                    v-model="formData.userId"
+                    v-model="formData.playerId"
                     class="select select-bordered"
                     :disabled="loadingUsers"
                   >
@@ -139,7 +139,79 @@
                     </option>
                   </select>
                   <label class="label">
-                    <span class="label-text-alt text-base-content/60">Required for USER type chests</span>
+                    <span class="label-text-alt text-base-content/60">Required for PLAYER type chests</span>
+                  </label>
+                </div>
+
+                <!-- Bank -->
+                <div class="form-control">
+                  <label class="label cursor-pointer justify-start gap-3">
+                    <input
+                      v-model="formData.bank"
+                      type="checkbox"
+                      class="checkbox"
+                    />
+                    <span class="label-text font-semibold">Bank Chest</span>
+                  </label>
+                  <label class="label">
+                    <span class="label-text-alt text-base-content/60">User bank account or region bank</span>
+                  </label>
+                </div>
+
+                <!-- PIN -->
+                <div class="form-control">
+                  <label class="label">
+                    <span class="label-text font-semibold">PIN</span>
+                  </label>
+                  <input
+                    v-model="formData.pin"
+                    type="text"
+                    class="input input-bordered"
+                    placeholder="Optional PIN code..."
+                  />
+                </div>
+
+                <!-- Capacity -->
+                <div class="form-control">
+                  <label class="label">
+                    <span class="label-text font-semibold">Capacity</span>
+                  </label>
+                  <input
+                    v-model.number="formData.capacity"
+                    type="number"
+                    class="input input-bordered"
+                    placeholder="Max items (0 = unlimited)"
+                    min="0"
+                  />
+                </div>
+
+                <!-- Key ID -->
+                <div class="form-control">
+                  <label class="label">
+                    <span class="label-text font-semibold">Key ID</span>
+                  </label>
+                  <input
+                    v-model="formData.keyId"
+                    type="text"
+                    class="input input-bordered"
+                    placeholder="Item ID of key (optional)..."
+                  />
+                </div>
+
+                <!-- Lock Picking Difficulty -->
+                <div class="form-control">
+                  <label class="label">
+                    <span class="label-text font-semibold">Lock Picking Difficulty</span>
+                  </label>
+                  <input
+                    v-model.number="formData.lockPickingDifficulty"
+                    type="number"
+                    class="input input-bordered"
+                    placeholder="0 = no lockpicking"
+                    min="0"
+                  />
+                  <label class="label">
+                    <span class="label-text-alt text-base-content/60">0 = lockpicking not possible, higher = harder</span>
                   </label>
                 </div>
 
@@ -250,11 +322,16 @@ const isEditMode = computed(() => !!props.chest);
 
 const formData = ref<ChestRequest>({
   name: '',
-  displayName: '',
+  title: '',
   description: '',
   worldId: '',
-  userId: '',
+  playerId: '',
   type: '' as ChestType,
+  bank: false,
+  pin: '',
+  capacity: 0,
+  keyId: '',
+  lockPickingDifficulty: 0,
 });
 
 const error = ref<string | null>(null);
@@ -297,7 +374,7 @@ const isValid = computed(() => {
     return false;
   }
 
-  if (formData.value.type === 'USER' && !formData.value.userId) {
+  if (formData.value.type === 'PLAYER' && !formData.value.playerId) {
     return false;
   }
 
@@ -320,9 +397,13 @@ const handleSave = async () => {
     if (isEditMode.value && props.chest) {
       // Update existing chest
       await chestService.updateChest(props.worldId, props.chest.name, {
-        displayName: formData.value.displayName,
+        title: formData.value.title,
         description: formData.value.description,
-        // Note: name, type, worldId, userId cannot be changed in edit mode
+        bank: formData.value.bank,
+        pin: formData.value.pin,
+        capacity: formData.value.capacity,
+        keyId: formData.value.keyId,
+        lockPickingDifficulty: formData.value.lockPickingDifficulty,
       });
       logger.info('Updated chest', { name: props.chest.name });
     } else {
@@ -383,7 +464,7 @@ const generateUuid = (): string => {
 watch(() => formData.value.type, (newType) => {
   if (newType === 'WORLD' && worlds.value.length === 0) {
     loadWorlds('mainOnly');
-  } else if (newType === 'USER' && users.value.length === 0) {
+  } else if (newType === 'PLAYER' && users.value.length === 0) {
     loadUsers();
   }
 });
@@ -393,17 +474,22 @@ onMounted(() => {
     // Populate form with chest data
     formData.value = {
       name: props.chest.name,
-      displayName: props.chest.displayName || '',
+      title: props.chest.title || '',
       description: props.chest.description || '',
       worldId: props.chest.worldId || '',
-      userId: props.chest.userId || '',
+      playerId: props.chest.playerId || '',
       type: props.chest.type,
+      bank: props.chest.bank || false,
+      pin: props.chest.pin || '',
+      capacity: props.chest.capacity || 0,
+      keyId: props.chest.keyId || '',
+      lockPickingDifficulty: props.chest.lockPickingDifficulty || 0,
     };
 
     // Load worlds/users if needed for existing chest
     if (props.chest.type === 'WORLD') {
       loadWorlds('mainOnly');
-    } else if (props.chest.type === 'USER') {
+    } else if (props.chest.type === 'PLAYER') {
       loadUsers();
     }
   } else {

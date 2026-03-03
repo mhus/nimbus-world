@@ -623,7 +623,7 @@ export class ChunkService {
 
           logger.debug('Processing item', {
             index: i,
-            itemId: item.id,
+            itemId: item.name,
             position: item.position,
             keys: item ? Object.keys(item) : [],
           });
@@ -642,7 +642,7 @@ export class ChunkService {
         if (itemChunkCoord.cx !== chunkData.cx || itemChunkCoord.cz !== chunkData.cz) {
           logger.debug('Item belongs to different chunk, skipping', {
             position: item.position,
-            itemId: item.id,
+            itemId: item.name,
             itemChunk: itemChunkCoord,
             currentChunk: { cx: chunkData.cx, cz: chunkData.cz },
           });
@@ -659,7 +659,7 @@ export class ChunkService {
         if (clientBlocksMap.has(posKey)) {
           logger.debug('Item skipped - position occupied by block', {
             position: item.position,
-            itemId: item.id,
+            itemId: item.name,
           });
           continue;
         }
@@ -669,7 +669,7 @@ export class ChunkService {
         if (!itemService) {
           logger.warn('ItemService not available for item processing', {
             position: item.position,
-            itemId: item.id,
+            itemId: item.name,
           });
           continue;
         }
@@ -678,7 +678,7 @@ export class ChunkService {
         // if (!filledItem) {
         //   logger.warn('Failed to fill Item', {
         //     position: item.position,
-        //     itemId: item.id,
+        //     itemId: item.name,
         //   });
         //   continue;
         // }
@@ -720,7 +720,7 @@ export class ChunkService {
 
         logger.debug('Item added to chunk', {
           position: item.position,
-          itemId: item.id,
+          itemId: item.name,
         });
         }
 
@@ -1050,7 +1050,7 @@ export class ChunkService {
             if (wasDeleted) {
               logger.debug('Item deleted', {
                 position: item.position,
-                itemId: item.id,
+                itemId: item.name,
               });
               affectedChunks.add(chunkKey);
             }
@@ -1091,7 +1091,7 @@ export class ChunkService {
           logger.debug('Item add/update ignored - position occupied by non-item block', {
             position: item.position,
             existingBlockTypeId: existingBlock.block.blockTypeId,
-            itemId: item.id,
+            itemId: item.name,
           });
           continue;
         }
@@ -1133,7 +1133,7 @@ export class ChunkService {
 
         logger.debug('Item added/updated', {
           position: item.position,
-          itemId: item.id,
+          itemId: item.name,
           wasUpdate: isItem,
         });
       }

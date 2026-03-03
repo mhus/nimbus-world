@@ -179,7 +179,7 @@ export class ItemService {
       return networkService.getAssetUrl(mergedModifier.texture);
     } catch (error) {
       ExceptionHandler.handle(error, 'ItemService.getTextureUrl', {
-        itemId: item.id,
+        itemId: item.name,
       });
       return null;
     }
@@ -274,10 +274,10 @@ export class ItemService {
             // Target comes from ShortcutService (already resolved)
             const scriptContext: any = {
               vars: {
-                itemId: item.id,
+                itemId: item.name,
                 shortcutKey,
                 item,
-                itemName: item.name,
+                itemName: item.title,
                 itemTexture: mergedModifier.texture,
                 source,              // $source (Player)
                 target,              // $target (from ShortcutService)
@@ -474,7 +474,7 @@ export class ItemService {
     // Load ItemType
     const itemType = await this.getItemType(item.itemType);
     if (!itemType) {
-      logger.warn('ItemType not found', { type: item.itemType, itemId: item.id });
+      logger.warn('ItemType not found', { type: item.itemType, itemId: item.name });
       return null;
     }
 
@@ -497,20 +497,20 @@ export class ItemService {
    */
   async fillItem(item: Item): Promise<FullItem | null> {
     logger.debug('fillItem called', {
-      itemId: item.id,
+      itemId: item.name,
       itemType: item.itemType,
       hasModifier: !!item.modifier,
     });
 
     if (!item.itemType) {
-      logger.warn('Item has no itemType', { itemId: item.id });
+      logger.warn('Item has no itemType', { itemId: item.name });
       return null;
     }
 
     // Load ItemType
     const itemType = await this.getItemType(item.itemType);
     if (!itemType) {
-      logger.warn('ItemType not found', { type: item.itemType, itemId: item.id });
+      logger.warn('ItemType not found', { type: item.itemType, itemId: item.name });
       return null;
     }
 
@@ -527,7 +527,7 @@ export class ItemService {
     };
 
     logger.debug('Item filled', {
-      itemId: item.id,
+      itemId: item.name,
       itemType: item.itemType,
       hasModifier: !!filledItem.modifier,
     });

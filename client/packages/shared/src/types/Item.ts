@@ -5,7 +5,7 @@
  * The ItemType provides texture, scaling, pose, and onUseEffect defaults.
  * Individual items can customize these via modifier.
  *
- * Items are stored with position, name, and id directly (no Block wrapper).
+ * Items are stored with position, title, and id directly (no Block wrapper).
  * ChunkService converts Items to Blocks for rendering only.
  */
 
@@ -20,14 +20,14 @@ export interface FullItem extends Item {
  * Item instance in the world
  *
  * References an ItemType and optionally overrides its properties.
- * The position, name, and id are stored directly (not in a Block wrapper).
+ * The position, title, and id are stored directly (not in a Block wrapper).
  */
 export interface Item {
   /**
-   * Unique item identifier
+   * Unique item name (technical identifier)
    * Generated on server, used for tracking and updates
    */
-  id: string;
+  name: string;
 
   /**
    * Item type identifier (e.g., 'sword', 'wand', 'potion')
@@ -43,10 +43,10 @@ export interface Item {
   // position: Vector3;
 
   /**
-   * Optional display name
-   * Overrides the ItemType name for this specific item instance
+   * Optional display title
+   * Overrides the ItemType title for this specific item instance
    */
-  name?: string;
+  title?: string;
 
   /**
    * Optional description override

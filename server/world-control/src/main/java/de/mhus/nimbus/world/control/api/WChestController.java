@@ -29,10 +29,15 @@ public class WChestController extends BaseEditorController {
     // DTOs
     public record ChestRequest(
             String name,
-            String displayName,
+            String title,
             String description,
-            String userId,
+            String playerId,
             WChest.ChestType type,
+            Boolean bank,
+            String pin,
+            Integer capacity,
+            String keyId,
+            Integer lockPickingDifficulty,
             List<ItemRef> items
     ) {}
 
@@ -40,10 +45,15 @@ public class WChestController extends BaseEditorController {
             String id,
             String worldId,
             String name,
-            String displayName,
+            String title,
             String description,
-            String userId,
+            String playerId,
             WChest.ChestType type,
+            boolean bank,
+            String pin,
+            int capacity,
+            String keyId,
+            int lockPickingDifficulty,
             List<ItemRef> items,
             Instant createdAt,
             Instant updatedAt
@@ -60,8 +70,13 @@ public class WChestController extends BaseEditorController {
                 chest.getName(),
                 chest.getTitle(),
                 chest.getDescription(),
-                chest.getUserId(),
+                chest.getPlayerId(),
                 chest.getType(),
+                chest.isBank(),
+                chest.getPin(),
+                chest.getCapacity(),
+                chest.getKeyId(),
+                chest.getLockPickingDifficulty(),
                 chest.getItems(),
                 chest.getCreatedAt(),
                 chest.getUpdatedAt()
@@ -74,19 +89,24 @@ public class WChestController extends BaseEditorController {
      *
      * Query parameters:
      * - type: Filter by chest type (REGION, WORLD, USER)
-     * - userId: Filter by user ID (for USER type chests)
+     * - playerId: Filter by user ID (for USER type chests)
      */
     @GetMapping
     public ResponseEntity<?> list(
             @RequestParam(required = false) WChest.ChestType type,
-            @RequestParam(required = false) String userId,
+            @RequestParam(required = false) String playerId,
             @PathVariable(required = false) String worldId) {
 
         try {
             List<WChest> chests;
 
-            // Apply filters based on query parameters
-            chests = chestService.findByWorldId(worldId);
+            if (type != null) {
+                chests = chestService.findByWorldIdAndType(worldId, type);
+            } else if (playerId != null) {
+                chests = chestService.findByWorldIdAndPlayerId(worldId, playerId);
+            } else {
+                chests = chestService.findByWorldId(worldId);
+            }
 
             List<ChestResponse> result = chests.stream()
                     .map(this::toResponse)
@@ -99,18 +119,18 @@ public class WChestController extends BaseEditorController {
 
     /**
      * List all user-related chests in a region
-     * GET /control/regions/{regionId}/chests/user/{userId}
+     * GET /control/regions/{regionId}/chests/user/{playerId}
      */
-    @GetMapping("/user/{userId}")
+    @GetMapping("/user/{playerId}")
     public ResponseEntity<?> listUserChests(
             @PathVariable String worldId,
-            @PathVariable String userId) {
+            @PathVariable String playerId) {
 
-        var error2 = validateId(userId, "userId");
+        var error2 = validateId(playerId, "playerId");
         if (error2 != null) return error2;
 
         try {
-            List<ChestResponse> result = chestService.findByWorldIdAndUserId(worldId, userId).stream()
+            List<ChestResponse> result = chestService.findByWorldIdAndPlayerId(worldId, playerId).stream()
                     .map(this::toResponse)
                     .toList();
             return ResponseEntity.ok(result);
@@ -173,8 +193,8 @@ public class WChestController extends BaseEditorController {
         }
 
         // Validate type-specific requirements
-        if (request.type() == WChest.ChestType.USER && Strings.isBlank(request.userId())) {
-            return bad("userId is required for USER type chests");
+        if (request.type() == WChest.ChestType.PLAYER && Strings.isBlank(request.playerId())) {
+            return bad("playerId is required for USER type chests");
         }
 
         if (request.type() == WChest.ChestType.WORLD && Strings.isBlank(worldId)) {
@@ -185,11 +205,20 @@ public class WChestController extends BaseEditorController {
             WChest created = chestService.createChest(
                     worldId,
                     request.name(),
-                    request.displayName(),
+                    request.title(),
                     request.description(),
-                    request.userId(),
+                    request.playerId(),
                     request.type()
             );
+
+            // Set additional fields
+            chestService.updateChest(created.getId(), chest -> {
+                if (request.bank() != null) chest.setBank(request.bank());
+                if (request.pin() != null) chest.setPin(request.pin());
+                if (request.capacity() != null) chest.setCapacity(request.capacity());
+                if (request.keyId() != null) chest.setKeyId(request.keyId());
+                if (request.lockPickingDifficulty() != null) chest.setLockPickingDifficulty(request.lockPickingDifficulty());
+            });
 
             // Add initial item references if provided
             if (request.items() != null && !request.items().isEmpty()) {
@@ -229,11 +258,16 @@ public class WChestController extends BaseEditorController {
 
         try {
             chestService.updateChest(existing.getId(), chest -> {
-                if (request.displayName() != null) chest.setTitle(request.displayName());
+                if (request.title() != null) chest.setTitle(request.title());
                 if (request.description() != null) chest.setDescription(request.description());
                 chest.setWorldId(worldId);
-                if (request.userId() != null) chest.setUserId(request.userId());
+                if (request.playerId() != null) chest.setPlayerId(request.playerId());
                 if (request.type() != null) chest.setType(request.type());
+                if (request.bank() != null) chest.setBank(request.bank());
+                if (request.pin() != null) chest.setPin(request.pin());
+                if (request.capacity() != null) chest.setCapacity(request.capacity());
+                if (request.keyId() != null) chest.setKeyId(request.keyId());
+                if (request.lockPickingDifficulty() != null) chest.setLockPickingDifficulty(request.lockPickingDifficulty());
                 if (request.items() != null) chest.setItems(request.items());
             });
 

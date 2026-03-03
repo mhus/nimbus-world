@@ -75,6 +75,20 @@ const panels = ref<Panel[]>([
     description: 'Manage editor shortcuts for player',
     url: './editor-shortcut-panel.html',
     color: '#8B5CF6' // purple
+  },
+  {
+    id: 'shortcut-panel',
+    name: 'Shortcut Panel',
+    description: 'Assign backpack items to shortcut slots',
+    url: './shortcut-panel.html',
+    color: '#F59E0B' // amber
+  },
+  {
+    id: 'chest-panel',
+    name: 'Chest Panel',
+    description: 'Transfer items between chest and backpack',
+    url: './chest-panel.html',
+    color: '#EF4444' // red
   }
 ]);
 

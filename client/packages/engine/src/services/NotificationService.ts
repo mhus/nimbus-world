@@ -1235,7 +1235,7 @@ export class NotificationService {
       // Add title (from Item or effect)
       const title = document.createElement('div');
       title.style.cssText = 'font-weight: bold; margin-bottom: 4px; color: rgba(255, 100, 100, 1);';
-      title.textContent = item?.name || effect.itemId;
+      title.textContent = item?.title || effect.itemId;
       tooltip.appendChild(title);
 
       // Add description if available

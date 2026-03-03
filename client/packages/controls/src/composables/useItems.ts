@@ -12,7 +12,8 @@ const logger = getLogger('useItems');
 
 export interface ItemSearchResult {
   itemId: string;
-  name: string;
+  itemType?: string;
+  title?: string;
   texture?: string;
 }
 

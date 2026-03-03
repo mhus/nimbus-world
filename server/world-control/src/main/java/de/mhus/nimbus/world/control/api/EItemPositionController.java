@@ -181,7 +181,7 @@ public class EItemPositionController extends BaseEditorController {
             @RequestBody CreateItemRequest request) {
 
         log.debug("CREATE item: worldId={}, itemId={}", worldId,
-                request.itemBlockRef() != null ? request.itemBlockRef().getId() : "null");
+                request.itemBlockRef() != null ? request.itemBlockRef().getName() : "null");
 
         var wid = WorldId.of(worldId).orElseThrow(
                 () -> new IllegalStateException("World ID not found in request")
@@ -192,7 +192,7 @@ public class EItemPositionController extends BaseEditorController {
 
         ItemBlockRef itemBlockRef = request.itemBlockRef();
 
-        if (Strings.isBlank(itemBlockRef.getId())) {
+        if (Strings.isBlank(itemBlockRef.getName())) {
             return bad("itemBlockRef.id required");
         }
 
@@ -202,13 +202,13 @@ public class EItemPositionController extends BaseEditorController {
 
         // Check if Item already exists
         // Use worldId as universeId (per user decision)
-        if (itemRegistryService.findItem(wid, itemBlockRef.getId()).isPresent()) {
+        if (itemRegistryService.findItem(wid, itemBlockRef.getName()).isPresent()) {
             return conflict("item already exists");
         }
 
         try {
             WItemPosition saved = itemRegistryService.saveItemPosition(wid, itemBlockRef);
-            log.info("Created item: itemId={}, chunk={}", itemBlockRef.getId(), saved.getChunk());
+            log.info("Created item: itemId={}, chunk={}", itemBlockRef.getName(), saved.getChunk());
             return ResponseEntity.status(HttpStatus.CREATED).body(toDto(saved));
         } catch (IllegalArgumentException e) {
             log.warn("Validation error creating item: {}", e.getMessage());
@@ -250,16 +250,17 @@ public class EItemPositionController extends BaseEditorController {
 
         // Ensure itemId in path matches itemBlockRef.id
         ItemBlockRef itemBlockRef = request.itemBlockRef();
-        if (!itemId.equals(itemBlockRef.getId())) {
+        if (!itemId.equals(itemBlockRef.getName())) {
             // Force ID to match path parameter
             itemBlockRef = ItemBlockRef.builder()
-                    .id(itemId)
+                    .name(itemId)
                     .texture(itemBlockRef.getTexture())
                     .position(itemBlockRef.getPosition())
                     .scaleX(itemBlockRef.getScaleX())
                     .scaleY(itemBlockRef.getScaleY())
                     .offset(itemBlockRef.getOffset())
                     .amount(itemBlockRef.getAmount())
+                    .title(itemBlockRef.getTitle())
                     .build();
         }
 

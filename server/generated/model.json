@@ -1918,7 +1918,7 @@
       "name" : "Item",
       "extendsList" : [ ],
       "properties" : [ {
-        "name" : "id",
+        "name" : "name",
         "type" : "string",
         "optional" : false,
         "visibility" : null,
@@ -1932,7 +1932,7 @@
         "javaTypeHint" : null,
         "comment" : null
       }, {
-        "name" : "name",
+        "name" : "title",
         "type" : "string",
         "optional" : true,
         "visibility" : null,
@@ -2706,7 +2706,7 @@
       "name" : "ItemBlockRef",
       "extendsList" : [ ],
       "properties" : [ {
-        "name" : "id",
+        "name" : "name",
         "type" : "string",
         "optional" : false,
         "visibility" : null,
@@ -2748,7 +2748,7 @@
         "javaTypeHint" : null,
         "comment" : null
       }, {
-        "name" : "name",
+        "name" : "title",
         "type" : "string",
         "optional" : true,
         "visibility" : null,
@@ -8194,7 +8194,7 @@
     } ],
     "enums" : [ {
       "name" : "WEARABLE_SLOT",
-      "values" : [ "HEAD", "BODY", "LEGS", "FEET", "HANDS", "NECK", "LEFT_RING", "RIGHT_RING", "LEFT_WEAPON_1", "RIGHT_WEAPON_1", "LEFT_WEAPON_2", "RIGHT_WEAPON_2" ],
+      "values" : [ "HEAD", "BODY", "LEGS", "FEET", "HANDS", "NECK", "LEFT_RING", "RIGHT_RING" ],
       "enumValues" : [ {
         "name" : "HEAD",
         "value" : "0"
@@ -8219,18 +8219,6 @@
       }, {
         "name" : "RIGHT_RING",
         "value" : "7"
-      }, {
-        "name" : "LEFT_WEAPON_1",
-        "value" : "8"
-      }, {
-        "name" : "RIGHT_WEAPON_1",
-        "value" : "9"
-      }, {
-        "name" : "LEFT_WEAPON_2",
-        "value" : "10"
-      }, {
-        "name" : "RIGHT_WEAPON_2",
-        "value" : "11"
       } ]
     } ],
     "classes" : [ ],

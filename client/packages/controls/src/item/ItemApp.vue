@@ -63,6 +63,8 @@ import { ref } from 'vue';
 import ItemListView from './views/ItemListView.vue';
 import ItemEditorView from './views/ItemEditorView.vue';
 import WorldSelector from '@material/components/WorldSelector.vue';
+import { ItemApiService } from './services/itemApiService';
+import { useWorld } from '@/composables/useWorld';
 
 // Read id from URL query parameter
 const getIdFromUrl = (): string | null => {
@@ -70,6 +72,7 @@ const getIdFromUrl = (): string | null => {
   return params.get('id');
 };
 
+const { currentWorldId } = useWorld();
 const urlItemId = getIdFromUrl();
 const selectedItemId = ref<string | null>(urlItemId);
 const isNewItem = ref(false);
@@ -84,9 +87,17 @@ function openItem(itemId: string) {
   isNewItem.value = false;
 }
 
-function duplicateItem(itemId: string) {
-  selectedItemId.value = `${itemId}_copy`;
-  isNewItem.value = true;
+async function duplicateItem(itemId: string) {
+  if (!currentWorldId.value) return;
+  const title = prompt(`Duplicate "${itemId}"\nNew title (leave empty to keep original):`, '') ?? undefined;
+  if (title === undefined) return; // cancelled
+  try {
+    const duplicated = await ItemApiService.duplicateItem(itemId, currentWorldId.value, title);
+    selectedItemId.value = duplicated.itemId;
+    isNewItem.value = false;
+  } catch (e: any) {
+    console.error('Failed to duplicate item:', e);
+  }
 }
 
 function saveItem() {

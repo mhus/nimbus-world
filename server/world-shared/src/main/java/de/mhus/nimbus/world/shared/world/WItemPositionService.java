@@ -45,7 +45,7 @@ public class WItemPositionService {
         if (itemBlockRef == null) {
             throw new IllegalArgumentException("itemBlockRef required");
         }
-        if (itemBlockRef.getId() == null || itemBlockRef.getId().isBlank()) {
+        if (itemBlockRef.getName() == null || itemBlockRef.getName().isBlank()) {
             throw new IllegalArgumentException("itemBlockRef.id required");
         }
         if (itemBlockRef.getPosition() == null) {
@@ -55,7 +55,7 @@ public class WItemPositionService {
             throw new IllegalArgumentException("WItemPosition cannot be in a collection");
         }
 
-        String itemId = itemBlockRef.getId();
+        String itemId = itemBlockRef.getName();
         Vector3 position = itemBlockRef.getPosition();
         WWorld world = worldService.getByWorldId(worldId.getId()).get();
         String chunk = world.getChunkKey((int)position.getX(), (int)position.getZ());

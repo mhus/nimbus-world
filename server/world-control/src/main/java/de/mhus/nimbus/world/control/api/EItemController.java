@@ -5,6 +5,8 @@ import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.shared.rest.BaseEditorController;
 import de.mhus.nimbus.world.shared.world.WItem;
 import de.mhus.nimbus.world.shared.world.WItemService;
+import de.mhus.nimbus.world.shared.world.WItemType;
+import de.mhus.nimbus.world.shared.world.WItemTypeService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -20,6 +22,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -41,11 +44,13 @@ import java.util.stream.Collectors;
 public class EItemController extends BaseEditorController {
 
     private final WItemService itemService;
+    private final WItemTypeService itemTypeService;
 
     // DTOs
     public record ItemSearchResult(
             String itemId,
-            String name,
+            String itemType,
+            String title,
             String texture
     ) {
     }
@@ -62,7 +67,7 @@ public class EItemController extends BaseEditorController {
 
     public record UpdateItemRequest(
             String itemType,
-            String name,
+            String title,
             String description,
             de.mhus.nimbus.generated.types.ItemModifier modifier,
             java.util.Map<String, Object> parameters
@@ -92,9 +97,27 @@ public class EItemController extends BaseEditorController {
 
         List<WItem> all = itemService.findEnabledByWorldIdAndQuery(wid, query);
 
-        List<ItemSearchResult> results = all.stream()
-                .limit(maxResults)
-                .map(this::toSearchResult)
+        List<WItem> limited = all.stream().limit(maxResults).collect(Collectors.toList());
+
+        // Batch-load ItemTypes to resolve textures
+        var itemTypeIds = limited.stream()
+                .map(WItem::getPublicData)
+                .filter(pd -> pd != null && pd.getItemType() != null)
+                .map(Item::getItemType)
+                .collect(Collectors.toSet());
+
+        Map<String, String> itemTypeTextures = itemTypeService.findAllEnabled(wid).stream()
+                .filter(wt -> itemTypeIds.contains(wt.getItemType()))
+                .filter(wt -> wt.getPublicData() != null && wt.getPublicData().getModifier() != null
+                        && wt.getPublicData().getModifier().getTexture() != null)
+                .collect(Collectors.toMap(
+                        WItemType::getItemType,
+                        wt -> wt.getPublicData().getModifier().getTexture(),
+                        (a, b) -> a
+                ));
+
+        List<ItemSearchResult> results = limited.stream()
+                .map(item -> toSearchResult(item, itemTypeTextures))
                 .collect(Collectors.toList());
 
         log.debug("Returning {} items", results.size());
@@ -223,9 +246,9 @@ public class EItemController extends BaseEditorController {
             // Merge updates with existing item
             Item existingData = existing.get().getPublicData();
             Item updatedItem = Item.builder()
-                    .id(itemId) // Ensure ID stays the same
+                    .name(itemId) // Ensure ID stays the same
                     .itemType(request.itemType() != null ? request.itemType() : existingData.getItemType())
-                    .name(request.name() != null ? request.name() : existingData.getName())
+                    .title(request.title() != null ? request.title() : existingData.getName())
                     .description(request.description() != null ? request.description() : existingData.getDescription())
                     .modifier(request.modifier() != null ? request.modifier() : existingData.getModifier())
                     .parameters(request.parameters() != null ? request.parameters() : existingData.getParameters())
@@ -246,6 +269,44 @@ public class EItemController extends BaseEditorController {
             log.error("Unexpected error updating item", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "Internal server error"));
+        }
+    }
+
+    /**
+     * Duplicate an existing item.
+     * POST /control/worlds/{worldId}/item/{itemId}/duplicate
+     */
+    public record DuplicateItemRequest(String title) {
+    }
+
+    @PostMapping("/control/worlds/{worldId}/item/{itemId}/duplicate")
+    @Operation(summary = "Duplicate item")
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "Item duplicated"),
+            @ApiResponse(responseCode = "400", description = "Invalid parameters"),
+            @ApiResponse(responseCode = "404", description = "Item not found")
+    })
+    public ResponseEntity<?> duplicate(
+            @Parameter(description = "World identifier") @PathVariable String worldId,
+            @Parameter(description = "Item identifier") @PathVariable String itemId,
+            @RequestBody(required = false) DuplicateItemRequest request) {
+
+        log.debug("DUPLICATE item: worldId={}, itemId={}", worldId, itemId);
+
+        var wid = WorldId.of(worldId).orElseThrow(
+                () -> new IllegalArgumentException("invalid worldId")
+        );
+        var validation = validateId(itemId, "itemId");
+        if (validation != null) return validation;
+
+        try {
+            String title = request != null ? request.title() : null;
+            WItem duplicated = itemService.duplicate(wid, itemId, title);
+            log.info("Duplicated item: {} -> {}", itemId, duplicated.getItemId());
+            return ResponseEntity.status(HttpStatus.CREATED).body(duplicated);
+        } catch (IllegalArgumentException e) {
+            log.warn("Error duplicating item: {}", e.getMessage());
+            return notFound(e.getMessage());
         }
     }
 
@@ -283,18 +344,22 @@ public class EItemController extends BaseEditorController {
 
     // Helper methods
 
-    private ItemSearchResult toSearchResult(WItem item) {
+    private ItemSearchResult toSearchResult(WItem item, Map<String, String> itemTypeTextures) {
         Item publicData = item.getPublicData();
         if (publicData == null) {
-            return new ItemSearchResult(item.getItemId(), item.getItemId(), null);
+            return new ItemSearchResult(item.getItemId(), null, null, null);
         }
 
-        // Extract texture from modifier
+        // Item's own texture override, fallback to ItemType texture
         String texture = publicData.getModifier() != null ? publicData.getModifier().getTexture() : null;
+        if (Strings.isBlank(texture) && publicData.getItemType() != null) {
+            texture = itemTypeTextures.get(publicData.getItemType());
+        }
 
         return new ItemSearchResult(
                 item.getItemId(),
-                publicData.getName() != null ? publicData.getName() : item.getItemId(),
+                publicData.getItemType(),
+                publicData.getTitle(),
                 texture
         );
     }

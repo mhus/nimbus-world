@@ -1,6 +1,7 @@
 package de.mhus.nimbus.world.shared.world;
 
 import de.mhus.nimbus.generated.types.ItemRef;
+import de.mhus.nimbus.shared.types.PlayerId;
 import de.mhus.nimbus.shared.types.WorldId;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,10 +24,64 @@ public class WChestService {
 
     /**
      * Find chest by worldId and name.
+     * If not found with the given worldId, tries with the region collection worldId (@region:regionId).
      */
     @Transactional(readOnly = true)
     public Optional<WChest> getByWorldIdAndName(String worldId, String name) {
-        return repository.findByWorldIdAndName(worldId, name);
+        var result = repository.findByWorldIdAndName(worldId, name);
+        if (result.isPresent()) {
+            return result;
+        }
+        // Fallback: try region collection worldId
+        var parsedWorldId = WorldId.of(worldId).orElse(null);
+        if (parsedWorldId != null && !parsedWorldId.isCollection()) {
+            String regionWorldId = parsedWorldId.toRegionCollection().getId();
+            return repository.findByWorldIdAndName(regionWorldId, name);
+        }
+        return result;
+    }
+
+    /**
+     * Get or create the user's bank chest in a world.
+     * Tries multiple worldId formats (@region:regionId, plain worldId) and userId/playerId combinations.
+     * If no bank chest exists, one is automatically created.
+     *
+     * @param worldId worldId from session
+     * @param playerId PlayerId (@userId:characterId)
+     * @return the user's bank chest, never null
+     */
+    @Transactional
+    public WChest getOrCreateUserBankChest(String worldId, PlayerId playerId) {
+        var parsedWorldId = WorldId.of(worldId).orElseThrow(
+                () -> new IllegalArgumentException("Invalid worldId: " + worldId));
+        String regionWorldId = parsedWorldId.toRegionCollection().getId();
+        String userId = playerId.getUserId();
+        String playerIdStr = playerId.getId();
+
+        // Try all combinations: regionWorldId and plain worldId x userId and playerId
+        for (String wId : List.of(regionWorldId, worldId)) {
+            for (String uId : List.of(playerIdStr, userId)) {
+                var result = repository.findFirstByWorldIdAndPlayerIdAndTypeAndBank(wId, uId, WChest.ChestType.PLAYER, true);
+                if (result.isPresent()) {
+                    return result.get();
+                }
+            }
+        }
+
+        // No bank chest found - create one
+        log.info("Creating bank chest for player: worldId={}, playerId={}", regionWorldId, playerIdStr);
+        String name = "bank_" + playerIdStr.replace("@", "").replace(":", "_");
+        WChest chest = WChest.builder()
+                .worldId(regionWorldId)
+                .name(name)
+                .title("Bank")
+                .playerId(playerIdStr)
+                .type(WChest.ChestType.PLAYER)
+                .bank(true)
+                .capacity(10)
+                .build();
+        chest.touchCreate();
+        return repository.save(chest);
     }
 
     /**
@@ -38,11 +93,11 @@ public class WChestService {
     }
 
     /**
-     * Find all chests for a specific user in a world.
+     * Find all chests for a specific player in a world.
      */
     @Transactional(readOnly = true)
-    public List<WChest> findByWorldIdAndUserId(String worldId, String userId) {
-        return repository.findByWorldIdAndUserId(worldId, userId);
+    public List<WChest> findByWorldIdAndPlayerId(String worldId, String playerId) {
+        return repository.findByWorldIdAndPlayerId(worldId, playerId);
     }
 
     /**
@@ -60,13 +115,13 @@ public class WChestService {
      * @param name Internal name/identifier
      * @param title Display name (optional)
      * @param description Description
-     * @param userId User identifier (optional, for user-specific chests)
+     * @param playerId Player identifier (optional, for player-specific chests)
      * @param type Chest type
      * @return Created chest entity
      */
     @Transactional
     public WChest createChest(String worldId, String name, String title,
-                              String description, String userId, WChest.ChestType type) {
+                              String description, String playerId, WChest.ChestType type) {
         if (repository.findByWorldIdAndName(worldId, name).isPresent()) {
             throw new IllegalStateException("Chest with name already exists in region: " + name);
         }
@@ -80,7 +135,7 @@ public class WChestService {
                 .name(name)
                 .title(title)
                 .description(description)
-                .userId(userId)
+                .playerId(playerId)
                 .type(type)
                 .build();
         chest.touchCreate();

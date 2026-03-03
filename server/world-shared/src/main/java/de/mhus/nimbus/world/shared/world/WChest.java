@@ -29,7 +29,7 @@ import java.util.List;
 @CompoundIndexes({
         @CompoundIndex(name = "region_name_idx", def = "{ 'regionId': 1, 'name': 1 }", unique = true),
         @CompoundIndex(name = "world_name_idx", def = "{ 'worldId': 1, 'name': 1 }"),
-        @CompoundIndex(name = "region_user_idx", def = "{ 'regionId': 1, 'userId': 1 }")
+        @CompoundIndex(name = "region_player_idx", def = "{ 'regionId': 1, 'playerId': 1 }")
 })
 @Data
 @Builder
@@ -67,11 +67,11 @@ public class WChest implements Identifiable {
     private String description;
 
     /**
-     * User identifier - optional, set for user-specific chests.
+     * Player identifier - optional, set for player-specific chests. Format: @userId:characterId
      */
     @Indexed
     @TypeScript(optional = true)
-    private String userId;
+    private String playerId;
 
     /**
      * Type of chest determining access scope.
@@ -79,6 +79,34 @@ public class WChest implements Identifiable {
     @Indexed
     @TypeScript(follow = true)
     private ChestType type;
+
+    /**
+     * Flag indicating if this chest is a bank chest, could be user bank account or region bank.
+     */
+    private boolean bank;
+
+    /**
+     * Optional PIN code for accessing the chest, if required.
+     */
+    private String pin;
+
+    /**
+     * Maximum number of items allowed in the chest.
+     */
+    private int capacity;
+
+    /**
+     * Optional key identifier for chests that require a key, referencing an itemId of a key item.
+     */
+    private String keyId;
+
+    /**
+     * Optional lock picking difficulty level for the chest, if it can be lockpicked instead of using a key.
+     * Higher values indicate more difficult locks. If 0 or not set, lockpicking is not possible.
+     */
+    @Builder.Default
+    private int lockPickingDifficulty = 0;
+
 
     /**
      * Items stored in this chest.
@@ -121,8 +149,8 @@ public class WChest implements Identifiable {
         WORLD,
 
         /**
-         * User-specific chest, only accessible to the owner.
+         * Player-specific chest, only accessible to the owner.
          */
-        USER
+        PLAYER
     }
 }

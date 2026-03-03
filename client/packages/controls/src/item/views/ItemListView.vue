@@ -33,8 +33,24 @@
         @click="$emit('select', item.itemId)"
       >
         <div class="card-body p-4">
-          <h3 class="card-title text-sm">{{ item.name }}</h3>
-          <p class="text-xs opacity-70">{{ item.itemId }}</p>
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 flex-shrink-0 rounded bg-base-300 flex items-center justify-center overflow-hidden">
+              <img
+                v-if="item.texture"
+                :src="getAssetUrl(item.texture)"
+                :alt="item.title"
+                class="w-10 h-10 object-contain"
+                style="image-rendering: pixelated;"
+                @error="onImageError($event)"
+              />
+              <span v-else class="text-base-content/30 text-xs">?</span>
+            </div>
+            <div class="min-w-0 flex-1">
+              <h3 class="card-title text-sm">{{ item.itemId }}</h3>
+              <p v-if="item.itemType" class="text-xs opacity-70">{{ item.itemType }}</p>
+              <p v-if="item.title" class="text-xs opacity-50">{{ item.title }}</p>
+            </div>
+          </div>
 
           <div class="card-actions justify-end mt-2">
             <button
@@ -73,6 +89,9 @@ import { ref, watch } from 'vue';
 import { useWorld } from '@/composables/useWorld';
 import { ItemApiService } from '../services/itemApiService';
 import type { ItemSearchResult } from '../services/itemApiService';
+import { ApiService } from '../../services/ApiService';
+
+const apiService = new ApiService();
 
 const emit = defineEmits<{
   select: [itemId: string];
@@ -86,6 +105,16 @@ const searchQuery = ref('');
 const items = ref<ItemSearchResult[]>([]);
 const loading = ref(false);
 const error = ref<string | null>(null);
+
+const getAssetUrl = (texturePath: string): string => {
+  if (!texturePath || !currentWorldId.value) return '';
+  return `${apiService.getBaseUrl()}/control/worlds/${currentWorldId.value}/assets/${texturePath}`;
+};
+
+const onImageError = (event: Event) => {
+  const img = event.target as HTMLImageElement;
+  img.style.display = 'none';
+};
 
 async function loadItems() {
   if (!currentWorldId.value) {

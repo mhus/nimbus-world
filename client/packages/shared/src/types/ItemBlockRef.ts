@@ -3,10 +3,10 @@ import type {Vector3} from "./Vector3";
 export interface ItemBlockRef {
 
     /**
-     * Unique item identifier
+     * Unique item name (technical identifier)
      * Generated on server, used for tracking and updates
      */
-    id: string;
+    name: string;
 
     /**
      * Position in world coordinates
@@ -43,9 +43,9 @@ export interface ItemBlockRef {
     offset?: [number, number, number];
 
     /**
-     * Optional display name for the item
+     * Optional display title for the item
      */
-    name?: string;
+    title?: string;
 
     /**
      * If the item type is generic (like 'potion' or 'arrow'), this specifies the quantity.

@@ -300,7 +300,7 @@ export class ItemRenderer extends BlockRenderer {
    * Uses a fixed-size screen-space GUI that doesn't scale with distance.
    *
    * @param mesh Item mesh to attach label to
-   * @param clientBlock ClientBlock containing itemBlockRef with name/amount
+   * @param clientBlock ClientBlock containing itemBlockRef with title/amount
    * @param renderContext Render context with resourcesToDispose
    */
   private createItemLabel(
@@ -311,14 +311,14 @@ export class ItemRenderer extends BlockRenderer {
     const itemBlockRef = clientBlock.itemBlockRef;
 
     // Check if item has name or amount to display
-    if (!itemBlockRef || (!itemBlockRef.name && !itemBlockRef.amount)) {
+    if (!itemBlockRef || (!itemBlockRef.title && !itemBlockRef.amount)) {
       return;
     }
 
     // Build label text
     let labelText = '';
-    if (itemBlockRef.name) {
-      labelText = itemBlockRef.name;
+    if (itemBlockRef.title) {
+      labelText = itemBlockRef.title;
     }
     if (itemBlockRef.amount && itemBlockRef.amount > 1) {
       labelText += labelText ? ` (${itemBlockRef.amount})` : `${itemBlockRef.amount}`;

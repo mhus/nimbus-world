@@ -4,11 +4,13 @@ import de.mhus.nimbus.generated.types.Item;
 import de.mhus.nimbus.shared.types.WorldId;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.logging.log4j.util.Strings;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Service for managing WItem entities (inventory/template items without position).
@@ -62,11 +64,32 @@ public class WItemService {
         return repository.findByWorldIdAndItemId(regionWorldId.getId(), itemId);
     }
 
-    public WItem create(WorldId worldId, Item publicData) {
-        var itemId = "item_" + worldId + "_" + System.currentTimeMillis() + "_" +
-                Long.toHexString(Double.doubleToLongBits(Math.random())).substring(0, 7);
+    /**
+     * Duplicates the item with the given itemId and creates a new item with a new itemId.
+     *
+     * @param worldId The worldId of the region collection where the item exists. Must be a region collection.
+     * @param itemId The itemId of the existing item to duplicate. Must exist in the region collection.
+     * @param title Optional title or leave blank to keep existing name. Only used for new items, ignored for duplicates.
+     * @return The newly created item with the new itemId.
+     */
+    public WItem duplicate(WorldId worldId, String itemId, String title) {
+        var regionWorldId = worldId.toRegionCollection();
+        if (!regionWorldId.isRegionCollection()) {
+            throw new IllegalArgumentException("worldId must be a region collection: " + worldId);
+        }
+        var existing = repository.findByWorldIdAndItemId(regionWorldId.getId(), itemId)
+                .orElseThrow(() -> new IllegalArgumentException("Item not found: " + itemId));
+        var publicData = existing.getPublicData();
+        if (Strings.isNotBlank(title)) {
+            publicData.setTitle(title);
+        }
+        return create(worldId, publicData);
+    }
 
-        publicData.setId(itemId);
+    public WItem create(WorldId worldId, Item publicData) {
+        var itemId = "i_" + System.currentTimeMillis() + "_" + UUID.randomUUID().toString().substring(0,6);
+
+        publicData.setName(itemId);
         return save(worldId, itemId, publicData);
     }
 
@@ -200,7 +223,7 @@ public class WItemService {
                     if (publicData == null) return false;
 
                     // Match query against itemId, name, or description
-                    return (publicData.getId() != null && publicData.getId().toLowerCase().contains(lowerQuery)) ||
+                    return (publicData.getName() != null && publicData.getName().toLowerCase().contains(lowerQuery)) ||
                             (publicData.getName() != null && publicData.getName().toLowerCase().contains(lowerQuery)) ||
                             (publicData.getDescription() != null && publicData.getDescription().toLowerCase().contains(lowerQuery));
                 })

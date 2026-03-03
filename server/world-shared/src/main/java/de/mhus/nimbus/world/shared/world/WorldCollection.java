@@ -50,8 +50,15 @@ public record WorldCollection(TYPE type, WorldId worldId, String path) {
         if (pos < 0) {
             if (path.startsWith("w/")) { // legacy support
                 path = path.substring(2);
+                return new WorldCollection(TYPE.WORLD, worldId, path);
             }
-            return new WorldCollection(TYPE.WORLD, worldId, path);
+            if (worldId.isSharedCollection())
+                return new WorldCollection(TYPE.SHARED, worldId, path);
+            if (worldId.isRegionCollection())
+                return new WorldCollection(TYPE.REGION, worldId, path);
+            if (worldId.isPublicRegion())
+                return new WorldCollection(TYPE.PUBLIC, worldId, path);
+            return new WorldCollection(TYPE.REGION, worldId.toRegionCollection(), path);
         }
         var group = path.substring(0, pos).toLowerCase();
         path = path.substring(pos + 1);

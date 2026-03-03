@@ -11,7 +11,8 @@ type ItemData = WItem;
 
 export interface ItemSearchResult {
   itemId: string;
-  name: string;
+  itemType?: string;
+  title: string;
   texture?: string;
 }
 
@@ -61,6 +62,14 @@ export class ItemApiService {
     const url = `/control/worlds/${worldId}/item/${encodeURIComponent(itemId)}`;
 
     await this.apiService.put(url, item);
+  }
+
+  /**
+   * Duplicate an item. Returns the new WItem.
+   */
+  static async duplicateItem(itemId: string, worldId: string, title?: string): Promise<ItemData> {
+    const url = `/control/worlds/${worldId}/item/${encodeURIComponent(itemId)}/duplicate`;
+    return this.apiService.post<ItemData>(url, { title: title || null });
   }
 
   /**

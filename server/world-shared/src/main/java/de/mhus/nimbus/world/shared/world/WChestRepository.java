@@ -18,9 +18,9 @@ public interface WChestRepository extends MongoRepository<WChest, String> {
     List<WChest> findByWorldId(String worldId);
 
     /**
-     * Find all chests for a specific user in a world.
+     * Find all chests for a specific player in a world.
      */
-    List<WChest> findByWorldIdAndUserId(String worldId, String userId);
+    List<WChest> findByWorldIdAndPlayerId(String worldId, String playerId);
 
     /**
      * Find all chests of a specific type in a world.
@@ -31,5 +31,10 @@ public interface WChestRepository extends MongoRepository<WChest, String> {
      * Find chest by worldId and name.
      */
     Optional<WChest> findByWorldIdAndName(String worldId, String name);
+
+    /**
+     * Find player bank chest by worldId, playerId, type and bank flag.
+     */
+    Optional<WChest> findFirstByWorldIdAndPlayerIdAndTypeAndBank(String worldId, String playerId, WChest.ChestType type, boolean bank);
 
 }

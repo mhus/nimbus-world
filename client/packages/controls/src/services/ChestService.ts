@@ -9,17 +9,22 @@ import type { ItemRef } from '@nimbus/shared';
 
 export interface ChestListParams {
   type?: ChestType;
-  userId?: string;
+  playerId?: string;
   worldId?: string;
 }
 
 export interface ChestRequest {
   name: string;
-  displayName?: string;
+  title?: string;
   description?: string;
   worldId?: string;
-  userId?: string;
+  playerId?: string;
   type: ChestType;
+  bank?: boolean;
+  pin?: string;
+  capacity?: number;
+  keyId?: string;
+  lockPickingDifficulty?: number;
   items?: ItemRef[];
 }
 
@@ -41,9 +46,9 @@ export class ChestService {
   /**
    * Get user-specific chests
    */
-  async getUserChests(worldId: string, userId: string): Promise<WChest[]> {
+  async getPlayerChests(worldId: string, playerId: string): Promise<WChest[]> {
     return apiService.get<WChest[]>(
-      `/control/world/${worldId}/chests/user/${userId}`
+      `/control/world/${worldId}/chests/user/${playerId}`
     );
   }
 

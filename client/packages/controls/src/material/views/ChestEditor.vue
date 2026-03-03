@@ -65,15 +65,26 @@
             <div
               v-for="item in itemSearchResults"
               :key="item.itemId"
-              class="p-3 border rounded mb-2 hover:bg-base-200 cursor-pointer flex justify-between items-center"
+              class="p-3 border rounded mb-2 hover:bg-base-200 cursor-pointer flex items-center gap-3"
               @click="handleAddItemToChest(item)"
             >
-              <div class="flex-1">
-                <div class="font-semibold">{{ item.name }}</div>
-                <div class="text-xs font-mono text-base-content/60">{{ item.itemId }}</div>
-                <div v-if="item.texture" class="text-xs text-base-content/50">{{ item.texture }}</div>
+              <div class="w-10 h-10 flex-shrink-0 rounded bg-base-300 flex items-center justify-center overflow-hidden">
+                <img
+                  v-if="item.texture"
+                  :src="getAssetUrl(item.texture)"
+                  :alt="item.itemId"
+                  class="w-10 h-10 object-contain"
+                  style="image-rendering: pixelated;"
+                  @error="onImageError($event)"
+                />
+                <span v-else class="text-base-content/30 text-xs">?</span>
               </div>
-              <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div class="flex-1 min-w-0">
+                <div class="font-semibold text-sm">{{ item.itemId }}</div>
+                <div v-if="item.itemType" class="text-xs text-base-content/60">{{ item.itemType }}</div>
+                <div v-if="item.title" class="text-xs text-base-content/50">{{ item.title }}</div>
+              </div>
+              <svg class="w-5 h-5 text-primary flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
               </svg>
             </div>
@@ -84,110 +95,158 @@
       <!-- Right Panel: Chests -->
       <div class="card bg-base-100 shadow-xl">
         <div class="card-body">
-          <div class="flex justify-between items-center">
-            <h2 class="card-title">Chests</h2>
-            <button class="btn btn-primary btn-sm" @click="openCreateDialog">
-              <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-              </svg>
-              Create
-            </button>
-          </div>
 
-          <!-- Chest Type Filter -->
-          <div class="form-control">
-            <select
-              v-model="selectedChestType"
-              class="select select-bordered select-sm"
-              @change="handleChestFilterChange"
-            >
-              <option value="">All Types</option>
-              <option value="REGION">Region Chests</option>
-              <option value="WORLD">World Chests</option>
-              <option value="USER">User Chests</option>
-            </select>
-          </div>
+          <!-- Mode 1: Chest List -->
+          <template v-if="!selectedChest">
+            <div class="flex justify-between items-center">
+              <h2 class="card-title">Chests</h2>
+              <button class="btn btn-primary btn-sm" @click="openCreateDialog">
+                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg>
+                Create
+              </button>
+            </div>
 
-          <!-- Loading State -->
-          <LoadingSpinner v-if="chestsLoading" />
+            <!-- Chest Type Filter -->
+            <div class="form-control">
+              <select
+                v-model="selectedChestType"
+                class="select select-bordered select-sm"
+                @change="handleChestFilterChange"
+              >
+                <option value="">All Types</option>
+                <option value="REGION">Region Chests</option>
+                <option value="WORLD">World Chests</option>
+                <option value="USER">User Chests</option>
+              </select>
+            </div>
 
-          <!-- Chests List -->
-          <div v-else-if="chests.length === 0" class="text-center py-8 text-base-content/50">
-            No chests found. Create one!
-          </div>
-          <div v-else class="overflow-y-auto max-h-96">
-            <div
-              v-for="chest in chests"
-              :key="chest.id"
-              class="p-3 border rounded mb-2 hover:bg-base-200 cursor-pointer transition-all"
-              :class="{ 'ring-2 ring-primary bg-base-200': selectedChest?.id === chest.id }"
-              @click="selectChestForItemAdd(chest)"
-            >
-              <div class="flex justify-between items-start">
-                <div class="flex-1">
-                  <div class="flex items-center gap-2">
-                    <div class="font-semibold">{{ chest.displayName || chest.name }}</div>
-                    <svg v-if="selectedChest?.id === chest.id" class="w-4 h-4 text-primary" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
+            <!-- Loading State -->
+            <LoadingSpinner v-if="chestsLoading" />
+
+            <!-- Chests List -->
+            <div v-else-if="chests.length === 0" class="text-center py-8 text-base-content/50">
+              No chests found. Create one!
+            </div>
+            <div v-else class="overflow-y-auto max-h-96">
+              <div
+                v-for="chest in chests"
+                :key="chest.name"
+                class="p-3 border rounded mb-2 hover:bg-base-200 cursor-pointer transition-all"
+                @click="selectChestForItemAdd(chest)"
+              >
+                <div class="flex justify-between items-start">
+                  <div class="flex-1">
+                    <div class="font-semibold">{{ chest.title || chest.name }}</div>
+                    <div class="text-xs font-mono text-base-content/60">{{ chest.name }}</div>
+                    <div class="flex gap-2 mt-1">
+                      <span class="badge badge-sm" :class="getTypeClass(chest.type)">{{ chest.type }}</span>
+                      <span class="badge badge-sm badge-info">{{ chest.items?.length || 0 }} items</span>
+                    </div>
                   </div>
-                  <div class="text-xs font-mono text-base-content/60">{{ chest.name }}</div>
-                  <div class="flex gap-2 mt-1">
-                    <span class="badge badge-sm" :class="getTypeClass(chest.type)">{{ chest.type }}</span>
-                    <span class="badge badge-sm badge-info">{{ chest.items?.length || 0 }} items</span>
-                  </div>
-                </div>
-                <div class="flex gap-1">
-                  <button
-                    class="btn btn-xs btn-ghost"
-                    @click.stop="handleEditChest(chest)"
-                    title="Edit chest"
-                  >
-                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                    </svg>
-                  </button>
-                  <button
-                    class="btn btn-xs btn-error"
-                    @click.stop="handleDeleteChest(chest)"
-                    title="Delete chest"
-                  >
-                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                  </button>
-                </div>
-              </div>
-
-              <!-- Items in Chest -->
-              <div v-if="chest.items && chest.items.length > 0" class="mt-2 pl-2 border-l-2 border-base-300">
-                <div v-for="itemRef in chest.items.slice(0, 3)" :key="itemRef.itemId" class="text-xs flex justify-between items-center py-1">
-                  <span>{{ itemRef.name || itemRef.itemId }}</span>
-                  <div class="flex gap-2 items-center">
-                    <span
-                      class="badge badge-xs cursor-pointer hover:badge-primary transition-colors"
-                      @click.stop="handleEditAmount(chest, itemRef)"
-                      title="Click to edit amount"
-                    >
-                      x{{ itemRef.amount }}
-                    </span>
+                  <div class="flex gap-1">
                     <button
                       class="btn btn-xs btn-ghost"
-                      @click.stop="handleRemoveItemFromChest(chest, itemRef.itemId)"
-                      title="Remove item"
+                      @click.stop="handleEditChest(chest)"
+                      title="Edit chest"
                     >
                       <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                    </button>
+                    <button
+                      class="btn btn-xs btn-error"
+                      @click.stop="handleDeleteChest(chest)"
+                      title="Delete chest"
+                    >
+                      <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                       </svg>
                     </button>
                   </div>
                 </div>
-                <div v-if="chest.items.length > 3" class="text-xs text-base-content/50">
-                  +{{ chest.items.length - 3 }} more...
+              </div>
+            </div>
+          </template>
+
+          <!-- Mode 2: Chest Detail -->
+          <template v-else>
+            <div class="flex justify-between items-center">
+              <h2 class="card-title">{{ selectedChest.title || selectedChest.name }}</h2>
+              <div class="flex gap-1">
+                <button
+                  class="btn btn-xs btn-ghost"
+                  @click.stop="handleEditChest(selectedChest)"
+                  title="Edit chest"
+                >
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                </button>
+                <button class="btn btn-sm btn-ghost" @click="closeChestDetail" title="Close">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <div class="flex gap-2">
+              <span class="badge badge-sm" :class="getTypeClass(selectedChest.type)">{{ selectedChest.type }}</span>
+              <span class="text-xs font-mono text-base-content/60">{{ selectedChest.name }}</span>
+            </div>
+
+            <!-- Items in Chest -->
+            <div v-if="chestItemsLoading" class="flex justify-center py-4">
+              <span class="loading loading-spinner loading-sm"></span>
+            </div>
+            <div v-else-if="!selectedChest.items || selectedChest.items.length === 0" class="text-center py-8 text-base-content/50">
+              No items in this chest
+            </div>
+            <div v-else class="overflow-y-auto max-h-96 space-y-2 mt-2">
+              <div
+                v-for="itemRef in selectedChest.items"
+                :key="itemRef.itemId"
+                class="p-2 border rounded flex items-center gap-3"
+              >
+                <div class="w-10 h-10 flex-shrink-0 rounded bg-base-300 flex items-center justify-center overflow-hidden">
+                  <img
+                    v-if="itemRef.texture"
+                    :src="getAssetUrl(itemRef.texture)"
+                    :alt="itemRef.itemId"
+                    class="w-10 h-10 object-contain"
+                    style="image-rendering: pixelated;"
+                    @error="onImageError($event)"
+                  />
+                  <span v-else class="text-base-content/30 text-xs">?</span>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class="font-semibold text-sm">{{ itemRef.itemId }}</div>
+                  <div v-if="itemRef.name" class="text-xs text-base-content/50">{{ itemRef.name }}</div>
+                </div>
+                <div class="flex gap-2 items-center flex-shrink-0">
+                  <span
+                    class="badge badge-sm cursor-pointer hover:badge-primary transition-colors"
+                    @click.stop="handleEditAmount(selectedChest, itemRef)"
+                    title="Click to edit amount"
+                  >
+                    x{{ itemRef.amount }}
+                  </span>
+                  <button
+                    class="btn btn-xs btn-ghost"
+                    @click.stop="handleRemoveItemFromChest(selectedChest, itemRef.itemId)"
+                    title="Remove item"
+                  >
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
                 </div>
               </div>
             </div>
-          </div>
+          </template>
+
         </div>
       </div>
     </div>
@@ -196,7 +255,7 @@
     <ChestDialog
       v-if="isDialogOpen"
       :world-id="currentWorldId!"
-      :chest="selectedChest"
+      :chest="dialogChest"
       @close="closeDialog"
       @saved="handleChestSaved"
     />
@@ -231,6 +290,7 @@ import type { ItemSearchResult } from '@/composables/useItems';
 import { useWorld } from '@/composables/useWorld';
 import { useChests } from '@/composables/useChests';
 import { useItems } from '@/composables/useItems';
+import { apiService } from '@/services/ApiService';
 import LoadingSpinner from '@components/LoadingSpinner.vue';
 import ErrorAlert from '@components/ErrorAlert.vue';
 import ChestDialog from '@material/components/ChestDialog.vue';
@@ -260,14 +320,26 @@ const itemSearchResults = computed(() => itemsComposable.value?.searchResults.va
 const itemsLoading = computed(() => itemsComposable.value?.loading.value || false);
 const itemsError = computed(() => itemsComposable.value?.error.value || null);
 
+const getAssetUrl = (texturePath: string): string => {
+  if (!texturePath || !selectedWorldId.value) return '';
+  return `${apiService.getBaseUrl()}/control/worlds/${selectedWorldId.value}/assets/${texturePath}`;
+};
+
+const onImageError = (event: Event) => {
+  const img = event.target as HTMLImageElement;
+  img.style.display = 'none';
+};
+
 const itemSearchQuery = ref('');
 const isDialogOpen = ref(false);
 const isItemRefDialogOpen = ref(false);
 const isAmountEditDialogOpen = ref(false);
 const selectedChest = ref<WChest | null>(null);
+const dialogChest = ref<WChest | null>(null);
 const selectedItem = ref<ItemSearchResult | null>(null);
 const editingItemRef = ref<ItemRef | null>(null);
 const editingChest = ref<WChest | null>(null);
+const chestItemsLoading = ref(false);
 
 /**
  * Handle world change
@@ -315,22 +387,29 @@ const getTypeClass = (type: ChestType): string => {
  * Open create chest dialog
  */
 const openCreateDialog = () => {
-  selectedChest.value = null;
+  dialogChest.value = null;
   isDialogOpen.value = true;
 };
 
 /**
- * Select chest for adding items (does NOT open dialog)
+ * Select chest to show detail view
  */
 const selectChestForItemAdd = (chest: WChest) => {
   selectedChest.value = chest;
 };
 
 /**
+ * Close chest detail view, return to list
+ */
+const closeChestDetail = () => {
+  selectedChest.value = null;
+};
+
+/**
  * Handle edit chest (opens dialog)
  */
 const handleEditChest = (chest: WChest) => {
-  selectedChest.value = chest;
+  dialogChest.value = chest;
   isDialogOpen.value = true;
 };
 
@@ -339,7 +418,7 @@ const handleEditChest = (chest: WChest) => {
  */
 const closeDialog = () => {
   isDialogOpen.value = false;
-  selectedChest.value = null;
+  dialogChest.value = null;
 };
 
 /**
@@ -347,9 +426,7 @@ const closeDialog = () => {
  */
 const handleChestSaved = async () => {
   closeDialog();
-  if (chestsComposable.value) {
-    await chestsComposable.value.loadChests();
-  }
+  await reloadChests();
 };
 
 /**
@@ -358,12 +435,15 @@ const handleChestSaved = async () => {
 const handleDeleteChest = async (chest: WChest) => {
   if (!chestsComposable.value) return;
 
-  const displayName = chest.displayName || chest.name;
-  if (!confirm(`Are you sure you want to delete chest "${displayName}"?`)) {
+  const chestTitle = chest.title || chest.name;
+  if (!confirm(`Are you sure you want to delete chest "${chestTitle}"?`)) {
     return;
   }
 
   await chestsComposable.value.deleteChest(chest.name);
+  if (selectedChest.value?.name === chest.name) {
+    selectedChest.value = null;
+  }
 };
 
 /**
@@ -404,13 +484,23 @@ const closeItemRefDialog = () => {
 };
 
 /**
+ * Reload chests and refresh selected chest if in detail view
+ */
+const reloadChests = async () => {
+  if (!chestsComposable.value) return;
+  await chestsComposable.value.loadChests();
+  if (selectedChest.value) {
+    const updated = chests.value.find(c => c.name === selectedChest.value?.name);
+    selectedChest.value = updated || null;
+  }
+};
+
+/**
  * Handle item ref saved
  */
 const handleItemRefSaved = async () => {
   closeItemRefDialog();
-  if (chestsComposable.value) {
-    await chestsComposable.value.loadChests();
-  }
+  await reloadChests();
 };
 
 /**
@@ -436,9 +526,7 @@ const closeAmountEditDialog = () => {
  */
 const handleAmountEditSaved = async () => {
   closeAmountEditDialog();
-  if (chestsComposable.value) {
-    await chestsComposable.value.loadChests();
-  }
+  await reloadChests();
 };
 
 /**
@@ -446,8 +534,8 @@ const handleAmountEditSaved = async () => {
  */
 const handleRemoveItemFromChest = async (chest: WChest, itemId: string) => {
   if (!chestsComposable.value) return;
-
   await chestsComposable.value.removeItem(chest.name, itemId);
+  await reloadChests();
 };
 
 // Load worlds and chests when world changes

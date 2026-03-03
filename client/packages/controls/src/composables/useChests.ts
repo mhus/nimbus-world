@@ -18,7 +18,7 @@ export function useChests(worldId: string) {
 
   // Filters
   const typeFilter = ref<ChestType | undefined>(undefined);
-  const userIdFilter = ref<string | undefined>(undefined);
+  const playerIdFilter = ref<string | undefined>(undefined);
   const worldIdFilter = ref<string | undefined>(undefined);
 
   /**
@@ -31,7 +31,7 @@ export function useChests(worldId: string) {
     try {
       chests.value = await chestService.getChests(worldId, {
         type: typeFilter.value,
-        userId: userIdFilter.value,
+        playerId: playerIdFilter.value,
         worldId: worldIdFilter.value,
       });
 
@@ -40,7 +40,7 @@ export function useChests(worldId: string) {
         worldId,
         filters: {
           type: typeFilter.value,
-          userId: userIdFilter.value,
+          playerId: playerIdFilter.value,
           worldId: worldIdFilter.value,
         },
       });
@@ -55,16 +55,16 @@ export function useChests(worldId: string) {
   /**
    * Load user-specific chests
    */
-  const loadUserChests = async (userId: string) => {
+  const loadPlayerChests = async (playerId: string) => {
     loading.value = true;
     error.value = null;
 
     try {
-      chests.value = await chestService.getUserChests(worldId, userId);
-      logger.info('Loaded user chests', { count: chests.value.length, worldId, userId });
+      chests.value = await chestService.getPlayerChests(worldId, playerId);
+      logger.info('Loaded player chests', { count: chests.value.length, worldId, playerId });
     } catch (err) {
-      error.value = 'Failed to load user chests';
-      logger.error('Failed to load user chests', { worldId, userId }, err as Error);
+      error.value = 'Failed to load player chests';
+      logger.error('Failed to load player chests', { worldId, playerId }, err as Error);
     } finally {
       loading.value = false;
     }
@@ -197,9 +197,9 @@ export function useChests(worldId: string) {
   /**
    * Set filters and reload
    */
-  const setFilters = async (type?: ChestType, userId?: string, worldId?: string) => {
+  const setFilters = async (type?: ChestType, playerId?: string, worldId?: string) => {
     typeFilter.value = type;
-    userIdFilter.value = userId;
+    playerIdFilter.value = playerId;
     worldIdFilter.value = worldId;
     await loadChests();
   };
@@ -209,11 +209,11 @@ export function useChests(worldId: string) {
     loading,
     error,
     typeFilter,
-    userIdFilter,
+    playerIdFilter,
     worldIdFilter,
     // Methods
     loadChests,
-    loadUserChests,
+    loadPlayerChests,
     loadRegionChests,
     loadWorldChests,
     createChest,

@@ -11,7 +11,7 @@ package de.mhus.nimbus.generated.types;
 @lombok.NoArgsConstructor
 @lombok.AllArgsConstructor(access = lombok.AccessLevel.PROTECTED)
 public class ItemBlockRef {
-    private String id;
+    private String name;
     private Vector3 position;
     private String texture;
     @com.fasterxml.jackson.annotation.JsonProperty("scaleX")
@@ -23,7 +23,7 @@ public class ItemBlockRef {
     @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
     private java.util.List<Object> offset;
     @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
-    private String name;
+    private String title;
     @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
     private int amount;
 }

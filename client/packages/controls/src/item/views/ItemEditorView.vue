@@ -38,11 +38,11 @@
               <span v-if="!isNew" class="label-text-alt text-xs opacity-50">Read-only</span>
             </label>
             <input
-              v-model="localItem.id"
+              v-model="localItem.name"
               type="text"
               class="input input-bordered"
               :disabled="!isNew"
-              placeholder="item_id"
+              placeholder="item_name"
             />
           </div>
 
@@ -69,10 +69,10 @@
               <span class="label-text font-semibold">Display Name</span>
             </label>
             <input
-              v-model="localItem.name"
+              v-model="localItem.title"
               type="text"
               class="input input-bordered"
-              placeholder="Item name (optional, uses ItemType.name if empty)"
+              placeholder="Display title (optional, uses ItemType title if empty)"
             />
           </div>
 
@@ -271,9 +271,9 @@ async function loadItem() {
   if (props.isNew) {
     // Create new item template
     localItem.value = {
-      id: 'new_item_' + Date.now(),
+      name: 'new_item_' + Date.now(),
       itemType: '',
-      name: 'New Item',
+      title: 'New Item',
       description: '',
       modifier: {
         texture: '',

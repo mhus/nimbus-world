@@ -187,7 +187,7 @@ export class ShortcutInfoCommand extends CommandHandler {
       if (itemService) {
         const item = await itemService.getItem(shortcut.itemId);
         if (item) {
-          lines.push(`  Item Name      : ${item.name}`);
+          lines.push(`  Item Title     : ${item.title}`);
           const mergedModifier = await itemService.getMergedModifier(item);
           if (mergedModifier) {
             lines.push(`  Action Target  : ${mergedModifier.actionTargeting ?? 'ALL'}`);
@@ -234,7 +234,7 @@ export class ShortcutInfoCommand extends CommandHandler {
         if (shortcutDef.itemId && itemService) {
           const item = await itemService.getItem(shortcutDef.itemId);
           if (item) {
-            lines.push(`  Item Name      : ${item.name}`);
+            lines.push(`  Item Title     : ${item.title}`);
             const mergedModifier = await itemService.getMergedModifier(item);
             if (mergedModifier) {
               lines.push(`  Action Target  : ${mergedModifier.actionTargeting ?? 'ALL'}`);
@@ -268,7 +268,7 @@ export class ShortcutInfoCommand extends CommandHandler {
       if (item) {
         lines.push('Item:');
         lines.push(`  Item ID        : ${activeShortcut.itemId}`);
-        lines.push(`  Item Name      : ${item.name}`);
+        lines.push(`  Item Title     : ${item.title}`);
         lines.push(`  Item Type      : ${item.itemType}`);
         lines.push('');
 
