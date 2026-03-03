@@ -38,6 +38,9 @@ public class ServerCommandSender {
      */
     public void sendCommand(PlayerSession session, String commandType, ObjectNode commandData) {
         try {
+            if (commandData == null) {
+                commandData = objectMapper.createObjectNode();
+            }
             ObjectNode data = objectMapper.createObjectNode();
             data.put("type", commandType);
             data.set("data", commandData);

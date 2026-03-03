@@ -31,4 +31,8 @@ public interface Gameplay {
     Map<String, Object> serialize(PlayerSession session);
 
     void onSessionTick(PlayerSession session, int count);
+
+    void onShortcutModified(PlayerSession session);
+
+    void onWearingModified(PlayerSession session);
 }

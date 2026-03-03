@@ -7,7 +7,6 @@ import de.mhus.nimbus.generated.types.ItemType;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.shared.access.AccessFilterBase;
 import de.mhus.nimbus.world.shared.client.WorldClientService;
-import de.mhus.nimbus.world.shared.commands.CommandContext;
 import de.mhus.nimbus.world.shared.region.RCharacter;
 import de.mhus.nimbus.world.shared.region.RCharacterService;
 import de.mhus.nimbus.world.shared.rest.BaseEditorController;
@@ -258,13 +257,7 @@ public class PlayerWearingController extends BaseEditorController {
             log.warn("No player URL available for session {}, cannot notify player of wearing change", sessionId);
             return;
         }
-        String playerUrl = wSession.get().getPlayerUrl();
-        var ctx = CommandContext.builder()
-                .worldId(worldId)
-                .sessionId(sessionId)
-                .originServer("world-control")
-                .build();
-        worldClientService.sendPlayerCommand(worldId, sessionId, playerUrl, "WearingModified", List.of(), ctx);
+        worldClientService.sendPlayerCommand(worldId, sessionId, wSession.get().getPlayerUrl(), "WearingModified", List.of(), null);
     }
 
     @SuppressWarnings("unchecked")

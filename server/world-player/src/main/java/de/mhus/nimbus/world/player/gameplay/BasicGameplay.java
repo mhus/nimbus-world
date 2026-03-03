@@ -1,6 +1,7 @@
 package de.mhus.nimbus.world.player.gameplay;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import de.mhus.nimbus.world.player.service.GameplayService;
 import de.mhus.nimbus.world.player.service.PlayerService;
 import de.mhus.nimbus.world.player.session.PlayerSession;
 import de.mhus.nimbus.world.shared.world.WChunkService;
@@ -12,6 +13,7 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -28,6 +30,10 @@ public class BasicGameplay implements Gameplay {
     protected WEntityService entityService;
     @Autowired
     protected WItemService itemService;
+    @Autowired
+    @Lazy
+    @Getter
+    protected GameplayService gameplayService;
 
     protected Map<String, GameplayAction> actions = new HashMap<>();
 
@@ -115,6 +121,16 @@ public class BasicGameplay implements Gameplay {
 
     @Override
     public void onSessionTick(PlayerSession session, int count) {
+
+    }
+
+    @Override
+    public void onShortcutModified(PlayerSession session) {
+
+    }
+
+    @Override
+    public void onWearingModified(PlayerSession session) {
 
     }
 
