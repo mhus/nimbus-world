@@ -7,9 +7,12 @@ import de.mhus.nimbus.generated.types.PlayerInfo;
 import de.mhus.nimbus.generated.types.ShortcutDefinition;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.shared.access.AccessFilterBase;
+import de.mhus.nimbus.world.shared.client.WorldClientService;
+import de.mhus.nimbus.world.shared.commands.CommandContext;
 import de.mhus.nimbus.world.shared.region.RCharacter;
 import de.mhus.nimbus.world.shared.region.RCharacterService;
 import de.mhus.nimbus.world.shared.rest.BaseEditorController;
+import de.mhus.nimbus.world.shared.session.WSessionService;
 import de.mhus.nimbus.world.shared.world.WItem;
 import de.mhus.nimbus.world.shared.world.WItemService;
 import de.mhus.nimbus.world.shared.world.WItemType;
@@ -44,6 +47,8 @@ public class PlayerBackpackShortcutController extends BaseEditorController {
     private final RCharacterService characterService;
     private final WItemService wItemService;
     private final WItemTypeService wItemTypeService;
+    private final WorldClientService worldClientService;
+    private final WSessionService wSessionService;
 
     /**
      * Get backpack items enriched with texture and name information.
@@ -283,6 +288,7 @@ public class PlayerBackpackShortcutController extends BaseEditorController {
         characterService.updateCharater(character);
 
         log.info("Assigned shortcut: userId={}, characterId={}, slot={}, itemId={}", userId, characterId, body.slotKey(), body.itemId());
+        notifyPlayer(worldId, request);
         return ResponseEntity.ok(Map.of("success", true));
     }
 
@@ -328,7 +334,28 @@ public class PlayerBackpackShortcutController extends BaseEditorController {
         }
 
         log.info("Cleared shortcut: userId={}, characterId={}, slot={}", userId, characterId, body.slotKey());
+        notifyPlayer(worldId, request);
         return ResponseEntity.ok(Map.of("success", true));
+    }
+
+    private void notifyPlayer(String worldId, HttpServletRequest request) {
+        String sessionId = (String) request.getAttribute(AccessFilterBase.ATTR_SESSION_ID);
+        if (Strings.isBlank(sessionId)) {
+            log.warn("No sessionId available, cannot notify player of shortcut change");
+            return;
+        }
+        var wSession = wSessionService.getWithPlayerUrl(sessionId);
+        if (wSession.isEmpty() || Strings.isBlank(wSession.get().getPlayerUrl())) {
+            log.warn("No player URL available for session {}, cannot notify player of shortcut change", sessionId);
+            return;
+        }
+        String playerUrl = wSession.get().getPlayerUrl();
+        var ctx = CommandContext.builder()
+                .worldId(worldId)
+                .sessionId(sessionId)
+                .originServer("world-control")
+                .build();
+        worldClientService.sendPlayerCommand(worldId, sessionId, playerUrl, "ShortcutModified", List.of(), ctx);
     }
 
     private RCharacter findCharacter(String worldId, String userId, String characterId) {

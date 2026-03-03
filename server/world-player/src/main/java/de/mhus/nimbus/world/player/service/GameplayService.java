@@ -104,6 +104,32 @@ public class GameplayService implements SessionAuthenticatedConsumer {
     }
 
     /**
+     * Called when a player's shortcuts have been modified via the shortcut panel.
+     * Implementation will be added later.
+     */
+    public void onShortcutModified(PlayerSession session) {
+        log.info("Shortcut modified for player {}", GameplayUtil.toString(session.getPlayer()));
+        var gameplay = session.getGameplay();
+        if (gameplay == null) {
+            log.warn("No gameplay set for session {}, cannot handle shortcut modification", session.getPlayer());
+        }
+        // TODO gameplay.onShortcutModified(session) - implementation later
+    }
+
+    /**
+     * Called when a player's wearing items have been modified via the wearing panel.
+     * Implementation will be added later.
+     */
+    public void onWearingModified(PlayerSession session) {
+        log.info("Wearing modified for player {}", GameplayUtil.toString(session.getPlayer()));
+        var gameplay = session.getGameplay();
+        if (gameplay == null) {
+            log.warn("No gameplay set for session {}, cannot handle wearing modification", session.getPlayer());
+        }
+        // TODO gameplay.onWearingModified(session) - implementation later
+    }
+
+    /**
      * Handle session authenticated event. This is called after the player has successfully authenticated and the session is ready.
      * Loads saved gameplay data from WPlayerSession (MongoDB) and passes it to the gameplay implementation for restoration.
      *

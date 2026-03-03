@@ -6,9 +6,12 @@ import de.mhus.nimbus.generated.types.Item;
 import de.mhus.nimbus.generated.types.ItemType;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.shared.access.AccessFilterBase;
+import de.mhus.nimbus.world.shared.client.WorldClientService;
+import de.mhus.nimbus.world.shared.commands.CommandContext;
 import de.mhus.nimbus.world.shared.region.RCharacter;
 import de.mhus.nimbus.world.shared.region.RCharacterService;
 import de.mhus.nimbus.world.shared.rest.BaseEditorController;
+import de.mhus.nimbus.world.shared.session.WSessionService;
 import de.mhus.nimbus.world.shared.world.WItem;
 import de.mhus.nimbus.world.shared.world.WItemService;
 import de.mhus.nimbus.world.shared.world.WItemType;
@@ -41,6 +44,8 @@ public class PlayerWearingController extends BaseEditorController {
     private final RCharacterService characterService;
     private final WItemService wItemService;
     private final WItemTypeService wItemTypeService;
+    private final WorldClientService worldClientService;
+    private final WSessionService wSessionService;
 
     @GetMapping
     @Operation(summary = "Get backpack items and wearing items with enriched info")
@@ -182,6 +187,7 @@ public class PlayerWearingController extends BaseEditorController {
         characterService.updateCharater(character);
 
         log.info("Equipped item: userId={}, characterId={}, itemId={}, slot={}", userId, characterId, body.itemId(), slot);
+        notifyPlayer(worldId, request);
         return ResponseEntity.ok(Map.of("success", true));
     }
 
@@ -237,7 +243,28 @@ public class PlayerWearingController extends BaseEditorController {
         characterService.updateCharater(character);
 
         log.info("Unequipped item: userId={}, characterId={}, itemId={}, slot={}", userId, characterId, itemId, body.slot());
+        notifyPlayer(worldId, request);
         return ResponseEntity.ok(Map.of("success", true));
+    }
+
+    private void notifyPlayer(String worldId, HttpServletRequest request) {
+        String sessionId = (String) request.getAttribute(AccessFilterBase.ATTR_SESSION_ID);
+        if (Strings.isBlank(sessionId)) {
+            log.warn("No sessionId available, cannot notify player of wearing change");
+            return;
+        }
+        var wSession = wSessionService.getWithPlayerUrl(sessionId);
+        if (wSession.isEmpty() || Strings.isBlank(wSession.get().getPlayerUrl())) {
+            log.warn("No player URL available for session {}, cannot notify player of wearing change", sessionId);
+            return;
+        }
+        String playerUrl = wSession.get().getPlayerUrl();
+        var ctx = CommandContext.builder()
+                .worldId(worldId)
+                .sessionId(sessionId)
+                .originServer("world-control")
+                .build();
+        worldClientService.sendPlayerCommand(worldId, sessionId, playerUrl, "WearingModified", List.of(), ctx);
     }
 
     @SuppressWarnings("unchecked")

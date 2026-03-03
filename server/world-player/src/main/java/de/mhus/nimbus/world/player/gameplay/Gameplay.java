@@ -26,6 +26,8 @@ public interface Gameplay {
 
     void onEntityInteraction(PlayerSession session, String entityId, String action, Long timestamp, JsonNode params);
 
+    void onItemInteraction(PlayerSession session, String itemId, JsonNode params);
+
     Map<String, Object> serialize(PlayerSession session);
 
     void onSessionTick(PlayerSession session, int count);

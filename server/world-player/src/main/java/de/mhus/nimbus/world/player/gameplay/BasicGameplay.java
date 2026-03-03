@@ -4,7 +4,13 @@ import com.fasterxml.jackson.databind.JsonNode;
 import de.mhus.nimbus.world.player.service.PlayerService;
 import de.mhus.nimbus.world.player.session.PlayerSession;
 import de.mhus.nimbus.world.shared.world.WChunkService;
+import de.mhus.nimbus.world.shared.world.WEntity;
+import de.mhus.nimbus.world.shared.world.WEntityService;
+import de.mhus.nimbus.world.shared.world.WItem;
+import de.mhus.nimbus.world.shared.world.WItemService;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.logging.log4j.util.Strings;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.HashMap;
@@ -16,12 +22,17 @@ public class BasicGameplay implements Gameplay {
     @Autowired
     protected WChunkService chunkService;
     @Autowired
+    @Getter
     protected PlayerService playerService;
+    @Autowired
+    protected WEntityService entityService;
+    @Autowired
+    protected WItemService itemService;
 
-    protected Map<String, BlockAction> blockActions = new HashMap<>();
+    protected Map<String, GameplayAction> actions = new HashMap<>();
 
     public BasicGameplay() {
-            blockActions.put("teleport", new BlockTeleportation());
+            actions.put("teleport", new TeleportationAction(this));
     }
 
     @Override
@@ -38,12 +49,12 @@ public class BasicGameplay implements Gameplay {
             log.warn("No action entry in server metadata for block at {} ({}, {}, {})", worldId, x, y, z);
             return;
         }
-        var handler = blockActions.get(blockAction);
+        var handler = actions.get(blockAction);
         if (handler == null) {
             log.warn("Unknown block action '{}' in server metadata for block at {} ({}, {}, {})", blockAction, worldId, x, y, z);
             return;
         }
-        handler.handleBlockAction(session, x, y, z, blockId, groupId, userAction, params, blockAction, serverInfo);
+        handler.handleBlockAction(session, x, y, z, blockId, groupId, blockAction, params, userAction, serverInfo);
 
     }
 
@@ -53,10 +64,48 @@ public class BasicGameplay implements Gameplay {
     }
 
     @Override
-    public void onEntityInteraction(PlayerSession session, String entityId, String action, Long timestamp, JsonNode params) {
+    public void onEntityInteraction(PlayerSession session, String entityId, String userAction, Long timestamp, JsonNode params) {
         //     session.getPlayer().character().getPublicData().getShortcuts()
         // Publish interaction to Redis for world-life processing
         // PlayerRedisSenderService.publishEntityInteraction(session, entityId, action, timestamp, params);
+        WEntity entity = entityService.findByWorldIdAndEntityId(session.getWorldId(), entityId).orElse(null);
+        if (entity == null) {
+            log.warn("Entity with ID {} not found in world {}", entityId, session.getWorldId());
+            return;
+        }
+        String entityAction = entity.getServer().get("action");
+        if (Strings.isBlank(entityAction)) {
+            log.warn("No action defined for entity {} in world {}", entityId, session.getWorldId());
+            return;
+        }
+        var handler = actions.get(entityAction);
+        if (handler == null) {
+            log.warn("Unknown entity action '{}' in server metadata for entity {} ({})", entityAction, session.getWorldId(), entityId);
+            return;
+        }
+        handler.handleEntityAction(session, entity, userAction, entityAction, params);
+    }
+
+    @Override
+    public void onItemInteraction(PlayerSession session, String itemId, JsonNode params) {
+        // Handle item interactions if needed
+        WItem item = itemService.findByItemId(session.getWorldId(), itemId).orElse(null);
+        if (item == null) {
+            log.warn("Item with ID {} not found in world {}", itemId, session.getWorldId());
+            return;
+        }
+        String itemAction = item.getServer().get("action");
+        if (Strings.isBlank(itemAction)) {
+            log.warn("No action defined for item {} in world {}", itemId, session.getWorldId());
+            return;
+        }
+        var handler = actions.get(itemAction);
+        if (handler == null) {
+            log.warn("Unknown item action '{}' in server metadata for item {} ({})", itemAction, session.getWorldId(), itemId);
+            return;
+        }
+        // For item interactions, we can define a separate interface or reuse BlockAction with null coordinates
+        handler.handleItemAction(session, item, itemAction, params);
     }
 
     @Override
@@ -74,38 +123,4 @@ public class BasicGameplay implements Gameplay {
 
     }
 
-    private class BlockTeleportation implements BlockAction {
-
-        /**
-         * Handle block teleportation if server metadata contains "teleportation" entry.
-         *
-         * @param session     PlayerSession
-         * @param x           Block x coordinate
-         * @param y           Block y coordinate
-         * @param z           Block z coordinate
-         * @param blockId
-         * @param groupId
-         * @param userAction
-         * @param params
-         * @param blockAction
-         */
-        @Override
-        public void handleBlockAction(PlayerSession session, int x, int y, int z, String blockId, String groupId, String userAction, JsonNode params, String blockAction, Map<String, String> serverInfo) {
-            // Check for teleportation entry
-            String teleportTarget = serverInfo.get("target");
-            if (teleportTarget == null || teleportTarget.isBlank()) {
-                log.trace("No teleportation entry in server metadata for block at ({}, {}, {})", x, y, z);
-                return;
-            }
-
-            // Trigger teleportation (PlayerService handles session save and redirect)
-            log.info("Teleportation triggered by block interaction at ({}, {}, {}): target={}",
-                    x, y, z, teleportTarget);
-
-            boolean success = playerService.teleportPlayer(session, teleportTarget);
-            if (!success) {
-                log.warn("Failed to trigger teleportation for player {}: target={}", session.getPlayer(), teleportTarget);
-            }
-        }
-    }
 }

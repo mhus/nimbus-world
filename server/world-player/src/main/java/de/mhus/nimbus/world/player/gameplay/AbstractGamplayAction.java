@@ -1,0 +1,35 @@
+package de.mhus.nimbus.world.player.gameplay;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import de.mhus.nimbus.world.player.session.PlayerSession;
+import de.mhus.nimbus.world.shared.world.WEntity;
+import de.mhus.nimbus.world.shared.world.WItem;
+
+import java.util.Map;
+
+public abstract class AbstractGamplayAction implements GameplayAction {
+
+    protected final BasicGameplay basic;
+
+    public AbstractGamplayAction(BasicGameplay basic) {
+        this.basic = basic;
+    }
+
+    @Override
+    public void handleBlockAction(PlayerSession session, int x, int y, int z, String blockId, String groupId, String blockAction, JsonNode params, String userAction, Map<String, String> serverInfo) {
+        handleAction(session, serverInfo, params);
+    }
+
+    @Override
+    public void handleEntityAction(PlayerSession session, WEntity entity, String userAction, String entityAction, JsonNode params) {
+        handleAction(session, entity.getServer(), params);
+    }
+
+    @Override
+    public void handleItemAction(PlayerSession session, WItem item, String itemAction, JsonNode params) {
+        handleAction(session, item.getServer(), params);
+    }
+
+    public abstract void handleAction(PlayerSession session, Map<String, String> serverParameters, JsonNode params);
+
+}

@@ -121,7 +121,8 @@ public class WEntity implements Identifiable {
      * E.g., quest triggers, dialog references, merchant inventory keys.
      * Not sent to clients.
      */
-    private Map<String, String> server;
+    @Builder.Default
+    private Map<String, String> server = new java.util.HashMap<>();
 
     /**
      * Identifies the creator/generator of this entity (e.g., "fauna-generator", "flora-generator").
