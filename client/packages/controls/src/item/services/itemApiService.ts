@@ -49,19 +49,27 @@ export class ItemApiService {
   /**
    * Create a new item
    */
-  static async createItem(item: ItemData, worldId: string): Promise<void> {
+  static async createItem(item: ItemData, worldId: string, server?: Record<string, string>): Promise<void> {
     const url = `/control/worlds/${worldId}/items`;
 
-    await this.apiService.post(url, item);
+    const body: any = { ...item };
+    if (server !== undefined) {
+      body.server = server;
+    }
+    await this.apiService.post(url, body);
   }
 
   /**
    * Update an existing item
    */
-  static async updateItem(itemId: string, item: ItemData, worldId: string): Promise<void> {
+  static async updateItem(itemId: string, item: ItemData, worldId: string, server?: Record<string, string>): Promise<void> {
     const url = `/control/worlds/${worldId}/item/${encodeURIComponent(itemId)}`;
 
-    await this.apiService.put(url, item);
+    const body: any = { ...item };
+    if (server !== undefined) {
+      body.server = server;
+    }
+    await this.apiService.put(url, body);
   }
 
   /**

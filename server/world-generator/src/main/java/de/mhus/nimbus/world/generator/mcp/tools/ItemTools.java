@@ -81,6 +81,9 @@ public class ItemTools {
         if (entity.getPublicData() != null) {
             result.put("publicData", entity.getPublicData());
         }
+        if (entity.getServer() != null) {
+            result.put("server", entity.getServer());
+        }
         return result;
     }
 
@@ -91,7 +94,8 @@ public class ItemTools {
             @ToolParam(description = "Reference to an itemType ID (e.g. 'iron_sword', 'health_potion')") String itemType,
             @ToolParam(description = "Display title (e.g. 'Iron Sword')") String title,
             @ToolParam(description = "Item description", required = false) String description,
-            @ToolParam(description = "Additional parameters as key-value pairs", required = false) Map<String, Object> parameters) {
+            @ToolParam(description = "Additional parameters as key-value pairs", required = false) Map<String, Object> parameters,
+            @ToolParam(description = "Server-side parameters for gameplay configuration", required = false) Map<String, String> server) {
         log.debug("MCP: Create item: worldId={}, itemId={}, itemType={}", worldId, itemId, itemType);
 
         if (Strings.isBlank(worldId)) {
@@ -123,6 +127,10 @@ public class ItemTools {
                         .parameters(parameters)
                         .build();
                 saved = itemService.save(wid, itemId, publicData);
+            }
+            if (server != null && !server.isEmpty()) {
+                saved.setServer(server);
+                itemService.saveEntity(saved);
             }
             return Map.of(
                     "itemId", saved.getItemId(),
@@ -159,6 +167,31 @@ public class ItemTools {
         } catch (IllegalArgumentException e) {
             throw new McpToolException(e.getMessage());
         }
+    }
+
+    @Tool(name = "update_items_by_type", description = "Batch update parameters for all items matching a specific itemType. Merges the given parameters into each item's existing parameters.")
+    public Map<String, Object> updateItemsByType(
+            @ToolParam(description = "World ID or region (e.g. '@region:earth616')") String worldId,
+            @ToolParam(description = "ItemType to match (e.g. 'sword_iron', 'armor_boots_gold')") String itemType,
+            @ToolParam(description = "Parameters to merge into each matching item") Map<String, Object> parameters) {
+        log.debug("MCP: Update items by type: worldId={}, itemType={}, parameters={}", worldId, itemType, parameters);
+
+        if (Strings.isBlank(worldId) || Strings.isBlank(itemType)) {
+            throw new McpToolException("worldId and itemType are required");
+        }
+        if (parameters == null || parameters.isEmpty()) {
+            throw new McpToolException("parameters are required");
+        }
+
+        var wid = WorldId.of(worldId).orElseThrow(
+                () -> new McpToolException("Invalid worldId: " + worldId));
+
+        int count = itemService.updateParametersByItemType(wid, itemType, parameters);
+        return Map.of(
+                "worldId", worldId,
+                "itemType", itemType,
+                "updatedCount", count
+        );
     }
 
     @Tool(name = "delete_item", description = "Delete an item by its itemId.")

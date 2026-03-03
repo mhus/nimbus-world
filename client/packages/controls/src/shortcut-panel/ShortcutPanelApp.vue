@@ -8,22 +8,11 @@
             <h1 class="text-2xl font-bold text-amber-400">Shortcut Panel</h1>
             <p class="text-gray-400 text-sm mt-1">Assign backpack items to shortcut slots</p>
           </div>
-          <div class="flex gap-2">
-            <button
-              v-if="hasChanges"
-              @click="saveShortcuts"
-              :disabled="saving"
-              class="px-4 py-2 bg-amber-500 text-gray-900 rounded-lg hover:bg-amber-400 disabled:bg-gray-600 disabled:text-gray-400 transition-colors font-semibold text-sm"
-            >
-              <span v-if="saving">Saving...</span>
-              <span v-else>Save</span>
-            </button>
-            <a href="/controls/panels.html" class="p-2 rounded bg-gray-700 hover:bg-gray-600 transition-colors" title="Back to Panels">
-              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-              </svg>
-            </a>
-          </div>
+          <a href="/controls/panels.html" class="p-2 rounded bg-gray-700 hover:bg-gray-600 transition-colors" title="Back to Panels">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+          </a>
         </div>
       </div>
     </header>
@@ -46,10 +35,10 @@
 
     <!-- Main Content -->
     <main v-else class="flex-1 container mx-auto px-4 py-6">
-      <!-- Save Message -->
-      <div v-if="saveMessage" class="mb-4 p-3 rounded-lg text-center text-sm font-medium transition-all"
-           :class="saveMessage.type === 'success' ? 'bg-green-900/30 text-green-400 border border-green-700' : 'bg-red-900/30 text-red-400 border border-red-700'">
-        {{ saveMessage.text }}
+      <!-- Action Message -->
+      <div v-if="actionMessage" class="mb-4 p-3 rounded-lg text-center text-sm font-medium transition-all"
+           :class="actionMessage.type === 'success' ? 'bg-green-900/30 text-green-400 border border-green-700' : 'bg-red-900/30 text-red-400 border border-red-700'">
+        {{ actionMessage.text }}
       </div>
 
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -153,7 +142,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted } from 'vue';
 import { apiService } from '@/services/ApiService';
 import type { ShortcutDefinition } from '@nimbus/shared/types/ShortcutDefinition';
 
@@ -185,19 +174,13 @@ const SLOT_ROWS = [
 ];
 
 const loading = ref(true);
-const saving = ref(false);
 const error = ref<string | null>(null);
-const saveMessage = ref<{ text: string; type: 'success' | 'error' } | null>(null);
+const actionMessage = ref<{ text: string; type: 'success' | 'error' } | null>(null);
 
 const worldId = ref('');
 const backpackItems = ref<BackpackItemInfo[]>([]);
 const shortcuts = ref<Record<string, ShortcutDefinition>>({});
-const originalShortcuts = ref<string>('{}');
 const selectedItem = ref<BackpackItemInfo | null>(null);
-
-const hasChanges = computed(() => {
-  return JSON.stringify(shortcuts.value) !== originalShortcuts.value;
-});
 
 const getAssetUrl = (texturePath: string): string => {
   if (!texturePath || !worldId.value) return '';
@@ -217,76 +200,66 @@ const selectItem = (item: BackpackItemInfo) => {
   }
 };
 
-const onSlotClick = (slotKey: string) => {
+const onSlotClick = async (slotKey: string) => {
   if (selectedItem.value) {
-    // Assign selected item to slot
-    shortcuts.value[slotKey] = {
-      type: 'use',
-      itemId: selectedItem.value.itemId,
-      name: selectedItem.value.name,
-      iconPath: selectedItem.value.texture || '',
-      wait: 0,
-    };
+    // Assign selected item to slot via backend
+    await doAssign(slotKey, selectedItem.value.itemId);
   } else if (shortcuts.value[slotKey]) {
-    // Clear slot if no item selected
-    delete shortcuts.value[slotKey];
-    // Trigger reactivity
-    shortcuts.value = { ...shortcuts.value };
+    // Clear slot via backend
+    await doClear(slotKey);
   }
 };
 
-const loadBackpack = async () => {
+const doAssign = async (slotKey: string, itemId: string) => {
   try {
-    const response = await apiService.get<{ worldId: string; items: BackpackItemInfo[] }>(
-      '/control/player/backpack-shortcut/backpack'
-    );
-    worldId.value = response.worldId || '';
-    backpackItems.value = response.items || [];
+    await apiService.post('/control/player/backpack-shortcut/assign', { slotKey, itemId });
+    selectedItem.value = null;
+    await loadData();
+    showMessage('Shortcut assigned!', 'success');
   } catch (err) {
-    console.error('[ShortcutPanel] Failed to load backpack:', err);
-    error.value = 'Failed to load backpack items.';
+    console.error('[ShortcutPanel] Failed to assign shortcut:', err);
+    showMessage('Failed to assign shortcut.', 'error');
   }
 };
 
-const loadShortcuts = async () => {
+const doClear = async (slotKey: string) => {
   try {
-    const response = await apiService.get<{ shortcuts: Record<string, ShortcutDefinition> }>(
-      '/control/player/backpack-shortcut'
-    );
-    shortcuts.value = response.shortcuts || {};
-    originalShortcuts.value = JSON.stringify(shortcuts.value);
+    await apiService.post('/control/player/backpack-shortcut/clear', { slotKey });
+    await loadData();
+    showMessage('Shortcut cleared!', 'success');
   } catch (err) {
-    console.error('[ShortcutPanel] Failed to load shortcuts:', err);
-    error.value = 'Failed to load shortcuts.';
+    console.error('[ShortcutPanel] Failed to clear shortcut:', err);
+    showMessage('Failed to clear shortcut.', 'error');
   }
 };
 
-const saveShortcuts = async () => {
-  saving.value = true;
+const loadData = async () => {
   try {
-    const response = await apiService.put<{ shortcuts: Record<string, ShortcutDefinition> }>(
-      '/control/player/backpack-shortcut',
-      { shortcuts: shortcuts.value }
-    );
-    shortcuts.value = response.shortcuts || shortcuts.value;
-    originalShortcuts.value = JSON.stringify(shortcuts.value);
-    showMessage('Shortcuts saved successfully!', 'success');
+    const [backpackResponse, shortcutResponse] = await Promise.all([
+      apiService.get<{ worldId: string; items: BackpackItemInfo[] }>(
+        '/control/player/backpack-shortcut/backpack'
+      ),
+      apiService.get<{ shortcuts: Record<string, ShortcutDefinition> }>(
+        '/control/player/backpack-shortcut'
+      ),
+    ]);
+    worldId.value = backpackResponse.worldId || '';
+    backpackItems.value = backpackResponse.items || [];
+    shortcuts.value = shortcutResponse.shortcuts || {};
   } catch (err) {
-    console.error('[ShortcutPanel] Failed to save shortcuts:', err);
-    showMessage('Failed to save shortcuts. Please try again.', 'error');
-  } finally {
-    saving.value = false;
+    console.error('[ShortcutPanel] Failed to load data:', err);
+    error.value = 'Failed to load data.';
   }
 };
 
 const showMessage = (text: string, type: 'success' | 'error') => {
-  saveMessage.value = { text, type };
-  setTimeout(() => { saveMessage.value = null; }, 3000);
+  actionMessage.value = { text, type };
+  setTimeout(() => { actionMessage.value = null; }, 3000);
 };
 
 onMounted(async () => {
   loading.value = true;
-  await Promise.all([loadBackpack(), loadShortcuts()]);
+  await loadData();
   loading.value = false;
 });
 </script>

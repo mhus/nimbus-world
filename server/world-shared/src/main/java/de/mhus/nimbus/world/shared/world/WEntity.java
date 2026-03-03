@@ -117,6 +117,13 @@ public class WEntity implements Identifiable {
     private Map<String, Object> behaviorConfig;
 
     /**
+     * Server-side parameters for gameplay configuration.
+     * E.g., quest triggers, dialog references, merchant inventory keys.
+     * Not sent to clients.
+     */
+    private Map<String, String> server;
+
+    /**
      * Identifies the creator/generator of this entity (e.g., "fauna-generator", "flora-generator").
      * Used to selectively delete generated entities before regeneration.
      */

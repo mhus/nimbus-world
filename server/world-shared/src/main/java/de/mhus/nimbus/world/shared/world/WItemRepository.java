@@ -31,4 +31,10 @@ public interface WItemRepository extends MongoRepository<WItem, String> {
      * Delete item by worldId and itemId.
      */
     void deleteByWorldIdAndItemId(String worldId, String itemId);
+
+    /**
+     * Find all items for a world with a specific itemType.
+     */
+    @org.springframework.data.mongodb.repository.Query("{ 'worldId': ?0, 'publicData.itemType': ?1 }")
+    List<WItem> findByWorldIdAndItemType(String worldId, String itemType);
 }

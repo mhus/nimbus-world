@@ -65,6 +65,7 @@ export default defineConfig({
         'editor-shortcut-panel': resolve(__dirname, 'editor-shortcut-panel.html'),
         'shortcut-panel': resolve(__dirname, 'shortcut-panel.html'),
         'chest-panel': resolve(__dirname, 'chest-panel.html'),
+        'wearing-panel': resolve(__dirname, 'wearing-panel.html'),
         'panels': resolve(__dirname, 'panels.html'),
       },
     },

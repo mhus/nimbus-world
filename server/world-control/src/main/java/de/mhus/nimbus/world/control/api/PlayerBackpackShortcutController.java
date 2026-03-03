@@ -180,31 +180,139 @@ public class PlayerBackpackShortcutController extends BaseEditorController {
     }
 
     /**
-     * Update player shortcuts.
+     * Assign a backpack item to a shortcut slot. Validates the item exists in the backpack
+     * and builds the ShortcutDefinition server-side.
      */
-    @PutMapping
-    @Operation(summary = "Update player shortcuts")
+    @PostMapping("/assign")
+    @Operation(summary = "Assign backpack item to shortcut slot")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Shortcuts updated"),
+            @ApiResponse(responseCode = "200", description = "Shortcut assigned"),
             @ApiResponse(responseCode = "400", description = "Invalid request"),
-            @ApiResponse(responseCode = "404", description = "Character not found")
+            @ApiResponse(responseCode = "404", description = "Character or item not found")
     })
-    public ResponseEntity<?> updateShortcuts(
-            @RequestBody UpdateShortcutsRequest body,
+    public ResponseEntity<?> assignShortcut(
+            @RequestBody AssignShortcutRequest body,
             HttpServletRequest request) {
 
         String worldId = (String) request.getAttribute(AccessFilterBase.ATTR_WORLD_ID);
         String userId = (String) request.getAttribute(AccessFilterBase.ATTR_USER_ID);
         String characterId = (String) request.getAttribute(AccessFilterBase.ATTR_CHARACTER_ID);
 
-        log.debug("PUT player shortcuts: worldId={}, userId={}, characterId={}", worldId, userId, characterId);
+        log.debug("POST assign shortcut: worldId={}, userId={}, characterId={}, slotKey={}, itemId={}",
+                worldId, userId, characterId, body != null ? body.slotKey() : null, body != null ? body.itemId() : null);
 
         if (Strings.isBlank(worldId) || Strings.isBlank(userId) || Strings.isBlank(characterId)) {
             return bad("Not authenticated");
         }
 
-        if (body == null || body.shortcuts() == null) {
-            return bad("shortcuts required");
+        if (body == null || Strings.isBlank(body.slotKey()) || Strings.isBlank(body.itemId())) {
+            return bad("slotKey and itemId required");
+        }
+
+        var parsedWorldId = WorldId.of(worldId).orElse(null);
+        if (parsedWorldId == null) {
+            return bad("Invalid worldId format");
+        }
+
+        var character = findCharacter(worldId, userId, characterId);
+        if (character == null) {
+            return notFound("Character not found");
+        }
+
+        // Validate item exists in backpack
+        PlayerBackpack backpack = character.getBackpack();
+        Map<String, Integer> itemIds = backpack != null ? backpack.getItemIds() : null;
+        if (itemIds == null || !itemIds.containsKey(body.itemId())) {
+            return bad("Item not in backpack");
+        }
+
+        // Enrich item to build ShortcutDefinition server-side
+        String texture = null;
+        String name = body.itemId();
+        String itemType = null;
+
+        Optional<WItem> itemOpt = wItemService.findByItemId(parsedWorldId, body.itemId());
+        if (itemOpt.isPresent()) {
+            Item publicData = itemOpt.get().getPublicData();
+            if (publicData != null) {
+                itemType = publicData.getItemType();
+                if (publicData.getModifier() != null) {
+                    texture = publicData.getModifier().getTexture();
+                }
+                if (!Strings.isBlank(publicData.getName())) {
+                    name = publicData.getName();
+                }
+            }
+        }
+
+        if (!Strings.isBlank(itemType)) {
+            Optional<WItemType> typeOpt = wItemTypeService.findByItemType(parsedWorldId, itemType);
+            if (typeOpt.isPresent()) {
+                ItemType typeData = typeOpt.get().getPublicData();
+                if (typeData != null) {
+                    if (texture == null && typeData.getModifier() != null) {
+                        texture = typeData.getModifier().getTexture();
+                    }
+                    if (body.itemId().equals(name) && !Strings.isBlank(typeData.getTitle())) {
+                        name = typeData.getTitle();
+                    }
+                }
+            }
+        }
+
+        // Build ShortcutDefinition
+        ShortcutDefinition shortcut = new ShortcutDefinition();
+        shortcut.setType("use");
+        shortcut.setItemId(body.itemId());
+        shortcut.setName(name);
+        shortcut.setIconPath(texture);
+        shortcut.setWait(0);
+
+        // Save
+        PlayerInfo playerInfo = character.getPublicData();
+        if (playerInfo == null) {
+            playerInfo = new PlayerInfo();
+        }
+        Map<String, ShortcutDefinition> shortcuts = playerInfo.getShortcuts();
+        if (shortcuts == null) {
+            shortcuts = new LinkedHashMap<>();
+        }
+        shortcuts.put(body.slotKey(), shortcut);
+        playerInfo.setShortcuts(shortcuts);
+        character.setPublicData(playerInfo);
+        characterService.updateCharater(character);
+
+        log.info("Assigned shortcut: userId={}, characterId={}, slot={}, itemId={}", userId, characterId, body.slotKey(), body.itemId());
+        return ResponseEntity.ok(Map.of("success", true));
+    }
+
+    /**
+     * Clear a shortcut slot.
+     */
+    @PostMapping("/clear")
+    @Operation(summary = "Clear a shortcut slot")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Shortcut cleared"),
+            @ApiResponse(responseCode = "400", description = "Invalid request"),
+            @ApiResponse(responseCode = "404", description = "Character not found")
+    })
+    public ResponseEntity<?> clearShortcut(
+            @RequestBody ClearShortcutRequest body,
+            HttpServletRequest request) {
+
+        String worldId = (String) request.getAttribute(AccessFilterBase.ATTR_WORLD_ID);
+        String userId = (String) request.getAttribute(AccessFilterBase.ATTR_USER_ID);
+        String characterId = (String) request.getAttribute(AccessFilterBase.ATTR_CHARACTER_ID);
+
+        log.debug("POST clear shortcut: worldId={}, userId={}, characterId={}, slotKey={}",
+                worldId, userId, characterId, body != null ? body.slotKey() : null);
+
+        if (Strings.isBlank(worldId) || Strings.isBlank(userId) || Strings.isBlank(characterId)) {
+            return bad("Not authenticated");
+        }
+
+        if (body == null || Strings.isBlank(body.slotKey())) {
+            return bad("slotKey required");
         }
 
         var character = findCharacter(worldId, userId, characterId);
@@ -213,18 +321,14 @@ public class PlayerBackpackShortcutController extends BaseEditorController {
         }
 
         PlayerInfo playerInfo = character.getPublicData();
-        if (playerInfo == null) {
-            playerInfo = new PlayerInfo();
+        if (playerInfo != null && playerInfo.getShortcuts() != null) {
+            playerInfo.getShortcuts().remove(body.slotKey());
+            character.setPublicData(playerInfo);
+            characterService.updateCharater(character);
         }
 
-        playerInfo.setShortcuts(body.shortcuts());
-        character.setPublicData(playerInfo);
-        characterService.updateCharater(character);
-
-        log.info("Updated player shortcuts: userId={}, characterId={}", userId, characterId);
-        return ResponseEntity.ok(Map.of(
-                "shortcuts", playerInfo.getShortcuts() != null ? playerInfo.getShortcuts() : Map.of()
-        ));
+        log.info("Cleared shortcut: userId={}, characterId={}, slot={}", userId, characterId, body.slotKey());
+        return ResponseEntity.ok(Map.of("success", true));
     }
 
     private RCharacter findCharacter(String worldId, String userId, String characterId) {
@@ -237,5 +341,6 @@ public class PlayerBackpackShortcutController extends BaseEditorController {
         return characterOpt.orElse(null);
     }
 
-    record UpdateShortcutsRequest(Map<String, ShortcutDefinition> shortcuts) {}
+    record AssignShortcutRequest(String slotKey, String itemId) {}
+    record ClearShortcutRequest(String slotKey) {}
 }

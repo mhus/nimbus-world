@@ -45,15 +45,16 @@ public class EEntityController extends BaseEditorController {
             String worldId,
             String modelId,
             boolean enabled,
+            Map<String, String> server,
             Instant createdAt,
             Instant updatedAt
     ) {
     }
 
-    public record CreateEntityRequest(String entityId, Entity publicData, String modelId) {
+    public record CreateEntityRequest(String entityId, Entity publicData, String modelId, Map<String, String> server) {
     }
 
-    public record UpdateEntityRequest(Entity publicData, String modelId, Boolean enabled) {
+    public record UpdateEntityRequest(Entity publicData, String modelId, Boolean enabled, Map<String, String> server) {
     }
 
     /**
@@ -86,8 +87,7 @@ public class EEntityController extends BaseEditorController {
         }
 
         log.debug("Returning entity: entityId={}", entityId);
-        // Return publicData only (match test_server format)
-        return ResponseEntity.ok(opt.get().getPublicData());
+        return ResponseEntity.ok(toDto(opt.get()));
     }
 
     /**
@@ -120,17 +120,16 @@ public class EEntityController extends BaseEditorController {
         int totalCount = all.size();
 
         // Apply pagination
-        List<Entity> publicDataList = all.stream()
+        List<EntityDto> dtoList = all.stream()
                 .skip(offset)
                 .limit(limit)
-                .map(WEntity::getPublicData)
+                .map(this::toDto)
                 .collect(Collectors.toList());
 
-        log.debug("Returning {} entities (total: {})", publicDataList.size(), totalCount);
+        log.debug("Returning {} entities (total: {})", dtoList.size(), totalCount);
 
-        // TypeScript compatible format (match test_server response)
         return ResponseEntity.ok(Map.of(
-                "entities", publicDataList,
+                "entities", dtoList,
                 "count", totalCount,
                 "limit", limit,
                 "offset", offset
@@ -177,6 +176,10 @@ public class EEntityController extends BaseEditorController {
                     request.publicData(),
                     request.modelId()
             );
+            if (request.server() != null) {
+                saved.setServer(request.server());
+                entityService.update(wid, request.entityId(), entity -> entity.setServer(request.server()));
+            }
 
             log.info("Created entity: entityId={}", request.entityId());
             return ResponseEntity.status(HttpStatus.CREATED).body(toDto(saved));
@@ -227,6 +230,9 @@ public class EEntityController extends BaseEditorController {
             }
             if (request.enabled() != null) {
                 entity.setEnabled(request.enabled());
+            }
+            if (request.server() != null) {
+                entity.setServer(request.server());
             }
         });
 
@@ -281,6 +287,7 @@ public class EEntityController extends BaseEditorController {
                 entity.getWorldId(),
                 entity.getModelId(),
                 entity.isEnabled(),
+                entity.getServer(),
                 entity.getCreatedAt(),
                 entity.getUpdatedAt()
         );

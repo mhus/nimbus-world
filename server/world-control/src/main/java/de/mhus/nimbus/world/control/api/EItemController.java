@@ -61,7 +61,8 @@ public class EItemController extends BaseEditorController {
             String name,
             String description,
             de.mhus.nimbus.generated.types.ItemModifier modifier,
-            java.util.Map<String, Object> parameters
+            java.util.Map<String, Object> parameters,
+            java.util.Map<String, String> server
     ) {
     }
 
@@ -70,7 +71,8 @@ public class EItemController extends BaseEditorController {
             String title,
             String description,
             de.mhus.nimbus.generated.types.ItemModifier modifier,
-            java.util.Map<String, Object> parameters
+            java.util.Map<String, Object> parameters,
+            java.util.Map<String, String> server
     ) {
     }
 
@@ -197,6 +199,10 @@ public class EItemController extends BaseEditorController {
                     .build();
 
             WItem saved = itemService.create(wid, item);
+            if (request.server() != null) {
+                saved.setServer(request.server());
+                itemService.saveEntity(saved);
+            }
             log.info("Created item: itemId={}", saved.getItemId());
 
             // Return full WItem entity with metadata
@@ -259,9 +265,15 @@ public class EItemController extends BaseEditorController {
                 return notFound("item disappeared during update");
             }
 
+            WItem result = updated.get();
+            if (request.server() != null) {
+                result.setServer(request.server());
+                result = itemService.saveEntity(result);
+            }
+
             log.info("Updated item: itemId={}", itemId);
             // Return full WItem entity with metadata
-            return ResponseEntity.ok(updated.get());
+            return ResponseEntity.ok(result);
         } catch (IllegalArgumentException e) {
             log.warn("Validation error updating item: {}", e.getMessage());
             return bad(e.getMessage());

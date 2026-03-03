@@ -198,15 +198,16 @@ const loadEntities = async () => {
       offset.value,
       pageSize.value
     );
-    entities.value = response.entities.map((publicData, index) => ({
-      entityId: publicData.id || `entity-${offset.value + index}`,
-      publicData,
-      worldId: currentWorldId.value!,
+    entities.value = response.entities.map((dto: any) => ({
+      entityId: dto.entityId || dto.publicData?.id || `entity-${offset.value}`,
+      publicData: dto.publicData || dto,
+      worldId: dto.worldId || currentWorldId.value!,
       chunk: '',
-      modelId: publicData.model || '',
-      enabled: true,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      modelId: dto.modelId || dto.publicData?.model || '',
+      enabled: dto.enabled !== undefined ? dto.enabled : true,
+      server: dto.server || null,
+      createdAt: dto.createdAt || new Date().toISOString(),
+      updatedAt: dto.updatedAt || new Date().toISOString(),
     }));
     totalCount.value = response.count;
     console.log('[EntityList] Loaded entities:', entities.value.length, 'total:', totalCount.value);

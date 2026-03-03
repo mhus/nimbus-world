@@ -204,6 +204,27 @@
             </label>
           </div>
 
+          <!-- Wearable Slots -->
+          <div class="divider">Wearable Slots</div>
+          <div class="space-y-2">
+            <label class="label">
+              <span class="label-text font-semibold">Allowed wearing slots (default for items of this type)</span>
+              <span class="label-text-alt text-xs">None selected = all slots allowed</span>
+            </label>
+            <div class="flex flex-wrap gap-2">
+              <button
+                v-for="slot in ALL_WEARABLE_SLOTS"
+                :key="slot"
+                type="button"
+                class="btn btn-sm"
+                :class="isWearableSlotActive(slot) ? 'btn-primary' : 'btn-outline'"
+                @click="toggleWearableSlot(slot)"
+              >
+                {{ slot }}
+              </button>
+            </div>
+          </div>
+
           <!-- Action Buttons -->
           <div class="flex gap-2 justify-end pt-4">
             <button
@@ -314,6 +335,28 @@ const isValid = computed(() => {
     /^[a-zA-Z0-9_]+$/.test(itemType.value.type)
   );
 });
+
+const ALL_WEARABLE_SLOTS = ['HEAD', 'NECK', 'BODY', 'HANDS', 'LEGS', 'FEET', 'LEFT_RING', 'RIGHT_RING'] as const;
+
+const isWearableSlotActive = (slot: string): boolean => {
+  const slots = itemType.value?.parameters?.wearableSlots;
+  if (!Array.isArray(slots)) return false;
+  return slots.includes(slot);
+};
+
+const toggleWearableSlot = (slot: string) => {
+  if (!itemType.value.parameters) itemType.value.parameters = {};
+  const slots: string[] = Array.isArray(itemType.value.parameters.wearableSlots)
+    ? [...itemType.value.parameters.wearableSlots]
+    : [];
+  const idx = slots.indexOf(slot);
+  if (idx >= 0) {
+    slots.splice(idx, 1);
+  } else {
+    slots.push(slot);
+  }
+  itemType.value.parameters.wearableSlots = slots.length > 0 ? slots : undefined;
+};
 
 async function loadItemType() {
   if (props.isNew) {

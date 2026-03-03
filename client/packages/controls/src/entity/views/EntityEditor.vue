@@ -201,6 +201,53 @@
           </div>
         </div>
       </div>
+
+      <!-- Parameters Card -->
+      <div class="card bg-base-100 shadow-xl">
+        <div class="card-body">
+          <div class="flex items-center justify-between">
+            <h3 class="card-title">Server Parameters</h3>
+            <button type="button" class="btn btn-ghost btn-sm" @click="addParameter">
+              <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+              </svg>
+              Add
+            </button>
+          </div>
+          <div v-if="parameterEntries.length === 0" class="text-sm text-base-content/50 py-2">
+            No server parameters defined
+          </div>
+          <div v-else class="space-y-2">
+            <div
+              v-for="(entry, index) in parameterEntries"
+              :key="index"
+              class="flex items-center gap-2"
+            >
+              <input
+                v-model="entry.key"
+                type="text"
+                placeholder="Key"
+                class="input input-bordered input-sm flex-1"
+              />
+              <input
+                v-model="entry.value"
+                type="text"
+                placeholder="Value"
+                class="input input-bordered input-sm flex-[2]"
+              />
+              <button
+                type="button"
+                class="btn btn-ghost btn-sm btn-square text-error"
+                @click="removeParameter(index)"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Success Message -->
@@ -252,6 +299,33 @@ const formData = ref({
 
 const entityData = ref<any>(null);
 const showJsonEditor = ref(false);
+const parameterEntries = ref<{ key: string; value: string }[]>([]);
+
+const addParameter = () => {
+  parameterEntries.value.push({ key: '', value: '' });
+};
+
+const removeParameter = (index: number) => {
+  parameterEntries.value.splice(index, 1);
+};
+
+const parametersToMap = (): Record<string, string> => {
+  const map: Record<string, string> = {};
+  for (const entry of parameterEntries.value) {
+    if (entry.key.trim()) {
+      map[entry.key.trim()] = entry.value;
+    }
+  }
+  return map;
+};
+
+const loadParametersFromMap = (params: Record<string, string> | null | undefined) => {
+  if (!params || Object.keys(params).length === 0) {
+    parameterEntries.value = [];
+    return;
+  }
+  parameterEntries.value = Object.entries(params).map(([key, value]) => ({ key, value: value ?? '' }));
+};
 
 const loadEntity = () => {
   if (isNew.value) {
@@ -274,6 +348,7 @@ const loadEntity = () => {
       notifyOnCollision: false,
       healthMax: 100,
     };
+    parameterEntries.value = [];
     return;
   }
 
@@ -284,6 +359,7 @@ const loadEntity = () => {
     enabled: entity.enabled,
   };
   entityData.value = entity.publicData || {};
+  loadParametersFromMap(entity.server);
 };
 
 const handleSave = async () => {
@@ -297,11 +373,13 @@ const handleSave = async () => {
   successMessage.value = null;
 
   try {
+    const params = parametersToMap();
     if (isNew.value) {
       await entityService.createEntity(currentWorldId.value, {
         entityId: formData.value.entityId,
         publicData: entityData.value,
         modelId: formData.value.modelId,
+        server: params,
       });
       successMessage.value = 'Entity created successfully';
     } else {
@@ -309,6 +387,7 @@ const handleSave = async () => {
         modelId: formData.value.modelId,
         enabled: formData.value.enabled,
         publicData: entityData.value,
+        server: params,
       });
       successMessage.value = 'Entity saved successfully';
     }

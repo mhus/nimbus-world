@@ -16,6 +16,7 @@ import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.Instant;
+import java.util.Map;
 
 /**
  * MongoDB Entity for Items (inventory/template).
@@ -55,6 +56,13 @@ public class WItem implements Identifiable {
      */
     @TypeScript(import_ = "Item", importPath = "../../types")
     private Item publicData;
+
+    /**
+     * Server-side parameters for gameplay configuration.
+     * Not sent to clients.
+     */
+    @TypeScript(ignore = true)
+    private Map<String, String> server;
 
     private Instant createdAt;
     private Instant updatedAt;

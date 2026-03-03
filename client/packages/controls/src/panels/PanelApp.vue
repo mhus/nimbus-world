@@ -89,6 +89,13 @@ const panels = ref<Panel[]>([
     description: 'Transfer items between chest and backpack',
     url: './chest-panel.html',
     color: '#EF4444' // red
+  },
+  {
+    id: 'wearing-panel',
+    name: 'Wearing Panel',
+    description: 'Equip items to wearing slots',
+    url: './wearing-panel.html',
+    color: '#10B981' // emerald
   }
 ]);
 

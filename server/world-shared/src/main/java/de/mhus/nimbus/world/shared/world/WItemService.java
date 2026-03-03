@@ -8,7 +8,9 @@ import org.apache.logging.log4j.util.Strings;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -188,6 +190,15 @@ public class WItemService {
     }
 
     /**
+     * Save a WItem entity directly (e.g. after modifying server-side fields).
+     */
+    @Transactional
+    public WItem saveEntity(WItem item) {
+        item.touchUpdate();
+        return repository.save(item);
+    }
+
+    /**
      * Save all items (batch operation for import).
      */
     @Transactional
@@ -213,6 +224,34 @@ public class WItemService {
         }
 
         return all;
+    }
+
+    /**
+     * Update parameters for all items matching a specific itemType.
+     * Merges the given parameters into each item's existing parameters.
+     *
+     * @return number of updated items
+     */
+    @Transactional
+    public int updateParametersByItemType(WorldId worldId, String itemType, Map<String, Object> parameters) {
+        var regionWorldId = worldId.toRegionCollection();
+        if (!regionWorldId.isRegionCollection()) {
+            throw new IllegalArgumentException("worldId must be a region collection: " + worldId);
+        }
+        List<WItem> items = repository.findByWorldIdAndItemType(regionWorldId.getId(), itemType);
+        for (WItem item : items) {
+            Item publicData = item.getPublicData();
+            if (publicData == null) continue;
+            if (publicData.getParameters() == null) {
+                publicData.setParameters(new HashMap<>(parameters));
+            } else {
+                publicData.getParameters().putAll(parameters);
+            }
+            item.touchUpdate();
+            repository.save(item);
+        }
+        log.debug("Updated parameters for {} items with itemType={}", items.size(), itemType);
+        return items.size();
     }
 
     private List<WItem> filterByQuery(List<WItem> items, String query) {

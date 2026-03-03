@@ -7,6 +7,7 @@ export interface EntityData {
   chunk: string;
   modelId: string;
   enabled: boolean;
+  server: Record<string, string> | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -22,12 +23,14 @@ export interface CreateEntityRequest {
   entityId: string;
   publicData: any;
   modelId: string;
+  server?: Record<string, string>;
 }
 
 export interface UpdateEntityRequest {
   publicData?: any;
   modelId?: string;
   enabled?: boolean;
+  server?: Record<string, string>;
 }
 
 class EntityService {
