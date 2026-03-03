@@ -312,7 +312,7 @@ export function checkUnderwaterState(
     entity.inWater = false;
   }
 
-  // Notify CameraService on state change
+  // Notify CameraService and server on state change
   if (wasInWater !== entity.inWater) {
     const cameraService = appContext.services.camera;
     if (cameraService) {
@@ -321,6 +321,11 @@ export function checkUnderwaterState(
         entityId: entity.entityId,
         inWater: entity.inWater,
       });
+    }
+    const networkService = appContext.services.network;
+    if (networkService) {
+      const action = entity.inWater ? 'underwater' : 'abovewater';
+      networkService.sendSimpleInteraction(action, '');
     }
     return true;
   }

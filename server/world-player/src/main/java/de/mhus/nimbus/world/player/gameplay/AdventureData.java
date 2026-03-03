@@ -31,6 +31,9 @@ public class AdventureData extends GameplayData {
     /** Seconds since last combat action (for adrenaline decay) */
     private double combatIdleTimer;
 
+    /** Whether player is currently underwater (transient, not persisted) */
+    private transient boolean underwater;
+
     /**
      * Initialize with default vital values and combat stats.
      */
@@ -45,6 +48,7 @@ public class AdventureData extends GameplayData {
         vitals.put("stamina",   VitalValue.of("stamina",   100, 2.0,   "#44CC44", "Stamina",   3));
         vitals.put("mana",      VitalValue.of("mana",      100, 1.0,   "#AA44FF", "Mana",      4));
         vitals.put("adrenaline",VitalValue.of("adrenaline",100, 0,     "#FF8800", "Adrenaline",5, 0.1));
+        vitals.put("air",       VitalValue.of("air",       100, 0,     "#88CCFF", "Air",       6));
 
         combatStats.put("physical.damage",      CombatStat.of("physical.damage",      5));
         combatStats.put("physical.accuracy",    CombatStat.of("physical.accuracy",    0.7));

@@ -45,7 +45,7 @@ public class SimpleInteractionHandler implements MessageHandler {
         String action = data.has("ac") ? data.get("ac").asText() : null;
         String shortcutKey = data.has("sc") ? data.get("sc").asText() : null;
 
-        if (action == null || shortcutKey == null) {
+        if (action == null) {
             log.warn("Simple interaction without action or shortcutKey");
             return;
         }

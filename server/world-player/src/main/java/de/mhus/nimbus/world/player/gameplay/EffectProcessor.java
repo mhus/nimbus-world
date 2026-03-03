@@ -32,6 +32,9 @@ public class EffectProcessor {
     private static final double THIRST_HIGH_STAMINA_REGEN_FACTOR = 0.5;
     private static final double ADRENALINE_COMBAT_IDLE_THRESHOLD = 5.0;
     private static final double ADRENALINE_DECAY_RATE = -0.5;
+    private static final double AIR_DEGEN_RATE = -5.0;
+    private static final double AIR_REGEN_RATE = 10.0;
+    private static final double AIR_DEPLETED_HEALTH_DEGEN = -10.0;
 
     /**
      * Process one tick of effects on the adventure data.
@@ -61,7 +64,10 @@ public class EffectProcessor {
         // 4. Apply hunger/thirst penalties on regen rates
         applyVitalPenalties(data);
 
-        // 5. Apply adrenaline combat idle decay
+        // 5. Apply underwater air depletion
+        applyUnderwaterAir(data);
+
+        // 6. Apply adrenaline combat idle decay
         applyAdrenalineDecay(data, deltaSeconds);
 
         // 6. Recalculate effective values
@@ -193,6 +199,28 @@ public class EffectProcessor {
                     stamina.setEffectiveRegenRate(currentRegen * THIRST_HIGH_STAMINA_REGEN_FACTOR);
                 }
             }
+        }
+    }
+
+    /**
+     * Apply underwater air depletion. When underwater, air degenerates.
+     * When air is depleted, health takes damage.
+     */
+    private void applyUnderwaterAir(AdventureData data) {
+        var air = data.getVital("air");
+        if (air == null) return;
+
+        if (data.isUnderwater()) {
+            air.setEffectiveRegenRate(AIR_DEGEN_RATE);
+            if (air.isDepleted()) {
+                var health = data.getVital("health");
+                if (health != null) {
+                    health.setEffectiveRegenRate(health.getEffectiveRegenRate() + AIR_DEPLETED_HEALTH_DEGEN);
+                }
+            }
+        } else if (!air.isFull()) {
+            // Above water: air regenerates
+            air.setEffectiveRegenRate(AIR_REGEN_RATE);
         }
     }
 

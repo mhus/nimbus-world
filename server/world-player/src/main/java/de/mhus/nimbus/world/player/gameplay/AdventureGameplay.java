@@ -121,6 +121,10 @@ public class AdventureGameplay extends BasicGameplay {
                 if (vital.getSendThreshold() > 0 && vital.getPercentage() <= vital.getSendThreshold()) {
                     continue;
                 }
+                // Skip air when not underwater and full
+                if ("air".equals(vital.getType()) && !data.isUnderwater() && vital.isFull()) {
+                    continue;
+                }
                 ObjectNode vNode = objectMapper.createObjectNode();
                 vNode.put("type", vital.getType());
                 vNode.put("current", (int) Math.ceil(vital.getCurrent()));
@@ -151,6 +155,23 @@ public class AdventureGameplay extends BasicGameplay {
         }
     }
 
+    @Override
+    public void onSimpleInteraction(PlayerSession session, String action, String shortcutKey) {
+        if (!(session.getGameplayData() instanceof AdventureData data)) return;
+
+        switch (action) {
+            case "underwater" -> {
+                data.setUnderwater(true);
+                log.debug("Player {} is now underwater", session.getEntityId());
+            }
+            case "abovewater" -> {
+                data.setUnderwater(false);
+                log.debug("Player {} surfaced, air regenerating", session.getEntityId());
+            }
+            default -> super.onSimpleInteraction(session, action, shortcutKey);
+        }
+    }
+
     /**
      * Handle player death: reset vitals, notify client.
      */
@@ -178,6 +199,13 @@ public class AdventureGameplay extends BasicGameplay {
         var adrenaline = data.getVital("adrenaline");
         if (adrenaline != null) {
             adrenaline.setCurrent(0);
+        }
+
+        // Reset air and surface
+        data.setUnderwater(false);
+        var air = data.getVital("air");
+        if (air != null) {
+            air.setCurrent(air.getEffectiveMax());
         }
 
         // Notify client
