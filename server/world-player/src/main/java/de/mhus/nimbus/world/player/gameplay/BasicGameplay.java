@@ -65,6 +65,11 @@ public class BasicGameplay implements Gameplay {
     }
 
     @Override
+    public void onSessionTick(PlayerSession session, int count) {
+
+    }
+
+    @Override
     public void onSessionAuthenticated(PlayerSession session, Map<String, Object> savedGameplayData) {
 
     }

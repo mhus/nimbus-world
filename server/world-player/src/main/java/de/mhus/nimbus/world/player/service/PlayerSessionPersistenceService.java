@@ -87,6 +87,8 @@ public class PlayerSessionPersistenceService implements SessionAuthenticatedCons
                     // Increment counter
                     int count = counter.incrementAndGet();
 
+                    gameplayTick(session, count);
+
                     // Save every N ticks
                     if (count >= saveIntervalTicks) {
                         saveSessionSafely(session, "periodic");
@@ -108,6 +110,17 @@ public class PlayerSessionPersistenceService implements SessionAuthenticatedCons
         tickThreads.put(sessionId, tickThread);
 
         log.info("Started tick thread for session: {}", sessionId);
+    }
+
+    private void gameplayTick(PlayerSession session, int count) {
+        var gameplay = session.getGameplay();
+        if (gameplay != null) {
+            try {
+                gameplay.onSessionTick(session, count);
+            } catch (Exception e) {
+                log.error("Error in gameplay tick for session {}: {}", session.getSessionId(), e.getMessage(), e);
+            }
+        }
     }
 
     /**
