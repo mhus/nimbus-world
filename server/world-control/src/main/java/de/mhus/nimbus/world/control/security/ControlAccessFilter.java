@@ -118,14 +118,16 @@ public class ControlAccessFilter extends AccessFilterBase {
 
     @Override
     protected boolean isPathAllowedForRole(String requestUri, SessionTokenClaims claims) {
-        // PLAYER actors can only access /control/player/** endpoints
+        // PLAYER actors can only access /control/player/** and /control/aaa/** endpoints
+        // /control/aaa/ is needed so players can re-login (devlogin, authorize, etc.)
         if ("PLAYER".equalsIgnoreCase(claims.role())) {
-            boolean isPlayerPath = requestUri.startsWith("/control/player/");
-            if (!isPlayerPath) {
+            boolean isAllowed = requestUri.startsWith("/control/player/")
+                    || requestUri.startsWith("/control/aaa/");
+            if (!isAllowed) {
                 log.debug("PLAYER actor attempted to access non-player endpoint: userId={}, path={}",
                         claims.userId(), requestUri);
             }
-            return isPlayerPath;
+            return isAllowed;
         }
 
         // All other actors (EDITOR, ADMIN, etc.) have unrestricted access
