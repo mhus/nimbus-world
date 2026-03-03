@@ -42,7 +42,7 @@ class BiomeTypeTest {
         assertNotNull(biome.getParameters());
         assertEquals("forest", biome.getParameters().get("g_builder"));
         assertEquals("5", biome.getParameters().get("g_offset"));
-        assertEquals("forest", biome.getParameters().get("gf_flora"));
+        assertEquals("forest_mixed", biome.getParameters().get("gf_flora"));
         assertEquals("0.8", biome.getParameters().get("gf_density"));
     }
 

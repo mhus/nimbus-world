@@ -25,6 +25,7 @@ import {SplashScreenCommand} from "./SplashScreenCommand";
 import {ShowTeamCommand} from "./ShowTeamCommand";
 import {SetPlayerInfoCommand} from "./SetPlayerInfoCommand";
 import {SetShortcutCommand} from "./SetShortcutCommand";
+import {ShortcutModifiedCommand} from "./ShortcutModifiedCommand";
 import {StatusEffectCommand} from "./StatusEffectCommand";
 import {VitalsCommand} from "./VitalsCommand";
 import {OpenComponentCommand} from "./OpenComponentCommand";
@@ -195,6 +196,7 @@ export class CommandsFactory {
         commandService.registerHandler(new ShowTeamCommand(appContext));
         commandService.registerHandler(new SetPlayerInfoCommand(appContext));
         commandService.registerHandler(new SetShortcutCommand(appContext));
+        commandService.registerHandler(new ShortcutModifiedCommand(appContext));
         commandService.registerHandler(new StatusEffectCommand(appContext));
         commandService.registerHandler(new VitalsCommand(appContext));
         commandService.registerHandler(new OpenComponentCommand(appContext));

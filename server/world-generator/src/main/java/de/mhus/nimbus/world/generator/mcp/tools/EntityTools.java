@@ -2,6 +2,7 @@ package de.mhus.nimbus.world.generator.mcp.tools;
 
 import de.mhus.nimbus.generated.types.Entity;
 import de.mhus.nimbus.shared.types.WorldId;
+import de.mhus.nimbus.shared.utils.TypeUtil;
 import de.mhus.nimbus.world.generator.mcp.McpToolException;
 import de.mhus.nimbus.world.shared.world.WEntity;
 import de.mhus.nimbus.world.shared.world.WEntityService;
@@ -163,8 +164,8 @@ public class EntityTools {
             // Set additional fields via update
             entityService.update(wid, entityId, entity -> {
                 if (posX != null && posY != null && posZ != null) {
-                    entity.setPosition(new de.mhus.nimbus.generated.types.Vector3(posX.floatValue(), posY.floatValue(), posZ.floatValue()));
-                    entity.setMiddlePoint(new de.mhus.nimbus.generated.types.Vector3(posX.floatValue(), posY.floatValue(), posZ.floatValue()));
+                    entity.setPosition(TypeUtil.vector3(posX.floatValue(), posY.floatValue(), posZ.floatValue()));
+                    entity.setMiddlePoint(TypeUtil.vector3(posX.floatValue(), posY.floatValue(), posZ.floatValue()));
                 }
                 if (radius != null) entity.setRadius(radius);
                 if (speed != null) entity.setSpeed(speed);
@@ -231,7 +232,7 @@ public class EntityTools {
 
             if (enabled != null) entity.setEnabled(enabled);
             if (posX != null && posY != null && posZ != null) {
-                entity.setPosition(new de.mhus.nimbus.generated.types.Vector3(posX.floatValue(), posY.floatValue(), posZ.floatValue()));
+                entity.setPosition(TypeUtil.vector3(posX.floatValue(), posY.floatValue(), posZ.floatValue()));
             }
             if (radius != null) entity.setRadius(radius);
             if (speed != null) entity.setSpeed(speed);

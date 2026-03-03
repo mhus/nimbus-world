@@ -37,7 +37,7 @@ export function itemToBlock(item: ItemBlockRef): Block {
         }
     },
     metadata: {
-      id: item.id
+      id: item.name
     },
   };
 }
