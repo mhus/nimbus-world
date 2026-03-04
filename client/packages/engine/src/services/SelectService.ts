@@ -310,9 +310,10 @@ export class SelectService {
         return false;
 
       case SelectMode.INTERACTIVE:
-        // Check currentModifier.interactive (from BlockType or Block modifier)
+        // Check block.metadata.interactive or currentModifier.interactive
         if (isAir) return false;
-        return clientBlock.currentModifier?.interactive === true;
+        return clientBlock.block?.metadata?.interactive === true
+            || clientBlock.currentModifier?.interactive === true;
 
       case SelectMode.BLOCK:
         // Any solid block
