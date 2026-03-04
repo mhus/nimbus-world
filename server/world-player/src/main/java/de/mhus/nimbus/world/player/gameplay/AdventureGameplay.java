@@ -3,8 +3,13 @@ package de.mhus.nimbus.world.player.gameplay;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import de.mhus.nimbus.generated.configs.PlayerBackpack;
+import de.mhus.nimbus.generated.types.PlayerInfo;
+import de.mhus.nimbus.generated.types.ShortcutDefinition;
+import de.mhus.nimbus.shared.types.PlayerId;
 import de.mhus.nimbus.world.player.service.ClientService;
 import de.mhus.nimbus.world.player.session.PlayerSession;
+import de.mhus.nimbus.world.shared.world.WItem;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -43,6 +48,10 @@ public class AdventureGameplay extends BasicGameplay {
         }
 
         session.setGameplayData(data);
+
+        // Load initial caches
+        refreshInventoryCache(session, data);
+        refreshSkillsCache(session, data);
 
         // Send initial vitals to client
         sendVitalsUpdate(session, data);
@@ -108,6 +117,135 @@ public class AdventureGameplay extends BasicGameplay {
         map.put("combatIdleTimer", data.getCombatIdleTimer());
 
         return map;
+    }
+
+    @Override
+    public void onBackpackModified(PlayerSession session) {
+        if (session.getGameplayData() instanceof AdventureData data) {
+            refreshInventoryCache(session, data);
+        }
+    }
+
+    @Override
+    public void onShortcutModified(PlayerSession session) {
+        if (session.getGameplayData() instanceof AdventureData data) {
+            refreshInventoryCache(session, data);
+        }
+    }
+
+    @Override
+    public void onWearingModified(PlayerSession session) {
+        if (session.getGameplayData() instanceof AdventureData data) {
+            refreshInventoryCache(session, data);
+        }
+    }
+
+    @Override
+    public void onSkillsModified(PlayerSession session) {
+        if (session.getGameplayData() instanceof AdventureData data) {
+            refreshSkillsCache(session, data);
+        }
+    }
+
+    /**
+     * Reload character data from DB and refresh inventory cache in AdventureData.
+     * Loads all items referenced by backpack, wearings, and shortcuts.
+     */
+    private void refreshInventoryCache(PlayerSession session, AdventureData data) {
+        try {
+            String entityId = session.getEntityId();
+            if (entityId == null || session.getWorldId() == null) return;
+
+            PlayerId playerId = PlayerId.of(entityId).orElse(null);
+            if (playerId == null) return;
+
+            String regionId = session.getWorldId().getRegionId();
+            var freshData = playerService.getPlayer(playerId, session.getClientType(), regionId);
+            if (freshData.isEmpty()) return;
+
+            // Update session with fresh player data
+            session.setPlayer(freshData.get());
+
+            var character = freshData.get().character();
+            PlayerBackpack backpack = character.getBackpack();
+            PlayerInfo playerInfo = character.getPublicData();
+
+            // Cache raw data
+            data.setCachedBackpack(backpack != null ? backpack : new PlayerBackpack());
+            data.setCachedShortcuts(playerInfo != null && playerInfo.getShortcuts() != null
+                    ? playerInfo.getShortcuts() : Map.of());
+
+            // Reuse already cached items (items don't change during a session)
+            Map<String, WItem> existingItems = data.getCachedItems();
+            Map<String, WItem> items = existingItems != null ? new HashMap<>(existingItems) : new HashMap<>();
+            var worldId = session.getWorldId();
+
+            // Backpack items
+            if (backpack != null && backpack.getItemIds() != null) {
+                for (String itemId : backpack.getItemIds().keySet()) {
+                    if (!items.containsKey(itemId)) {
+                        itemService.findByItemId(worldId, itemId).ifPresent(item -> items.put(itemId, item));
+                    }
+                }
+            }
+
+            // Wearing items
+            if (backpack != null && backpack.getWearingItemIds() != null) {
+                for (String itemId : backpack.getWearingItemIds().values()) {
+                    if (itemId != null && !items.containsKey(itemId)) {
+                        itemService.findByItemId(worldId, itemId).ifPresent(item -> items.put(itemId, item));
+                    }
+                }
+            }
+
+            // Shortcut-referenced items
+            if (playerInfo != null && playerInfo.getShortcuts() != null) {
+                for (ShortcutDefinition shortcut : playerInfo.getShortcuts().values()) {
+                    if (shortcut != null && shortcut.getItemId() != null && !items.containsKey(shortcut.getItemId())) {
+                        itemService.findByItemId(worldId, shortcut.getItemId())
+                                .ifPresent(item -> items.put(shortcut.getItemId(), item));
+                    }
+                }
+            }
+
+            data.setCachedItems(items);
+
+            log.debug("Refreshed inventory cache for player {}: backpack={}, wearings={}, shortcuts={}, items={}",
+                    entityId,
+                    backpack != null && backpack.getItemIds() != null ? backpack.getItemIds().size() : 0,
+                    backpack != null && backpack.getWearingItemIds() != null ? backpack.getWearingItemIds().size() : 0,
+                    data.getCachedShortcuts().size(),
+                    items.size());
+        } catch (Exception e) {
+            log.error("Failed to refresh inventory cache for session {}: {}",
+                    session.getSessionId(), e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Reload skills from RCharacter and cache in AdventureData.
+     */
+    private void refreshSkillsCache(PlayerSession session, AdventureData data) {
+        try {
+            String entityId = session.getEntityId();
+            if (entityId == null || session.getWorldId() == null) return;
+
+            PlayerId playerId = PlayerId.of(entityId).orElse(null);
+            if (playerId == null) return;
+
+            String regionId = session.getWorldId().getRegionId();
+            var characterOpt = characterService.getCharacter(
+                    playerId.getUserId(), regionId, playerId.getCharacterId());
+            if (characterOpt.isEmpty()) return;
+
+            data.setCachedSkills(new HashMap<>(characterOpt.get().getSkills()));
+
+            log.debug("Refreshed skills cache for player {}: skills={}",
+                    entityId, data.getCachedSkills().size());
+        } catch (Exception e) {
+            log.error("Failed to refresh skills cache for session {}: {}",
+                    session.getSessionId(), e.getMessage(), e);
+        }
     }
 
     /**

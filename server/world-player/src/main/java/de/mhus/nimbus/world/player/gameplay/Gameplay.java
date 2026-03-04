@@ -39,4 +39,6 @@ public interface Gameplay {
     void onWearingModified(PlayerSession session);
 
     void onBackpackModified(PlayerSession session);
+
+    void onSkillsModified(PlayerSession session);
 }

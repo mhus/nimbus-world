@@ -1,18 +1,26 @@
 package de.mhus.nimbus.world.player.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import de.mhus.nimbus.generated.types.ShortcutDefinition;
+import de.mhus.nimbus.shared.types.PlayerId;
 import de.mhus.nimbus.world.player.gameplay.AdventureGameplay;
 import de.mhus.nimbus.world.player.gameplay.EditorGameplay;
 import de.mhus.nimbus.world.player.gameplay.Gameplay;
 import de.mhus.nimbus.world.player.session.PlayerSession;
 import de.mhus.nimbus.world.player.session.SessionAuthenticatedConsumer;
+import de.mhus.nimbus.world.shared.region.RCharacter;
+import de.mhus.nimbus.world.shared.region.RCharacterService;
 import de.mhus.nimbus.world.shared.session.WPlayerSessionService;
+import de.mhus.nimbus.world.shared.world.WItem;
+import de.mhus.nimbus.world.shared.world.WItemService;
 import de.mhus.nimbus.world.shared.world.WWorld;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.logging.log4j.util.Strings;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -25,6 +33,8 @@ public class GameplayService implements SessionAuthenticatedConsumer {
     private final List<Gameplay> gameplays;
     private final WPlayerSessionService playerSessionService;
     private final ClientService clientService;
+    private final RCharacterService characterService;
+    private final WItemService itemService;
     private Map<String, Gameplay> gameplayMap;
 
     @PostConstruct
@@ -146,6 +156,108 @@ public class GameplayService implements SessionAuthenticatedConsumer {
         }
         clientService.sendCommand(session, "ShortcutModified", List.of());
         gameplay.onWearingModified(session);
+    }
+
+    /**
+     * Called when a player's skills have been modified.
+     */
+    public void onSkillsModified(PlayerSession session) {
+        log.info("Skills modified for player {}", GameplayUtil.toString(session.getPlayer()));
+        var gameplay = session.getGameplay();
+        if (gameplay == null) {
+            log.warn("No gameplay set for session {}, cannot handle skills modification", session.getPlayer());
+            return;
+        }
+        gameplay.onSkillsModified(session);
+    }
+
+    /**
+     * Reduce an item's quantity in the player's backpack.
+     * If the item has server parameter 'immortal' = true, nothing is consumed and true is returned.
+     * If insufficient quantity is available, nothing is consumed and false is returned (no events).
+     * On successful reduction (or removal at 0), fires onBackpackModified and optionally onShortcutModified.
+     *
+     * @param session  The player session
+     * @param itemId   The item to consume
+     * @param quantity The amount to reduce
+     * @return true if the item was consumed (or immortal), false if insufficient quantity
+     */
+    public boolean reduceItem(PlayerSession session, String itemId, int quantity) {
+        if (session.getWorldId() == null || quantity <= 0) return false;
+
+        String entityId = session.getEntityId();
+        if (entityId == null) return false;
+
+        PlayerId playerId = PlayerId.of(entityId).orElse(null);
+        if (playerId == null) return false;
+
+        String regionId = session.getWorldId().getRegionId();
+
+        // Check if item is immortal
+        var wItemOpt = itemService.findByItemId(session.getWorldId(), itemId);
+        if (wItemOpt.isPresent()) {
+            WItem wItem = wItemOpt.get();
+            if (wItem.getServer() != null && "true".equals(wItem.getServer().get("immortal"))) {
+                log.debug("Item {} is immortal, not consuming for player {}", itemId, entityId);
+                return true;
+            }
+        }
+
+        // Load character from DB
+        var characterOpt = characterService.getCharacter(
+                playerId.getUserId(), regionId, playerId.getCharacterId());
+        if (characterOpt.isEmpty()) return false;
+
+        RCharacter character = characterOpt.get();
+        var backpack = character.getBackpack();
+        if (backpack == null || backpack.getItemIds() == null) return false;
+
+        // Check current quantity
+        Integer currentCount = backpack.getItemIds().get(itemId);
+        if (currentCount == null || currentCount < quantity) {
+            return false;
+        }
+
+        // Reduce quantity
+        int newCount = currentCount - quantity;
+        boolean removed = false;
+        if (newCount <= 0) {
+            backpack.getItemIds().remove(itemId);
+            removed = true;
+        } else {
+            backpack.getItemIds().put(itemId, newCount);
+        }
+
+        // If item removed, also clean up shortcuts referencing this item
+        boolean shortcutsChanged = false;
+        if (removed && character.getPublicData() != null && character.getPublicData().getShortcuts() != null) {
+            var shortcuts = character.getPublicData().getShortcuts();
+            List<String> keysToRemove = new ArrayList<>();
+            for (var entry : shortcuts.entrySet()) {
+                ShortcutDefinition def = entry.getValue();
+                if (def != null && itemId.equals(def.getItemId())) {
+                    keysToRemove.add(entry.getKey());
+                }
+            }
+            for (String key : keysToRemove) {
+                shortcuts.remove(key);
+            }
+            shortcutsChanged = !keysToRemove.isEmpty();
+        }
+
+        // Save character
+        characterService.updateCharater(character);
+
+        log.info("Reduced item {} by {} for player {} (remaining: {}, removed: {})",
+                itemId, quantity, entityId, removed ? 0 : newCount, removed);
+
+        // Fire events
+        onBackpackModified(session);
+        if (shortcutsChanged) {
+            onShortcutModified(session);
+        }
+
+        return true;
     }
 
     /**

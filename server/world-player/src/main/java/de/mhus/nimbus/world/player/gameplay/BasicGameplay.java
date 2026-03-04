@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import de.mhus.nimbus.world.player.service.GameplayService;
 import de.mhus.nimbus.world.player.service.PlayerService;
 import de.mhus.nimbus.world.player.session.PlayerSession;
+import de.mhus.nimbus.world.shared.region.RCharacterService;
 import de.mhus.nimbus.world.shared.world.WChunkService;
 import de.mhus.nimbus.world.shared.world.WEntity;
 import de.mhus.nimbus.world.shared.world.WEntityService;
@@ -30,6 +31,8 @@ public class BasicGameplay implements Gameplay {
     protected WEntityService entityService;
     @Autowired
     protected WItemService itemService;
+    @Autowired
+    protected RCharacterService characterService;
     @Autowired
     @Lazy
     @Getter
@@ -136,6 +139,11 @@ public class BasicGameplay implements Gameplay {
 
     @Override
     public void onBackpackModified(PlayerSession session) {
+
+    }
+
+    @Override
+    public void onSkillsModified(PlayerSession session) {
 
     }
 
