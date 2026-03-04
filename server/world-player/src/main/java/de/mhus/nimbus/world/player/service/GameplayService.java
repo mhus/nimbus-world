@@ -72,7 +72,7 @@ public class GameplayService implements SessionAuthenticatedConsumer {
     }
 
 
-    public void onSimpleInteraction(PlayerSession session, String action, String shortcutKey) {
+    public void onSimpleInteraction(PlayerSession session, String action, String shortcutKey, JsonNode data) {
         log.info("Player {} simple interaction: action={}, shortcutKey={}",
                 GameplayUtil.toString(session.getPlayer()), action, shortcutKey);
         if (session.getWorldId() == null) {
@@ -83,7 +83,7 @@ public class GameplayService implements SessionAuthenticatedConsumer {
             log.warn("No gameplay set for session {}, cannot handle simple interaction", session.getPlayer());
             return;
         }
-        gameplay.onSimpleInteraction(session, action, shortcutKey);
+        gameplay.onSimpleInteraction(session, action, shortcutKey, data);
     }
 
     public void onPlayerBlockInteraction(PlayerSession session, int x, int y, int z, String blockId, String groupId, String userAction, String shortcutKey, JsonNode params) {

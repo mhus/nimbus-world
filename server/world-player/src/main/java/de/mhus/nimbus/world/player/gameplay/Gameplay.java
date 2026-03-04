@@ -28,7 +28,7 @@ public interface Gameplay {
 
     void onItemInteraction(PlayerSession session, String itemId, JsonNode params);
 
-    void onSimpleInteraction(PlayerSession session, String action, String shortcutKey);
+    void onSimpleInteraction(PlayerSession session, String action, String shortcutKey, JsonNode data);
 
     Map<String, Object> serialize(PlayerSession session);
 

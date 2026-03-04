@@ -65,6 +65,11 @@ public final class AdventureSkills {
             "Hunger und Durst sinken langsamer",
             1, 0, 100);
 
+    public static final Skill SURVIVAL_ACROBATICS = Skill.of(
+            "survival.acrobatics", "Akrobatik",
+            "Erlaubt hoeheres Fallen ohne Schaden",
+            2, 2, 100);
+
     // --- Gathering Skills (multiplicative: 100 = normal speed, 200 = double speed) ---
 
     public static final Skill GATHERING_MINING = Skill.of(
@@ -112,7 +117,7 @@ public final class AdventureSkills {
      */
     public static final List<Skill> ALL = List.of(
             COMBAT_MELEE, COMBAT_RANGED, COMBAT_MAGIC, COMBAT_DEFENSE, COMBAT_MAGIC_DEFENSE,
-            SURVIVAL_VITALITY, SURVIVAL_ENDURANCE, SURVIVAL_WILLPOWER, SURVIVAL_RESILIENCE,
+            SURVIVAL_VITALITY, SURVIVAL_ENDURANCE, SURVIVAL_WILLPOWER, SURVIVAL_RESILIENCE, SURVIVAL_ACROBATICS,
             GATHERING_MINING, GATHERING_WOODWORK, GATHERING_HERBALISM, GATHERING_FISHING,
             UTILITY_BACKPACK, UTILITY_TRADING, UTILITY_STEALTH
     );

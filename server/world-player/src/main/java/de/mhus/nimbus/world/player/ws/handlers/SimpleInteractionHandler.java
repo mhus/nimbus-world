@@ -53,7 +53,7 @@ public class SimpleInteractionHandler implements MessageHandler {
         log.trace("Simple interaction received: action={}, shortcutKey={}, user={}",
                 action, shortcutKey, session.getTitle());
 
-        gameplay.onSimpleInteraction(session, action, shortcutKey);
+        gameplay.onSimpleInteraction(session, action, shortcutKey, data);
     }
 
 }

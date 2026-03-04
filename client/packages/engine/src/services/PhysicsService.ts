@@ -149,6 +149,16 @@ export class PhysicsService {
     // This allows PlayerService and ModifierService to be fully initialized
     setTimeout(() => this.initializeMovementStateModifiers(), 100);
 
+    // Listen for fall events and send to server async
+    this.on('player:fall', (data: { fallDistance: number; landingBlockPos: Vector3 }) => {
+      const networkService = this.appContext.services.network;
+      if (networkService) {
+        networkService.sendSimpleInteraction('fall', '', {
+          fallHeight: Math.round(data.fallDistance * 100) / 100,
+        });
+      }
+    });
+
     logger.debug('PhysicsService initialized', {
       gravity: this.gravity,
       underwaterGravity: this.underwaterGravity,
@@ -632,8 +642,8 @@ export class PhysicsService {
       }
     });
 
-    // TODO: Send landing event to server
-    // this.sendPlayerLandedEvent(entity, fallDistance, landingBlockPos);
+    // Emit fall event async so it doesn't slow down physics
+    this.emit('player:fall', { fallDistance, landingBlockPos });
   }
 
   /**

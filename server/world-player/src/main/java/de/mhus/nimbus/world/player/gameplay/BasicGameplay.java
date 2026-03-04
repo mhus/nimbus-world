@@ -214,7 +214,7 @@ public class BasicGameplay implements Gameplay {
     }
 
     @Override
-    public void onSimpleInteraction(PlayerSession session, String action, String shortcutKey) {
+    public void onSimpleInteraction(PlayerSession session, String action, String shortcutKey, JsonNode data) {
         if (Strings.isBlank(shortcutKey)) {
             log.trace("Simple interaction without shortcut: action={}, player={}", action, session.getTitle());
             return;

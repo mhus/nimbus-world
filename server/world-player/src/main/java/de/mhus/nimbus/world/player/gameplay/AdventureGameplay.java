@@ -1,6 +1,7 @@
 package de.mhus.nimbus.world.player.gameplay;
 
 import java.util.Arrays;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -41,6 +42,7 @@ import java.util.Map;
 public class AdventureGameplay extends BasicGameplay {
 
     private static final int VITALS_SEND_INTERVAL_TICKS = 2;
+    private static final double FALL_DAMAGE_PER_METER = 3.0;
 
     @Autowired
     private ClientService clientService;
@@ -482,7 +484,7 @@ public class AdventureGameplay extends BasicGameplay {
     }
 
     @Override
-    public void onSimpleInteraction(PlayerSession session, String action, String shortcutKey) {
+    public void onSimpleInteraction(PlayerSession session, String action, String shortcutKey, JsonNode messageData) {
         if (!(session.getGameplayData() instanceof AdventureData data)) return;
 
         switch (action) {
@@ -494,8 +496,35 @@ public class AdventureGameplay extends BasicGameplay {
                 data.setUnderwater(false);
                 log.debug("Player {} surfaced, air regenerating", session.getEntityId());
             }
-            default -> super.onSimpleInteraction(session, action, shortcutKey);
+            case "fall" -> handleFallDamage(session, data, messageData);
+            default -> super.onSimpleInteraction(session, action, shortcutKey, messageData);
         }
+    }
+
+    /**
+     * Handle fall damage based on fall height and acrobatics skill.
+     * Safe fall height = acrobatics skill level (start=2, min=2, max=100).
+     * Damage = 10 per block exceeding safe height.
+     */
+    private void handleFallDamage(PlayerSession session, AdventureData data, JsonNode messageData) {
+        double fallHeight = messageData != null && messageData.has("fallHeight")
+                ? messageData.get("fallHeight").asDouble(0) : 0;
+        if (fallHeight <= 0) return;
+
+        int safeFallHeight = AdventureSkills.SURVIVAL_ACROBATICS.getValue(data.getCachedSkills());
+        if (fallHeight <= safeFallHeight) {
+            log.trace("Player {} fell {} blocks (safe: {}), no damage",
+                    session.getEntityId(), fallHeight, safeFallHeight);
+            return;
+        }
+
+        double excessBlocks = fallHeight - safeFallHeight;
+        double damage = excessBlocks * FALL_DAMAGE_PER_METER;
+
+        log.debug("Player {} fell {} blocks (safe: {}), taking {} fall damage",
+                session.getEntityId(), fallHeight, safeFallHeight, damage);
+
+        applyDamage(session, data, damage);
     }
 
     /**
@@ -643,25 +672,42 @@ public class AdventureGameplay extends BasicGameplay {
             return;
         }
 
-        // Apply damage to health
-        VitalValue health = data.getVital("health");
-        if (health == null) return;
-
-        health.setCurrent(health.getCurrent() + damage);
-        health.clamp();
-
         // Adrenaline gain + combat timer reset for defender
         effectProcessor.addAdrenaline(data, 3.0);
         effectProcessor.onCombatAction(data);
 
-        log.debug("Attack from {} hit {} for {} damage (health now {})",
-                msg.getSourceEntityId(), msg.getTargetEntityId(),
-                damage, health.getCurrent());
+        applyDamage(session, data, damage);
     }
 
     private double getEffectiveStat(AdventureData data, String statName) {
         CombatStat stat = data.getCombatStat(statName);
         return stat != null ? stat.getEffective() : 0;
+    }
+
+    /**
+     * Central method to apply damage to a player's health.
+     * Clamps health, sends vitals update, and triggers death if health reaches 0.
+     *
+     * @param session The player session
+     * @param data    The player's adventure data
+     * @param amount  Positive damage value (will be subtracted from health)
+     */
+    private void applyDamage(PlayerSession session, AdventureData data, double amount) {
+        amount = Math.abs(amount);
+        if (amount == 0) return;
+
+        VitalValue health = data.getVital("health");
+        if (health == null) return;
+
+        health.setCurrent(health.getCurrent() - amount);
+        health.clamp();
+
+        sendVitalsUpdate(session, data);
+
+        if (health.getCurrent() <= 0) {
+            log.info("Player {} died (damage={})", session.getEntityId(), amount);
+            onPlayerDeath(session, data);
+        }
     }
 
     /**

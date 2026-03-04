@@ -666,15 +666,16 @@ export class NetworkService {
    * Used when a shortcut fires but nothing is selected
    * @param action Action type (e.g., 'click')
    * @param shortcutKey Shortcut key (e.g., 'key1', 'click1')
+   * @param additionalData Optional additional data to include in the message
    */
-  sendSimpleInteraction(action: string, shortcutKey: string): void {
+  sendSimpleInteraction(action: string, shortcutKey: string, additionalData?: Record<string, any>): void {
     const message: BaseMessage<any> = {
       i: this.generateMessageId(),
       t: MessageType.SIMPLE_INTERACTION,
-      d: { ac: action, sc: shortcutKey },
+      d: { ac: action, sc: shortcutKey, ...additionalData },
     };
     this.send(message);
-    logger.debug('Sent simple interaction', { action, shortcutKey });
+    logger.debug('Sent simple interaction', { action, shortcutKey, additionalData });
   }
 
   /**
