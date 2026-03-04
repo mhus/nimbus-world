@@ -191,6 +191,23 @@ public class SessionManager {
     }
 
     /**
+     * Find a session by entity ID (e.g., "@user:char").
+     * Iterates over all sessions on this pod.
+     *
+     * @param entityId The entity ID to search for
+     * @return The matching PlayerSession, or null if not found on this pod
+     */
+    public PlayerSession findByEntityId(String entityId) {
+        if (entityId == null) return null;
+        for (var session : sessionsByWebSocketId.values()) {
+            if (entityId.equals(session.getEntityId())) {
+                return session;
+            }
+        }
+        return null;
+    }
+
+    /**
      * Count active sessions.
      */
     public int getSessionCount() {

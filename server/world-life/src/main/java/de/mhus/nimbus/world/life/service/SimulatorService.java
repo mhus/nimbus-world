@@ -374,6 +374,19 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
         log.debug("Entity not found in any world simulation states: {}", entityId);
     }
 
+    /**
+     * Find a simulation state by world and entity ID.
+     *
+     * @param worldId  World ID
+     * @param entityId Entity ID (e.g., "cow2")
+     * @return SimulationState or null if not loaded on this pod
+     */
+    public SimulationState findSimulationState(WorldId worldId, String entityId) {
+        Map<String, SimulationState> worldStates = worldSimulationStates.get(worldId);
+        if (worldStates == null) return null;
+        return worldStates.get(entityId);
+    }
+
     public int getEntityCount() {
         return worldSimulationStates.values().stream()
                 .mapToInt(Map::size)

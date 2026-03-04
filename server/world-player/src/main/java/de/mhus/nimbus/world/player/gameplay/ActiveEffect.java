@@ -67,6 +67,16 @@ public class ActiveEffect {
     @Builder.Default
     private int stacks = 1;
 
+    /** Target entity ID for remote effects. null = self (local effect). */
+    private String targetEntityId;
+
+    /**
+     * Checks if this is a remote effect (targets another entity).
+     */
+    public boolean isRemote() {
+        return targetEntityId != null;
+    }
+
     /**
      * Checks if this effect has expired.
      */
@@ -219,6 +229,9 @@ public class ActiveEffect {
         map.put("tickTimer", tickTimer);
         map.put("stackable", stackable);
         map.put("stacks", stacks);
+        if (targetEntityId != null) {
+            map.put("targetEntityId", targetEntityId);
+        }
         return map;
     }
 
@@ -239,6 +252,7 @@ public class ActiveEffect {
                 .tickTimer(doubleVal(map.get("tickTimer"), 0))
                 .stackable(boolVal(map.get("stackable"), false))
                 .stacks(intVal(map.get("stacks"), 1))
+                .targetEntityId(stringVal(map.get("targetEntityId"), null))
                 .build();
     }
 

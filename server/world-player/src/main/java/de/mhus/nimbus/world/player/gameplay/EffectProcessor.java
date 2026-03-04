@@ -1,8 +1,11 @@
 package de.mhus.nimbus.world.player.gameplay;
 
+import de.mhus.nimbus.world.shared.gameplay.VitalType;
+import de.mhus.nimbus.world.shared.redis.VitalDeltaBroadcastMessage;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
@@ -39,11 +42,16 @@ public class EffectProcessor {
     /**
      * Process one tick of effects on the adventure data.
      *
-     * @param data          The adventure data to process
-     * @param deltaSeconds  Time elapsed since last tick (usually ~1.0)
+     * @param data           The adventure data to process
+     * @param deltaSeconds   Time elapsed since last tick (usually ~1.0)
+     * @param outgoingDeltas Collects VitalDelta messages for remote effects (may be null for local-only processing)
+     * @param worldId        World ID for outgoing delta messages
+     * @param sourceEntityId Entity ID of the player owning these effects (source of remote deltas)
      * @return true if the player died (health <= 0)
      */
-    public boolean processTick(AdventureData data, double deltaSeconds) {
+    public boolean processTick(AdventureData data, double deltaSeconds,
+                               List<VitalDeltaBroadcastMessage> outgoingDeltas,
+                               String worldId, String sourceEntityId) {
 
         // 1. Remove expired effects
         removeExpiredEffects(data);
@@ -56,8 +64,9 @@ public class EffectProcessor {
             stat.resetBuffs();
         }
 
-        // 3. Accumulate buffs from active effects
+        // 3. Accumulate buffs from active effects (skip remote effects)
         for (var effect : data.getActiveEffects()) {
+            if (effect.isRemote()) continue; // remote effects don't modify own vitals
             accumulateEffect(data, effect);
         }
 
@@ -70,7 +79,7 @@ public class EffectProcessor {
         // 6. Apply adrenaline combat idle decay
         applyAdrenalineDecay(data, deltaSeconds);
 
-        // 6. Recalculate effective values
+        // 7. Recalculate effective values
         for (var vital : data.getVitals().values()) {
             vital.recalculate();
         }
@@ -78,18 +87,21 @@ public class EffectProcessor {
             stat.recalculate();
         }
 
-        // 7. Process periodic/DoT effects
-        processPeriodicEffects(data, deltaSeconds);
+        // 8. Process periodic/DoT effects (routes remote effects to outgoingDeltas)
+        processPeriodicEffects(data, deltaSeconds, outgoingDeltas, worldId, sourceEntityId);
 
-        // 8. Apply regen/degen
+        // 9. Apply regen/degen (only for local effects, remote regen handled below)
         for (var vital : data.getVitals().values()) {
             vital.applyRegen(deltaSeconds);
         }
 
-        // 9. Reduce durations
+        // 10. Process remote regen effects (non-periodic, continuous regen on remote targets)
+        processRemoteRegenEffects(data, deltaSeconds, outgoingDeltas, worldId, sourceEntityId);
+
+        // 11. Reduce durations
         reduceDurations(data, deltaSeconds);
 
-        // 10. Death check
+        // 12. Death check
         var health = data.getVital("health");
         return health != null && health.isDepleted();
     }
@@ -241,10 +253,12 @@ public class EffectProcessor {
 
     /**
      * Process periodic (DoT) effects: check tick timers and apply damage.
+     * Remote effects are routed to outgoingDeltas instead of applying locally.
      */
-    private void processPeriodicEffects(AdventureData data, double deltaSeconds) {
+    private void processPeriodicEffects(AdventureData data, double deltaSeconds,
+                                        List<VitalDeltaBroadcastMessage> outgoingDeltas,
+                                        String worldId, String sourceEntityId) {
         var health = data.getVital("health");
-        if (health == null) return;
 
         for (var effect : data.getActiveEffects()) {
             if (!effect.isPeriodic()) continue;
@@ -259,11 +273,72 @@ public class EffectProcessor {
                     continue;
                 }
 
-                // Apply damage (value is negative for damage)
                 double damage = effect.getValue() * effect.getStacks();
-                health.setCurrent(health.getCurrent() + damage);
-                log.debug("DoT {} from {}: {} damage, health now {}", effect.getStat(), effect.getSource(), damage, health.getCurrent());
+
+                if (effect.isRemote()) {
+                    // Remote periodic effect: collect as outgoing delta
+                    if (outgoingDeltas != null && VitalType.isRemoteModifiable(effect.getStat())) {
+                        VitalType vitalType = VitalType.fromStat(effect.getStat());
+                        if (vitalType != null) {
+                            outgoingDeltas.add(VitalDeltaBroadcastMessage.builder()
+                                    .targetEntityId(effect.getTargetEntityId())
+                                    .vitalType(vitalType.name())
+                                    .delta(damage)
+                                    .sourceEntityId(sourceEntityId)
+                                    .worldId(worldId)
+                                    .build());
+                        }
+                    }
+                } else {
+                    // Local periodic effect: apply directly to own health
+                    if (health != null) {
+                        health.setCurrent(health.getCurrent() + damage);
+                        log.debug("DoT {} from {}: {} damage, health now {}",
+                                effect.getStat(), effect.getSource(), damage, health.getCurrent());
+                    }
+                }
             }
+        }
+    }
+
+    /**
+     * Process remote regen effects (non-periodic, continuous regen on remote targets).
+     * These are effects like "health.regen:5:30" with a targetEntityId.
+     * The delta per tick is value * deltaSeconds.
+     */
+    private void processRemoteRegenEffects(AdventureData data, double deltaSeconds,
+                                           List<VitalDeltaBroadcastMessage> outgoingDeltas,
+                                           String worldId, String sourceEntityId) {
+        if (outgoingDeltas == null) return;
+
+        for (var effect : data.getActiveEffects()) {
+            if (!effect.isRemote()) continue;
+            if (effect.isPeriodic()) continue; // already handled in processPeriodicEffects
+            if (effect.isInstant()) continue;
+            if (effect.getStat() == null) continue;
+
+            String modifier = effect.getModifierType();
+            if (!"regen".equals(modifier)) continue;
+            if (!VitalType.isRemoteModifiable(effect.getStat())) continue;
+
+            // Probability check
+            if (effect.getProbability() < 1.0 && ThreadLocalRandom.current().nextDouble() >= effect.getProbability()) {
+                continue;
+            }
+
+            VitalType vitalType = VitalType.fromStat(effect.getStat());
+            if (vitalType == null) continue;
+
+            double delta = effect.getValue() * effect.getStacks() * deltaSeconds;
+            if (delta == 0) continue;
+
+            outgoingDeltas.add(VitalDeltaBroadcastMessage.builder()
+                    .targetEntityId(effect.getTargetEntityId())
+                    .vitalType(vitalType.name())
+                    .delta(delta)
+                    .sourceEntityId(sourceEntityId)
+                    .worldId(worldId)
+                    .build());
         }
     }
 

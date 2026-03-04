@@ -9,6 +9,8 @@ import de.mhus.nimbus.generated.types.ShortcutDefinition;
 import de.mhus.nimbus.shared.types.PlayerId;
 import de.mhus.nimbus.world.player.service.ClientService;
 import de.mhus.nimbus.world.player.session.PlayerSession;
+import de.mhus.nimbus.world.shared.redis.VitalDeltaBroadcastMessage;
+import de.mhus.nimbus.world.shared.redis.VitalDeltaPublisher;
 import de.mhus.nimbus.world.shared.world.WItem;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,6 +33,9 @@ public class AdventureGameplay extends BasicGameplay {
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    @Autowired
+    private VitalDeltaPublisher vitalDeltaPublisher;
 
     private final EffectProcessor effectProcessor = new EffectProcessor();
 
@@ -69,7 +74,17 @@ public class AdventureGameplay extends BasicGameplay {
         }
         data.setLastTickTimestamp(now);
 
-        boolean died = effectProcessor.processTick(data, deltaSeconds);
+        // Collect remote vital deltas during tick processing
+        List<VitalDeltaBroadcastMessage> outgoingDeltas = new ArrayList<>();
+        String worldId = session.getWorldId() != null ? session.getWorldId().getId() : null;
+        String sourceEntityId = session.getEntityId();
+
+        boolean died = effectProcessor.processTick(data, deltaSeconds, outgoingDeltas, worldId, sourceEntityId);
+
+        // Publish collected remote vital deltas
+        if (!outgoingDeltas.isEmpty()) {
+            vitalDeltaPublisher.publishDeltas(outgoingDeltas);
+        }
 
         if (died) {
             log.info("Player {} died in session {}", session.getEntityId(), session.getSessionId());
