@@ -11,9 +11,9 @@ public interface Gameplay {
         return getClass().getSimpleName();
     }
 
-    void onBlockInteraction(PlayerSession session, int x, int y, int z, String blockId, String groupId, String userAction, JsonNode params);
+    void onBlockInteraction(PlayerSession session, int x, int y, int z, String blockId, String groupId, String userAction, String shortcutKey, JsonNode params);
 
-    void onPlayerInteraction(PlayerSession session, String entityId, String userAction, Long timestamp, JsonNode params);
+    void onPlayerInteraction(PlayerSession session, String entityId, String userAction, String shortcutKey, Long timestamp, JsonNode params);
 
     /**
      * Called after session is authenticated and ready.
@@ -24,7 +24,7 @@ public interface Gameplay {
      */
     void onSessionAuthenticated(PlayerSession session, Map<String, Object> savedGameplayData);
 
-    void onEntityInteraction(PlayerSession session, String entityId, String action, Long timestamp, JsonNode params);
+    void onEntityInteraction(PlayerSession session, String entityId, String userAction, String shortcutKey, Long timestamp, JsonNode params);
 
     void onItemInteraction(PlayerSession session, String itemId, JsonNode params);
 

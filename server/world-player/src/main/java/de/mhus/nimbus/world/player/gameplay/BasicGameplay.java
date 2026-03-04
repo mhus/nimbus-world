@@ -45,8 +45,23 @@ public class BasicGameplay implements Gameplay {
     }
 
     @Override
-    public void onBlockInteraction(PlayerSession session, int x, int y, int z, String blockId, String groupId, String userAction, JsonNode params) {
-        // Check for teleportation in server metadata
+    public void onBlockInteraction(PlayerSession session, int x, int y, int z, String blockId, String groupId, String userAction, String shortcutKey, JsonNode params) {
+        if (!Strings.isBlank(shortcutKey)) {
+            // Shortcut on block: route via item action
+            String itemAction = resolveShortcutItemAction(session, shortcutKey);
+            if (itemAction == null) {
+                log.trace("No item action resolvable for shortcut '{}' on block at ({}, {}, {})", shortcutKey, x, y, z);
+                return;
+            }
+            var handler = actions.get(itemAction);
+            if (handler == null) {
+                log.trace("No handler for item action '{}' on block at ({}, {}, {})", itemAction, x, y, z);
+                return;
+            }
+            handler.handleBlockAction(session, x, y, z, blockId, groupId, itemAction, params, userAction, shortcutKey, Map.of());
+            return;
+        }
+        // Regular interaction: route via block server metadata
         var worldId = session.getWorldId();
         Map<String, String> serverInfo = chunkService.getServerInfo(session.getWorldId(), x, y, z);
         if (serverInfo == null || serverInfo.isEmpty()) {
@@ -63,26 +78,47 @@ public class BasicGameplay implements Gameplay {
             log.warn("Unknown block action '{}' in server metadata for block at {} ({}, {}, {})", blockAction, worldId, x, y, z);
             return;
         }
-        handler.handleBlockAction(session, x, y, z, blockId, groupId, blockAction, params, userAction, serverInfo);
-
+        handler.handleBlockAction(session, x, y, z, blockId, groupId, blockAction, params, userAction, null, serverInfo);
     }
 
     @Override
-    public void onPlayerInteraction(PlayerSession session, String entityId, String action, Long timestamp, JsonNode params) {
-        if (Strings.isBlank(action)) {
-            log.warn("No action for player interaction with {} in world {}", entityId, session.getWorldId());
+    public void onPlayerInteraction(PlayerSession session, String entityId, String userAction, String shortcutKey, Long timestamp, JsonNode params) {
+        if (Strings.isBlank(shortcutKey)) {
+            log.trace("Player interaction '{}' with {} without shortcut in world {}", userAction, entityId, session.getWorldId());
             return;
         }
-        var handler = actions.get(action);
+        String itemAction = resolveShortcutItemAction(session, shortcutKey);
+        if (itemAction == null) {
+            log.trace("No item action resolvable for shortcut '{}' on player {}", shortcutKey, entityId);
+            return;
+        }
+        var handler = actions.get(itemAction);
         if (handler == null) {
-            log.trace("No handler for player action '{}' in world {}", action, session.getWorldId());
+            log.trace("No handler for item action '{}' on player {}", itemAction, entityId);
             return;
         }
-        handler.handlePlayerAction(session, entityId, action, timestamp, params);
+        handler.handlePlayerAction(session, entityId, itemAction, shortcutKey, timestamp, params);
     }
 
     @Override
-    public void onEntityInteraction(PlayerSession session, String entityId, String userAction, Long timestamp, JsonNode params) {
+    public void onEntityInteraction(PlayerSession session, String entityId, String userAction, String shortcutKey, Long timestamp, JsonNode params) {
+        if (!Strings.isBlank(shortcutKey)) {
+            // Shortcut on entity: route via item action
+            String itemAction = resolveShortcutItemAction(session, shortcutKey);
+            if (itemAction == null) {
+                log.trace("No item action resolvable for shortcut '{}' on entity {}", shortcutKey, entityId);
+                return;
+            }
+            var handler = actions.get(itemAction);
+            if (handler == null) {
+                log.trace("No handler for item action '{}' on entity {}", itemAction, entityId);
+                return;
+            }
+            WEntity entity = entityService.findByWorldIdAndEntityId(session.getWorldId(), entityId).orElse(null);
+            handler.handleEntityAction(session, entity, userAction, itemAction, shortcutKey, params);
+            return;
+        }
+        // Regular interaction: route via entity server metadata
         WEntity entity = entityService.findByWorldIdAndEntityId(session.getWorldId(), entityId).orElse(null);
         if (entity == null) {
             log.warn("Entity with ID {} not found in world {}", entityId, session.getWorldId());
@@ -98,12 +134,32 @@ public class BasicGameplay implements Gameplay {
             log.warn("Unknown entity action '{}' in server metadata for entity {} ({})", entityAction, session.getWorldId(), entityId);
             return;
         }
-        handler.handleEntityAction(session, entity, userAction, entityAction, params);
+        handler.handleEntityAction(session, entity, userAction, entityAction, null, params);
+    }
+
+    /**
+     * Resolve the item's action from the shortcut key.
+     * Looks up the shortcut definition from the session's player data,
+     * then loads the item and returns its server action.
+     */
+    protected String resolveShortcutItemAction(PlayerSession session, String shortcutKey) {
+        if (Strings.isBlank(shortcutKey)) return null;
+
+        var character = session.getPlayer() != null ? session.getPlayer().character() : null;
+        var playerInfo = character != null ? character.getPublicData() : null;
+        if (playerInfo == null || playerInfo.getShortcuts() == null) return null;
+
+        var shortcutDef = playerInfo.getShortcuts().get(shortcutKey);
+        if (shortcutDef == null || shortcutDef.getItemId() == null) return null;
+
+        String itemId = shortcutDef.getItemId();
+        WItem item = itemService.findByItemId(session.getWorldId(), itemId).orElse(null);
+        if (item == null || item.getServer() == null) return null;
+        return item.getServer().get("action");
     }
 
     @Override
     public void onItemInteraction(PlayerSession session, String itemId, JsonNode params) {
-        // Handle item interactions if needed
         WItem item = itemService.findByItemId(session.getWorldId(), itemId).orElse(null);
         if (item == null) {
             log.warn("Item with ID {} not found in world {}", itemId, session.getWorldId());
@@ -119,7 +175,6 @@ public class BasicGameplay implements Gameplay {
             log.warn("Unknown item action '{}' in server metadata for item {} ({})", itemAction, session.getWorldId(), itemId);
             return;
         }
-        // For item interactions, we can define a separate interface or reuse BlockAction with null coordinates
         handler.handleItemAction(session, item, itemAction, params);
     }
 
@@ -160,7 +215,22 @@ public class BasicGameplay implements Gameplay {
 
     @Override
     public void onSimpleInteraction(PlayerSession session, String action, String shortcutKey) {
-        log.trace("Simple interaction: action={}, shortcutKey={}, player={}", action, shortcutKey, session.getTitle());
+        if (Strings.isBlank(shortcutKey)) {
+            log.trace("Simple interaction without shortcut: action={}, player={}", action, session.getTitle());
+            return;
+        }
+        // Shortcut without target: route via item action (e.g., self-application)
+        String itemAction = resolveShortcutItemAction(session, shortcutKey);
+        if (itemAction == null) {
+            log.trace("No item action resolvable for simple shortcut '{}', player={}", shortcutKey, session.getTitle());
+            return;
+        }
+        var handler = actions.get(itemAction);
+        if (handler == null) {
+            log.trace("No handler for item action '{}' from simple shortcut '{}'", itemAction, shortcutKey);
+            return;
+        }
+        handler.handlePlayerAction(session, null, itemAction, shortcutKey, null, null);
     }
 
     @Override

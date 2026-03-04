@@ -13,17 +13,15 @@ import org.springframework.stereotype.Component;
  * Message type: "e.int.r" (Entity Interaction Request, Client → Server)
  *
  * Client sends entity interactions when player interacts with NPCs or entities.
- * Server processes the interaction (currently just logging).
  *
  * Expected data:
  * {
  *   "entityId": "npc_farmer_001",
- *   "ts": 1697045600000,  // timestamp
- *   "ac": "click",  // action: 'click', 'fireShortcut', 'use', 'talk', 'attack', 'touch', etc.
- *   "pa": {  // params
- *     "clickType": "left",  // for 'click' action
- *     "shortcutNr": 2,      // for 'fireShortcut' action
- *     ...
+ *   "ts": 1697045600000,
+ *   "ac": "interact" | "fireShortcut" | "hitDuringShortcut",
+ *   "pa": {
+ *     "shortcutNr": 2,           // for 'fireShortcut'
+ *     "shortcutItemId": "potion1" // for 'fireShortcut'
  *   }
  * }
  */
@@ -52,26 +50,23 @@ public class EntityInteractionHandler implements MessageHandler {
         // Extract interaction data
         String entityId = data.has("entityId") ? data.get("entityId").asText() : null;
         Long timestamp = data.has("ts") ? data.get("ts").asLong() : null;
-        String shortcut = data.has("sc") ? data.get("sc").asText() : null;
+        String userAction = data.has("ac") ? data.get("ac").asText() : null;
+        String shortcutKey = data.has("sc") ? data.get("sc").asText() : null;
         JsonNode params = data.has("pa") ? data.get("pa") : null;
 
-        if (entityId == null || shortcut == null) {
+        if (entityId == null || userAction == null) {
             log.warn("Entity interaction without entityId or action");
             return;
         }
 
-        log.trace("Entity interaction received: entityId={}, shortcut={}, user={}",
-                entityId, shortcut, session.getTitle());
+        log.trace("Entity interaction received: entityId={}, action={}, shortcut={}, user={}",
+                entityId, userAction, shortcutKey, session.getTitle());
 
         if (entityId.startsWith("@")) {
-            // this is a player d not send to life server, send to gameplay service
-            gameplay.onPlayerPlayerInteraction(session, entityId, shortcut, timestamp, params);
+            gameplay.onPlayerPlayerInteraction(session, entityId, userAction, shortcutKey, timestamp, params);
         } else {
-            gameplay.onPlayerEntityInteraction(session, entityId, shortcut, timestamp, params);
+            gameplay.onPlayerEntityInteraction(session, entityId, userAction, shortcutKey, timestamp, params);
         }
-
-        log.debug("Entity interaction forwarded to world-life: entityId={}, shortcut={}, user={}",
-                entityId, shortcut, session.getTitle());
     }
 
 }

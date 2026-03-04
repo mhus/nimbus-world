@@ -59,18 +59,18 @@ public class BlockInteractionHandler implements MessageHandler {
         // Extract optional fields
         String blockId = data.has("id") ? data.get("id").asText() : null;
         String groupId = data.has("gId") ? data.get("gId").asText() : null;
+        String shortcutKey = data.has("sc") ? data.get("sc").asText() : null;
         JsonNode params = data.has("pa") ? data.get("pa") : null;
 
-        // Log interaction for now - implementation will follow later
-        log.trace("Block interaction - Session: {}, Position: ({},{},{}), userAction: {}, BlockId: {}, GroupId: {}, Params: {}",
+        log.trace("Block interaction - Session: {}, Position: ({},{},{}), action: {}, shortcut: {}, BlockId: {}, GroupId: {}",
                 session.getWebSocketSession().getId(),
                 x, y, z,
                 userAction,
+                shortcutKey,
                 blockId,
-                groupId,
-                params != null ? params.toString() : "none");
+                groupId);
 
-        gameplay.onPlayerBlockInteraction(session, x, y, z, blockId, groupId, userAction, params);
+        gameplay.onPlayerBlockInteraction(session, x, y, z, blockId, groupId, userAction, shortcutKey, params);
 
     }
 

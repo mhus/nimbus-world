@@ -1,9 +1,7 @@
 package de.mhus.nimbus.world.player.gameplay.adventure;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import de.mhus.nimbus.world.player.gameplay.AbstractGamplayAction;
 import de.mhus.nimbus.world.player.gameplay.AdventureGameplay;
-import de.mhus.nimbus.world.player.gameplay.BasicGameplay;
 import de.mhus.nimbus.world.player.gameplay.GameplayAction;
 import de.mhus.nimbus.world.player.session.PlayerSession;
 import de.mhus.nimbus.world.shared.world.WEntity;
@@ -20,13 +18,8 @@ public class EffectAction implements GameplayAction {
     }
 
     @Override
-    public void handleBlockAction(PlayerSession session, int x, int y, int z, String blockId, String groupId, String blockAction, JsonNode params, String userAction, Map<String, String> serverInfo) {
-
-    }
-
-    @Override
-    public void handleEntityAction(PlayerSession session, WEntity entity, String userAction, String entityAction, JsonNode params) {
-
+    public void handleBlockAction(PlayerSession session, int x, int y, int z, String blockId, String groupId, String blockAction, JsonNode params, String userAction, String shortcutKey, Map<String, String> serverInfo) {
+        // No effects on blocks
     }
 
     @Override
@@ -36,44 +29,19 @@ public class EffectAction implements GameplayAction {
     }
 
     @Override
-    public void handlePlayerAction(PlayerSession session, String targetEntityId, String action, Long timestamp, JsonNode params) {
-        // Player interaction → apply effect on target player
-        String itemId = resolveItemId(session, params);
-        if (itemId == null) {
-            return;
-        }
+    public void handlePlayerAction(PlayerSession session, String targetEntityId, String action, String shortcutKey, Long timestamp, JsonNode params) {
+        // Shortcut on player → apply effect on target player
+        String itemId = basic.resolveShortcutItemId(session, shortcutKey);
+        if (itemId == null) return;
         basic.getGameplayService().useItemEffect(session, itemId, targetEntityId);
     }
 
     @Override
-    public void handleEntityAction(PlayerSession session, WEntity entity, String userAction, String entityAction, JsonNode params) {
-        // Entity interaction → apply effect on entity
-        String itemId = resolveItemId(session, params);
-        if (itemId == null) {
-            return;
-        }
-        basic.getGameplayService().useItemEffect(session, itemId, entity.getEntityId());
-    }
-
-    /**
-     * Resolve the itemId from params (shortcutKey → shortcut → itemId).
-     */
-    private String resolveItemId(PlayerSession session, JsonNode params) {
-        // Try to get shortcutKey from params
-        String shortcutKey = null;
-        if (params != null && params.has("shortcutKey")) {
-            shortcutKey = params.get("shortcutKey").asText(null);
-        }
-        if (shortcutKey == null) return null;
-
-        // Look up shortcut to get itemId
-        var character = session.getPlayer() != null ? session.getPlayer().character() : null;
-        var playerInfo = character != null ? character.getPublicData() : null;
-        if (playerInfo == null || playerInfo.getShortcuts() == null) return null;
-
-        var shortcut = playerInfo.getShortcuts().get(shortcutKey);
-        if (shortcut == null || shortcut.getItemId() == null) return null;
-
-        return shortcut.getItemId();
+    public void handleEntityAction(PlayerSession session, WEntity entity, String userAction, String entityAction, String shortcutKey, JsonNode params) {
+        // Shortcut on entity → apply effect on entity
+        String itemId = basic.resolveShortcutItemId(session, shortcutKey);
+        if (itemId == null) return;
+        String targetEntityId = entity != null ? entity.getEntityId() : null;
+        basic.getGameplayService().useItemEffect(session, itemId, targetEntityId);
     }
 }

@@ -16,12 +16,12 @@ public abstract class AbstractGamplayAction implements GameplayAction {
     }
 
     @Override
-    public void handleBlockAction(PlayerSession session, int x, int y, int z, String blockId, String groupId, String blockAction, JsonNode params, String userAction, Map<String, String> serverInfo) {
+    public void handleBlockAction(PlayerSession session, int x, int y, int z, String blockId, String groupId, String blockAction, JsonNode params, String userAction, String shortcutKey, Map<String, String> serverInfo) {
         handleAction(session, serverInfo, params);
     }
 
     @Override
-    public void handleEntityAction(PlayerSession session, WEntity entity, String userAction, String entityAction, JsonNode params) {
+    public void handleEntityAction(PlayerSession session, WEntity entity, String userAction, String entityAction, String shortcutKey, JsonNode params) {
         handleAction(session, entity.getServer(), params);
     }
 
@@ -31,7 +31,7 @@ public abstract class AbstractGamplayAction implements GameplayAction {
     }
 
     @Override
-    public void handlePlayerAction(PlayerSession session, String targetEntityId, String action, Long timestamp, JsonNode params) {
+    public void handlePlayerAction(PlayerSession session, String targetEntityId, String action, String shortcutKey, Long timestamp, JsonNode params) {
         handleAction(session, Map.of(), params);
     }
 

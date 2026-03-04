@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import de.mhus.nimbus.generated.configs.PlayerBackpack;
+import de.mhus.nimbus.generated.configs.WEARABLE_SLOT;
 import de.mhus.nimbus.generated.types.PlayerInfo;
 import de.mhus.nimbus.generated.types.ShortcutDefinition;
 import de.mhus.nimbus.shared.types.PlayerId;
@@ -373,6 +374,63 @@ public class AdventureGameplay extends BasicGameplay {
             }
             default -> super.onSimpleInteraction(session, action, shortcutKey);
         }
+    }
+
+    /**
+     * Resolve the itemId from a shortcut key using cached data.
+     * Handles shortcut types: 'use' → shortcutDef.itemId, hand types → wearing slot.
+     * Returns null for 'interact', 'none', 'cmd' or if no item is found.
+     */
+    public String resolveShortcutItemId(PlayerSession session, String shortcutKey) {
+        if (!(session.getGameplayData() instanceof AdventureData data)) return null;
+        if (shortcutKey == null) return null;
+
+        var shortcuts = data.getCachedShortcuts();
+        if (shortcuts == null) return null;
+
+        var shortcutDef = shortcuts.get(shortcutKey);
+        if (shortcutDef == null) return null;
+
+        String type = shortcutDef.getType();
+        if (type == null) return null;
+
+        return switch (type) {
+            case "use" -> shortcutDef.getItemId();
+            case "left_hand_1" -> getWearingItemId(data, WEARABLE_SLOT.LEFT_HAND_1);
+            case "right_hand_1" -> getWearingItemId(data, WEARABLE_SLOT.RIGHT_HAND_1);
+            case "left_hand_2" -> getWearingItemId(data, WEARABLE_SLOT.LEFT_HAND_2);
+            case "right_hand_2" -> getWearingItemId(data, WEARABLE_SLOT.RIGHT_HAND_2);
+            default -> null; // 'none', 'cmd', 'interact' → no item
+        };
+    }
+
+    private String getWearingItemId(AdventureData data, WEARABLE_SLOT slot) {
+        var backpack = data.getCachedBackpack();
+        if (backpack == null || backpack.getWearingItemIds() == null) return null;
+        return backpack.getWearingItemIds().get(slot);
+    }
+
+    @Override
+    protected String resolveShortcutItemAction(PlayerSession session, String shortcutKey) {
+        if (!(session.getGameplayData() instanceof AdventureData data)) {
+            return super.resolveShortcutItemAction(session, shortcutKey);
+        }
+
+        String itemId = resolveShortcutItemId(session, shortcutKey);
+        if (itemId == null) return null;
+
+        var cachedItems = data.getCachedItems();
+        if (cachedItems != null) {
+            WItem item = cachedItems.get(itemId);
+            if (item != null && item.getServer() != null) {
+                return item.getServer().get("action");
+            }
+        }
+
+        // Fallback: item not in cache, load from DB
+        WItem item = itemService.findByItemId(session.getWorldId(), itemId).orElse(null);
+        if (item == null || item.getServer() == null) return null;
+        return item.getServer().get("action");
     }
 
     /**

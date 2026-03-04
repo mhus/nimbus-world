@@ -247,7 +247,6 @@ export class ShortcutService {
         selectionRadius: 5,
         movementStatus,
         shortcutType: shortcutDef.type,
-        shortcutItemId: shortcutDef.itemId,
       };
 
       // Add distance and target position if interaction target exists
@@ -272,7 +271,8 @@ export class ShortcutService {
             interactionTarget.entity.id,
             'fireShortcut',
             undefined,
-            params
+            params,
+            shortcutKey
           );
         } else if (interactionTarget.type === 'block') {
           const pos = interactionTarget.block.block.position;
@@ -283,7 +283,8 @@ export class ShortcutService {
             'fireShortcut',
             params,
             interactionTarget.block.block.metadata?.id,
-            interactionTarget.block.block.metadata?.groupId
+            interactionTarget.block.block.metadata?.groupId,
+            shortcutKey
           );
         }
       } else {
@@ -690,7 +691,6 @@ export class ShortcutService {
       playerRotation: { yaw: rotation.y, pitch: rotation.x },
       selectionRadius: 5,
       movementStatus,
-      shortcutItemId: shortcut.itemId,
       continuous: true, // Mark as continuous hit during active shortcut
     };
 
@@ -715,7 +715,8 @@ export class ShortcutService {
         target.entity.id,
         'hitDuringShortcut',
         undefined,
-        params
+        params,
+        shortcut.shortcutKey
       );
     } else if (target.type === 'block') {
       const pos = target.block.block.position;
@@ -726,7 +727,8 @@ export class ShortcutService {
         'hitDuringShortcut',
         params,
         target.block.block.metadata?.id,
-        target.block.block.metadata?.groupId
+        target.block.block.metadata?.groupId,
+        shortcut.shortcutKey
       );
     }
   }

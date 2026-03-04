@@ -43,23 +43,23 @@ public class GameplayService implements SessionAuthenticatedConsumer {
         log.info("Initialized GameplayService with gameplays: {}", gameplayMap.keySet());
     }
 
-    public void onPlayerPlayerInteraction(PlayerSession session, String entityId, String action, Long timestamp, JsonNode params) {
-        log.info("Player {} interacted with player {}: action={}, timestamp={}, params={}",
-                GameplayUtil.toString(session.getPlayer()), entityId, action, timestamp, params);
+    public void onPlayerPlayerInteraction(PlayerSession session, String entityId, String userAction, String shortcutKey, Long timestamp, JsonNode params) {
+        log.info("Player {} interacted with player {}: action={}, shortcut={}, timestamp={}",
+                GameplayUtil.toString(session.getPlayer()), entityId, userAction, shortcutKey, timestamp);
         if (session.getWorldId() == null) {
             return;
         }
         var gameplay = session.getGameplay();
         if (gameplay == null) {
-            log.warn("No gameplay set for session {}, cannot handle entity interaction", session.getPlayer());
+            log.warn("No gameplay set for session {}, cannot handle player interaction", session.getPlayer());
             return;
         }
-        gameplay.onPlayerInteraction(session, entityId, action, timestamp, params);
+        gameplay.onPlayerInteraction(session, entityId, userAction, shortcutKey, timestamp, params);
     }
 
-    public void onPlayerEntityInteraction(PlayerSession session, String entityId, String action, Long timestamp, JsonNode params) {
-        log.info("Player {} interacted with entity {}: action={}, timestamp={}, params={}",
-                GameplayUtil.toString(session.getPlayer()), entityId, action, timestamp, params);
+    public void onPlayerEntityInteraction(PlayerSession session, String entityId, String userAction, String shortcutKey, Long timestamp, JsonNode params) {
+        log.info("Player {} interacted with entity {}: action={}, shortcut={}, timestamp={}",
+                GameplayUtil.toString(session.getPlayer()), entityId, userAction, shortcutKey, timestamp);
         if (session.getWorldId() == null) {
             return;
         }
@@ -68,7 +68,7 @@ public class GameplayService implements SessionAuthenticatedConsumer {
             log.warn("No gameplay set for session {}, cannot handle entity interaction", session.getPlayer());
             return;
         }
-        gameplay.onEntityInteraction(session, entityId, action, timestamp, params);
+        gameplay.onEntityInteraction(session, entityId, userAction, shortcutKey, timestamp, params);
     }
 
 
@@ -86,9 +86,9 @@ public class GameplayService implements SessionAuthenticatedConsumer {
         gameplay.onSimpleInteraction(session, action, shortcutKey);
     }
 
-    public void onPlayerBlockInteraction(PlayerSession session, int x, int y, int z, String blockId, String groupId, String userAction, JsonNode params) {
-        log.info("Player {} interacted with block at ({}, {}, {}): blockId={}, groupId={}, userAction={}, params={}",
-                GameplayUtil.toString(session.getPlayer()), x, y, z, blockId, groupId, userAction, params);
+    public void onPlayerBlockInteraction(PlayerSession session, int x, int y, int z, String blockId, String groupId, String userAction, String shortcutKey, JsonNode params) {
+        log.info("Player {} interacted with block at ({}, {}, {}): action={}, shortcut={}, blockId={}, groupId={}",
+                GameplayUtil.toString(session.getPlayer()), x, y, z, userAction, shortcutKey, blockId, groupId);
 
         if (session.getWorldId() == null) {
             return;
@@ -98,7 +98,7 @@ public class GameplayService implements SessionAuthenticatedConsumer {
             log.warn("No gameplay set for session {}, cannot handle block interaction", session.getPlayer());
             return;
         }
-        gameplay.onBlockInteraction(session, x, y, z, blockId, groupId, userAction, params);
+        gameplay.onBlockInteraction(session, x, y, z, blockId, groupId, userAction, shortcutKey, params);
     }
 
     /**

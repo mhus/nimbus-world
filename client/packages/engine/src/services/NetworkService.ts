@@ -584,20 +584,25 @@ export class NetworkService {
     action: string = 'click',
     params?: Record<string, any>,
     id?: string,
-    gId?: string
+    gId?: string,
+    shortcutKey?: string
   ): void {
+    const data: any = {
+      x,
+      y,
+      z,
+      id,
+      gId,
+      ac: action,
+      pa: params || {},
+    };
+    if (shortcutKey) {
+      data.sc = shortcutKey;
+    }
     const message: RequestMessage<any> = {
       i: this.generateMessageId(),
       t: MessageType.BLOCK_INTERACTION,
-      d: {
-        x,
-        y,
-        z,
-        id,
-        gId,
-        ac: action,
-        pa: params || {},
-      },
+      d: data,
     };
 
     this.send(message);
@@ -623,22 +628,27 @@ export class NetworkService {
     entityId: string,
     action: string = 'click',
     clickType?: number,
-    additionalParams?: Record<string, any>
+    additionalParams?: Record<string, any>,
+    shortcutKey?: string
   ): void {
     const params: any = { ...additionalParams };
     if (action === 'click' && clickType !== undefined) {
       params.clickType = clickType;
     }
 
+    const data: any = {
+      entityId,
+      ts: Date.now(),
+      ac: action,
+      pa: params,
+    };
+    if (shortcutKey) {
+      data.sc = shortcutKey;
+    }
     const message: RequestMessage<any> = {
       i: this.generateMessageId(),
       t: MessageType.ENTITY_INTERACTION,
-      d: {
-        entityId,
-        ts: Date.now(),
-        ac: action,
-        pa: params,
-      },
+      d: data,
     };
 
     this.send(message);
