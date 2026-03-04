@@ -133,6 +133,8 @@ export class ShaderService {
             const params = this.environmentService.getUndulationParameters();
             this.updateUndulationMaterials(params);
           }
+          // Update scene lighting on all shader materials
+          this.updateAllLighting();
         }
       });
     } else {
@@ -430,6 +432,14 @@ export class ShaderService {
       // Uniforms
       uniform sampler2D textureSampler;
 
+      // Scene lighting uniforms
+      uniform float ambientIntensity;
+      uniform vec3 ambientDiffuse;
+      uniform vec3 ambientGround;
+      uniform float sunIntensity;
+      uniform vec3 sunDiffuse;
+      uniform vec3 sunDirection;
+
       void main(void) {
         // Sample texture from atlas
         vec4 texColor = texture2D(textureSampler, vUV);
@@ -439,8 +449,18 @@ export class ShaderService {
           discard;
         }
 
-        // Output texture directly without any modifications
-        gl_FragColor = vec4(texColor.rgb, 1.0);
+        // Hemispheric ambient light (Babylon.js model)
+        vec3 normal = normalize(vNormal);
+        float hemisphericNdl = dot(normal, vec3(0.0, 1.0, 0.0)) * 0.5 + 0.5;
+        vec3 ambient = mix(ambientGround, ambientDiffuse, hemisphericNdl) * ambientIntensity;
+
+        // Directional sun light
+        float sunNdl = max(dot(normal, -normalize(sunDirection)), 0.0);
+        vec3 sun = sunDiffuse * sunIntensity * sunNdl;
+
+        // Combined lighting
+        vec3 lighting = ambient + sun;
+        gl_FragColor = vec4(texColor.rgb * lighting, 1.0);
       }
     `;
 
@@ -483,7 +503,12 @@ export class ShaderService {
           'windStrength',
           'windGustStrength',
           'textureSampler',
-          'lightDirection',
+          'ambientIntensity',
+          'ambientDiffuse',
+          'ambientGround',
+          'sunIntensity',
+          'sunDiffuse',
+          'sunDirection',
         ],
         samplers: ['textureSampler'],
       }
@@ -511,8 +536,8 @@ export class ShaderService {
     material.setFloat('windStrength', 0.8);
     material.setFloat('windGustStrength', 0.4);
 
-    // Set light direction (from above-front)
-    material.setVector3('lightDirection', new Vector3(0.5, 1.0, 0.5));
+    // Set initial lighting from scene lights
+    this.applySceneLighting(material);
 
     // Configure material properties
     material.backFaceCulling = false; // Transparent blocks visible from both sides
@@ -631,7 +656,7 @@ export class ShaderService {
       }
     `;
 
-    // Fragment shader - texture + alpha test
+    // Fragment shader - texture + alpha test + scene lighting
     Effect.ShadersStore['undulationFragmentShader'] = `
       precision highp float;
 
@@ -643,6 +668,14 @@ export class ShaderService {
       // Uniforms
       uniform sampler2D textureSampler;
 
+      // Scene lighting uniforms
+      uniform float ambientIntensity;
+      uniform vec3 ambientDiffuse;
+      uniform vec3 ambientGround;
+      uniform float sunIntensity;
+      uniform vec3 sunDiffuse;
+      uniform vec3 sunDirection;
+
       void main(void) {
         // Sample texture from atlas
         vec4 texColor = texture2D(textureSampler, vUV);
@@ -652,7 +685,18 @@ export class ShaderService {
           discard;
         }
 
-        gl_FragColor = vec4(texColor.rgb, 1.0);
+        // Hemispheric ambient light (Babylon.js model)
+        vec3 normal = normalize(vNormal);
+        float hemisphericNdl = dot(normal, vec3(0.0, 1.0, 0.0)) * 0.5 + 0.5;
+        vec3 ambient = mix(ambientGround, ambientDiffuse, hemisphericNdl) * ambientIntensity;
+
+        // Directional sun light
+        float sunNdl = max(dot(normal, -normalize(sunDirection)), 0.0);
+        vec3 sun = sunDiffuse * sunIntensity * sunNdl;
+
+        // Combined lighting
+        vec3 lighting = ambient + sun;
+        gl_FragColor = vec4(texColor.rgb * lighting, 1.0);
       }
     `;
 
@@ -692,6 +736,12 @@ export class ShaderService {
           'undulationFrequency',
           'undulationWavelength',
           'textureSampler',
+          'ambientIntensity',
+          'ambientDiffuse',
+          'ambientGround',
+          'sunIntensity',
+          'sunDiffuse',
+          'sunDirection',
         ],
         samplers: ['textureSampler'],
       }
@@ -717,6 +767,9 @@ export class ShaderService {
     material.setFloat('undulationStrength', 0.3);
     material.setFloat('undulationFrequency', 1.0);
     material.setFloat('undulationWavelength', 1.0);
+
+    // Set initial lighting from scene lights
+    this.applySceneLighting(material);
 
     // Configure material properties
     material.backFaceCulling = false;
@@ -1326,7 +1379,7 @@ export class ShaderService {
       }
     `;
 
-    // Fragment shader (simple textured)
+    // Fragment shader with scene lighting
     Effect.ShadersStore['thinInstanceWindFragmentShader'] = `
       precision highp float;
 
@@ -1334,7 +1387,14 @@ export class ShaderService {
       varying vec3 vNormal;
 
       uniform sampler2D textureSampler;
-      uniform vec3 lightDirection;
+
+      // Scene lighting uniforms
+      uniform float ambientIntensity;
+      uniform vec3 ambientDiffuse;
+      uniform vec3 ambientGround;
+      uniform float sunIntensity;
+      uniform vec3 sunDiffuse;
+      uniform vec3 sunDirection;
 
       void main(void) {
         vec4 texColor = texture2D(textureSampler, vUV);
@@ -1343,10 +1403,17 @@ export class ShaderService {
           discard;
         }
 
-        float diffuse = max(dot(vNormal, -lightDirection), 0.3);
-        vec3 finalColor = texColor.rgb * diffuse;
+        // Hemispheric ambient light
+        vec3 normal = normalize(vNormal);
+        float hemisphericNdl = dot(normal, vec3(0.0, 1.0, 0.0)) * 0.5 + 0.5;
+        vec3 ambient = mix(ambientGround, ambientDiffuse, hemisphericNdl) * ambientIntensity;
 
-        gl_FragColor = vec4(finalColor, texColor.a);
+        // Directional sun light
+        float sunNdl = max(dot(normal, -normalize(sunDirection)), 0.0);
+        vec3 sun = sunDiffuse * sunIntensity * sunNdl;
+
+        vec3 lighting = ambient + sun;
+        gl_FragColor = vec4(texColor.rgb * lighting, texColor.a);
       }
     `;
 
@@ -1405,7 +1472,12 @@ export class ShaderService {
             'windSwayFactor',
             'windLeafiness',
             'windStability',
-            'lightDirection',
+            'ambientIntensity',
+            'ambientDiffuse',
+            'ambientGround',
+            'sunIntensity',
+            'sunDiffuse',
+            'sunDirection',
           ],
           defines: ['#define INSTANCES'],
         }
@@ -1429,8 +1501,8 @@ export class ShaderService {
       material.setFloat('windLeafiness', 0.5);
       material.setFloat('windStability', 0.5);
 
-      // Set light direction
-      material.setVector3('lightDirection', new Vector3(0.5, -1, 0.5));
+      // Set initial lighting from scene lights
+      this.applySceneLighting(material);
 
       // Set time uniform
       material.setFloat('time', 0);
@@ -1521,7 +1593,7 @@ export class ShaderService {
       }
     `;
 
-    // Fragment shader (identical to thinInstanceWindFragmentShader)
+    // Fragment shader with scene lighting
     Effect.ShadersStore['thinInstanceUndulationFragmentShader'] = `
       precision highp float;
 
@@ -1529,7 +1601,14 @@ export class ShaderService {
       varying vec3 vNormal;
 
       uniform sampler2D textureSampler;
-      uniform vec3 lightDirection;
+
+      // Scene lighting uniforms
+      uniform float ambientIntensity;
+      uniform vec3 ambientDiffuse;
+      uniform vec3 ambientGround;
+      uniform float sunIntensity;
+      uniform vec3 sunDiffuse;
+      uniform vec3 sunDirection;
 
       void main(void) {
         vec4 texColor = texture2D(textureSampler, vUV);
@@ -1539,11 +1618,17 @@ export class ShaderService {
           discard;
         }
 
-        // Simple diffuse lighting
-        float diffuse = max(dot(vNormal, -lightDirection), 0.3);
-        vec3 finalColor = texColor.rgb * diffuse;
+        // Hemispheric ambient light
+        vec3 normal = normalize(vNormal);
+        float hemisphericNdl = dot(normal, vec3(0.0, 1.0, 0.0)) * 0.5 + 0.5;
+        vec3 ambient = mix(ambientGround, ambientDiffuse, hemisphericNdl) * ambientIntensity;
 
-        gl_FragColor = vec4(finalColor, texColor.a);
+        // Directional sun light
+        float sunNdl = max(dot(normal, -normalize(sunDirection)), 0.0);
+        vec3 sun = sunDiffuse * sunIntensity * sunNdl;
+
+        vec3 lighting = ambient + sun;
+        gl_FragColor = vec4(texColor.rgb * lighting, texColor.a);
       }
     `;
 
@@ -1598,7 +1683,12 @@ export class ShaderService {
             'undulationStrength',
             'undulationFrequency',
             'undulationWavelength',
-            'lightDirection',
+            'ambientIntensity',
+            'ambientDiffuse',
+            'ambientGround',
+            'sunIntensity',
+            'sunDiffuse',
+            'sunDirection',
           ],
           defines: ['#define INSTANCES'],
         }
@@ -1619,8 +1709,8 @@ export class ShaderService {
         material.setFloat('undulationWavelength', 1.0);
       }
 
-      // Set light direction
-      material.setVector3('lightDirection', new Vector3(0.5, -1, 0.5));
+      // Set initial lighting from scene lights
+      this.applySceneLighting(material);
 
       // Set time uniform
       material.setFloat('time', 0);
@@ -1637,6 +1727,48 @@ export class ShaderService {
     } catch (error) {
       logger.error('Failed to create thin instance undulation material', { texturePath, error });
       return null;
+    }
+  }
+
+  /**
+   * Apply scene lighting uniforms to a shader material.
+   * Uses current ambient (hemispheric) and sun (directional) light values.
+   */
+  private applySceneLighting(material: ShaderMaterial): void {
+    if (this.environmentService) {
+      const ambient = this.environmentService.getAmbientLight();
+      const sun = this.environmentService.getSunLight();
+
+      if (ambient) {
+        material.setFloat('ambientIntensity', ambient.intensity);
+        material.setColor3('ambientDiffuse', ambient.diffuse);
+        material.setColor3('ambientGround', ambient.groundColor);
+      }
+      if (sun) {
+        material.setFloat('sunIntensity', sun.intensity);
+        material.setColor3('sunDiffuse', sun.diffuse);
+        material.setVector3('sunDirection', sun.direction);
+      }
+    } else {
+      // Sensible defaults matching EnvironmentService initial values
+      material.setFloat('ambientIntensity', 0.85);
+      material.setColor3('ambientDiffuse', new Color3(1, 1, 1));
+      material.setColor3('ambientGround', new Color3(0.3, 0.3, 0.3));
+      material.setFloat('sunIntensity', 0.8);
+      material.setColor3('sunDiffuse', new Color3(1, 0.95, 0.9));
+      material.setVector3('sunDirection', new Vector3(-1, -2, -1));
+    }
+  }
+
+  /**
+   * Update scene lighting on all shader materials
+   */
+  private updateAllLighting(): void {
+    for (const material of this.windMaterials) {
+      this.applySceneLighting(material);
+    }
+    for (const material of this.undulationMaterials) {
+      this.applySceneLighting(material);
     }
   }
 
