@@ -61,6 +61,12 @@ public class AttackAction implements GameplayAction {
         String worldId = session.getWorldId() != null ? session.getWorldId().getId() : null;
         if (worldId == null) return;
 
+        // Check gameMode (PvP/PvE)
+        if (!basic.isAttackAllowed(session, targetEntityId)) {
+            log.debug("Attack blocked by gameMode: {} -> {}", session.getEntityId(), targetEntityId);
+            return;
+        }
+
         // Check stamina
         VitalValue stamina = data.getVital("stamina");
         if (stamina != null && stamina.getCurrent() < STAMINA_COST) {

@@ -61,7 +61,7 @@ public class VitalDeltaBroadcastListener {
 
             String type = msg.getType();
             if (VitalDeltaBroadcastMessage.TYPE_ATTACK.equals(type)) {
-                adventureGameplay.handleIncomingAttack(data, msg);
+                adventureGameplay.handleIncomingAttack(targetSession, data, msg);
             } else {
                 handleDelta(msg, data);
             }

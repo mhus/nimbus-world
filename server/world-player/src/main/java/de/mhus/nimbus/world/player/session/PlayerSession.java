@@ -77,6 +77,12 @@ public class PlayerSession {
     private Integer currentChunkX;
     private Integer currentChunkZ;
     private int chunkSize = 16;
+    private int hexGridSize;
+
+    // Cache for gameMode lookup (avoid DB query when hex position unchanged)
+    private Integer cachedHexQ;
+    private Integer cachedHexR;
+    private String cachedGameMode;
 
     public PlayerSession(WebSocketSession webSocketSession) {
         this.webSocketSession = webSocketSession;

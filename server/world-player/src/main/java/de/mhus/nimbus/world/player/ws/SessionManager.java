@@ -247,8 +247,9 @@ public class SessionManager {
         session.setStatus(PlayerSession.SessionStatus.AUTHENTICATED);
         session.setSessionId(worldSession.getId());
 
-        // Set chunkSize from world configuration
+        // Set chunkSize and hexGridSize from world configuration
         session.setChunkSize(world.getPublicData().getChunkSize());
+        session.setHexGridSize(world.getPublicData().getHexGridSize());
 
         // init gameplay for session before registration
         gameplayService.initSessionGameplay(session, world);

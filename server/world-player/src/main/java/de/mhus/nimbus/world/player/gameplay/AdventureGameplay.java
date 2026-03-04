@@ -12,11 +12,17 @@ import de.mhus.nimbus.shared.types.PlayerId;
 import de.mhus.nimbus.world.player.gameplay.adventure.AttackAction;
 import de.mhus.nimbus.world.player.gameplay.adventure.CollectAction;
 import de.mhus.nimbus.world.player.gameplay.adventure.EffectAction;
+import de.mhus.nimbus.generated.types.HexVector2;
+import de.mhus.nimbus.generated.types.Vector3;
+import de.mhus.nimbus.shared.utils.TypeUtil;
 import de.mhus.nimbus.world.player.service.ClientService;
 import de.mhus.nimbus.world.player.session.PlayerSession;
 import de.mhus.nimbus.world.shared.gameplay.CombatResolver;
 import de.mhus.nimbus.world.shared.redis.VitalDeltaBroadcastMessage;
 import de.mhus.nimbus.world.shared.redis.VitalDeltaPublisher;
+import de.mhus.nimbus.world.shared.util.HexMathUtil;
+import de.mhus.nimbus.world.shared.world.WHexGrid;
+import de.mhus.nimbus.world.shared.world.WHexGridService;
 import de.mhus.nimbus.world.shared.world.WItem;
 import jakarta.annotation.PostConstruct;
 import lombok.Getter;
@@ -45,6 +51,9 @@ public class AdventureGameplay extends BasicGameplay {
     @Autowired
     @Getter
     private VitalDeltaPublisher vitalDeltaPublisher;
+
+    @Autowired
+    private WHexGridService hexGridService;
 
     @Getter
     private final EffectProcessor effectProcessor = new EffectProcessor();
@@ -547,13 +556,72 @@ public class AdventureGameplay extends BasicGameplay {
     }
 
     /**
+     * Resolve the gameMode for the player's current hex grid position.
+     * Uses a cache on PlayerSession to avoid DB queries when the hex position hasn't changed.
+     *
+     * @param session The player session
+     * @return gameMode string (e.g. "P", "E", "PE") or empty string if no hex grid / no gameMode
+     */
+    public String resolveGameMode(PlayerSession session) {
+        Vector3 pos = session.getLastPosition();
+        if (pos == null || session.getWorldId() == null) return "";
+
+        int hexGridSize = session.getHexGridSize();
+        if (hexGridSize <= 0) return "";
+
+        int worldX = (int) pos.getX();
+        int worldZ = (int) pos.getZ();
+        HexVector2 hexPos = HexMathUtil.flatToHex(TypeUtil.vector2int(worldX, worldZ), hexGridSize);
+
+        // Check cache: only query DB if hex position changed
+        if (session.getCachedHexQ() != null && session.getCachedHexR() != null
+                && session.getCachedHexQ() == hexPos.getQ() && session.getCachedHexR() == hexPos.getR()) {
+            return session.getCachedGameMode() != null ? session.getCachedGameMode() : "";
+        }
+
+        // Update cache
+        session.setCachedHexQ(hexPos.getQ());
+        session.setCachedHexR(hexPos.getR());
+
+        String worldId = session.getWorldId().getId();
+        String gameMode = hexGridService.findByWorldIdAndPosition(worldId, hexPos)
+                .map(WHexGrid::getParameters)
+                .map(params -> params.get("gameMode"))
+                .orElse("");
+
+        session.setCachedGameMode(gameMode);
+        return gameMode;
+    }
+
+    /**
+     * Check if an attack is allowed based on the attacker's current hex grid gameMode.
+     *
+     * @param session       The attacker's session
+     * @param targetEntityId The target entity ID (@ prefix = player → PvP, else → PvE)
+     * @return true if the attack is allowed
+     */
+    public boolean isAttackAllowed(PlayerSession session, String targetEntityId) {
+        String gameMode = resolveGameMode(session);
+        boolean targetIsPlayer = targetEntityId != null && targetEntityId.startsWith("@");
+        return targetIsPlayer ? gameMode.contains("P") : gameMode.contains("E");
+    }
+
+    /**
      * Handle an incoming ATTACK broadcast on the defender side.
      * Uses cached defence values (base + PassiveStats) to resolve damage via CombatResolver.
+     * Checks gameMode on the defender's hex grid before applying damage.
      *
-     * @param data The defender's AdventureData
-     * @param msg  The incoming attack message
+     * @param session The defender's session
+     * @param data    The defender's AdventureData
+     * @param msg     The incoming attack message
      */
-    public void handleIncomingAttack(AdventureData data, VitalDeltaBroadcastMessage msg) {
+    public void handleIncomingAttack(PlayerSession session, AdventureData data, VitalDeltaBroadcastMessage msg) {
+        // Check gameMode on defender side
+        if (!isAttackAllowed(session, msg.getSourceEntityId())) {
+            log.debug("Incoming attack blocked by gameMode: {} -> {}", msg.getSourceEntityId(), msg.getTargetEntityId());
+            return;
+        }
+
         // Read defender's cached defence stats (effective values from last tick recalculation)
         double defPhysDef = getEffectiveStat(data, "physical.defense");
         double defPhysEvasion = getEffectiveStat(data, "physical.evasion");

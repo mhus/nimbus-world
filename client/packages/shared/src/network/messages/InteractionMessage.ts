@@ -59,7 +59,9 @@ export interface SimpleInteractionData {
   /** Action type (e.g., 'click') */
   ac: string;
   /** Shortcut key (e.g., 'key1', 'click1') */
-  sc: string;
+  sc?: string;
+  /** Additional data (optional) */
+  d?: any;
 }
 
 /**
