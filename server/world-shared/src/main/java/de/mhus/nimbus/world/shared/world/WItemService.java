@@ -270,7 +270,7 @@ public class WItemService {
      * @return number of updated items
      */
     @Transactional
-    public int updateParametersByItemType(WorldId worldId, String itemType, Map<String, Object> parameters) {
+    public int updateParametersByItemType(WorldId worldId, String itemType, Map<String, String> parameters) {
         var regionWorldId = worldId.toRegionCollection();
         if (!regionWorldId.isRegionCollection()) {
             throw new IllegalArgumentException("worldId must be a region collection: " + worldId);
@@ -289,6 +289,30 @@ public class WItemService {
         }
         log.debug("Updated parameters for {} items with itemType={}", items.size(), itemType);
         return items.size();
+    }
+
+    /**
+     * Merge parameters into a single item identified by itemId.
+     *
+     * @return the updated item, or empty if not found
+     */
+    @Transactional
+    public Optional<WItem> updateParametersByItemId(WorldId worldId, String itemId, Map<String, String> parameters) {
+        var regionWorldId = worldId.toRegionCollection();
+        if (!regionWorldId.isRegionCollection()) {
+            throw new IllegalArgumentException("worldId must be a region collection: " + worldId);
+        }
+        return repository.findByWorldIdAndItemId(regionWorldId.getId(), itemId).map(item -> {
+            Item publicData = item.getPublicData();
+            if (publicData.getParameters() == null) {
+                publicData.setParameters(new HashMap<>(parameters));
+            } else {
+                publicData.getParameters().putAll(parameters);
+            }
+            item.touchUpdate();
+            log.debug("Updated parameters for item: itemId={}", itemId);
+            return repository.save(item);
+        });
     }
 
     private List<WItem> filterByQuery(List<WItem> items, String query) {

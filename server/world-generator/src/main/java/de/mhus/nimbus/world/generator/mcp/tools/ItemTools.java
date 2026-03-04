@@ -103,7 +103,7 @@ public class ItemTools {
             @ToolParam(description = "Vertical scale factor (default 0.3)", required = false) Double scaleY,
             @ToolParam(description = "Whether item is exclusive (default false)", required = false) Boolean exclusive,
             @ToolParam(description = "Whether item is generic/stackable (default false)", required = false) Boolean generic,
-            @ToolParam(description = "Additional parameters as key-value pairs", required = false) Map<String, Object> parameters,
+            @ToolParam(description = "Additional parameters as key-value pairs", required = false) Map<String, String> parameters,
             @ToolParam(description = "Server-side parameters for gameplay configuration", required = false) Map<String, String> server) {
         log.debug("MCP: Create item: worldId={}, itemId={}, itemType={}", worldId, itemId, itemType);
 
@@ -182,7 +182,7 @@ public class ItemTools {
     public Map<String, Object> updateItemsByType(
             @ToolParam(description = "World ID or region (e.g. '@region:earth616')") String worldId,
             @ToolParam(description = "ItemType to match (e.g. 'sword_iron', 'armor_boots_gold')") String itemType,
-            @ToolParam(description = "Parameters to merge into each matching item") Map<String, Object> parameters) {
+            @ToolParam(description = "Parameters to merge into each matching item") Map<String, String> parameters) {
         log.debug("MCP: Update items by type: worldId={}, itemType={}, parameters={}", worldId, itemType, parameters);
 
         if (Strings.isBlank(worldId) || Strings.isBlank(itemType)) {
@@ -201,6 +201,32 @@ public class ItemTools {
                 "itemType", itemType,
                 "updatedCount", count
         );
+    }
+
+    @Tool(name = "update_item", description = "Update parameters on an existing item by itemId. Merges the given parameters into the item's existing parameters map.")
+    public Map<String, Object> updateItem(
+            @ToolParam(description = "World ID or region (e.g. '@region:earth616')") String worldId,
+            @ToolParam(description = "Item ID to update") String itemId,
+            @ToolParam(description = "Parameters to merge into the item") Map<String, String> parameters) {
+        log.debug("MCP: Update item: worldId={}, itemId={}, parameters={}", worldId, itemId, parameters);
+
+        if (Strings.isBlank(worldId) || Strings.isBlank(itemId)) {
+            throw new McpToolException("worldId and itemId are required");
+        }
+        if (parameters == null || parameters.isEmpty()) {
+            throw new McpToolException("parameters are required");
+        }
+
+        var wid = WorldId.of(worldId).orElseThrow(
+                () -> new McpToolException("Invalid worldId: " + worldId));
+
+        return itemService.updateParametersByItemId(wid, itemId, parameters)
+                .map(item -> Map.<String, Object>of(
+                        "itemId", item.getItemId(),
+                        "worldId", item.getWorldId(),
+                        "status", "updated"
+                ))
+                .orElseThrow(() -> new McpToolException("Item not found: " + itemId));
     }
 
     @Tool(name = "rename_item", description = "Rename the itemId of an existing item. The new itemId must not already exist in the same world.")

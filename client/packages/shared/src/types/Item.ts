@@ -126,5 +126,5 @@ export interface Item {
    * Optional parameters
    * Custom key-value pairs for item-specific data.
    */
-  parameters?: Record<string, any>;
+  parameters?: Record<string, string>;
 }

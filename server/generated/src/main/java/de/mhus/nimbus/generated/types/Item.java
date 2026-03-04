@@ -48,5 +48,5 @@ public class Item {
     @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
     private java.lang.Boolean generic;
     @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
-    private java.util.Map<String, Object> parameters;
+    private java.util.Map<String, String> parameters;
 }

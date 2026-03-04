@@ -47,13 +47,13 @@
           <div class="bg-gray-800 rounded-lg shadow-md p-4 border border-gray-700">
             <h2 class="text-lg font-bold text-emerald-400 mb-3">Backpack</h2>
 
-            <div v-if="backpackItems.length === 0" class="text-center py-8 text-gray-500">
-              No items in backpack
+            <div v-if="wearableBackpackItems.length === 0" class="text-center py-8 text-gray-500">
+              No wearable items in backpack
             </div>
 
             <div v-else class="grid grid-cols-5 gap-2">
               <div
-                v-for="item in backpackItems"
+                v-for="item in wearableBackpackItems"
                 :key="item.itemId"
                 class="relative w-14 h-14 rounded border-2 cursor-pointer transition-all hover:border-gray-500 flex items-center justify-center bg-gray-700"
                 :class="selectedItem?.itemId === item.itemId ? 'border-emerald-400 shadow-lg shadow-emerald-400/20' : 'border-gray-600'"
@@ -143,7 +143,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, reactive } from 'vue';
+import { ref, computed, onMounted, reactive } from 'vue';
 import { apiService } from '@/services/ApiService';
 
 interface BackpackItemInfo {
@@ -218,6 +218,11 @@ for (const s of ALL_SLOTS) initialWearing[s] = null;
 const wearingItems = reactive<Record<WearableSlot, WearingItemInfo | null>>(initialWearing);
 
 const selectedItem = ref<BackpackItemInfo | null>(null);
+
+/** Only show items that have a wearingSlot in parameters (i.e. wearableSlots is set) */
+const wearableBackpackItems = computed(() =>
+  backpackItems.value.filter(item => item.wearableSlots && item.wearableSlots.length > 0)
+);
 
 const getAssetUrl = (texturePath: string): string => {
   if (!texturePath || !worldId.value) return '';

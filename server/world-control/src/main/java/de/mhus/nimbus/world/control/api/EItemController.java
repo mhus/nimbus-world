@@ -66,7 +66,7 @@ public class EItemController extends BaseEditorController {
             String pose,
             Boolean exclusive,
             Boolean generic,
-            java.util.Map<String, Object> parameters,
+            java.util.Map<String, String> parameters,
             java.util.Map<String, String> server
     ) {
     }
@@ -82,7 +82,7 @@ public class EItemController extends BaseEditorController {
             String pose,
             Boolean exclusive,
             Boolean generic,
-            java.util.Map<String, Object> parameters,
+            java.util.Map<String, String> parameters,
             java.util.Map<String, String> server
     ) {
     }

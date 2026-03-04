@@ -277,9 +277,15 @@ public class PlayerWearingController extends BaseEditorController {
                     description = publicData.getDescription();
                 }
                 if (publicData.getParameters() != null) {
-                    Object slots = publicData.getParameters().get("wearableSlots");
-                    if (slots instanceof List<?>) {
-                        wearableSlots = (List<String>) slots;
+                    // Support both "wearingSlot" (single string) and legacy "wearableSlots" (list)
+                    Object slotParam = publicData.getParameters().get("wearingSlot");
+                    if (slotParam != null && !slotParam.toString().isBlank()) {
+                        wearableSlots = List.of(slotParam.toString());
+                    } else {
+                        Object slots = publicData.getParameters().get("wearableSlots");
+                        if (slots instanceof List<?>) {
+                            wearableSlots = (List<String>) slots;
+                        }
                     }
                 }
             }

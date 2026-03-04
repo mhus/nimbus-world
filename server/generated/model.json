@@ -2031,7 +2031,7 @@
         "comment" : null
       }, {
         "name" : "parameters",
-        "type" : "Record<string, any>",
+        "type" : "Record<string, string>",
         "optional" : true,
         "visibility" : null,
         "javaTypeHint" : null,
