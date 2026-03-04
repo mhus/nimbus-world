@@ -1,15 +1,15 @@
 package de.mhus.nimbus.world.control.api;
 
 import de.mhus.nimbus.generated.configs.PlayerBackpack;
-import de.mhus.nimbus.generated.types.Item;
-import de.mhus.nimbus.generated.types.ItemRef;
-import de.mhus.nimbus.generated.types.ItemType;
+import de.mhus.nimbus.generated.types.*;
 import de.mhus.nimbus.shared.types.PlayerId;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.shared.access.AccessFilterBase;
 import de.mhus.nimbus.world.shared.region.RCharacter;
 import de.mhus.nimbus.world.shared.region.RCharacterService;
 import de.mhus.nimbus.world.shared.rest.BaseEditorController;
+import de.mhus.nimbus.world.shared.client.WorldClientService;
+import de.mhus.nimbus.world.shared.session.WSessionService;
 import de.mhus.nimbus.world.shared.world.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -43,6 +43,8 @@ public class PlayerChestController extends BaseEditorController {
     private final RCharacterService characterService;
     private final WItemService wItemService;
     private final WItemTypeService wItemTypeService;
+    private final WorldClientService worldClientService;
+    private final WSessionService wSessionService;
 
     /**
      * Get chest and backpack items with access check.
@@ -123,6 +125,7 @@ public class PlayerChestController extends BaseEditorController {
             PlayerBackpack backpack = character.getBackpack();
             Map<String, Integer> itemIds = backpack != null ? backpack.getItemIds() : null;
             result.put("backpack", Map.of("items", enrichBackpackItems(parsedWorldId, itemIds)));
+            result.put("shortcutItemIds", getShortcutItemIds(character));
         }
 
         result.put("accessGranted", accessGranted);
@@ -252,6 +255,7 @@ public class PlayerChestController extends BaseEditorController {
         log.info("Item transferred chest->backpack: worldId={}, userId={}, itemId={}, amount={}",
                 worldId, userId, body.itemId(), transferAmount);
 
+        notifyPlayer(worldId, request);
         return ResponseEntity.ok(Map.of("transferred", transferAmount));
     }
 
@@ -289,6 +293,11 @@ public class PlayerChestController extends BaseEditorController {
         var character = findCharacter(worldId, userId, characterId);
         if (character == null) {
             return notFound("Character not found");
+        }
+
+        // Check if item is referenced by a shortcut
+        if (getShortcutItemIds(character).contains(body.itemId())) {
+            return bad("Item is assigned to a shortcut and cannot be transferred");
         }
 
         PlayerBackpack backpack = character.getBackpack();
@@ -346,10 +355,37 @@ public class PlayerChestController extends BaseEditorController {
         log.info("Item transferred backpack->chest: worldId={}, userId={}, itemId={}, amount={}",
                 worldId, userId, body.itemId(), transferAmount);
 
+        notifyPlayer(worldId, request);
         return ResponseEntity.ok(Map.of("transferred", transferAmount));
     }
 
     // --- Helper methods ---
+
+    private Set<String> getShortcutItemIds(RCharacter character) {
+        Set<String> itemIds = new HashSet<>();
+        PlayerInfo playerInfo = character.getPublicData();
+        if (playerInfo == null || playerInfo.getShortcuts() == null) return itemIds;
+        for (ShortcutDefinition shortcut : playerInfo.getShortcuts().values()) {
+            if (shortcut != null && !Strings.isBlank(shortcut.getItemId())) {
+                itemIds.add(shortcut.getItemId());
+            }
+        }
+        return itemIds;
+    }
+
+    private void notifyPlayer(String worldId, HttpServletRequest request) {
+        String sessionId = (String) request.getAttribute(AccessFilterBase.ATTR_SESSION_ID);
+        if (Strings.isBlank(sessionId)) {
+            log.warn("No sessionId available, cannot notify player of backpack change");
+            return;
+        }
+        var wSession = wSessionService.getWithPlayerUrl(sessionId);
+        if (wSession.isEmpty() || Strings.isBlank(wSession.get().getPlayerUrl())) {
+            log.warn("No player URL available for session {}, cannot notify player of backpack change", sessionId);
+            return;
+        }
+        worldClientService.sendPlayerCommand(worldId, sessionId, wSession.get().getPlayerUrl(), "BackpackModified", List.of(), null);
+    }
 
     private ResponseEntity<?> checkChestAccess(String worldId, String userId, String chestId) {
         Optional<WChest> chestOpt = chestService.getByWorldIdAndName(worldId, chestId);

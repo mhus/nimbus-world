@@ -196,7 +196,7 @@ interface BackpackItemInfo {
   texture: string | null;
   description: string | null;
   count: number;
-  wearableSlots: string[] | null;
+  shortcut: boolean;
 }
 
 interface SpecialAction {
@@ -238,7 +238,7 @@ const actionMessage = ref<{ text: string; type: 'success' | 'error' } | null>(nu
 const worldId = ref('');
 const backpackItems = ref<BackpackItemInfo[]>([]);
 const shortcutableItems = computed(() =>
-  backpackItems.value.filter(item => !item.wearableSlots || item.wearableSlots.length === 0)
+  backpackItems.value.filter(item => item.shortcut)
 );
 const shortcuts = ref<Record<string, ShortcutDefinition>>({});
 const selectedItem = ref<BackpackItemInfo | null>(null);

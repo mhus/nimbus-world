@@ -37,4 +37,6 @@ public interface Gameplay {
     void onShortcutModified(PlayerSession session);
 
     void onWearingModified(PlayerSession session);
+
+    void onBackpackModified(PlayerSession session);
 }

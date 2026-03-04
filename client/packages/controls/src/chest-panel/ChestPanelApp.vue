@@ -169,9 +169,9 @@
               <div
                 v-for="item in backpackItems"
                 :key="'bp-' + item.itemId"
-                class="relative w-14 h-14 rounded border-2 cursor-pointer transition-all hover:border-gray-500 flex items-center justify-center bg-gray-700"
-                :class="selectedBackpackItem?.itemId === item.itemId ? 'border-blue-400 shadow-lg shadow-blue-400/20' : 'border-gray-600'"
-                :title="item.name"
+                class="relative w-14 h-14 rounded border-2 transition-all flex items-center justify-center bg-gray-700"
+                :class="backpackItemClass(item)"
+                :title="isShortcutItem(item.itemId) ? item.name + ' (shortcut)' : item.name"
                 @click="selectBackpackItem(item)"
               >
                 <img
@@ -270,6 +270,7 @@ const chestCapacity = ref(0);
 
 const chestItems = ref<ChestItemInfo[]>([]);
 const backpackItems = ref<BackpackItemInfo[]>([]);
+const shortcutItemIds = ref<Set<string>>(new Set());
 
 const selectedChestItem = ref<ChestItemInfo | null>(null);
 const selectedBackpackItem = ref<BackpackItemInfo | null>(null);
@@ -306,7 +307,16 @@ const selectChestItem = (item: ChestItemInfo) => {
   }
 };
 
+const isShortcutItem = (itemId: string): boolean => shortcutItemIds.value.has(itemId);
+
+const backpackItemClass = (item: BackpackItemInfo): string => {
+  if (isShortcutItem(item.itemId)) return 'border-red-500 opacity-70 cursor-not-allowed';
+  if (selectedBackpackItem.value?.itemId === item.itemId) return 'border-blue-400 shadow-lg shadow-blue-400/20 cursor-pointer hover:border-gray-500';
+  return 'border-gray-600 cursor-pointer hover:border-gray-500';
+};
+
 const selectBackpackItem = (item: BackpackItemInfo) => {
+  if (isShortcutItem(item.itemId)) return;
   selectedChestItem.value = null;
   if (selectedBackpackItem.value?.itemId === item.itemId) {
     selectedBackpackItem.value = null;
@@ -329,6 +339,7 @@ const loadChest = async () => {
       worldId: string;
       chest: { name: string; title: string; capacity: number; items?: ChestItemInfo[] };
       backpack?: { items: BackpackItemInfo[] };
+      shortcutItemIds?: string[];
       accessGranted: boolean;
       requiresPin: boolean;
     }>(url);
@@ -341,6 +352,7 @@ const loadChest = async () => {
     if (response.accessGranted) {
       chestItems.value = response.chest.items || [];
       backpackItems.value = response.backpack?.items || [];
+      shortcutItemIds.value = new Set(response.shortcutItemIds || []);
       state.value = 'ACTIVE';
     } else if (response.requiresPin) {
       state.value = 'PIN_REQUIRED';

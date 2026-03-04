@@ -94,7 +94,7 @@ public class PlayerBackpackShortcutController extends BaseEditorController {
                 String name = itemId;
                 String itemType = null;
                 String description = null;
-                List<String> wearableSlots = null;
+                boolean shortcut = false;
 
                 Optional<WItem> itemOpt = wItemService.findByItemId(parsedWorldId, itemId);
                 if (itemOpt.isPresent()) {
@@ -111,15 +111,15 @@ public class PlayerBackpackShortcutController extends BaseEditorController {
                             description = publicData.getDescription();
                         }
                         if (publicData.getParameters() != null) {
-                            Object slots = publicData.getParameters().get("wearableSlots");
-                            if (slots instanceof List<?>) {
-                                wearableSlots = (List<String>) slots;
+                            Object sc = publicData.getParameters().get("shortcut");
+                            if (Boolean.TRUE.equals(sc) || "true".equals(sc)) {
+                                shortcut = true;
                             }
                         }
                     }
                 }
 
-                // Fallback to ItemType for texture, name, description and wearableSlots
+                // Fallback to ItemType for texture, name, description and shortcut
                 if (!Strings.isBlank(itemType)) {
                     Optional<WItemType> typeOpt = wItemTypeService.findByItemType(parsedWorldId, itemType);
                     if (typeOpt.isPresent()) {
@@ -134,10 +134,10 @@ public class PlayerBackpackShortcutController extends BaseEditorController {
                             if (description == null && !Strings.isBlank(typeData.getDescription())) {
                                 description = typeData.getDescription();
                             }
-                            if (wearableSlots == null && typeData.getParameters() != null) {
-                                Object slots = typeData.getParameters().get("wearableSlots");
-                                if (slots instanceof List<?>) {
-                                    wearableSlots = (List<String>) slots;
+                            if (!shortcut && typeData.getParameters() != null) {
+                                Object sc = typeData.getParameters().get("shortcut");
+                                if (Boolean.TRUE.equals(sc) || "true".equals(sc)) {
+                                    shortcut = true;
                                 }
                             }
                         }
@@ -151,7 +151,7 @@ public class PlayerBackpackShortcutController extends BaseEditorController {
                 info.put("texture", texture);
                 info.put("description", description);
                 info.put("count", count);
-                info.put("wearableSlots", wearableSlots);
+                info.put("shortcut", shortcut);
                 items.add(info);
             }
         }
@@ -248,6 +248,7 @@ public class PlayerBackpackShortcutController extends BaseEditorController {
         String texture = null;
         String name = body.itemId();
         String itemType = null;
+        boolean shortcutAllowed = false;
 
         Optional<WItem> itemOpt = wItemService.findByItemId(parsedWorldId, body.itemId());
         if (itemOpt.isPresent()) {
@@ -259,6 +260,12 @@ public class PlayerBackpackShortcutController extends BaseEditorController {
                 }
                 if (!Strings.isBlank(publicData.getName())) {
                     name = publicData.getName();
+                }
+                if (publicData.getParameters() != null) {
+                    Object sc = publicData.getParameters().get("shortcut");
+                    if (Boolean.TRUE.equals(sc) || "true".equals(sc)) {
+                        shortcutAllowed = true;
+                    }
                 }
             }
         }
@@ -274,8 +281,18 @@ public class PlayerBackpackShortcutController extends BaseEditorController {
                     if (body.itemId().equals(name) && !Strings.isBlank(typeData.getTitle())) {
                         name = typeData.getTitle();
                     }
+                    if (!shortcutAllowed && typeData.getParameters() != null) {
+                        Object sc = typeData.getParameters().get("shortcut");
+                        if (Boolean.TRUE.equals(sc) || "true".equals(sc)) {
+                            shortcutAllowed = true;
+                        }
+                    }
                 }
             }
+        }
+
+        if (!shortcutAllowed) {
+            return bad("Item is not allowed as shortcut");
         }
 
         // Build ShortcutDefinition

@@ -149,6 +149,19 @@ public class GameplayService implements SessionAuthenticatedConsumer {
     }
 
     /**
+     * Called when a player's backpack has been modified via the chest panel.
+     */
+    public void onBackpackModified(PlayerSession session) {
+        log.info("Backpack modified for player {}", GameplayUtil.toString(session.getPlayer()));
+        var gameplay = session.getGameplay();
+        if (gameplay == null) {
+            log.warn("No gameplay set for session {}, cannot handle backpack modification", session.getPlayer());
+            return;
+        }
+        gameplay.onBackpackModified(session);
+    }
+
+    /**
      * Handle session authenticated event. This is called after the player has successfully authenticated and the session is ready.
      * Loads saved gameplay data from WPlayerSession (MongoDB) and passes it to the gameplay implementation for restoration.
      *
