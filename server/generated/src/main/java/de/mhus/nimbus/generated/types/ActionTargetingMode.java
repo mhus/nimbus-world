@@ -1,5 +1,5 @@
 /*
- * Source TS: ItemModifier.ts
+ * Source TS: Item.ts
  * Original TS: 'type ActionTargetingMode'
  */
 package de.mhus.nimbus.generated.types;

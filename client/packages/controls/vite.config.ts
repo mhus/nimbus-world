@@ -40,7 +40,7 @@ export default defineConfig({
         'block-editor': resolve(__dirname, 'block-editor.html'),
         'edit-config': resolve(__dirname, 'edit-config.html'),
         'item-editor': resolve(__dirname, 'item-editor.html'),
-        'itemtype-editor': resolve(__dirname, 'itemtype-editor.html'),
+
         'scrawl-editor': resolve(__dirname, 'scrawl-editor.html'),
         'dev-login': resolve(__dirname, 'dev-login.html'),
         'logout': resolve(__dirname, 'logout.html'),

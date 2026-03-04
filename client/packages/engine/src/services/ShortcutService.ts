@@ -233,8 +233,7 @@ export class ShortcutService {
       if (shortcutDef.itemId && itemService) {
         const item = await itemService.getItem(shortcutDef.itemId);
         if (item) {
-          const mergedModifier = await itemService.getMergedModifier(item);
-          visualTargetMode = mergedModifier?.actionTargeting ?? 'ALL';
+          visualTargetMode = item.actionTargeting ?? 'ALL';
         }
       }
       const visualTarget = targetingService.resolveTarget(visualTargetMode);

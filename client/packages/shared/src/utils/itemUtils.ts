@@ -21,10 +21,10 @@ import {ItemBlockRef} from "../types";
 export function itemToBlock(item: ItemBlockRef): Block {
   return {
     position: item.position,
-    blockTypeId: 'w/1', // ITEM blockType with group prefix (w/1)
+    blockTypeId: 'n:1', // ITEM blockType with group prefix (n:1)
     offsets: item.offset ?? [0, 0, 0],
     modifiers: {
-        0: {
+        'default': {
             visibility: {
                 shape: 28, // Shape.ITEM (Y-axis billboard)
                 textures: {
@@ -33,45 +33,12 @@ export function itemToBlock(item: ItemBlockRef): Block {
                 scalingX: item.scaleX ?? 0.5,
                 scalingY: item.scaleY ?? 0.5,
             },
-            interactive: true,
         }
     },
     metadata: {
-      id: item.name
+      id: item.name,
+      interactive: true,
     },
   };
 }
 
-// Deprecated implementation:
-// /**
-//  * Converts ItemModifier to BlockModifier for rendering.
-//  *
-//  * ItemRenderer expects BlockModifier structure with visibility properties.
-//  * This method creates a minimal BlockModifier from the simplified ItemModifier.
-//  *
-//  * @param itemModifier Simplified item modifier (storage format)
-//  * @returns BlockModifier with visibility properties (rendering format)
-//  */
-// private convertItemModifierToBlockModifier(itemModifier: any): any {
-//     return {
-//         visibility: {
-//             shape: 28, // Shape.ITEM (Y-axis billboard)
-//
-//             // Convert simple texture string to textures map
-//             textures: {
-//                 0: itemModifier.texture, // TextureKey.ALL
-//             },
-//
-//             // Copy scaling properties
-//             scalingX: itemModifier.scaleX ?? 0.5,
-//             scalingY: itemModifier.scaleY ?? 0.5,
-//
-//             // Copy offset (pivot point adjustment)
-//             offsets: itemModifier.offset || [0, 0, 0],
-//
-//             // Copy optional color tint
-//             color: itemModifier.color,
-//         },
-//         // Items don't need: wind, physics, illumination, effects, audio
-//     };
-// }

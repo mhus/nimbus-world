@@ -3,7 +3,6 @@ package de.mhus.nimbus.world.control.api;
 import de.mhus.nimbus.generated.configs.PlayerBackpack;
 import de.mhus.nimbus.generated.configs.WEARABLE_SLOT;
 import de.mhus.nimbus.generated.types.Item;
-import de.mhus.nimbus.generated.types.ItemType;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.shared.access.AccessFilterBase;
 import de.mhus.nimbus.world.shared.client.WorldClientService;
@@ -13,8 +12,6 @@ import de.mhus.nimbus.world.shared.rest.BaseEditorController;
 import de.mhus.nimbus.world.shared.session.WSessionService;
 import de.mhus.nimbus.world.shared.world.WItem;
 import de.mhus.nimbus.world.shared.world.WItemService;
-import de.mhus.nimbus.world.shared.world.WItemType;
-import de.mhus.nimbus.world.shared.world.WItemTypeService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -42,7 +39,6 @@ public class PlayerWearingController extends BaseEditorController {
 
     private final RCharacterService characterService;
     private final WItemService wItemService;
-    private final WItemTypeService wItemTypeService;
     private final WorldClientService worldClientService;
     private final WSessionService wSessionService;
 
@@ -273,9 +269,7 @@ public class PlayerWearingController extends BaseEditorController {
             Item publicData = itemOpt.get().getPublicData();
             if (publicData != null) {
                 itemType = publicData.getItemType();
-                if (publicData.getModifier() != null) {
-                    texture = publicData.getModifier().getTexture();
-                }
+                texture = publicData.getTexture();
                 if (!Strings.isBlank(publicData.getName())) {
                     name = publicData.getName();
                 }
@@ -286,31 +280,6 @@ public class PlayerWearingController extends BaseEditorController {
                     Object slots = publicData.getParameters().get("wearableSlots");
                     if (slots instanceof List<?>) {
                         wearableSlots = (List<String>) slots;
-                    }
-                }
-            }
-        }
-
-        // Fallback to ItemType for texture, name, description and wearableSlots
-        if (!Strings.isBlank(itemType)) {
-            Optional<WItemType> typeOpt = wItemTypeService.findByItemType(parsedWorldId, itemType);
-            if (typeOpt.isPresent()) {
-                ItemType typeData = typeOpt.get().getPublicData();
-                if (typeData != null) {
-                    if (texture == null && typeData.getModifier() != null) {
-                        texture = typeData.getModifier().getTexture();
-                    }
-                    if (itemId.equals(name) && !Strings.isBlank(typeData.getTitle())) {
-                        name = typeData.getTitle();
-                    }
-                    if (description == null && !Strings.isBlank(typeData.getDescription())) {
-                        description = typeData.getDescription();
-                    }
-                    if (wearableSlots == null && typeData.getParameters() != null) {
-                        Object slots = typeData.getParameters().get("wearableSlots");
-                        if (slots instanceof List<?>) {
-                            wearableSlots = (List<String>) slots;
-                        }
                     }
                 }
             }

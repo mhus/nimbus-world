@@ -10,7 +10,11 @@ import de.mhus.nimbus.world.shared.region.RCharacterService;
 import de.mhus.nimbus.world.shared.rest.BaseEditorController;
 import de.mhus.nimbus.world.shared.client.WorldClientService;
 import de.mhus.nimbus.world.shared.session.WSessionService;
-import de.mhus.nimbus.world.shared.world.*;
+import de.mhus.nimbus.world.shared.world.WChest;
+import de.mhus.nimbus.world.shared.world.WChestService;
+import de.mhus.nimbus.world.shared.world.WItem;
+import de.mhus.nimbus.world.shared.world.WItemService;
+import de.mhus.nimbus.world.shared.world.WProgressService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -42,7 +46,6 @@ public class PlayerChestController extends BaseEditorController {
     private final WProgressService progressService;
     private final RCharacterService characterService;
     private final WItemService wItemService;
-    private final WItemTypeService wItemTypeService;
     private final WorldClientService worldClientService;
     private final WSessionService wSessionService;
 
@@ -428,33 +431,14 @@ public class PlayerChestController extends BaseEditorController {
                 Item publicData = itemOpt.get().getPublicData();
                 if (publicData != null) {
                     itemType = publicData.getItemType();
-                    if (publicData.getModifier() != null && texture == null) {
-                        texture = publicData.getModifier().getTexture();
+                    if (texture == null && !Strings.isBlank(publicData.getTexture())) {
+                        texture = publicData.getTexture();
                     }
                     if (Strings.isBlank(name) && !Strings.isBlank(publicData.getName())) {
                         name = publicData.getName();
                     }
                     if (!Strings.isBlank(publicData.getDescription())) {
                         description = publicData.getDescription();
-                    }
-                }
-            }
-
-            // Fallback to ItemType
-            if (!Strings.isBlank(itemType)) {
-                Optional<WItemType> typeOpt = wItemTypeService.findByItemType(parsedWorldId, itemType);
-                if (typeOpt.isPresent()) {
-                    ItemType typeData = typeOpt.get().getPublicData();
-                    if (typeData != null) {
-                        if (texture == null && typeData.getModifier() != null) {
-                            texture = typeData.getModifier().getTexture();
-                        }
-                        if (Strings.isBlank(name) && !Strings.isBlank(typeData.getTitle())) {
-                            name = typeData.getTitle();
-                        }
-                        if (description == null && !Strings.isBlank(typeData.getDescription())) {
-                            description = typeData.getDescription();
-                        }
                     }
                 }
             }
@@ -493,33 +477,12 @@ public class PlayerChestController extends BaseEditorController {
                 Item publicData = itemOpt.get().getPublicData();
                 if (publicData != null) {
                     itemType = publicData.getItemType();
-                    if (publicData.getModifier() != null) {
-                        texture = publicData.getModifier().getTexture();
-                    }
+                    texture = publicData.getTexture();
                     if (!Strings.isBlank(publicData.getName())) {
                         name = publicData.getName();
                     }
                     if (!Strings.isBlank(publicData.getDescription())) {
                         description = publicData.getDescription();
-                    }
-                }
-            }
-
-            // Fallback to ItemType
-            if (!Strings.isBlank(itemType)) {
-                Optional<WItemType> typeOpt = wItemTypeService.findByItemType(parsedWorldId, itemType);
-                if (typeOpt.isPresent()) {
-                    ItemType typeData = typeOpt.get().getPublicData();
-                    if (typeData != null) {
-                        if (texture == null && typeData.getModifier() != null) {
-                            texture = typeData.getModifier().getTexture();
-                        }
-                        if (itemId.equals(name) && !Strings.isBlank(typeData.getTitle())) {
-                            name = typeData.getTitle();
-                        }
-                        if (description == null && !Strings.isBlank(typeData.getDescription())) {
-                            description = typeData.getDescription();
-                        }
                     }
                 }
             }

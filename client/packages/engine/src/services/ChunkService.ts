@@ -664,16 +664,6 @@ export class ChunkService {
           continue;
         }
 
-        // STEP 2: Fill Item via ItemService (merges ItemType)
-        const itemService = this.appContext.services.item;
-        if (!itemService) {
-          logger.warn('ItemService not available for item processing', {
-            position: item.position,
-            itemId: item.name,
-          });
-          continue;
-        }
-
         // const filledItem = await itemService.fillItem(item);
         // if (!filledItem) {
         //   logger.warn('Failed to fill Item', {
@@ -684,9 +674,9 @@ export class ChunkService {
         // }
 
         // STEP 3: Get BlockType 1 (ITEM type)
-        const blockType = await blockTypeService.getBlockType('1');
+        const blockType = await blockTypeService.getBlockType('n:1');
         if (!blockType) {
-          logger.warn('BlockType 1 (ITEM) not found');
+          logger.warn('BlockType n:1 (ITEM) not found');
           continue;
         }
 

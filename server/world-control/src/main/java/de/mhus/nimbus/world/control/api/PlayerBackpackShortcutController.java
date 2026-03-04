@@ -2,7 +2,6 @@ package de.mhus.nimbus.world.control.api;
 
 import de.mhus.nimbus.generated.configs.PlayerBackpack;
 import de.mhus.nimbus.generated.types.Item;
-import de.mhus.nimbus.generated.types.ItemType;
 import de.mhus.nimbus.generated.types.PlayerInfo;
 import de.mhus.nimbus.generated.types.ShortcutDefinition;
 import de.mhus.nimbus.shared.types.WorldId;
@@ -14,8 +13,6 @@ import de.mhus.nimbus.world.shared.rest.BaseEditorController;
 import de.mhus.nimbus.world.shared.session.WSessionService;
 import de.mhus.nimbus.world.shared.world.WItem;
 import de.mhus.nimbus.world.shared.world.WItemService;
-import de.mhus.nimbus.world.shared.world.WItemType;
-import de.mhus.nimbus.world.shared.world.WItemTypeService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -45,7 +42,6 @@ public class PlayerBackpackShortcutController extends BaseEditorController {
 
     private final RCharacterService characterService;
     private final WItemService wItemService;
-    private final WItemTypeService wItemTypeService;
     private final WorldClientService worldClientService;
     private final WSessionService wSessionService;
 
@@ -101,9 +97,7 @@ public class PlayerBackpackShortcutController extends BaseEditorController {
                     Item publicData = itemOpt.get().getPublicData();
                     if (publicData != null) {
                         itemType = publicData.getItemType();
-                        if (publicData.getModifier() != null) {
-                            texture = publicData.getModifier().getTexture();
-                        }
+                        texture = publicData.getTexture();
                         if (!Strings.isBlank(publicData.getName())) {
                             name = publicData.getName();
                         }
@@ -114,31 +108,6 @@ public class PlayerBackpackShortcutController extends BaseEditorController {
                             Object sc = publicData.getParameters().get("shortcut");
                             if (Boolean.TRUE.equals(sc) || "true".equals(sc)) {
                                 shortcut = true;
-                            }
-                        }
-                    }
-                }
-
-                // Fallback to ItemType for texture, name, description and shortcut
-                if (!Strings.isBlank(itemType)) {
-                    Optional<WItemType> typeOpt = wItemTypeService.findByItemType(parsedWorldId, itemType);
-                    if (typeOpt.isPresent()) {
-                        ItemType typeData = typeOpt.get().getPublicData();
-                        if (typeData != null) {
-                            if (texture == null && typeData.getModifier() != null) {
-                                texture = typeData.getModifier().getTexture();
-                            }
-                            if (itemId.equals(name) && !Strings.isBlank(typeData.getTitle())) {
-                                name = typeData.getTitle();
-                            }
-                            if (description == null && !Strings.isBlank(typeData.getDescription())) {
-                                description = typeData.getDescription();
-                            }
-                            if (!shortcut && typeData.getParameters() != null) {
-                                Object sc = typeData.getParameters().get("shortcut");
-                                if (Boolean.TRUE.equals(sc) || "true".equals(sc)) {
-                                    shortcut = true;
-                                }
                             }
                         }
                     }
@@ -255,9 +224,7 @@ public class PlayerBackpackShortcutController extends BaseEditorController {
             Item publicData = itemOpt.get().getPublicData();
             if (publicData != null) {
                 itemType = publicData.getItemType();
-                if (publicData.getModifier() != null) {
-                    texture = publicData.getModifier().getTexture();
-                }
+                texture = publicData.getTexture();
                 if (!Strings.isBlank(publicData.getName())) {
                     name = publicData.getName();
                 }
@@ -265,27 +232,6 @@ public class PlayerBackpackShortcutController extends BaseEditorController {
                     Object sc = publicData.getParameters().get("shortcut");
                     if (Boolean.TRUE.equals(sc) || "true".equals(sc)) {
                         shortcutAllowed = true;
-                    }
-                }
-            }
-        }
-
-        if (!Strings.isBlank(itemType)) {
-            Optional<WItemType> typeOpt = wItemTypeService.findByItemType(parsedWorldId, itemType);
-            if (typeOpt.isPresent()) {
-                ItemType typeData = typeOpt.get().getPublicData();
-                if (typeData != null) {
-                    if (texture == null && typeData.getModifier() != null) {
-                        texture = typeData.getModifier().getTexture();
-                    }
-                    if (body.itemId().equals(name) && !Strings.isBlank(typeData.getTitle())) {
-                        name = typeData.getTitle();
-                    }
-                    if (!shortcutAllowed && typeData.getParameters() != null) {
-                        Object sc = typeData.getParameters().get("shortcut");
-                        if (Boolean.TRUE.equals(sc) || "true".equals(sc)) {
-                            shortcutAllowed = true;
-                        }
                     }
                 }
             }

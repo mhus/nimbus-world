@@ -46,7 +46,9 @@ public class ItemTools {
             map.put("itemId", e.getItemId());
             if (e.getPublicData() != null) {
                 map.put("itemType", e.getPublicData().getItemType() != null ? e.getPublicData().getItemType() : "");
+                map.put("type", e.getPublicData().getType() != null ? e.getPublicData().getType() : "");
                 map.put("title", e.getPublicData().getTitle() != null ? e.getPublicData().getTitle() : "");
+                map.put("texture", e.getPublicData().getTexture() != null ? e.getPublicData().getTexture() : "");
             }
             map.put("enabled", e.isEnabled());
             return map;
@@ -87,13 +89,20 @@ public class ItemTools {
         return result;
     }
 
-    @Tool(name = "create_item", description = "Create or update an item. An item is an instance referencing an itemType. If no itemId is provided, one is auto-generated.")
+    @Tool(name = "create_item", description = "Create or update an item. If no itemId is provided, one is auto-generated. All rendering properties (texture, scale, pose, etc.) are directly on the item.")
     public Map<String, Object> createItem(
             @ToolParam(description = "World ID or region (e.g. '@region:earth616')") String worldId,
             @ToolParam(description = "Optional item ID. If not provided, an ID is auto-generated.", required = false) String itemId,
-            @ToolParam(description = "Reference to an itemType ID (e.g. 'iron_sword', 'health_potion')") String itemType,
+            @ToolParam(description = "Item type identifier (e.g. 'iron_sword', 'health_potion')") String itemType,
+            @ToolParam(description = "Item category type (e.g. 'weapon', 'tool', 'food', 'potion', 'armor', 'material')") String type,
             @ToolParam(description = "Display title (e.g. 'Iron Sword')") String title,
             @ToolParam(description = "Item description", required = false) String description,
+            @ToolParam(description = "Texture asset path (e.g. 'textures/items/iron_sword.png')") String texture,
+            @ToolParam(description = "Player pose when holding (e.g. 'hold', 'eat', 'drink', 'sword', 'bow')", required = false) String pose,
+            @ToolParam(description = "Horizontal scale factor (default 0.3)", required = false) Double scaleX,
+            @ToolParam(description = "Vertical scale factor (default 0.3)", required = false) Double scaleY,
+            @ToolParam(description = "Whether item is exclusive (default false)", required = false) Boolean exclusive,
+            @ToolParam(description = "Whether item is generic/stackable (default false)", required = false) Boolean generic,
             @ToolParam(description = "Additional parameters as key-value pairs", required = false) Map<String, Object> parameters,
             @ToolParam(description = "Server-side parameters for gameplay configuration", required = false) Map<String, String> server) {
         log.debug("MCP: Create item: worldId={}, itemId={}, itemType={}", worldId, itemId, itemType);
@@ -109,25 +118,25 @@ public class ItemTools {
                 () -> new McpToolException("Invalid worldId: " + worldId));
 
         try {
-            WItem saved;
-            if (Strings.isBlank(itemId)) {
-                Item publicData = Item.builder()
-                        .itemType(itemType)
-                        .title(title)
-                        .description(description)
-                        .parameters(parameters)
-                        .build();
-                saved = itemService.create(wid, publicData);
-            } else {
-                Item publicData = Item.builder()
-                        .name(itemId)
-                        .itemType(itemType)
-                        .title(title)
-                        .description(description)
-                        .parameters(parameters)
-                        .build();
-                saved = itemService.save(wid, itemId, publicData);
+            var builder = Item.builder()
+                    .itemType(itemType)
+                    .type(type)
+                    .title(title)
+                    .description(description)
+                    .texture(texture)
+                    .pose(pose != null ? pose : "hold")
+                    .scaleX(scaleX != null ? scaleX : 0.3)
+                    .scaleY(scaleY != null ? scaleY : 0.3)
+                    .exclusive(exclusive)
+                    .generic(generic)
+                    .offset(List.of(0, 0, 0))
+                    .parameters(parameters);
+
+            if (!Strings.isBlank(itemId)) {
+                builder.name(itemId);
             }
+
+            WItem saved = itemService.create(wid, builder.build());
             if (server != null && !server.isEmpty()) {
                 saved.setServer(server);
                 itemService.saveEntity(saved);
@@ -192,6 +201,33 @@ public class ItemTools {
                 "itemType", itemType,
                 "updatedCount", count
         );
+    }
+
+    @Tool(name = "rename_item", description = "Rename the itemId of an existing item. The new itemId must not already exist in the same world.")
+    public Map<String, Object> renameItem(
+            @ToolParam(description = "World ID or region (e.g. '@region:earth616')") String worldId,
+            @ToolParam(description = "Current item ID") String oldItemId,
+            @ToolParam(description = "New item ID") String newItemId) {
+        log.debug("MCP: Rename item: worldId={}, oldItemId={}, newItemId={}", worldId, oldItemId, newItemId);
+
+        if (Strings.isBlank(worldId) || Strings.isBlank(oldItemId) || Strings.isBlank(newItemId)) {
+            throw new McpToolException("worldId, oldItemId, and newItemId are required");
+        }
+
+        var wid = WorldId.of(worldId).orElseThrow(
+                () -> new McpToolException("Invalid worldId: " + worldId));
+
+        try {
+            WItem renamed = itemService.renameItemId(wid, oldItemId, newItemId);
+            return Map.of(
+                    "oldItemId", oldItemId,
+                    "newItemId", renamed.getItemId(),
+                    "worldId", renamed.getWorldId(),
+                    "status", "renamed"
+            );
+        } catch (IllegalArgumentException e) {
+            throw new McpToolException(e.getMessage());
+        }
     }
 
     @Tool(name = "delete_item", description = "Delete an item by its itemId.")

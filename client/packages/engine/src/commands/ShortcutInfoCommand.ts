@@ -126,17 +126,9 @@ export class ShortcutInfoCommand extends CommandHandler {
         result.item = item;
 
         if (item) {
-          const itemType = await itemService.getItemType(item.itemType);
-          result.itemType = itemType;
-
-          const mergedModifier = await itemService.getMergedModifier(item);
-          result.mergedModifier = mergedModifier;
-
-          // Explicitly show actionTargeting
+          // Show actionTargeting directly from item
           logger.debug('\n=== ACTION TARGETING ===');
-          logger.debug('ItemType.modifier.actionTargeting:', itemType?.modifier?.actionTargeting);
-          logger.debug('Item.modifier.actionTargeting:', item.modifier?.actionTargeting);
-          logger.debug('MergedModifier.actionTargeting:', mergedModifier?.actionTargeting);
+          logger.debug('Item.actionTargeting:', item.actionTargeting);
           logger.debug('========================\n');
         }
       }
@@ -158,8 +150,6 @@ export class ShortcutInfoCommand extends CommandHandler {
     logger.debug('\n=== FULL OBJECTS (JSON) ===');
     logger.debug('Shortcut:', JSON.stringify(result.shortcut, null, 2));
     logger.debug('\nItem:', JSON.stringify(result.item, null, 2));
-    logger.debug('\nItemType:', JSON.stringify(result.itemType, null, 2));
-    logger.debug('\nMergedModifier:', JSON.stringify(result.mergedModifier, null, 2));
     logger.debug('\nShortcutConfig:', JSON.stringify(result.shortcutConfig, null, 2));
     logger.debug('\nCurrentTarget:', JSON.stringify(result.currentTarget, null, 2));
     logger.debug('===========================\n');
@@ -188,12 +178,9 @@ export class ShortcutInfoCommand extends CommandHandler {
         const item = await itemService.getItem(shortcut.itemId);
         if (item) {
           lines.push(`  Item Title     : ${item.title}`);
-          const mergedModifier = await itemService.getMergedModifier(item);
-          if (mergedModifier) {
-            lines.push(`  Action Target  : ${mergedModifier.actionTargeting ?? 'ALL'}`);
-            lines.push(`  Pose           : ${mergedModifier.pose ?? 'none'}`);
-            lines.push(`  Exclusive      : ${mergedModifier.exclusive ?? false}`);
-          }
+          lines.push(`  Action Target  : ${item.actionTargeting ?? 'ALL'}`);
+          lines.push(`  Pose           : ${item.pose ?? 'none'}`);
+          lines.push(`  Exclusive      : ${item.exclusive ?? false}`);
         }
       }
     }
@@ -235,12 +222,9 @@ export class ShortcutInfoCommand extends CommandHandler {
           const item = await itemService.getItem(shortcutDef.itemId);
           if (item) {
             lines.push(`  Item Title     : ${item.title}`);
-            const mergedModifier = await itemService.getMergedModifier(item);
-            if (mergedModifier) {
-              lines.push(`  Action Target  : ${mergedModifier.actionTargeting ?? 'ALL'}`);
-              lines.push(`  Pose           : ${mergedModifier.pose ?? 'none'}`);
-              lines.push(`  Has onUseEffect: ${!!mergedModifier.onUseEffect}`);
-            }
+            lines.push(`  Action Target  : ${item.actionTargeting ?? 'ALL'}`);
+            lines.push(`  Pose           : ${item.pose ?? 'none'}`);
+            lines.push(`  Has onUseEffect: ${!!item.onUseEffect}`);
           }
         }
       } else {
@@ -272,17 +256,14 @@ export class ShortcutInfoCommand extends CommandHandler {
         lines.push(`  Item Type      : ${item.itemType}`);
         lines.push('');
 
-        const mergedModifier = await itemService.getMergedModifier(item);
-        if (mergedModifier) {
-          lines.push('Item Modifier:');
-          lines.push(`  Texture        : ${mergedModifier.texture}`);
-          lines.push(`  Action Target  : ${mergedModifier.actionTargeting ?? 'ALL (default)'}`);
-          lines.push(`  Pose           : ${mergedModifier.pose ?? 'none'}`);
-          lines.push(`  Exclusive      : ${mergedModifier.exclusive ?? false}`);
-          lines.push(`  Has onUseEffect: ${!!mergedModifier.onUseEffect}`);
-          lines.push(`  Has actionScript: ${!!mergedModifier.actionScript}`);
-          lines.push('');
-        }
+        lines.push('Item Properties:');
+        lines.push(`  Texture        : ${item.texture}`);
+        lines.push(`  Action Target  : ${item.actionTargeting ?? 'ALL (default)'}`);
+        lines.push(`  Pose           : ${item.pose ?? 'none'}`);
+        lines.push(`  Exclusive      : ${item.exclusive ?? false}`);
+        lines.push(`  Has onUseEffect: ${!!item.onUseEffect}`);
+        lines.push(`  Has actionScript: ${!!item.actionScript}`);
+        lines.push('');
       }
     }
 

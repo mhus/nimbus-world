@@ -86,6 +86,15 @@ public class EBlockTypeController extends BaseEditorController {
         var validation = validateId(blockId, "blockId");
         if (validation != null) return validation;
 
+        // AIR block type (id "air" or "0") is implicit and never stored in DB
+        if ("air".equalsIgnoreCase(blockId) || "0".equals(blockId)) {
+            BlockType airType = new BlockType();
+            airType.setId("air");
+            airType.setName("Air");
+            airType.setType(0);
+            return ResponseEntity.ok(airType);
+        }
+
         Optional<WBlockType> opt = blockTypeService.findByBlockId(wid, blockId);
         if (opt.isEmpty()) {
             log.warn("BlockType not found: worldId={}, blockId={}", wid, blockId);

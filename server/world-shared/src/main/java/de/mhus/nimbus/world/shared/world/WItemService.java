@@ -74,6 +74,7 @@ public class WItemService {
      * @param title Optional title or leave blank to keep existing name. Only used for new items, ignored for duplicates.
      * @return The newly created item with the new itemId.
      */
+    @Transactional
     public WItem duplicate(WorldId worldId, String itemId, String title) {
         var regionWorldId = worldId.toRegionCollection();
         if (!regionWorldId.isRegionCollection()) {
@@ -88,10 +89,20 @@ public class WItemService {
         return create(worldId, publicData);
     }
 
+    @Transactional
     public WItem create(WorldId worldId, Item publicData) {
-        var itemId = "i_" + System.currentTimeMillis() + "_" + UUID.randomUUID().toString().substring(0,6);
+        String itemId;
+        if (Strings.isBlank(publicData.getName())) {
+            itemId = "i_" + System.currentTimeMillis() + "_" + UUID.randomUUID().toString().substring(0,6);
+            publicData.setName(itemId);
+        } else {
+            itemId = publicData.getName();
+            var regionWorldId = worldId.toRegionCollection();
+            if (repository.findByWorldIdAndItemId(regionWorldId.getId(), itemId).isPresent()) {
+                throw new IllegalArgumentException("Item with itemId already exists: " + itemId);
+            }
+        }
 
-        publicData.setName(itemId);
         return save(worldId, itemId, publicData);
     }
 
@@ -150,6 +161,34 @@ public class WItemService {
             log.debug("Updated item publicData: regionWorldId={}, itemId={}", regionWorldId, itemId);
             return repository.save(item);
         });
+    }
+
+    /**
+     * Rename itemId of an existing item.
+     * Checks that the new itemId does not already exist in the same world.
+     */
+    @Transactional
+    public WItem renameItemId(WorldId worldId, String oldItemId, String newItemId) {
+        if (Strings.isBlank(newItemId)) {
+            throw new IllegalArgumentException("newItemId is required");
+        }
+        var regionWorldId = worldId.toRegionCollection();
+        if (!regionWorldId.isRegionCollection()) {
+            throw new IllegalArgumentException("worldId must be a region collection: " + worldId);
+        }
+        WItem item = repository.findByWorldIdAndItemId(regionWorldId.getId(), oldItemId)
+                .orElseThrow(() -> new IllegalArgumentException("Item not found: " + oldItemId));
+        if (oldItemId.equals(newItemId)) {
+            return item;
+        }
+        if (repository.findByWorldIdAndItemId(regionWorldId.getId(), newItemId).isPresent()) {
+            throw new IllegalArgumentException("Item with itemId already exists: " + newItemId);
+        }
+        item.setItemId(newItemId);
+        item.getPublicData().setName(newItemId);
+        item.touchUpdate();
+        log.debug("Renamed item: regionWorldId={}, oldItemId={}, newItemId={}", regionWorldId, oldItemId, newItemId);
+        return repository.save(item);
     }
 
     /**

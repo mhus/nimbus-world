@@ -408,6 +408,38 @@ public class GameplayService implements SessionAuthenticatedConsumer {
     }
 
     /**
+     * Find all items in the player's backpack that have a specific server "effect" value.
+     * Uses cached backpack and item data from AdventureData for fast lookup.
+     *
+     * @param session The player session
+     * @param effect  The effect value to search for (e.g. "1up")
+     * @return List of matching WItems (never null, may be empty)
+     */
+    public List<WItem> findItemsByEffect(PlayerSession session, String effect) {
+        if (effect == null || !(session.getGameplayData() instanceof de.mhus.nimbus.world.player.gameplay.AdventureData data)) {
+            return List.of();
+        }
+
+        var backpack = data.getCachedBackpack();
+        var items = data.getCachedItems();
+        if (backpack == null || backpack.getItemIds() == null || items == null) return List.of();
+
+        List<WItem> result = new ArrayList<>();
+        for (var entry : backpack.getItemIds().entrySet()) {
+            Integer count = entry.getValue();
+            if (count == null || count <= 0) continue;
+
+            WItem item = items.get(entry.getKey());
+            if (item == null || item.getServer() == null) continue;
+
+            if (effect.equals(item.getServer().get("effect"))) {
+                result.add(item);
+            }
+        }
+        return result;
+    }
+
+    /**
      * Called when a player's backpack has been modified via the chest panel.
      */
     public void onBackpackModified(PlayerSession session) {

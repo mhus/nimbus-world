@@ -708,19 +708,6 @@ export class NetworkService {
   }
 
   /**
-   * Get ItemType URL for loading item type definitions
-   *
-   * Constructs URL for ItemType REST API endpoint
-   *
-   * @param type - Item type identifier (e.g., 'sword', 'wand', 'potion')
-   * @returns Full ItemType URL
-   */
-  getItemTypeUrl(type: string): string {
-    const worldId = this.appContext.worldInfo?.worldId;
-    return `${this.apiUrl}/player/world/itemtypes/${type}`;
-  }
-
-  /**
    * Get speech URL for streaming speech audio
    *
    * Constructs full URL with sessionId and authToken as query parameters

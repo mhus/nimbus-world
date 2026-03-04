@@ -5,8 +5,6 @@ import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.shared.rest.BaseEditorController;
 import de.mhus.nimbus.world.shared.world.WItem;
 import de.mhus.nimbus.world.shared.world.WItemService;
-import de.mhus.nimbus.world.shared.world.WItemType;
-import de.mhus.nimbus.world.shared.world.WItemTypeService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -22,7 +20,6 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -44,12 +41,12 @@ import java.util.stream.Collectors;
 public class EItemController extends BaseEditorController {
 
     private final WItemService itemService;
-    private final WItemTypeService itemTypeService;
 
     // DTOs
     public record ItemSearchResult(
             String itemId,
             String itemType,
+            String type,
             String title,
             String texture
     ) {
@@ -58,9 +55,15 @@ public class EItemController extends BaseEditorController {
     public record CreateItemRequest(
             String id,
             String itemType,
+            String type,
             String name,
             String description,
-            de.mhus.nimbus.generated.types.ItemModifier modifier,
+            String texture,
+            Double scaleX,
+            Double scaleY,
+            String pose,
+            Boolean exclusive,
+            Boolean generic,
             java.util.Map<String, Object> parameters,
             java.util.Map<String, String> server
     ) {
@@ -68,9 +71,15 @@ public class EItemController extends BaseEditorController {
 
     public record UpdateItemRequest(
             String itemType,
+            String type,
             String title,
             String description,
-            de.mhus.nimbus.generated.types.ItemModifier modifier,
+            String texture,
+            Double scaleX,
+            Double scaleY,
+            String pose,
+            Boolean exclusive,
+            Boolean generic,
             java.util.Map<String, Object> parameters,
             java.util.Map<String, String> server
     ) {
@@ -101,25 +110,8 @@ public class EItemController extends BaseEditorController {
 
         List<WItem> limited = all.stream().limit(maxResults).collect(Collectors.toList());
 
-        // Batch-load ItemTypes to resolve textures
-        var itemTypeIds = limited.stream()
-                .map(WItem::getPublicData)
-                .filter(pd -> pd != null && pd.getItemType() != null)
-                .map(Item::getItemType)
-                .collect(Collectors.toSet());
-
-        Map<String, String> itemTypeTextures = itemTypeService.findAllEnabled(wid).stream()
-                .filter(wt -> itemTypeIds.contains(wt.getItemType()))
-                .filter(wt -> wt.getPublicData() != null && wt.getPublicData().getModifier() != null
-                        && wt.getPublicData().getModifier().getTexture() != null)
-                .collect(Collectors.toMap(
-                        WItemType::getItemType,
-                        wt -> wt.getPublicData().getModifier().getTexture(),
-                        (a, b) -> a
-                ));
-
         List<ItemSearchResult> results = limited.stream()
-                .map(item -> toSearchResult(item, itemTypeTextures))
+                .map(this::toSearchResult)
                 .collect(Collectors.toList());
 
         log.debug("Returning {} items", results.size());
@@ -192,9 +184,15 @@ public class EItemController extends BaseEditorController {
             // Build Item DTO
             Item item = Item.builder()
                     .itemType(request.itemType())
+                    .type(request.type())
                     .name(request.name())
                     .description(request.description())
-                    .modifier(request.modifier())
+                    .texture(request.texture())
+                    .scaleX(request.scaleX())
+                    .scaleY(request.scaleY())
+                    .pose(request.pose())
+                    .exclusive(request.exclusive())
+                    .generic(request.generic())
                     .parameters(request.parameters())
                     .build();
 
@@ -254,9 +252,15 @@ public class EItemController extends BaseEditorController {
             Item updatedItem = Item.builder()
                     .name(itemId) // Ensure ID stays the same
                     .itemType(request.itemType() != null ? request.itemType() : existingData.getItemType())
-                    .title(request.title() != null ? request.title() : existingData.getName())
+                    .type(request.type() != null ? request.type() : existingData.getType())
+                    .title(request.title() != null ? request.title() : existingData.getTitle())
                     .description(request.description() != null ? request.description() : existingData.getDescription())
-                    .modifier(request.modifier() != null ? request.modifier() : existingData.getModifier())
+                    .texture(request.texture() != null ? request.texture() : existingData.getTexture())
+                    .scaleX(request.scaleX() != null ? request.scaleX() : existingData.getScaleX())
+                    .scaleY(request.scaleY() != null ? request.scaleY() : existingData.getScaleY())
+                    .pose(request.pose() != null ? request.pose() : existingData.getPose())
+                    .exclusive(request.exclusive() != null ? request.exclusive() : existingData.getExclusive())
+                    .generic(request.generic() != null ? request.generic() : existingData.getGeneric())
                     .parameters(request.parameters() != null ? request.parameters() : existingData.getParameters())
                     .build();
 
@@ -356,23 +360,18 @@ public class EItemController extends BaseEditorController {
 
     // Helper methods
 
-    private ItemSearchResult toSearchResult(WItem item, Map<String, String> itemTypeTextures) {
+    private ItemSearchResult toSearchResult(WItem item) {
         Item publicData = item.getPublicData();
         if (publicData == null) {
-            return new ItemSearchResult(item.getItemId(), null, null, null);
-        }
-
-        // Item's own texture override, fallback to ItemType texture
-        String texture = publicData.getModifier() != null ? publicData.getModifier().getTexture() : null;
-        if (Strings.isBlank(texture) && publicData.getItemType() != null) {
-            texture = itemTypeTextures.get(publicData.getItemType());
+            return new ItemSearchResult(item.getItemId(), null, null, null, null);
         }
 
         return new ItemSearchResult(
                 item.getItemId(),
                 publicData.getItemType(),
+                publicData.getType(),
                 publicData.getTitle(),
-                texture
+                publicData.getTexture()
         );
     }
 }

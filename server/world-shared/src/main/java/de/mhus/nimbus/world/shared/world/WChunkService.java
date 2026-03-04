@@ -509,6 +509,10 @@ public class WChunkService implements StorageProvider {
 
         // Load items for this chunk from registry
         var items = itemRegistryService.getItemsInChunk(worldId, chunkData.getCx(), chunkData.getCz());
+        if (!items.isEmpty()) {
+            log.info("Loaded {} items for chunk transfer object: worldId={} cx={} cz={}",
+                    items.size(), worldId.getId(), chunkData.getCx(), chunkData.getCz());
+        }
 
         return ChunkDataTransferObject.builder()
                 .cx(chunkData.getCx())
@@ -543,6 +547,10 @@ public class WChunkService implements StorageProvider {
 
         // Load items for this chunk from registry
         var items = itemRegistryService.getItemsInChunk(worldId, cx, cz);
+        if (!items.isEmpty()) {
+            log.info("Loaded {} items for chunk transfer object: worldId={} cx={} cz={}",
+                    items.size(), worldId.getId(), cx, cz);
+        }
 
         // If chunk is compressed in storage, use storage data directly
         if (chunk.isCompressed() && chunk.getStorageId() != null) {

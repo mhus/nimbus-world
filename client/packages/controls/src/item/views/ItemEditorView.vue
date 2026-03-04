@@ -31,7 +31,7 @@
         <div class="card-body">
           <h3 class="card-title">Item Details</h3>
 
-          <!-- Item ID -->
+          <!-- Item ID (name) -->
           <div class="form-control">
             <label class="label">
               <span class="label-text font-semibold">Item ID</span>
@@ -46,7 +46,7 @@
             />
           </div>
 
-          <!-- Item Type ID -->
+          <!-- Item Type (category) -->
           <div class="form-control">
             <label class="label">
               <span class="label-text font-semibold">Item Type</span>
@@ -56,11 +56,26 @@
               type="text"
               class="input input-bordered"
               placeholder="e.g., sword, wand, potion"
-              :disabled="!isNew"
             />
             <label class="label">
-              <span class="label-text-alt text-xs">{{ isNew ? 'References ItemType definition' : 'Cannot be changed' }}</span>
+              <span class="label-text-alt text-xs">Category identifier for grouping items</span>
             </label>
+          </div>
+
+          <!-- Type (enum) -->
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text font-semibold">Category</span>
+            </label>
+            <select v-model="localItem.type" class="select select-bordered">
+              <option value="">-- none --</option>
+              <option value="weapon">weapon</option>
+              <option value="tool">tool</option>
+              <option value="food">food</option>
+              <option value="potion">potion</option>
+              <option value="armor">armor</option>
+              <option value="material">material</option>
+            </select>
           </div>
 
           <!-- Display Name -->
@@ -72,7 +87,7 @@
               v-model="localItem.title"
               type="text"
               class="input input-bordered"
-              placeholder="Display title (optional, uses ItemType title if empty)"
+              placeholder="Display title"
             />
           </div>
 
@@ -85,22 +100,22 @@
               v-model="localItem.description"
               class="textarea textarea-bordered"
               rows="2"
-              placeholder="Item description (optional)"
+              placeholder="Item description"
             ></textarea>
           </div>
 
-          <!-- Modifier Overrides -->
-          <div class="divider">Visual Modifier (Overrides)</div>
+          <!-- Visual Properties -->
+          <div class="divider">Visual Properties</div>
           <div class="space-y-4">
             <div class="form-control">
               <label class="label">
-                <span class="label-text font-semibold">Texture Override</span>
+                <span class="label-text font-semibold">Texture</span>
               </label>
               <input
-                v-model="modifierTexture"
+                v-model="localItem.texture"
                 type="text"
                 class="input input-bordered"
-                placeholder="Optional texture override (uses ItemType default if empty)"
+                placeholder="e.g., items/sword.png"
               />
             </div>
 
@@ -110,11 +125,11 @@
                   <span class="label-text">Scale X</span>
                 </label>
                 <input
-                  v-model.number="modifierScaleX"
+                  v-model.number="localItem.scaleX"
                   type="number"
                   step="0.1"
                   class="input input-bordered"
-                  placeholder="ItemType default"
+                  placeholder="0.5"
                 />
               </div>
 
@@ -123,32 +138,84 @@
                   <span class="label-text">Scale Y</span>
                 </label>
                 <input
-                  v-model.number="modifierScaleY"
+                  v-model.number="localItem.scaleY"
                   type="number"
                   step="0.1"
                   class="input input-bordered"
-                  placeholder="ItemType default"
+                  placeholder="0.5"
                 />
               </div>
             </div>
 
             <div class="form-control">
               <label class="label">
-                <span class="label-text">Pose Override</span>
+                <span class="label-text">Color Tint</span>
               </label>
               <input
-                v-model="modifierPose"
+                v-model="localItem.color"
                 type="text"
                 class="input input-bordered"
-                placeholder="e.g., attack, use, drink"
+                placeholder="e.g., #ff0000"
               />
+            </div>
+          </div>
+
+          <!-- Behavior -->
+          <div class="divider">Behavior</div>
+          <div class="space-y-4">
+            <div class="form-control">
+              <label class="label">
+                <span class="label-text">Pose</span>
+              </label>
+              <input
+                v-model="localItem.pose"
+                type="text"
+                class="input input-bordered"
+                placeholder="e.g., attack, use, drink, cast"
+              />
+            </div>
+
+            <div class="form-control">
+              <label class="label">
+                <span class="label-text">Action Targeting</span>
+              </label>
+              <select v-model="localItem.actionTargeting" class="select select-bordered">
+                <option value="">ALL (default)</option>
+                <option value="ENTITY">ENTITY</option>
+                <option value="BLOCK">BLOCK</option>
+                <option value="BOTH">BOTH</option>
+                <option value="GROUND">GROUND</option>
+                <option value="ALL">ALL</option>
+              </select>
+            </div>
+
+            <div class="flex gap-4">
+              <label class="label cursor-pointer gap-2">
+                <input
+                  type="checkbox"
+                  class="checkbox checkbox-sm"
+                  :checked="localItem.exclusive === true"
+                  @change="localItem.exclusive = ($event.target as HTMLInputElement).checked || undefined"
+                />
+                <span class="label-text">Exclusive (blocks other shortcuts while active)</span>
+              </label>
+
+              <label class="label cursor-pointer gap-2">
+                <input
+                  type="checkbox"
+                  class="checkbox checkbox-sm"
+                  :checked="localItem.generic === true"
+                  @change="localItem.generic = ($event.target as HTMLInputElement).checked || undefined"
+                />
+                <span class="label-text">Generic (stackable in inventory)</span>
+              </label>
             </div>
           </div>
 
           <!-- OnUseEffect -->
           <div class="divider">Scrawl Effect (onUseEffect)</div>
           <ScriptActionEditor
-            v-model="modifierOnUseEffect"
+            v-model="localItem.onUseEffect"
           />
 
           <!-- Wearable Slots -->
@@ -156,7 +223,7 @@
           <div class="space-y-2">
             <label class="label">
               <span class="label-text font-semibold">Allowed wearing slots</span>
-              <span class="label-text-alt text-xs">None selected = all slots allowed</span>
+              <span class="label-text-alt text-xs">None selected = not wearable</span>
             </label>
             <div class="flex flex-wrap gap-2">
               <button
@@ -272,15 +339,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, onMounted, watch } from 'vue';
 import type { Item } from '@nimbus/shared';
 import { ItemApiService } from '../services/itemApiService';
 import ScriptActionEditor from '../components/ScriptActionEditor.vue';
 import JsonEditorDialog from '@components/JsonEditorDialog.vue';
 import { useWorld } from '@/composables/useWorld';
-
-// Alias for backward compatibility
-type ItemData = Item;
 
 const props = defineProps<{
   itemId: string;
@@ -297,8 +361,7 @@ const emit = defineEmits<{
 
 const loading = ref(false);
 const error = ref<string | null>(null);
-const localItem = ref<ItemData | null>(null);
-const editableItemId = ref(props.itemId);
+const localItem = ref<Item | null>(null);
 const showJsonEditor = ref(false);
 
 // Key-value entries for publicData.parameters (excluding wearableSlots which has its own UI)
@@ -328,57 +391,6 @@ const mapToEntries = (map: Record<string, any> | null | undefined, excludeKeys: 
     .map(([key, value]) => ({ key, value: String(value ?? '') }));
 };
 
-// Computed properties for modifier fields
-const modifierTexture = computed({
-  get: () => localItem.value?.modifier?.texture || '',
-  set: (value: string) => {
-    if (localItem.value) {
-      if (!localItem.value.modifier) localItem.value.modifier = {};
-      localItem.value.modifier.texture = value || undefined;
-    }
-  },
-});
-
-const modifierScaleX = computed({
-  get: () => localItem.value?.modifier?.scaleX,
-  set: (value: number | undefined) => {
-    if (localItem.value) {
-      if (!localItem.value.modifier) localItem.value.modifier = {};
-      localItem.value.modifier.scaleX = value;
-    }
-  },
-});
-
-const modifierScaleY = computed({
-  get: () => localItem.value?.modifier?.scaleY,
-  set: (value: number | undefined) => {
-    if (localItem.value) {
-      if (!localItem.value.modifier) localItem.value.modifier = {};
-      localItem.value.modifier.scaleY = value;
-    }
-  },
-});
-
-const modifierPose = computed({
-  get: () => localItem.value?.modifier?.pose || '',
-  set: (value: string) => {
-    if (localItem.value) {
-      if (!localItem.value.modifier) localItem.value.modifier = {};
-      localItem.value.modifier.pose = value || undefined;
-    }
-  },
-});
-
-const modifierOnUseEffect = computed({
-  get: () => localItem.value?.modifier?.onUseEffect,
-  set: (value: any) => {
-    if (localItem.value) {
-      if (!localItem.value.modifier) localItem.value.modifier = {};
-      localItem.value.modifier.onUseEffect = value;
-    }
-  },
-});
-
 const ALL_WEARABLE_SLOTS = ['HEAD', 'NECK', 'BODY', 'ARMS', 'LEGS', 'FEET', 'RING', 'HAND'] as const;
 
 const isWearableSlotActive = (slot: string): boolean => {
@@ -404,18 +416,14 @@ const toggleWearableSlot = (slot: string) => {
 
 async function loadItem() {
   if (props.isNew) {
-    // Create new item template
     localItem.value = {
       name: 'new_item_' + Date.now(),
       itemType: '',
       title: 'New Item',
       description: '',
-      modifier: {
-        texture: '',
-        scaleX: 0.5,
-        scaleY: 0.5,
-        pose: 'use',
-      },
+      texture: '',
+      scaleX: 0.5,
+      scaleY: 0.5,
       parameters: {},
     };
     publicParamEntries.value = [];
@@ -512,7 +520,7 @@ async function confirmDelete() {
   }
 }
 
-function handleJsonApply(updatedItem: ItemData) {
+function handleJsonApply(updatedItem: Item) {
   localItem.value = updatedItem;
   showJsonEditor.value = false;
 }
@@ -522,7 +530,6 @@ watch(() => props.itemId, () => {
 });
 
 onMounted(() => {
-  // Load worlds with regionOnly filter for item editor
   loadWorlds('regionOnly');
   loadItem();
 });

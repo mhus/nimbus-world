@@ -1,15 +1,25 @@
 /**
- * Item - Item instance in the world
+ * Item - Item definition in the world
  *
- * Items reference an ItemType for default properties and can override them.
- * The ItemType provides texture, scaling, pose, and onUseEffect defaults.
- * Individual items can customize these via modifier.
+ * Items are Y-axis billboards with simple properties.
+ * All modifier properties are now directly on the Item (flattened from ItemModifier).
  *
  * Items are stored with position, title, and id directly (no Block wrapper).
  * ChunkService converts Items to Blocks for rendering only.
  */
 
-import type { ItemModifier } from './ItemModifier';
+import type { ScriptActionDefinition } from '../scrawl/ScriptActionDefinition';
+
+/**
+ * Targeting mode for action effects
+ *
+ * - 'ENTITY': Only execute when entity is targeted
+ * - 'BLOCK': Only execute when block is targeted
+ * - 'BOTH': Execute when entity OR block is targeted
+ * - 'GROUND': Always execute with ground position from camera ray
+ * - 'ALL': Always execute (entity, block, or ground position)
+ */
+export type ActionTargetingMode = 'ENTITY' | 'BLOCK' | 'BOTH' | 'GROUND' | 'ALL';
 
 /** This is a marker interface for full Item with all properties loaded from ItemType */
 export interface FullItem extends Item {
@@ -17,10 +27,9 @@ export interface FullItem extends Item {
 }
 
 /**
- * Item instance in the world
+ * Item definition in the world
  *
- * References an ItemType and optionally overrides its properties.
- * The position, title, and id are stored directly (not in a Block wrapper).
+ * Contains all properties directly (no separate ItemModifier).
  */
 export interface Item {
   /**
@@ -31,53 +40,91 @@ export interface Item {
 
   /**
    * Item type identifier (e.g., 'sword', 'wand', 'potion')
-   * References an ItemType definition loaded from files/itemtypes/{type}.json
    */
   itemType: string;
 
   /**
-   * Position in world coordinates
-   * Direct position, not wrapped in a Block
-   * Use ItemBlockRef position instead.
+   * Item category type (e.g., 'weapon', 'tool', 'food', 'potion', 'armor', 'material')
    */
-  // position: Vector3;
+  type?: string;
 
   /**
    * Optional display title
-   * Overrides the ItemType title for this specific item instance
    */
   title?: string;
 
   /**
-   * Optional description override
-   * Overrides the ItemType description for this specific item instance
+   * Optional description
    */
   description?: string;
 
+  // --- Rendering properties (formerly in ItemModifier) ---
+
   /**
-   * Optional modifier overrides
-   *
-   * Allows individual items to override ItemType.modifier properties.
-   * Merged with ItemType.modifier to create final rendering modifier.
-   *
-   * Example:
-   * ```json
-   * {
-   *   "modifier": {
-   *     "texture": "items/enchanted_sword.png",
-   *     "color": "#ff00ff",
-   *     "scaleX": 0.7
-   *   }
-   * }
-   * ```
+   * Texture path for the item (e.g., 'items/sword.png')
    */
-  modifier?: Partial<ItemModifier>;
+  texture?: string;
+
+  /**
+   * X-axis scaling (width)
+   * Default: 0.5 (half block width)
+   */
+  scaleX?: number;
+
+  /**
+   * Y-axis scaling (height multiplier)
+   * Default: 0.5 (half block height)
+   */
+  scaleY?: number;
+
+  /**
+   * Pivot offset [x, y, z]
+   * Shifts the item's center point relative to block position
+   * Default: [0, 0, 0]
+   */
+  offset?: [number, number, number];
+
+  /**
+   * Optional tint color (hex format, e.g., '#ff0000')
+   */
+  color?: string;
+
+  /**
+   * Animation pose when item is used
+   * Examples: 'attack', 'use', 'drink', 'cast'
+   */
+  pose?: string;
+
+  /**
+   * Scrawl script executed when item is used
+   */
+  onUseEffect?: ScriptActionDefinition;
+
+  /**
+   * Whether this item blocks other shortcuts while active
+   * Default: false
+   */
+  exclusive?: boolean;
+
+  /**
+   * Action script executed on specific triggers
+   */
+  actionScript?: ScriptActionDefinition;
+
+  /**
+   * Targeting mode for visual effects (pose, onUseEffect)
+   * Default: 'ALL'
+   */
+  actionTargeting?: ActionTargetingMode; // javaType: String
+
+  /**
+   * Generic item with amount, can be stacked in inventory.
+   */
+  generic?: boolean;
 
   /**
    * Optional parameters
-   *
-   * Custom key-value pairs for item-specific data (server-side only).
-   * Examples: durability, enchantments, customData
+   * Custom key-value pairs for item-specific data.
    */
   parameters?: Record<string, any>;
 }

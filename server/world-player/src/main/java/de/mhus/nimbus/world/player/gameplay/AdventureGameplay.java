@@ -601,46 +601,73 @@ public class AdventureGameplay extends BasicGameplay {
     }
 
     /**
-     * Handle player death: reset vitals, notify client.
+     * Handle player death: check for 1up item first, otherwise normal death.
      */
     private void onPlayerDeath(PlayerSession session, AdventureData data) {
-        // Reset health to max, remove debuffs
-        var health = data.getVital("health");
-        if (health != null) {
-            health.setCurrent(health.getEffectiveMax());
+        // Check backpack for a 1up item
+        var oneUpItems = gameplayService.findItemsByEffect(session, "1up");
+        String oneUpItemId = oneUpItems.isEmpty() ? null : oneUpItems.getFirst().getItemId();
+        if (oneUpItemId != null) {
+            // Consume the 1up item
+            gameplayService.reduceItem(session, oneUpItemId, 1);
+
+            // Reset all vitals to their default values (full revive)
+            resetVitalsToDefaults(data);
+
+            // Remove all non-permanent effects
+            data.getActiveEffects().removeIf(e -> !e.isPermanent());
+
+            data.setUnderwater(false);
+
+            clientService.sendSystemNotification(session, "1Up", "You have been revived!");
+            log.info("Player {} used 1Up item {} to revive", session.getEntityId(), oneUpItemId);
+        } else {
+            // Normal death: partial reset
+            var health = data.getVital("health");
+            if (health != null) {
+                health.setCurrent(health.getEffectiveMax());
+            }
+
+            data.getActiveEffects().removeIf(e -> !e.isPermanent());
+
+            var hunger = data.getVital("hunger");
+            if (hunger != null) {
+                hunger.setCurrent(hunger.getEffectiveMax() * 0.5);
+            }
+            var thirst = data.getVital("thirst");
+            if (thirst != null) {
+                thirst.setCurrent(thirst.getEffectiveMax() * 0.5);
+            }
+
+            var adrenaline = data.getVital("adrenaline");
+            if (adrenaline != null) {
+                adrenaline.setCurrent(0);
+            }
+
+            data.setUnderwater(false);
+            var air = data.getVital("air");
+            if (air != null) {
+                air.setCurrent(air.getEffectiveMax());
+            }
+
+            clientService.sendSystemNotification(session, "Death", "You have died and been revived.");
         }
 
-        // Remove all non-permanent effects (clear debuffs)
-        data.getActiveEffects().removeIf(e -> !e.isPermanent());
-
-        // Reset hunger/thirst to half
-        var hunger = data.getVital("hunger");
-        if (hunger != null) {
-            hunger.setCurrent(hunger.getEffectiveMax() * 0.5);
-        }
-        var thirst = data.getVital("thirst");
-        if (thirst != null) {
-            thirst.setCurrent(thirst.getEffectiveMax() * 0.5);
-        }
-
-        // Reset adrenaline
-        var adrenaline = data.getVital("adrenaline");
-        if (adrenaline != null) {
-            adrenaline.setCurrent(0);
-        }
-
-        // Reset air and surface
-        data.setUnderwater(false);
-        var air = data.getVital("air");
-        if (air != null) {
-            air.setCurrent(air.getEffectiveMax());
-        }
-
-        // Notify client
-        clientService.sendSystemNotification(session, "Death", "You have died and been revived.");
-
-        // Send updated vitals
         sendVitalsUpdate(session, data);
+    }
+
+    /**
+     * Reset all vitals to their default current values (full revive).
+     * Health, stamina, mana, air → max. Hunger, thirst → 0. Adrenaline → 0.
+     */
+    private void resetVitalsToDefaults(AdventureData data) {
+        for (var vital : data.getVitals().values()) {
+            switch (vital.getType()) {
+                case "hunger", "thirst", "adrenaline" -> vital.setCurrent(0);
+                default -> vital.setCurrent(vital.getEffectiveMax());
+            }
+            vital.clamp();
+        }
     }
 
     // --- Deserialization ---

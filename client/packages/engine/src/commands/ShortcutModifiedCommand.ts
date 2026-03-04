@@ -94,7 +94,7 @@ export class ShortcutModifiedCommand extends CommandHandler {
       if (!slotKey) continue;
 
       // Look up equipped item in the wearing slot
-      const equippedItemId = wearingItemIds?.[slotKey as any];
+      const equippedItemId = (wearingItemIds as Record<string, string> | undefined)?.[slotKey];
       if (!equippedItemId) {
         logger.debug('No item equipped in wearing slot for hand shortcut', { key, type: shortcut.type, slotKey });
         continue;
@@ -107,8 +107,8 @@ export class ShortcutModifiedCommand extends CommandHandler {
       if (itemService) {
         try {
           const item = await itemService.getItem(equippedItemId);
-          if (item?.modifier?.texture) {
-            shortcut.iconPath = item.modifier.texture;
+          if (item?.texture) {
+            shortcut.iconPath = item.texture;
           }
           if (item?.name) {
             shortcut.name = item.name;

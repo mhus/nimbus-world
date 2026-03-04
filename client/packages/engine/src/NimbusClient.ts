@@ -590,8 +590,8 @@ async function resolveHandShortcuts(
     if (itemService) {
       try {
         const item = await itemService.getItem(equippedItemId);
-        if (item?.modifier?.texture) {
-          shortcut.iconPath = item.modifier.texture;
+        if (item?.texture) {
+          shortcut.iconPath = item.texture;
         }
         if (item?.name) {
           shortcut.name = item.name;

@@ -23,8 +23,6 @@ export * from './BlockModifier';
 export * from './Item';
 export * from './ItemBlockRef';
 export * from './ItemRef';
-export * from './ItemType';
-export * from './ItemModifier';
 export * from './TargetingTypes';
 
 // Chunk types

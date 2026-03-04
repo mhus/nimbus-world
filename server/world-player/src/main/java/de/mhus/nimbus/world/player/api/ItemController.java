@@ -127,13 +127,10 @@ public class ItemController {
             return new ItemSearchResult(item.getItemId(), item.getItemId(), null);
         }
 
-        // Extract texture from modifier
-        String texture = publicData.getModifier() != null ? publicData.getModifier().getTexture() : null;
-
         return new ItemSearchResult(
                 publicData.getName(),
                 publicData.getTitle() != null ? publicData.getTitle() : publicData.getName(),
-                texture
+                publicData.getTexture()
         );
     }
 }
