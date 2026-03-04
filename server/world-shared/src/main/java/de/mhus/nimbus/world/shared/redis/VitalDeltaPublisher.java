@@ -60,6 +60,51 @@ public class VitalDeltaPublisher {
     }
 
     /**
+     * Publish an attack to the appropriate channel.
+     * The receiver will calculate actual damage using their own defense stats.
+     *
+     * @param worldId         World ID
+     * @param targetEntityId  Target entity (@ prefix = player, else = NPC)
+     * @param sourceEntityId  Entity that initiated the attack
+     * @param physDmg         Physical raw damage
+     * @param physAcc         Physical hit chance (0-1)
+     * @param magDmg          Magical raw damage
+     * @param magAcc          Magical hit chance (0-1)
+     * @param critChance      Critical hit chance (0-1)
+     * @param critMult        Critical hit multiplier (e.g. 1.5)
+     */
+    public void publishAttack(String worldId, String targetEntityId, String sourceEntityId,
+                              double physDmg, double physAcc, double magDmg, double magAcc,
+                              double critChance, double critMult) {
+        if (targetEntityId == null) return;
+
+        try {
+            VitalDeltaBroadcastMessage message = VitalDeltaBroadcastMessage.builder()
+                    .type(VitalDeltaBroadcastMessage.TYPE_ATTACK)
+                    .targetEntityId(targetEntityId)
+                    .sourceEntityId(sourceEntityId)
+                    .worldId(worldId)
+                    .physicalDamage(physDmg)
+                    .physicalAccuracy(physAcc)
+                    .magicalDamage(magDmg)
+                    .magicalAccuracy(magAcc)
+                    .critChance(critChance)
+                    .critMultiplier(critMult)
+                    .build();
+
+            String json = objectMapper.writeValueAsString(message);
+            String channel = targetEntityId.startsWith("@") ? CHANNEL_PLAYER : CHANNEL_ENTITY;
+            redisMessaging.publish(worldId, channel, json);
+
+            log.debug("Published attack: {} -> {} [phys={}/{}, mag={}/{}, crit={}/{}]",
+                    sourceEntityId, targetEntityId, physDmg, physAcc, magDmg, magAcc, critChance, critMult);
+
+        } catch (Exception e) {
+            log.error("Failed to publish attack for {} in world {}", targetEntityId, worldId, e);
+        }
+    }
+
+    /**
      * Publish multiple vital deltas at once.
      *
      * @param deltas List of delta messages to publish

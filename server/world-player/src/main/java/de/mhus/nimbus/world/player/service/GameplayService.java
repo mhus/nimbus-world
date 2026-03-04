@@ -340,6 +340,74 @@ public class GameplayService implements SessionAuthenticatedConsumer {
     }
 
     /**
+     * Put an item into the player's backpack.
+     * Creates backpack/itemIds map if they don't exist yet.
+     * Returns false if the backpack has too many distinct items or the total amount would exceed the limit.
+     *
+     * @param session  The player session
+     * @param itemId   The item to add
+     * @param quantity The amount to add
+     * @return true if the item was added successfully, false if backpack is full or amount exceeds limit
+     */
+    public boolean putIntoBackpack(PlayerSession session, String itemId, int quantity) {
+        if (session.getWorldId() == null || quantity <= 0) return false;
+
+        String entityId = session.getEntityId();
+        if (entityId == null) return false;
+
+        PlayerId playerId = PlayerId.of(entityId).orElse(null);
+        if (playerId == null) return false;
+
+        String regionId = session.getWorldId().getRegionId();
+
+        var characterOpt = characterService.getCharacter(
+                playerId.getUserId(), regionId, playerId.getCharacterId());
+        if (characterOpt.isEmpty()) return false;
+
+        RCharacter character = characterOpt.get();
+        var backpack = character.getBackpack();
+        if (backpack == null) {
+            backpack = new de.mhus.nimbus.generated.configs.PlayerBackpack();
+            character.setBackpack(backpack);
+        }
+        if (backpack.getItemIds() == null) {
+            backpack.setItemIds(new java.util.LinkedHashMap<>());
+        }
+
+        // Check capacity
+        int maxItems = session.getGameplay() != null
+                ? session.getGameplay().getMaxBackpackItems(session)
+                : 1000;
+
+        Integer currentCount = backpack.getItemIds().getOrDefault(itemId, 0);
+
+        // Check total amount for this item
+        if (currentCount + quantity > maxItems) {
+            log.debug("Backpack amount limit reached for player {} item {} ({} + {} > {})",
+                    entityId, itemId, currentCount, quantity, maxItems);
+            return false;
+        }
+
+        // Check distinct item count (only for new items)
+        if (currentCount == 0 && backpack.getItemIds().size() >= maxItems) {
+            log.debug("Backpack item slot limit reached for player {} ({} >= {})",
+                    entityId, backpack.getItemIds().size(), maxItems);
+            return false;
+        }
+
+        backpack.getItemIds().put(itemId, currentCount + quantity);
+
+        characterService.updateCharater(character);
+
+        log.info("Put item {} x{} into backpack for player {} (total: {})",
+                itemId, quantity, entityId, currentCount + quantity);
+
+        onBackpackModified(session);
+
+        return true;
+    }
+
+    /**
      * Called when a player's backpack has been modified via the chest panel.
      */
     public void onBackpackModified(PlayerSession session) {

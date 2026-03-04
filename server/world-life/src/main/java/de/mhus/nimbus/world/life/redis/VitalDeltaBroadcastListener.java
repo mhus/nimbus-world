@@ -80,10 +80,18 @@ public class VitalDeltaBroadcastListener {
             }
 
             // TODO: Apply delta to entity vitals when NPC vital system is implemented.
-            // For now, log the received delta for debugging.
-            log.debug("World {}: Received vital delta for entity {}: {} {} (from {})",
-                    worldId, delta.getTargetEntityId(), delta.getVitalType(),
-                    delta.getDelta(), delta.getSourceEntityId());
+            String type = delta.getType();
+            if (VitalDeltaBroadcastMessage.TYPE_ATTACK.equals(type)) {
+                log.debug("World {}: Received ATTACK for entity {} from {} [phys={}/{}, mag={}/{}, crit={}/{}]",
+                        worldId, delta.getTargetEntityId(), delta.getSourceEntityId(),
+                        delta.getPhysicalDamage(), delta.getPhysicalAccuracy(),
+                        delta.getMagicalDamage(), delta.getMagicalAccuracy(),
+                        delta.getCritChance(), delta.getCritMultiplier());
+            } else {
+                log.debug("World {}: Received vital delta for entity {}: {} {} (from {})",
+                        worldId, delta.getTargetEntityId(), delta.getVitalType(),
+                        delta.getDelta(), delta.getSourceEntityId());
+            }
 
         } catch (Exception e) {
             log.error("Failed to handle vital delta for world {}: {}", worldId, e.getMessage(), e);

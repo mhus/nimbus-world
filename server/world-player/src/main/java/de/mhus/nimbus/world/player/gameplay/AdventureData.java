@@ -49,6 +49,15 @@ public class AdventureData extends GameplayData {
     /** Cached skills from RCharacter (transient, not persisted) */
     private transient Map<String, Integer> cachedSkills;
 
+    /** Timestamp until which collecting is blocked (transient, not persisted) */
+    private transient long nextCollectAllowed = 0;
+
+    /** Timestamp until which attacking is blocked by attack speed cooldown (transient, not persisted) */
+    private transient long nextAttackAllowed = 0;
+
+    /** Passive stats from wearings + skills, recalculated on inventory/skill change (transient) */
+    private transient PassiveStats passiveStats = new PassiveStats();
+
     /**
      * Initialize with default vital values and combat stats.
      */

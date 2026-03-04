@@ -51,4 +51,12 @@ public interface Gameplay {
      * @return true if effects were applied successfully
      */
     boolean useEffect(PlayerSession session, Map<String, Object> parameters, String targetEntityId);
+
+    /**
+     * Maximum number of items (distinct slots and per-item amount) allowed in the backpack.
+     * Will be derived from player skills in the future.
+     */
+    default int getMaxBackpackItems(PlayerSession session) {
+        return 1000;
+    }
 }

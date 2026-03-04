@@ -2,6 +2,7 @@ package de.mhus.nimbus.world.player.ws.redis;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.world.player.gameplay.AdventureData;
+import de.mhus.nimbus.world.player.gameplay.AdventureGameplay;
 import de.mhus.nimbus.world.player.gameplay.VitalValue;
 import de.mhus.nimbus.world.player.session.PlayerSession;
 import de.mhus.nimbus.world.player.ws.SessionManager;
@@ -18,7 +19,8 @@ import org.springframework.stereotype.Service;
  * Channel pattern: world:*:v.d.p (player vital deltas)
  *
  * Receives deltas from other entities (players/NPCs) and applies them
- * to the targeted player's vitals.
+ * to the targeted player's vitals. ATTACK messages are delegated to
+ * AdventureGameplay for defence resolution.
  */
 @Service
 @RequiredArgsConstructor
@@ -28,6 +30,7 @@ public class VitalDeltaBroadcastListener {
     private final WorldRedisMessagingService redisMessaging;
     private final SessionManager sessionManager;
     private final ObjectMapper objectMapper;
+    private final AdventureGameplay adventureGameplay;
 
     @PostConstruct
     public void subscribeToVitalDeltas() {
@@ -37,51 +40,62 @@ public class VitalDeltaBroadcastListener {
 
     private void handleVitalDelta(String topic, String message) {
         try {
-            VitalDeltaBroadcastMessage delta = objectMapper.readValue(message, VitalDeltaBroadcastMessage.class);
+            VitalDeltaBroadcastMessage msg = objectMapper.readValue(message, VitalDeltaBroadcastMessage.class);
 
-            if (delta.getTargetEntityId() == null || delta.getVitalType() == null) {
-                log.warn("Invalid vital delta message: missing targetEntityId or vitalType");
+            if (msg.getTargetEntityId() == null) {
+                log.warn("Invalid vital delta message: missing targetEntityId");
                 return;
             }
 
             // Find the target player session on this pod
-            PlayerSession targetSession = sessionManager.findByEntityId(delta.getTargetEntityId());
+            PlayerSession targetSession = sessionManager.findByEntityId(msg.getTargetEntityId());
             if (targetSession == null) {
-                // Target player not on this pod - normal in a multi-pod setup
-                log.trace("Vital delta target {} not found on this pod", delta.getTargetEntityId());
+                log.trace("Vital delta target {} not found on this pod", msg.getTargetEntityId());
                 return;
             }
 
             if (!(targetSession.getGameplayData() instanceof AdventureData data)) {
-                log.trace("Target session {} has no AdventureData", delta.getTargetEntityId());
+                log.trace("Target session {} has no AdventureData", msg.getTargetEntityId());
                 return;
             }
 
-            // Resolve vital type
-            VitalType vitalType;
-            try {
-                vitalType = VitalType.valueOf(delta.getVitalType());
-            } catch (IllegalArgumentException e) {
-                log.warn("Unknown vital type in delta: {}", delta.getVitalType());
-                return;
+            String type = msg.getType();
+            if (VitalDeltaBroadcastMessage.TYPE_ATTACK.equals(type)) {
+                adventureGameplay.handleIncomingAttack(data, msg);
+            } else {
+                handleDelta(msg, data);
             }
-
-            VitalValue vital = data.getVital(vitalType.vitalName());
-            if (vital == null) {
-                log.trace("Vital {} not found on target {}", vitalType.vitalName(), delta.getTargetEntityId());
-                return;
-            }
-
-            // Apply delta and clamp
-            vital.setCurrent(vital.getCurrent() + delta.getDelta());
-            vital.clamp();
-
-            log.debug("Applied vital delta to {}: {} {} (from {}), now {}",
-                    delta.getTargetEntityId(), vitalType, delta.getDelta(),
-                    delta.getSourceEntityId(), vital.getCurrent());
 
         } catch (Exception e) {
             log.error("Failed to handle vital delta from topic {}: {}", topic, e.getMessage(), e);
         }
+    }
+
+    private void handleDelta(VitalDeltaBroadcastMessage msg, AdventureData data) {
+        if (msg.getVitalType() == null) {
+            log.warn("Invalid DELTA message: missing vitalType");
+            return;
+        }
+
+        VitalType vitalType;
+        try {
+            vitalType = VitalType.valueOf(msg.getVitalType());
+        } catch (IllegalArgumentException e) {
+            log.warn("Unknown vital type in delta: {}", msg.getVitalType());
+            return;
+        }
+
+        VitalValue vital = data.getVital(vitalType.vitalName());
+        if (vital == null) {
+            log.trace("Vital {} not found on target {}", vitalType.vitalName(), msg.getTargetEntityId());
+            return;
+        }
+
+        vital.setCurrent(vital.getCurrent() + msg.getDelta());
+        vital.clamp();
+
+        log.debug("Applied vital delta to {}: {} {} (from {}), now {}",
+                msg.getTargetEntityId(), vitalType, msg.getDelta(),
+                msg.getSourceEntityId(), vital.getCurrent());
     }
 }

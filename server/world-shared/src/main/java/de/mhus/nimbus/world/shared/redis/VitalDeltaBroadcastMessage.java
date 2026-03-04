@@ -13,6 +13,10 @@ import lombok.NoArgsConstructor;
  * - No "@" prefix -> Channel "v.d.e" (entity, handled by world-life)
  *
  * Redis channel: world:{worldId}:v.d.p or world:{worldId}:v.d.e
+ *
+ * Two message types:
+ * - "DELTA": Direct vital modification (heal, DoT). Uses vitalType + delta.
+ * - "ATTACK": Attack broadcast. Receiver calculates damage using own defense stats.
  */
 @Data
 @Builder
@@ -20,13 +24,20 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class VitalDeltaBroadcastMessage {
 
+    public static final String TYPE_DELTA = "DELTA";
+    public static final String TYPE_ATTACK = "ATTACK";
+
     /** Target entity ID, e.g. "@user:char" (player) or "cow2" (NPC) */
     private String targetEntityId;
 
-    /** Vital type: "HEALTH", "MANA", "STAMINA" */
+    /** Message type: "DELTA" (direct vital change) or "ATTACK" (receiver calculates damage) */
+    @Builder.Default
+    private String type = TYPE_DELTA;
+
+    /** Vital type: "HEALTH", "MANA", "STAMINA" — used for DELTA messages */
     private String vitalType;
 
-    /** Delta value to apply: negative = damage, positive = heal */
+    /** Delta value to apply: negative = damage, positive = heal — used for DELTA messages */
     private double delta;
 
     /** Source entity ID that initiated this effect */
@@ -34,4 +45,24 @@ public class VitalDeltaBroadcastMessage {
 
     /** World ID */
     private String worldId;
+
+    // --- ATTACK fields (only used when type = "ATTACK") ---
+
+    /** Physical raw damage */
+    private double physicalDamage;
+
+    /** Physical hit chance (0-1) */
+    private double physicalAccuracy;
+
+    /** Magical raw damage */
+    private double magicalDamage;
+
+    /** Magical hit chance (0-1) */
+    private double magicalAccuracy;
+
+    /** Critical hit chance (0-1) */
+    private double critChance;
+
+    /** Critical hit multiplier (e.g. 1.5) */
+    private double critMultiplier;
 }

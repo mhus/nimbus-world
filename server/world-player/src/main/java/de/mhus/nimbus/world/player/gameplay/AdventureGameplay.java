@@ -8,13 +8,17 @@ import de.mhus.nimbus.generated.configs.WEARABLE_SLOT;
 import de.mhus.nimbus.generated.types.PlayerInfo;
 import de.mhus.nimbus.generated.types.ShortcutDefinition;
 import de.mhus.nimbus.shared.types.PlayerId;
+import de.mhus.nimbus.world.player.gameplay.adventure.AttackAction;
+import de.mhus.nimbus.world.player.gameplay.adventure.CollectAction;
 import de.mhus.nimbus.world.player.gameplay.adventure.EffectAction;
 import de.mhus.nimbus.world.player.service.ClientService;
 import de.mhus.nimbus.world.player.session.PlayerSession;
+import de.mhus.nimbus.world.shared.gameplay.CombatResolver;
 import de.mhus.nimbus.world.shared.redis.VitalDeltaBroadcastMessage;
 import de.mhus.nimbus.world.shared.redis.VitalDeltaPublisher;
 import de.mhus.nimbus.world.shared.world.WItem;
 import jakarta.annotation.PostConstruct;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -38,13 +42,17 @@ public class AdventureGameplay extends BasicGameplay {
     private ObjectMapper objectMapper;
 
     @Autowired
+    @Getter
     private VitalDeltaPublisher vitalDeltaPublisher;
 
+    @Getter
     private final EffectProcessor effectProcessor = new EffectProcessor();
 
     @PostConstruct
     public void init() {
         actions.put("effect", new EffectAction(this));
+        actions.put("collect", new CollectAction(this));
+        actions.put("attack", new AttackAction(this));
     }
 
     @Override
@@ -276,6 +284,9 @@ public class AdventureGameplay extends BasicGameplay {
 
             data.setCachedItems(items);
 
+            // Recalculate passive stats from wearings + skills
+            recalculatePassiveStats(data);
+
             log.debug("Refreshed inventory cache for player {}: backpack={}, wearings={}, shortcuts={}, items={}",
                     entityId,
                     backpack != null && backpack.getItemIds() != null ? backpack.getItemIds().size() : 0,
@@ -306,12 +317,118 @@ public class AdventureGameplay extends BasicGameplay {
 
             data.setCachedSkills(new HashMap<>(characterOpt.get().getSkills()));
 
+            // Recalculate passive stats (skills affect them)
+            recalculatePassiveStats(data);
+
             log.debug("Refreshed skills cache for player {}: skills={}",
                     entityId, data.getCachedSkills().size());
         } catch (Exception e) {
             log.error("Failed to refresh skills cache for session {}: {}",
                     session.getSessionId(), e.getMessage(), e);
         }
+    }
+
+    /**
+     * Recalculate passive stats from worn equipment and skills.
+     * Called when inventory or skills change. Equipment effects are parsed from
+     * item.server "effects" (format: "stat:value[:duration[:probability]]").
+     * Only permanent effects (no duration) from wearings are considered.
+     *
+     * Skills apply multiplicative bonuses via {@link Skill#applyMultiplicative}:
+     * - combat.melee/ranged/magic: multiply physical/magical damage
+     * - combat.defense/magicDefense: multiply physical/magical defense
+     * - survival.*: additive bonuses to vitals
+     */
+    private void recalculatePassiveStats(AdventureData data) {
+        PassiveStats stats = data.getPassiveStats();
+        if (stats == null) {
+            stats = new PassiveStats();
+            data.setPassiveStats(stats);
+        }
+        stats.reset();
+
+        var skills = data.getCachedSkills();
+
+        // 1. Collect effects from worn items (non-weapon slots provide passive stats)
+        var backpack = data.getCachedBackpack();
+        var items = data.getCachedItems();
+        if (backpack != null && backpack.getWearingItemIds() != null && items != null) {
+            for (var entry : backpack.getWearingItemIds().entrySet()) {
+                String itemId = entry.getValue();
+                if (itemId == null) continue;
+
+                WItem item = items.get(itemId);
+                if (item == null || item.getServer() == null) continue;
+
+                String effectsDef = item.getServer().get("effects");
+                if (effectsDef == null || effectsDef.isBlank()) continue;
+
+                // Effects are comma-separated or a JSON array string; items store them as single strings
+                // Format in server map: "physical.defense:30,physical.evasion:-0.05"
+                // or as individual "effects" entries following ActiveEffect.parse format
+                for (String effectStr : effectsDef.split(",")) {
+                    String trimmed = effectStr.trim();
+                    if (trimmed.isEmpty()) continue;
+                    try {
+                        ActiveEffect effect = ActiveEffect.parse(trimmed, "item:" + itemId);
+                        // Only permanent effects (no duration) count as passive
+                        if (effect.isPermanent() && !effect.isInstant()) {
+                            stats.addEffect(effect.getStat(), effect.getValue());
+                        }
+                    } catch (Exception e) {
+                        log.trace("Skipping unparseable wearing effect '{}' on item {}", trimmed, itemId);
+                    }
+                }
+            }
+        }
+
+        // 2. Apply skill bonuses
+
+        // Survival skills (additive): level directly adds to vitals
+        // survival.vitality: +1.0 health.max, +0.01 health.regen per level
+        int vitality = AdventureSkills.SURVIVAL_VITALITY.getValue(skills);
+        stats.addEffect("health.max", vitality * 1.0);
+        stats.addEffect("health.regen", vitality * 0.01);
+
+        // survival.endurance: +0.5 stamina.max, +0.02 stamina.regen per level
+        int endurance = AdventureSkills.SURVIVAL_ENDURANCE.getValue(skills);
+        stats.addEffect("stamina.max", endurance * 0.5);
+        stats.addEffect("stamina.regen", endurance * 0.02);
+
+        // survival.willpower: +1.0 mana.max, +0.01 mana.regen per level
+        int willpower = AdventureSkills.SURVIVAL_WILLPOWER.getValue(skills);
+        stats.addEffect("mana.max", willpower * 1.0);
+        stats.addEffect("mana.regen", willpower * 0.01);
+
+        // survival.resilience: reduces hunger/thirst degen (additive regen buff)
+        int resilience = AdventureSkills.SURVIVAL_RESILIENCE.getValue(skills);
+        stats.addEffect("hunger.regen", resilience * 0.001);
+        stats.addEffect("thirst.regen", resilience * 0.001);
+
+        // Combat skills (multiplicative): applied as percent buffs
+        // combat.melee: multiplies physical damage (start=100 = no change)
+        double meleePercent = AdventureSkills.COMBAT_MELEE.getValue(skills) / 100.0 - 1.0;
+        if (meleePercent != 0) stats.addEffect("physical.damagePercent", meleePercent);
+
+        // combat.ranged: also contributes to physical accuracy
+        double rangedPercent = AdventureSkills.COMBAT_RANGED.getValue(skills) / 100.0 - 1.0;
+        if (rangedPercent != 0) stats.addEffect("physical.accuracy", rangedPercent * 0.1);
+
+        // combat.magic: multiplies magical damage
+        double magicPercent = AdventureSkills.COMBAT_MAGIC.getValue(skills) / 100.0 - 1.0;
+        if (magicPercent != 0) stats.addEffect("magical.damagePercent", magicPercent);
+
+        // combat.defense: multiplies physical defense
+        double defensePercent = AdventureSkills.COMBAT_DEFENSE.getValue(skills) / 100.0 - 1.0;
+        if (defensePercent != 0) stats.addEffect("physical.defensePercent", defensePercent);
+
+        // combat.magicDefense: multiplies magical defense
+        double mDefensePercent = AdventureSkills.COMBAT_MAGIC_DEFENSE.getValue(skills) / 100.0 - 1.0;
+        if (mDefensePercent != 0) stats.addEffect("magical.defensePercent", mDefensePercent);
+
+        log.debug("Recalculated passive stats: physDef={}, magDef={}, healthMax=+{}, manaMax=+{}",
+                stats.getPhysicalDefense(), stats.getMagicalDefense(),
+                stats.getHealthMax(), stats.getManaMax());
     }
 
     /**
@@ -431,6 +548,56 @@ public class AdventureGameplay extends BasicGameplay {
         WItem item = itemService.findByItemId(session.getWorldId(), itemId).orElse(null);
         if (item == null || item.getServer() == null) return null;
         return item.getServer().get("action");
+    }
+
+    /**
+     * Handle an incoming ATTACK broadcast on the defender side.
+     * Uses cached defence values (base + PassiveStats) to resolve damage via CombatResolver.
+     *
+     * @param data The defender's AdventureData
+     * @param msg  The incoming attack message
+     */
+    public void handleIncomingAttack(AdventureData data, VitalDeltaBroadcastMessage msg) {
+        // Read defender's cached defence stats (effective values from last tick recalculation)
+        double defPhysDef = getEffectiveStat(data, "physical.defense");
+        double defPhysEvasion = getEffectiveStat(data, "physical.evasion");
+        double defMagDef = getEffectiveStat(data, "magical.defense");
+        double defMagEvasion = getEffectiveStat(data, "magical.evasion");
+
+        // Resolve damage
+        double damage = CombatResolver.resolve(
+                msg.getPhysicalDamage(), msg.getPhysicalAccuracy(),
+                msg.getMagicalDamage(), msg.getMagicalAccuracy(),
+                msg.getCritChance(), msg.getCritMultiplier(),
+                defPhysDef, defPhysEvasion,
+                defMagDef, defMagEvasion);
+
+        if (damage == 0) {
+            log.debug("Attack from {} on {} missed (phyDef={}, phyEva={}, magDef={}, magEva={})",
+                    msg.getSourceEntityId(), msg.getTargetEntityId(),
+                    defPhysDef, defPhysEvasion, defMagDef, defMagEvasion);
+            return;
+        }
+
+        // Apply damage to health
+        VitalValue health = data.getVital("health");
+        if (health == null) return;
+
+        health.setCurrent(health.getCurrent() + damage);
+        health.clamp();
+
+        // Adrenaline gain + combat timer reset for defender
+        effectProcessor.addAdrenaline(data, 3.0);
+        effectProcessor.onCombatAction(data);
+
+        log.debug("Attack from {} hit {} for {} damage (health now {})",
+                msg.getSourceEntityId(), msg.getTargetEntityId(),
+                damage, health.getCurrent());
+    }
+
+    private double getEffectiveStat(AdventureData data, String statName) {
+        CombatStat stat = data.getCombatStat(statName);
+        return stat != null ? stat.getEffective() : 0;
     }
 
     /**

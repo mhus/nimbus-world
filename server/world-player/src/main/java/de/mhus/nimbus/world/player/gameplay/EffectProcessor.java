@@ -64,7 +64,12 @@ public class EffectProcessor {
             stat.resetBuffs();
         }
 
-        // 3. Accumulate buffs from active effects (skip remote effects)
+        // 3a. Apply passive stats from equipment + skills
+        if (data.getPassiveStats() != null) {
+            data.getPassiveStats().applyTo(data);
+        }
+
+        // 3b. Accumulate buffs from active effects (skip remote effects)
         for (var effect : data.getActiveEffects()) {
             if (effect.isRemote()) continue; // remote effects don't modify own vitals
             accumulateEffect(data, effect);
