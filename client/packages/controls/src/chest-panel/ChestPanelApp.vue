@@ -283,7 +283,7 @@ const submittingPin = ref(false);
 
 const getAssetUrl = (texturePath: string): string => {
   if (!texturePath || !worldId.value) return '';
-  return `${apiService.getBaseUrl()}/control/worlds/${worldId.value}/assets/${texturePath}`;
+  return `${apiService.getBaseUrl()}/control/player/assets/${texturePath}`;
 };
 
 const onImageError = (event: Event) => {

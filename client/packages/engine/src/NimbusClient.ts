@@ -513,6 +513,10 @@ async function postEngineInitialization(appContext: AppContext): Promise<void> {
       mode: __EDITOR__ ? 'editor' : 'viewer'
     });
 
+    // Resolve hand-type shortcuts from wearing items before initialization
+    const backpack = appContext.services.config?.getPlayerBackpack();
+    await resolveHandShortcuts(appContext, shortcuts, backpack);
+
     // Execute all shortcut initializations in parallel without waiting
     Promise.all(
       Object.entries(shortcuts).map(async ([key, shortcut]) => {
@@ -546,6 +550,58 @@ async function postEngineInitialization(appContext: AppContext): Promise<void> {
     }).catch((error) => {
       logger.error('Error during shortcuts initialization', undefined, error as Error);
     });
+  }
+}
+
+/** Maps hand shortcut types to their WEARABLE_SLOT keys */
+const HAND_TYPE_TO_SLOT: Record<string, string> = {
+  left_hand_1: 'LEFT_HAND_1',
+  right_hand_1: 'RIGHT_HAND_1',
+  left_hand_2: 'LEFT_HAND_2',
+  right_hand_2: 'RIGHT_HAND_2',
+};
+
+/**
+ * Resolve hand-type shortcuts by looking up the equipped item in the corresponding wearing slot.
+ * Updates itemId and iconPath from the wearing item.
+ */
+async function resolveHandShortcuts(
+  appContext: AppContext,
+  shortcuts: Record<string, any>,
+  backpack: any | null | undefined
+): Promise<void> {
+  const wearingItemIds = backpack?.wearingItemIds;
+  const itemService = appContext.services.item;
+
+  for (const [key, shortcut] of Object.entries(shortcuts)) {
+    if (!shortcut || !shortcut.type) continue;
+
+    const slotKey = HAND_TYPE_TO_SLOT[shortcut.type];
+    if (!slotKey) continue;
+
+    const equippedItemId = wearingItemIds?.[slotKey];
+    if (!equippedItemId) {
+      logger.debug('No item equipped in wearing slot for hand shortcut', { key, type: shortcut.type, slotKey });
+      continue;
+    }
+
+    shortcut.itemId = equippedItemId;
+
+    if (itemService) {
+      try {
+        const item = await itemService.getItem(equippedItemId);
+        if (item?.modifier?.texture) {
+          shortcut.iconPath = item.modifier.texture;
+        }
+        if (item?.name) {
+          shortcut.name = item.name;
+        }
+      } catch (err) {
+        logger.warn('Failed to load item for hand shortcut', { key, equippedItemId, error: (err as Error).message });
+      }
+    }
+
+    logger.debug('Resolved hand shortcut', { key, type: shortcut.type, slotKey, equippedItemId });
   }
 }
 

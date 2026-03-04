@@ -336,7 +336,7 @@ const isValid = computed(() => {
   );
 });
 
-const ALL_WEARABLE_SLOTS = ['HEAD', 'NECK', 'BODY', 'HANDS', 'LEGS', 'FEET', 'LEFT_RING', 'RIGHT_RING'] as const;
+const ALL_WEARABLE_SLOTS = ['HEAD', 'NECK', 'BODY', 'ARMS', 'LEGS', 'FEET', 'RING', 'HAND'] as const;
 
 const isWearableSlotActive = (slot: string): boolean => {
   const slots = itemType.value?.parameters?.wearableSlots;

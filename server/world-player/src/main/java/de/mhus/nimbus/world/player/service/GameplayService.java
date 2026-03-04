@@ -144,7 +144,7 @@ public class GameplayService implements SessionAuthenticatedConsumer {
             log.warn("No gameplay set for session {}, cannot handle wearing modification", session.getPlayer());
             return;
         }
-        clientService.sendCommand(session, "WearingModified", List.of());
+        clientService.sendCommand(session, "ShortcutModified", List.of());
         gameplay.onWearingModified(session);
     }
 

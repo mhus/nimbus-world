@@ -151,11 +151,11 @@ public class PlayerWearingController extends BaseEditorController {
             return bad("Invalid worldId format");
         }
 
-        // Validate that the item is allowed in this slot
+        // Validate that the item is allowed in this slot (wearableSlots contains group names)
         Map<String, Object> enriched = enrichItem(parsedWorldId, body.itemId(), 1);
         @SuppressWarnings("unchecked")
         List<String> wearableSlots = (List<String>) enriched.get("wearableSlots");
-        if (wearableSlots != null && !wearableSlots.contains(slot.name())) {
+        if (wearableSlots != null && !wearableSlots.contains(slotToGroup(slot))) {
             return bad("Item cannot be equipped in slot " + slot.name());
         }
 
@@ -335,6 +335,20 @@ public class PlayerWearingController extends BaseEditorController {
         String regionId = parsedWorldId.getRegionId();
         Optional<RCharacter> characterOpt = characterService.getCharacter(userId, regionId, characterId);
         return characterOpt.orElse(null);
+    }
+
+    private String slotToGroup(WEARABLE_SLOT slot) {
+        return switch (slot) {
+            case HEAD -> "HEAD";
+            case BODY -> "BODY";
+            case ARMS -> "ARMS";
+            case LEGS -> "LEGS";
+            case FEET -> "FEET";
+            case NECK -> "NECK";
+            case LEFT_RING, RIGHT_RING -> "RING";
+            case LEFT_HAND_1, RIGHT_HAND_1, LEFT_HAND_2, RIGHT_HAND_2 -> "HAND";
+            default -> slot.name();
+        };
     }
 
     record EquipRequest(String itemId, WEARABLE_SLOT slot) {}

@@ -8219,7 +8219,7 @@
     } ],
     "enums" : [ {
       "name" : "WEARABLE_SLOT",
-      "values" : [ "HEAD", "BODY", "LEGS", "FEET", "HANDS", "NECK", "LEFT_RING", "RIGHT_RING" ],
+      "values" : [ "HEAD", "BODY", "LEGS", "FEET", "NECK", "LEFT_RING", "RIGHT_RING", "LEFT_HAND_1", "RIGHT_HAND_1", "LEFT_HAND_2", "RIGHT_HAND_2", "ARMS" ],
       "enumValues" : [ {
         "name" : "HEAD",
         "value" : "0"
@@ -8233,16 +8233,56 @@
         "name" : "FEET",
         "value" : "3"
       }, {
-        "name" : "HANDS",
+        "name" : "NECK",
         "value" : "4"
       }, {
-        "name" : "NECK",
+        "name" : "LEFT_RING",
         "value" : "5"
       }, {
-        "name" : "LEFT_RING",
+        "name" : "RIGHT_RING",
         "value" : "6"
       }, {
-        "name" : "RIGHT_RING",
+        "name" : "LEFT_HAND_1",
+        "value" : "7"
+      }, {
+        "name" : "RIGHT_HAND_1",
+        "value" : "8"
+      }, {
+        "name" : "LEFT_HAND_2",
+        "value" : "9"
+      }, {
+        "name" : "RIGHT_HAND_2",
+        "value" : "10"
+      }, {
+        "name" : "ARMS",
+        "value" : "11"
+      } ]
+    }, {
+      "name" : "WEARABLE_GROUP",
+      "values" : [ "HEAD", "BODY", "LEGS", "FEET", "NECK", "RING", "HAND", "ARMS" ],
+      "enumValues" : [ {
+        "name" : "HEAD",
+        "value" : "0"
+      }, {
+        "name" : "BODY",
+        "value" : "1"
+      }, {
+        "name" : "LEGS",
+        "value" : "2"
+      }, {
+        "name" : "FEET",
+        "value" : "3"
+      }, {
+        "name" : "NECK",
+        "value" : "4"
+      }, {
+        "name" : "RING",
+        "value" : "5"
+      }, {
+        "name" : "HAND",
+        "value" : "6"
+      }, {
+        "name" : "ARMS",
         "value" : "7"
       } ]
     } ],

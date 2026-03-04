@@ -108,6 +108,56 @@ export class ShortcutService {
 
       const selectService = this.appContext.services.select;
 
+      // Handle 'interact' type: same as SPACE key interaction
+      if (shortcutDef.type === 'interact') {
+        logger.debug('Executing interact shortcut', { shortcutNr, shortcutKey });
+
+        if (!selectService) {
+          logger.warn('SelectService not available for interact shortcut');
+          return;
+        }
+
+        const selectedEntity = selectService.getCurrentSelectedEntity();
+        const selectedBlock = selectService.getCurrentSelectedBlock();
+
+        if (selectedEntity) {
+          networkService.sendEntityInteraction(
+            selectedEntity.id,
+            'interact',
+            undefined,
+            {}
+          );
+          logger.info('Interact shortcut: sent entity interaction', { entityId: selectedEntity.id });
+          playerService.emitShortcutActivated(shortcutKey, undefined, 'entity', selectedEntity.currentPosition);
+        } else if (selectedBlock) {
+          const confirmText = selectedBlock.block.metadata?.client?.confirm;
+          if (confirmText) {
+            const confirmed = window.confirm(confirmText);
+            if (!confirmed) {
+              logger.info('User cancelled block interaction');
+              return;
+            }
+          }
+          const pos = selectedBlock.block.position;
+          networkService.sendBlockInteraction(
+            pos.x,
+            pos.y,
+            pos.z,
+            'interact',
+            {},
+            selectedBlock.block.metadata?.id,
+            selectedBlock.block.metadata?.groupId
+          );
+          logger.info('Interact shortcut: sent block interaction', { position: pos });
+          playerService.emitShortcutActivated(shortcutKey, undefined, 'block', pos);
+        } else {
+          logger.debug('Interact shortcut: no target selected');
+        }
+
+        playerService.highlightShortcut(shortcutKey);
+        return;
+      }
+
       if (shortcutDef.command) {
         // execute command instead
         logger.debug('Executing shortcut command', { shortcutNr, shortcutKey });

@@ -94,6 +94,7 @@ public class PlayerBackpackShortcutController extends BaseEditorController {
                 String name = itemId;
                 String itemType = null;
                 String description = null;
+                List<String> wearableSlots = null;
 
                 Optional<WItem> itemOpt = wItemService.findByItemId(parsedWorldId, itemId);
                 if (itemOpt.isPresent()) {
@@ -109,10 +110,16 @@ public class PlayerBackpackShortcutController extends BaseEditorController {
                         if (!Strings.isBlank(publicData.getDescription())) {
                             description = publicData.getDescription();
                         }
+                        if (publicData.getParameters() != null) {
+                            Object slots = publicData.getParameters().get("wearableSlots");
+                            if (slots instanceof List<?>) {
+                                wearableSlots = (List<String>) slots;
+                            }
+                        }
                     }
                 }
 
-                // Fallback to ItemType for texture, name and description
+                // Fallback to ItemType for texture, name, description and wearableSlots
                 if (!Strings.isBlank(itemType)) {
                     Optional<WItemType> typeOpt = wItemTypeService.findByItemType(parsedWorldId, itemType);
                     if (typeOpt.isPresent()) {
@@ -127,6 +134,12 @@ public class PlayerBackpackShortcutController extends BaseEditorController {
                             if (description == null && !Strings.isBlank(typeData.getDescription())) {
                                 description = typeData.getDescription();
                             }
+                            if (wearableSlots == null && typeData.getParameters() != null) {
+                                Object slots = typeData.getParameters().get("wearableSlots");
+                                if (slots instanceof List<?>) {
+                                    wearableSlots = (List<String>) slots;
+                                }
+                            }
                         }
                     }
                 }
@@ -138,6 +151,7 @@ public class PlayerBackpackShortcutController extends BaseEditorController {
                 info.put("texture", texture);
                 info.put("description", description);
                 info.put("count", count);
+                info.put("wearableSlots", wearableSlots);
                 items.add(info);
             }
         }
@@ -361,6 +375,65 @@ public class PlayerBackpackShortcutController extends BaseEditorController {
         return characterOpt.orElse(null);
     }
 
+    /**
+     * Assign a special action (not a backpack item) to a shortcut slot.
+     */
+    @PostMapping("/assign-action")
+    @Operation(summary = "Assign a special action to a shortcut slot")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Action shortcut assigned"),
+            @ApiResponse(responseCode = "400", description = "Invalid request"),
+            @ApiResponse(responseCode = "404", description = "Character not found")
+    })
+    public ResponseEntity<?> assignActionShortcut(
+            @RequestBody AssignActionRequest body,
+            HttpServletRequest request) {
+
+        String worldId = (String) request.getAttribute(AccessFilterBase.ATTR_WORLD_ID);
+        String userId = (String) request.getAttribute(AccessFilterBase.ATTR_USER_ID);
+        String characterId = (String) request.getAttribute(AccessFilterBase.ATTR_CHARACTER_ID);
+
+        log.debug("POST assign action shortcut: worldId={}, userId={}, characterId={}, slotKey={}, type={}",
+                worldId, userId, characterId, body != null ? body.slotKey() : null, body != null ? body.type() : null);
+
+        if (Strings.isBlank(worldId) || Strings.isBlank(userId) || Strings.isBlank(characterId)) {
+            return bad("Not authenticated");
+        }
+
+        if (body == null || Strings.isBlank(body.slotKey()) || Strings.isBlank(body.type())) {
+            return bad("slotKey and type required");
+        }
+
+        var character = findCharacter(worldId, userId, characterId);
+        if (character == null) {
+            return notFound("Character not found");
+        }
+
+        ShortcutDefinition shortcut = new ShortcutDefinition();
+        shortcut.setType(body.type());
+        shortcut.setName(body.name());
+        shortcut.setIconPath(body.iconPath());
+        shortcut.setWait(0);
+
+        PlayerInfo playerInfo = character.getPublicData();
+        if (playerInfo == null) {
+            playerInfo = new PlayerInfo();
+        }
+        Map<String, ShortcutDefinition> shortcuts = playerInfo.getShortcuts();
+        if (shortcuts == null) {
+            shortcuts = new LinkedHashMap<>();
+        }
+        shortcuts.put(body.slotKey(), shortcut);
+        playerInfo.setShortcuts(shortcuts);
+        character.setPublicData(playerInfo);
+        characterService.updateCharater(character);
+
+        log.info("Assigned action shortcut: userId={}, characterId={}, slot={}, type={}", userId, characterId, body.slotKey(), body.type());
+        notifyPlayer(worldId, request);
+        return ResponseEntity.ok(Map.of("success", true));
+    }
+
     record AssignShortcutRequest(String slotKey, String itemId) {}
+    record AssignActionRequest(String slotKey, String type, String name, String iconPath) {}
     record ClearShortcutRequest(String slotKey) {}
 }

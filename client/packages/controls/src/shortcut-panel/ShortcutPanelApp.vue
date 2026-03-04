@@ -47,13 +47,13 @@
           <div class="bg-gray-800 rounded-lg shadow-md p-4 border border-gray-700">
             <h2 class="text-lg font-bold text-amber-400 mb-3">Backpack</h2>
 
-            <div v-if="backpackItems.length === 0" class="text-center py-8 text-gray-500">
+            <div v-if="shortcutableItems.length === 0" class="text-center py-8 text-gray-500">
               No items in backpack
             </div>
 
             <div v-else class="grid grid-cols-5 gap-2">
               <div
-                v-for="item in backpackItems"
+                v-for="item in shortcutableItems"
                 :key="item.itemId"
                 class="relative w-14 h-14 rounded border-2 cursor-pointer transition-all hover:border-gray-500 flex items-center justify-center bg-gray-700"
                 :class="selectedItem?.itemId === item.itemId ? 'border-amber-400 shadow-lg shadow-amber-400/20' : 'border-gray-600'"
@@ -95,10 +95,53 @@
                   <h3 class="font-semibold text-amber-300 truncate">{{ selectedItem.name }}</h3>
                   <p class="text-xs text-gray-400">{{ selectedItem.itemType || 'Unknown type' }}</p>
                   <p v-if="selectedItem.description" class="text-xs text-gray-500 mt-1">{{ selectedItem.description }}</p>
-                  <p class="text-xs text-gray-500 mt-1">Count: {{ selectedItem.count }}</p>
+                  <p v-if="selectedItem.count" class="text-xs text-gray-500 mt-1">Count: {{ selectedItem.count }}</p>
                 </div>
               </div>
               <p class="text-xs text-gray-500 mt-2 italic">Click a shortcut slot to assign this item</p>
+            </div>
+          </div>
+
+          <!-- Actions -->
+          <div class="bg-gray-800 rounded-lg shadow-md p-4 border border-gray-700 mt-4">
+            <h2 class="text-lg font-bold text-amber-400 mb-3">Actions</h2>
+            <div class="grid grid-cols-5 gap-2">
+              <div
+                v-for="action in SPECIAL_ACTIONS"
+                :key="action.type"
+                class="relative w-14 h-14 rounded border-2 cursor-pointer transition-all hover:border-gray-500 flex items-center justify-center bg-gray-700"
+                :class="selectedAction?.type === action.type ? 'border-amber-400 shadow-lg shadow-amber-400/20' : 'border-gray-600'"
+                :title="action.name"
+                @click="selectAction(action)"
+              >
+                <img
+                  :src="getAssetUrl(action.iconPath)"
+                  :alt="action.name"
+                  class="w-10 h-10 object-contain"
+                  style="image-rendering: pixelated;"
+                  @error="onImageError($event)"
+                />
+              </div>
+            </div>
+
+            <!-- Selected Action Detail -->
+            <div v-if="selectedAction" class="mt-4 pt-4 border-t border-gray-700">
+              <div class="flex items-start gap-3">
+                <div class="w-16 h-16 rounded bg-gray-700 border border-gray-600 flex items-center justify-center flex-shrink-0">
+                  <img
+                    :src="getAssetUrl(selectedAction.iconPath)"
+                    :alt="selectedAction.name"
+                    class="w-12 h-12 object-contain"
+                    style="image-rendering: pixelated;"
+                    @error="onImageError($event)"
+                  />
+                </div>
+                <div class="min-w-0">
+                  <h3 class="font-semibold text-amber-300 truncate">{{ selectedAction.name }}</h3>
+                  <p class="text-xs text-gray-400">Action: {{ selectedAction.type }}</p>
+                </div>
+              </div>
+              <p class="text-xs text-gray-500 mt-2 italic">Click a shortcut slot to assign this action</p>
             </div>
           </div>
         </div>
@@ -142,7 +185,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { apiService } from '@/services/ApiService';
 import type { ShortcutDefinition } from '@nimbus/shared/types/ShortcutDefinition';
 
@@ -153,7 +196,22 @@ interface BackpackItemInfo {
   texture: string | null;
   description: string | null;
   count: number;
+  wearableSlots: string[] | null;
 }
+
+interface SpecialAction {
+  type: string;
+  name: string;
+  iconPath: string;
+}
+
+const SPECIAL_ACTIONS: SpecialAction[] = [
+  { type: 'interact',     name: 'Interact',     iconPath: 'n:textures/hands/interact.png' },
+  { type: 'left_hand_1',  name: 'Left Hand 1',  iconPath: 'n:textures/hands/left_hand_1.png' },
+  { type: 'right_hand_1', name: 'Right Hand 1', iconPath: 'n:textures/hands/right_hand_1.png' },
+  { type: 'left_hand_2',  name: 'Left Hand 2',  iconPath: 'n:textures/hands/left_hand_2.png' },
+  { type: 'right_hand_2', name: 'Right Hand 2', iconPath: 'n:textures/hands/right_hand_2.png' },
+];
 
 const SLOT_ROWS = [
   {
@@ -179,12 +237,16 @@ const actionMessage = ref<{ text: string; type: 'success' | 'error' } | null>(nu
 
 const worldId = ref('');
 const backpackItems = ref<BackpackItemInfo[]>([]);
+const shortcutableItems = computed(() =>
+  backpackItems.value.filter(item => !item.wearableSlots || item.wearableSlots.length === 0)
+);
 const shortcuts = ref<Record<string, ShortcutDefinition>>({});
 const selectedItem = ref<BackpackItemInfo | null>(null);
+const selectedAction = ref<SpecialAction | null>(null);
 
 const getAssetUrl = (texturePath: string): string => {
   if (!texturePath || !worldId.value) return '';
-  return `${apiService.getBaseUrl()}/control/worlds/${worldId.value}/assets/${texturePath}`;
+  return `${apiService.getBaseUrl()}/control/player/assets/${texturePath}`;
 };
 
 const onImageError = (event: Event) => {
@@ -193,6 +255,7 @@ const onImageError = (event: Event) => {
 };
 
 const selectItem = (item: BackpackItemInfo) => {
+  selectedAction.value = null;
   if (selectedItem.value?.itemId === item.itemId) {
     selectedItem.value = null;
   } else {
@@ -200,12 +263,21 @@ const selectItem = (item: BackpackItemInfo) => {
   }
 };
 
+const selectAction = (action: SpecialAction) => {
+  selectedItem.value = null;
+  if (selectedAction.value?.type === action.type) {
+    selectedAction.value = null;
+  } else {
+    selectedAction.value = action;
+  }
+};
+
 const onSlotClick = async (slotKey: string) => {
   if (selectedItem.value) {
-    // Assign selected item to slot via backend
     await doAssign(slotKey, selectedItem.value.itemId);
+  } else if (selectedAction.value) {
+    await doAssignAction(slotKey, selectedAction.value);
   } else if (shortcuts.value[slotKey]) {
-    // Clear slot via backend
     await doClear(slotKey);
   }
 };
@@ -219,6 +291,23 @@ const doAssign = async (slotKey: string, itemId: string) => {
   } catch (err) {
     console.error('[ShortcutPanel] Failed to assign shortcut:', err);
     showMessage('Failed to assign shortcut.', 'error');
+  }
+};
+
+const doAssignAction = async (slotKey: string, action: SpecialAction) => {
+  try {
+    await apiService.post('/control/player/backpack-shortcut/assign-action', {
+      slotKey,
+      type: action.type,
+      name: action.name,
+      iconPath: action.iconPath,
+    });
+    selectedAction.value = null;
+    await loadData();
+    showMessage('Action assigned!', 'success');
+  } catch (err) {
+    console.error('[ShortcutPanel] Failed to assign action:', err);
+    showMessage('Failed to assign action.', 'error');
   }
 };
 

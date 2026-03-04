@@ -10,7 +10,7 @@
 /**
  * Shortcut action type
  */
-export type ShortcutActionType = 'block' | 'attack' | 'use' | 'none';
+export type ShortcutActionType = 'use' | 'none' | 'cmd' | 'interact' | 'left_hand_1' | 'right_hand_1' | 'left_hand_2' | 'right_hand_2';
 
 /**
  * Shortcut key type
@@ -29,10 +29,14 @@ export type ShortcutKey = string; // Format: 'key0'-'key9', 'click0'-'click2', '
 export interface ShortcutDefinition {
   /**
    * Action type
-   * - 'block': Place/use a block
-   * - 'attack': Attack action
    * - 'use': Use item action
    * - 'none': No action (default)
+   * - 'cmd': Execute a command
+   * - 'interact': Interact with target
+   * - 'left_hand_1': Use left hand slot 1
+   * - 'right_hand_1': Use right hand slot 1
+   * - 'left_hand_2': Use left hand slot 2
+   * - 'right_hand_2': Use right hand slot 2
    */
   type: ShortcutActionType; // javaType: String
 

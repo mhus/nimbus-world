@@ -98,7 +98,7 @@
                   <p class="text-xs text-gray-500 mt-1">Count: {{ selectedItem.count }}</p>
                 </div>
               </div>
-              <p v-if="selectedItem.wearableSlots?.length" class="text-xs text-gray-500 mt-1">Slots: {{ selectedItem.wearableSlots.join(', ') }}</p>
+              <p v-if="selectedItem.wearableSlots?.length" class="text-xs text-gray-500 mt-1">Groups: {{ selectedItem.wearableSlots.join(', ') }}</p>
               <p class="text-xs text-gray-500 mt-2 italic">Click a highlighted wearing slot to equip this item</p>
             </div>
           </div>
@@ -109,168 +109,28 @@
           <div class="bg-gray-800 rounded-lg shadow-md p-4 border border-gray-700">
             <h2 class="text-lg font-bold text-emerald-400 mb-3">Wearing Slots</h2>
 
-            <div class="wearing-grid mx-auto" style="max-width: 380px;">
-              <!-- Row 1: HEAD -->
-              <div class="wearing-slot" style="grid-column: 3; grid-row: 1;">
+            <div class="wearing-grid mx-auto" style="max-width: 450px;">
+              <div
+                v-for="def in SLOT_DEFS"
+                :key="def.slot"
+                class="wearing-slot"
+                :style="{ gridColumn: def.col, gridRow: def.row }"
+              >
                 <div
                   class="slot-box"
-                  :class="slotClass('HEAD')"
-                  @click="onSlotClick('HEAD')"
-                  title="Head"
+                  :class="slotClass(def.slot)"
+                  @click="onSlotClick(def.slot)"
+                  :title="def.label"
                 >
-                  <span class="slot-label">HEAD</span>
+                  <span class="slot-label">{{ def.label }}</span>
                   <img
-                    v-if="wearingItems.HEAD?.texture"
-                    :src="getAssetUrl(wearingItems.HEAD.texture)"
-                    alt="Head"
+                    v-if="wearingItems[def.slot]?.texture"
+                    :src="getAssetUrl(wearingItems[def.slot]!.texture!)"
+                    :alt="def.label"
                     class="slot-icon"
                     @error="onImageError($event)"
                   />
-                  <span v-else-if="wearingItems.HEAD" class="text-xs text-gray-400 text-center leading-tight px-1">{{ wearingItems.HEAD.name?.substring(0, 6) }}</span>
-                  <span v-else class="text-gray-600 text-lg">-</span>
-                </div>
-              </div>
-
-              <!-- Row 2: NECK -->
-              <div class="wearing-slot" style="grid-column: 3; grid-row: 2;">
-                <div
-                  class="slot-box"
-                  :class="slotClass('NECK')"
-                  @click="onSlotClick('NECK')"
-                  title="Neck"
-                >
-                  <span class="slot-label">NECK</span>
-                  <img
-                    v-if="wearingItems.NECK?.texture"
-                    :src="getAssetUrl(wearingItems.NECK.texture)"
-                    alt="Neck"
-                    class="slot-icon"
-                    @error="onImageError($event)"
-                  />
-                  <span v-else-if="wearingItems.NECK" class="text-xs text-gray-400 text-center leading-tight px-1">{{ wearingItems.NECK.name?.substring(0, 6) }}</span>
-                  <span v-else class="text-gray-600 text-lg">-</span>
-                </div>
-              </div>
-
-              <!-- Row 3: LEFT_RING, BODY, RIGHT_RING, HANDS -->
-              <div class="wearing-slot" style="grid-column: 2; grid-row: 3;">
-                <div
-                  class="slot-box"
-                  :class="slotClass('LEFT_RING')"
-                  @click="onSlotClick('LEFT_RING')"
-                  title="Left Ring"
-                >
-                  <span class="slot-label">L.RING</span>
-                  <img
-                    v-if="wearingItems.LEFT_RING?.texture"
-                    :src="getAssetUrl(wearingItems.LEFT_RING.texture)"
-                    alt="Left Ring"
-                    class="slot-icon"
-                    @error="onImageError($event)"
-                  />
-                  <span v-else-if="wearingItems.LEFT_RING" class="text-xs text-gray-400 text-center leading-tight px-1">{{ wearingItems.LEFT_RING.name?.substring(0, 6) }}</span>
-                  <span v-else class="text-gray-600 text-lg">-</span>
-                </div>
-              </div>
-
-              <div class="wearing-slot" style="grid-column: 3; grid-row: 3;">
-                <div
-                  class="slot-box"
-                  :class="slotClass('BODY')"
-                  @click="onSlotClick('BODY')"
-                  title="Body"
-                >
-                  <span class="slot-label">BODY</span>
-                  <img
-                    v-if="wearingItems.BODY?.texture"
-                    :src="getAssetUrl(wearingItems.BODY.texture)"
-                    alt="Body"
-                    class="slot-icon"
-                    @error="onImageError($event)"
-                  />
-                  <span v-else-if="wearingItems.BODY" class="text-xs text-gray-400 text-center leading-tight px-1">{{ wearingItems.BODY.name?.substring(0, 6) }}</span>
-                  <span v-else class="text-gray-600 text-lg">-</span>
-                </div>
-              </div>
-
-              <div class="wearing-slot" style="grid-column: 4; grid-row: 3;">
-                <div
-                  class="slot-box"
-                  :class="slotClass('RIGHT_RING')"
-                  @click="onSlotClick('RIGHT_RING')"
-                  title="Right Ring"
-                >
-                  <span class="slot-label">R.RING</span>
-                  <img
-                    v-if="wearingItems.RIGHT_RING?.texture"
-                    :src="getAssetUrl(wearingItems.RIGHT_RING.texture)"
-                    alt="Right Ring"
-                    class="slot-icon"
-                    @error="onImageError($event)"
-                  />
-                  <span v-else-if="wearingItems.RIGHT_RING" class="text-xs text-gray-400 text-center leading-tight px-1">{{ wearingItems.RIGHT_RING.name?.substring(0, 6) }}</span>
-                  <span v-else class="text-gray-600 text-lg">-</span>
-                </div>
-              </div>
-
-              <div class="wearing-slot" style="grid-column: 5; grid-row: 3;">
-                <div
-                  class="slot-box"
-                  :class="slotClass('HANDS')"
-                  @click="onSlotClick('HANDS')"
-                  title="Hands"
-                >
-                  <span class="slot-label">HANDS</span>
-                  <img
-                    v-if="wearingItems.HANDS?.texture"
-                    :src="getAssetUrl(wearingItems.HANDS.texture)"
-                    alt="Hands"
-                    class="slot-icon"
-                    @error="onImageError($event)"
-                  />
-                  <span v-else-if="wearingItems.HANDS" class="text-xs text-gray-400 text-center leading-tight px-1">{{ wearingItems.HANDS.name?.substring(0, 6) }}</span>
-                  <span v-else class="text-gray-600 text-lg">-</span>
-                </div>
-              </div>
-
-              <!-- Row 4: LEGS -->
-              <div class="wearing-slot" style="grid-column: 3; grid-row: 4;">
-                <div
-                  class="slot-box"
-                  :class="slotClass('LEGS')"
-                  @click="onSlotClick('LEGS')"
-                  title="Legs"
-                >
-                  <span class="slot-label">LEGS</span>
-                  <img
-                    v-if="wearingItems.LEGS?.texture"
-                    :src="getAssetUrl(wearingItems.LEGS.texture)"
-                    alt="Legs"
-                    class="slot-icon"
-                    @error="onImageError($event)"
-                  />
-                  <span v-else-if="wearingItems.LEGS" class="text-xs text-gray-400 text-center leading-tight px-1">{{ wearingItems.LEGS.name?.substring(0, 6) }}</span>
-                  <span v-else class="text-gray-600 text-lg">-</span>
-                </div>
-              </div>
-
-              <!-- Row 5: FEET -->
-              <div class="wearing-slot" style="grid-column: 3; grid-row: 5;">
-                <div
-                  class="slot-box"
-                  :class="slotClass('FEET')"
-                  @click="onSlotClick('FEET')"
-                  title="Feet"
-                >
-                  <span class="slot-label">FEET</span>
-                  <img
-                    v-if="wearingItems.FEET?.texture"
-                    :src="getAssetUrl(wearingItems.FEET.texture)"
-                    alt="Feet"
-                    class="slot-icon"
-                    @error="onImageError($event)"
-                  />
-                  <span v-else-if="wearingItems.FEET" class="text-xs text-gray-400 text-center leading-tight px-1">{{ wearingItems.FEET.name?.substring(0, 6) }}</span>
+                  <span v-else-if="wearingItems[def.slot]" class="text-xs text-gray-400 text-center leading-tight px-1">{{ wearingItems[def.slot]!.name?.substring(0, 6) }}</span>
                   <span v-else class="text-gray-600 text-lg">-</span>
                 </div>
               </div>
@@ -293,7 +153,7 @@ interface BackpackItemInfo {
   texture: string | null;
   description: string | null;
   count: number;
-  wearableSlots: string[] | null;
+  wearableSlots: string[] | null; // contains WEARABLE_GROUP names
 }
 
 interface WearingItemInfo {
@@ -306,7 +166,45 @@ interface WearingItemInfo {
   wearableSlots: string[] | null;
 }
 
-type WearableSlot = 'HEAD' | 'BODY' | 'LEGS' | 'FEET' | 'HANDS' | 'NECK' | 'LEFT_RING' | 'RIGHT_RING';
+type WearableSlot = 'HEAD' | 'BODY' | 'ARMS' | 'LEGS' | 'FEET' | 'NECK'
+  | 'LEFT_RING' | 'RIGHT_RING'
+  | 'LEFT_HAND_1' | 'RIGHT_HAND_1' | 'LEFT_HAND_2' | 'RIGHT_HAND_2';
+
+const ALL_SLOTS: WearableSlot[] = [
+  'HEAD', 'BODY', 'ARMS', 'LEGS', 'FEET', 'NECK',
+  'LEFT_RING', 'RIGHT_RING',
+  'LEFT_HAND_1', 'RIGHT_HAND_1', 'LEFT_HAND_2', 'RIGHT_HAND_2',
+];
+
+const SLOT_TO_GROUP: Record<WearableSlot, string> = {
+  HEAD: 'HEAD',
+  BODY: 'BODY',
+  ARMS: 'ARMS',
+  LEGS: 'LEGS',
+  FEET: 'FEET',
+  NECK: 'NECK',
+  LEFT_RING: 'RING',
+  RIGHT_RING: 'RING',
+  LEFT_HAND_1: 'HAND',
+  RIGHT_HAND_1: 'HAND',
+  LEFT_HAND_2: 'HAND',
+  RIGHT_HAND_2: 'HAND',
+};
+
+const SLOT_DEFS: Array<{ slot: WearableSlot; label: string; col: string; row: number }> = [
+  { slot: 'HEAD',         label: 'HEAD',    col: '3 / 5', row: 1 },
+  { slot: 'NECK',         label: 'NECK',    col: '3 / 5', row: 2 },
+  { slot: 'BODY',         label: 'BODY',    col: '3',     row: 3 },
+  { slot: 'ARMS',         label: 'ARMS',    col: '4',     row: 3 },
+  { slot: 'LEFT_HAND_2',  label: 'L.HAND2', col: '1',     row: 4 },
+  { slot: 'LEFT_HAND_1',  label: 'L.HAND1', col: '2',     row: 4 },
+  { slot: 'RIGHT_HAND_1', label: 'R.HAND1', col: '5',     row: 4 },
+  { slot: 'RIGHT_HAND_2', label: 'R.HAND2', col: '6',     row: 4 },
+  { slot: 'LEFT_RING',    label: 'L.RING',  col: '2',     row: 5 },
+  { slot: 'RIGHT_RING',   label: 'R.RING',  col: '5',     row: 5 },
+  { slot: 'LEGS',         label: 'LEGS',    col: '3 / 5', row: 6 },
+  { slot: 'FEET',         label: 'FEET',    col: '3 / 5', row: 7 },
+];
 
 const loading = ref(true);
 const error = ref<string | null>(null);
@@ -314,21 +212,16 @@ const actionMessage = ref<{ text: string; type: 'success' | 'error' } | null>(nu
 
 const worldId = ref('');
 const backpackItems = ref<BackpackItemInfo[]>([]);
-const wearingItems = reactive<Record<WearableSlot, WearingItemInfo | null>>({
-  HEAD: null,
-  NECK: null,
-  BODY: null,
-  LEFT_RING: null,
-  RIGHT_RING: null,
-  HANDS: null,
-  LEGS: null,
-  FEET: null,
-});
+
+const initialWearing: Record<WearableSlot, WearingItemInfo | null> = {} as any;
+for (const s of ALL_SLOTS) initialWearing[s] = null;
+const wearingItems = reactive<Record<WearableSlot, WearingItemInfo | null>>(initialWearing);
+
 const selectedItem = ref<BackpackItemInfo | null>(null);
 
 const getAssetUrl = (texturePath: string): string => {
   if (!texturePath || !worldId.value) return '';
-  return `${apiService.getBaseUrl()}/control/worlds/${worldId.value}/assets/${texturePath}`;
+  return `${apiService.getBaseUrl()}/control/player/assets/${texturePath}`;
 };
 
 const onImageError = (event: Event) => {
@@ -346,9 +239,9 @@ const selectItem = (item: BackpackItemInfo) => {
 
 const isSlotAllowed = (slot: WearableSlot): boolean => {
   if (!selectedItem.value) return false;
-  const slots = selectedItem.value.wearableSlots;
-  if (!slots || slots.length === 0) return true; // no restriction = all slots allowed
-  return slots.includes(slot);
+  const groups = selectedItem.value.wearableSlots;
+  if (!groups || groups.length === 0) return true; // no restriction = all slots allowed
+  return groups.includes(SLOT_TO_GROUP[slot]);
 };
 
 const slotClass = (slot: WearableSlot): string => {
@@ -405,8 +298,7 @@ const loadData = async () => {
     backpackItems.value = response.backpackItems || [];
 
     // Update wearing items
-    const slots: WearableSlot[] = ['HEAD', 'NECK', 'BODY', 'LEFT_RING', 'RIGHT_RING', 'HANDS', 'LEGS', 'FEET'];
-    for (const slot of slots) {
+    for (const slot of ALL_SLOTS) {
       wearingItems[slot] = response.wearingItems?.[slot] || null;
     }
   } catch (err) {
@@ -430,8 +322,8 @@ onMounted(async () => {
 <style scoped>
 .wearing-grid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  grid-template-rows: repeat(5, auto);
+  grid-template-columns: repeat(6, 1fr);
+  grid-template-rows: repeat(7, auto);
   gap: 8px;
   justify-items: center;
 }
