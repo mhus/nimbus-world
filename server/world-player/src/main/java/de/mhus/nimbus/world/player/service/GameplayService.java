@@ -172,6 +172,85 @@ public class GameplayService implements SessionAuthenticatedConsumer {
     }
 
     /**
+     * Use an item's effects on the player or a target entity.
+     * Checks if the item has effects, if there's sufficient quantity, applies effects via gameplay,
+     * then consumes the item (quantity 1) via reduceItem.
+     *
+     * @param session        The player session
+     * @param itemId         The item to use
+     * @param targetEntityId Target entity ID, or null for self-application
+     * @return true if the item was used successfully
+     */
+    @SuppressWarnings("unchecked")
+    public boolean useItemEffect(PlayerSession session, String itemId, String targetEntityId) {
+        if (session.getWorldId() == null) return false;
+
+        var gameplay = session.getGameplay();
+        if (gameplay == null) {
+            log.warn("No gameplay set for session {}, cannot use item effect", session.getSessionId());
+            return false;
+        }
+
+        // Load item
+        var wItemOpt = itemService.findByItemId(session.getWorldId(), itemId);
+        if (wItemOpt.isEmpty()) {
+            log.warn("Item {} not found in world {}", itemId, session.getWorldId());
+            return false;
+        }
+        WItem wItem = wItemOpt.get();
+        var publicData = wItem.getPublicData();
+        if (publicData == null || publicData.getParameters() == null) {
+            log.debug("Item {} has no parameters", itemId);
+            return false;
+        }
+
+        // Check if item has at least one effect
+        Object effectsObj = publicData.getParameters().get("effects");
+        if (effectsObj == null) {
+            log.debug("Item {} has no effects defined", itemId);
+            return false;
+        }
+        boolean hasEffects;
+        if (effectsObj instanceof List<?> list) {
+            hasEffects = !list.isEmpty();
+        } else if (effectsObj instanceof String s) {
+            hasEffects = !s.isBlank();
+        } else {
+            hasEffects = false;
+        }
+        if (!hasEffects) {
+            log.debug("Item {} has empty effects", itemId);
+            return false;
+        }
+
+        // Check if player has at least 1 of this item in backpack
+        var character = session.getPlayer() != null ? session.getPlayer().character() : null;
+        var backpack = character != null ? character.getBackpack() : null;
+        if (backpack == null || backpack.getItemIds() == null) return false;
+
+        Integer currentCount = backpack.getItemIds().get(itemId);
+        if (currentCount == null || currentCount < 1) {
+            log.debug("Player {} has no item {} in backpack", session.getEntityId(), itemId);
+            return false;
+        }
+
+        // Apply effects via gameplay
+        boolean applied = gameplay.useEffect(session, publicData.getParameters(), targetEntityId);
+        if (!applied) {
+            log.debug("Gameplay rejected effect application for item {}", itemId);
+            return false;
+        }
+
+        // Consume the item (quantity 1)
+        reduceItem(session, itemId, 1);
+
+        log.info("Player {} used item {} effect on {}",
+                session.getEntityId(), itemId, targetEntityId != null ? targetEntityId : "self");
+
+        return true;
+    }
+
+    /**
      * Reduce an item's quantity in the player's backpack.
      * If the item has server parameter 'immortal' = true, nothing is consumed and true is returned.
      * If insufficient quantity is available, nothing is consumed and false is returned (no events).

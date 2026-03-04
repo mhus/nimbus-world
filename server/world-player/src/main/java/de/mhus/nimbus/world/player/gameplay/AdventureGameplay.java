@@ -7,11 +7,13 @@ import de.mhus.nimbus.generated.configs.PlayerBackpack;
 import de.mhus.nimbus.generated.types.PlayerInfo;
 import de.mhus.nimbus.generated.types.ShortcutDefinition;
 import de.mhus.nimbus.shared.types.PlayerId;
+import de.mhus.nimbus.world.player.gameplay.adventure.EffectAction;
 import de.mhus.nimbus.world.player.service.ClientService;
 import de.mhus.nimbus.world.player.session.PlayerSession;
 import de.mhus.nimbus.world.shared.redis.VitalDeltaBroadcastMessage;
 import de.mhus.nimbus.world.shared.redis.VitalDeltaPublisher;
 import de.mhus.nimbus.world.shared.world.WItem;
+import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -38,6 +40,11 @@ public class AdventureGameplay extends BasicGameplay {
     private VitalDeltaPublisher vitalDeltaPublisher;
 
     private final EffectProcessor effectProcessor = new EffectProcessor();
+
+    @PostConstruct
+    public void init() {
+        actions.put("effect", new EffectAction(this));
+    }
 
     @Override
     public void onSessionAuthenticated(PlayerSession session, Map<String, Object> savedGameplayData) {
@@ -160,6 +167,49 @@ public class AdventureGameplay extends BasicGameplay {
         if (session.getGameplayData() instanceof AdventureData data) {
             refreshSkillsCache(session, data);
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public boolean useEffect(PlayerSession session, Map<String, Object> parameters, String targetEntityId) {
+        if (!(session.getGameplayData() instanceof AdventureData data)) return false;
+        if (parameters == null) return false;
+
+        // Extract effects list from parameters
+        Object effectsObj = parameters.get("effects");
+        if (effectsObj == null) return false;
+
+        List<String> effectDefs;
+        if (effectsObj instanceof List<?> list) {
+            effectDefs = list.stream()
+                    .filter(e -> e instanceof String)
+                    .map(e -> (String) e)
+                    .toList();
+        } else if (effectsObj instanceof String s) {
+            effectDefs = List.of(s);
+        } else {
+            return false;
+        }
+
+        if (effectDefs.isEmpty()) return false;
+
+        String source = "consumable:" + parameters.getOrDefault("name", "unknown");
+
+        for (String def : effectDefs) {
+            try {
+                ActiveEffect effect = ActiveEffect.parse(def, source);
+                if (targetEntityId != null) {
+                    effect.setTargetEntityId(targetEntityId);
+                }
+                data.addEffect(effect);
+                log.debug("Applied effect {} to {} (source: {}, target: {})",
+                        def, session.getEntityId(), source, targetEntityId != null ? targetEntityId : "self");
+            } catch (Exception e) {
+                log.warn("Failed to parse effect definition '{}': {}", def, e.getMessage());
+            }
+        }
+
+        return true;
     }
 
     /**

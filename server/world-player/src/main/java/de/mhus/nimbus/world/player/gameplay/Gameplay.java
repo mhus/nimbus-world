@@ -41,4 +41,14 @@ public interface Gameplay {
     void onBackpackModified(PlayerSession session);
 
     void onSkillsModified(PlayerSession session);
+
+    /**
+     * Apply effects from an item's parameters to the player (or a target entity).
+     *
+     * @param session       The player session
+     * @param parameters    The item's parameters map (contains "effects" list etc.)
+     * @param targetEntityId Target entity ID, or null for self-application
+     * @return true if effects were applied successfully
+     */
+    boolean useEffect(PlayerSession session, Map<String, Object> parameters, String targetEntityId);
 }

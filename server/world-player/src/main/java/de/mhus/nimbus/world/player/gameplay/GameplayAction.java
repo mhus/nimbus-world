@@ -15,4 +15,6 @@ public interface GameplayAction {
 
     void handleItemAction(PlayerSession session, WItem item, String itemAction, JsonNode params);
 
+    void handlePlayerAction(PlayerSession session, String targetEntityId, String action, Long timestamp, JsonNode params);
+
 }

@@ -30,6 +30,11 @@ public abstract class AbstractGamplayAction implements GameplayAction {
         handleAction(session, item.getServer(), params);
     }
 
+    @Override
+    public void handlePlayerAction(PlayerSession session, String targetEntityId, String action, Long timestamp, JsonNode params) {
+        handleAction(session, Map.of(), params);
+    }
+
     public abstract void handleAction(PlayerSession session, Map<String, String> serverParameters, JsonNode params);
 
 }

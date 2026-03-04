@@ -69,14 +69,20 @@ public class BasicGameplay implements Gameplay {
 
     @Override
     public void onPlayerInteraction(PlayerSession session, String entityId, String action, Long timestamp, JsonNode params) {
-    //     session.getPlayer().character().getPublicData().getShortcuts()
+        if (Strings.isBlank(action)) {
+            log.warn("No action for player interaction with {} in world {}", entityId, session.getWorldId());
+            return;
+        }
+        var handler = actions.get(action);
+        if (handler == null) {
+            log.trace("No handler for player action '{}' in world {}", action, session.getWorldId());
+            return;
+        }
+        handler.handlePlayerAction(session, entityId, action, timestamp, params);
     }
 
     @Override
     public void onEntityInteraction(PlayerSession session, String entityId, String userAction, Long timestamp, JsonNode params) {
-        //     session.getPlayer().character().getPublicData().getShortcuts()
-        // Publish interaction to Redis for world-life processing
-        // PlayerRedisSenderService.publishEntityInteraction(session, entityId, action, timestamp, params);
         WEntity entity = entityService.findByWorldIdAndEntityId(session.getWorldId(), entityId).orElse(null);
         if (entity == null) {
             log.warn("Entity with ID {} not found in world {}", entityId, session.getWorldId());
@@ -145,6 +151,11 @@ public class BasicGameplay implements Gameplay {
     @Override
     public void onSkillsModified(PlayerSession session) {
 
+    }
+
+    @Override
+    public boolean useEffect(PlayerSession session, Map<String, Object> parameters, String targetEntityId) {
+        return false;
     }
 
     @Override
