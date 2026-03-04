@@ -80,4 +80,10 @@ export interface VitalsData {
    * Example: health=0, hunger=1, stamina=2
    */
   order: number; // javaType: int
+
+  /**
+   * Options flags as compact string. Each character is a flag:
+   * - 'p' = pinned (always visible, don't auto-hide when full)
+   */
+  options?: string;
 }

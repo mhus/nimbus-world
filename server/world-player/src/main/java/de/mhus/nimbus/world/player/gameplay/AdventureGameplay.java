@@ -1,5 +1,6 @@
 package de.mhus.nimbus.world.player.gameplay;
 
+import java.util.Arrays;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -178,27 +179,19 @@ public class AdventureGameplay extends BasicGameplay {
         }
     }
 
-    @SuppressWarnings("unchecked")
     @Override
-    public boolean useEffect(PlayerSession session, Map<String, Object> parameters, String targetEntityId) {
+    public boolean useEffect(PlayerSession session, Map<String, String> parameters, String targetEntityId) {
         if (!(session.getGameplayData() instanceof AdventureData data)) return false;
         if (parameters == null) return false;
 
-        // Extract effects list from parameters
-        Object effectsObj = parameters.get("effects");
-        if (effectsObj == null) return false;
+        // Extract effects from comma-separated string
+        String effectsStr = parameters.get("effects");
+        if (effectsStr == null || effectsStr.isBlank()) return false;
 
-        List<String> effectDefs;
-        if (effectsObj instanceof List<?> list) {
-            effectDefs = list.stream()
-                    .filter(e -> e instanceof String)
-                    .map(e -> (String) e)
-                    .toList();
-        } else if (effectsObj instanceof String s) {
-            effectDefs = List.of(s);
-        } else {
-            return false;
-        }
+        List<String> effectDefs = Arrays.stream(effectsStr.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .toList();
 
         if (effectDefs.isEmpty()) return false;
 
@@ -455,6 +448,9 @@ public class AdventureGameplay extends BasicGameplay {
                 vNode.put("color", vital.getColor());
                 vNode.put("name", vital.getDisplayName());
                 vNode.put("order", vital.getOrder());
+                if (vital.getOptions() != null) {
+                    vNode.put("options", vital.getOptions());
+                }
                 vitalsArray.add(vNode);
             }
             String currentVitalisData = objectMapper.writeValueAsString(vitalsArray);

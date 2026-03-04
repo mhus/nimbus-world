@@ -7,9 +7,7 @@ import de.mhus.nimbus.world.player.session.PlayerSession;
 import de.mhus.nimbus.world.shared.world.WEntity;
 import de.mhus.nimbus.world.shared.world.WItem;
 
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 public class EffectAction implements GameplayAction {
@@ -68,13 +66,8 @@ public class EffectAction implements GameplayAction {
         String effects = serverInfo.get("effects");
         if (effects == null || effects.isBlank()) return;
 
-        List<String> effectList = Arrays.stream(effects.split(","))
-                .map(String::trim)
-                .filter(s -> !s.isEmpty())
-                .toList();
-
-        Map<String, Object> parameters = new HashMap<>();
-        parameters.put("effects", effectList);
+        Map<String, String> parameters = new HashMap<>();
+        parameters.put("effects", effects);
         parameters.put("name", serverInfo.getOrDefault("name", "interaction"));
 
         basic.useEffect(session, parameters, null);

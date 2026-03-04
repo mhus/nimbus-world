@@ -65,9 +65,11 @@ public class AdventureData extends GameplayData {
         vitals.put("health",    VitalValue.of("health",    100, 0.5,   "#FF4444", "Health",    0));
         var hunger = VitalValue.of("hunger",  100, 0.1,  "#CC8800", "Hunger", 1, 0.5);
         hunger.setCurrent(0);
+        hunger.setOptions("p");
         vitals.put("hunger", hunger);
         var thirst = VitalValue.of("thirst", 100, 0.15, "#4488FF", "Thirst", 2, 0.5);
         thirst.setCurrent(0);
+        thirst.setOptions("p");
         vitals.put("thirst", thirst);
         vitals.put("stamina",   VitalValue.of("stamina",   100, 2.0,   "#44CC44", "Stamina",   3));
         vitals.put("mana",      VitalValue.of("mana",      100, 1.0,   "#AA44FF", "Mana",      4));

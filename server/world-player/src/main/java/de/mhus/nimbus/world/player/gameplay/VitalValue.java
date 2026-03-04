@@ -58,6 +58,9 @@ public class VitalValue {
     /** Only send to client when percentage drops below this threshold (0.0 - 1.0). 0 = always send. */
     private double sendThreshold;
 
+    /** Options flags as compact string. Each character is a flag: 'p' = pinned (don't auto-hide when full). */
+    private String options;
+
     /**
      * Reset transient buff accumulators before recalculation.
      */
@@ -145,15 +148,18 @@ public class VitalValue {
      * Serialize to a Map for persistence.
      */
     public Map<String, Object> toMap() {
-        return Map.of(
-                "type", type,
-                "base", base,
-                "current", current,
-                "baseRegenRate", baseRegenRate,
-                "color", color != null ? color : "",
-                "displayName", displayName != null ? displayName : "",
-                "order", order
-        );
+        var map = new java.util.HashMap<String, Object>();
+        map.put("type", type);
+        map.put("base", base);
+        map.put("current", current);
+        map.put("baseRegenRate", baseRegenRate);
+        map.put("color", color != null ? color : "");
+        map.put("displayName", displayName != null ? displayName : "");
+        map.put("order", order);
+        if (options != null) {
+            map.put("options", options);
+        }
+        return map;
     }
 
     /**
@@ -168,6 +174,7 @@ public class VitalValue {
                 .color(stringVal(map.get("color"), "#FFFFFF"))
                 .displayName(stringVal(map.get("displayName"), ""))
                 .order(intVal(map.get("order"), 0))
+                .options(stringVal(map.get("options"), null))
                 .build();
         v.resetBuffs();
         v.recalculate();

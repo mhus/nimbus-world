@@ -1300,8 +1300,9 @@ export class NotificationService {
         return;
       }
 
-      // Filter vitals that should be displayed (not full)
+      // Filter vitals that should be displayed (not full, unless pinned)
       const visibleVitals = vitals.filter((vital) => {
+        if (vital.options?.includes('p')) return true;
         const maxValue = vital.max + (vital.extended || 0);
         return vital.current < maxValue;
       });

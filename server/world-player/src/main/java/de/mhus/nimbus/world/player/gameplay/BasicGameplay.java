@@ -209,7 +209,7 @@ public class BasicGameplay implements Gameplay {
     }
 
     @Override
-    public boolean useEffect(PlayerSession session, Map<String, Object> parameters, String targetEntityId) {
+    public boolean useEffect(PlayerSession session, Map<String, String> parameters, String targetEntityId) {
         return false;
     }
 

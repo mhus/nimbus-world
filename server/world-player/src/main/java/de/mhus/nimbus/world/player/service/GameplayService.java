@@ -198,28 +198,11 @@ public class GameplayService implements SessionAuthenticatedConsumer {
             return false;
         }
         WItem wItem = wItemOpt.get();
-        var publicData = wItem.getPublicData();
-        if (publicData == null || publicData.getParameters() == null) {
-            log.debug("Item {} has no parameters", itemId);
-            return false;
-        }
 
-        // Check if item has at least one effect
-        Object effectsObj = publicData.getParameters().get("effects");
-        if (effectsObj == null) {
+        // Check if item has at least one effect (in server-side hidden parameters)
+        String effects = wItem.getServer() != null ? wItem.getServer().get("effects") : null;
+        if (effects == null || effects.isBlank()) {
             log.debug("Item {} has no effects defined", itemId);
-            return false;
-        }
-        boolean hasEffects;
-        if (effectsObj instanceof List<?> list) {
-            hasEffects = !list.isEmpty();
-        } else if (effectsObj instanceof String s) {
-            hasEffects = !s.isBlank();
-        } else {
-            hasEffects = false;
-        }
-        if (!hasEffects) {
-            log.debug("Item {} has empty effects", itemId);
             return false;
         }
 
@@ -235,7 +218,7 @@ public class GameplayService implements SessionAuthenticatedConsumer {
         }
 
         // Apply effects via gameplay
-        boolean applied = gameplay.useEffect(session, publicData.getParameters(), targetEntityId);
+        boolean applied = gameplay.useEffect(session, wItem.getServer(), targetEntityId);
         if (!applied) {
             log.debug("Gameplay rejected effect application for item {}", itemId);
             return false;

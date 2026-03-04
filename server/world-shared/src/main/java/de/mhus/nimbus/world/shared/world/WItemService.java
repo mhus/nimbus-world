@@ -100,7 +100,6 @@ public class WItemService {
                 throw new IllegalArgumentException("Item with itemId already exists: " + itemId);
             }
         }
-
         return save(worldId, itemId, publicData);
     }
 

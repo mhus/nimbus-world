@@ -50,7 +50,7 @@ public interface Gameplay {
      * @param targetEntityId Target entity ID, or null for self-application
      * @return true if effects were applied successfully
      */
-    boolean useEffect(PlayerSession session, Map<String, Object> parameters, String targetEntityId);
+    boolean useEffect(PlayerSession session, Map<String, String> parameters, String targetEntityId);
 
     /**
      * Maximum number of items (distinct slots and per-item amount) allowed in the backpack.
