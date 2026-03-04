@@ -2,6 +2,7 @@ package de.mhus.nimbus.world.control.api;
 
 import de.mhus.nimbus.generated.types.BlockStatus;
 import de.mhus.nimbus.generated.types.BlockType;
+import de.mhus.nimbus.generated.types.BlockTypeType;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.shared.rest.BaseEditorController;
 import de.mhus.nimbus.world.shared.world.BlockUtil;
@@ -87,11 +88,11 @@ public class EBlockTypeController extends BaseEditorController {
         if (validation != null) return validation;
 
         // AIR block type (id "air" or "0") is implicit and never stored in DB
-        if ("air".equalsIgnoreCase(blockId) || "0".equals(blockId)) {
+        if ("air".equalsIgnoreCase(blockId) || "0".equals(blockId) || "n:0".equalsIgnoreCase(blockId)) {
             BlockType airType = new BlockType();
             airType.setId("air");
-            airType.setName("Air");
-            airType.setType(0);
+            airType.setTitle("Air");
+            airType.setType(BlockTypeType.AIR);
             return ResponseEntity.ok(airType);
         }
 

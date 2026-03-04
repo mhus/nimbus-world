@@ -22,6 +22,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import static org.springframework.http.ResponseEntity.badRequest;
+
 /**
  * REST Controller for Item CRUD operations.
  * Items are inventory/template objects without position (reusable across worlds).
@@ -292,7 +294,7 @@ public class EItemController extends BaseEditorController {
      * Duplicate an existing item.
      * POST /control/worlds/{worldId}/item/{itemId}/duplicate
      */
-    public record DuplicateItemRequest(String title) {
+    public record DuplicateItemRequest(String name) {
     }
 
     @PostMapping("/control/worlds/{worldId}/item/{itemId}/duplicate")
@@ -315,9 +317,13 @@ public class EItemController extends BaseEditorController {
         var validation = validateId(itemId, "itemId");
         if (validation != null) return validation;
 
+        String newName = request != null ? request.name() : null;
+        if (Strings.isBlank(newName)) {
+            return badRequest().body(Map.of("error", "name is required for duplication"));
+        }
+
         try {
-            String title = request != null ? request.title() : null;
-            WItem duplicated = itemService.duplicate(wid, itemId, title);
+            WItem duplicated = itemService.duplicate(wid, itemId, newName);
             log.info("Duplicated item: {} -> {}", itemId, duplicated.getItemId());
             return ResponseEntity.status(HttpStatus.CREATED).body(duplicated);
         } catch (IllegalArgumentException e) {

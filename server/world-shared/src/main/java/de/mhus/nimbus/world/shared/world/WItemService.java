@@ -67,15 +67,15 @@ public class WItemService {
     }
 
     /**
-     * Duplicates the item with the given itemId and creates a new item with a new itemId.
+     * Duplicates the item with the given itemId and creates a new item with the given new name as itemId.
      *
      * @param worldId The worldId of the region collection where the item exists. Must be a region collection.
      * @param itemId The itemId of the existing item to duplicate. Must exist in the region collection.
-     * @param title Optional title or leave blank to keep existing name. Only used for new items, ignored for duplicates.
+     * @param newName The name/itemId for the new item. Must not already exist.
      * @return The newly created item with the new itemId.
      */
     @Transactional
-    public WItem duplicate(WorldId worldId, String itemId, String title) {
+    public WItem duplicate(WorldId worldId, String itemId, String newName) {
         var regionWorldId = worldId.toRegionCollection();
         if (!regionWorldId.isRegionCollection()) {
             throw new IllegalArgumentException("worldId must be a region collection: " + worldId);
@@ -83,9 +83,7 @@ public class WItemService {
         var existing = repository.findByWorldIdAndItemId(regionWorldId.getId(), itemId)
                 .orElseThrow(() -> new IllegalArgumentException("Item not found: " + itemId));
         var publicData = existing.getPublicData();
-        if (Strings.isNotBlank(title)) {
-            publicData.setTitle(title);
-        }
+        publicData.setName(newName);
         return create(worldId, publicData);
     }
 

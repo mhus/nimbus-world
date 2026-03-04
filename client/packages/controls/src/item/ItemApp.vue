@@ -89,10 +89,14 @@ function openItem(itemId: string) {
 
 async function duplicateItem(itemId: string) {
   if (!currentWorldId.value) return;
-  const title = prompt(`Duplicate "${itemId}"\nNew title (leave empty to keep original):`, '') ?? undefined;
-  if (title === undefined) return; // cancelled
+  const newName = prompt(`Duplicate "${itemId}"\nNew item name/ID:`, '') ?? undefined;
+  if (newName === undefined) return; // cancelled
+  if (!newName.trim()) {
+    alert('Item name/ID is required.');
+    return;
+  }
   try {
-    const duplicated = await ItemApiService.duplicateItem(itemId, currentWorldId.value, title);
+    const duplicated = await ItemApiService.duplicateItem(itemId, currentWorldId.value, newName.trim());
     selectedItemId.value = duplicated.itemId;
     isNewItem.value = false;
   } catch (e: any) {

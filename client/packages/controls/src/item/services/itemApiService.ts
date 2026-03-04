@@ -75,9 +75,9 @@ export class ItemApiService {
   /**
    * Duplicate an item. Returns the new WItem.
    */
-  static async duplicateItem(itemId: string, worldId: string, title?: string): Promise<ItemData> {
+  static async duplicateItem(itemId: string, worldId: string, newName: string): Promise<ItemData> {
     const url = `/control/worlds/${worldId}/item/${encodeURIComponent(itemId)}/duplicate`;
-    return this.apiService.post<ItemData>(url, { title: title || null });
+    return this.apiService.post<ItemData>(url, { name: newName });
   }
 
   /**
