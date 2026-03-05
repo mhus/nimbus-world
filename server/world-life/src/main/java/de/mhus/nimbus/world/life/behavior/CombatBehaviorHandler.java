@@ -56,8 +56,7 @@ public class CombatBehaviorHandler {
         // Find nearest attacker position
         Vector3 attackerPos = findNearestAttackerPosition(state);
         if (attackerPos == null) {
-            log.debug("No attacker position found for entity {}, exiting combat", entity.getEntityId());
-            state.exitCombat();
+            log.debug("No attacker position found for entity {}, skipping combat pathway this tick", entity.getEntityId());
             return null;
         }
 

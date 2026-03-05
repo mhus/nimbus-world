@@ -12,6 +12,7 @@ import de.mhus.nimbus.world.life.model.SimulationState;
 import de.mhus.nimbus.world.life.redis.PathwayPublisher;
 import de.mhus.nimbus.world.shared.gameplay.BaseEffectProcessor;
 import de.mhus.nimbus.world.shared.gameplay.EntityCombatData;
+import de.mhus.nimbus.world.shared.gameplay.VitalValue;
 import de.mhus.nimbus.world.shared.redis.EntityStateRedisService;
 import de.mhus.nimbus.world.shared.redis.EntityStatusPublisher;
 import de.mhus.nimbus.world.shared.redis.VitalDeltaBroadcastMessage;
@@ -29,6 +30,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -551,6 +553,10 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
         List<VitalDeltaBroadcastMessage> outgoingDeltas = new ArrayList<>();
         String entityId = state.getEntity().getEntityId();
 
+        // Snapshot health before tick to detect changes from regen
+        VitalValue health = combatData.getVital("health");
+        double healthBefore = health != null ? health.getCurrent() : 0;
+
         boolean died = baseEffectProcessor.processTick(
                 combatData, deltaSeconds, outgoingDeltas, worldId.getId(), entityId);
 
@@ -562,7 +568,18 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
         if (died) {
             log.info("World {}: Entity {} died", worldId, entityId);
             handleEntityDeath(state, worldId);
+        } else if (health != null && health.getCurrent() != healthBefore) {
+            // Health changed (e.g. from regen) — publish status update to clients
+            publishHealthStatus(worldId, entityId, health);
         }
+    }
+
+    private void publishHealthStatus(WorldId worldId, String entityId, VitalValue health) {
+        Map<String, Object> status = new LinkedHashMap<>();
+        status.put("health", health.getCurrent());
+        status.put("healthMax", health.getEffectiveMax());
+        entityStatusPublisher.publishStatusUpdate(worldId.getId(), entityId, status, null);
+        entityStateRedisService.updateHealth(worldId.getId(), entityId, health.getCurrent(), health.getEffectiveMax());
     }
 
     /**
