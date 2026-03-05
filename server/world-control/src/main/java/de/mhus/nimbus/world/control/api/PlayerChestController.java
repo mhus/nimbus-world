@@ -229,31 +229,30 @@ public class PlayerChestController extends BaseEditorController {
 
         int transferAmount = Math.min(body.amount(), chestItem.getAmount());
 
-        // Update chest: reduce or remove item
-        if (chestItem.getAmount() <= transferAmount) {
-            chestService.removeItem(chest.getId(), body.itemId());
-        } else {
-            chestService.updateItemAmount(chest.getId(), body.itemId(), chestItem.getAmount() - transferAmount);
-        }
-
-        // Update backpack: add or increase item
+        // Load character for atomic backpack update
         var character = findCharacter(worldId, userId, characterId);
         if (character == null) {
             return notFound("Character not found");
         }
 
-        PlayerBackpack backpack = character.getBackpack();
-        if (backpack == null) {
-            backpack = new PlayerBackpack();
-            character.setBackpack(backpack);
+        // Atomic chest update: reduce or remove item
+        boolean chestUpdated;
+        if (chestItem.getAmount() <= transferAmount) {
+            chestUpdated = chestService.removeItemAtomic(chest.getId(), body.itemId());
+        } else {
+            chestUpdated = chestService.updateItemAmountAtomic(chest.getId(), body.itemId(), chestItem.getAmount() - transferAmount);
         }
-        if (backpack.getItemIds() == null) {
-            backpack.setItemIds(new HashMap<>());
+        if (!chestUpdated) {
+            return bad("Failed to update chest (concurrent modification)");
         }
 
-        int currentCount = backpack.getItemIds().getOrDefault(body.itemId(), 0);
-        backpack.getItemIds().put(body.itemId(), currentCount + transferAmount);
-        characterService.updateCharater(character);
+        // Atomic backpack update: add or increase item
+        boolean backpackUpdated = characterService.addBackpackItem(character.getId(), body.itemId(), transferAmount);
+        if (!backpackUpdated) {
+            log.error("Backpack update failed after chest was already modified! chestId={}, itemId={}, amount={}",
+                    chest.getId(), body.itemId(), transferAmount);
+            return bad("Failed to update backpack");
+        }
 
         log.info("Item transferred chest->backpack: worldId={}, userId={}, itemId={}, amount={}",
                 worldId, userId, body.itemId(), transferAmount);
@@ -328,15 +327,13 @@ public class PlayerChestController extends BaseEditorController {
             }
         }
 
-        // Update backpack: reduce or remove item
-        if (backpackCount <= transferAmount) {
-            itemIds.remove(body.itemId());
-        } else {
-            itemIds.put(body.itemId(), backpackCount - transferAmount);
+        // Atomic backpack update: reduce or remove item
+        boolean backpackUpdated = characterService.removeBackpackItem(character.getId(), body.itemId(), transferAmount);
+        if (!backpackUpdated) {
+            return bad("Failed to update backpack (concurrent modification or insufficient quantity)");
         }
-        characterService.updateCharater(character);
 
-        // Update chest: add or increase item
+        // Atomic chest update: add or increase item
         ItemRef existingChestItem = null;
         for (ItemRef item : chest.getItems()) {
             if (item.getItemId().equals(body.itemId())) {
@@ -345,14 +342,20 @@ public class PlayerChestController extends BaseEditorController {
             }
         }
 
+        boolean chestUpdated;
         if (existingChestItem != null) {
-            chestService.updateItemAmount(chest.getId(), body.itemId(), existingChestItem.getAmount() + transferAmount);
+            chestUpdated = chestService.incItemAmountAtomic(chest.getId(), body.itemId(), transferAmount);
         } else {
             ItemRef newRef = ItemRef.builder()
                     .itemId(body.itemId())
                     .amount(transferAmount)
                     .build();
-            chestService.addItem(chest.getId(), newRef);
+            chestUpdated = chestService.addItemAtomic(chest.getId(), newRef);
+        }
+        if (!chestUpdated) {
+            log.error("Chest update failed after backpack was already modified! chestId={}, itemId={}, amount={}",
+                    chest.getId(), body.itemId(), transferAmount);
+            return bad("Failed to update chest");
         }
 
         log.info("Item transferred backpack->chest: worldId={}, userId={}, itemId={}, amount={}",

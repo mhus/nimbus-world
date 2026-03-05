@@ -155,31 +155,15 @@ public class PlayerWearingController extends BaseEditorController {
             return bad("Item cannot be equipped in slot " + slot.name());
         }
 
-        // Initialize wearingItemIds if needed
+        // Determine old item in slot for swap-back
         Map<WEARABLE_SLOT, String> wearingItemIds = backpack.getWearingItemIds();
-        if (wearingItemIds == null) {
-            wearingItemIds = new LinkedHashMap<>();
-            backpack.setWearingItemIds(wearingItemIds);
+        String oldItemId = wearingItemIds != null ? wearingItemIds.get(slot) : null;
+
+        // Atomic update via MongoTemplate
+        boolean updated = characterService.equipItem(character.getId(), body.itemId(), slot, oldItemId);
+        if (!updated) {
+            return bad("Failed to equip item (concurrent modification or item not in backpack)");
         }
-
-        // If slot is already occupied, move old item back to backpack
-        String oldItemId = wearingItemIds.get(slot);
-        if (oldItemId != null) {
-            itemIds.merge(oldItemId, 1, Integer::sum);
-        }
-
-        // Remove item from backpack
-        int count = itemIds.get(body.itemId());
-        if (count <= 1) {
-            itemIds.remove(body.itemId());
-        } else {
-            itemIds.put(body.itemId(), count - 1);
-        }
-
-        // Put item in slot
-        wearingItemIds.put(slot, body.itemId());
-
-        characterService.updateCharater(character);
 
         log.info("Equipped item: userId={}, characterId={}, itemId={}, slot={}", userId, characterId, body.itemId(), slot);
         notifyPlayer(worldId, request);
@@ -225,17 +209,13 @@ public class PlayerWearingController extends BaseEditorController {
             return bad("Slot is empty");
         }
 
-        String itemId = wearingItemIds.remove(body.slot());
+        String itemId = wearingItemIds.get(body.slot());
 
-        // Add item back to backpack
-        Map<String, Integer> itemIds = backpack.getItemIds();
-        if (itemIds == null) {
-            itemIds = new LinkedHashMap<>();
-            backpack.setItemIds(itemIds);
+        // Atomic update via MongoTemplate
+        boolean updated = characterService.unequipItem(character.getId(), body.slot(), itemId);
+        if (!updated) {
+            return bad("Failed to unequip item (concurrent modification or slot mismatch)");
         }
-        itemIds.merge(itemId, 1, Integer::sum);
-
-        characterService.updateCharater(character);
 
         log.info("Unequipped item: userId={}, characterId={}, itemId={}, slot={}", userId, characterId, itemId, body.slot());
         notifyPlayer(worldId, request);

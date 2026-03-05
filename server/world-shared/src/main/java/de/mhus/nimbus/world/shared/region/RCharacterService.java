@@ -1,27 +1,38 @@
 package de.mhus.nimbus.world.shared.region;
 
+import de.mhus.nimbus.generated.configs.WEARABLE_SLOT;
 import de.mhus.nimbus.generated.types.PlayerInfo;
+import de.mhus.nimbus.generated.types.ShortcutDefinition;
 import de.mhus.nimbus.world.shared.sector.RUser;
 import de.mhus.nimbus.world.shared.sector.RUserRepository;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 
 @Service
 @Validated
+@Slf4j
 public class RCharacterService {
 
     private final RCharacterRepository repository;
     private final RUserRepository userRepository;
     private final RegionCharacterSettings limitProperties;
+    private final MongoTemplate mongoTemplate;
 
-    public RCharacterService(RCharacterRepository repository, RUserRepository userRepository, RegionCharacterSettings limitProperties) {
+    public RCharacterService(RCharacterRepository repository, RUserRepository userRepository, RegionCharacterSettings limitProperties, MongoTemplate mongoTemplate) {
         this.repository = repository;
         this.userRepository = userRepository;
         this.limitProperties = limitProperties;
+        this.mongoTemplate = mongoTemplate;
     }
 
     public RCharacter createCharacter(String username, String regionId, String name, String display) {
@@ -96,6 +107,271 @@ public class RCharacterService {
     public void updateCharater(RCharacter character) {
         character.touchUpdate();
         repository.save(character);
+    }
+
+    /**
+     * Atomically move an item from backpack to a wearing slot.
+     * If the target slot is already occupied, the old item is moved back to backpack.
+     *
+     * @param characterId MongoDB document id
+     * @param itemId      the item to equip from backpack
+     * @param slot        the target wearing slot
+     * @param oldItemId   the item currently in the slot (null if empty)
+     * @return true if the update was applied (item was in backpack and character exists)
+     */
+    public boolean equipItem(String characterId, String itemId, WEARABLE_SLOT slot, String oldItemId) {
+        Query query = new Query(Criteria.where("id").is(characterId)
+                .and("backpack.itemIds." + itemId).gte(1));
+
+        Update update = new Update()
+                .set("backpack.wearingItemIds." + slot.name(), itemId)
+                .inc("backpack.itemIds." + itemId, -1)
+                .set("modifiedAt", Instant.now());
+
+        if (oldItemId != null) {
+            update.inc("backpack.itemIds." + oldItemId, 1);
+        }
+
+        var result = mongoTemplate.updateFirst(query, update, RCharacter.class);
+
+        if (result.getModifiedCount() > 0) {
+            // Cleanup: remove item key if count dropped to 0
+            Query cleanupQuery = new Query(Criteria.where("id").is(characterId)
+                    .and("backpack.itemIds." + itemId).lte(0));
+            Update cleanupUpdate = new Update()
+                    .unset("backpack.itemIds." + itemId)
+                    .set("modifiedAt", Instant.now());
+            mongoTemplate.updateFirst(cleanupQuery, cleanupUpdate, RCharacter.class);
+            return true;
+        }
+
+        log.warn("equipItem failed: characterId={}, itemId={}, slot={} - item not in backpack or character not found",
+                characterId, itemId, slot);
+        return false;
+    }
+
+    /**
+     * Atomically move an item from a wearing slot back to backpack.
+     *
+     * @param characterId MongoDB document id
+     * @param slot        the wearing slot to unequip
+     * @param itemId      the item expected in the slot (for atomic verification)
+     * @return true if the update was applied
+     */
+    public boolean unequipItem(String characterId, WEARABLE_SLOT slot, String itemId) {
+        Query query = new Query(Criteria.where("id").is(characterId)
+                .and("backpack.wearingItemIds." + slot.name()).is(itemId));
+
+        Update update = new Update()
+                .unset("backpack.wearingItemIds." + slot.name())
+                .inc("backpack.itemIds." + itemId, 1)
+                .set("modifiedAt", Instant.now());
+
+        var result = mongoTemplate.updateFirst(query, update, RCharacter.class);
+
+        if (result.getModifiedCount() > 0) {
+            return true;
+        }
+
+        log.warn("unequipItem failed: characterId={}, slot={}, itemId={} - slot empty or item mismatch",
+                characterId, slot, itemId);
+        return false;
+    }
+
+    /**
+     * Atomically assign a shortcut definition to a shortcut slot.
+     *
+     * @param characterId MongoDB document id
+     * @param slotKey     the shortcut slot key (e.g. "1", "2", ...)
+     * @param shortcut    the ShortcutDefinition to assign
+     * @return true if the update was applied
+     */
+    public boolean assignShortcut(String characterId, String slotKey, ShortcutDefinition shortcut) {
+        Query query = new Query(Criteria.where("id").is(characterId));
+
+        Update update = new Update()
+                .set("publicData.shortcuts." + slotKey, shortcut)
+                .set("modifiedAt", Instant.now());
+
+        var result = mongoTemplate.updateFirst(query, update, RCharacter.class);
+
+        if (result.getModifiedCount() > 0) {
+            return true;
+        }
+
+        log.warn("assignShortcut failed: characterId={}, slotKey={}", characterId, slotKey);
+        return false;
+    }
+
+    /**
+     * Atomically clear a shortcut slot.
+     *
+     * @param characterId MongoDB document id
+     * @param slotKey     the shortcut slot key to clear
+     * @return true if the update was applied
+     */
+    public boolean clearShortcut(String characterId, String slotKey) {
+        Query query = new Query(Criteria.where("id").is(characterId)
+                .and("publicData.shortcuts." + slotKey).exists(true));
+
+        Update update = new Update()
+                .unset("publicData.shortcuts." + slotKey)
+                .set("modifiedAt", Instant.now());
+
+        var result = mongoTemplate.updateFirst(query, update, RCharacter.class);
+
+        if (result.getModifiedCount() > 0) {
+            return true;
+        }
+
+        log.warn("clearShortcut failed: characterId={}, slotKey={} - slot not found", characterId, slotKey);
+        return false;
+    }
+
+    /**
+     * Atomically add (or increase) an item in the backpack.
+     *
+     * @param characterId MongoDB document id
+     * @param itemId      the item to add
+     * @param amount      amount to add (positive)
+     * @return true if the update was applied
+     */
+    public boolean addBackpackItem(String characterId, String itemId, int amount) {
+        Query query = new Query(Criteria.where("id").is(characterId));
+
+        Update update = new Update()
+                .inc("backpack.itemIds." + itemId, amount)
+                .set("modifiedAt", Instant.now());
+
+        var result = mongoTemplate.updateFirst(query, update, RCharacter.class);
+
+        if (result.getModifiedCount() > 0) {
+            return true;
+        }
+
+        log.warn("addBackpackItem failed: characterId={}, itemId={}, amount={}", characterId, itemId, amount);
+        return false;
+    }
+
+    /**
+     * Atomically remove (or decrease) an item from the backpack.
+     * Verifies the item exists with at least the requested amount.
+     * Cleans up the key if count drops to 0.
+     *
+     * @param characterId MongoDB document id
+     * @param itemId      the item to remove
+     * @param amount      amount to remove (positive)
+     * @return true if the update was applied
+     */
+    public boolean removeBackpackItem(String characterId, String itemId, int amount) {
+        Query query = new Query(Criteria.where("id").is(characterId)
+                .and("backpack.itemIds." + itemId).gte(amount));
+
+        Update update = new Update()
+                .inc("backpack.itemIds." + itemId, -amount)
+                .set("modifiedAt", Instant.now());
+
+        var result = mongoTemplate.updateFirst(query, update, RCharacter.class);
+
+        if (result.getModifiedCount() > 0) {
+            // Cleanup: remove item key if count dropped to 0
+            Query cleanupQuery = new Query(Criteria.where("id").is(characterId)
+                    .and("backpack.itemIds." + itemId).lte(0));
+            Update cleanupUpdate = new Update()
+                    .unset("backpack.itemIds." + itemId)
+                    .set("modifiedAt", Instant.now());
+            mongoTemplate.updateFirst(cleanupQuery, cleanupUpdate, RCharacter.class);
+            return true;
+        }
+
+        log.warn("removeBackpackItem failed: characterId={}, itemId={}, amount={} - insufficient quantity or not found",
+                characterId, itemId, amount);
+        return false;
+    }
+
+    /**
+     * Atomically set a skill to a specific level.
+     *
+     * @param characterId MongoDB document id
+     * @param skill       skill name
+     * @param level       skill level (clamped to >= 0)
+     * @return true if the update was applied
+     */
+    public boolean setSkillAtomic(String characterId, String skill, int level) {
+        Query query = new Query(Criteria.where("id").is(characterId));
+
+        Update update = new Update()
+                .set("skills." + skill, Math.max(0, level))
+                .set("modifiedAt", Instant.now());
+
+        var result = mongoTemplate.updateFirst(query, update, RCharacter.class);
+
+        if (result.getModifiedCount() > 0) {
+            return true;
+        }
+
+        log.warn("setSkillAtomic failed: characterId={}, skill={}, level={}", characterId, skill, level);
+        return false;
+    }
+
+    /**
+     * Atomically increment a skill by a delta.
+     * The result is clamped to >= 0 via a subsequent cleanup step.
+     *
+     * @param characterId MongoDB document id
+     * @param skill       skill name
+     * @param delta       amount to add (can be negative)
+     * @return true if the update was applied
+     */
+    public boolean incrementSkillAtomic(String characterId, String skill, int delta) {
+        Query query = new Query(Criteria.where("id").is(characterId));
+
+        Update update = new Update()
+                .inc("skills." + skill, delta)
+                .set("modifiedAt", Instant.now());
+
+        var result = mongoTemplate.updateFirst(query, update, RCharacter.class);
+
+        if (result.getModifiedCount() > 0) {
+            // Clamp to 0: if value went negative, set to 0
+            if (delta < 0) {
+                Query clampQuery = new Query(Criteria.where("id").is(characterId)
+                        .and("skills." + skill).lt(0));
+                Update clampUpdate = new Update()
+                        .set("skills." + skill, 0)
+                        .set("modifiedAt", Instant.now());
+                mongoTemplate.updateFirst(clampQuery, clampUpdate, RCharacter.class);
+            }
+            return true;
+        }
+
+        log.warn("incrementSkillAtomic failed: characterId={}, skill={}, delta={}", characterId, skill, delta);
+        return false;
+    }
+
+    /**
+     * Atomically remove a skill.
+     *
+     * @param characterId MongoDB document id
+     * @param skill       skill name to remove
+     * @return true if the update was applied
+     */
+    public boolean removeSkillAtomic(String characterId, String skill) {
+        Query query = new Query(Criteria.where("id").is(characterId)
+                .and("skills." + skill).exists(true));
+
+        Update update = new Update()
+                .unset("skills." + skill)
+                .set("modifiedAt", Instant.now());
+
+        var result = mongoTemplate.updateFirst(query, update, RCharacter.class);
+
+        if (result.getModifiedCount() > 0) {
+            return true;
+        }
+
+        log.warn("removeSkillAtomic failed: characterId={}, skill={} - skill not found", characterId, skill);
+        return false;
     }
 
     private void fillWithDefaults(PlayerInfo playerInfo) {

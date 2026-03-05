@@ -5,9 +5,14 @@ import de.mhus.nimbus.shared.types.PlayerId;
 import de.mhus.nimbus.shared.types.WorldId;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -21,6 +26,7 @@ import java.util.Optional;
 public class WChestService {
 
     private final WChestRepository repository;
+    private final MongoTemplate mongoTemplate;
 
     /**
      * Find chest by worldId and name.
@@ -254,6 +260,97 @@ public class WChestService {
                 log.warn("ItemRef not found in chest: chestId={}, itemId={}", chestId, itemId);
             }
         });
+    }
+
+    // --- Atomic MongoTemplate operations ---
+
+    /**
+     * Atomically add an item to a chest's items array.
+     *
+     * @param chestId MongoDB document id
+     * @param itemRef the ItemRef to add
+     * @return true if the update was applied
+     */
+    public boolean addItemAtomic(String chestId, ItemRef itemRef) {
+        Query query = new Query(Criteria.where("id").is(chestId));
+        Update update = new Update()
+                .push("items", itemRef)
+                .set("updatedAt", Instant.now());
+
+        var result = mongoTemplate.updateFirst(query, update, WChest.class);
+        if (result.getModifiedCount() > 0) {
+            return true;
+        }
+        log.warn("addItemAtomic failed: chestId={}, itemId={}", chestId, itemRef.getItemId());
+        return false;
+    }
+
+    /**
+     * Atomically update the amount of an existing item in a chest.
+     * Uses the positional $ operator to match the array element by itemId.
+     *
+     * @param chestId MongoDB document id
+     * @param itemId  the itemId to match in the items array
+     * @param newAmount new amount value (must be > 0)
+     * @return true if the update was applied
+     */
+    public boolean updateItemAmountAtomic(String chestId, String itemId, int newAmount) {
+        Query query = new Query(Criteria.where("id").is(chestId)
+                .and("items.itemId").is(itemId));
+        Update update = new Update()
+                .set("items.$.amount", newAmount)
+                .set("updatedAt", Instant.now());
+
+        var result = mongoTemplate.updateFirst(query, update, WChest.class);
+        if (result.getModifiedCount() > 0) {
+            return true;
+        }
+        log.warn("updateItemAmountAtomic failed: chestId={}, itemId={}", chestId, itemId);
+        return false;
+    }
+
+    /**
+     * Atomically increment the amount of an existing item in a chest.
+     *
+     * @param chestId MongoDB document id
+     * @param itemId  the itemId to match in the items array
+     * @param delta   amount to add (positive) or subtract (negative)
+     * @return true if the update was applied
+     */
+    public boolean incItemAmountAtomic(String chestId, String itemId, int delta) {
+        Query query = new Query(Criteria.where("id").is(chestId)
+                .and("items.itemId").is(itemId));
+        Update update = new Update()
+                .inc("items.$.amount", delta)
+                .set("updatedAt", Instant.now());
+
+        var result = mongoTemplate.updateFirst(query, update, WChest.class);
+        if (result.getModifiedCount() > 0) {
+            return true;
+        }
+        log.warn("incItemAmountAtomic failed: chestId={}, itemId={}, delta={}", chestId, itemId, delta);
+        return false;
+    }
+
+    /**
+     * Atomically remove an item from a chest's items array.
+     *
+     * @param chestId MongoDB document id
+     * @param itemId  the itemId to remove
+     * @return true if the update was applied
+     */
+    public boolean removeItemAtomic(String chestId, String itemId) {
+        Query query = new Query(Criteria.where("id").is(chestId));
+        Update update = new Update()
+                .pull("items", new org.bson.Document("itemId", itemId))
+                .set("updatedAt", Instant.now());
+
+        var result = mongoTemplate.updateFirst(query, update, WChest.class);
+        if (result.getModifiedCount() > 0) {
+            return true;
+        }
+        log.warn("removeItemAtomic failed: chestId={}, itemId={}", chestId, itemId);
+        return false;
     }
 
     /**

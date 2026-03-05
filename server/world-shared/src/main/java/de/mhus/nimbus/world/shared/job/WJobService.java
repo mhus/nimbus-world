@@ -6,6 +6,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,6 +40,7 @@ public class WJobService {
 
     private final WJobRepository jobRepository;
     private final JobExecutorRegistry executorRegistry;
+    private final MongoTemplate mongoTemplate;
 
     @Transactional
     public WJob createJob(String worldId, String executor, String title, String type,
@@ -123,61 +128,135 @@ public class WJobService {
                 JobStatus.PENDING.name(), true);
     }
 
-    @Transactional
-    public Optional<WJob> markJobRunning(String jobId) {
-        return jobRepository.findById(jobId).map(job -> {
-            job.markStarted();
-            WJob saved = jobRepository.save(job);
-            log.debug("Job started: id={} world={} executor={}",
-                    jobId, job.getWorldId(), job.getExecutor());
-            return saved;
-        });
+    /**
+     * Atomically mark a job as RUNNING.
+     * Only transitions from PENDING status to prevent double-start.
+     */
+    public boolean markJobRunning(String jobId) {
+        Instant now = Instant.now();
+        Query query = new Query(Criteria.where("id").is(jobId)
+                .and("status").is(JobStatus.PENDING.name()));
+        Update update = new Update()
+                .set("status", JobStatus.RUNNING.name())
+                .set("startedAt", now)
+                .set("modifiedAt", now);
+
+        var result = mongoTemplate.updateFirst(query, update, WJob.class);
+        if (result.getModifiedCount() > 0) {
+            log.debug("Job started: id={}", jobId);
+            return true;
+        }
+        log.warn("markJobRunning failed: jobId={} - not found or not PENDING", jobId);
+        return false;
     }
 
-    @Transactional
-    public Optional<WJob> markJobAsync(String jobId, String result) {
-        return jobRepository.findById(jobId).map(job -> {
-            job.setAsync(result);
-            WJob saved = jobRepository.save(job);
-            log.info("Job async: id={} world={} executor={} duration={}ms",
-                    jobId, job.getWorldId(), job.getExecutor(),
-                    calculateDuration(job));
-            return saved;
-        });
+    /**
+     * Atomically mark a job as async.
+     */
+    public boolean markJobAsync(String jobId, String asyncResult) {
+        Instant now = Instant.now();
+        Query query = new Query(Criteria.where("id").is(jobId));
+        Update update = new Update()
+                .set("async", asyncResult)
+                .set("modifiedAt", now);
+
+        var result = mongoTemplate.updateFirst(query, update, WJob.class);
+        if (result.getModifiedCount() > 0) {
+            log.info("Job async: id={}", jobId);
+            return true;
+        }
+        log.warn("markJobAsync failed: jobId={}", jobId);
+        return false;
     }
 
-    @Transactional
-    public Optional<WJob> markJobCompleted(String jobId, String result) {
-        return jobRepository.findById(jobId).map(job -> {
-            job.markCompleted(result);
-            WJob saved = jobRepository.save(job);
-            log.info("Job completed: id={} world={} executor={} duration={}ms",
-                    jobId, job.getWorldId(), job.getExecutor(),
-                    calculateDuration(job));
-            scheduleNextJob(job, job.getOnSuccess(), result, null);
-            return saved;
-        });
+    /**
+     * Atomically mark a job as COMPLETED with optional result.
+     * Schedules follow-up job if configured.
+     */
+    public boolean markJobCompleted(String jobId, String resultData) {
+        Instant now = Instant.now();
+        Query query = new Query(Criteria.where("id").is(jobId)
+                .and("status").is(JobStatus.RUNNING.name()));
+        Update update = new Update()
+                .set("status", JobStatus.COMPLETED.name())
+                .set("completedAt", now)
+                .set("result", resultData)
+                .set("modifiedAt", now);
+
+        var result = mongoTemplate.updateFirst(query, update, WJob.class);
+        if (result.getModifiedCount() > 0) {
+            log.info("Job completed: id={}", jobId);
+            // Schedule follow-up job if configured (needs full job for onSuccess config)
+            jobRepository.findById(jobId).ifPresent(job ->
+                    scheduleNextJob(job, job.getOnSuccess(), resultData, null));
+            return true;
+        }
+        log.warn("markJobCompleted failed: jobId={} - not found or not RUNNING", jobId);
+        return false;
     }
 
-    @Transactional
-    public Optional<WJob> markJobFailed(String jobId, String errorMessage) {
-        return jobRepository.findById(jobId).map(job -> {
-            job.markFailed(errorMessage);
+    /**
+     * Atomically mark a job as FAILED with error message.
+     * Handles retry logic: if retries remaining, resets to PENDING.
+     */
+    public boolean markJobFailed(String jobId, String errorMessage) {
+        Instant now = Instant.now();
 
+        // First: atomically set FAILED, increment retryCount, set error
+        Query query = new Query(Criteria.where("id").is(jobId)
+                .and("status").is(JobStatus.RUNNING.name()));
+        Update update = new Update()
+                .set("status", JobStatus.FAILED.name())
+                .set("completedAt", now)
+                .set("errorMessage", errorMessage)
+                .inc("retryCount", 1)
+                .set("modifiedAt", now);
+
+        var result = mongoTemplate.updateFirst(query, update, WJob.class);
+        if (result.getModifiedCount() == 0) {
+            log.warn("markJobFailed failed: jobId={} - not found or not RUNNING", jobId);
+            return false;
+        }
+
+        // Check if retry is possible and reset to PENDING
+        var jobOpt = jobRepository.findById(jobId);
+        if (jobOpt.isPresent()) {
+            WJob job = jobOpt.get();
             if (job.canRetry()) {
-                job.setStatus(JobStatus.PENDING.name());
-                job.setStartedAt(null);
-                log.info("Job failed, retrying: id={} world={} executor={} retry={}/{} error={}",
-                        jobId, job.getWorldId(), job.getExecutor(),
-                        job.getRetryCount(), job.getMaxRetries(), errorMessage);
+                Query retryQuery = new Query(Criteria.where("id").is(jobId)
+                        .and("status").is(JobStatus.FAILED.name()));
+                Update retryUpdate = new Update()
+                        .set("status", JobStatus.PENDING.name())
+                        .unset("startedAt")
+                        .set("modifiedAt", Instant.now());
+                mongoTemplate.updateFirst(retryQuery, retryUpdate, WJob.class);
+                log.info("Job failed, retrying: id={} retry={}/{} error={}",
+                        jobId, job.getRetryCount(), job.getMaxRetries(), errorMessage);
             } else {
-                log.error("Job failed: id={} world={} executor={} error={}",
-                        jobId, job.getWorldId(), job.getExecutor(), errorMessage);
+                log.error("Job failed: id={} error={}", jobId, errorMessage);
                 scheduleNextJob(job, job.getOnError(), null, errorMessage);
             }
+        }
+        return true;
+    }
 
-            return jobRepository.save(job);
-        });
+    /**
+     * Atomically update specific fields on a job.
+     * For callers that need to set individual fields without load-modify-save.
+     */
+    public boolean updateJobFields(String jobId, Map<String, Object> fields) {
+        Query query = new Query(Criteria.where("id").is(jobId));
+        Update update = new Update().set("modifiedAt", Instant.now());
+        for (var entry : fields.entrySet()) {
+            update.set(entry.getKey(), entry.getValue());
+        }
+
+        var result = mongoTemplate.updateFirst(query, update, WJob.class);
+        if (result.getModifiedCount() > 0) {
+            return true;
+        }
+        log.warn("updateJobFields failed: jobId={}", jobId);
+        return false;
     }
 
     @Transactional
@@ -189,15 +268,22 @@ public class WJobService {
         });
     }
 
-    @Transactional
+    /**
+     * Atomically soft-delete a job.
+     */
     public boolean deleteJob(String jobId) {
-        return jobRepository.findById(jobId).map(job -> {
-            job.setEnabled(false);
-            job.touchUpdate();
-            jobRepository.save(job);
+        Query query = new Query(Criteria.where("id").is(jobId)
+                .and("enabled").is(true));
+        Update update = new Update()
+                .set("enabled", false)
+                .set("modifiedAt", Instant.now());
+
+        var result = mongoTemplate.updateFirst(query, update, WJob.class);
+        if (result.getModifiedCount() > 0) {
             log.debug("Job soft-deleted: id={}", jobId);
             return true;
-        }).orElse(false);
+        }
+        return false;
     }
 
     @Transactional
@@ -403,15 +489,23 @@ public class WJobService {
         }
     }
 
-    public void emigrateToWorld(String worldId, String jobId, String newWorldId) {
-        jobRepository.findById(jobId).ifPresent(job -> {
-            if (job.getWorldId().equals(worldId)) {
-                job.setWorldId(newWorldId);
-                jobRepository.save(job);
-                log.debug("Migrated job {} from world {} to world {}", jobId, worldId, newWorldId);
-            } else {
-                log.warn("Job {} does not belong to world {}, cannot migrate", jobId, worldId);
-            }
-        });
+    /**
+     * Atomically migrate a job to a different world.
+     * Only updates if the job currently belongs to the specified worldId.
+     */
+    public boolean emigrateToWorld(String worldId, String jobId, String newWorldId) {
+        Query query = new Query(Criteria.where("id").is(jobId)
+                .and("worldId").is(worldId));
+        Update update = new Update()
+                .set("worldId", newWorldId)
+                .set("modifiedAt", Instant.now());
+
+        var result = mongoTemplate.updateFirst(query, update, WJob.class);
+        if (result.getModifiedCount() > 0) {
+            log.debug("Migrated job {} from world {} to world {}", jobId, worldId, newWorldId);
+            return true;
+        }
+        log.warn("Job {} does not belong to world {}, cannot migrate", jobId, worldId);
+        return false;
     }
 }

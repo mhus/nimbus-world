@@ -12,5 +12,8 @@ package de.mhus.nimbus.generated.network.messages;
 @lombok.AllArgsConstructor(access = lombok.AccessLevel.PROTECTED)
 public class SimpleInteractionData {
     private String ac;
+    @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
     private String sc;
+    @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
+    private Object d;
 }

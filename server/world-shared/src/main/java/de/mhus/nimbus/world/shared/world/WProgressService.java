@@ -2,9 +2,14 @@ package de.mhus.nimbus.world.shared.world;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -19,6 +24,7 @@ import java.util.Optional;
 public class WProgressService {
 
     private final WProgressRepository repository;
+    private final MongoTemplate mongoTemplate;
 
     /**
      * Find all progress entries for a world.
@@ -105,6 +111,120 @@ public class WProgressService {
 
         log.debug("Created progress: worldId={}, playerId={}, type={}, quest={}", worldId, playerId, type, quest);
         return repository.save(progress);
+    }
+
+    // --- Atomic MongoTemplate operations on progressData ---
+
+    /**
+     * Atomically set a single key in progressData.
+     *
+     * @param progressId MongoDB document id
+     * @param key        the key to set
+     * @param value      the value to set
+     * @return true if the update was applied
+     */
+    public boolean setProgressDataValue(String progressId, String key, Object value) {
+        Query query = new Query(Criteria.where("id").is(progressId));
+        Update update = new Update()
+                .set("progressData." + key, value)
+                .set("updatedAt", Instant.now());
+
+        var result = mongoTemplate.updateFirst(query, update, WProgress.class);
+        if (result.getModifiedCount() > 0) {
+            return true;
+        }
+        log.warn("setProgressDataValue failed: progressId={}, key={}", progressId, key);
+        return false;
+    }
+
+    /**
+     * Atomically set multiple keys in progressData.
+     * Existing keys not in the map are preserved.
+     *
+     * @param progressId MongoDB document id
+     * @param values     key-value pairs to set
+     * @return true if the update was applied
+     */
+    public boolean setProgressDataValues(String progressId, Map<String, Object> values) {
+        Query query = new Query(Criteria.where("id").is(progressId));
+        Update update = new Update()
+                .set("updatedAt", Instant.now());
+
+        for (var entry : values.entrySet()) {
+            update.set("progressData." + entry.getKey(), entry.getValue());
+        }
+
+        var result = mongoTemplate.updateFirst(query, update, WProgress.class);
+        if (result.getModifiedCount() > 0) {
+            return true;
+        }
+        log.warn("setProgressDataValues failed: progressId={}", progressId);
+        return false;
+    }
+
+    /**
+     * Atomically remove a key from progressData.
+     *
+     * @param progressId MongoDB document id
+     * @param key        the key to remove
+     * @return true if the update was applied
+     */
+    public boolean removeProgressDataValue(String progressId, String key) {
+        Query query = new Query(Criteria.where("id").is(progressId)
+                .and("progressData." + key).exists(true));
+        Update update = new Update()
+                .unset("progressData." + key)
+                .set("updatedAt", Instant.now());
+
+        var result = mongoTemplate.updateFirst(query, update, WProgress.class);
+        if (result.getModifiedCount() > 0) {
+            return true;
+        }
+        log.warn("removeProgressDataValue failed: progressId={}, key={}", progressId, key);
+        return false;
+    }
+
+    /**
+     * Atomically increment a numeric value in progressData.
+     *
+     * @param progressId MongoDB document id
+     * @param key        the key to increment
+     * @param delta      amount to add (can be negative)
+     * @return true if the update was applied
+     */
+    public boolean incProgressDataValue(String progressId, String key, int delta) {
+        Query query = new Query(Criteria.where("id").is(progressId));
+        Update update = new Update()
+                .inc("progressData." + key, delta)
+                .set("updatedAt", Instant.now());
+
+        var result = mongoTemplate.updateFirst(query, update, WProgress.class);
+        if (result.getModifiedCount() > 0) {
+            return true;
+        }
+        log.warn("incProgressDataValue failed: progressId={}, key={}, delta={}", progressId, key, delta);
+        return false;
+    }
+
+    /**
+     * Atomically replace the entire progressData map.
+     *
+     * @param progressId   MongoDB document id
+     * @param progressData the new progressData
+     * @return true if the update was applied
+     */
+    public boolean replaceProgressData(String progressId, Map<String, Object> progressData) {
+        Query query = new Query(Criteria.where("id").is(progressId));
+        Update update = new Update()
+                .set("progressData", progressData)
+                .set("updatedAt", Instant.now());
+
+        var result = mongoTemplate.updateFirst(query, update, WProgress.class);
+        if (result.getModifiedCount() > 0) {
+            return true;
+        }
+        log.warn("replaceProgressData failed: progressId={}", progressId);
+        return false;
     }
 
     /**

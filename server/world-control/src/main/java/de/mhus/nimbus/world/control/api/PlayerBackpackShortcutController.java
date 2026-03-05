@@ -249,19 +249,11 @@ public class PlayerBackpackShortcutController extends BaseEditorController {
         shortcut.setIconPath(texture);
         shortcut.setWait(0);
 
-        // Save
-        PlayerInfo playerInfo = character.getPublicData();
-        if (playerInfo == null) {
-            playerInfo = new PlayerInfo();
+        // Atomic update via MongoTemplate
+        boolean updated = characterService.assignShortcut(character.getId(), body.slotKey(), shortcut);
+        if (!updated) {
+            return bad("Failed to assign shortcut (concurrent modification)");
         }
-        Map<String, ShortcutDefinition> shortcuts = playerInfo.getShortcuts();
-        if (shortcuts == null) {
-            shortcuts = new LinkedHashMap<>();
-        }
-        shortcuts.put(body.slotKey(), shortcut);
-        playerInfo.setShortcuts(shortcuts);
-        character.setPublicData(playerInfo);
-        characterService.updateCharater(character);
 
         log.info("Assigned shortcut: userId={}, characterId={}, slot={}, itemId={}", userId, characterId, body.slotKey(), body.itemId());
         notifyPlayer(worldId, request);
@@ -302,11 +294,10 @@ public class PlayerBackpackShortcutController extends BaseEditorController {
             return notFound("Character not found");
         }
 
-        PlayerInfo playerInfo = character.getPublicData();
-        if (playerInfo != null && playerInfo.getShortcuts() != null) {
-            playerInfo.getShortcuts().remove(body.slotKey());
-            character.setPublicData(playerInfo);
-            characterService.updateCharater(character);
+        // Atomic update via MongoTemplate
+        boolean updated = characterService.clearShortcut(character.getId(), body.slotKey());
+        if (!updated) {
+            return bad("Shortcut slot not found or already empty");
         }
 
         log.info("Cleared shortcut: userId={}, characterId={}, slot={}", userId, characterId, body.slotKey());
@@ -378,18 +369,11 @@ public class PlayerBackpackShortcutController extends BaseEditorController {
         shortcut.setIconPath(body.iconPath());
         shortcut.setWait(0);
 
-        PlayerInfo playerInfo = character.getPublicData();
-        if (playerInfo == null) {
-            playerInfo = new PlayerInfo();
+        // Atomic update via MongoTemplate
+        boolean updated = characterService.assignShortcut(character.getId(), body.slotKey(), shortcut);
+        if (!updated) {
+            return bad("Failed to assign action shortcut (concurrent modification)");
         }
-        Map<String, ShortcutDefinition> shortcuts = playerInfo.getShortcuts();
-        if (shortcuts == null) {
-            shortcuts = new LinkedHashMap<>();
-        }
-        shortcuts.put(body.slotKey(), shortcut);
-        playerInfo.setShortcuts(shortcuts);
-        character.setPublicData(playerInfo);
-        characterService.updateCharater(character);
 
         log.info("Assigned action shortcut: userId={}, characterId={}, slot={}, type={}", userId, characterId, body.slotKey(), body.type());
         notifyPlayer(worldId, request);

@@ -26,4 +26,6 @@ public class VitalsData {
     private String color;
     private String name;
     private int order;
+    @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
+    private String options;
 }

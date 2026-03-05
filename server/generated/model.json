@@ -4130,6 +4130,13 @@
         "visibility" : null,
         "javaTypeHint" : "int",
         "comment" : "// javaType: int"
+      }, {
+        "name" : "options",
+        "type" : "string",
+        "optional" : true,
+        "visibility" : null,
+        "javaTypeHint" : null,
+        "comment" : null
       } ],
       "methods" : [ ]
     } ],
@@ -7097,7 +7104,14 @@
       }, {
         "name" : "sc",
         "type" : "string",
-        "optional" : false,
+        "optional" : true,
+        "visibility" : null,
+        "javaTypeHint" : null,
+        "comment" : null
+      }, {
+        "name" : "d",
+        "type" : "any",
+        "optional" : true,
         "visibility" : null,
         "javaTypeHint" : null,
         "comment" : null
