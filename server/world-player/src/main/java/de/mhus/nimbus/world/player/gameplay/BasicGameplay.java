@@ -33,6 +33,7 @@ public class BasicGameplay implements Gameplay {
     @Autowired
     protected WEntityService entityService;
     @Autowired
+    @Getter
     protected WItemService itemService;
     @Autowired
     protected RCharacterService characterService;

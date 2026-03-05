@@ -465,7 +465,7 @@ appContextPromise
     }
 
     // Editor-specific initialization (tree-shaken in viewer build)
-    if (__EDITOR__) {
+    if (__EDITOR__ || __DEBUG_COMMANDS__) {
       logger.debug('Editor mode active');
 
       // Expose commands to browser console

@@ -92,6 +92,7 @@ public class CollectAction implements GameplayAction {
                 if (random.nextInt(100) < probability) {
                     boolean added = adventure.getGameplayService().putIntoBackpack(session, itemId, quantity);
                     if (added) {
+                        sendCollectNotification(session, itemId, quantity);
                         log.info("Player {} collected {} x{} (probability {}%)",
                                 session.getEntityId(), itemId, quantity, probability);
                     } else {
@@ -106,5 +107,23 @@ public class CollectAction implements GameplayAction {
 
         data.setNextCollectAllowed(now + cooldownSeconds * 1000L);
         return true;
+    }
+
+    private void sendCollectNotification(PlayerSession session, String itemId, int quantity) {
+        try {
+            // Try cached items first, then fall back to DB
+            WItem item = null;
+            if (session.getGameplayData() instanceof AdventureData data && data.getCachedItems() != null) {
+                item = data.getCachedItems().get(itemId);
+            }
+            if (item == null) {
+                item = adventure.getItemService().findByItemId(session.getWorldId(), itemId).orElse(null);
+            }
+            String title = item != null && item.getPublicData() != null ? item.getPublicData().getTitle() : itemId;
+            String texture = item != null && item.getPublicData() != null ? item.getPublicData().getTexture() : null;
+            adventure.getClientService().sendNotification(session, 3, "", "+ " + quantity + " " + title, texture);
+        } catch (Exception e) {
+            log.warn("Failed to send collect notification for {}: {}", itemId, e.getMessage());
+        }
     }
 }

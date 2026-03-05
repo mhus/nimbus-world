@@ -316,7 +316,7 @@ public class GameplayService implements SessionAuthenticatedConsumer {
             }
         }
 
-        // Load character from DB
+        // Load character to get ID and check current state
         var characterOpt = characterService.getCharacter(
                 playerId.getUserId(), regionId, playerId.getCharacterId());
         if (characterOpt.isEmpty()) return false;
@@ -325,23 +325,21 @@ public class GameplayService implements SessionAuthenticatedConsumer {
         var backpack = character.getBackpack();
         if (backpack == null || backpack.getItemIds() == null) return false;
 
-        // Check current quantity
         Integer currentCount = backpack.getItemIds().get(itemId);
         if (currentCount == null || currentCount < quantity) {
             return false;
         }
 
-        // Reduce quantity
-        int newCount = currentCount - quantity;
-        boolean removed = false;
-        if (newCount <= 0) {
-            backpack.getItemIds().remove(itemId);
-            removed = true;
-        } else {
-            backpack.getItemIds().put(itemId, newCount);
+        // Atomic MongoDB update via $inc (validates sufficient quantity, cleans up at 0)
+        boolean updated = characterService.removeBackpackItem(character.getId(), itemId, quantity);
+        if (!updated) {
+            log.warn("Atomic backpack reduce failed for player {} item {} x{}", entityId, itemId, quantity);
+            return false;
         }
 
-        // If item removed, also clean up shortcuts referencing this item
+        boolean removed = currentCount - quantity <= 0;
+
+        // If item fully removed, clean up shortcuts referencing this item
         boolean shortcutsChanged = false;
         if (removed && character.getPublicData() != null && character.getPublicData().getShortcuts() != null) {
             var shortcuts = character.getPublicData().getShortcuts();
@@ -352,19 +350,19 @@ public class GameplayService implements SessionAuthenticatedConsumer {
                     keysToRemove.add(entry.getKey());
                 }
             }
-            for (String key : keysToRemove) {
-                shortcuts.remove(key);
+            if (!keysToRemove.isEmpty()) {
+                for (String key : keysToRemove) {
+                    shortcuts.remove(key);
+                }
+                characterService.updateCharater(character);
+                shortcutsChanged = true;
             }
-            shortcutsChanged = !keysToRemove.isEmpty();
         }
 
-        // Save character
-        characterService.updateCharater(character);
-
         log.info("Reduced item {} by {} for player {} (remaining: {}, removed: {})",
-                itemId, quantity, entityId, removed ? 0 : newCount, removed);
+                itemId, quantity, entityId, removed ? 0 : currentCount - quantity, removed);
 
-        // Fire events
+        // Reload character from DB and refresh caches
         onBackpackModified(session);
         if (shortcutsChanged) {
             onShortcutModified(session);
@@ -400,20 +398,16 @@ public class GameplayService implements SessionAuthenticatedConsumer {
 
         RCharacter character = characterOpt.get();
         var backpack = character.getBackpack();
-        if (backpack == null) {
-            backpack = new de.mhus.nimbus.generated.configs.PlayerBackpack();
-            character.setBackpack(backpack);
-        }
-        if (backpack.getItemIds() == null) {
-            backpack.setItemIds(new java.util.LinkedHashMap<>());
-        }
 
         // Check capacity
         int maxItems = session.getGameplay() != null
                 ? session.getGameplay().getMaxBackpackItems(session)
                 : 1000;
 
-        Integer currentCount = backpack.getItemIds().getOrDefault(itemId, 0);
+        int currentCount = 0;
+        if (backpack != null && backpack.getItemIds() != null) {
+            currentCount = backpack.getItemIds().getOrDefault(itemId, 0);
+        }
 
         // Check total amount for this item
         if (currentCount + quantity > maxItems) {
@@ -423,19 +417,24 @@ public class GameplayService implements SessionAuthenticatedConsumer {
         }
 
         // Check distinct item count (only for new items)
-        if (currentCount == 0 && backpack.getItemIds().size() >= maxItems) {
+        if (currentCount == 0 && backpack != null && backpack.getItemIds() != null
+                && backpack.getItemIds().size() >= maxItems) {
             log.debug("Backpack item slot limit reached for player {} ({} >= {})",
                     entityId, backpack.getItemIds().size(), maxItems);
             return false;
         }
 
-        backpack.getItemIds().put(itemId, currentCount + quantity);
-
-        characterService.updateCharater(character);
+        // Atomic MongoDB update via $inc
+        boolean updated = characterService.addBackpackItem(character.getId(), itemId, quantity);
+        if (!updated) {
+            log.warn("Atomic backpack update failed for player {} item {} x{}", entityId, itemId, quantity);
+            return false;
+        }
 
         log.info("Put item {} x{} into backpack for player {} (total: {})",
                 itemId, quantity, entityId, currentCount + quantity);
 
+        // Reload character from DB and refresh caches
         onBackpackModified(session);
 
         return true;

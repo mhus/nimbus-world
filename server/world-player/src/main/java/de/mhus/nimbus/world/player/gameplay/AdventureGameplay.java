@@ -19,6 +19,7 @@ import de.mhus.nimbus.shared.utils.TypeUtil;
 import de.mhus.nimbus.world.player.service.ClientService;
 import de.mhus.nimbus.world.player.session.PlayerSession;
 import de.mhus.nimbus.world.shared.gameplay.ActiveEffect;
+import de.mhus.nimbus.world.shared.redis.EntityStatusPublisher;
 import de.mhus.nimbus.world.shared.gameplay.CombatResolver;
 import de.mhus.nimbus.world.shared.gameplay.CombatStat;
 import de.mhus.nimbus.world.shared.gameplay.PassiveStats;
@@ -49,6 +50,7 @@ public class AdventureGameplay extends BasicGameplay {
     private static final double FALL_DAMAGE_PER_METER = 3.0;
 
     @Autowired
+    @Getter
     private ClientService clientService;
 
     @Autowired
@@ -60,6 +62,9 @@ public class AdventureGameplay extends BasicGameplay {
 
     @Autowired
     private WHexGridService hexGridService;
+
+    @Autowired
+    private EntityStatusPublisher entityStatusPublisher;
 
     @Getter
     private final EffectProcessor effectProcessor = new EffectProcessor();
@@ -482,9 +487,24 @@ public class AdventureGameplay extends BasicGameplay {
             commandData.put("oneway", true);
 
             clientService.sendCommand(session, "vitals", commandData);
+
+            // Broadcast health status to other players via entity status update
+            publishPlayerHealthStatus(session, data);
         } catch (Exception e) {
             log.error("Failed to send vitals update to session {}: {}", session.getSessionId(), e.getMessage());
         }
+    }
+
+    private void publishPlayerHealthStatus(PlayerSession session, AdventureData data) {
+        VitalValue health = data.getVital("health");
+        if (health == null) return;
+        String worldId = session.getWorldId() != null ? session.getWorldId().getId() : null;
+        String entityId = session.getEntityId();
+        if (worldId == null || entityId == null) return;
+
+        entityStatusPublisher.publishStatusUpdate(worldId, entityId,
+                Map.of("health", health.getCurrent(), "healthMax", health.getEffectiveMax()),
+                session.getWebSocketSession().getId());
     }
 
     @Override

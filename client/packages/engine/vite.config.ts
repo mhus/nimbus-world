@@ -1,7 +1,8 @@
-import { defineConfig } from 'vite';
+import { defineConfig, loadEnv } from 'vite';
 import { resolve } from 'path';
 
 export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, __dirname, '');
   const isEditor = mode === 'editor';
   const isViewer = mode === 'viewer' || mode === 'development';
 
@@ -31,6 +32,7 @@ export default defineConfig(({ mode }) => {
       __EDITOR__: JSON.stringify(isEditor),
       __VIEWER__: JSON.stringify(isViewer),
       __BUILD_MODE__: JSON.stringify(mode),
+      __DEBUG_COMMANDS__: JSON.stringify(env.VITE_DEBUG_COMMANDS === 'true'),
     },
     resolve: {
       alias: {

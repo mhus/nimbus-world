@@ -7,4 +7,5 @@
 
 declare const __EDITOR__: boolean;
 declare const __VIEWER__: boolean;
+declare const __DEBUG_COMMANDS__: boolean;
 declare const __BUILD_MODE__: 'viewer' | 'editor' | 'development';
