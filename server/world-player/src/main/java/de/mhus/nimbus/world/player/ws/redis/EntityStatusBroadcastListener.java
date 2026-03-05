@@ -86,8 +86,8 @@ public class EntityStatusBroadcastListener {
             // Convert status updates array to JsonNode
             JsonNode updatesArray = objectMapper.valueToTree(statusUpdates);
 
-            // Broadcast to all sessions in affected chunks
-            if (affectedChunksNode != null && affectedChunksNode.isArray()) {
+            // Broadcast to all sessions in affected chunks (empty array = broadcast to all)
+            if (affectedChunksNode != null && affectedChunksNode.isArray() && !affectedChunksNode.isEmpty()) {
                 // Broadcast per chunk
                 for (JsonNode chunkNode : affectedChunksNode) {
                     int cx = chunkNode.has("cx") ? chunkNode.get("cx").asInt() : 0;

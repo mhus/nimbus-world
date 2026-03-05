@@ -9,7 +9,12 @@ import de.mhus.nimbus.world.life.behavior.EntityBehavior;
 import de.mhus.nimbus.world.life.model.ChunkCoordinate;
 import de.mhus.nimbus.world.life.model.SimulationState;
 import de.mhus.nimbus.world.life.redis.PathwayPublisher;
+import de.mhus.nimbus.world.shared.gameplay.BaseEffectProcessor;
+import de.mhus.nimbus.world.shared.gameplay.EntityCombatData;
+import de.mhus.nimbus.world.shared.redis.EntityStateRedisService;
 import de.mhus.nimbus.world.shared.redis.EntityStatusPublisher;
+import de.mhus.nimbus.world.shared.redis.VitalDeltaBroadcastMessage;
+import de.mhus.nimbus.world.shared.redis.VitalDeltaPublisher;
 import de.mhus.nimbus.world.shared.world.BlockUtil;
 import de.mhus.nimbus.world.shared.world.WEntity;
 import de.mhus.nimbus.world.shared.world.WEntityService;
@@ -60,6 +65,10 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
     private final EntityOwnershipService ownershipService;
     private final EntityStatusPublisher entityStatusPublisher;
     private final WWorldService worldService;
+    private final VitalDeltaPublisher vitalDeltaPublisher;
+    private final EntityStateRedisService entityStateRedisService;
+
+    private final BaseEffectProcessor baseEffectProcessor = new BaseEffectProcessor();
 
     /**
      * Simulation states for all entities, grouped by world.
@@ -109,7 +118,7 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
             entityChunks.addAll(chunkKeys);
 
             // Only create simulation state if not already loaded
-            if (worldStates.putIfAbsent(entityId, new SimulationState(entity)) == null) {
+            if (worldStates.putIfAbsent(entityId, createSimulationState(entity)) == null) {
                 loaded++;
             }
         }
@@ -279,6 +288,12 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
      * Simulate a single entity and generate pathway if needed.
      */
     private Optional<EntityPathway> simulateEntity(WEntity entity, SimulationState state, long currentTime, WorldId worldId) {
+
+        // Handle death/respawn lifecycle
+        if (state.getLifecycleState() != SimulationState.LifecycleState.ALIVE) {
+            return handleLifecycleTick(entity, state, currentTime, worldId);
+        }
+
         String behaviorType = getBehaviorType(entity);
         EntityBehavior behavior = behaviorRegistry.getBehavior(behaviorType);
 
@@ -289,6 +304,9 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
         var world = worldService.getByWorldId(worldId).orElseThrow();
 
         EntityPathway pathway = behavior.update(entity, state, currentTime, worldId);
+
+        // Process combat tick for entities with combat data
+        processCombatTick(state, 1.0, worldId);
 
         if (pathway != null) {
             List<Waypoint> waypoints = pathway.getWaypoints();
@@ -310,6 +328,77 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
         }
 
         return Optional.empty();
+    }
+
+    /**
+     * Handle lifecycle transitions for dead/gone entities.
+     * DEAD → (fade time) → GONE → (respawn time) → ALIVE
+     */
+    private Optional<EntityPathway> handleLifecycleTick(WEntity entity, SimulationState state, long currentTime, WorldId worldId) {
+        long elapsed = currentTime - state.getLifecycleTimestamp();
+        String entityId = entity.getEntityId();
+
+        if (state.getLifecycleState() == SimulationState.LifecycleState.DEAD) {
+            if (elapsed >= state.getFadeTimeMs()) {
+                // Fade time over → send gone, transition to GONE
+                entityStatusPublisher.publishStatusUpdate(worldId.getId(), entityId,
+                        Map.of(EntityStatusPublisher.GONE, 1), null);
+                entityStateRedisService.setLifecycle(worldId.getId(), entityId,
+                        EntityStateRedisService.LIFECYCLE_GONE);
+                state.setLifecycleState(SimulationState.LifecycleState.GONE);
+                state.setLifecycleTimestamp(currentTime);
+                log.info("World {}: Entity {} gone after death fade", worldId, entityId);
+            }
+        } else if (state.getLifecycleState() == SimulationState.LifecycleState.GONE) {
+            if (elapsed >= state.getRespawnTimeMs()) {
+                // Respawn time over → reset and respawn
+                respawnEntity(entity, state, currentTime, worldId);
+                return simulateEntity(entity, state, currentTime, worldId);
+            }
+        }
+        return Optional.empty();
+    }
+
+    /**
+     * Respawn entity: reset health, position to middlePoint, and lifecycle to ALIVE.
+     */
+    private void respawnEntity(WEntity entity, SimulationState state, long currentTime, WorldId worldId) {
+        String entityId = entity.getEntityId();
+
+        // Reset health
+        EntityCombatData combatData = state.getCombatData();
+        if (combatData != null) {
+            var health = combatData.getVital("health");
+            if (health != null) {
+                health.setCurrent(health.getBase());
+                health.clamp();
+            }
+            combatData.getActiveEffects().removeIf(e -> !e.isPermanent());
+        }
+
+        // Reset position to middlePoint (spawn point)
+        if (entity.getMiddlePoint() != null) {
+            entity.setPosition(Vector3.builder()
+                    .x(entity.getMiddlePoint().getX())
+                    .y(entity.getMiddlePoint().getY())
+                    .z(entity.getMiddlePoint().getZ())
+                    .build());
+            var world = worldService.getByWorldId(worldId).orElse(null);
+            if (world != null) {
+                updateEntityChunk(world, entity);
+            }
+        }
+
+        // Reset lifecycle
+        state.setLifecycleState(SimulationState.LifecycleState.ALIVE);
+        state.setLifecycleTimestamp(0);
+        state.setCurrentPathway(null);
+        state.setPathwayEndTime(0);
+
+        // Clear Redis state (absence = ALIVE)
+        entityStateRedisService.remove(worldId.getId(), entityId);
+
+        log.info("World {}: Entity {} respawned at middlePoint", worldId, entityId);
     }
 
     private String getBehaviorType(WEntity entity) {
@@ -401,6 +490,73 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
 
     public int getOwnedEntityCount() {
         return ownershipService.getOwnedEntityCount();
+    }
+
+    /**
+     * Create a SimulationState and initialize combat data from entity properties if available.
+     */
+    private SimulationState createSimulationState(WEntity entity) {
+        SimulationState state = new SimulationState(entity);
+        if (entity.getServer() != null) {
+            EntityCombatData combatData = EntityCombatData.fromEntityProperties(entity.getServer());
+            if (combatData != null) {
+                state.setCombatData(combatData);
+                log.debug("Initialized combat data for entity {}: health={}",
+                        entity.getEntityId(),
+                        combatData.getVital("health") != null ? combatData.getVital("health").getBase() : "none");
+            }
+        }
+        return state;
+    }
+
+    /**
+     * Process combat tick for an entity's combat data.
+     * Runs effects, regen, and death check.
+     */
+    private void processCombatTick(SimulationState state, double deltaSeconds, WorldId worldId) {
+        EntityCombatData combatData = state.getCombatData();
+        if (combatData == null) return;
+
+        List<VitalDeltaBroadcastMessage> outgoingDeltas = new ArrayList<>();
+        String entityId = state.getEntity().getEntityId();
+
+        boolean died = baseEffectProcessor.processTick(
+                combatData, deltaSeconds, outgoingDeltas, worldId.getId(), entityId);
+
+        // Publish outgoing deltas
+        if (!outgoingDeltas.isEmpty()) {
+            vitalDeltaPublisher.publishDeltas(outgoingDeltas);
+        }
+
+        if (died) {
+            log.info("World {}: Entity {} died", worldId, entityId);
+            handleEntityDeath(state, worldId);
+        }
+    }
+
+    /**
+     * Handle entity death: publish death status and start death/respawn lifecycle.
+     */
+    private void handleEntityDeath(SimulationState state, WorldId worldId) {
+        String entityId = state.getEntity().getEntityId();
+
+        // Publish death status to clients
+        entityStatusPublisher.publishStatusUpdate(worldId.getId(), entityId,
+                Map.of("health", 0.0, "healthMax", 0.0, "death", 1), null);
+
+        // Store lifecycle in Redis for cross-pod access
+        entityStateRedisService.updateState(worldId.getId(), entityId,
+                EntityStateRedisService.LIFECYCLE_DEAD, 0.0, 0.0);
+
+        // Transition to DEAD lifecycle state
+        state.setLifecycleState(SimulationState.LifecycleState.DEAD);
+        state.setLifecycleTimestamp(System.currentTimeMillis());
+        state.setCurrentPathway(null);
+
+        log.info("World {}: Entity {} died, fade time {}s, respawn time {}s",
+                worldId, entityId,
+                state.getFadeTimeMs() / 1000,
+                state.getRespawnTimeMs() / 1000);
     }
 
     private void updateEntityChunk(WWorld world, WEntity entity) {

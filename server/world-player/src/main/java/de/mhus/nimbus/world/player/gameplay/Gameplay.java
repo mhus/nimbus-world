@@ -11,8 +11,35 @@ public interface Gameplay {
         return getClass().getSimpleName();
     }
 
+    /**
+     * If the shortcut key is specified, the shortcut item action will be executed on the block.
+     * Otherwise, session owner interacts with a block (e.g. right-click or left-click). Executes the
+     * block action for 'interaction' defined in the block parameters on the player.
+     *
+     * @param session
+     * @param x
+     * @param y
+     * @param z
+     * @param blockId
+     * @param groupId
+     * @param userAction
+     * @param shortcutKey
+     * @param params
+     */
     void onBlockInteraction(PlayerSession session, int x, int y, int z, String blockId, String groupId, String userAction, String shortcutKey, JsonNode params);
 
+    /**
+     * Session owner 'interacts' with another player (Space-Key or A-Button on X-Box).
+     * If shortcut is provided, the shortcut action (item) will be executet on the other player.
+     * Otherwise TODO: Currently not specified what happens.
+     *
+     * @param session
+     * @param entityId
+     * @param userAction
+     * @param shortcutKey
+     * @param timestamp
+     * @param params
+     */
     void onPlayerInteraction(PlayerSession session, String entityId, String userAction, String shortcutKey, Long timestamp, JsonNode params);
 
     /**
@@ -24,11 +51,31 @@ public interface Gameplay {
      */
     void onSessionAuthenticated(PlayerSession session, Map<String, Object> savedGameplayData);
 
-    void onEntityInteraction(PlayerSession session, String entityId, String userAction, String shortcutKey, Long timestamp, JsonNode params);
+    /**
+     * If the shortcut key is specified, the shortcut item action will be executed on the entity.
+     * Otherwise, session owner 'interacts' with an entity (Space-Key or A-Button on X-Box).
+     * This should execute the action for 'interaction', defined on the entity's parameters on the player.
+     **/
+     void onEntityInteraction(PlayerSession session, String entityId, String userAction, String shortcutKey, Long timestamp, JsonNode params);
 
+    /**
+     * The item action will be executed on the player.
+     * Will be called if an item without a target is used.
+     *
+     * @param session
+     * @param itemId
+     * @param params
+     */
     void onItemInteraction(PlayerSession session, String itemId, JsonNode params);
 
-    void onSimpleInteraction(PlayerSession session, String action, String shortcutKey, JsonNode data);
+    /**
+     * Session owner performs fall, underwater, ...
+     *
+     * @param session
+     * @param action
+     * @param data
+     */
+    void onSimpleInteraction(PlayerSession session, String action, JsonNode data);
 
     Map<String, Object> serialize(PlayerSession session);
 

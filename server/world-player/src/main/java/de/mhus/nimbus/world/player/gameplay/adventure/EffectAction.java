@@ -19,43 +19,49 @@ public class EffectAction implements GameplayAction {
     }
 
     @Override
-    public void handleBlockAction(PlayerSession session, int x, int y, int z, String blockId, String groupId, String blockAction, JsonNode params, String userAction, String shortcutKey, Map<String, String> serverInfo) {
+    public boolean handleBlockAction(PlayerSession session, int x, int y, int z, String blockId, String groupId, String blockAction, JsonNode params, String userAction, String shortcutKey, Map<String, String> serverInfo) {
         if (shortcutKey != null) {
             // 'use' on block - no effects on blocks
-            return;
+            return false;
         }
         // 'interact' on effect block → apply block effects to self
         applyServerEffects(session, serverInfo);
+        return true;
     }
 
     @Override
-    public void handleEntityAction(PlayerSession session, WEntity entity, String userAction, String entityAction, String shortcutKey, JsonNode params) {
+    public boolean handleEntityAction(PlayerSession session, WEntity entity, String userAction, String entityAction, String shortcutKey, JsonNode params) {
         if (shortcutKey != null) {
             // 'use' on entity → apply item effects to entity
             String itemId = basic.resolveShortcutItemId(session, shortcutKey);
-            if (itemId == null) return;
+            if (itemId == null) return false;
             String targetEntityId = entity != null ? entity.getEntityId() : null;
             basic.getGameplayService().useItemEffect(session, itemId, targetEntityId);
+            return true;
         } else {
             // 'interact' on effect entity → apply entity effects to self
             if (entity != null && entity.getServer() != null) {
                 applyServerEffects(session, entity.getServer());
+                return true;
             }
+            return false;
         }
     }
 
     @Override
-    public void handleItemAction(PlayerSession session, WItem item, String itemAction, JsonNode params) {
+    public boolean handleItemAction(PlayerSession session, WItem item, String itemAction, JsonNode params) {
         // Item used directly → self-application
         basic.getGameplayService().useItemEffect(session, item.getItemId(), null);
+        return true;
     }
 
     @Override
-    public void handlePlayerAction(PlayerSession session, String targetEntityId, String action, String shortcutKey, Long timestamp, JsonNode params) {
+    public boolean handlePlayerAction(PlayerSession session, String targetEntityId, String action, String shortcutKey, Long timestamp, JsonNode params) {
         // Only 'use' on player (interact on player goes through separate method, not GameplayAction)
         String itemId = basic.resolveShortcutItemId(session, shortcutKey);
-        if (itemId == null) return;
+        if (itemId == null) return false;
         basic.getGameplayService().useItemEffect(session, itemId, targetEntityId);
+        return true;
     }
 
     /**

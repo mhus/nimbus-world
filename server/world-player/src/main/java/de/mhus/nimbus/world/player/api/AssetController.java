@@ -68,19 +68,19 @@ public class AssetController {
                 .orElse(null);
 
         if (asset == null) {
-            log.debug("Asset not found: {}", finalAssetPath);
+            log.debug("Asset not found: {} {}", worldId, finalAssetPath);
             return ResponseEntity.notFound().build();
         }
 
         if (!asset.isEnabled()) {
-            log.debug("Asset disabled: {}", finalAssetPath);
+            log.debug("Asset disabled: {} {}", worldId, finalAssetPath);
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
         // Load content as stream - no memory loading!
         InputStream contentStream = assetService.loadContent(asset);
         if (contentStream == null) {
-            log.warn("Asset has no content: {}", finalAssetPath);
+            log.warn("Asset has no content: {} {}", worldId, finalAssetPath);
             return ResponseEntity.notFound().build();
         }
 
@@ -102,8 +102,8 @@ public class AssetController {
         String filename = asset.getName() != null ? asset.getName() : "asset";
         headers.setContentDispositionFormData("inline", filename);
 
-        log.trace("Streaming asset: path={}, size={}, type={}, filename={}",
-                 finalAssetPath, asset.getSize(), contentType, filename);
+        log.trace("Streaming asset: worldId={}, path={}, size={}, type={}, filename={}",
+                 worldId, finalAssetPath, asset.getSize(), contentType, filename);
 
         // Return InputStreamResource for direct streaming without memory loading
         org.springframework.core.io.InputStreamResource resource = new org.springframework.core.io.InputStreamResource(contentStream);

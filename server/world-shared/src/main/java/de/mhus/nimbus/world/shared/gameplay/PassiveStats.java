@@ -1,4 +1,4 @@
-package de.mhus.nimbus.world.player.gameplay;
+package de.mhus.nimbus.world.shared.gameplay;
 
 import lombok.Data;
 
@@ -8,7 +8,7 @@ import lombok.Data;
  * These values are applied as permanent buffs during tick processing.
  *
  * <p>All values are final computed totals (equipment + skill contributions combined).
- * They are added to the buff accumulators in EffectProcessor alongside active effects.</p>
+ * They are added to the buff accumulators in BaseEffectProcessor alongside active effects.</p>
  */
 @Data
 public class PassiveStats {
@@ -122,7 +122,7 @@ public class PassiveStats {
      * Apply all passive stats as buffs to vitals and combat stats.
      * Called during tick processing after resetBuffs() and before active effects.
      */
-    public void applyTo(AdventureData data) {
+    public void applyTo(EntityCombatData data) {
         // Vital buffs
         applyVitalBuff(data, "health", healthMax, healthMaxPercent, healthRegen);
         applyVitalBuff(data, "stamina", staminaMax, staminaMaxPercent, staminaRegen);
@@ -142,7 +142,7 @@ public class PassiveStats {
         applyCombatBuff(data, "critMultiplier", critMultiplier, 0);
     }
 
-    private void applyVitalBuff(AdventureData data, String type, double flat, double percent, double regen) {
+    private void applyVitalBuff(EntityCombatData data, String type, double flat, double percent, double regen) {
         VitalValue vital = data.getVital(type);
         if (vital == null) return;
         vital.setBuffFlat(vital.getBuffFlat() + flat);
@@ -150,7 +150,7 @@ public class PassiveStats {
         vital.setEffectiveRegenRate(vital.getEffectiveRegenRate() + regen);
     }
 
-    private void applyCombatBuff(AdventureData data, String type, double flat, double percent) {
+    private void applyCombatBuff(EntityCombatData data, String type, double flat, double percent) {
         CombatStat stat = data.getCombatStat(type);
         if (stat == null) return;
         stat.setBuffFlat(stat.getBuffFlat() + flat);

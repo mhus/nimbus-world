@@ -9,12 +9,12 @@ import java.util.Map;
 
 public interface GameplayAction {
 
-    void handleBlockAction(PlayerSession session, int x, int y, int z, String blockId, String groupId, String blockAction, JsonNode params, String userAction, String shortcutKey, Map<String, String> serverInfo);
+    boolean handleBlockAction(PlayerSession session, int x, int y, int z, String blockId, String groupId, String blockAction, JsonNode params, String userAction, String shortcutKey, Map<String, String> serverInfo);
 
-    void handleEntityAction(PlayerSession session, WEntity entity, String userAction, String entityAction, String shortcutKey, JsonNode params);
+    boolean handleEntityAction(PlayerSession session, WEntity entity, String userAction, String entityAction, String shortcutKey, JsonNode params);
 
-    void handleItemAction(PlayerSession session, WItem item, String itemAction, JsonNode params);
+    boolean handleItemAction(PlayerSession session, WItem item, String itemAction, JsonNode params);
 
-    void handlePlayerAction(PlayerSession session, String targetEntityId, String action, String shortcutKey, Long timestamp, JsonNode params);
+    boolean handlePlayerAction(PlayerSession session, String targetEntityId, String action, String shortcutKey, Long timestamp, JsonNode params);
 
 }

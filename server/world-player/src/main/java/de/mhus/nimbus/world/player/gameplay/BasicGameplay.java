@@ -7,6 +7,7 @@ import de.mhus.nimbus.world.player.session.PlayerSession;
 import de.mhus.nimbus.world.shared.region.RCharacterService;
 import de.mhus.nimbus.world.shared.world.WChunkService;
 import de.mhus.nimbus.world.shared.world.WEntity;
+import de.mhus.nimbus.world.shared.redis.EntityStateRedisService;
 import de.mhus.nimbus.world.shared.world.WEntityService;
 import de.mhus.nimbus.world.shared.world.WItem;
 import de.mhus.nimbus.world.shared.world.WItemService;
@@ -21,6 +22,8 @@ import java.util.Map;
 
 @Slf4j
 public class BasicGameplay implements Gameplay {
+
+    public static final String SHORTCUT_INTERACT_ACTION = "__shortcut_interact__";
 
     @Autowired
     protected WChunkService chunkService;
@@ -37,6 +40,8 @@ public class BasicGameplay implements Gameplay {
     @Lazy
     @Getter
     protected GameplayService gameplayService;
+    @Autowired
+    protected EntityStateRedisService entityStateRedisService;
 
     protected Map<String, GameplayAction> actions = new HashMap<>();
 
@@ -53,13 +58,16 @@ public class BasicGameplay implements Gameplay {
                 log.trace("No item action resolvable for shortcut '{}' on block at ({}, {}, {})", shortcutKey, x, y, z);
                 return;
             }
-            var handler = actions.get(itemAction);
-            if (handler == null) {
-                log.trace("No handler for item action '{}' on block at ({}, {}, {})", itemAction, x, y, z);
+            if (!SHORTCUT_INTERACT_ACTION.equals(itemAction)) { // in case of interact shortcut do the same as regular interaction, skip item action routing
+                var handler = actions.get(itemAction);
+                if (handler == null) {
+                    log.trace("No handler for item action '{}' on block at ({}, {}, {})", itemAction, x, y, z);
+                    return;
+                }
+                boolean success = handler.handleBlockAction(session, x, y, z, blockId, groupId, itemAction, params, userAction, shortcutKey, Map.of());
+                if (success) sendItemUseFeedback(session, shortcutKey);
                 return;
             }
-            handler.handleBlockAction(session, x, y, z, blockId, groupId, itemAction, params, userAction, shortcutKey, Map.of());
-            return;
         }
         // Regular interaction: route via block server metadata
         var worldId = session.getWorldId();
@@ -92,12 +100,15 @@ public class BasicGameplay implements Gameplay {
             log.trace("No item action resolvable for shortcut '{}' on player {}", shortcutKey, entityId);
             return;
         }
-        var handler = actions.get(itemAction);
-        if (handler == null) {
-            log.trace("No handler for item action '{}' on player {}", itemAction, entityId);
-            return;
+        if (!SHORTCUT_INTERACT_ACTION.equals(itemAction)) { // in case of interact shortcut do the same as regular interaction, skip item action routing
+            var handler = actions.get(itemAction);
+            if (handler == null) {
+                log.trace("No handler for item action '{}' on player {}", itemAction, entityId);
+                return;
+            }
+            boolean success = handler.handlePlayerAction(session, entityId, itemAction, shortcutKey, timestamp, params);
+            if (success) sendItemUseFeedback(session, shortcutKey);
         }
-        handler.handlePlayerAction(session, entityId, itemAction, shortcutKey, timestamp, params);
     }
 
     @Override
@@ -109,14 +120,17 @@ public class BasicGameplay implements Gameplay {
                 log.trace("No item action resolvable for shortcut '{}' on entity {}", shortcutKey, entityId);
                 return;
             }
-            var handler = actions.get(itemAction);
-            if (handler == null) {
-                log.trace("No handler for item action '{}' on entity {}", itemAction, entityId);
+            if (!SHORTCUT_INTERACT_ACTION.equals(itemAction)) { // in case of interact shortcut do the same as regular interaction, skip item action routing
+                var handler = actions.get(itemAction);
+                if (handler == null) {
+                    log.trace("No handler for item action '{}' on entity {}", itemAction, entityId);
+                    return;
+                }
+                WEntity entity = entityService.findByWorldIdAndEntityId(session.getWorldId(), entityId).orElse(null);
+                boolean success = handler.handleEntityAction(session, entity, userAction, itemAction, shortcutKey, params);
+                if (success) sendItemUseFeedback(session, shortcutKey);
                 return;
             }
-            WEntity entity = entityService.findByWorldIdAndEntityId(session.getWorldId(), entityId).orElse(null);
-            handler.handleEntityAction(session, entity, userAction, itemAction, shortcutKey, params);
-            return;
         }
         // Regular interaction: route via entity server metadata
         WEntity entity = entityService.findByWorldIdAndEntityId(session.getWorldId(), entityId).orElse(null);
@@ -124,6 +138,17 @@ public class BasicGameplay implements Gameplay {
             log.warn("Entity with ID {} not found in world {}", entityId, session.getWorldId());
             return;
         }
+
+        // Dead entity → route to loot/collect instead of normal interaction
+        String worldIdStr = session.getWorldId() != null ? session.getWorldId().getId() : null;
+        if (worldIdStr != null && entityStateRedisService.isDead(worldIdStr, entityId)) {
+            var collectHandler = actions.get("collect");
+            if (collectHandler != null) {
+                collectHandler.handleEntityAction(session, entity, userAction, "collect", null, params);
+            }
+            return;
+        }
+
         String entityAction = entity.getServer().get("action");
         if (Strings.isBlank(entityAction)) {
             log.warn("No action defined for entity {} in world {}", entityId, session.getWorldId());
@@ -151,6 +176,13 @@ public class BasicGameplay implements Gameplay {
 
         var shortcutDef = playerInfo.getShortcuts().get(shortcutKey);
         if (shortcutDef == null || shortcutDef.getItemId() == null) return null;
+        if ("interact".equals(shortcutDef.getType())) {
+            return SHORTCUT_INTERACT_ACTION;
+        }
+        if (!"use".equals(shortcutDef.getType())) {
+            log.warn("Unsupported shortcut type '{}' for shortcut '{}' in world {}", shortcutDef.getType(), shortcutKey, session.getWorldId());
+            return null;
+        }
 
         String itemId = shortcutDef.getItemId();
         WItem item = itemService.findByItemId(session.getWorldId(), itemId).orElse(null);
@@ -213,24 +245,17 @@ public class BasicGameplay implements Gameplay {
         return false;
     }
 
+    /**
+     * Send visual feedback to the client after a successful item use.
+     * Override in subclasses to resolve the item texture and send flashImage.
+     */
+    protected void sendItemUseFeedback(PlayerSession session, String shortcutKey) {
+        // no-op by default
+    }
+
     @Override
-    public void onSimpleInteraction(PlayerSession session, String action, String shortcutKey, JsonNode data) {
-        if (Strings.isBlank(shortcutKey)) {
-            log.trace("Simple interaction without shortcut: action={}, player={}", action, session.getTitle());
-            return;
-        }
-        // Shortcut without target: route via item action (e.g., self-application)
-        String itemAction = resolveShortcutItemAction(session, shortcutKey);
-        if (itemAction == null) {
-            log.trace("No item action resolvable for simple shortcut '{}', player={}", shortcutKey, session.getTitle());
-            return;
-        }
-        var handler = actions.get(itemAction);
-        if (handler == null) {
-            log.trace("No handler for item action '{}' from simple shortcut '{}'", itemAction, shortcutKey);
-            return;
-        }
-        handler.handlePlayerAction(session, null, itemAction, shortcutKey, null, null);
+    public void onSimpleInteraction(PlayerSession session, String action, JsonNode data) {
+
     }
 
     @Override

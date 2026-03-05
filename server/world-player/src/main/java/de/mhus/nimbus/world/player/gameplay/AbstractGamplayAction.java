@@ -1,6 +1,7 @@
 package de.mhus.nimbus.world.player.gameplay;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import de.mhus.nimbus.world.player.service.GameplayUtil;
 import de.mhus.nimbus.world.player.session.PlayerSession;
 import de.mhus.nimbus.world.shared.world.WEntity;
 import de.mhus.nimbus.world.shared.world.WItem;
@@ -16,25 +17,25 @@ public abstract class AbstractGamplayAction implements GameplayAction {
     }
 
     @Override
-    public void handleBlockAction(PlayerSession session, int x, int y, int z, String blockId, String groupId, String blockAction, JsonNode params, String userAction, String shortcutKey, Map<String, String> serverInfo) {
-        handleAction(session, serverInfo, params);
+    public boolean handleBlockAction(PlayerSession session, int x, int y, int z, String blockId, String groupId, String blockAction, JsonNode params, String userAction, String shortcutKey, Map<String, String> serverInfo) {
+        return handleAction(session, GameplayUtil.extractParams(shortcutKey == null ? "int_" : "act_", serverInfo, null), params);
     }
 
     @Override
-    public void handleEntityAction(PlayerSession session, WEntity entity, String userAction, String entityAction, String shortcutKey, JsonNode params) {
-        handleAction(session, entity.getServer(), params);
+    public boolean handleEntityAction(PlayerSession session, WEntity entity, String userAction, String entityAction, String shortcutKey, JsonNode params) {
+        return handleAction(session, GameplayUtil.extractParams(shortcutKey == null ? "int_" : "act_", entity.getServer(), null), params);
     }
 
     @Override
-    public void handleItemAction(PlayerSession session, WItem item, String itemAction, JsonNode params) {
-        handleAction(session, item.getServer(), params);
+    public boolean handleItemAction(PlayerSession session, WItem item, String itemAction, JsonNode params) {
+        return handleAction(session, GameplayUtil.extractParams("act_", item.getPublicData().getParameters(), item.getServer()), params);
     }
 
     @Override
-    public void handlePlayerAction(PlayerSession session, String targetEntityId, String action, String shortcutKey, Long timestamp, JsonNode params) {
-        handleAction(session, Map.of(), params);
+    public boolean handlePlayerAction(PlayerSession session, String targetEntityId, String action, String shortcutKey, Long timestamp, JsonNode params) {
+        return handleAction(session, Map.of(), params);
     }
 
-    public abstract void handleAction(PlayerSession session, Map<String, String> serverParameters, JsonNode params);
+    public abstract boolean handleAction(PlayerSession session, Map<String, String> serverParameters, JsonNode params);
 
 }

@@ -23,42 +23,44 @@ public class CollectAction implements GameplayAction {
     }
 
     @Override
-    public void handleBlockAction(PlayerSession session, int x, int y, int z, String blockId, String groupId, String blockAction, JsonNode params, String userAction, String shortcutKey, Map<String, String> serverInfo) {
-        if (shortcutKey != null) return;
-        collect(session, serverInfo);
+    public boolean handleBlockAction(PlayerSession session, int x, int y, int z, String blockId, String groupId, String blockAction, JsonNode params, String userAction, String shortcutKey, Map<String, String> serverInfo) {
+        if (shortcutKey != null) return false;
+        return collect(session, serverInfo);
     }
 
     @Override
-    public void handleEntityAction(PlayerSession session, WEntity entity, String userAction, String entityAction, String shortcutKey, JsonNode params) {
-        if (shortcutKey != null) return;
-        if (entity == null || entity.getServer() == null) return;
-        collect(session, entity.getServer());
+    public boolean handleEntityAction(PlayerSession session, WEntity entity, String userAction, String entityAction, String shortcutKey, JsonNode params) {
+        if (shortcutKey != null) return false;
+        if (entity == null || entity.getServer() == null) return false;
+        return collect(session, entity.getServer());
     }
 
     @Override
-    public void handleItemAction(PlayerSession session, WItem item, String itemAction, JsonNode params) {
+    public boolean handleItemAction(PlayerSession session, WItem item, String itemAction, JsonNode params) {
         // Collect only via interact on blocks/entities
+        return false;
     }
 
     @Override
-    public void handlePlayerAction(PlayerSession session, String targetEntityId, String action, String shortcutKey, Long timestamp, JsonNode params) {
+    public boolean handlePlayerAction(PlayerSession session, String targetEntityId, String action, String shortcutKey, Long timestamp, JsonNode params) {
         // Collect only via interact on blocks/entities
+        return false;
     }
 
-    private void collect(PlayerSession session, Map<String, String> serverInfo) {
-        if (!(session.getGameplayData() instanceof AdventureData data)) return;
+    private boolean collect(PlayerSession session, Map<String, String> serverInfo) {
+        if (!(session.getGameplayData() instanceof AdventureData data)) return false;
 
         long now = System.currentTimeMillis();
         if (data.getNextCollectAllowed() > now) {
             log.debug("Collect on cooldown for player {} ({}ms remaining)",
                     session.getEntityId(), data.getNextCollectAllowed() - now);
-            return;
+            return false;
         }
 
         String rewardStr = serverInfo.get("collectReward");
         if (rewardStr == null || rewardStr.isBlank()) {
             log.debug("No collectReward defined in server info");
-            return;
+            return false;
         }
 
         int cooldownSeconds = 0;
@@ -103,5 +105,6 @@ public class CollectAction implements GameplayAction {
         }
 
         data.setNextCollectAllowed(now + cooldownSeconds * 1000L);
+        return true;
     }
 }

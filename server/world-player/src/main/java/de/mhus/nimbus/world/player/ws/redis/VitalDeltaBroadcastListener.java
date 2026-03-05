@@ -3,7 +3,7 @@ package de.mhus.nimbus.world.player.ws.redis;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.world.player.gameplay.AdventureData;
 import de.mhus.nimbus.world.player.gameplay.AdventureGameplay;
-import de.mhus.nimbus.world.player.gameplay.VitalValue;
+import de.mhus.nimbus.world.shared.gameplay.VitalValue;
 import de.mhus.nimbus.world.player.session.PlayerSession;
 import de.mhus.nimbus.world.player.ws.SessionManager;
 import de.mhus.nimbus.world.shared.gameplay.VitalType;

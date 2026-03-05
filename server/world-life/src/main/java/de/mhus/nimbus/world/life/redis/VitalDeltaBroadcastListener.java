@@ -2,8 +2,16 @@ package de.mhus.nimbus.world.life.redis;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.shared.types.WorldId;
+import de.mhus.nimbus.world.life.model.SimulationState;
 import de.mhus.nimbus.world.life.service.SimulatorService;
 import de.mhus.nimbus.world.life.service.WorldDiscoveryService;
+import de.mhus.nimbus.world.shared.gameplay.CombatResolver;
+import de.mhus.nimbus.world.shared.gameplay.CombatStat;
+import de.mhus.nimbus.world.shared.gameplay.EntityCombatData;
+import de.mhus.nimbus.world.shared.gameplay.VitalType;
+import de.mhus.nimbus.world.shared.gameplay.VitalValue;
+import de.mhus.nimbus.world.shared.redis.EntityStateRedisService;
+import de.mhus.nimbus.world.shared.redis.EntityStatusPublisher;
 import de.mhus.nimbus.world.shared.redis.VitalDeltaBroadcastMessage;
 import de.mhus.nimbus.world.shared.redis.WorldRedisMessagingService;
 import jakarta.annotation.PostConstruct;
@@ -13,17 +21,17 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Set;
 
 /**
  * Listens for vital delta messages targeting NPC entities on this pod.
  * Channel: world:{worldId}:v.d.e (entity vital deltas)
  *
- * Dynamically subscribes to all enabled worlds discovered from MongoDB.
- *
- * Currently logs received deltas since NPC vitals are not yet implemented.
- * When NPC vitals are added to SimulationState, this listener will apply
- * the deltas to the target entity's health/mana/stamina.
+ * Handles two message types:
+ * - ATTACK: Resolves damage using NPC's defense stats via CombatResolver
+ * - DELTA: Applies direct vital modification (heal, DoT)
  */
 @Service
 @RequiredArgsConstructor
@@ -33,6 +41,8 @@ public class VitalDeltaBroadcastListener {
     private final WorldRedisMessagingService redisMessaging;
     private final SimulatorService simulatorService;
     private final WorldDiscoveryService worldDiscoveryService;
+    private final EntityStatusPublisher entityStatusPublisher;
+    private final EntityStateRedisService entityStateRedisService;
     private final ObjectMapper objectMapper;
 
     private final Set<WorldId> subscribedWorlds = new HashSet<>();
@@ -67,8 +77,8 @@ public class VitalDeltaBroadcastListener {
         try {
             VitalDeltaBroadcastMessage delta = objectMapper.readValue(message, VitalDeltaBroadcastMessage.class);
 
-            if (delta.getTargetEntityId() == null || delta.getVitalType() == null) {
-                log.warn("Invalid vital delta message for world {}: missing targetEntityId or vitalType", worldId);
+            if (delta.getTargetEntityId() == null) {
+                log.warn("Invalid vital delta message for world {}: missing targetEntityId", worldId);
                 return;
             }
 
@@ -79,22 +89,107 @@ public class VitalDeltaBroadcastListener {
                 return;
             }
 
-            // TODO: Apply delta to entity vitals when NPC vital system is implemented.
+            EntityCombatData combatData = state.getCombatData();
+            if (combatData == null) {
+                log.debug("World {}: Entity {} has no combat data, ignoring vital delta",
+                        worldId, delta.getTargetEntityId());
+                return;
+            }
+
             String type = delta.getType();
             if (VitalDeltaBroadcastMessage.TYPE_ATTACK.equals(type)) {
-                log.debug("World {}: Received ATTACK for entity {} from {} [phys={}/{}, mag={}/{}, crit={}/{}]",
-                        worldId, delta.getTargetEntityId(), delta.getSourceEntityId(),
-                        delta.getPhysicalDamage(), delta.getPhysicalAccuracy(),
-                        delta.getMagicalDamage(), delta.getMagicalAccuracy(),
-                        delta.getCritChance(), delta.getCritMultiplier());
+                handleAttack(worldId, state, combatData, delta);
             } else {
-                log.debug("World {}: Received vital delta for entity {}: {} {} (from {})",
-                        worldId, delta.getTargetEntityId(), delta.getVitalType(),
-                        delta.getDelta(), delta.getSourceEntityId());
+                handleDelta(worldId, combatData, delta);
             }
 
         } catch (Exception e) {
             log.error("Failed to handle vital delta for world {}: {}", worldId, e.getMessage(), e);
         }
+    }
+
+    /**
+     * Handle an incoming ATTACK message.
+     * Uses the NPC's defense stats to resolve damage via CombatResolver.
+     */
+    private void handleAttack(WorldId worldId, SimulationState state,
+                               EntityCombatData combatData, VitalDeltaBroadcastMessage msg) {
+        // Read defender's effective combat stats
+        double defPhysDef = getEffectiveStat(combatData, "physical.defense");
+        double defPhysEvasion = getEffectiveStat(combatData, "physical.evasion");
+        double defMagDef = getEffectiveStat(combatData, "magical.defense");
+        double defMagEvasion = getEffectiveStat(combatData, "magical.evasion");
+
+        // Resolve damage using CombatResolver
+        double damage = CombatResolver.resolve(
+                msg.getPhysicalDamage(), msg.getPhysicalAccuracy(),
+                msg.getMagicalDamage(), msg.getMagicalAccuracy(),
+                msg.getCritChance(), msg.getCritMultiplier(),
+                defPhysDef, defPhysEvasion,
+                defMagDef, defMagEvasion);
+
+        if (damage == 0) {
+            log.debug("World {}: Attack from {} on {} missed",
+                    worldId, msg.getSourceEntityId(), msg.getTargetEntityId());
+            return;
+        }
+
+        // Apply damage to health
+        VitalValue health = combatData.getVital("health");
+        if (health != null) {
+            health.setCurrent(health.getCurrent() + damage); // damage is negative
+            health.clamp();
+
+            // Publish health status to clients
+            publishHealthStatus(worldId, msg.getTargetEntityId(), health);
+
+            log.debug("World {}: Entity {} took {} damage from {}, health now {}/{}",
+                    worldId, msg.getTargetEntityId(), -damage, msg.getSourceEntityId(),
+                    health.getCurrent(), health.getEffectiveMax());
+        }
+    }
+
+    /**
+     * Handle a DELTA message (direct vital modification).
+     */
+    private void handleDelta(WorldId worldId, EntityCombatData combatData, VitalDeltaBroadcastMessage msg) {
+        if (msg.getVitalType() == null) {
+            log.warn("Invalid DELTA message: missing vitalType");
+            return;
+        }
+
+        VitalType vitalType;
+        try {
+            vitalType = VitalType.valueOf(msg.getVitalType());
+        } catch (IllegalArgumentException e) {
+            log.warn("Unknown vital type in delta: {}", msg.getVitalType());
+            return;
+        }
+
+        VitalValue vital = combatData.getVital(vitalType.vitalName());
+        if (vital == null) {
+            log.trace("Vital {} not found on entity {}", vitalType.vitalName(), msg.getTargetEntityId());
+            return;
+        }
+
+        vital.setCurrent(vital.getCurrent() + msg.getDelta());
+        vital.clamp();
+
+        log.debug("World {}: Applied vital delta to entity {}: {} {} (from {}), now {}",
+                worldId, msg.getTargetEntityId(), vitalType, msg.getDelta(),
+                msg.getSourceEntityId(), vital.getCurrent());
+    }
+
+    private void publishHealthStatus(WorldId worldId, String entityId, VitalValue health) {
+        Map<String, Object> status = new LinkedHashMap<>();
+        status.put("health", health.getCurrent());
+        status.put("healthMax", health.getEffectiveMax());
+        entityStatusPublisher.publishStatusUpdate(worldId.getId(), entityId, status, null);
+        entityStateRedisService.updateHealth(worldId.getId(), entityId, health.getCurrent(), health.getEffectiveMax());
+    }
+
+    private double getEffectiveStat(EntityCombatData data, String statName) {
+        CombatStat stat = data.getCombatStat(statName);
+        return stat != null ? stat.getEffective() : 0;
     }
 }

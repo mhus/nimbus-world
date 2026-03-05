@@ -14,12 +14,12 @@ public class TeleportationAction extends AbstractGamplayAction {
     }
 
     @Override
-    public void handleAction(PlayerSession session, Map<String, String> serverParameters, JsonNode params) {
+    public boolean handleAction(PlayerSession session, Map<String, String> serverParameters, JsonNode params) {
         // Check for teleportation entry
         String teleportTarget = serverParameters.get("target");
         if (teleportTarget == null || teleportTarget.isBlank()) {
             log.trace("No teleportation entry");
-            return;
+            return false;
         }
         // Trigger teleportation (PlayerService handles session save and redirect)
         log.info("Teleportation triggered: {}", teleportTarget);
@@ -27,5 +27,6 @@ public class TeleportationAction extends AbstractGamplayAction {
         if (!success) {
             log.warn("Failed to trigger teleportation for player {}: target={}", session.getPlayer(), teleportTarget);
         }
+        return success;
     }
 }

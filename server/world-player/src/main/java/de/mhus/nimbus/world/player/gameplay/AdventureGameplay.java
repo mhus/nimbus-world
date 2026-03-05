@@ -18,7 +18,11 @@ import de.mhus.nimbus.generated.types.Vector3;
 import de.mhus.nimbus.shared.utils.TypeUtil;
 import de.mhus.nimbus.world.player.service.ClientService;
 import de.mhus.nimbus.world.player.session.PlayerSession;
+import de.mhus.nimbus.world.shared.gameplay.ActiveEffect;
 import de.mhus.nimbus.world.shared.gameplay.CombatResolver;
+import de.mhus.nimbus.world.shared.gameplay.CombatStat;
+import de.mhus.nimbus.world.shared.gameplay.PassiveStats;
+import de.mhus.nimbus.world.shared.gameplay.VitalValue;
 import de.mhus.nimbus.world.shared.redis.VitalDeltaBroadcastMessage;
 import de.mhus.nimbus.world.shared.redis.VitalDeltaPublisher;
 import de.mhus.nimbus.world.shared.util.HexMathUtil;
@@ -484,7 +488,7 @@ public class AdventureGameplay extends BasicGameplay {
     }
 
     @Override
-    public void onSimpleInteraction(PlayerSession session, String action, String shortcutKey, JsonNode messageData) {
+    public void onSimpleInteraction(PlayerSession session, String action, JsonNode messageData) {
         if (!(session.getGameplayData() instanceof AdventureData data)) return;
 
         switch (action) {
@@ -497,7 +501,7 @@ public class AdventureGameplay extends BasicGameplay {
                 log.debug("Player {} surfaced, air regenerating", session.getEntityId());
             }
             case "fall" -> handleFallDamage(session, data, messageData);
-            default -> super.onSimpleInteraction(session, action, shortcutKey, messageData);
+            default -> super.onSimpleInteraction(session, action, messageData);
         }
     }
 
@@ -551,6 +555,7 @@ public class AdventureGameplay extends BasicGameplay {
             case "right_hand_1" -> getWearingItemId(data, WEARABLE_SLOT.RIGHT_HAND_1);
             case "left_hand_2" -> getWearingItemId(data, WEARABLE_SLOT.LEFT_HAND_2);
             case "right_hand_2" -> getWearingItemId(data, WEARABLE_SLOT.RIGHT_HAND_2);
+            case "interact" -> BasicGameplay.SHORTCUT_INTERACT_ACTION; // Special constant to indicate interaction action
             default -> null; // 'none', 'cmd', 'interact' → no item
         };
     }
@@ -569,6 +574,9 @@ public class AdventureGameplay extends BasicGameplay {
 
         String itemId = resolveShortcutItemId(session, shortcutKey);
         if (itemId == null) return null;
+        if (itemId.equals(BasicGameplay.SHORTCUT_INTERACT_ACTION)) {
+            return BasicGameplay.SHORTCUT_INTERACT_ACTION;
+        }
 
         var cachedItems = data.getCachedItems();
         if (cachedItems != null) {
@@ -582,6 +590,27 @@ public class AdventureGameplay extends BasicGameplay {
         WItem item = itemService.findByItemId(session.getWorldId(), itemId).orElse(null);
         if (item == null || item.getServer() == null) return null;
         return item.getServer().get("action");
+    }
+
+    @Override
+    protected void sendItemUseFeedback(PlayerSession session, String shortcutKey) {
+        if (shortcutKey == null) return;
+        if (!(session.getGameplayData() instanceof AdventureData data)) return;
+
+        String itemId = resolveShortcutItemId(session, shortcutKey);
+        if (itemId == null) return;
+
+        var cachedItems = data.getCachedItems();
+        WItem item = cachedItems != null ? cachedItems.get(itemId) : null;
+        if (item == null) {
+            item = itemService.findByItemId(session.getWorldId(), itemId).orElse(null);
+        }
+        if (item == null || item.getPublicData() == null) return;
+
+        String texture = item.getPublicData().getTexture();
+        if (texture == null || texture.isBlank()) return;
+
+        clientService.sendCommand(session, "flashImage", List.of(texture, "500", "0.5"));
     }
 
     /**

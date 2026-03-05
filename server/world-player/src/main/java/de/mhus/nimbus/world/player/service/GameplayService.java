@@ -43,6 +43,18 @@ public class GameplayService implements SessionAuthenticatedConsumer {
         log.info("Initialized GameplayService with gameplays: {}", gameplayMap.keySet());
     }
 
+    /**
+     * Session owner 'interacts' with another player (Space-Key or A-Button on X-Box).
+     * If shortcut is provided, the shortcut action (item) will be executed on the other player.
+     * Otherwise ...
+     *
+     * @param session
+     * @param entityId
+     * @param userAction
+     * @param shortcutKey
+     * @param timestamp
+     * @param params
+     */
     public void onPlayerPlayerInteraction(PlayerSession session, String entityId, String userAction, String shortcutKey, Long timestamp, JsonNode params) {
         log.info("Player {} interacted with player {}: action={}, shortcut={}, timestamp={}",
                 GameplayUtil.toString(session.getPlayer()), entityId, userAction, shortcutKey, timestamp);
@@ -57,6 +69,18 @@ public class GameplayService implements SessionAuthenticatedConsumer {
         gameplay.onPlayerInteraction(session, entityId, userAction, shortcutKey, timestamp, params);
     }
 
+    /**
+     * If the shortcut key is specified, the shortcut item action will be executed on the entity.
+     * Otherwise, session owner 'interacts' with an entity (Space-Key or A-Button on X-Box).
+     * This should execute the action for 'interaction', defined on the entity's parameters on the player.
+     *
+     * @param session
+     * @param entityId
+     * @param userAction
+     * @param shortcutKey
+     * @param timestamp
+     * @param params
+     */
     public void onPlayerEntityInteraction(PlayerSession session, String entityId, String userAction, String shortcutKey, Long timestamp, JsonNode params) {
         log.info("Player {} interacted with entity {}: action={}, shortcut={}, timestamp={}",
                 GameplayUtil.toString(session.getPlayer()), entityId, userAction, shortcutKey, timestamp);
@@ -71,7 +95,15 @@ public class GameplayService implements SessionAuthenticatedConsumer {
         gameplay.onEntityInteraction(session, entityId, userAction, shortcutKey, timestamp, params);
     }
 
-
+    /**
+     * Session owner performs a simple interaction that is not targeting a block or entity (e.g. pressing a shortcut without target)
+     * or fall, underwater, ...
+     *
+     * @param session
+     * @param action
+     * @param shortcutKey
+     * @param data
+     */
     public void onSimpleInteraction(PlayerSession session, String action, String shortcutKey, JsonNode data) {
         log.info("Player {} simple interaction: action={}, shortcutKey={}",
                 GameplayUtil.toString(session.getPlayer()), action, shortcutKey);
@@ -83,9 +115,28 @@ public class GameplayService implements SessionAuthenticatedConsumer {
             log.warn("No gameplay set for session {}, cannot handle simple interaction", session.getPlayer());
             return;
         }
-        gameplay.onSimpleInteraction(session, action, shortcutKey, data);
+        if (shortcutKey != null) {
+            gameplay.onItemInteraction(session, shortcutKey, data);
+        } else {
+            gameplay.onSimpleInteraction(session, action, data);
+        }
     }
 
+    /**
+     * If the shortcut key is specified, the shortcut item action will be executed on the block.
+     * Otherwise, session owner interacts with a block (e.g. right-click or left-click). Executes the
+     * block action for 'interaction' defined in the block parameters on the player.
+     *
+     * @param session
+     * @param x
+     * @param y
+     * @param z
+     * @param blockId
+     * @param groupId
+     * @param userAction
+     * @param shortcutKey
+     * @param params
+     */
     public void onPlayerBlockInteraction(PlayerSession session, int x, int y, int z, String blockId, String groupId, String userAction, String shortcutKey, JsonNode params) {
         log.info("Player {} interacted with block at ({}, {}, {}): action={}, shortcut={}, blockId={}, groupId={}",
                 GameplayUtil.toString(session.getPlayer()), x, y, z, userAction, shortcutKey, blockId, groupId);

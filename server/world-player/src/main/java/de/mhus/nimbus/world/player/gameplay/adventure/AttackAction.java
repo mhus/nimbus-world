@@ -3,9 +3,9 @@ package de.mhus.nimbus.world.player.gameplay.adventure;
 import com.fasterxml.jackson.databind.JsonNode;
 import de.mhus.nimbus.world.player.gameplay.AdventureData;
 import de.mhus.nimbus.world.player.gameplay.AdventureGameplay;
-import de.mhus.nimbus.world.player.gameplay.CombatStat;
+import de.mhus.nimbus.world.shared.gameplay.CombatStat;
 import de.mhus.nimbus.world.player.gameplay.GameplayAction;
-import de.mhus.nimbus.world.player.gameplay.VitalValue;
+import de.mhus.nimbus.world.shared.gameplay.VitalValue;
 import de.mhus.nimbus.world.player.session.PlayerSession;
 import de.mhus.nimbus.world.shared.world.WEntity;
 import de.mhus.nimbus.world.shared.world.WItem;
@@ -31,40 +31,42 @@ public class AttackAction implements GameplayAction {
     }
 
     @Override
-    public void handleBlockAction(PlayerSession session, int x, int y, int z, String blockId, String groupId, String blockAction, JsonNode params, String userAction, String shortcutKey, Map<String, String> serverInfo) {
+    public boolean handleBlockAction(PlayerSession session, int x, int y, int z, String blockId, String groupId, String blockAction, JsonNode params, String userAction, String shortcutKey, Map<String, String> serverInfo) {
         // Blocks cannot be attacked
+        return false;
     }
 
     @Override
-    public void handleEntityAction(PlayerSession session, WEntity entity, String userAction, String entityAction, String shortcutKey, JsonNode params) {
-        if (entity == null) return;
+    public boolean handleEntityAction(PlayerSession session, WEntity entity, String userAction, String entityAction, String shortcutKey, JsonNode params) {
+        if (entity == null) return false;
         String targetEntityId = entity.getEntityId();
-        if (targetEntityId == null) return;
+        if (targetEntityId == null) return false;
 
-        performAttack(session, targetEntityId);
+        return performAttack(session, targetEntityId);
     }
 
     @Override
-    public void handleItemAction(PlayerSession session, WItem item, String itemAction, JsonNode params) {
+    public boolean handleItemAction(PlayerSession session, WItem item, String itemAction, JsonNode params) {
         // Items with action=attack need a target, no self-attack
+        return false;
     }
 
     @Override
-    public void handlePlayerAction(PlayerSession session, String targetEntityId, String action, String shortcutKey, Long timestamp, JsonNode params) {
-        if (targetEntityId == null) return;
-        performAttack(session, targetEntityId);
+    public boolean handlePlayerAction(PlayerSession session, String targetEntityId, String action, String shortcutKey, Long timestamp, JsonNode params) {
+        if (targetEntityId == null) return false;
+        return performAttack(session, targetEntityId);
     }
 
-    private void performAttack(PlayerSession session, String targetEntityId) {
-        if (!(session.getGameplayData() instanceof AdventureData data)) return;
+    private boolean performAttack(PlayerSession session, String targetEntityId) {
+        if (!(session.getGameplayData() instanceof AdventureData data)) return false;
 
         String worldId = session.getWorldId() != null ? session.getWorldId().getId() : null;
-        if (worldId == null) return;
+        if (worldId == null) return false;
 
         // Check gameMode (PvP/PvE)
         if (!basic.isAttackAllowed(session, targetEntityId)) {
             log.debug("Attack blocked by gameMode: {} -> {}", session.getEntityId(), targetEntityId);
-            return;
+            return false;
         }
 
         // Check stamina
@@ -72,7 +74,7 @@ public class AttackAction implements GameplayAction {
         if (stamina != null && stamina.getCurrent() < STAMINA_COST) {
             log.debug("Player {} has insufficient stamina for attack ({} < {})",
                     session.getEntityId(), stamina.getCurrent(), STAMINA_COST);
-            return;
+            return false;
         }
 
         // Check attack speed cooldown
@@ -84,7 +86,7 @@ public class AttackAction implements GameplayAction {
         if (now < data.getNextAttackAllowed()) {
             log.trace("Player {} attack on cooldown ({}ms remaining)",
                     session.getEntityId(), data.getNextAttackAllowed() - now);
-            return;
+            return false;
         }
         data.setNextAttackAllowed(now + (long) cooldownMs);
 
@@ -114,6 +116,7 @@ public class AttackAction implements GameplayAction {
         log.debug("Player {} attacked {} [phys={}/{}, mag={}/{}, crit={}/{}]",
                 session.getEntityId(), targetEntityId,
                 physDmg, physAcc, magDmg, magAcc, critChance, critMult);
+        return true;
     }
 
     private double getEffective(AdventureData data, String statName) {

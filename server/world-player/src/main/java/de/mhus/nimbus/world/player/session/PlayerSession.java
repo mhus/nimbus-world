@@ -7,7 +7,7 @@ import de.mhus.nimbus.generated.types.Vector3;
 import de.mhus.nimbus.shared.types.PlayerData;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.player.gameplay.Gameplay;
-import de.mhus.nimbus.world.player.gameplay.GameplayData;
+import de.mhus.nimbus.world.shared.gameplay.GameplayData;
 import lombok.Data;
 import org.springframework.web.socket.WebSocketSession;
 

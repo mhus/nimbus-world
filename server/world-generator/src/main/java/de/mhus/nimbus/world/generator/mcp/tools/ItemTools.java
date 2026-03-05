@@ -203,30 +203,53 @@ public class ItemTools {
         );
     }
 
-    @Tool(name = "update_item", description = "Update parameters on an existing item by itemId. Merges the given parameters into the item's existing parameters map.")
+    @Tool(name = "update_item", description = "Update parameters and/or server properties on an existing item by itemId. Merges the given values into the item's existing maps.")
     public Map<String, Object> updateItem(
             @ToolParam(description = "World ID or region (e.g. '@region:earth616')") String worldId,
             @ToolParam(description = "Item ID to update") String itemId,
-            @ToolParam(description = "Parameters to merge into the item") Map<String, String> parameters) {
-        log.debug("MCP: Update item: worldId={}, itemId={}, parameters={}", worldId, itemId, parameters);
+            @ToolParam(description = "Parameters to merge into the item's public parameters", required = false) Map<String, String> parameters,
+            @ToolParam(description = "Server-side parameters to merge into the item's server map (e.g. action, effects)", required = false) Map<String, String> server) {
+        log.debug("MCP: Update item: worldId={}, itemId={}, parameters={}, server={}", worldId, itemId, parameters, server);
 
         if (Strings.isBlank(worldId) || Strings.isBlank(itemId)) {
             throw new McpToolException("worldId and itemId are required");
         }
-        if (parameters == null || parameters.isEmpty()) {
-            throw new McpToolException("parameters are required");
+        if ((parameters == null || parameters.isEmpty()) && (server == null || server.isEmpty())) {
+            throw new McpToolException("At least one of parameters or server is required");
         }
 
         var wid = WorldId.of(worldId).orElseThrow(
                 () -> new McpToolException("Invalid worldId: " + worldId));
 
-        return itemService.updateParametersByItemId(wid, itemId, parameters)
-                .map(item -> Map.<String, Object>of(
-                        "itemId", item.getItemId(),
-                        "worldId", item.getWorldId(),
-                        "status", "updated"
-                ))
+        WItem item = itemService.findByItemId(wid, itemId)
                 .orElseThrow(() -> new McpToolException("Item not found: " + itemId));
+
+        if (parameters != null && !parameters.isEmpty()) {
+            if (item.getPublicData() != null) {
+                var existing = item.getPublicData().getParameters();
+                if (existing == null) {
+                    item.getPublicData().setParameters(new LinkedHashMap<>(parameters));
+                } else {
+                    existing.putAll(parameters);
+                }
+            }
+        }
+
+        if (server != null && !server.isEmpty()) {
+            if (item.getServer() == null) {
+                item.setServer(new LinkedHashMap<>(server));
+            } else {
+                item.getServer().putAll(server);
+            }
+        }
+
+        itemService.saveEntity(item);
+
+        return Map.of(
+                "itemId", item.getItemId(),
+                "worldId", item.getWorldId(),
+                "status", "updated"
+        );
     }
 
     @Tool(name = "rename_item", description = "Rename the itemId of an existing item. The new itemId must not already exist in the same world.")

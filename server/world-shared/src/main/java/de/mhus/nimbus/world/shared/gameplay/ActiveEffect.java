@@ -1,4 +1,4 @@
-package de.mhus.nimbus.world.player.gameplay;
+package de.mhus.nimbus.world.shared.gameplay;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -11,7 +11,7 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * Represents an active effect (buff/debuff) applied to a player.
+ * Represents an active effect (buff/debuff) applied to an entity.
  * Effects modify vitals or combat stats using the unified stat naming scheme.
  *
  * <p>String format: "stat:value[:duration[:probability]]"</p>

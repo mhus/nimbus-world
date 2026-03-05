@@ -1,4 +1,4 @@
-package de.mhus.nimbus.world.player.gameplay;
+package de.mhus.nimbus.world.shared.gameplay;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
