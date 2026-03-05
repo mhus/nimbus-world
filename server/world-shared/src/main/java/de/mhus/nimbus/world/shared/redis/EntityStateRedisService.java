@@ -1,13 +1,19 @@
 package de.mhus.nimbus.world.shared.redis;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import de.mhus.nimbus.generated.types.EntityPathway;
+import de.mhus.nimbus.generated.types.Vector3;
+import de.mhus.nimbus.generated.types.Waypoint;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * Central Redis storage for entity runtime state.
@@ -37,6 +43,7 @@ public class EntityStateRedisService {
     private static final String FIELD_HEALTH_MAX = "healthMax";
 
     private final StringRedisTemplate redis;
+    private final ObjectMapper objectMapper;
 
     /**
      * Update entity state in Redis.
@@ -116,7 +123,109 @@ public class EntityStateRedisService {
         }
     }
 
+    // --- Looter management (players eligible for loot) ---
+
+    /**
+     * Set the looters (players who attacked this entity) on death.
+     * Stored as a Redis Set alongside the state hash.
+     */
+    public void setLooters(String worldId, String entityId, Set<String> playerIds) {
+        if (playerIds == null || playerIds.isEmpty()) return;
+        String looterKey = looterKey(worldId, entityId);
+        redis.opsForSet().add(looterKey, playerIds.toArray(String[]::new));
+        redis.expire(looterKey, TTL);
+    }
+
+    /**
+     * Check if a player is eligible for loot (was an attacker).
+     */
+    public boolean isLooter(String worldId, String entityId, String playerId) {
+        return Boolean.TRUE.equals(redis.opsForSet().isMember(looterKey(worldId, entityId), playerId));
+    }
+
+    /**
+     * Remove a player from the looter set after looting.
+     * @return true if the player was in the set and was removed
+     */
+    public boolean removeLooter(String worldId, String entityId, String playerId) {
+        Long removed = redis.opsForSet().remove(looterKey(worldId, entityId), playerId);
+        return removed != null && removed > 0;
+    }
+
+    /**
+     * Remove entity state (e.g. on respawn or unload). Also removes looter set.
+     */
+    public void removeAll(String worldId, String entityId) {
+        redis.delete(key(worldId, entityId));
+        redis.delete(looterKey(worldId, entityId));
+    }
+
+    // --- Position from pathway ---
+
+    /**
+     * Calculate the current position of an entity by loading its pathway from Redis
+     * and interpolating between waypoints based on the current timestamp.
+     * Same algorithm as the client engine (EntityService.ts).
+     *
+     * @return interpolated position or null if no pathway exists
+     */
+    public Vector3 getCurrentPosition(String worldId, String entityId) {
+        String pathwayKey = "world:" + worldId + ":npc-pathway:" + entityId;
+        String json = redis.opsForValue().get(pathwayKey);
+        if (json == null) return null;
+
+        try {
+            EntityPathway pathway = objectMapper.readValue(json, EntityPathway.class);
+            List<Waypoint> waypoints = pathway.getWaypoints();
+            if (waypoints == null || waypoints.isEmpty()) return null;
+
+            long now = System.currentTimeMillis();
+
+            // Before first waypoint → first position
+            if (now <= waypoints.getFirst().getTimestamp()) {
+                return copyTarget(waypoints.getFirst());
+            }
+
+            // Past last waypoint → last position
+            if (now >= waypoints.getLast().getTimestamp()) {
+                return copyTarget(waypoints.getLast());
+            }
+
+            // Find segment and interpolate
+            for (int i = 0; i < waypoints.size() - 1; i++) {
+                Waypoint from = waypoints.get(i);
+                Waypoint to = waypoints.get(i + 1);
+                if (now >= from.getTimestamp() && now < to.getTimestamp()) {
+                    double t = (double) (now - from.getTimestamp()) / (to.getTimestamp() - from.getTimestamp());
+                    return Vector3.builder()
+                            .x(from.getTarget().getX() + (to.getTarget().getX() - from.getTarget().getX()) * t)
+                            .y(from.getTarget().getY() + (to.getTarget().getY() - from.getTarget().getY()) * t)
+                            .z(from.getTarget().getZ() + (to.getTarget().getZ() - from.getTarget().getZ()) * t)
+                            .build();
+                }
+            }
+
+            return copyTarget(waypoints.getLast());
+        } catch (Exception e) {
+            log.warn("Failed to parse pathway for entity {} in world {}: {}", entityId, worldId, e.getMessage());
+            return null;
+        }
+    }
+
+    private Vector3 copyTarget(Waypoint wp) {
+        if (wp.getTarget() == null) return null;
+        return Vector3.builder()
+                .x(wp.getTarget().getX())
+                .y(wp.getTarget().getY())
+                .z(wp.getTarget().getZ())
+                .build();
+    }
+
     private String key(String worldId, String entityId) {
         return "world:" + worldId + ":" + KEY_PREFIX + entityId;
+    }
+
+    private String looterKey(String worldId, String entityId) {
+        return "world:" + worldId + ":" + KEY_PREFIX + entityId + ":looters";
     }
 }

@@ -6,6 +6,9 @@ import de.mhus.nimbus.world.shared.world.WEntity;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 
+import java.util.HashSet;
+import java.util.Set;
+
 /**
  * Internal simulation state for each entity.
  * Tracks pathway generation, timing, and behavior state.
@@ -65,6 +68,9 @@ public class SimulationState {
 
     /** Timestamp when the current lifecycle phase started (millis). */
     private long lifecycleTimestamp = 0;
+
+    /** Player entity IDs that attacked this entity during current life. Eligible for loot on death. */
+    private Set<String> attackers = new HashSet<>();
 
     /**
      * Get fade time (time entity stays visible after death) from entity server properties.

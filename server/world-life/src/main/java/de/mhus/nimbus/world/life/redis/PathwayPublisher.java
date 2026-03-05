@@ -122,6 +122,13 @@ public class PathwayPublisher {
         }
     }
 
+    /**
+     * Remove only the pathway cache for an entity (e.g. on death — entity stays visible but stops moving).
+     */
+    public void removePathway(WorldId worldId, String entityId) {
+        worldRedisService.deleteValue(worldId.getId(), NPC_PATHWAY_PREFIX + entityId);
+    }
+
     private void cacheIndividualPathway(WorldId worldId, EntityPathway pathway) {
         try {
             String json = engineMapper.writeValueAsString(pathway);

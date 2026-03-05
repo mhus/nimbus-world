@@ -140,12 +140,18 @@ public class BasicGameplay implements Gameplay {
             return;
         }
 
-        // Dead entity → route to loot/collect instead of normal interaction
+        // Dead entity → route to loot/collect only if player was an attacker
         String worldIdStr = session.getWorldId() != null ? session.getWorldId().getId() : null;
         if (worldIdStr != null && entityStateRedisService.isDead(worldIdStr, entityId)) {
-            var collectHandler = actions.get("collect");
-            if (collectHandler != null) {
-                collectHandler.handleEntityAction(session, entity, userAction, "collect", null, params);
+            String playerId = session.getEntityId();
+            if (playerId != null && entityStateRedisService.removeLooter(worldIdStr, entityId, playerId)) {
+                var collectHandler = actions.get("collect");
+                if (collectHandler != null) {
+                    collectHandler.handleEntityAction(session, entity, userAction, "collect", null, params);
+                }
+            } else {
+                log.debug("Player {} is not eligible for loot from dead entity {} in world {}",
+                        playerId, entityId, worldIdStr);
             }
             return;
         }

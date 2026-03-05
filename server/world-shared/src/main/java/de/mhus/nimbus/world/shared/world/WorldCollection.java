@@ -48,10 +48,6 @@ public record WorldCollection(TYPE type, WorldId worldId, String path) {
         }
         int pos = path.indexOf(':');
         if (pos < 0) {
-//            if (path.startsWith("w/")) { // legacy support
-//                path = path.substring(2);
-//                return new WorldCollection(TYPE.WORLD, worldId, path);
-//            }
             if (worldId.isSharedCollection())
                 return new WorldCollection(TYPE.SHARED, worldId, path);
             if (worldId.isRegionCollection())

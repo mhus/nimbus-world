@@ -78,6 +78,12 @@ export class EntityStatusUpdateMessageHandler extends MessageHandler<EntityStatu
           health: status.health,
           healthMax: clientEntity.entity.healthMax,
         });
+
+        // Entity died - stop movement, trigger death pose
+        if (status.health <= 0 && !clientEntity.dead) {
+          this.entityService.markEntityDead(entityId);
+          return;
+        }
       }
 
       // Update healthMax

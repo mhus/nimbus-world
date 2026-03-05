@@ -324,6 +324,13 @@ export class EntityService {
       return;
     }
 
+    // Ignore pathways for dead entities (waiting for gone)
+    const existingEntity = this.entityCache.get(pathway.entityId);
+    if (existingEntity?.dead) {
+      logger.debug('Ignoring pathway for dead entity', { entityId: pathway.entityId });
+      return;
+    }
+
     // Check if pathway is within unload radius - skip loading if completely out of scope
     const playerService = this.appContext.services.player;
     if (playerService) {
@@ -521,6 +528,38 @@ export class EntityService {
    */
   getVisibleEntities(): ClientEntity[] {
     return Array.from(this.entityCache.values()).filter(e => e.visible);
+  }
+
+  /**
+   * Mark entity as dead - stops pathway movement and triggers death pose
+   */
+  markEntityDead(entityId: string): void {
+    const clientEntity = this.entityCache.get(entityId);
+    if (!clientEntity) {
+      logger.warn('Entity not found for death', { entityId });
+      return;
+    }
+
+    clientEntity.dead = true;
+
+    // Clear pathway to stop movement
+    this.entityPathwayCache.delete(entityId);
+    clientEntity.currentWaypoints = [];
+    clientEntity.currentWaypointIndex = 0;
+
+    // Clean up physics state
+    this.physicsController.removeEntity(entityId);
+
+    // Set death pose
+    clientEntity.currentPose = ENTITY_POSES.DEATH;
+    this.emit('transform', {
+      entityId,
+      position: clientEntity.currentPosition,
+      rotation: clientEntity.currentRotation,
+      pose: ENTITY_POSES.DEATH,
+    });
+
+    logger.info('Entity marked as dead', { entityId });
   }
 
   /**

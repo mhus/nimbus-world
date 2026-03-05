@@ -389,14 +389,15 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
             }
         }
 
-        // Reset lifecycle
+        // Reset lifecycle and attackers
         state.setLifecycleState(SimulationState.LifecycleState.ALIVE);
         state.setLifecycleTimestamp(0);
         state.setCurrentPathway(null);
         state.setPathwayEndTime(0);
+        state.getAttackers().clear();
 
-        // Clear Redis state (absence = ALIVE)
-        entityStateRedisService.remove(worldId.getId(), entityId);
+        // Clear Redis state (absence = ALIVE, also removes looters)
+        entityStateRedisService.removeAll(worldId.getId(), entityId);
 
         log.info("World {}: Entity {} respawned at middlePoint", worldId, entityId);
     }
@@ -544,19 +545,24 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
         entityStatusPublisher.publishStatusUpdate(worldId.getId(), entityId,
                 Map.of("health", 0.0, "healthMax", 0.0, "death", 1), null);
 
-        // Store lifecycle in Redis for cross-pod access
+        // Store lifecycle and attackers (loot-eligible players) in Redis for cross-pod access
         entityStateRedisService.updateState(worldId.getId(), entityId,
                 EntityStateRedisService.LIFECYCLE_DEAD, 0.0, 0.0);
+        entityStateRedisService.setLooters(worldId.getId(), entityId, state.getAttackers());
+
+        // Remove pathway from Redis so entity stops moving on clients
+        pathwayPublisher.removePathway(worldId, entityId);
 
         // Transition to DEAD lifecycle state
         state.setLifecycleState(SimulationState.LifecycleState.DEAD);
         state.setLifecycleTimestamp(System.currentTimeMillis());
         state.setCurrentPathway(null);
 
-        log.info("World {}: Entity {} died, fade time {}s, respawn time {}s",
+        log.info("World {}: Entity {} died, fade time {}s, respawn time {}s, attackers: {}",
                 worldId, entityId,
                 state.getFadeTimeMs() / 1000,
-                state.getRespawnTimeMs() / 1000);
+                state.getRespawnTimeMs() / 1000,
+                state.getAttackers());
     }
 
     private void updateEntityChunk(WWorld world, WEntity entity) {

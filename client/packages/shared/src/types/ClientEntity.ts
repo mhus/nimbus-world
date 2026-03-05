@@ -53,6 +53,9 @@ export interface ClientEntity {
 
   /** Last step sound time for throttling (timestamp in ms) */
   lastStepTime?: number; // javaType: long
+
+  /** Entity is dead - stop movement, play death pose, wait for gone */
+  dead?: boolean;
 }
 
 /**

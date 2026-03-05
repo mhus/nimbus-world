@@ -134,6 +134,11 @@ public class VitalDeltaBroadcastListener {
             return;
         }
 
+        // Track attacker for loot eligibility
+        if (msg.getSourceEntityId() != null) {
+            state.getAttackers().add(msg.getSourceEntityId());
+        }
+
         // Apply damage to health
         VitalValue health = combatData.getVital("health");
         if (health != null) {
