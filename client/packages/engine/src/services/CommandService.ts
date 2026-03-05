@@ -142,14 +142,22 @@ export class CommandService {
         (window as any)[functionName] = (...params: any[]) => {
           // Pass parameters as-is (no conversion)
           // Commands will use CastUtil for proper type conversion
-          this.executeCommand(name, params)
+          return this.executeCommand(name, params)
             .then((result) => {
-              // Log result to console
+              // Log result to console as table for arrays, formatted JSON for objects
               if (result !== undefined && result !== null) {
-                console.log(`✓ ${name}:`, result);
+                if (Array.isArray(result)) {
+                  console.log(`✓ ${name}: ${result.length} results`);
+                  console.table(result);
+                } else if (typeof result === 'object') {
+                  console.log(`✓ ${name}:\n` + JSON.stringify(result, null, 2));
+                } else {
+                  console.log(`✓ ${name}:`, result);
+                }
               } else {
                 console.log(`✓ ${name}: Command executed successfully`);
               }
+              return result;
             })
             .catch((error) => {
               // Log error to console
