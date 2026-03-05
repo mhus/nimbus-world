@@ -32,6 +32,9 @@ public class EntityCombatData extends GameplayData {
     /** Passive stats from equipment + skills, recalculated on inventory/skill change (transient) */
     private transient PassiveStats passiveStats;
 
+    /** Combat strategy when attacked (FLEE, ATTACK_FLEE, ATTACK_REPEAT) */
+    private CombatStrategy combatStrategy = CombatStrategy.FLEE;
+
     /**
      * Get a vital value by type, or null if not found.
      */
@@ -143,6 +146,11 @@ public class EntityCombatData extends GameplayData {
         overrideCombatStat(data, server, "critMultiplier", "critMultiplier");
 
         data.setLastTickTimestamp(System.currentTimeMillis());
+
+        // Parse combat strategy (default: FLEE)
+        String strategyVal = server.get("combat_strategy");
+        data.setCombatStrategy(CombatStrategy.fromString(strategyVal));
+
         return data;
     }
 

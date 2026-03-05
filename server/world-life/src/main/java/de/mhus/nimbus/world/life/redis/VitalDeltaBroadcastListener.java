@@ -13,6 +13,7 @@ import de.mhus.nimbus.world.shared.gameplay.VitalValue;
 import de.mhus.nimbus.world.shared.redis.EntityStateRedisService;
 import de.mhus.nimbus.world.shared.redis.EntityStatusPublisher;
 import de.mhus.nimbus.world.shared.redis.VitalDeltaBroadcastMessage;
+import de.mhus.nimbus.world.shared.redis.VitalDeltaPublisher;
 import de.mhus.nimbus.world.shared.redis.WorldRedisMessagingService;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
@@ -43,6 +44,7 @@ public class VitalDeltaBroadcastListener {
     private final WorldDiscoveryService worldDiscoveryService;
     private final EntityStatusPublisher entityStatusPublisher;
     private final EntityStateRedisService entityStateRedisService;
+    private final VitalDeltaPublisher vitalDeltaPublisher;
     private final ObjectMapper objectMapper;
 
     private final Set<WorldId> subscribedWorlds = new HashSet<>();
@@ -128,6 +130,11 @@ public class VitalDeltaBroadcastListener {
                 defPhysDef, defPhysEvasion,
                 defMagDef, defMagEvasion);
 
+        // Send attack result back to attacker
+        vitalDeltaPublisher.publishAttackResult(
+                worldId.getId(), msg.getSourceEntityId(), msg.getTargetEntityId(),
+                damage != 0, damage);
+
         if (damage == 0) {
             log.debug("World {}: Attack from {} on {} missed",
                     worldId, msg.getSourceEntityId(), msg.getTargetEntityId());
@@ -137,6 +144,19 @@ public class VitalDeltaBroadcastListener {
         // Track attacker for loot eligibility
         if (msg.getSourceEntityId() != null) {
             state.getAttackers().add(msg.getSourceEntityId());
+        }
+
+        // Activate or refresh combat mode
+        long now = System.currentTimeMillis();
+        if (combatData.getCombatStrategy() != null) {
+            if (!state.isInCombat()) {
+                state.setCombatStrategy(combatData.getCombatStrategy());
+                state.enterCombat(msg.getSourceEntityId(), msg.getSourceSessionId(), now);
+                log.info("World {}: Entity {} entered combat (strategy={}, attacker={})",
+                        worldId, msg.getTargetEntityId(), combatData.getCombatStrategy(), msg.getSourceEntityId());
+            } else {
+                state.refreshCombat(msg.getSourceEntityId(), msg.getSourceSessionId(), now);
+            }
         }
 
         // Apply damage to health

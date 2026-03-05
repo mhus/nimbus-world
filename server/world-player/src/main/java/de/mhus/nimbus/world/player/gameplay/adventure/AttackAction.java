@@ -104,10 +104,11 @@ public class AttackAction implements GameplayAction {
         double critChance = getEffective(data, "critChance");
         double critMult = getEffective(data, "critMultiplier");
 
-        // Publish attack via Redis
+        // Publish attack via Redis (include sessionId for position lookup)
         basic.getVitalDeltaPublisher().publishAttack(
                 worldId, targetEntityId, session.getEntityId(),
-                physDmg, physAcc, magDmg, magAcc, critChance, critMult);
+                physDmg, physAcc, magDmg, magAcc, critChance, critMult,
+                session.getSessionId());
 
         // Adrenaline gain + combat timer reset
         basic.getEffectProcessor().addAdrenaline(data, ATTACK_ADRENALINE);

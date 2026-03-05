@@ -5,6 +5,7 @@ import de.mhus.nimbus.generated.types.Vector3;
 import de.mhus.nimbus.generated.types.Waypoint;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.life.behavior.BehaviorRegistry;
+import de.mhus.nimbus.world.life.behavior.CombatBehaviorHandler;
 import de.mhus.nimbus.world.life.behavior.EntityBehavior;
 import de.mhus.nimbus.world.life.model.ChunkCoordinate;
 import de.mhus.nimbus.world.life.model.SimulationState;
@@ -67,6 +68,7 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
     private final WWorldService worldService;
     private final VitalDeltaPublisher vitalDeltaPublisher;
     private final EntityStateRedisService entityStateRedisService;
+    private final CombatBehaviorHandler combatBehaviorHandler;
 
     private final BaseEffectProcessor baseEffectProcessor = new BaseEffectProcessor();
 
@@ -294,6 +296,20 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
             return handleLifecycleTick(entity, state, currentTime, worldId);
         }
 
+        // Check combat mode
+        if (state.isInCombat()) {
+            if (currentTime >= state.getCombatEndTime()) {
+                state.exitCombat();
+                log.debug("World {}: Entity {} combat ended (timeout)", worldId, entity.getEntityId());
+            } else {
+                // Generate combat pathway
+                EntityPathway combatPathway = combatBehaviorHandler.generateCombatPathway(entity, state, currentTime, worldId);
+                if (combatPathway != null) {
+                    return finishPathway(entity, state, combatPathway, currentTime, worldId);
+                }
+            }
+        }
+
         String behaviorType = getBehaviorType(entity);
         EntityBehavior behavior = behaviorRegistry.getBehavior(behaviorType);
 
@@ -309,25 +325,36 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
         processCombatTick(state, 1.0, worldId);
 
         if (pathway != null) {
-            List<Waypoint> waypoints = pathway.getWaypoints();
-            if (waypoints != null && !waypoints.isEmpty()) {
-                Waypoint lastWaypoint = waypoints.get(waypoints.size() - 1);
-                entity.setPosition(lastWaypoint.getTarget());
-                updateEntityChunk(world, entity);
-            }
-
-            state.setLastPathwayTime(currentTime);
-            state.setCurrentPathway(pathway);
-            state.updatePathwayEndTime();
-
-            log.trace("Generated pathway for entity {}: {} waypoints",
-                    entity.getEntityId(),
-                    pathway.getWaypoints() != null ? pathway.getWaypoints().size() : 0);
-
-            return Optional.of(pathway);
+            return finishPathway(entity, state, pathway, currentTime, worldId);
         }
 
         return Optional.empty();
+    }
+
+    /**
+     * Finalize a pathway: update entity position, state, and return as Optional.
+     */
+    private Optional<EntityPathway> finishPathway(WEntity entity, SimulationState state,
+                                                   EntityPathway pathway, long currentTime, WorldId worldId) {
+        List<Waypoint> waypoints = pathway.getWaypoints();
+        if (waypoints != null && !waypoints.isEmpty()) {
+            Waypoint lastWaypoint = waypoints.get(waypoints.size() - 1);
+            entity.setPosition(lastWaypoint.getTarget());
+            var world = worldService.getByWorldId(worldId).orElse(null);
+            if (world != null) {
+                updateEntityChunk(world, entity);
+            }
+        }
+
+        state.setLastPathwayTime(currentTime);
+        state.setCurrentPathway(pathway);
+        state.updatePathwayEndTime();
+
+        log.trace("Generated pathway for entity {}: {} waypoints",
+                entity.getEntityId(),
+                pathway.getWaypoints() != null ? pathway.getWaypoints().size() : 0);
+
+        return Optional.of(pathway);
     }
 
     /**
@@ -389,10 +416,11 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
             }
         }
 
-        // Reset lifecycle and attackers
+        // Reset lifecycle, combat, and attackers
         state.setLifecycleState(SimulationState.LifecycleState.ALIVE);
         state.setLifecycleTimestamp(0);
         state.setCurrentPathway(null);
+        state.exitCombat();
         state.setPathwayEndTime(0);
         state.getAttackers().clear();
 
@@ -502,9 +530,11 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
             EntityCombatData combatData = EntityCombatData.fromEntityProperties(entity.getServer());
             if (combatData != null) {
                 state.setCombatData(combatData);
-                log.debug("Initialized combat data for entity {}: health={}",
+                state.setCombatStrategy(combatData.getCombatStrategy());
+                log.debug("Initialized combat data for entity {}: health={}, strategy={}",
                         entity.getEntityId(),
-                        combatData.getVital("health") != null ? combatData.getVital("health").getBase() : "none");
+                        combatData.getVital("health") != null ? combatData.getVital("health").getBase() : "none",
+                        combatData.getCombatStrategy());
             }
         }
         return state;

@@ -1,6 +1,7 @@
 package de.mhus.nimbus.world.life.model;
 
 import de.mhus.nimbus.generated.types.EntityPathway;
+import de.mhus.nimbus.world.shared.gameplay.CombatStrategy;
 import de.mhus.nimbus.world.shared.gameplay.EntityCombatData;
 import de.mhus.nimbus.world.shared.world.WEntity;
 import lombok.Data;
@@ -72,6 +73,23 @@ public class SimulationState {
     /** Player entity IDs that attacked this entity during current life. Eligible for loot on death. */
     private Set<String> attackers = new HashSet<>();
 
+    // --- Combat state ---
+
+    /** Combat strategy for this entity (from server property combat_strategy) */
+    private CombatStrategy combatStrategy;
+
+    /** True if entity is currently in combat mode */
+    private boolean inCombat;
+
+    /** Timestamp when combat mode ends (millis) */
+    private long combatEndTime;
+
+    /** Session IDs of attackers for position lookup in Redis (entityId -> sessionId) */
+    private java.util.Map<String, String> attackerSessions = new java.util.HashMap<>();
+
+    /** Number of attacks performed by entity in current combat (for ATTACK_FLEE: attack once then flee) */
+    private int combatAttackCount;
+
     /**
      * Get fade time (time entity stays visible after death) from entity server properties.
      * Property: death_fadeTime (seconds), default 120.
@@ -98,6 +116,45 @@ public class SimulationState {
         } catch (NumberFormatException e) {
             return defaultValue;
         }
+    }
+
+    /**
+     * Get combat duration from entity server properties.
+     * Property: combat_duration (seconds), default 15.
+     */
+    public long getCombatDurationMs() {
+        return getServerLong("combat_duration", CombatStrategy.DEFAULT_COMBAT_DURATION_MS / 1000) * 1000;
+    }
+
+    /**
+     * Enter combat mode with a new attacker.
+     */
+    public void enterCombat(String attackerEntityId, String sessionId, long currentTime) {
+        this.inCombat = true;
+        this.combatEndTime = currentTime + getCombatDurationMs();
+        if (attackerEntityId != null && sessionId != null) {
+            this.attackerSessions.put(attackerEntityId, sessionId);
+        }
+    }
+
+    /**
+     * Refresh combat timer (e.g., on repeated hits).
+     */
+    public void refreshCombat(String attackerEntityId, String sessionId, long currentTime) {
+        this.combatEndTime = currentTime + getCombatDurationMs();
+        if (attackerEntityId != null && sessionId != null) {
+            this.attackerSessions.put(attackerEntityId, sessionId);
+        }
+    }
+
+    /**
+     * Exit combat mode and reset combat state.
+     */
+    public void exitCombat() {
+        this.inCombat = false;
+        this.combatEndTime = 0;
+        this.attackerSessions.clear();
+        this.combatAttackCount = 0;
     }
 
     /**

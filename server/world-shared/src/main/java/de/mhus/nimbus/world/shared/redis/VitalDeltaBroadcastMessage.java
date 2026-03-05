@@ -26,6 +26,7 @@ public class VitalDeltaBroadcastMessage {
 
     public static final String TYPE_DELTA = "DELTA";
     public static final String TYPE_ATTACK = "ATTACK";
+    public static final String TYPE_ATTACK_RESULT = "ATTACK_RESULT";
 
     /** Target entity ID, e.g. "@user:char" (player) or "cow2" (NPC) */
     private String targetEntityId;
@@ -65,4 +66,7 @@ public class VitalDeltaBroadcastMessage {
 
     /** Critical hit multiplier (e.g. 1.5) */
     private double critMultiplier;
+
+    /** Source session ID (for looking up attacker position in Redis) */
+    private String sourceSessionId;
 }

@@ -76,6 +76,16 @@ public class VitalDeltaPublisher {
     public void publishAttack(String worldId, String targetEntityId, String sourceEntityId,
                               double physDmg, double physAcc, double magDmg, double magAcc,
                               double critChance, double critMult) {
+        publishAttack(worldId, targetEntityId, sourceEntityId, physDmg, physAcc, magDmg, magAcc, critChance, critMult, null);
+    }
+
+    /**
+     * Publish an attack with source session ID for position lookup.
+     */
+    public void publishAttack(String worldId, String targetEntityId, String sourceEntityId,
+                              double physDmg, double physAcc, double magDmg, double magAcc,
+                              double critChance, double critMult,
+                              String sourceSessionId) {
         if (targetEntityId == null) return;
 
         try {
@@ -90,6 +100,7 @@ public class VitalDeltaPublisher {
                     .magicalAccuracy(magAcc)
                     .critChance(critChance)
                     .critMultiplier(critMult)
+                    .sourceSessionId(sourceSessionId)
                     .build();
 
             String json = objectMapper.writeValueAsString(message);
@@ -101,6 +112,40 @@ public class VitalDeltaPublisher {
 
         } catch (Exception e) {
             log.error("Failed to publish attack for {} in world {}", targetEntityId, worldId, e);
+        }
+    }
+
+    /**
+     * Publish attack result back to the attacker (hit or miss).
+     * Sent to the player channel so world-player can show feedback.
+     *
+     * @param worldId        World ID
+     * @param attackerEntityId Player entity ID (@ prefix)
+     * @param targetEntityId  NPC entity ID that was attacked
+     * @param hit            True if attack hit, false if missed/blocked
+     * @param damage         Actual damage dealt (0 if missed)
+     */
+    public void publishAttackResult(String worldId, String attackerEntityId, String targetEntityId,
+                                     boolean hit, double damage) {
+        if (attackerEntityId == null) return;
+
+        try {
+            VitalDeltaBroadcastMessage message = VitalDeltaBroadcastMessage.builder()
+                    .type(VitalDeltaBroadcastMessage.TYPE_ATTACK_RESULT)
+                    .targetEntityId(attackerEntityId)
+                    .sourceEntityId(targetEntityId)
+                    .worldId(worldId)
+                    .delta(damage)
+                    .build();
+
+            String json = objectMapper.writeValueAsString(message);
+            redisMessaging.publish(worldId, CHANNEL_PLAYER, json);
+
+            log.debug("Published attack result: {} -> {} hit={} damage={}",
+                    targetEntityId, attackerEntityId, hit, damage);
+
+        } catch (Exception e) {
+            log.error("Failed to publish attack result for {} in world {}", attackerEntityId, worldId, e);
         }
     }
 

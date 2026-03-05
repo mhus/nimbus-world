@@ -3,12 +3,15 @@ package de.mhus.nimbus.world.player.ws.redis;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.world.player.gameplay.AdventureData;
 import de.mhus.nimbus.world.player.gameplay.AdventureGameplay;
+import de.mhus.nimbus.world.player.service.ClientService;
 import de.mhus.nimbus.world.shared.gameplay.VitalValue;
 import de.mhus.nimbus.world.player.session.PlayerSession;
 import de.mhus.nimbus.world.player.ws.SessionManager;
 import de.mhus.nimbus.world.shared.gameplay.VitalType;
 import de.mhus.nimbus.world.shared.redis.VitalDeltaBroadcastMessage;
 import de.mhus.nimbus.world.shared.redis.WorldRedisMessagingService;
+
+import java.util.List;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -31,6 +34,7 @@ public class VitalDeltaBroadcastListener {
     private final SessionManager sessionManager;
     private final ObjectMapper objectMapper;
     private final AdventureGameplay adventureGameplay;
+    private final ClientService clientService;
 
     @PostConstruct
     public void subscribeToVitalDeltas() {
@@ -62,6 +66,8 @@ public class VitalDeltaBroadcastListener {
             String type = msg.getType();
             if (VitalDeltaBroadcastMessage.TYPE_ATTACK.equals(type)) {
                 adventureGameplay.handleIncomingAttack(targetSession, data, msg);
+            } else if (VitalDeltaBroadcastMessage.TYPE_ATTACK_RESULT.equals(type)) {
+                handleAttackResult(targetSession, msg);
             } else {
                 handleDelta(msg, data);
             }
@@ -69,6 +75,17 @@ public class VitalDeltaBroadcastListener {
         } catch (Exception e) {
             log.error("Failed to handle vital delta from topic {}: {}", topic, e.getMessage(), e);
         }
+    }
+
+    private void handleAttackResult(PlayerSession session, VitalDeltaBroadcastMessage msg) {
+        boolean hit = msg.getDelta() != 0;
+        String texture = hit
+                ? "n:/textures/actions/attack_hit.png"
+                : "n:/textures/actions/attack_blocked.png";
+        clientService.sendCommand(session, "flashImage", List.of(texture, "500", "0.5"));
+
+        log.debug("Attack result for {}: {} (damage={})",
+                session.getEntityId(), hit ? "HIT" : "BLOCKED", msg.getDelta());
     }
 
     private void handleDelta(VitalDeltaBroadcastMessage msg, AdventureData data) {
