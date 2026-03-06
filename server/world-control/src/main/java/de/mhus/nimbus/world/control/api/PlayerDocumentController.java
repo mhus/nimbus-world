@@ -93,7 +93,7 @@ public class PlayerDocumentController extends BaseEditorController {
         }
 
         // Resolve document: collection/name or documentId
-        WorldId docWorldId = parsedWorldId.isInstance() ? parsedWorldId.toWorldId() : parsedWorldId;
+        WorldId docWorldId = parsedWorldId.mainWorld();
         if (docWorldId.isInstance()) {
             return bad("Cannot resolve document worldId");
         }

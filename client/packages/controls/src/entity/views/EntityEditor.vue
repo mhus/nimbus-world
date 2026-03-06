@@ -90,6 +90,41 @@
               </label>
             </div>
 
+            <!-- Type -->
+            <div class="form-control">
+              <label class="label">
+                <span class="label-text font-medium">Type</span>
+              </label>
+              <select
+                v-model="formData.type"
+                class="select select-bordered w-full"
+              >
+                <option value="OTHER">Other</option>
+                <option value="ANIMAL">Animal</option>
+                <option value="NPC">NPC</option>
+                <option value="PLAYER">Player</option>
+              </select>
+              <label class="label">
+                <span class="label-text-alt">Classification of this entity</span>
+              </label>
+            </div>
+
+            <!-- Portrait Path -->
+            <div class="form-control">
+              <label class="label">
+                <span class="label-text font-medium">Portrait Path</span>
+              </label>
+              <input
+                v-model="formData.portraitPath"
+                type="text"
+                placeholder="Path to portrait image"
+                class="input input-bordered w-full"
+              />
+              <label class="label">
+                <span class="label-text-alt">Image path for dialog UI portrait</span>
+              </label>
+            </div>
+
             <!-- Enabled Status -->
             <div v-if="!isNew" class="form-control">
               <label class="label cursor-pointer justify-start gap-4">
@@ -270,7 +305,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { useWorld } from '@/composables/useWorld';
-import { entityService, type EntityData } from '../services/EntityService';
+import { entityService, type EntityData, type EntityType } from '../services/EntityService';
 import JsonEditorDialog from '@components/JsonEditorDialog.vue';
 
 const props = defineProps<{
@@ -294,6 +329,8 @@ const successMessage = ref<string | null>(null);
 const formData = ref({
   entityId: '',
   modelId: '',
+  type: 'OTHER' as EntityType,
+  portraitPath: '',
   enabled: true,
 });
 
@@ -332,6 +369,8 @@ const loadEntity = () => {
     formData.value = {
       entityId: '',
       modelId: '',
+      type: 'OTHER' as EntityType,
+      portraitPath: '',
       enabled: true,
     };
     entityData.value = {
@@ -356,6 +395,8 @@ const loadEntity = () => {
   formData.value = {
     entityId: entity.entityId,
     modelId: entity.modelId,
+    type: entity.type || 'OTHER',
+    portraitPath: entity.portraitPath || '',
     enabled: entity.enabled,
   };
   entityData.value = entity.publicData || {};
@@ -379,6 +420,8 @@ const handleSave = async () => {
         entityId: formData.value.entityId,
         publicData: entityData.value,
         modelId: formData.value.modelId,
+        type: formData.value.type,
+        portraitPath: formData.value.portraitPath || undefined,
         server: params,
       });
       successMessage.value = 'Entity created successfully';
@@ -386,6 +429,8 @@ const handleSave = async () => {
       await entityService.updateEntity(currentWorldId.value, formData.value.entityId, {
         modelId: formData.value.modelId,
         enabled: formData.value.enabled,
+        type: formData.value.type,
+        portraitPath: formData.value.portraitPath || undefined,
         publicData: entityData.value,
         server: params,
       });

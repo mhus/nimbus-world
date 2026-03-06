@@ -205,6 +205,8 @@ const loadEntities = async () => {
       chunk: '',
       modelId: dto.modelId || dto.publicData?.model || '',
       enabled: dto.enabled !== undefined ? dto.enabled : true,
+      type: dto.type || null,
+      portraitPath: dto.portraitPath || null,
       server: dto.server || null,
       createdAt: dto.createdAt || new Date().toISOString(),
       updatedAt: dto.updatedAt || new Date().toISOString(),

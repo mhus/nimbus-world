@@ -5,6 +5,7 @@ import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.shared.rest.BaseEditorController;
 import de.mhus.nimbus.world.shared.world.WEntity;
 import de.mhus.nimbus.world.shared.world.WEntityService;
+import de.mhus.nimbus.world.shared.world.WEntityType;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -45,16 +46,18 @@ public class EEntityController extends BaseEditorController {
             String worldId,
             String modelId,
             boolean enabled,
+            WEntityType type,
+            String portraitPath,
             Map<String, String> server,
             Instant createdAt,
             Instant updatedAt
     ) {
     }
 
-    public record CreateEntityRequest(String entityId, Entity publicData, String modelId, Map<String, String> server) {
+    public record CreateEntityRequest(String entityId, Entity publicData, String modelId, WEntityType type, String portraitPath, Map<String, String> server) {
     }
 
-    public record UpdateEntityRequest(Entity publicData, String modelId, Boolean enabled, Map<String, String> server) {
+    public record UpdateEntityRequest(Entity publicData, String modelId, Boolean enabled, WEntityType type, String portraitPath, Map<String, String> server) {
     }
 
     /**
@@ -176,9 +179,18 @@ public class EEntityController extends BaseEditorController {
                     request.publicData(),
                     request.modelId()
             );
-            if (request.server() != null) {
-                saved.setServer(request.server());
-                entityService.update(wid, request.entityId(), entity -> entity.setServer(request.server()));
+            if (request.type() != null || request.portraitPath() != null || request.server() != null) {
+                entityService.update(wid, request.entityId(), entity -> {
+                    if (request.type() != null) {
+                        entity.setType(request.type());
+                    }
+                    if (request.portraitPath() != null) {
+                        entity.setPortraitPath(request.portraitPath());
+                    }
+                    if (request.server() != null) {
+                        entity.setServer(request.server());
+                    }
+                });
             }
 
             log.info("Created entity: entityId={}", request.entityId());
@@ -217,7 +229,7 @@ public class EEntityController extends BaseEditorController {
         var validation = validateId(entityId, "entityId");
         if (validation != null) return validation;
 
-        if (request.publicData() == null && request.modelId() == null && request.enabled() == null) {
+        if (request.publicData() == null && request.modelId() == null && request.enabled() == null && request.type() == null && request.portraitPath() == null) {
             return bad("at least one field required for update");
         }
 
@@ -230,6 +242,12 @@ public class EEntityController extends BaseEditorController {
             }
             if (request.enabled() != null) {
                 entity.setEnabled(request.enabled());
+            }
+            if (request.type() != null) {
+                entity.setType(request.type());
+            }
+            if (request.portraitPath() != null) {
+                entity.setPortraitPath(request.portraitPath());
             }
             if (request.server() != null) {
                 entity.setServer(request.server());
@@ -287,6 +305,8 @@ public class EEntityController extends BaseEditorController {
                 entity.getWorldId(),
                 entity.getModelId(),
                 entity.isEnabled(),
+                entity.getType(),
+                entity.getPortraitPath(),
                 entity.getServer(),
                 entity.getCreatedAt(),
                 entity.getUpdatedAt()

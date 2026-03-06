@@ -1,5 +1,7 @@
 import { apiService } from '@/services/ApiService';
 
+export type EntityType = 'OTHER' | 'ANIMAL' | 'NPC' | 'PLAYER';
+
 export interface EntityData {
   entityId: string;
   publicData: any;
@@ -7,6 +9,8 @@ export interface EntityData {
   chunk: string;
   modelId: string;
   enabled: boolean;
+  type: EntityType | null;
+  portraitPath: string | null;
   server: Record<string, string> | null;
   createdAt: string;
   updatedAt: string;
@@ -23,6 +27,8 @@ export interface CreateEntityRequest {
   entityId: string;
   publicData: any;
   modelId: string;
+  type?: EntityType;
+  portraitPath?: string;
   server?: Record<string, string>;
 }
 
@@ -30,6 +36,8 @@ export interface UpdateEntityRequest {
   publicData?: any;
   modelId?: string;
   enabled?: boolean;
+  type?: EntityType;
+  portraitPath?: string;
   server?: Record<string, string>;
 }
 

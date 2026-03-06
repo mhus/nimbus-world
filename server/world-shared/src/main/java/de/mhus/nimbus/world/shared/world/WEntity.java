@@ -143,6 +143,17 @@ public class WEntity implements Identifiable {
     private Instant updatedAt;
 
     /**
+     * Type classification of this entity.
+     */
+    @Builder.Default
+    private WEntityType type = WEntityType.OTHER;
+
+    /**
+     * Path to portrait image for this entity (e.g., for dialog UI).
+     */
+    private String portraitPath;
+
+    /**
      * Soft delete flag.
      */
     @Indexed
