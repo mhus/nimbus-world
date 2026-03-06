@@ -691,6 +691,74 @@ public class WWorldService {
     }
 
     /**
+     * Get the current world time as a formatted string for display.
+     * Format: "@era, @year.month.day, hour:minute"
+     * Also includes season info if available.
+     *
+     * @param worldId the WorldId to get time for
+     * @return formatted time string, or null if world not found or time not configured
+     */
+    public String getFormattedWorldTime(WorldId worldId) {
+        var worldOpt = loadWorld(worldId);
+        if (worldOpt.isEmpty()) return null;
+
+        var world = worldOpt.get();
+        var publicData = world.getPublicData();
+        if (publicData == null || publicData.getSettings() == null
+                || publicData.getSettings().getWorldTime() == null) {
+            return null;
+        }
+
+        var wt = publicData.getSettings().getWorldTime();
+        if (wt.getLinuxEpocheDeltaMinutes() == null || wt.getLinuxEpocheDeltaMinutes() == 0) return null;
+
+        int minuteScaling = wt.getMinuteScaling() != null ? wt.getMinuteScaling() : 1;
+        int minutesPerHour = wt.getMinutesPerHour() != null ? wt.getMinutesPerHour() : 60;
+        int hoursPerDay = wt.getHoursPerDay() != null ? wt.getHoursPerDay() : 24;
+        int daysPerMonth = wt.getDaysPerMonth() != null ? wt.getDaysPerMonth() : 30;
+        int monthsPerYear = wt.getMonthsPerYear() != null ? wt.getMonthsPerYear() : 12;
+        int era = wt.getCurrentEra() != null ? wt.getCurrentEra() : 1;
+
+        long currentUnixMinutes = System.currentTimeMillis() / 60000L;
+        long realElapsedMinutes = currentUnixMinutes - wt.getLinuxEpocheDeltaMinutes();
+        long worldMinute = realElapsedMinutes * minuteScaling;
+
+        long remaining = worldMinute;
+        long minute = remaining % minutesPerHour;
+        remaining /= minutesPerHour;
+        long hour = remaining % hoursPerDay;
+        remaining /= hoursPerDay;
+        long day = (remaining % daysPerMonth) + 1;
+        remaining /= daysPerMonth;
+        long month = (remaining % monthsPerYear) + 1;
+        remaining /= monthsPerYear;
+        long year = remaining + 1;
+
+        String timeStr = String.format("@%d, @%d.%d.%d, %d:%02d", era, year, month, day, hour, minute);
+
+        String season = getSeasonName(publicData.getSeasonStatus(), publicData.getSeasonProgress());
+        if (season != null) {
+            timeStr = season + " | " + timeStr;
+        }
+
+        return timeStr;
+    }
+
+    /**
+     * Get the season name with progress percentage.
+     */
+    public static String getSeasonName(int seasonStatus, double seasonProgress) {
+        String progressStr = String.format("%.1f%%", seasonProgress * 100);
+        return switch (seasonStatus) {
+            case 1 -> "Winter " + progressStr;
+            case 2 -> "Spring " + progressStr;
+            case 3 -> "Summer " + progressStr;
+            case 4 -> "Autumn " + progressStr;
+            default -> null;
+        };
+    }
+
+    /**
      * Result wrapper for world search with pagination info.
      */
     public record WorldSearchResult(

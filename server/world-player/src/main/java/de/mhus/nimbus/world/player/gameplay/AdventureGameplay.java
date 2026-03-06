@@ -16,6 +16,9 @@ import de.mhus.nimbus.world.shared.gameplay.Skill;
 import de.mhus.nimbus.world.player.gameplay.adventure.AttackAction;
 import de.mhus.nimbus.world.player.gameplay.adventure.CollectAction;
 import de.mhus.nimbus.world.player.gameplay.adventure.EffectAction;
+import de.mhus.nimbus.world.player.gameplay.adventure.IncreaseExpAction;
+import de.mhus.nimbus.world.player.gameplay.adventure.IncreaseSkillAction;
+import de.mhus.nimbus.world.player.gameplay.adventure.RestoreConstitutionAction;
 import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.generated.types.Vector3;
 import de.mhus.nimbus.shared.utils.TypeUtil;
@@ -77,6 +80,9 @@ public class AdventureGameplay extends BasicGameplay {
         actions.put("effect", new EffectAction(this));
         actions.put("collect", new CollectAction(this));
         actions.put("attack", new AttackAction(this));
+        actions.put("restore.constitution", new RestoreConstitutionAction(this));
+        actions.put("increase.exp", new IncreaseExpAction(this));
+        actions.put("increase.skill", new IncreaseSkillAction(this));
     }
 
     @Override
