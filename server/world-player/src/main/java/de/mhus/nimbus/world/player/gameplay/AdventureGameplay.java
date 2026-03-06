@@ -802,12 +802,14 @@ public class AdventureGameplay extends BasicGameplay {
             return;
         }
 
-        // Read defender's cached defence stats, scaled by armor constitution
+        // Read defender's cached defence stats, scaled by armor constitution and defense skills
         double armorCon = getConstitutionValue(data, "armor");
-        double defPhysDef = getEffectiveStat(data, "physical.defense") * armorCon;
-        double defPhysEvasion = getEffectiveStat(data, "physical.evasion") * armorCon;
-        double defMagDef = getEffectiveStat(data, "magical.defense") * armorCon;
-        double defMagEvasion = getEffectiveStat(data, "magical.evasion") * armorCon;
+        double physDefSkill = AdventureSkills.COMBAT_DEFENSE.getValue(data.getCachedSkills()) / 100.0;
+        double magDefSkill = AdventureSkills.COMBAT_MAGIC_DEFENSE.getValue(data.getCachedSkills()) / 100.0;
+        double defPhysDef = getEffectiveStat(data, "physical.defense") * armorCon * physDefSkill;
+        double defPhysEvasion = getEffectiveStat(data, "physical.evasion") * armorCon * physDefSkill;
+        double defMagDef = getEffectiveStat(data, "magical.defense") * armorCon * magDefSkill;
+        double defMagEvasion = getEffectiveStat(data, "magical.evasion") * armorCon * magDefSkill;
 
         // Resolve damage
         double damage = CombatResolver.resolve(
@@ -830,8 +832,10 @@ public class AdventureGameplay extends BasicGameplay {
 
         applyDamage(session, data, damage);
 
-        // Armor constitution wear — use average wear from equipped armor pieces
-        double armorWear = calculateArmorWear(data);
+        // Armor constitution wear — only wear items matching the incoming damage type
+        boolean physicalHit = msg.getPhysicalDamage() > 0;
+        boolean magicalHit = msg.getMagicalDamage() > 0;
+        double armorWear = calculateArmorWear(data, physicalHit, magicalHit);
         if (armorWear > 0) {
             applyConstitutionWear(session, data, "armor", armorWear, AdventureSkills.COMBAT_ARMOR_CARE);
         }
@@ -892,25 +896,60 @@ public class AdventureGameplay extends BasicGameplay {
     }
 
     private static final double DEFAULT_ARMOR_WEAR = 0.005;
-    private static final java.util.Set<WEARABLE_SLOT> ARMOR_SLOTS = java.util.Set.of(
+    private static final java.util.Set<WEARABLE_SLOT> BODY_ARMOR_SLOTS = java.util.Set.of(
             WEARABLE_SLOT.HEAD, WEARABLE_SLOT.BODY, WEARABLE_SLOT.LEGS, WEARABLE_SLOT.FEET,
             WEARABLE_SLOT.NECK, WEARABLE_SLOT.ARMS, WEARABLE_SLOT.LEFT_RING, WEARABLE_SLOT.RIGHT_RING);
+    private static final java.util.Set<WEARABLE_SLOT> HAND_SLOTS = java.util.Set.of(
+            WEARABLE_SLOT.LEFT_HAND_1, WEARABLE_SLOT.RIGHT_HAND_1,
+            WEARABLE_SLOT.LEFT_HAND_2, WEARABLE_SLOT.RIGHT_HAND_2);
 
-    private double calculateArmorWear(AdventureData data) {
+    /**
+     * Calculate average armor wear from equipped defense items matching the incoming damage type.
+     * Body armor slots are always included. Hand slots are only included if the item type is "shield".
+     * Items are filtered by their damageType property — only items matching the incoming damage are worn.
+     */
+    private double calculateArmorWear(AdventureData data, boolean physicalHit, boolean magicalHit) {
         var backpack = data.getCachedBackpack();
         if (backpack == null || backpack.getWearingItemIds() == null) return 0;
         var cachedItems = data.getCachedItems();
 
         double totalWear = 0;
         int count = 0;
-        for (var slot : ARMOR_SLOTS) {
+
+        // Body armor slots
+        for (var slot : BODY_ARMOR_SLOTS) {
             String itemId = backpack.getWearingItemIds().get(slot);
             if (itemId == null) continue;
             WItem item = cachedItems != null ? cachedItems.get(itemId) : null;
+            if (!matchesDamageType(item, physicalHit, magicalHit)) continue;
             totalWear += getItemWear(item, DEFAULT_ARMOR_WEAR);
             count++;
         }
+
+        // Hand slots — only shields
+        for (var slot : HAND_SLOTS) {
+            String itemId = backpack.getWearingItemIds().get(slot);
+            if (itemId == null) continue;
+            WItem item = cachedItems != null ? cachedItems.get(itemId) : null;
+            if (!"shield".equals(getServerProp(item, "type"))) continue;
+            if (!matchesDamageType(item, physicalHit, magicalHit)) continue;
+            totalWear += getItemWear(item, DEFAULT_ARMOR_WEAR);
+            count++;
+        }
+
         return count > 0 ? totalWear / count : 0;
+    }
+
+    private boolean matchesDamageType(WItem item, boolean physicalHit, boolean magicalHit) {
+        String damageType = getServerProp(item, "damageType");
+        if (damageType == null || damageType.isBlank()) return physicalHit; // default: physical armor
+        return (physicalHit && damageType.contains("physical"))
+                || (magicalHit && damageType.contains("magical"));
+    }
+
+    private String getServerProp(WItem item, String key) {
+        if (item == null || item.getServer() == null) return null;
+        return item.getServer().get(key);
     }
 
     /**

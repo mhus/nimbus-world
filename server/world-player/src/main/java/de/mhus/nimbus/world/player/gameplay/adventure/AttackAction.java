@@ -99,17 +99,34 @@ public class AttackAction implements GameplayAction {
             stamina.clamp();
         }
 
-        // Read effective combat stats, scaled by weapon constitution
+        // Resolve weapon item first to read its properties
+        String weaponItemId = resolveWeaponItemId(session, data, shortcutKey);
+        WItem weaponItem = null;
+        if (weaponItemId != null) {
+            var cachedItems = data.getCachedItems();
+            weaponItem = cachedItems != null ? cachedItems.get(weaponItemId) : null;
+        }
+
+        // Read weapon properties (bare fists: melee + physical + weapon)
+        String rangeType = getServerProp(weaponItem, "rangeType", "melee");
+        String damageType = getServerProp(weaponItem, "damageType", "physical");
+        String weaponType = getServerProp(weaponItem, "type", "weapon");
+
+        // Skill factors based on weapon properties
+        double rangeSkillFactor = calculateRangeSkillFactor(data, rangeType);
+        double magicSkillFactor = AdventureSkills.COMBAT_MAGIC.getValue(data.getCachedSkills()) / 100.0;
+
+        // Combat stats scaled by weapon constitution, skill, and damage type
         double weaponCon = getConstitution(data, "weapon");
-        double physDmg = getEffective(data, "physical.damage") * weaponCon;
-        double physAcc = getEffective(data, "physical.accuracy") * weaponCon;
-        double magDmg = getEffective(data, "magical.damage") * weaponCon;
-        double magAcc = getEffective(data, "magical.accuracy") * weaponCon;
+        boolean hasPhysical = damageType.contains("physical");
+        boolean hasMagical = damageType.contains("magical");
+
+        double physDmg = hasPhysical ? getEffective(data, "physical.damage") * weaponCon * rangeSkillFactor : 0;
+        double physAcc = hasPhysical ? getEffective(data, "physical.accuracy") * weaponCon * rangeSkillFactor : 0;
+        double magDmg = hasMagical ? getEffective(data, "magical.damage") * weaponCon * magicSkillFactor : 0;
+        double magAcc = hasMagical ? getEffective(data, "magical.accuracy") * weaponCon * magicSkillFactor : 0;
         double critChance = getEffective(data, "critChance") * weaponCon;
         double critMult = getEffective(data, "critMultiplier");
-
-        // Resolve weapon itemId from shortcut or equipped hand
-        String weaponItemId = resolveWeaponItemId(session, data, shortcutKey);
 
         // Publish attack via Redis (include sessionId for position lookup and weaponItemId)
         basic.getVitalDeltaPublisher().publishAttack(
@@ -121,17 +138,15 @@ public class AttackAction implements GameplayAction {
         basic.getEffectProcessor().addAdrenaline(data, ATTACK_ADRENALINE);
         basic.getEffectProcessor().onCombatAction(data);
 
-        // Weapon constitution wear
-        if (weaponItemId != null) {
-            var cachedItems = data.getCachedItems();
-            WItem weaponItem = cachedItems != null ? cachedItems.get(weaponItemId) : null;
+        // Weapon constitution wear (not for potions — they are consumed)
+        if (weaponItemId != null && !"potion".equals(weaponType)) {
             double itemWear = basic.getItemWear(weaponItem, DEFAULT_WEAPON_WEAR);
             basic.applyConstitutionWear(session, data, "weapon", itemWear, AdventureSkills.COMBAT_WEAPON_CARE);
         }
 
-        log.debug("Player {} attacked {} with weapon {} [phys={}/{}, mag={}/{}, crit={}/{}]",
-                session.getEntityId(), targetEntityId, weaponItemId,
-                physDmg, physAcc, magDmg, magAcc, critChance, critMult);
+        log.debug("Player {} attacked {} with {} {} [range={}, dmgType={}, phys={}/{}, mag={}/{}, crit={}/{}]",
+                session.getEntityId(), targetEntityId, weaponType, weaponItemId,
+                rangeType, damageType, physDmg, physAcc, magDmg, magAcc, critChance, critMult);
         return true;
     }
 
@@ -147,6 +162,27 @@ public class AttackAction implements GameplayAction {
         String right = backpack.getWearingItemIds().get(WEARABLE_SLOT.RIGHT_HAND_1);
         if (right != null) return right;
         return backpack.getWearingItemIds().get(WEARABLE_SLOT.LEFT_HAND_1);
+    }
+
+    private double calculateRangeSkillFactor(AdventureData data, String rangeType) {
+        boolean melee = rangeType.contains("melee");
+        boolean ranged = rangeType.contains("ranged");
+        if (melee && ranged) {
+            // Hybrid weapon: use the higher skill
+            double meleeSkill = AdventureSkills.COMBAT_MELEE.getValue(data.getCachedSkills()) / 100.0;
+            double rangedSkill = AdventureSkills.COMBAT_RANGED.getValue(data.getCachedSkills()) / 100.0;
+            return Math.max(meleeSkill, rangedSkill);
+        } else if (ranged) {
+            return AdventureSkills.COMBAT_RANGED.getValue(data.getCachedSkills()) / 100.0;
+        } else {
+            return AdventureSkills.COMBAT_MELEE.getValue(data.getCachedSkills()) / 100.0;
+        }
+    }
+
+    private String getServerProp(WItem item, String key, String defaultValue) {
+        if (item == null || item.getServer() == null) return defaultValue;
+        String val = item.getServer().get(key);
+        return val != null && !val.isBlank() ? val.trim() : defaultValue;
     }
 
     private double getEffective(AdventureData data, String statName) {
