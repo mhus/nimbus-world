@@ -50,6 +50,9 @@ export class MovementResolver {
    * Uses cached value from PhysicsEntity (updated on state change)
    */
   getMoveSpeed(entity: PhysicsEntity): number {
+    if (entity.speedOverride && entity.speedOverride > 0) {
+      return entity.speedOverride;
+    }
     return entity.effectiveSpeed;
   }
 

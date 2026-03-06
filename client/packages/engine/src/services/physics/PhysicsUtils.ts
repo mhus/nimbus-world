@@ -322,11 +322,6 @@ export function checkUnderwaterState(
         inWater: entity.inWater,
       });
     }
-    const networkService = appContext.services.network;
-    if (networkService) {
-      const action = entity.inWater ? 'underwater' : 'abovewater';
-      networkService.sendSimpleInteraction(action, '');
-    }
     return true;
   }
 

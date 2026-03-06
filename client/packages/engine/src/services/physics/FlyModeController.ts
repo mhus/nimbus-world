@@ -44,6 +44,9 @@ export class FlyModeController {
    * Get fly speed for entity
    */
   private getFlySpeed(entity: PhysicsEntity): number {
+    if (entity.speedOverride && entity.speedOverride > 0) {
+      return entity.speedOverride;
+    }
     // Check if player entity
     if ('playerInfo' in entity) {
       const playerInfo = (entity as any).playerInfo;

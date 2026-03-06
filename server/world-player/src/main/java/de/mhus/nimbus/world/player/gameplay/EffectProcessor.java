@@ -26,6 +26,7 @@ public class EffectProcessor extends BaseEffectProcessor {
     private static final double AIR_DEGEN_RATE = -5.0;
     private static final double AIR_REGEN_RATE = 10.0;
     private static final double AIR_DEPLETED_HEALTH_DEGEN = -10.0;
+    private static final double SPRINT_STAMINA_DRAIN = -3.0;
 
     /**
      * Process one tick of effects on the adventure data.
@@ -51,6 +52,7 @@ public class EffectProcessor extends BaseEffectProcessor {
         // Adventure-specific penalties between accumulate and recalculate
         applyVitalPenalties(adventureData);
         applyUnderwaterAir(adventureData);
+        applySprintStaminaDrain(adventureData);
         applyAdrenalineDecay(adventureData, deltaSeconds);
     }
 
@@ -104,6 +106,25 @@ public class EffectProcessor extends BaseEffectProcessor {
             }
         } else if (!air.isFull()) {
             air.setEffectiveRegenRate(AIR_REGEN_RATE);
+        }
+    }
+
+    /**
+     * Apply stamina drain while sprinting.
+     * Endurance skill reduces drain: at level 100, sprint costs no stamina.
+     */
+    private void applySprintStaminaDrain(AdventureData data) {
+        if (!data.isSprinting()) return;
+
+        var stamina = data.getVital("stamina");
+        if (stamina == null) return;
+
+        int endurance = AdventureSkills.SURVIVAL_ENDURANCE.getValue(data.getCachedSkills());
+        double reduction = Math.min(endurance / 100.0, 1.0);
+        double drain = SPRINT_STAMINA_DRAIN * (1.0 - reduction);
+
+        if (drain < 0) {
+            stamina.setEffectiveRegenRate(stamina.getEffectiveRegenRate() + drain);
         }
     }
 

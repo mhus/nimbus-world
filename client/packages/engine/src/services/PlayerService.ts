@@ -95,6 +95,7 @@ export class PlayerService {
   private currentMovementState: PlayerMovementState = PlayerMovementState.WALK;
   private playerMovementModifier?: Modifier<PlayerMovementState>;
 
+
   /**
    * Get the movement state stack
    * Stack is created centrally in StackModifierCreator
@@ -951,6 +952,12 @@ export class PlayerService {
       newState,
     };
     this.emit('movementStateChanged', event);
+
+    // Notify server about movement state change
+    const networkService = this.appContext.services.network;
+    if (networkService) {
+      networkService.sendSimpleInteraction('movementState', '', { state: newState });
+    }
 
     // Show notifications for important state changes
     // Skip notifications when coming from FALL state (landing is already logged)

@@ -24,8 +24,8 @@ public class AdventureData extends EntityCombatData {
     /** Seconds since last combat action (for adrenaline decay) */
     private double combatIdleTimer;
 
-    /** Whether player is currently underwater (transient, not persisted) */
-    private transient boolean underwater;
+    /** Current player movement state from client (transient, not persisted) */
+    private transient String movementState = "WALK";
 
     /** Cached backpack data including itemIds and wearingItemIds (transient, not persisted) */
     private transient PlayerBackpack cachedBackpack;
@@ -47,6 +47,9 @@ public class AdventureData extends EntityCombatData {
 
     /** Timestamp until which attacking is blocked by attack speed cooldown (transient, not persisted) */
     private transient long nextAttackAllowed = 0;
+
+    /** Whether stamina-depleted slow speed has been sent to the client (transient, not persisted) */
+    private transient boolean staminaSlowSent = false;
 
     /**
      * Initialize with default vital values and combat stats.
@@ -102,5 +105,13 @@ public class AdventureData extends EntityCombatData {
     }
 
     private String lastVitalisData;
+
+    public boolean isUnderwater() {
+        return "SWIM".equals(movementState);
+    }
+
+    public boolean isSprinting() {
+        return "SPRINT".equals(movementState);
+    }
 
 }

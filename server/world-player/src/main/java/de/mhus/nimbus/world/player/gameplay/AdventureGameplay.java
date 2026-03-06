@@ -48,6 +48,7 @@ public class AdventureGameplay extends BasicGameplay {
 
     private static final int VITALS_SEND_INTERVAL_TICKS = 2;
     private static final double FALL_DAMAGE_PER_METER = 3.0;
+    private static final double STAMINA_DEPLETED_SPEED = 0.1;
 
     @Autowired
     @Getter
@@ -124,6 +125,9 @@ public class AdventureGameplay extends BasicGameplay {
             log.info("Player {} died in session {}", session.getEntityId(), session.getSessionId());
             onPlayerDeath(session, data);
         }
+
+        // Check stamina depletion → slow speed
+        checkStaminaSpeed(session, data);
 
         // Send vitals update periodically
         if (count % VITALS_SEND_INTERVAL_TICKS == 0) {
@@ -535,10 +539,34 @@ public class AdventureGameplay extends BasicGameplay {
 
             clientService.sendCommand(session, "vitals", commandData);
 
+            // Low health alert flash
+            VitalValue health = data.getVital("health");
+            if (health != null && health.getPercentage() > 0 && health.getPercentage() <= 0.25) {
+                clientService.sendCommand(session, "flashImage",
+                        List.of("n:/textures/actions/health_alert.png", "500", "0.5"));
+            }
+
             // Broadcast health status to other players via entity status update
             publishPlayerHealthStatus(session, data);
         } catch (Exception e) {
             log.error("Failed to send vitals update to session {}: {}", session.getSessionId(), e.getMessage());
+        }
+    }
+
+    private void checkStaminaSpeed(PlayerSession session, AdventureData data) {
+        VitalValue stamina = data.getVital("stamina");
+        if (stamina == null) return;
+
+        boolean depleted = stamina.getCurrent() <= 0;
+        if (depleted && !data.isStaminaSlowSent()) {
+            data.setStaminaSlowSent(true);
+            clientService.sendCommand(session, "speed",
+                    java.util.List.of(String.valueOf(STAMINA_DEPLETED_SPEED)));
+            log.debug("Stamina depleted for {}, sending slow speed {}", session.getEntityId(), STAMINA_DEPLETED_SPEED);
+        } else if (!depleted && data.isStaminaSlowSent()) {
+            data.setStaminaSlowSent(false);
+            clientService.sendCommand(session, "speed", java.util.List.of("0"));
+            log.debug("Stamina recovered for {}, resetting speed override", session.getEntityId());
         }
     }
 
@@ -559,13 +587,10 @@ public class AdventureGameplay extends BasicGameplay {
         if (!(session.getGameplayData() instanceof AdventureData data)) return;
 
         switch (action) {
-            case "underwater" -> {
-                data.setUnderwater(true);
-                log.debug("Player {} is now underwater", session.getEntityId());
-            }
-            case "abovewater" -> {
-                data.setUnderwater(false);
-                log.debug("Player {} surfaced, air regenerating", session.getEntityId());
+            case "movementState" -> {
+                String state = messageData.has("state") ? messageData.get("state").asText() : "WALK";
+                data.setMovementState(state);
+                log.debug("Player {} movement state: {}", session.getEntityId(), state);
             }
             case "fall" -> handleFallDamage(session, data, messageData);
             default -> super.onSimpleInteraction(session, action, messageData);
@@ -1010,7 +1035,7 @@ public class AdventureGameplay extends BasicGameplay {
             // Remove all non-permanent effects
             data.getActiveEffects().removeIf(e -> !e.isPermanent());
 
-            data.setUnderwater(false);
+            data.setMovementState("WALK");
 
             clientService.sendSystemNotification(session, "1Up", "You have been revived!");
             log.info("Player {} used 1Up item {} to revive", session.getEntityId(), oneUpItemId);
@@ -1037,7 +1062,7 @@ public class AdventureGameplay extends BasicGameplay {
                 adrenaline.setCurrent(0);
             }
 
-            data.setUnderwater(false);
+            data.setMovementState("WALK");
             var air = data.getVital("air");
             if (air != null) {
                 air.setCurrent(air.getEffectiveMax());

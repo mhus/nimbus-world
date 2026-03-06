@@ -86,6 +86,9 @@ export interface PhysicsEntity {
   /** Current horizontal movement speed (varies by state: WALK=5.0, SPRINT=7.0, CROUCH=2.5) */
   effectiveSpeed: number;
 
+  /** Speed override (if > 0, overrides effectiveSpeed) */
+  speedOverride?: number;
+
   /** Current jump velocity (varies by state: WALK=8.0, CROUCH=4.0, RIDING=10.0) */
   effectiveJumpSpeed: number;
 
