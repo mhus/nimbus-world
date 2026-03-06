@@ -1295,6 +1295,46 @@ export class ModalService {
   }
 
   /**
+   * Open document widget modal displaying a document referenced by a progress entry.
+   *
+   * @param progressId The progress ID referencing the document
+   * @returns Modal reference
+   */
+  openDocument(progressId: string): ModalReference {
+    try {
+      if (document.pointerLockElement) {
+        document.exitPointerLock();
+        logger.debug('Exited pointer lock for document widget');
+      }
+
+      const componentBaseUrl = this.appContext?.services.network?.getComponentBaseUrl();
+
+      if (!componentBaseUrl) {
+        logger.warn('No component URL configured for this world');
+        throw new Error('Document widget is not available in this world');
+      }
+
+      const separator = componentBaseUrl.includes('?') ? '&' : '?';
+      const worldId = this.appContext.worldInfo?.worldId;
+      const sessionId = this.appContext.sessionId;
+
+      const docUrl = `${componentBaseUrl}document-widget.html${separator}embedded=true&worldId=${worldId}&sessionId=${sessionId}&progressId=${encodeURIComponent(progressId)}`;
+
+      logger.debug('Opening document widget modal', { docUrl, progressId });
+
+      return this.openModal(
+        `document-${progressId}`,
+        'Document',
+        docUrl,
+        ModalSizePreset.CENTER_MEDIUM,
+        ModalFlags.CLOSEABLE | ModalFlags.MOVEABLE | ModalFlags.NO_BACKGROUND_LOCK | ModalFlags.RESIZEABLE | ModalFlags.MINIMIZABLE
+      );
+    } catch (error) {
+      throw ExceptionHandler.handleAndRethrow(error, 'ModalService.openDocument', { progressId });
+    }
+  }
+
+  /**
    * Open a predefined component modal
    *
    * @param component Component name (e.g., 'block_editor', 'settings', 'inventory')
@@ -1336,13 +1376,12 @@ export class ModalService {
           // No attributes required
           return this.openPanel();
 
-        // Future components can be added here:
-        // case 'settings':
-        //   return this.openSettings(attributes);
-        // case 'inventory':
-        //   return this.openInventory(attributes);
-        // case 'map':
-        //   return this.openMap(attributes);
+        case 'document':
+          // Expect attributes: [progressId]
+          if (attributes.length < 1) {
+            throw new Error('document requires 1 attribute: progressId');
+          }
+          return this.openDocument(attributes[0]);
 
         default:
           throw new Error(`Unknown component: ${component}`);

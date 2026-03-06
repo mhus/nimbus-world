@@ -7,6 +7,8 @@
  * Available components:
  * - block_editor: Opens block editor at position (x, y, z)
  *   Usage: openComponent block_editor <x> <y> <z>
+ * - document: Opens a document widget via progress reference
+ *   Usage: openComponent document <progressId>
  */
 
 import { CommandHandler } from './CommandHandler';
@@ -53,10 +55,10 @@ export class OpenComponentCommand extends CommandHandler {
       logger.error('');
       logger.error('  panel - Opens panel navigation');
       logger.error('    Usage: openComponent panel');
-      logger.error('    Example: openComponent panel');
       logger.error('');
-      logger.error('Future components:');
-      logger.error('  settings, inventory, map, etc.');
+      logger.error('  document - Opens a document referenced by a progress entry');
+      logger.error('    Usage: openComponent document <progressId>');
+      logger.error('    Example: openComponent document abc-123-def');
       return { error: 'Invalid arguments' };
     }
 

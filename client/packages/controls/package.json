@@ -12,10 +12,11 @@
     "lint": "eslint src --ext .ts,.vue"
   },
   "dependencies": {
-    "@nimbus/shared": "workspace:*",
-    "vue": "^3.5.26",
     "@headlessui/vue": "^1.7.0",
-    "axios": "^1.6.0"
+    "@nimbus/shared": "workspace:*",
+    "axios": "^1.6.0",
+    "marked": "^17.0.4",
+    "vue": "^3.5.26"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^6.0.3",

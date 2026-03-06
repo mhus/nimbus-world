@@ -43,6 +43,14 @@ public class WProgressService {
     }
 
     /**
+     * Find a progress entry by its progressId.
+     */
+    @Transactional(readOnly = true)
+    public Optional<WProgress> findByProgressId(String progressId) {
+        return repository.findByProgressId(progressId);
+    }
+
+    /**
      * Find all progress entries for a player in a world.
      */
     @Transactional(readOnly = true)

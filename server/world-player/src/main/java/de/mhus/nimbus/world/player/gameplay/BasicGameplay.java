@@ -13,6 +13,8 @@ import de.mhus.nimbus.world.shared.redis.VitalDeltaPublisher;
 import de.mhus.nimbus.world.shared.world.WEntityService;
 import de.mhus.nimbus.world.shared.world.WItem;
 import de.mhus.nimbus.world.shared.world.WItemService;
+import de.mhus.nimbus.world.shared.world.WDocumentService;
+import de.mhus.nimbus.world.shared.world.WProgressService;
 import de.mhus.nimbus.world.shared.world.WWorldService;
 import de.mhus.nimbus.world.player.service.ClientService;
 import lombok.Getter;
@@ -59,6 +61,12 @@ public class BasicGameplay implements Gameplay {
     @Autowired
     @Getter
     protected ClientService basicClientService;
+    @Autowired
+    @Getter
+    protected WDocumentService documentService;
+    @Autowired
+    @Getter
+    protected WProgressService progressService;
 
     protected Map<String, GameplayAction> actions = new HashMap<>();
 
@@ -66,6 +74,7 @@ public class BasicGameplay implements Gameplay {
             actions.put("teleport", new TeleportationAction(this));
             actions.put("show.time", new ShowTimeAction(this));
             actions.put("show.coordinates", new ShowCoordinatesAction(this));
+            actions.put("show.document", new ShowDocumentAction(this));
     }
 
     @Override

@@ -69,6 +69,7 @@ export default defineConfig({
         'skill-panel': resolve(__dirname, 'skill-panel.html'),
         'status-panel': resolve(__dirname, 'status-panel.html'),
         'map-panel': resolve(__dirname, 'map-panel.html'),
+        'document-widget': resolve(__dirname, 'document-widget.html'),
         'panels': resolve(__dirname, 'panels.html'),
       },
     },
