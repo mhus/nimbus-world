@@ -109,6 +109,13 @@ const panels = ref<Panel[]>([
     description: 'Charakter-Uebersicht: Vitals, Skills, Zustand',
     url: './status-panel.html',
     color: '#34D399' // emerald-400
+  },
+  {
+    id: 'map-panel',
+    name: 'Map',
+    description: 'Weltkarte mit Hex-Navigation',
+    url: './map-panel.html',
+    color: '#3B82F6' // blue
   }
 ]);
 

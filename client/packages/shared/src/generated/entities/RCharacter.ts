@@ -15,6 +15,9 @@ export interface RCharacter {
   publicData: PlayerInfo;
   backpack: PlayerBackpack;
   skills: Record<string, number>;
+  skillPoints: number;
+  skillExperience: number;
+  silver: number;
   constitution: Record<string, number>;
   attributes: Record<string, string>;
   regionId: string;

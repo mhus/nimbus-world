@@ -112,8 +112,6 @@ public class WorldAssetController extends BaseEditorController {
      * Get/serve asset file content.
      * GET /control/worlds/{worldId}/assets/{*path}
      * Example: GET /control/worlds/main/assets/textures/block/stone.png
-     *
-     * For metadata (.info), use WorldAssetInfoController
      */
     @GetMapping("/{*path}")
     @Operation(summary = "Get asset file content")

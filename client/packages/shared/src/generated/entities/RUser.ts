@@ -21,5 +21,6 @@ export interface RUser {
   regionRoles: Record<string, RegionRoles>;
   characterLimits: Record<string, number>;
   userSettings: Record<string, Settings>;
+  gold: number;
   attributes: Record<string, string>;
 }

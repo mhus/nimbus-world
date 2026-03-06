@@ -376,8 +376,17 @@ const handleAssetsDrop = async (data: any, shouldCopy: boolean = false) => {
       // Extract filename from source path
       const fileName = getFileName(sourceAsset);
 
-      // Build target path
+      // Build target path - add collection prefix for cross-world copy based on target worldId
       let newPath = targetPath ? `${targetPath}/${fileName}` : fileName;
+      if (sourceWorldId !== targetWorldId && !newPath.includes(':')) {
+        // Cross-world: folderPath has no prefix, but the API needs the correct prefix
+        // Derive prefix from target worldId: "@region:x" → "r:", "@public:x" → "rp:", else "w:"
+        const prefix = targetWorldId.startsWith('@region:') ? 'r:'
+          : targetWorldId.startsWith('@public:') ? 'rp:'
+          : targetWorldId.startsWith('@') ? ''
+          : 'w:';
+        newPath = prefix + newPath;
+      }
 
       // If same world and same path: skip
       if (sourceWorldId === targetWorldId && sourceAsset.path === newPath) {

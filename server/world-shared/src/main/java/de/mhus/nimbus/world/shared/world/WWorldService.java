@@ -699,7 +699,7 @@ public class WWorldService {
      * @return formatted time string, or null if world not found or time not configured
      */
     public String getFormattedWorldTime(WorldId worldId) {
-        var worldOpt = loadWorld(worldId);
+        var worldOpt = getByWorldId(worldId);
         if (worldOpt.isEmpty()) return null;
 
         var world = worldOpt.get();
