@@ -207,6 +207,8 @@ interface SpecialAction {
 
 const SPECIAL_ACTIONS: SpecialAction[] = [
   { type: 'interact',     name: 'Interact',     iconPath: 'n:textures/hands/interact.png' },
+  { type: 'fist',         name: 'Fist',         iconPath: 'n:textures/hands/fist.png' },
+  { type: 'block',        name: 'Block',        iconPath: 'n:textures/hands/block.png' },
   { type: 'left_hand_1',  name: 'Left Hand 1',  iconPath: 'n:textures/hands/left_hand_1.png' },
   { type: 'right_hand_1', name: 'Right Hand 1', iconPath: 'n:textures/hands/right_hand_1.png' },
   { type: 'left_hand_2',  name: 'Left Hand 2',  iconPath: 'n:textures/hands/left_hand_2.png' },
