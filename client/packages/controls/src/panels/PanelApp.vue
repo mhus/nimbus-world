@@ -102,6 +102,13 @@ const panels = ref<Panel[]>([
     description: 'Verwalte und verteile deine Faehigkeiten',
     url: './skill-panel.html',
     color: '#06B6D4' // cyan
+  },
+  {
+    id: 'status-panel',
+    name: 'Status',
+    description: 'Charakter-Uebersicht: Vitals, Skills, Zustand',
+    url: './status-panel.html',
+    color: '#34D399' // emerald-400
   }
 ]);
 

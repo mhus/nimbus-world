@@ -67,6 +67,7 @@ export default defineConfig({
         'chest-panel': resolve(__dirname, 'chest-panel.html'),
         'wearing-panel': resolve(__dirname, 'wearing-panel.html'),
         'skill-panel': resolve(__dirname, 'skill-panel.html'),
+        'status-panel': resolve(__dirname, 'status-panel.html'),
         'panels': resolve(__dirname, 'panels.html'),
       },
     },
