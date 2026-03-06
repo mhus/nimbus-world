@@ -35,6 +35,7 @@ import {
   BlockEditorActivateHandler,
   EditConfigActivateHandler,
   PanelActivateHandler,
+  MapActivateHandler,
 } from '../input/handlers/EditorHandlers';
 
 const logger = getLogger('InputService');
@@ -124,6 +125,7 @@ export class InputService {
 
     // Panel handler (available in both editor and viewer mode)
     this.handlerRegistry.set('panelActivate', new PanelActivateHandler(this.playerService, this.appContext));
+    this.handlerRegistry.set('mapActivate', new MapActivateHandler(this.playerService, this.appContext));
 
     // Editor handlers (only in editor mode)
     if (__EDITOR__) {

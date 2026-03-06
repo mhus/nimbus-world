@@ -76,6 +76,7 @@ export class WebInputController implements InputController {
   private blockEditorActivateHandler?: InputHandler;
   private editConfigActivateHandler?: InputHandler;
   private panelActivateHandler?: InputHandler;
+  private mapActivateHandler?: InputHandler;
   private toggleModelSelectorHandler?: InputHandler;
 
   // Pointer lock state
@@ -144,6 +145,10 @@ export class WebInputController implements InputController {
       this.keyBindings.set('p', this.panelActivateHandler);
       this.keyBindings.set('P', this.panelActivateHandler);
     }
+    if (this.mapActivateHandler) {
+      this.keyBindings.set('m', this.mapActivateHandler);
+      this.keyBindings.set('M', this.mapActivateHandler);
+    }
     if (this.editConfigActivateHandler) {
       this.keyBindings.set('F9', this.editConfigActivateHandler);
     }
@@ -193,6 +198,7 @@ export class WebInputController implements InputController {
 
     // Panel handler (available in both editor and viewer mode)
     this.panelActivateHandler = inputService.getHandler('panelActivate');
+    this.mapActivateHandler = inputService.getHandler('mapActivate');
 
     // Editor handlers (only available in editor mode)
     if (__EDITOR__) {
@@ -236,6 +242,9 @@ export class WebInputController implements InputController {
     }
     if (this.panelActivateHandler) {
       handlerList.push(this.panelActivateHandler);
+    }
+    if (this.mapActivateHandler) {
+      handlerList.push(this.mapActivateHandler);
     }
 
     // Filter out undefined handlers and build final list

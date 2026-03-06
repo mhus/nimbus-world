@@ -327,3 +327,45 @@ export class PanelActivateHandler extends InputHandler {
     // Panel activation doesn't need continuous updates
   }
 }
+
+/**
+ * MapActivate Handler (Key: m)
+ *
+ * Opens map panel modal directly
+ */
+export class MapActivateHandler extends InputHandler {
+  constructor(playerService: PlayerService, appContext: AppContext) {
+    super(playerService, appContext);
+  }
+
+  protected onActivate(value: number): void {
+    const modalService = this.appContext?.services.modal;
+
+    if (!modalService) {
+      logger.warn('ModalService not available');
+      return;
+    }
+
+    logger.debug('Opening map panel modal (triggered by m key)');
+
+    try {
+      modalService.openMap();
+    } catch (error) {
+      logger.error('Failed to open map modal', { error });
+
+      const notificationService = this.appContext?.services.notification;
+      if (notificationService) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        notificationService.newNotification(0, null, `Failed to open map: ${errorMessage}`);
+      }
+    }
+  }
+
+  protected onDeactivate(): void {
+    // No action needed on deactivation
+  }
+
+  protected onUpdate(deltaTime: number, value: number): void {
+    // Map activation doesn't need continuous updates
+  }
+}

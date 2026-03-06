@@ -1138,6 +1138,43 @@ export class ModalService {
   }
 
   /**
+   * Open map panel directly (for M key)
+   */
+  openMap(): ModalReference {
+    try {
+      if (document.pointerLockElement) {
+        document.exitPointerLock();
+        logger.debug('Exited pointer lock for map panel');
+      }
+
+      const componentBaseUrl = this.appContext?.services.network?.getComponentBaseUrl();
+
+      if (!componentBaseUrl) {
+        logger.warn('No component URL configured for this world');
+        throw new Error('Map panel is not available in this world');
+      }
+
+      const separator = componentBaseUrl.includes('?') ? '&' : '?';
+      const worldId = this.appContext.worldInfo?.worldId;
+      const sessionId = this.appContext.sessionId;
+
+      const mapUrl = `${componentBaseUrl}map-panel.html${separator}embedded=true&worldId=${worldId}&sessionId=${sessionId}`;
+
+      logger.debug('Opening map panel modal', { mapUrl });
+
+      return this.openModal(
+        'map-panel',
+        'Map',
+        mapUrl,
+        ModalSizePreset.CENTER_LARGE,
+        ModalFlags.CLOSEABLE | ModalFlags.MOVEABLE | ModalFlags.NO_BACKGROUND_LOCK | ModalFlags.RESIZEABLE | ModalFlags.BREAK_OUT | ModalFlags.MINIMIZABLE
+      );
+    } catch (error) {
+      throw ExceptionHandler.handleAndRethrow(error, 'ModalService.openMap');
+    }
+  }
+
+  /**
    * Open widget selector dialog (for F9 key)
    * Shows a dialog to select between available widgets
    */
