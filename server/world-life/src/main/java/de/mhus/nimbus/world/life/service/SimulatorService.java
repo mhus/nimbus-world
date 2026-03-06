@@ -522,6 +522,64 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
     }
 
     /**
+     * Reload all entities for a world from DB.
+     * Clears existing simulation states and re-loads from currently active chunks.
+     *
+     * @return number of entities loaded
+     */
+    public int reloadEntities(WorldId worldId) {
+        // Clear existing states
+        Map<String, SimulationState> worldStates = worldSimulationStates.get(worldId);
+        if (worldStates != null) {
+            worldStates.clear();
+        }
+        Map<String, Set<String>> chunkRefs = entityActiveChunkRefs.get(worldId);
+        if (chunkRefs != null) {
+            chunkRefs.clear();
+        }
+
+        // Re-load from active chunks
+        Set<ChunkCoordinate> activeChunks = multiWorldChunkService.getActiveChunks(worldId);
+        if (activeChunks.isEmpty()) {
+            log.info("World {}: No active chunks for reload", worldId);
+            return 0;
+        }
+
+        onChunksActivated(worldId, activeChunks);
+
+        int count = worldSimulationStates.containsKey(worldId) ? worldSimulationStates.get(worldId).size() : 0;
+        log.info("World {}: Reloaded {} entities from {} active chunks", worldId, count, activeChunks.size());
+        return count;
+    }
+
+    /**
+     * Trigger an immediate combat tick for an entity that just entered combat via spread.
+     * Generates a combat pathway and publishes it right away, so the entity reacts
+     * without waiting for the next scheduled simulation tick.
+     */
+    public void triggerImmediateCombatTick(WorldId worldId, SimulationState state) {
+        WEntity entity = state.getEntity();
+        if (state.getLifecycleState() != SimulationState.LifecycleState.ALIVE) return;
+        if (!state.isInCombat()) return;
+
+        long currentTime = System.currentTimeMillis();
+        EntityPathway combatPathway = combatBehaviorHandler.generateCombatPathway(entity, state, currentTime, worldId);
+        if (combatPathway == null) return;
+
+        finishPathway(entity, state, combatPathway, currentTime, worldId);
+
+        // Publish single pathway immediately
+        WWorld world = worldService.getByWorldId(worldId).orElse(null);
+        if (world != null) {
+            Set<ChunkCoordinate> chunks = calculateAffectedChunks(world, List.of(combatPathway));
+            pathwayPublisher.publishPathways(worldId, List.of(combatPathway), chunks);
+        }
+
+        log.debug("World {}: Immediate combat tick for entity {} (spread reaction)",
+                worldId, entity.getEntityId());
+    }
+
+    /**
      * Spread combat mode to nearby entities when an entity enters combat.
      * Radius is defined per entity via combat_spreadRadius property (0 = no spread).
      * Uses pathway interpolation for current positions.
@@ -554,6 +612,7 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
             if (dist <= spreadRadius) {
                 neighborState.setCombatStrategy(neighborState.getCombatData().getCombatStrategy());
                 neighborState.enterCombat(attackerEntityId, sessionId, now);
+                triggerImmediateCombatTick(worldId, neighborState);
                 log.info("World {}: Combat spread from {} to {} (dist={}, radius={})",
                         worldId, attackedEntityId, neighborState.getEntity().getEntityId(),
                         String.format("%.1f", dist), spreadRadius);
