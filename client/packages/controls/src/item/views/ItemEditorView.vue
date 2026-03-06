@@ -46,22 +46,6 @@
             />
           </div>
 
-          <!-- Item Type (category) -->
-          <div class="form-control">
-            <label class="label">
-              <span class="label-text font-semibold">Item Type</span>
-            </label>
-            <input
-              v-model="localItem.itemType"
-              type="text"
-              class="input input-bordered"
-              placeholder="e.g., sword, wand, potion"
-            />
-            <label class="label">
-              <span class="label-text-alt text-xs">Category identifier for grouping items</span>
-            </label>
-          </div>
-
           <!-- Type (enum) -->
           <div class="form-control">
             <label class="label">
@@ -418,7 +402,6 @@ async function loadItem() {
   if (props.isNew) {
     localItem.value = {
       name: 'new_item_' + Date.now(),
-      itemType: '',
       title: 'New Item',
       description: '',
       texture: '',

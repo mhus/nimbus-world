@@ -47,7 +47,6 @@
             </div>
             <div class="min-w-0 flex-1">
               <h3 class="card-title text-sm">{{ item.itemId }}</h3>
-              <p v-if="item.itemType" class="text-xs opacity-70">{{ item.itemType }}</p>
               <p v-if="item.title" class="text-xs opacity-50">{{ item.title }}</p>
             </div>
           </div>

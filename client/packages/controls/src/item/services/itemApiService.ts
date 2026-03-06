@@ -11,7 +11,6 @@ type ItemData = WItem;
 
 export interface ItemSearchResult {
   itemId: string;
-  itemType?: string;
   title: string;
   texture?: string;
 }

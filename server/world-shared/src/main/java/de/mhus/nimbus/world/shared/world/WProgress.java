@@ -16,6 +16,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.Instant;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * MongoDB Entity for player progress tracking.
@@ -43,6 +44,10 @@ public class WProgress implements Identifiable {
      */
     @Indexed
     private String worldId;
+
+    @Indexed
+    @Builder.Default
+    private String progressId = UUID.randomUUID().toString();
 
     /**
      * Player identifier (user ID).
