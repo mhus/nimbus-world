@@ -1,6 +1,7 @@
 package de.mhus.nimbus.world.player.gameplay.adventure;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import de.mhus.nimbus.generated.configs.WEARABLE_SLOT;
 import de.mhus.nimbus.world.player.gameplay.AdventureData;
 import de.mhus.nimbus.world.player.gameplay.AdventureGameplay;
 import de.mhus.nimbus.world.shared.gameplay.CombatStat;
@@ -42,7 +43,7 @@ public class AttackAction implements GameplayAction {
         String targetEntityId = entity.getEntityId();
         if (targetEntityId == null) return false;
 
-        return performAttack(session, targetEntityId);
+        return performAttack(session, targetEntityId, shortcutKey);
     }
 
     @Override
@@ -54,10 +55,10 @@ public class AttackAction implements GameplayAction {
     @Override
     public boolean handlePlayerAction(PlayerSession session, String targetEntityId, String action, String shortcutKey, Long timestamp, JsonNode params) {
         if (targetEntityId == null) return false;
-        return performAttack(session, targetEntityId);
+        return performAttack(session, targetEntityId, shortcutKey);
     }
 
-    private boolean performAttack(PlayerSession session, String targetEntityId) {
+    private boolean performAttack(PlayerSession session, String targetEntityId, String shortcutKey) {
         if (!(session.getGameplayData() instanceof AdventureData data)) return false;
 
         String worldId = session.getWorldId() != null ? session.getWorldId().getId() : null;
@@ -104,20 +105,37 @@ public class AttackAction implements GameplayAction {
         double critChance = getEffective(data, "critChance");
         double critMult = getEffective(data, "critMultiplier");
 
-        // Publish attack via Redis (include sessionId for position lookup)
+        // Resolve weapon itemId from shortcut or equipped hand
+        String weaponItemId = resolveWeaponItemId(session, data, shortcutKey);
+
+        // Publish attack via Redis (include sessionId for position lookup and weaponItemId)
         basic.getVitalDeltaPublisher().publishAttack(
                 worldId, targetEntityId, session.getEntityId(),
                 physDmg, physAcc, magDmg, magAcc, critChance, critMult,
-                session.getSessionId());
+                session.getSessionId(), weaponItemId);
 
         // Adrenaline gain + combat timer reset
         basic.getEffectProcessor().addAdrenaline(data, ATTACK_ADRENALINE);
         basic.getEffectProcessor().onCombatAction(data);
 
-        log.debug("Player {} attacked {} [phys={}/{}, mag={}/{}, crit={}/{}]",
-                session.getEntityId(), targetEntityId,
+        log.debug("Player {} attacked {} with weapon {} [phys={}/{}, mag={}/{}, crit={}/{}]",
+                session.getEntityId(), targetEntityId, weaponItemId,
                 physDmg, physAcc, magDmg, magAcc, critChance, critMult);
         return true;
+    }
+
+    private String resolveWeaponItemId(PlayerSession session, AdventureData data, String shortcutKey) {
+        // Try to resolve from shortcut (e.g. shortcut type "right_hand_1")
+        if (shortcutKey != null) {
+            String itemId = basic.resolveShortcutItemId(session, shortcutKey);
+            if (itemId != null) return itemId;
+        }
+        // Fallback: check RIGHT_HAND_1, then LEFT_HAND_1
+        var backpack = data.getCachedBackpack();
+        if (backpack == null || backpack.getWearingItemIds() == null) return null;
+        String right = backpack.getWearingItemIds().get(WEARABLE_SLOT.RIGHT_HAND_1);
+        if (right != null) return right;
+        return backpack.getWearingItemIds().get(WEARABLE_SLOT.LEFT_HAND_1);
     }
 
     private double getEffective(AdventureData data, String statName) {

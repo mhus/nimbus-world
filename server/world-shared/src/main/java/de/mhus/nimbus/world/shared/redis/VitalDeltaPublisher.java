@@ -76,16 +76,16 @@ public class VitalDeltaPublisher {
     public void publishAttack(String worldId, String targetEntityId, String sourceEntityId,
                               double physDmg, double physAcc, double magDmg, double magAcc,
                               double critChance, double critMult) {
-        publishAttack(worldId, targetEntityId, sourceEntityId, physDmg, physAcc, magDmg, magAcc, critChance, critMult, null);
+        publishAttack(worldId, targetEntityId, sourceEntityId, physDmg, physAcc, magDmg, magAcc, critChance, critMult, null, null);
     }
 
     /**
-     * Publish an attack with source session ID for position lookup.
+     * Publish an attack with source session ID and weapon item ID.
      */
     public void publishAttack(String worldId, String targetEntityId, String sourceEntityId,
                               double physDmg, double physAcc, double magDmg, double magAcc,
                               double critChance, double critMult,
-                              String sourceSessionId) {
+                              String sourceSessionId, String weaponItemId) {
         if (targetEntityId == null) return;
 
         try {
@@ -101,6 +101,7 @@ public class VitalDeltaPublisher {
                     .critChance(critChance)
                     .critMultiplier(critMult)
                     .sourceSessionId(sourceSessionId)
+                    .weaponItemId(weaponItemId)
                     .build();
 
             String json = objectMapper.writeValueAsString(message);

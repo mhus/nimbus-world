@@ -35,6 +35,9 @@ public class EntityCombatData extends GameplayData {
     /** Combat strategy when attacked (FLEE, ATTACK_FLEE, ATTACK_REPEAT) */
     private CombatStrategy combatStrategy = CombatStrategy.FLEE;
 
+    /** Weapon item ID used for attacks (default: fist) */
+    private String weaponItemId = CombatConstants.FIST_ITEM_ID;
+
     /**
      * Get a vital value by type, or null if not found.
      */
@@ -151,7 +154,47 @@ public class EntityCombatData extends GameplayData {
         String strategyVal = server.get("combat_strategy");
         data.setCombatStrategy(CombatStrategy.fromString(strategyVal));
 
+        // Weapon item ID (default: fist)
+        String weaponId = server.get("combat_weapon");
+        if (weaponId != null && !weaponId.isBlank()) {
+            data.setWeaponItemId(weaponId.trim());
+        }
+
         return data;
+    }
+
+    /**
+     * Apply weapon effects to this entity's combat stats.
+     * Parses the weapon's "effects" string (same format as item effects:
+     * "physical.damage:10,physical.accuracy:0.8") and adds the values
+     * to the corresponding base combat stats.
+     *
+     * @param effectsDef Comma-separated effect definitions from WItem.server.effects
+     */
+    public void applyWeaponEffects(String effectsDef) {
+        if (effectsDef == null || effectsDef.isBlank()) return;
+        for (String effectStr : effectsDef.split(",")) {
+            String trimmed = effectStr.trim();
+            if (trimmed.isEmpty()) continue;
+            String[] parts = trimmed.split(":");
+            if (parts.length < 2) continue;
+            String statName = parts[0].trim();
+            double value;
+            try {
+                value = Double.parseDouble(parts[1].trim());
+            } catch (NumberFormatException e) {
+                continue;
+            }
+            CombatStat stat = combatStats.get(statName);
+            if (stat != null) {
+                stat.setBase(stat.getBase() + value);
+                stat.resetBuffs();
+                stat.recalculate();
+            } else {
+                CombatStat newStat = CombatStat.of(statName, value);
+                combatStats.put(statName, newStat);
+            }
+        }
     }
 
     private static void overrideVital(EntityCombatData data, Map<String, String> server,

@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import de.mhus.nimbus.generated.configs.PlayerBackpack;
 import de.mhus.nimbus.generated.configs.WEARABLE_SLOT;
+import de.mhus.nimbus.generated.types.Item;
 import de.mhus.nimbus.generated.types.PlayerInfo;
 import de.mhus.nimbus.generated.types.ShortcutDefinition;
 import de.mhus.nimbus.shared.types.PlayerId;
@@ -217,6 +218,11 @@ public class AdventureGameplay extends BasicGameplay {
 
         String source = "consumable:" + parameters.getOrDefault("name", "unknown");
 
+        String texture = parameters.get("texture");
+        if (texture == null || texture.isBlank()) {
+            texture = parameters.get("icon");
+        }
+
         for (String def : effectDefs) {
             try {
                 ActiveEffect effect = ActiveEffect.parse(def, source);
@@ -224,6 +230,14 @@ public class AdventureGameplay extends BasicGameplay {
                     effect.setTargetEntityId(targetEntityId);
                 }
                 data.addEffect(effect);
+
+                // Send timed effects to client for UI display
+                if (!effect.isPermanent() && !effect.isRemote() && texture != null) {
+                    long durationMs = (long) (effect.getMaxDuration() * 1000);
+                    clientService.sendCommand(session, "effect",
+                            List.of("add", texture, String.valueOf(durationMs)));
+                }
+
                 log.debug("Applied effect {} to {} (source: {}, target: {})",
                         def, session.getEntityId(), source, targetEntityId != null ? targetEntityId : "self");
             } catch (Exception e) {
@@ -294,6 +308,10 @@ public class AdventureGameplay extends BasicGameplay {
                     }
                 }
             }
+
+            // Add synthetic fist/block items (always available)
+            items.put(BasicGameplay.FIST_ITEM_ID, createSyntheticFistItem(data));
+            items.put(BasicGameplay.BLOCK_ITEM_ID, createSyntheticBlockItem(data));
 
             data.setCachedItems(items);
 
@@ -575,8 +593,10 @@ public class AdventureGameplay extends BasicGameplay {
             case "right_hand_1" -> getWearingItemId(data, WEARABLE_SLOT.RIGHT_HAND_1);
             case "left_hand_2" -> getWearingItemId(data, WEARABLE_SLOT.LEFT_HAND_2);
             case "right_hand_2" -> getWearingItemId(data, WEARABLE_SLOT.RIGHT_HAND_2);
-            case "interact" -> BasicGameplay.SHORTCUT_INTERACT_ACTION; // Special constant to indicate interaction action
-            default -> null; // 'none', 'cmd', 'interact' → no item
+            case "fist" -> BasicGameplay.FIST_ITEM_ID;
+            case "block" -> BasicGameplay.BLOCK_ITEM_ID;
+            case "interact" -> BasicGameplay.SHORTCUT_INTERACT_ACTION;
+            default -> null; // 'none', 'cmd' → no item
         };
     }
 
@@ -584,6 +604,54 @@ public class AdventureGameplay extends BasicGameplay {
         var backpack = data.getCachedBackpack();
         if (backpack == null || backpack.getWearingItemIds() == null) return null;
         return backpack.getWearingItemIds().get(slot);
+    }
+
+    /**
+     * Create synthetic fist item with attack stats derived from character skills.
+     * Base physical damage from combat.melee skill level.
+     */
+    private WItem createSyntheticFistItem(AdventureData data) {
+        var skills = data.getCachedSkills();
+        int melee = skills != null ? AdventureSkills.COMBAT_MELEE.getValue(skills) : 0;
+        double physDmg = 2.0 + melee * 0.1;
+        double physAcc = 0.6 + melee * 0.005;
+
+        return WItem.builder()
+                .itemId(BasicGameplay.FIST_ITEM_ID)
+                .publicData(Item.builder()
+                        .name(BasicGameplay.FIST_ITEM_ID)
+                        .title("Fist")
+                        .texture("n:textures/hands/fist.png")
+                        .build())
+                .server(Map.of(
+                        "action", "attack",
+                        "effects", "physical.damage:" + physDmg + ",physical.accuracy:" + physAcc
+                ))
+                .build();
+    }
+
+    /**
+     * Create synthetic block item with defense stats derived from character skills.
+     * Base physical defense from combat.defense skill level.
+     */
+    private WItem createSyntheticBlockItem(AdventureData data) {
+        var skills = data.getCachedSkills();
+        int defense = skills != null ? AdventureSkills.COMBAT_DEFENSE.getValue(skills) : 0;
+        double physDef = 1.0 + defense * 0.1;
+        double physEvasion = 0.1 + defense * 0.005;
+
+        return WItem.builder()
+                .itemId(BasicGameplay.BLOCK_ITEM_ID)
+                .publicData(Item.builder()
+                        .name(BasicGameplay.BLOCK_ITEM_ID)
+                        .title("Block")
+                        .texture("n:textures/hands/block.png")
+                        .build())
+                .server(Map.of(
+                        "action", "block",
+                        "effects", "physical.defense:" + physDef + ",physical.evasion:" + physEvasion
+                ))
+                .build();
     }
 
     @Override

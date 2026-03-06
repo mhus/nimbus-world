@@ -69,4 +69,7 @@ public class VitalDeltaBroadcastMessage {
 
     /** Source session ID (for looking up attacker position in Redis) */
     private String sourceSessionId;
+
+    /** Weapon item ID used for the attack (for special weapon checks, e.g. silver, boss-only) */
+    private String weaponItemId;
 }

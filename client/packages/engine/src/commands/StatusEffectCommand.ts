@@ -2,7 +2,7 @@
  * StatusEffectCommand - Manage player status effects
  *
  * Usage:
- * - /effect add <itemId> [duration] - Add status effect
+ * - /effect add <texture> [duration] [title] - Add status effect
  * - /effect remove <effectId> - Remove status effect by ID
  * - /effect clear - Remove all status effects
  * - /effect list - List all active status effects
@@ -52,15 +52,16 @@ export class StatusEffectCommand extends CommandHandler {
   }
 
   /**
-   * Handle /effect add <itemId> [duration]
+   * Handle /effect add <texture> [duration] [title]
    */
   private async handleAdd(args: any[]): Promise<string> {
     if (args.length === 0) {
-      return 'Usage: /effect add <itemId> [duration]\n\nExample: /effect add potion_heal 5000';
+      return 'Usage: /effect add <texture> [duration] [title]\n\nExample: /effect add n:/textures/items/potion_heal.png 5000 Healing';
     }
 
-    const itemId = String(args[0]);
+    const texture = String(args[0]);
     const duration = args[1] ? parseInt(String(args[1]), 10) : undefined;
+    const title = args[2] ? String(args[2]) : undefined;
 
     if (duration !== undefined && (isNaN(duration) || duration <= 0)) {
       return 'Error: duration must be a positive number (milliseconds)';
@@ -72,10 +73,13 @@ export class StatusEffectCommand extends CommandHandler {
     }
 
     try {
-      const effectId = playerService.addStatusEffect(itemId, duration);
+      const effectId = playerService.addStatusEffect(texture, duration, title);
 
       let message = `Status effect added: ${effectId}\n`;
-      message += `Item ID: ${itemId}\n`;
+      message += `Texture: ${texture}\n`;
+      if (title) {
+        message += `Title: ${title}\n`;
+      }
       if (duration) {
         message += `Duration: ${duration}ms (${(duration / 1000).toFixed(1)}s)`;
       } else {
@@ -84,7 +88,7 @@ export class StatusEffectCommand extends CommandHandler {
 
       return message;
     } catch (error) {
-      logger.error('Failed to add status effect', { itemId, duration }, error as Error);
+      logger.error('Failed to add status effect', { texture, duration }, error as Error);
       return `Error: ${(error as Error).message}`;
     }
   }
@@ -145,7 +149,10 @@ export class StatusEffectCommand extends CommandHandler {
 
     for (const effect of effects) {
       output += `\n${effect.id}`;
-      output += `\n  Item: ${effect.itemId}`;
+      output += `\n  Texture: ${effect.texture}`;
+      if (effect.title) {
+        output += `\n  Title: ${effect.title}`;
+      }
       output += `\n  Applied: ${new Date(effect.appliedAt).toLocaleTimeString()}`;
 
       if (effect.duration && effect.expiresAt) {
@@ -167,15 +174,15 @@ export class StatusEffectCommand extends CommandHandler {
     return `StatusEffect Command - Manage player status effects
 
 Usage:
-  /effect add <itemId> [duration]  - Add status effect
-  /effect remove <effectId>        - Remove status effect
-  /effect clear                    - Remove all status effects
-  /effect list                     - List active status effects
+  /effect add <texture> [duration] [title]  - Add status effect
+  /effect remove <effectId>                 - Remove status effect
+  /effect clear                             - Remove all status effects
+  /effect list                              - List active status effects
 
 Examples:
-  /effect add potion_heal 5000     - Add heal effect for 5 seconds
-  /effect add buff_strength         - Add permanent strength buff
-  /effect remove effect_123...      - Remove specific effect
-  /effect list                      - Show all active effects`;
+  /effect add n:/textures/items/potion_heal.png 5000 Healing  - Add heal effect for 5s
+  /effect add n:/textures/items/buff_strength.png              - Add permanent buff
+  /effect remove effect_123...                                 - Remove specific effect
+  /effect list                                                 - Show all active effects`;
   }
 }

@@ -1093,12 +1093,12 @@ export class NotificationService {
         return;
       }
 
-      // Create status effects container (above shortcuts)
+      // Create status effects container (below shortcuts)
       this.statusEffectsContainer = document.createElement('div');
       this.statusEffectsContainer.id = 'status-effects-container';
       this.statusEffectsContainer.style.cssText = `
         position: fixed;
-        bottom: 130px;
+        bottom: 30px;
         left: 50%;
         transform: translateX(-50%);
         display: flex;
@@ -1114,7 +1114,7 @@ export class NotificationService {
 
       // Create effect slots
       for (const effect of effects) {
-        const slot = await this.createStatusEffectSlot(effect);
+        const slot = this.createStatusEffectSlot(effect);
         this.statusEffectsContainer.appendChild(slot);
       }
 
@@ -1127,7 +1127,7 @@ export class NotificationService {
   /**
    * Create status effect slot element
    */
-  private async createStatusEffectSlot(effect: any): Promise<HTMLElement> {
+  private createStatusEffectSlot(effect: any): HTMLElement {
     const slot = document.createElement('div');
     slot.style.cssText = `
       width: 32px;
@@ -1143,8 +1143,8 @@ export class NotificationService {
       flex-shrink: 0;
     `;
 
-    // Load item and display texture
-    await this.loadStatusEffectItem(slot, effect);
+    // Load and display texture
+    this.loadStatusEffectItem(slot, effect);
 
     // Add hover tooltip
     this.addStatusEffectTooltip(slot, effect);
@@ -1153,35 +1153,23 @@ export class NotificationService {
   }
 
   /**
-   * Load item for status effect and display texture
+   * Load texture for status effect and display it
    */
-  private async loadStatusEffectItem(slot: HTMLElement, effect: any): Promise<void> {
+  private loadStatusEffectItem(slot: HTMLElement, effect: any): void {
     try {
-      const itemService = this.appContext.services.item;
-      if (!itemService) {
-        logger.warn('ItemService not available');
+      const texture = effect.texture;
+      if (!texture) {
+        logger.debug('No texture in effect', { effect });
         return;
       }
 
-      const itemId = effect.itemId;
-      if (!itemId) {
-        logger.debug('No itemId in effect', { effect });
+      const networkService = this.appContext.services.network;
+      if (!networkService) {
+        logger.warn('NetworkService not available');
         return;
       }
 
-      // Load item from server
-      const item = await itemService.getItem(itemId);
-      if (!item) {
-        logger.debug('Item not found', { itemId });
-        return;
-      }
-
-      // Get texture URL (now async)
-      const textureUrl = await itemService.getTextureUrl(item);
-      if (!textureUrl) {
-        logger.debug('No texture for item', { itemId });
-        return;
-      }
+      const textureUrl = networkService.getAssetUrl(texture);
 
       // Create image element
       const img = document.createElement('img');
@@ -1205,17 +1193,10 @@ export class NotificationService {
   /**
    * Add tooltip to status effect slot
    */
-  private async addStatusEffectTooltip(slot: HTMLElement, effect: any): Promise<void> {
-    const itemService = this.appContext.services.item;
-    if (!itemService) return;
-
-    // Load Item for description
-    const item = await itemService.getItem(effect.itemId);
-
+  private addStatusEffectTooltip(slot: HTMLElement, effect: any): void {
     let tooltip: HTMLElement | null = null;
 
     slot.addEventListener('mouseenter', () => {
-      // Create tooltip
       tooltip = document.createElement('div');
       tooltip.style.cssText = `
         position: absolute;
@@ -1232,18 +1213,12 @@ export class NotificationService {
         z-index: 1000;
       `;
 
-      // Add title (from Item or effect)
-      const title = document.createElement('div');
-      title.style.cssText = 'font-weight: bold; margin-bottom: 4px; color: rgba(255, 100, 100, 1);';
-      title.textContent = item?.title || effect.itemId;
-      tooltip.appendChild(title);
-
-      // Add description if available
-      if (item?.description) {
-        const desc = document.createElement('div');
-        desc.style.cssText = 'font-size: 11px; color: rgba(255, 255, 255, 0.8); margin-bottom: 4px;';
-        desc.textContent = item.description;
-        tooltip.appendChild(desc);
+      // Add title if available
+      if (effect.title) {
+        const title = document.createElement('div');
+        title.style.cssText = 'font-weight: bold; margin-bottom: 4px; color: rgba(255, 100, 100, 1);';
+        title.textContent = effect.title;
+        tooltip.appendChild(title);
       }
 
       // Add duration info if available

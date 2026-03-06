@@ -2,12 +2,7 @@
  * StatusEffect - Active status effect on player
  *
  * Status effects are temporary modifiers applied to the player.
- * They reference items from the server (ItemData) which contain:
- * - Visual representation (icon/texture)
- * - Description
- * - Duration
- * - Pose (optional)
- * - Parameters (custom effect data)
+ * They use a texture path for visual representation.
  */
 
 /**
@@ -21,10 +16,14 @@ export interface StatusEffect {
   id: string;
 
   /**
-   * Item ID that defines this effect
-   * References an ItemData on the server
+   * Texture path for the effect icon (e.g. "n:/textures/items/potion_heal.png")
    */
-  itemId: string;
+  texture: string;
+
+  /**
+   * Display title for tooltip (optional)
+   */
+  title?: string;
 
   /**
    * Timestamp when effect was applied (ms)

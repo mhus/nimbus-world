@@ -1,6 +1,7 @@
 package de.mhus.nimbus.world.player.gameplay;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import de.mhus.nimbus.world.shared.gameplay.CombatConstants;
 import de.mhus.nimbus.world.player.service.GameplayService;
 import de.mhus.nimbus.world.player.service.PlayerService;
 import de.mhus.nimbus.world.player.session.PlayerSession;
@@ -24,6 +25,8 @@ import java.util.Map;
 public class BasicGameplay implements Gameplay {
 
     public static final String SHORTCUT_INTERACT_ACTION = "__shortcut_interact__";
+    public static final String FIST_ITEM_ID = CombatConstants.FIST_ITEM_ID;
+    public static final String BLOCK_ITEM_ID = CombatConstants.BLOCK_ITEM_ID;
 
     @Autowired
     protected WChunkService chunkService;

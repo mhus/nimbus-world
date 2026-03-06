@@ -1422,17 +1422,19 @@ export class PlayerService {
   /**
    * Add a status effect to the player
    *
-   * @param itemId Item ID that defines the effect
-   * @param duration Duration in milliseconds (optional, can also come from ItemData)
+   * @param texture Texture path for the effect icon (e.g. "n:/textures/items/potion_heal.png")
+   * @param duration Duration in milliseconds (optional)
+   * @param title Display title for tooltip (optional)
    * @returns Generated effect ID
    */
-  addStatusEffect(itemId: string, duration?: number): string {
+  addStatusEffect(texture: string, duration?: number, title?: string): string {
     // Generate unique ID
     const effectId = `effect_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 
     const effect: StatusEffect = {
       id: effectId,
-      itemId,
+      texture,
+      title,
       appliedAt: Date.now(),
       duration,
       expiresAt: duration ? Date.now() + duration : undefined,
@@ -1451,7 +1453,7 @@ export class PlayerService {
     // Emit event for UI update
     this.emit('statusEffects:changed', Array.from(this.statusEffects.values()));
 
-    logger.debug('Status effect added', { effectId, itemId, duration });
+    logger.debug('Status effect added', { effectId, texture, duration });
     return effectId;
   }
 
@@ -1496,12 +1498,12 @@ export class PlayerService {
   /**
    * Check if player has a specific effect
    *
-   * @param itemId Item ID of the effect
+   * @param texture Texture path of the effect
    * @returns True if player has this effect
    */
-  hasStatusEffect(itemId: string): boolean {
+  hasStatusEffect(texture: string): boolean {
     for (const effect of this.statusEffects.values()) {
-      if (effect.itemId === itemId) {
+      if (effect.texture === texture) {
         return true;
       }
     }

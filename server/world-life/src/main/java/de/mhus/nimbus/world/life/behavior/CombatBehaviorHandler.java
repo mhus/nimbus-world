@@ -216,13 +216,15 @@ public class CombatBehaviorHandler {
         double magAcc = getEffective(combatData, "magical.accuracy");
         double critChance = getEffective(combatData, "critChance");
         double critMult = getEffective(combatData, "critMultiplier");
+        String weaponItemId = combatData.getWeaponItemId();
 
         vitalDeltaPublisher.publishAttack(
                 worldId.getId(), targetEntityId, entity.getEntityId(),
-                physDmg, physAcc, magDmg, magAcc, critChance, critMult);
+                physDmg, physAcc, magDmg, magAcc, critChance, critMult,
+                null, weaponItemId);
 
-        log.debug("Entity {} attacked player {} [phys={}/{}, mag={}/{}]",
-                entity.getEntityId(), targetEntityId, physDmg, physAcc, magDmg, magAcc);
+        log.debug("Entity {} attacked player {} with weapon {} [phys={}/{}, mag={}/{}]",
+                entity.getEntityId(), targetEntityId, weaponItemId, physDmg, physAcc, magDmg, magAcc);
     }
 
     private double getEffective(EntityCombatData data, String statName) {

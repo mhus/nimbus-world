@@ -10,6 +10,7 @@ import de.mhus.nimbus.world.life.behavior.EntityBehavior;
 import de.mhus.nimbus.world.life.model.ChunkCoordinate;
 import de.mhus.nimbus.world.life.model.SimulationState;
 import de.mhus.nimbus.world.life.redis.PathwayPublisher;
+import de.mhus.nimbus.world.shared.gameplay.CombatConstants;
 import de.mhus.nimbus.world.shared.gameplay.BaseEffectProcessor;
 import de.mhus.nimbus.world.shared.gameplay.EntityCombatData;
 import de.mhus.nimbus.world.shared.gameplay.VitalValue;
@@ -71,6 +72,7 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
     private final VitalDeltaPublisher vitalDeltaPublisher;
     private final EntityStateRedisService entityStateRedisService;
     private final CombatBehaviorHandler combatBehaviorHandler;
+    private final de.mhus.nimbus.world.shared.world.WItemService itemService;
 
     private final BaseEffectProcessor baseEffectProcessor = new BaseEffectProcessor();
 
@@ -533,13 +535,43 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
             if (combatData != null) {
                 state.setCombatData(combatData);
                 state.setCombatStrategy(combatData.getCombatStrategy());
-                log.debug("Initialized combat data for entity {}: health={}, strategy={}",
+                // Load weapon and apply its effects to combat stats
+                applyEntityWeapon(combatData, entity);
+                log.debug("Initialized combat data for entity {}: health={}, strategy={}, weapon={}",
                         entity.getEntityId(),
                         combatData.getVital("health") != null ? combatData.getVital("health").getBase() : "none",
-                        combatData.getCombatStrategy());
+                        combatData.getCombatStrategy(),
+                        combatData.getWeaponItemId());
             }
         }
         return state;
+    }
+
+    /**
+     * Load the entity's weapon and apply its effects to combat stats.
+     * If combat_weapon is set in server properties, load the WItem and apply effects.
+     * If no weapon is configured (fist), apply synthetic fist stats based on entity base values.
+     */
+    private void applyEntityWeapon(EntityCombatData combatData, WEntity entity) {
+        String weaponId = combatData.getWeaponItemId();
+        if (CombatConstants.FIST_ITEM_ID.equals(weaponId)) {
+            // Fist: synthetic base values already set via initBaseDefaults / fromEntityProperties
+            return;
+        }
+        // Load real weapon from DB
+        var worldId = WorldId.of(entity.getWorldId()).orElse(null);
+        if (worldId == null) return;
+        var weaponOpt = itemService.findByItemId(worldId, weaponId);
+        if (weaponOpt.isEmpty()) {
+            log.warn("Weapon item '{}' not found for entity {} — falling back to fist",
+                    weaponId, entity.getEntityId());
+            combatData.setWeaponItemId(CombatConstants.FIST_ITEM_ID);
+            return;
+        }
+        var weapon = weaponOpt.get();
+        if (weapon.getServer() == null) return;
+        String effectsDef = weapon.getServer().get("effects");
+        combatData.applyWeaponEffects(effectsDef);
     }
 
     /**
