@@ -153,7 +153,7 @@ public class BlockUpdateBroadcastListener {
                 }
 
                 // Send to session (including originating session)
-                session.getWebSocketSession().sendMessage(textMessage);
+                session.sendMessage(textMessage);
                 sentCount++;
             }
 

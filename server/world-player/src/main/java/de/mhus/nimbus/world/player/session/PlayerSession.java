@@ -9,6 +9,8 @@ import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.player.gameplay.Gameplay;
 import de.mhus.nimbus.world.shared.gameplay.GameplayData;
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.web.socket.WebSocketMessage;
 import org.springframework.web.socket.WebSocketSession;
 
 import java.time.Instant;
@@ -21,6 +23,7 @@ import java.util.Set;
  * Maintains connection state, authentication, and chunk subscriptions.
  */
 @Data
+@Slf4j
 public class PlayerSession {
 
     private final WebSocketSession webSocketSession;
@@ -84,10 +87,27 @@ public class PlayerSession {
     private Integer cachedHexR;
     private String cachedGameMode;
 
+    private final Object sendLock = new Object();
+
     public PlayerSession(WebSocketSession webSocketSession) {
         this.webSocketSession = webSocketSession;
         this.connectedAt = Instant.now();
         this.lastPingAt = Instant.now();
+    }
+
+    /**
+     * Thread-safe send of a message via the WebSocket session.
+     */
+    public void sendMessage(WebSocketMessage<?> message) {
+        synchronized (sendLock) {
+            try {
+                if (webSocketSession.isOpen()) {
+                    webSocketSession.sendMessage(message);
+                }
+            } catch (Exception e) {
+                log.warn("Failed to send message to session {}: {}", sessionId, e.getMessage());
+            }
+        }
     }
 
 

@@ -62,7 +62,7 @@ public class PingHandler implements MessageHandler {
                 .build();
 
         String json = objectMapper.writeValueAsString(response);
-        session.getWebSocketSession().sendMessage(new TextMessage(json));
+        session.sendMessage(new TextMessage(json));
 
         executionService.execute(() -> {
             for (var consumer : pingConsumers) {

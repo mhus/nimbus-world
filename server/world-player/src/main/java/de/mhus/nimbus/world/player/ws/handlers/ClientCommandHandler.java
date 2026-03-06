@@ -289,7 +289,7 @@ public class ClientCommandHandler implements MessageHandler {
                     .build();
 
             String json = objectMapper.writeValueAsString(response);
-            session.getWebSocketSession().sendMessage(new TextMessage(json));
+            session.sendMessage(new TextMessage(json));
 
             log.trace("Sent command streaming message: requestId={}", requestId);
 
@@ -316,7 +316,7 @@ public class ClientCommandHandler implements MessageHandler {
                     .build();
 
             String json = objectMapper.writeValueAsString(response);
-            session.getWebSocketSession().sendMessage(new TextMessage(json));
+            session.sendMessage(new TextMessage(json));
 
             log.trace("Sent command response: requestId={}, rc={}", requestId, returnCode);
 

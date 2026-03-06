@@ -76,7 +76,7 @@ public class BroadcastService {
                 }
 
                 // Send to session
-                session.getWebSocketSession().sendMessage(textMessage);
+                session.sendMessage(textMessage);
                 sentCount++;
             }
 
@@ -164,7 +164,7 @@ public class BroadcastService {
                 if (!hasChunk) continue;
 
                 // Send to session
-                session.getWebSocketSession().sendMessage(textMessage);
+                session.sendMessage(textMessage);
                 sentSessions.add(session.getSessionId());
             }
 

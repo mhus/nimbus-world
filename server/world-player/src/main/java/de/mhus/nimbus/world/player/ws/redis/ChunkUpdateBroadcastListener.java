@@ -213,7 +213,7 @@ public class ChunkUpdateBroadcastListener {
         buffer.put(dto.getC());              // GZIP compressed data
 
         // 3. Send as binary WebSocket frame
-        session.getWebSocketSession().sendMessage(new BinaryMessage(buffer.array()));
+        session.sendMessage(new BinaryMessage(buffer.array()));
 
         log.debug("Sent binary chunk update: cx={}, cz={}, header={} bytes, compressed={} bytes, total={} bytes",
                 dto.getCx(), dto.getCz(), headerBytes.length, dto.getC().length, buffer.position());

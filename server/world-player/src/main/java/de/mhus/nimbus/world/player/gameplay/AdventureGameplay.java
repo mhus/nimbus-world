@@ -543,7 +543,7 @@ public class AdventureGameplay extends BasicGameplay {
             VitalValue health = data.getVital("health");
             if (health != null && health.getPercentage() > 0 && health.getPercentage() <= 0.25) {
                 clientService.sendCommand(session, "flashImage",
-                        List.of("n:/textures/actions/health_alert.png", "500", "0.5"));
+                        List.of("n:textures/actions/health_alert.png", "500", "0.5"));
             }
 
             // Broadcast health status to other players via entity status update

@@ -39,7 +39,7 @@ public class ClientService {
 
             // Send message
             String json = objectMapper.writeValueAsString(message);
-            session.getWebSocketSession().sendMessage(new TextMessage(json));
+            session.sendMessage(new TextMessage(json));
 
             log.info("Sent server command to player: cmd={}, sessionId={}",
                     commandName, session.getWebSocketSession().getId());

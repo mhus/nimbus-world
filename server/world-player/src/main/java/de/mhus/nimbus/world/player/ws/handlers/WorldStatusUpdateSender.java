@@ -51,7 +51,7 @@ public class WorldStatusUpdateSender {
             int sentCount = 0;
             for (PlayerSession session : sessionManager.getAllSessions().values()) {
                 if (worldId.equals(session.getWorldId()) && session.isAuthenticated()) {
-                    session.getWebSocketSession().sendMessage(textMessage);
+                    session.sendMessage(textMessage);
                     sentCount++;
                 }
             }

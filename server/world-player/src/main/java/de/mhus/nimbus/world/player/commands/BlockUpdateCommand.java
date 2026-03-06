@@ -85,7 +85,7 @@ public class BlockUpdateCommand implements Command {
             TextMessage textMessage = new TextMessage(json);
 
             // Send via WebSocket
-            session.getWebSocketSession().sendMessage(textMessage);
+            session.sendMessage(textMessage);
 
             log.debug("Sent block update to client: session={} blocks={}",
                     sessionId, blocks.length);

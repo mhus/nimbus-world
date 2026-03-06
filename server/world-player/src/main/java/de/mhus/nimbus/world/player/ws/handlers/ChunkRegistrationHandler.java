@@ -139,7 +139,7 @@ public class ChunkRegistrationHandler implements MessageHandler {
                         .build();
 
                 String json = objectMapper.writeValueAsString(pathwayMessage);
-                session.getWebSocketSession().sendMessage(new TextMessage(json));
+                session.sendMessage(new TextMessage(json));
 
                 log.debug("Sent {} cached pathways to session {} for {} new chunks",
                         allPathways.size(), session.getSessionId(), chunks.size());

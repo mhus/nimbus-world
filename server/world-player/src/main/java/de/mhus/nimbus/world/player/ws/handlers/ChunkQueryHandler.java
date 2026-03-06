@@ -84,7 +84,7 @@ public class ChunkQueryHandler implements MessageHandler {
                     .build();
 
             String json = objectMapper.writeValueAsString(response);
-            session.getWebSocketSession().sendMessage(new TextMessage(json));
+            session.sendMessage(new TextMessage(json));
 
             log.debug("Sent {} chunks to session={}", responseChunks.size(),
                     session.getWebSocketSession().getId());

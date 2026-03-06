@@ -146,6 +146,6 @@ public class LoginHandler implements MessageHandler {
                 .build();
 
         String json = objectMapper.writeValueAsString(response);
-        session.getWebSocketSession().sendMessage(new TextMessage(json));
+        session.sendMessage(new TextMessage(json));
     }
 }

@@ -164,7 +164,7 @@ public class ChunkSenderService {
                         .build();
 
                 String json = objectMapper.writeValueAsString(response);
-                session.getWebSocketSession().sendMessage(new TextMessage(json));
+                session.sendMessage(new TextMessage(json));
 
                 log.debug("Sent {} chunks to session={}", responseChunks.size(),
                         session.getWebSocketSession().getId());
@@ -202,7 +202,7 @@ public class ChunkSenderService {
         buffer.put(dto.getC());              // GZIP compressed data
 
         // 3. Send as binary WebSocket frame
-        session.getWebSocketSession().sendMessage(new BinaryMessage(buffer.array()));
+        session.sendMessage(new BinaryMessage(buffer.array()));
 
         log.debug("Sent binary chunk: cx={}, cz={}, header={} bytes, compressed={} bytes, total={} bytes",
                 dto.getCx(), dto.getCz(), headerBytes.length, dto.getC().length, buffer.position());

@@ -81,8 +81,8 @@ public class VitalDeltaBroadcastListener {
     private void handleAttackResult(PlayerSession session, VitalDeltaBroadcastMessage msg) {
         boolean hit = msg.getDelta() != 0;
         String texture = hit
-                ? "n:/textures/actions/attack_hit.png"
-                : "n:/textures/actions/attack_blocked.png";
+                ? "n:textures/actions/attack_hit.png"
+                : "n:textures/actions/attack_blocked.png";
         clientService.sendCommand(session, "flashImage", List.of(texture, "500", "0.5"));
 
         log.debug("Attack result for {}: {} (damage={})",

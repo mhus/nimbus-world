@@ -97,7 +97,7 @@ public class InteractionRequestHandler implements MessageHandler {
                     .build();
 
             String json = objectMapper.writeValueAsString(response);
-            session.getWebSocketSession().sendMessage(new TextMessage(json));
+            session.sendMessage(new TextMessage(json));
 
             log.debug("Sent interaction failure response: requestId={}, errorCode={}", requestId, errorCode);
 
@@ -122,7 +122,7 @@ public class InteractionRequestHandler implements MessageHandler {
                     .build();
 
             String json = objectMapper.writeValueAsString(response);
-            session.getWebSocketSession().sendMessage(new TextMessage(json));
+            session.sendMessage(new TextMessage(json));
 
             log.debug("Sent interaction successful response: requestId={}", requestId);
 

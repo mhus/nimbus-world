@@ -115,7 +115,7 @@ public class GameplayService implements SessionAuthenticatedConsumer {
             log.warn("No gameplay set for session {}, cannot handle simple interaction", session.getPlayer());
             return;
         }
-        if (shortcutKey != null) {
+        if (shortcutKey != null && !shortcutKey.isEmpty()) {
             gameplay.onItemInteraction(session, shortcutKey, data);
         } else {
             gameplay.onSimpleInteraction(session, action, data);

@@ -52,7 +52,7 @@ public class BlockUpdateSender {
                     .build();
 
             String json = objectMapper.writeValueAsString(message);
-            session.getWebSocketSession().sendMessage(new TextMessage(json));
+            session.sendMessage(new TextMessage(json));
 
             log.debug("Sent {} block updates to session: {}",
                     blocks.size(), session.getWebSocketSession().getId());
