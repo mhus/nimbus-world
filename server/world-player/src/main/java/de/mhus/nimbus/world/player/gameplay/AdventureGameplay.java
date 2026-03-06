@@ -72,6 +72,9 @@ public class AdventureGameplay extends BasicGameplay {
     @Autowired
     private EntityStatusPublisher entityStatusPublisher;
 
+    @Autowired
+    private de.mhus.nimbus.world.shared.world.WProgressService progressService;
+
     @Getter
     private final EffectProcessor effectProcessor = new EffectProcessor();
 
@@ -140,6 +143,9 @@ public class AdventureGameplay extends BasicGameplay {
 
         // Check stamina depletion → slow speed
         checkStaminaSpeed(session, data);
+
+        // Check hex exploration
+        checkHexExploration(session, data);
 
         // Send vitals update periodically
         if (count % VITALS_SEND_INTERVAL_TICKS == 0) {
@@ -586,6 +592,52 @@ public class AdventureGameplay extends BasicGameplay {
         }
     }
 
+    /**
+     * Check if the player entered a new hex and track exploration.
+     * Also updates the cached gameMode in AdventureData.
+     */
+    private void checkHexExploration(PlayerSession session, AdventureData data) {
+        Vector3 pos = session.getLastPosition();
+        if (pos == null || session.getWorldId() == null) return;
+
+        int hexGridSize = session.getHexGridSize();
+        if (hexGridSize <= 0) return;
+
+        int worldX = (int) pos.getX();
+        int worldZ = (int) pos.getZ();
+        HexVector2 hexPos = HexMathUtil.flatToHex(TypeUtil.vector2int(worldX, worldZ), hexGridSize);
+        String hexKey = hexPos.getQ() + ";" + hexPos.getR();
+
+        // Same hex as last check? Nothing to do
+        if (hexKey.equals(data.getLastCheckedHexKey())) return;
+        data.setLastCheckedHexKey(hexKey);
+
+        // Update gameMode cache
+        resolveGameMode(session);
+
+        // Check exploration progress
+        try {
+            String worldId = session.getWorldId().getId();
+            String playerId = session.getEntityId();
+            if (playerId == null) return;
+
+            var existing = progressService.findByWorldIdAndPlayerIdAndTypeAndQuest(
+                    worldId, playerId, "EXPLORED_HEX", hexKey);
+
+            if (existing.isEmpty()) {
+                progressService.save(worldId, playerId, "EXPLORED_HEX", hexKey, Map.of(
+                        "q", hexPos.getQ(),
+                        "r", hexPos.getR(),
+                        "discoveredAt", System.currentTimeMillis()
+                ));
+                clientService.sendNotification(session, 3, "", "New Area Discovered", null);
+                log.info("Player {} discovered new hex {} in world {}", playerId, hexKey, worldId);
+            }
+        } catch (Exception e) {
+            log.warn("Failed to check hex exploration for session {}: {}", session.getSessionId(), e.getMessage());
+        }
+    }
+
     private void publishPlayerHealthStatus(PlayerSession session, AdventureData data) {
         VitalValue health = data.getVital("health");
         if (health == null) return;
@@ -806,6 +858,12 @@ public class AdventureGameplay extends BasicGameplay {
                 .orElse("");
 
         session.setCachedGameMode(gameMode);
+
+        // Also cache in AdventureData for easy access
+        if (session.getGameplayData() instanceof AdventureData data) {
+            data.setCachedGameMode(gameMode);
+        }
+
         return gameMode;
     }
 

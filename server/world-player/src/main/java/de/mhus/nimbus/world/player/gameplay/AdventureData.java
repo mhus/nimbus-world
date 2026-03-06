@@ -54,6 +54,12 @@ public class AdventureData extends EntityCombatData {
     /** Whether stamina-depleted slow speed has been sent to the client (transient, not persisted) */
     private transient boolean staminaSlowSent = false;
 
+    /** Cached hex key "q;r" of the last explored hex check (transient, not persisted) */
+    private transient String lastCheckedHexKey;
+
+    /** Cached gameMode from the current hex grid (transient, not persisted) */
+    private transient String cachedGameMode;
+
     /**
      * Initialize with default vital values and combat stats.
      * Calls super.initBaseDefaults() for health/stamina/mana + all combat stats,
