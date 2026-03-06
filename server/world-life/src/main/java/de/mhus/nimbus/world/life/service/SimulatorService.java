@@ -124,7 +124,7 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
             entityChunks.addAll(chunkKeys);
 
             // Only create simulation state if not already loaded
-            if (worldStates.putIfAbsent(entityId, createSimulationState(entity)) == null) {
+            if (worldStates.putIfAbsent(entityId, createSimulationState(worldId, entity)) == null) {
                 loaded++;
             }
         }
@@ -431,6 +431,14 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
         // Clear Redis state (absence = ALIVE, also removes looters)
         entityStateRedisService.removeAll(worldId.getId(), entityId);
 
+        // Publish initial health after respawn
+        if (combatData != null) {
+            VitalValue health = combatData.getVital("health");
+            if (health != null) {
+                publishHealthStatus(worldId, entityId, health);
+            }
+        }
+
         log.info("World {}: Entity {} respawned at middlePoint", worldId, entityId);
     }
 
@@ -509,6 +517,103 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
         return worldStates.get(entityId);
     }
 
+    public Map<String, SimulationState> getSimulationStates(WorldId worldId) {
+        return worldSimulationStates.get(worldId);
+    }
+
+    /**
+     * Spread combat mode to nearby entities when an entity enters combat.
+     * Radius is defined per entity via combat_spreadRadius property (0 = no spread).
+     * Uses pathway interpolation for current positions.
+     */
+    public void spreadCombatMode(WorldId worldId, String attackedEntityId, String attackerEntityId, String sessionId) {
+        Map<String, SimulationState> worldStates = worldSimulationStates.get(worldId);
+        if (worldStates == null) return;
+
+        SimulationState attackedState = worldStates.get(attackedEntityId);
+        if (attackedState == null) return;
+
+        double spreadRadius = getServerDouble(attackedState, "combat_spreadRadius", 0);
+        if (spreadRadius <= 0) return;
+
+        Vector3 attackedPos = getCurrentEntityPosition(attackedState);
+        if (attackedPos == null) return;
+
+        long now = System.currentTimeMillis();
+
+        for (SimulationState neighborState : worldStates.values()) {
+            if (neighborState == attackedState) continue;
+            if (neighborState.getLifecycleState() != SimulationState.LifecycleState.ALIVE) continue;
+            if (neighborState.isInCombat()) continue;
+            if (neighborState.getCombatData() == null) continue;
+
+            Vector3 neighborPos = getCurrentEntityPosition(neighborState);
+            if (neighborPos == null) continue;
+
+            double dist = distance(attackedPos, neighborPos);
+            if (dist <= spreadRadius) {
+                neighborState.setCombatStrategy(neighborState.getCombatData().getCombatStrategy());
+                neighborState.enterCombat(attackerEntityId, sessionId, now);
+                log.info("World {}: Combat spread from {} to {} (dist={}, radius={})",
+                        worldId, attackedEntityId, neighborState.getEntity().getEntityId(),
+                        String.format("%.1f", dist), spreadRadius);
+            }
+        }
+    }
+
+    /**
+     * Get current entity position by interpolating the active pathway.
+     * Falls back to WEntity.position (spawn point) if no pathway exists.
+     */
+    private Vector3 getCurrentEntityPosition(SimulationState state) {
+        var pathway = state.getCurrentPathway();
+        if (pathway != null && pathway.getWaypoints() != null && !pathway.getWaypoints().isEmpty()) {
+            var waypoints = pathway.getWaypoints();
+            long now = System.currentTimeMillis();
+
+            if (now <= waypoints.getFirst().getTimestamp()) {
+                return waypoints.getFirst().getTarget();
+            }
+            if (now >= waypoints.getLast().getTimestamp()) {
+                return waypoints.getLast().getTarget();
+            }
+            for (int i = 0; i < waypoints.size() - 1; i++) {
+                var from = waypoints.get(i);
+                var to = waypoints.get(i + 1);
+                if (now >= from.getTimestamp() && now < to.getTimestamp()) {
+                    double t = (double) (now - from.getTimestamp()) / (to.getTimestamp() - from.getTimestamp());
+                    return Vector3.builder()
+                            .x(from.getTarget().getX() + (to.getTarget().getX() - from.getTarget().getX()) * t)
+                            .y(from.getTarget().getY() + (to.getTarget().getY() - from.getTarget().getY()) * t)
+                            .z(from.getTarget().getZ() + (to.getTarget().getZ() - from.getTarget().getZ()) * t)
+                            .build();
+                }
+            }
+            return waypoints.getLast().getTarget();
+        }
+        // Fallback: entity spawn position
+        return state.getEntity().getPosition();
+    }
+
+    private static double distance(Vector3 a, Vector3 b) {
+        double dx = b.getX() - a.getX();
+        double dy = b.getY() - a.getY();
+        double dz = b.getZ() - a.getZ();
+        return Math.sqrt(dx * dx + dy * dy + dz * dz);
+    }
+
+    private static double getServerDouble(SimulationState state, String key, double defaultValue) {
+        var server = state.getEntity().getServer();
+        if (server == null) return defaultValue;
+        String val = server.get(key);
+        if (val == null || val.isBlank()) return defaultValue;
+        try {
+            return Double.parseDouble(val.trim());
+        } catch (NumberFormatException e) {
+            return defaultValue;
+        }
+    }
+
     public int getEntityCount() {
         return worldSimulationStates.values().stream()
                 .mapToInt(Map::size)
@@ -527,8 +632,9 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
 
     /**
      * Create a SimulationState and initialize combat data from entity properties if available.
+     * Publishes initial health to Redis and clients so health bars show correct values from the start.
      */
-    private SimulationState createSimulationState(WEntity entity) {
+    private SimulationState createSimulationState(WorldId worldId, WEntity entity) {
         SimulationState state = new SimulationState(entity);
         if (entity.getServer() != null) {
             EntityCombatData combatData = EntityCombatData.fromEntityProperties(entity.getServer());
@@ -537,9 +643,16 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
                 state.setCombatStrategy(combatData.getCombatStrategy());
                 // Load weapon and apply its effects to combat stats
                 applyEntityWeapon(combatData, entity);
+
+                // Publish initial health so clients show correct values
+                VitalValue health = combatData.getVital("health");
+                if (health != null) {
+                    publishHealthStatus(worldId, entity.getEntityId(), health);
+                }
+
                 log.debug("Initialized combat data for entity {}: health={}, strategy={}, weapon={}",
                         entity.getEntityId(),
-                        combatData.getVital("health") != null ? combatData.getVital("health").getBase() : "none",
+                        health != null ? health.getBase() : "none",
                         combatData.getCombatStrategy(),
                         combatData.getWeaponItemId());
             }

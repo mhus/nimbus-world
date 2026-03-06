@@ -154,6 +154,9 @@ public class VitalDeltaBroadcastListener {
                 state.enterCombat(msg.getSourceEntityId(), msg.getSourceSessionId(), now);
                 log.info("World {}: Entity {} entered combat (strategy={}, attacker={})",
                         worldId, msg.getTargetEntityId(), combatData.getCombatStrategy(), msg.getSourceEntityId());
+                // Spread combat to nearby entities
+                simulatorService.spreadCombatMode(worldId, msg.getTargetEntityId(),
+                        msg.getSourceEntityId(), msg.getSourceSessionId());
             } else {
                 state.refreshCombat(msg.getSourceEntityId(), msg.getSourceSessionId(), now);
             }

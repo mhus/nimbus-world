@@ -50,6 +50,9 @@ export class SendCommand extends CommandHandler {
       });
 
       // Display result
+      if (result.message) {
+        console.log(`[Server] ${result.message}`);
+      }
       if (result.rc === 0) {
         logger.debug(`✓ Command successful: ${result.message}`);
         return result;
