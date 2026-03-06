@@ -48,6 +48,22 @@
     <!-- Main Content -->
     <main v-else class="flex-1 container mx-auto px-4 py-6 space-y-6">
 
+      <!-- Currency -->
+      <section class="bg-gray-800 rounded-lg shadow-md border border-gray-700 p-4">
+        <div class="flex flex-wrap items-center gap-6">
+          <div class="flex items-center gap-2">
+            <img :src="getAssetUrl('n:textures/currencies/gold-coin.png')" alt="Gold" class="w-6 h-6 object-contain" style="image-rendering: pixelated;" />
+            <span class="text-xl font-bold text-yellow-400">{{ gold }}</span>
+            <span class="text-sm text-gray-400">Gold ({{ username }})</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <img :src="getAssetUrl('n:textures/currencies/silver-coin.png')" alt="Silver" class="w-6 h-6 object-contain" style="image-rendering: pixelated;" />
+            <span class="text-xl font-bold text-gray-300">{{ silver }}</span>
+            <span class="text-sm text-gray-400">Silver ({{ characterName }})</span>
+          </div>
+        </div>
+      </section>
+
       <!-- Vitals -->
       <section v-if="vitals.length > 0">
         <h2 class="text-lg font-bold text-emerald-400 mb-3">Vitalwerte</h2>
@@ -196,6 +212,10 @@ interface StatusResponse {
   constitution: ConstitutionInfo[];
   vitals: VitalInfo[];
   combatStats: CombatStatInfo[];
+  gold: number;
+  silver: number;
+  username: string;
+  characterName: string;
 }
 
 const loading = ref(true);
@@ -204,6 +224,14 @@ const skills = ref<SkillDef[]>([]);
 const constitution = ref<ConstitutionInfo[]>([]);
 const vitals = ref<VitalInfo[]>([]);
 const combatStats = ref<CombatStatInfo[]>([]);
+const gold = ref(0);
+const silver = ref(0);
+const username = ref('');
+const characterName = ref('');
+
+const getAssetUrl = (texturePath: string): string => {
+  return `${apiService.getBaseUrl()}/control/player/assets/${texturePath}`;
+};
 
 const hasData = computed(() => skills.value.length > 0 || vitals.value.length > 0);
 
@@ -269,6 +297,10 @@ const loadData = async () => {
     constitution.value = response.constitution || [];
     vitals.value = response.vitals || [];
     combatStats.value = response.combatStats || [];
+    gold.value = response.gold || 0;
+    silver.value = response.silver || 0;
+    username.value = response.username || '';
+    characterName.value = response.characterName || '';
   } catch (err) {
     console.error('[StatusPanel] Failed to load data:', err);
     error.value = 'Daten konnten nicht geladen werden.';

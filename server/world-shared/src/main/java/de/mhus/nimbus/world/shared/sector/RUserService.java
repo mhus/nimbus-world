@@ -11,15 +11,22 @@ import de.mhus.nimbus.generated.configs.Settings;
 import de.mhus.nimbus.shared.types.PlayerUser;
 import de.mhus.nimbus.shared.user.SectorRoles;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 
 import de.mhus.nimbus.shared.user.RegionRoles;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class RUserService {
 
     private final RUserRepository repository;
+    private final MongoTemplate mongoTemplate;
 
     public RUser createUser(PlayerUser publicData, String email) {
         if (email == null || email.isBlank()) throw new IllegalArgumentException("email is blank");
@@ -236,6 +243,41 @@ public class RUserService {
         user.setUserSettings(settings);
         user.touchUpdate();
         repository.save(user);
+    }
+
+    /**
+     * Atomically change the gold amount for a user.
+     * If amount is negative, verifies the user has enough gold first.
+     *
+     * @param userId MongoDB document id of the user
+     * @param amount amount to add (positive) or subtract (negative)
+     * @return true if the update was applied
+     */
+    public boolean changeGold(String userId, long amount) {
+        if (amount == 0) return true;
+
+        Query query;
+        if (amount < 0) {
+            query = new Query(Criteria.where("id").is(userId)
+                    .and("gold").gte(-amount));
+        } else {
+            query = new Query(Criteria.where("id").is(userId));
+        }
+
+        Update update = new Update()
+                .inc("gold", amount)
+                .set("modifiedAt", java.time.Instant.now());
+
+        var result = mongoTemplate.updateFirst(query, update, RUser.class);
+
+        if (result.getModifiedCount() > 0) {
+            return true;
+        }
+
+        if (amount < 0) {
+            log.warn("changeGold failed: userId={}, amount={} - insufficient gold", userId, amount);
+        }
+        return false;
     }
 
     public long getUserCount() {

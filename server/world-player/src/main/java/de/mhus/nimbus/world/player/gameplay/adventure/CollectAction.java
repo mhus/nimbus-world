@@ -1,6 +1,7 @@
 package de.mhus.nimbus.world.player.gameplay.adventure;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import de.mhus.nimbus.shared.types.PlayerId;
 import de.mhus.nimbus.world.player.gameplay.AdventureData;
 import de.mhus.nimbus.world.player.gameplay.AdventureGameplay;
 import de.mhus.nimbus.world.player.gameplay.GameplayAction;
@@ -90,14 +91,19 @@ public class CollectAction implements GameplayAction {
                 int quantity = Integer.parseInt(parts[2].trim());
 
                 if (random.nextInt(100) < probability) {
-                    boolean added = adventure.getGameplayService().putIntoBackpack(session, itemId, quantity);
-                    if (added) {
-                        sendCollectNotification(session, itemId, quantity);
-                        log.info("Player {} collected {} x{} (probability {}%)",
+                    if (handleSyntheticReward(session, data, itemId, quantity)) {
+                        log.info("Player {} collected synthetic {} x{} (probability {}%)",
                                 session.getEntityId(), itemId, quantity, probability);
                     } else {
-                        log.debug("Player {} backpack full, could not add {} x{}",
-                                session.getEntityId(), itemId, quantity);
+                        boolean added = adventure.getGameplayService().putIntoBackpack(session, itemId, quantity);
+                        if (added) {
+                            sendCollectNotification(session, itemId, quantity);
+                            log.info("Player {} collected {} x{} (probability {}%)",
+                                    session.getEntityId(), itemId, quantity, probability);
+                        } else {
+                            log.debug("Player {} backpack full, could not add {} x{}",
+                                    session.getEntityId(), itemId, quantity);
+                        }
                     }
                 }
             } catch (NumberFormatException e) {
@@ -107,6 +113,46 @@ public class CollectAction implements GameplayAction {
 
         data.setNextCollectAllowed(now + cooldownSeconds * 1000L);
         return true;
+    }
+
+    private boolean handleSyntheticReward(PlayerSession session, AdventureData data, String itemId, int quantity) {
+        String docId = data.getCachedCharacterDocId();
+        if (docId == null) return false;
+
+        switch (itemId) {
+            case "_gold_" -> {
+                String entityId = session.getEntityId();
+                PlayerId playerId = entityId != null ? PlayerId.of(entityId).orElse(null) : null;
+                if (playerId == null) return false;
+                var userOpt = adventure.getUserService().getByUsername(playerId.getUserId());
+                if (userOpt.isEmpty()) return false;
+                adventure.getUserService().changeGold(userOpt.get().getId(), quantity);
+                adventure.getClientService().sendNotification(session, 3, "",
+                        "+ " + quantity + " Gold", "n:textures/currencies/gold-coin.png");
+                return true;
+            }
+            case "_silver_" -> {
+                adventure.getCharacterService().changeSilver(docId, quantity);
+                adventure.getClientService().sendNotification(session, 3, "",
+                        "+ " + quantity + " Silver", "n:textures/currencies/silver-coin.png");
+                return true;
+            }
+            case "_exp_" -> {
+                adventure.getCharacterService().addSkillExperience(docId, quantity);
+                adventure.getClientService().sendNotification(session, 3, "",
+                        "+ " + quantity + " Exp", "n:textures/actions/exp.png");
+                return true;
+            }
+            case "_skill_" -> {
+                adventure.getCharacterService().addSkillPoints(docId, quantity);
+                adventure.getClientService().sendNotification(session, 3, "",
+                        "+ " + quantity + " Skill", "n:textures/actions/skill.png");
+                return true;
+            }
+            default -> {
+                return false;
+            }
+        }
     }
 
     private void sendCollectNotification(PlayerSession session, String itemId, int quantity) {

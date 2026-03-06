@@ -56,6 +56,9 @@ public class RCharacter {
     // Accumulated experience towards next skill point
     private long skillExperience;
 
+    // Character-based currency
+    private long silver;
+
     // Constitution: wear/durability per category (1.0 = perfect, 0.0 = broken)
     // Keys: e.g. "weapon", "armor", "magic", "tool"
     private Map<String, Double> constitution;

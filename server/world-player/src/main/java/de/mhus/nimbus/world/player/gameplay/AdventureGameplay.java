@@ -57,6 +57,10 @@ public class AdventureGameplay extends BasicGameplay {
     private ClientService clientService;
 
     @Autowired
+    @Getter
+    private de.mhus.nimbus.world.shared.sector.RUserService userService;
+
+    @Autowired
     private ObjectMapper objectMapper;
 
     @Autowired

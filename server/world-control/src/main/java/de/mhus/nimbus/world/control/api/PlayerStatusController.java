@@ -9,6 +9,7 @@ import de.mhus.nimbus.world.shared.gameplay.Skill;
 import de.mhus.nimbus.world.shared.region.RCharacter;
 import de.mhus.nimbus.world.shared.region.RCharacterService;
 import de.mhus.nimbus.world.shared.rest.BaseEditorController;
+import de.mhus.nimbus.world.shared.sector.RUserService;
 import de.mhus.nimbus.world.shared.session.WSessionService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -29,6 +30,7 @@ import java.util.*;
 public class PlayerStatusController extends BaseEditorController {
 
     private final RCharacterService characterService;
+    private final RUserService userService;
     private final WorldClientService worldClientService;
     private final WSessionService wSessionService;
     private final ObjectMapper objectMapper;
@@ -52,6 +54,18 @@ public class PlayerStatusController extends BaseEditorController {
         }
 
         Map<String, Object> result = new LinkedHashMap<>();
+
+        // Currency & identity
+        result.put("characterName", character.getName());
+        result.put("username", userId);
+        result.put("silver", character.getSilver());
+
+        long gold = 0;
+        var userOpt = userService.getByUsername(userId);
+        if (userOpt.isPresent()) {
+            gold = userOpt.get().getGold();
+        }
+        result.put("gold", gold);
 
         // Skills
         Map<String, Integer> skills = character.getSkills();

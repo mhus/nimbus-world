@@ -40,6 +40,7 @@ public class BasicGameplay implements Gameplay {
     @Getter
     protected WItemService itemService;
     @Autowired
+    @Getter
     protected RCharacterService characterService;
     @Autowired
     @Lazy

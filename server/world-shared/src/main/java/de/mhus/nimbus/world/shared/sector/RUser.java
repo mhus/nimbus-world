@@ -74,6 +74,9 @@ public class RUser implements Identifiable {
     @TypeScript(import_ = "Settings", importPath = "../../configs")
     private Map<String, Settings> userSettings;
 
+    // Account-based currency (shared across all characters)
+    private long gold;
+
     private Map<String,String> attributes; // Zusätzliche Attribute
 
     public RUser() { this.enabled = true; }

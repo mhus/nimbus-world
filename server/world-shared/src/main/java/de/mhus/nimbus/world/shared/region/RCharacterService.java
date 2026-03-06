@@ -459,6 +459,41 @@ public class RCharacterService {
     }
 
     /**
+     * Atomically change the silver amount for a character.
+     * If amount is negative, verifies the character has enough silver first.
+     *
+     * @param characterId MongoDB document id
+     * @param amount      amount to add (positive) or subtract (negative)
+     * @return true if the update was applied
+     */
+    public boolean changeSilver(String characterId, long amount) {
+        if (amount == 0) return true;
+
+        Query query;
+        if (amount < 0) {
+            query = new Query(Criteria.where("id").is(characterId)
+                    .and("silver").gte(-amount));
+        } else {
+            query = new Query(Criteria.where("id").is(characterId));
+        }
+
+        Update update = new Update()
+                .inc("silver", amount)
+                .set("modifiedAt", Instant.now());
+
+        var result = mongoTemplate.updateFirst(query, update, RCharacter.class);
+
+        if (result.getModifiedCount() > 0) {
+            return true;
+        }
+
+        if (amount < 0) {
+            log.warn("changeSilver failed: characterId={}, amount={} - insufficient silver", characterId, amount);
+        }
+        return false;
+    }
+
+    /**
      * Calculate the experience required for the next skill point.
      * Based on the total number of skill points already earned (quadratic formula).
      *
@@ -506,6 +541,25 @@ public class RCharacterService {
         Update update = new Update()
                 .inc("skillPoints", 1)
                 .inc("skillExperience", -experienceToNext)
+                .set("modifiedAt", Instant.now());
+
+        var result = mongoTemplate.updateFirst(query, update, RCharacter.class);
+        return result.getModifiedCount() > 0;
+    }
+
+    /**
+     * Atomically add skill points to a character.
+     *
+     * @param characterId MongoDB document id
+     * @param points      number of points to add (positive)
+     * @return true if updated
+     */
+    public boolean addSkillPoints(String characterId, int points) {
+        if (points <= 0) return false;
+
+        Query query = new Query(Criteria.where("id").is(characterId));
+        Update update = new Update()
+                .inc("skillPoints", points)
                 .set("modifiedAt", Instant.now());
 
         var result = mongoTemplate.updateFirst(query, update, RCharacter.class);
