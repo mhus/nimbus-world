@@ -1335,6 +1335,46 @@ export class ModalService {
   }
 
   /**
+   * Open dialog widget modal displaying a dialog referenced by a progress entry.
+   *
+   * @param progressId The progress ID referencing the dialog playbook
+   * @returns Modal reference
+   */
+  openDialog(progressId: string): ModalReference {
+    try {
+      if (document.pointerLockElement) {
+        document.exitPointerLock();
+        logger.debug('Exited pointer lock for dialog widget');
+      }
+
+      const componentBaseUrl = this.appContext?.services.network?.getComponentBaseUrl();
+
+      if (!componentBaseUrl) {
+        logger.warn('No component URL configured for this world');
+        throw new Error('Dialog widget is not available in this world');
+      }
+
+      const separator = componentBaseUrl.includes('?') ? '&' : '?';
+      const worldId = this.appContext.worldInfo?.worldId;
+      const sessionId = this.appContext.sessionId;
+
+      const dialogUrl = `${componentBaseUrl}dialog-widget.html${separator}embedded=true&worldId=${worldId}&sessionId=${sessionId}&progressId=${encodeURIComponent(progressId)}`;
+
+      logger.debug('Opening dialog widget modal', { dialogUrl, progressId });
+
+      return this.openModal(
+        `dialog-${progressId}`,
+        'Dialog',
+        dialogUrl,
+        ModalSizePreset.CENTER_MEDIUM,
+        ModalFlags.CLOSEABLE | ModalFlags.MOVEABLE | ModalFlags.NO_BACKGROUND_LOCK | ModalFlags.RESIZEABLE | ModalFlags.MINIMIZABLE
+      );
+    } catch (error) {
+      throw ExceptionHandler.handleAndRethrow(error, 'ModalService.openDialog', { progressId });
+    }
+  }
+
+  /**
    * Open a predefined component modal
    *
    * @param component Component name (e.g., 'block_editor', 'settings', 'inventory')
@@ -1382,6 +1422,13 @@ export class ModalService {
             throw new Error('document requires 1 attribute: progressId');
           }
           return this.openDocument(attributes[0]);
+
+        case 'dialog':
+          // Expect attributes: [progressId]
+          if (attributes.length < 1) {
+            throw new Error('dialog requires 1 attribute: progressId');
+          }
+          return this.openDialog(attributes[0]);
 
         default:
           throw new Error(`Unknown component: ${component}`);

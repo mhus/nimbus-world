@@ -15,6 +15,7 @@ import de.mhus.nimbus.world.shared.world.WItem;
 import de.mhus.nimbus.world.shared.world.WItemService;
 import de.mhus.nimbus.world.shared.world.WDocumentService;
 import de.mhus.nimbus.world.shared.world.WProgressService;
+import de.mhus.nimbus.world.shared.world.WAnythingService;
 import de.mhus.nimbus.world.shared.world.WWorldService;
 import de.mhus.nimbus.world.player.service.ClientService;
 import lombok.Getter;
@@ -67,6 +68,9 @@ public class BasicGameplay implements Gameplay {
     @Autowired
     @Getter
     protected WProgressService progressService;
+    @Autowired
+    @Getter
+    protected WAnythingService anythingService;
 
     protected Map<String, GameplayAction> actions = new HashMap<>();
 

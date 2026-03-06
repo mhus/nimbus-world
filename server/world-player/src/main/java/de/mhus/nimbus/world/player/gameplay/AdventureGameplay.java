@@ -86,6 +86,7 @@ public class AdventureGameplay extends BasicGameplay {
         actions.put("restore.constitution", new RestoreConstitutionAction(this));
         actions.put("increase.exp", new IncreaseExpAction(this));
         actions.put("increase.skill", new IncreaseSkillAction(this));
+        actions.put("dialog", new DialogAction(this));
     }
 
     @Override
