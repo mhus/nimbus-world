@@ -36,6 +36,9 @@ public class AdventureData extends EntityCombatData {
     /** Cached items by itemId - contains all loaded WItems from backpack, wearings, and shortcuts (transient, not persisted) */
     private transient Map<String, WItem> cachedItems;
 
+    /** Cached MongoDB document ID of the RCharacter (transient, not persisted) */
+    private transient String cachedCharacterDocId;
+
     /** Cached skills from RCharacter (transient, not persisted) */
     private transient Map<String, Integer> cachedSkills;
 

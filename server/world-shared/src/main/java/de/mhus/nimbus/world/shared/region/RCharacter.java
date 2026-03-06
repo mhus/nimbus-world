@@ -50,6 +50,12 @@ public class RCharacter {
     // Skills (Skill-Name -> Level)
     private Map<String, Integer> skills;
 
+    // Skill points available for distribution
+    private int skillPoints;
+
+    // Accumulated experience towards next skill point
+    private long skillExperience;
+
     // Constitution: wear/durability per category (1.0 = perfect, 0.0 = broken)
     // Keys: e.g. "weapon", "armor", "magic", "tool"
     private Map<String, Double> constitution;

@@ -458,6 +458,100 @@ public class RCharacterService {
         return result.getModifiedCount() > 0;
     }
 
+    /**
+     * Calculate the experience required for the next skill point.
+     * Based on the total number of skill points already earned (quadratic formula).
+     *
+     * @param totalSkillPoints current total skill points (already earned + available)
+     * @return experience needed to earn the next skill point
+     */
+    public long calculateSkillExperienceToNext(int totalSkillPoints) {
+        return (long) totalSkillPoints * totalSkillPoints * 100;
+    }
+
+    /**
+     * Calculate total skill points from a character's current skills and available points.
+     * Sum of all invested skill levels above their start values, plus unspent skill points.
+     *
+     * @param character the character
+     * @param skillDefinitions list of skill definitions to calculate invested points
+     * @return total skill points (invested + available)
+     */
+    public int calculateTotalSkillPoints(RCharacter character, java.util.function.Function<String, int[]> skillStartLookup) {
+        int invested = 0;
+        for (var entry : character.getSkills().entrySet()) {
+            int[] startMinMax = skillStartLookup.apply(entry.getKey());
+            if (startMinMax != null) {
+                invested += entry.getValue() - startMinMax[0];
+            }
+        }
+        return invested + character.getSkillPoints();
+    }
+
+    /**
+     * Atomically try to convert experience into a skill point.
+     * Checks if skillExperience >= experienceToNext, then increments skillPoints
+     * and decrements skillExperience by experienceToNext.
+     *
+     * @param characterId MongoDB document id
+     * @param experienceToNext the experience threshold for the next point
+     * @return true if a skill point was earned
+     */
+    public boolean convertExperienceToSkillPoint(String characterId, long experienceToNext) {
+        if (experienceToNext <= 0) experienceToNext = 100;
+
+        Query query = new Query(Criteria.where("id").is(characterId)
+                .and("skillExperience").gte(experienceToNext));
+
+        Update update = new Update()
+                .inc("skillPoints", 1)
+                .inc("skillExperience", -experienceToNext)
+                .set("modifiedAt", Instant.now());
+
+        var result = mongoTemplate.updateFirst(query, update, RCharacter.class);
+        return result.getModifiedCount() > 0;
+    }
+
+    /**
+     * Atomically add experience to a character.
+     *
+     * @param characterId MongoDB document id
+     * @param experience  amount to add (positive)
+     * @return true if updated
+     */
+    public boolean addSkillExperience(String characterId, long experience) {
+        if (experience <= 0) return false;
+
+        Query query = new Query(Criteria.where("id").is(characterId));
+        Update update = new Update()
+                .inc("skillExperience", experience)
+                .set("modifiedAt", Instant.now());
+
+        var result = mongoTemplate.updateFirst(query, update, RCharacter.class);
+        return result.getModifiedCount() > 0;
+    }
+
+    /**
+     * Atomically spend one skill point to increment a skill by 1.
+     * Requires at least 1 skillPoint available.
+     *
+     * @param characterId MongoDB document id
+     * @param skill       skill name to increment
+     * @return true if the update was applied
+     */
+    public boolean spendSkillPoint(String characterId, String skill) {
+        Query query = new Query(Criteria.where("id").is(characterId)
+                .and("skillPoints").gte(1));
+
+        Update update = new Update()
+                .inc("skillPoints", -1)
+                .inc("skills." + skill, 1)
+                .set("modifiedAt", Instant.now());
+
+        var result = mongoTemplate.updateFirst(query, update, RCharacter.class);
+        return result.getModifiedCount() > 0;
+    }
+
     private void fillWithDefaults(PlayerInfo playerInfo) {
         var stateValues = new HashMap<String, de.mhus.nimbus.generated.types.MovementStateValues>();
 

@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import de.mhus.nimbus.generated.configs.WEARABLE_SLOT;
 import de.mhus.nimbus.world.player.gameplay.AdventureData;
 import de.mhus.nimbus.world.player.gameplay.AdventureGameplay;
-import de.mhus.nimbus.world.player.gameplay.AdventureSkills;
+import de.mhus.nimbus.world.shared.gameplay.AdventureSkills;
 import de.mhus.nimbus.world.shared.gameplay.CombatStat;
 import de.mhus.nimbus.world.player.gameplay.GameplayAction;
 import de.mhus.nimbus.world.shared.gameplay.VitalValue;

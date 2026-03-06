@@ -2,6 +2,7 @@ package de.mhus.nimbus.world.player.gameplay;
 
 import de.mhus.nimbus.generated.configs.PlayerBackpack;
 import de.mhus.nimbus.generated.configs.WEARABLE_SLOT;
+import de.mhus.nimbus.world.shared.gameplay.AdventureSkills;
 import de.mhus.nimbus.world.shared.gameplay.CombatResolver;
 import de.mhus.nimbus.world.shared.gameplay.CombatStat;
 import de.mhus.nimbus.world.shared.gameplay.VitalValue;

@@ -1,4 +1,4 @@
-package de.mhus.nimbus.world.player.gameplay;
+package de.mhus.nimbus.world.shared.gameplay;
 
 import lombok.Getter;
 
@@ -20,6 +20,12 @@ public class Skill {
     /** Short description of what the skill does */
     private final String description;
 
+    /** Group for UI display, e.g. "combat", "survival", "gathering", "utility" */
+    private final String group;
+
+    /** Whether this skill can be leveled up by spending skill points */
+    private final boolean free;
+
     /** Starting level for new characters */
     private final int start;
 
@@ -29,10 +35,12 @@ public class Skill {
     /** Maximum possible level */
     private final int max;
 
-    private Skill(String name, String title, String description, int start, int min, int max) {
+    private Skill(String name, String title, String description, String group, boolean free, int start, int min, int max) {
         this.name = name;
         this.title = title;
         this.description = description;
+        this.group = group;
+        this.free = free;
         this.start = start;
         this.min = min;
         this.max = max;
@@ -44,13 +52,15 @@ public class Skill {
      * @param name        Technical skill ID (e.g. "combat.melee")
      * @param title       Display name
      * @param description Short description
+     * @param group       Group for UI display
+     * @param free        Whether the skill can be leveled up with skill points
      * @param start       Starting level for new characters
      * @param min         Minimum level
      * @param max         Maximum level
      * @return Skill instance
      */
-    public static Skill of(String name, String title, String description, int start, int min, int max) {
-        return new Skill(name, title, description, start, min, max);
+    public static Skill of(String name, String title, String description, String group, boolean free, int start, int min, int max) {
+        return new Skill(name, title, description, group, free, start, min, max);
     }
 
     /**

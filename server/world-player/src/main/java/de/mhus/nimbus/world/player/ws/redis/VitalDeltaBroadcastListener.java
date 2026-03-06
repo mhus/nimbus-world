@@ -85,6 +85,11 @@ public class VitalDeltaBroadcastListener {
                 : "n:textures/actions/attack_blocked.png";
         clientService.sendCommand(session, "flashImage", List.of(texture, "500", "0.5"));
 
+        // Successful attack: +1 skill experience
+        if (hit) {
+            adventureGameplay.addSkillExperienceForSession(session);
+        }
+
         log.debug("Attack result for {}: {} (damage={})",
                 session.getEntityId(), hit ? "HIT" : "BLOCKED", msg.getDelta());
     }

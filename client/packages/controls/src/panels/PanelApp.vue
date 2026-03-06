@@ -95,6 +95,13 @@ const panels = ref<Panel[]>([
     description: 'Equip items to wearing slots',
     url: './wearing-panel.html',
     color: '#10B981' // emerald
+  },
+  {
+    id: 'skill-panel',
+    name: 'Skill Panel',
+    description: 'Verwalte und verteile deine Faehigkeiten',
+    url: './skill-panel.html',
+    color: '#06B6D4' // cyan
   }
 ]);
 

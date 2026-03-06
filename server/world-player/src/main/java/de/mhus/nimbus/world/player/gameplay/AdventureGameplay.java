@@ -11,6 +11,8 @@ import de.mhus.nimbus.generated.types.Item;
 import de.mhus.nimbus.generated.types.PlayerInfo;
 import de.mhus.nimbus.generated.types.ShortcutDefinition;
 import de.mhus.nimbus.shared.types.PlayerId;
+import de.mhus.nimbus.world.shared.gameplay.AdventureSkills;
+import de.mhus.nimbus.world.shared.gameplay.Skill;
 import de.mhus.nimbus.world.player.gameplay.adventure.AttackAction;
 import de.mhus.nimbus.world.player.gameplay.adventure.CollectAction;
 import de.mhus.nimbus.world.player.gameplay.adventure.EffectAction;
@@ -353,7 +355,9 @@ public class AdventureGameplay extends BasicGameplay {
                     playerId.getUserId(), regionId, playerId.getCharacterId());
             if (characterOpt.isEmpty()) return;
 
-            data.setCachedSkills(new HashMap<>(characterOpt.get().getSkills()));
+            var character = characterOpt.get();
+            data.setCachedCharacterDocId(character.getId());
+            data.setCachedSkills(new HashMap<>(character.getSkills()));
 
             // Recalculate passive stats (skills affect them)
             recalculatePassiveStats(data);
@@ -382,7 +386,9 @@ public class AdventureGameplay extends BasicGameplay {
                     playerId.getUserId(), regionId, playerId.getCharacterId());
             if (characterOpt.isEmpty()) return;
 
-            data.setCachedConstitution(new HashMap<>(characterOpt.get().getConstitution()));
+            var character = characterOpt.get();
+            data.setCachedCharacterDocId(character.getId());
+            data.setCachedConstitution(new HashMap<>(character.getConstitution()));
 
             log.debug("Refreshed constitution cache for player {}: {}",
                     entityId, data.getCachedConstitution());
@@ -848,6 +854,10 @@ public class AdventureGameplay extends BasicGameplay {
             log.debug("Attack from {} on {} missed (phyDef={}, phyEva={}, magDef={}, magEva={})",
                     msg.getSourceEntityId(), msg.getTargetEntityId(),
                     defPhysDef, defPhysEvasion, defMagDef, defMagEvasion);
+            // Successful active defense: +1 skill experience
+            if (data.getCachedCharacterDocId() != null) {
+                characterService.addSkillExperience(data.getCachedCharacterDocId(), 1);
+            }
             return;
         }
 
@@ -918,6 +928,18 @@ public class AdventureGameplay extends BasicGameplay {
         if (characterOpt.isEmpty()) return;
 
         characterService.reduceConstitution(characterOpt.get().getId(), category, actualWear);
+    }
+
+    /**
+     * Add +1 skill experience for the player in the given session.
+     * Uses the cached character document ID for a fast atomic increment.
+     */
+    public void addSkillExperienceForSession(PlayerSession session) {
+        if (!(session.getGameplayData() instanceof AdventureData data)) return;
+        String docId = data.getCachedCharacterDocId();
+        if (docId != null) {
+            characterService.addSkillExperience(docId, 1);
+        }
     }
 
     private static final double DEFAULT_ARMOR_WEAR = 0.005;

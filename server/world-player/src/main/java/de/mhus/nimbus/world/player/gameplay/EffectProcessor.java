@@ -1,5 +1,6 @@
 package de.mhus.nimbus.world.player.gameplay;
 
+import de.mhus.nimbus.world.shared.gameplay.AdventureSkills;
 import de.mhus.nimbus.world.shared.gameplay.BaseEffectProcessor;
 import de.mhus.nimbus.world.shared.gameplay.EntityCombatData;
 import de.mhus.nimbus.world.shared.gameplay.VitalValue;
