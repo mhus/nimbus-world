@@ -223,6 +223,20 @@ public class GameplayService implements SessionAuthenticatedConsumer {
     }
 
     /**
+     * Called when a player's constitution has been modified (weapon/armor/magic wear).
+     */
+    public void onConstitutionModified(PlayerSession session) {
+        log.info("Constitution modified for player {}", GameplayUtil.toString(session.getPlayer()));
+        var gameplay = session.getGameplay();
+        if (gameplay == null) {
+            log.warn("No gameplay set for session {}, cannot handle constitution modification", session.getPlayer());
+            return;
+        }
+        clientService.sendCommand(session, "ConstitutionModified", List.of());
+        gameplay.onConstitutionModified(session);
+    }
+
+    /**
      * Use an item's effects on the player or a target entity.
      * Checks if the item has effects, if there's sufficient quantity, applies effects via gameplay,
      * then consumes the item (quantity 1) via reduceItem.

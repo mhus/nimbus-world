@@ -99,7 +99,9 @@ public class VitalDeltaBroadcastListener {
             }
 
             String type = delta.getType();
-            if (VitalDeltaBroadcastMessage.TYPE_ATTACK.equals(type)) {
+            if (VitalDeltaBroadcastMessage.TYPE_PROXIMITY.equals(type)) {
+                handleProximity(worldId, state, combatData, delta);
+            } else if (VitalDeltaBroadcastMessage.TYPE_ATTACK.equals(type)) {
                 handleAttack(worldId, state, combatData, delta);
             } else {
                 handleDelta(worldId, combatData, delta);
@@ -130,23 +132,24 @@ public class VitalDeltaBroadcastListener {
                 defPhysDef, defPhysEvasion,
                 defMagDef, defMagEvasion);
 
+        log.debug("World {}: Attack on {} from {}: physDmg={}, physAcc={}, magDmg={}, magAcc={}, crit={}/{}, def: phys={}/{}, mag={}/{} → damage={}",
+                worldId, msg.getTargetEntityId(), msg.getSourceEntityId(),
+                msg.getPhysicalDamage(), msg.getPhysicalAccuracy(),
+                msg.getMagicalDamage(), msg.getMagicalAccuracy(),
+                msg.getCritChance(), msg.getCritMultiplier(),
+                defPhysDef, defPhysEvasion, defMagDef, defMagEvasion, damage);
+
         // Send attack result back to attacker
         vitalDeltaPublisher.publishAttackResult(
                 worldId.getId(), msg.getSourceEntityId(), msg.getTargetEntityId(),
                 damage != 0, damage);
 
-        if (damage == 0) {
-            log.debug("World {}: Attack from {} on {} missed",
-                    worldId, msg.getSourceEntityId(), msg.getTargetEntityId());
-            return;
-        }
-
-        // Track attacker for loot eligibility
+        // Track attacker for loot eligibility (even on miss — they are engaged)
         if (msg.getSourceEntityId() != null) {
             state.getAttackers().add(msg.getSourceEntityId());
         }
 
-        // Activate or refresh combat mode
+        // Activate or refresh combat mode (even on miss — entity should react to being attacked)
         long now = System.currentTimeMillis();
         if (combatData.getCombatStrategy() != null) {
             if (!state.isInCombat()) {
@@ -162,6 +165,10 @@ public class VitalDeltaBroadcastListener {
             }
         }
 
+        if (damage == 0) {
+            return;
+        }
+
         // Apply damage to health
         VitalValue health = combatData.getVital("health");
         if (health != null) {
@@ -175,6 +182,41 @@ public class VitalDeltaBroadcastListener {
                     worldId, msg.getTargetEntityId(), -damage, msg.getSourceEntityId(),
                     health.getCurrent(), health.getEffectiveMax());
         }
+    }
+
+    /**
+     * Handle a PROXIMITY message.
+     * A player entered the attention range of this entity.
+     * If the entity has combat_aggroOnProximity=true, it enters combat mode.
+     */
+    private void handleProximity(WorldId worldId, SimulationState state,
+                                  EntityCombatData combatData, VitalDeltaBroadcastMessage msg) {
+        String aggroOnProximity = state.getEntity() != null && state.getEntity().getServer() != null
+                ? state.getEntity().getServer().get("combat_aggroOnProximity") : null;
+        if (!"true".equals(aggroOnProximity)) {
+            log.trace("World {}: Entity {} does not aggro on proximity", worldId, msg.getTargetEntityId());
+            return;
+        }
+
+        if (state.isInCombat()) {
+            log.trace("World {}: Entity {} already in combat, ignoring proximity", worldId, msg.getTargetEntityId());
+            return;
+        }
+
+        if (combatData.getCombatStrategy() == null) {
+            log.trace("World {}: Entity {} has no combat strategy, ignoring proximity", worldId, msg.getTargetEntityId());
+            return;
+        }
+
+        long now = System.currentTimeMillis();
+        state.setCombatStrategy(combatData.getCombatStrategy());
+        state.enterCombat(msg.getSourceEntityId(), msg.getSourceSessionId(), now);
+        log.info("World {}: Entity {} entered combat via proximity (attacker={})",
+                worldId, msg.getTargetEntityId(), msg.getSourceEntityId());
+
+        // Spread combat to nearby entities
+        simulatorService.spreadCombatMode(worldId, msg.getTargetEntityId(),
+                msg.getSourceEntityId(), msg.getSourceSessionId());
     }
 
     /**

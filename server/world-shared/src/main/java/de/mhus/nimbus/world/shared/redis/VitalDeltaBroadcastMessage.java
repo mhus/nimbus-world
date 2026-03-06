@@ -27,6 +27,7 @@ public class VitalDeltaBroadcastMessage {
     public static final String TYPE_DELTA = "DELTA";
     public static final String TYPE_ATTACK = "ATTACK";
     public static final String TYPE_ATTACK_RESULT = "ATTACK_RESULT";
+    public static final String TYPE_PROXIMITY = "PROXIMITY";
 
     /** Target entity ID, e.g. "@user:char" (player) or "cow2" (NPC) */
     private String targetEntityId;

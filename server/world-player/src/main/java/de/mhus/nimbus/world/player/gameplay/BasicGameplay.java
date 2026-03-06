@@ -9,6 +9,7 @@ import de.mhus.nimbus.world.shared.region.RCharacterService;
 import de.mhus.nimbus.world.shared.world.WChunkService;
 import de.mhus.nimbus.world.shared.world.WEntity;
 import de.mhus.nimbus.world.shared.redis.EntityStateRedisService;
+import de.mhus.nimbus.world.shared.redis.VitalDeltaPublisher;
 import de.mhus.nimbus.world.shared.world.WEntityService;
 import de.mhus.nimbus.world.shared.world.WItem;
 import de.mhus.nimbus.world.shared.world.WItemService;
@@ -46,6 +47,9 @@ public class BasicGameplay implements Gameplay {
     protected GameplayService gameplayService;
     @Autowired
     protected EntityStateRedisService entityStateRedisService;
+    @Autowired
+    @Getter
+    protected VitalDeltaPublisher vitalDeltaPublisher;
 
     protected Map<String, GameplayAction> actions = new HashMap<>();
 
@@ -117,6 +121,18 @@ public class BasicGameplay implements Gameplay {
 
     @Override
     public void onEntityInteraction(PlayerSession session, String entityId, String userAction, String shortcutKey, Long timestamp, JsonNode params) {
+        // Proximity notification: forward to world-life
+        if ("entityProximity".equals(userAction)) {
+            boolean entered = params != null && params.has("entered") && params.get("entered").asBoolean();
+            if (entered) {
+                String worldId = session.getWorldId() != null ? session.getWorldId().getId() : null;
+                if (worldId != null) {
+                    vitalDeltaPublisher.publishProximity(
+                            worldId, entityId, session.getEntityId(), session.getSessionId());
+                }
+            }
+            return;
+        }
         if (!Strings.isBlank(shortcutKey)) {
             // Shortcut on entity: route via item action
             String itemAction = resolveShortcutItemAction(session, shortcutKey);
@@ -247,6 +263,11 @@ public class BasicGameplay implements Gameplay {
 
     @Override
     public void onSkillsModified(PlayerSession session) {
+
+    }
+
+    @Override
+    public void onConstitutionModified(PlayerSession session) {
 
     }
 

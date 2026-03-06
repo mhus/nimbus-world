@@ -374,6 +374,90 @@ public class RCharacterService {
         return false;
     }
 
+    /**
+     * Atomically reduce a constitution value by a delta.
+     * If the key doesn't exist yet, it is initialized to 1.0 first.
+     * The value is clamped to [0.0, 1.0].
+     *
+     * @param characterId MongoDB document id
+     * @param category    constitution category (e.g. "weapon", "armor", "magic")
+     * @param delta       amount to reduce (positive value, will be subtracted)
+     * @return true if the update was applied
+     */
+    public boolean reduceConstitution(String characterId, String category, double delta) {
+        if (delta <= 0) return false;
+
+        // First ensure the key exists with default 1.0 if missing
+        Query initQuery = new Query(Criteria.where("id").is(characterId)
+                .and("constitution." + category).exists(false));
+        Update initUpdate = new Update()
+                .set("constitution." + category, 1.0)
+                .set("modifiedAt", Instant.now());
+        mongoTemplate.updateFirst(initQuery, initUpdate, RCharacter.class);
+
+        // Now atomically decrement
+        Query query = new Query(Criteria.where("id").is(characterId));
+        Update update = new Update()
+                .inc("constitution." + category, -delta)
+                .set("modifiedAt", Instant.now());
+        var result = mongoTemplate.updateFirst(query, update, RCharacter.class);
+
+        if (result.getModifiedCount() > 0) {
+            // Clamp to 0
+            Query clampQuery = new Query(Criteria.where("id").is(characterId)
+                    .and("constitution." + category).lt(0));
+            Update clampUpdate = new Update()
+                    .set("constitution." + category, 0.0)
+                    .set("modifiedAt", Instant.now());
+            mongoTemplate.updateFirst(clampQuery, clampUpdate, RCharacter.class);
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Atomically set a single constitution value.
+     * Clamps to [0.0, 1.0].
+     *
+     * @param characterId MongoDB document id
+     * @param category    constitution category
+     * @param value       new value (clamped to 0.0-1.0)
+     * @return true if the update was applied
+     */
+    public boolean setConstitution(String characterId, String category, double value) {
+        value = Math.max(0.0, Math.min(1.0, value));
+        Query query = new Query(Criteria.where("id").is(characterId));
+        Update update = new Update()
+                .set("constitution." + category, value)
+                .set("modifiedAt", Instant.now());
+        var result = mongoTemplate.updateFirst(query, update, RCharacter.class);
+        return result.getModifiedCount() > 0;
+    }
+
+    /**
+     * Atomically reset all constitution values to 1.0 (full recovery).
+     *
+     * @param characterId MongoDB document id
+     * @return true if the update was applied
+     */
+    public boolean restoreAllConstitution(String characterId) {
+        Query query = new Query(Criteria.where("id").is(characterId));
+
+        RCharacter character = mongoTemplate.findById(characterId, RCharacter.class);
+        if (character == null) return false;
+
+        var constitution = character.getConstitution();
+        if (constitution.isEmpty()) return true;
+
+        Update update = new Update().set("modifiedAt", Instant.now());
+        for (String key : constitution.keySet()) {
+            update.set("constitution." + key, 1.0);
+        }
+
+        var result = mongoTemplate.updateFirst(query, update, RCharacter.class);
+        return result.getModifiedCount() > 0;
+    }
+
     private void fillWithDefaults(PlayerInfo playerInfo) {
         var stateValues = new HashMap<String, de.mhus.nimbus.generated.types.MovementStateValues>();
 

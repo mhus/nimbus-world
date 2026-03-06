@@ -26,7 +26,6 @@ import de.mhus.nimbus.world.shared.gameplay.CombatStat;
 import de.mhus.nimbus.world.shared.gameplay.PassiveStats;
 import de.mhus.nimbus.world.shared.gameplay.VitalValue;
 import de.mhus.nimbus.world.shared.redis.VitalDeltaBroadcastMessage;
-import de.mhus.nimbus.world.shared.redis.VitalDeltaPublisher;
 import de.mhus.nimbus.world.shared.util.HexMathUtil;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
 import de.mhus.nimbus.world.shared.world.WHexGridService;
@@ -56,10 +55,6 @@ public class AdventureGameplay extends BasicGameplay {
 
     @Autowired
     private ObjectMapper objectMapper;
-
-    @Autowired
-    @Getter
-    private VitalDeltaPublisher vitalDeltaPublisher;
 
     @Autowired
     private WHexGridService hexGridService;
@@ -95,6 +90,7 @@ public class AdventureGameplay extends BasicGameplay {
         // Load initial caches
         refreshInventoryCache(session, data);
         refreshSkillsCache(session, data);
+        refreshConstitutionCache(session, data);
 
         // Send initial vitals to client
         sendVitalsUpdate(session, data);
@@ -197,6 +193,13 @@ public class AdventureGameplay extends BasicGameplay {
     public void onSkillsModified(PlayerSession session) {
         if (session.getGameplayData() instanceof AdventureData data) {
             refreshSkillsCache(session, data);
+        }
+    }
+
+    @Override
+    public void onConstitutionModified(PlayerSession session) {
+        if (session.getGameplayData() instanceof AdventureData data) {
+            refreshConstitutionCache(session, data);
         }
     }
 
@@ -355,6 +358,32 @@ public class AdventureGameplay extends BasicGameplay {
                     entityId, data.getCachedSkills().size());
         } catch (Exception e) {
             log.error("Failed to refresh skills cache for session {}: {}",
+                    session.getSessionId(), e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Reload constitution from RCharacter and cache in AdventureData.
+     */
+    private void refreshConstitutionCache(PlayerSession session, AdventureData data) {
+        try {
+            String entityId = session.getEntityId();
+            if (entityId == null || session.getWorldId() == null) return;
+
+            PlayerId playerId = PlayerId.of(entityId).orElse(null);
+            if (playerId == null) return;
+
+            String regionId = session.getWorldId().getRegionId();
+            var characterOpt = characterService.getCharacter(
+                    playerId.getUserId(), regionId, playerId.getCharacterId());
+            if (characterOpt.isEmpty()) return;
+
+            data.setCachedConstitution(new HashMap<>(characterOpt.get().getConstitution()));
+
+            log.debug("Refreshed constitution cache for player {}: {}",
+                    entityId, data.getCachedConstitution());
+        } catch (Exception e) {
+            log.error("Failed to refresh constitution cache for session {}: {}",
                     session.getSessionId(), e.getMessage(), e);
         }
     }
@@ -762,17 +791,23 @@ public class AdventureGameplay extends BasicGameplay {
      * @param msg     The incoming attack message
      */
     public void handleIncomingAttack(PlayerSession session, AdventureData data, VitalDeltaBroadcastMessage msg) {
+        log.debug("Incoming attack on player {} from {} [phys={}/{}, mag={}/{}]",
+                msg.getTargetEntityId(), msg.getSourceEntityId(),
+                msg.getPhysicalDamage(), msg.getPhysicalAccuracy(),
+                msg.getMagicalDamage(), msg.getMagicalAccuracy());
         // Check gameMode on defender side
         if (!isAttackAllowed(session, msg.getSourceEntityId())) {
-            log.debug("Incoming attack blocked by gameMode: {} -> {}", msg.getSourceEntityId(), msg.getTargetEntityId());
+            log.debug("Incoming attack blocked by gameMode: {} -> {} (gameMode={})",
+                    msg.getSourceEntityId(), msg.getTargetEntityId(), resolveGameMode(session));
             return;
         }
 
-        // Read defender's cached defence stats (effective values from last tick recalculation)
-        double defPhysDef = getEffectiveStat(data, "physical.defense");
-        double defPhysEvasion = getEffectiveStat(data, "physical.evasion");
-        double defMagDef = getEffectiveStat(data, "magical.defense");
-        double defMagEvasion = getEffectiveStat(data, "magical.evasion");
+        // Read defender's cached defence stats, scaled by armor constitution
+        double armorCon = getConstitutionValue(data, "armor");
+        double defPhysDef = getEffectiveStat(data, "physical.defense") * armorCon;
+        double defPhysEvasion = getEffectiveStat(data, "physical.evasion") * armorCon;
+        double defMagDef = getEffectiveStat(data, "magical.defense") * armorCon;
+        double defMagEvasion = getEffectiveStat(data, "magical.evasion") * armorCon;
 
         // Resolve damage
         double damage = CombatResolver.resolve(
@@ -794,11 +829,103 @@ public class AdventureGameplay extends BasicGameplay {
         effectProcessor.onCombatAction(data);
 
         applyDamage(session, data, damage);
+
+        // Armor constitution wear — use average wear from equipped armor pieces
+        double armorWear = calculateArmorWear(data);
+        if (armorWear > 0) {
+            applyConstitutionWear(session, data, "armor", armorWear, AdventureSkills.COMBAT_ARMOR_CARE);
+        }
     }
 
     private double getEffectiveStat(AdventureData data, String statName) {
         CombatStat stat = data.getCombatStat(statName);
         return stat != null ? stat.getEffective() : 0;
+    }
+
+    private double getConstitutionValue(AdventureData data, String category) {
+        var con = data.getCachedConstitution();
+        if (con == null) return 1.0;
+        return con.getOrDefault(category, 1.0);
+    }
+
+    /**
+     * Apply constitution wear after attack or defense.
+     * Calculates actual wear from item base wear and care skill, then reduces
+     * the constitution value atomically in MongoDB and updates the local cache.
+     *
+     * @param session   Player session
+     * @param data      Adventure data with cached constitution
+     * @param category  Constitution category ("weapon" or "armor")
+     * @param itemWear  Base wear from item server property (e.g. 0.01)
+     * @param careSkill Skill that reduces wear (higher = less wear)
+     */
+    public void applyConstitutionWear(PlayerSession session, AdventureData data,
+                                        String category, double itemWear, Skill careSkill) {
+        if (itemWear <= 0) return;
+
+        // Skill factor: skill 100 = 1.0x wear, skill 200 = 0.5x wear
+        double skillFactor = careSkill.getValue(data.getCachedSkills()) / 100.0;
+        if (skillFactor <= 0) skillFactor = 0.01;
+        double actualWear = itemWear / skillFactor;
+
+        // Update local cache directly
+        var con = data.getCachedConstitution();
+        if (con == null) {
+            con = new java.util.HashMap<>();
+            data.setCachedConstitution(con);
+        }
+        double current = con.getOrDefault(category, 1.0);
+        double newValue = Math.max(0.0, current - actualWear);
+        con.put(category, newValue);
+
+        // Atomic DB update
+        String entityId = session.getEntityId();
+        if (entityId == null || session.getWorldId() == null) return;
+        var playerId = de.mhus.nimbus.shared.types.PlayerId.of(entityId).orElse(null);
+        if (playerId == null) return;
+        String regionId = session.getWorldId().getRegionId();
+        var characterOpt = characterService.getCharacter(
+                playerId.getUserId(), regionId, playerId.getCharacterId());
+        if (characterOpt.isEmpty()) return;
+
+        characterService.reduceConstitution(characterOpt.get().getId(), category, actualWear);
+    }
+
+    private static final double DEFAULT_ARMOR_WEAR = 0.005;
+    private static final java.util.Set<WEARABLE_SLOT> ARMOR_SLOTS = java.util.Set.of(
+            WEARABLE_SLOT.HEAD, WEARABLE_SLOT.BODY, WEARABLE_SLOT.LEGS, WEARABLE_SLOT.FEET,
+            WEARABLE_SLOT.NECK, WEARABLE_SLOT.ARMS, WEARABLE_SLOT.LEFT_RING, WEARABLE_SLOT.RIGHT_RING);
+
+    private double calculateArmorWear(AdventureData data) {
+        var backpack = data.getCachedBackpack();
+        if (backpack == null || backpack.getWearingItemIds() == null) return 0;
+        var cachedItems = data.getCachedItems();
+
+        double totalWear = 0;
+        int count = 0;
+        for (var slot : ARMOR_SLOTS) {
+            String itemId = backpack.getWearingItemIds().get(slot);
+            if (itemId == null) continue;
+            WItem item = cachedItems != null ? cachedItems.get(itemId) : null;
+            totalWear += getItemWear(item, DEFAULT_ARMOR_WEAR);
+            count++;
+        }
+        return count > 0 ? totalWear / count : 0;
+    }
+
+    /**
+     * Get the wear value from an item's server properties.
+     * Returns defaultWear if no "wear" property is set.
+     */
+    public double getItemWear(WItem item, double defaultWear) {
+        if (item == null || item.getServer() == null) return defaultWear;
+        String val = item.getServer().get("wear");
+        if (val == null || val.isBlank()) return defaultWear;
+        try {
+            return Double.parseDouble(val.trim());
+        } catch (NumberFormatException e) {
+            return defaultWear;
+        }
     }
 
     /**

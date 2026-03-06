@@ -36,6 +36,7 @@ public class PreyAnimalBehavior implements EntityBehavior {
 
     // Configuration constants
     private static final int DEFAULT_WAYPOINTS_PER_PATH = 5;
+    private static final double DEFAULT_ROAM_RADIUS = 20.0;
     private static final long DEFAULT_MIN_IDLE_DURATION_MS = 1000;
     private static final long DEFAULT_MAX_IDLE_DURATION_MS = 3000;
 
@@ -74,6 +75,8 @@ public class PreyAnimalBehavior implements EntityBehavior {
 
     /**
      * Generate a new pathway for the entity.
+     * If the entity is outside its roam radius (relative to middlePoint/spawn),
+     * it generates a path back towards the center instead of a random direction.
      */
     private EntityPathway generatePathway(WEntity entity, SimulationState state, long currentTime, WorldId worldId) {
         // Get entity's current position (server-side simulation data)
@@ -91,8 +94,8 @@ public class PreyAnimalBehavior implements EntityBehavior {
         startPosition.setY((double) startY);
         startPosition.setZ(currentPosition.getZ());
 
-        // Choose random direction for roaming
-        Vector3 direction = blockMovement.getRandomDirection();
+        // Determine direction: if too far from home, head back; otherwise random
+        Vector3 direction = chooseDirection(entity, startPosition);
 
         // Get entity speed (default to 1.0 blocks/second)
         double speed = entity.getSpeed() != null ? entity.getSpeed() : 1.0;
@@ -128,6 +131,49 @@ public class PreyAnimalBehavior implements EntityBehavior {
                 entity.getEntityId(), waypointsWithIdle.size());
 
         return pathway;
+    }
+
+    /**
+     * Choose movement direction based on distance to home position.
+     * If entity is outside its roam_radius, returns direction towards middlePoint.
+     * Otherwise returns a random direction.
+     */
+    private Vector3 chooseDirection(WEntity entity, Vector3 currentPos) {
+        Vector3 homePos = entity.getMiddlePoint() != null ? entity.getMiddlePoint() : entity.getPosition();
+        if (homePos == null) return blockMovement.getRandomDirection();
+
+        double roamRadius = getServerDouble(entity, "roam_radius", DEFAULT_ROAM_RADIUS);
+        if (roamRadius <= 0) return blockMovement.getRandomDirection();
+
+        double dx = currentPos.getX() - homePos.getX();
+        double dz = currentPos.getZ() - homePos.getZ();
+        double distFromHome = Math.sqrt(dx * dx + dz * dz);
+
+        if (distFromHome > roamRadius) {
+            // Head back towards home
+            double length = distFromHome;
+            log.trace("Entity {} is {} blocks from home (radius={}), heading back",
+                    entity.getEntityId(), String.format("%.1f", distFromHome), roamRadius);
+            return Vector3.builder()
+                    .x(-dx / length)
+                    .y(0.0)
+                    .z(-dz / length)
+                    .build();
+        }
+
+        return blockMovement.getRandomDirection();
+    }
+
+    private static double getServerDouble(WEntity entity, String key, double defaultValue) {
+        var server = entity.getServer();
+        if (server == null) return defaultValue;
+        String val = server.get(key);
+        if (val == null || val.isBlank()) return defaultValue;
+        try {
+            return Double.parseDouble(val.trim());
+        } catch (NumberFormatException e) {
+            return defaultValue;
+        }
     }
 
     /**

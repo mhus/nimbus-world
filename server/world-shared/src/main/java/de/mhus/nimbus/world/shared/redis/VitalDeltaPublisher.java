@@ -151,6 +151,33 @@ public class VitalDeltaPublisher {
     }
 
     /**
+     * Publish a proximity notification to an entity.
+     * Used when a player enters an NPC's attention range.
+     * The entity decides whether to enter combat based on its properties.
+     */
+    public void publishProximity(String worldId, String targetEntityId, String sourceEntityId, String sourceSessionId) {
+        if (targetEntityId == null || sourceEntityId == null) return;
+
+        try {
+            VitalDeltaBroadcastMessage message = VitalDeltaBroadcastMessage.builder()
+                    .type(VitalDeltaBroadcastMessage.TYPE_PROXIMITY)
+                    .targetEntityId(targetEntityId)
+                    .sourceEntityId(sourceEntityId)
+                    .sourceSessionId(sourceSessionId)
+                    .worldId(worldId)
+                    .build();
+
+            String json = objectMapper.writeValueAsString(message);
+            String channel = targetEntityId.startsWith("@") ? CHANNEL_PLAYER : CHANNEL_ENTITY;
+            redisMessaging.publish(worldId, channel, json);
+
+            log.debug("Published proximity: {} entered range of {}", sourceEntityId, targetEntityId);
+        } catch (Exception e) {
+            log.error("Failed to publish proximity for {} in world {}", targetEntityId, worldId, e);
+        }
+    }
+
+    /**
      * Publish multiple vital deltas at once.
      *
      * @param deltas List of delta messages to publish

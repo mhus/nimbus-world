@@ -39,6 +39,9 @@ public class AdventureData extends EntityCombatData {
     /** Cached skills from RCharacter (transient, not persisted) */
     private transient Map<String, Integer> cachedSkills;
 
+    /** Cached constitution from RCharacter (transient, not persisted) */
+    private transient Map<String, Double> cachedConstitution;
+
     /** Timestamp until which collecting is blocked (transient, not persisted) */
     private transient long nextCollectAllowed = 0;
 

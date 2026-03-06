@@ -64,6 +64,7 @@ public class VitalDeltaBroadcastListener {
             }
 
             String type = msg.getType();
+            log.debug("Received vital delta: type={}, target={}, source={}", type, msg.getTargetEntityId(), msg.getSourceEntityId());
             if (VitalDeltaBroadcastMessage.TYPE_ATTACK.equals(type)) {
                 adventureGameplay.handleIncomingAttack(targetSession, data, msg);
             } else if (VitalDeltaBroadcastMessage.TYPE_ATTACK_RESULT.equals(type)) {

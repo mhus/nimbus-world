@@ -50,6 +50,10 @@ public class RCharacter {
     // Skills (Skill-Name -> Level)
     private Map<String, Integer> skills;
 
+    // Constitution: wear/durability per category (1.0 = perfect, 0.0 = broken)
+    // Keys: e.g. "weapon", "armor", "magic", "tool"
+    private Map<String, Double> constitution;
+
     private Map<String, String> attributes; // neu: Attribute
 
     @Indexed
@@ -63,6 +67,14 @@ public class RCharacter {
     }
 
     public Map<String, Integer> getSkills() { if (skills == null) skills = new HashMap<>(); return skills; }
+    public Map<String, Double> getConstitution() { if (constitution == null) constitution = new HashMap<>(); return constitution; }
+
+    /**
+     * Get constitution value for a category. Returns 1.0 if not set.
+     */
+    public double getConstitutionValue(String category) {
+        return getConstitution().getOrDefault(category, 1.0);
+    }
 
     public void setSkill(String skill, int level) {
         if (level < 0) level = 0;

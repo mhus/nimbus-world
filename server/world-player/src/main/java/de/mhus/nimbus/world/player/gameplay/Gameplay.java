@@ -89,6 +89,8 @@ public interface Gameplay {
 
     void onSkillsModified(PlayerSession session);
 
+    void onConstitutionModified(PlayerSession session);
+
     /**
      * Apply effects from an item's parameters to the player (or a target entity).
      *

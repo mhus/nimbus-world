@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import de.mhus.nimbus.generated.configs.WEARABLE_SLOT;
 import de.mhus.nimbus.world.player.gameplay.AdventureData;
 import de.mhus.nimbus.world.player.gameplay.AdventureGameplay;
+import de.mhus.nimbus.world.player.gameplay.AdventureSkills;
 import de.mhus.nimbus.world.shared.gameplay.CombatStat;
 import de.mhus.nimbus.world.player.gameplay.GameplayAction;
 import de.mhus.nimbus.world.shared.gameplay.VitalValue;
@@ -24,6 +25,7 @@ public class AttackAction implements GameplayAction {
 
     private static final double STAMINA_COST = 5.0;
     private static final double ATTACK_ADRENALINE = 5.0;
+    private static final double DEFAULT_WEAPON_WEAR = 0.01;
 
     private final AdventureGameplay basic;
 
@@ -97,12 +99,13 @@ public class AttackAction implements GameplayAction {
             stamina.clamp();
         }
 
-        // Read effective combat stats
-        double physDmg = getEffective(data, "physical.damage");
-        double physAcc = getEffective(data, "physical.accuracy");
-        double magDmg = getEffective(data, "magical.damage");
-        double magAcc = getEffective(data, "magical.accuracy");
-        double critChance = getEffective(data, "critChance");
+        // Read effective combat stats, scaled by weapon constitution
+        double weaponCon = getConstitution(data, "weapon");
+        double physDmg = getEffective(data, "physical.damage") * weaponCon;
+        double physAcc = getEffective(data, "physical.accuracy") * weaponCon;
+        double magDmg = getEffective(data, "magical.damage") * weaponCon;
+        double magAcc = getEffective(data, "magical.accuracy") * weaponCon;
+        double critChance = getEffective(data, "critChance") * weaponCon;
         double critMult = getEffective(data, "critMultiplier");
 
         // Resolve weapon itemId from shortcut or equipped hand
@@ -117,6 +120,14 @@ public class AttackAction implements GameplayAction {
         // Adrenaline gain + combat timer reset
         basic.getEffectProcessor().addAdrenaline(data, ATTACK_ADRENALINE);
         basic.getEffectProcessor().onCombatAction(data);
+
+        // Weapon constitution wear
+        if (weaponItemId != null) {
+            var cachedItems = data.getCachedItems();
+            WItem weaponItem = cachedItems != null ? cachedItems.get(weaponItemId) : null;
+            double itemWear = basic.getItemWear(weaponItem, DEFAULT_WEAPON_WEAR);
+            basic.applyConstitutionWear(session, data, "weapon", itemWear, AdventureSkills.COMBAT_WEAPON_CARE);
+        }
 
         log.debug("Player {} attacked {} with weapon {} [phys={}/{}, mag={}/{}, crit={}/{}]",
                 session.getEntityId(), targetEntityId, weaponItemId,
@@ -141,5 +152,11 @@ public class AttackAction implements GameplayAction {
     private double getEffective(AdventureData data, String statName) {
         CombatStat stat = data.getCombatStat(statName);
         return stat != null ? stat.getEffective() : 0;
+    }
+
+    private double getConstitution(AdventureData data, String category) {
+        var con = data.getCachedConstitution();
+        if (con == null) return 1.0;
+        return con.getOrDefault(category, 1.0);
     }
 }

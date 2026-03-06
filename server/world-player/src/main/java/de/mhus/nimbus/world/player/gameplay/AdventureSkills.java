@@ -43,6 +43,16 @@ public final class AdventureSkills {
             "Verbessert magische Abwehr und Ausweichen",
             100, 50, 500);
 
+    public static final Skill COMBAT_WEAPON_CARE = Skill.of(
+            "combat.weaponCare", "Waffenpflege",
+            "Reduziert den Verschleiss von Waffen",
+            100, 50, 500);
+
+    public static final Skill COMBAT_ARMOR_CARE = Skill.of(
+            "combat.armorCare", "Ruestungspflege",
+            "Reduziert den Verschleiss von Ruestungen",
+            100, 50, 500);
+
     // --- Survival Skills (additive: level is a direct bonus value) ---
 
     public static final Skill SURVIVAL_VITALITY = Skill.of(
@@ -117,6 +127,7 @@ public final class AdventureSkills {
      */
     public static final List<Skill> ALL = List.of(
             COMBAT_MELEE, COMBAT_RANGED, COMBAT_MAGIC, COMBAT_DEFENSE, COMBAT_MAGIC_DEFENSE,
+            COMBAT_WEAPON_CARE, COMBAT_ARMOR_CARE,
             SURVIVAL_VITALITY, SURVIVAL_ENDURANCE, SURVIVAL_WILLPOWER, SURVIVAL_RESILIENCE, SURVIVAL_ACROBATICS,
             GATHERING_MINING, GATHERING_WOODWORK, GATHERING_HERBALISM, GATHERING_FISHING,
             UTILITY_BACKPACK, UTILITY_TRADING, UTILITY_STEALTH

@@ -37,7 +37,7 @@ public class CombatBehaviorHandler {
 
     private static final int FLEE_WAYPOINTS = 4;
     private static final int ATTACK_WAYPOINTS = 3;
-    private static final double ATTACK_RANGE = 2.0;
+    private static final double DEFAULT_ATTACK_RANGE = 0.5;
     private static final double FLEE_SPEED_MULTIPLIER = 1.5;
 
     private final BlockBasedMovement blockMovement;
@@ -56,12 +56,23 @@ public class CombatBehaviorHandler {
         // Find nearest attacker position
         Vector3 attackerPos = findNearestAttackerPosition(state);
         if (attackerPos == null) {
-            log.debug("No attacker position found for entity {}, skipping combat pathway this tick", entity.getEntityId());
+            log.debug("No attacker position found for entity {}, exiting combat", entity.getEntityId());
+            state.exitCombat();
             return null;
         }
 
         Vector3 entityPos = entity.getPosition();
         if (entityPos == null) return null;
+
+        // Check if attacker is too far away — exit combat
+        double maxRange = getServerDouble(entity, "combat_maxRange", 30.0);
+        double distToAttacker = distance(entityPos, attackerPos);
+        if (distToAttacker > maxRange) {
+            log.debug("World {}: Entity {} attacker too far (dist={}, max={}), exiting combat",
+                    worldId, entity.getEntityId(), String.format("%.1f", distToAttacker), maxRange);
+            state.exitCombat();
+            return null;
+        }
 
         return switch (strategy) {
             case FLEE -> generateFleePathway(entity, entityPos, attackerPos, currentTime, worldId);
@@ -101,10 +112,11 @@ public class CombatBehaviorHandler {
     private EntityPathway generateAttackFleePathway(WEntity entity, SimulationState state,
                                                      Vector3 entityPos, Vector3 attackerPos,
                                                      long currentTime, WorldId worldId) {
+        double attackRange = getServerDouble(entity, "combat_attackRange", DEFAULT_ATTACK_RANGE);
         if (state.getCombatAttackCount() == 0) {
             // First phase: move towards attacker and attack
             double distance = distance(entityPos, attackerPos);
-            if (distance <= ATTACK_RANGE) {
+            if (distance <= attackRange) {
                 performAttack(entity, state, worldId);
                 state.setCombatAttackCount(1);
                 return generateAttackInPlacePathway(entity, entityPos, attackerPos, currentTime);
@@ -123,9 +135,10 @@ public class CombatBehaviorHandler {
     private EntityPathway generateAttackRepeatPathway(WEntity entity, SimulationState state,
                                                        Vector3 entityPos, Vector3 attackerPos,
                                                        long currentTime, WorldId worldId) {
+        double attackRange = getServerDouble(entity, "combat_attackRange", DEFAULT_ATTACK_RANGE);
         double distance = distance(entityPos, attackerPos);
 
-        if (distance > ATTACK_RANGE) {
+        if (distance > attackRange) {
             // Move towards attacker
             return generateApproachPathway(entity, entityPos, attackerPos, currentTime, worldId);
         } else {
@@ -322,6 +335,18 @@ public class CombatBehaviorHandler {
         rotation.setY(Math.toDegrees(yawRad));
         rotation.setP(0.0);
         return rotation;
+    }
+
+    private static double getServerDouble(WEntity entity, String key, double defaultValue) {
+        var server = entity.getServer();
+        if (server == null) return defaultValue;
+        String val = server.get(key);
+        if (val == null || val.isBlank()) return defaultValue;
+        try {
+            return Double.parseDouble(val.trim());
+        } catch (NumberFormatException e) {
+            return defaultValue;
+        }
     }
 
     private double distance(Vector3 a, Vector3 b) {
