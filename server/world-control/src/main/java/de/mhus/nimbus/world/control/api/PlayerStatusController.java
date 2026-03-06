@@ -4,7 +4,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.shared.access.AccessFilterBase;
 import de.mhus.nimbus.world.shared.client.WorldClientService;
+import de.mhus.nimbus.world.shared.gameplay.AdventureReputations;
 import de.mhus.nimbus.world.shared.gameplay.AdventureSkills;
+import de.mhus.nimbus.world.shared.gameplay.Reputation;
 import de.mhus.nimbus.world.shared.gameplay.Skill;
 import de.mhus.nimbus.world.shared.region.RCharacter;
 import de.mhus.nimbus.world.shared.region.RCharacterService;
@@ -99,6 +101,22 @@ public class PlayerStatusController extends BaseEditorController {
             conList.add(c);
         }
         result.put("constitution", conList);
+
+        // Reputation
+        Map<String, Integer> reputations = character.getReputation();
+        List<Map<String, Object>> repList = new ArrayList<>();
+        for (Reputation rep : AdventureReputations.ALL) {
+            Map<String, Object> r = new LinkedHashMap<>();
+            r.put("name", rep.getName());
+            r.put("title", rep.getTitle());
+            r.put("description", rep.getDescription());
+            r.put("group", rep.getGroup());
+            r.put("current", rep.getValue(reputations));
+            r.put("min", rep.getMin());
+            r.put("max", rep.getMax());
+            repList.add(r);
+        }
+        result.put("reputations", repList);
 
         // Live vitals & combat stats from session via command
         result.put("vitals", List.of());

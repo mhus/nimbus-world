@@ -752,6 +752,33 @@ public class RCharacterService {
         playerInfo.setStateValues(stateValues);
     }
 
+    /**
+     * Atomically change the reputation value for a faction/group.
+     *
+     * @param characterId MongoDB document id
+     * @param faction     faction or group name (e.g. "villagers", "bandits")
+     * @param delta       amount to add (positive) or subtract (negative)
+     * @return true if the update was applied
+     */
+    public boolean changeReputation(String characterId, String faction, int delta) {
+        if (delta == 0) return true;
+
+        Query query = new Query(Criteria.where("id").is(characterId));
+
+        Update update = new Update()
+                .inc("reputation." + faction, delta)
+                .set("modifiedAt", Instant.now());
+
+        var result = mongoTemplate.updateFirst(query, update, RCharacter.class);
+
+        if (result.getModifiedCount() > 0) {
+            return true;
+        }
+
+        log.warn("changeReputation failed: characterId={}, faction={}, delta={}", characterId, faction, delta);
+        return false;
+    }
+
     public long getCharacterCount() {
         return repository.count();
     }

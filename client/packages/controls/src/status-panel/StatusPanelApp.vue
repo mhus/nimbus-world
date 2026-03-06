@@ -46,9 +46,9 @@
     </main>
 
     <!-- Main Content -->
-    <main v-else class="flex-1 container mx-auto px-4 py-6 space-y-6">
+    <main v-else class="flex-1 container mx-auto px-4 py-6 space-y-4">
 
-      <!-- Currency -->
+      <!-- Currency (always visible) -->
       <section class="bg-gray-800 rounded-lg shadow-md border border-gray-700 p-4">
         <div class="flex flex-wrap items-center gap-6">
           <div class="flex items-center gap-2">
@@ -64,95 +64,143 @@
         </div>
       </section>
 
-      <!-- Vitals -->
-      <section v-if="vitals.length > 0">
-        <h2 class="text-lg font-bold text-emerald-400 mb-3">Vitalwerte</h2>
-        <div class="bg-gray-800 rounded-lg shadow-md border border-gray-700 divide-y divide-gray-700">
-          <div v-for="vital in vitals" :key="vital.type" class="p-4">
-            <div class="flex items-center justify-between mb-1">
-              <span class="font-semibold text-gray-200">{{ vital.displayName }}</span>
-              <span class="text-sm text-gray-400">
-                {{ formatNum(vital.current) }} / {{ formatNum(vital.effectiveMax) }}
-                <span v-if="vital.effectiveRegenRate !== 0" class="ml-2" :class="vital.effectiveRegenRate > 0 ? 'text-green-400' : 'text-red-400'">
-                  ({{ vital.effectiveRegenRate > 0 ? '+' : '' }}{{ formatNum(vital.effectiveRegenRate) }}/s)
+      <!-- Tabs -->
+      <div class="flex border-b border-gray-700 gap-1">
+        <button
+          v-for="tab in tabs"
+          :key="tab.id"
+          @click="activeTab = tab.id"
+          class="px-4 py-2 text-sm font-medium rounded-t-lg transition-colors"
+          :class="activeTab === tab.id
+            ? 'bg-gray-800 text-emerald-400 border border-gray-700 border-b-gray-800 -mb-px'
+            : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800/50'"
+        >
+          {{ tab.label }}
+        </button>
+      </div>
+
+      <!-- Tab: Kampf -->
+      <div v-show="activeTab === 'combat'" class="space-y-6">
+        <!-- Vitals -->
+        <section v-if="vitals.length > 0">
+          <h2 class="text-lg font-bold text-emerald-400 mb-3">Vitalwerte</h2>
+          <div class="bg-gray-800 rounded-lg shadow-md border border-gray-700 divide-y divide-gray-700">
+            <div v-for="vital in vitals" :key="vital.type" class="p-4">
+              <div class="flex items-center justify-between mb-1">
+                <span class="font-semibold text-gray-200">{{ vital.displayName }}</span>
+                <span class="text-sm text-gray-400">
+                  {{ formatNum(vital.current) }} / {{ formatNum(vital.effectiveMax) }}
+                  <span v-if="vital.effectiveRegenRate !== 0" class="ml-2" :class="vital.effectiveRegenRate > 0 ? 'text-green-400' : 'text-red-400'">
+                    ({{ vital.effectiveRegenRate > 0 ? '+' : '' }}{{ formatNum(vital.effectiveRegenRate) }}/s)
+                  </span>
                 </span>
-              </span>
-            </div>
-            <div class="w-full bg-gray-700 rounded-full h-3 overflow-hidden">
-              <div
-                class="h-3 rounded-full transition-all duration-300"
-                :style="{ width: vitalPercent(vital) + '%', backgroundColor: vital.color }"
-              ></div>
+              </div>
+              <div class="w-full bg-gray-700 rounded-full h-3 overflow-hidden">
+                <div
+                  class="h-3 rounded-full transition-all duration-300"
+                  :style="{ width: vitalPercent(vital) + '%', backgroundColor: vital.color }"
+                ></div>
+              </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      <!-- Combat Stats (Defense) -->
-      <section v-if="defenseStats.length > 0">
-        <h2 class="text-lg font-bold text-emerald-400 mb-3">Passive Verteidigung</h2>
-        <div class="bg-gray-800 rounded-lg shadow-md border border-gray-700">
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-0 divide-y sm:divide-y-0 sm:divide-x divide-gray-700">
-            <div v-for="stat in defenseStats" :key="stat.type" class="p-4">
-              <div class="flex items-center justify-between">
-                <span class="text-gray-300 text-sm">{{ formatStatName(stat.type) }}</span>
-                <div class="text-right">
-                  <span class="font-bold text-gray-100">{{ formatNum(stat.effective) }}</span>
-                  <span v-if="stat.buffFlat !== 0 || stat.buffPercent !== 0" class="text-xs text-emerald-400 ml-1">
-                    ({{ formatNum(stat.base) }}
-                    <span v-if="stat.buffFlat > 0">+{{ formatNum(stat.buffFlat) }}</span>
-                    <span v-if="stat.buffPercent !== 0"> x{{ formatNum(1 + stat.buffPercent) }}</span>)
-                  </span>
+        <!-- Combat Stats (Defense) -->
+        <section v-if="defenseStats.length > 0">
+          <h2 class="text-lg font-bold text-emerald-400 mb-3">Passive Verteidigung</h2>
+          <div class="bg-gray-800 rounded-lg shadow-md border border-gray-700">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-0 divide-y sm:divide-y-0 sm:divide-x divide-gray-700">
+              <div v-for="stat in defenseStats" :key="stat.type" class="p-4">
+                <div class="flex items-center justify-between">
+                  <span class="text-gray-300 text-sm">{{ formatStatName(stat.type) }}</span>
+                  <div class="text-right">
+                    <span class="font-bold text-gray-100">{{ formatNum(stat.effective) }}</span>
+                    <span v-if="stat.buffFlat !== 0 || stat.buffPercent !== 0" class="text-xs text-emerald-400 ml-1">
+                      ({{ formatNum(stat.base) }}
+                      <span v-if="stat.buffFlat > 0">+{{ formatNum(stat.buffFlat) }}</span>
+                      <span v-if="stat.buffPercent !== 0"> x{{ formatNum(1 + stat.buffPercent) }}</span>)
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      <!-- Skills grouped -->
-      <section v-for="group in skillGroups" :key="group.name">
-        <h2 class="text-lg font-bold text-emerald-400 mb-3">{{ group.name }}</h2>
-        <div class="bg-gray-800 rounded-lg shadow-md border border-gray-700 divide-y divide-gray-700">
-          <div v-for="skill in group.skills" :key="skill.name" class="p-4 flex items-center justify-between">
-            <div class="min-w-0">
-              <div class="flex items-center gap-2">
-                <span class="font-semibold text-gray-200">{{ skill.title }}</span>
-                <span v-if="!skill.free" class="text-gray-500" title="Nicht frei verteilbar">
-                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                  </svg>
-                </span>
+        <!-- Constitution -->
+        <section v-if="constitution.length > 0">
+          <h2 class="text-lg font-bold text-emerald-400 mb-3">Zustand</h2>
+          <div class="bg-gray-800 rounded-lg shadow-md border border-gray-700 divide-y divide-gray-700">
+            <div v-for="con in constitution" :key="con.category" class="p-4">
+              <div class="flex items-center justify-between mb-1">
+                <span class="font-semibold text-gray-200 capitalize">{{ con.category }}</span>
+                <span class="text-sm" :class="conColor(con.value)">{{ con.percent }}%</span>
               </div>
-              <p class="text-xs text-gray-500">{{ skill.description }}</p>
-            </div>
-            <div class="text-right flex-shrink-0 ml-4">
-              <span class="text-xl font-bold text-gray-100">{{ skill.current }}</span>
-              <span class="text-xs text-gray-500"> / {{ skill.max }}</span>
+              <div class="w-full bg-gray-700 rounded-full h-2 overflow-hidden">
+                <div
+                  class="h-2 rounded-full transition-all duration-300"
+                  :class="conBarColor(con.value)"
+                  :style="{ width: con.percent + '%' }"
+                ></div>
+              </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+      </div>
 
-      <!-- Constitution -->
-      <section v-if="constitution.length > 0">
-        <h2 class="text-lg font-bold text-emerald-400 mb-3">Zustand</h2>
-        <div class="bg-gray-800 rounded-lg shadow-md border border-gray-700 divide-y divide-gray-700">
-          <div v-for="con in constitution" :key="con.category" class="p-4">
-            <div class="flex items-center justify-between mb-1">
-              <span class="font-semibold text-gray-200 capitalize">{{ con.category }}</span>
-              <span class="text-sm" :class="conColor(con.value)">{{ con.percent }}%</span>
-            </div>
-            <div class="w-full bg-gray-700 rounded-full h-2 overflow-hidden">
-              <div
-                class="h-2 rounded-full transition-all duration-300"
-                :class="conBarColor(con.value)"
-                :style="{ width: con.percent + '%' }"
-              ></div>
+      <!-- Tab: Skills -->
+      <div v-show="activeTab === 'skills'" class="space-y-6">
+        <section v-for="group in skillGroups" :key="group.name">
+          <h2 class="text-lg font-bold text-emerald-400 mb-3">{{ group.name }}</h2>
+          <div class="bg-gray-800 rounded-lg shadow-md border border-gray-700 divide-y divide-gray-700">
+            <div v-for="skill in group.skills" :key="skill.name" class="p-4 flex items-center justify-between">
+              <div class="min-w-0">
+                <div class="flex items-center gap-2">
+                  <span class="font-semibold text-gray-200">{{ skill.title }}</span>
+                  <span v-if="!skill.free" class="text-gray-500" title="Nicht frei verteilbar">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                  </span>
+                </div>
+                <p class="text-xs text-gray-500">{{ skill.description }}</p>
+              </div>
+              <div class="text-right flex-shrink-0 ml-4">
+                <span class="text-xl font-bold text-gray-100">{{ skill.current }}</span>
+                <span class="text-xs text-gray-500"> / {{ skill.max }}</span>
+              </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+      </div>
+
+      <!-- Tab: Reputation -->
+      <div v-show="activeTab === 'reputation'" class="space-y-6">
+        <section v-for="group in reputationGroups" :key="group.name">
+          <h2 class="text-lg font-bold text-emerald-400 mb-3">{{ group.name }}</h2>
+          <div class="bg-gray-800 rounded-lg shadow-md border border-gray-700 divide-y divide-gray-700">
+            <div v-for="rep in group.reputations" :key="rep.name" class="p-4">
+              <div class="flex items-center justify-between mb-1">
+                <div class="min-w-0">
+                  <span class="font-semibold text-gray-200">{{ rep.title }}</span>
+                  <p class="text-xs text-gray-500">{{ rep.description }}</p>
+                </div>
+                <div class="text-right flex-shrink-0 ml-4">
+                  <span class="text-xl font-bold" :class="repValueColor(rep.current)">{{ rep.current }}</span>
+                  <span class="text-xs text-gray-500"> / {{ rep.max }}</span>
+                </div>
+              </div>
+              <div class="w-full bg-gray-700 rounded-full h-2 overflow-hidden">
+                <div
+                  class="h-2 rounded-full transition-all duration-300"
+                  :class="repBarColor(rep.current)"
+                  :style="{ width: repPercent(rep) + '%' }"
+                ></div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
 
     </main>
   </div>
@@ -176,6 +224,21 @@ interface SkillDef {
 interface SkillGroup {
   name: string;
   skills: SkillDef[];
+}
+
+interface ReputationDef {
+  name: string;
+  title: string;
+  description: string;
+  group: string;
+  current: number;
+  min: number;
+  max: number;
+}
+
+interface ReputationGroup {
+  name: string;
+  reputations: ReputationDef[];
 }
 
 interface VitalInfo {
@@ -210,6 +273,7 @@ interface StatusResponse {
   skillPoints: number;
   skillExperience: number;
   constitution: ConstitutionInfo[];
+  reputations: ReputationDef[];
   vitals: VitalInfo[];
   combatStats: CombatStatInfo[];
   gold: number;
@@ -218,9 +282,20 @@ interface StatusResponse {
   characterName: string;
 }
 
+type TabId = 'combat' | 'skills' | 'reputation';
+
+const tabs: { id: TabId; label: string }[] = [
+  { id: 'combat', label: 'Kampf' },
+  { id: 'skills', label: 'Skills' },
+  { id: 'reputation', label: 'Reputation' },
+];
+
+const activeTab = ref<TabId>('combat');
+
 const loading = ref(true);
 const error = ref<string | null>(null);
 const skills = ref<SkillDef[]>([]);
+const reputations = ref<ReputationDef[]>([]);
 const constitution = ref<ConstitutionInfo[]>([]);
 const vitals = ref<VitalInfo[]>([]);
 const combatStats = ref<CombatStatInfo[]>([]);
@@ -233,7 +308,7 @@ const getAssetUrl = (texturePath: string): string => {
   return `${apiService.getBaseUrl()}/control/player/assets/${texturePath}`;
 };
 
-const hasData = computed(() => skills.value.length > 0 || vitals.value.length > 0);
+const hasData = computed(() => skills.value.length > 0 || vitals.value.length > 0 || reputations.value.length > 0);
 
 const skillGroups = computed<SkillGroup[]>(() => {
   const groups: Record<string, SkillDef[]> = {};
@@ -242,6 +317,15 @@ const skillGroups = computed<SkillGroup[]>(() => {
     groups[skill.group].push(skill);
   }
   return Object.entries(groups).map(([name, skills]) => ({ name, skills }));
+});
+
+const reputationGroups = computed<ReputationGroup[]>(() => {
+  const groups: Record<string, ReputationDef[]> = {};
+  for (const rep of reputations.value) {
+    if (!groups[rep.group]) groups[rep.group] = [];
+    groups[rep.group].push(rep);
+  }
+  return Object.entries(groups).map(([name, reps]) => ({ name, reputations: reps }));
 });
 
 const defenseStats = computed(() =>
@@ -288,12 +372,31 @@ const conBarColor = (value: number): string => {
   return 'bg-red-500';
 };
 
+const repPercent = (rep: ReputationDef): number => {
+  const range = rep.max - rep.min;
+  if (range <= 0) return 0;
+  return Math.min(100, Math.max(0, ((rep.current - rep.min) / range) * 100));
+};
+
+const repValueColor = (value: number): string => {
+  if (value > 0) return 'text-emerald-400';
+  if (value < 0) return 'text-red-400';
+  return 'text-gray-400';
+};
+
+const repBarColor = (value: number): string => {
+  if (value > 0) return 'bg-emerald-500';
+  if (value < 0) return 'bg-red-500';
+  return 'bg-gray-500';
+};
+
 const loadData = async () => {
   loading.value = true;
   error.value = null;
   try {
     const response = await apiService.get<StatusResponse>('/control/player/status');
     skills.value = response.skills || [];
+    reputations.value = response.reputations || [];
     constitution.value = response.constitution || [];
     vitals.value = response.vitals || [];
     combatStats.value = response.combatStats || [];

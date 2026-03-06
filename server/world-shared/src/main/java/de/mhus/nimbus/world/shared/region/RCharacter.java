@@ -63,6 +63,9 @@ public class RCharacter {
     // Keys: e.g. "weapon", "armor", "magic", "tool"
     private Map<String, Double> constitution;
 
+    // Reputation per faction/group (e.g. "villagers" -> 10, "bandits" -> -5)
+    private Map<String, Integer> reputation;
+
     private Map<String, String> attributes; // neu: Attribute
 
     @Indexed
@@ -76,6 +79,7 @@ public class RCharacter {
     }
 
     public Map<String, Integer> getSkills() { if (skills == null) skills = new HashMap<>(); return skills; }
+    public Map<String, Integer> getReputation() { if (reputation == null) reputation = new HashMap<>(); return reputation; }
     public Map<String, Double> getConstitution() { if (constitution == null) constitution = new HashMap<>(); return constitution; }
 
     /**
