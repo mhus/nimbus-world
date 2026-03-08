@@ -3,6 +3,7 @@ package de.mhus.nimbus.world.player.ws;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.player.session.PlayerSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -42,6 +43,9 @@ public class BroadcastService {
             String originatingSessionId,
             Integer cx,
             Integer cz) {
+
+        // Normalize worldId (strip trailing colons from fullId format)
+        worldId = WorldId.unchecked(worldId).getId();
 
         try {
             NetworkMessage networkMessage = NetworkMessage.builder()
@@ -122,6 +126,9 @@ public class BroadcastService {
             JsonNode data,
             String originatingSessionId,
             ArrayNode chunks) {
+
+        // Normalize worldId (strip trailing colons from fullId format)
+        worldId = WorldId.unchecked(worldId).getId();
 
         try {
             NetworkMessage networkMessage = NetworkMessage.builder()
