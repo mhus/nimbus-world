@@ -230,6 +230,29 @@ public class WWorldService {
         );
     }
 
+    /**
+     * Find all zones for a main world.
+     * Zones are worlds whose worldId starts with "regionId:worldName:" and have a non-empty zone part.
+     *
+     * @param mainWorldId The main world's worldId (must be a main world, not zone/instance)
+     * @return List of zone worlds
+     */
+    @Transactional(readOnly = true)
+    public List<WWorld> findZonesForMainWorld(String mainWorldId) {
+        WorldId parsed = WorldId.unchecked(mainWorldId);
+        if (!parsed.isMain()) {
+            log.warn("findZonesForMainWorld called with non-main worldId: {}", mainWorldId);
+            return List.of();
+        }
+        String prefix = mainWorldId + ":";
+        return repository.findByWorldIdStartingWith(prefix).stream()
+                .filter(w -> {
+                    WorldId wid = WorldId.unchecked(w.getWorldId());
+                    return wid.isZone() && !wid.isInstance();
+                })
+                .toList();
+    }
+
     @Transactional(readOnly = true)
     public List<WWorld> findByRegionId(String regionId) {
         return repository.findByRegionId(regionId);

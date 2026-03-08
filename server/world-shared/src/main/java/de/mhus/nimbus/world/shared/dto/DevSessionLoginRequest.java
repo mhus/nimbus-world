@@ -44,4 +44,11 @@ public class DevSessionLoginRequest {
      * - null/blank - Defaults to "world"
      */
     private String entryPoint;
+
+    /**
+     * Optional instance ID for rejoining an existing instance.
+     * If null/blank, a new instance will be created for PLAYER actors in instanceable worlds.
+     * If set, the player will rejoin the specified instance.
+     */
+    private String instanceId;
 }

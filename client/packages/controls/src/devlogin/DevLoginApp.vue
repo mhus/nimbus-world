@@ -202,6 +202,38 @@
                 </select>
               </div>
 
+              <!-- Zone Selection (shown for EDITOR when zones exist) -->
+              <div v-if="selectedCharacter && selectedActor === 'EDITOR'" class="form-control">
+                <label class="label">
+                  <span class="label-text">Zone</span>
+                </label>
+                <div v-if="loadingZones" class="flex justify-center py-2">
+                  <span class="loading loading-spinner loading-sm"></span>
+                </div>
+                <select v-else v-model="selectedZone" class="select select-bordered w-full">
+                  <option value="">Main World</option>
+                  <option v-for="z in zones" :key="z.worldId" :value="z.worldId">
+                    {{ z.name || z.worldId }}
+                  </option>
+                </select>
+              </div>
+
+              <!-- Instance Selection (shown for PLAYER) -->
+              <div v-if="selectedCharacter && selectedActor === 'PLAYER'" class="form-control">
+                <label class="label">
+                  <span class="label-text">Instance</span>
+                </label>
+                <div v-if="loadingInstances" class="flex justify-center py-2">
+                  <span class="loading loading-spinner loading-sm"></span>
+                </div>
+                <select v-else v-model="selectedInstance" class="select select-bordered w-full">
+                  <option value="">New Instance</option>
+                  <option v-for="inst in instances" :key="inst.instanceId" :value="inst.instanceId">
+                    {{ inst.title }} ({{ inst.instanceId }})
+                  </option>
+                </select>
+              </div>
+
               <!-- View Distance Selection (shown after character selected) -->
               <div v-if="selectedCharacter" class="form-control">
                 <label class="label">
@@ -380,6 +412,12 @@
               <div v-if="loginType === 'session'">
                 <strong>Actor:</strong> {{ selectedActor }}
               </div>
+              <div v-if="loginType === 'session' && selectedActor === 'EDITOR'">
+                <strong>Zone:</strong> {{ selectedZone ? selectedZone : 'Main World' }}
+              </div>
+              <div v-if="loginType === 'session' && selectedActor === 'PLAYER'">
+                <strong>Instance:</strong> {{ selectedInstance ? selectedInstance : 'New Instance' }}
+              </div>
               <div v-if="loginType === 'session'">
                 <strong>View Distance:</strong> {{ viewDistance }} (Render: {{ viewDistance - 1 }}, Unload: {{ viewDistance }})
               </div>
@@ -412,7 +450,8 @@ import {
   type User,
   type Character,
   type ActorType,
-  type LoginRequest
+  type LoginRequest,
+  type WorldInstance
 } from './services/DevLoginService';
 
 // ===== LOCAL STORAGE KEYS =====
@@ -452,6 +491,16 @@ const loadingCharacters = ref(false);
 const charactersError = ref<string | null>(null);
 const selectedCharacter = ref<Character | null>(null);
 const selectedActor = ref<ActorType>('PLAYER');
+
+// Session Login - Zones (for EDITOR)
+const zones = ref<World[]>([]);
+const loadingZones = ref(false);
+const selectedZone = ref<string>(''); // empty = main world, worldId = zone
+
+// Session Login - Instances (for PLAYER)
+const instances = ref<WorldInstance[]>([]);
+const loadingInstances = ref(false);
+const selectedInstance = ref<string>(''); // empty = new instance, instanceId = rejoin
 
 // Session Login - Entry Point
 const entryPoint = ref<'last' | 'grid' | 'world'>('world');
@@ -673,6 +722,10 @@ const handleWorldSelect = (world: World) => {
   selectedAgentUser.value = null;
   selectedCharacter.value = null;
   characters.value = [];
+  zones.value = [];
+  instances.value = [];
+  selectedZone.value = '';
+  selectedInstance.value = '';
   loginError.value = null;
 };
 
@@ -738,6 +791,36 @@ const loadCharacters = async (userId: string, worldId: string) => {
 };
 
 /**
+ * Load zones for the selected world
+ */
+const loadZones = async (worldId: string) => {
+  loadingZones.value = true;
+  try {
+    zones.value = await devLoginService.getZones(worldId);
+  } catch (e) {
+    console.error('[DevLogin] Failed to load zones:', e);
+    zones.value = [];
+  } finally {
+    loadingZones.value = false;
+  }
+};
+
+/**
+ * Load instances for the selected player in the selected world
+ */
+const loadInstances = async (worldId: string, playerId: string) => {
+  loadingInstances.value = true;
+  try {
+    instances.value = await devLoginService.getInstances(worldId, playerId);
+  } catch (e) {
+    console.error('[DevLogin] Failed to load instances:', e);
+    instances.value = [];
+  } finally {
+    loadingInstances.value = false;
+  }
+};
+
+/**
  * Handle agent user search (debounced)
  */
 let agentUserSearchTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -799,13 +882,20 @@ const handleLogin = async () => {
         entryPointStr = 'world';
       }
 
+      // Determine effective worldId (include zone for editors)
+      let effectiveWorldId = selectedWorld.value.worldId;
+      if (selectedActor.value === 'EDITOR' && selectedZone.value) {
+        effectiveWorldId = selectedZone.value;
+      }
+
       request = {
-        worldId: selectedWorld.value.worldId,
+        worldId: effectiveWorldId,
         agent: false,
         userId: selectedSessionUser.value.username,
         characterId: selectedCharacter.value.id,
         actor: selectedActor.value,
         entryPoint: entryPointStr,
+        instanceId: selectedActor.value === 'PLAYER' && selectedInstance.value ? selectedInstance.value : undefined,
       };
     } else {
       if (!selectedAgentUser.value) {
@@ -874,6 +964,42 @@ watch(loginType, (newType, oldType) => {
 watch(selectedWorld, (newWorld) => {
   if (newWorld && loginType.value === 'session' && sessionUsers.value.length === 0) {
     loadSessionUsers();
+  }
+});
+
+/**
+ * When actor changes, load zones or instances as needed
+ */
+watch(selectedActor, (newActor) => {
+  selectedZone.value = '';
+  selectedInstance.value = '';
+  zones.value = [];
+  instances.value = [];
+
+  if (!selectedWorld.value || !selectedCharacter.value) return;
+
+  if (newActor === 'EDITOR') {
+    loadZones(selectedWorld.value.worldId);
+  } else if (newActor === 'PLAYER' && selectedSessionUser.value) {
+    const playerId = selectedSessionUser.value.username + ':' + selectedCharacter.value.id;
+    loadInstances(selectedWorld.value.worldId, playerId);
+  }
+});
+
+/**
+ * When character changes, reload instances for PLAYER or zones for EDITOR
+ */
+watch(selectedCharacter, (newChar) => {
+  selectedZone.value = '';
+  selectedInstance.value = '';
+
+  if (!newChar || !selectedWorld.value) return;
+
+  if (selectedActor.value === 'EDITOR') {
+    loadZones(selectedWorld.value.worldId);
+  } else if (selectedActor.value === 'PLAYER' && selectedSessionUser.value) {
+    const playerId = selectedSessionUser.value.username + ':' + newChar.id;
+    loadInstances(selectedWorld.value.worldId, playerId);
   }
 });
 

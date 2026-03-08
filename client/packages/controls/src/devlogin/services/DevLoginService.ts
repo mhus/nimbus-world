@@ -26,6 +26,16 @@ export interface User {
   enabled: boolean;
 }
 
+export interface WorldInstance {
+  instanceId: string;
+  worldId: string;
+  title: string;
+  description?: string;
+  creator: string;
+  players: string[];
+  enabled: boolean;
+}
+
 export type ActorType = 'PLAYER' | 'EDITOR' | 'SUPPORT';
 
 export interface SessionLoginRequest {
@@ -35,6 +45,7 @@ export interface SessionLoginRequest {
   characterId: string;
   actor: ActorType;
   entryPoint?: string;  // Optional: "last", "grid:q,r", or "world"
+  instanceId?: string;  // Optional: existing instance ID for PLAYER rejoining
 }
 
 export interface AgentLoginRequest {
@@ -84,6 +95,20 @@ class DevLoginService {
   async getCharacters(userId: string, worldId: string): Promise<Character[]> {
     const params = { userId, worldId };
     return apiService.get<Character[]>('/control/aaa/devlogin/characters', params);
+  }
+
+  /**
+   * Get zones for a main world
+   */
+  async getZones(worldId: string): Promise<World[]> {
+    return apiService.get<World[]>('/control/aaa/devlogin/zones', { worldId });
+  }
+
+  /**
+   * Get instances for a player in a world
+   */
+  async getInstances(worldId: string, playerId: string): Promise<WorldInstance[]> {
+    return apiService.get<WorldInstance[]>('/control/aaa/devlogin/instances', { worldId, playerId });
   }
 
   /**

@@ -30,5 +30,11 @@ public interface WWorldRepository extends MongoRepository<WWorld, String> {
             "{ 'description': { $regex: ?0, $options: 'i' } } " +
             "] }")
     Page<WWorld> findBySearchQuery(String searchPattern, Pageable pageable);
+
+    /**
+     * Find worlds whose worldId starts with a given prefix.
+     * Used e.g. to find zones for a main world (prefix = "regionId:worldName:").
+     */
+    List<WWorld> findByWorldIdStartingWith(String prefix);
 }
 

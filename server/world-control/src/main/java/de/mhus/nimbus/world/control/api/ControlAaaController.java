@@ -41,7 +41,8 @@ public class ControlAaaController extends BaseEditorController {
             Boolean agent,       // Optional, defaults to false
             String characterId,  // Required when agent=false
             ActorRoles actor,    // Required when agent=false
-            String entryPoint    // Optional: "last", "grid:q,r", or "world"
+            String entryPoint,   // Optional: "last", "grid:q,r", or "world"
+            String instanceId    // Optional: existing instance ID for PLAYER rejoining
     ) {
         public boolean isAgent() {
             return agent != null && agent;
@@ -103,6 +104,62 @@ public class ControlAaaController extends BaseEditorController {
             log.error("Failed to load users for dev login", e);
             return ResponseEntity.status(500)
                     .body(Map.of("error", "Failed to load users: " + e.getMessage()));
+        }
+    }
+
+    // ===== GET /control/aaa/devlogin/zones =====
+
+    /**
+     * Get zones for a main world.
+     *
+     * @param worldId Main world ID
+     * @return List of zone worlds
+     */
+    @GetMapping("/devlogin/zones")
+    public ResponseEntity<?> getDevLoginZones(@RequestParam String worldId) {
+        log.debug("GET /control/aaa/devlogin/zones - worldId={}", worldId);
+
+        ResponseEntity<?> validation = validateId(worldId, "worldId");
+        if (validation != null) return validation;
+
+        try {
+            var zones = accessService.getZonesForWorld(worldId);
+            log.debug("Returning {} zones for world={}", zones.size(), worldId);
+            return ResponseEntity.ok(zones);
+        } catch (Exception e) {
+            log.error("Failed to load zones", e);
+            return ResponseEntity.status(500)
+                    .body(Map.of("error", "Failed to load zones: " + e.getMessage()));
+        }
+    }
+
+    // ===== GET /control/aaa/devlogin/instances =====
+
+    /**
+     * Get instances for a player in a world.
+     *
+     * @param worldId Main world ID
+     * @param playerId Player ID
+     * @return List of instances accessible by the player
+     */
+    @GetMapping("/devlogin/instances")
+    public ResponseEntity<?> getDevLoginInstances(
+            @RequestParam String worldId,
+            @RequestParam String playerId
+    ) {
+        log.debug("GET /control/aaa/devlogin/instances - worldId={}, playerId={}", worldId, playerId);
+
+        ResponseEntity<?> validation = validateId(worldId, "worldId");
+        if (validation != null) return validation;
+
+        try {
+            var instances = accessService.getInstancesForPlayer(worldId, playerId);
+            log.debug("Returning {} instances for player={} in world={}", instances.size(), playerId, worldId);
+            return ResponseEntity.ok(instances);
+        } catch (Exception e) {
+            log.error("Failed to load instances", e);
+            return ResponseEntity.status(500)
+                    .body(Map.of("error", "Failed to load instances: " + e.getMessage()));
         }
     }
 
@@ -212,6 +269,7 @@ public class ControlAaaController extends BaseEditorController {
                         .characterId(request.characterId())
                         .actor(request.actor())
                         .entryPoint(request.entryPoint())
+                        .instanceId(request.instanceId())
                         .build();
 
                 response = accessService.devSessionLogin(sessionRequest);

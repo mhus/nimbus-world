@@ -88,7 +88,9 @@ public class AccessService {
         // Use database-level filtering and pagination
         var result = worldService.searchWorlds(searchQuery, 0, limit);
 
+        // Filter to main worlds only (no zones, no instances)
         return result.worlds().stream()
+                .filter(w -> WorldId.unchecked(w.getWorldId()).isMain())
                 .map(this::mapToWorldInfoDto)
                 .toList();
     }
@@ -105,6 +107,39 @@ public class AccessService {
                 .enabled(world.isEnabled())
                 .publicFlag(world.isPublicFlag())
                 .build();
+    }
+
+    // ===== 1b. getZonesForWorld =====
+
+    /**
+     * Retrieves zones for a main world.
+     *
+     * @param worldId The main world's worldId
+     * @return List of WorldInfoDto for zones
+     */
+    @Transactional(readOnly = true)
+    public List<WorldInfoDto> getZonesForWorld(String worldId) {
+        log.debug("Fetching zones for world: {}", worldId);
+        return worldService.findZonesForMainWorld(worldId).stream()
+                .map(this::mapToWorldInfoDto)
+                .toList();
+    }
+
+    // ===== 1c. getInstancesForPlayer =====
+
+    /**
+     * Retrieves instances for a player in a specific world.
+     *
+     * @param worldId The main world's worldId
+     * @param playerId The playerId
+     * @return List of instances where the player is registered
+     */
+    @Transactional(readOnly = true)
+    public List<WWorldInstance> getInstancesForPlayer(String worldId, String playerId) {
+        log.debug("Fetching instances for player={} in world={}", playerId, worldId);
+        return worldInstanceService.findByWorldId(worldId).stream()
+                .filter(i -> i.isPlayerAllowed(playerId))
+                .toList();
     }
 
     // ===== 2. getUsers =====
@@ -276,21 +311,31 @@ public class AccessService {
         // Determine effective worldId (might be an instanceId for instanceable worlds)
         String effectiveWorldId = worldId.getId();
 
-        // Auto-create instance for PLAYER actors in instanceable worlds
+        // Auto-create or rejoin instance for PLAYER actors in instanceable worlds
         if (world.isInstanceable() && request.getActor() == ActorRoles.PLAYER) {
-            // TODO check if user is in Team and maybe tehre is already a running instance for the team
-            // if not add all team memebers to the new instance - requires a lock on instance creation
-            // do this in the service layer
-            WWorldInstance instance = worldInstanceService.createInstanceForPlayer(
-                    worldId.getId(),
-                    world.getPublicData().getTitle(),
-                    playerId.getId(),
-                    character.getPublicData().getTitle()
-            );
-
-            effectiveWorldId = instance.getWorldWithInstanceId();
-            log.info("Auto-created world instance for player: instanceId={}, worldId={}, playerId={}",
-                    instance.getInstanceId(), worldId.getId(), playerId.getId());
+            if (request.getInstanceId() != null && !request.getInstanceId().isBlank()) {
+                // Rejoin existing instance
+                var existingInstance = worldInstanceService.findByInstanceIdWithValidation(request.getInstanceId())
+                        .orElseThrow(() -> new IllegalArgumentException("Instance not found: " + request.getInstanceId()));
+                if (!existingInstance.isPlayerAllowed(playerId.getId())) {
+                    throw new IllegalArgumentException("Player not allowed in instance: " + request.getInstanceId());
+                }
+                worldInstanceService.addActivePlayerAtomic(existingInstance.getInstanceId(), playerId.getId());
+                effectiveWorldId = existingInstance.getWorldWithInstanceId();
+                log.info("Player rejoining existing instance: instanceId={}, playerId={}",
+                        existingInstance.getInstanceId(), playerId.getId());
+            } else {
+                // Create new instance
+                WWorldInstance instance = worldInstanceService.createInstanceForPlayer(
+                        worldId.getId(),
+                        world.getPublicData().getTitle(),
+                        playerId.getId(),
+                        character.getPublicData().getTitle()
+                );
+                effectiveWorldId = instance.getWorldWithInstanceId();
+                log.info("Auto-created world instance for player: instanceId={}, worldId={}, playerId={}",
+                        instance.getInstanceId(), worldId.getId(), playerId.getId());
+            }
         }
 
         // Create session with effective worldId (original worldId or instanceId)
