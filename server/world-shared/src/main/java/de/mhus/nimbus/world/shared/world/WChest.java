@@ -36,7 +36,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @GenerateTypeScript("entities")
-public class WChest implements Identifiable {
+public class WChest implements Identifiable, CowEntity {
 
     @Id
     @TypeScript(ignore = true)
@@ -110,8 +110,28 @@ public class WChest implements Identifiable {
     @TypeScript(import_ = "ItemRef", importPath = "../../types/ItemRef")
     private List<ItemRef> items = new ArrayList<>();
 
+    /**
+     * Soft delete flag. Used as tombstone marker in COW instances.
+     */
+    @Indexed
+    @Builder.Default
+    @TypeScript(ignore = true)
+    private boolean enabled = true;
+
     private Instant createdAt;
     private Instant updatedAt;
+
+    @Override
+    @org.springframework.data.annotation.Transient
+    public String getCowId() {
+        return name;
+    }
+
+    @Override
+    @org.springframework.data.annotation.Transient
+    public boolean isCowEnabled() {
+        return enabled;
+    }
 
     /**
      * Initialize timestamps for new chest.

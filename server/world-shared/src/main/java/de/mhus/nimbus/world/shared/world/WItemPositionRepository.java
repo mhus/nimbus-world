@@ -50,4 +50,14 @@ public interface WItemPositionRepository extends MongoRepository<WItemPosition, 
             String worldId, String chunk, boolean enabled);
 
     Optional<WItemPosition> findByWorldIdAndItemId(String worldId, String itemId);
+
+    /**
+     * Find all items in a chunk (including disabled/tombstones).
+     * Used for COW instance layer queries where tombstones must be included in merge.
+     *
+     * @param worldId World identifier
+     * @param chunk Chunk key
+     * @return List of all item positions in the chunk
+     */
+    List<WItemPosition> findByWorldIdAndChunk(String worldId, String chunk);
 }

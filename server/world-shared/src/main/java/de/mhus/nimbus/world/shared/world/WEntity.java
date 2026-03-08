@@ -35,7 +35,7 @@ import java.util.Set;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class WEntity implements Identifiable {
+public class WEntity implements Identifiable, CowEntity {
 
     @Id
     private String id;
@@ -159,6 +159,18 @@ public class WEntity implements Identifiable {
     @Indexed
     @Builder.Default
     private boolean enabled = true;
+
+    @Override
+    @org.springframework.data.annotation.Transient
+    public String getCowId() {
+        return entityId;
+    }
+
+    @Override
+    @org.springframework.data.annotation.Transient
+    public boolean isCowEnabled() {
+        return enabled;
+    }
 
     /**
      * Initialize timestamps for new entity.

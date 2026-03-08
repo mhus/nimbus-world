@@ -32,6 +32,7 @@ public class WItemPositionService {
     /**
      * Save or update an item position.
      * Automatically calculates chunk key from item position.
+     * For instance worlds: creates a COW copy in the instance layer.
      *
      * @param worldId World identifier (can be main world, instance, or zone)
      * @param itemBlockRef ItemBlockRef containing position and display data
@@ -57,9 +58,10 @@ public class WItemPositionService {
 
         String itemId = itemBlockRef.getName();
         Vector3 position = itemBlockRef.getPosition();
-        WWorld world = worldService.getByWorldId(worldId.getId()).get();
+        WWorld world = worldService.getByWorldId(worldId.toBaseWorldId().getId()).get();
         String chunk = world.getChunkKey((int)position.getX(), (int)position.getZ());
 
+        // For instance worlds: always write to instance layer
         WItemPosition itemPosition = repository.findByWorldIdAndItemId(worldId.getId(), itemId)
                 .orElseGet(() -> {
                     WItemPosition neu = WItemPosition.builder()
@@ -87,7 +89,7 @@ public class WItemPositionService {
     /**
      * Get all items in a specific chunk.
      * Returns only enabled items.
-     * No fallback to parent world - returns only items in this specific world context.
+     * For instance worlds: merges base world items with instance overrides (COW).
      *
      * @param worldId World identifier (can be main world, instance, or zone)
      * @param cx Chunk X coordinate
@@ -100,8 +102,18 @@ public class WItemPositionService {
             throw new IllegalArgumentException("WItemPosition cannot be in a collection");
         }
         String chunk = TypeUtil.toStringChunkCoord(cx, cz);
-        List<WItemPosition> positions = repository.findByWorldIdAndChunkAndEnabled(
-                worldId.getId(), chunk, true);
+
+        List<WItemPosition> positions;
+        if (worldId.isInstance()) {
+            var baseList = repository.findByWorldIdAndChunkAndEnabled(
+                    worldId.toBaseWorldId().getId(), chunk, true);
+            var instanceList = repository.findByWorldIdAndChunk(
+                    worldId.getId(), chunk);
+            positions = CowUtil.merge(baseList, instanceList);
+        } else {
+            positions = repository.findByWorldIdAndChunkAndEnabled(
+                    worldId.getId(), chunk, true);
+        }
 
         return positions.stream()
                 .map(WItemPosition::getPublicData)
@@ -112,7 +124,7 @@ public class WItemPositionService {
     /**
      * Get all items in a world.
      * Returns only enabled items.
-     * No fallback to parent world - returns only items in this specific world context.
+     * For instance worlds: merges base world items with instance overrides (COW).
      *
      * @param worldId World identifier (can be main world, instance, or zone)
      * @return List of all item positions
@@ -122,20 +134,31 @@ public class WItemPositionService {
         if (worldId.isCollection()) {
             throw new IllegalArgumentException("WItemPosition cannot be in a collection");
         }
+        if (worldId.isInstance()) {
+            var baseList = repository.findByWorldId(worldId.toBaseWorldId().getId());
+            var instanceList = repository.findByWorldId(worldId.getId());
+            return CowUtil.merge(baseList, instanceList);
+        }
         return repository.findByWorldId(worldId.getId());
     }
 
     /**
      * Find a specific item by ID.
+     * For instance worlds: checks instance layer first, falls back to base world (COW).
      *
      * @param worldId World identifier (can be main world, instance, or zone)
      * @param itemId Item identifier
-     * @return Optional containing the item position if found
+     * @return Optional containing the item position if found (empty if tombstoned or not found)
      */
     @Transactional(readOnly = true)
     public Optional<WItemPosition> findItem(WorldId worldId, String itemId) {
         if (worldId.isCollection()) {
             throw new IllegalArgumentException("WItemPosition cannot be in a collection");
+        }
+        if (worldId.isInstance()) {
+            var instanceEntry = repository.findByWorldIdAndItemId(worldId.getId(), itemId).orElse(null);
+            var baseEntry = repository.findByWorldIdAndItemId(worldId.toBaseWorldId().getId(), itemId).orElse(null);
+            return Optional.ofNullable(CowUtil.findOne(instanceEntry, baseEntry));
         }
         return repository.findByWorldIdAndItemId(worldId.getId(), itemId);
     }
@@ -143,6 +166,7 @@ public class WItemPositionService {
     /**
      * Delete an item position.
      * Performs soft delete by setting enabled=false.
+     * For instance worlds: creates a tombstone in the instance layer (COW).
      *
      * @param worldId World identifier (can be main world, instance, or zone)
      * @param itemId Item identifier
@@ -153,22 +177,38 @@ public class WItemPositionService {
         if (worldId.isCollection()) {
             throw new IllegalArgumentException("WItemPosition cannot be in a collection");
         }
-        Optional<WItemPosition> itemOpt = repository.findByWorldIdAndItemId(worldId.getId(), itemId);
 
-        if (itemOpt.isEmpty()) {
-            log.debug("Item not found for deletion: world={}, itemId={}",
-                    worldId, itemId);
-            return false;
+        // Check if item exists in instance layer
+        Optional<WItemPosition> itemOpt = repository.findByWorldIdAndItemId(worldId.getId(), itemId);
+        if (itemOpt.isPresent()) {
+            WItemPosition item = itemOpt.get();
+            item.setEnabled(false);
+            item.touchUpdate();
+            repository.save(item);
+            log.info("Soft deleted item: world={}, itemId={}", worldId, itemId);
+            return true;
         }
 
-        WItemPosition item = itemOpt.get();
-        item.setEnabled(false);
-        item.touchUpdate();
-        repository.save(item);
+        // For instance worlds: check if item exists in base world and create tombstone
+        if (worldId.isInstance()) {
+            Optional<WItemPosition> baseOpt = repository.findByWorldIdAndItemId(
+                    worldId.toBaseWorldId().getId(), itemId);
+            if (baseOpt.isPresent()) {
+                WItemPosition tombstone = WItemPosition.builder()
+                        .worldId(worldId.getId())
+                        .itemId(itemId)
+                        .chunk(baseOpt.get().getChunk())
+                        .enabled(false)
+                        .build();
+                tombstone.touchCreate();
+                repository.save(tombstone);
+                log.info("Created COW tombstone for item: world={}, itemId={}", worldId, itemId);
+                return true;
+            }
+        }
 
-        log.info("Soft deleted item: world={}, itemId={}",
-                worldId, itemId);
-        return true;
+        log.debug("Item not found for deletion: world={}, itemId={}", worldId, itemId);
+        return false;
     }
 
     /**
@@ -212,7 +252,7 @@ public class WItemPositionService {
 
     /**
      * Count items in a chunk.
-     * Counts only items in this specific world context (no parent fallback).
+     * For instance worlds: counts merged result (COW).
      *
      * @param worldId World identifier (can be main world, instance, or zone)
      * @param cx Chunk X coordinate
@@ -225,6 +265,13 @@ public class WItemPositionService {
             throw new IllegalArgumentException("WItemPosition cannot be in a collection");
         }
         String chunk = TypeUtil.toStringChunkCoord(cx, cz);
+        if (worldId.isInstance()) {
+            var baseList = repository.findByWorldIdAndChunkAndEnabled(
+                    worldId.toBaseWorldId().getId(), chunk, true);
+            var instanceList = repository.findByWorldIdAndChunk(
+                    worldId.getId(), chunk);
+            return CowUtil.merge(baseList, instanceList).size();
+        }
         return repository.findByWorldIdAndChunkAndEnabled(
                 worldId.getId(), chunk, true).size();
     }

@@ -29,7 +29,7 @@ import java.time.Instant;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class WItemPosition implements Identifiable {
+public class WItemPosition implements Identifiable, CowEntity {
 
     @Id
     private String id;
@@ -67,6 +67,18 @@ public class WItemPosition implements Identifiable {
     @Indexed
     @Builder.Default
     private boolean enabled = true;
+
+    @Override
+    @org.springframework.data.annotation.Transient
+    public String getCowId() {
+        return itemId;
+    }
+
+    @Override
+    @org.springframework.data.annotation.Transient
+    public boolean isCowEnabled() {
+        return enabled;
+    }
 
     /**
      * Initialize timestamps for new item position.
