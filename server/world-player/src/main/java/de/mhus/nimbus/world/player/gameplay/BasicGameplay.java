@@ -16,6 +16,7 @@ import de.mhus.nimbus.world.shared.world.WItemService;
 import de.mhus.nimbus.world.shared.world.WDocumentService;
 import de.mhus.nimbus.world.shared.world.WProgressService;
 import de.mhus.nimbus.world.shared.world.WAnythingService;
+import de.mhus.nimbus.world.shared.world.WChestService;
 import de.mhus.nimbus.world.shared.world.WWorldService;
 import de.mhus.nimbus.world.player.service.ClientService;
 import lombok.Getter;
@@ -71,6 +72,9 @@ public class BasicGameplay implements Gameplay {
     @Autowired
     @Getter
     protected WAnythingService anythingService;
+    @Autowired
+    @Getter
+    protected WChestService chestService;
 
     protected Map<String, GameplayAction> actions = new HashMap<>();
 
@@ -79,6 +83,7 @@ public class BasicGameplay implements Gameplay {
             actions.put("show.time", new ShowTimeAction(this));
             actions.put("show.coordinates", new ShowCoordinatesAction(this));
             actions.put("show.document", new ShowDocumentAction(this));
+            actions.put("open.chest", new OpenChestAction(this));
     }
 
     @Override

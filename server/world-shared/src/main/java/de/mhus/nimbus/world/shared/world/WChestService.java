@@ -67,7 +67,8 @@ public class WChestService {
         // Try all combinations: regionWorldId and plain worldId x userId and playerId
         for (String wId : List.of(regionWorldId, worldId)) {
             for (String uId : List.of(playerIdStr, userId)) {
-                var result = repository.findFirstByWorldIdAndPlayerIdAndTypeAndBank(wId, uId, WChest.ChestType.PLAYER, true);
+                // Search for BANK type first, then legacy PLAYER+bank for migration
+                var result = repository.findFirstByWorldIdAndPlayerIdAndType(wId, uId, WChest.ChestType.BANK);
                 if (result.isPresent()) {
                     return result.get();
                 }
@@ -82,8 +83,50 @@ public class WChestService {
                 .name(name)
                 .title("Bank")
                 .playerId(playerIdStr)
-                .type(WChest.ChestType.PLAYER)
-                .bank(true)
+                .type(WChest.ChestType.BANK)
+                .capacity(10)
+                .build();
+        chest.touchCreate();
+        return repository.save(chest);
+    }
+
+    /**
+     * Get or create the user's transfer chest in a world.
+     * Tries multiple worldId formats (@region:regionId, plain worldId) and userId/playerId combinations.
+     * If no transfer chest exists, one is automatically created.
+     * There is only one transfer chest per player.
+     *
+     * @param worldId worldId from session
+     * @param playerId PlayerId (@userId:characterId)
+     * @return the user's transfer chest, never null
+     */
+    @Transactional
+    public WChest getOrCreateUserTransferChest(String worldId, PlayerId playerId) {
+        var parsedWorldId = WorldId.of(worldId).orElseThrow(
+                () -> new IllegalArgumentException("Invalid worldId: " + worldId));
+        String regionWorldId = parsedWorldId.toRegionCollection().getId();
+        String userId = playerId.getUserId();
+        String playerIdStr = playerId.getId();
+
+        // Try all combinations: regionWorldId and plain worldId x userId and playerId
+        for (String wId : List.of(regionWorldId, worldId)) {
+            for (String uId : List.of(playerIdStr, userId)) {
+                var result = repository.findFirstByWorldIdAndPlayerIdAndType(wId, uId, WChest.ChestType.TRANSFER);
+                if (result.isPresent()) {
+                    return result.get();
+                }
+            }
+        }
+
+        // No transfer chest found - create one
+        log.info("Creating transfer chest for player: worldId={}, playerId={}", regionWorldId, playerIdStr);
+        String name = "transfer_" + playerIdStr.replace("@", "").replace(":", "_");
+        WChest chest = WChest.builder()
+                .worldId(regionWorldId)
+                .name(name)
+                .title("Transfer")
+                .playerId(playerIdStr)
+                .type(WChest.ChestType.TRANSFER)
                 .capacity(10)
                 .build();
         chest.touchCreate();

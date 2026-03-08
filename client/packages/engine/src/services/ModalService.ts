@@ -1375,6 +1375,46 @@ export class ModalService {
   }
 
   /**
+   * Open chest widget modal for interacting with a world chest via progress reference.
+   *
+   * @param progressId The progress ID referencing the chest access
+   * @returns Modal reference
+   */
+  openChest(progressId: string): ModalReference {
+    try {
+      if (document.pointerLockElement) {
+        document.exitPointerLock();
+        logger.debug('Exited pointer lock for chest widget');
+      }
+
+      const componentBaseUrl = this.appContext?.services.network?.getComponentBaseUrl();
+
+      if (!componentBaseUrl) {
+        logger.warn('No component URL configured for this world');
+        throw new Error('Chest widget is not available in this world');
+      }
+
+      const separator = componentBaseUrl.includes('?') ? '&' : '?';
+      const worldId = this.appContext.worldInfo?.worldId;
+      const sessionId = this.appContext.sessionId;
+
+      const chestUrl = `${componentBaseUrl}chest-widget.html${separator}embedded=true&worldId=${worldId}&sessionId=${sessionId}&progressId=${encodeURIComponent(progressId)}`;
+
+      logger.debug('Opening chest widget modal', { chestUrl, progressId });
+
+      return this.openModal(
+        `chest-${progressId}`,
+        'Chest',
+        chestUrl,
+        ModalSizePreset.CENTER_MEDIUM,
+        ModalFlags.CLOSEABLE | ModalFlags.MOVEABLE | ModalFlags.NO_BACKGROUND_LOCK | ModalFlags.RESIZEABLE | ModalFlags.MINIMIZABLE
+      );
+    } catch (error) {
+      throw ExceptionHandler.handleAndRethrow(error, 'ModalService.openChest', { progressId });
+    }
+  }
+
+  /**
    * Open a predefined component modal
    *
    * @param component Component name (e.g., 'block_editor', 'settings', 'inventory')
@@ -1429,6 +1469,13 @@ export class ModalService {
             throw new Error('dialog requires 1 attribute: progressId');
           }
           return this.openDialog(attributes[0]);
+
+        case 'chest':
+          // Expect attributes: [progressId]
+          if (attributes.length < 1) {
+            throw new Error('chest requires 1 attribute: progressId');
+          }
+          return this.openChest(attributes[0]);
 
         default:
           throw new Error(`Unknown component: ${component}`);

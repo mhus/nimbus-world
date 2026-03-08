@@ -4595,6 +4595,13 @@
         "visibility" : null,
         "javaTypeHint" : "long",
         "comment" : "// javaType: long"
+      }, {
+        "name" : "dead",
+        "type" : "boolean",
+        "optional" : true,
+        "visibility" : null,
+        "javaTypeHint" : null,
+        "comment" : null
       } ],
       "methods" : [ ]
     } ],

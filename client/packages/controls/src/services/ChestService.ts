@@ -20,7 +20,6 @@ export interface ChestRequest {
   worldId?: string;
   playerId?: string;
   type: ChestType;
-  bank?: boolean;
   pin?: string;
   capacity?: number;
   keyId?: string;

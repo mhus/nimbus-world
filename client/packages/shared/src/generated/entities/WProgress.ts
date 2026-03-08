@@ -5,6 +5,8 @@
 
 export interface WProgress {
   worldId: string;
+  progressId: string;
+  title: string;
   playerId: string;
   quest?: string;
   type: string;

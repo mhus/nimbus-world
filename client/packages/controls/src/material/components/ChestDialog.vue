@@ -96,6 +96,8 @@
                     <option value="REGION">Region Chest</option>
                     <option value="WORLD">World Chest</option>
                     <option value="PLAYER">Player Chest</option>
+                    <option value="BANK">Bank Chest</option>
+                    <option value="TRANSFER">Transfer Chest</option>
                   </select>
                   <label class="label">
                     <span class="label-text-alt text-base-content/60">
@@ -123,8 +125,8 @@
                   </label>
                 </div>
 
-                <!-- Player ID (for PLAYER type) -->
-                <div v-if="formData.type === 'PLAYER'" class="form-control">
+                <!-- Player ID (for PLAYER, BANK, TRANSFER types) -->
+                <div v-if="formData.type === 'PLAYER' || formData.type === 'BANK' || formData.type === 'TRANSFER'" class="form-control">
                   <label class="label">
                     <span class="label-text font-semibold">Player {{ formData.type === 'PLAYER' ? '*' : '' }}</span>
                   </label>
@@ -140,21 +142,6 @@
                   </select>
                   <label class="label">
                     <span class="label-text-alt text-base-content/60">Required for PLAYER type chests</span>
-                  </label>
-                </div>
-
-                <!-- Bank -->
-                <div class="form-control">
-                  <label class="label cursor-pointer justify-start gap-3">
-                    <input
-                      v-model="formData.bank"
-                      type="checkbox"
-                      class="checkbox"
-                    />
-                    <span class="label-text font-semibold">Bank Chest</span>
-                  </label>
-                  <label class="label">
-                    <span class="label-text-alt text-base-content/60">User bank account or region bank</span>
                   </label>
                 </div>
 
@@ -327,7 +314,6 @@ const formData = ref<ChestRequest>({
   worldId: '',
   playerId: '',
   type: '' as ChestType,
-  bank: false,
   pin: '',
   capacity: 0,
   keyId: '',
@@ -374,7 +360,8 @@ const isValid = computed(() => {
     return false;
   }
 
-  if (formData.value.type === 'PLAYER' && !formData.value.playerId) {
+  if ((formData.value.type === 'PLAYER' || formData.value.type === 'BANK' || formData.value.type === 'TRANSFER')
+      && !formData.value.playerId) {
     return false;
   }
 
@@ -399,7 +386,6 @@ const handleSave = async () => {
       await chestService.updateChest(props.worldId, props.chest.name, {
         title: formData.value.title,
         description: formData.value.description,
-        bank: formData.value.bank,
         pin: formData.value.pin,
         capacity: formData.value.capacity,
         keyId: formData.value.keyId,
@@ -464,7 +450,7 @@ const generateUuid = (): string => {
 watch(() => formData.value.type, (newType) => {
   if (newType === 'WORLD' && worlds.value.length === 0) {
     loadWorlds('mainOnly');
-  } else if (newType === 'PLAYER' && users.value.length === 0) {
+  } else if ((newType === 'PLAYER' || newType === 'BANK' || newType === 'TRANSFER') && users.value.length === 0) {
     loadUsers();
   }
 });
@@ -479,7 +465,6 @@ onMounted(() => {
       worldId: props.chest.worldId || '',
       playerId: props.chest.playerId || '',
       type: props.chest.type,
-      bank: props.chest.bank || false,
       pin: props.chest.pin || '',
       capacity: props.chest.capacity || 0,
       keyId: props.chest.keyId || '',
@@ -489,7 +474,7 @@ onMounted(() => {
     // Load worlds/users if needed for existing chest
     if (props.chest.type === 'WORLD') {
       loadWorlds('mainOnly');
-    } else if (props.chest.type === 'PLAYER') {
+    } else if (props.chest.type === 'PLAYER' || props.chest.type === 'BANK' || props.chest.type === 'TRANSFER') {
       loadUsers();
     }
   } else {

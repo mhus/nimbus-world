@@ -40,7 +40,6 @@ public class ChestTools {
             map.put("playerId", e.getPlayerId() != null ? e.getPlayerId() : "");
             map.put("capacity", e.getCapacity());
             map.put("itemCount", e.getItems() != null ? e.getItems().size() : 0);
-            map.put("bank", e.isBank());
             return map;
         }).toList();
 
@@ -71,14 +70,13 @@ public class ChestTools {
         result.put("type", chest.getType() != null ? chest.getType().name() : null);
         result.put("playerId", chest.getPlayerId());
         result.put("capacity", chest.getCapacity());
-        result.put("bank", chest.isBank());
         result.put("keyId", chest.getKeyId());
         result.put("lockPickingDifficulty", chest.getLockPickingDifficulty());
         result.put("items", chest.getItems());
         return result;
     }
 
-    @Tool(name = "create_chest", description = "Create a new chest. Type must be REGION, WORLD, or PLAYER. For PLAYER chests, playerId is required.")
+    @Tool(name = "create_chest", description = "Create a new chest. Type must be REGION, WORLD, PLAYER, BANK, or TRANSFER. For PLAYER, BANK, and TRANSFER chests, playerId is required.")
     public Map<String, Object> createChest(
             @ToolParam(description = "World ID (e.g. 'ymir:Mist' or '@region:earth616')") String worldId,
             @ToolParam(description = "Unique chest name (technical identifier)") String name,
@@ -87,7 +85,6 @@ public class ChestTools {
             @ToolParam(description = "Description", required = false) String description,
             @ToolParam(description = "Player ID for PLAYER type chests (format: @userId:characterId)", required = false) String playerId,
             @ToolParam(description = "Maximum item capacity (default 10)", required = false) Integer capacity,
-            @ToolParam(description = "Whether this is a bank chest", required = false) Boolean bank,
             @ToolParam(description = "Key item ID required to open", required = false) String keyId,
             @ToolParam(description = "Lock picking difficulty (0 = not possible)", required = false) Integer lockPickingDifficulty) {
         log.debug("MCP: Create chest: worldId={}, name={}, type={}", worldId, name, type);
@@ -100,18 +97,18 @@ public class ChestTools {
         try {
             chestType = WChest.ChestType.valueOf(type.toUpperCase());
         } catch (IllegalArgumentException e) {
-            throw new McpToolException("Invalid chest type: " + type + ". Must be REGION, WORLD, or PLAYER");
+            throw new McpToolException("Invalid chest type: " + type + ". Must be REGION, WORLD, PLAYER, BANK, or TRANSFER");
         }
 
-        if (chestType == WChest.ChestType.PLAYER && Strings.isBlank(playerId)) {
-            throw new McpToolException("playerId is required for PLAYER type chests");
+        if ((chestType == WChest.ChestType.PLAYER || chestType == WChest.ChestType.BANK || chestType == WChest.ChestType.TRANSFER)
+                && Strings.isBlank(playerId)) {
+            throw new McpToolException("playerId is required for " + chestType + " type chests");
         }
 
         try {
             WChest chest = chestService.createChest(worldId, name, title, description, playerId, chestType);
             if (capacity != null && capacity > 0) chest.setCapacity(capacity);
             else chest.setCapacity(10);
-            if (bank != null) chest.setBank(bank);
             if (Strings.isNotBlank(keyId)) chest.setKeyId(keyId);
             if (lockPickingDifficulty != null) chest.setLockPickingDifficulty(lockPickingDifficulty);
             chestService.save(chest);

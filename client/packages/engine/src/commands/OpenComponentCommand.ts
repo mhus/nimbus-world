@@ -9,6 +9,8 @@
  *   Usage: openComponent block_editor <x> <y> <z>
  * - document: Opens a document widget via progress reference
  *   Usage: openComponent document <progressId>
+ * - chest: Opens a chest widget via progress reference
+ *   Usage: openComponent chest <progressId>
  */
 
 import { CommandHandler } from './CommandHandler';

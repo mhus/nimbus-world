@@ -118,7 +118,9 @@
                 <option value="">All Types</option>
                 <option value="REGION">Region Chests</option>
                 <option value="WORLD">World Chests</option>
-                <option value="USER">User Chests</option>
+                <option value="PLAYER">Player Chests</option>
+                <option value="BANK">Bank Chests</option>
+                <option value="TRANSFER">Transfer Chests</option>
               </select>
             </div>
 
@@ -376,8 +378,12 @@ const getTypeClass = (type: ChestType): string => {
       return 'badge-primary';
     case 'WORLD':
       return 'badge-secondary';
-    case 'USER':
+    case 'PLAYER':
       return 'badge-accent';
+    case 'BANK':
+      return 'badge-warning';
+    case 'TRANSFER':
+      return 'badge-info';
     default:
       return '';
   }

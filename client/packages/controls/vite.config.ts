@@ -70,6 +70,7 @@ export default defineConfig({
         'status-panel': resolve(__dirname, 'status-panel.html'),
         'map-panel': resolve(__dirname, 'map-panel.html'),
         'document-widget': resolve(__dirname, 'document-widget.html'),
+        'chest-widget': resolve(__dirname, 'chest-widget.html'),
         'dialog-widget': resolve(__dirname, 'dialog-widget.html'),
         'library-panel': resolve(__dirname, 'library-panel.html'),
         'panels': resolve(__dirname, 'panels.html'),

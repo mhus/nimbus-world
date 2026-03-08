@@ -19,6 +19,7 @@ export interface RCharacter {
   skillExperience: number;
   silver: number;
   constitution: Record<string, number>;
+  reputation: Record<string, number>;
   attributes: Record<string, string>;
   regionId: string;
 }

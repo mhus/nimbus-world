@@ -81,11 +81,6 @@ public class WChest implements Identifiable {
     private ChestType type;
 
     /**
-     * Flag indicating if this chest is a bank chest, could be user bank account or region bank.
-     */
-    private boolean bank;
-
-    /**
      * Optional PIN code for accessing the chest, if required.
      */
     private String pin;
@@ -151,6 +146,16 @@ public class WChest implements Identifiable {
         /**
          * Player-specific chest, only accessible to the owner.
          */
-        PLAYER
+        PLAYER,
+
+        /**
+         * Player bank chest, requires playerId. Stores the player's bank items.
+         */
+        BANK,
+
+        /**
+         * Player transfer chest, requires playerId. Used for item transfers between players or systems.
+         */
+        TRANSFER
     }
 }

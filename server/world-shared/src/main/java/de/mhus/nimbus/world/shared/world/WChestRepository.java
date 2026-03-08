@@ -33,8 +33,8 @@ public interface WChestRepository extends MongoRepository<WChest, String> {
     Optional<WChest> findByWorldIdAndName(String worldId, String name);
 
     /**
-     * Find player bank chest by worldId, playerId, type and bank flag.
+     * Find player chest by worldId, playerId and type.
      */
-    Optional<WChest> findFirstByWorldIdAndPlayerIdAndTypeAndBank(String worldId, String playerId, WChest.ChestType type, boolean bank);
+    Optional<WChest> findFirstByWorldIdAndPlayerIdAndType(String worldId, String playerId, WChest.ChestType type);
 
 }

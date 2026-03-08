@@ -14,6 +14,8 @@ import de.mhus.nimbus.world.shared.world.WChest;
 import de.mhus.nimbus.world.shared.world.WChestService;
 import de.mhus.nimbus.world.shared.world.WItem;
 import de.mhus.nimbus.world.shared.world.WItemService;
+import de.mhus.nimbus.world.shared.world.WProgress;
+import de.mhus.nimbus.world.shared.world.WProgressService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -28,43 +30,52 @@ import org.springframework.web.bind.annotation.*;
 import java.util.*;
 
 /**
- * REST Controller for player's own chests (bank and transfer).
- * No PIN or access checks needed - these are the player's personal chests.
- * Accessible by players under /control/player/chest.
+ * REST Controller for chest widget operations.
+ * Allows players to interact with world chests via a WProgress reference.
+ * The WProgress (type "chest-access") contains a chestId in progressData.
+ * Validates that the WProgress belongs to the requesting player and world.
+ * Accessible by players under /control/player/chest-widget.
  */
 @RestController
-@RequestMapping("/control/player/chest")
+@RequestMapping("/control/player/chest-widget")
 @RequiredArgsConstructor
 @Slf4j
-@Tag(name = "Player Chest", description = "Player's bank and transfer chests")
-public class PlayerChestController extends BaseEditorController {
+@Tag(name = "Player Chest Widget", description = "Interact with world chests via progress reference")
+public class PlayerChestWidgetController extends BaseEditorController {
 
     private final WChestService chestService;
+    private final WProgressService progressService;
     private final RCharacterService characterService;
     private final WItemService wItemService;
     private final WorldClientService worldClientService;
     private final WSessionService wSessionService;
 
     /**
-     * Get player's bank and transfer chests with backpack items.
+     * Get chest and backpack items via WProgress reference.
+     * Validates the progress belongs to the requesting player and world.
      */
     @GetMapping
-    @Operation(summary = "Get player's bank and transfer chests")
+    @Operation(summary = "Get chest and backpack items via progress reference")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Chests and backpack data returned"),
-            @ApiResponse(responseCode = "400", description = "Not authenticated"),
-            @ApiResponse(responseCode = "404", description = "Character not found")
+            @ApiResponse(responseCode = "200", description = "Chest and backpack data returned"),
+            @ApiResponse(responseCode = "400", description = "Not authenticated or invalid request"),
+            @ApiResponse(responseCode = "404", description = "Progress, chest, or character not found")
     })
-    public ResponseEntity<?> getChests(HttpServletRequest request) {
+    public ResponseEntity<?> getChest(
+            @RequestParam String progressId,
+            HttpServletRequest request) {
 
         String worldId = (String) request.getAttribute(AccessFilterBase.ATTR_WORLD_ID);
         String userId = (String) request.getAttribute(AccessFilterBase.ATTR_USER_ID);
         String characterId = (String) request.getAttribute(AccessFilterBase.ATTR_CHARACTER_ID);
 
-        log.debug("GET player chests: worldId={}, userId={}, characterId={}", worldId, userId, characterId);
+        log.debug("GET chest-widget: worldId={}, userId={}, characterId={}, progressId={}", worldId, userId, characterId, progressId);
 
         if (Strings.isBlank(worldId) || Strings.isBlank(userId) || Strings.isBlank(characterId)) {
             return bad("Not authenticated");
+        }
+        if (Strings.isBlank(progressId)) {
+            return bad("progressId required");
         }
 
         var parsedWorldId = WorldId.of(worldId).orElse(null);
@@ -72,14 +83,22 @@ public class PlayerChestController extends BaseEditorController {
             return bad("Invalid worldId format");
         }
 
-        var playerId = PlayerId.of(userId, characterId).orElse(null);
-        if (playerId == null) {
-            return bad("Invalid playerId");
+        // Load and validate WProgress
+        var resolveResult = resolveChestFromProgress(progressId, worldId, userId);
+        if (resolveResult.error != null) {
+            return resolveResult.error;
         }
+        WChest chest = resolveResult.chest;
 
-        // Get or create bank and transfer chests
-        WChest bankChest = chestService.getOrCreateUserBankChest(worldId, playerId);
-        WChest transferChest = chestService.getOrCreateUserTransferChest(worldId, playerId);
+        // Access check (PIN-based)
+        boolean requiresPin = !Strings.isBlank(chest.getPin());
+        boolean accessGranted = !requiresPin;
+
+        if (requiresPin) {
+            var pinProgressOpt = progressService.findByWorldIdAndPlayerIdAndTypeAndQuest(
+                    worldId, userId, "CHEST_ACCESS", chest.getName());
+            accessGranted = pinProgressOpt.isPresent();
+        }
 
         // Load character and backpack
         var character = findCharacter(worldId, userId, characterId);
@@ -87,29 +106,82 @@ public class PlayerChestController extends BaseEditorController {
             return notFound("Character not found");
         }
 
-        PlayerBackpack backpack = character.getBackpack();
-        Map<String, Integer> itemIds = backpack != null ? backpack.getItemIds() : null;
-
         // Build response
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("worldId", worldId);
-        result.put("bank", buildChestData(parsedWorldId, bankChest));
-        result.put("transfer", buildChestData(parsedWorldId, transferChest));
-        result.put("backpack", Map.of("items", enrichBackpackItems(parsedWorldId, itemIds)));
-        result.put("shortcutItemIds", getShortcutItemIds(character));
+
+        Map<String, Object> chestData = new LinkedHashMap<>();
+        chestData.put("name", chest.getName());
+        chestData.put("title", chest.getTitle());
+        chestData.put("capacity", chest.getCapacity());
+        if (accessGranted) {
+            chestData.put("items", enrichChestItems(parsedWorldId, chest.getItems()));
+        }
+        result.put("chest", chestData);
+
+        if (accessGranted) {
+            PlayerBackpack backpack = character.getBackpack();
+            Map<String, Integer> itemIds = backpack != null ? backpack.getItemIds() : null;
+            result.put("backpack", Map.of("items", enrichBackpackItems(parsedWorldId, itemIds)));
+            result.put("shortcutItemIds", getShortcutItemIds(character));
+        }
+
+        result.put("accessGranted", accessGranted);
+        result.put("requiresPin", requiresPin);
 
         return ResponseEntity.ok(result);
     }
 
     /**
-     * Transfer item from a player chest to backpack.
+     * Validate PIN and grant access via WProgress.
+     */
+    @PostMapping("/pin")
+    @Operation(summary = "Validate chest PIN via progress reference")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "PIN validated"),
+            @ApiResponse(responseCode = "400", description = "Invalid request"),
+            @ApiResponse(responseCode = "404", description = "Progress or chest not found")
+    })
+    public ResponseEntity<?> validatePin(
+            @RequestBody PinRequest body,
+            HttpServletRequest request) {
+
+        String worldId = (String) request.getAttribute(AccessFilterBase.ATTR_WORLD_ID);
+        String userId = (String) request.getAttribute(AccessFilterBase.ATTR_USER_ID);
+
+        if (Strings.isBlank(worldId) || Strings.isBlank(userId)) {
+            return bad("Not authenticated");
+        }
+        if (body == null || Strings.isBlank(body.progressId()) || Strings.isBlank(body.pin())) {
+            return bad("progressId and pin required");
+        }
+
+        var resolveResult = resolveChestFromProgress(body.progressId(), worldId, userId);
+        if (resolveResult.error != null) {
+            return resolveResult.error;
+        }
+        WChest chest = resolveResult.chest;
+
+        if (!body.pin().equals(chest.getPin())) {
+            return bad("Invalid PIN");
+        }
+
+        // Grant access via WProgress
+        progressService.save(worldId, userId, "CHEST_ACCESS", chest.getName(), Map.of("granted", true));
+
+        log.info("Chest widget PIN validated: worldId={}, userId={}, chestName={}", worldId, userId, chest.getName());
+        return ResponseEntity.ok(Map.of("accessGranted", true));
+    }
+
+    /**
+     * Transfer item from chest to backpack.
      */
     @PostMapping("/to-backpack")
-    @Operation(summary = "Move item from player chest to backpack")
+    @Operation(summary = "Move item from world chest to backpack")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Item transferred"),
             @ApiResponse(responseCode = "400", description = "Invalid request"),
-            @ApiResponse(responseCode = "404", description = "Chest or character not found")
+            @ApiResponse(responseCode = "404", description = "Progress, chest, or character not found")
     })
     public ResponseEntity<?> toBackpack(
             @RequestBody TransferRequest body,
@@ -122,15 +194,19 @@ public class PlayerChestController extends BaseEditorController {
         if (Strings.isBlank(worldId) || Strings.isBlank(userId) || Strings.isBlank(characterId)) {
             return bad("Not authenticated");
         }
-
-        if (body == null || Strings.isBlank(body.chestType()) || Strings.isBlank(body.itemId()) || body.amount() <= 0) {
-            return bad("chestType, itemId and amount (> 0) required");
+        if (body == null || Strings.isBlank(body.progressId()) || Strings.isBlank(body.itemId()) || body.amount() <= 0) {
+            return bad("progressId, itemId and amount (> 0) required");
         }
 
-        WChest chest = resolvePlayerChest(worldId, userId, characterId, body.chestType());
-        if (chest == null) {
-            return bad("Invalid chestType: " + body.chestType());
+        var resolveResult = resolveChestFromProgress(body.progressId(), worldId, userId);
+        if (resolveResult.error != null) {
+            return resolveResult.error;
         }
+        WChest chest = resolveResult.chest;
+
+        // PIN access check
+        var accessCheck = checkChestPinAccess(worldId, userId, chest);
+        if (accessCheck != null) return accessCheck;
 
         // Find item in chest
         ItemRef chestItem = null;
@@ -170,22 +246,22 @@ public class PlayerChestController extends BaseEditorController {
             return bad("Failed to update backpack");
         }
 
-        log.info("Item transferred chest->backpack: worldId={}, userId={}, chestType={}, itemId={}, amount={}",
-                worldId, userId, body.chestType(), body.itemId(), transferAmount);
+        log.info("Chest widget item transferred chest->backpack: worldId={}, userId={}, itemId={}, amount={}",
+                worldId, userId, body.itemId(), transferAmount);
 
         notifyPlayer(worldId, request);
         return ResponseEntity.ok(Map.of("transferred", transferAmount));
     }
 
     /**
-     * Transfer item from backpack to a player chest.
+     * Transfer item from backpack to chest.
      */
     @PostMapping("/to-chest")
-    @Operation(summary = "Move item from backpack to player chest")
+    @Operation(summary = "Move item from backpack to world chest")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Item transferred"),
             @ApiResponse(responseCode = "400", description = "Invalid request"),
-            @ApiResponse(responseCode = "404", description = "Chest or character not found")
+            @ApiResponse(responseCode = "404", description = "Progress, chest, or character not found")
     })
     public ResponseEntity<?> toChest(
             @RequestBody TransferRequest body,
@@ -198,15 +274,19 @@ public class PlayerChestController extends BaseEditorController {
         if (Strings.isBlank(worldId) || Strings.isBlank(userId) || Strings.isBlank(characterId)) {
             return bad("Not authenticated");
         }
-
-        if (body == null || Strings.isBlank(body.chestType()) || Strings.isBlank(body.itemId()) || body.amount() <= 0) {
-            return bad("chestType, itemId and amount (> 0) required");
+        if (body == null || Strings.isBlank(body.progressId()) || Strings.isBlank(body.itemId()) || body.amount() <= 0) {
+            return bad("progressId, itemId and amount (> 0) required");
         }
 
-        WChest chest = resolvePlayerChest(worldId, userId, characterId, body.chestType());
-        if (chest == null) {
-            return bad("Invalid chestType: " + body.chestType());
+        var resolveResult = resolveChestFromProgress(body.progressId(), worldId, userId);
+        if (resolveResult.error != null) {
+            return resolveResult.error;
         }
+        WChest chest = resolveResult.chest;
+
+        // PIN access check
+        var accessCheck = checkChestPinAccess(worldId, userId, chest);
+        if (accessCheck != null) return accessCheck;
 
         var character = findCharacter(worldId, userId, characterId);
         if (character == null) {
@@ -267,8 +347,8 @@ public class PlayerChestController extends BaseEditorController {
             return bad("Failed to update chest");
         }
 
-        log.info("Item transferred backpack->chest: worldId={}, userId={}, chestType={}, itemId={}, amount={}",
-                worldId, userId, body.chestType(), body.itemId(), transferAmount);
+        log.info("Chest widget item transferred backpack->chest: worldId={}, userId={}, itemId={}, amount={}",
+                worldId, userId, body.itemId(), transferAmount);
 
         notifyPlayer(worldId, request);
         return ResponseEntity.ok(Map.of("transferred", transferAmount));
@@ -276,24 +356,57 @@ public class PlayerChestController extends BaseEditorController {
 
     // --- Helper methods ---
 
-    private WChest resolvePlayerChest(String worldId, String userId, String characterId, String chestType) {
-        var playerId = PlayerId.of(userId, characterId).orElse(null);
-        if (playerId == null) return null;
+    /**
+     * Resolve chest from a WProgress entry.
+     * Validates that the progress belongs to the requesting player and world,
+     * is of type "chest-access", and uses the quest field as chest name.
+     */
+    private ChestResolveResult resolveChestFromProgress(String progressId, String worldId, String userId) {
+        Optional<WProgress> progressOpt = progressService.findByProgressId(progressId);
+        if (progressOpt.isEmpty()) {
+            return ChestResolveResult.ofError(notFound("Progress not found"));
+        }
+        WProgress progress = progressOpt.get();
 
-        return switch (chestType.toLowerCase()) {
-            case "bank" -> chestService.getOrCreateUserBankChest(worldId, playerId);
-            case "transfer" -> chestService.getOrCreateUserTransferChest(worldId, playerId);
-            default -> null;
-        };
+        // Validate ownership: playerId and worldId must match
+        if (!worldId.equals(progress.getWorldId())) {
+            log.warn("Chest widget access denied: worldId mismatch. expected={}, actual={}", worldId, progress.getWorldId());
+            return ChestResolveResult.ofError(bad("Access denied"));
+        }
+        if (!userId.equals(progress.getPlayerId())) {
+            log.warn("Chest widget access denied: playerId mismatch. expected={}, actual={}", userId, progress.getPlayerId());
+            return ChestResolveResult.ofError(bad("Access denied"));
+        }
+
+        // Validate type
+        if (!"chest-access".equals(progress.getType())) {
+            return ChestResolveResult.ofError(bad("Invalid progress type"));
+        }
+
+        // quest field contains the chest name
+        String chestName = progress.getQuest();
+        if (Strings.isBlank(chestName)) {
+            return ChestResolveResult.ofError(bad("Progress does not reference a chest"));
+        }
+
+        // Load chest by name
+        Optional<WChest> chestOpt = chestService.getByWorldIdAndName(worldId, chestName);
+        if (chestOpt.isEmpty()) {
+            return ChestResolveResult.ofError(notFound("Chest not found"));
+        }
+
+        return ChestResolveResult.ofChest(chestOpt.get());
     }
 
-    private Map<String, Object> buildChestData(WorldId parsedWorldId, WChest chest) {
-        Map<String, Object> data = new LinkedHashMap<>();
-        data.put("name", chest.getName());
-        data.put("title", chest.getTitle());
-        data.put("capacity", chest.getCapacity());
-        data.put("items", enrichChestItems(parsedWorldId, chest.getItems()));
-        return data;
+    private ResponseEntity<?> checkChestPinAccess(String worldId, String userId, WChest chest) {
+        if (!Strings.isBlank(chest.getPin())) {
+            var pinProgressOpt = progressService.findByWorldIdAndPlayerIdAndTypeAndQuest(
+                    worldId, userId, "CHEST_ACCESS", chest.getName());
+            if (pinProgressOpt.isEmpty()) {
+                return unauthorized("Access denied - PIN required");
+            }
+        }
+        return null;
     }
 
     private Set<String> getShortcutItemIds(RCharacter character) {
@@ -414,7 +527,26 @@ public class PlayerChestController extends BaseEditorController {
         return items;
     }
 
-    // --- Request DTOs ---
+    // --- DTOs ---
 
-    record TransferRequest(String chestType, String itemId, int amount) {}
+    record PinRequest(String progressId, String pin) {}
+    record TransferRequest(String progressId, String itemId, int amount) {}
+
+    private static class ChestResolveResult {
+        final WChest chest;
+        final ResponseEntity<?> error;
+
+        private ChestResolveResult(WChest chest, ResponseEntity<?> error) {
+            this.chest = chest;
+            this.error = error;
+        }
+
+        static ChestResolveResult ofChest(WChest chest) {
+            return new ChestResolveResult(chest, null);
+        }
+
+        static ChestResolveResult ofError(ResponseEntity<?> error) {
+            return new ChestResolveResult(null, error);
+        }
+    }
 }

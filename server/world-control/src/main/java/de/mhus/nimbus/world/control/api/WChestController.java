@@ -33,7 +33,6 @@ public class WChestController extends BaseEditorController {
             String description,
             String playerId,
             WChest.ChestType type,
-            Boolean bank,
             String pin,
             Integer capacity,
             String keyId,
@@ -49,7 +48,6 @@ public class WChestController extends BaseEditorController {
             String description,
             String playerId,
             WChest.ChestType type,
-            boolean bank,
             String pin,
             int capacity,
             String keyId,
@@ -72,7 +70,6 @@ public class WChestController extends BaseEditorController {
                 chest.getDescription(),
                 chest.getPlayerId(),
                 chest.getType(),
-                chest.isBank(),
                 chest.getPin(),
                 chest.getCapacity(),
                 chest.getKeyId(),
@@ -193,8 +190,11 @@ public class WChestController extends BaseEditorController {
         }
 
         // Validate type-specific requirements
-        if (request.type() == WChest.ChestType.PLAYER && Strings.isBlank(request.playerId())) {
-            return bad("playerId is required for USER type chests");
+        if ((request.type() == WChest.ChestType.PLAYER
+                || request.type() == WChest.ChestType.BANK
+                || request.type() == WChest.ChestType.TRANSFER)
+                && Strings.isBlank(request.playerId())) {
+            return bad("playerId is required for " + request.type() + " type chests");
         }
 
         if (request.type() == WChest.ChestType.WORLD && Strings.isBlank(worldId)) {
@@ -213,7 +213,6 @@ public class WChestController extends BaseEditorController {
 
             // Set additional fields
             chestService.updateChest(created.getId(), chest -> {
-                if (request.bank() != null) chest.setBank(request.bank());
                 if (request.pin() != null) chest.setPin(request.pin());
                 if (request.capacity() != null) chest.setCapacity(request.capacity());
                 if (request.keyId() != null) chest.setKeyId(request.keyId());
@@ -263,7 +262,6 @@ public class WChestController extends BaseEditorController {
                 chest.setWorldId(worldId);
                 if (request.playerId() != null) chest.setPlayerId(request.playerId());
                 if (request.type() != null) chest.setType(request.type());
-                if (request.bank() != null) chest.setBank(request.bank());
                 if (request.pin() != null) chest.setPin(request.pin());
                 if (request.capacity() != null) chest.setCapacity(request.capacity());
                 if (request.keyId() != null) chest.setKeyId(request.keyId());
