@@ -280,8 +280,12 @@ public class EntityOwnershipService {
      * @return World ID
      */
     private WorldId extractWorldIdFromTopic(String topic) {
-        String[] parts = topic.split(":");
-        return WorldId.unchecked(parts.length >= 2 ? parts[1] : "unknown"); // TODO throw if invalid?
+        // Topic format: "world:{worldId}:e.o" where worldId can contain colons (e.g. "earth616:westview:main:inst123")
+        if (topic.startsWith("world:") && topic.endsWith(":e.o")) {
+            String worldId = topic.substring("world:".length(), topic.length() - ":e.o".length());
+            return WorldId.unchecked(worldId);
+        }
+        throw new IllegalArgumentException("Invalid ownership topic format: " + topic);
     }
 
     /**

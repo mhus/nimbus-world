@@ -54,7 +54,7 @@ public class VitalDeltaBroadcastListener {
         updateSubscriptions();
     }
 
-    @Scheduled(fixedDelay = 60000)
+    @Scheduled(fixedDelay = 1000)
     public void updateSubscriptions() {
         Set<WorldId> knownWorlds = worldDiscoveryService.getKnownWorldIds();
 

@@ -5,6 +5,7 @@ import de.mhus.nimbus.world.life.config.WorldLifeSettings;
 import de.mhus.nimbus.world.life.model.ChunkCoordinate;
 import de.mhus.nimbus.world.life.service.ChunkTTLTracker;
 import de.mhus.nimbus.world.life.service.MultiWorldChunkService;
+import de.mhus.nimbus.world.life.service.WorldDiscoveryService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -28,6 +29,7 @@ import java.util.Set;
 public class ChunkTTLCleanupTask {
 
     private final MultiWorldChunkService multiWorldChunkService;
+    private final WorldDiscoveryService worldDiscoveryService;
     private final WorldLifeSettings properties;
 
     /**
@@ -52,8 +54,15 @@ public class ChunkTTLCleanupTask {
 
                     log.info("World {}: TTL cleanup removed {} stale chunks (TTL: {}ms), {} active remain",
                             worldId, staleChunks.size(), ttlMs, aliveService.getActiveChunkCount());
+                }
+
+                // If no active chunks remain, remove the dynamic world registration
+                if (aliveService.getActiveChunkCount() == 0) {
+                    worldDiscoveryService.removeDynamicWorld(worldIdStr);
+                    multiWorldChunkService.removeWorld(worldId);
+                    log.info("World {}: no active chunks, removed dynamic registration", worldId);
                 } else {
-                    log.trace("World {}: TTL cleanup: no stale chunks, {} active",
+                    log.trace("World {}: TTL cleanup: {} active chunks",
                             worldId, aliveService.getActiveChunkCount());
                 }
             }

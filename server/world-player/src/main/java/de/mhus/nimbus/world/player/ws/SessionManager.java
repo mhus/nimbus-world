@@ -47,6 +47,10 @@ public class SessionManager {
 
     @Autowired
     @Lazy
+    private de.mhus.nimbus.world.player.ws.redis.MovementBroadcastListener movementBroadcastListener;
+
+    @Autowired
+    @Lazy
     private List<SessionClosedConsumer> sessionClosedConsumers;
 
     @Autowired
@@ -264,6 +268,7 @@ public class SessionManager {
         // Only after authentication, when session is RUNNING
         chunkUpdateListener.subscribeToWorld(worldId.getId());
         blockUpdateListener.subscribeToWorld(worldId.getId());
+        movementBroadcastListener.subscribeToWorld(worldId.getId());
 
         log.debug("Session authenticated and subscribed to broadcasts: sessionId={}, worldId={}, actor={}",
                 worldSessionId, worldId.getId(), actor);

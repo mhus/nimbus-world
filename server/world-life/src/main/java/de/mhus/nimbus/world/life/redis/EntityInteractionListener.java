@@ -62,7 +62,7 @@ public class EntityInteractionListener {
      * Periodically check for new worlds and update subscriptions.
      * Runs every minute.
      */
-    @Scheduled(fixedDelay = 60000)
+    @Scheduled(fixedDelay = 1000)
     public void updateSubscriptions() {
         Set<WorldId> knownWorlds = worldDiscoveryService.getKnownWorldIds();
 

@@ -120,6 +120,9 @@ public class WorldConfigController {
      * @param request The HTTP request (for session lookup)
      */
     private void patchWorldInfo(WorldInfo worldInfo, de.mhus.nimbus.shared.types.WorldId worldId, PlayerId playerId, HttpServletRequest request) {
+        // Set worldId to the full session worldId (includes instance if present)
+        worldInfo.setWorldId(worldId.getId());
+
         // Set editor URL
         worldInfo.setEditorUrl(serverSettings.getControlsBaseUrl() + "/");
 
@@ -300,7 +303,9 @@ public class WorldConfigController {
             return ResponseEntity.status(404).body(Map.of("error", "World not found"));
         }
 
-        return ResponseEntity.ok(worldOpt.get().getPublicData());
+        WorldInfo info = worldOpt.get().getPublicData();
+        info.setWorldId(worldId.getId());
+        return ResponseEntity.ok(info);
     }
 
     @GetMapping("/config/playerinfo")
@@ -346,8 +351,6 @@ public class WorldConfigController {
     public ResponseEntity<?> getSettings(
             HttpServletRequest request,
             @RequestParam(required = false) String client) {
-
-        String clientVariant = client != null ? client : "viewer";
 
         var worldId = accessUtil.getWorldId(request).orElseThrow(
                 () -> new IllegalStateException("World ID not found in request")

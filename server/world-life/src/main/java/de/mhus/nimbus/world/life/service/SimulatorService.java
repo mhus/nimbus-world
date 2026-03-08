@@ -89,6 +89,20 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
      */
     private final Map<WorldId, Map<String, Set<String>>> entityActiveChunkRefs = new ConcurrentHashMap<>();
 
+    /**
+     * Cached WWorld instances per worldId.
+     * Loaded on first access per world, invalidated when world is removed.
+     */
+    private final Map<WorldId, WWorld> worldCache = new ConcurrentHashMap<>();
+
+    /**
+     * Get cached WWorld for a worldId. Loads from DB on first access.
+     */
+    private WWorld getCachedWorld(WorldId worldId) {
+        return worldCache.computeIfAbsent(worldId, id ->
+                worldService.getByWorldId(id).orElse(null));
+    }
+
     @PostConstruct
     public void initialize() {
         log.info("Initializing SimulatorService — registering as WorldChunkChangeListener");
@@ -238,7 +252,11 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
         }
 
         List<EntityPathway> newPathways = new ArrayList<>();
-        WWorld world = worldService.getByWorldId(worldId).get();
+        WWorld world = getCachedWorld(worldId);
+        if (world == null) {
+            log.warn("World {}: World not found in cache or DB, skipping simulation", worldId);
+            return;
+        }
         int skippedOwnership = 0;
         int skippedNoPathway = 0;
 
@@ -321,8 +339,6 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
             log.warn("World {}: Behavior not found: {}, entity: {}", worldId, behaviorType, entity.getEntityId());
             return Optional.empty();
         }
-        var world = worldService.getByWorldId(worldId).orElseThrow();
-
         EntityPathway pathway = behavior.update(entity, state, currentTime, worldId);
 
         // Process combat tick for entities with combat data
@@ -344,7 +360,7 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
         if (waypoints != null && !waypoints.isEmpty()) {
             Waypoint lastWaypoint = waypoints.get(waypoints.size() - 1);
             entity.setPosition(lastWaypoint.getTarget());
-            var world = worldService.getByWorldId(worldId).orElse(null);
+            var world = getCachedWorld(worldId);
             if (world != null) {
                 updateEntityChunk(world, entity);
             }
@@ -414,7 +430,7 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
                     .y(entity.getMiddlePoint().getY())
                     .z(entity.getMiddlePoint().getZ())
                     .build());
-            var world = worldService.getByWorldId(worldId).orElse(null);
+            var world = getCachedWorld(worldId);
             if (world != null) {
                 updateEntityChunk(world, entity);
             }
@@ -474,14 +490,15 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
     public void tryClaimOrphanedEntity(String entityId) {
         for (Map.Entry<WorldId, Map<String, SimulationState>> worldEntry : worldSimulationStates.entrySet()) {
             WorldId worldId = worldEntry.getKey();
-            Optional<WWorld> worldOpt = worldService.getByWorldId(worldId);
+            WWorld world = getCachedWorld(worldId);
             Map<String, SimulationState> simulationStates = worldEntry.getValue();
 
             SimulationState state = simulationStates.get(entityId);
             if (state == null) continue;
+            if (world == null) continue;
 
             WEntity entity = state.getEntity();
-            String entityChunk = BlockUtil.toChunkKey(worldOpt.get(), entity.getPosition());
+            String entityChunk = BlockUtil.toChunkKey(world, entity.getPosition());
 
             if (entityChunk == null) {
                 log.debug("Entity {} has no chunk information", entityId);
@@ -528,6 +545,9 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
      * @return number of entities loaded
      */
     public int reloadEntities(WorldId worldId) {
+        // Invalidate world cache so it's reloaded from DB
+        worldCache.remove(worldId);
+
         // Clear existing states
         Map<String, SimulationState> worldStates = worldSimulationStates.get(worldId);
         if (worldStates != null) {
@@ -569,7 +589,7 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
         finishPathway(entity, state, combatPathway, currentTime, worldId);
 
         // Publish single pathway immediately
-        WWorld world = worldService.getByWorldId(worldId).orElse(null);
+        WWorld world = getCachedWorld(worldId);
         if (world != null) {
             Set<ChunkCoordinate> chunks = calculateAffectedChunks(world, List.of(combatPathway));
             pathwayPublisher.publishPathways(worldId, List.of(combatPathway), chunks);

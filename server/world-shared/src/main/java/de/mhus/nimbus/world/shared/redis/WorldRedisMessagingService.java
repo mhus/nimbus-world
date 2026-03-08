@@ -87,6 +87,37 @@ public class WorldRedisMessagingService {
         }
     }
 
+    // ===== Global (non-world-specific) channels =====
+
+    /**
+     * Publish to a global channel (not world-specific).
+     * Topic format: "world:global:{channel}"
+     */
+    public void publishGlobal(String channel, String message) {
+        String t = "world:global:" + channel;
+        redisTemplate.convertAndSend(t, message);
+    }
+
+    /**
+     * Subscribe to a global channel (not world-specific).
+     * Topic format: "world:global:{channel}"
+     */
+    public void subscribeGlobal(String channel, BiConsumer<String, String> handler) {
+        String t = "world:global:" + channel;
+        if (listeners.containsKey(t)) return;
+        MessageListener listener = (msg, pattern) -> {
+            try {
+                String body = new String(msg.getBody());
+                handler.accept(t, body);
+            } catch (Exception e) {
+                log.warn("Failed to process redis message on {}: {}", t, e.getMessage(), e);
+            }
+        };
+        container.addMessageListener(listener, ChannelTopic.of(t));
+        listeners.put(t, listener);
+        log.info("Subscribed to global Redis channel: {}", t);
+    }
+
     private String topic(String worldId, String channel) {
         return "world:" + WorldId.unchecked(worldId).getFullId() + ":" + channel;
     }

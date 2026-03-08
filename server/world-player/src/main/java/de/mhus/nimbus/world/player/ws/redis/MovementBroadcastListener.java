@@ -10,6 +10,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+
 /**
  * Redis listener for user movement updates.
  * Receives movement events from Redis and distributes to relevant sessions via BroadcastService.
@@ -33,26 +36,32 @@ public class MovementBroadcastListener {
     private final WorldRedisMessagingService redisMessaging;
     private final BroadcastService broadcastService;
     private final ObjectMapper objectMapper;
+    private final Set<String> subscribedWorlds = ConcurrentHashMap.newKeySet();
 
     /**
-     * Subscribe to all active worlds on startup.
-     * TODO: Dynamically subscribe when new worlds become active
+     * Subscribe to worlds dynamically when sessions connect.
      */
     @PostConstruct
     public void subscribeToWorlds() {
-        // Subscribe to "main" world for now
-        // In production, subscribe to all active worlds dynamically
-        subscribeToWorld("main");
+        log.info("MovementBroadcastListener initialized - will subscribe to worlds dynamically");
     }
 
     /**
      * Subscribe to movement updates for a specific world.
+     * Thread-safe - can be called from multiple threads.
      */
     public void subscribeToWorld(String worldId) {
-        redisMessaging.subscribe(worldId, "u.m", (topic, message) -> {
-            handleMovementUpdate(worldId, message);
+        String baseWorldId = de.mhus.nimbus.shared.types.WorldId.unchecked(worldId).toBaseWorldId().getId();
+
+        if (subscribedWorlds.contains(baseWorldId)) {
+            return;
+        }
+
+        subscribedWorlds.add(baseWorldId);
+        redisMessaging.subscribe(baseWorldId, "u.m", (topic, message) -> {
+            handleMovementUpdate(baseWorldId, message);
         });
-        log.info("Subscribed to movement updates for world: {}", worldId);
+        log.info("Subscribed to movement updates for world: {}", baseWorldId);
     }
 
     /**

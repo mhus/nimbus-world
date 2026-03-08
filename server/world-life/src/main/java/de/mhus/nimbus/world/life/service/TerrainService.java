@@ -11,7 +11,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Service for accessing terrain data (chunk blocks) for entity positioning.
@@ -24,6 +26,13 @@ public class TerrainService {
 
     private final WChunkService chunkService;
     private final WWorldService worldService;
+
+    private final Map<WorldId, de.mhus.nimbus.world.shared.world.WWorld> worldCache = new ConcurrentHashMap<>();
+
+    private de.mhus.nimbus.world.shared.world.WWorld getCachedWorld(WorldId worldId) {
+        return worldCache.computeIfAbsent(worldId, id ->
+                worldService.getByWorldId(id).orElse(null));
+    }
 
     /**
      * Get ground height at world position (x, z).
@@ -52,7 +61,7 @@ public class TerrainService {
      */
     public int getGroundHeight(WorldId worldId, int x, int z, int startY, boolean canWalkOnWater) {
         try {
-            var world = worldService.getByWorldId(worldId).orElseThrow();
+            var world = getCachedWorld(worldId);
             // Calculate chunk coordinates
             int chunkX = world.getChunkX(x);
             int chunkZ = world.getChunkZ(z);
@@ -178,7 +187,7 @@ public class TerrainService {
      */
     public int getWaterPosition(WorldId worldId, int x, int z) {
         try {
-            var world = worldService.getByWorldId(worldId).orElseThrow();
+            var world = getCachedWorld(worldId);
             // Calculate chunk coordinates
             int chunkX = world.getChunkX(x);
             int chunkZ = world.getChunkZ(z);

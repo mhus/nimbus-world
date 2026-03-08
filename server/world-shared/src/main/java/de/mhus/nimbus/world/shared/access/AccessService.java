@@ -66,6 +66,10 @@ public class AccessService {
     @Lazy
     private de.mhus.nimbus.world.shared.client.WorldClientService worldClientService;
 
+    @Autowired
+    @Lazy
+    private de.mhus.nimbus.world.shared.redis.WorldRedisMessagingService redisMessagingService;
+
     // Cache for world token (server-to-server authentication)
     private volatile String cachedWorldToken;
     private volatile Instant cachedWorldTokenExpiry;
@@ -337,7 +341,7 @@ public class AccessService {
             log.info("{} joining instance: instanceId={}, playerId={}",
                     request.getActor(), existingInstance.getInstanceId(), playerId.getId());
 
-        } else if (world.isInstanceable() && request.getActor() == ActorRoles.PLAYER) {
+        } else if (request.getActor() == ActorRoles.PLAYER) {
             // PLAYER without instanceId: auto-create new instance
             WWorldInstance instance = worldInstanceService.createInstanceForPlayer(
                     worldId.getId(),
@@ -349,6 +353,9 @@ public class AccessService {
             log.info("Auto-created world instance for player: instanceId={}, worldId={}, playerId={}",
                     instance.getInstanceId(), worldId.getId(), playerId.getId());
         }
+
+        // Notify world-life and other services about the active world
+        notifyWorldActive(effectiveWorldId);
 
         // Create session with effective worldId (original worldId or instanceId)
         WorldId sessionWorldId = WorldId.unchecked(effectiveWorldId);
@@ -378,6 +385,19 @@ public class AccessService {
                 .sessionId(session.getId())
                 .playerId(playerId.getId())
                 .build();
+    }
+
+    /**
+     * Notify all services (e.g. world-life) that a world is active.
+     * Published on global Redis channel so world-life can dynamically subscribe.
+     */
+    private void notifyWorldActive(String worldId) {
+        try {
+            redisMessagingService.publishGlobal("active", worldId);
+            log.debug("Published world active notification: {}", worldId);
+        } catch (Exception e) {
+            log.warn("Failed to publish world active notification: {}", e.getMessage());
+        }
     }
 
     /**
