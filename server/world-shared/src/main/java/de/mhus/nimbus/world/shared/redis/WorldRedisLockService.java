@@ -1,5 +1,6 @@
 package de.mhus.nimbus.world.shared.redis;
 
+import de.mhus.nimbus.shared.types.WorldId;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -155,6 +156,6 @@ public class WorldRedisLockService {
     }
 
     private String lockKey(String worldId) {
-        return "world:" + worldId + ":" + LOCK_PREFIX;
+        return "world:" + WorldId.unchecked(worldId).getFullId() + ":" + LOCK_PREFIX;
     }
 }

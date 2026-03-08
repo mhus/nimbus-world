@@ -1,5 +1,6 @@
 package de.mhus.nimbus.world.shared.redis;
 
+import de.mhus.nimbus.shared.types.WorldId;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
@@ -55,7 +56,6 @@ public class WorldRedisService {
     }
 
     private String ns(String worldId, String key) {
-        // Use ':' delimiter to match test expectations and redis key convention
-        return "world:" + worldId + ":" + key;
+        return "world:" + WorldId.unchecked(worldId).getFullId() + ":" + key;
     }
 }

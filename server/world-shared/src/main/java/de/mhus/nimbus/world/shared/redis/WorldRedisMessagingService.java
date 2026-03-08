@@ -1,5 +1,6 @@
 package de.mhus.nimbus.world.shared.redis;
 
+import de.mhus.nimbus.shared.types.WorldId;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -87,7 +88,6 @@ public class WorldRedisMessagingService {
     }
 
     private String topic(String worldId, String channel) {
-        // Use ':' as delimiter to match Redis topic convention and tests
-        return "world:" + worldId + ":" + channel;
+        return "world:" + WorldId.unchecked(worldId).getFullId() + ":" + channel;
     }
 }

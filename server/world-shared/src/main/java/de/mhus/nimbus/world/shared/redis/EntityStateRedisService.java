@@ -2,6 +2,7 @@ package de.mhus.nimbus.world.shared.redis;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.generated.types.EntityPathway;
+import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.generated.types.Vector3;
 import de.mhus.nimbus.generated.types.Waypoint;
 import lombok.RequiredArgsConstructor;
@@ -170,7 +171,7 @@ public class EntityStateRedisService {
      * @return interpolated position or null if no pathway exists
      */
     public Vector3 getCurrentPosition(String worldId, String entityId) {
-        String pathwayKey = "world:" + worldId + ":npc-pathway:" + entityId;
+        String pathwayKey = "world:" + fullWorldId(worldId) + ":npc-pathway:" + entityId;
         String json = redis.opsForValue().get(pathwayKey);
         if (json == null) return null;
 
@@ -221,11 +222,15 @@ public class EntityStateRedisService {
                 .build();
     }
 
+    private String fullWorldId(String worldId) {
+        return WorldId.unchecked(worldId).getFullId();
+    }
+
     private String key(String worldId, String entityId) {
-        return "world:" + worldId + ":" + KEY_PREFIX + entityId;
+        return "world:" + fullWorldId(worldId) + ":" + KEY_PREFIX + entityId;
     }
 
     private String looterKey(String worldId, String entityId) {
-        return "world:" + worldId + ":" + KEY_PREFIX + entityId + ":looters";
+        return "world:" + fullWorldId(worldId) + ":" + KEY_PREFIX + entityId + ":looters";
     }
 }

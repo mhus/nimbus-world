@@ -18,13 +18,13 @@ class WorldRedisServiceTest {
         StringRedisTemplate template = Mockito.mock(StringRedisTemplate.class, Mockito.RETURNS_DEEP_STUBS);
         @SuppressWarnings("unchecked") ValueOperations<String,String> ops = Mockito.mock(ValueOperations.class);
         Mockito.when(template.opsForValue()).thenReturn(ops);
-        Mockito.when(ops.get("world:w1:test")).thenReturn("v1");
-        Mockito.when(template.delete("world:w1:test")).thenReturn(true);
+        Mockito.when(ops.get("world:r1:w1:::test")).thenReturn("v1");
+        Mockito.when(template.delete("world:r1:w1:::test")).thenReturn(true);
         WorldRedisService service = new WorldRedisService(template);
-        service.putValue("w1","test","v1", Duration.ofSeconds(30));
-        Optional<String> value = service.getValue("w1","test");
+        service.putValue("r1:w1","test","v1", Duration.ofSeconds(30));
+        Optional<String> value = service.getValue("r1:w1","test");
         assertTrue(value.isPresent());
         assertEquals("v1", value.get());
-        assertTrue(service.deleteValue("w1","test"));
+        assertTrue(service.deleteValue("r1:w1","test"));
     }
 }
