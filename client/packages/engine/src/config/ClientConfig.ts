@@ -55,6 +55,13 @@ export interface ClientConfig {
    * Loaded from URL query parameter 'unloadDistance', defaults to 10
    */
   unloadDistance: number;
+
+  /**
+   * Hardware scaling quality level.
+   * 0 = Low (scaling 2), 1 = Medium (scaling 1), 2 = High (scaling 0.5)
+   * Loaded from URL query parameter 'quality', defaults to 1 (Medium)
+   */
+  quality: number;
 }
 
 /**
@@ -100,6 +107,9 @@ export async function loadClientConfig(): Promise<ClientConfig> {
   const renderDistance = renderDistanceParam ? parseInt(renderDistanceParam, 10) : 1;
   const unloadDistance = unloadDistanceParam ? parseInt(unloadDistanceParam, 10) : 2;
 
+  const qualityParam = urlParams.get('quality');
+  const quality = qualityParam ? parseInt(qualityParam, 10) : 1;
+
   if (usernameFromUrl) {
     logger.info('Username overridden by URL query parameter', { username: usernameFromUrl });
   }
@@ -140,6 +150,7 @@ export async function loadClientConfig(): Promise<ClientConfig> {
     logToConsole,
     renderDistance,
     unloadDistance,
+    quality,
   };
 
   logger.info('Initial client configuration loaded', {
@@ -149,6 +160,7 @@ export async function loadClientConfig(): Promise<ClientConfig> {
     logToConsole,
     renderDistance,
     unloadDistance,
+    quality,
     note: 'websocketUrl will be loaded from server config',
   });
 

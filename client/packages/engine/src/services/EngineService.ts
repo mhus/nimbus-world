@@ -113,9 +113,16 @@ export class EngineService {
         throw new Error('Failed to create Babylon.js Engine');
       }
 
+      // Apply hardware scaling based on quality parameter (0=Low→2, 1=Medium→1, 2=High→0.5)
+      const quality = this.appContext.config?.quality ?? 1;
+      const scalingLevel = quality === 0 ? 2 : quality === 2 ? 0.5 : 1;
+      this.engine.setHardwareScalingLevel(scalingLevel);
+
       logger.info('Babylon.js Engine created', {
         webGLVersion: this.engine.webGLVersion,
         isWebGL2: (this.engine as any).isWebGL2,
+        quality,
+        hardwareScalingLevel: scalingLevel,
       });
 
       // Create Scene
