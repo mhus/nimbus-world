@@ -55,7 +55,7 @@ public class BlockUpdateBroadcastListener {
      */
     public void subscribeToWorld(String worldId) {
         // Extract base worldId without instance
-        String baseWorldId = de.mhus.nimbus.shared.types.WorldId.unchecked(worldId).withoutInstance().getId();
+        String baseWorldId = de.mhus.nimbus.shared.types.WorldId.unchecked(worldId).toBaseWorldId().getId();
 
         // Check if already subscribed
         if (subscribedWorlds.contains(baseWorldId)) {

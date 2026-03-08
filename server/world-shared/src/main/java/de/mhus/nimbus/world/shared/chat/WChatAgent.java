@@ -77,7 +77,7 @@ public interface WChatAgent {
                                              String command, Map<String, Object> params) {
         // Default implementation: return error message
         WChatMessage errorMessage = WChatMessage.builder()
-                .worldId(worldId.withoutInstance().getId())
+                .worldId(worldId.toBaseWorldId().getId())
                 .messageId(UUID.randomUUID().toString())
                 .senderId(getName() + "-agent")
                 .message("Command execution not supported by this agent: " + command)

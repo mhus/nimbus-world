@@ -29,7 +29,18 @@ class WorldIdTest {
 
         @Test
         void validate_ValidWorldIdWithInstance_ShouldReturnTrue() {
-            assertTrue(WorldId.validate("region1:world1!instance1"));
+            assertTrue(WorldId.validate("region1:world1:zone1:instance1"));
+            assertTrue(WorldId.validate("region1:world1::instance1"));
+        }
+
+        @Test
+        void validate_ValidFullId_ShouldReturnTrue() {
+            assertTrue(WorldId.validate("region1:world1::"));
+        }
+
+        @Test
+        void validate_OldBangSyntax_ShouldReturnFalse() {
+            assertFalse(WorldId.validate("region1:world1!instance1"));
         }
 
         @Test
@@ -133,8 +144,8 @@ class WorldIdTest {
 
             assertEquals("region1", worldId.getRegionId());
             assertEquals("world1", worldId.getWorldName());
-            assertNull(worldId.getZone());
-            assertNull(worldId.getInstance());
+            assertEquals("", worldId.getZone());
+            assertEquals("", worldId.getInstance());
         }
 
         @Test
@@ -144,16 +155,26 @@ class WorldIdTest {
             assertEquals("region1", worldId.getRegionId());
             assertEquals("world1", worldId.getWorldName());
             assertEquals("zone1", worldId.getZone());
-            assertNull(worldId.getInstance());
+            assertEquals("", worldId.getInstance());
         }
 
         @Test
-        void worldIdWithInstance_ShouldParseCorrectly() {
-            WorldId worldId = WorldId.of("region1:world1!instance1").orElseThrow();
+        void worldIdWithZoneAndInstance_ShouldParseCorrectly() {
+            WorldId worldId = WorldId.of("region1:world1:zone1:instance1").orElseThrow();
 
             assertEquals("region1", worldId.getRegionId());
             assertEquals("world1", worldId.getWorldName());
-            assertNull(worldId.getZone());
+            assertEquals("zone1", worldId.getZone());
+            assertEquals("instance1", worldId.getInstance());
+        }
+
+        @Test
+        void worldIdWithEmptyZoneAndInstance_ShouldParseCorrectly() {
+            WorldId worldId = WorldId.of("region1:world1::instance1").orElseThrow();
+
+            assertEquals("region1", worldId.getRegionId());
+            assertEquals("world1", worldId.getWorldName());
+            assertEquals("", worldId.getZone());
             assertEquals("instance1", worldId.getInstance());
         }
 
@@ -163,8 +184,8 @@ class WorldIdTest {
 
             assertEquals("@collection1", worldId.getRegionId());
             assertEquals("collectinId", worldId.getWorldName());
-            assertNull(worldId.getZone());
-            assertNull(worldId.getInstance());
+            assertEquals("", worldId.getZone());
+            assertEquals("", worldId.getInstance());
         }
     }
 
@@ -197,7 +218,7 @@ class WorldIdTest {
 
         @Test
         void isMain_WithInstance_ShouldReturnFalse() {
-            WorldId worldId = WorldId.of("region1:world1!instance1").orElseThrow();
+            WorldId worldId = WorldId.of("region1:world1::instance1").orElseThrow();
             assertFalse(worldId.isMain());
         }
 
@@ -215,7 +236,7 @@ class WorldIdTest {
 
         @Test
         void isInstance_WithInstance_ShouldReturnTrue() {
-            WorldId worldId = WorldId.of("region1:world1!instance1").orElseThrow();
+            WorldId worldId = WorldId.of("region1:world1::instance1").orElseThrow();
             assertTrue(worldId.isInstance());
         }
 
@@ -224,6 +245,30 @@ class WorldIdTest {
             WorldId worldId = WorldId.of("region1:world1").orElseThrow();
             assertFalse(worldId.isInstance());
         }
+
+        @Test
+        void isInstanceOrZone_WithZone_ShouldReturnTrue() {
+            WorldId worldId = WorldId.of("region1:world1:zone1").orElseThrow();
+            assertTrue(worldId.isInstanceOrZone());
+        }
+
+        @Test
+        void isInstanceOrZone_WithInstance_ShouldReturnTrue() {
+            WorldId worldId = WorldId.of("region1:world1::instance1").orElseThrow();
+            assertTrue(worldId.isInstanceOrZone());
+        }
+
+        @Test
+        void isInstanceOrZone_WithMainWorld_ShouldReturnFalse() {
+            WorldId worldId = WorldId.of("region1:world1").orElseThrow();
+            assertFalse(worldId.isInstanceOrZone());
+        }
+
+        @Test
+        void isMain_WithFullIdEmptyParts_ShouldReturnTrue() {
+            WorldId worldId = WorldId.of("region1:world1::").orElseThrow();
+            assertTrue(worldId.isMain());
+        }
     }
 
     @Nested
@@ -231,7 +276,7 @@ class WorldIdTest {
 
         @Test
         void toString_ShouldReturnOriginalId() {
-            String originalId = "region1:world1:zone1!instance1";
+            String originalId = "region1:world1:zone1:instance1";
             WorldId worldId = WorldId.of(originalId).orElseThrow();
             assertEquals(originalId, worldId.toString());
         }
@@ -249,7 +294,7 @@ class WorldIdTest {
 
         @Test
         void multipleParsingCalls_ShouldNotAffectResult() {
-            WorldId worldId = WorldId.of("region1:world1:zone1!instance1").orElseThrow();
+            WorldId worldId = WorldId.of("region1:world1:zone1:instance1").orElseThrow();
 
             // Call getters multiple times to test caching
             assertEquals("region1", worldId.getRegionId());
@@ -285,16 +330,197 @@ class WorldIdTest {
     }
 
     @Nested
-    class BugFixTests {
+    class BaseWorldTests {
 
         @Test
-        void parseId_WithAllComponents_ShouldParseCorrectly() {
-            // Test that all components work together correctly
-            WorldId worldId = WorldId.of("region1:world1:zone1!instance1").orElseThrow();
-            assertEquals("region1", worldId.getRegionId());
-            assertEquals("world1", worldId.getWorldName());
-            assertEquals("zone1", worldId.getZone());
-            assertEquals("instance1", worldId.getInstance());
+        void isBase_WithMainWorld_ShouldReturnTrue() {
+            WorldId worldId = WorldId.of("region1:world1").orElseThrow();
+            assertTrue(worldId.isBase());
+        }
+
+        @Test
+        void isBase_WithZoneWorld_ShouldReturnTrue() {
+            WorldId worldId = WorldId.of("region1:world1:zone1").orElseThrow();
+            assertTrue(worldId.isBase());
+        }
+
+        @Test
+        void isBase_WithInstance_ShouldReturnFalse() {
+            WorldId worldId = WorldId.of("region1:world1::instance1").orElseThrow();
+            assertFalse(worldId.isBase());
+        }
+
+        @Test
+        void isBase_WithZoneAndInstance_ShouldReturnFalse() {
+            WorldId worldId = WorldId.of("region1:world1:zone1:instance1").orElseThrow();
+            assertFalse(worldId.isBase());
+        }
+
+        @Test
+        void toBaseWorldId_FromInstance_ShouldStripInstance() {
+            WorldId worldId = WorldId.of("region1:world1::instance1").orElseThrow();
+            assertEquals("region1:world1", worldId.toBaseWorldId().getId());
+        }
+
+        @Test
+        void toBaseWorldId_FromZoneInstance_ShouldKeepZone() {
+            WorldId worldId = WorldId.of("region1:world1:zone1:instance1").orElseThrow();
+            assertEquals("region1:world1:zone1", worldId.toBaseWorldId().getId());
+        }
+
+        @Test
+        void toBaseWorldId_FromBaseWorld_ShouldReturnSame() {
+            WorldId worldId = WorldId.of("region1:world1").orElseThrow();
+            assertSame(worldId, worldId.toBaseWorldId());
+        }
+
+        @Test
+        void toBaseWorldId_FromZoneWorld_ShouldReturnSame() {
+            WorldId worldId = WorldId.of("region1:world1:zone1").orElseThrow();
+            assertSame(worldId, worldId.toBaseWorldId());
+        }
+
+        @Test
+        void toMainWorld_FromZone_ShouldStripZone() {
+            WorldId worldId = WorldId.of("region1:world1:zone1").orElseThrow();
+            assertEquals("region1:world1", worldId.toMainWorld().getId());
+        }
+
+        @Test
+        void toMainWorld_FromZoneInstance_ShouldStripZoneAndInstance() {
+            WorldId worldId = WorldId.of("region1:world1:zone1:instance1").orElseThrow();
+            assertEquals("region1:world1", worldId.toMainWorld().getId());
+        }
+
+        @Test
+        void toMainWorld_FromMainWorld_ShouldReturnSameValue() {
+            WorldId worldId = WorldId.of("region1:world1").orElseThrow();
+            assertEquals("region1:world1", worldId.toMainWorld().getId());
+        }
+    }
+
+    @Nested
+    class ToWorldWithInstanceTests {
+
+        @Test
+        void toWorldWithInstance_FromMainWorld_ShouldAddInstance() {
+            WorldId worldId = WorldId.of("region1:world1").orElseThrow();
+            WorldId result = worldId.toWorldWithInstance("inst1");
+            assertEquals("region1:world1::inst1", result.getId());
+            assertTrue(result.isInstance());
+            assertFalse(result.isZone());
+        }
+
+        @Test
+        void toWorldWithInstance_FromZoneWorld_ShouldKeepZone() {
+            WorldId worldId = WorldId.of("region1:world1:zone1").orElseThrow();
+            WorldId result = worldId.toWorldWithInstance("inst1");
+            assertEquals("region1:world1:zone1:inst1", result.getId());
+            assertTrue(result.isInstance());
+            assertTrue(result.isZone());
+        }
+
+        @Test
+        void toWorldWithInstance_FromExistingInstance_ShouldReplaceInstance() {
+            WorldId worldId = WorldId.of("region1:world1:zone1:old").orElseThrow();
+            WorldId result = worldId.toWorldWithInstance("new");
+            assertEquals("region1:world1:zone1:new", result.getId());
+        }
+
+        @Test
+        void toWorldWithInstance_WithNull_ShouldThrow() {
+            WorldId worldId = WorldId.of("region1:world1").orElseThrow();
+            assertThrows(IllegalArgumentException.class, () -> worldId.toWorldWithInstance(null));
+        }
+
+        @Test
+        void toWorldWithInstance_WithBlank_ShouldThrow() {
+            WorldId worldId = WorldId.of("region1:world1").orElseThrow();
+            assertThrows(IllegalArgumentException.class, () -> worldId.toWorldWithInstance("  "));
+        }
+    }
+
+    @Nested
+    class EqualsTests {
+
+        @Test
+        void equals_SameFullId_DifferentFormat_ShouldBeEqual() {
+            WorldId a = WorldId.of("region1:world1").orElseThrow();
+            WorldId b = WorldId.of("region1:world1::").orElseThrow();
+            assertEquals(a, b);
+        }
+
+        @Test
+        void equals_DifferentWorlds_ShouldNotBeEqual() {
+            WorldId a = WorldId.of("region1:world1").orElseThrow();
+            WorldId b = WorldId.of("region1:world2").orElseThrow();
+            assertNotEquals(a, b);
+        }
+
+        @Test
+        void compareTo_SameFullId_DifferentFormat_ShouldBeZero() {
+            WorldId a = WorldId.of("region1:world1").orElseThrow();
+            WorldId b = WorldId.of("region1:world1::").orElseThrow();
+            assertEquals(0, a.compareTo(b));
+        }
+    }
+
+    @Nested
+    class FullIdAndNormalizationTests {
+
+        @Test
+        void getFullId_FromBasicId_ShouldReturnAllParts() {
+            WorldId worldId = WorldId.of("region1:world1").orElseThrow();
+            assertEquals("region1:world1::", worldId.getFullId());
+        }
+
+        @Test
+        void getFullId_FromZoneId_ShouldReturnAllParts() {
+            WorldId worldId = WorldId.of("region1:world1:zone1").orElseThrow();
+            assertEquals("region1:world1:zone1:", worldId.getFullId());
+        }
+
+        @Test
+        void getFullId_FromFullId_ShouldReturnSame() {
+            WorldId worldId = WorldId.of("region1:world1:zone1:instance1").orElseThrow();
+            assertEquals("region1:world1:zone1:instance1", worldId.getFullId());
+        }
+
+        @Test
+        void getFullId_FromEmptyZoneInstance_ShouldReturnAllParts() {
+            WorldId worldId = WorldId.of("region1:world1::instance1").orElseThrow();
+            assertEquals("region1:world1::instance1", worldId.getFullId());
+        }
+
+        @Test
+        void validate_FullIdWithEmptyZoneAndInstance_ShouldReturnTrue() {
+            assertTrue(WorldId.validate("region1:world1::"));
+        }
+
+        @Test
+        void getId_NormalizesTrailingColons() {
+            WorldId worldId = WorldId.of("region1:world1::").orElseThrow();
+            assertEquals("region1:world1", worldId.getId());
+        }
+
+        @Test
+        void getId_NormalizesTrailingColonAfterZone() {
+            WorldId worldId = WorldId.of("region1:world1:zone1:").orElseThrow();
+            assertEquals("region1:world1:zone1", worldId.getId());
+        }
+
+        @Test
+        void getId_KeepsInstanceWithEmptyZone() {
+            WorldId worldId = WorldId.of("region1:world1::instance1").orElseThrow();
+            assertEquals("region1:world1::instance1", worldId.getId());
+        }
+
+        @Test
+        void normalizedId_WithEmptyZoneAndInstance_ShouldBeMain() {
+            WorldId worldId = WorldId.of("region1:world1::").orElseThrow();
+            assertTrue(worldId.isMain());
+            assertFalse(worldId.isInstance());
+            assertFalse(worldId.isZone());
         }
     }
 }

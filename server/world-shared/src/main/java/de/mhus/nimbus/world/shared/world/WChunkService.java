@@ -75,7 +75,7 @@ public class WChunkService implements StorageProvider {
      */
     @Transactional(readOnly = true)
     public Optional<WChunk> find(WorldId worldId, String chunkKey) {
-        var lookupWorld = worldId.withoutInstance();
+        var lookupWorld = worldId.toBaseWorldId();
         return repository.findByWorldIdAndChunk(lookupWorld.getId(), chunkKey);
     }
 
@@ -174,7 +174,7 @@ public class WChunkService implements StorageProvider {
         if (worldId.isCollection()) {
             throw new IllegalArgumentException("Chunks can't be in Collections");
         }
-        var lookupWorld = worldId.withoutInstance();
+        var lookupWorld = worldId.toBaseWorldId();
 
         WChunk chunk = repository.findByWorldIdAndChunk(lookupWorld.getId(), chunkKey).orElse(null);
 
@@ -211,7 +211,7 @@ public class WChunkService implements StorageProvider {
         if (worldId.isCollection()) {
             throw new IllegalArgumentException("Chunks can't be in Collections");
         }
-        var lookupWorld = worldId.withoutInstance();
+        var lookupWorld = worldId.toBaseWorldId();
 
         WChunk chunk = repository.findByWorldIdAndChunk(lookupWorld.getId(), chunkKey).orElse(null);
 
@@ -278,7 +278,7 @@ public class WChunkService implements StorageProvider {
         if (worldId.isCollection()) {
             throw new IllegalArgumentException("Chunks can't be in Collections");
         }
-        var lookupWorld = worldId.withoutInstance();
+        var lookupWorld = worldId.toBaseWorldId();
 
         Optional<WChunk> chunkOpt = repository.findByWorldIdAndChunk(lookupWorld.getId(), chunkKey);
 
@@ -353,7 +353,7 @@ public class WChunkService implements StorageProvider {
             int cz = Integer.parseInt(parts[1]);
 
             // Load world configuration
-            WorldId lookupWorldId = WorldId.of(worldId).orElseThrow().withoutInstance();
+            WorldId lookupWorldId = WorldId.of(worldId).orElseThrow().toBaseWorldId();
             WWorld world = worldService.getByWorldId(lookupWorldId).orElse(null);
             if (world == null) {
                 log.warn("World not found for default chunk generation: {}", worldId);
@@ -478,7 +478,7 @@ public class WChunkService implements StorageProvider {
         if (worldId.isCollection()) {
             throw new IllegalArgumentException("Chunks can't be in Collections");
         }
-        var lookupWorld = worldId.withoutInstance();
+        var lookupWorld = worldId.toBaseWorldId();
         return repository.findByWorldIdAndChunk(lookupWorld.getId(), chunkKey).map(c -> {
             if (c.getStorageId() != null) {
                 safeDeleteExternal(storageService, c.getStorageId());
@@ -735,7 +735,7 @@ public class WChunkService implements StorageProvider {
         if (worldId.isCollection()) {
             throw new IllegalArgumentException("Chunks can't be in Collections");
         }
-        WorldId lookupWorldId = worldId.withoutInstance();
+        WorldId lookupWorldId = worldId.toBaseWorldId();
         Optional<WWorld> worldOpt = worldService.getByWorldId(lookupWorldId.getId());
         if (worldOpt.isEmpty()) {
             log.warn("World not found for server info lookup: worldId={}", worldId);
@@ -770,7 +770,7 @@ public class WChunkService implements StorageProvider {
      */
     @Override
     public List<String> findDistinctStorageIds(WorldId worldId) {
-        var lookupWorld = worldId.withoutInstance();
+        var lookupWorld = worldId.toBaseWorldId();
         var query = new Query(Criteria.where("worldId").is(lookupWorld.getId()));
         return mongoTemplate.findDistinct(
                 query,

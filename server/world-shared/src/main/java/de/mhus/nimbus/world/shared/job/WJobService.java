@@ -79,7 +79,7 @@ public class WJobService {
     public WJob createJob(String worldId, WJob job) {
         // IMPORTANT: Filter out instances - jobs are per world only
         WorldId parsedWorldId = de.mhus.nimbus.shared.types.WorldId.unchecked(worldId);
-        String lookupWorldId = parsedWorldId.withoutInstance().getId();
+        String lookupWorldId = parsedWorldId.toBaseWorldId().getId();
 
         job.setWorldId(lookupWorldId);
         job.setStatus(JobStatus.PENDING.name());
@@ -108,7 +108,7 @@ public class WJobService {
     public List<WJob> getJobsByWorld(String worldId) {
         // IMPORTANT: Filter out instances - jobs are per world only
         WorldId parsedWorldId = de.mhus.nimbus.shared.types.WorldId.unchecked(worldId);
-        String lookupWorldId = parsedWorldId.withoutInstance().getId();
+        String lookupWorldId = parsedWorldId.toBaseWorldId().getId();
 
         return jobRepository.findByWorldId(lookupWorldId);
     }
@@ -117,7 +117,7 @@ public class WJobService {
     public List<WJob> getJobsByWorldAndStatus(String worldId, JobStatus status) {
         // IMPORTANT: Filter out instances - jobs are per world only
         WorldId parsedWorldId = de.mhus.nimbus.shared.types.WorldId.unchecked(worldId);
-        String lookupWorldId = parsedWorldId.withoutInstance().getId();
+        String lookupWorldId = parsedWorldId.toBaseWorldId().getId();
 
         return jobRepository.findByWorldIdAndStatus(lookupWorldId, status.name());
     }
@@ -308,7 +308,7 @@ public class WJobService {
     public long countJobs(String worldId, JobStatus status) {
         // IMPORTANT: Filter out instances - jobs are per world only
         WorldId parsedWorldId = de.mhus.nimbus.shared.types.WorldId.unchecked(worldId);
-        String lookupWorldId = parsedWorldId.withoutInstance().getId();
+        String lookupWorldId = parsedWorldId.toBaseWorldId().getId();
 
         return jobRepository.countByWorldIdAndStatus(lookupWorldId, status.name());
     }
@@ -321,7 +321,7 @@ public class WJobService {
     public List<WJob> getJobsByWorldAndQuery(String worldId, String query) {
         // IMPORTANT: Filter out instances - jobs are per world only
         WorldId parsedWorldId = de.mhus.nimbus.shared.types.WorldId.unchecked(worldId);
-        String lookupWorldId = parsedWorldId.withoutInstance().getId();
+        String lookupWorldId = parsedWorldId.toBaseWorldId().getId();
 
         List<WJob> all = jobRepository.findByWorldId(lookupWorldId);
 

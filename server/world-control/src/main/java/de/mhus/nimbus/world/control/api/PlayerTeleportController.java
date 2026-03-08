@@ -315,7 +315,7 @@ public class PlayerTeleportController {
 
             // Empty worldId part means use current world
             if (worldIdPart.isBlank()) {
-                worldIdPart = currentWorldId != null ? currentWorldId.withoutInstance().getId() : null;
+                worldIdPart = currentWorldId != null ? currentWorldId.toBaseWorldId().getId() : null;
             }
         } else {
             // Format: worldId only (use default entry point)

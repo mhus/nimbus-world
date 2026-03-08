@@ -43,7 +43,7 @@ public class ShowDocumentAction extends AbstractGamplayAction {
         String collection = serverParameters.getOrDefault("collection", "document");
 
         WorldId worldId = session.getWorldId();
-        WorldId docWorldId = worldId.isInstance() ? worldId.mainWorld() : worldId;
+        WorldId docWorldId = worldId.isInstance() ? worldId.toMainWorld() : worldId;
 
         // Resolve and verify document exists
         Optional<WDocument> docOpt;

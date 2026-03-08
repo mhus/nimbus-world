@@ -179,7 +179,7 @@ public class ResourceRepairService {
             Set<String> mainWorldIds = allKnownWorldIds.stream()
                     .map(worldId -> {
                         var parsed = WorldId.of(worldId);
-                        return parsed.map(wid -> wid.mainWorld().getId()).orElse(worldId);
+                        return parsed.map(wid -> wid.toMainWorld().getId()).orElse(worldId);
                     })
                     .collect(Collectors.toSet());
 

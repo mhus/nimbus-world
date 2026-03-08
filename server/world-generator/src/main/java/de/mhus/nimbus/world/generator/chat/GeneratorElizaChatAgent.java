@@ -72,7 +72,7 @@ public class GeneratorElizaChatAgent implements WChatAgent {
             log.info("Creating command message for: {}", commandName);
 
             WChatMessage commandMessage = WChatMessage.builder()
-                    .worldId(worldId.withoutInstance().getId())
+                    .worldId(worldId.toBaseWorldId().getId())
                     .chatId(null) // Will be set by the command or service
                     .messageId(UUID.randomUUID().toString())
                     .senderId(AGENT_ID)
@@ -89,7 +89,7 @@ public class GeneratorElizaChatAgent implements WChatAgent {
         String response = generateResponse(message);
 
         WChatMessage responseMessage = WChatMessage.builder()
-                .worldId(worldId.withoutInstance().getId())
+                .worldId(worldId.toBaseWorldId().getId())
                 .chatId(null) // Will be set by the command or service
                 .messageId(UUID.randomUUID().toString())
                 .senderId(AGENT_ID)
@@ -114,7 +114,7 @@ public class GeneratorElizaChatAgent implements WChatAgent {
         String response = generateCommandResponse(command, messageId);
 
         WChatMessage responseMessage = WChatMessage.builder()
-                .worldId(worldId.withoutInstance().getId())
+                .worldId(worldId.toBaseWorldId().getId())
                 .chatId(null) // Will be set by the command or service
                 .messageId(UUID.randomUUID().toString())
                 .senderId(AGENT_ID)

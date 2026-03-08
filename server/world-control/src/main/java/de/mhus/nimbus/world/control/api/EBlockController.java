@@ -53,7 +53,7 @@ public class EBlockController extends BaseEditorController {
         );
 
         // IMPORTANT: Filter out instances - layers are per world only
-        String lookupWorldId = wid.withoutInstance().getId();
+        String lookupWorldId = wid.toBaseWorldId().getId();
 
         try {
             WLayerService.BlockOrigin origin = layerService.findBlockOrigin(lookupWorldId, x, y, z);

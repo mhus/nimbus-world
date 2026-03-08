@@ -4,10 +4,11 @@ export class WorldId {
     static readonly COLLECTION_PUBLIC = '@public';
 
     private _id: string;
-    private _regionId?: string;
-    private _worldName?: string;
-    private _zone?: string;
-    private _instance?: string;
+    private _regionId: string | undefined;
+    private _worldName: string = '';
+    private _zone: string = '';
+    private _instance: string = '';
+    private _parsed: boolean = false;
 
     private constructor(id: string) {
         this._id = id;
@@ -20,31 +21,48 @@ export class WorldId {
 
     static worldWithInstance(worldId: string, instanceId: string | null | undefined): string {
         if (!instanceId || instanceId.trim() === '') return worldId;
-        return worldId + '!' + instanceId;
+        const parts = worldId.split(':', 4);
+        if (parts.length === 2) {
+            // regionId:worldName -> regionId:worldName::instanceId
+            return worldId + '::' + instanceId;
+        } else if (parts.length === 3) {
+            // regionId:worldName:zone -> regionId:worldName:zone:instanceId
+            return worldId + ':' + instanceId;
+        } else if (parts.length === 4) {
+            // already has instance slot, replace it
+            return parts[0] + ':' + parts[1] + ':' + parts[2] + ':' + instanceId;
+        }
+        return worldId + '::' + instanceId;
     }
 
     get id(): string {
+        this.parseId();
         return this._id;
     }
 
-    getRegionId(): string | undefined {
+    getRegionId(): string {
         this.parseId();
-        return this._regionId;
+        return this._regionId!;
     }
 
-    getWorldName(): string | undefined {
+    getWorldName(): string {
         this.parseId();
         return this._worldName;
     }
 
-    getZone(): string | undefined {
+    getZone(): string {
         this.parseId();
         return this._zone;
     }
 
-    getInstance(): string | undefined {
+    getInstance(): string {
         this.parseId();
         return this._instance;
+    }
+
+    getFullId(): string {
+        this.parseId();
+        return this._regionId + ':' + this._worldName + ':' + this._zone + ':' + this._instance;
     }
 
     isCollection(): boolean {
@@ -52,33 +70,29 @@ export class WorldId {
     }
 
     private parseId(): void {
-        if (this._regionId !== undefined) return;
-        let string = this._id;
+        if (this._parsed) return;
+        this._parsed = true;
+        const string = this._id;
         if (string.startsWith('@')) {
             // Collection ID
             const parts = string.split(':', 3);
             this._regionId = parts[0];
             this._worldName = parts[1];
-            this._zone = undefined;
-            this._instance = undefined;
             return;
         }
-        if (string.indexOf('!') > 0) {
-            const parts = string.split('!', 3);
-            if (parts.length > 1) {
-                this._instance = parts[1];
-            }
-            string = parts[0];
-        }
-        const parts = string.split(':', 4);
+        const parts = string.split(':', 5);
         this._regionId = parts[0];
         this._worldName = parts[1];
-        if (parts.length > 2) {
-            this._zone = parts[2];
-        }
+        this._zone = parts.length > 2 ? parts[2] : '';
+        this._instance = parts.length > 3 ? parts[3] : '';
+        // normalize id to reduced canonical form (strip trailing empty colons)
+        let len = this._id.length;
+        while (len > 0 && this._id.charAt(len - 1) === ':') len--;
+        if (len < this._id.length) this._id = this._id.substring(0, len);
     }
 
     toString(): string {
+        this.parseId();
         return this._id;
     }
 
@@ -100,22 +114,23 @@ export class WorldId {
         if (id.startsWith('@')) {
             return /^@[a-zA-Z0-9_\-]{1,64}:[a-zA-Z0-9_\-]{1,64}$/.test(id);
         }
-        return /^[a-zA-Z0-9_\-]{1,64}:[a-zA-Z0-9_\-]{1,64}(:[a-zA-Z0-9_\-]{1,64})?(![a-zA-Z0-9_\-]{1,64})?$/.test(id);
+        // format: regionId:worldName[:zone[:instance]] where zone can be empty
+        return /^[a-zA-Z0-9_\-]{1,64}:[a-zA-Z0-9_\-]{1,64}(:[a-zA-Z0-9_\-]{0,64}(:[a-zA-Z0-9_\-]{0,64})?)?$/.test(id);
     }
 
     isMain(): boolean {
         this.parseId();
-        return this._zone === undefined && this._instance === undefined;
+        return this._zone === '' && this._instance === '';
     }
 
     isInstance(): boolean {
         this.parseId();
-        return this._instance !== undefined;
+        return this._instance !== '';
     }
 
     isZone(): boolean {
         this.parseId();
-        return this._zone !== undefined;
+        return this._zone !== '';
     }
 
     equals(other: any): boolean {
@@ -130,10 +145,10 @@ export class WorldId {
 
     withoutInstance(): WorldId {
         this.parseId();
-        if (!this._instance) return this;
-        let sb = this._regionId + ':' + this._worldName;
-        if (this._zone) sb += ':' + this._zone;
-        return new WorldId(sb);
+        if (this._instance === '') return this;
+        let result = this._regionId + ':' + this._worldName;
+        if (this._zone !== '') result += ':' + this._zone;
+        return new WorldId(result);
     }
 
     /**
@@ -148,10 +163,7 @@ export class WorldId {
             throw new Error('instanceId cannot be null or blank');
         }
         this.parseId();
-        let sb = this._regionId + ':' + this._worldName;
-        if (this._zone) sb += ':' + this._zone;
-        sb += '!' + instanceId;
-        return new WorldId(sb);
+        return new WorldId(this._regionId + ':' + this._worldName + ':' + this._zone + ':' + instanceId);
     }
 
     toRegionCollection(): WorldId {

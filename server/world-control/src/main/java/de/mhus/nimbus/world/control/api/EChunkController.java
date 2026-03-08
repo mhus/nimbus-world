@@ -14,8 +14,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -66,7 +64,7 @@ public class EChunkController extends BaseEditorController {
         if (validation != null) return validation;
 
         // IMPORTANT: Filter out instances - chunks are per world only
-        String lookupWorldId = wid.withoutInstance().getId();
+        String lookupWorldId = wid.toBaseWorldId().getId();
 
         // Get all Chunks for this world
         List<WChunk> all;
@@ -116,7 +114,7 @@ public class EChunkController extends BaseEditorController {
                 () -> new IllegalStateException("Invalid worldId: " + worldId)
         );
 
-        String lookupWorldId = wid.withoutInstance().getId();
+        String lookupWorldId = wid.toBaseWorldId().getId();
 
         Optional<WChunk> chunkOpt = chunkRepository.findByWorldIdAndChunk(lookupWorldId, chunkKey);
         if (chunkOpt.isEmpty()) {
@@ -147,7 +145,7 @@ public class EChunkController extends BaseEditorController {
                 () -> new IllegalStateException("Invalid worldId: " + worldId)
         );
 
-        String lookupWorldId = wid.withoutInstance().getId();
+        String lookupWorldId = wid.toBaseWorldId().getId();
 
         // Load chunk data using WChunkService.getStream for memory efficiency
         try {
@@ -197,7 +195,7 @@ public class EChunkController extends BaseEditorController {
                 () -> new IllegalStateException("Invalid worldId: " + worldId)
         );
 
-        String lookupWorldId = wid.withoutInstance().getId();
+        String lookupWorldId = wid.toBaseWorldId().getId();
 
         // Mark chunk as dirty
         dirtyChunkService.markChunkDirty(lookupWorldId, chunkKey, "manual_editor_request");

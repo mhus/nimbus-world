@@ -208,7 +208,7 @@ public class WLayerService implements StorageProvider {
     @Transactional(readOnly = true)
     public Optional<WLayer> findLayer(String worldId, String layerName) {
         WorldId parsedWorldId = WorldId.of(worldId).orElseThrow();
-        return layerRepository.findByWorldIdAndName(parsedWorldId.withoutInstance().getId(), layerName);
+        return layerRepository.findByWorldIdAndName(parsedWorldId.toBaseWorldId().getId(), layerName);
     }
 
     /**
@@ -217,7 +217,7 @@ public class WLayerService implements StorageProvider {
     @Transactional(readOnly = true)
     public Optional<WLayer> findByWorldIdAndName(String worldId, String layerName) {
         WorldId parsedWorldId = WorldId.of(worldId).orElseThrow();
-        return layerRepository.findByWorldIdAndName(parsedWorldId.withoutInstance().getId(), layerName);
+        return layerRepository.findByWorldIdAndName(parsedWorldId.toBaseWorldId().getId(), layerName);
     }
 
     /**
@@ -227,7 +227,7 @@ public class WLayerService implements StorageProvider {
     @Transactional(readOnly = true)
     public Optional<WLayer> findByWorldIdAndLayerDataId(String worldId, String layerDataId) {
         WorldId parsedWorldId = WorldId.of(worldId).orElseThrow();
-        return layerRepository.findByWorldIdAndLayerDataId(parsedWorldId.withoutInstance().getId(), layerDataId);
+        return layerRepository.findByWorldIdAndLayerDataId(parsedWorldId.toBaseWorldId().getId(), layerDataId);
     }
 
     /**
@@ -239,7 +239,7 @@ public class WLayerService implements StorageProvider {
     @Transactional(readOnly = true)
     public List<WLayer> findLayersByWorld(String worldId) {
         WorldId parsedWorldId = WorldId.of(worldId).orElseThrow();
-        return layerRepository.findByWorldIdOrderByOrderAsc(parsedWorldId.withoutInstance().getId());
+        return layerRepository.findByWorldIdOrderByOrderAsc(parsedWorldId.toBaseWorldId().getId());
     }
 
     /**
@@ -251,7 +251,7 @@ public class WLayerService implements StorageProvider {
     @Transactional(readOnly = true)
     public List<WLayer> findByWorldId(String worldId) {
         WorldId parsedWorldId = WorldId.of(worldId).orElseThrow();
-        return layerRepository.findByWorldIdOrderByOrderAsc(parsedWorldId.withoutInstance().getId());
+        return layerRepository.findByWorldIdOrderByOrderAsc(parsedWorldId.toBaseWorldId().getId());
     }
 
     /**
@@ -263,7 +263,7 @@ public class WLayerService implements StorageProvider {
     @Transactional(readOnly = true)
     public List<WLayer> findByWorldIdAndQuery(String worldId, String query) {
         WorldId parsedWorldId = WorldId.of(worldId).orElseThrow();
-        List<WLayer> all = layerRepository.findByWorldIdOrderByOrderAsc(parsedWorldId.withoutInstance().getId());
+        List<WLayer> all = layerRepository.findByWorldIdOrderByOrderAsc(parsedWorldId.toBaseWorldId().getId());
 
         // Apply search filter if provided
         if (query != null && !query.isBlank()) {
@@ -2267,7 +2267,7 @@ public class WLayerService implements StorageProvider {
      */
     @Override
     public List<String> findDistinctStorageIds(WorldId worldId) {
-        var lookupWorld = worldId.withoutInstance();
+        var lookupWorld = worldId.toBaseWorldId();
         var query = new Query(Criteria.where("worldId").is(lookupWorld.getId()));
         return mongoTemplate.findDistinct(
                 query,

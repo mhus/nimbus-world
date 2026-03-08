@@ -74,7 +74,7 @@ public class SAssetService implements StorageProvider {
             throw new IllegalArgumentException("can't be save to a world instance: " + worldId);
         }
 
-        var collection = WorldCollection.of(worldId.mainWorld(), path);
+        var collection = WorldCollection.of(worldId.toMainWorld(), path);
 
         SAsset asset = SAsset.builder()
                 .worldId(collection.worldId().getId())
@@ -172,7 +172,7 @@ public class SAssetService implements StorageProvider {
      * WARNING: This loads ALL assets into memory. Use searchAssets() for large result sets.
      */
     public List<SAsset> findByWorldId(WorldId worldId) {
-        var lookupWorld = worldId.mainWorld();
+        var lookupWorld = worldId.toMainWorld();
         return repository.findByWorldId(lookupWorld.getId());
     }
 
@@ -190,7 +190,7 @@ public class SAssetService implements StorageProvider {
     public Optional<SAsset> findByPath(WorldId worldId, String path) {
 
         // world lookup - always use main world (no branches, no instances, no zones)
-        var lookupWorld = worldId.mainWorld();
+        var lookupWorld = worldId.toMainWorld();
         var collection = WorldCollection.of(lookupWorld, path);
 
         // Find all assets with this path
@@ -479,7 +479,7 @@ public class SAssetService implements StorageProvider {
         }
 
         // Handle world collection prefix in newPath
-        var collection = WorldCollection.of(targetWorldId.mainWorld(), newPath);
+        var collection = WorldCollection.of(targetWorldId.toMainWorld(), newPath);
 
         // Create new asset entity with target worldId
         // Copy compression state and metadata from source
@@ -535,7 +535,7 @@ public class SAssetService implements StorageProvider {
      */
     public AssetSearchResult searchAssets(WorldId worldId, String query, String extension, int offset, int limit) {
 
-        WorldId lookupWorld = worldId.mainWorld();
+        WorldId lookupWorld = worldId.toMainWorld();
         if (Strings.isNotBlank(query)) {
             int pos = query.indexOf(':');
             if (pos > 0) {
@@ -612,7 +612,7 @@ public class SAssetService implements StorageProvider {
                 : null;
 
         // Load all assets for the world
-        WorldId lookupWorld = worldId.mainWorld();
+        WorldId lookupWorld = worldId.toMainWorld();
         List<SAsset> assets = repository.findByWorldId(lookupWorld.getId());
 
         log.debug("Extracting folders from {} assets (worldId={}, parent={})",
@@ -754,7 +754,7 @@ public class SAssetService implements StorageProvider {
         final String normalizedOldPrefix = oldPrefix.replaceAll("/+$", "");
         final String normalizedNewPrefix = newPrefix.replaceAll("/+$", "");
 
-        WorldId lookupWorld = worldId.mainWorld();
+        WorldId lookupWorld = worldId.toMainWorld();
 
         log.debug("Updating path prefix: worldId={}, oldPrefix='{}', newPrefix='{}'",
                 lookupWorld.getId(), normalizedOldPrefix, normalizedNewPrefix);
@@ -859,7 +859,7 @@ public class SAssetService implements StorageProvider {
      */
     @Override
     public List<String> findDistinctStorageIds(WorldId worldId) {
-        var lookupWorld = worldId.mainWorld();
+        var lookupWorld = worldId.toMainWorld();
         var query = new org.springframework.data.mongodb.core.query.Query(
                 org.springframework.data.mongodb.core.query.Criteria.where("worldId").is(lookupWorld.getId())
         );

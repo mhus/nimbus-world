@@ -66,7 +66,7 @@ public class WWorldInstanceService {
      * This method extracts the base worldId from the full instanceId using WorldId class
      * and validates that the found instance actually belongs to that worldId.
      *
-     * @param fullInstanceId The full instanceId (format: worldId!instance per WorldId spec)
+     * @param fullInstanceId The full instanceId (format: regionId:worldName[:zone]:instance per WorldId spec)
      * @return Optional containing the instance if found and validated
      */
     @Transactional(readOnly = true)
@@ -91,7 +91,7 @@ public class WWorldInstanceService {
         }
 
         // Extract base worldId (without instance part)
-        String expectedWorldId = worldId.withoutInstance().getId();
+        String expectedWorldId = worldId.toBaseWorldId().getId();
 
         // Find instance
         Optional<WWorldInstance> instanceOpt = repository.findByInstanceId(fullInstanceId);
@@ -217,7 +217,7 @@ public class WWorldInstanceService {
         // Generate unique instanceId using WorldId class
         String uuid = java.util.UUID.randomUUID().toString();
         WorldId baseWorldId = WorldId.unchecked(worldId);
-        String instanceId = baseWorldId.withInstance(uuid).getId();
+        String instanceId = baseWorldId.toWorldWithInstance(uuid).getId();
 
         // Create instance
         String title = (worldTitle != null ? worldTitle : baseWorldId) + " - " +

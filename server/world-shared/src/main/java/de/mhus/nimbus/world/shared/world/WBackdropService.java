@@ -30,7 +30,7 @@ public class WBackdropService {
      */
     @Transactional(readOnly = true)
     public Optional<WBackdrop> findByBackdropId(WorldId worldId, String backdropId) {
-        var lookupWorld = worldId.mainWorld();
+        var lookupWorld = worldId.toMainWorld();
         var collection = WorldCollection.of(lookupWorld, backdropId);
         return repository.findByWorldIdAndBackdropId(collection.worldId().getId(), backdropId);
     }
@@ -41,7 +41,7 @@ public class WBackdropService {
      */
     @Transactional(readOnly = true)
     public List<WBackdrop> findByWorldId(WorldId worldId) {
-        var lookupWorld = worldId.mainWorld();
+        var lookupWorld = worldId.toMainWorld();
         return repository.findByWorldId(lookupWorld.getId());
     }
 
@@ -51,7 +51,7 @@ public class WBackdropService {
      */
     @Transactional(readOnly = true)
     public List<WBackdrop> findAllEnabled(WorldId worldId) {
-        var lookupWorld = worldId.mainWorld();
+        var lookupWorld = worldId.toMainWorld();
         return repository.findByWorldIdAndEnabled(lookupWorld.getId(), true);
     }
 
@@ -160,7 +160,7 @@ public class WBackdropService {
      */
     @Transactional(readOnly = true)
     public List<WBackdrop> findByWorldIdAndQuery(WorldId worldId, String query) {
-        var lookupWorld = worldId.mainWorld();
+        var lookupWorld = worldId.toMainWorld();
         List<WBackdrop> all = repository.findByWorldId(lookupWorld.getId());
 
         // Apply search filter if provided

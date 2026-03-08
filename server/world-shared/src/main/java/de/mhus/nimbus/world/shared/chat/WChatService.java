@@ -115,7 +115,7 @@ public class WChatService {
      */
     @Transactional(readOnly = true)
     public Optional<WChat> findByWorldIdAndChatId(WorldId worldId, String chatId) {
-        var lookupWorld = worldId.withoutInstance();
+        var lookupWorld = worldId.toBaseWorldId();
         return repository.findByWorldIdAndChatId(lookupWorld.getId(), chatId);
     }
 
@@ -125,7 +125,7 @@ public class WChatService {
      */
     @Transactional(readOnly = true)
     public List<WChat> findByWorldId(WorldId worldId) {
-        var lookupWorld = worldId.withoutInstance();
+        var lookupWorld = worldId.toBaseWorldId();
         return repository.findByWorldId(lookupWorld.getId());
     }
 
@@ -135,7 +135,7 @@ public class WChatService {
      */
     @Transactional(readOnly = true)
     public List<WChat> findByType(WorldId worldId, String type) {
-        var lookupWorld = worldId.withoutInstance();
+        var lookupWorld = worldId.toBaseWorldId();
         return repository.findByWorldIdAndType(lookupWorld.getId(), type);
     }
 
@@ -145,7 +145,7 @@ public class WChatService {
      */
     @Transactional(readOnly = true)
     public List<WChat> findByArchived(WorldId worldId, boolean archived) {
-        var lookupWorld = worldId.withoutInstance();
+        var lookupWorld = worldId.toBaseWorldId();
         return repository.findByWorldIdAndArchived(lookupWorld.getId(), archived);
     }
 
@@ -155,7 +155,7 @@ public class WChatService {
      */
     @Transactional(readOnly = true)
     public List<WChat> findByOwnerId(WorldId worldId, String ownerId) {
-        var lookupWorld = worldId.withoutInstance();
+        var lookupWorld = worldId.toBaseWorldId();
         return repository.findByWorldIdAndOwnerId(lookupWorld.getId(), ownerId);
     }
 
@@ -165,7 +165,7 @@ public class WChatService {
      */
     @Transactional(readOnly = true)
     public List<WChat> findByTypeAndArchived(WorldId worldId, String type, boolean archived) {
-        var lookupWorld = worldId.withoutInstance();
+        var lookupWorld = worldId.toBaseWorldId();
         return repository.findByWorldIdAndTypeAndArchived(lookupWorld.getId(), type, archived);
     }
 
@@ -188,7 +188,7 @@ public class WChatService {
             throw new IllegalArgumentException("ownerId required");
         }
 
-        var lookupWorld = worldId.withoutInstance();
+        var lookupWorld = worldId.toBaseWorldId();
 
         log.debug("getChatsForOwner: worldId={}, lookupWorldId={}, type={}, ownerId={}, archived={}",
                 worldId.getId(), lookupWorld.getId(), type, ownerId, archived);
@@ -237,7 +237,7 @@ public class WChatService {
             throw new IllegalArgumentException("type required");
         }
 
-        var lookupWorld = worldId.withoutInstance();
+        var lookupWorld = worldId.toBaseWorldId();
 
         WChat chat = repository.findByWorldIdAndChatId(lookupWorld.getId(), chatId).orElseGet(() -> {
             WChat neu = WChat.builder()
@@ -286,7 +286,7 @@ public class WChatService {
      */
     @Transactional
     public Optional<WChat> update(WorldId worldId, String chatId, Consumer<WChat> updater) {
-        var lookupWorld = worldId.withoutInstance();
+        var lookupWorld = worldId.toBaseWorldId();
         return repository.findByWorldIdAndChatId(lookupWorld.getId(), chatId).map(chat -> {
             updater.accept(chat);
             chat.touchUpdate();
@@ -320,7 +320,7 @@ public class WChatService {
      */
     @Transactional
     public boolean delete(WorldId worldId, String chatId) {
-        var lookupWorld = worldId.withoutInstance();
+        var lookupWorld = worldId.toBaseWorldId();
 
         return repository.findByWorldIdAndChatId(lookupWorld.getId(), chatId).map(chat -> {
             repository.delete(chat);
@@ -335,7 +335,7 @@ public class WChatService {
      */
     @Transactional(readOnly = true)
     public List<WChat> findByWorldIdAndQuery(WorldId worldId, String query) {
-        var lookupWorld = worldId.withoutInstance();
+        var lookupWorld = worldId.toBaseWorldId();
         List<WChat> all = repository.findByWorldId(lookupWorld.getId());
 
         // Apply search filter if provided
@@ -389,7 +389,7 @@ public class WChatService {
             throw new IllegalArgumentException("type required");
         }
 
-        var lookupWorld = worldId.withoutInstance();
+        var lookupWorld = worldId.toBaseWorldId();
 
         WChatMessage chatMessage = WChatMessage.builder()
                 .worldId(lookupWorld.getId())
@@ -423,7 +423,7 @@ public class WChatService {
         if (messages == null || messages.isEmpty()) {
             return;
         }
-        var lookupWorld = worldId.withoutInstance();
+        var lookupWorld = worldId.toBaseWorldId();
         for (WChatMessage message : messages) {
             message.setWorldId(lookupWorld.getId());
             message.setChatId(chatId);
@@ -446,7 +446,7 @@ public class WChatService {
      */
     @Transactional(readOnly = true)
     public Optional<WChatMessage> findMessageByWorldIdAndChatIdAndMessageId(WorldId worldId, String chatId, String messageId) {
-        var lookupWorld = worldId.withoutInstance();
+        var lookupWorld = worldId.toBaseWorldId();
         return messageRepository.findByWorldIdAndChatIdAndMessageId(lookupWorld.getId(), chatId, messageId);
     }
 
@@ -456,7 +456,7 @@ public class WChatService {
      */
     @Transactional(readOnly = true)
     public List<WChatMessage> findMessagesByWorldIdAndChatId(WorldId worldId, String chatId) {
-        var lookupWorld = worldId.withoutInstance();
+        var lookupWorld = worldId.toBaseWorldId();
         return messageRepository.findByWorldIdAndChatId(lookupWorld.getId(), chatId);
     }
 
@@ -473,7 +473,7 @@ public class WChatService {
      */
     @Transactional(readOnly = true)
     public List<WChatMessage> getChatMessages(WorldId worldId, String chatId, int limit) {
-        var lookupWorld = worldId.withoutInstance();
+        var lookupWorld = worldId.toBaseWorldId();
         Pageable pageable = PageRequest.of(0, limit);
 
         // Fetch newest messages first (DESC)
@@ -492,7 +492,7 @@ public class WChatService {
      */
     @Transactional(readOnly = true)
     public List<WChatMessage> findMessagesByWorldIdAndChatIdNewestFirst(WorldId worldId, String chatId, int page, int size) {
-        var lookupWorld = worldId.withoutInstance();
+        var lookupWorld = worldId.toBaseWorldId();
         Pageable pageable = PageRequest.of(page, size);
         return messageRepository.findByWorldIdAndChatIdOrderByCreatedAtDesc(lookupWorld.getId(), chatId, pageable);
     }
@@ -503,7 +503,7 @@ public class WChatService {
      */
     @Transactional(readOnly = true)
     public List<WChatMessage> findMessagesByWorldIdAndChatIdOldestFirst(WorldId worldId, String chatId, int page, int size) {
-        var lookupWorld = worldId.withoutInstance();
+        var lookupWorld = worldId.toBaseWorldId();
         Pageable pageable = PageRequest.of(page, size);
         return messageRepository.findByWorldIdAndChatIdOrderByCreatedAtAsc(lookupWorld.getId(), chatId, pageable);
     }
@@ -514,7 +514,7 @@ public class WChatService {
      */
     @Transactional(readOnly = true)
     public List<WChatMessage> findMessagesByType(WorldId worldId, String chatId, String type) {
-        var lookupWorld = worldId.withoutInstance();
+        var lookupWorld = worldId.toBaseWorldId();
         return messageRepository.findByWorldIdAndChatIdAndType(lookupWorld.getId(), chatId, type);
     }
 
@@ -524,7 +524,7 @@ public class WChatService {
      */
     @Transactional(readOnly = true)
     public List<WChatMessage> findMessagesAfter(WorldId worldId, String chatId, Instant after) {
-        var lookupWorld = worldId.withoutInstance();
+        var lookupWorld = worldId.toBaseWorldId();
         return messageRepository.findByWorldIdAndChatIdAndCreatedAtAfter(lookupWorld.getId(), chatId, after);
     }
 
@@ -534,7 +534,7 @@ public class WChatService {
      */
     @Transactional(readOnly = true)
     public List<WChatMessage> findMessagesBefore(WorldId worldId, String chatId, Instant before) {
-        var lookupWorld = worldId.withoutInstance();
+        var lookupWorld = worldId.toBaseWorldId();
         return messageRepository.findByWorldIdAndChatIdAndCreatedAtBefore(lookupWorld.getId(), chatId, before);
     }
 
@@ -544,7 +544,7 @@ public class WChatService {
      */
     @Transactional(readOnly = true)
     public List<WChatMessage> findMessagesBySenderId(WorldId worldId, String senderId) {
-        var lookupWorld = worldId.withoutInstance();
+        var lookupWorld = worldId.toBaseWorldId();
         return messageRepository.findByWorldIdAndSenderId(lookupWorld.getId(), senderId);
     }
 
@@ -554,7 +554,7 @@ public class WChatService {
      */
     @Transactional(readOnly = true)
     public long countMessages(WorldId worldId, String chatId) {
-        var lookupWorld = worldId.withoutInstance();
+        var lookupWorld = worldId.toBaseWorldId();
         return messageRepository.countByWorldIdAndChatId(lookupWorld.getId(), chatId);
     }
 
@@ -564,7 +564,7 @@ public class WChatService {
      */
     @Transactional
     public boolean deleteMessage(WorldId worldId, String chatId, String messageId) {
-        var lookupWorld = worldId.withoutInstance();
+        var lookupWorld = worldId.toBaseWorldId();
 
         return messageRepository.findByWorldIdAndChatIdAndMessageId(lookupWorld.getId(), chatId, messageId).map(message -> {
             messageRepository.delete(message);
@@ -579,7 +579,7 @@ public class WChatService {
      */
     @Transactional
     public void deleteAllMessagesInChat(WorldId worldId, String chatId) {
-        var lookupWorld = worldId.withoutInstance();
+        var lookupWorld = worldId.toBaseWorldId();
         messageRepository.deleteByWorldIdAndChatId(lookupWorld.getId(), chatId);
         log.debug("Deleted all messages in chat: world={}, chatId={}", lookupWorld, chatId);
     }
@@ -659,7 +659,7 @@ public class WChatService {
         WChatAgent agent = getAgent(agentName, worldId, sessionId)
                 .orElseThrow(() -> new IllegalArgumentException("Agent not found: " + agentName));
 
-        var lookupWorld = worldId.withoutInstance();
+        var lookupWorld = worldId.toBaseWorldId();
 
         // Save player message
         WChatMessage playerMessage = WChatMessage.builder()
@@ -689,7 +689,7 @@ public class WChatService {
     }
 
     private void processMessage(WorldId worldId, String sessionId, WChatMessage response) {
-        var lookupWorld = worldId.withoutInstance();
+        var lookupWorld = worldId.toBaseWorldId();
         // Handle model-selector command: extract ModelSelector data and store in Redis
         if ("model-selector".equals(response.getType()) &&
                 response.isCommand() &&
@@ -761,7 +761,7 @@ public class WChatService {
         WChatAgent agent = getAgent(agentName, worldId, sessionId)
                 .orElseThrow(() -> new IllegalArgumentException("Agent not found: " + agentName));
 
-        var lookupWorld = worldId.withoutInstance();
+        var lookupWorld = worldId.toBaseWorldId();
 
         // Execute command on agent
         List<WChatMessage> responses = agent.executeCommand(worldId, chatId, playerId, command, params);
@@ -784,7 +784,7 @@ public class WChatService {
 
     @Transactional
     public List<WChatMessage> getChatMessagesAfterMessageId(WorldId worldId, String chatId, String messageId, int limit) {
-        var lookupWorld = worldId.withoutInstance();
+        var lookupWorld = worldId.toBaseWorldId();
         Pageable pageable = PageRequest.of(0, limit);
 
         // Find the reference message to get its createdAt timestamp
@@ -858,7 +858,7 @@ public class WChatService {
     }
 
     public Optional<WChatMessage> findByWorldIdAndChatIdAndMessageId(WorldId worldId, String chatId, String messageId) {
-        var lookupWorld = worldId.withoutInstance();
+        var lookupWorld = worldId.toBaseWorldId();
         return messageRepository.findByWorldIdAndChatIdAndMessageId(lookupWorld.getId(), chatId, messageId);
     }
 

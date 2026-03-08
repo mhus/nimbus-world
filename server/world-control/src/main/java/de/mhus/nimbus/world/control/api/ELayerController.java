@@ -24,7 +24,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -114,7 +113,7 @@ public class ELayerController extends BaseEditorController {
         if (validation != null) return validation;
 
         // IMPORTANT: Filter out instances - layers are per world/zone only
-        String lookupWorldId = wid.withoutInstance().getId();
+        String lookupWorldId = wid.toBaseWorldId().getId();
 
         // Get all Layers for this world with query filter
         List<WLayer> all = layerService.findByWorldIdAndQuery(lookupWorldId, query);
@@ -167,7 +166,7 @@ public class ELayerController extends BaseEditorController {
         }
 
         // IMPORTANT: Filter out instances - layers are per world/zone only
-        String lookupWorldId = wid.withoutInstance().getId();
+        String lookupWorldId = wid.toBaseWorldId().getId();
 
         // Check if Layer with same title already exists
         if (layerService.findByWorldIdAndName(lookupWorldId, request.name()).isPresent()) {
@@ -326,7 +325,7 @@ public class ELayerController extends BaseEditorController {
         WLayer layer = opt.get();
 
         // IMPORTANT: Filter out instances - layers are per world only
-        String lookupWorldId = wid.withoutInstance().getId();
+        String lookupWorldId = wid.toBaseWorldId().getId();
         if (!layer.getWorldId().equals(lookupWorldId)) {
             log.warn("Layer worldId mismatch: expected={}, actual={}", lookupWorldId, layer.getWorldId());
             return notFound("layer not found");
@@ -461,7 +460,7 @@ public class ELayerController extends BaseEditorController {
         if (validation != null) return validation;
 
         // IMPORTANT: Filter out instances - layers are per world/zone only
-        String lookupWorldId = wid.withoutInstance().getId();
+        String lookupWorldId = wid.toBaseWorldId().getId();
 
         Optional<WLayer> opt = layerService.findById(id);
         if (opt.isEmpty()) {
@@ -547,7 +546,7 @@ public class ELayerController extends BaseEditorController {
         var validation = validateId(id, "id");
         if (validation != null) return validation;
 
-        String lookupWorldId = wid.withoutInstance().getId();
+        String lookupWorldId = wid.toBaseWorldId().getId();
 
         Optional<WLayer> opt = layerService.findById(id);
         if (opt.isEmpty()) {

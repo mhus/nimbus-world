@@ -88,7 +88,7 @@ public class LayerToolService {
             WorldId wid = WorldId.of(worldId).orElseThrow(
                     () -> new IllegalArgumentException("Invalid worldId: " + worldId)
             );
-            String lookupWorldId = wid.withoutInstance().getId();
+            String lookupWorldId = wid.toBaseWorldId().getId();
             List<WLayer> layers = layerService.findByWorldId(lookupWorldId);
 
             if (layers.isEmpty()) {
@@ -144,7 +144,7 @@ public class LayerToolService {
             WorldId wid = WorldId.of(worldId).orElseThrow(
                     () -> new IllegalArgumentException("Invalid worldId: " + worldId)
             );
-            String lookupWorldId = wid.withoutInstance().getId();
+            String lookupWorldId = wid.toBaseWorldId().getId();
             Optional<WLayer> layerOpt = layerService.findByWorldIdAndName(lookupWorldId, layerName);
 
             if (layerOpt.isEmpty()) {
@@ -200,7 +200,7 @@ public class LayerToolService {
             WorldId wid = WorldId.of(worldId).orElseThrow(
                     () -> new IllegalArgumentException("Invalid worldId: " + worldId)
             );
-            String lookupWorldId = wid.withoutInstance().getId();
+            String lookupWorldId = wid.toBaseWorldId().getId();
             Optional<WLayer> layerOpt = layerService.findByWorldIdAndName(lookupWorldId, layerName);
 
             if (layerOpt.isEmpty()) {
@@ -274,7 +274,7 @@ public class LayerToolService {
             WorldId wid = WorldId.of(worldId).orElseThrow(
                     () -> new IllegalArgumentException("Invalid worldId: " + worldId)
             );
-            String lookupWorldId = wid.withoutInstance().getId();
+            String lookupWorldId = wid.toBaseWorldId().getId();
 
             // Check if layer already exists
             Optional<WLayer> existing = layerService.findByWorldIdAndName(lookupWorldId, layerName);
@@ -329,7 +329,7 @@ public class LayerToolService {
             WorldId wid = WorldId.of(worldId).orElseThrow(
                     () -> new IllegalArgumentException("Invalid worldId: " + worldId)
             );
-            String lookupWorldId = wid.withoutInstance().getId();
+            String lookupWorldId = wid.toBaseWorldId().getId();
 
             // Check if layer already exists
             Optional<WLayer> existing = layerService.findByWorldIdAndName(lookupWorldId, layerName);
@@ -392,7 +392,7 @@ public class LayerToolService {
             WorldId wid = WorldId.of(worldId).orElseThrow(
                     () -> new IllegalArgumentException("Invalid worldId: " + worldId)
             );
-            String lookupWorldId = wid.withoutInstance().getId();
+            String lookupWorldId = wid.toBaseWorldId().getId();
 
             // Find layer
             Optional<WLayer> layerOpt = layerService.findByWorldIdAndName(lookupWorldId, layerName);
@@ -469,7 +469,7 @@ public class LayerToolService {
             WorldId wid = WorldId.of(worldId).orElseThrow(
                     () -> new IllegalArgumentException("Invalid worldId: " + worldId)
             );
-            String lookupWorldId = wid.withoutInstance().getId();
+            String lookupWorldId = wid.toBaseWorldId().getId();
 
             Optional<WLayer> layerOpt = layerService.findByWorldIdAndName(lookupWorldId, layerName);
             if (layerOpt.isEmpty()) {
@@ -557,7 +557,7 @@ public class LayerToolService {
             WorldId wid = WorldId.of(worldId).orElseThrow(
                     () -> new IllegalArgumentException("Invalid worldId: " + worldId)
             );
-            String lookupWorldId = wid.withoutInstance().getId();
+            String lookupWorldId = wid.toBaseWorldId().getId();
 
             // Verify layer exists
             Optional<WLayer> layerOpt = layerService.findByWorldIdAndName(lookupWorldId, layerName);
@@ -613,7 +613,7 @@ public class LayerToolService {
             WorldId wid = WorldId.of(worldId).orElseThrow(
                     () -> new IllegalArgumentException("Invalid worldId: " + worldId)
             );
-            String lookupWorldId = wid.withoutInstance().getId();
+            String lookupWorldId = wid.toBaseWorldId().getId();
 
             Optional<WLayer> layerOpt = layerService.findByWorldIdAndName(lookupWorldId, layerName);
             if (layerOpt.isEmpty()) {
@@ -678,7 +678,7 @@ public class LayerToolService {
             WorldId wid = WorldId.of(worldId).orElseThrow(
                     () -> new IllegalArgumentException("Invalid worldId: " + worldId)
             );
-            String lookupWorldId = wid.withoutInstance().getId();
+            String lookupWorldId = wid.toBaseWorldId().getId();
 
             Optional<WLayer> layerOpt = layerService.findByWorldIdAndName(lookupWorldId, layerName);
             if (layerOpt.isEmpty()) {

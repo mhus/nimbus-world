@@ -84,7 +84,7 @@ public class ResourceRepairAllWorldsJobExecutor implements JobExecutor {
             for (String worldId : allKnownWorldIds) {
                 var parsed = WorldId.of(worldId);
                 if (parsed.isPresent()) {
-                    mainWorldIds.add(parsed.get().mainWorld().getId());
+                    mainWorldIds.add(parsed.get().toMainWorld().getId());
                 } else {
                     mainWorldIds.add(worldId);
                 }

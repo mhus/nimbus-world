@@ -204,7 +204,7 @@ public class TechnicalBlockChatAgent implements WChatAgent {
 
         return List.of(
                 WChatMessage.builder()
-                        .worldId(worldId.withoutInstance().getId())
+                        .worldId(worldId.toBaseWorldId().getId())
                         .messageId(UUID.randomUUID().toString())
                         .senderId(AGENT_ID)
                         .message("⏳ Processing manipulator '" + manipulatorName + "'...")
@@ -228,7 +228,7 @@ public class TechnicalBlockChatAgent implements WChatAgent {
 
         // Success - add text message
         WChatMessage textMessage = WChatMessage.builder()
-                .worldId(worldId.withoutInstance().getId())
+                .worldId(worldId.toBaseWorldId().getId())
                 .messageId(UUID.randomUUID().toString())
                 .senderId(AGENT_ID)
                 .message(result.getMessage())
@@ -250,7 +250,7 @@ public class TechnicalBlockChatAgent implements WChatAgent {
                 // Create command message with ModelSelector data as JSON in message field
                 // world-control will parse this and store in Redis
                 WChatMessage commandMessage = WChatMessage.builder()
-                        .worldId(worldId.withoutInstance().getId())
+                        .worldId(worldId.toBaseWorldId().getId())
                         .messageId(UUID.randomUUID().toString())
                         .senderId(AGENT_ID)
                         .message(modelSelectorJson)  // ModelSelector data as JSON
@@ -325,7 +325,7 @@ public class TechnicalBlockChatAgent implements WChatAgent {
 
                 // Return confirmation message
                 WChatMessage confirmMessage = WChatMessage.builder()
-                        .worldId(worldId.withoutInstance().getId())
+                        .worldId(worldId.toBaseWorldId().getId())
                         .messageId(UUID.randomUUID().toString())
                         .senderId(AGENT_ID)
                         .message("✅ Model selector re-activated: " + modelSelectorData.size() + " blocks highlighted")
@@ -344,7 +344,7 @@ public class TechnicalBlockChatAgent implements WChatAgent {
 
         // Unknown command
         WChatMessage errorMessage = WChatMessage.builder()
-                .worldId(worldId.withoutInstance().getId())
+                .worldId(worldId.toBaseWorldId().getId())
                 .messageId(UUID.randomUUID().toString())
                 .senderId(AGENT_ID)
                 .message("Unknown command: " + command)
@@ -361,7 +361,7 @@ public class TechnicalBlockChatAgent implements WChatAgent {
      */
     private WChatMessage createErrorMessage(WorldId worldId, String errorText) {
         return WChatMessage.builder()
-                .worldId(worldId.withoutInstance().getId())
+                .worldId(worldId.toBaseWorldId().getId())
                 .messageId(UUID.randomUUID().toString())
                 .senderId(AGENT_ID)
                 .message("❌ " + errorText)

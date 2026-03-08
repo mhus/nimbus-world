@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.player.session.PlayerSession;
 import de.mhus.nimbus.world.shared.world.WAnything;
-import de.mhus.nimbus.world.shared.world.WProgress;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
 
@@ -53,7 +52,7 @@ public class DialogAction extends AbstractGamplayAction {
         String name = parts[1];
 
         WorldId worldId = session.getWorldId();
-        WorldId anythingWorldId = worldId.isInstance() ? worldId.mainWorld() : worldId;
+        WorldId anythingWorldId = worldId.isInstance() ? worldId.toMainWorld() : worldId;
 
         // Verify playbook exists in WAnything
         Optional<WAnything> playbookOpt = basic.getAnythingService()

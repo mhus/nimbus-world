@@ -30,7 +30,7 @@ public class WEntityModelService {
      */
     @Transactional(readOnly = true)
     public Optional<WEntityModel> findByModelId(WorldId worldId, String modelId) {
-        var lookupWorld = worldId.mainWorld();
+        var lookupWorld = worldId.toMainWorld();
         var collection = WorldCollection.of(lookupWorld, modelId);
         lookupWorld = collection.worldId();
         lookupWorld = lookupWorld.toCollection(); // if the result is a world id, convert to region collection

@@ -4,7 +4,6 @@ import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.shared.dto.CreateLayerModelRequest;
 import de.mhus.nimbus.world.shared.dto.LayerModelDto;
 import de.mhus.nimbus.world.shared.dto.UpdateLayerModelRequest;
-import de.mhus.nimbus.world.shared.layer.LayerBlock;
 import de.mhus.nimbus.world.shared.layer.WLayer;
 import de.mhus.nimbus.world.shared.layer.WLayerModel;
 import de.mhus.nimbus.world.shared.layer.WLayerService;
@@ -121,7 +120,7 @@ public class ELayerModelController extends BaseEditorController {
         }
 
         WLayer layer = layerOpt.get();
-        String lookupWorldId = wid.withoutInstance().getId();
+        String lookupWorldId = wid.toBaseWorldId().getId();
         if (!layer.getWorldId().equals(lookupWorldId)) {
             log.warn("Layer worldId mismatch: expected={}, actual={}", lookupWorldId, layer.getWorldId());
             return notFound("layer not found");
@@ -186,7 +185,7 @@ public class ELayerModelController extends BaseEditorController {
         }
 
         WLayer layer = layerOpt.get();
-        String lookupWorldId = wid.withoutInstance().getId();
+        String lookupWorldId = wid.toBaseWorldId().getId();
         if (!layer.getWorldId().equals(lookupWorldId)) {
             log.warn("Layer worldId mismatch: expected={}, actual={}", lookupWorldId, layer.getWorldId());
             return notFound("layer not found");
@@ -398,7 +397,7 @@ public class ELayerModelController extends BaseEditorController {
         }
 
         WLayer layer = layerOpt.get();
-        String lookupWorldId = WorldId.of(worldId).orElseThrow().withoutInstance().getId();
+        String lookupWorldId = WorldId.of(worldId).orElseThrow().toBaseWorldId().getId();
         if (!layer.getWorldId().equals(lookupWorldId)) {
             log.warn("Layer worldId mismatch: expected={}, actual={}", lookupWorldId, layer.getWorldId());
             return notFound("layer not found");
@@ -476,7 +475,7 @@ public class ELayerModelController extends BaseEditorController {
         }
 
         WLayer layer = layerOpt.get();
-        String lookupWorldId = WorldId.of(worldId).orElseThrow().withoutInstance().getId();
+        String lookupWorldId = WorldId.of(worldId).orElseThrow().toBaseWorldId().getId();
         if (!layer.getWorldId().equals(lookupWorldId)) {
             log.warn("Layer worldId mismatch: expected={}, actual={}", lookupWorldId, layer.getWorldId());
             return notFound("layer not found");
@@ -564,7 +563,7 @@ public class ELayerModelController extends BaseEditorController {
         }
 
         WLayer layer = layerOpt.get();
-        String lookupWorldId = WorldId.of(worldId).orElseThrow().withoutInstance().getId();
+        String lookupWorldId = WorldId.of(worldId).orElseThrow().toBaseWorldId().getId();
         if (!layer.getWorldId().equals(lookupWorldId)) {
             log.warn("Layer worldId mismatch: expected={}, actual={}", lookupWorldId, layer.getWorldId());
             return notFound("layer not found");
@@ -652,7 +651,7 @@ public class ELayerModelController extends BaseEditorController {
         }
 
         WLayer layer = layerOpt.get();
-        String lookupWorldId = WorldId.of(worldId).orElseThrow().withoutInstance().getId();
+        String lookupWorldId = WorldId.of(worldId).orElseThrow().toBaseWorldId().getId();
         if (!layer.getWorldId().equals(lookupWorldId)) {
             log.warn("Layer worldId mismatch: expected={}, actual={}", lookupWorldId, layer.getWorldId());
             return notFound("layer not found");
@@ -752,7 +751,7 @@ public class ELayerModelController extends BaseEditorController {
         }
 
         WLayerModel sourceModel = sourceModelOpt.get();
-        String lookupWorldId = WorldId.of(worldId).orElseThrow().withoutInstance().getId();
+        String lookupWorldId = WorldId.of(worldId).orElseThrow().toBaseWorldId().getId();
         if (!sourceModel.getWorldId().equals(lookupWorldId)) {
             log.warn("Source model worldId mismatch: expected={}, actual={}", lookupWorldId, sourceModel.getWorldId());
             return notFound("source model not found");

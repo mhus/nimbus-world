@@ -55,7 +55,7 @@ public class WHexGridService {
         if (parsedWorldId.isCollection()) {
             throw new IllegalArgumentException("WHexGrid cannot be in a collection");
         }
-        var lookupWorld = parsedWorldId.withoutInstance();
+        var lookupWorld = parsedWorldId.toBaseWorldId();
 
         return repository.findByWorldIdAndPosition(lookupWorld.getId(), positionKey);
     }
@@ -77,7 +77,7 @@ public class WHexGridService {
         if (parsedWorldId.isCollection()) {
             throw new IllegalArgumentException("WHexGrid cannot be in a collection");
         }
-        var lookupWorld = parsedWorldId.withoutInstance();
+        var lookupWorld = parsedWorldId.toBaseWorldId();
 
         return repository.findByWorldId(lookupWorld.getId());
     }
@@ -99,7 +99,7 @@ public class WHexGridService {
         if (parsedWorldId.isCollection()) {
             throw new IllegalArgumentException("WHexGrid cannot be in a collection");
         }
-        var lookupWorld = parsedWorldId.withoutInstance();
+        var lookupWorld = parsedWorldId.toBaseWorldId();
 
         return repository.findByWorldIdAndEnabled(lookupWorld.getId(), true);
     }

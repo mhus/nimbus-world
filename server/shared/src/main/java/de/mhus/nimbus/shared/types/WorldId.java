@@ -1,14 +1,26 @@
 package de.mhus.nimbus.shared.types;
 
-import lombok.Getter;
-
 import java.util.Optional;
 
 /*
- * WorldId represents a unique identifier for a world in the format
- * "regionId:worldName[:zone][!instance]".
- * or
+ * WorldId represents a unique identifier for a world in the
+ * format: "regionId:worldName[:zone[:instance]]".
+ * e.g.
+ * - regionId:worldName::instance
+ * - regionId:worldName:zone:instance
+ * - regionId:worldName::
+ *
+ * - worldName without zone is main world
+ * - worldName with zone is zone world
+ * - main or zone without instance is a base world
+ * - instance is an instance world
+ * - full id is a world id with all parts but zone and instance could be empty
+ *
+ * - if zone is empty it's a main world
+ *
+ * or starts with @ for collections:
  * @collection:collectinId
+ *
  * Every part is a string 'a-zA-Z0-9_-' from 1 to 64 characters.
  */
 public class WorldId implements Comparable<WorldId> {
@@ -16,12 +28,12 @@ public class WorldId implements Comparable<WorldId> {
     public static final String COLLECTION_SHARED = "@shared";
     public static final String COLLECTION_PUBLIC = "@public";
 
-    @Getter
     private String id;
     private String regionId;
     private String worldName;
     private String zone;
     private String instance;
+    private String fullId;
 
     private WorldId(String id) {
         this.id = id;
@@ -33,11 +45,27 @@ public class WorldId implements Comparable<WorldId> {
     }
 
     public static String worldWithInstance(String worldId, String instanceId) {
-        // TODO validate output
         if (instanceId == null || instanceId.isBlank()) {
             return worldId;
         }
-        return worldId + "!" + instanceId;
+        // ensure we append at the right position depending on existing parts
+        var parts = worldId.split(":", 4);
+        if (parts.length == 2) {
+            // regionId:worldName -> regionId:worldName::instanceId
+            return worldId + "::" + instanceId;
+        } else if (parts.length == 3) {
+            // regionId:worldName:zone -> regionId:worldName:zone:instanceId
+            return worldId + ":" + instanceId;
+        } else if (parts.length == 4) {
+            // already has instance slot, replace it
+            return parts[0] + ":" + parts[1] + ":" + parts[2] + ":" + instanceId;
+        }
+        return worldId + "::" + instanceId;
+    }
+
+    public String getId() {
+        parseId();
+        return id;
     }
 
     public String getRegionId() {
@@ -60,6 +88,18 @@ public class WorldId implements Comparable<WorldId> {
         return instance;
     }
 
+    /**
+     * Returns the full id string with all 4 parts: regionId:worldName:zone:instance
+     * Zone and instance may be empty strings.
+     */
+    public String getFullId() {
+        parseId();
+        if (fullId == null) {
+             fullId = regionId + ":" + worldName + ":" + zone + ":" + instance;
+        }
+        return fullId;
+    }
+
     public boolean isCollection() {
         return id.startsWith("@");
     }
@@ -72,27 +112,23 @@ public class WorldId implements Comparable<WorldId> {
             var parts = string.split(":", 3); // one more for garbage
             regionId = parts[0];
             worldName = parts[1];
-            zone = null;
-            instance = null;
+            zone = "";
+            instance = "";
             return;
         }
-        if (string.indexOf('!') > 0) {
-            var parts = id.split("!", 3); // one more for garbage
-            if (parts.length > 1) {
-                instance = parts[1];
-            }
-            string = parts[0];
-        }
-        var parts = string.split(":", 4); // one more for garbage
+        var parts = string.split(":", 5); // one more for garbage
         regionId = parts[0];
         worldName = parts[1];
-        if (parts.length > 2) {
-            zone = parts[2];
-        }
+        zone = parts.length > 2 ? parts[2] : "";
+        instance = parts.length > 3 ? parts[3] : "";
+        // normalize id to reduced canonical form (strip trailing empty colons)
+        int len = id.length();
+        while (len > 0 && id.charAt(len - 1) == ':') len--;
+        if (len < id.length()) id = id.substring(0, len);
     }
 
     public String toString() {
-        return id;
+        return getId();
     }
 
     public static Optional<WorldId> of(String first, String second) {
@@ -112,58 +148,55 @@ public class WorldId implements Comparable<WorldId> {
             return id.matches("^@[a-zA-Z0-9_\\-]{1,64}:[a-zA-Z0-9_\\-]{1,64}$");
         }
          // Every part is a string 'a-zA-Z0-9_-' from 1 to 64 characters.
-        return id.matches("^[a-zA-Z0-9_\\-]{1,64}:[a-zA-Z0-9_\\-]{1,64}(:[a-zA-Z0-9_\\-]{1,64})?(![a-zA-Z0-9_\\-]{1,64})?$");
+        // format: regionId:worldName[:zone[:instance]] where zone can be empty
+        return id.matches("^[a-zA-Z0-9_\\-]{1,64}:[a-zA-Z0-9_\\-]{1,64}(:[a-zA-Z0-9_\\-]{0,64}(:[a-zA-Z0-9_\\-]{0,64})?)?$");
     }
 
     public boolean isMain() {
         parseId();
-        return zone == null && instance == null;
+        return zone.isEmpty() && instance.isEmpty();
     }
 
     public boolean isInstance() {
         parseId();
-        return instance != null;
+        return !instance.isEmpty();
     }
 
     public boolean isZone() {
         parseId();
-        return zone != null;
+        return !zone.isEmpty();
+    }
+
+    // base means main or zone but not instance
+    public boolean isBase() {
+        parseId();
+        return instance.isEmpty();
     }
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        WorldId worldId = (WorldId) o;
-        return id.equals(worldId.id);
+        WorldId other = (WorldId) o;
+        return getId().equals(other.getId());
     }
 
     @Override
     public int hashCode() {
-        return id.hashCode();
+        return getId().hashCode();
     }
 
     @Override
     public int compareTo(WorldId o) {
-        return this.id.compareTo(o.id);
+        return this.getId().compareTo(o.getId());
     }
 
-    public WorldId withoutInstance() {
+    public WorldId toBaseWorldId() {
         parseId();
-        if (instance == null) return this;
-        StringBuilder sb = new StringBuilder();
-        sb.append(regionId).append(":").append(worldName);
-        if (zone != null) sb.append(":").append(zone);
-        return new WorldId(sb.toString());
-    }
-
-    /**
-     * @deprecated Use mainWorld() instead
-     * @return
-     */
-    @Deprecated
-    public WorldId withoutInstanceAndZone() {
-        return mainWorld();
+        if (instance.isEmpty()) return this;
+        String result = regionId + ":" + worldName;
+        if (!zone.isEmpty()) result += ":" + zone;
+        return new WorldId(result);
     }
 
     /**
@@ -173,16 +206,12 @@ public class WorldId implements Comparable<WorldId> {
      * @param instanceId The instance identifier to add
      * @return A new WorldId with the instance part set
      */
-    public WorldId withInstance(String instanceId) {
+    public WorldId toWorldWithInstance(String instanceId) {
         if (instanceId == null || instanceId.isBlank()) {
             throw new IllegalArgumentException("instanceId cannot be null or blank");
         }
         parseId();
-        StringBuilder sb = new StringBuilder();
-        sb.append(regionId).append(":").append(worldName);
-        if (zone != null) sb.append(":").append(zone);
-        sb.append("!").append(instanceId);
-        return new WorldId(sb.toString());
+        return new WorldId(regionId + ":" + worldName + ":" + zone + ":" + instanceId);
     }
 
     /**
@@ -218,7 +247,7 @@ public class WorldId implements Comparable<WorldId> {
         return WorldId.of(COLLECTION_REGION, regionId)
                 .orElseThrow(() -> new IllegalArgumentException("Invalid region worldId: " + regionId));
     }
-    public WorldId mainWorld() {
+    public WorldId toMainWorld() {
         parseId();
         return new WorldId(regionId + ":" + worldName);
     }

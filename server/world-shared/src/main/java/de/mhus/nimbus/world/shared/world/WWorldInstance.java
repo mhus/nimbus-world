@@ -244,21 +244,21 @@ public class WWorldInstance implements Identifiable {
 
     /**
      * Get the full worldId including instance part.
-     * Combines worldId and instanceId into format: worldId!instance
+     * Combines worldId and instanceId into format: worldId::instance
      *
-     * @return Full worldId with instance (e.g., "main:terra!abc123")
+     * @return Full worldId with instance (e.g., "main:terra::abc123")
      */
     public String getWorldWithInstanceId() {
         if (instanceId == null || instanceId.isBlank()) {
             return worldId;
         }
-        // Parse instanceId to extract instance part only (format: worldId!instance)
+        // Parse instanceId to extract instance part only (format: worldId::instance)
         WorldId parsed = WorldId.unchecked(instanceId);
         if (parsed.isInstance()) {
             // instanceId already contains full format
             return instanceId;
         }
-        // If instanceId doesn't contain '!', construct it
-        return WorldId.unchecked(worldId).withInstance(instanceId).getId();
+        // If instanceId doesn't contain instance part, construct it
+        return WorldId.unchecked(worldId).toWorldWithInstance(instanceId).getId();
     }
 }

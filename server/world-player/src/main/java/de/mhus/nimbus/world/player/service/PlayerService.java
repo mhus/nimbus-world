@@ -351,7 +351,7 @@ public class PlayerService implements SessionPingConsumer {
         }
 
         WorldId targetWorldId = targetWorldIdOpt.get();
-        if (worldService.getByWorldId(targetWorldId.withoutInstance().getId()).isEmpty()) {
+        if (worldService.getByWorldId(targetWorldId.toBaseWorldId().getId()).isEmpty()) {
             log.warn("Cannot handle return teleportation: target world does not exist: {}", previousWorldId);
             clientService.sendSystemNotification(session, "Return Teleport Failed",
                     "Previous world no longer exists: " + previousWorldId);

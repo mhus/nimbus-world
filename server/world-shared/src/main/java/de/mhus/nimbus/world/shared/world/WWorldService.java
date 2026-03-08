@@ -37,16 +37,16 @@ public class WWorldService {
         // Parse worldId using WorldId class
         WorldId parsedWorldId = WorldId.unchecked(worldId);
 
-        // Check if this is an instance world (format: worldId!instance per WorldId spec)
+        // Check if this is an instance world (format: regionId:worldName[:zone]:instance per WorldId spec)
         if (parsedWorldId.isInstance()) {
             return loadInstanceWorld(worldId);
         }
 
         Optional<WWorld> world = repository.findByWorldId(worldId);
 
-        // Enrich zone worlds with base world data
+        // Enrich zone worlds with main world data
         if (parsedWorldId.isZone()) {
-            return world.map(w -> enrichZoneWithBaseWorldData(parsedWorldId, w));
+            return world.map(w -> enrichZoneWithMainWorldData(parsedWorldId, w));
         }
 
         // Regular world (no zone, no instance)
@@ -56,12 +56,12 @@ public class WWorldService {
     /**
      * Loads an instance world.
      * Steps:
-     * 1. Validate instance exists and extract base worldId from instance
-     * 2. Load base world (with zone enrichment if applicable)
+     * 1. Validate instance exists and extract main worldId from instance
+     * 2. Load main world (with zone enrichment if applicable)
      * 3. Load instance data
      * 4. Override worldId in WWorld with full instance ID
      *
-     * @param fullInstanceId The full instance ID (format: worldId!instance, e.g. "main:terra!abc" or "main:terra:zone!abc")
+     * @param fullInstanceId The full instance ID (format: regionId:worldName[:zone]:instance, e.g. "main:terra::abc" or "main:terra:zone:abc")
      * @return The enriched world with instance data
      */
     private Optional<WWorld> loadInstanceWorld(String fullInstanceId) {
@@ -75,19 +75,19 @@ public class WWorldService {
             }
 
             WWorldInstance instance = instanceOpt.get();
-            String baseWorldId = instance.getWorldId();
+            String mainWorldId = instance.getWorldId();
 
-            log.debug("Loading instance world: instanceId={}, baseWorldId={}", fullInstanceId, baseWorldId);
+            log.debug("Loading instance world: instanceId={}, mainWorldId={}", fullInstanceId, mainWorldId);
 
-            // Load base world (this will handle zone enrichment automatically)
-            Optional<WWorld> baseWorldOpt = getByWorldId(baseWorldId);
+            // Load main world (this will handle zone enrichment automatically)
+            Optional<WWorld> mainWorldOpt = getByWorldId(mainWorldId);
 
-            if (baseWorldOpt.isEmpty()) {
-                log.warn("Base world not found for instance {}: {}", fullInstanceId, baseWorldId);
+            if (mainWorldOpt.isEmpty()) {
+                log.warn("Main world not found for instance {}: {}", fullInstanceId, mainWorldId);
                 return Optional.empty();
             }
 
-            WWorld world = baseWorldOpt.get();
+            WWorld world = mainWorldOpt.get();
 
             // Override worldId in WWorld with the full instance ID
             world.setWorldId(fullInstanceId);
@@ -104,39 +104,39 @@ public class WWorldService {
     }
 
     /**
-     * Enriches a zone world with time system and season data from the base world.
+     * Enriches a zone world with time system and season data from the main world.
      * Copies: Time System (worldTime), seasonStatus, seasonProgress
      *
      * @param zoneWorldId The parsed zone worldId
      * @param zoneWorld The loaded zone world
-     * @return The zone world enriched with base world data
+     * @return The zone world enriched with main world data
      */
-    private WWorld enrichZoneWithBaseWorldData(WorldId zoneWorldId, WWorld zoneWorld) {
+    private WWorld enrichZoneWithMainWorldData(WorldId zoneWorldId, WWorld zoneWorld) {
         try {
-            // Get base worldId (without zone and instance)
-            WorldId baseWorldId = zoneWorldId.withoutInstanceAndZone();
+            // Get main worldId (without zone and instance)
+            WorldId mainWorldId = zoneWorldId.toMainWorld();
 
-            // Load base world
-            Optional<WWorld> baseWorldOpt = repository.findByWorldId(baseWorldId.getId());
+            // Load main world
+            Optional<WWorld> mainWorldOpt = repository.findByWorldId(mainWorldId.getId());
 
-            if (baseWorldOpt.isEmpty()) {
-                log.warn("Base world not found for zone {}: {}", zoneWorldId.getId(), baseWorldId.getId());
+            if (mainWorldOpt.isEmpty()) {
+                log.warn("Main world not found for zone {}: {}", zoneWorldId.getId(), mainWorldId.getId());
                 return zoneWorld;
             }
 
-            WWorld baseWorld = baseWorldOpt.get();
+            WWorld mainWorld = mainWorldOpt.get();
 
             // Check if both worlds have publicData
-            if (zoneWorld.getPublicData() == null || baseWorld.getPublicData() == null) {
-                log.warn("Cannot enrich zone world - missing publicData: zone={}, base={}",
-                        zoneWorld.getPublicData() == null, baseWorld.getPublicData() == null);
+            if (zoneWorld.getPublicData() == null || mainWorld.getPublicData() == null) {
+                log.warn("Cannot enrich zone world - missing publicData: zone={}, main={}",
+                        zoneWorld.getPublicData() == null, mainWorld.getPublicData() == null);
                 return zoneWorld;
             }
 
-            // Copy time system data from base to zone
-            copyTimeSystemData(baseWorld, zoneWorld);
+            // Copy time system data from main to zone
+            copyTimeSystemData(mainWorld, zoneWorld);
 
-            log.debug("Enriched zone world {} with data from base world {}", zoneWorldId.getId(), baseWorldId.getId());
+            log.debug("Enriched zone world {} with data from main world {}", zoneWorldId.getId(), mainWorldId.getId());
 
             return zoneWorld;
 
@@ -147,40 +147,40 @@ public class WWorldService {
     }
 
     /**
-     * Copies time system and season data from base world to zone world.
+     * Copies time system and season data from main world to zone world.
      * Copies:
      * - worldTime (entire time system configuration)
      * - seasonStatus
      * - seasonProgress
      *
-     * @param baseWorld The base world (source)
+     * @param mainWorld The main world (source)
      * @param zoneWorld The zone world (target, will be modified)
      */
-    private void copyTimeSystemData(WWorld baseWorld, WWorld zoneWorld) {
-        var basePublicData = baseWorld.getPublicData();
+    private void copyTimeSystemData(WWorld mainWorld, WWorld zoneWorld) {
+        var mainPublicData = mainWorld.getPublicData();
         var zonePublicData = zoneWorld.getPublicData();
 
         // Copy seasonStatus (primitive byte, always copy)
-        zonePublicData.setSeasonStatus(basePublicData.getSeasonStatus());
+        zonePublicData.setSeasonStatus(mainPublicData.getSeasonStatus());
 
         // Copy seasonProgress (primitive double, always copy)
-        zonePublicData.setSeasonProgress(basePublicData.getSeasonProgress());
+        zonePublicData.setSeasonProgress(mainPublicData.getSeasonProgress());
 
         // Copy worldTime settings
-        if (basePublicData.getSettings() != null && basePublicData.getSettings().getWorldTime() != null) {
+        if (mainPublicData.getSettings() != null && mainPublicData.getSettings().getWorldTime() != null) {
             // Ensure zone has settings structure
             if (zonePublicData.getSettings() == null) {
                 zonePublicData.setSettings(new de.mhus.nimbus.generated.types.WorldInfoSettingsDTO());
             }
 
             // Copy the entire worldTime object
-            var baseWorldTime = basePublicData.getSettings().getWorldTime();
-            zonePublicData.getSettings().setWorldTime(baseWorldTime);
+            var mainWorldTime = mainPublicData.getSettings().getWorldTime();
+            zonePublicData.getSettings().setWorldTime(mainWorldTime);
 
             log.debug("Copied time system data: seasonStatus={}, seasonProgress={}, currentEra={}",
-                    basePublicData.getSeasonStatus(),
-                    basePublicData.getSeasonProgress(),
-                    baseWorldTime.getCurrentEra());
+                    mainPublicData.getSeasonStatus(),
+                    mainPublicData.getSeasonProgress(),
+                    mainWorldTime.getCurrentEra());
         }
     }
 
@@ -194,11 +194,11 @@ public class WWorldService {
     }
 
     /**
-     * Search worlds with database-level filtering and pagination.
+     * Search worlds with datamain-level filtering and pagination.
      * Searches in worldId, name, and description fields (case-insensitive).
      *
      * @param searchQuery Optional search query (can be null/empty for no filter)
-     * @param offset Pagination offset (0-based)
+     * @param offset Pagination offset (0-maind)
      * @param limit Pagination limit
      * @return WorldSearchResult with paginated worlds and total count
      */
@@ -468,7 +468,7 @@ public class WWorldService {
 
     /**
      * Deletes world collection entities for a region.
-     * This deletes the WWorldCollection entities (database entries) for:
+     * This deletes the WWorldCollection entities (datamain entries) for:
      * - @region:<regionName>
      * - @public:<regionName>
      *

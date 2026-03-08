@@ -37,7 +37,7 @@ public class WEntityService {
         if (worldId.isCollection()) {
             throw new IllegalArgumentException("worldId must not be a collection id");
         }
-        var lookupWorld = worldId.withoutInstance();
+        var lookupWorld = worldId.toBaseWorldId();
         return repository.findByWorldIdAndEntityId(lookupWorld.getId(), entityId);
     }
 
@@ -50,7 +50,7 @@ public class WEntityService {
         if (worldId.isCollection()) {
             throw new IllegalArgumentException("worldId must not be a collection id");
         }
-        var lookupWorld = worldId.withoutInstance();
+        var lookupWorld = worldId.toBaseWorldId();
         return repository.findByWorldId(lookupWorld.getId());
     }
 
@@ -63,7 +63,7 @@ public class WEntityService {
         if (worldId.isCollection()) {
             throw new IllegalArgumentException("worldId must not be a collection id");
         }
-        var lookupWorld = worldId.withoutInstance();
+        var lookupWorld = worldId.toBaseWorldId();
         return repository.findByWorldIdAndModelId(lookupWorld.getId(), modelId);
     }
 
@@ -76,7 +76,7 @@ public class WEntityService {
         if (worldId.isCollection()) {
             throw new IllegalArgumentException("worldId must not be a collection id");
         }
-        var lookupWorld = worldId.withoutInstance();
+        var lookupWorld = worldId.toBaseWorldId();
         return repository.findByWorldIdAndEnabled(lookupWorld.getId(), true);
     }
 
@@ -195,7 +195,7 @@ public class WEntityService {
         if (worldId.isInstance() || worldId.isCollection()) {
             throw new IllegalArgumentException("worldId must be a world id (no instance, no collection)");
         }
-        var lookupWorld = worldId.withoutInstance();
+        var lookupWorld = worldId.toBaseWorldId();
         List<WEntity> entities = repository.findByWorldIdAndEntityIdStartingWith(
                 lookupWorld.getId(), prefix);
         if (!entities.isEmpty()) {
@@ -219,7 +219,7 @@ public class WEntityService {
         if (worldId.isInstance() || worldId.isCollection()) {
             throw new IllegalArgumentException("worldId must be a world id (no instance, no collection)");
         }
-        var lookupWorld = worldId.withoutInstance();
+        var lookupWorld = worldId.toBaseWorldId();
         List<WEntity> entities = repository.findByWorldIdAndSourceAndAffectedChunksIn(
                 lookupWorld.getId(), source, chunkKeys);
         if (!entities.isEmpty()) {
@@ -243,7 +243,7 @@ public class WEntityService {
         if (worldId.isCollection()) {
             throw new IllegalArgumentException("worldId must not be a collection id");
         }
-        var lookupWorld = worldId.withoutInstance();
+        var lookupWorld = worldId.toBaseWorldId();
         return repository.findByWorldIdAndEnabledAndAffectedChunksIn(lookupWorld.getId(), true, chunkKeys);
     }
 
@@ -256,7 +256,7 @@ public class WEntityService {
         if (worldId.isCollection()) {
             throw new IllegalArgumentException("worldId must not be a collection id");
         }
-        var lookupWorld = worldId.withoutInstance();
+        var lookupWorld = worldId.toBaseWorldId();
         List<WEntity> all = repository.findByWorldId(lookupWorld.getId());
 
         // Apply search filter if provided

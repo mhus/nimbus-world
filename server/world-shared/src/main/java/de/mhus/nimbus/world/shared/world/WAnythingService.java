@@ -31,7 +31,7 @@ public class WAnythingService {
      */
     @Transactional(readOnly = true)
     public Optional<WAnything> findByWorldIdAndCollectionAndName(String worldId, String collection, String name) {
-        WorldId world = WorldId.of(worldId).orElseThrow().withoutInstance();
+        WorldId world = WorldId.of(worldId).orElseThrow().toBaseWorldId();
         var result = repository.findByWorldIdAndCollectionAndName(world.getId(), collection, name);
         if (result.isPresent()) {
             return result;
@@ -65,7 +65,7 @@ public class WAnythingService {
      */
     @Transactional(readOnly = true)
     public List<WAnything> findByWorldIdAndCollection(String worldId, String collection) {
-        WorldId world = WorldId.of(worldId).orElseThrow().withoutInstance();
+        WorldId world = WorldId.of(worldId).orElseThrow().toBaseWorldId();
         return repository.findByWorldIdAndCollection(world.getId(), collection);
     }
 
@@ -74,7 +74,7 @@ public class WAnythingService {
      */
     @Transactional(readOnly = true)
     public List<WAnything> findByWorldIdAndCollectionAndEnabled(String worldId, String collection, boolean enabled) {
-        WorldId world = WorldId.of(worldId).orElseThrow().withoutInstance();
+        WorldId world = WorldId.of(worldId).orElseThrow().toBaseWorldId();
         return repository.findByWorldIdAndCollectionAndEnabled(world.getId(), collection, enabled);
     }
 
@@ -83,7 +83,7 @@ public class WAnythingService {
      */
     @Transactional(readOnly = true)
     public List<WAnything> findByWorldIdAndCollectionAndType(String worldId, String collection, String type) {
-        WorldId world = WorldId.of(worldId).orElseThrow().withoutInstance();
+        WorldId world = WorldId.of(worldId).orElseThrow().toBaseWorldId();
         return repository.findByWorldIdAndCollectionAndType(world.getId(), collection, type);
     }
 
@@ -92,7 +92,7 @@ public class WAnythingService {
      */
     @Transactional
     public WAnything create(String worldId, String collection, String name, String title, String description, String type, Object data) {
-        WorldId world = WorldId.of(worldId).orElseThrow().withoutInstance();
+        WorldId world = WorldId.of(worldId).orElseThrow().toBaseWorldId();
         if (world.isInstance()) {
             throw new IllegalArgumentException("worldId must not contain instance part: " + worldId);
         }
@@ -154,7 +154,7 @@ public class WAnythingService {
      */
     @Transactional
     public void deleteByWorldIdAndCollectionAndName(String worldId, String collection, String name) {
-        WorldId world = WorldId.of(worldId).orElseThrow().withoutInstance();
+        WorldId world = WorldId.of(worldId).orElseThrow().toBaseWorldId();
         if (world.isInstance()) {
             throw new IllegalArgumentException("worldId must not contain instance part: " + worldId);
         }
@@ -167,7 +167,7 @@ public class WAnythingService {
      */
     @Transactional(readOnly = true)
     public boolean exists(String worldId, String collection, String name) {
-        WorldId world = WorldId.of(worldId).orElseThrow().withoutInstance();
+        WorldId world = WorldId.of(worldId).orElseThrow().toBaseWorldId();
         return repository.existsByWorldIdAndCollectionAndName(world.getId(), collection, name);
     }
 
@@ -176,7 +176,7 @@ public class WAnythingService {
      */
     @Transactional(readOnly = true)
     public List<String> findDistinctCollections(String worldId) {
-        WorldId world = WorldId.of(worldId).orElseThrow().withoutInstance();
+        WorldId world = WorldId.of(worldId).orElseThrow().toBaseWorldId();
         var query = new org.springframework.data.mongodb.core.query.Query();
         query.addCriteria(org.springframework.data.mongodb.core.query.Criteria.where("worldId").is(world.getId()));
 

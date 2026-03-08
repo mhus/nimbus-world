@@ -98,7 +98,7 @@ public class PlayerDialogController extends BaseEditorController {
         String collection = parts[0];
         String name = parts[1];
 
-        WorldId anythingWorldId = parsedWorldId.isInstance() ? parsedWorldId.mainWorld() : parsedWorldId;
+        WorldId anythingWorldId = parsedWorldId.isInstance() ? parsedWorldId.toMainWorld() : parsedWorldId;
 
         Optional<WAnything> playbookOpt = anythingService.findByWorldIdAndCollectionAndName(
                 anythingWorldId.getId(), collection, name);

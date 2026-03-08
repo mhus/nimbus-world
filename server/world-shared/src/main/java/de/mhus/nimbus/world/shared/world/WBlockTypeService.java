@@ -32,7 +32,7 @@ public class WBlockTypeService {
     @Transactional(readOnly = true)
     public Optional<WBlockType> findByBlockId(WorldId worldId, String blockId) {
 
-        var lookupWorld = worldId.mainWorld();
+        var lookupWorld = worldId.toMainWorld();
         var collection = WorldCollection.of(lookupWorld, blockId);
 
         return repository.findByWorldIdAndBlockId(collection.worldId().getId(), collection.path());
@@ -44,7 +44,7 @@ public class WBlockTypeService {
      */
     @Transactional(readOnly = true)
     public List<WBlockType> findByBlockTypeGroup(WorldId worldId, String blockTypeGroup) {
-        var collection = WorldCollection.of(worldId.mainWorld(), blockTypeGroup + ":");
+        var collection = WorldCollection.of(worldId.toMainWorld(), blockTypeGroup + ":");
         var lookupWorld = collection.worldId();
         return repository.findByWorldId(lookupWorld.getId());
     }
@@ -55,7 +55,7 @@ public class WBlockTypeService {
      */
     @Transactional(readOnly = true)
     public List<WBlockType> findByWorldId(WorldId worldId) {
-        var lookupWorld = worldId.mainWorld();
+        var lookupWorld = worldId.toMainWorld();
         return repository.findByWorldId(lookupWorld.getId());
     }
 
@@ -65,7 +65,7 @@ public class WBlockTypeService {
      */
     @Transactional(readOnly = true)
     public List<WBlockType> findAllEnabled(WorldId worldId) {
-        var lookupWorld = worldId.mainWorld();
+        var lookupWorld = worldId.toMainWorld();
         return repository.findByWorldIdAndEnabled(lookupWorld.getId(), true);
     }
 
@@ -94,7 +94,7 @@ public class WBlockTypeService {
         if (publicData.getModifiers().keySet().stream().anyMatch(k -> !BlockUtil.isStatus(k))) {
             throw new IllegalArgumentException("publicData.modifiers keys must be valid block statuses");
         }
-        var collection = WorldCollection.of(worldId.mainWorld(), blockId);
+        var collection = WorldCollection.of(worldId.toMainWorld(), blockId);
         var entityOpt = repository.findByWorldIdAndBlockId(collection.worldId().getId(), collection.path());
         WBlockType entity = null;
         if (entityOpt.isEmpty()) {
@@ -130,7 +130,7 @@ public class WBlockTypeService {
      */
     @Transactional
     public Optional<WBlockType> update(WorldId worldId, String blockId, Consumer<WBlockType> updater) {
-        var collection = WorldCollection.of(worldId.mainWorld(), blockId);
+        var collection = WorldCollection.of(worldId.toMainWorld(), blockId);
         return repository.findByWorldIdAndBlockId(collection.worldId().getId(), collection.path()).map(entity -> {
             updater.accept(entity);
             entity.touchUpdate();
@@ -159,7 +159,7 @@ public class WBlockTypeService {
      */
     @Transactional
     public boolean delete(WorldId worldId, String blockId) {
-        var collection = WorldCollection.of(worldId.mainWorld(), blockId);
+        var collection = WorldCollection.of(worldId.toMainWorld(), blockId);
 
         return repository.findByWorldIdAndBlockId(collection.worldId().getId(), collection.path()).map(entity -> {
             repository.delete(entity);
@@ -214,7 +214,7 @@ public class WBlockTypeService {
     @Transactional(readOnly = true)
     public List<WBlockType> lookupBlockTypes(WorldId worldId) {
         if (worldId.isInstanceOrZone()) {
-            worldId = worldId.mainWorld();
+            worldId = worldId.toMainWorld();
         }
 
         java.util.Set<String> uniqueIds = new java.util.HashSet<>();

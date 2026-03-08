@@ -167,7 +167,7 @@ public class TechnicalFlatChatAgent implements WChatAgent {
 
         return List.of(
                 WChatMessage.builder()
-                        .worldId(worldId.withoutInstance().getId())
+                        .worldId(worldId.toBaseWorldId().getId())
                         .messageId(UUID.randomUUID().toString())
                         .senderId(AGENT_ID)
                         .message("⏳ Processing command...")
@@ -189,7 +189,7 @@ public class TechnicalFlatChatAgent implements WChatAgent {
 
         return List.of(
                 WChatMessage.builder()
-                        .worldId(worldId.withoutInstance().getId())
+                        .worldId(worldId.toBaseWorldId().getId())
                         .messageId(UUID.randomUUID().toString())
                         .senderId(AGENT_ID)
                         .message("✅ " + result.getMessage())
@@ -213,7 +213,7 @@ public class TechnicalFlatChatAgent implements WChatAgent {
 
         // Add text message
         responses.add(WChatMessage.builder()
-                .worldId(worldId.withoutInstance().getId())
+                .worldId(worldId.toBaseWorldId().getId())
                 .messageId(UUID.randomUUID().toString())
                 .senderId(AGENT_ID)
                 .message("✅ " + result.getMessage())
@@ -224,7 +224,7 @@ public class TechnicalFlatChatAgent implements WChatAgent {
         // Add command message with flatId for future use
         if (result.getFlatId() != null) {
             responses.add(WChatMessage.builder()
-                    .worldId(worldId.withoutInstance().getId())
+                    .worldId(worldId.toBaseWorldId().getId())
                     .messageId(UUID.randomUUID().toString())
                     .senderId(AGENT_ID)
                     .message(result.getFlatId())
@@ -249,7 +249,7 @@ public class TechnicalFlatChatAgent implements WChatAgent {
 
         return List.of(
                 WChatMessage.builder()
-                        .worldId(worldId.withoutInstance().getId())
+                        .worldId(worldId.toBaseWorldId().getId())
                         .messageId(UUID.randomUUID().toString())
                         .senderId(AGENT_ID)
                         .message("✅ " + result.getMessage())
@@ -292,7 +292,7 @@ public class TechnicalFlatChatAgent implements WChatAgent {
 
                 // Return confirmation message
                 WChatMessage confirmMessage = WChatMessage.builder()
-                        .worldId(worldId.withoutInstance().getId())
+                        .worldId(worldId.toBaseWorldId().getId())
                         .messageId(UUID.randomUUID().toString())
                         .senderId(AGENT_ID)
                         .message("✅ Using flat: " + flatId)
@@ -311,7 +311,7 @@ public class TechnicalFlatChatAgent implements WChatAgent {
 
         // Unknown command
         WChatMessage errorMessage = WChatMessage.builder()
-                .worldId(worldId.withoutInstance().getId())
+                .worldId(worldId.toBaseWorldId().getId())
                 .messageId(UUID.randomUUID().toString())
                 .senderId(AGENT_ID)
                 .message("Unknown command: " + command)
@@ -328,7 +328,7 @@ public class TechnicalFlatChatAgent implements WChatAgent {
      */
     private WChatMessage createErrorMessage(WorldId worldId, String errorText) {
         return WChatMessage.builder()
-                .worldId(worldId.withoutInstance().getId())
+                .worldId(worldId.toBaseWorldId().getId())
                 .messageId(UUID.randomUUID().toString())
                 .senderId(AGENT_ID)
                 .message("❌ " + errorText)
