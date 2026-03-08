@@ -1,12 +1,19 @@
 package de.mhus.nimbus.world.shared.world;
 
 import de.mhus.nimbus.shared.types.WorldId;
+import de.mhus.nimbus.world.shared.job.WJobService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -19,22 +26,30 @@ import java.util.Optional;
 public class WWorldInstanceService {
 
     private final WWorldInstanceRepository repository;
+    private final MongoTemplate mongoTemplate;
     private final WWorldService worldService;
+    private final WJobService jobService;
     private final List<WWorldInstanceListener> listeners;
 
     /**
      * Constructor with lazy initialization to avoid circular dependencies.
      *
      * @param repository The repository
+     * @param mongoTemplate The MongoTemplate for atomic operations
      * @param worldService The world service (lazy to break circular dependency)
+     * @param jobService The job service for scheduling async jobs (optional, lazy)
      * @param listeners List of listeners (lazy initialized)
      */
     public WWorldInstanceService(
             WWorldInstanceRepository repository,
+            MongoTemplate mongoTemplate,
             @Lazy WWorldService worldService,
+            @Lazy Optional<WJobService> jobService,
             @Lazy List<WWorldInstanceListener> listeners) {
         this.repository = repository;
+        this.mongoTemplate = mongoTemplate;
         this.worldService = worldService;
+        this.jobService = jobService.orElse(null);
         this.listeners = listeners;
     }
 
@@ -428,6 +443,94 @@ public class WWorldInstanceService {
         return repository.countByCreator(creator);
     }
 
+    // --- Atomic MongoTemplate operations for players ---
+
+    private Query queryByInstanceId(String instanceId) {
+        return new Query(Criteria.where("instanceId").is(instanceId));
+    }
+
+    /**
+     * Atomically add a player to the players list.
+     *
+     * @param instanceId The instanceId
+     * @param playerId The playerId to add
+     * @return true if the update was applied
+     */
+    public boolean addPlayerAtomic(String instanceId, String playerId) {
+        Update update = new Update()
+                .addToSet("players", playerId)
+                .set("updatedAt", Instant.now());
+        var result = mongoTemplate.updateFirst(queryByInstanceId(instanceId), update, WWorldInstance.class);
+        if (result.getModifiedCount() > 0) {
+            log.debug("Player added atomically: instanceId={}, playerId={}", instanceId, playerId);
+            return true;
+        }
+        log.warn("addPlayerAtomic failed: instanceId={}, playerId={}", instanceId, playerId);
+        return false;
+    }
+
+    /**
+     * Atomically remove a player from the players list.
+     *
+     * @param instanceId The instanceId
+     * @param playerId The playerId to remove
+     * @return true if the update was applied
+     */
+    public boolean removePlayerAtomic(String instanceId, String playerId) {
+        Update update = new Update()
+                .pull("players", playerId)
+                .set("updatedAt", Instant.now());
+        var result = mongoTemplate.updateFirst(queryByInstanceId(instanceId), update, WWorldInstance.class);
+        if (result.getModifiedCount() > 0) {
+            log.debug("Player removed atomically: instanceId={}, playerId={}", instanceId, playerId);
+            return true;
+        }
+        log.warn("removePlayerAtomic failed: instanceId={}, playerId={}", instanceId, playerId);
+        return false;
+    }
+
+    /**
+     * Atomically add a player to the activePlayers list and update lastAccessTime.
+     *
+     * @param instanceId The instanceId
+     * @param playerId The playerId to add
+     * @return true if the update was applied
+     */
+    public boolean addActivePlayerAtomic(String instanceId, String playerId) {
+        Update update = new Update()
+                .addToSet("activePlayers", playerId)
+                .set("lastAccessTime", Instant.now())
+                .set("updatedAt", Instant.now());
+        var result = mongoTemplate.updateFirst(queryByInstanceId(instanceId), update, WWorldInstance.class);
+        if (result.getModifiedCount() > 0) {
+            log.debug("Active player added atomically: instanceId={}, playerId={}", instanceId, playerId);
+            return true;
+        }
+        log.warn("addActivePlayerAtomic failed: instanceId={}, playerId={}", instanceId, playerId);
+        return false;
+    }
+
+    /**
+     * Atomically remove a player from the activePlayers list and update lastAccessTime.
+     *
+     * @param instanceId The instanceId
+     * @param playerId The playerId to remove
+     * @return true if the update was applied
+     */
+    public boolean removeActivePlayerAtomic(String instanceId, String playerId) {
+        Update update = new Update()
+                .pull("activePlayers", playerId)
+                .set("lastAccessTime", Instant.now())
+                .set("updatedAt", Instant.now());
+        var result = mongoTemplate.updateFirst(queryByInstanceId(instanceId), update, WWorldInstance.class);
+        if (result.getModifiedCount() > 0) {
+            log.debug("Active player removed atomically: instanceId={}, playerId={}", instanceId, playerId);
+            return true;
+        }
+        log.warn("removeActivePlayerAtomic failed: instanceId={}, playerId={}", instanceId, playerId);
+        return false;
+    }
+
     /**
      * Find all instances accessible by a player.
      * Includes instances where player is creator or in players list.
@@ -503,9 +606,8 @@ public class WWorldInstanceService {
 
             // Check if instance is now empty
             if (instance.hasNoActivePlayers()) {
-                log.info("Instance {} has no active players, deleting instance", instanceIdOrWorldId);
-                delete(instanceIdOrWorldId);
-                log.info("Instance {} deleted successfully", instanceIdOrWorldId);
+                log.info("Instance {} has no active players, scheduling deletion job", instanceIdOrWorldId);
+                scheduleDeleteInstanceJob(worldId, instanceIdOrWorldId);
             } else {
                 // Save updated instance
                 save(instance);
@@ -516,6 +618,33 @@ public class WWorldInstanceService {
                     playerId, instanceIdOrWorldId);
             return false;
         }
+    }
+
+    /**
+     * Schedule an async job to delete a world instance.
+     * The job is created on the base worldId (without instance) and receives
+     * the full instance worldId as parameter.
+     *
+     * @param instanceWorldId The WorldId object of the instance
+     * @param fullInstanceId The full instance worldId string
+     */
+    private void scheduleDeleteInstanceJob(WorldId instanceWorldId, String fullInstanceId) {
+        if (jobService == null) {
+            log.warn("WJobService not available, deleting instance synchronously: {}", fullInstanceId);
+            delete(fullInstanceId);
+            return;
+        }
+
+        String baseWorldId = instanceWorldId.toBaseWorldId().getId();
+        jobService.createJob(
+                baseWorldId,
+                "delete-world-instance",
+                "Delete instance " + instanceWorldId.getInstance(),
+                "delete-world-instance",
+                Map.of("instanceWorldId", fullInstanceId)
+        );
+        log.info("Scheduled delete-world-instance job: baseWorldId={}, instanceWorldId={}",
+                baseWorldId, fullInstanceId);
     }
 
     /**
