@@ -27,8 +27,11 @@ interface RenderedEntity {
   /** Entity ID */
   id: string;
 
-  /** Root mesh */
+  /** Root mesh (rotationNode - controls position/rotation) */
   mesh: Mesh;
+
+  /** Model root node (child of mesh, may be affected by animations) */
+  modelRoot?: any;
 
   /** Pathway lines (for debugging) */
   pathwayLines?: any;
@@ -364,6 +367,7 @@ export class EntityRenderService {
       const rendered: RenderedEntity = {
         id: entityId,
         mesh: rotationNode as any, // Store rotation node (controls position/rotation)
+        modelRoot: modelRootNode, // Store model root to reset animation bleed-through
         animations: animations.length > 0 ? animations : undefined,
         clonedMaterials: modifierResult.clonedMaterials.length > 0 ? modifierResult.clonedMaterials : undefined,
       };
@@ -482,6 +486,13 @@ export class EntityRenderService {
         const rotOffsetP = ('p' in rotOffset) ? (rotOffset as any).p : 0;
         (rendered.mesh as any).rotation.x = (rotation.p * Math.PI) / 180 + (rotOffsetP * Math.PI) / 180;
       }
+    }
+
+    // Reset model root rotation.z to prevent animation bleed-through
+    // Animations (e.g., walk cycle) can set rotation.z on the model root node,
+    // and AnimationGroup.stop() does not reset values. This causes sideways tilt.
+    if (rendered.modelRoot && 'rotation' in rendered.modelRoot) {
+      rendered.modelRoot.rotation.z = 0;
     }
   }
 
