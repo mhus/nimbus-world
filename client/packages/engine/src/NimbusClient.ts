@@ -41,6 +41,7 @@ import { EntityStatusUpdateMessageHandler } from './network/handlers/EntityStatu
 import { CommandMessageHandler } from './network/handlers/CommandMessageHandler';
 import { CommandResultHandler } from './network/handlers/CommandResultHandler';
 import { ServerCommandHandler } from './network/handlers/ServerCommandHandler';
+import { BlockProgressStatusHandler } from './network/handlers/BlockProgressStatusHandler';
 
 import {CommandsFactory} from "./commands/CommandsFactory";
 
@@ -310,6 +311,11 @@ async function initializeCoreServices(appContext: AppContext): Promise<void> {
     const itemBlockUpdateHandler = new ItemBlockUpdateHandler(chunkService);
     networkService.registerHandler(itemBlockUpdateHandler);
     logger.debug('🔵 ItemBlockUpdateHandler registered for message type: b.iu');
+
+    // Register BlockProgressStatusHandler
+    const blockProgressStatusHandler = new BlockProgressStatusHandler(chunkService);
+    networkService.registerHandler(blockProgressStatusHandler);
+    logger.debug('BlockProgressStatusHandler registered for message type: b.ps');
 
     // Register EntityPathwayMessageHandler
     const entityPathwayHandler = new EntityPathwayMessageHandler(entityService);

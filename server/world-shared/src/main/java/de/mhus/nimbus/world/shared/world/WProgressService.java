@@ -1,5 +1,6 @@
 package de.mhus.nimbus.world.shared.world;
 
+import de.mhus.nimbus.world.shared.redis.BlockStatusPublisher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -25,6 +26,7 @@ public class WProgressService {
 
     private final WProgressRepository repository;
     private final MongoTemplate mongoTemplate;
+    private final BlockStatusPublisher blockStatusPublisher;
 
     /**
      * Find all progress entries for a world.
@@ -295,6 +297,7 @@ public class WProgressService {
                 .setOnInsert("createdAt", Instant.now());
 
         mongoTemplate.upsert(query, update, WProgress.class);
+        blockStatusPublisher.publishStatusChange(worldId, chunkKey, blockKey, status);
         log.debug("Set block status: worldId={}, chunk={}, block={}, status={}", worldId, chunkKey, blockKey, status);
     }
 
@@ -317,6 +320,7 @@ public class WProgressService {
                 .set("updatedAt", Instant.now());
 
         mongoTemplate.updateFirst(query, update, WProgress.class);
+        blockStatusPublisher.publishStatusChange(worldId, chunkKey, blockKey, null);
         log.debug("Removed block status: worldId={}, chunk={}, block={}", worldId, chunkKey, blockKey);
     }
 

@@ -23,6 +23,7 @@ import {
     type AudioDefinition, ItemBlockRef,
     normalizeBlockTypeId,
     getBlockTypeGroup, BlockType, type AreaData, HeightData,
+    type BlockProgressStatusData,
 } from '@nimbus/shared';
 import type { AppContext } from '../AppContext';
 import type { NetworkService } from './NetworkService';
@@ -976,6 +977,59 @@ export class ChunkService {
     } catch (error) {
       ExceptionHandler.handle(error, 'ChunkService.onBlockUpdate', {
         count: blocks.length,
+      });
+    }
+  }
+
+  /**
+   * Handle block progress status update from server (b.ps).
+   * Updates statusData in the affected chunk, re-merges block modifiers, and triggers re-rendering.
+   *
+   * @param data - Block progress status data with chunk coordinates and status map
+   */
+  async onBlockProgressStatusUpdate(data: BlockProgressStatusData): Promise<void> {
+    try {
+      const chunkKey = getChunkKey(data.cx, data.cz);
+      const clientChunk = this.chunks.get(chunkKey);
+      if (!clientChunk) {
+        logger.debug('Block progress status update for unloaded chunk, ignoring', { cx: data.cx, cz: data.cz });
+        return;
+      }
+
+      const blockTypeService = this.appContext.services.blockType!;
+      let changed = false;
+
+      for (const [posKey, status] of Object.entries(data.s)) {
+        if (status === null || status === undefined) {
+          // Remove status
+          clientChunk.data.statusData.delete(posKey);
+        } else {
+          // Set status
+          clientChunk.data.statusData.set(posKey, status);
+        }
+
+        // Re-merge modifier for the affected block
+        const clientBlock = clientChunk.data.data.get(posKey);
+        if (clientBlock) {
+          const blockType = await blockTypeService.getBlockType(clientBlock.block.blockTypeId);
+          if (blockType) {
+            clientBlock.currentModifier = mergeBlockModifier(
+              this.appContext, clientBlock.block, blockType, status ?? undefined
+            );
+            clientBlock.isDirty = true;
+            changed = true;
+          }
+        }
+      }
+
+      if (changed) {
+        clientChunk.isRendered = false;
+        this.emit('chunk:updated', clientChunk);
+        logger.debug('Block progress status applied', { chunkKey, entries: Object.keys(data.s).length });
+      }
+    } catch (error) {
+      ExceptionHandler.handle(error, 'ChunkService.onBlockProgressStatusUpdate', {
+        cx: data.cx, cz: data.cz,
       });
     }
   }

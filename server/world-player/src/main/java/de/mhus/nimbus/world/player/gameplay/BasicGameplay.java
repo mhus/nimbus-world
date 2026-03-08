@@ -84,6 +84,7 @@ public class BasicGameplay implements Gameplay {
             actions.put("show.coordinates", new ShowCoordinatesAction(this));
             actions.put("show.document", new ShowDocumentAction(this));
             actions.put("open.chest", new OpenChestAction(this));
+            actions.put("door", new DoorAction(this));
     }
 
     @Override
