@@ -157,6 +157,7 @@ import {
     CameraLightRangeCommand,
     CameraLightInfoCommand
 } from "./camera";
+import {RenderScaleCommand} from "./RenderScaleCommand";
 
 // Initialize logger (basic setup before ClientService)
 const logger = getLogger('CommandsFactory');
@@ -370,6 +371,9 @@ export class CommandsFactory {
         commandService.registerHandler(new CameraLightIntensityCommand(appContext));
         commandService.registerHandler(new CameraLightRangeCommand(appContext));
         commandService.registerHandler(new CameraLightInfoCommand(appContext));
+
+        // Register render scale command
+        commandService.registerHandler(new RenderScaleCommand(appContext));
 
         logger.debug('CommandService initialized with commands');
 
