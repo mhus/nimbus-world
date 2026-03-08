@@ -202,8 +202,8 @@
                 </select>
               </div>
 
-              <!-- Zone Selection (shown for EDITOR when zones exist) -->
-              <div v-if="selectedCharacter && selectedActor === 'EDITOR'" class="form-control">
+              <!-- Zone Selection (shown for EDITOR and SUPPORT) -->
+              <div v-if="selectedCharacter && (selectedActor === 'EDITOR' || selectedActor === 'SUPPORT')" class="form-control">
                 <label class="label">
                   <span class="label-text">Zone</span>
                 </label>
@@ -218,8 +218,8 @@
                 </select>
               </div>
 
-              <!-- Instance Selection (shown for PLAYER) -->
-              <div v-if="selectedCharacter && selectedActor === 'PLAYER'" class="form-control">
+              <!-- Instance Selection (shown for PLAYER and SUPPORT) -->
+              <div v-if="selectedCharacter && (selectedActor === 'PLAYER' || selectedActor === 'SUPPORT')" class="form-control">
                 <label class="label">
                   <span class="label-text">Instance</span>
                 </label>
@@ -227,7 +227,7 @@
                   <span class="loading loading-spinner loading-sm"></span>
                 </div>
                 <select v-else v-model="selectedInstance" class="select select-bordered w-full">
-                  <option value="">New Instance</option>
+                  <option v-if="selectedActor === 'PLAYER'" value="">New Instance</option>
                   <option v-for="inst in instances" :key="inst.instanceId" :value="inst.instanceId">
                     {{ inst.title }} ({{ inst.instanceId }})
                   </option>
@@ -412,11 +412,11 @@
               <div v-if="loginType === 'session'">
                 <strong>Actor:</strong> {{ selectedActor }}
               </div>
-              <div v-if="loginType === 'session' && selectedActor === 'EDITOR'">
+              <div v-if="loginType === 'session' && (selectedActor === 'EDITOR' || selectedActor === 'SUPPORT')">
                 <strong>Zone:</strong> {{ selectedZone ? selectedZone : 'Main World' }}
               </div>
-              <div v-if="loginType === 'session' && selectedActor === 'PLAYER'">
-                <strong>Instance:</strong> {{ selectedInstance ? selectedInstance : 'New Instance' }}
+              <div v-if="loginType === 'session' && (selectedActor === 'PLAYER' || selectedActor === 'SUPPORT')">
+                <strong>Instance:</strong> {{ selectedInstance ? selectedInstance : (selectedActor === 'PLAYER' ? 'New Instance' : 'None') }}
               </div>
               <div v-if="loginType === 'session'">
                 <strong>View Distance:</strong> {{ viewDistance }} (Render: {{ viewDistance - 1 }}, Unload: {{ viewDistance }})
@@ -808,10 +808,10 @@ const loadZones = async (worldId: string) => {
 /**
  * Load instances for the selected player in the selected world
  */
-const loadInstances = async (worldId: string, playerId: string) => {
+const loadInstances = async (worldId: string, playerId?: string, all: boolean = false) => {
   loadingInstances.value = true;
   try {
-    instances.value = await devLoginService.getInstances(worldId, playerId);
+    instances.value = await devLoginService.getInstances(worldId, playerId, all);
   } catch (e) {
     console.error('[DevLogin] Failed to load instances:', e);
     instances.value = [];
@@ -882,10 +882,16 @@ const handleLogin = async () => {
         entryPointStr = 'world';
       }
 
-      // Determine effective worldId (include zone for editors)
+      // Determine effective worldId (include zone for editors and support)
       let effectiveWorldId = selectedWorld.value.worldId;
-      if (selectedActor.value === 'EDITOR' && selectedZone.value) {
+      if ((selectedActor.value === 'EDITOR' || selectedActor.value === 'SUPPORT') && selectedZone.value) {
         effectiveWorldId = selectedZone.value;
+      }
+
+      // Instance: PLAYER can rejoin or create new, SUPPORT can only join existing
+      let instanceId: string | undefined;
+      if (selectedInstance.value) {
+        instanceId = selectedInstance.value;
       }
 
       request = {
@@ -895,7 +901,7 @@ const handleLogin = async () => {
         characterId: selectedCharacter.value.id,
         actor: selectedActor.value,
         entryPoint: entryPointStr,
-        instanceId: selectedActor.value === 'PLAYER' && selectedInstance.value ? selectedInstance.value : undefined,
+        instanceId,
       };
     } else {
       if (!selectedAgentUser.value) {
@@ -978,16 +984,19 @@ watch(selectedActor, (newActor) => {
 
   if (!selectedWorld.value || !selectedCharacter.value) return;
 
-  if (newActor === 'EDITOR') {
+  if (newActor === 'EDITOR' || newActor === 'SUPPORT') {
     loadZones(selectedWorld.value.worldId);
-  } else if (newActor === 'PLAYER' && selectedSessionUser.value) {
+  }
+  if (newActor === 'PLAYER' && selectedSessionUser.value) {
     const playerId = selectedSessionUser.value.username + ':' + selectedCharacter.value.id;
     loadInstances(selectedWorld.value.worldId, playerId);
+  } else if (newActor === 'SUPPORT') {
+    loadInstances(selectedWorld.value.worldId, undefined, true);
   }
 });
 
 /**
- * When character changes, reload instances for PLAYER or zones for EDITOR
+ * When character changes, reload zones/instances
  */
 watch(selectedCharacter, (newChar) => {
   selectedZone.value = '';
@@ -995,11 +1004,14 @@ watch(selectedCharacter, (newChar) => {
 
   if (!newChar || !selectedWorld.value) return;
 
-  if (selectedActor.value === 'EDITOR') {
+  if (selectedActor.value === 'EDITOR' || selectedActor.value === 'SUPPORT') {
     loadZones(selectedWorld.value.worldId);
-  } else if (selectedActor.value === 'PLAYER' && selectedSessionUser.value) {
+  }
+  if (selectedActor.value === 'PLAYER' && selectedSessionUser.value) {
     const playerId = selectedSessionUser.value.username + ':' + newChar.id;
     loadInstances(selectedWorld.value.worldId, playerId);
+  } else if (selectedActor.value === 'SUPPORT') {
+    loadInstances(selectedWorld.value.worldId, undefined, true);
   }
 });
 

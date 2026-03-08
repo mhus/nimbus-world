@@ -129,15 +129,22 @@ public class AccessService {
 
     /**
      * Retrieves instances for a player in a specific world.
+     * If allInstances is true, returns all instances (for SUPPORT actors).
+     * Otherwise, only returns instances where the player is registered.
      *
      * @param worldId The main world's worldId
-     * @param playerId The playerId
-     * @return List of instances where the player is registered
+     * @param playerId The playerId (used for filtering when allInstances=false)
+     * @param allInstances If true, return all instances regardless of player access
+     * @return List of matching instances
      */
     @Transactional(readOnly = true)
-    public List<WWorldInstance> getInstancesForPlayer(String worldId, String playerId) {
-        log.debug("Fetching instances for player={} in world={}", playerId, worldId);
-        return worldInstanceService.findByWorldId(worldId).stream()
+    public List<WWorldInstance> getInstancesForPlayer(String worldId, String playerId, boolean allInstances) {
+        log.debug("Fetching instances for player={} in world={} (allInstances={})", playerId, worldId, allInstances);
+        var all = worldInstanceService.findByWorldId(worldId);
+        if (allInstances) {
+            return all;
+        }
+        return all.stream()
                 .filter(i -> i.isPlayerAllowed(playerId))
                 .toList();
     }
@@ -311,31 +318,36 @@ public class AccessService {
         // Determine effective worldId (might be an instanceId for instanceable worlds)
         String effectiveWorldId = worldId.getId();
 
-        // Auto-create or rejoin instance for PLAYER actors in instanceable worlds
-        if (world.isInstanceable() && request.getActor() == ActorRoles.PLAYER) {
-            if (request.getInstanceId() != null && !request.getInstanceId().isBlank()) {
-                // Rejoin existing instance
-                var existingInstance = worldInstanceService.findByInstanceIdWithValidation(request.getInstanceId())
-                        .orElseThrow(() -> new IllegalArgumentException("Instance not found: " + request.getInstanceId()));
-                if (!existingInstance.isPlayerAllowed(playerId.getId())) {
-                    throw new IllegalArgumentException("Player not allowed in instance: " + request.getInstanceId());
-                }
-                worldInstanceService.addActivePlayerAtomic(existingInstance.getInstanceId(), playerId.getId());
-                effectiveWorldId = existingInstance.getWorldWithInstanceId();
-                log.info("Player rejoining existing instance: instanceId={}, playerId={}",
-                        existingInstance.getInstanceId(), playerId.getId());
-            } else {
-                // Create new instance
-                WWorldInstance instance = worldInstanceService.createInstanceForPlayer(
-                        worldId.getId(),
-                        world.getPublicData().getTitle(),
-                        playerId.getId(),
-                        character.getPublicData().getTitle()
-                );
-                effectiveWorldId = instance.getWorldWithInstanceId();
-                log.info("Auto-created world instance for player: instanceId={}, worldId={}, playerId={}",
-                        instance.getInstanceId(), worldId.getId(), playerId.getId());
+        // Remove player from all other instances of this world (player can only be in one instance)
+        removePlayerFromAllInstances(worldId.getId(), playerId.getId());
+
+        // Handle instance selection based on actor
+        if (request.getInstanceId() != null && !request.getInstanceId().isBlank()) {
+            // Explicit instance selected (PLAYER rejoin or SUPPORT join)
+            var existingInstance = worldInstanceService.findByInstanceIdWithValidation(request.getInstanceId())
+                    .orElseThrow(() -> new IllegalArgumentException("Instance not found: " + request.getInstanceId()));
+
+            // PLAYER: must be in players list; SUPPORT: can join any instance
+            if (request.getActor() == ActorRoles.PLAYER && !existingInstance.isPlayerAllowed(playerId.getId())) {
+                throw new IllegalArgumentException("Player not allowed in instance: " + request.getInstanceId());
             }
+
+            worldInstanceService.addActivePlayerAtomic(existingInstance.getInstanceId(), playerId.getId());
+            effectiveWorldId = existingInstance.getWorldWithInstanceId();
+            log.info("{} joining instance: instanceId={}, playerId={}",
+                    request.getActor(), existingInstance.getInstanceId(), playerId.getId());
+
+        } else if (world.isInstanceable() && request.getActor() == ActorRoles.PLAYER) {
+            // PLAYER without instanceId: auto-create new instance
+            WWorldInstance instance = worldInstanceService.createInstanceForPlayer(
+                    worldId.getId(),
+                    world.getPublicData().getTitle(),
+                    playerId.getId(),
+                    character.getPublicData().getTitle()
+            );
+            effectiveWorldId = instance.getWorldWithInstanceId();
+            log.info("Auto-created world instance for player: instanceId={}, worldId={}, playerId={}",
+                    instance.getInstanceId(), worldId.getId(), playerId.getId());
         }
 
         // Create session with effective worldId (original worldId or instanceId)
@@ -366,6 +378,20 @@ public class AccessService {
                 .sessionId(session.getId())
                 .playerId(playerId.getId())
                 .build();
+    }
+
+    /**
+     * Remove a player from all instances of the given world.
+     * Ensures a player is only active in one instance at a time.
+     */
+    private void removePlayerFromAllInstances(String worldId, String playerId) {
+        var instances = worldInstanceService.findByWorldId(worldId);
+        for (var instance : instances) {
+            if (instance.getActivePlayers() != null && instance.getActivePlayers().contains(playerId)) {
+                worldInstanceService.removeActivePlayerAtomic(instance.getInstanceId(), playerId);
+                log.info("Removed player {} from instance {} (switching instance)", playerId, instance.getInstanceId());
+            }
+        }
     }
 
     private String findJumpUrl(AccessSettings properties, DevSessionLoginRequest request, String sessionId, String effectiveWorldId) {

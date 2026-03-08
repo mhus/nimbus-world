@@ -105,10 +105,14 @@ class DevLoginService {
   }
 
   /**
-   * Get instances for a player in a world
+   * Get instances for a player in a world.
+   * If all=true, returns all instances (for SUPPORT actors).
    */
-  async getInstances(worldId: string, playerId: string): Promise<WorldInstance[]> {
-    return apiService.get<WorldInstance[]>('/control/aaa/devlogin/instances', { worldId, playerId });
+  async getInstances(worldId: string, playerId?: string, all: boolean = false): Promise<WorldInstance[]> {
+    const params: any = { worldId };
+    if (playerId) params.playerId = playerId;
+    if (all) params.all = true;
+    return apiService.get<WorldInstance[]>('/control/aaa/devlogin/instances', params);
   }
 
   /**

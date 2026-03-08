@@ -145,16 +145,17 @@ public class ControlAaaController extends BaseEditorController {
     @GetMapping("/devlogin/instances")
     public ResponseEntity<?> getDevLoginInstances(
             @RequestParam String worldId,
-            @RequestParam String playerId
+            @RequestParam(required = false) String playerId,
+            @RequestParam(required = false, defaultValue = "false") boolean all
     ) {
-        log.debug("GET /control/aaa/devlogin/instances - worldId={}, playerId={}", worldId, playerId);
+        log.debug("GET /control/aaa/devlogin/instances - worldId={}, playerId={}, all={}", worldId, playerId, all);
 
         ResponseEntity<?> validation = validateId(worldId, "worldId");
         if (validation != null) return validation;
 
         try {
-            var instances = accessService.getInstancesForPlayer(worldId, playerId);
-            log.debug("Returning {} instances for player={} in world={}", instances.size(), playerId, worldId);
+            var instances = accessService.getInstancesForPlayer(worldId, playerId, all);
+            log.debug("Returning {} instances for world={}", instances.size(), worldId);
             return ResponseEntity.ok(instances);
         } catch (Exception e) {
             log.error("Failed to load instances", e);
