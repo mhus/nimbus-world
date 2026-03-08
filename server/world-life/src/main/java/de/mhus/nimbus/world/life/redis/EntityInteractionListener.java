@@ -55,24 +55,28 @@ public class EntityInteractionListener {
 
     @PostConstruct
     public void initialize() {
+        worldDiscoveryService.addWorldActivationListener(this::subscribeToWorld);
         updateSubscriptions();
     }
 
+    private synchronized void subscribeToWorld(WorldId worldId) {
+        if (subscribedWorlds.contains(worldId)) return;
+        redisMessaging.subscribe(worldId.getId(), "e.int", (topic, message) -> handleEntityInteraction(worldId, message));
+        subscribedWorlds.add(worldId);
+        log.info("Subscribed to entity interactions for world: {}", worldId);
+    }
+
     /**
-     * Periodically check for new worlds and update subscriptions.
-     * Runs every minute.
+     * Periodically check for removed worlds and clean up subscriptions.
+     * Subscriptions are now primarily handled via WorldActivationListener callback.
      */
-    @Scheduled(fixedDelay = 1000)
+    @Scheduled(fixedDelay = 10000)
     public void updateSubscriptions() {
         Set<WorldId> knownWorlds = worldDiscoveryService.getKnownWorldIds();
 
-        // Subscribe to new worlds
+        // Backup: subscribe to any worlds not yet subscribed
         for (WorldId worldId : knownWorlds) {
-            if (!subscribedWorlds.contains(worldId)) {
-                redisMessaging.subscribe(worldId.getId(), "e.int", (topic, message) -> handleEntityInteraction(worldId, message));
-                subscribedWorlds.add(worldId);
-                log.info("Subscribed to entity interactions for world: {}", worldId);
-            }
+            subscribeToWorld(worldId);
         }
 
         // Unsubscribe from removed worlds

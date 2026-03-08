@@ -51,19 +51,28 @@ public class VitalDeltaBroadcastListener {
 
     @PostConstruct
     public void initialize() {
+        worldDiscoveryService.addWorldActivationListener(this::subscribeToWorld);
         updateSubscriptions();
     }
 
-    @Scheduled(fixedDelay = 1000)
+    private synchronized void subscribeToWorld(WorldId worldId) {
+        if (subscribedWorlds.contains(worldId)) return;
+        redisMessaging.subscribe(worldId.getId(), "v.d.e", (topic, message) -> handleVitalDelta(worldId, message));
+        subscribedWorlds.add(worldId);
+        log.info("Subscribed to entity vital deltas for world: {}", worldId);
+    }
+
+    /**
+     * Periodically check for removed worlds and clean up subscriptions.
+     * Subscriptions are now primarily handled via WorldActivationListener callback.
+     */
+    @Scheduled(fixedDelay = 10000)
     public void updateSubscriptions() {
         Set<WorldId> knownWorlds = worldDiscoveryService.getKnownWorldIds();
 
+        // Backup: subscribe to any worlds not yet subscribed
         for (WorldId worldId : knownWorlds) {
-            if (!subscribedWorlds.contains(worldId)) {
-                redisMessaging.subscribe(worldId.getId(), "v.d.e", (topic, message) -> handleVitalDelta(worldId, message));
-                subscribedWorlds.add(worldId);
-                log.info("Subscribed to entity vital deltas for world: {}", worldId);
-            }
+            subscribeToWorld(worldId);
         }
 
         Set<WorldId> toRemove = new HashSet<>(subscribedWorlds);

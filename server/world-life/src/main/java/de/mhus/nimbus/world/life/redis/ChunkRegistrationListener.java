@@ -45,24 +45,33 @@ public class ChunkRegistrationListener {
 
     @PostConstruct
     public void initialize() {
+        worldDiscoveryService.addWorldActivationListener(this::subscribeToWorld);
         updateSubscriptions();
     }
 
     /**
-     * Periodically check for new worlds and update subscriptions.
-     * Runs every minute.
+     * Subscribe to chunk registrations for a specific world.
+     * Called immediately from WorldDiscoveryService when a new world is activated.
      */
-    @Scheduled(fixedDelay = 1000)
+    private synchronized void subscribeToWorld(WorldId worldId) {
+        if (subscribedWorlds.contains(worldId)) return;
+        redisMessaging.subscribe(worldId.getId(), "c.r", (topic, message) -> handleChunkRegistration(worldId, message));
+        subscribedWorlds.add(worldId);
+        log.info("Subscribed to chunk registrations for world: {}", worldId);
+    }
+
+    /**
+     * Periodically check for new worlds and clean up removed ones.
+     * Subscriptions are now primarily handled via WorldActivationListener callback,
+     * this serves as backup and handles unsubscription.
+     */
+    @Scheduled(fixedDelay = 10000)
     public void updateSubscriptions() {
         Set<WorldId> knownWorlds = worldDiscoveryService.getKnownWorldIds();
 
-        // Subscribe to new worlds
+        // Subscribe to any worlds not yet subscribed (backup)
         for (WorldId worldId : knownWorlds) {
-            if (!subscribedWorlds.contains(worldId)) {
-                redisMessaging.subscribe(worldId.getId(), "c.r", (topic, message) -> handleChunkRegistration(worldId, message));
-                subscribedWorlds.add(worldId);
-                log.info("Subscribed to chunk registrations for world: {}", worldId);
-            }
+            subscribeToWorld(worldId);
         }
 
         // Unsubscribe from removed worlds

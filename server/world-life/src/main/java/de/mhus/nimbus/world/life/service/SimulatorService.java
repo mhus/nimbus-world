@@ -124,7 +124,7 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
         Map<String, Set<String>> chunkRefs = entityActiveChunkRefs
                 .computeIfAbsent(worldId, k -> new ConcurrentHashMap<>());
 
-        int loaded = 0;
+        List<SimulationState> newlyLoaded = new ArrayList<>();
         for (WEntity entity : entities) {
             String entityId = entity.getEntityId();
 
@@ -138,14 +138,57 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
             entityChunks.addAll(chunkKeys);
 
             // Only create simulation state if not already loaded
-            if (worldStates.putIfAbsent(entityId, createSimulationState(worldId, entity)) == null) {
-                loaded++;
+            SimulationState state = createSimulationState(worldId, entity);
+            if (worldStates.putIfAbsent(entityId, state) == null) {
+                newlyLoaded.add(state);
             }
         }
 
-        if (loaded > 0) {
+        if (!newlyLoaded.isEmpty()) {
             log.info("World {}: Chunk activation loaded {} new entities ({} chunks activated)",
-                    worldId, loaded, added.size());
+                    worldId, newlyLoaded.size(), added.size());
+            // Generate and publish initial pathways immediately so clients see entities right away
+            generateInitialPathways(worldId, newlyLoaded);
+        }
+    }
+
+    /**
+     * Generate and publish initial pathways for newly loaded entities.
+     * Called immediately after chunk activation to avoid waiting for the next simulation tick.
+     */
+    private void generateInitialPathways(WorldId worldId, List<SimulationState> newStates) {
+        WWorld world = getCachedWorld(worldId);
+        if (world == null) return;
+
+        long currentTime = System.currentTimeMillis();
+        List<EntityPathway> pathways = new ArrayList<>();
+
+        for (SimulationState state : newStates) {
+            WEntity entity = state.getEntity();
+            String entityId = entity.getEntityId();
+
+            try {
+                // Try to claim ownership
+                String entityChunk = BlockUtil.toChunkKey(world, entity.getPosition());
+                if (!ownershipService.claimEntity(worldId, entityId, entityChunk)) {
+                    continue;
+                }
+
+                // Generate initial pathway
+                Optional<EntityPathway> pathway = simulateEntity(entity, state, currentTime, worldId);
+                pathway.ifPresent(pathways::add);
+
+            } catch (Exception e) {
+                log.warn("World {}: Failed to generate initial pathway for entity {}: {}",
+                        worldId, entityId, e.getMessage());
+            }
+        }
+
+        if (!pathways.isEmpty()) {
+            Set<ChunkCoordinate> affectedChunks = calculateAffectedChunks(world, pathways);
+            pathwayPublisher.publishPathways(worldId, pathways, affectedChunks);
+            log.info("World {}: Published {} initial pathways for newly loaded entities",
+                    worldId, pathways.size());
         }
     }
 
