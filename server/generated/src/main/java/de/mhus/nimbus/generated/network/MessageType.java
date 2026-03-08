@@ -15,6 +15,7 @@ public enum MessageType implements de.mhus.nimbus.types.TsEnum {
     CHUNK_UPDATE("c.u"),
     BLOCK_UPDATE("b.u"),
     BLOCK_STATUS_UPDATE("b.s.u"),
+    BLOCK_PROGRESS_STATUS_UPDATE("b.ps"),
     ITEM_BLOCK_UPDATE("b.iu"),
     BLOCK_INTERACTION("b.int"),
     ENTITY_UPDATE("e.u"),

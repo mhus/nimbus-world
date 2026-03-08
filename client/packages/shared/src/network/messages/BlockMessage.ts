@@ -42,6 +42,28 @@ export interface BlockStatusUpdate {
 export type BlockStatusUpdateMessage = BaseMessage<BlockStatusUpdate[]>;
 
 /**
+ * Block progress status update data (Server -> Client)
+ * Sends block status changes from WProgress to client.
+ * Keys are blockIds (string), values are status strings or null for removal.
+ */
+export interface BlockProgressStatusData {
+  /** Chunk X coordinate */
+  cx: number; // javaType: int
+
+  /** Chunk Z coordinate */
+  cz: number; // javaType: int
+
+  /** Block status map: blockId -> status (null = removed) */
+  s: Record<string, string | null>; // javaType: java.util.Map<String,String>
+}
+
+/**
+ * Block progress status update (Server -> Client)
+ * Server sends block status changes from world progress data.
+ */
+export type BlockProgressStatusMessage = BaseMessage<BlockProgressStatusData>;
+
+/**
  * Block interaction data (Client -> Server)
  */
 export interface BlockInteractionData {

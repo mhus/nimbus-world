@@ -1,6 +1,7 @@
 package de.mhus.nimbus.world.shared.world;
 
 import de.mhus.nimbus.generated.types.Block;
+import de.mhus.nimbus.generated.types.Vector2Int;
 import de.mhus.nimbus.generated.types.Vector3;
 import de.mhus.nimbus.generated.types.Vector3Int;
 import de.mhus.nimbus.shared.utils.TypeUtil;
@@ -86,6 +87,15 @@ public class BlockUtil {
         int cz = world.getChunkZ(position.getZ());
         return cx + ":" + cz;
     }
+
+    public static String toChunkKey(Vector2Int position) {
+        return position.getX() + ":" + position.getZ();
+    }
+
+    public static String toChunkKey(int chunkX, int xhunkZ) {
+        return chunkX + ":" + xhunkZ;
+    }
+
 
     public static Block createAirBlock(int x, int y, int z) {
         return Block.builder().blockTypeId("0")

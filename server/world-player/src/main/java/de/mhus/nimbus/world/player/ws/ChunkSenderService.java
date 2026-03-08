@@ -12,6 +12,7 @@ import de.mhus.nimbus.world.shared.layer.WEditCache;
 import de.mhus.nimbus.world.shared.layer.WEditCacheService;
 import de.mhus.nimbus.world.shared.world.BlockUtil;
 import de.mhus.nimbus.world.shared.world.WChunkService;
+import de.mhus.nimbus.world.shared.world.WProgressService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -38,6 +39,7 @@ public class ChunkSenderService {
 
     private final WChunkService chunkService;
     private final WEditCacheService editCacheService;
+    private final WProgressService progressService;
     private final ExecutionService executionService;
     private final ObjectMapper objectMapper;
 
@@ -73,8 +75,15 @@ public class ChunkSenderService {
         try {
             ArrayNode responseChunks = objectMapper.createArrayNode();
 
+            // Batch-load block status for all requested chunks
+            List<String> chunkKeys = chunks.stream()
+                    .map(c -> BlockUtil.toChunkKey(c.cx(), c.cz()))
+                    .toList();
+            Map<String, Map<String, Object>> blockStatusMap =
+                    progressService.findBlockStatusForChunks(session.getWorldId().getId(), chunkKeys);
+
             for (ChunkCoord coord : chunks) {
-                String chunkKey = coord.cx() + ":" + coord.cz();
+                String chunkKey = BlockUtil.toChunkKey(coord.cx(), coord.cz());
 
                 // First find WChunk entity
                 var chunkOpt = chunkService.find(session.getWorldId(), chunkKey);
@@ -93,7 +102,8 @@ public class ChunkSenderService {
                         continue;
                     }
 
-                    // Send the generated chunk directly (uncompressed, not saved to DB)
+                    // Apply block status and send the generated chunk directly (uncompressed, not saved to DB)
+                    applyBlockStatus(dto, blockStatusMap, chunkKey);
                     responseChunks.add(objectMapper.valueToTree(dto));
                     log.debug("Sent generated chunk (not saved): cx={}, cz={}, blocks={}",
                             coord.cx(), coord.cz(), dto.getB() != null ? dto.getB().size() : 0);
@@ -108,6 +118,9 @@ public class ChunkSenderService {
                     log.warn("Failed to convert chunk to transfer object: chunkKey={}", chunkKey);
                     continue;
                 }
+
+                // Apply block status overrides
+                applyBlockStatus(dto, blockStatusMap, chunkKey);
 
                 // Handle EDITOR overlays from WEditCache (requires loading ChunkData)
                 if (session.isEditActor() && hasOverlayData(session.getWorldId(), chunkKey)) {
@@ -190,6 +203,9 @@ public class ChunkSenderService {
         header.put("cz", dto.getCz());
         if (dto.getI() != null && !dto.getI().isEmpty()) {
             header.put("i", dto.getI());
+        }
+        if (dto.getS() != null && !dto.getS().isEmpty()) {
+            header.put("s", dto.getS());
         }
 
         String headerJson = objectMapper.writeValueAsString(header);
@@ -283,6 +299,20 @@ public class ChunkSenderService {
         } catch (Exception e) {
             log.error("Failed to apply WEditCache overlays: chunk={}:{}, worldId={}",
                     chunkData.getCx(), chunkData.getCz(), worldId, e);
+        }
+    }
+
+    /**
+     * Apply block status from WProgress to DTO if available.
+     */
+    private void applyBlockStatus(ChunkDataTransferObject dto, Map<String, Map<String, Object>> blockStatusMap, String chunkKey) {
+        var statusData = blockStatusMap.get(chunkKey);
+        if (statusData != null && !statusData.isEmpty()) {
+            Map<String, String> s = new HashMap<>();
+            for (var entry : statusData.entrySet()) {
+                s.put(entry.getKey(), String.valueOf(entry.getValue()));
+            }
+            dto.setS(s);
         }
     }
 

@@ -48,6 +48,11 @@ public interface WProgressRepository extends MongoRepository<WProgress, String> 
     void deleteByWorldIdAndPlayerId(String worldId, String playerId);
 
     /**
+     * Find progress entries by worldId, type, and a list of quest values.
+     */
+    List<WProgress> findByWorldIdAndTypeAndQuestIn(String worldId, String type, List<String> quests);
+
+    /**
      * Delete all progress for a world.
      * Used for instance cleanup (hard delete of all instance-specific data).
      */

@@ -55,6 +55,9 @@ export interface ChunkDataTransferObject {
 
   c?: Uint8Array; // javaType: byte[]
 
+  /** Block status overrides. Key: world coordinates "x,y,z", Value: status string */
+  s?: Record<string, string>; // javaType: java.util.Map<String,String>
+
   /**
    * Indicates that the chunk is denied access
    * default is false

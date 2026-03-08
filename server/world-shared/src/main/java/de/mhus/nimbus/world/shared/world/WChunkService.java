@@ -225,51 +225,6 @@ public class WChunkService implements StorageProvider {
     }
 
     /**
-     * Streams chunk content directly to HTTP response without loading into memory.
-     * Verhindert Memory-Probleme bei großen Chunks.
-     * Filters out instances.
-     */
-    @Transactional(readOnly = true)
-    public boolean streamToResponse(WorldId worldId, String chunkKey, jakarta.servlet.http.HttpServletResponse response) {
-        if (worldId.isCollection() || worldId.isInstance()) {
-            throw new IllegalArgumentException("Chunks können nur für Welten/Zonen gespeichert werden, nicht für Collections/Instanzen");
-        }
-
-        WChunk chunk = repository.findByWorldIdAndChunk(worldId.getId(), chunkKey).orElse(null);
-
-        if (chunk == null || chunk.getStorageId() == null) {
-            return false;
-        }
-
-        try (InputStream inputStream = storageService.load(chunk.getStorageId())) {
-            if (inputStream == null) {
-                return false;
-            }
-            InputStream stream = inputStream;
-            if (chunk.isCompressed()) {
-                stream = new GZIPInputStream(inputStream);
-            }
-
-            // Set content type and headers
-            response.setContentType("application/json");
-            response.setCharacterEncoding("UTF-8");
-
-            // Stream direkt zum Client ohne Memory-Belastung
-            try (OutputStream outputStream = response.getOutputStream()) {
-                stream.transferTo(outputStream);
-                outputStream.flush();
-            }
-
-            log.debug("Chunk erfolgreich gestreamt chunkKey={} world={}", chunkKey, worldId.getId());
-            return true;
-
-        } catch (Exception e) {
-            log.warn("Fehler beim Streamen des Chunks chunkKey={} world={}", chunkKey, worldId.getId(), e);
-            return false;
-        }
-    }
-
-    /**
      * Load chunk data.
      * Filters out instances.
      */

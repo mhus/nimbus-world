@@ -83,6 +83,22 @@ public class WProgressService {
     }
 
     /**
+     * Find block-status progress entries for a world and a list of chunk keys.
+     * Returns a map: chunkKey -> progressData (block coordinates -> status).
+     */
+    @Transactional(readOnly = true)
+    public Map<String, Map<String, Object>> findBlockStatusForChunks(String worldId, List<String> chunkKeys) {
+        List<WProgress> entries = repository.findByWorldIdAndTypeAndQuestIn(worldId, "block-status", chunkKeys);
+        Map<String, Map<String, Object>> result = new java.util.HashMap<>();
+        for (WProgress entry : entries) {
+            if (entry.getProgressData() != null && !entry.getProgressData().isEmpty()) {
+                result.put(entry.getQuest(), entry.getProgressData());
+            }
+        }
+        return result;
+    }
+
+    /**
      * Create or update a progress entry.
      * If a matching entry (worldId + playerId + type + quest) exists, it is updated.
      * Otherwise a new entry is created.
@@ -247,6 +263,61 @@ public class WProgressService {
         }
         log.warn("replaceProgressData failed: progressId={}", progressId);
         return false;
+    }
+
+    // --- Block status operations (type="block-status", quest=chunkKey) ---
+
+    private static final String BLOCK_STATUS_TYPE = "block-status";
+    private static final String BLOCK_STATUS_PLAYER = "world";
+
+    /**
+     * Atomically set a block status entry for a chunk.
+     * Creates the WProgress document if it doesn't exist (upsert).
+     *
+     * @param worldId  World identifier
+     * @param chunkKey Chunk key (e.g. "1:2"), stored as quest
+     * @param blockKey Block identifier (block id or world coordinates "x,y,z")
+     * @param status   Status value (e.g. "open", "closed")
+     */
+    public void setBlockStatus(String worldId, String chunkKey, String blockKey, String status) {
+        Query query = new Query(Criteria.where("worldId").is(worldId)
+                .and("playerId").is(BLOCK_STATUS_PLAYER)
+                .and("type").is(BLOCK_STATUS_TYPE)
+                .and("quest").is(chunkKey));
+        Update update = new Update()
+                .set("progressData." + blockKey, status)
+                .set("updatedAt", Instant.now())
+                .setOnInsert("worldId", worldId)
+                .setOnInsert("playerId", BLOCK_STATUS_PLAYER)
+                .setOnInsert("type", BLOCK_STATUS_TYPE)
+                .setOnInsert("quest", chunkKey)
+                .setOnInsert("progressId", java.util.UUID.randomUUID().toString())
+                .setOnInsert("createdAt", Instant.now());
+
+        mongoTemplate.upsert(query, update, WProgress.class);
+        log.debug("Set block status: worldId={}, chunk={}, block={}, status={}", worldId, chunkKey, blockKey, status);
+    }
+
+    /**
+     * Atomically remove a block status entry from a chunk.
+     * Does nothing if the WProgress document or key doesn't exist.
+     *
+     * @param worldId  World identifier
+     * @param chunkKey Chunk key (e.g. "1:2"), stored as quest
+     * @param blockKey Block identifier (block id or world coordinates "x,y,z")
+     */
+    public void removeBlockStatus(String worldId, String chunkKey, String blockKey) {
+        Query query = new Query(Criteria.where("worldId").is(worldId)
+                .and("playerId").is(BLOCK_STATUS_PLAYER)
+                .and("type").is(BLOCK_STATUS_TYPE)
+                .and("quest").is(chunkKey)
+                .and("progressData." + blockKey).exists(true));
+        Update update = new Update()
+                .unset("progressData." + blockKey)
+                .set("updatedAt", Instant.now());
+
+        mongoTemplate.updateFirst(query, update, WProgress.class);
+        log.debug("Removed block status: worldId={}, chunk={}, block={}", worldId, chunkKey, blockKey);
     }
 
     /**
