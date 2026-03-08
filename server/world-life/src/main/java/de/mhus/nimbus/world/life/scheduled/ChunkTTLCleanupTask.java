@@ -4,6 +4,7 @@ import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.life.config.WorldLifeSettings;
 import de.mhus.nimbus.world.life.model.ChunkCoordinate;
 import de.mhus.nimbus.world.life.service.ChunkTTLTracker;
+import de.mhus.nimbus.world.life.service.LifePodRegistrationService;
 import de.mhus.nimbus.world.life.service.MultiWorldChunkService;
 import de.mhus.nimbus.world.life.service.WorldDiscoveryService;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +31,7 @@ public class ChunkTTLCleanupTask {
 
     private final MultiWorldChunkService multiWorldChunkService;
     private final WorldDiscoveryService worldDiscoveryService;
+    private final LifePodRegistrationService lifePodRegistrationService;
     private final WorldLifeSettings properties;
 
     /**
@@ -58,6 +60,7 @@ public class ChunkTTLCleanupTask {
 
                 // If no active chunks remain, remove the dynamic world registration
                 if (aliveService.getActiveChunkCount() == 0) {
+                    lifePodRegistrationService.unregisterForWorld(worldIdStr);
                     worldDiscoveryService.removeDynamicWorld(worldIdStr);
                     multiWorldChunkService.removeWorld(worldId);
                     log.info("World {}: no active chunks, removed dynamic registration", worldId);

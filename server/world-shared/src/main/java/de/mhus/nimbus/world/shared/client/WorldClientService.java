@@ -7,6 +7,7 @@ import de.mhus.nimbus.world.shared.access.AccessService;
 import de.mhus.nimbus.world.shared.commands.CommandContext;
 import de.mhus.nimbus.world.shared.commands.WorldCommandController;
 import de.mhus.nimbus.world.shared.commands.WorldCommandController.CommandRequest;
+import de.mhus.nimbus.world.shared.redis.WorldRedisService;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,6 +26,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -43,6 +45,7 @@ public class WorldClientService {
     private final WorldClientSettings properties;
     private final LocationService locationService;
     private final AccessService accessService;
+    private final WorldRedisService worldRedisService;
 
     /**
      * Command response DTO.
@@ -68,9 +71,32 @@ public class WorldClientService {
             List<String> args,
             CommandContext context) {
 
-        String baseUrl = properties.getLifeBaseUrl();
+        String baseUrl = resolveLifePodUrl(worldId);
         prepareContext(context, worldId);
         return sendCommand(baseUrl, commandName, args, context, SERVER.LIFE);
+    }
+
+    /**
+     * Resolve the life pod URL for a given world.
+     * Looks up registered life pods in Redis (key: world:{fullWorldId}:life-pods).
+     * Falls back to default lifeBaseUrl if no pod is registered.
+     *
+     * @param worldId Full world ID
+     * @return Base URL of the life pod
+     */
+    private String resolveLifePodUrl(String worldId) {
+        try {
+            Set<String> pods = worldRedisService.getSetMembers(worldId, "life-pods");
+            if (pods != null && !pods.isEmpty()) {
+                // Pick first available pod (all pods simulate the same world)
+                String podUrl = pods.iterator().next();
+                log.trace("Resolved life pod for world {}: {}", worldId, podUrl);
+                return podUrl;
+            }
+        } catch (Exception e) {
+            log.debug("Failed to lookup life pod for world {}: {}", worldId, e.getMessage());
+        }
+        return properties.getLifeBaseUrl();
     }
 
     private void prepareContext(CommandContext context, String worldId) {
