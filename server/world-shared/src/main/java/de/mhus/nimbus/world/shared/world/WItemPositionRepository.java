@@ -60,4 +60,10 @@ public interface WItemPositionRepository extends MongoRepository<WItemPosition, 
      * @return List of all item positions in the chunk
      */
     List<WItemPosition> findByWorldIdAndChunk(String worldId, String chunk);
+
+    /**
+     * Delete all item positions for a world.
+     * Used for instance cleanup (hard delete of all COW data).
+     */
+    void deleteByWorldId(String worldId);
 }

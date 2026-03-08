@@ -29,4 +29,10 @@ public interface WEntityRepository extends MongoRepository<WEntity, String> {
     List<WEntity> findByWorldIdAndSourceAndAffectedChunksIn(String worldId, String source, java.util.Collection<String> chunkKeys);
 
     List<WEntity> findByWorldIdAndEnabledAndAffectedChunksIn(String worldId, boolean enabled, java.util.Collection<String> chunkKeys);
+
+    /**
+     * Delete all entities for a world.
+     * Used for instance cleanup (hard delete of all COW data).
+     */
+    void deleteByWorldId(String worldId);
 }

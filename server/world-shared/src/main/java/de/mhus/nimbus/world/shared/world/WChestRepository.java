@@ -37,4 +37,9 @@ public interface WChestRepository extends MongoRepository<WChest, String> {
      */
     Optional<WChest> findFirstByWorldIdAndPlayerIdAndType(String worldId, String playerId, WChest.ChestType type);
 
+    /**
+     * Delete all chests for a world.
+     * Used for instance cleanup (hard delete of all COW data).
+     */
+    void deleteByWorldId(String worldId);
 }

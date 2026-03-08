@@ -46,4 +46,10 @@ public interface WProgressRepository extends MongoRepository<WProgress, String> 
      * Delete all progress for a player in a world.
      */
     void deleteByWorldIdAndPlayerId(String worldId, String playerId);
+
+    /**
+     * Delete all progress for a world.
+     * Used for instance cleanup (hard delete of all instance-specific data).
+     */
+    void deleteByWorldId(String worldId);
 }
