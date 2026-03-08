@@ -49,6 +49,8 @@ public class WProgress implements Identifiable {
     @Builder.Default
     private String progressId = UUID.randomUUID().toString();
 
+    private String title; // Optional title for the progress entry (e.g. quest name, achievement title)
+
     /**
      * Player identifier (user ID).
      */

@@ -116,6 +116,13 @@ const panels = ref<Panel[]>([
     description: 'Weltkarte mit Hex-Navigation',
     url: './map-panel.html',
     color: '#3B82F6' // blue
+  },
+  {
+    id: 'library-panel',
+    name: 'Bibliothek',
+    description: 'Gesammelte Dokumente einsehen',
+    url: './library-panel.html',
+    color: '#A78BFA' // violet
   }
 ]);
 

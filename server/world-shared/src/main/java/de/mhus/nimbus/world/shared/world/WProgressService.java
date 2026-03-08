@@ -89,6 +89,16 @@ public class WProgressService {
      */
     @Transactional
     public WProgress save(String worldId, String playerId, String type, String quest, Map<String, Object> progressData) {
+        return save(worldId, playerId, type, quest, null, progressData);
+    }
+
+    /**
+     * Create or update a progress entry with title.
+     * If a matching entry (worldId + playerId + type + quest) exists, it is updated.
+     * Otherwise a new entry is created.
+     */
+    @Transactional
+    public WProgress save(String worldId, String playerId, String type, String quest, String title, Map<String, Object> progressData) {
         if (worldId == null || worldId.isBlank()) {
             throw new IllegalArgumentException("worldId is required");
         }
@@ -102,6 +112,9 @@ public class WProgressService {
         Optional<WProgress> existing = repository.findByWorldIdAndPlayerIdAndTypeAndQuest(worldId, playerId, type, quest);
         if (existing.isPresent()) {
             WProgress progress = existing.get();
+            if (title != null) {
+                progress.setTitle(title);
+            }
             progress.setProgressData(progressData);
             progress.touchUpdate();
             log.debug("Updated progress: worldId={}, playerId={}, type={}, quest={}", worldId, playerId, type, quest);
@@ -113,6 +126,7 @@ public class WProgressService {
                 .playerId(playerId)
                 .type(type)
                 .quest(quest)
+                .title(title)
                 .progressData(progressData)
                 .build();
         progress.touchCreate();

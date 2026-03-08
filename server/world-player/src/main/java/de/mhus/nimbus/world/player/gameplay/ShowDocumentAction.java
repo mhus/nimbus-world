@@ -39,6 +39,9 @@ public class ShowDocumentAction extends AbstractGamplayAction {
             return false;
         }
 
+        // Optional collection parameter overrides the progress type (default: "document")
+        String collection = serverParameters.getOrDefault("collection", "document");
+
         WorldId worldId = session.getWorldId();
         WorldId docWorldId = worldId.isInstance() ? worldId.mainWorld() : worldId;
 
@@ -57,13 +60,16 @@ public class ShowDocumentAction extends AbstractGamplayAction {
             return false;
         }
 
-        // Create WProgress with document reference
+        WDocument doc = docOpt.get();
+
+        // Create WProgress with document reference, title and documentRef as quest for uniqueness
         String playerId = session.getEntityId();
         var progress = basic.getProgressService().save(
                 worldId.getId(),
                 playerId,
-                "document",
-                null,
+                collection,
+                documentRef,
+                doc.getTitle(),
                 Map.of("document", documentRef)
         );
 
@@ -71,8 +77,8 @@ public class ShowDocumentAction extends AbstractGamplayAction {
         basic.getBasicClientService().sendCommand(session, "openComponent",
                 List.of("document", progress.getProgressId()));
 
-        log.debug("Sent show.document to player {}: document={}, progressId={}",
-                playerId, documentRef, progress.getProgressId());
+        log.debug("Sent show.document to player {}: document={}, collection={}, progressId={}",
+                playerId, documentRef, collection, progress.getProgressId());
         return true;
     }
 }
