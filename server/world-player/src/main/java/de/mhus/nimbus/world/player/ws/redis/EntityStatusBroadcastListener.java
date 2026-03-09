@@ -120,7 +120,7 @@ public class EntityStatusBroadcastListener {
                     statusUpdates.size(), sentCount, worldId, originatingSessionId);
             }
 
-            log.debug("Handled entity status update: {} updates", statusUpdates.size());
+            log.trace("Handled entity status update: {} updates", statusUpdates.size());
 
         } catch (Exception e) {
             log.error("Failed to handle entity status update from topic {}: {}", topic, message, e);

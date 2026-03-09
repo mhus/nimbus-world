@@ -109,7 +109,31 @@ public class BasicGameplay implements Gameplay {
 
     @Override
     public void onBlockInteraction(PlayerSession session, int x, int y, int z, String blockId, String groupId, String userAction, String shortcutKey, JsonNode params) {
+        var worldId = session.getWorldId();
+
+        // Always load block serverInfo
+        Map<String, String> serverInfo = chunkService.getServerInfo(worldId, x, y, z);
+        if (serverInfo == null) {
+            serverInfo = Map.of();
+        }
+
         if (!Strings.isBlank(shortcutKey)) {
+            // Check if block forces its own action (overrides item action)
+            String blockAction = serverInfo.get("action");
+            boolean forceAction = "true".equals(serverInfo.get("forceAction"));
+
+            if (forceAction && blockAction != null && !blockAction.isBlank()) {
+                // Block forces interaction: use block's action with shortcut context
+                var handler = actions.get(blockAction);
+                if (handler == null) {
+                    log.warn("Unknown forced block action '{}' at {} ({}, {}, {})", blockAction, worldId, x, y, z);
+                    return;
+                }
+                boolean success = handler.handleBlockAction(session, x, y, z, blockId, groupId, blockAction, params, userAction, shortcutKey, serverInfo);
+                if (success) sendItemUseFeedback(session, shortcutKey);
+                return;
+            }
+
             // Shortcut on block: route via item action
             String itemAction = resolveShortcutItemAction(session, shortcutKey);
             if (itemAction == null) {
@@ -122,15 +146,13 @@ public class BasicGameplay implements Gameplay {
                     log.trace("No handler for item action '{}' on block at ({}, {}, {})", itemAction, x, y, z);
                     return;
                 }
-                boolean success = handler.handleBlockAction(session, x, y, z, blockId, groupId, itemAction, params, userAction, shortcutKey, Map.of());
+                boolean success = handler.handleBlockAction(session, x, y, z, blockId, groupId, itemAction, params, userAction, shortcutKey, serverInfo);
                 if (success) sendItemUseFeedback(session, shortcutKey);
                 return;
             }
         }
         // Regular interaction: route via block server metadata
-        var worldId = session.getWorldId();
-        Map<String, String> serverInfo = chunkService.getServerInfo(session.getWorldId(), x, y, z);
-        if (serverInfo == null || serverInfo.isEmpty()) {
+        if (serverInfo.isEmpty()) {
             log.trace("No server metadata for block at {} ({}, {}, {})", worldId, x, y, z);
             return;
         }

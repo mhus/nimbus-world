@@ -41,7 +41,7 @@ public class ClientService {
             String json = objectMapper.writeValueAsString(message);
             session.sendMessage(new TextMessage(json));
 
-            log.info("Sent server command to player: cmd={}, sessionId={}",
+            log.trace("Sent server command to player: cmd={}, sessionId={}",
                     commandName, session.getWebSocketSession().getId());
 
         } catch (Exception e) {

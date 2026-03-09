@@ -61,7 +61,7 @@ public class EntityStatusPublisher {
             String json = objectMapper.writeValueAsString(message);
             redisMessaging.publish(worldId, "e.s.u", json);
 
-            log.debug("Published {} entity status updates to Redis for world {} [origin={}]",
+            log.trace("Published {} entity status updates to Redis for world {} [origin={}]",
                 statusUpdates.size(), worldId, originatingSessionId);
 
         } catch (Exception e) {
