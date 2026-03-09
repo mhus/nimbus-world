@@ -604,12 +604,12 @@ public class WWorldInstanceService {
             log.info("Player {} removed from instance {} (active players: {})",
                     playerId, instanceIdOrWorldId, instance.getActivePlayerCount());
 
-            // Check if instance is now empty
-            if (instance.hasNoActivePlayers()) {
-                log.info("Instance {} has no active players, scheduling deletion job", instanceIdOrWorldId);
+            // Check if instance is now empty and should be auto-deleted
+            if (instance.hasNoActivePlayers() && instance.isDeleteWhenEmpty()) {
+                log.info("SHORT instance {} has no active players, scheduling deletion job", instanceIdOrWorldId);
                 scheduleDeleteInstanceJob(worldId, instanceIdOrWorldId);
             } else {
-                // Save updated instance
+                // Save updated instance (persistent instances survive empty state)
                 save(instance);
             }
             return true;

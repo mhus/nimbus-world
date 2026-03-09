@@ -229,7 +229,7 @@
                 <select v-else v-model="selectedInstance" class="select select-bordered w-full">
                   <option v-if="selectedActor === 'PLAYER'" value="">New Instance</option>
                   <option v-for="inst in instances" :key="inst.instanceId" :value="inst.instanceId">
-                    {{ inst.title }} - {{ inst.createdAt ? new Date(inst.createdAt).toLocaleDateString() : '' }} ({{ inst.instanceId }})
+                    [{{ inst.accessType || 'PRIVATE' }}] {{ inst.title }} - {{ inst.createdAt ? new Date(inst.createdAt).toLocaleDateString() : '' }}
                   </option>
                 </select>
               </div>

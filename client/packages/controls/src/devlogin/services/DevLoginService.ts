@@ -34,6 +34,8 @@ export interface WorldInstance {
   creator: string;
   players: string[];
   enabled: boolean;
+  accessType?: string;
+  durationType?: string;
   createdAt?: string;
 }
 

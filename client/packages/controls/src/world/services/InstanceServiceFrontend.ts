@@ -1,5 +1,8 @@
 import { apiService } from '@/services/ApiService';
 
+export type InstanceAccessType = 'PRIVATE' | 'TEAM' | 'PUBLIC';
+export type InstanceDurationType = 'SHORT' | 'SEASONAL' | 'EVENT';
+
 export interface Instance {
   id: string;
   instanceId: string;
@@ -8,9 +11,22 @@ export interface Instance {
   description: string;
   creator: string;
   players: string[];
+  activePlayers: string[];
+  accessType: InstanceAccessType;
+  durationType: InstanceDurationType;
+  expiresAt?: string;
   createdAt: string;
   updatedAt: string;
   enabled: boolean;
+}
+
+export interface InstanceUpdateRequest {
+  title?: string;
+  description?: string;
+  accessType?: InstanceAccessType;
+  durationType?: InstanceDurationType;
+  expiresAt?: string;
+  enabled?: boolean;
 }
 
 export interface InstanceStats {
@@ -33,6 +49,10 @@ class InstanceServiceFrontend {
 
   async getInstance(instanceId: string): Promise<Instance> {
     return apiService.get<Instance>(`/control/instances/${instanceId}`);
+  }
+
+  async updateInstance(instanceId: string, request: InstanceUpdateRequest): Promise<Instance> {
+    return apiService.put<Instance>(`/control/instances/${instanceId}`, request);
   }
 
   async deleteInstance(instanceId: string): Promise<void> {

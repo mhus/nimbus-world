@@ -1,6 +1,8 @@
 package de.mhus.nimbus.world.control.api;
 
 import de.mhus.nimbus.world.shared.rest.BaseEditorController;
+import de.mhus.nimbus.world.shared.world.InstanceAccessType;
+import de.mhus.nimbus.world.shared.world.InstanceDurationType;
 import de.mhus.nimbus.world.shared.world.WWorldInstance;
 import de.mhus.nimbus.world.shared.world.WWorldInstanceService;
 import lombok.RequiredArgsConstructor;
@@ -34,9 +36,22 @@ public class WWorldInstanceController extends BaseEditorController {
             String description,
             String creator,
             List<String> players,
+            List<String> activePlayers,
+            InstanceAccessType accessType,
+            InstanceDurationType durationType,
+            Instant expiresAt,
             Instant createdAt,
             Instant updatedAt,
             boolean enabled
+    ) {}
+
+    public record InstanceUpdateRequest(
+            String title,
+            String description,
+            InstanceAccessType accessType,
+            InstanceDurationType durationType,
+            Instant expiresAt,
+            Boolean enabled
     ) {}
 
     private InstanceResponse toResponse(WWorldInstance instance) {
@@ -48,6 +63,10 @@ public class WWorldInstanceController extends BaseEditorController {
                 instance.getDescription(),
                 instance.getCreator(),
                 instance.getPlayers(),
+                instance.getActivePlayers(),
+                instance.getAccessType(),
+                instance.getDurationType(),
+                instance.getExpiresAt(),
                 instance.getCreatedAt(),
                 instance.getUpdatedAt(),
                 instance.isEnabled()
@@ -101,6 +120,36 @@ public class WWorldInstanceController extends BaseEditorController {
                 .<ResponseEntity<?>>map(instance -> ResponseEntity.ok(toResponse(instance)))
                 .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND)
                         .body(Map.of("error", "Instance not found: " + instanceId)));
+    }
+
+    /**
+     * Update world instance properties.
+     * PUT /control/instances/{instanceId}
+     */
+    @PutMapping("/{instanceId}")
+    public ResponseEntity<?> update(
+            @PathVariable String instanceId,
+            @RequestBody InstanceUpdateRequest request) {
+
+        var error = validateId(instanceId, "instanceId");
+        if (error != null) return error;
+
+        try {
+            var updated = instanceService.update(instanceId, instance -> {
+                if (request.title() != null) instance.setTitle(request.title());
+                if (request.description() != null) instance.setDescription(request.description());
+                if (request.accessType() != null) instance.setAccessType(request.accessType());
+                if (request.durationType() != null) instance.setDurationType(request.durationType());
+                if (request.expiresAt() != null) instance.setExpiresAt(request.expiresAt());
+                if (request.enabled() != null) instance.setEnabled(request.enabled());
+            });
+
+            return updated
+                    .<ResponseEntity<?>>map(instance -> ResponseEntity.ok(toResponse(instance)))
+                    .orElseGet(() -> notFound("Instance not found: " + instanceId));
+        } catch (Exception e) {
+            return bad(e.getMessage());
+        }
     }
 
     /**

@@ -13,12 +13,15 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 /**
  * Service for managing WChest entities.
  * Provides business logic for chest operations including creation, retrieval, and item management.
+ * Supports COW (Copy-on-Write) for instance worlds: base world chests are copied to the instance
+ * layer on first write, so mutations never affect the base world.
  */
 @Service
 @RequiredArgsConstructor
@@ -28,18 +31,30 @@ public class WChestService {
     private final WChestRepository repository;
     private final MongoTemplate mongoTemplate;
 
+    // ===== Read operations (COW-aware) =====
+
     /**
      * Find chest by worldId and name.
-     * If not found with the given worldId, tries with the region collection worldId (@region:regionId).
+     * COW-aware: for instance worlds, checks instance layer first, then base world.
+     * Falls back to region collection worldId (@region:regionId) for bank/transfer chests.
      */
     @Transactional(readOnly = true)
     public Optional<WChest> getByWorldIdAndName(String worldId, String name) {
+        var parsedWorldId = WorldId.of(worldId).orElse(null);
+
+        // For instance worlds: check instance layer first, then base world (COW)
+        if (parsedWorldId != null && parsedWorldId.isInstance()) {
+            var instanceEntry = repository.findByWorldIdAndName(worldId, name).orElse(null);
+            var baseEntry = repository.findByWorldIdAndName(
+                    parsedWorldId.toBaseWorldId().getId(), name).orElse(null);
+            return Optional.ofNullable(CowUtil.findOne(instanceEntry, baseEntry));
+        }
+
         var result = repository.findByWorldIdAndName(worldId, name);
         if (result.isPresent()) {
             return result;
         }
         // Fallback: try region collection worldId
-        var parsedWorldId = WorldId.of(worldId).orElse(null);
         if (parsedWorldId != null && !parsedWorldId.isCollection()) {
             String regionWorldId = parsedWorldId.toRegionCollection().getId();
             return repository.findByWorldIdAndName(regionWorldId, name);
@@ -48,13 +63,119 @@ public class WChestService {
     }
 
     /**
-     * Get or create the user's bank chest in a world.
-     * Tries multiple worldId formats (@region:regionId, plain worldId) and userId/playerId combinations.
-     * If no bank chest exists, one is automatically created.
+     * Find all chests for a specific world.
+     * COW-aware: for instance worlds, merges base world chests with instance overrides.
+     */
+    @Transactional(readOnly = true)
+    public List<WChest> findByWorldId(String worldId) {
+        var parsedWorldId = WorldId.of(worldId).orElse(null);
+        if (parsedWorldId != null && parsedWorldId.isInstance()) {
+            var baseList = repository.findByWorldId(parsedWorldId.toBaseWorldId().getId());
+            var instanceList = repository.findByWorldId(worldId);
+            return CowUtil.merge(baseList, instanceList);
+        }
+        return repository.findByWorldId(worldId);
+    }
+
+    // ===== COW copy-on-write support =====
+
+    /**
+     * Ensure a COW copy exists for a chest in an instance world.
+     * If the chest belongs to the base world, creates a deep copy in the instance layer.
+     * If the chest already belongs to the instance (or is a region chest), returns it as-is.
      *
-     * @param worldId worldId from session
-     * @param playerId PlayerId (@userId:characterId)
-     * @return the user's bank chest, never null
+     * @param worldId The instance worldId (must be an instance)
+     * @param chest The chest to ensure a copy for
+     * @return The instance-layer chest (either existing or newly created copy)
+     */
+    @Transactional
+    public WChest ensureCowCopy(String worldId, WChest chest) {
+        var parsedWorldId = WorldId.of(worldId).orElse(null);
+
+        // Not an instance world, or chest is already in instance/region layer - no copy needed
+        if (parsedWorldId == null || !parsedWorldId.isInstance()) {
+            return chest;
+        }
+
+        // Chest already belongs to this instance
+        if (worldId.equals(chest.getWorldId())) {
+            return chest;
+        }
+
+        // Chest is a region collection chest (bank/transfer) - not COW-managed
+        var chestWorldId = WorldId.of(chest.getWorldId()).orElse(null);
+        if (chestWorldId != null && chestWorldId.isCollection()) {
+            return chest;
+        }
+
+        // Check if an instance copy already exists
+        var existingCopy = repository.findByWorldIdAndName(worldId, chest.getName());
+        if (existingCopy.isPresent()) {
+            var copy = existingCopy.get();
+            // Tombstone check: if disabled, the chest is "deleted" in this instance
+            if (!copy.isEnabled()) {
+                log.warn("COW chest is tombstoned in instance: worldId={}, name={}", worldId, chest.getName());
+                return copy;
+            }
+            return copy;
+        }
+
+        // Create COW copy: deep copy items to avoid sharing mutable list
+        List<ItemRef> copiedItems = new ArrayList<>();
+        if (chest.getItems() != null) {
+            for (ItemRef item : chest.getItems()) {
+                copiedItems.add(ItemRef.builder()
+                        .itemId(item.getItemId())
+                        .name(item.getName())
+                        .texture(item.getTexture())
+                        .amount(item.getAmount())
+                        .build());
+            }
+        }
+
+        WChest copy = WChest.builder()
+                .worldId(worldId)
+                .name(chest.getName())
+                .title(chest.getTitle())
+                .description(chest.getDescription())
+                .playerId(chest.getPlayerId())
+                .type(chest.getType())
+                .pin(chest.getPin())
+                .capacity(chest.getCapacity())
+                .keyId(chest.getKeyId())
+                .lockPickingDifficulty(chest.getLockPickingDifficulty())
+                .items(copiedItems)
+                .enabled(true)
+                .build();
+        copy.touchCreate();
+        repository.save(copy);
+
+        log.info("COW copy created for chest: worldId={}, name={}, baseWorldId={}",
+                worldId, chest.getName(), chest.getWorldId());
+        return copy;
+    }
+
+    /**
+     * Get a mutable chest for an instance world.
+     * If the chest is from the base world, creates a COW copy first.
+     * This is the entry point for all write operations on instance chests.
+     *
+     * @param worldId The worldId (can be instance or base)
+     * @param name The chest name
+     * @return The mutable chest (COW copy if needed), or empty if not found
+     */
+    @Transactional
+    public Optional<WChest> getForWrite(String worldId, String name) {
+        var chest = getByWorldIdAndName(worldId, name);
+        if (chest.isEmpty()) return Optional.empty();
+        return Optional.of(ensureCowCopy(worldId, chest.get()));
+    }
+
+    // ===== Bank/Transfer chests (region-level, not COW-affected) =====
+
+    /**
+     * Get or create the user's bank chest in a world.
+     * Bank chests are stored at region level and not affected by COW.
      */
     @Transactional
     public WChest getOrCreateUserBankChest(String worldId, PlayerId playerId) {
@@ -67,7 +188,6 @@ public class WChestService {
         // Try all combinations: regionWorldId and plain worldId x userId and playerId
         for (String wId : List.of(regionWorldId, worldId)) {
             for (String uId : List.of(playerIdStr, userId)) {
-                // Search for BANK type first, then legacy PLAYER+bank for migration
                 var result = repository.findFirstByWorldIdAndPlayerIdAndType(wId, uId, WChest.ChestType.BANK);
                 if (result.isPresent()) {
                     return result.get();
@@ -92,13 +212,7 @@ public class WChestService {
 
     /**
      * Get or create the user's transfer chest in a world.
-     * Tries multiple worldId formats (@region:regionId, plain worldId) and userId/playerId combinations.
-     * If no transfer chest exists, one is automatically created.
-     * There is only one transfer chest per player.
-     *
-     * @param worldId worldId from session
-     * @param playerId PlayerId (@userId:characterId)
-     * @return the user's transfer chest, never null
+     * Transfer chests are stored at region level and not affected by COW.
      */
     @Transactional
     public WChest getOrCreateUserTransferChest(String worldId, PlayerId playerId) {
@@ -108,7 +222,6 @@ public class WChestService {
         String userId = playerId.getUserId();
         String playerIdStr = playerId.getId();
 
-        // Try all combinations: regionWorldId and plain worldId x userId and playerId
         for (String wId : List.of(regionWorldId, worldId)) {
             for (String uId : List.of(playerIdStr, userId)) {
                 var result = repository.findFirstByWorldIdAndPlayerIdAndType(wId, uId, WChest.ChestType.TRANSFER);
@@ -118,7 +231,6 @@ public class WChestService {
             }
         }
 
-        // No transfer chest found - create one
         log.info("Creating transfer chest for player: worldId={}, playerId={}", regionWorldId, playerIdStr);
         String name = "transfer_" + playerIdStr.replace("@", "").replace(":", "_");
         WChest chest = WChest.builder()
@@ -133,13 +245,7 @@ public class WChestService {
         return repository.save(chest);
     }
 
-    /**
-     * Find all chests for a specific world.
-     */
-    @Transactional(readOnly = true)
-    public List<WChest> findByWorldId(String worldId) {
-        return repository.findByWorldId(worldId);
-    }
+    // ===== Additional read operations =====
 
     /**
      * Find all chests for a specific player in a world.
@@ -157,16 +263,10 @@ public class WChestService {
         return repository.findByWorldIdAndType(worldId, type);
     }
 
+    // ===== Create / Update / Delete =====
+
     /**
      * Create a new chest.
-     *
-     * @param worldId World identifier (optional)
-     * @param name Internal name/identifier
-     * @param title Display name (optional)
-     * @param description Description
-     * @param playerId Player identifier (optional, for player-specific chests)
-     * @param type Chest type
-     * @return Created chest entity
      */
     @Transactional
     public WChest createChest(String worldId, String name, String title,
@@ -195,10 +295,6 @@ public class WChestService {
 
     /**
      * Update an existing chest.
-     *
-     * @param chestId Chest ID
-     * @param updater Consumer to apply updates
-     * @return Updated chest if found
      */
     @Transactional
     public Optional<WChest> updateChest(String chestId, java.util.function.Consumer<WChest> updater) {
@@ -214,11 +310,6 @@ public class WChestService {
     /**
      * Add an item reference to a chest.
      * Simply adds the item. Does NOT check for duplicates or merge amounts.
-     * Use updateItemAmount() to change existing item amounts.
-     *
-     * @param chestId Chest ID
-     * @param itemRef ItemRef to add
-     * @return Updated chest if found
      */
     @Transactional
     public Optional<WChest> addItem(String chestId, ItemRef itemRef) {
@@ -231,11 +322,6 @@ public class WChestService {
 
     /**
      * Update the amount of an existing item in a chest.
-     *
-     * @param chestId Chest ID
-     * @param itemId Item ID to update
-     * @param newAmount New amount (must be > 0)
-     * @return Updated chest if found
      */
     @Transactional
     public Optional<WChest> updateItemAmount(String chestId, String itemId, int newAmount) {
@@ -244,7 +330,6 @@ public class WChestService {
         }
 
         return updateChest(chestId, chest -> {
-            // Find item by itemId
             int existingIndex = -1;
             for (int i = 0; i < chest.getItems().size(); i++) {
                 if (chest.getItems().get(i).getItemId().equals(itemId)) {
@@ -275,10 +360,6 @@ public class WChestService {
     /**
      * Remove an item reference from a chest by item ID.
      * Only removes the first occurrence.
-     *
-     * @param chestId Chest ID
-     * @param itemId Item ID to remove
-     * @return Updated chest if found
      */
     @Transactional
     public Optional<WChest> removeItem(String chestId, String itemId) {
@@ -286,7 +367,6 @@ public class WChestService {
             log.debug("Removing ItemRef from chest: chestId={}, itemId={}, currentItems={}",
                     chestId, itemId, chest.getItems().size());
 
-            // Find and remove only the first matching item
             int indexToRemove = -1;
             for (int i = 0; i < chest.getItems().size(); i++) {
                 if (chest.getItems().get(i).getItemId().equals(itemId)) {
@@ -305,12 +385,13 @@ public class WChestService {
         });
     }
 
-    // --- Atomic MongoTemplate operations ---
+    // ===== Atomic MongoTemplate operations =====
 
     /**
      * Atomically add an item to a chest's items array.
+     * COW-safe: caller must pass the ID of a COW copy (from ensureCowCopy/getForWrite).
      *
-     * @param chestId MongoDB document id
+     * @param chestId MongoDB document id (must be instance copy, not base world)
      * @param itemRef the ItemRef to add
      * @return true if the update was applied
      */
@@ -330,12 +411,7 @@ public class WChestService {
 
     /**
      * Atomically update the amount of an existing item in a chest.
-     * Uses the positional $ operator to match the array element by itemId.
-     *
-     * @param chestId MongoDB document id
-     * @param itemId  the itemId to match in the items array
-     * @param newAmount new amount value (must be > 0)
-     * @return true if the update was applied
+     * COW-safe: caller must pass the ID of a COW copy.
      */
     public boolean updateItemAmountAtomic(String chestId, String itemId, int newAmount) {
         Query query = new Query(Criteria.where("id").is(chestId)
@@ -354,11 +430,7 @@ public class WChestService {
 
     /**
      * Atomically increment the amount of an existing item in a chest.
-     *
-     * @param chestId MongoDB document id
-     * @param itemId  the itemId to match in the items array
-     * @param delta   amount to add (positive) or subtract (negative)
-     * @return true if the update was applied
+     * COW-safe: caller must pass the ID of a COW copy.
      */
     public boolean incItemAmountAtomic(String chestId, String itemId, int delta) {
         Query query = new Query(Criteria.where("id").is(chestId)
@@ -377,10 +449,7 @@ public class WChestService {
 
     /**
      * Atomically remove an item from a chest's items array.
-     *
-     * @param chestId MongoDB document id
-     * @param itemId  the itemId to remove
-     * @return true if the update was applied
+     * COW-safe: caller must pass the ID of a COW copy.
      */
     public boolean removeItemAtomic(String chestId, String itemId) {
         Query query = new Query(Criteria.where("id").is(chestId));
@@ -396,11 +465,10 @@ public class WChestService {
         return false;
     }
 
+    // ===== Save / Delete =====
+
     /**
      * Save a chest (updates modification timestamp).
-     *
-     * @param chest Chest to save
-     * @return Saved chest
      */
     @Transactional
     public WChest save(WChest chest) {
@@ -416,9 +484,6 @@ public class WChestService {
 
     /**
      * Delete a chest by ID.
-     *
-     * @param chestId Chest ID
-     * @return true if chest was deleted
      */
     @Transactional
     public boolean deleteChestById(String chestId) {
@@ -429,15 +494,51 @@ public class WChestService {
         }).orElse(false);
     }
 
+    /**
+     * Delete a chest by worldId and name.
+     * COW-aware: for instance worlds, creates a tombstone instead of deleting the base chest.
+     */
     @Transactional
     public void deleteChest(String worldId, String name) {
         WorldId parsedWorldId = WorldId.of(worldId).orElseThrow();
         if (parsedWorldId.isSharedCollection() || parsedWorldId.isPublicRegion()) {
             throw new IllegalArgumentException("WChest can't be in shared or public region");
         }
-        getByWorldIdAndName(worldId, name).ifPresent(chest  ->{
-            repository.delete(chest);
-            log.debug("Chest deleted: worldId={}, name={}", worldId, name);
-        });
+
+        // Check for existing instance copy
+        var directEntry = repository.findByWorldIdAndName(worldId, name);
+        if (directEntry.isPresent()) {
+            if (parsedWorldId.isInstance()) {
+                // Instance copy exists: mark as tombstone
+                WChest chest = directEntry.get();
+                chest.setEnabled(false);
+                chest.touchUpdate();
+                repository.save(chest);
+                log.debug("Chest tombstoned in instance: worldId={}, name={}", worldId, name);
+            } else {
+                // Base world: hard delete
+                repository.delete(directEntry.get());
+                log.debug("Chest deleted: worldId={}, name={}", worldId, name);
+            }
+            return;
+        }
+
+        // For instance worlds: check if chest exists in base world and create tombstone
+        if (parsedWorldId.isInstance()) {
+            var baseEntry = repository.findByWorldIdAndName(
+                    parsedWorldId.toBaseWorldId().getId(), name);
+            if (baseEntry.isPresent()) {
+                WChest tombstone = WChest.builder()
+                        .worldId(worldId)
+                        .name(name)
+                        .title(baseEntry.get().getTitle())
+                        .type(baseEntry.get().getType())
+                        .enabled(false)
+                        .build();
+                tombstone.touchCreate();
+                repository.save(tombstone);
+                log.info("COW tombstone created for chest: worldId={}, name={}", worldId, name);
+            }
+        }
     }
 }

@@ -389,13 +389,15 @@ public class PlayerChestWidgetController extends BaseEditorController {
             return ChestResolveResult.ofError(bad("Progress does not reference a chest"));
         }
 
-        // Load chest by name
+        // Load chest by name (COW-aware: for instance worlds, resolves from base world too)
         Optional<WChest> chestOpt = chestService.getByWorldIdAndName(worldId, chestName);
         if (chestOpt.isEmpty()) {
             return ChestResolveResult.ofError(notFound("Chest not found"));
         }
 
-        return ChestResolveResult.ofChest(chestOpt.get());
+        // Ensure COW copy exists for instance worlds before any write operation
+        WChest chest = chestService.ensureCowCopy(worldId, chestOpt.get());
+        return ChestResolveResult.ofChest(chest);
     }
 
     private ResponseEntity<?> checkChestPinAccess(String worldId, String userId, WChest chest) {

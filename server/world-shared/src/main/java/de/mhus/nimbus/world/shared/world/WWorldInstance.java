@@ -96,6 +96,27 @@ public class WWorldInstance implements Identifiable {
     private Instant lastAccessTime;
 
     /**
+     * Access type: who is allowed to join this instance.
+     * PRIVATE = only creator, TEAM = creator + players list, PUBLIC = everyone.
+     */
+    @Indexed
+    @Builder.Default
+    private InstanceAccessType accessType = InstanceAccessType.PRIVATE;
+
+    /**
+     * Duration type: how long this instance lives.
+     * SHORT = deleted when empty, SEASONAL = persists for a season, EVENT = tied to an event.
+     */
+    @Builder.Default
+    private InstanceDurationType durationType = InstanceDurationType.SHORT;
+
+    /**
+     * Optional expiration time for SEASONAL and EVENT instances.
+     * Null means no expiration (or managed externally).
+     */
+    private Instant expiresAt;
+
+    /**
      * Soft delete flag.
      */
     @Indexed
@@ -121,7 +142,10 @@ public class WWorldInstance implements Identifiable {
     /**
      * Check if a player is allowed to access this instance.
      * Creator always has access.
-     * If players list is empty, instance is public and everyone has access.
+     * Access is controlled by accessType:
+     * - PRIVATE: only creator
+     * - TEAM: creator + players in the players list
+     * - PUBLIC: everyone
      *
      * @param playerId The playerId to check
      * @return true if player has access, false otherwise
@@ -136,13 +160,14 @@ public class WWorldInstance implements Identifiable {
             return true;
         }
 
-        // Empty list means public instance
-        if (players == null || players.isEmpty()) {
-            return true;
-        }
+        // Determine effective access type (default PRIVATE for null/legacy data)
+        InstanceAccessType effective = accessType != null ? accessType : InstanceAccessType.PRIVATE;
 
-        // Check if player is in the list
-        return players.contains(playerId);
+        return switch (effective) {
+            case PRIVATE -> false;
+            case TEAM -> players != null && players.contains(playerId);
+            case PUBLIC -> true;
+        };
     }
 
     /**
@@ -240,6 +265,26 @@ public class WWorldInstance implements Identifiable {
      */
     public int getActivePlayerCount() {
         return activePlayers == null ? 0 : activePlayers.size();
+    }
+
+    /**
+     * Check if this instance has expired based on its expiresAt time.
+     *
+     * @return true if expiresAt is set and in the past, false otherwise
+     */
+    public boolean isExpired() {
+        return expiresAt != null && Instant.now().isAfter(expiresAt);
+    }
+
+    /**
+     * Check if this instance should be deleted when all active players leave.
+     * Only SHORT instances are auto-deleted. SEASONAL and EVENT instances persist.
+     *
+     * @return true if the instance should be deleted when empty
+     */
+    public boolean isDeleteWhenEmpty() {
+        InstanceDurationType effective = durationType != null ? durationType : InstanceDurationType.SHORT;
+        return effective == InstanceDurationType.SHORT;
     }
 
     /**
