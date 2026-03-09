@@ -78,6 +78,7 @@ public class WItemPositionService {
 
         itemPosition.setPublicData(itemBlockRef);
         itemPosition.setChunk(chunk);
+        itemPosition.setEnabled(true);
         itemPosition.touchUpdate();
 
         WItemPosition saved = repository.save(itemPosition);

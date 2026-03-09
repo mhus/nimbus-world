@@ -1107,14 +1107,10 @@ export class ChunkService {
         // Get chunk
         const clientChunk = this.chunks.get(chunkKey);
         if (!clientChunk) {
-          const loadedKeys = Array.from(this.chunks.keys()).slice(0, 20);
-          logger.warn('Item update for unloaded chunk, ignoring', {
+          logger.debug('Item update for unloaded chunk, ignoring', {
             position: item.position,
-            chunkSize,
             cx: chunkCoord.cx,
             cz: chunkCoord.cz,
-            chunkKey,
-            loadedChunks: loadedKeys,
           });
           continue;
         }
@@ -1177,10 +1173,9 @@ export class ChunkService {
 
         affectedChunks.add(chunkKey);
 
-        logger.info('Item added/updated', {
+        logger.debug('Item added/updated', {
           position: item.position,
           itemId: item.name,
-          chunkKey,
           wasUpdate: isItem,
         });
       }
