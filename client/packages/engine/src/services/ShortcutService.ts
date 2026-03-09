@@ -139,12 +139,22 @@ export class ShortcutService {
             }
           }
           const pos = selectedBlock.block.position;
+          logger.info('Selected block for interact', {
+            blockTypeId: selectedBlock.block.blockTypeId,
+            metadataId: selectedBlock.block.metadata?.id,
+            hasItemBlockRef: !!selectedBlock.itemBlockRef,
+            block: JSON.stringify(selectedBlock.block),
+          });
+          const interactParams: Record<string, any> = {};
+          if (selectedBlock.block.blockTypeId === 'n:1' && selectedBlock.block.metadata?.id) {
+            interactParams.itemId = selectedBlock.block.metadata.id;
+          }
           networkService.sendBlockInteraction(
             pos.x,
             pos.y,
             pos.z,
             'interact',
-            {},
+            interactParams,
             selectedBlock.block.metadata?.id,
             selectedBlock.block.metadata?.groupId
           );
@@ -275,6 +285,9 @@ export class ShortcutService {
           );
         } else if (interactionTarget.type === 'block') {
           const pos = interactionTarget.block.block.position;
+          if (interactionTarget.block.block.blockTypeId === 'n:1' && interactionTarget.block.block.metadata?.id) {
+            params.itemId = interactionTarget.block.block.metadata.id;
+          }
           networkService.sendBlockInteraction(
             pos.x,
             pos.y,
@@ -719,6 +732,9 @@ export class ShortcutService {
       );
     } else if (target.type === 'block') {
       const pos = target.block.block.position;
+      if (target.block.block.blockTypeId === 'n:1' && target.block.block.metadata?.id) {
+        params.itemId = target.block.block.metadata.id;
+      }
       networkService.sendBlockInteraction(
         pos.x,
         pos.y,

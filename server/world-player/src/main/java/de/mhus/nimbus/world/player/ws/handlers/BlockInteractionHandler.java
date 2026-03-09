@@ -62,6 +62,15 @@ public class BlockInteractionHandler implements MessageHandler {
         String shortcutKey = data.has("sc") ? data.get("sc").asText() : null;
         JsonNode params = data.has("pa") ? data.get("pa") : null;
 
+        if (params != null && params.has("itemId")) {
+            String itemId = params.get("itemId").asText();
+            log.trace("Block interaction params - itemId: {}", itemId);
+
+            gameplay.onPlayerItemInteraction(session, x, y, z, itemId, groupId, userAction, shortcutKey, params);
+
+            return;
+        }
+
         log.trace("Block interaction - Session: {}, Position: ({},{},{}), action: {}, shortcut: {}, BlockId: {}, GroupId: {}",
                 session.getWebSocketSession().getId(),
                 x, y, z,

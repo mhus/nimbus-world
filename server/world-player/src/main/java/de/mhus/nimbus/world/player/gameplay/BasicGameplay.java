@@ -1,6 +1,7 @@
 package de.mhus.nimbus.world.player.gameplay;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import de.mhus.nimbus.generated.types.ItemBlockRef;
 import de.mhus.nimbus.world.shared.gameplay.CombatConstants;
 import de.mhus.nimbus.world.player.service.GameplayService;
 import de.mhus.nimbus.world.player.service.PlayerService;
@@ -80,6 +81,12 @@ public class BasicGameplay implements Gameplay {
     @Autowired
     @Getter
     protected BlockStatusSenderService blockStatusSenderService;
+    @Autowired
+    @Getter
+    protected de.mhus.nimbus.world.shared.world.WItemPositionService itemPositionService;
+    @Autowired
+    @Getter
+    protected de.mhus.nimbus.world.shared.redis.ItemBlockUpdatePublisher itemBlockUpdatePublisher;
 
     protected Map<String, GameplayAction> actions = new HashMap<>();
 
@@ -138,6 +145,13 @@ public class BasicGameplay implements Gameplay {
             return;
         }
         handler.handleBlockAction(session, x, y, z, blockId, groupId, blockAction, params, userAction, null, serverInfo);
+    }
+
+    @Override
+    public void onItemInteraction(PlayerSession session, int x, int y, int z, ItemBlockRef itemRef, String groupId, String userAction, String shortcutKey, JsonNode params) {
+        String itemName = itemRef != null ? itemRef.getName() : "unknown";
+        log.debug("Item interaction: item={}, action={}, pos=({},{},{})", itemName, userAction, x, y, z);
+        basicClientService.sendNotification(session, 3, "", "Item: " + itemName, null);
     }
 
     @Override

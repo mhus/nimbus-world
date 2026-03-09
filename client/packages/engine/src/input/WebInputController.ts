@@ -322,12 +322,16 @@ export class WebInputController implements InputController {
 
               // Send block interaction (b.int)
               const pos = selectedBlock.block.position;
+              const interactParams: Record<string, any> = {};
+              if (selectedBlock.block.blockTypeId === 'n:1' && selectedBlock.block.metadata?.id) {
+                interactParams.itemId = selectedBlock.block.metadata.id;
+              }
               networkService.sendBlockInteraction(
                 pos.x,
                 pos.y,
                 pos.z,
                 'interact',
-                {}, // no additional params for 'interact' action
+                interactParams,
                 selectedBlock.block.metadata?.id,
                 selectedBlock.block.metadata?.groupId
               );

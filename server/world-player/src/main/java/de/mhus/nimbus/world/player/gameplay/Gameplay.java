@@ -1,6 +1,7 @@
 package de.mhus.nimbus.world.player.gameplay;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import de.mhus.nimbus.generated.types.ItemBlockRef;
 import de.mhus.nimbus.world.player.session.PlayerSession;
 
 import java.util.Map;
@@ -27,6 +28,23 @@ public interface Gameplay {
      * @param params
      */
     void onBlockInteraction(PlayerSession session, int x, int y, int z, String blockId, String groupId, String userAction, String shortcutKey, JsonNode params);
+
+    /**
+     * If the shortcut key is specified, the shortcut item action will be executed on the block.
+     * Otherwise, session owner interacts with a block (e.g. right-click or left-click). Executes the
+     * block action for 'interaction' defined in the block parameters on the player.
+     *
+     * @param session
+     * @param x
+     * @param y
+     * @param z
+     * @param itemRef
+     * @param groupId
+     * @param userAction
+     * @param shortcutKey
+     * @param params
+     */
+    void onItemInteraction(PlayerSession session, int x, int y, int z, ItemBlockRef itemRef, String groupId, String userAction, String shortcutKey, JsonNode params);
 
     /**
      * Session owner 'interacts' with another player (Space-Key or A-Button on X-Box).

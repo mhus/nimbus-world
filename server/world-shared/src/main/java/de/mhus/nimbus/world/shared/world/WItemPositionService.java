@@ -251,28 +251,49 @@ public class WItemPositionService {
     }
 
     /**
-     * Count items in a chunk.
-     * For instance worlds: counts merged result (COW).
+     * Find an item at exact world coordinates.
+     * Searches within the chunk that contains the coordinates.
+     * For instance worlds: uses COW merge (instance overrides base).
      *
-     * @param worldId World identifier (can be main world, instance, or zone)
-     * @param cx Chunk X coordinate
-     * @param cz Chunk Z coordinate
-     * @return Number of items in the chunk
+     * @param worldId World identifier
+     * @param x World X coordinate
+     * @param y World Y coordinate
+     * @param z World Z coordinate
+     * @return Optional containing the item position if found at exact coordinates
      */
     @Transactional(readOnly = true)
-    public long countItemsInChunk(WorldId worldId, int cx, int cz) {
+    public Optional<WItemPosition> getItemAt(WorldId worldId, int x, int y, int z) {
         if (worldId.isCollection()) {
             throw new IllegalArgumentException("WItemPosition cannot be in a collection");
         }
-        String chunk = TypeUtil.toStringChunkCoord(cx, cz);
+        WWorld world = worldService.getByWorldId(worldId.toBaseWorldId().getId()).orElse(null);
+        if (world == null) {
+            return Optional.empty();
+        }
+        String chunk = world.getChunkKey(x, z);
+
+        List<WItemPosition> positions;
         if (worldId.isInstance()) {
             var baseList = repository.findByWorldIdAndChunkAndEnabled(
                     worldId.toBaseWorldId().getId(), chunk, true);
             var instanceList = repository.findByWorldIdAndChunk(
                     worldId.getId(), chunk);
-            return CowUtil.merge(baseList, instanceList).size();
+            positions = CowUtil.merge(baseList, instanceList);
+        } else {
+            positions = repository.findByWorldIdAndChunkAndEnabled(
+                    worldId.getId(), chunk, true);
         }
-        return repository.findByWorldIdAndChunkAndEnabled(
-                worldId.getId(), chunk, true).size();
+
+        return positions.stream()
+                .filter(item -> {
+                    var data = item.getPublicData();
+                    if (data == null || data.getPosition() == null) return false;
+                    var pos = data.getPosition();
+                    return (int) pos.getX() == x
+                            && (int) pos.getY() == y
+                            && (int) pos.getZ() == z;
+                })
+                .findFirst();
     }
+
 }

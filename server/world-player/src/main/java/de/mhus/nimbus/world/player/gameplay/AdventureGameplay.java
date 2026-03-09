@@ -8,6 +8,7 @@ import de.mhus.nimbus.generated.types.Vector3;
 import de.mhus.nimbus.shared.utils.TypeUtil;
 import de.mhus.nimbus.world.player.gameplay.adventure.AttackAction;
 import de.mhus.nimbus.world.player.gameplay.adventure.CollectAction;
+import de.mhus.nimbus.world.player.gameplay.adventure.DropItemAction;
 import de.mhus.nimbus.world.player.gameplay.adventure.EffectAction;
 import de.mhus.nimbus.world.player.gameplay.adventure.IncreaseExpAction;
 import de.mhus.nimbus.world.player.gameplay.adventure.IncreaseSkillAction;
@@ -28,6 +29,7 @@ import de.mhus.nimbus.world.shared.redis.VitalDeltaBroadcastMessage;
 import de.mhus.nimbus.world.shared.util.HexMathUtil;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
 import de.mhus.nimbus.world.shared.world.WHexGridService;
+import de.mhus.nimbus.generated.types.ItemBlockRef;
 import de.mhus.nimbus.world.shared.world.WItem;
 import jakarta.annotation.PostConstruct;
 import lombok.Getter;
@@ -98,6 +100,7 @@ public class AdventureGameplay extends BasicGameplay {
         actions.put("increase.exp", new IncreaseExpAction(this));
         actions.put("increase.skill", new IncreaseSkillAction(this));
         actions.put("dialog", new DialogAction(this));
+        actions.put("drop.item", new DropItemAction(this));
     }
 
     // --- Condition delegation ---
@@ -276,6 +279,38 @@ public class AdventureGameplay extends BasicGameplay {
             case "fall" -> explorationHandler.handleFallDamage(session, data, messageData);
             default -> super.onSimpleInteraction(session, action, messageData);
         }
+    }
+
+    // --- Item interaction ---
+
+    @Override
+    public void onItemInteraction(PlayerSession session, int x, int y, int z, ItemBlockRef itemRef, String groupId, String userAction, String shortcutKey, JsonNode params) {
+        if (itemRef == null || itemRef.getName() == null) {
+            log.warn("Item interaction without itemRef at ({},{},{})", x, y, z);
+            return;
+        }
+
+        String itemName = itemRef.getName();
+        int amount = Math.max(1, itemRef.getAmount());
+
+        boolean added = gameplayService.putIntoBackpack(session, itemName, amount);
+        if (!added) {
+            log.debug("Could not add item {} to backpack for player {}", itemName, session.getEntityId());
+            clientService.sendNotification(session, 0, "", "Backpack full", null);
+            return;
+        }
+
+        // Remove item from world
+        itemPositionService.deleteItemPosition(session.getWorldId(), itemName);
+
+        // Broadcast removal to all clients
+        itemBlockUpdatePublisher.publishItemRemoved(session.getWorldId(), itemName, x, y, z);
+
+        // Notify player
+        String title = itemRef.getTitle() != null ? itemRef.getTitle() : itemName;
+        String texture = itemRef.getTexture();
+        clientService.sendNotification(session, 3, "", "+ " + amount + " " + title, texture);
+        log.info("Player {} collected item {} x{} at ({},{},{})", session.getEntityId(), itemName, amount, x, y, z);
     }
 
     // --- Shortcut resolution delegation ---

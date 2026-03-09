@@ -12,6 +12,8 @@ import de.mhus.nimbus.world.shared.region.RCharacter;
 import de.mhus.nimbus.world.shared.region.RCharacterService;
 import de.mhus.nimbus.world.shared.session.WPlayerSessionService;
 import de.mhus.nimbus.world.shared.world.WItem;
+import de.mhus.nimbus.world.shared.world.WItemPosition;
+import de.mhus.nimbus.world.shared.world.WItemPositionService;
 import de.mhus.nimbus.world.shared.world.WItemService;
 import de.mhus.nimbus.world.shared.world.WWorld;
 import jakarta.annotation.PostConstruct;
@@ -23,6 +25,7 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -35,6 +38,7 @@ public class GameplayService implements SessionAuthenticatedConsumer {
     private final ClientService clientService;
     private final RCharacterService characterService;
     private final WItemService itemService;
+    private final WItemPositionService itemPositionService;
     private Map<String, Gameplay> gameplayMap;
 
     @PostConstruct
@@ -150,6 +154,43 @@ public class GameplayService implements SessionAuthenticatedConsumer {
             return;
         }
         gameplay.onBlockInteraction(session, x, y, z, blockId, groupId, userAction, shortcutKey, params);
+    }
+
+    /**
+     * If the shortcut key is specified, the shortcut item action will be executed on the block.
+     * Otherwise, session owner interacts with a block (e.g. right-click or left-click). Executes the
+     * block action for 'interaction' defined in the block parameters on the player.
+     *
+     * @param session
+     * @param x
+     * @param y
+     * @param z
+     * @param itemId
+     * @param groupId
+     * @param userAction
+     * @param shortcutKey
+     * @param params
+     */
+    public void onPlayerItemInteraction(PlayerSession session, int x, int y, int z, String itemId, String groupId, String userAction, String shortcutKey, JsonNode params) {
+        log.info("Player {} interacted with item at ({}, {}, {}): action={}, shortcut={}, itemId={}, groupId={}",
+                GameplayUtil.toString(session.getPlayer()), x, y, z, userAction, shortcutKey, itemId, groupId);
+
+        if (session.getWorldId() == null) {
+            return;
+        }
+        var gameplay = session.getGameplay();
+        if (gameplay == null) {
+            log.warn("No gameplay set for session {}, cannot handle block interaction", session.getPlayer());
+            return;
+        }
+        // check item pos
+        Optional<WItemPosition> itemPositionOpt = itemPositionService.getItemAt(session.getWorldId(), x, y , z);
+        if (itemPositionOpt.isEmpty() || !itemId.equals(itemPositionOpt.get().getItemId())) {
+            log.warn("No item {} found at position ({}, {}, {}) for world {}, cannot handle item interaction",
+                    itemId, x, y, z, session.getWorldId());
+            return;
+        }
+        gameplay.onItemInteraction(session, x, y, z, itemPositionOpt.get().getPublicData(), groupId, userAction, shortcutKey, params);
     }
 
     /**
