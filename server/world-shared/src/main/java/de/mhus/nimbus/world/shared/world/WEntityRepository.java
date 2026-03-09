@@ -30,6 +30,14 @@ public interface WEntityRepository extends MongoRepository<WEntity, String> {
 
     List<WEntity> findByWorldIdAndEnabledAndAffectedChunksIn(String worldId, boolean enabled, java.util.Collection<String> chunkKeys);
 
+    // Epoch-aware queries
+
+    List<WEntity> findByWorldIdAndEpochesContaining(String worldId, int epoch);
+
+    List<WEntity> findByWorldIdAndEnabledAndEpochesContaining(String worldId, boolean enabled, int epoch);
+
+    List<WEntity> findByWorldIdAndEnabledAndAffectedChunksInAndEpochesContaining(String worldId, boolean enabled, java.util.Collection<String> chunkKeys, int epoch);
+
     /**
      * Delete all entities for a world.
      * Used for instance cleanup (hard delete of all COW data).

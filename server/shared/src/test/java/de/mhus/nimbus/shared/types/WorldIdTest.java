@@ -441,6 +441,65 @@ class WorldIdTest {
     }
 
     @Nested
+    class EditorInstanceTests {
+
+        @Test
+        void isEditorInstance_WithXPrefix_ShouldReturnTrue() {
+            WorldId worldId = WorldId.of("region1:world1::x0").orElseThrow();
+            assertTrue(worldId.isEditorInstance());
+        }
+
+        @Test
+        void isEditorInstance_WithXAndEpoch_ShouldReturnTrue() {
+            WorldId worldId = WorldId.of("region1:world1::x2").orElseThrow();
+            assertTrue(worldId.isEditorInstance());
+        }
+
+        @Test
+        void isEditorInstance_WithRegularInstance_ShouldReturnFalse() {
+            WorldId worldId = WorldId.of("region1:world1::abc1").orElseThrow();
+            assertFalse(worldId.isEditorInstance());
+        }
+
+        @Test
+        void isEditorInstance_WithBaseWorld_ShouldReturnFalse() {
+            WorldId worldId = WorldId.of("region1:world1").orElseThrow();
+            assertFalse(worldId.isEditorInstance());
+        }
+
+        @Test
+        void isEditorInstance_WithZoneAndXPrefix_ShouldReturnTrue() {
+            WorldId worldId = WorldId.of("region1:world1:zone1:x3").orElseThrow();
+            assertTrue(worldId.isEditorInstance());
+        }
+
+        @Test
+        void getEditorEpoch_ShouldReturnEpochNumber() {
+            WorldId worldId = WorldId.of("region1:world1::x2").orElseThrow();
+            assertEquals(2, worldId.getEditorEpoch());
+        }
+
+        @Test
+        void getEditorEpoch_WithZero_ShouldReturnZero() {
+            WorldId worldId = WorldId.of("region1:world1::x0").orElseThrow();
+            assertEquals(0, worldId.getEditorEpoch());
+        }
+
+        @Test
+        void getEditorEpoch_WithLargeNumber_ShouldReturn() {
+            WorldId worldId = WorldId.of("region1:world1::x42").orElseThrow();
+            assertEquals(42, worldId.getEditorEpoch());
+        }
+
+        @Test
+        void editorInstance_ToBaseWorldId_ShouldStripInstance() {
+            WorldId worldId = WorldId.of("region1:world1::x2").orElseThrow();
+            assertEquals("region1:world1", worldId.toBaseWorldId().getId());
+            assertFalse(worldId.toBaseWorldId().isEditorInstance());
+        }
+    }
+
+    @Nested
     class EqualsTests {
 
         @Test

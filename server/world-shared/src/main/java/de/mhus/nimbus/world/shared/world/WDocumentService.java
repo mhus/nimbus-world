@@ -27,8 +27,8 @@ public class WDocumentService {
      */
     @Transactional(readOnly = true)
     public Optional<WDocument> findByDocumentId(WorldId worldId, String collection, String documentId) {
-        if (worldId.isInstance()) {
-            throw new IllegalArgumentException("worldId must not be an instance id");
+        if (worldId.isInstance() && !worldId.isEditorInstance()) {
+            throw new IllegalArgumentException("worldId must not be a player instance id");
         }
         return repository.findByWorldIdAndCollectionAndDocumentId(worldId.getId(), collection, documentId);
     }
@@ -38,8 +38,8 @@ public class WDocumentService {
      */
     @Transactional(readOnly = true)
     public Optional<WDocument> findByDocumentId(WorldId worldId, String documentId) {
-        if (worldId.isInstance()) {
-            throw new IllegalArgumentException("worldId must not be an instance id");
+        if (worldId.isInstance() && !worldId.isEditorInstance()) {
+            throw new IllegalArgumentException("worldId must not be a player instance id");
         }
         return repository.findByWorldIdAndDocumentId(worldId.getId(), documentId);
     }
@@ -49,8 +49,8 @@ public class WDocumentService {
      */
     @Transactional(readOnly = true)
     public Optional<WDocument> findByName(WorldId worldId, String collection, String name) {
-        if (worldId.isInstance()) {
-            throw new IllegalArgumentException("worldId must not be an instance id");
+        if (worldId.isInstance() && !worldId.isEditorInstance()) {
+            throw new IllegalArgumentException("worldId must not be a player instance id");
         }
         return repository.findFirstByWorldIdAndCollectionAndNameOrderByCreatedAtDesc(worldId.getId(), collection, name);
     }
@@ -60,8 +60,8 @@ public class WDocumentService {
      */
     @Transactional(readOnly = true)
     public List<WDocument> findByCollection(WorldId worldId, String collection) {
-        if (worldId.isInstance()) {
-            throw new IllegalArgumentException("worldId must not be an instance id");
+        if (worldId.isInstance() && !worldId.isEditorInstance()) {
+            throw new IllegalArgumentException("worldId must not be a player instance id");
         }
         return repository.findByWorldIdAndCollection(worldId.getId(), collection);
     }
@@ -71,8 +71,8 @@ public class WDocumentService {
      */
     @Transactional(readOnly = true)
     public List<WDocument> findByWorldId(WorldId worldId) {
-        if (worldId.isInstance()) {
-            throw new IllegalArgumentException("worldId must not be an instance id");
+        if (worldId.isInstance() && !worldId.isEditorInstance()) {
+            throw new IllegalArgumentException("worldId must not be a player instance id");
         }
         return repository.findByWorldId(worldId.getId());
     }
@@ -82,8 +82,8 @@ public class WDocumentService {
      */
     @Transactional(readOnly = true)
     public List<WDocument> findByType(WorldId worldId, String type) {
-        if (worldId.isInstance()) {
-            throw new IllegalArgumentException("worldId must not be an instance id");
+        if (worldId.isInstance() && !worldId.isEditorInstance()) {
+            throw new IllegalArgumentException("worldId must not be a player instance id");
         }
         return repository.findByWorldIdAndType(worldId.getId(), type);
     }
@@ -101,8 +101,8 @@ public class WDocumentService {
      */
     @Transactional(readOnly = true)
     public List<WDocument> lookupDocuments(WorldId worldId, String collection) {
-        if (worldId.isInstance()) {
-            throw new IllegalArgumentException("worldId must not be an instance id");
+        if (worldId.isInstance() && !worldId.isEditorInstance()) {
+            throw new IllegalArgumentException("worldId must not be a player instance id");
         }
         if (Strings.isBlank(collection)) {
             throw new IllegalArgumentException("collection required");
@@ -164,8 +164,8 @@ public class WDocumentService {
         if (Strings.isBlank(documentId)) {
             throw new IllegalArgumentException("documentId required");
         }
-        if (worldId.isInstance()) {
-            throw new IllegalArgumentException("worldId must not be an instance id");
+        if (worldId.isInstance() && !worldId.isEditorInstance()) {
+            throw new IllegalArgumentException("worldId must not be a player instance id");
         }
 
         WDocument document = repository.findByWorldIdAndCollectionAndDocumentId(worldId.getId(), collection, documentId)
@@ -255,8 +255,8 @@ public class WDocumentService {
      */
     @Transactional
     public Optional<WDocument> update(WorldId worldId, String collection, String documentId, Consumer<WDocument> updater) {
-        if (worldId.isInstance()) {
-            throw new IllegalArgumentException("worldId must not be an instance id");
+        if (worldId.isInstance() && !worldId.isEditorInstance()) {
+            throw new IllegalArgumentException("worldId must not be a player instance id");
         }
 
         return repository.findByWorldIdAndCollectionAndDocumentId(worldId.getId(), collection, documentId)
@@ -274,8 +274,8 @@ public class WDocumentService {
      */
     @Transactional
     public boolean delete(WorldId worldId, String collection, String documentId) {
-        if (worldId.isInstance()) {
-            throw new IllegalArgumentException("worldId must not be an instance id");
+        if (worldId.isInstance() && !worldId.isEditorInstance()) {
+            throw new IllegalArgumentException("worldId must not be a player instance id");
         }
 
         return repository.findByWorldIdAndCollectionAndDocumentId(worldId.getId(), collection, documentId)
@@ -291,8 +291,8 @@ public class WDocumentService {
      */
     @Transactional(readOnly = true)
     public boolean exists(WorldId worldId, String collection, String documentId) {
-        if (worldId.isInstance()) {
-            throw new IllegalArgumentException("worldId must not be an instance id");
+        if (worldId.isInstance() && !worldId.isEditorInstance()) {
+            throw new IllegalArgumentException("worldId must not be a player instance id");
         }
         return repository.existsByWorldIdAndCollectionAndDocumentId(worldId.getId(), collection, documentId);
     }

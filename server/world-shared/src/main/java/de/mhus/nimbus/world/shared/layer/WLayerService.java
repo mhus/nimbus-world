@@ -92,8 +92,8 @@ public class WLayerService implements StorageProvider {
             throw new IllegalArgumentException("layerType is required");
         }
         WorldId parsedWorldId = WorldId.of(worldId).orElseThrow();
-        if (parsedWorldId.isInstance()) {
-            throw new IllegalArgumentException("Cannot create layer for instance worldId");
+        if (parsedWorldId.isInstance() && !parsedWorldId.isEditorInstance()) {
+            throw new IllegalArgumentException("Cannot create layer for player instance worldId");
         }
 
         // Check for duplicate name
@@ -139,8 +139,8 @@ public class WLayerService implements StorageProvider {
             return Optional.empty();
         }
         WorldId parsedWorldId = WorldId.of(worldId).orElseThrow();
-        if (parsedWorldId.isInstance()) {
-            throw new IllegalArgumentException("Cannot create layer for instance or collection worldId");
+        if (parsedWorldId.isInstance() && !parsedWorldId.isEditorInstance()) {
+            throw new IllegalArgumentException("Cannot create layer for player instance or collection worldId");
         }
 
         WLayer layer = layerOpt.get();
@@ -170,8 +170,8 @@ public class WLayerService implements StorageProvider {
             return false;
         }
         WorldId parsedWorldId = WorldId.of(worldId).orElseThrow();
-        if (parsedWorldId.isInstance() || parsedWorldId.isCollection()) {
-            throw new IllegalArgumentException("Cannot create layer for instance or collection worldId");
+        if ((parsedWorldId.isInstance() && !parsedWorldId.isEditorInstance()) || parsedWorldId.isCollection()) {
+            throw new IllegalArgumentException("Cannot create layer for player instance or collection worldId");
         }
 
         WLayer layer = layerOpt.get();
@@ -285,14 +285,64 @@ public class WLayerService implements StorageProvider {
                 .collect(Collectors.toList());
     }
 
+    // ==================== EPOCH-AWARE QUERIES ====================
+
+    /**
+     * Find all layers for a world filtered by epoch.
+     */
+    @Transactional(readOnly = true)
+    public List<WLayer> findByWorldId(String worldId, int epoch) {
+        WorldId parsedWorldId = WorldId.of(worldId).orElseThrow();
+        return layerRepository.findByWorldIdAndEpochesContainingOrderByOrderAsc(parsedWorldId.toBaseWorldId().getId(), epoch);
+    }
+
+    /**
+     * Find all layers for a world with optional query filter, filtered by epoch.
+     */
+    @Transactional(readOnly = true)
+    public List<WLayer> findByWorldIdAndQuery(String worldId, String query, int epoch) {
+        WorldId parsedWorldId = WorldId.of(worldId).orElseThrow();
+        List<WLayer> all = layerRepository.findByWorldIdAndEpochesContainingOrderByOrderAsc(parsedWorldId.toBaseWorldId().getId(), epoch);
+
+        if (query != null && !query.isBlank()) {
+            all = filterByQuery(all, query);
+        }
+
+        return all;
+    }
+
+    /**
+     * Find layers affecting a specific chunk filtered by epoch.
+     */
+    @Transactional(readOnly = true)
+    public List<WLayer> getLayersAffectingChunk(String worldId, String chunkKey, int epoch) {
+        WorldId parsedWorldId = WorldId.of(worldId).orElseThrow();
+        if (parsedWorldId.isInstance() && !parsedWorldId.isEditorInstance()) {
+            throw new IllegalArgumentException("Cannot query layers for player instance worldId");
+        }
+        return layerRepository.findLayersAffectingChunkAndEpoch(worldId, chunkKey, epoch)
+                .stream()
+                .sorted(Comparator.comparingInt(WLayer::getOrder))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Find enabled layers for a world filtered by epoch.
+     */
+    @Transactional(readOnly = true)
+    public List<WLayer> findEnabledByWorldId(String worldId, int epoch) {
+        WorldId parsedWorldId = WorldId.of(worldId).orElseThrow();
+        return layerRepository.findByWorldIdAndEnabledAndEpochesContainingOrderByOrderAsc(parsedWorldId.toBaseWorldId().getId(), true, epoch);
+    }
+
     /**
      * Save a layer.
      */
     @Transactional
     public WLayer save(WLayer layer) {
         WorldId parsedWorldId = WorldId.of(layer.getWorldId()).orElseThrow();
-        if (parsedWorldId.isInstance()) {
-            throw new IllegalArgumentException("Cannot create layer for instance worldId");
+        if (parsedWorldId.isInstance() && !parsedWorldId.isEditorInstance()) {
+            throw new IllegalArgumentException("Cannot create layer for player instance worldId");
         }
         return layerRepository.save(layer);
     }
@@ -335,8 +385,8 @@ public class WLayerService implements StorageProvider {
     @Transactional(readOnly = true)
     public List<WLayer> getLayersAffectingChunk(String worldId, String chunkKey) {
         WorldId parsedWorldId = WorldId.of(worldId).orElseThrow();
-        if (parsedWorldId.isInstance()) {
-            throw new IllegalArgumentException("Cannot create layer for instance worldId");
+        if (parsedWorldId.isInstance() && !parsedWorldId.isEditorInstance()) {
+            throw new IllegalArgumentException("Cannot create layer for player instance worldId");
         }
         return layerRepository.findLayersAffectingChunk(worldId, chunkKey)
                 .stream()
@@ -355,8 +405,8 @@ public class WLayerService implements StorageProvider {
             throw new IllegalArgumentException("LayerChunkData is required");
         }
         WorldId parsedWorldId = WorldId.of(worldId).orElseThrow();
-        if (parsedWorldId.isInstance()) {
-            throw new IllegalArgumentException("Cannot create layer for instance worldId");
+        if (parsedWorldId.isInstance() && !parsedWorldId.isEditorInstance()) {
+            throw new IllegalArgumentException("Cannot create layer for player instance worldId");
         }
 
         // Serialize to JSON
@@ -791,8 +841,8 @@ public class WLayerService implements StorageProvider {
             return;
         }
         WorldId parsedWorldId = WorldId.of(worldId).orElseThrow();
-        if (parsedWorldId.isInstance()) {
-            throw new IllegalArgumentException("Cannot create layer for instance worldId");
+        if (parsedWorldId.isInstance() && !parsedWorldId.isEditorInstance()) {
+            throw new IllegalArgumentException("Cannot create layer for player instance worldId");
         }
         var world = worldService.getByWorldId(worldId).orElseThrow(
                 () -> new IllegalArgumentException("World not found: " + worldId)
@@ -1377,8 +1427,8 @@ public class WLayerService implements StorageProvider {
             throw new IllegalArgumentException("Content is required");
         }
         WorldId parsedWorldId = WorldId.of(worldId).orElseThrow();
-        if (parsedWorldId.isInstance()) {
-            throw new IllegalArgumentException("Cannot create layer for instance worldId");
+        if (parsedWorldId.isInstance() && !parsedWorldId.isEditorInstance()) {
+            throw new IllegalArgumentException("Cannot create layer for player instance worldId");
         }
         if (Strings.isBlank(name)) {
             throw new IllegalArgumentException("name is required");
@@ -1682,8 +1732,8 @@ public class WLayerService implements StorageProvider {
             throw new IllegalArgumentException("Content is required");
         }
         WorldId parsedWorldId = WorldId.of(worldId).orElseThrow();
-        if (parsedWorldId.isInstance()) {
-            throw new IllegalArgumentException("Cannot create layer for instance worldId");
+        if (parsedWorldId.isInstance() && !parsedWorldId.isEditorInstance()) {
+            throw new IllegalArgumentException("Cannot create layer for player instance worldId");
         }
 
         // Find or create entity (old behavior - only one model per layerDataId)
@@ -1900,8 +1950,8 @@ public class WLayerService implements StorageProvider {
     public BlockOrigin findBlockOrigin(String worldId, int x, int y, int z) {
         // Calculate chunk key
         WorldId parsedWorldId = WorldId.of(worldId).orElseThrow();
-        if (parsedWorldId.isInstance()) {
-            throw new IllegalArgumentException("Cannot create layer for instance worldId");
+        if (parsedWorldId.isInstance() && !parsedWorldId.isEditorInstance()) {
+            throw new IllegalArgumentException("Cannot create layer for player instance worldId");
         }
         var world = worldService.getByWorldId(worldId).orElseThrow(
                 () -> new IllegalArgumentException("World not found: " + worldId)

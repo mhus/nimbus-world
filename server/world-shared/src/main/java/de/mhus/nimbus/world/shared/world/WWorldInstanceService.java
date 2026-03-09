@@ -106,8 +106,8 @@ public class WWorldInstanceService {
         }
 
         // Synthetic editor instances (x-prefix) return a synthetic WWorldInstance
-        if (WWorldService.isSyntheticInstance(worldId)) {
-            int epoch = WWorldService.parseSyntheticEpoch(worldId);
+        if (worldId.isEditorInstance()) {
+            int epoch = worldId.getEditorEpoch();
             WWorldInstance synthetic = WWorldInstance.builder()
                     .instanceId(fullInstanceId)
                     .worldId(worldId.toBaseWorldId().getId())

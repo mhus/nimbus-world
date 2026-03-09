@@ -58,14 +58,17 @@ public class WItemPositionService {
 
         String itemId = itemBlockRef.getName();
         Vector3 position = itemBlockRef.getPosition();
+        // Editor instances: write directly to base world (no COW)
+        WorldId lookupWorld = worldId.isEditorInstance() ? worldId.toBaseWorldId() : worldId;
         WWorld world = worldService.getByWorldId(worldId.toBaseWorldId().getId()).get();
         String chunk = world.getChunkKey((int)position.getX(), (int)position.getZ());
 
-        // For instance worlds: always write to instance layer
-        WItemPosition itemPosition = repository.findByWorldIdAndItemId(worldId.getId(), itemId)
+        // For player instance worlds: write to instance layer (COW)
+        // For editor instances: write to base world
+        WItemPosition itemPosition = repository.findByWorldIdAndItemId(lookupWorld.getId(), itemId)
                 .orElseGet(() -> {
                     WItemPosition neu = WItemPosition.builder()
-                            .worldId(worldId.getId())
+                            .worldId(lookupWorld.getId())
                             .itemId(itemId)
                             .chunk(chunk)
                             .enabled(true)
@@ -105,15 +108,17 @@ public class WItemPositionService {
         String chunk = TypeUtil.toStringChunkCoord(cx, cz);
 
         List<WItemPosition> positions;
-        if (worldId.isInstance()) {
+        if (worldId.isInstance() && !worldId.isEditorInstance()) {
+            // Player instance: COW merge
             var baseList = repository.findByWorldIdAndChunkAndEnabled(
                     worldId.toBaseWorldId().getId(), chunk, true);
             var instanceList = repository.findByWorldIdAndChunk(
                     worldId.getId(), chunk);
             positions = CowUtil.merge(baseList, instanceList);
         } else {
+            // Base world or editor instance: read directly from base world
             positions = repository.findByWorldIdAndChunkAndEnabled(
-                    worldId.getId(), chunk, true);
+                    worldId.toBaseWorldId().getId(), chunk, true);
         }
 
         return positions.stream()
@@ -125,7 +130,8 @@ public class WItemPositionService {
     /**
      * Get all items in a world.
      * Returns only enabled items.
-     * For instance worlds: merges base world items with instance overrides (COW).
+     * For player instance worlds: merges base world items with instance overrides (COW).
+     * For editor instances: reads directly from base world (no COW).
      *
      * @param worldId World identifier (can be main world, instance, or zone)
      * @return List of all item positions
@@ -135,17 +141,20 @@ public class WItemPositionService {
         if (worldId.isCollection()) {
             throw new IllegalArgumentException("WItemPosition cannot be in a collection");
         }
-        if (worldId.isInstance()) {
+        if (worldId.isInstance() && !worldId.isEditorInstance()) {
+            // Player instance: COW merge
             var baseList = repository.findByWorldId(worldId.toBaseWorldId().getId());
             var instanceList = repository.findByWorldId(worldId.getId());
             return CowUtil.merge(baseList, instanceList);
         }
-        return repository.findByWorldId(worldId.getId());
+        // Base world or editor instance
+        return repository.findByWorldId(worldId.toBaseWorldId().getId());
     }
 
     /**
      * Find a specific item by ID.
-     * For instance worlds: checks instance layer first, falls back to base world (COW).
+     * For player instance worlds: checks instance layer first, falls back to base world (COW).
+     * For editor instances: reads directly from base world (no COW).
      *
      * @param worldId World identifier (can be main world, instance, or zone)
      * @param itemId Item identifier
@@ -156,18 +165,21 @@ public class WItemPositionService {
         if (worldId.isCollection()) {
             throw new IllegalArgumentException("WItemPosition cannot be in a collection");
         }
-        if (worldId.isInstance()) {
+        if (worldId.isInstance() && !worldId.isEditorInstance()) {
+            // Player instance: COW lookup
             var instanceEntry = repository.findByWorldIdAndItemId(worldId.getId(), itemId).orElse(null);
             var baseEntry = repository.findByWorldIdAndItemId(worldId.toBaseWorldId().getId(), itemId).orElse(null);
             return Optional.ofNullable(CowUtil.findOne(instanceEntry, baseEntry));
         }
-        return repository.findByWorldIdAndItemId(worldId.getId(), itemId);
+        // Base world or editor instance
+        return repository.findByWorldIdAndItemId(worldId.toBaseWorldId().getId(), itemId);
     }
 
     /**
      * Delete an item position.
      * Performs soft delete by setting enabled=false.
-     * For instance worlds: creates a tombstone in the instance layer (COW).
+     * For player instance worlds: creates a tombstone in the instance layer (COW).
+     * For editor instances: deletes directly from base world (no COW).
      *
      * @param worldId World identifier (can be main world, instance, or zone)
      * @param itemId Item identifier
@@ -177,6 +189,22 @@ public class WItemPositionService {
     public boolean deleteItemPosition(WorldId worldId, String itemId) {
         if (worldId.isCollection()) {
             throw new IllegalArgumentException("WItemPosition cannot be in a collection");
+        }
+
+        // Editor instance: operate directly on base world
+        if (worldId.isEditorInstance()) {
+            String baseId = worldId.toBaseWorldId().getId();
+            Optional<WItemPosition> itemOpt = repository.findByWorldIdAndItemId(baseId, itemId);
+            if (itemOpt.isPresent()) {
+                WItemPosition item = itemOpt.get();
+                item.setEnabled(false);
+                item.touchUpdate();
+                repository.save(item);
+                log.info("Soft deleted item (editor instance): world={}, itemId={}", baseId, itemId);
+                return true;
+            }
+            log.debug("Item not found for deletion (editor instance): world={}, itemId={}", baseId, itemId);
+            return false;
         }
 
         // Check if item exists in instance layer
@@ -190,7 +218,7 @@ public class WItemPositionService {
             return true;
         }
 
-        // For instance worlds: check if item exists in base world and create tombstone
+        // For player instance worlds: check if item exists in base world and create tombstone
         if (worldId.isInstance()) {
             Optional<WItemPosition> baseOpt = repository.findByWorldIdAndItemId(
                     worldId.toBaseWorldId().getId(), itemId);
@@ -251,6 +279,59 @@ public class WItemPositionService {
         return saved;
     }
 
+    // ==================== EPOCH-AWARE QUERIES ====================
+
+    /**
+     * Get all items in a specific chunk filtered by epoch.
+     * Returns only enabled items.
+     * For instance worlds: merges base world items with instance overrides (COW).
+     */
+    @Transactional(readOnly = true)
+    public List<ItemBlockRef> getItemsInChunk(WorldId worldId, int cx, int cz, int epoch) {
+        if (worldId.isCollection()) {
+            throw new IllegalArgumentException("WItemPosition cannot be in a collection");
+        }
+        String chunk = TypeUtil.toStringChunkCoord(cx, cz);
+
+        List<WItemPosition> positions;
+        if (worldId.isInstance() && !worldId.isEditorInstance()) {
+            // Player instance: COW merge with epoch filter on base
+            var baseList = repository.findByWorldIdAndChunkAndEnabledAndEpochesContaining(
+                    worldId.toBaseWorldId().getId(), chunk, true, epoch);
+            var instanceList = repository.findByWorldIdAndChunk(
+                    worldId.getId(), chunk);
+            positions = CowUtil.merge(baseList, instanceList);
+        } else {
+            // Base world or editor instance
+            positions = repository.findByWorldIdAndChunkAndEnabledAndEpochesContaining(
+                    worldId.toBaseWorldId().getId(), chunk, true, epoch);
+        }
+
+        return positions.stream()
+                .map(WItemPosition::getPublicData)
+                .filter(data -> data != null)
+                .toList();
+    }
+
+    /**
+     * Get all items in a world filtered by epoch.
+     * Returns only enabled items.
+     */
+    @Transactional(readOnly = true)
+    public List<WItemPosition> getAllItems(WorldId worldId, int epoch) {
+        if (worldId.isCollection()) {
+            throw new IllegalArgumentException("WItemPosition cannot be in a collection");
+        }
+        if (worldId.isInstance() && !worldId.isEditorInstance()) {
+            // Player instance: COW merge
+            var baseList = repository.findByWorldIdAndEpochesContaining(worldId.toBaseWorldId().getId(), epoch);
+            var instanceList = repository.findByWorldId(worldId.getId());
+            return CowUtil.merge(baseList, instanceList);
+        }
+        // Base world or editor instance
+        return repository.findByWorldIdAndEpochesContaining(worldId.toBaseWorldId().getId(), epoch);
+    }
+
     /**
      * Find an item at exact world coordinates.
      * Searches within the chunk that contains the coordinates.
@@ -274,15 +355,17 @@ public class WItemPositionService {
         String chunk = world.getChunkKey(x, z);
 
         List<WItemPosition> positions;
-        if (worldId.isInstance()) {
+        if (worldId.isInstance() && !worldId.isEditorInstance()) {
+            // Player instance: COW merge
             var baseList = repository.findByWorldIdAndChunkAndEnabled(
                     worldId.toBaseWorldId().getId(), chunk, true);
             var instanceList = repository.findByWorldIdAndChunk(
                     worldId.getId(), chunk);
             positions = CowUtil.merge(baseList, instanceList);
         } else {
+            // Base world or editor instance
             positions = repository.findByWorldIdAndChunkAndEnabled(
-                    worldId.getId(), chunk, true);
+                    worldId.toBaseWorldId().getId(), chunk, true);
         }
 
         return positions.stream()

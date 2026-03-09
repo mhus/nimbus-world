@@ -121,8 +121,8 @@ public class WHexGridService {
             throw new IllegalArgumentException("publicData required");
         }
         WorldId worldId = WorldId.of(entity.getWorldId()).orElseThrow();
-        if (worldId.isCollection() || worldId.isInstance()) {
-            throw new IllegalArgumentException("WHexGrid cannot be in a collection or instance");
+        if (worldId.isCollection() || (worldId.isInstance() && !worldId.isEditorInstance())) {
+            throw new IllegalArgumentException("WHexGrid cannot be in a collection or player instance");
         }
 
         // Ensure position key is synchronized
@@ -161,8 +161,8 @@ public class WHexGridService {
         }
 
         WorldId parsedWorldId = WorldId.of(worldId).orElseThrow();
-        if (parsedWorldId.isCollection() || parsedWorldId.isInstance()) {
-            throw new IllegalArgumentException("WHexGrid cannot be in a collection or instance");
+        if (parsedWorldId.isCollection() || (parsedWorldId.isInstance() && !parsedWorldId.isEditorInstance())) {
+            throw new IllegalArgumentException("WHexGrid cannot be in a collection or player instance");
         }
 
         String positionKey = TypeUtil.toStringHexCoord(publicData.getPosition());
@@ -210,8 +210,8 @@ public class WHexGridService {
         }
 
         WorldId parsedWorldId = WorldId.of(worldId).orElseThrow();
-        if (parsedWorldId.isCollection() || parsedWorldId.isInstance()) {
-            throw new IllegalArgumentException("WHexGrid cannot be in a collection or instance");
+        if (parsedWorldId.isCollection() || (parsedWorldId.isInstance() && !parsedWorldId.isEditorInstance())) {
+            throw new IllegalArgumentException("WHexGrid cannot be in a collection or player instance");
         }
 
         String positionKey = TypeUtil.toStringHexCoord(hexPos);
@@ -269,8 +269,8 @@ public class WHexGridService {
         }
 
         WorldId parsedWorldId = WorldId.of(worldId).orElseThrow();
-        if (parsedWorldId.isCollection() || parsedWorldId.isInstance()) {
-            throw new IllegalArgumentException("WHexGrid cannot be in a collection or instance");
+        if (parsedWorldId.isCollection() || (parsedWorldId.isInstance() && !parsedWorldId.isEditorInstance())) {
+            throw new IllegalArgumentException("WHexGrid cannot be in a collection or player instance");
         }
 
         String positionKey = TypeUtil.toStringHexCoord(hexPos);

@@ -70,7 +70,7 @@ public class WWorldService {
             WorldId parsedId = WorldId.unchecked(fullInstanceId);
 
             // Check for synthetic editor instance (x-prefix, e.g. "x0", "x2")
-            if (isSyntheticInstance(parsedId)) {
+            if (parsedId.isEditorInstance()) {
                 return loadSyntheticEditorInstance(parsedId, fullInstanceId);
             }
 
@@ -112,28 +112,19 @@ public class WWorldService {
     }
 
     /**
-     * Check if an instance ID represents a synthetic editor instance.
-     * Synthetic instances use the format "xN" where N is the epoch number (e.g. "x0", "x2").
-     * The 'x' prefix is not valid in regular instance IDs.
-     *
-     * @param worldId The parsed WorldId
-     * @return true if this is a synthetic editor instance
+     * @deprecated Use {@link WorldId#isEditorInstance()} instead.
      */
+    @Deprecated
     public static boolean isSyntheticInstance(WorldId worldId) {
-        if (!worldId.isInstance()) return false;
-        String instancePart = worldId.getInstance();
-        return instancePart.startsWith("x") && instancePart.length() > 1;
+        return worldId.isEditorInstance();
     }
 
     /**
-     * Parse the epoch number from a synthetic instance ID.
-     *
-     * @param worldId The parsed WorldId (must be a synthetic instance)
-     * @return The epoch number
-     * @throws NumberFormatException if the epoch part is not a valid number
+     * @deprecated Use {@link WorldId#getEditorEpoch()} instead.
      */
+    @Deprecated
     public static int parseSyntheticEpoch(WorldId worldId) {
-        return Integer.parseInt(worldId.getInstance().substring(1));
+        return worldId.getEditorEpoch();
     }
 
     /**
@@ -148,7 +139,7 @@ public class WWorldService {
     private Optional<WWorld> loadSyntheticEditorInstance(WorldId parsedId, String fullInstanceId) {
         int epoch;
         try {
-            epoch = parseSyntheticEpoch(parsedId);
+            epoch = parsedId.getEditorEpoch();
         } catch (NumberFormatException e) {
             log.warn("Invalid synthetic instance epoch: {}", fullInstanceId);
             return Optional.empty();

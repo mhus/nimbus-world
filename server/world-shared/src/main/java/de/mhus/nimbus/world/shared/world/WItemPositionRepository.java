@@ -66,4 +66,11 @@ public interface WItemPositionRepository extends MongoRepository<WItemPosition, 
      * Used for instance cleanup (hard delete of all COW data).
      */
     void deleteByWorldId(String worldId);
+
+    // Epoch-aware queries
+
+    List<WItemPosition> findByWorldIdAndChunkAndEnabledAndEpochesContaining(
+            String worldId, String chunk, boolean enabled, int epoch);
+
+    List<WItemPosition> findByWorldIdAndEpochesContaining(String worldId, int epoch);
 }

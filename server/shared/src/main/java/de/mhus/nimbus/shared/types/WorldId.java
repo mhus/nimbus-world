@@ -275,4 +275,29 @@ public class WorldId implements Comparable<WorldId> {
         return id.startsWith(COLLECTION_PUBLIC + ":");
     }
 
+    /**
+     * Check if this is a synthetic editor instance.
+     * Editor instances use the format "xN" where N is the epoch number (e.g. "x0", "x2").
+     * They operate on base world data without COW.
+     *
+     * @return true if this is a synthetic editor instance
+     */
+    public boolean isEditorInstance() {
+        parseId();
+        if (instance.isEmpty()) return false;
+        return instance.startsWith("x") && instance.length() > 1;
+    }
+
+    /**
+     * Get the epoch number from a synthetic editor instance.
+     * Only valid when {@link #isEditorInstance()} returns true.
+     *
+     * @return epoch number extracted from instance ID (e.g. "x2" -> 2)
+     * @throws NumberFormatException if instance ID is not a valid editor instance
+     */
+    public int getEditorEpoch() {
+        parseId();
+        return Integer.parseInt(instance.substring(1));
+    }
+
 }

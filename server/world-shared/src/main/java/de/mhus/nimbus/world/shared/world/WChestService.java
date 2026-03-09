@@ -42,15 +42,19 @@ public class WChestService {
     public Optional<WChest> getByWorldIdAndName(String worldId, String name) {
         var parsedWorldId = WorldId.of(worldId).orElse(null);
 
-        // For instance worlds: check instance layer first, then base world (COW)
-        if (parsedWorldId != null && parsedWorldId.isInstance()) {
+        // For player instance worlds (not editor): check instance layer first, then base world (COW)
+        if (parsedWorldId != null && parsedWorldId.isInstance() && !parsedWorldId.isEditorInstance()) {
             var instanceEntry = repository.findByWorldIdAndName(worldId, name).orElse(null);
             var baseEntry = repository.findByWorldIdAndName(
                     parsedWorldId.toBaseWorldId().getId(), name).orElse(null);
             return Optional.ofNullable(CowUtil.findOne(instanceEntry, baseEntry));
         }
 
-        var result = repository.findByWorldIdAndName(worldId, name);
+        // Editor instances and base worlds: lookup by base worldId
+        String lookupWorldId = (parsedWorldId != null && parsedWorldId.isEditorInstance())
+                ? parsedWorldId.toBaseWorldId().getId()
+                : worldId;
+        var result = repository.findByWorldIdAndName(lookupWorldId, name);
         if (result.isPresent()) {
             return result;
         }
@@ -69,12 +73,17 @@ public class WChestService {
     @Transactional(readOnly = true)
     public List<WChest> findByWorldId(String worldId) {
         var parsedWorldId = WorldId.of(worldId).orElse(null);
-        if (parsedWorldId != null && parsedWorldId.isInstance()) {
+        // Player instances (not editor): COW merge
+        if (parsedWorldId != null && parsedWorldId.isInstance() && !parsedWorldId.isEditorInstance()) {
             var baseList = repository.findByWorldId(parsedWorldId.toBaseWorldId().getId());
             var instanceList = repository.findByWorldId(worldId);
             return CowUtil.merge(baseList, instanceList);
         }
-        return repository.findByWorldId(worldId);
+        // Editor instances: lookup by base worldId
+        String lookupWorldId = (parsedWorldId != null && parsedWorldId.isEditorInstance())
+                ? parsedWorldId.toBaseWorldId().getId()
+                : worldId;
+        return repository.findByWorldId(lookupWorldId);
     }
 
     // ===== COW copy-on-write support =====
@@ -92,8 +101,8 @@ public class WChestService {
     public WChest ensureCowCopy(String worldId, WChest chest) {
         var parsedWorldId = WorldId.of(worldId).orElse(null);
 
-        // Not an instance world, or chest is already in instance/region layer - no copy needed
-        if (parsedWorldId == null || !parsedWorldId.isInstance()) {
+        // Not an instance world, editor instance, or chest is already in instance/region layer - no copy needed
+        if (parsedWorldId == null || !parsedWorldId.isInstance() || parsedWorldId.isEditorInstance()) {
             return chest;
         }
 
@@ -505,26 +514,31 @@ public class WChestService {
             throw new IllegalArgumentException("WChest can't be in shared or public region");
         }
 
-        // Check for existing instance copy
-        var directEntry = repository.findByWorldIdAndName(worldId, name);
+        // Resolve lookup worldId: editor instances use base world directly
+        String lookupWorldId = parsedWorldId.isEditorInstance()
+                ? parsedWorldId.toBaseWorldId().getId()
+                : worldId;
+
+        // Check for existing entry
+        var directEntry = repository.findByWorldIdAndName(lookupWorldId, name);
         if (directEntry.isPresent()) {
-            if (parsedWorldId.isInstance()) {
-                // Instance copy exists: mark as tombstone
+            if (parsedWorldId.isInstance() && !parsedWorldId.isEditorInstance()) {
+                // Player instance copy exists: mark as tombstone
                 WChest chest = directEntry.get();
                 chest.setEnabled(false);
                 chest.touchUpdate();
                 repository.save(chest);
                 log.debug("Chest tombstoned in instance: worldId={}, name={}", worldId, name);
             } else {
-                // Base world: hard delete
+                // Base world or editor instance: hard delete
                 repository.delete(directEntry.get());
-                log.debug("Chest deleted: worldId={}, name={}", worldId, name);
+                log.debug("Chest deleted: worldId={}, name={}", lookupWorldId, name);
             }
             return;
         }
 
-        // For instance worlds: check if chest exists in base world and create tombstone
-        if (parsedWorldId.isInstance()) {
+        // For player instance worlds: check if chest exists in base world and create tombstone
+        if (parsedWorldId.isInstance() && !parsedWorldId.isEditorInstance()) {
             var baseEntry = repository.findByWorldIdAndName(
                     parsedWorldId.toBaseWorldId().getId(), name);
             if (baseEntry.isPresent()) {

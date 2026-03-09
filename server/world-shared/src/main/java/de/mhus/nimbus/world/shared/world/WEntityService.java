@@ -95,19 +95,20 @@ public class WEntityService {
         if (publicData == null) {
             throw new IllegalArgumentException("publicData required");
         }
-        if (worldId.isInstance() || worldId.isCollection()) {
-            throw new IllegalArgumentException("worldId must be a world id (no instance, no collection)");
+        if ((worldId.isInstance() && !worldId.isEditorInstance()) || worldId.isCollection()) {
+            throw new IllegalArgumentException("worldId must be a world id (no player instance, no collection)");
         }
+        var lookupWorld = worldId.toBaseWorldId();
 
-        WEntity entity = repository.findByWorldIdAndEntityId(worldId.getId(), entityId).orElseGet(() -> {
+        WEntity entity = repository.findByWorldIdAndEntityId(lookupWorld.getId(), entityId).orElseGet(() -> {
             WEntity neu = WEntity.builder()
-                    .worldId(worldId.getId())
+                    .worldId(lookupWorld.getId())
                     .entityId(entityId)
                     .modelId(modelId)
                     .enabled(true)
                     .build();
             neu.touchCreate();
-            log.debug("Creating new WEntity: world={}, entityId={}", worldId, entityId);
+            log.debug("Creating new WEntity: world={}, entityId={}", lookupWorld, entityId);
             return neu;
         });
 
@@ -117,7 +118,7 @@ public class WEntityService {
         entity.touchUpdate();
 
         WEntity saved = repository.save(entity);
-        log.debug("Saved WEntity: world={}, entityId={}", worldId, entityId);
+        log.debug("Saved WEntity: world={}, entityId={}", lookupWorld, entityId);
         return saved;
     }
 
@@ -141,16 +142,17 @@ public class WEntityService {
      */
     @Transactional
     public Optional<WEntity> update(WorldId worldId, String entityId, Consumer<WEntity> updater) {
-        if (worldId.isInstance() || worldId.isCollection()) {
-            throw new IllegalArgumentException("worldId must be a world id (no instance, no collection)");
+        if ((worldId.isInstance() && !worldId.isEditorInstance()) || worldId.isCollection()) {
+            throw new IllegalArgumentException("worldId must be a world id (no player instance, no collection)");
         }
+        var lookupWorld = worldId.toBaseWorldId();
 
-        return repository.findByWorldIdAndEntityId(worldId.getId(), entityId).map(entity -> {
+        return repository.findByWorldIdAndEntityId(lookupWorld.getId(), entityId).map(entity -> {
             updater.accept(entity);
             computeAffectedChunks(entity);
             entity.touchUpdate();
             WEntity saved = repository.save(entity);
-            log.debug("Updated WEntity: world={}, entityId={}", worldId, entityId);
+            log.debug("Updated WEntity: world={}, entityId={}", lookupWorld, entityId);
             return saved;
         });
     }
@@ -161,13 +163,14 @@ public class WEntityService {
      */
     @Transactional
     public boolean delete(WorldId worldId, String entityId) {
-        if (worldId.isInstance() || worldId.isCollection()) {
-            throw new IllegalArgumentException("worldId must be a world id (no instance, no collection)");
+        if ((worldId.isInstance() && !worldId.isEditorInstance()) || worldId.isCollection()) {
+            throw new IllegalArgumentException("worldId must be a world id (no player instance, no collection)");
         }
+        var lookupWorld = worldId.toBaseWorldId();
 
-        return repository.findByWorldIdAndEntityId(worldId.getId(), entityId).map(entity -> {
+        return repository.findByWorldIdAndEntityId(lookupWorld.getId(), entityId).map(entity -> {
             repository.delete(entity);
-            log.debug("Deleted WEntity: world={}, entityId={}", worldId, entityId);
+            log.debug("Deleted WEntity: world={}, entityId={}", lookupWorld, entityId);
             return true;
         }).orElse(false);
     }
@@ -192,8 +195,8 @@ public class WEntityService {
      */
     @Transactional
     public int deleteByEntityIdPrefix(WorldId worldId, String prefix) {
-        if (worldId.isInstance() || worldId.isCollection()) {
-            throw new IllegalArgumentException("worldId must be a world id (no instance, no collection)");
+        if ((worldId.isInstance() && !worldId.isEditorInstance()) || worldId.isCollection()) {
+            throw new IllegalArgumentException("worldId must be a world id (no player instance, no collection)");
         }
         var lookupWorld = worldId.toBaseWorldId();
         List<WEntity> entities = repository.findByWorldIdAndEntityIdStartingWith(
@@ -216,8 +219,8 @@ public class WEntityService {
      */
     @Transactional
     public int deleteBySourceAndAffectedChunks(WorldId worldId, String source, Collection<String> chunkKeys) {
-        if (worldId.isInstance() || worldId.isCollection()) {
-            throw new IllegalArgumentException("worldId must be a world id (no instance, no collection)");
+        if ((worldId.isInstance() && !worldId.isEditorInstance()) || worldId.isCollection()) {
+            throw new IllegalArgumentException("worldId must be a world id (no player instance, no collection)");
         }
         var lookupWorld = worldId.toBaseWorldId();
         List<WEntity> entities = repository.findByWorldIdAndSourceAndAffectedChunksIn(
@@ -260,6 +263,62 @@ public class WEntityService {
         List<WEntity> all = repository.findByWorldId(lookupWorld.getId());
 
         // Apply search filter if provided
+        if (query != null && !query.isBlank()) {
+            all = filterByQuery(all, query);
+        }
+
+        return all;
+    }
+
+    // ==================== EPOCH-AWARE QUERIES ====================
+
+    /**
+     * Find all entities for specific world filtered by epoch.
+     */
+    @Transactional(readOnly = true)
+    public List<WEntity> findByWorldId(WorldId worldId, int epoch) {
+        if (worldId.isCollection()) {
+            throw new IllegalArgumentException("worldId must not be a collection id");
+        }
+        var lookupWorld = worldId.toBaseWorldId();
+        return repository.findByWorldIdAndEpochesContaining(lookupWorld.getId(), epoch);
+    }
+
+    /**
+     * Find all enabled entities for specific world filtered by epoch.
+     */
+    @Transactional(readOnly = true)
+    public List<WEntity> findAllEnabled(WorldId worldId, int epoch) {
+        if (worldId.isCollection()) {
+            throw new IllegalArgumentException("worldId must not be a collection id");
+        }
+        var lookupWorld = worldId.toBaseWorldId();
+        return repository.findByWorldIdAndEnabledAndEpochesContaining(lookupWorld.getId(), true, epoch);
+    }
+
+    /**
+     * Find all enabled entities in specified chunks filtered by epoch.
+     */
+    @Transactional(readOnly = true)
+    public List<WEntity> findEnabledByChunks(WorldId worldId, Collection<String> chunkKeys, int epoch) {
+        if (worldId.isCollection()) {
+            throw new IllegalArgumentException("worldId must not be a collection id");
+        }
+        var lookupWorld = worldId.toBaseWorldId();
+        return repository.findByWorldIdAndEnabledAndAffectedChunksInAndEpochesContaining(lookupWorld.getId(), true, chunkKeys, epoch);
+    }
+
+    /**
+     * Find all entities for specific world with optional query filter, filtered by epoch.
+     */
+    @Transactional(readOnly = true)
+    public List<WEntity> findByWorldIdAndQuery(WorldId worldId, String query, int epoch) {
+        if (worldId.isCollection()) {
+            throw new IllegalArgumentException("worldId must not be a collection id");
+        }
+        var lookupWorld = worldId.toBaseWorldId();
+        List<WEntity> all = repository.findByWorldIdAndEpochesContaining(lookupWorld.getId(), epoch);
+
         if (query != null && !query.isBlank()) {
             all = filterByQuery(all, query);
         }

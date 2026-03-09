@@ -89,6 +89,94 @@ public class WChunkService implements StorageProvider {
         return repository.findAllByWorldIdAndChunk(lookupWorld.getId(), chunkKey);
     }
 
+    // ==================== EPOCH-AWARE QUERIES ====================
+
+    /**
+     * Find chunk by chunkKey filtered by epoch.
+     */
+    @Transactional(readOnly = true)
+    public Optional<WChunk> find(WorldId worldId, String chunkKey, int epoch) {
+        var lookupWorld = worldId.toBaseWorldId();
+        return repository.findByWorldIdAndChunkAndEpochesContaining(lookupWorld.getId(), chunkKey, epoch);
+    }
+
+    /**
+     * Load chunk data filtered by epoch.
+     * Falls back to non-epoch find if no epoch-specific chunk exists.
+     */
+    @Transactional(readOnly = true)
+    public Optional<ChunkData> loadChunkData(WorldId worldId, String chunkKey, boolean create, int epoch) {
+        if (worldId.isCollection()) {
+            throw new IllegalArgumentException("Chunks can't be in Collections");
+        }
+        var lookupWorld = worldId.toBaseWorldId();
+
+        // Try epoch-specific chunk first
+        Optional<WChunk> chunkOpt = repository.findByWorldIdAndChunkAndEpochesContaining(lookupWorld.getId(), chunkKey, epoch);
+
+        if (chunkOpt.isPresent()) {
+            WChunk entity = chunkOpt.get();
+            if (entity.getStorageId() == null) {
+                log.warn("Chunk ohne StorageId gefunden chunkKey={} world={} epoch={}", chunkKey, worldId.getId(), epoch);
+                return Optional.empty();
+            }
+
+            try (InputStream inputStream = storageService.load(entity.getStorageId())) {
+                if (inputStream == null) {
+                    return Optional.empty();
+                }
+                InputStream stream = inputStream;
+                if (entity.isCompressed()) {
+                    stream = new GZIPInputStream(inputStream);
+                }
+                ChunkData chunkData = objectMapper.readValue(stream, ChunkData.class);
+                return Optional.ofNullable(chunkData);
+            } catch (Exception e) {
+                log.warn("ChunkData Deserialisierung fehlgeschlagen chunkKey={} world={} epoch={}", chunkKey, worldId.getId(), epoch, e);
+                return Optional.empty();
+            }
+        } else if (create) {
+            log.debug("Chunk not found in DB for epoch, generating default: chunkKey={} world={} epoch={}", chunkKey, lookupWorld.getId(), epoch);
+            var data = generateDefaultChunk(lookupWorld.getId(), chunkKey);
+            return Optional.ofNullable(data);
+        } else {
+            return Optional.empty();
+        }
+    }
+
+    /**
+     * Get chunk stream filtered by epoch.
+     */
+    @Transactional(readOnly = true)
+    public InputStream getStream(WorldId worldId, String chunkKey, int epoch) {
+        if (worldId.isCollection()) {
+            throw new IllegalArgumentException("Chunks can't be in Collections");
+        }
+        var lookupWorld = worldId.toBaseWorldId();
+
+        WChunk chunk = repository.findByWorldIdAndChunkAndEpochesContaining(lookupWorld.getId(), chunkKey, epoch).orElse(null);
+
+        if (chunk == null || chunk.getStorageId() == null) {
+            return new ByteArrayInputStream(new byte[0]);
+        }
+
+        InputStream stream = storageService.load(chunk.getStorageId());
+        if (stream == null) {
+            return new ByteArrayInputStream(new byte[0]);
+        }
+
+        if (chunk.isCompressed()) {
+            try {
+                return new GZIPInputStream(stream);
+            } catch (Exception e) {
+                log.error("Fehler beim Dekomprimieren von Chunk chunkKey={} world={} epoch={}", chunkKey, worldId.getId(), epoch, e);
+                return new ByteArrayInputStream(new byte[0]);
+            }
+        }
+
+        return stream;
+    }
+
     /**
      * Save chunk data.
      * Filters out instances - chunks are stored per world/zone (not per instance).
@@ -100,8 +188,8 @@ public class WChunkService implements StorageProvider {
         }
         if (data == null) throw new IllegalArgumentException("ChunkData erforderlich");
 
-        if (worldId.isCollection() || worldId.isInstance()) {
-            throw new IllegalArgumentException("Chunks können nur für Welten/Zonen gespeichert werden, nicht für Collections/Instanzen");
+        if (worldId.isCollection() || (worldId.isInstance() && !worldId.isEditorInstance())) {
+            throw new IllegalArgumentException("Chunks können nur für Welten/Zonen gespeichert werden, nicht für Player-Instanzen/Collections");
         }
 
         // Extract server metadata from blocks and store in separate map

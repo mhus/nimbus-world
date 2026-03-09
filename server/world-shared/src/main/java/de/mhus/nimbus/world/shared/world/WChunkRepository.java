@@ -14,5 +14,9 @@ public interface WChunkRepository extends MongoRepository<WChunk, String> {
     void deleteByWorldIdAndChunk(String worldId, String chunk);
     List<WChunk> findByWorldId(String worldId);
     List<WChunk> findByWorldIdAndChunkContaining(String worldId, String chunk);
+
+    // Epoch-aware queries
+    Optional<WChunk> findByWorldIdAndChunkAndEpochesContaining(String worldId, String chunk, int epoch);
+    List<WChunk> findByWorldIdAndEpochesContaining(String worldId, int epoch);
 }
 

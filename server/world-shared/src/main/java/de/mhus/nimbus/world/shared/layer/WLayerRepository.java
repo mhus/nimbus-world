@@ -42,6 +42,24 @@ public interface WLayerRepository extends MongoRepository<WLayer, String> {
     @Query("{ 'worldId': ?0, 'enabled': true, $or: [ { 'allChunks': true }, { 'affectedChunks': ?1 } ] }")
     List<WLayer> findLayersAffectingChunk(String worldId, String chunkKey);
 
+    // Epoch-aware queries
+
+    /**
+     * Find all layers for a world filtered by epoch, sorted by order ascending.
+     */
+    List<WLayer> findByWorldIdAndEpochesContainingOrderByOrderAsc(String worldId, int epoch);
+
+    /**
+     * Find enabled layers for a world filtered by epoch, sorted by order ascending.
+     */
+    List<WLayer> findByWorldIdAndEnabledAndEpochesContainingOrderByOrderAsc(String worldId, boolean enabled, int epoch);
+
+    /**
+     * Find layers affecting a specific chunk filtered by epoch.
+     */
+    @Query("{ 'worldId': ?0, 'enabled': true, 'epoches': ?2, $or: [ { 'allChunks': true }, { 'affectedChunks': ?1 } ] }")
+    List<WLayer> findLayersAffectingChunkAndEpoch(String worldId, String chunkKey, int epoch);
+
     /**
      * Delete all layers for a world.
      */
