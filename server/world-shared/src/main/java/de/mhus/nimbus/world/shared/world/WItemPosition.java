@@ -14,6 +14,8 @@ import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * MongoDB Entity for Item positions in the world.
@@ -23,7 +25,8 @@ import java.time.Instant;
 @Document(collection = "w_item_positions")
 @ActualSchemaVersion("1.0.0")
 @CompoundIndexes({
-        @CompoundIndex(name = "world_itemId_idx", def = "{ 'worldId': 1, 'itemId': 1 }", unique = true)
+        @CompoundIndex(name = "world_itemId_idx", def = "{ 'worldId': 1, 'itemId': 1 }", unique = true),
+        @CompoundIndex(name = "world_epoches_idx", def = "{ 'worldId': 1, 'epoches': 1 }")
 })
 @Data
 @Builder
@@ -57,6 +60,14 @@ public class WItemPosition implements Identifiable, CowEntity {
      * This is what gets serialized and sent to clients with chunk data.
      */
     private ItemBlockRef publicData;
+
+    /**
+     * Epoch assignment for this item position.
+     * The item is visible in world instances with any of the listed epochs.
+     * Empty list means visible in all epochs (backward compatible).
+     */
+    @Builder.Default
+    private List<Integer> epoches = new ArrayList<>();
 
     private Instant createdAt;
     private Instant updatedAt;

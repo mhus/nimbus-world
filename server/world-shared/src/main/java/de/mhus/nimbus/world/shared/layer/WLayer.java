@@ -29,7 +29,8 @@ import java.util.Map;
 @CompoundIndexes({
         @CompoundIndex(name = "world_name_idx", def = "{ 'worldId': 1, 'name': 1 }", unique = true),
         @CompoundIndex(name = "world_order_idx", def = "{ 'worldId': 1, 'order': 1 }"),
-        @CompoundIndex(name = "world_enabled_idx", def = "{ 'worldId': 1, 'enabled': 1 }")
+        @CompoundIndex(name = "world_enabled_idx", def = "{ 'worldId': 1, 'enabled': 1 }"),
+        @CompoundIndex(name = "world_epoches_idx", def = "{ 'worldId': 1, 'epoches': 1, 'enabled': 1 }")
 })
 @Data
 @Builder
@@ -101,6 +102,14 @@ public class WLayer implements Identifiable {
      */
     @Builder.Default
     private boolean baseGround = false;
+
+    /**
+     * Epoch assignment for this layer.
+     * The layer and its data (terrain/model) are visible in all listed epochs.
+     * Empty list means the layer is visible in all epochs (backward compatible).
+     */
+    @Builder.Default
+    private List<Integer> epoches = new ArrayList<>();
 
     private Instant createdAt;
     private Instant updatedAt;

@@ -56,16 +56,24 @@ public class WWorldService {
     /**
      * Loads an instance world.
      * Steps:
-     * 1. Validate instance exists and extract main worldId from instance
-     * 2. Load main world (with zone enrichment if applicable)
-     * 3. Load instance data
-     * 4. Override worldId in WWorld with full instance ID
+     * 1. Check for synthetic editor instance (x-prefix)
+     * 2. Validate instance exists and extract main worldId from instance
+     * 3. Load main world (with zone enrichment if applicable)
+     * 4. Load instance data
+     * 5. Override worldId in WWorld with full instance ID
      *
      * @param fullInstanceId The full instance ID (format: regionId:worldName[:zone]:instance, e.g. "main:terra::abc" or "main:terra:zone:abc")
      * @return The enriched world with instance data
      */
     private Optional<WWorld> loadInstanceWorld(String fullInstanceId) {
         try {
+            WorldId parsedId = WorldId.unchecked(fullInstanceId);
+
+            // Check for synthetic editor instance (x-prefix, e.g. "x0", "x2")
+            if (isSyntheticInstance(parsedId)) {
+                return loadSyntheticEditorInstance(parsedId, fullInstanceId);
+            }
+
             // Load and validate instance data
             Optional<WWorldInstance> instanceOpt = instanceService.findByInstanceIdWithValidation(fullInstanceId);
 
@@ -101,6 +109,75 @@ public class WWorldService {
             log.error("Error loading instance world {}: {}", fullInstanceId, e.getMessage(), e);
             return Optional.empty();
         }
+    }
+
+    /**
+     * Check if an instance ID represents a synthetic editor instance.
+     * Synthetic instances use the format "xN" where N is the epoch number (e.g. "x0", "x2").
+     * The 'x' prefix is not valid in regular instance IDs.
+     *
+     * @param worldId The parsed WorldId
+     * @return true if this is a synthetic editor instance
+     */
+    public static boolean isSyntheticInstance(WorldId worldId) {
+        if (!worldId.isInstance()) return false;
+        String instancePart = worldId.getInstance();
+        return instancePart.startsWith("x") && instancePart.length() > 1;
+    }
+
+    /**
+     * Parse the epoch number from a synthetic instance ID.
+     *
+     * @param worldId The parsed WorldId (must be a synthetic instance)
+     * @return The epoch number
+     * @throws NumberFormatException if the epoch part is not a valid number
+     */
+    public static int parseSyntheticEpoch(WorldId worldId) {
+        return Integer.parseInt(worldId.getInstance().substring(1));
+    }
+
+    /**
+     * Loads a synthetic editor instance.
+     * No DB lookup, no COW - returns the base world with the synthetic instance worldId.
+     * The epoch is extracted from the instance ID (e.g. "x2" -> epoch 2).
+     *
+     * @param parsedId The parsed WorldId
+     * @param fullInstanceId The full instance ID string
+     * @return The base world with synthetic instance worldId
+     */
+    private Optional<WWorld> loadSyntheticEditorInstance(WorldId parsedId, String fullInstanceId) {
+        int epoch;
+        try {
+            epoch = parseSyntheticEpoch(parsedId);
+        } catch (NumberFormatException e) {
+            log.warn("Invalid synthetic instance epoch: {}", fullInstanceId);
+            return Optional.empty();
+        }
+
+        // Load base world (no instance, no COW)
+        String baseWorldId = parsedId.toBaseWorldId().getId();
+        Optional<WWorld> baseWorldOpt = getByWorldId(baseWorldId);
+
+        if (baseWorldOpt.isEmpty()) {
+            log.warn("Base world not found for synthetic instance {}: {}", fullInstanceId, baseWorldId);
+            return Optional.empty();
+        }
+
+        WWorld world = baseWorldOpt.get();
+
+        // Validate epoch exists in world definition
+        boolean epochValid = world.getEpoches() != null &&
+                world.getEpoches().stream().anyMatch(e -> e.getEpoch() == epoch);
+        if (!epochValid) {
+            log.warn("Epoch {} not defined in world {} for synthetic instance {}", epoch, baseWorldId, fullInstanceId);
+            return Optional.empty();
+        }
+
+        // Keep base worldId (no COW) but set the synthetic instance ID for routing
+        world.setWorldId(fullInstanceId);
+
+        log.debug("Loaded synthetic editor instance: {} (epoch={}, baseWorld={})", fullInstanceId, epoch, baseWorldId);
+        return Optional.of(world);
     }
 
     /**
@@ -318,10 +395,17 @@ public class WWorldService {
                 .worldId(worldId.getId())
                 .regionId(worldId.getRegionId())
                 .publicData(info)
+                .epoches(List.of(
+                        WEpochMeta.builder()
+                                .epoch(0)
+                                .name("base")
+                                .description("Base world")
+                                .build()
+                ))
                 .build();
         entity.touchForCreate();
         repository.save(entity);
-        log.debug("WWorld angelegt: {} (Era 1 started)", worldId);
+        log.debug("WWorld angelegt: {} (Era 1 started, Epoch 0 created)", worldId);
         return entity;
     }
 

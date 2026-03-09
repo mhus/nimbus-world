@@ -14,5 +14,9 @@ export interface WWorldInstance {
   createdAt: Date;
   updatedAt: Date;
   lastAccessTime: Date;
+  accessType: InstanceAccessType;
+  durationType: InstanceDurationType;
+  expiresAt: Date;
+  epoch: number;
   enabled: boolean;
 }

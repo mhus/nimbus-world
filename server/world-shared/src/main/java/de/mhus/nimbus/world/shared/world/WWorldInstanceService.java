@@ -105,6 +105,19 @@ public class WWorldInstanceService {
             return Optional.empty();
         }
 
+        // Synthetic editor instances (x-prefix) return a synthetic WWorldInstance
+        if (WWorldService.isSyntheticInstance(worldId)) {
+            int epoch = WWorldService.parseSyntheticEpoch(worldId);
+            WWorldInstance synthetic = WWorldInstance.builder()
+                    .instanceId(fullInstanceId)
+                    .worldId(worldId.toBaseWorldId().getId())
+                    .title("Editor Epoch " + epoch)
+                    .epoch(epoch)
+                    .enabled(true)
+                    .build();
+            return Optional.of(synthetic);
+        }
+
         // Extract base worldId (without instance part)
         String expectedWorldId = worldId.toBaseWorldId().getId();
 

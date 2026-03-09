@@ -128,6 +128,14 @@ public class WWorld implements Identifiable {
     @Builder.Default
     private List<Long> eraHistory = List.of();
 
+    /**
+     * Epoch definitions for this world.
+     * Each epoch extends the world with new content (layers, entities, items).
+     * Epochs are numbered sequentially starting from 0.
+     */
+    @Builder.Default
+    private List<WEpochMeta> epoches = List.of();
+
     public void touchForCreate() {
         Instant now = Instant.now();
         createdAt = now;

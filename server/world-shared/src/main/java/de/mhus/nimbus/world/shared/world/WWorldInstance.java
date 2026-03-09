@@ -117,6 +117,14 @@ public class WWorldInstance implements Identifiable {
     private Instant expiresAt;
 
     /**
+     * Current epoch for this instance.
+     * Determines which epoch-dependent content (chunks, layers, entities, items) is visible.
+     * References an epoch number defined in WWorld.epoches.
+     */
+    @Builder.Default
+    private int epoch = 0;
+
+    /**
      * Soft delete flag.
      */
     @Indexed

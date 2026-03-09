@@ -17,6 +17,7 @@ export interface WLayer {
   enabled: boolean;
   groups: Record<string, string>;
   baseGround: boolean;
+  epoches: number[];
   createdAt: Date;
   updatedAt: Date;
 }

@@ -13,6 +13,7 @@ import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -24,7 +25,8 @@ import java.util.Map;
 @Document(collection = "w_chunks")
 @ActualSchemaVersion("1.0.0")
 @CompoundIndexes({
-        @CompoundIndex(name = "world_chunk_idx", def = "{ 'worldId': 1, 'chunk': 1 }", unique = true)
+        @CompoundIndex(name = "world_chunk_idx", def = "{ 'worldId': 1, 'chunk': 1 }"),
+        @CompoundIndex(name = "world_chunk_epoches_idx", def = "{ 'worldId': 1, 'chunk': 1, 'epoches': 1 }")
 })
 @Data
 @Builder
@@ -62,6 +64,14 @@ public class WChunk implements Identifiable {
      * Value: Server metadata map from BlockMetadata.server
      */
     private Map<String, Map<String, String>> infoServer;
+
+    /**
+     * Epoch assignment for this chunk version.
+     * This chunk data is valid for all listed epochs.
+     * Multiple WChunk documents for the same worldId+chunk may exist with different epoches.
+     */
+    @Builder.Default
+    private List<Integer> epoches = List.of();
 
     private Instant createdAt;
     private Instant updatedAt;

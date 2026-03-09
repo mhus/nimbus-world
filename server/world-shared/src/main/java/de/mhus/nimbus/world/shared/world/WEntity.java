@@ -29,7 +29,8 @@ import java.util.Set;
 @Document(collection = "w_entities")
 @ActualSchemaVersion("1.0.0")
 @CompoundIndexes({
-        @CompoundIndex(name = "worldId_entityId_idx", def = "{ 'worldId': 1, 'entityId': 1 }", unique = true)
+        @CompoundIndex(name = "worldId_entityId_idx", def = "{ 'worldId': 1, 'entityId': 1 }", unique = true),
+        @CompoundIndex(name = "world_epoches_idx", def = "{ 'worldId': 1, 'epoches': 1, 'enabled': 1 }")
 })
 @Data
 @Builder
@@ -152,6 +153,14 @@ public class WEntity implements Identifiable, CowEntity {
      * Path to portrait image for this entity (e.g., for dialog UI).
      */
     private String portraitPath;
+
+    /**
+     * Epoch assignment for this entity.
+     * The entity is visible in world instances with any of the listed epochs.
+     * Empty list means visible in all epochs (backward compatible).
+     */
+    @Builder.Default
+    private List<Integer> epoches = new ArrayList<>();
 
     /**
      * Soft delete flag.
