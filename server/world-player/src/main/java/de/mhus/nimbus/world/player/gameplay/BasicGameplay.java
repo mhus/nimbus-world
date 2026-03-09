@@ -83,6 +83,14 @@ public class BasicGameplay implements Gameplay {
 
     protected Map<String, GameplayAction> actions = new HashMap<>();
 
+    /**
+     * Check if a player can use/interact with a block based on its serverInfo conditions.
+     * Override in subclasses (e.g. AdventureGameplay) to add condition checks.
+     */
+    public boolean canUseBlock(PlayerSession session, int x, int y, int z, Map<String, String> serverInfo) {
+        return true;
+    }
+
     public BasicGameplay() {
             actions.put("teleport", new TeleportationAction(this));
             actions.put("show.time", new ShowTimeAction(this));

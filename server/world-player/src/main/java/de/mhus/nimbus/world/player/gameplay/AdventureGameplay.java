@@ -90,6 +90,44 @@ public class AdventureGameplay extends BasicGameplay {
     }
 
     @Override
+    public boolean canUseBlock(PlayerSession session, int x, int y, int z, Map<String, String> serverInfo) {
+        if (serverInfo == null) return true;
+
+        String condition = serverInfo.get("condition");
+        if (condition == null) return true;
+
+        return switch (condition.toLowerCase()) {
+            case "key" -> checkKeyCondition(session, serverInfo);
+            default -> {
+                log.warn("Unknown block condition '{}' at ({},{},{})", condition, x, y, z);
+                yield true;
+            }
+        };
+    }
+
+    /**
+     * Check if the player has a key item in their backpack matching the required keyId.
+     */
+    private boolean checkKeyCondition(PlayerSession session, Map<String, String> serverInfo) {
+        String requiredKeyId = serverInfo.get("keyId");
+        if (requiredKeyId == null) {
+            log.warn("condition=key but no keyId specified");
+            return true;
+        }
+
+        var keyItems = gameplayService.findItemsByEffect(session, "key");
+        for (var item : keyItems) {
+            if (item.getServer() != null && requiredKeyId.equals(item.getServer().get("keyId"))) {
+                log.debug("Key condition met: player has key with keyId={}", requiredKeyId);
+                return true;
+            }
+        }
+
+        log.debug("Key condition NOT met: player missing key with keyId={}", requiredKeyId);
+        return false;
+    }
+
+    @Override
     public void onSessionAuthenticated(PlayerSession session, Map<String, Object> savedGameplayData) {
         var data = new AdventureData();
         data.initDefaults();

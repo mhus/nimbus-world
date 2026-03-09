@@ -46,6 +46,7 @@ public class DoorAction implements GameplayAction {
                                      String blockAction, JsonNode params, String userAction, String shortcutKey,
                                      Map<String, String> serverInfo) {
         if (session.getWorldId() == null) return false;
+        if (!basic.canUseBlock(session, x, y, z, serverInfo)) return false;
 
         String worldId = session.getWorldId().getId();
         WorldId wid = session.getWorldId();
