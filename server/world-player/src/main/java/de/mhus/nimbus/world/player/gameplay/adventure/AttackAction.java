@@ -45,7 +45,7 @@ public class AttackAction implements GameplayAction {
         String targetEntityId = entity.getEntityId();
         if (targetEntityId == null) return false;
 
-        return performAttack(session, targetEntityId, shortcutKey);
+        return performAttack(session, targetEntityId, shortcutKey, params);
     }
 
     @Override
@@ -57,10 +57,10 @@ public class AttackAction implements GameplayAction {
     @Override
     public boolean handlePlayerAction(PlayerSession session, String targetEntityId, String action, String shortcutKey, Long timestamp, JsonNode params) {
         if (targetEntityId == null) return false;
-        return performAttack(session, targetEntityId, shortcutKey);
+        return performAttack(session, targetEntityId, shortcutKey, params);
     }
 
-    private boolean performAttack(PlayerSession session, String targetEntityId, String shortcutKey) {
+    private boolean performAttack(PlayerSession session, String targetEntityId, String shortcutKey, JsonNode params) {
         if (!(session.getGameplayData() instanceof AdventureData data)) return false;
 
         String worldId = session.getWorldId() != null ? session.getWorldId().getId() : null;
@@ -100,7 +100,7 @@ public class AttackAction implements GameplayAction {
         }
 
         // Resolve weapon item first to read its properties
-        String weaponItemId = resolveWeaponItemId(session, data, shortcutKey);
+        String weaponItemId = resolveWeaponItemId(session, data, shortcutKey, params);
         WItem weaponItem = null;
         if (weaponItemId != null) {
             var cachedItems = data.getCachedItems();
@@ -150,10 +150,10 @@ public class AttackAction implements GameplayAction {
         return true;
     }
 
-    private String resolveWeaponItemId(PlayerSession session, AdventureData data, String shortcutKey) {
+    private String resolveWeaponItemId(PlayerSession session, AdventureData data, String shortcutKey, JsonNode params) {
         // Try to resolve from shortcut (e.g. shortcut type "right_hand_1")
         if (shortcutKey != null) {
-            String itemId = basic.resolveShortcutItemId(session, shortcutKey);
+            String itemId = basic.resolveShortcutItemId(session, shortcutKey, params);
             if (itemId != null) return itemId;
         }
         // Fallback: check RIGHT_HAND_1, then LEFT_HAND_1

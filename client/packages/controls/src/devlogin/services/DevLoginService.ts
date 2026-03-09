@@ -34,6 +34,7 @@ export interface WorldInstance {
   creator: string;
   players: string[];
   enabled: boolean;
+  createdAt?: string;
 }
 
 export type ActorType = 'PLAYER' | 'EDITOR' | 'SUPPORT';

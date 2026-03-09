@@ -135,7 +135,7 @@ public class BasicGameplay implements Gameplay {
             }
 
             // Shortcut on block: route via item action
-            String itemAction = resolveShortcutItemAction(session, shortcutKey);
+            String itemAction = resolveShortcutItemAction(session, shortcutKey, params);
             if (itemAction == null) {
                 log.trace("No item action resolvable for shortcut '{}' on block at ({}, {}, {})", shortcutKey, x, y, z);
                 return;
@@ -182,7 +182,7 @@ public class BasicGameplay implements Gameplay {
             log.trace("Player interaction '{}' with {} without shortcut in world {}", userAction, entityId, session.getWorldId());
             return;
         }
-        String itemAction = resolveShortcutItemAction(session, shortcutKey);
+        String itemAction = resolveShortcutItemAction(session, shortcutKey, params);
         if (itemAction == null) {
             log.trace("No item action resolvable for shortcut '{}' on player {}", shortcutKey, entityId);
             return;
@@ -214,7 +214,7 @@ public class BasicGameplay implements Gameplay {
         }
         if (!Strings.isBlank(shortcutKey)) {
             // Shortcut on entity: route via item action
-            String itemAction = resolveShortcutItemAction(session, shortcutKey);
+            String itemAction = resolveShortcutItemAction(session, shortcutKey, params);
             if (itemAction == null) {
                 log.trace("No item action resolvable for shortcut '{}' on entity {}", shortcutKey, entityId);
                 return;
@@ -273,7 +273,16 @@ public class BasicGameplay implements Gameplay {
      * then loads the item and returns its server action.
      */
     protected String resolveShortcutItemAction(PlayerSession session, String shortcutKey) {
+        return resolveShortcutItemAction(session, shortcutKey, null);
+    }
+
+    protected String resolveShortcutItemAction(PlayerSession session, String shortcutKey, JsonNode params) {
         if (Strings.isBlank(shortcutKey)) return null;
+
+        // Backpack mode: itemId comes from params, not from shortcut definitions
+        if ("backpack".equals(shortcutKey)) {
+            return resolveBackpackItemAction(session, params);
+        }
 
         var character = session.getPlayer() != null ? session.getPlayer().character() : null;
         var playerInfo = character != null ? character.getPublicData() : null;
@@ -295,8 +304,25 @@ public class BasicGameplay implements Gameplay {
         return item.getServer().get("action");
     }
 
+    /**
+     * Resolve item action from backpack interaction params.
+     * The itemId is passed in params.itemId instead of via shortcut definition.
+     */
+    protected String resolveBackpackItemAction(PlayerSession session, JsonNode params) {
+        if (params == null || !params.has("itemId")) return null;
+        String itemId = params.get("itemId").asText();
+        if (Strings.isBlank(itemId)) return null;
+        WItem item = itemService.findByItemId(session.getWorldId(), itemId).orElse(null);
+        if (item == null || item.getServer() == null) return null;
+        return item.getServer().get("action");
+    }
+
     @Override
     public void onItemInteraction(PlayerSession session, String itemId, JsonNode params) {
+        // Backpack mode: itemId is 'backpack', real itemId is in params
+        if ("backpack".equals(itemId) && params != null && params.has("itemId")) {
+            itemId = params.get("itemId").asText();
+        }
         WItem item = itemService.findByItemId(session.getWorldId(), itemId).orElse(null);
         if (item == null) {
             log.warn("Item with ID {} not found in world {}", itemId, session.getWorldId());

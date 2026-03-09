@@ -586,7 +586,7 @@ export class NotificationService {
   // ============================================
 
   /** Shortcut display modes */
-  private shortcutModes = ['keys', 'clicks', 'slots0', 'slots1', 'off'] as const;
+  private shortcutModes = ['keys', 'clicks', 'slots0', 'slots1', 'backpack', 'off'] as const;
   private currentShortcutMode: typeof this.shortcutModes[number] = 'off';
   private shortcutContainer: HTMLElement | null = null;
 
@@ -814,6 +814,17 @@ export class NotificationService {
 
       // If mode is 'off', don't create display
       if (this.currentShortcutMode === 'off') {
+        return;
+      }
+
+      // Backpack mode: reload backpack data from server, then show grid
+      if (this.currentShortcutMode === 'backpack') {
+        try {
+          await this.appContext.services.config?.loadPlayerBackpack();
+        } catch (e) {
+          logger.warn('Failed to reload backpack data', e);
+        }
+        await this.updateBackpackDisplay();
         return;
       }
 
@@ -1069,6 +1080,213 @@ export class NotificationService {
         tooltip = null;
       }
     });
+  }
+
+  // ============================================
+  // Backpack Grid Display
+  // ============================================
+
+  /**
+   * Display all backpack items in a scrollable grid.
+   * Items are shown as icon boxes similar to shortcut slots.
+   */
+  private async updateBackpackDisplay(): Promise<void> {
+    const backpack = this.appContext.services.config?.getPlayerBackpack();
+    const itemIds = backpack?.itemIds;
+
+    this.shortcutContainer = document.createElement('div');
+    this.shortcutContainer.id = 'shortcuts-container';
+    this.shortcutContainer.style.cssText = `
+      position: fixed;
+      bottom: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      flex-direction: column;
+      padding: 8px;
+      background: rgba(0, 0, 0, 0.7);
+      border-radius: 8px;
+      z-index: 900;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      color: white;
+      max-height: 280px;
+    `;
+
+    // Header
+    const header = document.createElement('div');
+    header.style.cssText = `
+      font-size: 11px;
+      color: rgba(255, 200, 50, 0.9);
+      margin-bottom: 6px;
+      text-align: center;
+      flex-shrink: 0;
+    `;
+    header.textContent = 'Backpack';
+    this.shortcutContainer.appendChild(header);
+
+    if (!itemIds || Object.keys(itemIds).length === 0) {
+      const empty = document.createElement('div');
+      empty.style.cssText = 'color: rgba(255,255,255,0.5); text-align: center; padding: 12px;';
+      empty.textContent = 'Empty';
+      this.shortcutContainer.appendChild(empty);
+      document.body.appendChild(this.shortcutContainer);
+      return;
+    }
+
+    // Scrollable grid area
+    const gridScroll = document.createElement('div');
+    gridScroll.style.cssText = `
+      overflow-y: auto;
+      overflow-x: hidden;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255,255,255,0.3) transparent;
+    `;
+
+    const grid = document.createElement('div');
+    grid.style.cssText = `
+      display: grid;
+      grid-template-columns: repeat(10, 32px);
+      gap: 4px;
+    `;
+
+    const itemService = this.appContext.services.item;
+    const networkService = this.appContext.services.network;
+
+    for (const [itemId, count] of Object.entries(itemIds)) {
+      const slot = document.createElement('div');
+      slot.style.cssText = `
+        width: 32px;
+        height: 32px;
+        background: rgba(50, 50, 50, 0.9);
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        cursor: pointer;
+        flex-shrink: 0;
+      `;
+
+      // Click handler: send interaction with this backpack item
+      slot.addEventListener('click', () => {
+        this.sendBackpackItemInteraction(itemId);
+      });
+
+      // Load item texture
+      if (itemService) {
+        try {
+          const item = await itemService.getItem(itemId);
+          if (item) {
+            const textureUrl = await itemService.getTextureUrl(item);
+            if (textureUrl) {
+              const img = document.createElement('img');
+              img.src = textureUrl;
+              img.style.cssText = `
+                width: 28px;
+                height: 28px;
+                object-fit: contain;
+                image-rendering: pixelated;
+              `;
+              img.onerror = () => { img.style.display = 'none'; };
+              slot.appendChild(img);
+            }
+
+            // Tooltip
+            this.addShortcutTooltip(slot, {
+              name: item.title || item.name || itemId,
+              description: item.description || `x${count}`,
+            });
+          }
+        } catch (e) {
+          logger.debug('Failed to load backpack item', { itemId });
+        }
+      }
+
+      // Count badge
+      if (typeof count === 'number' && count > 1) {
+        const badge = document.createElement('div');
+        badge.style.cssText = `
+          position: absolute;
+          bottom: -1px;
+          right: -1px;
+          background: rgba(200, 160, 40, 0.95);
+          color: #111;
+          font-size: 9px;
+          font-weight: bold;
+          border-radius: 6px;
+          min-width: 12px;
+          height: 12px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 0 2px;
+          line-height: 1;
+        `;
+        badge.textContent = count > 99 ? '99+' : String(count);
+        slot.appendChild(badge);
+      }
+
+      grid.appendChild(slot);
+    }
+
+    gridScroll.appendChild(grid);
+    this.shortcutContainer.appendChild(gridScroll);
+    document.body.appendChild(this.shortcutContainer);
+  }
+
+  /**
+   * Send interaction using a backpack item.
+   * If a block or entity is selected, sends block/entity interaction with sc='backpack' and itemId in params.
+   * Otherwise sends a simple interaction.
+   */
+  private sendBackpackItemInteraction(itemId: string): void {
+    try {
+      const networkService = this.appContext.services.network;
+      const selectService = this.appContext.services.select;
+      if (!networkService) return;
+
+      const params: Record<string, any> = { itemId };
+
+      if (selectService) {
+        const selectedEntity = selectService.getCurrentSelectedEntity();
+        if (selectedEntity) {
+          networkService.sendEntityInteraction(
+            selectedEntity.id,
+            'interact',
+            undefined,
+            params,
+            'backpack'
+          );
+          logger.debug('Backpack item interaction sent to entity', { itemId, entityId: selectedEntity.id });
+          return;
+        }
+
+        const selectedBlock = selectService.getCurrentSelectedBlock();
+        if (selectedBlock) {
+          const pos = selectedBlock.block.position;
+          networkService.sendBlockInteraction(
+            pos.x,
+            pos.y,
+            pos.z,
+            'interact',
+            params,
+            selectedBlock.block.metadata?.id,
+            selectedBlock.block.metadata?.groupId,
+            'backpack'
+          );
+          logger.debug('Backpack item interaction sent to block', { itemId, position: pos });
+          return;
+        }
+      }
+
+      // Nothing selected: send simple interaction
+      networkService.sendSimpleInteraction('interact', 'backpack', params);
+      logger.debug('Backpack item simple interaction sent', { itemId });
+    } catch (error) {
+      ExceptionHandler.handle(error, 'NotificationService.sendBackpackItemInteraction', { itemId });
+    }
   }
 
   // ============================================

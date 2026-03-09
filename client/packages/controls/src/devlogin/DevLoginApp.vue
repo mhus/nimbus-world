@@ -229,7 +229,7 @@
                 <select v-else v-model="selectedInstance" class="select select-bordered w-full">
                   <option v-if="selectedActor === 'PLAYER'" value="">New Instance</option>
                   <option v-for="inst in instances" :key="inst.instanceId" :value="inst.instanceId">
-                    {{ inst.title }} ({{ inst.instanceId }})
+                    {{ inst.title }} - {{ inst.createdAt ? new Date(inst.createdAt).toLocaleDateString() : '' }} ({{ inst.instanceId }})
                   </option>
                 </select>
               </div>
@@ -1030,7 +1030,7 @@ watch(selectedActor, (newActor) => {
     loadZones(selectedWorld.value.worldId);
   }
   if (newActor === 'PLAYER' && selectedSessionUser.value) {
-    const playerId = selectedSessionUser.value.username + ':' + selectedCharacter.value.id;
+    const playerId = '@' + selectedSessionUser.value.username + ':' + selectedCharacter.value.id;
     loadInstances(selectedWorld.value.worldId, playerId);
   } else if (newActor === 'SUPPORT') {
     loadInstances(selectedWorld.value.worldId, undefined, true);
@@ -1050,7 +1050,7 @@ watch(selectedCharacter, (newChar) => {
     loadZones(selectedWorld.value.worldId);
   }
   if (selectedActor.value === 'PLAYER' && selectedSessionUser.value) {
-    const playerId = selectedSessionUser.value.username + ':' + newChar.id;
+    const playerId = '@' + selectedSessionUser.value.username + ':' + newChar.id;
     loadInstances(selectedWorld.value.worldId, playerId);
   } else if (selectedActor.value === 'SUPPORT') {
     loadInstances(selectedWorld.value.worldId, undefined, true);

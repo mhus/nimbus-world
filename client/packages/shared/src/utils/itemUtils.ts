@@ -28,7 +28,7 @@ export function itemToBlock(item: ItemBlockRef): Block {
             visibility: {
                 shape: 28, // Shape.ITEM (Y-axis billboard)
                 textures: {
-                    0: item.texture
+                    0: { path: item.texture, transparencyMode: 1 }
                 },
                 scalingX: item.scaleX ?? 0.5,
                 scalingY: item.scaleY ?? 0.5,

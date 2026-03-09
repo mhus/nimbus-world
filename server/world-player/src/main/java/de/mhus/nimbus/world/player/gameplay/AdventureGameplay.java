@@ -317,15 +317,27 @@ public class AdventureGameplay extends BasicGameplay {
 
     /**
      * Resolve the itemId from a shortcut key using cached data.
+     * For backpack mode (shortcutKey='backpack'), pass params containing the itemId.
      */
     public String resolveShortcutItemId(PlayerSession session, String shortcutKey) {
+        return resolveShortcutItemId(session, shortcutKey, null);
+    }
+
+    public String resolveShortcutItemId(PlayerSession session, String shortcutKey, JsonNode params) {
+        if ("backpack".equals(shortcutKey) && params != null && params.has("itemId")) {
+            return params.get("itemId").asText();
+        }
         return inventoryHandler.resolveShortcutItemId(session, shortcutKey);
     }
 
     @Override
-    protected String resolveShortcutItemAction(PlayerSession session, String shortcutKey) {
+    protected String resolveShortcutItemAction(PlayerSession session, String shortcutKey, JsonNode params) {
+        // Backpack mode: delegate to base which resolves itemId from params
+        if ("backpack".equals(shortcutKey)) {
+            return super.resolveShortcutItemAction(session, shortcutKey, params);
+        }
         if (!(session.getGameplayData() instanceof AdventureData)) {
-            return super.resolveShortcutItemAction(session, shortcutKey);
+            return super.resolveShortcutItemAction(session, shortcutKey, params);
         }
         return inventoryHandler.resolveShortcutItemAction(session, shortcutKey);
     }

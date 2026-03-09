@@ -62,7 +62,10 @@ public class BlockInteractionHandler implements MessageHandler {
         String shortcutKey = data.has("sc") ? data.get("sc").asText() : null;
         JsonNode params = data.has("pa") ? data.get("pa") : null;
 
-        if (params != null && params.has("itemId")) {
+        if (params != null && params.has("itemId") && shortcutKey == null) {
+            // Item at block position (blockTypeId n:1) - only when no shortcut is active.
+            // When shortcutKey is set (e.g. 'backpack'), the itemId in params refers to
+            // the player's item, not an item placed at the block position.
             String itemId = params.get("itemId").asText();
             log.trace("Block interaction params - itemId: {}", itemId);
 

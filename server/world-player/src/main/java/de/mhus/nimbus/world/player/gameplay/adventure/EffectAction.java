@@ -33,7 +33,7 @@ public class EffectAction implements GameplayAction {
     public boolean handleEntityAction(PlayerSession session, WEntity entity, String userAction, String entityAction, String shortcutKey, JsonNode params) {
         if (shortcutKey != null) {
             // 'use' on entity → apply item effects to entity
-            String itemId = basic.resolveShortcutItemId(session, shortcutKey);
+            String itemId = basic.resolveShortcutItemId(session, shortcutKey, params);
             if (itemId == null) return false;
             String targetEntityId = entity != null ? entity.getEntityId() : null;
             basic.getGameplayService().useItemEffect(session, itemId, targetEntityId);
@@ -58,7 +58,7 @@ public class EffectAction implements GameplayAction {
     @Override
     public boolean handlePlayerAction(PlayerSession session, String targetEntityId, String action, String shortcutKey, Long timestamp, JsonNode params) {
         // Only 'use' on player (interact on player goes through separate method, not GameplayAction)
-        String itemId = basic.resolveShortcutItemId(session, shortcutKey);
+        String itemId = basic.resolveShortcutItemId(session, shortcutKey, params);
         if (itemId == null) return false;
         basic.getGameplayService().useItemEffect(session, itemId, targetEntityId);
         return true;

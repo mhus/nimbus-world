@@ -39,8 +39,8 @@ public class DropItemAction implements GameplayAction {
             return false;
         }
 
-        // Resolve item behind shortcut
-        String itemId = adventure.resolveShortcutItemId(session, shortcutKey);
+        // Resolve item behind shortcut (backpack mode passes itemId in params)
+        String itemId = adventure.resolveShortcutItemId(session, shortcutKey, params);
         if (itemId == null) {
             log.debug("No item resolved for shortcut {}", shortcutKey);
             adventure.getClientService().sendNotification(session, 0, "", "No item selected", null);
