@@ -672,7 +672,8 @@ public class WChunkService implements StorageProvider {
                 && metadata.getTitle() == null
                 && metadata.getGroupId() == null
                 && metadata.getServer() == null
-                && metadata.getClient() == null;
+                && metadata.getClient() == null
+                && metadata.getInteractive() == null;
     }
 
     /**

@@ -5,7 +5,6 @@ import de.mhus.nimbus.world.generator.mcp.McpJobException;
 import de.mhus.nimbus.world.generator.mcp.McpJobExecutor;
 import de.mhus.nimbus.world.generator.mcp.McpJobTimeoutException;
 import de.mhus.nimbus.world.generator.mcp.McpToolException;
-import de.mhus.nimbus.world.shared.job.JobExecutorRegistry;
 import de.mhus.nimbus.world.shared.job.WJob;
 import de.mhus.nimbus.world.shared.job.WJobService;
 import lombok.RequiredArgsConstructor;
@@ -24,7 +23,6 @@ import java.util.Optional;
 public class JobTools {
 
     private final McpJobExecutor mcpJobExecutor;
-    private final JobExecutorRegistry executorRegistry;
     private final WJobService jobService;
 
     @Tool(name = "execute_job", description = "Execute a job synchronously. Blocks until the job completes, fails, or times out. Returns job result or error.")
@@ -40,10 +38,6 @@ public class JobTools {
         WorldId.of(worldId).orElseThrow(
                 () -> new McpToolException("Invalid worldId: " + worldId)
         );
-
-        if (!executorRegistry.hasExecutor(executor)) {
-            throw new McpToolException("Executor not found: " + executor);
-        }
 
         long timeoutMs = 300000; // Default: 5 minutes
         if (timeoutSeconds != null) {

@@ -6909,55 +6909,8 @@
     } ]
   }, {
     "path" : "/Users/hummel/sources/mhus/nimbus-wb/repos/nimbus-world/server/generated/../client_shared_src/network/messages/BlockMessage.ts",
-    "imports" : [ "../BaseMessage", "../../types/Block", "../../types/AnimationData" ],
+    "imports" : [ "../BaseMessage", "../../types/Block" ],
     "interfaces" : [ {
-      "name" : "BlockStatusUpdate",
-      "extendsList" : [ ],
-      "properties" : [ {
-        "name" : "x",
-        "type" : "number",
-        "optional" : false,
-        "visibility" : null,
-        "javaTypeHint" : "int",
-        "comment" : "// javaType: int"
-      }, {
-        "name" : "y",
-        "type" : "number",
-        "optional" : false,
-        "visibility" : null,
-        "javaTypeHint" : "int",
-        "comment" : "// javaType: int"
-      }, {
-        "name" : "z",
-        "type" : "number",
-        "optional" : false,
-        "visibility" : null,
-        "javaTypeHint" : "int",
-        "comment" : "// javaType: int"
-      }, {
-        "name" : "s",
-        "type" : "number",
-        "optional" : false,
-        "visibility" : null,
-        "javaTypeHint" : "int",
-        "comment" : "// javaType: int"
-      }, {
-        "name" : "aa",
-        "type" : "AnimationData[]",
-        "optional" : true,
-        "visibility" : null,
-        "javaTypeHint" : null,
-        "comment" : null
-      }, {
-        "name" : "ab",
-        "type" : "AnimationData[]",
-        "optional" : true,
-        "visibility" : null,
-        "javaTypeHint" : null,
-        "comment" : null
-      } ],
-      "methods" : [ ]
-    }, {
       "name" : "BlockProgressStatusData",
       "extendsList" : [ ],
       "properties" : [ {
@@ -7042,9 +6995,6 @@
     "classes" : [ ],
     "typeAliases" : [ {
       "name" : "BlockUpdateMessage",
-      "target" : null
-    }, {
-      "name" : "BlockStatusUpdateMessage",
       "target" : null
     }, {
       "name" : "BlockProgressStatusMessage",
@@ -7922,7 +7872,7 @@
     "interfaces" : [ ],
     "enums" : [ {
       "name" : "MessageType",
-      "values" : [ "LOGIN", "LOGIN_RESPONSE", "LOGOUT", "PING", "WORLD_STATUS_UPDATE", "CHUNK_REGISTER", "CHUNK_QUERY", "CHUNK_UPDATE", "BLOCK_UPDATE", "BLOCK_STATUS_UPDATE", "BLOCK_PROGRESS_STATUS_UPDATE", "ITEM_BLOCK_UPDATE", "BLOCK_INTERACTION", "ENTITY_UPDATE", "ENTITY_CHUNK_PATHWAY", "ENTITY_POSITION_UPDATE", "ENTITY_INTERACTION", "ENTITY_STATUS_UPDATE", "EFFECT_TRIGGER", "EFFECT_PARAMETER_UPDATE", "USER_MOVEMENT", "PLAYER_TELEPORT", "INTERACTION_REQUEST", "INTERACTION_RESPONSE", "CMD", "CMD_MESSAGE", "CMD_RESULT", "SCMD", "SCMD_RESULT", "SIMPLE_INTERACTION", "TEAM_DATA", "TEAM_STATUS" ],
+      "values" : [ "LOGIN", "LOGIN_RESPONSE", "LOGOUT", "PING", "WORLD_STATUS_UPDATE", "CHUNK_REGISTER", "CHUNK_QUERY", "CHUNK_UPDATE", "BLOCK_UPDATE", "BLOCK_PROGRESS_STATUS_UPDATE", "ITEM_BLOCK_UPDATE", "BLOCK_INTERACTION", "ENTITY_UPDATE", "ENTITY_CHUNK_PATHWAY", "ENTITY_POSITION_UPDATE", "ENTITY_INTERACTION", "ENTITY_STATUS_UPDATE", "EFFECT_TRIGGER", "EFFECT_PARAMETER_UPDATE", "USER_MOVEMENT", "PLAYER_TELEPORT", "INTERACTION_REQUEST", "INTERACTION_RESPONSE", "CMD", "CMD_MESSAGE", "CMD_RESULT", "SCMD", "SCMD_RESULT", "SIMPLE_INTERACTION", "TEAM_DATA", "TEAM_STATUS" ],
       "enumValues" : [ {
         "name" : "LOGIN",
         "value" : "login"
@@ -7950,9 +7900,6 @@
       }, {
         "name" : "BLOCK_UPDATE",
         "value" : "b.u"
-      }, {
-        "name" : "BLOCK_STATUS_UPDATE",
-        "value" : "b.s.u"
       }, {
         "name" : "BLOCK_PROGRESS_STATUS_UPDATE",
         "value" : "b.ps"

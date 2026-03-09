@@ -172,11 +172,16 @@ public class ChunkTools {
                         dto.put("chunk", entry.getChunk());
                         dto.put("createdAt", entry.getCreatedAt());
                         dto.put("modifiedAt", entry.getModifiedAt());
-                        if (entry.getBlock() != null && entry.getBlock().getBlock() != null) {
-                            dto.put("block", toChunkBlockDto(entry.getBlock().getBlock()));
-                        }
-                        if (entry.getBlock() != null && entry.getBlock().getGroup() != null) {
-                            dto.put("group", entry.getBlock().getGroup());
+                        if (entry.getBlock() != null) {
+                            if (entry.getBlock().getBlock() != null) {
+                                dto.put("block", toChunkBlockDto(entry.getBlock().getBlock()));
+                            }
+                            if (entry.getBlock().getGroup() != null) {
+                                dto.put("group", entry.getBlock().getGroup());
+                            }
+                            if (entry.getBlock().getMetadata() != null) {
+                                dto.put("layerMetadata", entry.getBlock().getMetadata());
+                            }
                         }
                         return dto;
                     })
@@ -225,7 +230,7 @@ public class ChunkTools {
             dto.put("offsets", block.getOffsets());
         }
         if (block.getMetadata() != null) {
-            dto.put("hasMetadata", true);
+            dto.put("metadata", block.getMetadata());
         }
         return dto;
     }

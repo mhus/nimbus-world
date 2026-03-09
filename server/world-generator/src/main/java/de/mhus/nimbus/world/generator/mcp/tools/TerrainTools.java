@@ -9,6 +9,9 @@ import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Component;
 
+import de.mhus.nimbus.world.shared.world.WWorld;
+import de.mhus.nimbus.world.shared.world.WWorldService;
+
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -19,6 +22,7 @@ public class TerrainTools {
 
     private final WLayerService layerService;
     private final WLayerTerrainRepository terrainRepository;
+    private final WWorldService worldService;
 
     @Tool(name = "list_terrain_chunk_keys", description = "List chunk keys (cx:cz) that have terrain data for a specific layer")
     public Map<String, Object> listTerrainChunkKeys(
@@ -123,6 +127,88 @@ public class TerrainTools {
         return result;
     }
 
+    @Tool(name = "get_terrain_block_at", description = "Get a single block from a terrain layer at an exact world position (x, y, z). Automatically calculates the correct chunk.")
+    public Map<String, Object> getTerrainBlockAt(
+            @ToolParam(description = "World ID") String worldId,
+            @ToolParam(description = "Layer name") String layerName,
+            @ToolParam(description = "World X coordinate") int x,
+            @ToolParam(description = "World Y coordinate") int y,
+            @ToolParam(description = "World Z coordinate") int z) {
+        log.debug("MCP: Get terrain block at: worldId={}, layerName={}, x={}, y={}, z={}", worldId, layerName, x, y, z);
+
+        var wid = WorldId.of(worldId).orElseThrow(
+                () -> new McpToolException("Invalid worldId: " + worldId)
+        );
+
+        WWorld world = worldService.getByWorldId(wid).orElseThrow(
+                () -> new McpToolException("World not found: " + worldId)
+        );
+        int chunkSize = world.getPublicData().getChunkSize();
+
+        Optional<WLayer> layerOpt = layerService.findLayer(worldId, layerName);
+        if (layerOpt.isEmpty()) {
+            throw new McpToolException("layer not found: " + layerName);
+        }
+        WLayer layer = layerOpt.get();
+
+        int cx = Math.floorDiv(x, chunkSize);
+        int cz = Math.floorDiv(z, chunkSize);
+        String chunkKey = cx + ":" + cz;
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("x", x);
+        result.put("y", y);
+        result.put("z", z);
+        result.put("chunkSize", chunkSize);
+        result.put("chunkKey", chunkKey);
+        result.put("cx", cx);
+        result.put("cz", cz);
+        result.put("layerName", layer.getName());
+
+        Optional<LayerChunkData> chunkDataOpt = layerService.loadTerrainChunk(worldId, layer.getLayerDataId(), chunkKey);
+        if (chunkDataOpt.isEmpty()) {
+            result.put("found", false);
+            result.put("message", "No terrain data for layer '" + layerName + "' in chunk " + chunkKey);
+            return result;
+        }
+
+        LayerChunkData chunkData = chunkDataOpt.get();
+        List<LayerBlock> blocks = chunkData.getBlocks();
+        if (blocks == null || blocks.isEmpty()) {
+            result.put("found", false);
+            result.put("message", "Terrain chunk exists but contains no blocks");
+            return result;
+        }
+
+        LayerBlock match = blocks.stream()
+                .filter(b -> b.getBlock() != null && b.getBlock().getPosition() != null
+                        && (int) b.getBlock().getPosition().getX() == x
+                        && (int) b.getBlock().getPosition().getY() == y
+                        && (int) b.getBlock().getPosition().getZ() == z)
+                .findFirst()
+                .orElse(null);
+
+        if (match != null) {
+            result.put("found", true);
+            result.put("block", toLayerBlockDto(match));
+        } else {
+            result.put("found", false);
+            result.put("message", "No block at this position in terrain layer (air or empty)");
+            List<Map<String, Object>> nearby = blocks.stream()
+                    .filter(b -> b.getBlock() != null && b.getBlock().getPosition() != null
+                            && Math.abs((int) b.getBlock().getPosition().getX() - x) <= 1
+                            && Math.abs((int) b.getBlock().getPosition().getY() - y) <= 1
+                            && Math.abs((int) b.getBlock().getPosition().getZ() - z) <= 1)
+                    .map(this::toLayerBlockDto)
+                    .collect(Collectors.toList());
+            if (!nearby.isEmpty()) {
+                result.put("nearbyBlocks", nearby);
+            }
+        }
+
+        return result;
+    }
+
     private Map<String, Object> toTerrainMetadataDto(WLayerTerrain terrain) {
         Map<String, Object> dto = new HashMap<>();
         dto.put("id", terrain.getId());
@@ -146,9 +232,18 @@ public class TerrainTools {
                 dto.put("z", (int) block.getPosition().getZ());
             }
             dto.put("blockId", block.getBlockTypeId());
+            if (block.getMetadata() != null) {
+                dto.put("blockMetadata", block.getMetadata());
+            }
+            if (block.getModifiers() != null && !block.getModifiers().isEmpty()) {
+                dto.put("modifiers", block.getModifiers());
+            }
+            if (block.getStatus() != null) {
+                dto.put("status", block.getStatus());
+            }
         }
         dto.put("group", layerBlock.getGroup());
-        dto.put("metadata", layerBlock.getMetadata());
+        dto.put("layerMetadata", layerBlock.getMetadata());
         return dto;
     }
 }

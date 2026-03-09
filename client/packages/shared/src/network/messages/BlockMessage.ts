@@ -4,8 +4,6 @@
 
 import type { BaseMessage } from '../BaseMessage';
 import type { Block } from '../../types/Block';
-import type { AnimationData } from '../../types/AnimationData';
-
 /**
  * Block update (Server -> Client)
  * Server sends block changes to client
@@ -13,38 +11,9 @@ import type { AnimationData } from '../../types/AnimationData';
 export type BlockUpdateMessage = BaseMessage<Block[]>;
 
 /**
- * Block status update data
- */
-export interface BlockStatusUpdate {
-  /** Block X position */
-  x: number; // javaType: int
-
-  /** Block Y position */
-  y: number; // javaType: int
-
-  /** Block Z position */
-  z: number; // javaType: int
-
-  /** New status value */
-  s: number; // javaType: int
-
-  /** Optional animations before status change */
-  aa?: AnimationData[];
-
-  /** Optional animations after status change */
-  ab?: AnimationData[];
-}
-
-/**
- * Block status update (Server -> Client)
- * Server sends block status changes (e.g., for animations, effects)
- */
-export type BlockStatusUpdateMessage = BaseMessage<BlockStatusUpdate[]>;
-
-/**
- * Block progress status update data (Server -> Client)
- * Sends block status changes from WProgress to client.
- * Keys are blockIds (string), values are status strings or null for removal.
+ * Block progress status update (Server -> Client).
+ * Notifies clients about block status changes (e.g. door open/closed).
+ * Key: world coordinates "x,y,z", Value: status string or null for removal.
  */
 export interface BlockProgressStatusData {
   /** Chunk X coordinate */
@@ -53,7 +22,7 @@ export interface BlockProgressStatusData {
   /** Chunk Z coordinate */
   cz: number; // javaType: int
 
-  /** Block status map: blockId -> status (null = removed) */
+  /** Block status map: "x,y,z" -> status (null = removed) */
   s: Record<string, string | null>; // javaType: java.util.Map<String,String>
 }
 
