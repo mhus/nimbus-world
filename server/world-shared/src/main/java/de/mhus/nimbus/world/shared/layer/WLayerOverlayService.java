@@ -44,17 +44,26 @@ public class WLayerOverlayService {
     /**
      * Generate final chunk by overlaying all enabled layers.
      *
-     * NEW CONCEPT:
-     * - All layers now have a WLayerTerrain
-     * - GROUND layers: Direct terrain data, can be edited
-     * - MODEL layers: Terrain data is generated from multiple WLayerModel documents
-     *
      * @param worldId  World identifier
      * @param chunkKey Chunk key (format: "cx:cz")
      * @return Merged ChunkData or empty Optional if no layers
      */
-    // dont need or? @Transactional(readOnly = true)
     public Optional<ChunkData> generateChunk(String worldId, String chunkKey) {
+        // Get all layers affecting this chunk (sorted by order)
+        List<WLayer> layers = layerService.getLayersAffectingChunk(worldId, chunkKey);
+        return generateChunk(worldId, chunkKey, layers);
+    }
+
+    /**
+     * Generate final chunk by overlaying the given layers.
+     * Used by the epoch-aware renderer to generate chunks from specific layer subsets.
+     *
+     * @param worldId  World identifier
+     * @param chunkKey Chunk key (format: "cx:cz")
+     * @param layers   Pre-selected layers to overlay (sorted by order)
+     * @return Merged ChunkData or empty Optional if no layers
+     */
+    public Optional<ChunkData> generateChunk(String worldId, String chunkKey, List<WLayer> layers) {
 
         var world = worldService.getByWorldId(worldId).orElseThrow(
                 () -> new IllegalArgumentException("World not found: " + worldId)
@@ -78,9 +87,6 @@ public class WLayerOverlayService {
             return Optional.empty();
         }
 
-        // Get all layers affecting this chunk (sorted by order)
-        List<WLayer> layers = layerService.getLayersAffectingChunk(worldId, chunkKey);
-
         if (layers.isEmpty()) {
             log.debug("No layers affecting chunk {}, returning empty", chunkKey);
             return Optional.empty();
@@ -90,18 +96,15 @@ public class WLayerOverlayService {
         Map<String, Block> blockMap = new HashMap<>();
 
         // Overlay each layer (bottom to top)
-        // All layers are now terrain-based
         for (WLayer layer : layers) {
             if (!layer.isEnabled()) {
                 continue;
             }
 
             try {
-                // All layers are now processed as terrain layers
                 overlayTerrainLayer(layer, chunkKey, cx, cz, blockMap);
             } catch (Exception e) {
                 log.error("Failed to overlay layer {} on chunk {}", layer.getName(), chunkKey, e);
-                // Continue with other layers
             }
         }
 
@@ -113,7 +116,7 @@ public class WLayerOverlayService {
         result.setCx(cx);
         result.setCz(cz);
         result.setSize(chunkSize);
-        
+
         result.setBlocks(new ArrayList<>(blockMap.values()));
 
         // Calculate height data

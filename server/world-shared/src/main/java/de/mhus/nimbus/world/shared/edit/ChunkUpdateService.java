@@ -6,10 +6,15 @@ import de.mhus.nimbus.generated.types.ChunkData;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.shared.layer.WDirtyChunk;
 import de.mhus.nimbus.world.shared.layer.WDirtyChunkService;
+import de.mhus.nimbus.world.shared.layer.WLayer;
 import de.mhus.nimbus.world.shared.layer.WLayerOverlayService;
+import de.mhus.nimbus.world.shared.layer.WLayerService;
 import de.mhus.nimbus.world.shared.redis.WorldRedisMessagingService;
 import de.mhus.nimbus.world.shared.redis.WorldRedisLockService;
 import de.mhus.nimbus.world.shared.world.WChunkService;
+import de.mhus.nimbus.world.shared.world.WEpochMeta;
+import de.mhus.nimbus.world.shared.world.WWorld;
+import de.mhus.nimbus.world.shared.world.WWorldService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -17,12 +22,18 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Service for regenerating chunks from layers.
  * Processes dirty chunks and publishes updates via Redis.
+ *
+ * Epoch-aware rendering:
+ * - Loads all enabled layers affecting a chunk
+ * - For each defined epoch, determines active layers (epoch IN layer.epoches)
+ * - Groups epochs with identical layer combinations
+ * - Renders one WChunk per group with the grouped epoches array
  */
 @Service
 @RequiredArgsConstructor
@@ -31,7 +42,9 @@ public class ChunkUpdateService {
 
     private final WDirtyChunkService dirtyChunkService;
     private final WLayerOverlayService overlayService;
+    private final WLayerService layerService;
     private final WChunkService chunkService;
+    private final WWorldService worldService;
     private final WorldRedisMessagingService redisMessaging;
     private final WorldRedisLockService lockService;
     private final ObjectMapper objectMapper;
@@ -40,7 +53,17 @@ public class ChunkUpdateService {
     private int batchSize;
 
     /**
-     * Regenerate a single dirty chunk and publish update event.
+     * Regenerate a single dirty chunk with epoch-aware rendering.
+     *
+     * Algorithm:
+     * 1. Load WWorld to get epoch definitions
+     * 2. Load ALL enabled layers affecting this chunk (all epochs)
+     * 3. For each epoch, determine which layers are active (epoch IN layer.epoches)
+     * 4. Group epochs with identical active layer sets
+     * 5. Delete all old WChunks for this chunkKey
+     * 6. For each group: generate chunk from those layers, save with epoches array
+     *
+     * If no epochs are defined in WWorld, falls back to single-chunk rendering (backward compatible).
      *
      * @param worldId  World identifier
      * @param chunkKey Chunk key
@@ -51,32 +74,22 @@ public class ChunkUpdateService {
         try {
             log.debug("Regenerating chunk: world={} chunk={}", worldId, chunkKey);
 
-            // Generate merged chunk from layers
-            Optional<ChunkData> chunkDataOpt = overlayService.generateChunk(worldId, chunkKey);
-
             WorldId wid = WorldId.of(worldId).orElseThrow(
                     () -> new IllegalArgumentException("Invalid worldId: " + worldId)
             );
 
-            if (chunkDataOpt.isEmpty()) {
-                log.info("No layers affecting chunk, deleting WChunk: world={} chunk={}", worldId, chunkKey);
-                // Delete existing WChunk if no layers define it
-                chunkService.delete(wid, chunkKey);
-                publishChunkUpdate(worldId, chunkKey, null);
-                return true;
+            // Load world for epoch definitions
+            WWorld world = worldService.getByWorldId(wid.toBaseWorldId().getId()).orElse(null);
+            List<WEpochMeta> epochMetas = (world != null && world.getEpoches() != null)
+                    ? world.getEpoches() : List.of();
+
+            if (epochMetas.isEmpty()) {
+                // No epochs defined - backward compatible single-chunk rendering
+                return regenerateChunkLegacy(worldId, chunkKey, wid);
             }
 
-            // Save to WChunk
-            ChunkData chunkData = chunkDataOpt.get();
-            chunkService.saveChunk(wid, chunkKey, chunkData);
-
-            // Publish update event to Redis
-            publishChunkUpdate(worldId, chunkKey, chunkData);
-
-            log.info("Regenerated chunk: world={} chunk={} blocks={}",
-                    worldId, chunkKey, chunkData.getBlocks() != null ? chunkData.getBlocks().size() : 0);
-
-            return true;
+            // Epoch-aware rendering
+            return regenerateChunkWithEpoches(worldId, chunkKey, wid, epochMetas);
 
         } catch (Exception e) {
             log.error("Failed to regenerate chunk: world={} chunk={}", worldId, chunkKey, e);
@@ -85,15 +98,123 @@ public class ChunkUpdateService {
     }
 
     /**
+     * Legacy single-chunk rendering (no epochs defined).
+     */
+    private boolean regenerateChunkLegacy(String worldId, String chunkKey, WorldId wid) {
+        Optional<ChunkData> chunkDataOpt = overlayService.generateChunk(worldId, chunkKey);
+
+        if (chunkDataOpt.isEmpty()) {
+            log.info("No layers affecting chunk, deleting WChunk: world={} chunk={}", worldId, chunkKey);
+            chunkService.delete(wid, chunkKey);
+            publishChunkUpdate(worldId, chunkKey, null);
+            return true;
+        }
+
+        ChunkData chunkData = chunkDataOpt.get();
+        chunkService.saveChunk(wid, chunkKey, chunkData);
+        publishChunkUpdate(worldId, chunkKey, chunkData);
+
+        log.info("Regenerated chunk (legacy): world={} chunk={} blocks={}",
+                worldId, chunkKey, chunkData.getBlocks() != null ? chunkData.getBlocks().size() : 0);
+        return true;
+    }
+
+    /**
+     * Epoch-aware chunk rendering.
+     * Groups epochs by their active layer combination and renders one WChunk per group.
+     */
+    private boolean regenerateChunkWithEpoches(String worldId, String chunkKey, WorldId wid,
+                                                List<WEpochMeta> epochMetas) {
+        // 1. Load ALL enabled layers affecting this chunk (no epoch filter)
+        List<WLayer> allLayers = layerService.getLayersAffectingChunk(worldId, chunkKey);
+
+        // 2. For each epoch, determine active layers
+        // Key: sorted layer IDs string, Value: list of epoch numbers
+        Map<String, List<Integer>> layerGroupToEpoches = new LinkedHashMap<>();
+        Map<String, List<WLayer>> layerGroupToLayers = new LinkedHashMap<>();
+
+        for (WEpochMeta epochMeta : epochMetas) {
+            int epoch = epochMeta.getEpoch();
+
+            // Filter layers active in this epoch
+            List<WLayer> activeLayers = allLayers.stream()
+                    .filter(layer -> isLayerActiveInEpoch(layer, epoch))
+                    .collect(Collectors.toList());
+
+            // Create a key from the sorted layer IDs to identify identical combinations
+            String groupKey = activeLayers.stream()
+                    .map(WLayer::getLayerDataId)
+                    .sorted()
+                    .collect(Collectors.joining(","));
+
+            layerGroupToEpoches.computeIfAbsent(groupKey, k -> new ArrayList<>()).add(epoch);
+            layerGroupToLayers.putIfAbsent(groupKey, activeLayers);
+        }
+
+        // 3. Delete all old WChunks for this chunkKey
+        chunkService.deleteAllChunkVersions(wid, chunkKey);
+
+        // 4. For each group: render and save
+        int totalGroups = layerGroupToEpoches.size();
+        int renderedGroups = 0;
+
+        for (var entry : layerGroupToEpoches.entrySet()) {
+            String groupKey = entry.getKey();
+            List<Integer> epoches = entry.getValue();
+            List<WLayer> layers = layerGroupToLayers.get(groupKey);
+
+            if (layers.isEmpty()) {
+                log.debug("No layers for epoch group {}, skipping chunk: world={} chunk={}",
+                        epoches, worldId, chunkKey);
+                continue;
+            }
+
+            // Generate chunk from specific layer subset
+            Optional<ChunkData> chunkDataOpt = overlayService.generateChunk(worldId, chunkKey, layers);
+
+            if (chunkDataOpt.isEmpty()) {
+                log.debug("Empty chunk for epoch group {}: world={} chunk={}",
+                        epoches, worldId, chunkKey);
+                continue;
+            }
+
+            // Save with epoches assignment
+            chunkService.saveChunkWithEpoches(wid, chunkKey, chunkDataOpt.get(), epoches);
+            renderedGroups++;
+
+            log.debug("Rendered chunk for epochs {}: world={} chunk={} layers={} blocks={}",
+                    epoches, worldId, chunkKey, layers.size(),
+                    chunkDataOpt.get().getBlocks() != null ? chunkDataOpt.get().getBlocks().size() : 0);
+        }
+
+        // Publish update event
+        publishChunkUpdate(worldId, chunkKey, null); // signal reload
+
+        log.info("Regenerated chunk with epochs: world={} chunk={} groups={}/{} epochs={}",
+                worldId, chunkKey, renderedGroups, totalGroups, epochMetas.size());
+
+        return true;
+    }
+
+    /**
+     * Check if a layer is active in a given epoch.
+     * A layer with an empty epoches list is active in ALL epochs (backward compatible).
+     */
+    private boolean isLayerActiveInEpoch(WLayer layer, int epoch) {
+        if (layer.getEpoches() == null || layer.getEpoches().isEmpty()) {
+            return true; // No epoch restriction = active in all epochs
+        }
+        return layer.getEpoches().contains(epoch);
+    }
+
+    /**
      * Process dirty chunks for all worlds.
-     * Loads all worldIds that have dirty chunks and processes each.
      *
      * @param maxChunks Maximum chunks to process per world
      * @return Total number of chunks successfully regenerated across all worlds
      */
     @Transactional
     public int processDirtyChunks(int maxChunks) {
-        // Get all worldIds that have dirty chunks
         List<String> worldIds = dirtyChunkService.getWorldIdsWithDirtyChunks();
 
         if (worldIds.isEmpty()) {
@@ -127,7 +248,6 @@ public class ChunkUpdateService {
      */
     @Transactional
     public int processDirtyChunks(String worldId, int maxChunks) {
-        // Try to acquire lock
         String lockToken = lockService.acquireLock(worldId);
         if (lockToken == null) {
             log.trace("Chunk update already in progress for world: {}", worldId);
@@ -135,7 +255,6 @@ public class ChunkUpdateService {
         }
 
         try {
-            // Get oldest dirty chunks via service
             List<WDirtyChunk> dirtyChunks = dirtyChunkService.getDirtyChunks(worldId, maxChunks);
 
             if (dirtyChunks.isEmpty()) {
@@ -147,15 +266,12 @@ public class ChunkUpdateService {
 
             int successCount = 0;
             for (WDirtyChunk dirtyChunk : dirtyChunks) {
-                // Refresh lock every chunk to prevent timeout
                 lockService.refreshLock(worldId, lockToken, Duration.ofMinutes(1));
 
                 if (regenerateChunk(worldId, dirtyChunk.getChunkKey())) {
-                    // Remove from dirty queue
                     dirtyChunkService.clearDirtyChunk(worldId, dirtyChunk.getChunkKey());
                     successCount++;
                 } else {
-                    // Retry later: mark as dirty again (updates timestamp)
                     dirtyChunkService.markChunkDirty(worldId, dirtyChunk.getChunkKey(),
                             "regeneration_failed_retry");
                 }
@@ -167,36 +283,29 @@ public class ChunkUpdateService {
             return successCount;
 
         } finally {
-            // Always release lock
             lockService.releaseLock(worldId, lockToken);
         }
     }
 
     /**
      * Update a chunk asynchronously if no lock is held, otherwise mark as dirty.
-     * This method should be called after saveTerrainChunk or saveModel.
      *
      * @param worldId  World identifier
      * @param chunkKey Chunk key
      * @param reason   Reason for update
      */
     public void updateChunkAsync(String worldId, String chunkKey, String reason) {
-        // Check if lock is held
         if (lockService.isLocked(worldId)) {
-            // Lock is held - mark chunk as dirty for later processing
             dirtyChunkService.markChunkDirty(worldId, chunkKey, reason);
             log.debug("Chunk update lock held, marked as dirty: world={} chunk={} reason={}",
                     worldId, chunkKey, reason);
         } else {
-            // No lock - try to update immediately
             String lockToken = lockService.acquireLock(worldId, Duration.ofSeconds(30));
             if (lockToken != null) {
                 try {
-                    // Update chunk immediately
                     if (regenerateChunk(worldId, chunkKey)) {
                         log.debug("Chunk updated immediately: world={} chunk={}", worldId, chunkKey);
                     } else {
-                        // Failed - mark as dirty
                         dirtyChunkService.markChunkDirty(worldId, chunkKey, reason + "_failed");
                         log.warn("Immediate chunk update failed, marked as dirty: world={} chunk={}",
                                 worldId, chunkKey);
@@ -205,7 +314,6 @@ public class ChunkUpdateService {
                     lockService.releaseLock(worldId, lockToken);
                 }
             } else {
-                // Could not acquire lock - mark as dirty
                 dirtyChunkService.markChunkDirty(worldId, chunkKey, reason);
                 log.debug("Could not acquire lock, marked as dirty: world={} chunk={}", worldId, chunkKey);
             }
@@ -214,7 +322,6 @@ public class ChunkUpdateService {
 
     /**
      * Publish chunk update event to Redis.
-     * world-player pods will receive this and send updates to clients.
      */
     private void publishChunkUpdate(String worldId, String chunkKey, ChunkData chunkData) {
         try {

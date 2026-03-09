@@ -542,6 +542,100 @@ public class WChunkService implements StorageProvider {
         }).orElse(false);
     }
 
+    /**
+     * Delete all epoch variants of a chunk.
+     * Used before re-rendering a chunk with new epoch groupings.
+     */
+    @Transactional
+    public void deleteAllChunkVersions(WorldId worldId, String chunkKey) {
+        if (worldId.isCollection()) {
+            throw new IllegalArgumentException("Chunks can't be in Collections");
+        }
+        var lookupWorld = worldId.toBaseWorldId();
+        List<WChunk> allVersions = repository.findAllByWorldIdAndChunk(lookupWorld.getId(), chunkKey);
+        for (WChunk c : allVersions) {
+            if (c.getStorageId() != null) {
+                safeDeleteExternal(storageService, c.getStorageId());
+            }
+        }
+        repository.deleteAllByWorldIdAndChunk(lookupWorld.getId(), chunkKey);
+        log.debug("Deleted {} chunk versions: chunkKey={} world={}", allVersions.size(), chunkKey, lookupWorld.getId());
+    }
+
+    /**
+     * Save chunk data with explicit epoches assignment.
+     * Creates a NEW WChunk document (does not update existing ones).
+     * Used by the epoch-aware renderer that creates multiple chunks per chunkKey.
+     */
+    @Transactional
+    public WChunk saveChunkWithEpoches(WorldId worldId, String chunkKey, ChunkData data, List<Integer> epoches) {
+        if (Strings.isBlank(worldId.getId()) || Strings.isBlank(chunkKey)) {
+            throw new IllegalArgumentException("worldId und chunkKey erforderlich");
+        }
+        if (data == null) throw new IllegalArgumentException("ChunkData erforderlich");
+        if (worldId.isCollection() || (worldId.isInstance() && !worldId.isEditorInstance())) {
+            throw new IllegalArgumentException("Chunks können nur für Welten/Zonen gespeichert werden");
+        }
+
+        // Extract server metadata from blocks
+        Map<String, Map<String, String>> infoServer = extractServerMetadata(data);
+
+        data.setStatus(null);
+        data.setI(null);
+
+        String json;
+        try {
+            json = objectMapper.writeValueAsString(data);
+        } catch (Exception e) {
+            throw new IllegalStateException("Serialisierung ChunkData fehlgeschlagen", e);
+        }
+
+        // Create new WChunk entity
+        WChunk entity = WChunk.builder()
+                .worldId(worldId.getId())
+                .chunk(chunkKey)
+                .epoches(epoches)
+                .build();
+        entity.touchCreate();
+
+        // Set hex coordinate
+        var chunkCoordinates = TypeUtil.parseChunkCoord(chunkKey);
+        WWorld world = worldService.getByWorldId(worldId).orElseThrow();
+        var mainHex = HexMathUtil.getDominantHexForChunk(world, chunkCoordinates[0], chunkCoordinates[1]);
+        entity.setHex(TypeUtil.toStringHexCoord(mainHex));
+
+        // Compress
+        byte[] dataBytes;
+        if (compressionEnabled) {
+            try (ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+                 GZIPOutputStream gzip = new GZIPOutputStream(buffer)) {
+                gzip.write(json.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+                gzip.finish();
+                dataBytes = buffer.toByteArray();
+                entity.setCompressed(true);
+            } catch (Exception e) {
+                throw new IllegalStateException("Komprimierung ChunkData fehlgeschlagen", e);
+            }
+        } else {
+            dataBytes = json.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+            entity.setCompressed(false);
+        }
+
+        // Store externally
+        try (InputStream stream = new ByteArrayInputStream(dataBytes)) {
+            StorageService.StorageInfo storageInfo = storageService.store(
+                    STORAGE_SCHEMA, STORAGE_SCHEMA_VERSION, worldId.getId(), "chunk/" + chunkKey, stream);
+            entity.setStorageId(storageInfo.id());
+        } catch (Exception e) {
+            throw new IllegalStateException("Speichern ChunkData fehlgeschlagen", e);
+        }
+
+        entity.setInfoServer(infoServer.isEmpty() ? null : infoServer);
+        entity.setBlockCount(data.getBlocks().size());
+        entity.touchUpdate();
+        return repository.save(entity);
+    }
+
     private void safeDeleteExternal(StorageService storage, String storageId) {
         try { storage.delete(storageId); } catch (Exception e) { log.warn("Externer Chunk-Speicher konnte nicht gelöscht werden id={}", storageId, e); }
     }
