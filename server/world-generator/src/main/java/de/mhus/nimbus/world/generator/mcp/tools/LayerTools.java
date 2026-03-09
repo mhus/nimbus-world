@@ -22,16 +22,25 @@ public class LayerTools {
 
     private final WLayerService layerService;
 
-    @Tool(name = "list_layers", description = "List all layers for a world")
+    @Tool(name = "list_layers", description = "List all layers for a world. Use epoch parameter to filter by specific epoch.")
     public Map<String, Object> listLayers(
-            @ToolParam(description = "World ID") String worldId) {
-        log.debug("MCP: List layers: worldId={}", worldId);
+            @ToolParam(description = "World ID") String worldId,
+            @ToolParam(description = "Optional epoch number to filter layers belonging to this epoch", required = false) Integer epoch) {
+        log.debug("MCP: List layers: worldId={}, epoch={}", worldId, epoch);
 
         WorldId.of(worldId).orElseThrow(
                 () -> new McpToolException("Invalid worldId: " + worldId)
         );
 
         List<WLayer> layers = layerService.findByWorldId(worldId);
+
+        // Filter by epoch if specified
+        if (epoch != null) {
+            layers = layers.stream()
+                    .filter(l -> l.getEpoches() != null && l.getEpoches().contains(epoch))
+                    .collect(Collectors.toList());
+        }
+
         List<Map<String, Object>> layerDtos = layers.stream()
                 .map(this::toLayerDto)
                 .collect(Collectors.toList());
@@ -71,7 +80,8 @@ public class LayerTools {
             @ToolParam(description = "Layer type: TERRAIN or MODEL") String layerType,
             @ToolParam(description = "Layer order (lower renders first)", required = false) Integer order,
             @ToolParam(description = "Whether the layer is enabled", required = false) Boolean enabled,
-            @ToolParam(description = "Whether this layer defines ground level", required = false) Boolean baseGround) {
+            @ToolParam(description = "Whether this layer defines ground level", required = false) Boolean baseGround,
+            @ToolParam(description = "Epoch numbers this layer belongs to (e.g. [0,1,2]). If not specified, defaults to empty list.", required = false) List<Integer> epoches) {
         log.debug("MCP: Create layer: worldId={}, name={}", worldId, name);
 
         WorldId.of(worldId).orElseThrow(
@@ -106,6 +116,7 @@ public class LayerTools {
                 .order(order != null ? order : 0)
                 .enabled(enabled != null ? enabled : true)
                 .baseGround(baseGround != null ? baseGround : false)
+                .epoches(epoches != null ? new ArrayList<>(epoches) : new ArrayList<>())
                 .build();
 
         layer.touchCreate();
@@ -128,6 +139,7 @@ public class LayerTools {
         dto.put("enabled", layer.isEnabled());
         dto.put("baseGround", layer.isBaseGround());
         dto.put("groups", layer.getGroups());
+        dto.put("epoches", layer.getEpoches() != null ? layer.getEpoches() : List.of());
         dto.put("createdAt", layer.getCreatedAt());
         dto.put("updatedAt", layer.getUpdatedAt());
         return dto;

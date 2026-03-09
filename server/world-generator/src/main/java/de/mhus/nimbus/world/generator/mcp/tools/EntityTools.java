@@ -14,6 +14,7 @@ import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
@@ -22,11 +23,12 @@ public class EntityTools {
 
     private final WEntityService entityService;
 
-    @Tool(name = "list_entities", description = "List all entities for a world. Returns entityId, modelId, name, enabled status, position, and server parameters.")
+    @Tool(name = "list_entities", description = "List all entities for a world. Returns entityId, modelId, name, enabled status, position, epoches, and server parameters. Use epoch parameter to filter by specific epoch.")
     public Map<String, Object> listEntities(
             @ToolParam(description = "World ID (e.g. 'ymir:Mist'). Must be a world ID, not a collection.") String worldId,
-            @ToolParam(description = "Optional search query to filter by entityId or name", required = false) String query) {
-        log.debug("MCP: List entities: worldId={}, query={}", worldId, query);
+            @ToolParam(description = "Optional search query to filter by entityId or name", required = false) String query,
+            @ToolParam(description = "Optional epoch number to filter entities belonging to this epoch", required = false) Integer epoch) {
+        log.debug("MCP: List entities: worldId={}, query={}, epoch={}", worldId, query, epoch);
 
         if (Strings.isBlank(worldId)) {
             throw new McpToolException("worldId is required");
@@ -42,6 +44,13 @@ public class EntityTools {
             entities = entityService.findByWorldIdAndQuery(wid, query);
         }
 
+        // Filter by epoch if specified
+        if (epoch != null) {
+            entities = entities.stream()
+                    .filter(e -> e.getEpoches() != null && e.getEpoches().contains(epoch))
+                    .collect(Collectors.toList());
+        }
+
         var dtos = entities.stream().map(e -> {
             Map<String, Object> map = new LinkedHashMap<>();
             map.put("entityId", e.getEntityId());
@@ -50,6 +59,7 @@ public class EntityTools {
                 map.put("name", e.getPublicData().getName() != null ? e.getPublicData().getName() : "");
             }
             map.put("enabled", e.isEnabled());
+            map.put("epoches", e.getEpoches() != null ? e.getEpoches() : List.of());
             if (e.getPosition() != null) {
                 map.put("position", Map.of(
                         "x", e.getPosition().getX(),
@@ -90,6 +100,7 @@ public class EntityTools {
         result.put("entityId", entity.getEntityId());
         result.put("modelId", entity.getModelId());
         result.put("enabled", entity.isEnabled());
+        result.put("epoches", entity.getEpoches() != null ? entity.getEpoches() : List.of());
         result.put("source", entity.getSource());
         if (entity.getPublicData() != null) {
             result.put("publicData", entity.getPublicData());
@@ -137,7 +148,8 @@ public class EntityTools {
             @ToolParam(description = "Movement radius around position (blocks)", required = false) Double radius,
             @ToolParam(description = "Movement speed (blocks per second)", required = false) Double speed,
             @ToolParam(description = "Behavior model identifier (e.g. 'PreyAnimalBehavior')", required = false) String behaviorModel,
-            @ToolParam(description = "Server-side parameters as key-value pairs for gameplay configuration", required = false) Map<String, String> server) {
+            @ToolParam(description = "Server-side parameters as key-value pairs for gameplay configuration", required = false) Map<String, String> server,
+            @ToolParam(description = "Epoch numbers this entity belongs to (e.g. [0,1,2]). If not specified, defaults to all defined epoches of the world.", required = false) List<Integer> epoches) {
         log.debug("MCP: Create entity: worldId={}, entityId={}, modelId={}", worldId, entityId, modelId);
 
         if (Strings.isBlank(worldId) || Strings.isBlank(entityId) || Strings.isBlank(modelId)) {
@@ -171,6 +183,9 @@ public class EntityTools {
                 if (speed != null) entity.setSpeed(speed);
                 if (Strings.isNotBlank(behaviorModel)) entity.setBehaviorModel(behaviorModel);
                 if (server != null) entity.setServer(server);
+                if (epoches != null) {
+                    entity.setEpoches(new ArrayList<>(epoches));
+                }
             });
 
             return Map.of(
@@ -202,7 +217,8 @@ public class EntityTools {
             @ToolParam(description = "Movement radius around position (blocks)", required = false) Double radius,
             @ToolParam(description = "Movement speed (blocks per second)", required = false) Double speed,
             @ToolParam(description = "Behavior model identifier", required = false) String behaviorModel,
-            @ToolParam(description = "Server-side parameters to merge into existing server parameters", required = false) Map<String, String> server) {
+            @ToolParam(description = "Server-side parameters to merge into existing server parameters", required = false) Map<String, String> server,
+            @ToolParam(description = "Epoch numbers this entity belongs to (replaces existing epoches)", required = false) List<Integer> epoches) {
         log.debug("MCP: Update entity: worldId={}, entityId={}", worldId, entityId);
 
         if (Strings.isBlank(worldId) || Strings.isBlank(entityId)) {
@@ -244,6 +260,9 @@ public class EntityTools {
                 } else {
                     existing.putAll(server);
                 }
+            }
+            if (epoches != null) {
+                entity.setEpoches(new ArrayList<>(epoches));
             }
         });
 

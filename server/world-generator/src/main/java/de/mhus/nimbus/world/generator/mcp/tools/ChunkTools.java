@@ -25,12 +25,13 @@ public class ChunkTools {
     private final WWorldService worldService;
     private final WEditCacheService editCacheService;
 
-    @Tool(name = "get_chunk_data", description = "Get chunk storage data including blocks for a specific chunk position")
+    @Tool(name = "get_chunk_data", description = "Get chunk storage data including blocks for a specific chunk position. Use epoch parameter to get the chunk version for a specific epoch (since multiple versions may exist for different epoches).")
     public Map<String, Object> getChunkData(
             @ToolParam(description = "World ID") String worldId,
             @ToolParam(description = "Chunk X coordinate") int cx,
-            @ToolParam(description = "Chunk Z coordinate") int cz) {
-        log.debug("MCP: Get chunk data: worldId={}, cx={}, cz={}", worldId, cx, cz);
+            @ToolParam(description = "Chunk Z coordinate") int cz,
+            @ToolParam(description = "Optional epoch number. If specified, returns the chunk version that contains this epoch. If not specified, returns the first chunk found.", required = false) Integer epoch) {
+        log.debug("MCP: Get chunk data: worldId={}, cx={}, cz={}, epoch={}", worldId, cx, cz, epoch);
 
         var wid = WorldId.of(worldId).orElseThrow(
                 () -> new McpToolException("Invalid worldId: " + worldId)
@@ -38,7 +39,15 @@ public class ChunkTools {
 
         String chunkKey = cx + ":" + cz;
 
-        Optional<WChunk> chunkOpt = chunkService.find(wid, chunkKey);
+        Optional<WChunk> chunkOpt;
+        if (epoch != null) {
+            // Find the chunk version that contains the specified epoch
+            chunkOpt = chunkService.findAll(wid, chunkKey).stream()
+                    .filter(c -> c.getEpoches() != null && c.getEpoches().contains(epoch))
+                    .findFirst();
+        } else {
+            chunkOpt = chunkService.find(wid, chunkKey);
+        }
 
         Map<String, Object> result = new HashMap<>();
         result.put("chunkKey", chunkKey);
@@ -283,6 +292,7 @@ public class ChunkTools {
         dto.put("compressed", chunk.isCompressed());
         dto.put("blockCount", chunk.getBlockCount());
         dto.put("chunkSize", chunk.getChunkSize());
+        dto.put("epoches", chunk.getEpoches() != null ? chunk.getEpoches() : List.of());
         dto.put("hasInfoServer", chunk.getInfoServer() != null && !chunk.getInfoServer().isEmpty());
         dto.put("createdAt", chunk.getCreatedAt());
         dto.put("updatedAt", chunk.getUpdatedAt());

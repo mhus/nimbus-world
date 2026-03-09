@@ -53,6 +53,9 @@ public record CreateLayerRequest(
         Boolean baseGround,
 
         @TypeScript(optional = true)
-        Map<String, String> groups
+        Map<String, String> groups,
+
+        @TypeScript(optional = true)
+        List<Integer> epoches
 ) {
 }

@@ -12,6 +12,7 @@ export interface EntityData {
   type: EntityType | null;
   portraitPath: string | null;
   server: Record<string, string> | null;
+  epoches: number[];
   createdAt: string;
   updatedAt: string;
 }
@@ -30,6 +31,7 @@ export interface CreateEntityRequest {
   type?: EntityType;
   portraitPath?: string;
   server?: Record<string, string>;
+  epoches?: number[];
 }
 
 export interface UpdateEntityRequest {
@@ -39,6 +41,7 @@ export interface UpdateEntityRequest {
   type?: EntityType;
   portraitPath?: string;
   server?: Record<string, string>;
+  epoches?: number[];
 }
 
 class EntityService {

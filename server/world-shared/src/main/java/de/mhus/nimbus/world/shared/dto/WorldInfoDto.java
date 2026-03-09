@@ -1,10 +1,13 @@
 package de.mhus.nimbus.world.shared.dto;
 
 import de.mhus.nimbus.shared.annotations.GenerateTypeScript;
+import de.mhus.nimbus.world.shared.world.WEpochMeta;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import java.util.List;
 
 /**
  * Simplified world information DTO for list operations.
@@ -22,4 +25,10 @@ public class WorldInfoDto {
     private String regionId;
     private boolean enabled;
     private boolean publicFlag;
+
+    /**
+     * Epoch definitions for this world.
+     */
+    @Builder.Default
+    private List<WEpochMeta> epoches = List.of();
 }

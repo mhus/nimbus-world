@@ -136,6 +136,22 @@
                 />
               </label>
             </div>
+
+            <!-- Epoches -->
+            <div class="form-control">
+              <label class="label">
+                <span class="label-text font-medium">Epoches</span>
+              </label>
+              <input
+                v-model="epochesText"
+                type="text"
+                placeholder="Comma-separated epoch numbers, e.g. 0,1,2"
+                class="input input-bordered w-full"
+              />
+              <label class="label">
+                <span class="label-text-alt">Which epoches this entity belongs to (empty = all epoches)</span>
+              </label>
+            </div>
           </div>
         </div>
       </div>
@@ -337,6 +353,7 @@ const formData = ref({
 const entityData = ref<any>(null);
 const showJsonEditor = ref(false);
 const parameterEntries = ref<{ key: string; value: string }[]>([]);
+const epochesText = ref('');
 
 const addParameter = () => {
   parameterEntries.value.push({ key: '', value: '' });
@@ -344,6 +361,14 @@ const addParameter = () => {
 
 const removeParameter = (index: number) => {
   parameterEntries.value.splice(index, 1);
+};
+
+const parseEpoches = (): number[] => {
+  return epochesText.value
+    .split(',')
+    .map(s => s.trim())
+    .filter(s => s.length > 0 && !isNaN(Number(s)))
+    .map(s => Number(s));
 };
 
 const parametersToMap = (): Record<string, string> => {
@@ -401,6 +426,7 @@ const loadEntity = () => {
   };
   entityData.value = entity.publicData || {};
   loadParametersFromMap(entity.server);
+  epochesText.value = (entity.epoches || []).join(',');
 };
 
 const handleSave = async () => {
@@ -423,6 +449,7 @@ const handleSave = async () => {
         type: formData.value.type,
         portraitPath: formData.value.portraitPath || undefined,
         server: params,
+        epoches: parseEpoches(),
       });
       successMessage.value = 'Entity created successfully';
     } else {
@@ -433,6 +460,7 @@ const handleSave = async () => {
         portraitPath: formData.value.portraitPath || undefined,
         publicData: entityData.value,
         server: params,
+        epoches: parseEpoches(),
       });
       successMessage.value = 'Entity saved successfully';
     }

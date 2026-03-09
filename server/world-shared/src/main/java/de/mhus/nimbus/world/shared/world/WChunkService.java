@@ -81,6 +81,15 @@ public class WChunkService implements StorageProvider {
     }
 
     /**
+     * Find all chunk versions by chunkKey (multiple chunks possible due to epoch variants).
+     */
+    @Transactional(readOnly = true)
+    public List<WChunk> findAll(WorldId worldId, String chunkKey) {
+        var lookupWorld = worldId.toBaseWorldId();
+        return repository.findAllByWorldIdAndChunk(lookupWorld.getId(), chunkKey);
+    }
+
+    /**
      * Save chunk data.
      * Filters out instances - chunks are stored per world/zone (not per instance).
      */

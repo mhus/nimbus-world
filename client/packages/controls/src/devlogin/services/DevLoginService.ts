@@ -2,6 +2,12 @@ import { apiService } from '@/services/ApiService';
 
 // ===== Interfaces =====
 
+export interface EpochMeta {
+  epoch: number;
+  name: string;
+  description: string;
+}
+
 export interface World {
   worldId: string;
   name: string;
@@ -9,6 +15,7 @@ export interface World {
   regionId: string;
   enabled: boolean;
   publicFlag: boolean;
+  epoches: EpochMeta[];
 }
 
 export interface Character {

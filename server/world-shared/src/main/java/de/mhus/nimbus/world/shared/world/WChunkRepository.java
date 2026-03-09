@@ -9,6 +9,7 @@ import java.util.Optional;
 @Repository
 public interface WChunkRepository extends MongoRepository<WChunk, String> {
     Optional<WChunk> findByWorldIdAndChunk(String worldId, String chunk);
+    List<WChunk> findAllByWorldIdAndChunk(String worldId, String chunk);
     boolean existsByWorldIdAndChunk(String worldId, String chunk);
     void deleteByWorldIdAndChunk(String worldId, String chunk);
     List<WChunk> findByWorldId(String worldId);

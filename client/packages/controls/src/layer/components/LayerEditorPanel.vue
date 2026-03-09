@@ -102,6 +102,22 @@
           </label>
         </div>
 
+        <!-- Epoches -->
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text">Epoches</span>
+          </label>
+          <input
+            v-model="epochesText"
+            type="text"
+            class="input input-bordered"
+            placeholder="Comma-separated epoch numbers, e.g. 0,1,2"
+          />
+          <label class="label">
+            <span class="label-text-alt">Which epoches this layer belongs to (empty = all epoches)</span>
+          </label>
+        </div>
+
         <!-- All Chunks -->
         <div class="form-control">
           <label class="label cursor-pointer">
@@ -490,6 +506,7 @@ const formData = ref<Partial<WLayer>>({
 });
 
 const affectedChunksText = ref('');
+const epochesText = ref('');
 const errorMessage = ref('');
 const saving = ref(false);
 const regenerating = ref(false);
@@ -525,6 +542,7 @@ const showGridEditor = ref(false);
 if (props.layer) {
   formData.value = { ...props.layer };
   affectedChunksText.value = (props.layer.affectedChunks || []).join('\n');
+  epochesText.value = (props.layer.epoches || []).join(',');
 }
 
 // Watch affectedChunksText and update formData
@@ -533,6 +551,15 @@ watch(affectedChunksText, (newValue) => {
     .split('\n')
     .map(line => line.trim())
     .filter(line => line.length > 0);
+});
+
+// Watch epochesText and update formData
+watch(epochesText, (newValue) => {
+  formData.value.epoches = newValue
+    .split(',')
+    .map(s => s.trim())
+    .filter(s => s.length > 0 && !isNaN(Number(s)))
+    .map(s => Number(s));
 });
 
 /**
@@ -780,7 +807,8 @@ const handleSave = async () => {
         order: formData.value.order,
         enabled: formData.value.enabled,
         baseGround: formData.value.baseGround,
-        groups: formData.value.groups
+        groups: formData.value.groups,
+        epoches: formData.value.epoches,
       };
       const success = await updateLayer(props.layer.id, updateData);
       if (!success) {
@@ -796,7 +824,8 @@ const handleSave = async () => {
         order: formData.value.order,
         enabled: formData.value.enabled,
         baseGround: formData.value.baseGround,
-        groups: formData.value.groups
+        groups: formData.value.groups,
+        epoches: formData.value.epoches,
       };
       const id = await createLayer(createData);
       if (!id) {

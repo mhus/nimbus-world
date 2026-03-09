@@ -110,6 +110,7 @@ public class AccessService {
                 .regionId(world.getRegionId())
                 .enabled(world.isEnabled())
                 .publicFlag(world.isPublicFlag())
+                .epoches(world.getEpoches() != null ? world.getEpoches() : java.util.List.of())
                 .build();
     }
 

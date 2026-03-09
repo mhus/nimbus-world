@@ -10,4 +10,5 @@ export interface WorldInfoDto {
   regionId: string;
   enabled: boolean;
   publicFlag: boolean;
+  epoches: WEpochMeta[];
 }

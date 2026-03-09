@@ -218,6 +218,18 @@
                 </select>
               </div>
 
+              <!-- Epoch Selection (shown for EDITOR when world has epoches) -->
+              <div v-if="selectedCharacter && selectedActor === 'EDITOR' && selectedWorld.epoches && selectedWorld.epoches.length > 0" class="form-control">
+                <label class="label">
+                  <span class="label-text">Epoch</span>
+                </label>
+                <select v-model.number="selectedEpoch" class="select select-bordered w-full">
+                  <option v-for="ep in selectedWorld.epoches" :key="ep.epoch" :value="ep.epoch">
+                    {{ ep.epoch }} - {{ ep.name }}{{ ep.description ? ` (${ep.description})` : '' }}
+                  </option>
+                </select>
+              </div>
+
               <!-- Instance Selection (shown for PLAYER and SUPPORT) -->
               <div v-if="selectedCharacter && (selectedActor === 'PLAYER' || selectedActor === 'SUPPORT')" class="form-control">
                 <label class="label">
@@ -433,6 +445,9 @@
               <div v-if="loginType === 'session' && (selectedActor === 'EDITOR' || selectedActor === 'SUPPORT')">
                 <strong>Zone:</strong> {{ selectedZone ? selectedZone : 'Main World' }}
               </div>
+              <div v-if="loginType === 'session' && selectedActor === 'EDITOR' && selectedWorld && selectedWorld.epoches && selectedWorld.epoches.length > 0">
+                <strong>Epoch:</strong> {{ selectedEpoch }}
+              </div>
               <div v-if="loginType === 'session' && (selectedActor === 'PLAYER' || selectedActor === 'SUPPORT')">
                 <strong>Instance:</strong> {{ selectedInstance ? selectedInstance : (selectedActor === 'PLAYER' ? 'New Instance' : 'None') }}
               </div>
@@ -472,7 +487,8 @@ import {
   type Character,
   type ActorType,
   type LoginRequest,
-  type WorldInstance
+  type WorldInstance,
+  type EpochMeta
 } from './services/DevLoginService';
 
 // ===== LOCAL STORAGE KEYS =====
@@ -487,6 +503,7 @@ const STORAGE_KEY_GRID_Q = 'nimbus-devlogin-grid-q';
 const STORAGE_KEY_GRID_R = 'nimbus-devlogin-grid-r';
 const STORAGE_KEY_VIEW_DISTANCE = 'nimbus-devlogin-view-distance';
 const STORAGE_KEY_QUALITY = 'nimbus-devlogin-quality';
+const STORAGE_KEY_EPOCH = 'nimbus-devlogin-epoch';
 
 // ===== STATE =====
 
@@ -518,6 +535,9 @@ const selectedActor = ref<ActorType>('PLAYER');
 const zones = ref<World[]>([]);
 const loadingZones = ref(false);
 const selectedZone = ref<string>(''); // empty = main world, worldId = zone
+
+// Session Login - Epoch (for EDITOR)
+const selectedEpoch = ref<number>(0);
 
 // Session Login - Instances (for PLAYER)
 const instances = ref<WorldInstance[]>([]);
@@ -601,6 +621,9 @@ const saveToLocalStorage = () => {
 
     // Save quality
     localStorage.setItem(STORAGE_KEY_QUALITY, quality.value.toString());
+
+    // Save epoch
+    localStorage.setItem(STORAGE_KEY_EPOCH, selectedEpoch.value.toString());
   } catch (e) {
     console.error('[DevLogin] Failed to save to localStorage:', e);
   }
@@ -694,6 +717,12 @@ const loadFromLocalStorage = async () => {
                   quality.value = q;
                 }
               }
+
+              // Load epoch
+              const savedEpoch = localStorage.getItem(STORAGE_KEY_EPOCH);
+              if (savedEpoch) {
+                selectedEpoch.value = parseInt(savedEpoch, 10) || 0;
+              }
             }
           }
         }
@@ -768,6 +797,7 @@ const handleWorldSelect = (world: World) => {
   instances.value = [];
   selectedZone.value = '';
   selectedInstance.value = '';
+  selectedEpoch.value = 0;
   loginError.value = null;
 };
 
@@ -931,8 +961,11 @@ const handleLogin = async () => {
       }
 
       // Instance: PLAYER can rejoin or create new, SUPPORT can only join existing
+      // EDITOR uses synthetic epoch instance (xN)
       let instanceId: string | undefined;
-      if (selectedInstance.value) {
+      if (selectedActor.value === 'EDITOR' && selectedWorld.value.epoches && selectedWorld.value.epoches.length > 0) {
+        instanceId = `x${selectedEpoch.value}`;
+      } else if (selectedInstance.value) {
         instanceId = selectedInstance.value;
       }
 
