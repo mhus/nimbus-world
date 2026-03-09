@@ -62,7 +62,7 @@ public class BroadcastService {
                 if (!session.isAuthenticated()) continue;
 
                 // Skip if different world (editor instances also match their base world)
-                if (session.getWorldId() == null || !session.getWorldId().matchesWorld(worldId)) continue;
+                if (session.getWorldId() == null || !session.getWorldId().matchesBaseWorld(worldId)) continue;
 
                 // Skip if this is the originating session (ignore own events)
                 if (originatingSessionId != null && originatingSessionId.equals(session.getSessionId())) {
@@ -146,7 +146,7 @@ public class BroadcastService {
                 if (!session.isAuthenticated()) continue;
 
                 // Skip if different world (editor instances also match their base world)
-                if (session.getWorldId() == null || !session.getWorldId().matchesWorld(worldId)) continue;
+                if (session.getWorldId() == null || !session.getWorldId().matchesBaseWorld(worldId)) continue;
 
                 // Skip if this is the originating session
                 if (originatingSessionId != null && originatingSessionId.equals(session.getSessionId())) continue;

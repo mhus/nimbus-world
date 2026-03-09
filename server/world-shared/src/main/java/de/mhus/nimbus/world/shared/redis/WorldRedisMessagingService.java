@@ -24,7 +24,8 @@ public class WorldRedisMessagingService {
     private final Map<String, MessageListener> listeners = new ConcurrentHashMap<>();
 
     public void publish(String worldId, String channel, String message) {
-        redisTemplate.convertAndSend(topic(worldId, channel), message);
+        String t = topic(worldId, channel);
+        redisTemplate.convertAndSend(t, message);
     }
 
     public void subscribe(String worldId, String channel, BiConsumer<String,String> handler) {
@@ -119,6 +120,6 @@ public class WorldRedisMessagingService {
     }
 
     private String topic(String worldId, String channel) {
-        return "world:" + WorldId.unchecked(worldId).getFullId() + ":" + channel;
+        return "world:" + WorldId.unchecked(worldId).getFullBaseId() + ":" + channel;
     }
 }

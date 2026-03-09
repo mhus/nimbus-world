@@ -83,13 +83,19 @@ public class BlockUpdateBroadcastListener {
      * Handle incoming block update event from Redis.
      * Distributes block updates to relevant sessions based on audience filter.
      */
-    private void handleBlockUpdate(String worldId, String message) {
+    private void handleBlockUpdate(String subscriptionWorldId, String message) {
         try {
             // Deserialize broadcast message
             BlockUpdateBroadcastMessage broadcast = objectMapper.readValue(message, BlockUpdateBroadcastMessage.class);
 
-            log.debug("Received block update broadcast: world={}, audience={}, origin={}",
-                    worldId, broadcast.getTargetAudience(), broadcast.getOriginatingSessionId());
+            // Use worldId from message for epoch-aware filtering.
+            // The subscription is on the base world channel, but filtering must use the
+            // full worldId (e.g., "earth616:westview::x0") so that editors in different
+            // epochs only receive block updates for their own epoch.
+            String messageWorldId = broadcast.getWorldId();
+
+            log.debug("Received block update broadcast: subscriptionWorld={}, messageWorld={}, audience={}, origin={}",
+                    subscriptionWorldId, messageWorldId, broadcast.getTargetAudience(), broadcast.getOriginatingSessionId());
 
             // Validate block JSON
             if (broadcast.getBlockJson() == null || broadcast.getBlockJson().isBlank()) {
@@ -127,27 +133,30 @@ public class BlockUpdateBroadcastListener {
             // Determine target audience
             boolean editorOnly = BlockUpdateBroadcastMessage.AUDIENCE_EDITOR.equals(broadcast.getTargetAudience());
 
-            // Send to relevant sessions
+            // Send to relevant sessions - filter by message worldId (epoch-aware)
             int sentCount = 0;
             for (PlayerSession session : sessionManager.getAllSessions().values()) {
-                // Skip if not authenticated
                 if (!session.isAuthenticated()) continue;
 
-                // Skip if different world
-                if (session.getWorldId() == null || !worldId.equals(session.getWorldId().getId())) continue;
+                if (session.getWorldId() == null) continue;
+
+                // Exact match on full worldId for epoch isolation
+                // Editor in x0 only gets x0 updates, editor in x5 only gets x5 updates
+                // Players (no instance) match base world updates
+                String sessionWorldId = session.getWorldId().getId();
+                if (!sessionWorldId.equals(messageWorldId)
+                        && !session.getWorldId().matchesBaseWorld(messageWorldId)) {
+                    continue;
+                }
 
                 // Filter by audience: EDITOR only?
                 if (editorOnly && !"EDITOR".equals(session.getActor())) {
-                    log.trace("Skipping non-editor session: {} (actor={})",
-                            session.getSessionId(), session.getActor());
                     continue;
                 }
 
                 // Filter by chunk if specified
                 if (broadcast.getCx() != null && broadcast.getCz() != null) {
                     if (!session.isChunkRegistered(broadcast.getCx(), broadcast.getCz())) {
-                        log.trace("Session {} has not registered chunk ({}, {}), skipping",
-                                session.getSessionId(), broadcast.getCx(), broadcast.getCz());
                         continue;
                     }
                 }
@@ -158,7 +167,7 @@ public class BlockUpdateBroadcastListener {
             }
 
             log.info("Broadcast block update to {} sessions: world={} audience={} blocks={}",
-                    sentCount, worldId, broadcast.getTargetAudience(), blocks.length);
+                    sentCount, messageWorldId, broadcast.getTargetAudience(), blocks.length);
 
         } catch (Exception e) {
             log.error("Failed to handle block update from Redis: {}", message, e);

@@ -140,8 +140,8 @@ public class ChunkUpdateBroadcastListener {
                 // Skip if not authenticated
                 if (!session.isAuthenticated()) continue;
 
-                // Skip if different world
-                if (session.getWorldId() == null || !worldId.equals(session.getWorldId().getId())) continue;
+                // Skip if different world (editor instances also match their base world)
+                if (session.getWorldId() == null || !session.getWorldId().matchesBaseWorld(worldId)) continue;
 
                 // Check if session has registered the chunk
                 if (!session.isChunkRegistered(cx, cz)) {

@@ -276,19 +276,31 @@ public class WorldId implements Comparable<WorldId> {
     }
 
     /**
-     * Checks if this WorldId matches the given worldId string.
-     * For editor instances, also matches the base world (without instance suffix).
-     * This is used for Redis broadcast filtering where editor sessions
-     * need to receive base world messages.
+     * Checks if this WorldId matches the given base worldId (stripped format without trailing colons).
+     * Compares against this id AND against toBaseWorldId().getId().
+     * Use for comparisons where the other side uses getId() (e.g., BroadcastService listeners).
      *
-     * @param otherWorldId The worldId string to compare against
-     * @return true if this WorldId matches (exact or editor-to-base match)
+     * @param otherWorldId Base worldId string (e.g., "earth616:westview")
+     * @return true if this WorldId matches
      */
-    public boolean matchesWorld(String otherWorldId) {
+    public boolean matchesBaseWorld(String otherWorldId) {
         parseId();
         if (getId().equals(otherWorldId)) return true;
-        if (getFullBaseId().equals(otherWorldId)) return true;
-        return false;
+        return toBaseWorldId().getId().equals(otherWorldId);
+    }
+
+    /**
+     * Checks if this WorldId matches the given full worldId (with trailing colons).
+     * Compares against this fullId AND against getFullBaseId().
+     * Use for comparisons where the other side uses getFullId() (e.g., Redis topics).
+     *
+     * @param otherWorldId Full worldId string (e.g., "earth616:westview::")
+     * @return true if this WorldId matches
+     */
+    public boolean matchesFullWorld(String otherWorldId) {
+        parseId();
+        if (getFullId().equals(otherWorldId)) return true;
+        return getFullBaseId().equals(otherWorldId);
     }
 
     /**
