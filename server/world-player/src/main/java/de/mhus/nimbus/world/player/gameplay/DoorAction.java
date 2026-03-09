@@ -1,14 +1,18 @@
 package de.mhus.nimbus.world.player.gameplay;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.shared.utils.TypeUtil;
 import de.mhus.nimbus.world.player.session.PlayerSession;
+import de.mhus.nimbus.world.shared.world.WChunk;
 import de.mhus.nimbus.world.shared.world.WEntity;
 import de.mhus.nimbus.world.shared.world.WItem;
 import de.mhus.nimbus.world.shared.world.WWorld;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -20,6 +24,11 @@ import java.util.Optional;
  * - value=open/close/toggle (default: toggle)
  * - position=x,y,z (optional, if not set uses the interacted block position)
  * - defaultDoorState=open/closed (default: closed)
+ * - toggleType=auto/single/group (default: auto)
+ *   - auto: also toggle adjacent blocks (up/down) with same action=door
+ *   - single: only toggle this block
+ *   - group: toggle all blocks in the chunk with the same toggleGroup and action=door
+ * - toggleGroup=<name> (required when toggleType=group)
  */
 @Slf4j
 public class DoorAction implements GameplayAction {
@@ -39,6 +48,7 @@ public class DoorAction implements GameplayAction {
         if (session.getWorldId() == null) return false;
 
         String worldId = session.getWorldId().getId();
+        WorldId wid = session.getWorldId();
 
         // Determine target position
         int targetX = x, targetY = y, targetZ = z;
@@ -72,23 +82,106 @@ public class DoorAction implements GameplayAction {
         String chunkKey = world.getChunkKey(targetX, targetZ);
         String blockKey = targetX + "," + targetY + "," + targetZ;
 
-        // Resolve final status
+        // Resolve final status for the interacted block
         String newStatus = resolveStatus(worldId, chunkKey, blockKey, value, defaultDoorState);
         if (newStatus == null) {
             return false;
         }
 
-        // Set/remove status AND broadcast to clients
+        // Collect all block keys to toggle
+        List<String> blockKeys = collectToggleTargets(wid, serverInfo, chunkKey, targetX, targetY, targetZ);
+
+        // Apply status to all targets
         var sender = basic.getBlockStatusSenderService();
-        if (newStatus.equals(defaultDoorState)) {
-            int[] cc = TypeUtil.parseChunkCoord(chunkKey);
-            sender.removeAndBroadcast(worldId, chunkKey, cc[0], cc[1], blockKey);
-        } else {
-            sender.setAndBroadcast(worldId, chunkKey, blockKey, newStatus);
+        for (String key : blockKeys) {
+            if (newStatus.equals(defaultDoorState)) {
+                int[] cc = TypeUtil.parseChunkCoord(chunkKey);
+                sender.removeAndBroadcast(worldId, chunkKey, cc[0], cc[1], key);
+            } else {
+                sender.setAndBroadcast(worldId, chunkKey, key, newStatus);
+            }
         }
 
-        log.debug("Door action: worldId={}, chunkKey={}, blockKey={}, status={}", worldId, chunkKey, blockKey, newStatus);
+        log.debug("Door action: worldId={}, chunkKey={}, targets={}, status={}", worldId, chunkKey, blockKeys, newStatus);
         return true;
+    }
+
+    /**
+     * Collect all block keys that should be toggled based on toggleType.
+     *
+     * @return List of block keys ("x,y,z") to toggle, always includes the target itself
+     */
+    private List<String> collectToggleTargets(WorldId worldId, Map<String, String> serverInfo, String chunkKey,
+                                               int targetX, int targetY, int targetZ) {
+        String targetKey = targetX + "," + targetY + "," + targetZ;
+        String toggleType = serverInfo != null ? serverInfo.get("toggleType") : null;
+        if (Strings.isBlank(toggleType)) {
+            toggleType = "auto";
+        }
+
+        return switch (toggleType.toLowerCase()) {
+            case "single" -> List.of(targetKey);
+            case "group" -> collectGroupTargets(worldId, serverInfo, chunkKey, targetKey);
+            default -> collectAutoTargets(worldId, chunkKey, targetX, targetY, targetZ, targetKey);
+        };
+    }
+
+    /**
+     * Auto-detect: find adjacent blocks (up/down) in the same chunk with action=door.
+     */
+    private List<String> collectAutoTargets(WorldId worldId, String chunkKey,
+                                             int targetX, int targetY, int targetZ, String targetKey) {
+        WChunk chunk = basic.getChunkService().find(worldId, chunkKey).orElse(null);
+        if (chunk == null || chunk.getInfoServer() == null) {
+            return List.of(targetKey);
+        }
+
+        List<String> targets = new ArrayList<>();
+        targets.add(targetKey);
+
+        // Check blocks above and below (up to 2 blocks in each direction)
+        int[][] offsets = {{0, 1, 0}, {0, -1, 0}, {0, 2, 0}, {0, -2, 0}};
+        for (int[] offset : offsets) {
+            String adjacentKey = (targetX + offset[0]) + "," + (targetY + offset[1]) + "," + (targetZ + offset[2]);
+            Map<String, String> adjacentInfo = chunk.getInfoServer().get(adjacentKey);
+            if (adjacentInfo != null && "door".equals(adjacentInfo.get("action"))) {
+                targets.add(adjacentKey);
+            }
+        }
+
+        return targets;
+    }
+
+    /**
+     * Group: find all blocks in the same chunk with matching toggleGroup and action=door.
+     */
+    private List<String> collectGroupTargets(WorldId worldId, Map<String, String> serverInfo,
+                                              String chunkKey, String targetKey) {
+        String groupName = serverInfo != null ? serverInfo.get("toggleGroup") : null;
+        if (Strings.isBlank(groupName)) {
+            log.warn("toggleType=group but no toggleGroup specified, falling back to single");
+            return List.of(targetKey);
+        }
+
+        WChunk chunk = basic.getChunkService().find(worldId, chunkKey).orElse(null);
+        if (chunk == null || chunk.getInfoServer() == null) {
+            return List.of(targetKey);
+        }
+
+        List<String> targets = new ArrayList<>();
+        for (var entry : chunk.getInfoServer().entrySet()) {
+            Map<String, String> info = entry.getValue();
+            if ("door".equals(info.get("action")) && groupName.equals(info.get("toggleGroup"))) {
+                targets.add(entry.getKey());
+            }
+        }
+
+        // Ensure target is included
+        if (!targets.contains(targetKey)) {
+            targets.add(targetKey);
+        }
+
+        return targets;
     }
 
     private String resolveStatus(String worldId, String chunkKey, String blockKey, String value, String defaultDoorState) {
@@ -96,17 +189,14 @@ public class DoorAction implements GameplayAction {
             case "open" -> "open";
             case "close", "closed" -> "closed";
             case "toggle" -> {
-                // Check current status in WProgress
-                var statusMap = basic.getProgressService().findBlockStatusForChunks(worldId, java.util.List.of(chunkKey));
+                var statusMap = basic.getProgressService().findBlockStatusForChunks(worldId, List.of(chunkKey));
                 var chunkStatus = statusMap.get(chunkKey);
                 String currentStatus = chunkStatus != null ? (String) chunkStatus.get(blockKey) : null;
 
-                // If no override exists, the current state is the default
                 if (currentStatus == null) {
                     currentStatus = defaultDoorState;
                 }
 
-                // Toggle
                 yield "open".equals(currentStatus) ? "closed" : "open";
             }
             default -> {

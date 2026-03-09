@@ -39,8 +39,8 @@ public class BlockStatusSenderService {
      * @param status   New status value (e.g. "open", "closed")
      */
     public void setAndBroadcast(String worldId, String chunkKey, int cx, int cz, String blockKey, String status) {
+        // progressService publishes via Redis -> BlockStatusBroadcastListener -> broadcastStatusUpdate, no direct call needed
         progressService.setBlockStatus(worldId, chunkKey, blockKey, status);
-        broadcastStatusUpdate(worldId, cx, cz, Map.of(blockKey, status));
     }
 
     /**
@@ -67,8 +67,8 @@ public class BlockStatusSenderService {
      * @param blockKey Block identifier (blockId string)
      */
     public void removeAndBroadcast(String worldId, String chunkKey, int cx, int cz, String blockKey) {
+        // progressService publishes via Redis -> BlockStatusBroadcastListener -> broadcastStatusUpdate, no direct call needed
         progressService.removeBlockStatus(worldId, chunkKey, blockKey);
-        broadcastStatusRemoval(worldId, cx, cz, blockKey);
     }
 
     /**

@@ -37,6 +37,7 @@ public class BasicGameplay implements Gameplay {
     public static final String BLOCK_ITEM_ID = CombatConstants.BLOCK_ITEM_ID;
 
     @Autowired
+    @Getter
     protected WChunkService chunkService;
     @Autowired
     @Getter
