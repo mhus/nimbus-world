@@ -276,6 +276,35 @@ public class WorldId implements Comparable<WorldId> {
     }
 
     /**
+     * Checks if this WorldId matches the given worldId string.
+     * For editor instances, also matches the base world (without instance suffix).
+     * This is used for Redis broadcast filtering where editor sessions
+     * need to receive base world messages.
+     *
+     * @param otherWorldId The worldId string to compare against
+     * @return true if this WorldId matches (exact or editor-to-base match)
+     */
+    public boolean matchesWorld(String otherWorldId) {
+        parseId();
+        if (getId().equals(otherWorldId)) return true;
+        if (getFullBaseId().equals(otherWorldId)) return true;
+        return false;
+    }
+
+    /**
+     * Returns the full base worldId (without instance suffix for editor instances).
+     * For editor instances, returns the base worldId so messages go to the
+     * shared base world channel (editors work on base world data).
+     * For all other WorldIds, returns the regular id.
+     *
+     * @return base worldId for editor instances, otherwise this worldId
+     */
+    public String getFullBaseId() {
+        parseId();
+        return regionId + ":" + worldName + ":" + zone + ":";
+    }
+
+    /**
      * Check if this is a synthetic editor instance.
      * Editor instances use the format "xN" where N is the epoch number (e.g. "x0", "x2").
      * They operate on base world data without COW.

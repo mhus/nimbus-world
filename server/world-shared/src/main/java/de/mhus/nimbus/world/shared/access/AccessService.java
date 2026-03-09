@@ -328,9 +328,15 @@ public class AccessService {
 
         // Handle instance selection based on actor
         if (request.getInstanceId() != null && !request.getInstanceId().isBlank()) {
+            // Build full instance worldId if only the instance part was provided
+            String fullInstanceId = request.getInstanceId();
+            if (!fullInstanceId.contains(":")) {
+                fullInstanceId = WorldId.worldWithInstance(worldId.getId(), fullInstanceId);
+            }
             // Explicit instance selected (PLAYER rejoin or SUPPORT join)
-            var existingInstance = worldInstanceService.findByInstanceIdWithValidation(request.getInstanceId())
-                    .orElseThrow(() -> new IllegalArgumentException("Instance not found: " + request.getInstanceId()));
+            final String resolvedInstanceId = fullInstanceId;
+            var existingInstance = worldInstanceService.findByInstanceIdWithValidation(resolvedInstanceId)
+                    .orElseThrow(() -> new IllegalArgumentException("Instance not found: " + resolvedInstanceId));
 
             // PLAYER: must be in players list; SUPPORT: can join any instance
             if (request.getActor() == ActorRoles.PLAYER && !existingInstance.isPlayerAllowed(playerId.getId())) {
