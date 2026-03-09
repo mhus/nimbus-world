@@ -196,6 +196,83 @@ public class ChunkTools {
         return result;
     }
 
+    @Tool(name = "list_server_info_keys", description = "List all block coordinate keys that have server info in a chunk. Returns coordinate keys like '-24,70,39'.")
+    public Map<String, Object> listServerInfoKeys(
+            @ToolParam(description = "World ID") String worldId,
+            @ToolParam(description = "Chunk key (e.g. '-1:1')") String chunkKey) {
+        log.debug("MCP: List server info keys: worldId={}, chunkKey={}", worldId, chunkKey);
+
+        var wid = WorldId.of(worldId).orElseThrow(
+                () -> new McpToolException("Invalid worldId: " + worldId)
+        );
+
+        var keys = chunkService.getServerInfoKeys(wid, chunkKey);
+        return Map.of("chunkKey", chunkKey, "keys", keys, "count", keys.size());
+    }
+
+    @Tool(name = "get_server_info", description = "Get server info (metadata) for a specific block position. Server info contains action configuration like 'action=door', 'value=toggle' etc.")
+    public Map<String, Object> getServerInfo(
+            @ToolParam(description = "World ID") String worldId,
+            @ToolParam(description = "World X coordinate") int x,
+            @ToolParam(description = "World Y coordinate") int y,
+            @ToolParam(description = "World Z coordinate") int z) {
+        log.debug("MCP: Get server info: worldId={}, x={}, y={}, z={}", worldId, x, y, z);
+
+        var wid = WorldId.of(worldId).orElseThrow(
+                () -> new McpToolException("Invalid worldId: " + worldId)
+        );
+
+        var info = chunkService.getServerInfo(wid, x, y, z);
+        Map<String, Object> result = new HashMap<>();
+        result.put("x", x);
+        result.put("y", y);
+        result.put("z", z);
+        if (info != null) {
+            result.put("found", true);
+            result.put("serverInfo", info);
+        } else {
+            result.put("found", false);
+        }
+        return result;
+    }
+
+    @Tool(name = "set_server_info", description = "Set server info (metadata) for a specific block position. Use to configure block actions like doors (action=door, value=toggle).")
+    public Map<String, Object> setServerInfo(
+            @ToolParam(description = "World ID") String worldId,
+            @ToolParam(description = "World X coordinate") int x,
+            @ToolParam(description = "World Y coordinate") int y,
+            @ToolParam(description = "World Z coordinate") int z,
+            @ToolParam(description = "Server info key-value pairs (e.g. {\"action\": \"door\", \"value\": \"toggle\"})") Map<String, String> serverInfo) {
+        log.debug("MCP: Set server info: worldId={}, x={}, y={}, z={}, info={}", worldId, x, y, z, serverInfo);
+
+        var wid = WorldId.of(worldId).orElseThrow(
+                () -> new McpToolException("Invalid worldId: " + worldId)
+        );
+
+        if (serverInfo == null || serverInfo.isEmpty()) {
+            throw new McpToolException("serverInfo must not be empty");
+        }
+
+        chunkService.setServerInfo(wid, x, y, z, serverInfo);
+        return Map.of("x", x, "y", y, "z", z, "serverInfo", serverInfo, "status", "saved");
+    }
+
+    @Tool(name = "remove_server_info", description = "Remove server info (metadata) for a specific block position.")
+    public Map<String, Object> removeServerInfo(
+            @ToolParam(description = "World ID") String worldId,
+            @ToolParam(description = "World X coordinate") int x,
+            @ToolParam(description = "World Y coordinate") int y,
+            @ToolParam(description = "World Z coordinate") int z) {
+        log.debug("MCP: Remove server info: worldId={}, x={}, y={}, z={}", worldId, x, y, z);
+
+        var wid = WorldId.of(worldId).orElseThrow(
+                () -> new McpToolException("Invalid worldId: " + worldId)
+        );
+
+        chunkService.removeServerInfo(wid, x, y, z);
+        return Map.of("x", x, "y", y, "z", z, "status", "removed");
+    }
+
     private Map<String, Object> toChunkMetadataDto(WChunk chunk) {
         Map<String, Object> dto = new HashMap<>();
         dto.put("id", chunk.getId());

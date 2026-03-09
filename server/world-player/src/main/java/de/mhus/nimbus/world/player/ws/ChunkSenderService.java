@@ -305,14 +305,21 @@ public class ChunkSenderService {
     /**
      * Apply block status from WProgress to DTO if available.
      */
+    @SuppressWarnings("unchecked")
     private void applyBlockStatus(ChunkDataTransferObject dto, Map<String, Map<String, Object>> blockStatusMap, String chunkKey) {
         var statusData = blockStatusMap.get(chunkKey);
         if (statusData != null && !statusData.isEmpty()) {
-            Map<String, String> s = new HashMap<>();
-            for (var entry : statusData.entrySet()) {
-                s.put(entry.getKey(), String.valueOf(entry.getValue()));
+            try {
+                dto.setS((Map<String, String>) (Map<?, ?>) statusData);
+            } catch (ClassCastException e) {
+                log.warn("Block status data contains non-String values for chunkKey={}, falling back to copy", chunkKey);
+                Map<String, String> s = new HashMap<>();
+                for (var entry : statusData.entrySet()) {
+                    s.put(entry.getKey(), String.valueOf(entry.getValue()));
+                }
+                dto.setS(s);
             }
-            dto.setS(s);
+            log.debug("Applied block status: chunkKey={}, entries={}", chunkKey, statusData.size());
         }
     }
 

@@ -19,6 +19,7 @@ import de.mhus.nimbus.world.shared.world.WAnythingService;
 import de.mhus.nimbus.world.shared.world.WChestService;
 import de.mhus.nimbus.world.shared.world.WWorldService;
 import de.mhus.nimbus.world.player.service.ClientService;
+import de.mhus.nimbus.world.player.ws.BlockStatusSenderService;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
@@ -75,6 +76,9 @@ public class BasicGameplay implements Gameplay {
     @Autowired
     @Getter
     protected WChestService chestService;
+    @Autowired
+    @Getter
+    protected BlockStatusSenderService blockStatusSenderService;
 
     protected Map<String, GameplayAction> actions = new HashMap<>();
 

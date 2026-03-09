@@ -355,6 +355,7 @@ export class NetworkService {
         cz: header.cz,
         b: [],  // Will be filled after decompression
         i: header.i,
+        s: header.s,
         c: compressedBytes,  // Pass compressed data to ChunkService
       };
 
@@ -425,7 +426,7 @@ export class NetworkService {
           }
         });
       } else {
-        logger.warn('🔴 NO HANDLER registered for message type', {
+        logger.warn('No handler registered for message type', {
           type: message.t,
           registeredTypes: Array.from(this.handlers.keys()),
         });

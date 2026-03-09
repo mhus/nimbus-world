@@ -974,6 +974,17 @@ public class EditService {
                     .build());
         }
 
+        // Normalize legacy status "0" to "default"
+        if ("0".equals(block.getStatus())) {
+            block.setStatus(BlockUtil.DEFAULT_STATUS);
+        }
+
+        // Normalize legacy modifier key "0" to "default"
+        if (block.getModifiers() != null && block.getModifiers().containsKey("0")) {
+            var modifier = block.getModifiers().remove("0");
+            block.getModifiers().putIfAbsent(BlockUtil.DEFAULT_STATUS, modifier);
+        }
+
         // Get layerDataId from selected layer
         String selectedLayer = editState.getSelectedLayer();
         if (selectedLayer == null) {

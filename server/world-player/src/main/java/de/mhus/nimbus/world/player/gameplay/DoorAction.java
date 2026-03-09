@@ -78,14 +78,16 @@ public class DoorAction implements GameplayAction {
             return false;
         }
 
-        // If the new status equals the default, remove the override (revert to default)
+        // Set/remove status AND broadcast to clients
+        var sender = basic.getBlockStatusSenderService();
         if (newStatus.equals(defaultDoorState)) {
-            basic.getProgressService().removeBlockStatus(worldId, chunkKey, blockKey);
+            int[] cc = TypeUtil.parseChunkCoord(chunkKey);
+            sender.removeAndBroadcast(worldId, chunkKey, cc[0], cc[1], blockKey);
         } else {
-            basic.getProgressService().setBlockStatus(worldId, chunkKey, blockKey, newStatus);
+            sender.setAndBroadcast(worldId, chunkKey, blockKey, newStatus);
         }
 
-        log.debug("Door action: worldId={}, pos=({},{},{}), status={}", worldId, targetX, targetY, targetZ, newStatus);
+        log.debug("Door action: worldId={}, chunkKey={}, blockKey={}, status={}", worldId, chunkKey, blockKey, newStatus);
         return true;
     }
 

@@ -1489,7 +1489,7 @@ export class PlayerService {
     // Emit event for UI update
     this.emit('statusEffects:changed', Array.from(this.statusEffects.values()));
 
-    logger.debug('Status effect removed', { effectId, itemId: effect.itemId });
+    logger.debug('Status effect removed', { effectId });
     return true;
   }
 

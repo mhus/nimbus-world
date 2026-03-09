@@ -20,7 +20,7 @@ const logger = getLogger('BlockProgressStatusHandler');
  * Handles BLOCK_PROGRESS_STATUS_UPDATE messages from server (b.ps)
  */
 export class BlockProgressStatusHandler extends MessageHandler<BlockProgressStatusData> {
-  readonly messageType = MessageType.BLOCK_PROGRESS_STATUS_UPDATE;
+  readonly messageType = 'b.ps' as MessageType;
 
   constructor(private chunkService: ChunkService) {
     super();

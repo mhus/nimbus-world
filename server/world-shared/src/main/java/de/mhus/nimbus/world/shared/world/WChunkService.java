@@ -31,6 +31,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
@@ -715,6 +716,88 @@ public class WChunkService implements StorageProvider {
         // Get server info for block
         WChunk chunk = chunkOpt.get();
         return chunk.getServerInfoForBlock(x, y, z);
+    }
+
+    /**
+     * Get all server info coordinate keys for a chunk.
+     *
+     * @param worldId World identifier
+     * @param chunkKey Chunk key (e.g. "-1:1")
+     * @return Set of coordinate keys (e.g. "-24,70,39"), or empty set if none
+     */
+    public Set<String> getServerInfoKeys(WorldId worldId, String chunkKey) {
+        WorldId lookupWorldId = worldId.toBaseWorldId();
+        Optional<WChunk> chunkOpt = find(lookupWorldId, chunkKey);
+        if (chunkOpt.isEmpty()) {
+            return Set.of();
+        }
+        WChunk chunk = chunkOpt.get();
+        if (chunk.getInfoServer() == null) {
+            return Set.of();
+        }
+        return chunk.getInfoServer().keySet();
+    }
+
+    /**
+     * Set server info for a specific block position.
+     * Creates or updates the entry in the chunk's infoServer map.
+     *
+     * @param worldId World identifier
+     * @param x Block x coordinate (world coordinates)
+     * @param y Block y coordinate (world coordinates)
+     * @param z Block z coordinate (world coordinates)
+     * @param serverInfo Server metadata map to set
+     */
+    public void setServerInfo(WorldId worldId, int x, int y, int z, Map<String, String> serverInfo) {
+        WorldId lookupWorldId = worldId.toBaseWorldId();
+        WWorld world = worldService.getByWorldId(lookupWorldId.getId())
+                .orElseThrow(() -> new IllegalArgumentException("World not found: " + worldId));
+
+        String chunkKey = world.getChunkKey(x, z);
+        WChunk chunk = find(lookupWorldId, chunkKey)
+                .orElseThrow(() -> new IllegalArgumentException("Chunk not found: " + chunkKey));
+
+        String coordinate = x + "," + y + "," + z;
+        Map<String, Map<String, String>> infoServerMap = chunk.getInfoServer();
+        if (infoServerMap == null) {
+            infoServerMap = new HashMap<>();
+            chunk.setInfoServer(infoServerMap);
+        }
+        infoServerMap.put(coordinate, new HashMap<>(serverInfo));
+        chunk.touchUpdate();
+        repository.save(chunk);
+        log.debug("Set server info for block: worldId={}, pos=({},{},{}), info={}", worldId, x, y, z, serverInfo);
+    }
+
+    /**
+     * Remove server info for a specific block position.
+     *
+     * @param worldId World identifier
+     * @param x Block x coordinate (world coordinates)
+     * @param y Block y coordinate (world coordinates)
+     * @param z Block z coordinate (world coordinates)
+     */
+    public void removeServerInfo(WorldId worldId, int x, int y, int z) {
+        WorldId lookupWorldId = worldId.toBaseWorldId();
+        WWorld world = worldService.getByWorldId(lookupWorldId.getId())
+                .orElseThrow(() -> new IllegalArgumentException("World not found: " + worldId));
+
+        String chunkKey = world.getChunkKey(x, z);
+        WChunk chunk = find(lookupWorldId, chunkKey)
+                .orElseThrow(() -> new IllegalArgumentException("Chunk not found: " + chunkKey));
+
+        if (chunk.getInfoServer() == null) {
+            return;
+        }
+
+        String coordinate = x + "," + y + "," + z;
+        chunk.getInfoServer().remove(coordinate);
+        if (chunk.getInfoServer().isEmpty()) {
+            chunk.setInfoServer(null);
+        }
+        chunk.touchUpdate();
+        repository.save(chunk);
+        log.debug("Removed server info for block: worldId={}, pos=({},{},{})", worldId, x, y, z);
     }
 
     /**

@@ -1001,10 +1001,8 @@ export class ChunkService {
 
       for (const [posKey, status] of Object.entries(data.s)) {
         if (status === null || status === undefined) {
-          // Remove status
           clientChunk.data.statusData.delete(posKey);
         } else {
-          // Set status
           clientChunk.data.statusData.set(posKey, status);
         }
 
