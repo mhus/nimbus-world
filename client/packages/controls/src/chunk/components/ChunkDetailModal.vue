@@ -41,6 +41,10 @@
                 <span class="font-medium">Storage ID:</span>
                 <span class="text-xs">{{ chunkMetadata.storageId }}</span>
               </div>
+              <div v-if="chunkMetadata?.epoches && chunkMetadata.epoches.length > 0">
+                <span class="font-medium">Epochs:</span>
+                <span class="badge badge-primary badge-sm ml-2">{{ chunkMetadata.epoches.join(', ') }}</span>
+              </div>
             </div>
           </div>
         </div>

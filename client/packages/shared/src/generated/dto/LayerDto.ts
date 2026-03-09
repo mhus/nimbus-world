@@ -17,6 +17,7 @@ export interface LayerDto {
   enabled: boolean;
   baseGround: boolean;
   groups?: Record<string, string>;
+  epoches?: number[];
   createdAt?: Date;
   updatedAt?: Date;
 }

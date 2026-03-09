@@ -20,6 +20,16 @@ export type WorldFilter =
   | 'withCollections'
   | 'withCollectionsAndZones';
 
+export interface EpochMeta {
+  epoch: number;
+  name: string;
+  description: string;
+}
+
+export interface WorldDetail extends WorldInfo {
+  epoches?: EpochMeta[];
+}
+
 export class WorldService {
   /**
    * Get all worlds with optional filter
@@ -35,6 +45,13 @@ export class WorldService {
    */
   async getWorld(worldId: string): Promise<WorldInfo> {
     return apiService.get<WorldInfo>(`/control/worlds/${worldId}`);
+  }
+
+  /**
+   * Get world detail with epoches
+   */
+  async getWorldDetail(worldId: string): Promise<WorldDetail> {
+    return apiService.get<WorldDetail>(`/control/worlds/${worldId}`);
   }
 }
 

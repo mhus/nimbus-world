@@ -12,7 +12,19 @@
       <div class="flex-1">
         <h1 class="text-xl font-bold px-4">Nimbus Entity Editor</h1>
       </div>
-      <div class="flex-none">
+      <div class="flex-none flex items-center gap-2">
+        <!-- Epoch Selector -->
+        <div v-if="epoches.length > 0" class="flex items-center gap-1">
+          <span class="text-sm">Epoch:</span>
+          <select
+            v-model.number="selectedEpoch"
+            class="select select-ghost select-sm"
+          >
+            <option v-for="ep in epoches" :key="ep.epoch" :value="ep.epoch">
+              {{ ep.epoch }} - {{ ep.name }}
+            </option>
+          </select>
+        </div>
         <!-- World Selector -->
         <WorldSelector />
       </div>
@@ -32,6 +44,7 @@
       <div v-else>
         <EntityList
           v-if="!selectedEntity"
+          :epoch="selectedEpoch"
           @select="handleEntitySelect"
           @create="handleCreateNew"
         />
@@ -49,12 +62,32 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 import { useWorld } from '@/composables/useWorld';
+import { worldService, type EpochMeta } from '@/services/WorldService';
 import WorldSelector from '@material/components/WorldSelector.vue';
 import EntityList from './views/EntityList.vue';
 import EntityEditor from './views/EntityEditor.vue';
 import { entityService, type EntityData } from './services/EntityService';
 
 const { currentWorldId } = useWorld();
+
+const epoches = ref<EpochMeta[]>([]);
+const selectedEpoch = ref<number>(0);
+
+const loadEpoches = async () => {
+  if (!currentWorldId.value || currentWorldId.value.startsWith('@')) {
+    epoches.value = [];
+    return;
+  }
+  try {
+    const detail = await worldService.getWorldDetail(currentWorldId.value);
+    epoches.value = detail.epoches || [];
+    if (epoches.value.length > 0) {
+      selectedEpoch.value = epoches.value[0].epoch;
+    }
+  } catch {
+    epoches.value = [];
+  }
+};
 
 // Read id from URL query parameter
 const getIdFromUrl = (): string | null => {
@@ -102,8 +135,9 @@ const handleSaved = () => {
   selectedEntity.value = null;
 };
 
-// Watch for world changes and load entity if URL param exists
+// Watch for world changes: load epoches and entity from URL
 watch(currentWorldId, () => {
+  loadEpoches();
   if (urlEntityId && currentWorldId.value && !selectedEntity.value) {
     loadEntityFromUrl();
   }

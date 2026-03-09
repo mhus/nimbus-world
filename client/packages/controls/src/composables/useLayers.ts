@@ -15,6 +15,7 @@ export function useLayers(worldId: string) {
   const loading = ref(false);
   const error = ref<string | null>(null);
   const searchQuery = ref('');
+  const epochFilter = ref<number | undefined>(undefined);
 
   // Paging state
   const totalCount = ref(0);
@@ -38,6 +39,7 @@ export function useLayers(worldId: string) {
       const offset = (page - 1) * pageSize.value;
       const response = await layerService.getLayers(worldId, {
         query: searchQuery.value || undefined,
+        epoch: epochFilter.value,
         limit: pageSize.value,
         offset,
       });
@@ -157,11 +159,21 @@ export function useLayers(worldId: string) {
     }
   };
 
+  /**
+   * Set epoch filter and reload
+   */
+  const setEpochFilter = async (epoch: number | undefined) => {
+    epochFilter.value = epoch;
+    currentPage.value = 1;
+    await loadLayers(1);
+  };
+
   return {
     layers,
     loading,
     error,
     searchQuery,
+    epochFilter,
     // Paging
     totalCount,
     currentPage,
@@ -172,6 +184,7 @@ export function useLayers(worldId: string) {
     // Methods
     loadLayers,
     searchLayers,
+    setEpochFilter,
     nextPage,
     previousPage,
     goToPage,

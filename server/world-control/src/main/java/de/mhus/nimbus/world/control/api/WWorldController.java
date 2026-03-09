@@ -12,6 +12,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import de.mhus.nimbus.world.shared.world.WEpochMeta;
+
 import java.net.URI;
 import java.time.Instant;
 import java.util.List;
@@ -50,7 +52,8 @@ public class WWorldController extends BaseEditorController {
             String groundBlockType,
             String seaBlockType,
             Long noiseSeed,
-            Double noiseFrequency
+            Double noiseFrequency,
+            List<WEpochMeta> epoches
     ) {}
 
     public record WorldResponse(
@@ -74,7 +77,8 @@ public class WWorldController extends BaseEditorController {
             Set<String> editor,
             Set<String> supporter,
             Set<String> player,
-            boolean publicFlag
+            boolean publicFlag,
+            List<WEpochMeta> epoches
     ) {}
 
     public record WorldCreateResponse(
@@ -99,6 +103,7 @@ public class WWorldController extends BaseEditorController {
             Set<String> supporter,
             Set<String> player,
             boolean publicFlag,
+            List<WEpochMeta> epoches,
             String jobId
     ) {}
 
@@ -130,7 +135,8 @@ public class WWorldController extends BaseEditorController {
                 world.getEditor(),
                 world.getSupporter(),
                 world.getPlayer(),
-                world.isPublicFlag()
+                world.isPublicFlag(),
+                world.getEpoches()
         );
     }
 
@@ -159,7 +165,8 @@ public class WWorldController extends BaseEditorController {
                 Set.of(),  // empty editor set
                 Set.of(),  // empty supporter set
                 Set.of(),  // empty player set
-                false  // not public
+                false,  // not public
+                List.of()  // empty epoches
         );
     }
 
@@ -393,6 +400,7 @@ public class WWorldController extends BaseEditorController {
                     worldResponse.supporter(),
                     worldResponse.player(),
                     worldResponse.publicFlag(),
+                    worldResponse.epoches(),
                     job.getId()
             );
 
@@ -473,6 +481,7 @@ public class WWorldController extends BaseEditorController {
             if (request.seaBlockType() != null) existing.setSeaBlockType(request.seaBlockType());
             if (request.noiseSeed() != null) existing.setNoiseSeed(request.noiseSeed());
             if (request.noiseFrequency() != null) existing.setNoiseFrequency(request.noiseFrequency());
+            if (request.epoches() != null) existing.setEpoches(request.epoches());
 
             WWorld updated = worldService.save(existing);
             return ResponseEntity.ok(toResponse(updated));

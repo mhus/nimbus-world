@@ -1,6 +1,7 @@
 package de.mhus.nimbus.world.shared.dto;
 
 import de.mhus.nimbus.shared.annotations.GenerateTypeScript;
+import de.mhus.nimbus.shared.annotations.TypeScript;
 import de.mhus.nimbus.world.shared.world.WEpochMeta;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -29,6 +30,7 @@ public class WorldInfoDto {
     /**
      * Epoch definitions for this world.
      */
+    @TypeScript(follow = true)
     @Builder.Default
     private List<WEpochMeta> epoches = List.of();
 }

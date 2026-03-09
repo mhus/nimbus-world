@@ -13,6 +13,7 @@
             <p>Block Count: {{ chunk.blockCount || 0 }}</p>
             <p>Created: {{ formatDate(chunk.createdAt) }}</p>
             <p>Updated: {{ formatDate(chunk.updatedAt) }}</p>
+            <p v-if="chunk.epoches && chunk.epoches.length > 0">Epochs: {{ chunk.epoches.join(', ') }}</p>
           </div>
         </div>
         <div class="flex gap-2">

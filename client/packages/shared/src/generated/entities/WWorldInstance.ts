@@ -3,6 +3,9 @@
  Source: de.mhus.nimbus.world.shared.world.WWorldInstance
 */
 
+import { InstanceDurationType } from './InstanceDurationType';
+import { InstanceAccessType } from './InstanceAccessType';
+
 export interface WWorldInstance {
   instanceId: string;
   worldId: string;

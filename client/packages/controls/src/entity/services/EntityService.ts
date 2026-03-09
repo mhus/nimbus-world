@@ -45,9 +45,10 @@ export interface UpdateEntityRequest {
 }
 
 class EntityService {
-  async listEntities(worldId: string, query?: string, offset: number = 0, limit: number = 50): Promise<EntityListResponse> {
+  async listEntities(worldId: string, query?: string, offset: number = 0, limit: number = 50, epoch?: number): Promise<EntityListResponse> {
     const params: any = { offset, limit };
     if (query) params.query = query;
+    if (epoch !== undefined) params.epoch = epoch;
 
     return apiService.get<EntityListResponse>(`/control/worlds/${worldId}/entities`, params);
   }

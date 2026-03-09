@@ -357,6 +357,8 @@
                @click="activeWorldInfoTab = 'time'">Time System</a>
             <a class="tab" :class="{'tab-active': activeWorldInfoTab === 'generator'}"
                @click="activeWorldInfoTab = 'generator'">Generator</a>
+            <a class="tab" :class="{'tab-active': activeWorldInfoTab === 'epochs'}"
+               @click="activeWorldInfoTab = 'epochs'">Epochs</a>
           </div>
 
           <!-- Tab: Basic -->
@@ -1318,6 +1320,67 @@
             </div>
           </div>
 
+          <!-- Tab: Epochs -->
+          <div v-show="activeWorldInfoTab === 'epochs'" class="space-y-4 mt-4">
+            <p class="text-sm text-base-content/70">Define epochs to progressively expand the world with new content. Epoch 0 is the base world.</p>
+
+            <!-- Epoch List -->
+            <div class="overflow-x-auto">
+              <table class="table table-compact w-full">
+                <thead>
+                  <tr>
+                    <th class="w-20">Epoch</th>
+                    <th>Name</th>
+                    <th>Description</th>
+                    <th class="w-16"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="(ep, index) in formData.epoches" :key="index">
+                    <td>
+                      <input
+                        v-model.number="ep.epoch"
+                        type="number"
+                        min="0"
+                        class="input input-bordered input-sm w-16"
+                      />
+                    </td>
+                    <td>
+                      <input
+                        v-model="ep.name"
+                        type="text"
+                        placeholder="e.g. base, farming, magic"
+                        class="input input-bordered input-sm w-full"
+                      />
+                    </td>
+                    <td>
+                      <input
+                        v-model="ep.description"
+                        type="text"
+                        placeholder="Description of this epoch"
+                        class="input input-bordered input-sm w-full"
+                      />
+                    </td>
+                    <td>
+                      <button type="button" class="btn btn-ghost btn-sm btn-square" @click="removeEpoch(index)">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </td>
+                  </tr>
+                  <tr v-if="formData.epoches.length === 0">
+                    <td colspan="4" class="text-center text-base-content/50">No epochs defined</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <button type="button" class="btn btn-sm btn-outline" @click="addEpoch">
+              + Add Epoch
+            </button>
+          </div>
+
         </div>
       </div>
 
@@ -1517,7 +1580,7 @@ const newSupporter = ref('');
 const newPlayer = ref('');
 
 // Tab navigation for WorldInfo
-const activeWorldInfoTab = ref<'basic' | 'boundaries' | 'entryPoint' | 'visual' | 'gameplay' | 'environment' | 'time' | 'generator'>('basic');
+const activeWorldInfoTab = ref<'basic' | 'boundaries' | 'entryPoint' | 'visual' | 'gameplay' | 'environment' | 'time' | 'generator' | 'epochs'>('basic');
 
 const formData = ref({
   worldId: '',
@@ -1530,6 +1593,7 @@ const formData = ref({
   editor: [] as string[],
   supporter: [] as string[],
   player: [] as string[],
+  epoches: [] as { epoch: number; name: string; description: string }[],
   groundLevel: 20,
   oceanLevel: 50,
   groundBlockType: 'n:g',
@@ -1639,6 +1703,7 @@ const loadWorld = () => {
       editor: [],
       supporter: [],
       player: [],
+      epoches: [],
       groundLevel: 20,
       oceanLevel: 64,
       groundBlockType: 'n:g',
@@ -1843,6 +1908,7 @@ const loadWorld = () => {
     editor: world.editor ? [...world.editor] : [],
     supporter: world.supporter ? [...world.supporter] : [],
     player: world.player ? [...world.player] : [],
+    epoches: world.epoches ? world.epoches.map(e => ({ ...e })) : [],
     groundLevel: world.groundLevel,
     oceanLevel: world.oceanLevel,
     groundBlockType: world.groundBlockType,
@@ -1878,6 +1944,18 @@ const removeFromSet = (field: 'owner' | 'editor' | 'supporter' | 'player', userI
   if (index > -1) {
     formData.value[field].splice(index, 1);
   }
+};
+
+// Helper methods for epoch management
+const addEpoch = () => {
+  const nextEpoch = formData.value.epoches.length > 0
+    ? Math.max(...formData.value.epoches.map(e => e.epoch)) + 1
+    : 0;
+  formData.value.epoches.push({ epoch: nextEpoch, name: '', description: '' });
+};
+
+const removeEpoch = (index: number) => {
+  formData.value.epoches.splice(index, 1);
 };
 
 // Helper method to format date strings
@@ -2001,6 +2079,7 @@ const performSave = async () => {
       seaBlockType: formData.value.seaBlockType,
       noiseSeed: formData.value.noiseSeed,
       noiseFrequency: formData.value.noiseFrequency,
+      epoches: formData.value.epoches,
     };
 
     if (isNew.value) {

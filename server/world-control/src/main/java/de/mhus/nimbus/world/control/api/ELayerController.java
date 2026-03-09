@@ -101,10 +101,11 @@ public class ELayerController extends BaseEditorController {
     public ResponseEntity<?> list(
             @Parameter(description = "World identifier") @PathVariable String worldId,
             @Parameter(description = "Search query") @RequestParam(required = false) String query,
+            @Parameter(description = "Filter by epoch") @RequestParam(required = false) Integer epoch,
             @Parameter(description = "Pagination offset") @RequestParam(defaultValue = "0") int offset,
             @Parameter(description = "Pagination limit") @RequestParam(defaultValue = "50") int limit) {
 
-        log.debug("LIST layers: worldId={}, query={}, offset={}, limit={}", worldId, query, offset, limit);
+        log.debug("LIST layers: worldId={}, query={}, epoch={}, offset={}, limit={}", worldId, query, epoch, offset, limit);
 
         var wid = WorldId.of(worldId).orElseThrow(
                 () -> new IllegalStateException("Invalid worldId: " + worldId)
@@ -117,6 +118,13 @@ public class ELayerController extends BaseEditorController {
 
         // Get all Layers for this world with query filter
         List<WLayer> all = layerService.findByWorldIdAndQuery(lookupWorldId, query);
+
+        // Filter by epoch if specified
+        if (epoch != null) {
+            all = all.stream()
+                    .filter(l -> l.getEpoches() != null && l.getEpoches().contains(epoch))
+                    .collect(Collectors.toList());
+        }
 
         int totalCount = all.size();
 
@@ -194,6 +202,12 @@ public class ELayerController extends BaseEditorController {
             // Set groups if provided
             if (request.groups() != null) {
                 layer.setGroups(request.groups());
+                layer = layerService.save(layer);
+            }
+
+            // Set epoches if provided
+            if (request.epoches() != null) {
+                layer.setEpoches(new java.util.ArrayList<>(request.epoches()));
                 layer = layerService.save(layer);
             }
 
@@ -276,6 +290,10 @@ public class ELayerController extends BaseEditorController {
         }
         if (request.groups() != null) {
             layer.setGroups(request.groups());
+            changed = true;
+        }
+        if (request.epoches() != null) {
+            layer.setEpoches(new java.util.ArrayList<>(request.epoches()));
             changed = true;
         }
 
@@ -624,6 +642,7 @@ public class ELayerController extends BaseEditorController {
                 layer.isEnabled(),
                 layer.isBaseGround(),
                 layer.getGroups(),
+                layer.getEpoches(),
                 layer.getCreatedAt(),
                 layer.getUpdatedAt()
         );

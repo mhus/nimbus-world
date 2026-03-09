@@ -45,6 +45,9 @@ public record LayerDto(
         Map<String, String> groups,
 
         @TypeScript(optional = true)
+        List<Integer> epoches,
+
+        @TypeScript(optional = true)
         Instant createdAt,
 
         @TypeScript(optional = true)

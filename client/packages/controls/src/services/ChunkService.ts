@@ -13,6 +13,7 @@ export interface ChunkMetadata {
   storageId: string;
   compressed: boolean;
   blockCount: number;
+  epoches?: number[];
   createdAt: string;
   updatedAt: string;
 }

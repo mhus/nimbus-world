@@ -142,6 +142,10 @@ import LayerEditorPanel from '@layer/components/LayerEditorPanel.vue';
 import ModelEditorPanel from '@layer/components/ModelEditorPanel.vue';
 import BlockGridEditor from '@layer/components/BlockGridEditor.vue';
 
+const props = defineProps<{
+  epoch?: number;
+}>();
+
 const { currentWorldId } = useWorld();
 
 const layersComposable = computed(() => {
@@ -187,9 +191,14 @@ const gridEditorParams = ref<{
 // Load layers when world changes
 watch(currentWorldId, () => {
   if (currentWorldId.value) {
-    layersComposable.value?.loadLayers();
+    layersComposable.value?.setEpochFilter(props.epoch);
   }
 }, { immediate: true });
+
+// Reload when epoch changes
+watch(() => props.epoch, () => {
+  layersComposable.value?.setEpochFilter(props.epoch);
+});
 
 onMounted(() => {
   // Note: WorldSelector in AppHeader loads worlds with 'withCollections' filter

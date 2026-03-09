@@ -207,16 +207,17 @@ public class EChunkController extends BaseEditorController {
     // Helper methods
 
     private Map<String, Object> toSimpleDto(WChunk chunk) {
-        return Map.of(
-                "id", chunk.getId(),
-                "worldId", chunk.getWorldId(),
-                "chunk", chunk.getChunk(),
-                "hex", chunk.getHex() != null ? chunk.getHex() : "",
-                "storageId", chunk.getStorageId() != null ? chunk.getStorageId() : "",
-                "compressed", chunk.isCompressed(),
-                "blockCount", chunk.getBlockCount(),
-                "createdAt", chunk.getCreatedAt() != null ? chunk.getCreatedAt().toString() : "",
-                "updatedAt", chunk.getUpdatedAt() != null ? chunk.getUpdatedAt().toString() : ""
-        );
+        var map = new java.util.LinkedHashMap<String, Object>();
+        map.put("id", chunk.getId());
+        map.put("worldId", chunk.getWorldId());
+        map.put("chunk", chunk.getChunk());
+        map.put("hex", chunk.getHex() != null ? chunk.getHex() : "");
+        map.put("storageId", chunk.getStorageId() != null ? chunk.getStorageId() : "");
+        map.put("compressed", chunk.isCompressed());
+        map.put("blockCount", chunk.getBlockCount());
+        map.put("epoches", chunk.getEpoches() != null ? chunk.getEpoches() : List.of());
+        map.put("createdAt", chunk.getCreatedAt() != null ? chunk.getCreatedAt().toString() : "");
+        map.put("updatedAt", chunk.getUpdatedAt() != null ? chunk.getUpdatedAt().toString() : "");
+        return map;
     }
 }

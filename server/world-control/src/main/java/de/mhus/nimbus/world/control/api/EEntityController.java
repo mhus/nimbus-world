@@ -49,15 +49,16 @@ public class EEntityController extends BaseEditorController {
             WEntityType type,
             String portraitPath,
             Map<String, String> server,
+            List<Integer> epoches,
             Instant createdAt,
             Instant updatedAt
     ) {
     }
 
-    public record CreateEntityRequest(String entityId, Entity publicData, String modelId, WEntityType type, String portraitPath, Map<String, String> server) {
+    public record CreateEntityRequest(String entityId, Entity publicData, String modelId, WEntityType type, String portraitPath, Map<String, String> server, List<Integer> epoches) {
     }
 
-    public record UpdateEntityRequest(Entity publicData, String modelId, Boolean enabled, WEntityType type, String portraitPath, Map<String, String> server) {
+    public record UpdateEntityRequest(Entity publicData, String modelId, Boolean enabled, WEntityType type, String portraitPath, Map<String, String> server, List<Integer> epoches) {
     }
 
     /**
@@ -106,10 +107,11 @@ public class EEntityController extends BaseEditorController {
     public ResponseEntity<?> list(
             @Parameter(description = "World identifier") @PathVariable String worldId,
             @Parameter(description = "Search query") @RequestParam(required = false) String query,
+            @Parameter(description = "Filter by epoch") @RequestParam(required = false) Integer epoch,
             @Parameter(description = "Pagination offset") @RequestParam(defaultValue = "0") int offset,
             @Parameter(description = "Pagination limit") @RequestParam(defaultValue = "50") int limit) {
 
-        log.debug("LIST entities: worldId={}, query={}, offset={}, limit={}", worldId, query, offset, limit);
+        log.debug("LIST entities: worldId={}, query={}, epoch={}, offset={}, limit={}", worldId, query, epoch, offset, limit);
 
         var wid = WorldId.of(worldId).orElseThrow(
                 () -> new IllegalStateException("World ID not found in request")
@@ -119,6 +121,13 @@ public class EEntityController extends BaseEditorController {
 
         // Get all Entities for this world with query filter
         List<WEntity> all = entityService.findByWorldIdAndQuery(wid, query);
+
+        // Filter by epoch if specified
+        if (epoch != null) {
+            all = all.stream()
+                    .filter(e -> e.getEpoches() != null && e.getEpoches().contains(epoch))
+                    .collect(Collectors.toList());
+        }
 
         int totalCount = all.size();
 
@@ -179,7 +188,7 @@ public class EEntityController extends BaseEditorController {
                     request.publicData(),
                     request.modelId()
             );
-            if (request.type() != null || request.portraitPath() != null || request.server() != null) {
+            if (request.type() != null || request.portraitPath() != null || request.server() != null || request.epoches() != null) {
                 entityService.update(wid, request.entityId(), entity -> {
                     if (request.type() != null) {
                         entity.setType(request.type());
@@ -189,6 +198,9 @@ public class EEntityController extends BaseEditorController {
                     }
                     if (request.server() != null) {
                         entity.setServer(request.server());
+                    }
+                    if (request.epoches() != null) {
+                        entity.setEpoches(request.epoches());
                     }
                 });
             }
@@ -252,6 +264,9 @@ public class EEntityController extends BaseEditorController {
             if (request.server() != null) {
                 entity.setServer(request.server());
             }
+            if (request.epoches() != null) {
+                entity.setEpoches(request.epoches());
+            }
         });
 
         if (updated.isEmpty()) {
@@ -308,6 +323,7 @@ public class EEntityController extends BaseEditorController {
                 entity.getType(),
                 entity.getPortraitPath(),
                 entity.getServer(),
+                entity.getEpoches() != null ? entity.getEpoches() : List.of(),
                 entity.getCreatedAt(),
                 entity.getUpdatedAt()
         );

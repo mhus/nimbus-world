@@ -19,6 +19,7 @@ export interface LayerCreateResponse {
 
 export interface LayerPagingParams {
   query?: string;
+  epoch?: number;
   limit?: number;
   offset?: number;
 }

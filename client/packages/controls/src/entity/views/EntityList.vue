@@ -80,6 +80,9 @@
               <div v-if="entity.chunk" class="text-xs text-base-content/70">
                 Chunk: {{ entity.chunk }}
               </div>
+              <div v-if="entity.epoches && entity.epoches.length > 0" class="text-xs">
+                <span class="badge badge-primary badge-sm">Epochs: {{ entity.epoches.join(', ') }}</span>
+              </div>
             </div>
             <div class="card-actions justify-end mt-2">
               <button
@@ -143,6 +146,12 @@ import { ref, computed, watch } from 'vue';
 import { useWorld } from '@/composables/useWorld';
 import { entityService, type EntityData } from '../services/EntityService';
 
+interface Props {
+  epoch?: number;
+}
+
+const props = defineProps<Props>();
+
 const emit = defineEmits<{
   select: [entity: EntityData];
   create: [];
@@ -196,7 +205,8 @@ const loadEntities = async () => {
       currentWorldId.value,
       searchQuery.value || undefined,
       offset.value,
-      pageSize.value
+      pageSize.value,
+      props.epoch
     );
     entities.value = response.entities.map((dto: any) => ({
       entityId: dto.entityId || dto.publicData?.id || `entity-${offset.value}`,
@@ -208,6 +218,7 @@ const loadEntities = async () => {
       type: dto.type || null,
       portraitPath: dto.portraitPath || null,
       server: dto.server || null,
+      epoches: dto.epoches || [],
       createdAt: dto.createdAt || new Date().toISOString(),
       updatedAt: dto.updatedAt || new Date().toISOString(),
     }));
@@ -271,4 +282,10 @@ watch(currentWorldId, () => {
   currentPage.value = 1;
   loadEntities();
 }, { immediate: true });
+
+// Watch for epoch changes
+watch(() => props.epoch, () => {
+  currentPage.value = 1;
+  loadEntities();
+});
 </script>

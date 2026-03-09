@@ -54,6 +54,11 @@
         <div v-if="!layer.allChunks" class="badge badge-secondary badge-outline">
           {{ layer.affectedChunks?.length || 0 }} chunks
         </div>
+
+        <!-- Epochs Badge -->
+        <div v-if="layer.epoches && layer.epoches.length > 0" class="badge badge-primary badge-outline">
+          Epochs: {{ layer.epoches.join(', ') }}
+        </div>
       </div>
     </div>
   </div>

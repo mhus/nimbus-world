@@ -14,6 +14,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import de.mhus.nimbus.world.shared.world.WEpochMeta;
+
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -55,7 +57,8 @@ public class WorldController extends BaseEditorController {
             Set<String> owner,
             Boolean publicFlag,
             Set<String> editor,
-            Set<String> player
+            Set<String> player,
+            List<WEpochMeta> epoches
     ) {
     }
 
@@ -247,7 +250,8 @@ public class WorldController extends BaseEditorController {
                 world.getOwner(),
                 world.isPublicFlag(),
                 world.getEditor(),
-                world.getPlayer()
+                world.getPlayer(),
+                world.getEpoches()
         );
     }
 

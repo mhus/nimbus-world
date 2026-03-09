@@ -108,6 +108,7 @@ export interface World {
   supporter: string[];
   player: string[];
   publicFlag: boolean;
+  epoches: { epoch: number; name: string; description: string }[];
 }
 
 export interface WorldRequest {
@@ -128,6 +129,7 @@ export interface WorldRequest {
   seaBlockType?: string;
   noiseSeed?: number;
   noiseFrequency?: number;
+  epoches?: { epoch: number; name: string; description: string }[];
 }
 
 export interface WorldCreateResponse extends World {

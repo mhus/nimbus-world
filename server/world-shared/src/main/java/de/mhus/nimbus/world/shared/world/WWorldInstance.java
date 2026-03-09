@@ -100,6 +100,7 @@ public class WWorldInstance implements Identifiable {
      * PRIVATE = only creator, TEAM = creator + players list, PUBLIC = everyone.
      */
     @Indexed
+    @TypeScript(follow = true)
     @Builder.Default
     private InstanceAccessType accessType = InstanceAccessType.PRIVATE;
 
@@ -107,6 +108,7 @@ public class WWorldInstance implements Identifiable {
      * Duration type: how long this instance lives.
      * SHORT = deleted when empty, SEASONAL = persists for a season, EVENT = tied to an event.
      */
+    @TypeScript(follow = true)
     @Builder.Default
     private InstanceDurationType durationType = InstanceDurationType.SHORT;
 
