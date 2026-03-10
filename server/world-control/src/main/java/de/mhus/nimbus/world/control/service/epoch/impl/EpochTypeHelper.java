@@ -22,6 +22,7 @@ public final class EpochTypeHelper {
 
     /**
      * Validate epoch consistency for a collection.
+     * Auto-repairs: removes duplicate epoch entries and undefined epochs from documents.
      */
     public static ResourceEpochService.ProcessResult validate(
             MongoTemplate mongoTemplate, String collection, String typeName,
@@ -32,6 +33,7 @@ public final class EpochTypeHelper {
                 .collect(Collectors.toSet());
 
         List<String> issues = new ArrayList<>();
+        List<String> repairs = new ArrayList<>();
 
         // 1. Find documents with empty epoches
         Query emptyEpochesQuery = new Query(Criteria.where("worldId").is(worldId)
@@ -46,16 +48,51 @@ public final class EpochTypeHelper {
             issues.add(emptyCount + " documents with empty/missing epoches");
         }
 
-        // 2. Find documents with epoch values not in WWorld.epoches
-        // Get all distinct epoch values used in this collection for this world
+        // 2. Check all documents for duplicates, undefined epochs
         Query worldQuery = new Query(Criteria.where("worldId").is(worldId));
         List<Document> docs = mongoTemplate.find(worldQuery, Document.class, collection);
 
         Set<Integer> usedEpochs = new HashSet<>();
         int invalidEpochDocs = 0;
+        int duplicateRepairs = 0;
+        int undefinedRepairs = 0;
+
         for (Document doc : docs) {
             List<Integer> epoches = doc.getList("epoches", Integer.class);
             if (epoches == null || epoches.isEmpty()) continue;
+
+            // Detect duplicates and undefined epochs
+            List<Integer> cleaned = epoches.stream()
+                    .distinct()
+                    .filter(definedEpochs::contains)
+                    .sorted()
+                    .toList();
+
+            boolean hasDuplicates = epoches.size() != new HashSet<>(epoches).size();
+            boolean hasUndefined = epoches.stream().anyMatch(e -> !definedEpochs.contains(e));
+
+            if (hasDuplicates || hasUndefined) {
+                // Auto-repair: update document with cleaned epoches
+                Object docId = doc.get("_id");
+                Query updateQuery = new Query(Criteria.where("_id").is(docId));
+                Update update = new Update().set("epoches", cleaned);
+                mongoTemplate.updateFirst(updateQuery, update, collection);
+
+                if (hasDuplicates) {
+                    duplicateRepairs++;
+                    log.info("Epoch validate repair: removed duplicate epoches in {} doc _id={}, was={}, now={}",
+                            typeName, docId, epoches, cleaned);
+                }
+                if (hasUndefined) {
+                    undefinedRepairs++;
+                    Set<Integer> removed = epoches.stream()
+                            .filter(e -> !definedEpochs.contains(e))
+                            .collect(Collectors.toSet());
+                    log.info("Epoch validate repair: removed undefined epoches {} in {} doc _id={}, was={}, now={}",
+                            removed, typeName, docId, epoches, cleaned);
+                }
+            }
+
             for (Integer epoch : epoches) {
                 usedEpochs.add(epoch);
                 if (!definedEpochs.contains(epoch)) {
@@ -64,11 +101,11 @@ public final class EpochTypeHelper {
             }
         }
 
-        if (invalidEpochDocs > 0) {
-            Set<Integer> undefinedEpochs = usedEpochs.stream()
-                    .filter(e -> !definedEpochs.contains(e))
-                    .collect(Collectors.toSet());
-            issues.add(invalidEpochDocs + " documents reference undefined epochs: " + undefinedEpochs);
+        if (duplicateRepairs > 0) {
+            repairs.add("Deduplicated epoches in " + duplicateRepairs + " documents");
+        }
+        if (undefinedRepairs > 0) {
+            repairs.add("Removed undefined epoches from " + undefinedRepairs + " documents");
         }
 
         // 3. Warn about defined epochs not used by any document
@@ -81,15 +118,20 @@ public final class EpochTypeHelper {
 
         long totalDocs = mongoTemplate.count(worldQuery, collection);
 
-        if (issues.isEmpty()) {
-            return new ResourceEpochService.ProcessResult(typeName, true,
-                    "OK (" + totalDocs + " documents, epochs " + usedEpochs + ")",
-                    System.currentTimeMillis());
-        } else {
-            return new ResourceEpochService.ProcessResult(typeName, false,
-                    String.join("; ", issues) + " (" + totalDocs + " total documents)",
-                    System.currentTimeMillis());
+        // Build result message
+        StringBuilder message = new StringBuilder();
+        if (!repairs.isEmpty()) {
+            message.append("REPAIRED: ").append(String.join("; ", repairs)).append(". ");
         }
+        if (issues.isEmpty()) {
+            message.append("OK (").append(totalDocs).append(" documents, epochs ").append(usedEpochs).append(")");
+        } else {
+            message.append(String.join("; ", issues)).append(" (").append(totalDocs).append(" total documents)");
+        }
+
+        boolean success = issues.isEmpty();
+        return new ResourceEpochService.ProcessResult(typeName, success,
+                message.toString(), System.currentTimeMillis());
     }
 
     /**
