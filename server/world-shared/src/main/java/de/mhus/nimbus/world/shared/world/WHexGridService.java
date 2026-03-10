@@ -184,10 +184,15 @@ public class WHexGridService {
     }
 
     // --- Save / Create ---
+    // See readme/EPOCH_ENTITY_MANAGEMENT.md – Epoch Pull/Validate Pattern
 
     /**
      * Saves a hex grid entity.
-     * Validates that no other hex grid at the same position shares any epoch.
+     * For new entities (no ID): pulls conflicting epochs from other documents at the same position,
+     * throws EpochOverwriteException if this would make another document fully obsolete.
+     * For existing entities (has ID): pulls conflicting epochs silently.
+     *
+     * See readme/EPOCH_ENTITY_MANAGEMENT.md – Epoch Pull/Validate Pattern
      */
     @Transactional
     public WHexGrid save(WHexGrid entity) {
@@ -205,8 +210,9 @@ public class WHexGridService {
         // Ensure position key is synchronized
         entity.syncPositionKey();
 
-        // Validate no epoch overlap with other documents at same position
-        validateNoEpochOverlap(entity);
+        // Pull conflicting epochs; for new entities check for overwrites (Strategy B)
+        boolean isNew = entity.getId() == null;
+        pullConflictingEpochs(entity, !isNew);
 
         // Set timestamps if new entity
         if (entity.getCreatedAt() == null) {
@@ -222,8 +228,11 @@ public class WHexGridService {
 
     /**
      * Creates a new hex grid.
-     * Rejects if another hex grid at the same position shares any epoch in the epoches list.
+     * Pulls conflicting epochs from other documents at the same position.
+     * Throws EpochOverwriteException if this would make another document fully obsolete.
      * Multiple hex grids at the same position with disjoint epoches are allowed.
+     *
+     * See readme/EPOCH_ENTITY_MANAGEMENT.md – Epoch Pull/Validate Pattern
      *
      * @param worldId    The world identifier
      * @param publicData The hex grid public data with position and metadata
@@ -231,7 +240,7 @@ public class WHexGridService {
      * @param areas      Optional area-specific parameter maps (can be null or empty)
      * @param epoches    Epoch list (null or empty = all epochs)
      * @return The created hex grid entity
-     * @throws IllegalStateException if epoch overlap exists at this position
+     * @throws EpochOverwriteException if another document would become fully obsolete
      */
     @Transactional
     public WHexGrid create(String worldId, HexGrid publicData, Map<String, String> parameters,
@@ -260,8 +269,8 @@ public class WHexGridService {
                 .enabled(true)
                 .build();
 
-        // Validate no epoch overlap with existing documents at same position
-        validateNoEpochOverlap(entity);
+        // Pull conflicting epochs; create = strict overwrite check (Strategy A)
+        pullConflictingEpochs(entity, false);
 
         entity.touchCreate();
 
@@ -283,6 +292,9 @@ public class WHexGridService {
 
     /**
      * Updates a hex grid by its MongoDB ID using a consumer function.
+     * Pulls conflicting epochs silently (update = known entity, Strategy A).
+     *
+     * See readme/EPOCH_ENTITY_MANAGEMENT.md – Epoch Pull/Validate Pattern
      */
     @Transactional
     public Optional<WHexGrid> updateById(String id, Consumer<WHexGrid> updater) {
@@ -297,7 +309,7 @@ public class WHexGridService {
             updater.accept(entity);
             entity.syncPositionKey();
             entity.touchUpdate();
-            validateNoEpochOverlap(entity);
+            pullConflictingEpochs(entity, true);
 
             WHexGrid saved = repository.save(entity);
             log.debug("Updated WHexGrid: id={}, position={}, epoches={}", id, saved.getPosition(), saved.getEpoches());
@@ -308,7 +320,10 @@ public class WHexGridService {
     /**
      * Updates a hex grid using a consumer function.
      * If multiple epoch variants exist at this position, updates the first one found.
+     * Pulls conflicting epochs silently (update = known entity, Strategy A).
      * Prefer {@link #updateById(String, Consumer)} for precise updates.
+     *
+     * See readme/EPOCH_ENTITY_MANAGEMENT.md – Epoch Pull/Validate Pattern
      */
     @Transactional
     public Optional<WHexGrid> update(String worldId, HexVector2 hexPos, Consumer<WHexGrid> updater) {
@@ -336,7 +351,7 @@ public class WHexGridService {
         updater.accept(entity);
         entity.syncPositionKey();
         entity.touchUpdate();
-        validateNoEpochOverlap(entity);
+        pullConflictingEpochs(entity, true);
 
         WHexGrid saved = repository.save(entity);
         log.debug("Updated WHexGrid: worldId={}, position={}, epoches={}", parsedWorldId.getId(), positionKey, saved.getEpoches());
@@ -430,35 +445,66 @@ public class WHexGridService {
         return all.size();
     }
 
-    // --- Validation ---
+    // --- Epoch Pull/Validate ---
+    // See readme/EPOCH_ENTITY_MANAGEMENT.md – Epoch Pull/Validate Pattern
 
     /**
-     * Validates that the entity's epoches do not overlap with other hex grids at the same position.
-     * Rules:
-     * - Empty epoches (= not visible) conflicts with any other document at the same position
-     * - Non-empty epoches must not share any epoch value with other documents at the same position
+     * Pulls conflicting epochs from other documents at the same natural key (worldId + position).
+     * Documents that lose all their epochs are deleted.
+     *
+     * @param entity       the entity being saved
+     * @param forceOverwrite if false, throws EpochOverwriteException when another document would
+     *                       become fully obsolete; if true, allows overwrite silently
      */
-    private void validateNoEpochOverlap(WHexGrid entity) {
+    private void pullConflictingEpochs(WHexGrid entity, boolean forceOverwrite) {
+        if (entity.getEpoches() == null || entity.getEpoches().isEmpty()) {
+            // Empty epoches = not visible in any epoch, no conflicts possible
+            return;
+        }
+
         List<WHexGrid> existing = repository.findAllByWorldIdAndPosition(entity.getWorldId(), entity.getPosition());
 
         for (WHexGrid other : existing) {
             // Skip self (same MongoDB ID)
             if (other.getId() != null && other.getId().equals(entity.getId())) continue;
 
-            // Empty epoches on either side = all epochs = always overlaps
-            if (entity.getEpoches().isEmpty() || other.getEpoches().isEmpty()) {
-                throw new IllegalStateException(
-                        "Hex grid epoch conflict at position=" + entity.getPosition() +
-                        ": cannot have multiple hex grids when one has empty epoches (= not visible)");
+            // Find overlapping epochs
+            List<Integer> overlapping = other.getEpoches().stream()
+                    .filter(entity.getEpoches()::contains)
+                    .toList();
+
+            if (overlapping.isEmpty()) continue;
+
+            // Check if pulling would make the other document fully obsolete
+            List<Integer> remaining = other.getEpoches().stream()
+                    .filter(e -> !overlapping.contains(e))
+                    .toList();
+
+            if (remaining.isEmpty() && !forceOverwrite) {
+                throw new EpochOverwriteException(
+                        "WHexGrid",
+                        entity.getWorldId() + "/" + entity.getPosition(),
+                        other.getId(),
+                        "Saving WHexGrid at position=" + entity.getPosition() +
+                        " with epoches=" + entity.getEpoches() +
+                        " would make existing document id=" + other.getId() +
+                        " (epoches=" + other.getEpoches() + ") fully obsolete. " +
+                        "Use force/update to allow this overwrite."
+                );
             }
 
-            // Check for shared epoch values
-            for (Integer epoch : entity.getEpoches()) {
-                if (other.getEpoches().contains(epoch)) {
-                    throw new IllegalStateException(
-                            "Hex grid epoch conflict at position=" + entity.getPosition() +
-                            ": epoch " + epoch + " already assigned to another hex grid");
-                }
+            if (remaining.isEmpty()) {
+                // Document becomes obsolete → delete
+                repository.delete(other);
+                log.info("Epoch pull: deleted obsolete WHexGrid id={} at position={} (had epoches={})",
+                        other.getId(), other.getPosition(), other.getEpoches());
+            } else {
+                // Pull conflicting epochs
+                other.setEpoches(new java.util.ArrayList<>(remaining));
+                other.touchUpdate();
+                repository.save(other);
+                log.info("Epoch pull: removed epoches {} from WHexGrid id={} at position={}, remaining={}",
+                        overlapping, other.getId(), other.getPosition(), remaining);
             }
         }
     }

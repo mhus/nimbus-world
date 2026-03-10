@@ -87,6 +87,7 @@ public class WEntityService {
     /**
      * Save or update an entity.
      * Filters out instances.
+     * Single document per worldId+entityId — no epoch pull needed (see readme/EPOCH_ENTITY_MANAGEMENT.md).
      */
     @Transactional
     public WEntity save(WorldId worldId, String entityId, Entity publicData, String modelId) {
@@ -126,6 +127,7 @@ public class WEntityService {
         return saved;
     }
 
+    // See readme/EPOCH_ENTITY_MANAGEMENT.md — single doc per key, no epoch pull needed
     @Transactional
     public List<WEntity> saveAll(List<WEntity> entities) {
         entities.forEach(e -> {
@@ -143,6 +145,7 @@ public class WEntityService {
     /**
      * Update an entity.
      * Denies out instances and collections.
+     * Single document per worldId+entityId — no epoch pull needed (see readme/EPOCH_ENTITY_MANAGEMENT.md).
      */
     @Transactional
     public Optional<WEntity> update(WorldId worldId, String entityId, Consumer<WEntity> updater) {

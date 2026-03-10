@@ -167,11 +167,17 @@ public class EditorController extends BaseEditorController {
     @GetMapping("/{worldId}/layers")
     public ResponseEntity<?> listLayers(@PathVariable String worldId) {
 
-        WorldId.of(worldId).orElseThrow(
+        WorldId wid = WorldId.of(worldId).orElseThrow(
                 () -> new IllegalStateException("Invalid worldId: " + worldId)
         );
 
-        List<WLayer> layers = layerService.findLayersByWorld(worldId);
+        // Filter layers by editor epoch if in editor instance
+        List<WLayer> layers;
+        if (wid.isEditorInstance()) {
+            layers = layerService.findByWorldId(worldId, wid.getEditorEpoch());
+        } else {
+            layers = layerService.findLayersByWorld(worldId);
+        }
 
         List<Map<String, Object>> dtos = layers.stream()
                 .map(layer -> {
@@ -182,7 +188,7 @@ public class EditorController extends BaseEditorController {
                     dto.put("enabled", layer.isEnabled());
                     dto.put("order", layer.getOrder());
                     dto.put("layerDataId", layer.getLayerDataId());
-                    // Note: mountX/Y/Z and groups are now in WLayerModel, not WLayer
+                    dto.put("epoches", layer.getEpoches());
                     return dto;
                 })
                 .toList();

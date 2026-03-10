@@ -1,5 +1,6 @@
 package de.mhus.nimbus.world.shared.layer;
 
+import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.shared.redis.WorldRedisLockService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -182,7 +183,7 @@ public class WEditCacheDirtyService {
     public void processLayer(String worldId, String layerDataId) {
         log.info("Processing dirty layer: worldId={}, layerDataId={}", worldId, layerDataId);
 
-        // Load all cached blocks for this layer
+        // Load all cached blocks for this layer (EditCache uses the original worldId incl. instance)
         List<WEditCache> cachedBlocks = cacheService.findByWorldIdAndLayerDataId(worldId, layerDataId);
 
         if (cachedBlocks.isEmpty()) {
@@ -193,47 +194,66 @@ public class WEditCacheDirtyService {
 
         log.debug("Found {} cached blocks to merge into layer", cachedBlocks.size());
 
+        // Convert to base worldId for all layer/terrain/chunk operations.
+        // EditCache is stored with instance worldId (e.g. "earth616:westview::x0"),
+        // but WLayer, WLayerTerrain, WLayerModel, WDirtyChunk use the base worldId.
+        String baseWorldId = WorldId.of(worldId)
+                .map(wid -> wid.toBaseWorldId().getId())
+                .orElse(worldId);
+
         // Get affected chunks for marking dirty after merge
         Set<String> affectedChunks = cachedBlocks.stream()
                 .map(WEditCache::getChunk)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
 
-        // Get layer information
-        Optional<WLayer> layerOpt = layerService.findByWorldIdAndLayerDataId(worldId, layerDataId);
+        // Get layer information (layers use base worldId)
+        Optional<WLayer> layerOpt = layerService.findByWorldIdAndLayerDataId(baseWorldId, layerDataId);
         if (layerOpt.isEmpty()) {
-            log.error("Layer not found: worldId={}, layerDataId={}", worldId, layerDataId);
+            log.error("Layer not found: worldId={} (base={}), layerDataId={}", worldId, baseWorldId, layerDataId);
             clearDirty(worldId, layerDataId);
             return;
         }
         WLayer layer = layerOpt.get();
         String layerName = layer.getName();
 
-        // Write blocks based on layer type
+        // Validate epoch: editor instance epoch should match the layer's epoches
+        WorldId parsedWorldId = WorldId.of(worldId).orElse(null);
+        if (parsedWorldId != null && parsedWorldId.isEditorInstance()) {
+            int editorEpoch = parsedWorldId.getEditorEpoch();
+            List<Integer> layerEpoches = layer.getEpoches();
+            if (layerEpoches != null && !layerEpoches.isEmpty() && !layerEpoches.contains(editorEpoch)) {
+                log.warn("Epoch mismatch: editor instance epoch {} not in layer epoches {} for layer '{}' (layerDataId={}). " +
+                         "Blocks from a different epoch are being merged into this layer!",
+                        editorEpoch, layerEpoches, layerName, layerDataId);
+            }
+        }
+
+        // Write blocks based on layer type (use base worldId)
         if (layer.getLayerType() == LayerType.MODEL) {
-            mergeBlocksIntoLayerModel(worldId, layerDataId, cachedBlocks);
+            mergeBlocksIntoLayerModel(baseWorldId, layerDataId, cachedBlocks);
             log.info("Merged {} blocks into WLayerModel for layerDataId={}", cachedBlocks.size(), layerDataId);
         } else if (layer.getLayerType() == LayerType.GROUND) {
-            mergeBlocksIntoLayerTerrain(worldId, layerDataId, cachedBlocks);
+            mergeBlocksIntoLayerTerrain(baseWorldId, layerDataId, cachedBlocks);
             log.info("Merged {} blocks into WLayerTerrain for layerDataId={}", cachedBlocks.size(), layerDataId);
         } else {
             log.warn("Unknown layer type {}, cannot merge blocks", layer.getLayerType());
         }
 
-        // Delete cached blocks after successful merge
+        // Delete cached blocks after successful merge (EditCache uses original worldId)
         long deletedCount = cacheService.deleteByWorldIdAndLayerDataId(worldId, layerDataId);
         log.debug("Deleted {} cached blocks after merge", deletedCount);
 
-        // Mark affected chunks as dirty for regeneration
-        dirtyChunkService.markChunksDirty(worldId, new ArrayList<>(affectedChunks),
+        // Mark affected chunks as dirty for regeneration (use base worldId)
+        dirtyChunkService.markChunksDirty(baseWorldId, new ArrayList<>(affectedChunks),
                 "edit_cache_applied:layer=" + layerDataId);
         log.debug("Marked {} chunks as dirty", affectedChunks.size());
 
-        // Remove dirty flag
+        // Remove dirty flag (dirty entries use original worldId)
         clearDirty(worldId, layerDataId);
 
-        log.info("Successfully processed dirty layer: worldId={}, layerDataId={}, blocks={}, chunks={}",
-                worldId, layerDataId, cachedBlocks.size(), affectedChunks.size());
+        log.info("Successfully processed dirty layer: worldId={} (base={}), layerDataId={}, blocks={}, chunks={}",
+                worldId, baseWorldId, layerDataId, cachedBlocks.size(), affectedChunks.size());
     }
 
     /**
@@ -271,30 +291,35 @@ public class WEditCacheDirtyService {
     public long discardChanges(String worldId, String layerDataId) {
         log.info("Discard changes requested: worldId={}, layerDataId={}", worldId, layerDataId);
 
-        // Get affected chunks before deleting
+        // Convert to base worldId for chunk operations
+        String baseWorldId = WorldId.of(worldId)
+                .map(wid -> wid.toBaseWorldId().getId())
+                .orElse(worldId);
+
+        // Get affected chunks before deleting (EditCache uses original worldId)
         List<WEditCache> cachedBlocks = cacheService.findByWorldIdAndLayerDataId(worldId, layerDataId);
         Set<String> affectedChunks = cachedBlocks.stream()
                 .map(WEditCache::getChunk)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
 
-        // Delete all cached blocks
+        // Delete all cached blocks (EditCache uses original worldId)
         long deletedCount = cacheService.deleteByWorldIdAndLayerDataId(worldId, layerDataId);
 
-        // Mark affected chunks dirty to trigger refresh on clients
+        // Mark affected chunks dirty to trigger refresh on clients (use base worldId)
         if (!affectedChunks.isEmpty()) {
-            dirtyChunkService.markChunksDirty(worldId, new ArrayList<>(affectedChunks),
+            dirtyChunkService.markChunksDirty(baseWorldId, new ArrayList<>(affectedChunks),
                     "edit_cache_discarded:layer=" + layerDataId);
             log.debug("Marked {} chunks dirty for refresh", affectedChunks.size());
         }
 
-        // Clear dirty flag if exists
+        // Clear dirty flag if exists (dirty entries use original worldId)
         if (isDirty(worldId, layerDataId)) {
             clearDirty(worldId, layerDataId);
         }
 
-        log.info("Discarded {} cached blocks for layer: worldId={}, layerDataId={}, chunks={}",
-                deletedCount, worldId, layerDataId, affectedChunks.size());
+        log.info("Discarded {} cached blocks for layer: worldId={} (base={}), layerDataId={}, chunks={}",
+                deletedCount, worldId, baseWorldId, layerDataId, affectedChunks.size());
 
         return deletedCount;
     }

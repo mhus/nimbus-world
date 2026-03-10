@@ -33,6 +33,7 @@ public class WItemPositionService {
      * Save or update an item position.
      * Automatically calculates chunk key from item position.
      * For instance worlds: creates a COW copy in the instance layer.
+     * Single document per worldId+itemId — no epoch pull needed (see readme/EPOCH_ENTITY_MANAGEMENT.md).
      *
      * @param worldId World identifier (can be main world, instance, or zone)
      * @param itemBlockRef ItemBlockRef containing position and display data
@@ -261,6 +262,7 @@ public class WItemPositionService {
 
     /**
      * Save multiple item positions in batch.
+     * Single document per worldId+itemId — no epoch pull needed (see readme/EPOCH_ENTITY_MANAGEMENT.md).
      *
      * @param items List of item positions to save
      * @return List of saved item positions

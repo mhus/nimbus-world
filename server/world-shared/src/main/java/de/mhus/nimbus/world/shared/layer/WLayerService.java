@@ -340,6 +340,7 @@ public class WLayerService implements StorageProvider {
 
     /**
      * Save a layer.
+     * Single document per worldId+name — no epoch pull needed (see readme/EPOCH_ENTITY_MANAGEMENT.md).
      */
     @Transactional
     public WLayer save(WLayer layer) {
