@@ -75,6 +75,14 @@ export class EngineService {
   private isInitialized: boolean = false;
   private isRunning: boolean = false;
 
+  // Idle quality reduction
+  private static readonly IDLE_TIMEOUT_MS = 60_000;
+  private static readonly IDLE_SCALING_LEVEL = 5;
+  private isIdleQualityReduced: boolean = false;
+  private lastCameraYaw: number = 0;
+  private lastCameraPitch: number = 0;
+  private lastActivityTime: number = Date.now();
+
   constructor(appContext: AppContext, canvas: HTMLCanvasElement) {
     this.appContext = appContext;
     this.canvas = canvas;
@@ -117,6 +125,7 @@ export class EngineService {
       const quality = this.appContext.config?.quality ?? 1;
       const scalingLevel = quality === 0 ? 2 : quality === 2 ? 0.5 : 1;
       this.engine.setHardwareScalingLevel(scalingLevel);
+      this.appContext.defaultHardwareScaling = scalingLevel;
 
       logger.info('Babylon.js Engine created', {
         webGLVersion: this.engine.webGLVersion,
@@ -409,6 +418,9 @@ export class EngineService {
         // Check and emit player direction updates (for beam:follow effects)
         this.physicsService?.checkAndEmitPlayerDirection();
 
+        // Idle quality reduction
+        this.updateIdleQuality();
+
         // Render scene
         this.scene!.render();
       } catch (error) {
@@ -485,6 +497,47 @@ export class EngineService {
       configuredGroups: maxGroupId + 1,
       usedGroupIds: groupIds.sort((a, b) => a - b),
     });
+  }
+
+  /**
+   * Check idle state and adjust hardware scaling level.
+   * Tracks both player movement and camera rotation as activity.
+   */
+  private updateIdleQuality(): void {
+    if (!this.engine) return;
+
+    const now = Date.now();
+
+    // Check player movement
+    const lastMovement = this.playerService?.getLastMovementTime() ?? now;
+    if (lastMovement > this.lastActivityTime) {
+      this.lastActivityTime = lastMovement;
+    }
+
+    // Check camera rotation change
+    const camera = this.cameraService?.getCamera();
+    if (camera) {
+      const yaw = camera.rotation.y;
+      const pitch = camera.rotation.x;
+      if (yaw !== this.lastCameraYaw || pitch !== this.lastCameraPitch) {
+        this.lastCameraYaw = yaw;
+        this.lastCameraPitch = pitch;
+        this.lastActivityTime = now;
+      }
+    }
+
+    const idleMs = now - this.lastActivityTime;
+
+    if (!this.isIdleQualityReduced && idleMs >= EngineService.IDLE_TIMEOUT_MS) {
+      this.engine.setHardwareScalingLevel(EngineService.IDLE_SCALING_LEVEL);
+      this.isIdleQualityReduced = true;
+      logger.info('Idle quality reduction activated', { scalingLevel: EngineService.IDLE_SCALING_LEVEL });
+    } else if (this.isIdleQualityReduced && idleMs < EngineService.IDLE_TIMEOUT_MS) {
+      const defaultScaling = this.appContext.defaultHardwareScaling;
+      this.engine.setHardwareScalingLevel(defaultScaling);
+      this.isIdleQualityReduced = false;
+      logger.info('Quality restored after activity', { scalingLevel: defaultScaling });
+    }
   }
 
   /**

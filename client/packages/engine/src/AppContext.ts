@@ -195,6 +195,9 @@ export interface AppContext {
 
   /** Session ID (after login) */
   sessionId: string | null;
+
+  /** Default hardware scaling level from quality query parameter (0.5, 1, or 2) */
+  defaultHardwareScaling: number;
 }
 
 /**
@@ -261,5 +264,6 @@ export function createAppContext(
     worldInfo: null,
     playerInfo: null,
     sessionId: null,
+    defaultHardwareScaling: 1,
   };
 }

@@ -45,6 +45,7 @@ export class RenderScaleCommand extends CommandHandler {
     }
 
     engine.setHardwareScalingLevel(value);
+    this.appContext.defaultHardwareScaling = value;
     logger.info(`Hardware scaling level set to ${value}`);
     return `Hardware scaling level set to ${value}`;
   }

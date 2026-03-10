@@ -117,7 +117,7 @@ export class PlayerService {
   private targetCharacterYaw: number = 0; // Target yaw for smooth rotation
 
   // Pose/Animation state
-  private lastMovementTime: number = 0; // Last time player moved
+  private lastMovementTime: number = Date.now(); // Last time player moved
   private idleDelay: number = 500; // ms before switching to IDLE pose
   private isMoving: boolean = false; // Movement state (with hysteresis)
   private isJumping: boolean = false; // Jump state (set by jump event)
@@ -550,6 +550,13 @@ export class PlayerService {
   private getPlayerSpeed(): number {
     const velocity = this.playerEntity.velocity;
     return Math.sqrt(velocity.x * velocity.x + velocity.z * velocity.z);
+  }
+
+  /**
+   * Get timestamp of last player movement (for idle detection)
+   */
+  getLastMovementTime(): number {
+    return this.lastMovementTime;
   }
 
   /**
