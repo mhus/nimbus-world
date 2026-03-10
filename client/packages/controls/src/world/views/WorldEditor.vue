@@ -1381,10 +1381,10 @@
                     </td>
                     <td>
                       <input
-                        v-model.number="ep.worldStatus"
-                        type="number"
-                        min="0"
-                        class="input input-bordered input-sm w-20"
+                        v-model="ep.worldStatus"
+                        type="text"
+                        placeholder="default"
+                        class="input input-bordered input-sm w-32"
                       />
                     </td>
                     <td>
@@ -1729,7 +1729,7 @@ const formData = ref({
   editor: [] as string[],
   supporter: [] as string[],
   player: [] as string[],
-  epoches: [] as { epoch: number; name: string; description: string; worldStatus: number; splashScreen: string; splashScreenAudio: string }[],
+  epoches: [] as { epoch: number; name: string; description: string; worldStatus: string; splashScreen: string; splashScreenAudio: string }[],
   groundLevel: 20,
   oceanLevel: 50,
   groundBlockType: 'n:g',
@@ -2047,7 +2047,7 @@ const loadWorld = () => {
     editor: world.editor ? [...world.editor] : [],
     supporter: world.supporter ? [...world.supporter] : [],
     player: world.player ? [...world.player] : [],
-    epoches: world.epoches ? world.epoches.map(e => ({ ...e, worldStatus: e.worldStatus ?? 0, splashScreen: e.splashScreen ?? '', splashScreenAudio: e.splashScreenAudio ?? '' })) : [],
+    epoches: world.epoches ? world.epoches.map(e => ({ ...e, worldStatus: e.worldStatus ?? 'default', splashScreen: e.splashScreen ?? '', splashScreenAudio: e.splashScreenAudio ?? '' })) : [],
     groundLevel: world.groundLevel,
     oceanLevel: world.oceanLevel,
     groundBlockType: world.groundBlockType,
@@ -2090,7 +2090,7 @@ const addEpoch = () => {
   const nextEpoch = formData.value.epoches.length > 0
     ? Math.max(...formData.value.epoches.map(e => e.epoch)) + 1
     : 0;
-  formData.value.epoches.push({ epoch: nextEpoch, name: '', description: '', worldStatus: 0, splashScreen: '', splashScreenAudio: '' });
+  formData.value.epoches.push({ epoch: nextEpoch, name: '', description: '', worldStatus: 'default', splashScreen: '', splashScreenAudio: '' });
 };
 
 const removeEpoch = (index: number) => {

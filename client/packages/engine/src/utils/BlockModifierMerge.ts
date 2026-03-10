@@ -329,11 +329,15 @@ export function calculateStatus(
     // Fallback to BlockType's initialStatus or default to 0
     newStatus = blockType.initialStatus ?? 'default';
   }
+  if (newStatus === '0') {
+    newStatus = 'default'; // legacy support for numeric "0" as default status, normalize to "default"
+  }
 
   // World status override: if current status is 0 (default) and world status is non-zero
   // and a modifier exists for that world status either on block instance or block type.
   const worldStatus = appContext.worldInfo?.status;
-  if (
+
+    if (
     newStatus === 'default' &&
     worldStatus !== undefined &&
     worldStatus !== 'default' &&

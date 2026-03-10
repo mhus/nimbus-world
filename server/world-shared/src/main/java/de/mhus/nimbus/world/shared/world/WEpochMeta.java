@@ -33,11 +33,11 @@ public class WEpochMeta {
     private String description;
 
     /**
-     * World status level required for this epoch (default 0).
-     * Used to gate epoch availability based on world progression.
+     * World status key for this epoch (e.g., "default", "winter", "summer").
+     * Used as modifier key in block types to select epoch-specific block appearance.
      */
     @Builder.Default
-    private int worldStatus = 0;
+    private String worldStatus = "default";
 
     /**
      * Splash screen image URL shown when this epoch becomes active.

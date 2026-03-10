@@ -150,7 +150,7 @@ public class WorldConfigController {
                     .filter(e -> e.getEpoch() == resolvedEpoch)
                     .findFirst()
                     .ifPresent(epochMeta ->
-                            worldInfo.setStatus(String.valueOf(epochMeta.getWorldStatus())));
+                            worldInfo.setStatus(epochMeta.getWorldStatus()));
         }
 
         // Get session to determine entry point
