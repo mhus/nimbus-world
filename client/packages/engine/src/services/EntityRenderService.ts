@@ -103,10 +103,12 @@ export class EntityRenderService {
     this.entityService.on('pathway', async (pathway: EntityPathway) => {
       await this.onEntityPathway(pathway);
 
-      // Create label when entity appears
-      const clientEntity = await this.entityService.getEntity(pathway.entityId);
-      if (clientEntity) {
-        this.entityLabelRenderer.createLabel(clientEntity);
+      // Create label when entity appears (skip for player avatar in ego mode)
+      if (!this.isPlayerAvatarInEgoMode(pathway.entityId)) {
+        const clientEntity = await this.entityService.getEntity(pathway.entityId);
+        if (clientEntity) {
+          this.entityLabelRenderer.createLabel(clientEntity);
+        }
       }
     });
 
@@ -117,10 +119,12 @@ export class EntityRenderService {
         this.updateEntityPose(data.entityId, data.pose, data.velocity);
       }
 
-      // Update label
-      const clientEntity = await this.entityService.getEntity(data.entityId);
-      if (clientEntity) {
-        this.entityLabelRenderer.updateLabel(clientEntity);
+      // Update label (skip for player avatar in ego mode)
+      if (!this.isPlayerAvatarInEgoMode(data.entityId)) {
+        const clientEntity = await this.entityService.getEntity(data.entityId);
+        if (clientEntity) {
+          this.entityLabelRenderer.updateLabel(clientEntity);
+        }
       }
     });
 
@@ -565,6 +569,19 @@ export class EntityRenderService {
     rendered.currentPose = pose; // Remember current pose
 
     logger.debug('Entity animation changed', { entityId, pose, animationName: poseConfig.animationName });
+  }
+
+  /**
+   * Check if entity is the player's own avatar and camera is in ego (first-person) mode.
+   * In ego mode, the player's label should not be shown because the camera doesn't track it.
+   */
+  private isPlayerAvatarInEgoMode(entityId: string): boolean {
+    const playerId = this.appContext.playerInfo?.playerId;
+    if (!playerId || entityId !== playerId) {
+      return false;
+    }
+    const cameraService = this.appContext.services.camera;
+    return !cameraService || cameraService.egoView;
   }
 
   /**
