@@ -7,4 +7,5 @@ export interface WEpochMeta {
   epoch: number;
   name: string;
   description: string;
+  worldStatus: number;
 }

@@ -5216,6 +5216,13 @@
         "javaTypeHint" : null,
         "comment" : null
       }, {
+        "name" : "version",
+        "type" : "number",
+        "optional" : true,
+        "visibility" : null,
+        "javaTypeHint" : "long",
+        "comment" : "// javaType: long"
+      }, {
         "name" : "editorUrl",
         "type" : "string",
         "optional" : true,

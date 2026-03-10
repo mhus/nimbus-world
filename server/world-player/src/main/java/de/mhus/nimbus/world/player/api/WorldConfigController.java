@@ -24,9 +24,11 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.env.Environment;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -50,6 +52,7 @@ public class WorldConfigController {
     private final WPlayerSessionService playerSessionService;
     private final WHexGridService wHexGridService;
     private final WWorldInstanceService worldInstanceService;
+    private final Environment env;
 
     @GetMapping("/config")
     @Operation(summary = "Get complete EngineConfiguration",
@@ -77,7 +80,7 @@ public class WorldConfigController {
 
         WWorld world = worldOpt.get();
         WorldInfo worldInfo = world.getPublicData();
-        patchWorldInfo(worldInfo, worldId, playerId, request);
+        patchWorldInfo(worldInfo, world, worldId, playerId, request);
 
         // Load player data (always use WEB as ClientType for now)
         Optional<PlayerData> playerDataOpt = playerService.getPlayer(playerId, ClientType.WEB, worldId.getRegionId());
@@ -121,12 +124,34 @@ public class WorldConfigController {
      * @param playerId The playerId
      * @param request The HTTP request (for session lookup)
      */
-    private void patchWorldInfo(WorldInfo worldInfo, de.mhus.nimbus.shared.types.WorldId worldId, PlayerId playerId, HttpServletRequest request) {
+    private void patchWorldInfo(WorldInfo worldInfo, WWorld world, de.mhus.nimbus.shared.types.WorldId worldId, PlayerId playerId, HttpServletRequest request) {
         // Set worldId to the full session worldId (includes instance if present)
         worldInfo.setWorldId(worldId.getId());
 
         // Set editor URL
         worldInfo.setEditorUrl(serverSettings.getControlsBaseUrl() + "/");
+
+        // In non-prod mode, override version with current timestamp to force client reloads
+        if (!Arrays.asList(env.getActiveProfiles()).contains("prod")) {
+            worldInfo.setVersion(System.currentTimeMillis());
+        }
+
+        // Resolve epoch from world instance
+        int epoch = 0;
+        if (worldId.isInstance()) {
+            epoch = worldInstanceService.findByInstanceIdWithValidation(worldId.getId())
+                    .map(inst -> inst.getEpoch()).orElse(0);
+        }
+
+        // Override status with worldStatus from current epoch definition
+        if (world.getEpoches() != null) {
+            final int resolvedEpoch = epoch;
+            world.getEpoches().stream()
+                    .filter(e -> e.getEpoch() == resolvedEpoch)
+                    .findFirst()
+                    .ifPresent(epochMeta ->
+                            worldInfo.setStatus(String.valueOf(epochMeta.getWorldStatus())));
+        }
 
         // Get session to determine entry point
         String sessionId = accessUtil.getSessionId(request);
@@ -148,13 +173,6 @@ public class WorldConfigController {
             // Use world default spawn point (no changes needed)
             log.debug("Using world default spawn point for sessionId={}", sessionId);
             return;
-        }
-
-        // Resolve epoch from world instance
-        int epoch = 0;
-        if (worldId.isInstance()) {
-            epoch = worldInstanceService.findByInstanceIdWithValidation(worldId.getId())
-                    .map(inst -> inst.getEpoch()).orElse(0);
         }
 
         if ("last".equals(entryPoint)) {

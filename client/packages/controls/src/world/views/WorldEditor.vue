@@ -388,13 +388,24 @@
                      placeholder="Asset path (e.g., textures/world-icon.png)"
                      class="input input-bordered" />
             </div>
-            <div class="form-control">
-              <label class="label"><span class="label-text">Status</span></label>
-              <select v-model.number="formData.publicData.status" class="select select-bordered">
-                <option :value="0">Active</option>
-                <option :value="1">Inactive</option>
-                <option :value="2">Maintenance</option>
-              </select>
+            <div class="flex gap-4">
+              <div class="form-control flex-1">
+                <label class="label"><span class="label-text">Status</span></label>
+                <select v-model.number="formData.publicData.status" class="select select-bordered">
+                  <option :value="0">Active</option>
+                  <option :value="1">Inactive</option>
+                  <option :value="2">Maintenance</option>
+                </select>
+              </div>
+              <div class="form-control flex-1">
+                <label class="label"><span class="label-text">Version</span></label>
+                <input v-model.number="formData.publicData.version" type="number"
+                       min="0"
+                       class="input input-bordered" />
+                <label class="label">
+                  <span class="label-text-alt">World data version number</span>
+                </label>
+              </div>
             </div>
           </div>
 
@@ -1332,6 +1343,7 @@
                     <th class="w-20">Epoch</th>
                     <th>Name</th>
                     <th>Description</th>
+                    <th class="w-24">World Status</th>
                     <th class="w-16"></th>
                   </tr>
                 </thead>
@@ -1362,6 +1374,14 @@
                       />
                     </td>
                     <td>
+                      <input
+                        v-model.number="ep.worldStatus"
+                        type="number"
+                        min="0"
+                        class="input input-bordered input-sm w-20"
+                      />
+                    </td>
+                    <td>
                       <button type="button" class="btn btn-ghost btn-sm btn-square" @click="removeEpoch(index)">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -1370,7 +1390,7 @@
                     </td>
                   </tr>
                   <tr v-if="formData.epoches.length === 0">
-                    <td colspan="4" class="text-center text-base-content/50">No epochs defined</td>
+                    <td colspan="5" class="text-center text-base-content/50">No epochs defined</td>
                   </tr>
                 </tbody>
               </table>
@@ -1593,7 +1613,7 @@ const formData = ref({
   editor: [] as string[],
   supporter: [] as string[],
   player: [] as string[],
-  epoches: [] as { epoch: number; name: string; description: string }[],
+  epoches: [] as { epoch: number; name: string; description: string; worldStatus: number }[],
   groundLevel: 20,
   oceanLevel: 50,
   groundBlockType: 'n:g',
@@ -1608,6 +1628,7 @@ const formData = ref({
     hexGridSize: 400,
     worldIcon: '',
     status: 0,
+    version: 0,
     seasonStatus: 0,
     seasonProgress: 0,
     seasonMonths: [0, 3, 6, 9],
@@ -1718,6 +1739,7 @@ const loadWorld = () => {
         hexGridSize: 400,
         worldIcon: '',
         status: 0,
+        version: 0,
         seasonStatus: 0,
         seasonProgress: 0,
         seasonMonths: [0, 3, 6, 9],
@@ -1817,6 +1839,7 @@ const loadWorld = () => {
       hexGridSize: worldData?.hexGridSize || 16,
       worldIcon: worldData?.worldIcon || '',
       status: worldData?.status || 0,
+      version: worldData?.version || 0,
       seasonStatus: worldData?.seasonStatus || 0,
       seasonProgress: worldData?.seasonProgress || 0,
       seasonMonths: worldData?.seasonMonths || [0, 3, 6, 9],
@@ -1908,7 +1931,7 @@ const loadWorld = () => {
     editor: world.editor ? [...world.editor] : [],
     supporter: world.supporter ? [...world.supporter] : [],
     player: world.player ? [...world.player] : [],
-    epoches: world.epoches ? world.epoches.map(e => ({ ...e })) : [],
+    epoches: world.epoches ? world.epoches.map(e => ({ ...e, worldStatus: e.worldStatus ?? 0 })) : [],
     groundLevel: world.groundLevel,
     oceanLevel: world.oceanLevel,
     groundBlockType: world.groundBlockType,
@@ -1951,7 +1974,7 @@ const addEpoch = () => {
   const nextEpoch = formData.value.epoches.length > 0
     ? Math.max(...formData.value.epoches.map(e => e.epoch)) + 1
     : 0;
-  formData.value.epoches.push({ epoch: nextEpoch, name: '', description: '' });
+  formData.value.epoches.push({ epoch: nextEpoch, name: '', description: '', worldStatus: 0 });
 };
 
 const removeEpoch = (index: number) => {

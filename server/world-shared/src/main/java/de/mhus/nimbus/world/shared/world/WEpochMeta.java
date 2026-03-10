@@ -32,4 +32,11 @@ public class WEpochMeta {
      */
     private String description;
 
+    /**
+     * World status level required for this epoch (default 0).
+     * Used to gate epoch availability based on world progression.
+     */
+    @Builder.Default
+    private int worldStatus = 0;
+
 }

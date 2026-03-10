@@ -270,6 +270,9 @@ export interface WorldInfo {
     rotation: Rotation;
   };
 
+  /** World data version, incremented on changes to detect stale data */
+  version?: number; // javaType: long
+
   /** Editor URL for block editing */
   editorUrl?: string;
 

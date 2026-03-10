@@ -39,6 +39,8 @@ public class WorldInfo {
     private String createdAt;
     @com.fasterxml.jackson.annotation.JsonProperty("updatedAt")
     private String updatedAt;
+    @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
+    private long version;
     @com.fasterxml.jackson.annotation.JsonProperty("editorUrl")
     @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
     private String editorUrl;
