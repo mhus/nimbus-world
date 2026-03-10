@@ -32,7 +32,7 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class WItemPosition implements Identifiable, CowEntity {
+public class WItemPosition implements Identifiable, CowEntity, EpochEntity {
 
     @Id
     private String id;

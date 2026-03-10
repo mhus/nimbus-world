@@ -4,6 +4,7 @@ import de.mhus.nimbus.shared.annotations.GenerateTypeScript;
 import de.mhus.nimbus.shared.annotations.TypeScript;
 import de.mhus.nimbus.shared.persistence.ActualSchemaVersion;
 import de.mhus.nimbus.shared.types.Identifiable;
+import de.mhus.nimbus.world.shared.world.EpochEntity;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -37,7 +38,7 @@ import java.util.Map;
 @NoArgsConstructor
 @AllArgsConstructor
 @GenerateTypeScript("entities")
-public class WLayer implements Identifiable {
+public class WLayer implements Identifiable, EpochEntity {
 
     @Id
     @TypeScript(ignore = true)

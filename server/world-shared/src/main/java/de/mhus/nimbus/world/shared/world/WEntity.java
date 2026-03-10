@@ -36,7 +36,7 @@ import java.util.Set;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class WEntity implements Identifiable, CowEntity {
+public class WEntity implements Identifiable, CowEntity, EpochEntity {
 
     @Id
     private String id;

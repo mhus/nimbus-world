@@ -32,7 +32,7 @@ import java.util.Map;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class WChunk implements Identifiable {
+public class WChunk implements Identifiable, EpochEntity {
 
     @Id
     private String id;

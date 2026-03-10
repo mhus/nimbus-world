@@ -40,7 +40,7 @@ import java.util.Map;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class WHexGrid implements Identifiable {
+public class WHexGrid implements Identifiable, EpochEntity {
 
     public enum EDGE {
         NORTH_EAST("NE"), // TOP_RIGHT
