@@ -2,6 +2,7 @@ package de.mhus.nimbus.world.shared.world;
 
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.shared.job.WJobService;
+import de.mhus.nimbus.world.shared.redis.WorldRedisMessagingService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -30,6 +31,7 @@ public class WWorldInstanceService {
     private final WWorldService worldService;
     private final WJobService jobService;
     private final List<WWorldInstanceListener> listeners;
+    private final WorldRedisMessagingService redisMessaging;
 
     /**
      * Constructor with lazy initialization to avoid circular dependencies.
@@ -45,12 +47,14 @@ public class WWorldInstanceService {
             MongoTemplate mongoTemplate,
             @Lazy WWorldService worldService,
             @Lazy Optional<WJobService> jobService,
-            @Lazy List<WWorldInstanceListener> listeners) {
+            @Lazy List<WWorldInstanceListener> listeners,
+            WorldRedisMessagingService redisMessaging) {
         this.repository = repository;
         this.mongoTemplate = mongoTemplate;
         this.worldService = worldService;
         this.jobService = jobService.orElse(null);
         this.listeners = listeners;
+        this.redisMessaging = redisMessaging;
     }
 
     /**
@@ -658,6 +662,38 @@ public class WWorldInstanceService {
         );
         log.info("Scheduled delete-world-instance job: baseWorldId={}, instanceWorldId={}",
                 baseWorldId, fullInstanceId);
+    }
+
+    /**
+     * Perform an epoch switch on a world instance.
+     * Updates the epoch on the instance and publishes a Redis event
+     * so all connected sessions and services react to the change.
+     *
+     * @param instanceId The instanceId of the world instance
+     * @param newEpoch The new epoch value
+     * @return true if the epoch was updated, false if instance not found
+     */
+    @Transactional
+    public boolean epochSwitch(String instanceId, int newEpoch) {
+        Optional<WWorldInstance> instanceOpt = repository.findByInstanceId(instanceId);
+        if (instanceOpt.isEmpty()) {
+            log.warn("Epoch switch failed: instance not found: {}", instanceId);
+            return false;
+        }
+
+        WWorldInstance instance = instanceOpt.get();
+        int oldEpoch = instance.getEpoch();
+        instance.setEpoch(newEpoch);
+        instance.touchUpdate();
+        repository.save(instance);
+
+        log.info("Epoch switch: instanceId={}, {} -> {}", instanceId, oldEpoch, newEpoch);
+
+        // Publish epoch switch event via Redis
+        String baseWorldId = instance.getWorldId();
+        redisMessaging.publish(baseWorldId, "epoch.switch", "{\"epoch\":" + newEpoch + "}");
+
+        return true;
     }
 
     /**

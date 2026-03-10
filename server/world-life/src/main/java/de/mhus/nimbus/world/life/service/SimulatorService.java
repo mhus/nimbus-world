@@ -18,11 +18,15 @@ import de.mhus.nimbus.world.shared.redis.EntityStateRedisService;
 import de.mhus.nimbus.world.shared.redis.EntityStatusPublisher;
 import de.mhus.nimbus.world.shared.redis.VitalDeltaBroadcastMessage;
 import de.mhus.nimbus.world.shared.redis.VitalDeltaPublisher;
+import de.mhus.nimbus.world.shared.redis.WorldRedisMessagingService;
 import de.mhus.nimbus.world.shared.world.BlockUtil;
 import de.mhus.nimbus.world.shared.world.WEntity;
 import de.mhus.nimbus.world.shared.world.WEntityService;
 import de.mhus.nimbus.world.shared.world.WWorld;
+import de.mhus.nimbus.world.shared.world.WWorldInstanceService;
 import de.mhus.nimbus.world.shared.world.WWorldService;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -73,6 +77,9 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
     private final EntityStateRedisService entityStateRedisService;
     private final CombatBehaviorHandler combatBehaviorHandler;
     private final de.mhus.nimbus.world.shared.world.WItemService itemService;
+    private final WorldRedisMessagingService redisMessaging;
+    private final WWorldInstanceService worldInstanceService;
+    private final ObjectMapper objectMapper;
 
     private final BaseEffectProcessor baseEffectProcessor = new BaseEffectProcessor();
 
@@ -96,6 +103,12 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
     private final Map<WorldId, WWorld> worldCache = new ConcurrentHashMap<>();
 
     /**
+     * Cached epoch per worldId (instance world).
+     * Loaded from WWorldInstance on first access, updated on epoch switch.
+     */
+    private final Map<WorldId, Integer> worldEpoches = new ConcurrentHashMap<>();
+
+    /**
      * Get cached WWorld for a worldId. Loads from DB on first access.
      */
     private WWorld getCachedWorld(WorldId worldId) {
@@ -103,10 +116,62 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
                 worldService.getByWorldId(id).orElse(null));
     }
 
+    /**
+     * Get cached epoch for a worldId. Loads from WWorldInstance on first access.
+     * Returns 0 for non-instance worlds.
+     */
+    private int getWorldEpoch(WorldId worldId) {
+        return worldEpoches.computeIfAbsent(worldId, id -> {
+            if (id.isInstance()) {
+                return worldInstanceService.findByInstanceIdWithValidation(id.getId())
+                        .map(instance -> instance.getEpoch())
+                        .orElse(0);
+            }
+            return 0;
+        });
+    }
+
     @PostConstruct
     public void initialize() {
         log.info("Initializing SimulatorService — registering as WorldChunkChangeListener");
         multiWorldChunkService.addWorldChunkChangeListener(this);
+
+        // Subscribe to epoch switch events for all worlds
+        redisMessaging.subscribeToAllWorlds("epoch.switch", (topic, message) -> {
+            handleEpochSwitch(topic, message);
+        });
+        log.info("Subscribed to epoch switch events for all worlds");
+    }
+
+    /**
+     * Handle epoch switch event from Redis.
+     * Updates cached epoch and reloads all entities for the affected world.
+     */
+    private void handleEpochSwitch(String topic, String message) {
+        try {
+            // Extract worldId from topic: "world:{baseWorldId}:epoch.switch"
+            String baseWorldId = topic.substring("world:".length(), topic.lastIndexOf(":epoch.switch"));
+
+            // Parse new epoch from message
+            JsonNode data = objectMapper.readTree(message);
+            int newEpoch = data.get("epoch").asInt();
+
+            log.info("Epoch switch received in world-life: world={}, newEpoch={}", baseWorldId, newEpoch);
+
+            // Find all matching worlds in simulation and update epoch + reload
+            List<WorldId> matchingWorlds = worldSimulationStates.keySet().stream()
+                    .filter(wid -> wid.matchesBaseWorld(baseWorldId))
+                    .toList();
+
+            for (WorldId worldId : matchingWorlds) {
+                worldEpoches.put(worldId, newEpoch);
+                int reloaded = reloadEntities(worldId);
+                log.info("Epoch switch: world={}, newEpoch={}, reloaded {} entities", worldId, newEpoch, reloaded);
+            }
+
+        } catch (Exception e) {
+            log.error("Failed to handle epoch switch: topic={}, message={}", topic, message, e);
+        }
     }
 
     @Override
@@ -117,7 +182,8 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
                 .map(ChunkCoordinate::toKey)
                 .collect(Collectors.toSet());
 
-        List<WEntity> entities = entityService.findEnabledByChunks(worldId, chunkKeys);
+        int epoch = getWorldEpoch(worldId);
+        List<WEntity> entities = entityService.findEnabledByChunks(worldId, chunkKeys, epoch);
 
         Map<String, SimulationState> worldStates = worldSimulationStates
                 .computeIfAbsent(worldId, k -> new ConcurrentHashMap<>());
@@ -590,6 +656,7 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
     public int reloadEntities(WorldId worldId) {
         // Invalidate world cache so it's reloaded from DB
         worldCache.remove(worldId);
+        // Note: worldEpoches is NOT invalidated here - it's managed by epoch switch or explicit set
 
         // Clear existing states
         Map<String, SimulationState> worldStates = worldSimulationStates.get(worldId);

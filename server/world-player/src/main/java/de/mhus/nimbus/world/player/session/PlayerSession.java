@@ -35,6 +35,8 @@ public class PlayerSession {
     private ClientType clientType;
     private String actor;
 
+    private int epoch;
+
     private SessionStatus status = SessionStatus.CONNECTED;
 
     private Instant connectedAt;

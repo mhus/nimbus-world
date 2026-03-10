@@ -10,6 +10,7 @@ import de.mhus.nimbus.world.player.session.SessionAuthenticatedConsumer;
 import de.mhus.nimbus.world.player.session.SessionClosedConsumer;
 import de.mhus.nimbus.world.shared.session.WSessionService;
 import de.mhus.nimbus.world.shared.session.WSessionStatus;
+import de.mhus.nimbus.world.shared.world.WWorldInstanceService;
 import de.mhus.nimbus.world.shared.world.WWorldService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -36,6 +37,7 @@ public class SessionManager {
     private final LocationService locationService;
     private final de.mhus.nimbus.world.shared.client.WorldClientService worldClientService;
     private final WWorldService worldService;
+    private final WWorldInstanceService worldInstanceService;
 
     @Autowired
     @Lazy
@@ -48,6 +50,10 @@ public class SessionManager {
     @Autowired
     @Lazy
     private de.mhus.nimbus.world.player.ws.redis.MovementBroadcastListener movementBroadcastListener;
+
+    @Autowired
+    @Lazy
+    private de.mhus.nimbus.world.player.ws.redis.EpochSwitchBroadcastListener epochSwitchListener;
 
     @Autowired
     @Lazy
@@ -64,11 +70,13 @@ public class SessionManager {
     public SessionManager(WSessionService wSessionService,
                          LocationService locationService,
                          de.mhus.nimbus.world.shared.client.WorldClientService worldClientService,
-                         WWorldService worldService) {
+                         WWorldService worldService,
+                         WWorldInstanceService worldInstanceService) {
         this.wSessionService = wSessionService;
         this.locationService = locationService;
         this.worldClientService = worldClientService;
         this.worldService = worldService;
+        this.worldInstanceService = worldInstanceService;
     }
 
     private final Map<String, PlayerSession> sessionsByWebSocketId = new ConcurrentHashMap<>();
@@ -255,6 +263,16 @@ public class SessionManager {
         session.setChunkSize(world.getPublicData().getChunkSize());
         session.setHexGridSize(world.getPublicData().getHexGridSize());
 
+        // Set epoch from WWorldInstance (if instance world) or default 0
+        int epoch = 0;
+        if (worldId.isInstance()) {
+            var instanceOpt = worldInstanceService.findByInstanceIdWithValidation(worldId.getId());
+            if (instanceOpt.isPresent()) {
+                epoch = instanceOpt.get().getEpoch();
+            }
+        }
+        session.setEpoch(epoch);
+
         // init gameplay for session before registration
         gameplayService.initSessionGameplay(session, world);
 
@@ -269,6 +287,7 @@ public class SessionManager {
         chunkUpdateListener.subscribeToWorld(worldId.getId());
         blockUpdateListener.subscribeToWorld(worldId.getId());
         movementBroadcastListener.subscribeToWorld(worldId.getId());
+        epochSwitchListener.subscribeToWorld(worldId.getId());
 
         log.debug("Session authenticated and subscribed to broadcasts: sessionId={}, worldId={}, actor={}",
                 worldSessionId, worldId.getId(), actor);
