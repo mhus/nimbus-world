@@ -193,7 +193,7 @@ export class EntityService {
     chunkService.on('chunk:loaded', (chunk: any) => {
       const worldInfo = this.appContext.worldInfo;
       if (worldInfo && worldInfo.chunkSize) {
-        this.onChunkLoaded(chunk.data.transfer.cx, chunk.data.transfer.cz, worldInfo.chunkSize);
+        this.onChunkLoaded(chunk.cx, chunk.cz, worldInfo.chunkSize);
       }
     });
 

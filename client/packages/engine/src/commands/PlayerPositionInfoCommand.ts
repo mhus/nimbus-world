@@ -136,7 +136,7 @@ export class PlayerPositionInfoCommand extends CommandHandler {
       lines.push(`  Coordinates  : (${cx}, ${cz})`);
       lines.push(`  Loaded       : ${chunk ? 'Yes' : 'No'}`);
       if (chunk) {
-        lines.push(`  Deny Access  : ${chunk.data.deny === true ? 'Yes' : 'No'}`);
+        lines.push(`  Deny Access  : ${chunk.deny === true ? 'Yes' : 'No'}`);
       }
       lines.push('');
 
@@ -145,7 +145,7 @@ export class PlayerPositionInfoCommand extends CommandHandler {
         const localX = ((Math.floor(position.x) % chunkSize) + chunkSize) % chunkSize;
         const localZ = ((Math.floor(position.z) % chunkSize) + chunkSize) % chunkSize;
         const heightKey = `${localX},${localZ}`;
-        const heightData = chunk.data.hightData[heightKey];
+        const heightData = chunk.heightData[heightKey];
 
         lines.push('Height Data (current column):');
         if (heightData) {

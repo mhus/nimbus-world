@@ -27,7 +27,6 @@ import {
 } from '@nimbus/shared';
 import type { AppContext } from '../AppContext';
 import type { NetworkService } from './NetworkService';
-import type { ClientChunkData } from '../types/ClientChunk';
 import { ClientChunk } from '../types/ClientChunk';
 import type { ClientBlock } from '../types/ClientBlock';
 import { DisposableResources } from '../rendering/DisposableResources';
@@ -185,8 +184,8 @@ export class ChunkService {
 
       for (const [key, chunk] of this.chunks) {
         const distance = Math.max(
-          Math.abs(chunk.data.transfer.cx - playerCx),
-          Math.abs(chunk.data.transfer.cz - playerCz)
+          Math.abs(chunk.cx - playerCx),
+          Math.abs(chunk.cz - playerCz)
         );
 
         if (distance > this.lowDensityDistance) {
@@ -196,8 +195,8 @@ export class ChunkService {
 
       // Now unload all collected chunks
       for (const { key, chunk, distance } of chunksToUnload) {
-        const cx = chunk.data.transfer.cx;
-        const cz = chunk.data.transfer.cz;
+        const cx = chunk.cx;
+        const cz = chunk.cz;
 
         // Emit event for rendering cleanup BEFORE deleting chunk
         // so RenderService can still access DisposableResources
@@ -281,22 +280,27 @@ export class ChunkService {
           }
         }
 
-        // Process blocks into ClientBlocks with merged modifiers
-        const clientChunkData = await this.processChunkData(chunkData);
+        // Process blocks into ClientChunk
+        const chunkSize = this.appContext.worldInfo?.chunkSize || 16;
+        const clientChunkNew = await this.processChunkData(chunkData, chunkSize);
 
         if (existingChunk) {
-          // Update existing chunk
+          // Update existing chunk - copy processed data into existing instance
           logger.debug('Updating existing chunk with new data', {
             cx: chunkData.cx,
             cz: chunkData.cz,
-            oldBlocks: existingChunk.data.data.size,
-            newBlocks: clientChunkData.data.size,
+            oldBlocks: existingChunk.blocks.size,
+            newBlocks: clientChunkNew.blocks.size,
           });
 
-          // Replace chunk data
-          existingChunk.data = clientChunkData;
+          existingChunk.blocks = clientChunkNew.blocks;
+          existingChunk.heightData = clientChunkNew.heightData;
+          existingChunk.statusData = clientChunkNew.statusData;
+          existingChunk.backdrop = clientChunkNew.backdrop;
+          existingChunk.areaData = clientChunkNew.areaData;
+          existingChunk.deny = clientChunkNew.deny;
           existingChunk.isRendered = false;
-          existingChunk.isLoaded = true; // All data (blocks + heightData) fully loaded
+          existingChunk.isLoaded = true;
 
           // Emit event for re-rendering
           this.emit('chunk:updated', existingChunk);
@@ -315,8 +319,8 @@ export class ChunkService {
             cz: chunkData.cz,
           });
         } else {
-          // Create new chunk
-          const clientChunk: ClientChunk = new ClientChunk(clientChunkData, this.appContext.worldInfo?.chunkSize || 16);
+          // Store new chunk
+          const clientChunk = clientChunkNew;
 
           this.chunks.set(key, clientChunk);
 
@@ -339,7 +343,7 @@ export class ChunkService {
             cx: chunkData.cx,
             cz: chunkData.cz,
             blocks: chunkData.b.length,
-            clientBlocks: clientChunkData.data.size,
+            clientBlocks: clientChunk.blocks.size,
           });
         }
       }
@@ -408,14 +412,15 @@ export class ChunkService {
   }
 
   /**
-   * Process chunk data from server into ClientChunkData with ClientBlocks
+   * Process chunk data from server into a ClientChunk with ClientBlocks
    *
    * Performance-optimized: Processes blocks and height data in a single pass
    *
    * @param chunkData Raw chunk data from server
-   * @returns Processed ClientChunkData with merged modifiers and height data
+   * @param chunkSize Chunk size in blocks
+   * @returns Processed ClientChunk with merged modifiers and height data
    */
-  private async processChunkData(chunkData: ChunkDataTransferObject): Promise<ClientChunkData> {
+  private async processChunkData(chunkData: ChunkDataTransferObject, chunkSize: number): Promise<ClientChunk> {
 
     // Normalize blockTypeId for all blocks (convert legacy numbers to strings)
     if (chunkData.b) {
@@ -427,7 +432,6 @@ export class ChunkService {
     const clientBlocksMap = new Map<string, ClientBlock>();
     const blockTypeService = this.appContext.services.blockType;
     const statusData = this.processStatusData(chunkData);
-    const chunkSize = this.appContext.worldInfo?.chunkSize || 32;
     const deny = chunkData.deny ?? false;
 
     // Pre-load all BlockType groups needed for this chunk
@@ -455,13 +459,9 @@ export class ChunkService {
 
     if (!blockTypeService) {
       logger.warn('BlockTypeService not available - cannot process blocks');
-      return {
-        transfer: chunkData,
-        data: clientBlocksMap,
-        hightData: heightData,
-        statusData: statusData,
-        deny: deny
-      };
+      const earlyChunk = new ClientChunk(chunkData.cx, chunkData.cz, clientBlocksMap, heightData, statusData, chunkSize);
+      earlyChunk.deny = deny;
+      return earlyChunk;
     }
 
     // STEP 1.5: Preload all BlockTypes needed for this chunk
@@ -732,15 +732,18 @@ export class ChunkService {
         }
     }
 
-    return {
-      transfer: chunkData,
-      data: clientBlocksMap,
-      hightData: heightData,
-      statusData: statusData,
-      backdrop,
-      areaData,
-      deny,
-    };
+    const clientChunk = new ClientChunk(
+      chunkData.cx,
+      chunkData.cz,
+      clientBlocksMap,
+      heightData,
+      statusData,
+      chunkSize,
+    );
+    clientChunk.backdrop = backdrop;
+    clientChunk.areaData = areaData;
+    clientChunk.deny = deny;
+    return clientChunk;
   }
 
   /**
@@ -819,7 +822,7 @@ export class ChunkService {
 
     // Look up block in processed data map
     const posKey = getBlockPositionKey(x, y, z);
-    return chunk.data.data.get(posKey);
+    return chunk.blocks.get(posKey);
   }
 
   /**
@@ -891,7 +894,7 @@ export class ChunkService {
 
         // Handle deletion (blockTypeId: '0')
         if (block.blockTypeId === 'air' || block.blockTypeId === '0' || block.blockTypeId === 'n:0') {
-          const wasDeleted = clientChunk.data.data.delete(posKey);
+          const wasDeleted = clientChunk.blocks.delete(posKey);
           if (wasDeleted) {
             logger.debug('Block deleted', { position: block.position });
             affectedChunks.add(chunkKey);
@@ -913,7 +916,7 @@ export class ChunkService {
         }
 
         // Merge block modifiers
-        const currentModifier = mergeBlockModifier(this.appContext, block, blockType, clientChunk.data.statusData.get(posKey));
+        const currentModifier = mergeBlockModifier(this.appContext, block, blockType, clientChunk.statusData.get(posKey));
         if (currentModifier.visibility == undefined) {
           // fallback default visibility
           currentModifier.visibility = {
@@ -933,7 +936,7 @@ export class ChunkService {
         };
 
         // Update in chunk
-        clientChunk.data.data.set(posKey, clientBlock);
+        clientChunk.blocks.set(posKey, clientBlock);
 
         // Load audio files for this block (non-blocking - loads in background)
         this.loadBlockAudio(clientBlock).catch(error => {
@@ -1001,13 +1004,13 @@ export class ChunkService {
 
       for (const [posKey, status] of Object.entries(data.s)) {
         if (status === null || status === undefined) {
-          clientChunk.data.statusData.delete(posKey);
+          clientChunk.statusData.delete(posKey);
         } else {
-          clientChunk.data.statusData.set(posKey, status);
+          clientChunk.statusData.set(posKey, status);
         }
 
         // Re-merge modifier for the affected block
-        const clientBlock = clientChunk.data.data.get(posKey);
+        const clientBlock = clientChunk.blocks.get(posKey);
         if (clientBlock) {
           const blockType = await blockTypeService.getBlockType(clientBlock.block.blockTypeId);
           if (blockType) {
@@ -1084,11 +1087,11 @@ export class ChunkService {
           }
 
           const posKey = getBlockPositionKey(item.position.x, item.position.y, item.position.z);
-          const existingBlock = clientChunk.data.data.get(posKey);
+          const existingBlock = clientChunk.blocks.get(posKey);
 
           // Only delete if an item exists at this position
           if (existingBlock && existingBlock.block.blockTypeId === 'n:1') {
-            const wasDeleted = clientChunk.data.data.delete(posKey);
+            const wasDeleted = clientChunk.blocks.delete(posKey);
             if (wasDeleted) {
               logger.debug('Item deleted', {
                 position: item.position,
@@ -1123,7 +1126,7 @@ export class ChunkService {
         );
 
         // Get existing block at this position
-        const existingBlock = clientChunk.data.data.get(posKey);
+        const existingBlock = clientChunk.blocks.get(posKey);
 
         // Check if position is AIR or already has an item
         const isAir = !existingBlock;
@@ -1161,7 +1164,7 @@ export class ChunkService {
         };
 
         // Update in chunk
-        clientChunk.data.data.set(posKey, clientBlock);
+        clientChunk.blocks.set(posKey, clientBlock);
 
         // Load audio files for this block (non-blocking)
         this.loadBlockAudio(clientBlock).catch(error => {
@@ -1293,7 +1296,7 @@ export class ChunkService {
 
     for (const chunk of chunks) {
       // Iterate over all blocks in chunk
-      for (const clientBlock of chunk.data.data.values()) {
+      for (const clientBlock of chunk.blocks.values()) {
         const posKey = getBlockPositionKey(
           clientBlock.block.position.x,
           clientBlock.block.position.y,
@@ -1305,7 +1308,7 @@ export class ChunkService {
           this.appContext,
           clientBlock.block,
           clientBlock.blockType,
-          chunk.data.statusData.get(posKey)
+          chunk.statusData.get(posKey)
         );
 
         // Update currentModifier
@@ -1425,12 +1428,12 @@ export class ChunkService {
     }
 
     // Initialize permanent audio map if needed
-    if (!clientChunk.data.permanentAudioSounds) {
-      clientChunk.data.permanentAudioSounds = new Map();
+    if (!clientChunk.permanentAudioSounds) {
+      clientChunk.permanentAudioSounds = new Map();
     }
 
     // Iterate over all blocks in the chunk
-    for (const clientBlock of clientChunk.data.data.values()) {
+    for (const clientBlock of clientChunk.blocks.values()) {
       const posKey = getBlockPositionKey(
         clientBlock.block.position.x,
         clientBlock.block.position.y,
@@ -1460,15 +1463,15 @@ export class ChunkService {
 
         if (sound) {
           // Ensure resourcesToDispose exists
-          if (!clientChunk.data.resourcesToDispose) {
-            clientChunk.data.resourcesToDispose = new DisposableResources();
+          if (!clientChunk.resourcesToDispose) {
+            clientChunk.resourcesToDispose = new DisposableResources();
           }
 
           // Add sound to disposable resources (will be disposed when chunk unloads)
-          clientChunk.data.resourcesToDispose.add(sound);
+          clientChunk.resourcesToDispose.add(sound);
 
           // Track sound by block position for updates
-          clientChunk.data.permanentAudioSounds.set(posKey, sound);
+          clientChunk.permanentAudioSounds.set(posKey, sound);
 
           // Start playing (deferred sound will wait for audio unlock if needed)
           sound.play();
@@ -1509,17 +1512,17 @@ export class ChunkService {
     }
 
     // Initialize permanent audio map if needed
-    if (!clientChunk.data.permanentAudioSounds) {
-      clientChunk.data.permanentAudioSounds = new Map();
+    if (!clientChunk.permanentAudioSounds) {
+      clientChunk.permanentAudioSounds = new Map();
     }
 
     // Stop and dispose old sound if it exists
-    const oldSound = clientChunk.data.permanentAudioSounds.get(posKey);
+    const oldSound = clientChunk.permanentAudioSounds.get(posKey);
     if (oldSound) {
       try {
         oldSound.stop();
         oldSound.dispose();
-        clientChunk.data.permanentAudioSounds.delete(posKey);
+        clientChunk.permanentAudioSounds.delete(posKey);
         logger.debug('Stopped old permanent sound for block update', {
           position: clientBlock.block.position,
         });
@@ -1555,15 +1558,15 @@ export class ChunkService {
 
       if (sound) {
         // Ensure resourcesToDispose exists
-        if (!clientChunk.data.resourcesToDispose) {
-          clientChunk.data.resourcesToDispose = new DisposableResources();
+        if (!clientChunk.resourcesToDispose) {
+          clientChunk.resourcesToDispose = new DisposableResources();
         }
 
         // Add sound to disposable resources
-        clientChunk.data.resourcesToDispose.add(sound);
+        clientChunk.resourcesToDispose.add(sound);
 
         // Track sound by block position
-        clientChunk.data.permanentAudioSounds.set(posKey, sound);
+        clientChunk.permanentAudioSounds.set(posKey, sound);
 
         // Start playing (deferred sound will wait for audio unlock if needed)
         sound.play();

@@ -823,7 +823,7 @@ export class PhysicsService {
     }
 
     // Check deny flag (default is false if not set)
-    if (chunk.data.deny === true) {
+    if (chunk.deny === true) {
       return false;
     }
 
@@ -1323,14 +1323,14 @@ export class PhysicsService {
 
     // Get chunk at this position
     const chunk = this.chunkService.getChunkForBlockPosition(new Vector3(blockX, blockY, blockZ));
-    if (!chunk || !chunk.data.areaData) {
+    if (!chunk || !chunk.areaData) {
       return;
     }
 
     // Find all areas that contain this position
     const matchingAreas: any[] = [];
 
-    for (const area of chunk.data.areaData) {
+    for (const area of chunk.areaData) {
       if (this.isPositionInArea(blockX, blockY, blockZ, area)) {
         matchingAreas.push(area);
       }

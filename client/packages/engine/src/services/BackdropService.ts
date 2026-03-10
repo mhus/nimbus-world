@@ -107,8 +107,8 @@ export class BackdropService {
       // Build set of loaded chunk coordinates for fast lookup
       const loadedCoords = new Set<string>();
       for (const chunk of allChunks) {
-        const cx = chunk.data.transfer.cx;
-        const cz = chunk.data.transfer.cz;
+        const cx = chunk.cx;
+        const cz = chunk.cz;
         loadedCoords.add(getChunkKey(cx, cz));
       }
 
@@ -117,8 +117,8 @@ export class BackdropService {
 
       // Check each loaded chunk for missing neighbors
       for (const chunk of allChunks) {
-        const cx = chunk.data.transfer.cx;
-        const cz = chunk.data.transfer.cz;
+        const cx = chunk.cx;
+        const cz = chunk.cz;
 
         // Check North neighbor (cz+1)
         const hasNorth = loadedCoords.has(getChunkKey(cx, cz + 1));
@@ -221,8 +221,8 @@ export class BackdropService {
     // Build a map of chunks by coordinate for fast lookup
     const chunkMap = new Map<string, any>();
     for (const chunk of allChunks) {
-      const cx = chunk.data.transfer.cx;
-      const cz = chunk.data.transfer.cz;
+      const cx = chunk.cx;
+      const cz = chunk.cz;
       chunkMap.set(getChunkKey(cx, cz), chunk);
     }
 
@@ -241,12 +241,12 @@ export class BackdropService {
 
       // Get the chunk
       const chunk = chunkMap.get(getChunkKey(cx, cz));
-      if (!chunk || !chunk.data.backdrop) {
+      if (!chunk || !chunk.backdrop) {
         continue;
       }
 
       // Get backdrop data for this direction
-      const backdrop = chunk.data.backdrop;
+      const backdrop = chunk.backdrop;
       let backdropData: Array<Backdrop> | undefined;
 
       switch (direction) {
@@ -546,11 +546,11 @@ export class BackdropService {
     try {
       const chunk = this.chunkService.getChunk(cx, cz);
       const chunkSize = chunk?.chunkSize || 16;
-      if (!chunk || !chunk.data.hightData) {
+      if (!chunk || !chunk.heightData) {
         return 0; // Default if no height data
       }
 
-      const heightData = chunk.data.hightData;
+      const heightData = chunk.heightData;
       let minGroundLevel = Infinity;
 
       // Sample ground level along the edge
@@ -575,8 +575,8 @@ export class BackdropService {
             continue;
         }
         // Convert local coordinates to world coordinates
-        const worldX = chunk.data.transfer.cx * chunkSize + x;
-        const worldZ = chunk.data.transfer.cz * chunkSize + z;
+        const worldX = chunk.cx * chunkSize + x;
+        const worldZ = chunk.cz * chunkSize + z;
 
         const key = `${worldX},${worldZ}`;
         const height = heightData[key];

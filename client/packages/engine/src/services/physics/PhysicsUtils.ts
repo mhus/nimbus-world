@@ -287,7 +287,7 @@ export function checkUnderwaterState(
 
   // Calculate local coordinates within chunk (handle negative positions correctly)
   const heightKey = `${Math.floor(entity.position.x)},${Math.floor(entity.position.z)}`;
-  const heightData = chunk.data.hightData[heightKey];
+  const heightData = chunk.heightData[heightKey];
 
   const wasInWater = entity.inWater;
 

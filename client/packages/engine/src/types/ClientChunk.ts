@@ -1,48 +1,31 @@
 /**
  * ClientChunk - Client-side chunk representation
  *
- * Wraps ChunkDataTransferObject from server with additional
+ * Contains processed block data from the server enriched with
  * client-side state for rendering and management.
  */
 
-import {ChunkDataTransferObject, Backdrop, Vector3, AreaData, HeightData} from '@nimbus/shared';
+import {Backdrop, Vector3, AreaData, HeightData} from '@nimbus/shared';
 import type { ClientBlock } from './ClientBlock';
 import type { DisposableResources } from '../rendering/DisposableResources';
 
 /**
- * Height data for chunk column
- *
- * Describes vertical boundaries and special levels for a single column (x, z) in a chunk.
- *
- * @field x - World X coordinate within chunk (0 to chunkSize-1)
- * @field z - World Z coordinate within chunk (0 to chunkSize-1)
- * @field maxHeight - Maximum Y boundary:
- *   - Usually world.stop.y (e.g. 1000)
- *   - Exception: If blocks exceed world.stop.y, set to (highestBlock + 10) for headroom
- *   - Can be overridden by server via chunkData.h
- * @field minHeight - Minimum Y boundary (lowest block Y position, or world.start.y if no blocks)
- * @field groundLevel - Y position of lowest solid block (ground surface)
- * @field waterHeight - Y position of highest water block (water surface), undefined if no water
+ * Client-side chunk with processed blocks and rendering state
  */
-// export type ClientHeightData = readonly [
-//   maxHeight: number,
-//   minHeight: number,
-//   groundLevel: number,
-//   waterHeight?: number
-// ];
+export class ClientChunk {
+  /** Chunk X coordinate */
+  cx: number;
 
-/**
- * Client-side chunk data with processed blocks
- */
-export interface ClientChunkData {
-  /** Original transfer object from server */
-  transfer: ChunkDataTransferObject;
+  /** Chunk Z coordinate */
+  cz: number;
 
   /** Map of block position key(x,y,z) -> ClientBlock (with merged modifiers) */
-  data: Map<string, ClientBlock>;
-  /** Record of height position key(x,z) -> HeightData */
-  hightData: Record<string, HeightData>;
+  blocks: Map<string, ClientBlock>;
 
+  /** Record of height position key(x,z) -> HeightData */
+  heightData: Record<string, HeightData>;
+
+  /** Block status overrides by position key */
   statusData: Map<string, string>;
 
   /** Backdrop data for chunk edges (with defaults applied) */
@@ -65,15 +48,6 @@ export interface ClientChunkData {
   /** Indicates that the chunk is denied access */
   deny?: boolean;
 
-}
-
-/**
- * Client-side chunk with rendering state
- */
-export class ClientChunk {
-  /** Chunk data with processed blocks */
-  data: ClientChunkData;
-
   /** Whether chunk has been rendered */
   isRendered: boolean;
 
@@ -82,39 +56,44 @@ export class ClientChunk {
 
   chunkSize: number;
 
-    /** Last time chunk was accessed (for LRU) */
+  /** Last time chunk was accessed (for LRU) */
   lastAccessTime: number;
-
-    constructor(data: ClientChunkData, chunkSize : number) {
-        this.data = data;
-        this.isRendered = false;
-        this.isLoaded = false;
-        this.chunkSize = chunkSize;
-        this.lastAccessTime = Date.now();
-    }
 
   /** Optional reference to Babylon.js mesh */
   renderMesh?: any;
+
+  constructor(
+    cx: number,
+    cz: number,
+    blocks: Map<string, ClientBlock>,
+    heightData: Record<string, HeightData>,
+    statusData: Map<string, string>,
+    chunkSize: number,
+  ) {
+    this.cx = cx;
+    this.cz = cz;
+    this.blocks = blocks;
+    this.heightData = heightData;
+    this.statusData = statusData;
+    this.chunkSize = chunkSize;
+    this.isRendered = false;
+    this.isLoaded = false;
+    this.lastAccessTime = Date.now();
+  }
 
   /**
    * Get height data for column (x, z) within chunk
    * @param posX block world x coordinate
    * @param posZ block world z coordinate
-   * @returns ClientHeightData or undefined if not found
+   * @returns HeightData or undefined if not found
    */
   getHeightData(posX: number, posZ: number): HeightData | undefined {
-    // Convert world coordinates to local chunk coordinates
-    const chunkCx = this.data.transfer.cx;
-    const chunkCz = this.data.transfer.cz;
-
     const worldX = Math.floor(posX);
     const worldZ = Math.floor(posZ);
-
-    return this.data?.hightData?.[`${worldX},${worldZ}`];
+    return this.heightData?.[`${worldX},${worldZ}`];
   }
 
   getHeightDataForPosition(position: Vector3) {
     return this.getHeightData(position.x, position.z);
   }
-
 }

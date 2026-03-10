@@ -208,8 +208,8 @@ export class RenderService {
    * Handle single chunk loaded event
    */
   private onChunkLoaded(clientChunk: ClientChunk): void {
-    const cx = clientChunk.data.transfer.cx;
-    const cz = clientChunk.data.transfer.cz;
+    const cx = clientChunk.cx;
+    const cz = clientChunk.cz;
 
     logger.debug('Chunk loaded, rendering', { cx, cz });
 
@@ -225,10 +225,10 @@ export class RenderService {
    * Handle chunk updated event (blocks changed via b.u message)
    */
   private onChunkUpdated(clientChunk: ClientChunk): void {
-    const cx = clientChunk.data.transfer.cx;
-    const cz = clientChunk.data.transfer.cz;
+    const cx = clientChunk.cx;
+    const cz = clientChunk.cz;
 
-    logger.debug('Chunk updated, re-rendering', { cx, cz, blockCount: clientChunk.data.data.size });
+    logger.debug('Chunk updated, re-rendering', { cx, cz, blockCount: clientChunk.blocks.size });
 
     // Remove old mesh first
     this.unloadChunk(cx, cz);
@@ -259,7 +259,7 @@ export class RenderService {
    * @param clientChunk Client-side chunk with processed ClientBlocks
    */
   async renderChunk(clientChunk: ClientChunk): Promise<void> {
-    const chunk = clientChunk.data.transfer; // Get transfer object for chunk coordinates
+    const chunk = clientChunk; // chunk coordinates directly on ClientChunk
     try {
       const chunkKey = this.getChunkKey(chunk.cx, chunk.cz);
 
@@ -273,7 +273,7 @@ export class RenderService {
       const generation = (this.chunkRenderGeneration.get(chunkKey) ?? 0) + 1;
       this.chunkRenderGeneration.set(chunkKey, generation);
 
-      const clientBlocksMap = clientChunk.data.data;
+      const clientBlocksMap = clientChunk.blocks;
       const blockCount = clientBlocksMap.size;
 
       logger.debug('Rendering chunk from ClientBlocks', {
@@ -283,9 +283,9 @@ export class RenderService {
       });
 
       // Dispose old resources if they exist (e.g., during chunk update)
-      if (clientChunk.data.resourcesToDispose) {
-        const oldStats = clientChunk.data.resourcesToDispose.getStats();
-        clientChunk.data.resourcesToDispose.dispose();
+      if (clientChunk.resourcesToDispose) {
+        const oldStats = clientChunk.resourcesToDispose.getStats();
+        clientChunk.resourcesToDispose.dispose();
         logger.debug('Disposed old chunk resources before re-render', {
           cx: chunk.cx,
           cz: chunk.cz,
@@ -295,7 +295,7 @@ export class RenderService {
 
       // Create new DisposableResources for this chunk
       const resourcesToDispose = new DisposableResources();
-      clientChunk.data.resourcesToDispose = resourcesToDispose;
+      clientChunk.resourcesToDispose = resourcesToDispose;
 
       // Separate blocks into chunk mesh blocks vs separate mesh blocks
       const { chunkMeshBlocks, separateMeshBlocks } = this.separateBlocksByRenderType(clientChunk);
@@ -729,7 +729,7 @@ export class RenderService {
     const chunkMeshBlocks: ClientBlock[] = [];
     const separateMeshBlocks: ClientBlock[] = [];
 
-    for (const clientBlock of clientChunk.data.data.values()) {
+    for (const clientBlock of clientChunk.blocks.values()) {
       const renderer = this.getRenderer(clientBlock);
 
       if (!renderer) {
@@ -778,7 +778,7 @@ export class RenderService {
     blocksToGroup?: ClientBlock[]
   ): Map<string, ClientBlock[]> {
     const groups = new Map<string, ClientBlock[]>();
-    const blocks = blocksToGroup || Array.from(clientChunk.data.data.values());
+    const blocks = blocksToGroup || Array.from(clientChunk.blocks.values());
 
     for (const clientBlock of blocks) {
       const modifier = clientBlock.currentModifier;
@@ -884,7 +884,7 @@ export class RenderService {
     blocksToGroup?: ClientBlock[]
   ): Map<string, FaceDescriptor[]> {
     const groups = new Map<string, FaceDescriptor[]>();
-    const blocks = blocksToGroup || Array.from(clientChunk.data.data.values());
+    const blocks = blocksToGroup || Array.from(clientChunk.blocks.values());
 
     for (const clientBlock of blocks) {
       const modifier = clientBlock.currentModifier;
@@ -1065,11 +1065,11 @@ export class RenderService {
     const chunkService = this.appContext.services.chunk;
     if (chunkService) {
       const clientChunk = chunkService.getChunk(cx, cz);
-      if (clientChunk?.data.resourcesToDispose) {
-        const stats = clientChunk.data.resourcesToDispose.getStats();
-        clientChunk.data.resourcesToDispose.dispose();
+      if (clientChunk?.resourcesToDispose) {
+        const stats = clientChunk.resourcesToDispose.getStats();
+        clientChunk.resourcesToDispose.dispose();
         // Clear reference to disposed resources to prevent double-dispose in renderChunk()
-        clientChunk.data.resourcesToDispose = undefined as any;
+        clientChunk.resourcesToDispose = undefined as any;
 
         logger.debug('Chunk resources disposed', {
           cx,
@@ -1149,9 +1149,9 @@ export class RenderService {
     const chunkService = this.appContext.services.chunk;
     if (chunkService) {
       for (const chunk of chunkService.getAllChunks()) {
-        if (chunk.data.resourcesToDispose) {
-          chunk.data.resourcesToDispose.dispose();
-          chunk.data.resourcesToDispose = undefined as any;
+        if (chunk.resourcesToDispose) {
+          chunk.resourcesToDispose.dispose();
+          chunk.resourcesToDispose = undefined as any;
         }
       }
     }
