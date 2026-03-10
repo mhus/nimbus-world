@@ -5,6 +5,9 @@ import de.mhus.nimbus.shared.persistence.SKeyRepository;
 import de.mhus.nimbus.shared.security.KeyKind;
 import de.mhus.nimbus.shared.security.KeyType;
 import jakarta.validation.Valid;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -17,11 +20,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.StreamSupport;
 
 /**
  * Shared REST Controller für Schlüsselverwaltung unter /shared/key.
@@ -33,9 +34,11 @@ import java.util.stream.StreamSupport;
 public class SharedKeyController {
 
     private final SKeyRepository repository;
+    private final MongoTemplate mongoTemplate;
 
-    public SharedKeyController(SKeyRepository repository) {
+    public SharedKeyController(SKeyRepository repository, MongoTemplate mongoTemplate) {
         this.repository = repository;
+        this.mongoTemplate = mongoTemplate;
     }
 
     @GetMapping
@@ -43,16 +46,18 @@ public class SharedKeyController {
                               @RequestParam(name = "kind", required = false) String kind,
                               @RequestParam(name = "name", required = false) String name,
                               @RequestParam(name = "algorithm", required = false) String algorithm) {
-        Iterable<SKey> all = repository.findAll();
-        List<SharedSKeyDto> out = new ArrayList<>();
-        StreamSupport.stream(all.spliterator(), false)
-            .filter(e -> type == null || (e.getType() != null && type.equalsIgnoreCase(e.getType().name())))
-            .filter(e -> kind == null || (e.getKind() != null && kind.equalsIgnoreCase(e.getKind().name())))
-            .filter(e -> name == null || name.equals(e.getKeyId()))
-            .filter(e -> algorithm == null || algorithm.equals(e.getAlgorithm()))
-            .map(this::toDto)
-            .forEach(out::add);
-        return out;
+        Query query = new Query();
+        List<Criteria> criteria = new ArrayList<>();
+        if (type != null) criteria.add(Criteria.where("type").is(type.toUpperCase()));
+        if (kind != null) criteria.add(Criteria.where("kind").is(kind.toUpperCase()));
+        if (name != null) criteria.add(Criteria.where("keyId").is(name));
+        if (algorithm != null) criteria.add(Criteria.where("algorithm").is(algorithm));
+        if (!criteria.isEmpty()) {
+            query.addCriteria(new Criteria().andOperator(criteria.toArray(new Criteria[0])));
+        }
+        return mongoTemplate.find(query, SKey.class).stream()
+                .map(this::toDto)
+                .toList();
     }
 
     @GetMapping("/{id}")

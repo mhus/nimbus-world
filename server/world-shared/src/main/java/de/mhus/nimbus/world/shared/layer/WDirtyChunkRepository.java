@@ -41,6 +41,9 @@ public interface WDirtyChunkRepository extends MongoRepository<WDirtyChunk, Stri
     /**
      * Find all distinct world IDs that have dirty chunks.
      */
-    @Query(value = "{}", fields = "{ 'worldId' : 1 }")
-    List<WDirtyChunk> findAllBy();
+    @org.springframework.data.mongodb.repository.Aggregation(pipeline = {
+        "{ '$group': { '_id': '$worldId' } }",
+        "{ '$project': { 'worldId': '$_id', '_id': 0 } }"
+    })
+    List<String> findDistinctWorldIds();
 }

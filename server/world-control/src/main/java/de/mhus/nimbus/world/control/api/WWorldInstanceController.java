@@ -190,7 +190,7 @@ public class WWorldInstanceController extends BaseEditorController {
             } else if (creator != null && !creator.isBlank()) {
                 count = instanceService.countByCreator(creator);
             } else {
-                count = instanceService.findAll().size();
+                count = instanceService.count();
             }
 
             Map<String, Object> stats = Map.of(

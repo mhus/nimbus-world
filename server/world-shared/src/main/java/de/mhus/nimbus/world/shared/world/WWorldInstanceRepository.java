@@ -94,4 +94,13 @@ public interface WWorldInstanceRepository extends MongoRepository<WWorldInstance
      * @return Number of instances
      */
     long countByCreator(String creator);
+
+    /**
+     * Find instances last updated before the given cutoff time.
+     * Used by cleanup scheduler to find old instances.
+     *
+     * @param cutoffTime The cutoff timestamp
+     * @return List of instances older than cutoffTime
+     */
+    List<WWorldInstance> findByUpdatedAtBefore(java.time.Instant cutoffTime);
 }

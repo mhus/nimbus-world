@@ -204,8 +204,10 @@ public class RUserService {
     }
 
     public List<String> getUserIdsByRegionRole(String regionId, RegionRoles role) {
-        return repository.findAll().stream()
-            .filter(user -> user.hasRegionRole(regionId, role))
+        String fieldPath = "regionRoles." + regionId;
+        Query query = new Query(Criteria.where(fieldPath).is(role.name()));
+        query.fields().include("_id");
+        return mongoTemplate.find(query, RUser.class).stream()
             .map(RUser::getId)
             .collect(Collectors.toList());
     }

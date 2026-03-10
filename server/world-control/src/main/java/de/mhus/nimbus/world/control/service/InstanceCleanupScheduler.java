@@ -56,22 +56,27 @@ public class InstanceCleanupScheduler {
             // Calculate cutoff time
             Instant cutoffTime = Instant.now().minus(properties.getMaxAgeHours(), ChronoUnit.HOURS);
 
-            // Find all instances
-            List<WWorldInstance> allInstances = instanceService.findAll();
-            log.debug("Found {} total instances", allInstances.size());
+            // Find instances older than cutoff time
+            List<WWorldInstance> oldInstances = instanceService.findByUpdatedAtBefore(cutoffTime);
+            log.debug("Found {} instances older than cutoff", oldInstances.size());
 
             int deletedCount = 0;
             int skippedCount = 0;
 
-            for (WWorldInstance instance : allInstances) {
+            for (WWorldInstance instance : oldInstances) {
                 // Stop if we reached the max deletes limit
                 if (deletedCount >= properties.getMaxDeletesPerRun()) {
                     log.warn("Reached max deletes per run limit ({}), stopping cleanup", properties.getMaxDeletesPerRun());
                     break;
                 }
 
-                // Check if instance is old enough for cleanup
-                if (shouldCleanup(instance, cutoffTime)) {
+                // Instance is already filtered by updatedAtBefore, but validate null check
+                if (instance.getUpdatedAt() == null) {
+                    skippedCount++;
+                    continue;
+                }
+
+                {
                     if (properties.isDryRun()) {
                         log.info("DRY-RUN: Would delete instance: instanceId={}, updatedAt={}, age={}h, activePlayers={}",
                                 instance.getInstanceId(),
@@ -104,36 +109,12 @@ public class InstanceCleanupScheduler {
                 }
             }
 
-            log.info("Instance cleanup completed: deleted={}, skipped={}, total={}, dryRun={}",
-                    deletedCount, skippedCount, allInstances.size(), properties.isDryRun());
+            log.info("Instance cleanup completed: deleted={}, skipped={}, candidates={}, dryRun={}",
+                    deletedCount, skippedCount, oldInstances.size(), properties.isDryRun());
 
         } catch (Exception e) {
             log.error("Instance cleanup failed: {}", e.getMessage(), e);
         }
-    }
-
-    /**
-     * Determines if an instance should be cleaned up.
-     *
-     * @param instance The instance to check
-     * @param cutoffTime The cutoff time (instances older than this are candidates)
-     * @return true if instance should be cleaned up
-     */
-    private boolean shouldCleanup(WWorldInstance instance, Instant cutoffTime) {
-        // Check if instance has updatedAt timestamp
-        if (instance.getUpdatedAt() == null) {
-            log.warn("Instance {} has no updatedAt timestamp, skipping", instance.getInstanceId());
-            return false;
-        }
-
-        // Check if instance is old enough
-        if (instance.getUpdatedAt().isAfter(cutoffTime)) {
-            // Instance was updated recently, don't cleanup
-            return false;
-        }
-
-        // Instance is old enough for cleanup
-        return true;
     }
 
     /**

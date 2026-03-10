@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -117,24 +118,21 @@ public class WEditCacheDirtyService {
 
     public void processEditCacheDirty() {
         try {
-            List<WEditCacheDirty> dirtyEntries = dirtyRepository.findAllByOrderByCreatedAtAsc();
+            List<WEditCacheDirty> dirtyEntries = dirtyRepository.findAllByOrderByCreatedAtAsc(
+                    PageRequest.of(0, MAX_ENTRIES_PER_CYCLE));
 
             if (dirtyEntries.isEmpty()) {
                 log.trace("No dirty edit cache entries to process");
                 return;
             }
 
-            log.debug("Found {} dirty edit cache entries", dirtyEntries.size());
+            log.debug("Found {} dirty edit cache entries to process", dirtyEntries.size());
 
             int processed = 0;
             int skipped = 0;
             int failed = 0;
 
             for (WEditCacheDirty dirty : dirtyEntries) {
-                if (processed >= MAX_ENTRIES_PER_CYCLE) {
-                    log.debug("Reached max entries per cycle ({}), stopping", MAX_ENTRIES_PER_CYCLE);
-                    break;
-                }
 
                 String lockKey = "edit-cache-dirty:" + dirty.getWorldId() + ":" + dirty.getLayerDataId();
                 String lockToken = lockService.acquireGenericLock(lockKey, LOCK_TTL);

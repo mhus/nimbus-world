@@ -126,10 +126,7 @@ public class WDirtyChunkService {
      */
     @Transactional(readOnly = true)
     public List<String> getWorldIdsWithDirtyChunks() {
-        return dirtyChunkRepository.findAllBy().stream()
-                .map(WDirtyChunk::getWorldId)
-                .distinct()
-                .collect(Collectors.toList());
+        return dirtyChunkRepository.findDistinctWorldIds();
     }
 
     /**

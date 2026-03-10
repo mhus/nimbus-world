@@ -460,6 +460,27 @@ public class WWorldInstanceService {
         return repository.countByCreator(creator);
     }
 
+    /**
+     * Count all instances.
+     *
+     * @return Total number of instances
+     */
+    @Transactional(readOnly = true)
+    public long count() {
+        return repository.count();
+    }
+
+    /**
+     * Find instances last updated before the given cutoff time.
+     *
+     * @param cutoffTime The cutoff timestamp
+     * @return List of instances older than cutoffTime
+     */
+    @Transactional(readOnly = true)
+    public List<WWorldInstance> findByUpdatedAtBefore(java.time.Instant cutoffTime) {
+        return repository.findByUpdatedAtBefore(cutoffTime);
+    }
+
     // --- Atomic MongoTemplate operations for players ---
 
     private Query queryByInstanceId(String instanceId) {

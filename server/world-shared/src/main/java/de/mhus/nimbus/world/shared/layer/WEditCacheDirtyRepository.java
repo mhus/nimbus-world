@@ -1,5 +1,6 @@
 package de.mhus.nimbus.world.shared.layer;
 
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
 
@@ -37,6 +38,14 @@ public interface WEditCacheDirtyRepository extends MongoRepository<WEditCacheDir
      * @return List of dirty entries ordered by age
      */
     List<WEditCacheDirty> findAllByOrderByCreatedAtAsc();
+
+    /**
+     * Find oldest dirty entries with limit for batch processing.
+     *
+     * @param pageable Pageable with limit
+     * @return List of dirty entries ordered by age
+     */
+    List<WEditCacheDirty> findAllByOrderByCreatedAtAsc(Pageable pageable);
 
     /**
      * Find dirty entries older than specified timestamp.

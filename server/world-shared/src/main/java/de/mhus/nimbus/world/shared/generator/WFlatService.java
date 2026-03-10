@@ -98,15 +98,6 @@ public class WFlatService {
     }
 
     /**
-     * Find all flats.
-     * @return List of all flats
-     */
-    public List<WFlat> findAll() {
-        log.debug("Finding all flats");
-        return wFlatRepository.findAll();
-    }
-
-    /**
      * Check if flat exists by world ID, layer data ID, and flat ID.
      * @param worldId World identifier
      * @param layerDataId Layer data identifier
