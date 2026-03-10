@@ -666,31 +666,34 @@ public class WWorldInstanceService {
 
     /**
      * Perform an epoch switch on a world instance.
-     * Updates the epoch on the instance and publishes a Redis event
+     * Atomically updates the epoch in MongoDB and publishes a Redis event
      * so all connected sessions and services react to the change.
      *
      * @param instanceId The instanceId of the world instance
      * @param newEpoch The new epoch value
-     * @return true if the epoch was updated, false if instance not found
+     * @return true if the epoch was updated, false if instance not found or unchanged
      */
-    @Transactional
-    public boolean epochSwitch(String instanceId, int newEpoch) {
-        Optional<WWorldInstance> instanceOpt = repository.findByInstanceId(instanceId);
-        if (instanceOpt.isEmpty()) {
+    public boolean switchInstanceEpoch(String instanceId, int newEpoch) {
+        Update update = new Update()
+                .set("epoch", newEpoch)
+                .set("updatedAt", Instant.now());
+        var result = mongoTemplate.updateFirst(queryByInstanceId(instanceId), update, WWorldInstance.class);
+        if (result.getMatchedCount() == 0) {
             log.warn("Epoch switch failed: instance not found: {}", instanceId);
             return false;
         }
 
-        WWorldInstance instance = instanceOpt.get();
-        int oldEpoch = instance.getEpoch();
-        instance.setEpoch(newEpoch);
-        instance.touchUpdate();
-        repository.save(instance);
+        // Resolve baseWorldId for Redis publish
+        Optional<WWorldInstance> instanceOpt = repository.findByInstanceId(instanceId);
+        if (instanceOpt.isEmpty()) {
+            log.warn("Epoch switch: instance disappeared after update: {}", instanceId);
+            return false;
+        }
 
-        log.info("Epoch switch: instanceId={}, {} -> {}", instanceId, oldEpoch, newEpoch);
+        String baseWorldId = instanceOpt.get().getWorldId();
+        log.info("Epoch switch: instanceId={}, newEpoch={}, baseWorldId={}", instanceId, newEpoch, baseWorldId);
 
         // Publish epoch switch event via Redis
-        String baseWorldId = instance.getWorldId();
         redisMessaging.publish(baseWorldId, "epoch.switch", "{\"epoch\":" + newEpoch + "}");
 
         return true;
