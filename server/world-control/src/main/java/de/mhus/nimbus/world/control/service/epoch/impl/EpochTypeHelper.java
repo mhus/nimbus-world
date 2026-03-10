@@ -172,16 +172,18 @@ public final class EpochTypeHelper {
 
     /**
      * Create a new epoch by adding it to all documents that contain the source epoch.
+     * Uses $addToSet to avoid duplicates. Documents that already have newEpoch are safely skipped.
      */
     public static ResourceEpochService.ProcessResult create(
             MongoTemplate mongoTemplate, String collection, String typeName,
             String worldId, int sourceEpoch, int newEpoch) {
 
-        // $push newEpoch to all documents that contain sourceEpoch but not newEpoch
-        Query query = new Query(Criteria.where("worldId").is(worldId)
-                .and("epoches").is(sourceEpoch)
-                .and("epoches").nin(newEpoch));
-        Update update = new Update().push("epoches", newEpoch);
+        // Use $and to avoid duplicate key in Criteria, and $addToSet to prevent duplicate epoch values
+        Query query = new Query(new Criteria().andOperator(
+                Criteria.where("worldId").is(worldId),
+                Criteria.where("epoches").is(sourceEpoch)
+        ));
+        Update update = new Update().addToSet("epoches", newEpoch);
 
         var result = mongoTemplate.updateMulti(query, update, collection);
         long modifiedCount = result.getModifiedCount();
