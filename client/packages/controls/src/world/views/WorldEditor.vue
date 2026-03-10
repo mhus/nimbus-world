@@ -1335,6 +1335,10 @@
           <div v-show="activeWorldInfoTab === 'epochs'" class="space-y-4 mt-4">
             <p class="text-sm text-base-content/70">Define epochs to progressively expand the world with new content. Epoch 0 is the base world.</p>
 
+            <div v-if="!isNew" class="alert alert-warning text-sm">
+              Create / Delete Epoch operations modify resource data immediately and do not require Save. Name, description and world status changes are saved with the world form.
+            </div>
+
             <!-- Epoch List -->
             <div class="overflow-x-auto">
               <table class="table table-compact w-full">
@@ -1344,7 +1348,9 @@
                     <th>Name</th>
                     <th>Description</th>
                     <th class="w-24">World Status</th>
-                    <th class="w-16"></th>
+                    <th>Splash Screen</th>
+                    <th>Splash Audio</th>
+                    <th class="w-24"></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1382,6 +1388,33 @@
                       />
                     </td>
                     <td>
+                      <input
+                        v-model="ep.splashScreen"
+                        type="text"
+                        placeholder="image URL"
+                        class="input input-bordered input-sm w-full"
+                      />
+                    </td>
+                    <td>
+                      <input
+                        v-model="ep.splashScreenAudio"
+                        type="text"
+                        placeholder="audio URL"
+                        class="input input-bordered input-sm w-full"
+                      />
+                    </td>
+                    <td class="flex gap-1">
+                      <button
+                        v-if="!isNew"
+                        type="button"
+                        class="btn btn-ghost btn-sm btn-square text-error"
+                        title="Delete epoch data from all resources"
+                        @click="confirmEpochDelete(ep)"
+                      >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
                       <button type="button" class="btn btn-ghost btn-sm btn-square" @click="removeEpoch(index)">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -1390,15 +1423,88 @@
                     </td>
                   </tr>
                   <tr v-if="formData.epoches.length === 0">
-                    <td colspan="5" class="text-center text-base-content/50">No epochs defined</td>
+                    <td colspan="7" class="text-center text-base-content/50">No epochs defined</td>
                   </tr>
                 </tbody>
               </table>
             </div>
 
-            <button type="button" class="btn btn-sm btn-outline" @click="addEpoch">
-              + Add Epoch
-            </button>
+            <div class="flex gap-2">
+              <button type="button" class="btn btn-sm btn-outline" @click="addEpoch">
+                + Add Epoch
+              </button>
+              <button v-if="!isNew && formData.epoches.length > 0" type="button" class="btn btn-sm btn-outline btn-info" @click="handleEpochValidate">
+                Validate Epochs
+              </button>
+              <button v-if="!isNew && formData.epoches.length >= 2" type="button" class="btn btn-sm btn-outline btn-warning" @click="showEpochCreateDialog = true">
+                Create Epoch
+              </button>
+            </div>
+
+            <!-- Epoch Create Dialog -->
+            <dialog :open="showEpochCreateDialog" class="modal">
+              <div class="modal-box">
+                <h3 class="font-bold text-lg">Create Epoch</h3>
+                <div class="alert alert-warning text-sm mt-2">
+                  This operation is executed immediately and modifies resource data in the database.
+                </div>
+                <p class="py-2 text-sm text-base-content/70">
+                  Propagate data from a source epoch to a new epoch. This adds the new epoch to all resources (chunks, layers, entities, items, hexgrids) that contain the source epoch.
+                </p>
+                <div class="form-control mt-2">
+                  <label class="label"><span class="label-text">Source Epoch</span></label>
+                  <select v-model.number="epochCreateSourceEpoch" class="select select-bordered select-sm">
+                    <option v-for="ep in formData.epoches" :key="ep.epoch" :value="ep.epoch">
+                      {{ ep.epoch }} - {{ ep.name || '(unnamed)' }}
+                    </option>
+                  </select>
+                </div>
+                <div class="form-control mt-2">
+                  <label class="label"><span class="label-text">New Epoch</span></label>
+                  <select v-model.number="epochCreateNewEpoch" class="select select-bordered select-sm">
+                    <option v-for="ep in formData.epoches" :key="ep.epoch" :value="ep.epoch">
+                      {{ ep.epoch }} - {{ ep.name || '(unnamed)' }}
+                    </option>
+                  </select>
+                </div>
+                <div v-if="epochCreateSourceEpoch === epochCreateNewEpoch" class="alert alert-warning mt-3 text-sm">
+                  Source and new epoch must be different.
+                </div>
+                <div class="modal-action">
+                  <button class="btn btn-ghost" @click="showEpochCreateDialog = false">Cancel</button>
+                  <button
+                    class="btn btn-warning"
+                    :disabled="epochCreateSourceEpoch === epochCreateNewEpoch"
+                    @click="handleEpochCreate"
+                  >
+                    Create Epoch
+                  </button>
+                </div>
+              </div>
+              <div class="modal-backdrop" @click="showEpochCreateDialog = false"></div>
+            </dialog>
+
+            <!-- Epoch Delete Confirm Dialog -->
+            <dialog :open="showEpochDeleteDialog" class="modal">
+              <div class="modal-box">
+                <h3 class="font-bold text-lg text-error">Delete Epoch Data</h3>
+                <div class="alert alert-error text-sm mt-2">
+                  This operation is executed immediately and cannot be undone!
+                </div>
+                <p class="py-2 text-sm">
+                  This will remove epoch <strong>{{ epochDeleteTarget?.epoch }}</strong> ({{ epochDeleteTarget?.name || 'unnamed' }})
+                  from all resource documents (chunks, layers, entities, items, hexgrids).
+                  Documents that only belong to this epoch will end up with an empty epoches array.
+                </p>
+                <div class="modal-action">
+                  <button class="btn btn-ghost" @click="showEpochDeleteDialog = false">Cancel</button>
+                  <button class="btn btn-error" @click="handleEpochDelete">
+                    Delete Epoch Data
+                  </button>
+                </div>
+              </div>
+              <div class="modal-backdrop" @click="showEpochDeleteDialog = false"></div>
+            </dialog>
           </div>
 
         </div>
@@ -1470,6 +1576,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useRegion } from '@/composables/useRegion';
 import { worldServiceFrontend, type World, type WorldInfo } from '../services/WorldServiceFrontend';
 import JobWatch from '@/components/JobWatch.vue';
+import { useJobs } from '@/composables/useJobs';
 
 const props = defineProps<{
   world: World | 'new';
@@ -1495,6 +1602,15 @@ const jobWatchJobId = ref('');
 
 // Confirmation dialog for world creation
 const showConfirmDialog = ref(false);
+
+// Epoch create dialog
+const showEpochCreateDialog = ref(false);
+const epochCreateSourceEpoch = ref(0);
+const epochCreateNewEpoch = ref(0);
+
+// Epoch delete dialog
+const showEpochDeleteDialog = ref(false);
+const epochDeleteTarget = ref<{ epoch: number; name: string } | null>(null);
 
 // World name input (without regionId prefix)
 const worldNameInput = ref('');
@@ -1613,7 +1729,7 @@ const formData = ref({
   editor: [] as string[],
   supporter: [] as string[],
   player: [] as string[],
-  epoches: [] as { epoch: number; name: string; description: string; worldStatus: number }[],
+  epoches: [] as { epoch: number; name: string; description: string; worldStatus: number; splashScreen: string; splashScreenAudio: string }[],
   groundLevel: 20,
   oceanLevel: 50,
   groundBlockType: 'n:g',
@@ -1931,7 +2047,7 @@ const loadWorld = () => {
     editor: world.editor ? [...world.editor] : [],
     supporter: world.supporter ? [...world.supporter] : [],
     player: world.player ? [...world.player] : [],
-    epoches: world.epoches ? world.epoches.map(e => ({ ...e, worldStatus: e.worldStatus ?? 0 })) : [],
+    epoches: world.epoches ? world.epoches.map(e => ({ ...e, worldStatus: e.worldStatus ?? 0, splashScreen: e.splashScreen ?? '', splashScreenAudio: e.splashScreenAudio ?? '' })) : [],
     groundLevel: world.groundLevel,
     oceanLevel: world.oceanLevel,
     groundBlockType: world.groundBlockType,
@@ -1974,11 +2090,83 @@ const addEpoch = () => {
   const nextEpoch = formData.value.epoches.length > 0
     ? Math.max(...formData.value.epoches.map(e => e.epoch)) + 1
     : 0;
-  formData.value.epoches.push({ epoch: nextEpoch, name: '', description: '', worldStatus: 0 });
+  formData.value.epoches.push({ epoch: nextEpoch, name: '', description: '', worldStatus: 0, splashScreen: '', splashScreenAudio: '' });
 };
 
 const removeEpoch = (index: number) => {
   formData.value.epoches.splice(index, 1);
+};
+
+const handleEpochValidate = async () => {
+  if (isNew.value) return;
+  const worldId = formData.value.worldId;
+  if (!worldId) return;
+  try {
+    const { createJob } = useJobs(worldId);
+    const job = await createJob({
+      executor: 'epoch-validate',
+      title: `Validate epochs for ${worldId}`,
+      parameters: {},
+    });
+    jobWatchWorldId.value = worldId;
+    jobWatchJobId.value = job.id;
+    showJobWatch.value = true;
+  } catch (e) {
+    error.value = e instanceof Error ? e.message : 'Failed to start epoch validation';
+  }
+};
+
+const handleEpochCreate = async () => {
+  showEpochCreateDialog.value = false;
+  if (isNew.value) return;
+  const worldId = formData.value.worldId;
+  if (!worldId) return;
+  if (epochCreateSourceEpoch.value === epochCreateNewEpoch.value) return;
+  try {
+    const { createJob } = useJobs(worldId);
+    const job = await createJob({
+      executor: 'epoch-create',
+      title: `Create epoch ${epochCreateNewEpoch.value} from ${epochCreateSourceEpoch.value} for ${worldId}`,
+      parameters: {
+        sourceEpoch: String(epochCreateSourceEpoch.value),
+        newEpoch: String(epochCreateNewEpoch.value),
+      },
+    });
+    jobWatchWorldId.value = worldId;
+    jobWatchJobId.value = job.id;
+    showJobWatch.value = true;
+  } catch (e) {
+    error.value = e instanceof Error ? e.message : 'Failed to start epoch creation';
+  }
+};
+
+const confirmEpochDelete = (ep: { epoch: number; name: string }) => {
+  epochDeleteTarget.value = ep;
+  showEpochDeleteDialog.value = true;
+};
+
+const handleEpochDelete = async () => {
+  showEpochDeleteDialog.value = false;
+  if (isNew.value || !epochDeleteTarget.value) return;
+  const worldId = formData.value.worldId;
+  if (!worldId) return;
+  const epoch = epochDeleteTarget.value.epoch;
+  epochDeleteTarget.value = null;
+  try {
+    const { createJob } = useJobs(worldId);
+    const job = await createJob({
+      executor: 'epoch-delete',
+      title: `Delete epoch ${epoch} from ${worldId}`,
+      parameters: {
+        epoch: String(epoch),
+      },
+    });
+    jobWatchWorldId.value = worldId;
+    jobWatchJobId.value = job.id;
+    showJobWatch.value = true;
+  } catch (e) {
+    error.value = e instanceof Error ? e.message : 'Failed to start epoch deletion';
+  }
 };
 
 // Helper method to format date strings

@@ -8,4 +8,6 @@ export interface WEpochMeta {
   name: string;
   description: string;
   worldStatus: number;
+  splashScreen: string;
+  splashScreenAudio: string;
 }

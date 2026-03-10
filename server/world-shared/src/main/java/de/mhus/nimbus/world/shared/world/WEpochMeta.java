@@ -39,4 +39,14 @@ public class WEpochMeta {
     @Builder.Default
     private int worldStatus = 0;
 
+    /**
+     * Splash screen image URL shown when this epoch becomes active.
+     */
+    private String splashScreen;
+
+    /**
+     * Splash screen audio URL played when this epoch becomes active.
+     */
+    private String splashScreenAudio;
+
 }
