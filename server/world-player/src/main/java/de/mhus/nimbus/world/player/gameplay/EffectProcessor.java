@@ -27,6 +27,7 @@ public class EffectProcessor extends BaseEffectProcessor {
     private static final double AIR_DEGEN_RATE = -5.0;
     private static final double AIR_REGEN_RATE = 10.0;
     private static final double AIR_DEPLETED_HEALTH_DEGEN = -10.0;
+    private static final double UNDERWATER_THIRST_DEGEN_RATE = -3.0;
     private static final double SPRINT_STAMINA_DRAIN = -3.0;
 
     /**
@@ -91,7 +92,7 @@ public class EffectProcessor extends BaseEffectProcessor {
     }
 
     /**
-     * Apply underwater air depletion.
+     * Apply underwater air depletion and accelerated thirst.
      */
     private void applyUnderwaterAir(AdventureData data) {
         var air = data.getVital("air");
@@ -104,6 +105,10 @@ public class EffectProcessor extends BaseEffectProcessor {
                 if (health != null) {
                     health.setEffectiveRegenRate(health.getEffectiveRegenRate() + AIR_DEPLETED_HEALTH_DEGEN);
                 }
+            }
+            var thirst = data.getVital("thirst");
+            if (thirst != null) {
+                thirst.setEffectiveRegenRate(thirst.getEffectiveRegenRate() + UNDERWATER_THIRST_DEGEN_RATE);
             }
         } else if (!air.isFull()) {
             air.setEffectiveRegenRate(AIR_REGEN_RATE);

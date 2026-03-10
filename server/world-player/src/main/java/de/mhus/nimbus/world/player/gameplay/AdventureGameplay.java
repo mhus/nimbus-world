@@ -8,6 +8,7 @@ import de.mhus.nimbus.generated.types.Vector3;
 import de.mhus.nimbus.shared.utils.TypeUtil;
 import de.mhus.nimbus.world.player.gameplay.adventure.AttackAction;
 import de.mhus.nimbus.world.player.gameplay.adventure.CollectAction;
+import de.mhus.nimbus.world.player.gameplay.adventure.BuffAction;
 import de.mhus.nimbus.world.player.gameplay.adventure.DropItemAction;
 import de.mhus.nimbus.world.player.gameplay.adventure.EffectAction;
 import de.mhus.nimbus.world.player.gameplay.adventure.IncreaseExpAction;
@@ -101,6 +102,7 @@ public class AdventureGameplay extends BasicGameplay {
         actions.put("increase.skill", new IncreaseSkillAction(this));
         actions.put("dialog", new DialogAction(this));
         actions.put("drop.item", new DropItemAction(this));
+        actions.put("buff", new BuffAction(this));
     }
 
     // --- Condition delegation ---

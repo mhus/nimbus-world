@@ -554,7 +554,7 @@ watch(currentWorldId, () => {
 }, { immediate: true });
 
 onMounted(async () => {
-  await loadWorlds('mainOnly');
+  await loadWorlds('withCollections');
 
   if (currentWorldId.value && chestsComposable.value) {
     await chestsComposable.value.loadChests();
