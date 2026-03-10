@@ -102,6 +102,8 @@ public class GameplayService implements SessionAuthenticatedConsumer {
     /**
      * Session owner performs a simple interaction that is not targeting a block or entity (e.g. pressing a shortcut without target)
      * or fall, underwater, ...
+     * click, {"ac":"click","sc":"key7"}
+     * interact, {"ac":"interact","sc":"backpack","itemId":"apple"}
      *
      * @param session
      * @param action
@@ -120,7 +122,25 @@ public class GameplayService implements SessionAuthenticatedConsumer {
             return;
         }
         if (shortcutKey != null && !shortcutKey.isEmpty()) {
-            gameplay.onItemInteraction(session, shortcutKey, data);
+            String itemId = shortcutKey;
+            // Resolve shortcut key to actual itemId (unless it's a backpack direct reference)
+            if (!"backpack".equals(shortcutKey)) {
+                var character = session.getPlayer() != null ? session.getPlayer().character() : null;
+                var playerInfo = character != null ? character.getPublicData() : null;
+                if (playerInfo != null && playerInfo.getShortcuts() != null) {
+                    var shortcutDef = playerInfo.getShortcuts().get(shortcutKey);
+                    if (shortcutDef != null && shortcutDef.getItemId() != null) {
+                        itemId = shortcutDef.getItemId();
+                    } else {
+                        log.warn("No shortcut definition found for key '{}' in session {}", shortcutKey, session.getSessionId());
+                        return;
+                    }
+                } else {
+                    log.warn("No shortcuts available for session {}", session.getSessionId());
+                    return;
+                }
+            }
+            gameplay.onItemInteraction(session, itemId, data);
         } else {
             gameplay.onSimpleInteraction(session, action, data);
         }
