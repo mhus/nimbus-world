@@ -118,11 +118,10 @@
             <artifactId>junit-jupiter</artifactId>
             <scope>test</scope>
         </dependency>
-        <!-- MongoDB driver for integration tests -->
+        <!-- MongoDB driver (needed for SchemaAwareMongoTemplate extending MongoTemplate) -->
         <dependency>
             <groupId>org.mongodb</groupId>
             <artifactId>mongodb-driver-sync</artifactId>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>

@@ -35,7 +35,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 @DataMongoTest
 @Testcontainers
 @Import({SchemaVersionEventListener.class, SchemaVersionEventListenerIntegrationTest.TestConfig.class})
-@Disabled
 class SchemaVersionEventListenerIntegrationTest {
 
     /**

@@ -18,7 +18,6 @@ import static org.mockito.Mockito.when;
  * Unit tests for SchemaVersionEventListener.
  * Tests the automatic addition and validation of schema versions for MongoDB entities.
  */
-@Disabled
 @ExtendWith(MockitoExtension.class)
 class SchemaVersionEventListenerTest {
 
