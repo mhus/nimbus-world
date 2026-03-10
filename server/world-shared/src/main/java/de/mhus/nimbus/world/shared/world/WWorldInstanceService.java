@@ -263,6 +263,10 @@ public class WWorldInstanceService {
                 .description(description)
                 .creator(playerId)
                 .players(List.of(playerId))
+                .accessType(InstanceAccessType.PRIVATE)
+                .durationType(InstanceDurationType.SHORT)
+                .expiresAt(Instant.now().plus(java.time.Duration.ofHours(24)))
+                .epoch(0)
                 .enabled(true)
                 .build();
         instance.touchCreate();
@@ -315,6 +319,10 @@ public class WWorldInstanceService {
                 .description(description)
                 .creator(creator)
                 .players(players != null ? players : List.of())
+                .accessType(InstanceAccessType.PRIVATE)
+                .durationType(InstanceDurationType.SHORT)
+                .expiresAt(Instant.now().plus(java.time.Duration.ofHours(24)))
+                .epoch(0)
                 .enabled(true)
                 .build();
         instance.touchCreate();

@@ -18,6 +18,7 @@ export interface Instance {
   createdAt: string;
   updatedAt: string;
   enabled: boolean;
+  epoch: number;
 }
 
 export interface InstanceUpdateRequest {
@@ -57,6 +58,10 @@ class InstanceServiceFrontend {
 
   async deleteInstance(instanceId: string): Promise<void> {
     return apiService.delete<void>(`/control/instances/${instanceId}`);
+  }
+
+  async switchEpoch(instanceId: string, epoch: number): Promise<Instance> {
+    return apiService.put<Instance>(`/control/instances/${instanceId}/epoch`, { epoch });
   }
 
   async getStats(worldId?: string, creator?: string): Promise<InstanceStats> {

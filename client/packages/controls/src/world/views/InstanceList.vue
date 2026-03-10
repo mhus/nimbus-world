@@ -85,6 +85,7 @@
               <th>Instance ID</th>
               <th>Title</th>
               <th>World ID</th>
+              <th>Epoch</th>
               <th>Creator</th>
               <th>Players</th>
               <th>Access</th>
@@ -115,13 +116,18 @@
                 </div>
               </td>
               <td>
+                <span class="badge badge-sm badge-outline font-mono">
+                  {{ instance.epoch }}
+                </span>
+              </td>
+              <td>
                 <div class="font-mono text-xs" :title="instance.creator">
                   {{ instance.creator }}
                 </div>
               </td>
               <td>
                 <div class="badge badge-sm badge-outline">
-                  {{ instance.players.length }}/{{ instance.activePlayers?.length || 0 }}
+                  {{ instance.activePlayers?.length || 0 }}/{{ instance.players.length }}
                 </div>
               </td>
               <td>
@@ -152,6 +158,16 @@
               </td>
               <td>
                 <div class="flex gap-1">
+                  <button
+                    class="btn btn-ghost btn-xs"
+                    @click="handleSwitchEpoch(instance)"
+                    title="Switch epoch"
+                  >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                    </svg>
+                    Epoch
+                  </button>
                   <button
                     class="btn btn-ghost btn-xs"
                     @click="handleEdit(instance)"
@@ -296,6 +312,39 @@
       </div>
       <form method="dialog" class="modal-backdrop"><button>close</button></form>
     </dialog>
+    <!-- Epoch Switch Modal -->
+    <dialog ref="epochDialog" class="modal">
+      <div class="modal-box max-w-sm">
+        <h3 class="font-bold text-lg mb-4">Switch Epoch</h3>
+
+        <div v-if="epochInstance" class="space-y-4">
+          <div class="text-xs font-mono text-base-content/50">{{ epochInstance.instanceId }}</div>
+          <div class="text-sm">Current epoch: <span class="badge badge-sm badge-outline font-mono">{{ epochInstance.epoch }}</span></div>
+
+          <div class="form-control">
+            <label class="label"><span class="label-text">New Epoch</span></label>
+            <input
+              v-model.number="newEpochValue"
+              type="number"
+              min="0"
+              class="input input-bordered w-full"
+              @keyup.enter="handleConfirmEpochSwitch"
+            />
+          </div>
+
+          <div v-if="epochError" class="alert alert-error text-sm">{{ epochError }}</div>
+        </div>
+
+        <div class="modal-action">
+          <button class="btn btn-ghost" @click="closeEpochDialog">Cancel</button>
+          <button class="btn btn-primary" :disabled="epochSaving" @click="handleConfirmEpochSwitch">
+            <span v-if="epochSaving" class="loading loading-spinner loading-xs"></span>
+            Switch
+          </button>
+        </div>
+      </div>
+      <form method="dialog" class="modal-backdrop"><button>close</button></form>
+    </dialog>
   </div>
 </template>
 
@@ -323,6 +372,13 @@ const editForm = ref({
 });
 const editSaving = ref(false);
 const editError = ref<string | null>(null);
+
+// Epoch switch modal state
+const epochDialog = ref<HTMLDialogElement | null>(null);
+const epochInstance = ref<Instance | null>(null);
+const newEpochValue = ref(0);
+const epochSaving = ref(false);
+const epochError = ref<string | null>(null);
 
 // Paging
 const currentPage = ref(1);
@@ -489,6 +545,39 @@ const handleDelete = async (instanceId: string, title: string) => {
   } catch (e) {
     error.value = e instanceof Error ? e.message : 'Failed to delete instance';
     console.error('[InstanceList] Failed to delete instance:', e);
+  }
+};
+
+const handleSwitchEpoch = (instance: Instance) => {
+  epochInstance.value = instance;
+  newEpochValue.value = instance.epoch;
+  epochError.value = null;
+  epochDialog.value?.showModal();
+};
+
+const closeEpochDialog = () => {
+  epochDialog.value?.close();
+  epochInstance.value = null;
+};
+
+const handleConfirmEpochSwitch = async () => {
+  if (!epochInstance.value) return;
+  if (newEpochValue.value === epochInstance.value.epoch) {
+    epochError.value = 'Epoch is already ' + newEpochValue.value;
+    return;
+  }
+  epochSaving.value = true;
+  epochError.value = null;
+
+  try {
+    await instanceServiceFrontend.switchEpoch(epochInstance.value.instanceId, newEpochValue.value);
+    closeEpochDialog();
+    await loadInstances();
+  } catch (e) {
+    epochError.value = e instanceof Error ? e.message : 'Failed to switch epoch';
+    console.error('[InstanceList] Failed to switch epoch:', e);
+  } finally {
+    epochSaving.value = false;
   }
 };
 

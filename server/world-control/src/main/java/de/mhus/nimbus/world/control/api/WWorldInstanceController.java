@@ -1,10 +1,7 @@
 package de.mhus.nimbus.world.control.api;
 
 import de.mhus.nimbus.world.shared.rest.BaseEditorController;
-import de.mhus.nimbus.world.shared.world.InstanceAccessType;
-import de.mhus.nimbus.world.shared.world.InstanceDurationType;
-import de.mhus.nimbus.world.shared.world.WWorldInstance;
-import de.mhus.nimbus.world.shared.world.WWorldInstanceService;
+import de.mhus.nimbus.world.shared.world.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -26,6 +23,7 @@ import java.util.Map;
 public class WWorldInstanceController extends BaseEditorController {
 
     private final WWorldInstanceService instanceService;
+    private final WWorldService worldService;
 
     // DTOs
     public record InstanceResponse(
@@ -42,7 +40,8 @@ public class WWorldInstanceController extends BaseEditorController {
             Instant expiresAt,
             Instant createdAt,
             Instant updatedAt,
-            boolean enabled
+            boolean enabled,
+            int epoch
     ) {}
 
     public record InstanceUpdateRequest(
@@ -62,14 +61,15 @@ public class WWorldInstanceController extends BaseEditorController {
                 instance.getTitle(),
                 instance.getDescription(),
                 instance.getCreator(),
-                instance.getPlayers(),
-                instance.getActivePlayers(),
-                instance.getAccessType(),
-                instance.getDurationType(),
+                instance.getPlayers() != null ? instance.getPlayers() : List.of(),
+                instance.getActivePlayers() != null ? instance.getActivePlayers() : List.of(),
+                instance.getAccessType() != null ? instance.getAccessType() : InstanceAccessType.PRIVATE,
+                instance.getDurationType() != null ? instance.getDurationType() : InstanceDurationType.SHORT,
                 instance.getExpiresAt(),
                 instance.getCreatedAt(),
                 instance.getUpdatedAt(),
-                instance.isEnabled()
+                instance.isEnabled(),
+                instance.getEpoch()
         );
     }
 
@@ -168,6 +168,60 @@ public class WWorldInstanceController extends BaseEditorController {
         try {
             instanceService.delete(instanceId);
             return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+        } catch (Exception e) {
+            return bad(e.getMessage());
+        }
+    }
+
+    /**
+     * Switch epoch for a world instance.
+     * PUT /control/instances/{instanceId}/epoch
+     * Validates that the epoch exists in the world's epoch definitions.
+     */
+    @PutMapping("/{instanceId}/epoch")
+    public ResponseEntity<?> switchEpoch(
+            @PathVariable String instanceId,
+            @RequestBody Map<String, Integer> body) {
+
+        var error = validateId(instanceId, "instanceId");
+        if (error != null) return error;
+
+        Integer newEpoch = body.get("epoch");
+        if (newEpoch == null) {
+            return bad("epoch is required");
+        }
+
+        try {
+            // Find instance to get worldId
+            var instanceOpt = instanceService.findByInstanceId(instanceId);
+            if (instanceOpt.isEmpty()) {
+                return notFound("Instance not found: " + instanceId);
+            }
+
+            // Validate epoch exists in world definition
+            String worldId = instanceOpt.get().getWorldId();
+            var worldOpt = worldService.getByWorldId(worldId);
+            if (worldOpt.isEmpty()) {
+                return bad("World not found: " + worldId);
+            }
+
+            List<WEpochMeta> epoches = worldOpt.get().getEpoches();
+            boolean epochExists = epoches != null && epoches.stream()
+                    .anyMatch(e -> e.getEpoch() == newEpoch);
+            if (!epochExists) {
+                return bad("Epoch " + newEpoch + " does not exist in world " + worldId);
+            }
+
+            boolean updated = instanceService.switchInstanceEpoch(instanceId, newEpoch);
+            if (!updated) {
+                return bad("Epoch switch failed for instance: " + instanceId);
+            }
+
+            // Return updated instance
+            var updatedInstance = instanceService.findByInstanceId(instanceId);
+            return updatedInstance
+                    .<ResponseEntity<?>>map(inst -> ResponseEntity.ok(toResponse(inst)))
+                    .orElseGet(() -> bad("Instance disappeared after epoch switch"));
         } catch (Exception e) {
             return bad(e.getMessage());
         }
