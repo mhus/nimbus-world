@@ -83,12 +83,17 @@ public class HexGridController extends BaseEditorController {
      * GET /control/worlds/{worldId}/hexgrid
      */
     @GetMapping
-    public ResponseEntity<?> list(@PathVariable String worldId) {
+    public ResponseEntity<?> list(
+            @PathVariable String worldId,
+            @RequestParam(required = false) Integer epoch) {
         var error = validateId(worldId, "worldId");
         if (error != null) return error;
 
         try {
-            List<HexGridResponse> result = hexGridService.findByWorldId(worldId).stream()
+            List<WHexGrid> hexGrids = epoch != null
+                    ? hexGridService.findByWorldId(worldId, epoch)
+                    : hexGridService.findByWorldId(worldId);
+            List<HexGridResponse> result = hexGrids.stream()
                     .map(this::toResponse)
                     .toList();
             return ResponseEntity.ok(result);
@@ -102,12 +107,17 @@ public class HexGridController extends BaseEditorController {
      * GET /control/worlds/{worldId}/hexgrid/enabled
      */
     @GetMapping("/enabled")
-    public ResponseEntity<?> listEnabled(@PathVariable String worldId) {
+    public ResponseEntity<?> listEnabled(
+            @PathVariable String worldId,
+            @RequestParam(required = false) Integer epoch) {
         var error = validateId(worldId, "worldId");
         if (error != null) return error;
 
         try {
-            List<HexGridResponse> result = hexGridService.findAllEnabled(worldId).stream()
+            List<WHexGrid> hexGrids = epoch != null
+                    ? hexGridService.findAllEnabled(worldId, epoch)
+                    : hexGridService.findAllEnabled(worldId);
+            List<HexGridResponse> result = hexGrids.stream()
                     .map(this::toResponse)
                     .toList();
             return ResponseEntity.ok(result);

@@ -64,6 +64,19 @@ public class WLayerOverlayService {
      * @return Merged ChunkData or empty Optional if no layers
      */
     public Optional<ChunkData> generateChunk(String worldId, String chunkKey, List<WLayer> layers) {
+        return generateChunk(worldId, chunkKey, layers, null);
+    }
+
+    /**
+     * Generate final chunk by overlaying the given layers with epoch-aware hex grid lookup.
+     *
+     * @param worldId  World identifier
+     * @param chunkKey Chunk key (format: "cx:cz")
+     * @param layers   Pre-selected layers to overlay (sorted by order)
+     * @param epoch    Optional epoch for hex grid filtering (null = use first found)
+     * @return Merged ChunkData or empty Optional if no layers
+     */
+    public Optional<ChunkData> generateChunk(String worldId, String chunkKey, List<WLayer> layers, Integer epoch) {
 
         var world = worldService.getByWorldId(worldId).orElseThrow(
                 () -> new IllegalArgumentException("World not found: " + worldId)
@@ -125,7 +138,7 @@ public class WLayerOverlayService {
         if (calculateDeny(world, heightData))
             result.setDeny(true);
 
-        List<AreaData> areaData = calculateAreaData(world, cx, cz);
+        List<AreaData> areaData = calculateAreaData(world, cx, cz, epoch);
         result.setA(areaData);
 
         log.debug("Generated chunk {} from {} layers, {} blocks",
@@ -150,13 +163,12 @@ public class WLayerOverlayService {
         return false;
     }
 
-    private List<AreaData> calculateAreaData(WWorld world, int cx, int cz) {
+    private List<AreaData> calculateAreaData(WWorld world, int cx, int cz, Integer epoch) {
         var hexes = HexMathUtil.getHexesForChunk(world, cx, cz);
         var mainHex = HexMathUtil.getDominantHexForChunk(world, cx, cz);
-        var mainGridOpt = hexGridService.findByWorldIdAndPosition(
-                world.getWorldId(),
-                mainHex
-        );
+        var mainGridOpt = epoch != null
+                ? hexGridService.findByWorldIdAndPosition(world.getWorldId(), mainHex, epoch)
+                : hexGridService.findByWorldIdAndPosition(world.getWorldId(), mainHex);
         var chunkSize = world.getPublicData().getChunkSize();
         var minX = cx * chunkSize;
         var minZ = cz * chunkSize;
@@ -165,10 +177,9 @@ public class WLayerOverlayService {
 
         List<AreaData> areaDataList = new ArrayList<>();
         for (var hex : hexes) {
-            var gridOpt = hexGridService.findByWorldIdAndPosition(
-                    world.getWorldId(),
-                    hex
-            );
+            var gridOpt = epoch != null
+                    ? hexGridService.findByWorldIdAndPosition(world.getWorldId(), hex, epoch)
+                    : hexGridService.findByWorldIdAndPosition(world.getWorldId(), hex);
             if (gridOpt.isEmpty()) continue;
             var grid = gridOpt.get();
             if (grid.getAreas() == null) continue;

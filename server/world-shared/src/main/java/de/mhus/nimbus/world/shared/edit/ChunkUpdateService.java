@@ -169,8 +169,9 @@ public class ChunkUpdateService {
                 continue;
             }
 
-            // Generate chunk from specific layer subset
-            Optional<ChunkData> chunkDataOpt = overlayService.generateChunk(worldId, chunkKey, layers);
+            // Generate chunk from specific layer subset with epoch for hex grid filtering
+            Integer representativeEpoch = epoches.isEmpty() ? null : epoches.getFirst();
+            Optional<ChunkData> chunkDataOpt = overlayService.generateChunk(worldId, chunkKey, layers, representativeEpoch);
 
             if (chunkDataOpt.isEmpty()) {
                 log.debug("Empty chunk for epoch group {}: world={} chunk={}",
