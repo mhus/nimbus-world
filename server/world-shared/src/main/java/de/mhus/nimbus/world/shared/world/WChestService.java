@@ -555,4 +555,13 @@ public class WChestService {
             }
         }
     }
+
+    /**
+     * Delete all chests for a world (used for instance cleanup).
+     */
+    @Transactional
+    public void deleteByWorldId(String worldId) {
+        repository.deleteByWorldId(worldId);
+        log.info("Deleted all chests for worldId={}", worldId);
+    }
 }

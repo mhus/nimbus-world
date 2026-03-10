@@ -391,4 +391,13 @@ public class WEntityService {
                 .collect(java.util.stream.Collectors.toList());
     }
 
+    /**
+     * Delete all entities for a world (used for instance cleanup).
+     */
+    @Transactional
+    public void deleteByWorldId(String worldId) {
+        repository.deleteByWorldId(worldId);
+        log.info("Deleted all entities for worldId={}", worldId);
+    }
+
 }

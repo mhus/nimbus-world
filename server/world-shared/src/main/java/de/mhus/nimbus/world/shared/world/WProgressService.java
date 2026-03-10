@@ -344,4 +344,13 @@ public class WProgressService {
         repository.deleteByWorldIdAndPlayerId(worldId, playerId);
         log.debug("Deleted all progress: worldId={}, playerId={}", worldId, playerId);
     }
+
+    /**
+     * Delete all progress for a world (used for instance cleanup).
+     */
+    @Transactional
+    public void deleteByWorldId(String worldId) {
+        repository.deleteByWorldId(worldId);
+        log.info("Deleted all progress for worldId={}", worldId);
+    }
 }

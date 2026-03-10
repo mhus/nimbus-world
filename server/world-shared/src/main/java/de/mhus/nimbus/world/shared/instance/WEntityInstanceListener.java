@@ -1,7 +1,7 @@
 package de.mhus.nimbus.world.shared.instance;
 
 import de.mhus.nimbus.shared.types.WorldId;
-import de.mhus.nimbus.world.shared.world.WEntityRepository;
+import de.mhus.nimbus.world.shared.world.WEntityService;
 import de.mhus.nimbus.world.shared.world.WWorldInstance;
 import de.mhus.nimbus.world.shared.world.WWorldInstanceListener;
 import de.mhus.nimbus.world.shared.world.WorldInstanceEvent;
@@ -17,7 +17,7 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class WEntityInstanceListener implements WWorldInstanceListener {
 
-    private final WEntityRepository repository;
+    private final WEntityService entityService;
 
     @Override
     public void worldInstanceCreated(WorldInstanceEvent event) {
@@ -32,7 +32,7 @@ public class WEntityInstanceListener implements WWorldInstanceListener {
         if (instanceWorldId == null || instanceWorldId.isBlank()) return;
         if (!WorldId.unchecked(instanceWorldId).isInstance()) return;
 
-        repository.deleteByWorldId(instanceWorldId);
+        entityService.deleteByWorldId(instanceWorldId);
         log.info("Deleted WEntity data for instance {}", instanceWorldId);
     }
 }

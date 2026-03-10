@@ -1,7 +1,7 @@
 package de.mhus.nimbus.world.shared.instance;
 
 import de.mhus.nimbus.shared.types.WorldId;
-import de.mhus.nimbus.world.shared.world.WProgressRepository;
+import de.mhus.nimbus.world.shared.world.WProgressService;
 import de.mhus.nimbus.world.shared.world.WWorldInstance;
 import de.mhus.nimbus.world.shared.world.WWorldInstanceListener;
 import de.mhus.nimbus.world.shared.world.WorldInstanceEvent;
@@ -18,7 +18,7 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class WProgressInstanceListener implements WWorldInstanceListener {
 
-    private final WProgressRepository repository;
+    private final WProgressService progressService;
 
     @Override
     public void worldInstanceCreated(WorldInstanceEvent event) {
@@ -33,7 +33,7 @@ public class WProgressInstanceListener implements WWorldInstanceListener {
         if (instanceWorldId == null || instanceWorldId.isBlank()) return;
         if (!WorldId.unchecked(instanceWorldId).isInstance()) return;
 
-        repository.deleteByWorldId(instanceWorldId);
+        progressService.deleteByWorldId(instanceWorldId);
         log.info("Deleted WProgress data for instance {}", instanceWorldId);
     }
 }

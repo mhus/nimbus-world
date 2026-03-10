@@ -422,4 +422,13 @@ public class WItemPositionService {
                 .findFirst();
     }
 
+    /**
+     * Delete all item positions for a world (used for instance cleanup).
+     */
+    @Transactional
+    public void deleteByWorldId(String worldId) {
+        repository.deleteByWorldId(worldId);
+        log.info("Deleted all item positions for worldId={}", worldId);
+    }
+
 }

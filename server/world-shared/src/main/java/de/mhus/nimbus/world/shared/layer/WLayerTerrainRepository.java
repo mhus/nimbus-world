@@ -25,4 +25,6 @@ public interface WLayerTerrainRepository extends MongoRepository<WLayerTerrain, 
     Optional<WLayerTerrain> findByWorldIdAndLayerDataIdAndChunkKey(String worldId, String layerDataId, String chunkKey);
 
     List<WLayerTerrain> findByWorldIdAndLayerDataId(String worldId, String layerDataId);
+
+    long countByWorldIdAndLayerDataId(String worldId, String layerDataId);
 }

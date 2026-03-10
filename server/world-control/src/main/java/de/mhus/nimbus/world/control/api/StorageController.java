@@ -1,7 +1,6 @@
 package de.mhus.nimbus.world.control.api;
 
 import de.mhus.nimbus.shared.storage.StorageData;
-import de.mhus.nimbus.shared.storage.StorageDataRepository;
 import de.mhus.nimbus.shared.storage.StorageService;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -35,7 +34,6 @@ import java.util.Map;
 public class StorageController {
 
     private final StorageService storageService;
-    private final StorageDataRepository storageDataRepository;
     private final MongoTemplate mongoTemplate;
 
     /**

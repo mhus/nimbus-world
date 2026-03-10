@@ -1,7 +1,7 @@
 package de.mhus.nimbus.world.shared.instance;
 
 import de.mhus.nimbus.shared.types.WorldId;
-import de.mhus.nimbus.world.shared.world.WItemPositionRepository;
+import de.mhus.nimbus.world.shared.world.WItemPositionService;
 import de.mhus.nimbus.world.shared.world.WWorldInstance;
 import de.mhus.nimbus.world.shared.world.WWorldInstanceListener;
 import de.mhus.nimbus.world.shared.world.WorldInstanceEvent;
@@ -17,7 +17,7 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class WItemPositionInstanceListener implements WWorldInstanceListener {
 
-    private final WItemPositionRepository repository;
+    private final WItemPositionService itemPositionService;
 
     @Override
     public void worldInstanceCreated(WorldInstanceEvent event) {
@@ -32,7 +32,7 @@ public class WItemPositionInstanceListener implements WWorldInstanceListener {
         if (instanceWorldId == null || instanceWorldId.isBlank()) return;
         if (!WorldId.unchecked(instanceWorldId).isInstance()) return;
 
-        repository.deleteByWorldId(instanceWorldId);
+        itemPositionService.deleteByWorldId(instanceWorldId);
         log.info("Deleted WItemPosition data for instance {}", instanceWorldId);
     }
 }

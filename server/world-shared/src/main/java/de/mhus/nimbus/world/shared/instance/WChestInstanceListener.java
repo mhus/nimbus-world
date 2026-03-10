@@ -1,7 +1,7 @@
 package de.mhus.nimbus.world.shared.instance;
 
 import de.mhus.nimbus.shared.types.WorldId;
-import de.mhus.nimbus.world.shared.world.WChestRepository;
+import de.mhus.nimbus.world.shared.world.WChestService;
 import de.mhus.nimbus.world.shared.world.WWorldInstance;
 import de.mhus.nimbus.world.shared.world.WWorldInstanceListener;
 import de.mhus.nimbus.world.shared.world.WorldInstanceEvent;
@@ -17,7 +17,7 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class WChestInstanceListener implements WWorldInstanceListener {
 
-    private final WChestRepository repository;
+    private final WChestService chestService;
 
     @Override
     public void worldInstanceCreated(WorldInstanceEvent event) {
@@ -32,7 +32,7 @@ public class WChestInstanceListener implements WWorldInstanceListener {
         if (instanceWorldId == null || instanceWorldId.isBlank()) return;
         if (!WorldId.unchecked(instanceWorldId).isInstance()) return;
 
-        repository.deleteByWorldId(instanceWorldId);
+        chestService.deleteByWorldId(instanceWorldId);
         log.info("Deleted WChest data for instance {}", instanceWorldId);
     }
 }

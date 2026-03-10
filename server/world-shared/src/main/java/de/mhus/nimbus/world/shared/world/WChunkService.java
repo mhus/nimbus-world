@@ -1042,4 +1042,25 @@ public class WChunkService implements StorageProvider {
         );
     }
 
+    /**
+     * Find all chunk metadata for a world (no data loading).
+     */
+    public List<WChunk> findChunksByWorldId(String worldId) {
+        return repository.findByWorldId(worldId);
+    }
+
+    /**
+     * Search chunk metadata by chunk key substring.
+     */
+    public List<WChunk> findChunksByWorldIdAndQuery(String worldId, String query) {
+        return repository.findByWorldIdAndChunkContaining(worldId, query);
+    }
+
+    /**
+     * Find single chunk metadata by world and chunk key.
+     */
+    public Optional<WChunk> findChunkByWorldIdAndKey(String worldId, String chunkKey) {
+        return repository.findByWorldIdAndChunk(worldId, chunkKey);
+    }
+
 }

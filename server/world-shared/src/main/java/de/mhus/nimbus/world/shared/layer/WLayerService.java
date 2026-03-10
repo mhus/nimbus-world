@@ -2348,4 +2348,12 @@ public class WLayerService implements StorageProvider {
                 String.class
         );
     }
+
+    /**
+     * Count terrain chunks for a layer.
+     */
+    @Transactional(readOnly = true)
+    public long countTerrainChunks(String worldId, String layerDataId) {
+        return terrainRepository.countByWorldIdAndLayerDataId(worldId, layerDataId);
+    }
 }

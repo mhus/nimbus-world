@@ -1,16 +1,13 @@
 package de.mhus.nimbus.world.control.api;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import de.mhus.nimbus.shared.storage.StorageService;
 import de.mhus.nimbus.world.shared.layer.*;
 import de.mhus.nimbus.world.shared.world.WWorld;
-import de.mhus.nimbus.world.shared.world.WWorldRepository;
+import de.mhus.nimbus.world.shared.world.WWorldService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.io.InputStream;
 import java.util.*;
 
 /**
@@ -23,25 +20,12 @@ import java.util.*;
 @Slf4j
 public class ELayerBlockGridController {
 
-    private final WLayerRepository layerRepository;
-    private final WLayerTerrainRepository terrainRepository;
     private final WLayerService layerService;
-    private final WWorldRepository worldRepository;
-    private final StorageService storageService;
-
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final WWorldService worldService;
 
     /**
      * Get block coordinates from WLayerTerrain chunks within a specific area.
      * Loads only chunks that intersect with the requested cubic area.
-     *
-     * @param worldId World ID
-     * @param layerId Layer ID
-     * @param centerX Center X coordinate
-     * @param centerY Center Y coordinate
-     * @param centerZ Center Z coordinate
-     * @param radius Radius in blocks (half-size of the cubic area)
-     * @return List of block coordinates with optional color
      */
     @GetMapping("/terrain/blocks")
     public ResponseEntity<?> getTerrainBlocks(
@@ -57,19 +41,15 @@ public class ELayerBlockGridController {
                 worldId, layerId, centerX, centerY, centerZ, radiusXZ, radiusY);
 
         // Load layer
-        Optional<WLayer> layerOpt = layerRepository.findById(layerId);
+        Optional<WLayer> layerOpt = layerService.findById(layerId);
         if (layerOpt.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
 
         WLayer layer = layerOpt.get();
 
-        // Both GROUND and MODEL layers can have terrain data
-        // GROUND: terrain is the primary storage
-        // MODEL: terrain is the projection/cache of models after sync
-
         // Load world to get chunkSize
-        Optional<WWorld> worldOpt = worldRepository.findByWorldId(worldId);
+        Optional<WWorld> worldOpt = worldService.getByWorldId(worldId);
         if (worldOpt.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
@@ -98,74 +78,42 @@ public class ELayerBlockGridController {
                 chunksChecked++;
                 String chunkKey = chunkX + ":" + chunkZ;
 
-                // Load this specific chunk
-                Optional<WLayerTerrain> terrainOpt = terrainRepository.findByWorldIdAndLayerDataIdAndChunkKey(
+                // Load chunk data via service
+                Optional<LayerChunkData> chunkDataOpt = layerService.loadTerrainChunk(
                         layer.getWorldId(), layer.getLayerDataId(), chunkKey);
 
-                if (terrainOpt.isEmpty()) {
+                if (chunkDataOpt.isEmpty()) {
                     log.trace("Chunk {} not found for layerDataId={}", chunkKey, layer.getLayerDataId());
                     continue;
                 }
 
                 chunksFound++;
+                LayerChunkData chunkData = chunkDataOpt.get();
 
-                WLayerTerrain terrain = terrainOpt.get();
-                if (terrain.getStorageId() == null) {
-                    continue;
-                }
+                // Extract blocks from chunk data
+                if (chunkData.getBlocks() != null) {
+                    for (LayerBlock layerBlock : chunkData.getBlocks()) {
+                        if (layerBlock.getBlock() == null) continue;
 
-                try {
-                    // Load chunk data from storage
-                    InputStream stream = storageService.load(terrain.getStorageId());
-                    if (stream == null) {
-                        log.warn("Chunk data not found for storageId={}", terrain.getStorageId());
-                        continue;
-                    }
+                        var position = layerBlock.getBlock().getPosition();
+                        if (position == null) continue;
 
-                    // Decompress if needed
-                    InputStream dataStream = stream;
-                    if (terrain.isCompressed()) {
-                        dataStream = new java.util.zip.GZIPInputStream(stream);
-                    }
+                        int worldX = (int) position.getX();
+                        int worldY = (int) position.getY();
+                        int worldZ = (int) position.getZ();
 
-                    LayerChunkData chunkData = objectMapper.readValue(dataStream, LayerChunkData.class);
-                    dataStream.close();
+                        Map<String, Object> coord = new HashMap<>();
+                        coord.put("x", worldX);
+                        coord.put("y", worldY);
+                        coord.put("z", worldZ);
 
-                    // Extract blocks from chunk data
-                    // NOTE: Positions in LayerChunkData are already absolute world coordinates!
-                    if (chunkData.getBlocks() != null) {
-                        for (LayerBlock layerBlock : chunkData.getBlocks()) {
-                            if (layerBlock.getBlock() == null) {
-                                continue;
-                            }
-
-                            var position = layerBlock.getBlock().getPosition();
-                            if (position == null) {
-                                continue;
-                            }
-
-                            // Positions are already in world coordinates
-                            int worldX = (int) position.getX();
-                            int worldY = (int) position.getY();
-                            int worldZ = (int) position.getZ();
-
-                            // Add all blocks from loaded chunks (no additional filtering)
-                            Map<String, Object> coord = new HashMap<>();
-                            coord.put("x", worldX);
-                            coord.put("y", worldY);
-                            coord.put("z", worldZ);
-
-                            // Optional: Add color based on group
-                            String groupId = layerBlock.getGroup();
-                            if (groupId != null && !groupId.isEmpty()) {
-                                coord.put("color", getGroupColor(groupId));
-                            }
-
-                            blockCoordinates.add(coord);
+                        String groupId = layerBlock.getGroup();
+                        if (groupId != null && !groupId.isEmpty()) {
+                            coord.put("color", getGroupColor(groupId));
                         }
+
+                        blockCoordinates.add(coord);
                     }
-                } catch (Exception e) {
-                    log.error("Failed to load chunk data for storageId={}", terrain.getStorageId(), e);
                 }
             }
         }
@@ -173,12 +121,12 @@ public class ELayerBlockGridController {
         log.info("Terrain blocks: checked {} chunks, found {} chunks, returning {} block coordinates (center={},{},{}, radiusXZ={}, radiusY={})",
                 chunksChecked, chunksFound, blockCoordinates.size(), centerX, centerY, centerZ, radiusXZ, radiusY);
 
-        // If no blocks found and center is at origin, try to find any chunk as a hint
+        // If no blocks found and center is at origin, provide a hint
         String hint = null;
         if (blockCoordinates.isEmpty() && centerX == 0 && centerY == 64 && centerZ == 0) {
-            List<WLayerTerrain> anyChunks = terrainRepository.findByWorldIdAndLayerDataId(layer.getWorldId(), layer.getLayerDataId());
-            if (!anyChunks.isEmpty()) {
-                hint = "No blocks at default center (0,64,0). Found " + anyChunks.size() + " chunks total. Try navigating to find blocks.";
+            long chunkCount = layerService.countTerrainChunks(layer.getWorldId(), layer.getLayerDataId());
+            if (chunkCount > 0) {
+                hint = "No blocks at default center (0,64,0). Found " + chunkCount + " chunks total. Try navigating to find blocks.";
             } else {
                 hint = "No terrain chunks found for this layer.";
             }
@@ -198,13 +146,6 @@ public class ELayerBlockGridController {
 
     /**
      * Get detailed block information from WLayerTerrain.
-     *
-     * @param worldId World ID
-     * @param layerId Layer ID
-     * @param x Block X coordinate
-     * @param y Block Y coordinate
-     * @param z Block Z coordinate
-     * @return Block details including LayerBlock wrapper
      */
     @GetMapping("/terrain/block/{x}/{y}/{z}")
     public ResponseEntity<?> getTerrainBlockDetails(
@@ -217,89 +158,52 @@ public class ELayerBlockGridController {
         log.debug("Loading terrain block details for worldId={}, layerId={}, pos=({},{},{})",
                 worldId, layerId, x, y, z);
 
-        // Load layer
-        Optional<WLayer> layerOpt = layerRepository.findById(layerId);
+        Optional<WLayer> layerOpt = layerService.findById(layerId);
         if (layerOpt.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
 
         WLayer layer = layerOpt.get();
 
-        // Both GROUND and MODEL layers can have terrain data
-
-        // Load world to get chunkSize
-        Optional<WWorld> worldOpt = worldRepository.findByWorldId(worldId);
+        Optional<WWorld> worldOpt = worldService.getByWorldId(worldId);
         if (worldOpt.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
         int chunkSize = worldOpt.get().getPublicData().getChunkSize();
 
-        // Calculate chunk coordinates
         int chunkX = Math.floorDiv(x, chunkSize);
         int chunkZ = Math.floorDiv(z, chunkSize);
         String chunkKey = chunkX + ":" + chunkZ;
 
-        // Load terrain chunk
-        Optional<WLayerTerrain> terrainOpt = terrainRepository.findByWorldIdAndLayerDataIdAndChunkKey(
+        Optional<LayerChunkData> chunkDataOpt = layerService.loadTerrainChunk(
                 layer.getWorldId(), layer.getLayerDataId(), chunkKey);
 
-        if (terrainOpt.isEmpty() || terrainOpt.get().getStorageId() == null) {
+        if (chunkDataOpt.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
 
-        WLayerTerrain terrain = terrainOpt.get();
+        LayerChunkData chunkData = chunkDataOpt.get();
 
-        try {
-            // Load chunk data from storage
-            InputStream stream = storageService.load(terrain.getStorageId());
-            if (stream == null) {
-                return ResponseEntity.notFound().build();
-            }
+        if (chunkData.getBlocks() != null) {
+            for (LayerBlock layerBlock : chunkData.getBlocks()) {
+                if (layerBlock.getBlock() == null || layerBlock.getBlock().getPosition() == null) continue;
 
-            // Decompress if needed
-            InputStream dataStream = stream;
-            if (terrain.isCompressed()) {
-                dataStream = new java.util.zip.GZIPInputStream(stream);
-            }
-
-            LayerChunkData chunkData = objectMapper.readValue(dataStream, LayerChunkData.class);
-            dataStream.close();
-
-            // Find block at specified position (positions in chunk are already absolute world coordinates)
-            if (chunkData.getBlocks() != null) {
-                for (LayerBlock layerBlock : chunkData.getBlocks()) {
-                    if (layerBlock.getBlock() == null || layerBlock.getBlock().getPosition() == null) {
-                        continue;
-                    }
-
-                    var pos = layerBlock.getBlock().getPosition();
-                    if ((int) pos.getX() == x && (int) pos.getY() == y && (int) pos.getZ() == z) {
-                        // Return LayerBlock wrapper with block and metadata
-                        return ResponseEntity.ok(Map.of(
-                                "block", layerBlock.getBlock(),
-                                "group", layerBlock.getGroup(),
-                                "metadata", layerBlock.getMetadata() != null ? layerBlock.getMetadata() : ""
-                        ));
-                    }
+                var pos = layerBlock.getBlock().getPosition();
+                if ((int) pos.getX() == x && (int) pos.getY() == y && (int) pos.getZ() == z) {
+                    return ResponseEntity.ok(Map.of(
+                            "block", layerBlock.getBlock(),
+                            "group", layerBlock.getGroup(),
+                            "metadata", layerBlock.getMetadata() != null ? layerBlock.getMetadata() : ""
+                    ));
                 }
             }
-
-            return ResponseEntity.notFound().build();
-        } catch (Exception e) {
-            log.error("Failed to load block details", e);
-            return ResponseEntity.internalServerError()
-                    .body(Map.of("error", e.getMessage()));
         }
+
+        return ResponseEntity.notFound().build();
     }
 
     /**
      * Get all block coordinates from WLayerModel.
-     * Returns only coordinates and optional color for each block.
-     *
-     * @param worldId World ID
-     * @param layerId Layer ID
-     * @param modelId Model ID
-     * @return List of block coordinates with optional color
      */
     @GetMapping("/models/{modelId}/blocks")
     public ResponseEntity<?> getModelBlocks(
@@ -310,8 +214,7 @@ public class ELayerBlockGridController {
         log.debug("Loading model blocks for worldId={}, layerId={}, modelId={}",
                 worldId, layerId, modelId);
 
-        // Load layer
-        Optional<WLayer> layerOpt = layerRepository.findById(layerId);
+        Optional<WLayer> layerOpt = layerService.findById(layerId);
         if (layerOpt.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
@@ -321,7 +224,6 @@ public class ELayerBlockGridController {
             return ResponseEntity.badRequest().body(Map.of("error", "Layer is not MODEL type"));
         }
 
-        // Load model
         Optional<WLayerModel> modelOpt = layerService.loadModelById(modelId);
         if (modelOpt.isEmpty()) {
             return ResponseEntity.notFound().build();
@@ -329,14 +231,11 @@ public class ELayerBlockGridController {
 
         WLayerModel model = modelOpt.get();
 
-        // Collect all block coordinates (relative positions from model)
         List<Map<String, Object>> blockCoordinates = new ArrayList<>();
 
         if (model.getContent() != null) {
             for (LayerBlock layerBlock : model.getContent()) {
-                if (layerBlock.getBlock() == null || layerBlock.getBlock().getPosition() == null) {
-                    continue;
-                }
+                if (layerBlock.getBlock() == null || layerBlock.getBlock().getPosition() == null) continue;
 
                 var position = layerBlock.getBlock().getPosition();
 
@@ -345,7 +244,6 @@ public class ELayerBlockGridController {
                 coord.put("y", (int) position.getY());
                 coord.put("z", (int) position.getZ());
 
-                // Optional: Add color based on group
                 String groupId = layerBlock.getGroup();
                 if (groupId != null && !groupId.isEmpty()) {
                     coord.put("color", getGroupColor(groupId));
@@ -371,14 +269,6 @@ public class ELayerBlockGridController {
 
     /**
      * Get detailed block information from WLayerModel.
-     *
-     * @param worldId World ID
-     * @param layerId Layer ID
-     * @param modelId Model ID
-     * @param x Block X coordinate (relative to mount point)
-     * @param y Block Y coordinate
-     * @param z Block Z coordinate (relative to mount point)
-     * @return Block details including LayerBlock wrapper
      */
     @GetMapping("/models/{modelId}/block/{x}/{y}/{z}")
     public ResponseEntity<?> getModelBlockDetails(
@@ -392,8 +282,7 @@ public class ELayerBlockGridController {
         log.debug("Loading model block details for worldId={}, layerId={}, modelId={}, pos=({},{},{})",
                 worldId, layerId, modelId, x, y, z);
 
-        // Load layer
-        Optional<WLayer> layerOpt = layerRepository.findById(layerId);
+        Optional<WLayer> layerOpt = layerService.findById(layerId);
         if (layerOpt.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
@@ -403,7 +292,6 @@ public class ELayerBlockGridController {
             return ResponseEntity.badRequest().body(Map.of("error", "Layer is not MODEL type"));
         }
 
-        // Load model
         Optional<WLayerModel> modelOpt = layerService.loadModelById(modelId);
         if (modelOpt.isEmpty()) {
             return ResponseEntity.notFound().build();
@@ -411,16 +299,12 @@ public class ELayerBlockGridController {
 
         WLayerModel model = modelOpt.get();
 
-        // Find block at specified relative position
         if (model.getContent() != null) {
             for (LayerBlock layerBlock : model.getContent()) {
-                if (layerBlock.getBlock() == null || layerBlock.getBlock().getPosition() == null) {
-                    continue;
-                }
+                if (layerBlock.getBlock() == null || layerBlock.getBlock().getPosition() == null) continue;
 
                 var pos = layerBlock.getBlock().getPosition();
                 if ((int) pos.getX() == x && (int) pos.getY() == y && (int) pos.getZ() == z) {
-                    // Return LayerBlock wrapper with block and metadata
                     return ResponseEntity.ok(Map.of(
                             "block", layerBlock.getBlock(),
                             "group", layerBlock.getGroup(),
@@ -433,22 +317,11 @@ public class ELayerBlockGridController {
         return ResponseEntity.notFound().build();
     }
 
-    /**
-     * Get color for group ID (simple mapping for visualization).
-     */
     private String getGroupColor(String groupId) {
-        // Simple color mapping based on group ID hash
         String[] colors = {
-                "#3b82f6", // blue
-                "#ef4444", // red
-                "#10b981", // green
-                "#f59e0b", // amber
-                "#8b5cf6", // purple
-                "#ec4899", // pink
-                "#06b6d4", // cyan
-                "#f97316"  // orange
+                "#3b82f6", "#ef4444", "#10b981", "#f59e0b",
+                "#8b5cf6", "#ec4899", "#06b6d4", "#f97316"
         };
-        // Use hashCode for consistent color assignment
         int hash = Math.abs(groupId.hashCode());
         return colors[hash % colors.length];
     }

@@ -5,7 +5,6 @@ import de.mhus.nimbus.generated.types.ChunkData;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.shared.rest.BaseEditorController;
 import de.mhus.nimbus.world.shared.world.WChunk;
-import de.mhus.nimbus.world.shared.world.WChunkRepository;
 import de.mhus.nimbus.world.shared.world.WChunkService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -34,7 +33,6 @@ import java.util.stream.Collectors;
 @Tag(name = "Chunks", description = "Chunk viewing and management for editors")
 public class EChunkController extends BaseEditorController {
 
-    private final WChunkRepository chunkRepository;
     private final WChunkService chunkService;
     private final ObjectMapper objectMapper;
     private final de.mhus.nimbus.world.shared.layer.WDirtyChunkService dirtyChunkService;
@@ -69,10 +67,9 @@ public class EChunkController extends BaseEditorController {
         // Get all Chunks for this world
         List<WChunk> all;
         if (query != null && !query.isBlank()) {
-            // Search by chunk key
-            all = chunkRepository.findByWorldIdAndChunkContaining(lookupWorldId, query);
+            all = chunkService.findChunksByWorldIdAndQuery(lookupWorldId, query);
         } else {
-            all = chunkRepository.findByWorldId(lookupWorldId);
+            all = chunkService.findChunksByWorldId(lookupWorldId);
         }
 
         int totalCount = all.size();
@@ -116,7 +113,7 @@ public class EChunkController extends BaseEditorController {
 
         String lookupWorldId = wid.toBaseWorldId().getId();
 
-        Optional<WChunk> chunkOpt = chunkRepository.findByWorldIdAndChunk(lookupWorldId, chunkKey);
+        Optional<WChunk> chunkOpt = chunkService.findChunkByWorldIdAndKey(lookupWorldId, chunkKey);
         if (chunkOpt.isEmpty()) {
             log.warn("Chunk not found: worldId={}, chunkKey={}", lookupWorldId, chunkKey);
             return notFound("chunk not found");
