@@ -39,6 +39,20 @@ public class HexComposition implements BuildFeature {
     private String title;
     private String worldId;
 
+    /**
+     * The epoch this composition generates content for.
+     * All created WHexGrids will be assigned to this epoch.
+     */
+    @Builder.Default
+    private int epoch = 0;
+
+    /**
+     * The parent epoch from which this composition's epoch was derived.
+     * Used for tracking epoch lineage when creating new epochs.
+     * Null means this is the initial/base epoch.
+     */
+    private Integer parentEpoch;
+
     // NEW: Feature-based list (replaces biomes + villages)
     private List<Feature> features;
 

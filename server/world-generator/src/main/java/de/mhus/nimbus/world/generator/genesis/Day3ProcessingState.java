@@ -17,6 +17,7 @@ public class Day3ProcessingState implements JournalRecord {
     private List<String> flatIds; // flatId for each coordinate
     private String currentPhase; // createAll, groundAll, blenderAll, terrainAll, exportAll, imagesAll
     private int currentIndex;
+    private int epoch; // epoch from composition, used for WHexGrid creation and image export paths
 
     @Data
     @NoArgsConstructor

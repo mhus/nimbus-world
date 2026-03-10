@@ -1,7 +1,11 @@
 package de.mhus.nimbus.world.generator.genesis;
 
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.shared.types.WorldId;
+import de.mhus.nimbus.world.generator.composer.build.HexComposition;
 import de.mhus.nimbus.world.generator.structures.HexGridStructurePlacerJobExecutor;
 import de.mhus.nimbus.world.shared.generator.WFlatService;
 import de.mhus.nimbus.world.shared.workflow.MethodBasedWorkflow;
@@ -55,6 +59,7 @@ public class Day3Generation extends MethodBasedWorkflow {
     private final WDocumentService documentService;
     private final WFlatService flatService;
     private final WHexGridService hexGridService;
+    private final ObjectMapper objectMapper;
 
     @Override
     public String name() {
@@ -70,9 +75,12 @@ public class Day3Generation extends MethodBasedWorkflow {
         }
 
         WorldId wid = WorldId.of(worldId).orElseThrow();
-        if (documentService.findByDocumentId(wid, compositionId).isEmpty()) {
-            throw new WorkflowException(null, "composition document not found: " + compositionId);
-        }
+        var compositionDoc = documentService.findByDocumentId(wid, compositionId)
+                .orElseThrow(() -> new WorkflowException(null, "composition document not found: " + compositionId));
+
+        // Read epoch from composition document
+        int epoch = extractEpochFromComposition(compositionDoc.getContent());
+        log.info("Composition epoch: {}", epoch);
 
         // Optional phases parameter - comma-separated list of phases to execute in order
         // Default: all phases (createAll,groundAll,blenderAll,terrainAll,fillerAll,exportAll,imagesAll,compositeImages)
@@ -95,16 +103,37 @@ public class Day3Generation extends MethodBasedWorkflow {
 
         return Map.of(
                 GenesisConst.COMPOSITION_ID, compositionId,
-                GenesisConst.PHASES, phases
+                GenesisConst.PHASES, phases,
+                GenesisConst.EPOCH, epoch
         );
+    }
+
+    /**
+     * Extract epoch from composition document JSON content.
+     * Returns 0 if epoch is not set or cannot be parsed.
+     */
+    private int extractEpochFromComposition(String content) {
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            mapper.registerModule(new com.fasterxml.jackson.datatype.jsr310.JavaTimeModule());
+            mapper.enable(JsonParser.Feature.ALLOW_COMMENTS);
+            mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+            HexComposition composition = mapper.readValue(content, HexComposition.class);
+            return composition.getEpoch();
+        } catch (Exception e) {
+            log.warn("Failed to extract epoch from composition, defaulting to 0: {}", e.getMessage());
+            return 0;
+        }
     }
 
     @Override
     public void start(WorkflowContext context) throws WorkflowException {
         context.updateWorkflowStatus("generateHexGrids");
+        int epoch = (int) context.getParameters().get(GenesisConst.EPOCH);
         // GenerateHexGridFromCompositeJobExecutor
         context.enqueueJob("generator-generate-hexgrid-from-composite", "", Map.of(
-                "documentId", (String)context.getParameters().get(GenesisConst.COMPOSITION_ID)
+                "documentId", (String)context.getParameters().get(GenesisConst.COMPOSITION_ID),
+                "epoch", String.valueOf(epoch)
         ));
     }
 
@@ -136,12 +165,14 @@ public class Day3Generation extends MethodBasedWorkflow {
 
         // Store processing state - start with first configured phase
         String phases = (String) context.getParameters().get(GenesisConst.PHASES);
+        int epoch = (int) context.getParameters().get(GenesisConst.EPOCH);
         String firstPhase = phases.split(",")[0];
         Day3ProcessingState state = Day3ProcessingState.builder()
                 .coordinates(hexCoordinates)
                 .flatIds(flatIds)
                 .currentPhase(firstPhase)
                 .currentIndex(0)
+                .epoch(epoch)
                 .build();
         context.addRecord(state);
 
@@ -293,8 +324,8 @@ public class Day3Generation extends MethodBasedWorkflow {
             }
             case "imagesAll" -> {
                 String flatId = state.getFlatIds().get(index);
-                String levelPath = String.format("map/%d_%d/level.png", coord.getQ(), coord.getR());
-                String materialPath = String.format("map/%d_%d/material.png", coord.getQ(), coord.getR());
+                String levelPath = String.format("map/%d_%d/%d_level.png", coord.getQ(), coord.getR(), state.getEpoch());
+                String materialPath = String.format("map/%d_%d/%d_material.png", coord.getQ(), coord.getR(), state.getEpoch());
                 context.updateWorkflowStatus("exportImages");
                 context.enqueueJob("flat-export-images", "", "",
                         "Export Images " + gridLabel,

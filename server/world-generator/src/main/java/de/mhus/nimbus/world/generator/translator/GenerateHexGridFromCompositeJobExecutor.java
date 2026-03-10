@@ -30,6 +30,7 @@ import static de.mhus.nimbus.world.generator.translator.TranslateInstructionJobE
  *
  * Required parameters:
  * - documentId: Id of the document containing the enriched composition (in 'generator_composed' collection)
+ * - epoch: Epoch number to assign to all created WHexGrids (e.g. "0")
  *
  * Optional parameters:
  * - seed: Random seed for reproducible generation (default: random)
@@ -68,6 +69,7 @@ public class GenerateHexGridFromCompositeJobExecutor implements JobExecutor {
 
             // Extract required parameters
             String documentId = getRequiredParameter(job, "documentId");
+            int epoch = Integer.parseInt(getRequiredParameter(job, "epoch"));
 
             // Extract optional parameters
             Long seed = getOptionalLongParameter(job, "seed", null);
@@ -82,8 +84,8 @@ public class GenerateHexGridFromCompositeJobExecutor implements JobExecutor {
             String edgeShakeStrength = getOptionalParameter(job, "edge_shake_strength", "0.2");
             String edgeBlurRadius = getOptionalParameter(job, "edge_blur_radius", "1");
 
-            log.info("Generating hexgrids: documentId={}, seed={}, edge_blend_width={}, edge_blend_randomness={}, edge_shake_strength={}, edge_blur_radius={}",
-                    documentId, seed, edgeBlendWidth, edgeBlendRandomness, edgeShakeStrength, edgeBlurRadius);
+            log.info("Generating hexgrids: documentId={}, epoch={}, seed={}, edge_blend_width={}, edge_blend_randomness={}, edge_shake_strength={}, edge_blur_radius={}",
+                    documentId, epoch, seed, edgeBlendWidth, edgeBlendRandomness, edgeShakeStrength, edgeBlurRadius);
 
             // Step 1: Load document from path
             WDocument document = loadDocumentFromPath(job.getWorldId(), documentId);
@@ -149,6 +151,7 @@ public class GenerateHexGridFromCompositeJobExecutor implements JobExecutor {
                     wHexGrid = existingList.getFirst();
                     wHexGrid.getPublicData().setTitle(sourceGrid.getPublicData().getTitle());
                     wHexGrid.setParameters(new HashMap<>(params));
+                    wHexGrid.setEpoches(new ArrayList<>(List.of(epoch)));
 
                     // Update publicData (name, title) from sourceGrid
                     if (sourceGrid.getPublicData() != null) {
@@ -201,6 +204,7 @@ public class GenerateHexGridFromCompositeJobExecutor implements JobExecutor {
                             .position(position)
                             .publicData(publicData)
                             .parameters(new HashMap<>(params))
+                            .epoches(new ArrayList<>(List.of(epoch)))
                             .build();
                     wHexGrid.touchCreate();
                     wHexGrid.syncPositionKey();
@@ -282,6 +286,7 @@ public class GenerateHexGridFromCompositeJobExecutor implements JobExecutor {
             resultData.put("gridCount", composition.getFeatureHexGridRegistry().size());
             resultData.put("createdGrids", createdGrids);
             resultData.put("updatedGrids", updatedGrids);
+            resultData.put("epoch", epoch);
 
             log.info("GenerateHexGridFromComposite completed: gridCount={}, created={}, updated={}",
                     composition.getFeatureHexGridRegistry().size(), createdGrids, updatedGrids);

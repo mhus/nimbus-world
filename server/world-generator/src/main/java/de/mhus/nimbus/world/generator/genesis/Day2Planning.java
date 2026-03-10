@@ -1,7 +1,11 @@
 package de.mhus.nimbus.world.generator.genesis;
 
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.shared.utils.CastUtil;
+import de.mhus.nimbus.world.generator.composer.build.HexComposition;
 import de.mhus.nimbus.world.shared.region.RRegionService;
 import de.mhus.nimbus.world.shared.workflow.MethodBasedWorkflow;
 import de.mhus.nimbus.world.shared.workflow.OnSuccess;
@@ -15,6 +19,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.stereotype.Service;
 
+import java.util.HashMap;
 import java.util.Map;
 
 @Service
@@ -23,6 +28,7 @@ import java.util.Map;
 public class Day2Planning extends MethodBasedWorkflow {
 
     private final WDocumentService documentService;
+    private final ObjectMapper objectMapper;
 
     @Override
     public String name() {
@@ -42,9 +48,21 @@ public class Day2Planning extends MethodBasedWorkflow {
             throw new WorkflowException(null, "instructions document not found: " + instructionsId);
         }
 
-        return Map.of(
-                GenesisConst.INSTRUCTIONS_DOCUMENT_ID, instructionsId
-        );
+        // Optional epoch parameters (default: epoch=0, parentEpoch=null)
+        int epoch = 0;
+        Integer parentEpoch = null;
+        if (Strings.isNotBlank(params.get(GenesisConst.EPOCH))) {
+            epoch = Integer.parseInt(params.get(GenesisConst.EPOCH));
+        }
+        if (Strings.isNotBlank(params.get("parentEpoch"))) {
+            parentEpoch = Integer.parseInt(params.get("parentEpoch"));
+        }
+
+        Map<String, Object> result = new HashMap<>();
+        result.put(GenesisConst.INSTRUCTIONS_DOCUMENT_ID, instructionsId);
+        result.put(GenesisConst.EPOCH, epoch);
+        result.put("parentEpoch", parentEpoch);
+        return result;
     }
 
     @Override
@@ -110,10 +128,18 @@ public class Day2Planning extends MethodBasedWorkflow {
 
         log.info("Flora/fauna values filled: enrichedDocumentId={}", enrichedDocumentId);
 
+        WorldId wid = WorldId.of(context.getWorldId()).orElseThrow();
+
         // Verify enriched document exists
-        if (documentService.findByDocumentId(WorldId.of(context.getWorldId()).orElseThrow(), enrichedDocumentId).isEmpty()) {
+        if (documentService.findByDocumentId(wid, enrichedDocumentId).isEmpty()) {
             throw new WorkflowException(null, "enriched composition document not found: " + enrichedDocumentId);
         }
+
+        // Write epoch/parentEpoch into composition document
+        int epoch = (int) context.getParameters().get(GenesisConst.EPOCH);
+        Integer parentEpoch = (Integer) context.getParameters().get("parentEpoch");
+        updateCompositionEpoch(wid, "generator_composed", enrichedDocumentId, epoch, parentEpoch);
+        log.info("Set composition epoch={}, parentEpoch={} in document {}", epoch, parentEpoch, enrichedDocumentId);
 
         // Update state with enriched document ID
         var state = context.getLastJournalRecord(Day2PlanningState.class)
@@ -128,6 +154,33 @@ public class Day2Planning extends MethodBasedWorkflow {
         context.enqueueJob("hex-grid-schema-image", "", "",
                 "Create Schema Image",
                 Map.of("compositionId", enrichedDocumentId));
+    }
+
+    /**
+     * Update the composition document with epoch and parentEpoch values.
+     */
+    private void updateCompositionEpoch(WorldId wid, String collection, String documentId,
+                                         int epoch, Integer parentEpoch) throws WorkflowException {
+        try {
+            documentService.save(wid, collection, documentId, doc -> {
+                try {
+                    ObjectMapper mapper = new ObjectMapper();
+                    mapper.registerModule(new com.fasterxml.jackson.datatype.jsr310.JavaTimeModule());
+                    mapper.enable(JsonParser.Feature.ALLOW_COMMENTS);
+                    mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
+                    HexComposition composition = mapper.readValue(doc.getContent(), HexComposition.class);
+                    composition.setEpoch(epoch);
+                    composition.setParentEpoch(parentEpoch);
+
+                    doc.setContent(mapper.writeValueAsString(composition));
+                } catch (Exception e) {
+                    throw new RuntimeException("Failed to update composition epoch: " + e.getMessage(), e);
+                }
+            });
+        } catch (RuntimeException e) {
+            throw new WorkflowException(null, "Failed to update composition with epoch data: " + e.getMessage());
+        }
     }
 
     @OnSuccess("createSchemaImage")

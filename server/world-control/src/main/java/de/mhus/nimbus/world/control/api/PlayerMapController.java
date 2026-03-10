@@ -8,6 +8,7 @@ import de.mhus.nimbus.world.shared.access.AccessFilterBase;
 import de.mhus.nimbus.world.shared.rest.BaseEditorController;
 import de.mhus.nimbus.world.shared.session.WPlayerSessionService;
 import de.mhus.nimbus.world.shared.util.HexMathUtil;
+import de.mhus.nimbus.world.shared.world.SAssetService;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
 import de.mhus.nimbus.world.shared.world.WHexGridService;
 import de.mhus.nimbus.world.shared.world.WProgressService;
@@ -33,10 +34,13 @@ import java.util.*;
 @Tag(name = "Player Map", description = "Player map panel endpoints")
 public class PlayerMapController extends BaseEditorController {
 
+    private static final String EMPTY_MAP_IMAGE = "n:textures/actions/empty_map.png";
+
     private final WPlayerSessionService playerSessionService;
     private final WHexGridService hexGridService;
     private final WWorldService worldService;
     private final WProgressService progressService;
+    private final SAssetService assetService;
 
     @GetMapping("/home")
     @Operation(summary = "Get player's current hex position, world position, and hex grid info")
@@ -138,6 +142,7 @@ public class PlayerMapController extends BaseEditorController {
     }
 
     private Map<String, Object> buildHexInfo(String worldId, String playerId, HexVector2 hexPos, WHexGrid hexGrid, int hexGridSize) {
+        WorldId wid = WorldId.of(worldId).orElse(null);
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("q", hexPos.getQ());
         result.put("r", hexPos.getR());
@@ -147,8 +152,11 @@ public class PlayerMapController extends BaseEditorController {
             result.put("title", hexGrid.getPublicData().getTitle());
             result.put("description", hexGrid.getPublicData().getDescription());
             result.put("exists", true);
+            // Resolve map image path with epoch fallback
+            result.put("mapImage", resolveMapImage(wid, hexPos, hexGrid));
         } else {
             result.put("exists", false);
+            result.put("mapImage", EMPTY_MAP_IMAGE);
         }
 
         // Build neighbor info
@@ -167,6 +175,9 @@ public class PlayerMapController extends BaseEditorController {
             if (neighborGrid != null && neighborGrid.getPublicData() != null) {
                 neighborInfo.put("name", neighborGrid.getPublicData().getName());
                 neighborInfo.put("title", neighborGrid.getPublicData().getTitle());
+                neighborInfo.put("mapImage", resolveMapImage(wid, neighborPos, neighborGrid));
+            } else {
+                neighborInfo.put("mapImage", EMPTY_MAP_IMAGE);
             }
 
             // Check if player has explored this neighbor
@@ -181,5 +192,34 @@ public class PlayerMapController extends BaseEditorController {
         result.put("neighbors", neighbors);
 
         return result;
+    }
+
+    /**
+     * Resolve the map image path for a hex grid.
+     * Checks epoches from highest to lowest, returns the first asset path that exists.
+     * Falls back to the empty map image if no map image is found.
+     *
+     * Path pattern: map/{q}_{r}/{epoch}_level.png
+     */
+    private String resolveMapImage(WorldId wid, HexVector2 hexPos, WHexGrid hexGrid) {
+        if (wid == null || hexGrid == null || hexGrid.getEpoches() == null || hexGrid.getEpoches().isEmpty()) {
+            return EMPTY_MAP_IMAGE;
+        }
+
+        int q = hexPos.getQ();
+        int r = hexPos.getR();
+
+        // Check epoches from highest to lowest
+        List<Integer> sortedEpoches = new ArrayList<>(hexGrid.getEpoches());
+        sortedEpoches.sort(Collections.reverseOrder());
+
+        for (int epoch : sortedEpoches) {
+            String path = String.format("map/%d_%d/%d_level.png", q, r, epoch);
+            if (assetService.findByPath(wid, path).isPresent()) {
+                return path;
+            }
+        }
+
+        return EMPTY_MAP_IMAGE;
     }
 }
