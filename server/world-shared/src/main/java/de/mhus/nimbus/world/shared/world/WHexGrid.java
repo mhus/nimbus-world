@@ -34,7 +34,8 @@ import java.util.Map;
 @ActualSchemaVersion("1.0.0")
 @CompoundIndexes({
         @CompoundIndex(name = "world_position_idx", def = "{ 'worldId': 1, 'position': 1 }"),
-        @CompoundIndex(name = "world_position_epoches_idx", def = "{ 'worldId': 1, 'position': 1, 'epoches': 1 }")
+        @CompoundIndex(name = "world_position_epoches_idx", def = "{ 'worldId': 1, 'position': 1, 'epoches': 1 }"),
+        @CompoundIndex(name = "world_enabled_epoches_idx", def = "{ 'worldId': 1, 'enabled': 1, 'epoches': 1 }")
 })
 @Data
 @Builder

@@ -29,7 +29,8 @@ import java.util.List;
 @CompoundIndexes({
         @CompoundIndex(name = "region_name_idx", def = "{ 'regionId': 1, 'name': 1 }", unique = true),
         @CompoundIndex(name = "world_name_idx", def = "{ 'worldId': 1, 'name': 1 }"),
-        @CompoundIndex(name = "region_player_idx", def = "{ 'regionId': 1, 'playerId': 1 }")
+        @CompoundIndex(name = "region_player_idx", def = "{ 'regionId': 1, 'playerId': 1 }"),
+        @CompoundIndex(name = "world_player_idx", def = "{ 'worldId': 1, 'playerId': 1 }")
 })
 @Data
 @Builder

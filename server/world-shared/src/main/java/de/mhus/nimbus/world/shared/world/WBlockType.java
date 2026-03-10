@@ -23,7 +23,7 @@ import java.time.Instant;
 @Document(collection = "w_blocktypes")
 @ActualSchemaVersion("1.1.0")
 @CompoundIndexes({
-        @CompoundIndex(name = "blockId_idx", def = "{ 'blockId': 1 }", unique = true)
+        @CompoundIndex(name = "world_blockId_idx", def = "{ 'worldId': 1, 'blockId': 1 }", unique = true)
 })
 @Data
 @Builder
@@ -36,9 +36,8 @@ public class WBlockType implements Identifiable {
 
     /**
      * External block identifier (e.g., "stone", "123").
-     * Unique across all block types.
+     * Unique per world (compound index with worldId).
      */
-    @Indexed(unique = true)
     private String blockId;
 
     /**

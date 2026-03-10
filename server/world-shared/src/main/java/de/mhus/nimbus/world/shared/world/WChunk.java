@@ -45,10 +45,8 @@ public class WChunk implements Identifiable, EpochEntity {
     private String chunk;
 
     /** Hex Identifier 'q;r' */
-    @Indexed
     private String hex;
 
-    @Indexed
     private String storageId;
 
     @Builder.Default

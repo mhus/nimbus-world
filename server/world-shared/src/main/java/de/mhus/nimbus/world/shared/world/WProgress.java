@@ -45,7 +45,7 @@ public class WProgress implements Identifiable {
     @Indexed
     private String worldId;
 
-    @Indexed
+    @Indexed(unique = true)
     @Builder.Default
     private String progressId = UUID.randomUUID().toString();
 

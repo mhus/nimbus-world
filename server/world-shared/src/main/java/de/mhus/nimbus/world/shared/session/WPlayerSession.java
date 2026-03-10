@@ -39,7 +39,6 @@ public class WPlayerSession {
      * Full worldId with instance (e.g., "main:terra!abc123").
      * One save per player per world (including instance).
      */
-    @Indexed
     private String worldId;
 
     /**
@@ -91,8 +90,8 @@ public class WPlayerSession {
      */
     private String actor;
 
-    @Indexed
     private Instant createdAt;
+    @Indexed
     private Instant updatedAt;
 
     /**

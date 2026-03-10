@@ -28,7 +28,7 @@ import java.util.Optional;
 @ActualSchemaVersion("1.0.0")
 @CompoundIndexes({
         @CompoundIndex(name = "world_collection_name_idx",
-                       def = "{ 'worldId': 1, 'collection': 1, 'name': 1 }")
+                       def = "{ 'worldId': 1, 'collection': 1, 'name': 1 }", unique = true)
 })
 @Data
 @Builder

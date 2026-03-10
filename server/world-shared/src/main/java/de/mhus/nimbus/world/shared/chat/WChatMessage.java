@@ -38,14 +38,12 @@ public class WChatMessage implements Identifiable {
      * World identifier where this message exists.
      * Required for all messages.
      */
-    @Indexed
     private String worldId;
 
     /**
      * Chat identifier (UUID format) this message belongs to.
      * References WChat.chatId.
      */
-    @Indexed
     private String chatId;
 
     /**

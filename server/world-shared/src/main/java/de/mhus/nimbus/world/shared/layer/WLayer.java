@@ -31,7 +31,8 @@ import java.util.Map;
         @CompoundIndex(name = "world_name_idx", def = "{ 'worldId': 1, 'name': 1 }", unique = true),
         @CompoundIndex(name = "world_order_idx", def = "{ 'worldId': 1, 'order': 1 }"),
         @CompoundIndex(name = "world_enabled_idx", def = "{ 'worldId': 1, 'enabled': 1 }"),
-        @CompoundIndex(name = "world_epoches_idx", def = "{ 'worldId': 1, 'epoches': 1, 'enabled': 1 }")
+        @CompoundIndex(name = "world_epoches_idx", def = "{ 'worldId': 1, 'epoches': 1, 'enabled': 1 }"),
+        @CompoundIndex(name = "world_layerDataId_idx", def = "{ 'worldId': 1, 'layerDataId': 1 }", unique = true)
 })
 @Data
 @Builder

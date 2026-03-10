@@ -69,7 +69,6 @@ public class WWorld implements Identifiable {
      * Whether this world can create instances.
      * If true, players can create independent copies (instances) of this world.
      */
-    @Indexed
     @Builder.Default
     private boolean instanceable = false;
 

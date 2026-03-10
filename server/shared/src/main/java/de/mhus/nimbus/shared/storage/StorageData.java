@@ -41,7 +41,6 @@ public class StorageData implements Identifiable {
      * Logical storage identifier (UUID), returned to clients as storageId.
      * Multiple chunks share the same UUID to form a complete file.
      */
-    @Indexed
     private String uuid;
 
     /**

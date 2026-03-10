@@ -23,7 +23,7 @@ import java.time.Instant;
 @Document(collection = "w_backdrops")
 @ActualSchemaVersion("1.0.0")
 @CompoundIndexes({
-        @CompoundIndex(name = "backdropId_idx", def = "{ 'backdropId': 1 }", unique = true)
+        @CompoundIndex(name = "world_backdropId_idx", def = "{ 'worldId': 1, 'backdropId': 1 }", unique = true)
 })
 @Data
 @Builder
@@ -36,9 +36,8 @@ public class WBackdrop implements Identifiable {
 
     /**
      * Backdrop identifier (e.g., "fog1", "sky", "hills").
-     * Unique across all backdrops.
+     * Unique per world (compound index with worldId).
      */
-    @Indexed(unique = true)
     private String backdropId;
 
     /**

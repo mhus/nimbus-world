@@ -23,7 +23,7 @@ import java.time.Instant;
 @Document(collection = "w_entity_models")
 @ActualSchemaVersion("1.0.0")
 @CompoundIndexes({
-        @CompoundIndex(name = "modelId_idx", def = "{ 'modelId': 1 }", unique = true)
+        @CompoundIndex(name = "world_modelId_idx", def = "{ 'worldId': 1, 'modelId': 1 }", unique = true)
 })
 @Data
 @Builder
@@ -36,9 +36,8 @@ public class WEntityModel implements Identifiable {
 
     /**
      * Model identifier (e.g., "cow1", "farmer1", "pig1").
-     * Unique across all entity models.
+     * Unique per world (compound index with worldId).
      */
-    @Indexed(unique = true)
     private String modelId;
 
     private String title;

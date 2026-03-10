@@ -23,7 +23,8 @@ import java.util.Map;
 @Document(collection = "w_documents")
 @ActualSchemaVersion("1.0.0")
 @CompoundIndexes({
-        @CompoundIndex(name = "worldId_collection_documentId_idx", def = "{ 'worldId': 1, 'collection': 1, 'documentId': 1 }", unique = true)
+        @CompoundIndex(name = "worldId_collection_documentId_idx", def = "{ 'worldId': 1, 'collection': 1, 'documentId': 1 }", unique = true),
+        @CompoundIndex(name = "worldId_documentId_idx", def = "{ 'worldId': 1, 'documentId': 1 }", unique = true)
 })
 @Data
 @Builder

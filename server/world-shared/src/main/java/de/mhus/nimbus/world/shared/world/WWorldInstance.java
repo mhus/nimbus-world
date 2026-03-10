@@ -76,6 +76,7 @@ public class WWorldInstance implements Identifiable {
      * List of PlayerIds that are allowed to play in this instance.
      * Empty list means no restrictions (public instance).
      */
+    @Indexed
     @Builder.Default
     private List<String> players = new ArrayList<>();
 
@@ -99,7 +100,6 @@ public class WWorldInstance implements Identifiable {
      * Access type: who is allowed to join this instance.
      * PRIVATE = only creator, TEAM = creator + players list, PUBLIC = everyone.
      */
-    @Indexed
     @TypeScript(follow = true)
     @Builder.Default
     private InstanceAccessType accessType = InstanceAccessType.PRIVATE;

@@ -26,7 +26,8 @@ import java.util.List;
 @ActualSchemaVersion("1.0.0")
 @CompoundIndexes({
         @CompoundIndex(name = "world_itemId_idx", def = "{ 'worldId': 1, 'itemId': 1 }", unique = true),
-        @CompoundIndex(name = "world_epoches_idx", def = "{ 'worldId': 1, 'epoches': 1 }")
+        @CompoundIndex(name = "world_epoches_idx", def = "{ 'worldId': 1, 'epoches': 1 }"),
+        @CompoundIndex(name = "world_chunk_enabled_epoches_idx", def = "{ 'worldId': 1, 'chunk': 1, 'enabled': 1, 'epoches': 1 }")
 })
 @Data
 @Builder

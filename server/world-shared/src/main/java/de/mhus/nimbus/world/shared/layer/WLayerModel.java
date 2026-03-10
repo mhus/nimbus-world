@@ -30,7 +30,9 @@ import java.util.stream.Stream;
 @ActualSchemaVersion("1.0.0")
 @CompoundIndexes({
         @CompoundIndex(name = "layerData_idx", def = "{ 'layerDataId': 1 }"),
-        @CompoundIndex(name = "world_layerData_idx", def = "{ 'worldId': 1, 'layerDataId': 1 }")
+        @CompoundIndex(name = "world_layerData_idx", def = "{ 'worldId': 1, 'layerDataId': 1 }"),
+        @CompoundIndex(name = "layerData_name_idx", def = "{ 'layerDataId': 1, 'name': 1 }", unique = true),
+        @CompoundIndex(name = "world_name_idx", def = "{ 'worldId': 1, 'name': 1 }")
 })
 @Data
 @Builder

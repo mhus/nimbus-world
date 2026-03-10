@@ -26,7 +26,11 @@ import java.util.Map;
         @CompoundIndex(name = "world_status_created_idx",
                 def = "{ 'worldId': 1, 'status': 1, 'createdAt': 1 }"),
         @CompoundIndex(name = "world_executor_status_idx",
-                def = "{ 'worldId': 1, 'executor': 1, 'status': 1 }")
+                def = "{ 'worldId': 1, 'executor': 1, 'status': 1 }"),
+        @CompoundIndex(name = "status_enabled_priority_created_idx",
+                def = "{ 'status': 1, 'enabled': 1, 'priority': -1, 'createdAt': 1 }"),
+        @CompoundIndex(name = "status_completedAt_idx",
+                def = "{ 'status': 1, 'completedAt': 1 }")
 })
 @Data
 @Builder
@@ -62,7 +66,6 @@ public class WJob implements Identifiable {
      * If set, only the specified server will process this job.
      * Checked against LocationService.getApplicationServiceName().
      */
-    @Indexed
     private String location;
 
     /**
