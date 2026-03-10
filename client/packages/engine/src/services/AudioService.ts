@@ -610,10 +610,10 @@ export class AudioService implements IDisposable {
     // Create loading promise and cache it
     const loadingPromise = (async () => {
       try {
-        // Get audio URL with cache-busting timestamp
+        // Get audio URL with cache-busting version
         const baseUrl = networkService.getAssetUrl(path);
-        const timestamp = Date.now();
-        const audioUrl = `${baseUrl}?t=${timestamp}`;
+        const version = this.appContext.worldInfo?.version || Date.now();
+        const audioUrl = `${baseUrl}?v=${version}`;
         logger.debug('Loading sound into pool', { path, audioUrl, initialPoolSize });
 
         // Load audio URL with credentials (once for all instances)

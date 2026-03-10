@@ -3,6 +3,8 @@
  Source: de.mhus.nimbus.world.shared.dto.WorldInfoDto
 */
 
+import { WEpochMeta } from './WEpochMeta';
+
 export interface WorldInfoDto {
   worldId: string;
   title: string;

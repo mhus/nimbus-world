@@ -89,6 +89,14 @@ export class NetworkService {
   }
 
   /**
+   * Get cache version string from worldInfo.version, falling back to Date.now().
+   * Used as query parameter for cache-busting resource URLs.
+   */
+  private getCacheVersion(): number {
+    return this.appContext.worldInfo?.version || Date.now();
+  }
+
+  /**
    * Update WebSocket URL after server config is loaded
    * Called by ConfigService after loading EngineConfiguration
    */
@@ -760,9 +768,7 @@ export class NetworkService {
    * @returns Full entity model URL with cache-busting timestamp
    */
   getEntityModelUrl(entityTypeId: string): string {
-    const worldId = this.appContext.worldInfo?.worldId;
-    const timestamp = Date.now();
-    return `${this.apiUrl}/player/world/entitymodel/${entityTypeId}?t=${timestamp}`;
+    return `${this.apiUrl}/player/world/entitymodel/${entityTypeId}?v=${this.getCacheVersion()}`;
   }
 
   /**
@@ -772,9 +778,7 @@ export class NetworkService {
    * @returns Full backdrop URL with cache-busting timestamp
    */
   getBackdropUrl(backdropTypeId: string): string {
-    const worldId = this.appContext.worldInfo?.worldId;
-    const timestamp = Date.now();
-    return `${this.apiUrl}/player/world/backdrop/${backdropTypeId}?t=${timestamp}`;
+    return `${this.apiUrl}/player/world/backdrop/${backdropTypeId}?v=${this.getCacheVersion()}`;
   }
 
   /**
@@ -784,9 +788,7 @@ export class NetworkService {
    * @returns Full entity URL with cache-busting timestamp
    */
   getEntityUrl(entityId: string): string {
-    const worldId = this.appContext.worldInfo?.worldId;
-    const timestamp = Date.now();
-    return `${this.apiUrl}/player/world/entity/${entityId}?t=${timestamp}`;
+    return `${this.apiUrl}/player/world/entity/${entityId}?v=${this.getCacheVersion()}`;
   }
 
   /**
@@ -798,9 +800,7 @@ export class NetworkService {
    * @returns Full block types range URL with cache-busting timestamp
    */
   getBlockTypesRangeUrl(from: number, to: number): string {
-    const worldId = this.appContext.worldInfo?.worldId;
-    const timestamp = Date.now();
-    return `${this.apiUrl}/player/world/blocktypes/${from}/${to}?t=${timestamp}`;
+    return `${this.apiUrl}/player/world/blocktypes/${from}/${to}?v=${this.getCacheVersion()}`;
   }
 
   /**
@@ -810,9 +810,7 @@ export class NetworkService {
    * @returns Full block types chunk URL with cache-busting timestamp
    */
   getBlockTypesChunkUrl(groupName: string): string {
-    const worldId = this.appContext.worldInfo?.worldId;
-    const timestamp = Date.now();
-    return `${this.apiUrl}/player/world/blocktypeschunk/${groupName}?t=${timestamp}`;
+    return `${this.apiUrl}/player/world/blocktypeschunk/${groupName}?v=${this.getCacheVersion()}`;
   }
 
   /**

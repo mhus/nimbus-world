@@ -120,12 +120,15 @@ public class TypeScriptGenerator {
                 // Default-Imports aus Konfiguration hinzufügen (nur für Interfaces)
                 addDefaultImports(tt);
 
-                // Auto-Importe für gefolgte Enums (Top-Level) hinzufügen
+                // Auto-Importe für gefolgte Typen (Top-Level: Enums und Interfaces) hinzufügen
                 if (!followed.isEmpty()) {
                     for (String name : followed) {
                         JavaClassModel target = bySimpleName.get(name);
                         if (target == null) continue;
-                        if (target.getKind() != JavaKind.ENUM) continue; // nur Enums automatisch importieren
+                        // Skip types already emitted as nested enums in this file
+                        boolean isNestedEnum = tt.getNestedEnums().stream()
+                                .anyMatch(ne -> ne.getName().equals(name));
+                        if (isNestedEnum) continue;
                         String importSymbol = resolveTargetTsName(target);
                         String relPath = buildRelativeImportPath(tt.getSubfolder(), target.getGenerateSubfolder(),
                                 resolveTargetBaseFileName(target, importSymbol));

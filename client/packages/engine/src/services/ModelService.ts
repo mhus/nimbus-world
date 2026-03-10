@@ -78,6 +78,8 @@ export class ModelService {
   // GLB container cache: path -> CachedGlbContainer
   private glbContainerCache: Map<string, CachedGlbContainer> = new Map();
 
+  private appContext: AppContext;
+
   // Cache cleanup interval
   private cleanupInterval?: NodeJS.Timeout;
 
@@ -87,6 +89,7 @@ export class ModelService {
     }
 
     this.scene = scene;
+    this.appContext = appContext;
     this.networkService = appContext.services.network;
 
     // Default configuration
@@ -133,9 +136,9 @@ export class ModelService {
       logger.debug('Loading GLB model from asset server', { modelPath });
 
       // Get full model URL via NetworkService with cache-busting timestamp
-      const timestamp = Date.now();
+      const version = this.appContext.worldInfo?.version || Date.now();
       const baseUrl = this.networkService.getAssetUrl(modelPath);
-      const fullModelUrl = `${baseUrl}?t=${timestamp}`;
+      const fullModelUrl = `${baseUrl}?v=${version}`;
 
       // Load the GLB model using LoadAssetContainerAsync
       let container: AssetContainer;
@@ -229,9 +232,9 @@ export class ModelService {
       logger.debug('Loading model from asset server', { modelPath });
 
       // Get full model URL via NetworkService with cache-busting timestamp
-      const timestamp = Date.now();
+      const version = this.appContext.worldInfo?.version || Date.now();
       const baseUrl = this.networkService.getAssetUrl(modelPath);
-      const fullModelUrl = `${baseUrl}?t=${timestamp}`;
+      const fullModelUrl = `${baseUrl}?v=${version}`;
 
       // Parse URL to get root path and filename
       const lastSlashIndex = fullModelUrl.lastIndexOf('/');
