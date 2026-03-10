@@ -197,7 +197,10 @@ public class ItemPositionResourceSyncType implements ResourceSyncType {
             for (Document dbDoc : dbDocs) {
                 Object idObj = dbDoc.get("_id");
                 if (idObj != null && !filesystemItemPositionIds.contains(idObj.toString())) {
-                    mongoTemplate.remove(query.addCriteria(Criteria.where("_id").is(idObj)), COLLECTION_NAME);
+                    mongoTemplate.remove(
+                            new Query(Criteria.where("_id").is(idObj)),
+                            COLLECTION_NAME
+                    );
                     log.info("Deleted item position not in filesystem: {}", idObj);
                     deleted++;
                 }
