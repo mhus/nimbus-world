@@ -141,6 +141,7 @@ public class HexGridResourceSyncType implements ResourceSyncType {
 
                     // Transform document (worldId replacement + prefix mapping)
                     migratedDoc = documentTransformer.transformForImport(migratedDoc, definition);
+                    documentTransformer.ensureEpoches(migratedDoc);
 
                     // Find existing by unique constraint (worldId + position)
                     Query findQuery = new Query(

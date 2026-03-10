@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.bson.Document;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -39,6 +40,20 @@ public class DocumentTransformer {
         }
 
         return transformed;
+    }
+
+    /**
+     * Ensure the document has an 'epoches' field.
+     * If missing or null, sets it to [0] as default.
+     * Call this after transformForImport for epoch-aware entities
+     * (WHexGrid, WEntity, WItemPosition, WLayer).
+     */
+    public void ensureEpoches(Document doc) {
+        Object epoches = doc.get("epoches");
+        if (epoches == null || (epoches instanceof List<?> list && list.isEmpty())) {
+            doc.put("epoches", List.of(0));
+            log.debug("Set default epoches=[0] on imported document");
+        }
     }
 
     /**

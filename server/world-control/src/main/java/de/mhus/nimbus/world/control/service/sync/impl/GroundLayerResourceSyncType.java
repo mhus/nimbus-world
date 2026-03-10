@@ -214,6 +214,7 @@ public class GroundLayerResourceSyncType implements ResourceSyncType {
 
                     // Transform document (worldId replacement + prefix mapping)
                     migratedLayerDoc = documentTransformer.transformForImport(migratedLayerDoc, definition);
+                    documentTransformer.ensureEpoches(migratedLayerDoc);
 
                     // Find existing layer by unique constraint (worldId + title)
                     String targetWorldId = migratedLayerDoc.getString("worldId");

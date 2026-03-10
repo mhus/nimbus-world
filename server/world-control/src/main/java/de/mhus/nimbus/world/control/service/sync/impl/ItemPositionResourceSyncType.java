@@ -146,6 +146,7 @@ public class ItemPositionResourceSyncType implements ResourceSyncType {
 
                     // Transform document (worldId replacement + prefix mapping)
                     migratedDoc = documentTransformer.transformForImport(migratedDoc, definition);
+                    documentTransformer.ensureEpoches(migratedDoc);
 
                     // Find existing by unique constraint (worldId + itemId)
                     Query findQuery = new Query(

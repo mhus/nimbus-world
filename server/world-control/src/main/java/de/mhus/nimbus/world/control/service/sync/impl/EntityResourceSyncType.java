@@ -144,6 +144,7 @@ public class EntityResourceSyncType implements ResourceSyncType {
 
                     // Transform document (worldId replacement + prefix mapping)
                     migratedDoc = documentTransformer.transformForImport(migratedDoc, definition);
+                    documentTransformer.ensureEpoches(migratedDoc);
 
                     // Find existing by unique constraint (worldId + entityId)
                     Query findQuery = new Query(
