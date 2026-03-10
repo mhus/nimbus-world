@@ -67,7 +67,8 @@ public class FaunaGeneratorService {
                 .orElseThrow(() -> new RuntimeException("World not found: " + worldId));
 
         String position = hexQ + ";" + hexR;
-        WHexGrid hexGrid = hexGridRepository.findByWorldIdAndPosition(worldId, position)
+        WHexGrid hexGrid = hexGridRepository.findAllByWorldIdAndPosition(worldId, position)
+                .stream().findFirst()
                 .orElseThrow(() -> new RuntimeException("HexGrid not found: " + position));
 
         Map<String, String> params = hexGrid.getParameters();

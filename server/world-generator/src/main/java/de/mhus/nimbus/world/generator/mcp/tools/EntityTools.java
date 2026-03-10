@@ -149,7 +149,7 @@ public class EntityTools {
             @ToolParam(description = "Movement speed (blocks per second)", required = false) Double speed,
             @ToolParam(description = "Behavior model identifier (e.g. 'PreyAnimalBehavior')", required = false) String behaviorModel,
             @ToolParam(description = "Server-side parameters as key-value pairs for gameplay configuration", required = false) Map<String, String> server,
-            @ToolParam(description = "Epoch numbers this entity belongs to (e.g. [0,1,2]). If not specified, defaults to all defined epoches of the world.", required = false) List<Integer> epoches) {
+            @ToolParam(description = "Epoch numbers this entity belongs to (e.g. [0,1,2]). If not specified, defaults to empty list (= not visible in any epoch).", required = false) List<Integer> epoches) {
         log.debug("MCP: Create entity: worldId={}, entityId={}, modelId={}", worldId, entityId, modelId);
 
         if (Strings.isBlank(worldId) || Strings.isBlank(entityId) || Strings.isBlank(modelId)) {

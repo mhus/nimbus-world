@@ -198,11 +198,11 @@ public class ChunkUpdateService {
 
     /**
      * Check if a layer is active in a given epoch.
-     * A layer with an empty epoches list is active in ALL epochs (backward compatible).
+     * A layer with an empty epoches list is NOT active in any epoch.
      */
     private boolean isLayerActiveInEpoch(WLayer layer, int epoch) {
         if (layer.getEpoches() == null || layer.getEpoches().isEmpty()) {
-            return true; // No epoch restriction = active in all epochs
+            return false;
         }
         return layer.getEpoches().contains(epoch);
     }

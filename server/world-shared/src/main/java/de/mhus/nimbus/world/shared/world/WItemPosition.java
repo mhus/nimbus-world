@@ -64,7 +64,7 @@ public class WItemPosition implements Identifiable, CowEntity {
     /**
      * Epoch assignment for this item position.
      * The item is visible in world instances with any of the listed epochs.
-     * Empty list means visible in all epochs (backward compatible).
+     * Empty list means not visible in any epoch.
      */
     @Builder.Default
     private List<Integer> epoches = new ArrayList<>();

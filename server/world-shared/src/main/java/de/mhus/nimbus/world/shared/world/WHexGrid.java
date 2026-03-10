@@ -20,7 +20,9 @@ import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -31,7 +33,8 @@ import java.util.Map;
 @Document(collection = "w_hexgrids")
 @ActualSchemaVersion("1.0.0")
 @CompoundIndexes({
-        @CompoundIndex(name = "world_position_idx", def = "{ 'worldId': 1, 'position': 1 }", unique = true)
+        @CompoundIndex(name = "world_position_idx", def = "{ 'worldId': 1, 'position': 1 }"),
+        @CompoundIndex(name = "world_position_epoches_idx", def = "{ 'worldId': 1, 'position': 1, 'epoches': 1 }")
 })
 @Data
 @Builder
@@ -173,6 +176,14 @@ public class WHexGrid implements Identifiable {
      */
     @Builder.Default
     private Map<String, Map<String, String>> areas = new HashMap<>();
+
+    /**
+     * Epoch visibility list.
+     * Lists in which epochs this hex grid is active.
+     * Empty list means not visible in any epoch.
+     */
+    @Builder.Default
+    private List<Integer> epoches = new ArrayList<>();
 
     private Instant createdAt;
     private Instant updatedAt;

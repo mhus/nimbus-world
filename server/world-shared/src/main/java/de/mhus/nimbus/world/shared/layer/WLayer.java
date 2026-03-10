@@ -106,7 +106,7 @@ public class WLayer implements Identifiable {
     /**
      * Epoch assignment for this layer.
      * The layer and its data (terrain/model) are visible in all listed epochs.
-     * Empty list means the layer is visible in all epochs (backward compatible).
+     * Empty list means not visible in any epoch.
      */
     @Builder.Default
     private List<Integer> epoches = new ArrayList<>();

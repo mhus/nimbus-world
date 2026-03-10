@@ -19,6 +19,7 @@ export interface HexGridWithId {
   createdAt?: string;
   updatedAt?: string;
   enabled: boolean;
+  epoches?: number[];
 }
 
 export interface UseHexGridsReturn {

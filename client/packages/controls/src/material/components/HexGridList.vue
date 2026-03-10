@@ -6,6 +6,7 @@
           <th>Position (Q;R)</th>
           <th>Name</th>
           <th>Title</th>
+          <th>Epoches</th>
           <th>Status</th>
           <th>Created</th>
           <th>Actions</th>
@@ -33,6 +34,14 @@
             <div class="text-sm text-base-content/70 max-w-xs truncate">
               {{ hexGrid.publicData.title || '-' }}
             </div>
+          </td>
+
+          <!-- Epoches -->
+          <td @click="$emit('edit', hexGrid)">
+            <span v-if="hexGrid.epoches && hexGrid.epoches.length > 0" class="badge badge-sm badge-outline">
+              {{ hexGrid.epoches.join(',') }}
+            </span>
+            <span v-else class="text-xs text-base-content/50">all</span>
           </td>
 
           <!-- Status -->

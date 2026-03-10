@@ -114,7 +114,7 @@
             placeholder="Comma-separated epoch numbers, e.g. 0,1,2"
           />
           <label class="label">
-            <span class="label-text-alt">Which epoches this layer belongs to (empty = all epoches)</span>
+            <span class="label-text-alt">Comma-separated list of epoch numbers, e.g. 0,1,2 (empty = not visible in any epoch)</span>
           </label>
         </div>
 

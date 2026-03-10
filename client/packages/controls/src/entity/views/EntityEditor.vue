@@ -149,7 +149,7 @@
                 class="input input-bordered w-full"
               />
               <label class="label">
-                <span class="label-text-alt">Which epoches this entity belongs to (empty = all epoches)</span>
+                <span class="label-text-alt">Comma-separated list of epoch numbers, e.g. 0,1,2 (empty = not visible in any epoch)</span>
               </label>
             </div>
           </div>

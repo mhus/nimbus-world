@@ -74,7 +74,8 @@ public class HexGridStructurePlacerJobExecutor implements JobExecutor {
 
             // Load hex grid
             String position = hexQ + ";" + hexR;
-            WHexGrid hexGrid = hexGridRepository.findByWorldIdAndPosition(worldId, position)
+            WHexGrid hexGrid = hexGridRepository.findAllByWorldIdAndPosition(worldId, position)
+                    .stream().findFirst()
                     .orElseThrow(() -> new JobExecutionException("HexGrid not found: " + position));
 
             // Load flat for coordinate mapping

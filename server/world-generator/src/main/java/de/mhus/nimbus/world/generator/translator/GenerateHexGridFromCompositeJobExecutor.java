@@ -139,14 +139,14 @@ public class GenerateHexGridFromCompositeJobExecutor implements JobExecutor {
                 Map<String, String> params = sourceGrid.getParameters();
 
                 // Check if grid already exists in database
-                Optional<de.mhus.nimbus.world.shared.world.WHexGrid> existingOpt =
-                    hexGridRepository.findByWorldIdAndPosition(composition.getWorldId(), position);
+                var existingList =
+                    hexGridRepository.findAllByWorldIdAndPosition(composition.getWorldId(), position);
 
                 de.mhus.nimbus.world.shared.world.WHexGrid wHexGrid;
 
-                if (existingOpt.isPresent()) {
+                if (!existingList.isEmpty()) {
                     // Update existing grid with parameters and publicData from FilledHexGrid
-                    wHexGrid = existingOpt.get();
+                    wHexGrid = existingList.getFirst();
                     wHexGrid.getPublicData().setTitle(sourceGrid.getPublicData().getTitle());
                     wHexGrid.setParameters(new HashMap<>(params));
 
@@ -224,14 +224,14 @@ public class GenerateHexGridFromCompositeJobExecutor implements JobExecutor {
 
             // Iterate over unique coordinates only (use Set instead of List to avoid duplicates)
             for (String position : allCoordinateStrings) {
-                Optional<de.mhus.nimbus.world.shared.world.WHexGrid> gridOpt =
-                    hexGridRepository.findByWorldIdAndPosition(composition.getWorldId(), position);
+                var gridList =
+                    hexGridRepository.findAllByWorldIdAndPosition(composition.getWorldId(), position);
 
-                if (gridOpt.isEmpty()) {
+                if (gridList.isEmpty()) {
                     continue;
                 }
 
-                de.mhus.nimbus.world.shared.world.WHexGrid grid = gridOpt.get();
+                de.mhus.nimbus.world.shared.world.WHexGrid grid = gridList.getFirst();
                 boolean modified = false;
 
                 // Parse coordinate from position string

@@ -75,7 +75,8 @@ public class FloraGeneratorService {
                 .orElseThrow(() -> new ModelBuilderException("World not found: " + worldId));
 
         String position = hexQ + ";" + hexR;
-        WHexGrid hexGrid = hexGridRepository.findByWorldIdAndPosition(worldId, position)
+        WHexGrid hexGrid = hexGridRepository.findAllByWorldIdAndPosition(worldId, position)
+                .stream().findFirst()
                 .orElseThrow(() -> new ModelBuilderException("HexGrid not found: " + position));
 
         Map<String, String> params = hexGrid.getParameters();

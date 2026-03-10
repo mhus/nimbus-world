@@ -166,10 +166,10 @@ public class HexGridGenerator {
 
             for (FeatureHexGrid config : hexGridConfigs) {
                 String positionKey = config.getPositionKey();
-                Optional<WHexGrid> existing = hexGridRepository
-                    .findByWorldIdAndPosition(worldId, positionKey);
+                boolean existing = !hexGridRepository
+                    .findAllByWorldIdAndPosition(worldId, positionKey).isEmpty();
 
-                if (existing.isPresent()) {
+                if (existing) {
                     log.debug("HexGrid already exists at {}, skipping", positionKey);
                     skippedCount++;
                     continue;

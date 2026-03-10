@@ -220,6 +220,22 @@
           </div>
         </div>
 
+        <!-- Epoches -->
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text">Epoches</span>
+          </label>
+          <input
+            v-model="epochesText"
+            type="text"
+            placeholder="Comma-separated epoch numbers, e.g. 0,1,2"
+            class="input input-bordered"
+          />
+          <label class="label">
+            <span class="label-text-alt">Comma-separated list of epoch numbers, e.g. 0,1,2 (empty = not visible in any epoch)</span>
+          </label>
+        </div>
+
         <!-- Enabled -->
         <div class="form-control">
           <label class="label cursor-pointer justify-start gap-4">
@@ -459,6 +475,15 @@ const markingDirty = ref(false);
 const saveError = ref<string | null>(null);
 const showJsonEditor = ref(false);
 const showAreaEditor = ref(false);
+const epochesText = ref('');
+
+const parseEpoches = (): number[] => {
+  return epochesText.value
+    .split(',')
+    .map(s => s.trim())
+    .filter(s => s.length > 0 && !isNaN(Number(s)))
+    .map(Number);
+};
 
 // Parameters editing
 const newParamKey = ref('');
@@ -490,6 +515,7 @@ watch(() => props.hexGrid, (hexGrid) => {
       parameters: hexGrid.parameters ? { ...hexGrid.parameters } : {},
       areas: hexGrid.areas ? JSON.parse(JSON.stringify(hexGrid.areas)) : {}
     };
+    epochesText.value = (hexGrid.epoches || []).join(',');
   } else {
     // Reset for create mode
     formData.value = {
@@ -508,6 +534,7 @@ watch(() => props.hexGrid, (hexGrid) => {
       parameters: {},
       areas: {}
     };
+    epochesText.value = '';
   }
 }, { immediate: true });
 
@@ -574,7 +601,8 @@ const handleSave = async () => {
       publicData: publicData,
       enabled: formData.value.enabled,
       parameters: formData.value.parameters,
-      areas: formData.value.areas
+      areas: formData.value.areas,
+      epoches: parseEpoches()
     };
 
     if (isEditMode.value) {

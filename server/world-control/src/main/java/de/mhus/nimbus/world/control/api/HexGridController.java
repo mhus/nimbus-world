@@ -43,7 +43,8 @@ public class HexGridController extends BaseEditorController {
             HexGrid publicData,
             Map<String, String> parameters,
             Map<String, Map<String, String>> areas,
-            Boolean enabled
+            Boolean enabled,
+            List<Integer> epoches
     ) {}
 
     /**
@@ -58,7 +59,8 @@ public class HexGridController extends BaseEditorController {
             Map<String, Map<String, String>> areas,
             Instant createdAt,
             Instant updatedAt,
-            boolean enabled
+            boolean enabled,
+            List<Integer> epoches
     ) {}
 
     private HexGridResponse toResponse(WHexGrid hexGrid) {
@@ -71,7 +73,8 @@ public class HexGridController extends BaseEditorController {
                 hexGrid.getAreas(),
                 hexGrid.getCreatedAt(),
                 hexGrid.getUpdatedAt(),
-                hexGrid.isEnabled()
+                hexGrid.isEnabled(),
+                hexGrid.getEpoches()
         );
     }
 
@@ -225,7 +228,8 @@ public class HexGridController extends BaseEditorController {
                     worldId,
                     request.publicData(),
                     request.parameters(),
-                    request.areas()
+                    request.areas(),
+                    request.epoches()
             );
 
             // Apply enabled flag if specified
@@ -278,6 +282,9 @@ public class HexGridController extends BaseEditorController {
                 }
                 if (request.enabled() != null) {
                     hexGrid.setEnabled(request.enabled());
+                }
+                if (request.epoches() != null) {
+                    hexGrid.setEpoches(request.epoches());
                 }
             });
 

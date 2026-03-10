@@ -14,37 +14,32 @@ import java.util.Optional;
 public interface WHexGridRepository extends MongoRepository<WHexGrid, String> {
 
     /**
-     * Finds a hex grid by world ID and position.
-     *
-     * @param worldId The world identifier
-     * @param position The position key in format "q:r"
-     * @return Optional containing the hex grid if found
+     * Finds all hex grids at the given world and position (may be multiple with different epoches).
      */
-    Optional<WHexGrid> findByWorldIdAndPosition(String worldId, String position);
+    List<WHexGrid> findAllByWorldIdAndPosition(String worldId, String position);
+
+    /**
+     * Finds a hex grid by world ID, position, and epoch.
+     */
+    Optional<WHexGrid> findByWorldIdAndPositionAndEpochesContaining(String worldId, String position, int epoch);
 
     /**
      * Finds all hex grids in a world.
-     *
-     * @param worldId The world identifier
-     * @return List of all hex grids in the world
      */
     List<WHexGrid> findByWorldId(String worldId);
 
     /**
      * Finds hex grids in a world filtered by enabled status.
-     *
-     * @param worldId The world identifier
-     * @param enabled The enabled status to filter by
-     * @return List of hex grids matching the criteria
      */
     List<WHexGrid> findByWorldIdAndEnabled(String worldId, boolean enabled);
 
     /**
-     * Checks if a hex grid exists at the given world and position.
-     *
-     * @param worldId The world identifier
-     * @param position The position key in format "q:r"
-     * @return true if a hex grid exists at this position
+     * Finds all hex grids in a world that are active in the given epoch.
      */
-    boolean existsByWorldIdAndPosition(String worldId, String position);
+    List<WHexGrid> findByWorldIdAndEpochesContaining(String worldId, int epoch);
+
+    /**
+     * Finds enabled hex grids in a world that are active in the given epoch.
+     */
+    List<WHexGrid> findByWorldIdAndEnabledAndEpochesContaining(String worldId, boolean enabled, int epoch);
 }
