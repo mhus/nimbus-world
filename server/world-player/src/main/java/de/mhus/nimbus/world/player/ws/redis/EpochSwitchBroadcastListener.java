@@ -2,6 +2,7 @@ package de.mhus.nimbus.world.player.ws.redis;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import de.mhus.nimbus.world.player.service.ClientService;
 import de.mhus.nimbus.world.player.session.PlayerSession;
 import de.mhus.nimbus.world.player.ws.ChunkSenderService;
 import de.mhus.nimbus.world.player.ws.ChunkSenderService.ChunkCoord;
@@ -33,6 +34,7 @@ public class EpochSwitchBroadcastListener {
     private final WorldRedisMessagingService redisMessaging;
     private final SessionManager sessionManager;
     private final ChunkSenderService chunkSenderService;
+    private final ClientService clientService;
     private final ObjectMapper objectMapper;
 
     private final Set<String> subscribedWorlds = java.util.concurrent.ConcurrentHashMap.newKeySet();
@@ -84,6 +86,9 @@ public class EpochSwitchBroadcastListener {
 
                 log.debug("Updated epoch for session {}: {} -> {}", session.getSessionId(), oldEpoch, newEpoch);
 
+                // Send reloadWorldConfig command so client reloads WorldInfo (incl. worldStatus)
+                sendReloadWorldConfigCommand(session);
+
                 // Resend all registered chunks with new epoch data
                 resendRegisteredChunks(session);
             }
@@ -94,6 +99,19 @@ public class EpochSwitchBroadcastListener {
         } catch (Exception e) {
             log.error("Failed to handle epoch switch from Redis: {}", message, e);
         }
+    }
+
+    /**
+     * Send reloadWorldConfig server command to client.
+     * This triggers the client to reload WorldInfo (including updated worldStatus for the new epoch)
+     * before chunks arrive, so block rendering uses the correct status.
+     */
+    private void sendReloadWorldConfigCommand(PlayerSession session) {
+        var commandData = objectMapper.createObjectNode();
+        commandData.put("cmd", "reloadWorldConfig");
+        commandData.put("oneway", true);
+        clientService.sendCommand(session, "reloadWorldConfig", commandData);
+        log.debug("Sent reloadWorldConfig command to session {}", session.getSessionId());
     }
 
     /**
