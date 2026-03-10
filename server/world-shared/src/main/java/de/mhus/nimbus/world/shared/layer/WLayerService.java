@@ -402,6 +402,8 @@ public class WLayerService implements StorageProvider {
 
     /**
      * Core logic for saving terrain chunk data (without dirty marking).
+     * Uses upsert to avoid DuplicateKeyException race conditions on the
+     * unique index (layerDataId, chunkKey).
      */
     private WLayerTerrain saveTerrainChunkCore(String worldId, String layerDataId,
                                                 String chunkKey, LayerChunkData data) {
@@ -421,28 +423,21 @@ public class WLayerService implements StorageProvider {
             throw new IllegalStateException("Failed to serialize ChunkData", e);
         }
 
-        // Find or create entity
-        WLayerTerrain entity = terrainRepository
-                .findByWorldIdAndLayerDataIdAndChunkKey(worldId, layerDataId, chunkKey)
-                .orElseGet(() -> {
-                    WLayerTerrain newEntity = WLayerTerrain.builder()
-                            .worldId(worldId)
-                            .layerDataId(layerDataId)
-                            .chunkKey(chunkKey)
-                            .build();
-                    newEntity.touchCreate();
-                    return newEntity;
-                });
+        // Find existing entity to get storageId for update (optional, not critical)
+        Optional<WLayerTerrain> existingOpt = terrainRepository
+                .findByWorldIdAndLayerDataIdAndChunkKey(worldId, layerDataId, chunkKey);
+        String existingStorageId = existingOpt.map(WLayerTerrain::getStorageId).orElse(null);
 
         // Compression if enabled
         byte[] dataBytes;
+        boolean compressed;
         if (compressionEnabled) {
             try (ByteArrayOutputStream buffer = new ByteArrayOutputStream();
                  GZIPOutputStream gzip = new GZIPOutputStream(buffer)) {
                 gzip.write(json.getBytes(java.nio.charset.StandardCharsets.UTF_8));
                 gzip.finish();
                 dataBytes = buffer.toByteArray();
-                entity.setCompressed(true);
+                compressed = true;
                 log.debug("Layer terrain chunk compressed: layerDataId={} chunkKey={} original={} compressed={} ratio={}",
                         layerDataId, chunkKey, json.length(), dataBytes.length,
                         String.format("%.1f%%", 100.0 * dataBytes.length / json.length()));
@@ -451,26 +446,42 @@ public class WLayerService implements StorageProvider {
             }
         } else {
             dataBytes = json.getBytes(java.nio.charset.StandardCharsets.UTF_8);
-            entity.setCompressed(false);
+            compressed = false;
         }
 
         // Store via StorageService
+        String storageId;
         try (InputStream stream = new ByteArrayInputStream(dataBytes)) {
             StorageService.StorageInfo storageInfo;
-            if (entity.getStorageId() != null) {
-                storageInfo = storageService.update(STORAGE_SCHEMA, STORAGE_SCHEMA_VERSION, entity.getStorageId(), stream);
+            if (existingStorageId != null) {
+                storageInfo = storageService.update(STORAGE_SCHEMA, STORAGE_SCHEMA_VERSION, existingStorageId, stream);
             } else {
                 storageInfo = storageService.store(STORAGE_SCHEMA, STORAGE_SCHEMA_VERSION, worldId, "layer/terrain/" + layerDataId + "/" + chunkKey, stream);
             }
-            entity.setStorageId(storageInfo.id());
+            storageId = storageInfo.id();
             log.debug("Terrain chunk stored: layerDataId={} chunkKey={} storageId={} size={} compressed={}",
-                    layerDataId, chunkKey, storageInfo.id(), storageInfo.size(), entity.isCompressed());
+                    layerDataId, chunkKey, storageId, storageInfo.size(), compressed);
         } catch (Exception e) {
             throw new IllegalStateException("Failed to store terrain chunk", e);
         }
 
-        entity.touchUpdate();
-        return terrainRepository.save(entity);
+        // Atomic upsert based on unique index (layerDataId + chunkKey)
+        var now = java.time.Instant.now();
+        var query = new Query(Criteria.where("layerDataId").is(layerDataId)
+                .and("chunkKey").is(chunkKey));
+        var update = new org.springframework.data.mongodb.core.query.Update()
+                .set("worldId", worldId)
+                .set("storageId", storageId)
+                .set("compressed", compressed)
+                .set("updatedAt", now)
+                .setOnInsert("createdAt", now);
+
+        mongoTemplate.upsert(query, update, WLayerTerrain.class);
+
+        // Return the saved entity
+        return terrainRepository.findByWorldIdAndLayerDataIdAndChunkKey(worldId, layerDataId, chunkKey)
+                .orElseThrow(() -> new IllegalStateException(
+                        "Terrain chunk not found after upsert: layerDataId=" + layerDataId + " chunkKey=" + chunkKey));
     }
 
     /**
