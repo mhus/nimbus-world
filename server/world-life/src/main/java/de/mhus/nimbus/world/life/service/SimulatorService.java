@@ -434,7 +434,8 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
                 log.debug("World {}: Entity {} combat ended (timeout)", worldId, entity.getEntityId());
             } else {
                 // Generate combat pathway
-                EntityPathway combatPathway = combatBehaviorHandler.generateCombatPathway(entity, state, currentTime, worldId);
+                int epoch = getWorldEpoch(worldId);
+                EntityPathway combatPathway = combatBehaviorHandler.generateCombatPathway(entity, state, currentTime, worldId, epoch);
                 if (combatPathway != null) {
                     return finishPathway(entity, state, combatPathway, currentTime, worldId);
                 }
@@ -448,7 +449,8 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
             log.warn("World {}: Behavior not found: {}, entity: {}", worldId, behaviorType, entity.getEntityId());
             return Optional.empty();
         }
-        EntityPathway pathway = behavior.update(entity, state, currentTime, worldId);
+        int epoch = getWorldEpoch(worldId);
+        EntityPathway pathway = behavior.update(entity, state, currentTime, worldId, epoch);
 
         // Process combat tick for entities with combat data
         processCombatTick(state, 1.0, worldId);
@@ -693,7 +695,8 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
         if (!state.isInCombat()) return;
 
         long currentTime = System.currentTimeMillis();
-        EntityPathway combatPathway = combatBehaviorHandler.generateCombatPathway(entity, state, currentTime, worldId);
+        int epoch = getWorldEpoch(worldId);
+        EntityPathway combatPathway = combatBehaviorHandler.generateCombatPathway(entity, state, currentTime, worldId, epoch);
         if (combatPathway == null) return;
 
         finishPathway(entity, state, combatPathway, currentTime, worldId);

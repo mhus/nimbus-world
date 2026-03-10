@@ -35,7 +35,11 @@ public class PlayerSession {
     private ClientType clientType;
     private String actor;
 
-    private int epoch;
+    /**
+     * Current epoch for this session. Volatile because it is written by EpochSwitchBroadcastListener
+     * and read by multiple threads (chunk loading, gameplay, REST controllers).
+     */
+    private volatile int epoch;
 
     private SessionStatus status = SessionStatus.CONNECTED;
 

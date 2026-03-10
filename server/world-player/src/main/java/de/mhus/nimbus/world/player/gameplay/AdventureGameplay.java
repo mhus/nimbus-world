@@ -416,7 +416,7 @@ public class AdventureGameplay extends BasicGameplay {
         session.setCachedHexR(hexPos.getR());
 
         String worldId = session.getWorldId().getId();
-        String gameMode = hexGridService.findByWorldIdAndPosition(worldId, hexPos)
+        String gameMode = hexGridService.findByWorldIdAndPosition(worldId, hexPos, session.getEpoch())
                 .map(WHexGrid::getParameters)
                 .map(params -> params.get("gameMode"))
                 .orElse("");

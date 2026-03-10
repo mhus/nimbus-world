@@ -2,6 +2,7 @@ package de.mhus.nimbus.world.player.api;
 
 import de.mhus.nimbus.generated.types.Entity;
 import de.mhus.nimbus.world.player.service.PlayerService;
+import de.mhus.nimbus.world.player.session.PlayerSession;
 import de.mhus.nimbus.world.player.ws.SessionManager;
 import de.mhus.nimbus.world.shared.access.AccessValidator;
 import de.mhus.nimbus.world.shared.world.WEntity;
@@ -72,7 +73,9 @@ public class WorldEntityController {
         }
 
         // Not a player entity or not found in sessions - search database
-        return service.findByWorldIdAndEntityId(worldId, entityId)
+        int epoch = sessionManager.getBySessionId(accessUtil.getSessionId(request))
+                .map(PlayerSession::getEpoch).orElse(0);
+        return service.findByWorldIdAndEntityId(worldId, entityId, epoch)
                         .map(WEntity::getPublicData)
                         .map(ResponseEntity::ok)
                         .orElseGet(() -> {

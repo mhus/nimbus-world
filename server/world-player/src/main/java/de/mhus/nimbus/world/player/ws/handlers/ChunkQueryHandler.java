@@ -51,11 +51,11 @@ public class ChunkQueryHandler implements MessageHandler {
 
             // Load chunk entity first
             String chunkKey = cx + ":" + cz;
-            var chunkOpt = chunkService.find(session.getWorldId(), chunkKey);
+            var chunkOpt = chunkService.find(session.getWorldId(), chunkKey, session.getEpoch());
 
             if (chunkOpt.isEmpty()) {
                 // Generate default chunk if not found
-                var chunkData = chunkService.loadChunkData(session.getWorldId(), chunkKey, true);
+                var chunkData = chunkService.loadChunkData(session.getWorldId(), chunkKey, true, session.getEpoch());
                 if (chunkData.isPresent()) {
                     var saved = chunkService.saveChunk(session.getWorldId(), chunkKey, chunkData.get());
                     chunkOpt = java.util.Optional.of(saved);

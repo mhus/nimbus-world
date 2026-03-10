@@ -13,28 +13,33 @@ import java.util.Optional;
 @Repository
 public interface WLayerRepository extends MongoRepository<WLayer, String> {
 
+    // EPOCH-UNFILTERED: returns data across all epochs. Use the epoch-filtered overload for player/gameplay context.
     /**
      * Find layer by world ID and name.
      */
     Optional<WLayer> findByWorldIdAndName(String worldId, String name);
 
+    // EPOCH-UNFILTERED: returns data across all epochs. Use the epoch-filtered overload for player/gameplay context.
     /**
      * Find layer by world ID and layer data ID.
      * This is the preferred method as only worldId + layerDataId is guaranteed unique.
      */
     Optional<WLayer> findByWorldIdAndLayerDataId(String worldId, String layerDataId);
 
+    // EPOCH-UNFILTERED: returns data across all epochs. Use the epoch-filtered overload for player/gameplay context.
     /**
      * Find all layers for a world, sorted by order ascending.
      */
     List<WLayer> findByWorldIdOrderByOrderAsc(String worldId);
 
+    // EPOCH-UNFILTERED: returns data across all epochs. Use the epoch-filtered overload for player/gameplay context.
     /**
      * Find enabled layers for a world, sorted by order ascending.
      * Performance-critical query for chunk regeneration.
      */
     List<WLayer> findByWorldIdAndEnabledOrderByOrderAsc(String worldId, boolean enabled);
 
+    // EPOCH-UNFILTERED: returns data across all epochs. Use the epoch-filtered overload for player/gameplay context.
     /**
      * Find layers affecting a specific chunk.
      * Returns layers where allChunks=true OR chunk is in affectedChunks list.

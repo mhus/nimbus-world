@@ -93,7 +93,7 @@ public class DropItemAction implements GameplayAction {
         }
 
         // Check if target position is free (no existing item)
-        var existingItem = adventure.getItemPositionService().getItemAt(session.getWorldId(), targetX, targetY, targetZ);
+        var existingItem = adventure.getItemPositionService().getItemAt(session.getWorldId(), targetX, targetY, targetZ, session.getEpoch());
         if (existingItem.isPresent()) {
             log.debug("Position ({},{},{}) already occupied by item {}", targetX, targetY, targetZ, existingItem.get().getItemId());
             adventure.getClientService().sendNotification(session, 0, "", "Position occupied", null);

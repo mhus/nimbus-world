@@ -105,6 +105,7 @@ public class GenerateHexGridFromCompositeJobTest {
         Map<String, String> params = new HashMap<>();
         params.put("documentId", TEST_DOCUMENT_ID);
         params.put("seed", "42");
+        params.put("epoch", "1");
 
         // Create job
         WJob job = WJob.builder()
@@ -173,6 +174,7 @@ public class GenerateHexGridFromCompositeJobTest {
         Map<String, String> params = new HashMap<>();
         params.put("documentId", TEST_DOCUMENT_ID);
         params.put("seed", "42");
+        params.put("epoch", "1");
 
         // Create job
         WJob job = WJob.builder()
@@ -214,6 +216,7 @@ public class GenerateHexGridFromCompositeJobTest {
         Map<String, String> params = new HashMap<>();
         params.put("documentId", "invalid-document-id");
         params.put("seed", "42");
+        params.put("epoch", "1");
 
         WJob job = WJob.builder()
                 .id(UUID.randomUUID().toString())
@@ -250,6 +253,7 @@ public class GenerateHexGridFromCompositeJobTest {
         Map<String, String> params = new HashMap<>();
         params.put("documentId", villageDocumentId);
         params.put("seed", "42");
+        params.put("epoch", "1");
 
         // Create job
         WJob job = WJob.builder()
@@ -320,6 +324,7 @@ public class GenerateHexGridFromCompositeJobTest {
         Map<String, String> params = new HashMap<>();
         params.put("documentId", genesisDocumentId);
         params.put("seed", "42");
+        params.put("epoch", "1");
         params.put("edge_blend_width", "30");
         params.put("edge_blend_randomness", "0.6");
         params.put("edge_shake_strength", "0.2");
@@ -503,6 +508,7 @@ public class GenerateHexGridFromCompositeJobTest {
         Map<String, String> generateParams = new HashMap<>();
         generateParams.put("documentId", compositionDocId);
         generateParams.put("seed", "42");
+        generateParams.put("epoch", "1");
         generateParams.put("edge_blend_width", "30");
         generateParams.put("edge_blend_randomness", "0.6");
         generateParams.put("edge_shake_strength", "0.2");
@@ -608,6 +614,7 @@ public class GenerateHexGridFromCompositeJobTest {
         Map<String, String> params = new HashMap<>();
         params.put("documentId", genesisDocumentId);
         params.put("seed", "42");
+        params.put("epoch", "1");
 
         // Create job
         WJob job = WJob.builder()
@@ -932,44 +939,8 @@ public class GenerateHexGridFromCompositeJobTest {
      * Setup WHexGridRepository mock to track created/existing grids
      */
     private void setupHexGridRepositoryMock() {
-        // Mock existsByWorldIdAndPosition
-        when(hexGridRepository.existsByWorldIdAndPosition(any(String.class), any(String.class)))
-                .thenAnswer(invocation -> {
-                    String worldId = invocation.getArgument(0);
-                    String position = invocation.getArgument(1);
-
-                    String key = worldId + ":" + position;
-                    boolean exists = existingHexGridKeys.contains(key);
-
-                    log.debug("Mock existsByWorldIdAndPosition: {}:{} -> {}", worldId, position, exists);
-                    return exists;
-                });
-
-        // Mock save
-        when(hexGridRepository.save(any(WHexGrid.class)))
-                .thenAnswer(invocation -> {
-                    WHexGrid grid = invocation.getArgument(0);
-
-                    // Remove existing grid with same position before adding (to handle updates)
-                    createdHexGrids.removeIf(existing ->
-                            existing.getWorldId().equals(grid.getWorldId()) &&
-                            existing.getPosition().equals(grid.getPosition()));
-
-                    // Add the updated/new grid
-                    createdHexGrids.add(grid);
-
-                    HexVector2 pos = grid.getPublicData().getPosition();
-                    String key = grid.getWorldId() + ":" + pos.getQ() + ";" + pos.getR();
-                    existingHexGridKeys.add(key);
-
-                    log.debug("Mock save: worldId={}, position={}",
-                            grid.getWorldId(), grid.getPosition());
-
-                    return grid;
-                });
-
-        // Mock findByWorldIdAndPosition (for updates)
-        when(hexGridRepository.findByWorldIdAndPosition(any(String.class), any(String.class)))
+        // Mock findAllByWorldIdAndPosition (used for both existence checks and lookups)
+        when(hexGridRepository.findAllByWorldIdAndPosition(any(String.class), any(String.class)))
                 .thenAnswer(invocation -> {
                     String worldId = invocation.getArgument(0);
                     String position = invocation.getArgument(1);
@@ -983,7 +954,7 @@ public class GenerateHexGridFromCompositeJobTest {
                             .findFirst();
 
                     if (found.isPresent()) {
-                        return found;
+                        return List.of(found.get());
                     }
 
                     // If not in createdHexGrids but in existingHexGridKeys (simulated existing grids)
@@ -1007,10 +978,34 @@ public class GenerateHexGridFromCompositeJobTest {
                                 .publicData(publicData)
                                 .parameters(new HashMap<>())  // Empty parameters to simulate bug
                                 .build();
-                        return Optional.of(grid);
+                        return List.of(grid);
                     }
 
-                    return Optional.empty();
+                    log.debug("Mock findAllByWorldIdAndPosition: {}:{} -> empty", worldId, position);
+                    return List.of();
+                });
+
+        // Mock save
+        when(hexGridRepository.save(any(WHexGrid.class)))
+                .thenAnswer(invocation -> {
+                    WHexGrid grid = invocation.getArgument(0);
+
+                    // Remove existing grid with same position before adding (to handle updates)
+                    createdHexGrids.removeIf(existing ->
+                            existing.getWorldId().equals(grid.getWorldId()) &&
+                            existing.getPosition().equals(grid.getPosition()));
+
+                    // Add the updated/new grid
+                    createdHexGrids.add(grid);
+
+                    HexVector2 pos = grid.getPublicData().getPosition();
+                    String key = grid.getWorldId() + ":" + pos.getQ() + ";" + pos.getR();
+                    existingHexGridKeys.add(key);
+
+                    log.debug("Mock save: worldId={}, position={}",
+                            grid.getWorldId(), grid.getPosition());
+
+                    return grid;
                 });
     }
 

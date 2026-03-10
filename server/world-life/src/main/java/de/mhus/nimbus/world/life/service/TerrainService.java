@@ -45,7 +45,7 @@ public class TerrainService {
      * @return Y coordinate of ground surface (top of highest solid block), or 64 if not found
      */
     public int getGroundHeight(WorldId worldId, int x, int z, int startY) {
-        return getGroundHeight(worldId, x, z, startY, false);
+        return getGroundHeight(worldId, x, z, startY, false, 0);
     }
 
     /**
@@ -57,9 +57,10 @@ public class TerrainService {
      * @param z Z coordinate (world space)
      * @param startY Starting Y coordinate for downward search
      * @param canWalkOnWater If true, allows walking on water. If false, skips positions with water.
+     * @param epoch Current world epoch
      * @return Y coordinate of ground surface (top of highest solid block), or 64 if not found
      */
-    public int getGroundHeight(WorldId worldId, int x, int z, int startY, boolean canWalkOnWater) {
+    public int getGroundHeight(WorldId worldId, int x, int z, int startY, boolean canWalkOnWater, int epoch) {
         try {
             var world = getCachedWorld(worldId);
             // Calculate chunk coordinates
@@ -68,7 +69,7 @@ public class TerrainService {
             String chunkKey = TypeUtil.toStringChunkCoord(chunkX, chunkZ);
 
             // Load chunk from database (regionId = worldId for main world, create=false)
-            Optional<ChunkData> chunkDataOpt = chunkService.loadChunkData(worldId, chunkKey, false);
+            Optional<ChunkData> chunkDataOpt = chunkService.loadChunkData(worldId, chunkKey, false, epoch);
 
             if (chunkDataOpt.isEmpty()) {
                 log.trace("Chunk not found for ground height lookup: world={}, chunk={}", worldId, chunkKey);
@@ -185,7 +186,7 @@ public class TerrainService {
      * @param z Z coordinate (world space)
      * @return Y coordinate within water bounds, or -1 if no water at this position
      */
-    public int getWaterPosition(WorldId worldId, int x, int z) {
+    public int getWaterPosition(WorldId worldId, int x, int z, int epoch) {
         try {
             var world = getCachedWorld(worldId);
             // Calculate chunk coordinates
@@ -194,7 +195,7 @@ public class TerrainService {
             String chunkKey = TypeUtil.toStringChunkCoord(chunkX, chunkZ);
 
             // Load chunk from database
-            Optional<ChunkData> chunkDataOpt = chunkService.loadChunkData(worldId, chunkKey, false);
+            Optional<ChunkData> chunkDataOpt = chunkService.loadChunkData(worldId, chunkKey, false, epoch);
 
             if (chunkDataOpt.isEmpty()) {
                 log.trace("Chunk not found for water position lookup: world={}, chunk={}", worldId, chunkKey);

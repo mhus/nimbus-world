@@ -40,11 +40,11 @@ public class WaterBasedMovement {
      * @param z Starting Z coordinate
      * @return Water Y coordinate, or -1 if no water at this position
      */
-    public int findStartPosition(WorldId worldId, double x, double z) {
+    public int findStartPosition(WorldId worldId, double x, double z, int epoch) {
         int floorX = (int) Math.floor(x);
         int floorZ = (int) Math.floor(z);
 
-        return terrainService.getWaterPosition(worldId, floorX, floorZ);
+        return terrainService.getWaterPosition(worldId, floorX, floorZ, epoch);
     }
 
     /**
@@ -91,7 +91,8 @@ public class WaterBasedMovement {
             Vector3 direction,
             int waypointCount,
             double speed,
-            long currentTime) {
+            long currentTime,
+            int epoch) {
 
         List<Waypoint> waypoints = new ArrayList<>();
 
@@ -123,7 +124,8 @@ public class WaterBasedMovement {
             int waterY = terrainService.getWaterPosition(
                     worldId,
                     (int) Math.floor(nextX),
-                    (int) Math.floor(nextZ)
+                    (int) Math.floor(nextZ),
+                    epoch
             );
 
             // Check if position has water

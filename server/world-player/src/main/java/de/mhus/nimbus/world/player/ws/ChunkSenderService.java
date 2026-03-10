@@ -86,10 +86,10 @@ public class ChunkSenderService {
                 String chunkKey = BlockUtil.toChunkKey(coord.cx(), coord.cz());
 
                 // First find WChunk entity
-                var chunkOpt = chunkService.find(session.getWorldId(), chunkKey);
+                var chunkOpt = chunkService.find(session.getWorldId(), chunkKey, session.getEpoch());
                 if (chunkOpt.isEmpty()) {
                     // Generate default chunk if not found (but don't save it)
-                    var chunkDataOpt = chunkService.loadChunkData(session.getWorldId(), chunkKey, true);
+                    var chunkDataOpt = chunkService.loadChunkData(session.getWorldId(), chunkKey, true, session.getEpoch());
                     if (chunkDataOpt.isEmpty()) {
                         log.debug("Chunk not found and could not generate: cx={}, cz={}", coord.cx(), coord.cz());
                         continue;
@@ -124,7 +124,7 @@ public class ChunkSenderService {
 
                 // Handle EDITOR overlays from WEditCache (requires loading ChunkData)
                 if (session.isEditActor() && hasOverlayData(session.getWorldId(), chunkKey)) {
-                    var chunkDataOpt = chunkService.loadChunkData(session.getWorldId(), chunkKey, false); // laod 2 times ... hmm
+                    var chunkDataOpt = chunkService.loadChunkData(session.getWorldId(), chunkKey, false, session.getEpoch()); // laod 2 times ... hmm
                     if (chunkDataOpt.isPresent()) {
                         var chunkData = chunkDataOpt.get();
                         // Apply WEditCache overlays (decompresses, merges, sets c=null)
@@ -150,7 +150,7 @@ public class ChunkSenderService {
                         log.error("Failed to send binary chunk, falling back to text: cx={}, cz={}",
                                 coord.cx(), coord.cz(), e);
                         // Decompress server-side for JSON fallback (base64-encoded c field is not valid gzip for client)
-                        var fallbackData = chunkService.loadChunkData(session.getWorldId(), chunkKey, false);
+                        var fallbackData = chunkService.loadChunkData(session.getWorldId(), chunkKey, false, session.getEpoch());
                         if (fallbackData.isPresent()) {
                             var cd = fallbackData.get();
                             dto.setB(cd.getBlocks());

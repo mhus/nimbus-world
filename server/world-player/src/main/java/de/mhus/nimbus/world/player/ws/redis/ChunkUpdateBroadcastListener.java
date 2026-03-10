@@ -16,8 +16,11 @@ import org.springframework.web.socket.BinaryMessage;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Redis listener for chunk update events.
@@ -28,12 +31,8 @@ import java.util.Map;
  *   "chunkKey": "0:0",
  *   "cx": 0,
  *   "cz": 0,
- *   "blockCount": 256
- * }
- * OR
- * {
- *   "chunkKey": "0:0",
- *   "deleted": true
+ *   "blockCount": 256,
+ *   "epoches": [1, 2]       // optional: affected epoches (null = all)
  * }
  *
  * Client message type: "c.u" (Chunk Update)
@@ -103,10 +102,18 @@ public class ChunkUpdateBroadcastListener {
             String chunkKey = data.get("chunkKey").asText();
             int cx = data.has("cx") ? data.get("cx").asInt() : parseChunkX(chunkKey);
             int cz = data.has("cz") ? data.get("cz").asInt() : parseChunkZ(chunkKey);
-            boolean deleted = data.has("deleted") && data.get("deleted").asBoolean();
 
-            log.debug("Received chunk update: world={} chunk={} deleted={}",
-                    worldId, chunkKey, deleted);
+            // Parse affected epoches from message (null = all epoches, i.e. legacy mode)
+            Set<Integer> affectedEpoches = null;
+            if (data.has("epoches") && data.get("epoches").isArray()) {
+                affectedEpoches = new HashSet<>();
+                for (JsonNode epochNode : data.get("epoches")) {
+                    affectedEpoches.add(epochNode.asInt());
+                }
+            }
+
+            log.debug("Received chunk update: world={} chunk={} epoches={}",
+                    worldId, chunkKey, affectedEpoches);
 
             // Load updated chunk from database
             WorldId wid = WorldId.of(worldId).orElse(null);
@@ -115,26 +122,10 @@ public class ChunkUpdateBroadcastListener {
                 return;
             }
 
-            if (deleted) {
-                log.debug("Chunk deleted, skipping broadcast: world={} chunk={}", worldId, chunkKey);
-                return;
-            }
+            // Cache DTOs per epoch to avoid redundant DB loads
+            Map<Integer, ChunkDataTransferObject> dtoByEpoch = new HashMap<>();
 
-            // Find WChunk entity
-            var chunkEntityOpt = chunkService.find(wid, chunkKey);
-            if (chunkEntityOpt.isEmpty()) {
-                log.warn("WChunk entity not found for broadcast: chunkKey={}", chunkKey);
-                return;
-            }
-
-            // Convert to transfer object (uses compressed storage if available)
-            ChunkDataTransferObject dto = chunkService.toTransferObject(wid, chunkEntityOpt.get());
-            if (dto == null) {
-                log.warn("Failed to convert chunk to transfer object: chunkKey={}", chunkKey);
-                return;
-            }
-
-            // Send as binary message to all sessions registered for this chunk
+            // Send to all sessions registered for this chunk, loading per-epoch
             int sent = 0;
             for (PlayerSession session : sessionManager.getAllSessions().values()) {
                 // Skip if not authenticated
@@ -150,13 +141,32 @@ public class ChunkUpdateBroadcastListener {
                     continue;
                 }
 
+                // Skip if session's epoch is not in the affected epoches
+                int epoch = session.getEpoch();
+                if (affectedEpoches != null && !affectedEpoches.contains(epoch)) {
+                    log.trace("Session {} epoch {} not in affected epoches {}, skipping",
+                            session.getSessionId(), epoch, affectedEpoches);
+                    continue;
+                }
+
+                ChunkDataTransferObject dto = dtoByEpoch.computeIfAbsent(epoch, ep -> {
+                    var chunkEntityOpt = chunkService.find(wid, chunkKey, ep);
+                    if (chunkEntityOpt.isEmpty()) {
+                        log.debug("WChunk not found for broadcast: chunkKey={}, epoch={}", chunkKey, ep);
+                        return null;
+                    }
+                    return chunkService.toTransferObject(wid, chunkEntityOpt.get());
+                });
+
+                if (dto == null) continue;
+
                 // Send as binary frame if compressed
                 if (dto.getC() != null && dto.getC().length > 0) {
                     try {
                         sendCompressedChunkBinary(session, dto);
                         sent++;
-                        log.trace("Sent binary chunk update to session: cx={}, cz={}, compressed={} bytes",
-                                cx, cz, dto.getC().length);
+                        log.trace("Sent binary chunk update to session: cx={}, cz={}, epoch={}, compressed={} bytes",
+                                cx, cz, epoch, dto.getC().length);
                     } catch (Exception e) {
                         log.error("Failed to send binary chunk update to session: cx={}, cz={}",
                                 cx, cz, e);
@@ -166,8 +176,8 @@ public class ChunkUpdateBroadcastListener {
                 }
             }
 
-            log.info("Broadcast chunk update to {} sessions: world={} chunk={}",
-                    sent, worldId, chunkKey);
+            log.info("Broadcast chunk update to {} sessions: world={} chunk={} epoches={}",
+                    sent, worldId, chunkKey, affectedEpoches);
 
         } catch (Exception e) {
             log.error("Failed to handle chunk update from Redis: {}", message, e);

@@ -46,8 +46,8 @@ public class FlowComposerTest {
         mockRepository = Mockito.mock(WHexGridRepository.class);
 
         // Mock repository to return empty for all lookups (simulate no existing grids)
-        when(mockRepository.findByWorldIdAndPosition(anyString(), anyString()))
-            .thenReturn(Optional.empty());
+        when(mockRepository.findAllByWorldIdAndPosition(anyString(), anyString()))
+            .thenReturn(List.of());
 
         // Mock saveAll to return what was passed in
         when(mockRepository.saveAll(any())).thenAnswer(invocation -> {

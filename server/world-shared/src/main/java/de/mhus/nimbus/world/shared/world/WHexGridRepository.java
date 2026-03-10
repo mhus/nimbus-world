@@ -13,6 +13,7 @@ import java.util.Optional;
 @Repository
 public interface WHexGridRepository extends MongoRepository<WHexGrid, String> {
 
+    // EPOCH-UNFILTERED: returns data across all epochs. Use the epoch-filtered overload for player/gameplay context.
     /**
      * Finds all hex grids at the given world and position (may be multiple with different epoches).
      */
@@ -23,11 +24,13 @@ public interface WHexGridRepository extends MongoRepository<WHexGrid, String> {
      */
     Optional<WHexGrid> findByWorldIdAndPositionAndEpochesContaining(String worldId, String position, int epoch);
 
+    // EPOCH-UNFILTERED: returns data across all epochs. Use the epoch-filtered overload for player/gameplay context.
     /**
      * Finds all hex grids in a world.
      */
     List<WHexGrid> findByWorldId(String worldId);
 
+    // EPOCH-UNFILTERED: returns data across all epochs. Use the epoch-filtered overload for player/gameplay context.
     /**
      * Finds hex grids in a world filtered by enabled status.
      */

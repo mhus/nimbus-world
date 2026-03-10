@@ -17,6 +17,7 @@ import de.mhus.nimbus.world.shared.session.WSession;
 import de.mhus.nimbus.world.shared.session.WSessionService;
 import de.mhus.nimbus.world.shared.world.WHexGridService;
 import de.mhus.nimbus.world.shared.world.WWorld;
+import de.mhus.nimbus.world.shared.world.WWorldInstanceService;
 import de.mhus.nimbus.world.shared.world.WWorldService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -48,6 +49,7 @@ public class WorldConfigController {
     private final WSessionService sessionService;
     private final WPlayerSessionService playerSessionService;
     private final WHexGridService wHexGridService;
+    private final WWorldInstanceService worldInstanceService;
 
     @GetMapping("/config")
     @Operation(summary = "Get complete EngineConfiguration",
@@ -148,12 +150,19 @@ public class WorldConfigController {
             return;
         }
 
+        // Resolve epoch from world instance
+        int epoch = 0;
+        if (worldId.isInstance()) {
+            epoch = worldInstanceService.findByInstanceIdWithValidation(worldId.getId())
+                    .map(inst -> inst.getEpoch()).orElse(0);
+        }
+
         if ("last".equals(entryPoint)) {
             // Load from last saved position (WPlayerSession)
             handleLastEntryPoint(worldInfo, worldId.getId(), playerId.getId());
         } else if (entryPoint.startsWith("grid:")) {
             // Load from hex grid coordinates
-            handleGridEntryPoint(worldInfo, entryPoint);
+            handleGridEntryPoint(worldInfo, entryPoint, epoch);
         } else if (entryPoint.startsWith("position:")) {
             // Load from explicit position coordinates
             handlePositionEntryPoint(worldInfo, entryPoint);
@@ -205,7 +214,7 @@ public class WorldConfigController {
      * Handle "grid:q,r" entry point - set hex grid coordinates.
      * Falls back to world default if coordinates invalid.
      */
-    private void handleGridEntryPoint(WorldInfo worldInfo, String entryPoint) {
+    private void handleGridEntryPoint(WorldInfo worldInfo, String entryPoint, int epoch) {
         // Parse grid coordinates from "grid:q,r" format
         String coordsPart = entryPoint.substring(5); // Remove "grid:" prefix
         String[] coords = coordsPart.split(",");
@@ -224,7 +233,7 @@ public class WorldConfigController {
                     .q(q)
                     .r(r)
                     .build();
-            var hexGridOpt = wHexGridService.findByWorldIdAndPosition(worldInfo.getWorldId(), hexGrid);
+            var hexGridOpt = wHexGridService.findByWorldIdAndPosition(worldInfo.getWorldId(), hexGrid, epoch);
             if (hexGridOpt.isEmpty()) {
                 log.warn("Hex grid position not found in world: {}, q={}, r={}", worldInfo.getWorldId(), q, r);
                 return;

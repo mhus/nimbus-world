@@ -35,6 +35,7 @@ public class WHexGridService {
 
     // --- Find by position ---
 
+    // EPOCH-UNFILTERED: returns data across all epochs. Use the epoch-filtered overload for player/gameplay context.
     /**
      * Finds all hex grids at the given world and position (all epoch variants).
      */
@@ -80,6 +81,7 @@ public class WHexGridService {
         return repository.findByWorldIdAndPositionAndEpochesContaining(lookupWorld.getId(), positionKey, epoch);
     }
 
+    // EPOCH-UNFILTERED: returns data across all epochs. Use the epoch-filtered overload for player/gameplay context.
     /**
      * Finds a hex grid by world ID and position.
      * If multiple epoch variants exist, returns the first one found.
@@ -107,6 +109,7 @@ public class WHexGridService {
 
     // --- Find by world ---
 
+    // EPOCH-UNFILTERED: returns data across all epochs. Use the epoch-filtered overload for player/gameplay context.
     /**
      * Finds all hex grids in a world (all epochs).
      */
@@ -143,6 +146,7 @@ public class WHexGridService {
         return repository.findByWorldIdAndEpochesContaining(lookupWorld.getId(), epoch);
     }
 
+    // EPOCH-UNFILTERED: returns data across all epochs. Use the epoch-filtered overload for player/gameplay context.
     /**
      * Finds all enabled hex grids in a world (all epochs).
      */

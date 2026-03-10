@@ -8,11 +8,16 @@ import java.util.Optional;
 
 @Repository
 public interface WChunkRepository extends MongoRepository<WChunk, String> {
+    // EPOCH-UNFILTERED: returns data across all epochs. Use the epoch-filtered overload for player/gameplay context.
     Optional<WChunk> findByWorldIdAndChunk(String worldId, String chunk);
+    // EPOCH-UNFILTERED: returns data across all epochs. Use the epoch-filtered overload for player/gameplay context.
     List<WChunk> findAllByWorldIdAndChunk(String worldId, String chunk);
+    // EPOCH-UNFILTERED: returns data across all epochs. Use the epoch-filtered overload for player/gameplay context.
     boolean existsByWorldIdAndChunk(String worldId, String chunk);
     void deleteByWorldIdAndChunk(String worldId, String chunk);
+    // EPOCH-UNFILTERED: returns data across all epochs. Use the epoch-filtered overload for player/gameplay context.
     List<WChunk> findByWorldId(String worldId);
+    // EPOCH-UNFILTERED: returns data across all epochs. Use the epoch-filtered overload for player/gameplay context.
     List<WChunk> findByWorldIdAndChunkContaining(String worldId, String chunk);
 
     void deleteAllByWorldIdAndChunk(String worldId, String chunk);

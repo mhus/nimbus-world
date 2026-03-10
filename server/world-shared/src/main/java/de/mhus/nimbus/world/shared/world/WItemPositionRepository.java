@@ -13,6 +13,7 @@ import java.util.Optional;
 @Repository
 public interface WItemPositionRepository extends MongoRepository<WItemPosition, String> {
 
+    // EPOCH-UNFILTERED: returns data across all epochs. Use the epoch-filtered overload for player/gameplay context.
     /**
      * Find all items in a world.
      *
@@ -21,6 +22,7 @@ public interface WItemPositionRepository extends MongoRepository<WItemPosition, 
      */
     List<WItemPosition> findByWorldId(String worldId);
 
+    // EPOCH-UNFILTERED: returns data across all epochs. Use the epoch-filtered overload for player/gameplay context.
     /**
      * Check if an item exists.
      *
@@ -38,6 +40,7 @@ public interface WItemPositionRepository extends MongoRepository<WItemPosition, 
      */
     void deleteByWorldIdAndItemId(String worldId, String itemId);
 
+    // EPOCH-UNFILTERED: returns data across all epochs. Use the epoch-filtered overload for player/gameplay context.
     /**
      * Find enabled items in a chunk.
      *
@@ -49,8 +52,10 @@ public interface WItemPositionRepository extends MongoRepository<WItemPosition, 
     List<WItemPosition> findByWorldIdAndChunkAndEnabled(
             String worldId, String chunk, boolean enabled);
 
+    // EPOCH-UNFILTERED: returns data across all epochs. Use the epoch-filtered overload for player/gameplay context.
     Optional<WItemPosition> findByWorldIdAndItemId(String worldId, String itemId);
 
+    // EPOCH-UNFILTERED: returns data across all epochs. Use the epoch-filtered overload for player/gameplay context.
     /**
      * Find all items in a chunk (including disabled/tombstones).
      * Used for COW instance layer queries where tombstones must be included in merge.

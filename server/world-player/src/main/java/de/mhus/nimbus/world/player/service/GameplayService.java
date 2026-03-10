@@ -184,7 +184,7 @@ public class GameplayService implements SessionAuthenticatedConsumer {
             return;
         }
         // check item pos
-        Optional<WItemPosition> itemPositionOpt = itemPositionService.getItemAt(session.getWorldId(), x, y , z);
+        Optional<WItemPosition> itemPositionOpt = itemPositionService.getItemAt(session.getWorldId(), x, y, z, session.getEpoch());
         if (itemPositionOpt.isEmpty() || !itemId.equals(itemPositionOpt.get().getItemId())) {
             log.warn("No item {} found at position ({}, {}, {}) for world {}, cannot handle item interaction",
                     itemId, x, y, z, session.getWorldId());

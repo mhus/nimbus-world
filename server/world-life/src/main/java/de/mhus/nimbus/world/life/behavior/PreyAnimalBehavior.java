@@ -50,14 +50,14 @@ public class PreyAnimalBehavior implements EntityBehavior {
     }
 
     @Override
-    public EntityPathway update(WEntity entity, SimulationState state, long currentTime, WorldId worldId) {
+    public EntityPathway update(WEntity entity, SimulationState state, long currentTime, WorldId worldId, int epoch) {
         // Check if we need a new pathway (with interval check)
         if (!needsNewPathwayWithInterval(state, currentTime)) {
             return null;
         }
 
         // Generate new pathway
-        return generatePathway(entity, state, currentTime, worldId);
+        return generatePathway(entity, state, currentTime, worldId, epoch);
     }
 
     /**
@@ -78,7 +78,7 @@ public class PreyAnimalBehavior implements EntityBehavior {
      * If the entity is outside its roam radius (relative to middlePoint/spawn),
      * it generates a path back towards the center instead of a random direction.
      */
-    private EntityPathway generatePathway(WEntity entity, SimulationState state, long currentTime, WorldId worldId) {
+    private EntityPathway generatePathway(WEntity entity, SimulationState state, long currentTime, WorldId worldId, int epoch) {
         // Get entity's current position (server-side simulation data)
         Vector3 currentPosition = entity.getPosition();
         if (currentPosition == null) {
@@ -87,7 +87,7 @@ public class PreyAnimalBehavior implements EntityBehavior {
         }
 
         // Ensure start position is on solid ground
-        int startY = blockMovement.findStartPosition(worldId, currentPosition.getX(), currentPosition.getZ());
+        int startY = blockMovement.findStartPosition(worldId, currentPosition.getX(), currentPosition.getZ(), epoch);
 
         Vector3 startPosition = new Vector3();
         startPosition.setX(currentPosition.getX());
@@ -107,7 +107,8 @@ public class PreyAnimalBehavior implements EntityBehavior {
                 direction,
                 DEFAULT_WAYPOINTS_PER_PATH,
                 speed,
-                currentTime
+                currentTime,
+                epoch
         );
 
         if (movementWaypoints.isEmpty()) {

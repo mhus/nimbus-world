@@ -70,6 +70,7 @@ public class WChunkService implements StorageProvider {
         noise.SetFrequency(0.02f); // Controls terrain smoothness
     }
 
+    // EPOCH-UNFILTERED: returns data across all epochs. Use the epoch-filtered overload for player/gameplay context.
     /**
      * Find chunk by chunkKey.
      * Instances always look up in their world (without instance suffix).
@@ -80,6 +81,7 @@ public class WChunkService implements StorageProvider {
         return repository.findByWorldIdAndChunk(lookupWorld.getId(), chunkKey);
     }
 
+    // EPOCH-UNFILTERED: returns data across all epochs. Use the epoch-filtered overload for player/gameplay context.
     /**
      * Find all chunk versions by chunkKey (multiple chunks possible due to epoch variants).
      */
@@ -263,6 +265,7 @@ public class WChunkService implements StorageProvider {
         return repository.save(entity);
     }
 
+    // EPOCH-UNFILTERED: returns data across all epochs. Use the epoch-filtered overload for player/gameplay context.
     /**
      * Get chunk stream.
      * Filters out instances.
@@ -299,6 +302,7 @@ public class WChunkService implements StorageProvider {
         return stream;
     }
 
+    // EPOCH-UNFILTERED: returns data across all epochs. Use the epoch-filtered overload for player/gameplay context.
     /**
      * Get compressed stream without decompression.
      * Returns raw compressed data for client-side decompression (future use).
@@ -322,6 +326,7 @@ public class WChunkService implements StorageProvider {
         return stream != null ? stream : new ByteArrayInputStream(new byte[0]);
     }
 
+    // EPOCH-UNFILTERED: returns data across all epochs. Use the epoch-filtered overload for player/gameplay context.
     /**
      * Load chunk data.
      * Filters out instances.
@@ -868,6 +873,7 @@ public class WChunkService implements StorageProvider {
                 && metadata.getInteractive() == null;
     }
 
+    // EPOCH-UNFILTERED: returns data across all epochs. Use the epoch-filtered overload for player/gameplay context.
     /**
      * Get server metadata for a specific block position.
      * Loads world, calculates chunk coordinates, loads chunk, and returns server info.
@@ -909,6 +915,32 @@ public class WChunkService implements StorageProvider {
         return chunk.getServerInfoForBlock(x, y, z);
     }
 
+    /**
+     * Get server info for a block at world coordinates, filtered by epoch.
+     */
+    public Map<String, String> getServerInfo(WorldId worldId, int x, int y, int z, int epoch) {
+        if (worldId.isCollection()) {
+            throw new IllegalArgumentException("Chunks can't be in Collections");
+        }
+        WorldId lookupWorldId = worldId.toBaseWorldId();
+        Optional<WWorld> worldOpt = worldService.getByWorldId(lookupWorldId.getId());
+        if (worldOpt.isEmpty()) {
+            log.warn("World not found for server info lookup: worldId={}", worldId);
+            return null;
+        }
+
+        WWorld world = worldOpt.get();
+        String chunkKey = world.getChunkKey(x, z);
+
+        Optional<WChunk> chunkOpt = find(lookupWorldId, chunkKey, epoch);
+        if (chunkOpt.isEmpty()) {
+            return null;
+        }
+
+        return chunkOpt.get().getServerInfoForBlock(x, y, z);
+    }
+
+    // EPOCH-UNFILTERED: returns data across all epochs. Use the epoch-filtered overload for player/gameplay context.
     /**
      * Get all server info coordinate keys for a chunk.
      *

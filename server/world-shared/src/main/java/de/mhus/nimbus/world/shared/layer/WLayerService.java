@@ -230,6 +230,7 @@ public class WLayerService implements StorageProvider {
         return layerRepository.findByWorldIdAndLayerDataId(parsedWorldId.toBaseWorldId().getId(), layerDataId);
     }
 
+    // EPOCH-UNFILTERED: returns data across all epochs. Use the epoch-filtered overload for player/gameplay context.
     /**
      * Find all layers for a world.
      * No fallback to parent world - returns only layers in this specific world.
@@ -242,6 +243,7 @@ public class WLayerService implements StorageProvider {
         return layerRepository.findByWorldIdOrderByOrderAsc(parsedWorldId.toBaseWorldId().getId());
     }
 
+    // EPOCH-UNFILTERED: returns data across all epochs. Use the epoch-filtered overload for player/gameplay context.
     /**
      * Find all layers for a world (alias for REST API).
      * No fallback to parent world - returns only layers in this specific world.
@@ -254,6 +256,7 @@ public class WLayerService implements StorageProvider {
         return layerRepository.findByWorldIdOrderByOrderAsc(parsedWorldId.toBaseWorldId().getId());
     }
 
+    // EPOCH-UNFILTERED: returns data across all epochs. Use the epoch-filtered overload for player/gameplay context.
     /**
      * Find all layers for a world with optional query filter.
      * No fallback to parent world - returns only layers in this specific world.
@@ -382,6 +385,7 @@ public class WLayerService implements StorageProvider {
      * @param chunkKey Chunk key
      * @return List of layers sorted by order
      */
+    // EPOCH-UNFILTERED: returns data across all epochs. Use the epoch-filtered overload for player/gameplay context.
     @Transactional(readOnly = true)
     public List<WLayer> getLayersAffectingChunk(String worldId, String chunkKey) {
         WorldId parsedWorldId = WorldId.of(worldId).orElseThrow();

@@ -49,7 +49,7 @@ public class CombatBehaviorHandler {
      *
      * @return EntityPathway or null if no valid pathway could be generated
      */
-    public EntityPathway generateCombatPathway(WEntity entity, SimulationState state, long currentTime, WorldId worldId) {
+    public EntityPathway generateCombatPathway(WEntity entity, SimulationState state, long currentTime, WorldId worldId, int epoch) {
         CombatStrategy strategy = state.getCombatStrategy();
         if (strategy == null) strategy = CombatStrategy.FLEE;
 
@@ -75,9 +75,9 @@ public class CombatBehaviorHandler {
         }
 
         return switch (strategy) {
-            case FLEE -> generateFleePathway(entity, entityPos, attackerPos, currentTime, worldId);
-            case ATTACK_FLEE -> generateAttackFleePathway(entity, state, entityPos, attackerPos, currentTime, worldId);
-            case ATTACK_REPEAT -> generateAttackRepeatPathway(entity, state, entityPos, attackerPos, currentTime, worldId);
+            case FLEE -> generateFleePathway(entity, entityPos, attackerPos, currentTime, worldId, epoch);
+            case ATTACK_FLEE -> generateAttackFleePathway(entity, state, entityPos, attackerPos, currentTime, worldId, epoch);
+            case ATTACK_REPEAT -> generateAttackRepeatPathway(entity, state, entityPos, attackerPos, currentTime, worldId, epoch);
         };
     }
 
@@ -85,12 +85,12 @@ public class CombatBehaviorHandler {
      * FLEE: Generate pathway running away from attacker.
      */
     private EntityPathway generateFleePathway(WEntity entity, Vector3 entityPos, Vector3 attackerPos,
-                                               long currentTime, WorldId worldId) {
+                                               long currentTime, WorldId worldId, int epoch) {
         Vector3 fleeDirection = calculateFleeDirection(entityPos, attackerPos);
         double speed = (entity.getSpeed() != null ? entity.getSpeed() : 1.0) * FLEE_SPEED_MULTIPLIER;
 
         List<Waypoint> waypoints = blockMovement.generatePathway(
-                worldId, entityPos, fleeDirection, FLEE_WAYPOINTS, speed, currentTime);
+                worldId, entityPos, fleeDirection, FLEE_WAYPOINTS, speed, currentTime, epoch);
 
         if (waypoints.isEmpty()) return null;
 
@@ -111,7 +111,7 @@ public class CombatBehaviorHandler {
      */
     private EntityPathway generateAttackFleePathway(WEntity entity, SimulationState state,
                                                      Vector3 entityPos, Vector3 attackerPos,
-                                                     long currentTime, WorldId worldId) {
+                                                     long currentTime, WorldId worldId, int epoch) {
         double attackRange = getServerDouble(entity, "combat_attackRange", DEFAULT_ATTACK_RANGE);
         if (state.getCombatAttackCount() == 0) {
             // First phase: move towards attacker and attack
@@ -121,11 +121,11 @@ public class CombatBehaviorHandler {
                 state.setCombatAttackCount(1);
                 return generateAttackInPlacePathway(entity, entityPos, attackerPos, currentTime);
             }
-            EntityPathway attackPathway = generateApproachPathway(entity, entityPos, attackerPos, currentTime, worldId);
+            EntityPathway attackPathway = generateApproachPathway(entity, entityPos, attackerPos, currentTime, worldId, epoch);
             return attackPathway;
         } else {
             // Second phase: flee
-            return generateFleePathway(entity, entityPos, attackerPos, currentTime, worldId);
+            return generateFleePathway(entity, entityPos, attackerPos, currentTime, worldId, epoch);
         }
     }
 
@@ -134,13 +134,13 @@ public class CombatBehaviorHandler {
      */
     private EntityPathway generateAttackRepeatPathway(WEntity entity, SimulationState state,
                                                        Vector3 entityPos, Vector3 attackerPos,
-                                                       long currentTime, WorldId worldId) {
+                                                       long currentTime, WorldId worldId, int epoch) {
         double attackRange = getServerDouble(entity, "combat_attackRange", DEFAULT_ATTACK_RANGE);
         double distance = distance(entityPos, attackerPos);
 
         if (distance > attackRange) {
             // Move towards attacker
-            return generateApproachPathway(entity, entityPos, attackerPos, currentTime, worldId);
+            return generateApproachPathway(entity, entityPos, attackerPos, currentTime, worldId, epoch);
         } else {
             // In range: attack and stay close
             state.setCombatAttackCount(state.getCombatAttackCount() + 1);
@@ -153,7 +153,7 @@ public class CombatBehaviorHandler {
      * Generate pathway approaching the attacker.
      */
     private EntityPathway generateApproachPathway(WEntity entity, Vector3 entityPos, Vector3 attackerPos,
-                                                   long currentTime, WorldId worldId) {
+                                                   long currentTime, WorldId worldId, int epoch) {
         Vector3 direction = calculateDirectionTowards(entityPos, attackerPos);
         double speed = entity.getSpeed() != null ? entity.getSpeed() : 1.0;
 
@@ -163,7 +163,7 @@ public class CombatBehaviorHandler {
         if (waypointCount < 1) waypointCount = 1;
 
         List<Waypoint> waypoints = blockMovement.generatePathway(
-                worldId, entityPos, direction, waypointCount, speed, currentTime);
+                worldId, entityPos, direction, waypointCount, speed, currentTime, epoch);
 
         if (waypoints.isEmpty()) return null;
 

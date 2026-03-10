@@ -28,6 +28,7 @@ public class WEntityService {
     private final WEntityRepository repository;
     private final WWorldService worldService;
 
+    // EPOCH-UNFILTERED: returns data across all epochs. Use the epoch-filtered overload for player/gameplay context.
     /**
      * Find entity by entityId.
      * Instances always look up in their world.
@@ -41,6 +42,7 @@ public class WEntityService {
         return repository.findByWorldIdAndEntityId(lookupWorld.getId(), entityId);
     }
 
+    // EPOCH-UNFILTERED: returns data across all epochs. Use the epoch-filtered overload for player/gameplay context.
     /**
      * Find all entities for specific world.
      * Filters out instances.
@@ -54,6 +56,7 @@ public class WEntityService {
         return repository.findByWorldId(lookupWorld.getId());
     }
 
+    // EPOCH-UNFILTERED: returns data across all epochs. Use the epoch-filtered overload for player/gameplay context.
     /**
      * Find entities by modelId for specific world.
      * Filters out instances.
@@ -67,6 +70,7 @@ public class WEntityService {
         return repository.findByWorldIdAndModelId(lookupWorld.getId(), modelId);
     }
 
+    // EPOCH-UNFILTERED: returns data across all epochs. Use the epoch-filtered overload for player/gameplay context.
     /**
      * Find all enabled entities for specific world.
      * Filters out instances.
@@ -233,6 +237,7 @@ public class WEntityService {
         return entities.size();
     }
 
+    // EPOCH-UNFILTERED: returns data across all epochs. Use the epoch-filtered overload for player/gameplay context.
     /**
      * Find all enabled entities that have any of the specified affected chunks.
      * Used for chunk-based entity loading in world-life.
@@ -250,6 +255,7 @@ public class WEntityService {
         return repository.findByWorldIdAndEnabledAndAffectedChunksIn(lookupWorld.getId(), true, chunkKeys);
     }
 
+    // EPOCH-UNFILTERED: returns data across all epochs. Use the epoch-filtered overload for player/gameplay context.
     /**
      * Find all entities for specific world with optional query filter.
      * Filters out instances.
@@ -271,6 +277,18 @@ public class WEntityService {
     }
 
     // ==================== EPOCH-AWARE QUERIES ====================
+
+    /**
+     * Find entity by entityId filtered by epoch.
+     */
+    @Transactional(readOnly = true)
+    public Optional<WEntity> findByWorldIdAndEntityId(WorldId worldId, String entityId, int epoch) {
+        if (worldId.isCollection()) {
+            throw new IllegalArgumentException("worldId must not be a collection id");
+        }
+        var lookupWorld = worldId.toBaseWorldId();
+        return repository.findByWorldIdAndEntityIdAndEpochesContaining(lookupWorld.getId(), entityId, epoch);
+    }
 
     /**
      * Find all entities for specific world filtered by epoch.

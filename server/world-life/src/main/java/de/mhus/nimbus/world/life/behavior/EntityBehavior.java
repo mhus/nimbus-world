@@ -36,9 +36,10 @@ public interface EntityBehavior {
      * @param state Simulation state for this entity
      * @param currentTime Current simulation time (milliseconds)
      * @param worldId World identifier
+     * @param epoch Current world epoch
      * @return New EntityPathway if generated, or null if no update needed
      */
-    EntityPathway update(WEntity entity, SimulationState state, long currentTime, WorldId worldId);
+    EntityPathway update(WEntity entity, SimulationState state, long currentTime, WorldId worldId, int epoch);
 
     /**
      * Check if entity needs a new pathway.

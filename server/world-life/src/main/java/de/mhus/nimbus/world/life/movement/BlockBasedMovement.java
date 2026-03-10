@@ -40,12 +40,12 @@ public class BlockBasedMovement {
      * @param z Starting Z coordinate
      * @return Ground Y coordinate
      */
-    public int findStartPosition(WorldId worldId, double x, double z) {
+    public int findStartPosition(WorldId worldId, double x, double z, int epoch) {
         int floorX = (int) Math.floor(x);
         int floorZ = (int) Math.floor(z);
 
         // Search from reasonable height (128) downward
-        return terrainService.getGroundHeight(worldId, floorX, floorZ, 128);
+        return terrainService.getGroundHeight(worldId, floorX, floorZ, 128, false, epoch);
     }
 
     /**
@@ -91,7 +91,8 @@ public class BlockBasedMovement {
             Vector3 direction,
             int waypointCount,
             double speed,
-            long currentTime) {
+            long currentTime,
+            int epoch) {
 
         List<Waypoint> waypoints = new ArrayList<>();
 
@@ -126,7 +127,8 @@ public class BlockBasedMovement {
                     (int) Math.floor(nextX),
                     (int) Math.floor(nextZ),
                     (int) currentY + 5,  // Search start slightly above current position
-                    false  // Cannot walk on water
+                    false,  // Cannot walk on water
+                    epoch
             );
 
             // Check if position is invalid (water or not found)

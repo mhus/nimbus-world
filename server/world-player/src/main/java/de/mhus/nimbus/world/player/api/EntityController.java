@@ -2,6 +2,7 @@ package de.mhus.nimbus.world.player.api;
 
 import de.mhus.nimbus.shared.types.PlayerId;
 import de.mhus.nimbus.world.player.service.PlayerService;
+import de.mhus.nimbus.world.player.ws.SessionManager;
 import de.mhus.nimbus.world.shared.access.AccessValidator;
 import de.mhus.nimbus.world.shared.world.WEntity;
 import de.mhus.nimbus.world.shared.world.WEntityService;
@@ -30,6 +31,7 @@ public class EntityController {
     private final WEntityService service;
     private final PlayerService playerService;
     private final AccessValidator accessUtil;
+    private final SessionManager sessionManager;
 
     @GetMapping("/{entityId}")
     @Operation(summary = "Get Entity by world and entity ID", description = "Returns Entity instance for a specific entity in a world")
@@ -58,7 +60,9 @@ public class EntityController {
                     .orElseGet(() -> ResponseEntity.notFound().build());
         }
 
-        return service.findByWorldIdAndEntityId(worldId, entityId)
+        int epoch = sessionManager.getBySessionId(accessUtil.getSessionId(request))
+                .map(s -> s.getEpoch()).orElse(0);
+        return service.findByWorldIdAndEntityId(worldId, entityId, epoch)
                         .map(WEntity::getPublicData)
                         .map(ResponseEntity::ok)
                         .orElseGet(() -> ResponseEntity.notFound().build());

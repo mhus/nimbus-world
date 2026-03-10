@@ -90,6 +90,7 @@ public class WItemPositionService {
         return saved;
     }
 
+    // EPOCH-UNFILTERED: returns data across all epochs. Use the epoch-filtered overload for player/gameplay context.
     /**
      * Get all items in a specific chunk.
      * Returns only enabled items.
@@ -127,6 +128,7 @@ public class WItemPositionService {
                 .toList();
     }
 
+    // EPOCH-UNFILTERED: returns data across all epochs. Use the epoch-filtered overload for player/gameplay context.
     /**
      * Get all items in a world.
      * Returns only enabled items.
@@ -151,6 +153,7 @@ public class WItemPositionService {
         return repository.findByWorldId(worldId.toBaseWorldId().getId());
     }
 
+    // EPOCH-UNFILTERED: returns data across all epochs. Use the epoch-filtered overload for player/gameplay context.
     /**
      * Find a specific item by ID.
      * For player instance worlds: checks instance layer first, falls back to base world (COW).
@@ -332,6 +335,7 @@ public class WItemPositionService {
         return repository.findByWorldIdAndEpochesContaining(worldId.toBaseWorldId().getId(), epoch);
     }
 
+    // EPOCH-UNFILTERED: returns data across all epochs. Use the epoch-filtered overload for player/gameplay context.
     /**
      * Find an item at exact world coordinates.
      * Searches within the chunk that contains the coordinates.
@@ -366,6 +370,44 @@ public class WItemPositionService {
             // Base world or editor instance
             positions = repository.findByWorldIdAndChunkAndEnabled(
                     worldId.toBaseWorldId().getId(), chunk, true);
+        }
+
+        return positions.stream()
+                .filter(item -> {
+                    var data = item.getPublicData();
+                    if (data == null || data.getPosition() == null) return false;
+                    var pos = data.getPosition();
+                    return (int) pos.getX() == x
+                            && (int) pos.getY() == y
+                            && (int) pos.getZ() == z;
+                })
+                .findFirst();
+    }
+
+    /**
+     * Find an item at exact world coordinates, filtered by epoch.
+     */
+    @Transactional(readOnly = true)
+    public Optional<WItemPosition> getItemAt(WorldId worldId, int x, int y, int z, int epoch) {
+        if (worldId.isCollection()) {
+            throw new IllegalArgumentException("WItemPosition cannot be in a collection");
+        }
+        WWorld world = worldService.getByWorldId(worldId.toBaseWorldId().getId()).orElse(null);
+        if (world == null) {
+            return Optional.empty();
+        }
+        String chunk = world.getChunkKey(x, z);
+
+        List<WItemPosition> positions;
+        if (worldId.isInstance() && !worldId.isEditorInstance()) {
+            var baseList = repository.findByWorldIdAndChunkAndEnabledAndEpochesContaining(
+                    worldId.toBaseWorldId().getId(), chunk, true, epoch);
+            var instanceList = repository.findByWorldIdAndChunk(
+                    worldId.getId(), chunk);
+            positions = CowUtil.merge(baseList, instanceList);
+        } else {
+            positions = repository.findByWorldIdAndChunkAndEnabledAndEpochesContaining(
+                    worldId.toBaseWorldId().getId(), chunk, true, epoch);
         }
 
         return positions.stream()

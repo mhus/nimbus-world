@@ -106,13 +106,13 @@ public class ChunkUpdateService {
         if (chunkDataOpt.isEmpty()) {
             log.info("No layers affecting chunk, deleting WChunk: world={} chunk={}", worldId, chunkKey);
             chunkService.delete(wid, chunkKey);
-            publishChunkUpdate(worldId, chunkKey, null);
+            publishChunkUpdate(worldId, chunkKey, null, null);
             return true;
         }
 
         ChunkData chunkData = chunkDataOpt.get();
         chunkService.saveChunk(wid, chunkKey, chunkData);
-        publishChunkUpdate(worldId, chunkKey, chunkData);
+        publishChunkUpdate(worldId, chunkKey, chunkData, null);
 
         log.info("Regenerated chunk (legacy): world={} chunk={} blocks={}",
                 worldId, chunkKey, chunkData.getBlocks() != null ? chunkData.getBlocks().size() : 0);
@@ -157,6 +157,7 @@ public class ChunkUpdateService {
         // 4. For each group: render and save
         int totalGroups = layerGroupToEpoches.size();
         int renderedGroups = 0;
+        List<Integer> allRenderedEpoches = new ArrayList<>();
 
         for (var entry : layerGroupToEpoches.entrySet()) {
             String groupKey = entry.getKey();
@@ -181,6 +182,7 @@ public class ChunkUpdateService {
 
             // Save with epoches assignment
             chunkService.saveChunkWithEpoches(wid, chunkKey, chunkDataOpt.get(), epoches);
+            allRenderedEpoches.addAll(epoches);
             renderedGroups++;
 
             log.debug("Rendered chunk for epochs {}: world={} chunk={} layers={} blocks={}",
@@ -188,8 +190,8 @@ public class ChunkUpdateService {
                     chunkDataOpt.get().getBlocks() != null ? chunkDataOpt.get().getBlocks().size() : 0);
         }
 
-        // Publish update event
-        publishChunkUpdate(worldId, chunkKey, null); // signal reload
+        // Publish update event with affected epoches so listeners can filter by session epoch
+        publishChunkUpdate(worldId, chunkKey, null, allRenderedEpoches);
 
         log.info("Regenerated chunk with epochs: world={} chunk={} groups={}/{} epochs={}",
                 worldId, chunkKey, renderedGroups, totalGroups, epochMetas.size());
@@ -323,8 +325,13 @@ public class ChunkUpdateService {
 
     /**
      * Publish chunk update event to Redis.
+     *
+     * @param worldId   World identifier
+     * @param chunkKey  Chunk key (format "cx:cz")
+     * @param chunkData Chunk data (null if deleted or epoch-aware reload)
+     * @param epoches   Epoches affected by this update (null = all epoches, i.e. legacy/no filtering)
      */
-    private void publishChunkUpdate(String worldId, String chunkKey, ChunkData chunkData) {
+    private void publishChunkUpdate(String worldId, String chunkKey, ChunkData chunkData, List<Integer> epoches) {
         try {
             ObjectNode message = objectMapper.createObjectNode();
             message.put("chunkKey", chunkKey);
@@ -334,13 +341,21 @@ public class ChunkUpdateService {
                 message.put("cz", chunkData.getCz());
                 message.put("blockCount", chunkData.getBlocks() != null ? chunkData.getBlocks().size() : 0);
             } else {
-                message.put("deleted", true);
+                // Parse cx/cz from chunkKey for epoch-aware updates without ChunkData
+                String[] parts = chunkKey.split(":");
+                message.put("cx", Integer.parseInt(parts[0]));
+                message.put("cz", Integer.parseInt(parts[1]));
+            }
+
+            if (epoches != null) {
+                var epochArray = message.putArray("epoches");
+                epoches.forEach(epochArray::add);
             }
 
             String json = objectMapper.writeValueAsString(message);
             redisMessaging.publish(worldId, "c.update", json);
 
-            log.trace("Published chunk update event: world={} chunk={}", worldId, chunkKey);
+            log.trace("Published chunk update event: world={} chunk={} epoches={}", worldId, chunkKey, epoches);
 
         } catch (Exception e) {
             log.error("Failed to publish chunk update event: world={} chunk={}",
