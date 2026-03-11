@@ -19,7 +19,8 @@ import java.util.Map;
 @Slf4j
 public class VitalsHandler {
 
-    private static final double STAMINA_DEPLETED_SPEED = 0.1;
+    private static final double STAMINA_MIN_SPEED = 0.1;
+    private static final double STAMINA_SLOW_THRESHOLD = 0.10; // 10% of max
 
     private final AdventureGameplay gameplay;
 
@@ -87,22 +88,33 @@ public class VitalsHandler {
     }
 
     /**
-     * Check stamina depletion and send/reset slow speed to the client.
+     * Gradually reduce speed when stamina falls below 10%.
+     * Speed scales linearly from 1.0 (at 10%) to STAMINA_MIN_SPEED (at 0%).
+     * Above 10% stamina, speed override is removed.
      */
     public void checkStaminaSpeed(PlayerSession session, AdventureData data) {
         VitalValue stamina = data.getVital("stamina");
         if (stamina == null) return;
 
-        boolean depleted = stamina.getCurrent() <= 0;
-        if (depleted && !data.isStaminaSlowSent()) {
-            data.setStaminaSlowSent(true);
-            gameplay.getClientService().sendCommand(session, "speed",
-                    List.of(String.valueOf(STAMINA_DEPLETED_SPEED)));
-            log.debug("Stamina depleted for {}, sending slow speed {}", session.getEntityId(), STAMINA_DEPLETED_SPEED);
-        } else if (!depleted && data.isStaminaSlowSent()) {
-            data.setStaminaSlowSent(false);
-            gameplay.getClientService().sendCommand(session, "speed", List.of("0"));
-            log.debug("Stamina recovered for {}, resetting speed override", session.getEntityId());
+        double percentage = stamina.getPercentage();
+        double newSpeed;
+
+        if (percentage >= STAMINA_SLOW_THRESHOLD) {
+            newSpeed = 0; // no override
+        } else {
+            // Linear interpolation: 10% → 1.0, 0% → STAMINA_MIN_SPEED
+            double factor = percentage / STAMINA_SLOW_THRESHOLD; // 0.0 .. 1.0
+            newSpeed = STAMINA_MIN_SPEED + factor * (1.0 - STAMINA_MIN_SPEED);
+            // Round to 1 decimal to avoid sending updates for tiny changes
+            newSpeed = Math.round(newSpeed * 10.0) / 10.0;
+        }
+
+        if (Double.compare(newSpeed, data.getLastStaminaSpeed()) != 0) {
+            data.setLastStaminaSpeed(newSpeed);
+            String speedStr = newSpeed == 0 ? "0" : String.valueOf(newSpeed);
+            gameplay.getClientService().sendCommand(session, "speed", List.of(speedStr));
+            log.debug("Stamina speed for {}: {}% -> speed={}", session.getEntityId(),
+                    (int)(percentage * 100), speedStr);
         }
     }
 

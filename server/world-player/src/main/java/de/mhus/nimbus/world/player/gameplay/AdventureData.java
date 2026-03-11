@@ -51,8 +51,8 @@ public class AdventureData extends EntityCombatData {
     /** Timestamp until which attacking is blocked by attack speed cooldown (transient, not persisted) */
     private transient long nextAttackAllowed = 0;
 
-    /** Whether stamina-depleted slow speed has been sent to the client (transient, not persisted) */
-    private transient boolean staminaSlowSent = false;
+    /** Last stamina speed override sent to client (0 = no override, >0 = speed factor) */
+    private transient double lastStaminaSpeed = 0;
 
     /** Cached hex key "q;r" of the last explored hex check (transient, not persisted) */
     private transient String lastCheckedHexKey;
