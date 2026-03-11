@@ -1478,25 +1478,39 @@ export class PlayerService {
    * @returns True if effect was removed, false if not found
    */
   removeStatusEffect(effectId: string): boolean {
-    const effect = this.statusEffects.get(effectId);
+    // First try by effectId
+    let effect = this.statusEffects.get(effectId);
+    let resolvedId = effectId;
+
+    // If not found by ID, try by texture
+    if (!effect) {
+      for (const [id, e] of this.statusEffects.entries()) {
+        if (e.texture === effectId) {
+          effect = e;
+          resolvedId = id;
+          break;
+        }
+      }
+    }
+
     if (!effect) {
       return false;
     }
 
     // Clear timer if exists
-    const timer = this.effectTimers.get(effectId);
+    const timer = this.effectTimers.get(resolvedId);
     if (timer) {
       clearTimeout(timer);
-      this.effectTimers.delete(effectId);
+      this.effectTimers.delete(resolvedId);
     }
 
     // Remove effect
-    this.statusEffects.delete(effectId);
+    this.statusEffects.delete(resolvedId);
 
     // Emit event for UI update
     this.emit('statusEffects:changed', Array.from(this.statusEffects.values()));
 
-    logger.debug('Status effect removed', { effectId });
+    logger.debug('Status effect removed', { effectId: resolvedId, texture: effect.texture });
     return true;
   }
 

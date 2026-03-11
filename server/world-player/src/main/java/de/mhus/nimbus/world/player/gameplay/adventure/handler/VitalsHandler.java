@@ -21,6 +21,7 @@ public class VitalsHandler {
 
     private static final double STAMINA_MIN_SPEED = 0.1;
     private static final double STAMINA_SLOW_THRESHOLD = 0.10; // 10% of max
+    private static final String STAMINA_EXHAUSTED_TEXTURE = "n:textures/actions/exhausted.png";
 
     private final AdventureGameplay gameplay;
 
@@ -110,9 +111,20 @@ public class VitalsHandler {
         }
 
         if (Double.compare(newSpeed, data.getLastStaminaSpeed()) != 0) {
+            boolean wasSlowed = data.getLastStaminaSpeed() > 0;
+            boolean isSlowed = newSpeed > 0;
             data.setLastStaminaSpeed(newSpeed);
             String speedStr = newSpeed == 0 ? "0" : String.valueOf(newSpeed);
             gameplay.getClientService().sendCommand(session, "speed", List.of(speedStr));
+
+            if (isSlowed && !wasSlowed) {
+                gameplay.getClientService().sendCommand(session, "effect",
+                        List.of("add", STAMINA_EXHAUSTED_TEXTURE));
+            } else if (!isSlowed && wasSlowed) {
+                gameplay.getClientService().sendCommand(session, "effect",
+                        List.of("remove", STAMINA_EXHAUSTED_TEXTURE));
+            }
+
             log.debug("Stamina speed for {}: {}% -> speed={}", session.getEntityId(),
                     (int)(percentage * 100), speedStr);
         }
