@@ -50,14 +50,14 @@ public class BuffAction implements GameplayAction {
     @Override
     public boolean handleBlockAction(PlayerSession session, int x, int y, int z, String blockId, String groupId, String blockAction, JsonNode params, String userAction, String shortcutKey, Map<String, String> serverInfo) {
         if (shortcutKey != null) return false;
-        return applyBuff(session, serverInfo);
+        return applyBuff(session, serverInfo, null);
     }
 
     @Override
     public boolean handleEntityAction(PlayerSession session, WEntity entity, String userAction, String entityAction, String shortcutKey, JsonNode params) {
         if (shortcutKey != null) return false;
         if (entity == null || entity.getServer() == null) return false;
-        return applyBuff(session, entity.getServer());
+        return applyBuff(session, entity.getServer(), null);
     }
 
     @Override
@@ -65,7 +65,10 @@ public class BuffAction implements GameplayAction {
         Map<String, String> serverParams = item.getServer();
         if (serverParams == null) return false;
 
-        boolean applied = applyBuff(session, serverParams);
+        // Resolve item texture for flashImage and effect fallback
+        String itemTexture = item.getPublicData() != null ? item.getPublicData().getTexture() : null;
+
+        boolean applied = applyBuff(session, serverParams, itemTexture);
         if (applied) {
             adventure.getGameplayService().reduceItem(session, item.getItemId(), 1);
         }
@@ -77,14 +80,19 @@ public class BuffAction implements GameplayAction {
         return false;
     }
 
-    private boolean applyBuff(PlayerSession session, Map<String, String> params) {
+    private boolean applyBuff(PlayerSession session, Map<String, String> params, String itemTexture) {
         if (!(session.getGameplayData() instanceof AdventureData data)) return false;
 
         double duration = parseDouble(params.get("duration"), 0);
         String source = "buff:" + params.getOrDefault("name", "unknown");
+
+        // Resolve texture: server param "texture" > "icon" > item's own texture
         String texture = params.get("texture");
         if (texture == null || texture.isBlank()) {
             texture = params.get("icon");
+        }
+        if ((texture == null || texture.isBlank()) && itemTexture != null && !itemTexture.isBlank()) {
+            texture = itemTexture;
         }
 
         boolean applied = false;
@@ -109,6 +117,13 @@ public class BuffAction implements GameplayAction {
         if (applied) {
             String sound = params.getOrDefault("sound", DEFAULT_SOUND);
             adventure.getClientService().sendCommand(session, "playSound", List.of(sound));
+
+            // Flash the item texture on screen
+            if (texture != null && !texture.isBlank()) {
+                adventure.getClientService().sendCommand(session, "flashImage",
+                        List.of(texture, "500", "0.5"));
+            }
+
             log.info("Applied buff to player {}: {}", session.getEntityId(), describeParams(params));
         }
 

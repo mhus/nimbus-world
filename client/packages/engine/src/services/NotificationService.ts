@@ -1040,21 +1040,20 @@ export class NotificationService {
     let tooltip: HTMLElement | null = null;
 
     slot.addEventListener('mouseenter', () => {
-      // Create tooltip
+      // Create tooltip on body to avoid overflow clipping in scroll containers
       tooltip = document.createElement('div');
       tooltip.style.cssText = `
-        position: absolute;
-        bottom: 100%;
-        left: 50%;
-        transform: translateX(-50%);
-        margin-bottom: 8px;
+        position: fixed;
         padding: 8px 12px;
         background: rgba(0, 0, 0, 0.95);
         border: 1px solid rgba(255, 255, 255, 0.3);
         border-radius: 4px;
         white-space: nowrap;
         pointer-events: none;
-        z-index: 1000;
+        z-index: 1100;
+        font-family: 'Courier New', monospace;
+        font-size: 12px;
+        color: white;
       `;
 
       // Add title
@@ -1071,7 +1070,13 @@ export class NotificationService {
         tooltip.appendChild(desc);
       }
 
-      slot.appendChild(tooltip);
+      document.body.appendChild(tooltip);
+
+      // Position above the slot
+      const rect = slot.getBoundingClientRect();
+      const tooltipRect = tooltip.getBoundingClientRect();
+      tooltip.style.left = `${rect.left + rect.width / 2 - tooltipRect.width / 2}px`;
+      tooltip.style.top = `${rect.top - tooltipRect.height - 8}px`;
     });
 
     slot.addEventListener('mouseleave', () => {

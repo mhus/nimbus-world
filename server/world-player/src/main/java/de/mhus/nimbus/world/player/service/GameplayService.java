@@ -439,9 +439,8 @@ public class GameplayService implements SessionAuthenticatedConsumer {
 
         // Reload character from DB and refresh caches
         onBackpackModified(session);
-        if (shortcutsChanged) {
-            onShortcutModified(session);
-        }
+        // Always notify client so backpack UI updates (item count changed)
+        onShortcutModified(session);
 
         return true;
     }
@@ -511,6 +510,8 @@ public class GameplayService implements SessionAuthenticatedConsumer {
 
         // Reload character from DB and refresh caches
         onBackpackModified(session);
+        // Notify client so backpack UI updates (item count changed)
+        onShortcutModified(session);
 
         return true;
     }
