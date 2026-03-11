@@ -13,6 +13,7 @@ import de.mhus.nimbus.world.shared.redis.VitalDeltaBroadcastMessage;
 import de.mhus.nimbus.world.shared.world.WItem;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -81,6 +82,8 @@ public class CombatHandler {
             log.debug("Attack from {} on {} missed (phyDef={}, phyEva={}, magDef={}, magEva={})",
                     msg.getSourceEntityId(), msg.getTargetEntityId(),
                     defPhysDef, defPhysEvasion, defMagDef, defMagEvasion);
+            // Sound: attack blocked
+            gameplay.getClientService().sendCommand(session, "playSound", List.of("n:audio/actions/attack_blocked.ogg"));
             // Successful active defense: +1 skill experience
             if (data.getCachedCharacterDocId() != null) {
                 gameplay.getCharacterService().addSkillExperience(data.getCachedCharacterDocId(), 1);
@@ -93,6 +96,9 @@ public class CombatHandler {
         gameplay.getEffectProcessor().onCombatAction(data);
 
         gameplay.getVitalsHandler().applyDamage(session, data, damage);
+
+        // Sound: attack hit
+        gameplay.getClientService().sendCommand(session, "playSound", List.of("n:audio/actions/attack_hit.ogg"));
 
         // Armor constitution wear - only wear items matching the incoming damage type
         boolean physicalHit = msg.getPhysicalDamage() > 0;

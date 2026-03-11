@@ -240,6 +240,7 @@
                 </div>
                 <select v-else v-model="selectedInstance" class="select select-bordered w-full">
                   <option v-if="selectedActor === 'PLAYER'" value="">New Instance</option>
+                  <option v-if="selectedActor === 'PLAYER' && instances.length > 0" value="__last__">Last Instance</option>
                   <option v-for="inst in instances" :key="inst.instanceId" :value="inst.instanceId">
                     [{{ inst.accessType || 'PRIVATE' }}] {{ inst.title }} - {{ inst.createdAt ? new Date(inst.createdAt).toLocaleDateString() : '' }}
                   </option>
@@ -449,7 +450,7 @@
                 <strong>Epoch:</strong> {{ selectedEpoch }}
               </div>
               <div v-if="loginType === 'session' && (selectedActor === 'PLAYER' || selectedActor === 'SUPPORT')">
-                <strong>Instance:</strong> {{ selectedInstance ? selectedInstance : (selectedActor === 'PLAYER' ? 'New Instance' : 'None') }}
+                <strong>Instance:</strong> {{ selectedInstance === '__last__' ? 'Last Instance' : (selectedInstance ? selectedInstance : (selectedActor === 'PLAYER' ? 'New Instance' : 'None')) }}
               </div>
               <div v-if="loginType === 'session'">
                 <strong>View Distance:</strong> {{ viewDistance }} (Render: {{ viewDistance - 1 }}, Unload: {{ viewDistance }})
@@ -504,6 +505,7 @@ const STORAGE_KEY_GRID_R = 'nimbus-devlogin-grid-r';
 const STORAGE_KEY_VIEW_DISTANCE = 'nimbus-devlogin-view-distance';
 const STORAGE_KEY_QUALITY = 'nimbus-devlogin-quality';
 const STORAGE_KEY_EPOCH = 'nimbus-devlogin-epoch';
+const STORAGE_KEY_INSTANCE_MODE = 'nimbus-devlogin-instance-mode';
 
 // ===== STATE =====
 
@@ -624,6 +626,9 @@ const saveToLocalStorage = () => {
 
     // Save epoch
     localStorage.setItem(STORAGE_KEY_EPOCH, selectedEpoch.value.toString());
+
+    // Save instance selection ('' = new, '__last__' = last, or specific instanceId)
+    localStorage.setItem(STORAGE_KEY_INSTANCE_MODE, selectedInstance.value);
   } catch (e) {
     console.error('[DevLogin] Failed to save to localStorage:', e);
   }
@@ -878,12 +883,43 @@ const loadZones = async (worldId: string) => {
 };
 
 /**
+ * Resolve the most recently created instance from the loaded instances list.
+ */
+const resolveLastInstance = (): WorldInstance | undefined => {
+  if (instances.value.length === 0) return undefined;
+  return [...instances.value].sort((a, b) => {
+    const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+    const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+    return dateB - dateA;
+  })[0];
+};
+
+/**
  * Load instances for the selected player in the selected world
  */
 const loadInstances = async (worldId: string, playerId?: string, all: boolean = false) => {
   loadingInstances.value = true;
   try {
     instances.value = await devLoginService.getInstances(worldId, playerId, all);
+
+    // Restore saved instance selection with fallback chain:
+    // saved specific ID → __last__ → '' (new)
+    const savedMode = localStorage.getItem(STORAGE_KEY_INSTANCE_MODE);
+    if (savedMode && savedMode !== '' && savedMode !== '__last__') {
+      // Specific instanceId was saved - check if it still exists
+      const exists = instances.value.some(inst => inst.instanceId === savedMode);
+      if (exists) {
+        selectedInstance.value = savedMode;
+      } else if (instances.value.length > 0) {
+        selectedInstance.value = '__last__';
+      } else {
+        selectedInstance.value = '';
+      }
+    } else if (savedMode === '__last__' && instances.value.length > 0) {
+      selectedInstance.value = '__last__';
+    } else {
+      selectedInstance.value = savedMode ?? '';
+    }
   } catch (e) {
     console.error('[DevLogin] Failed to load instances:', e);
     instances.value = [];
@@ -965,6 +1001,10 @@ const handleLogin = async () => {
       let instanceId: string | undefined;
       if (selectedActor.value === 'EDITOR' && selectedWorld.value.epoches && selectedWorld.value.epoches.length > 0) {
         instanceId = `x${selectedEpoch.value}`;
+      } else if (selectedInstance.value === '__last__') {
+        // Resolve "Last Instance" to the most recently created instance
+        const lastInstance = resolveLastInstance();
+        instanceId = lastInstance?.instanceId;
       } else if (selectedInstance.value) {
         instanceId = selectedInstance.value;
       }

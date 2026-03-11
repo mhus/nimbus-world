@@ -13,6 +13,7 @@ import de.mhus.nimbus.world.shared.world.WEntity;
 import de.mhus.nimbus.world.shared.world.WItem;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -133,6 +134,10 @@ public class AttackAction implements GameplayAction {
                 worldId, targetEntityId, session.getEntityId(),
                 physDmg, physAcc, magDmg, magAcc, critChance, critMult,
                 session.getSessionId(), weaponItemId);
+
+        // Play attack sound (weapon-specific or default)
+        String attackSound = getServerProp(weaponItem, "sound_attack", "n:audio/actions/attack.ogg");
+        basic.getClientService().sendCommand(session, "playSound", List.of(attackSound));
 
         // Adrenaline gain + combat timer reset
         basic.getEffectProcessor().addAdrenaline(data, ATTACK_ADRENALINE);
