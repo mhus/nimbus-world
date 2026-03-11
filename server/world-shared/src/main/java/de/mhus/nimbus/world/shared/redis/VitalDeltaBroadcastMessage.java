@@ -73,4 +73,18 @@ public class VitalDeltaBroadcastMessage {
 
     /** Weapon item ID used for the attack (for special weapon checks, e.g. silver, boss-only) */
     private String weaponItemId;
+
+    // --- Sound fields (optional, used to relay positional sound via ATTACK_RESULT) ---
+
+    /** Sound URL to play at the source entity's position (e.g. NPC hit sound) */
+    private String soundUrl;
+
+    /** Sound position X coordinate */
+    private double soundX;
+
+    /** Sound position Y coordinate */
+    private double soundY;
+
+    /** Sound position Z coordinate */
+    private double soundZ;
 }

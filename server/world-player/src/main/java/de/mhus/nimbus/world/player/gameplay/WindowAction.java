@@ -1,5 +1,6 @@
 package de.mhus.nimbus.world.player.gameplay;
 
+import de.mhus.nimbus.world.player.service.GameplayUtil;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -31,11 +32,11 @@ public class WindowAction extends DoorAction {
 
     @Override
     protected String getDefaultSoundOpen() {
-        return "n:audio/actions/window_open.ogg";
+        return GameplayUtil.SOUND_WINDOW_OPEN;
     }
 
     @Override
     protected String getDefaultSoundClose() {
-        return "n:audio/actions/window_close.ogg";
+        return GameplayUtil.SOUND_WINDOW_CLOSE;
     }
 }

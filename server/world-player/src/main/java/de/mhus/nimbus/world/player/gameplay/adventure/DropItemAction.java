@@ -5,6 +5,7 @@ import de.mhus.nimbus.generated.types.ItemBlockRef;
 import de.mhus.nimbus.generated.types.Vector3;
 import de.mhus.nimbus.world.player.gameplay.AdventureGameplay;
 import de.mhus.nimbus.world.player.gameplay.GameplayAction;
+import de.mhus.nimbus.world.player.service.GameplayUtil;
 import de.mhus.nimbus.world.player.session.PlayerSession;
 import de.mhus.nimbus.world.shared.world.WEntity;
 import de.mhus.nimbus.world.shared.world.WItem;
@@ -131,10 +132,8 @@ public class DropItemAction implements GameplayAction {
         adventure.getItemBlockUpdatePublisher().publishItemAdded(session.getWorldId(), itemBlockRef);
 
         // Play sound at block position
-        String sound = serverInfo != null ? serverInfo.get("sound") : null;
-        if (Strings.isBlank(sound)) {
-            sound = "n:audio/actions/item_drop.ogg";
-        }
+        String soundValue = serverInfo != null ? serverInfo.get("sound") : null;
+        String sound = GameplayUtil.resolveSound(soundValue, GameplayUtil.SOUND_ITEM_DROP);
         adventure.getClientService().sendCommand(session, "playSoundAtPosition",
                 List.of(sound, String.valueOf(x), String.valueOf(y), String.valueOf(z)));
 

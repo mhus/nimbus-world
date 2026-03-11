@@ -2,6 +2,7 @@ package de.mhus.nimbus.world.player.gameplay;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import de.mhus.nimbus.shared.utils.TypeUtil;
+import de.mhus.nimbus.world.player.service.GameplayUtil;
 import de.mhus.nimbus.world.player.session.PlayerSession;
 import de.mhus.nimbus.world.shared.world.WEntity;
 import de.mhus.nimbus.world.shared.world.WItem;
@@ -92,10 +93,8 @@ public class ToggleAction implements GameplayAction {
         }
 
         // Play sound
-        String sound = serverInfo != null ? serverInfo.get("sound") : null;
-        if (Strings.isBlank(sound)) {
-            sound = "n:audio/actions/toggle.ogg";
-        }
+        String soundValue = serverInfo != null ? serverInfo.get("sound") : null;
+        String sound = GameplayUtil.resolveSound(soundValue, GameplayUtil.SOUND_TOGGLE);
         basic.getBasicClientService().sendCommand(session, "playSoundAtPosition",
                 List.of(sound, String.valueOf(x), String.valueOf(y), String.valueOf(z)));
 

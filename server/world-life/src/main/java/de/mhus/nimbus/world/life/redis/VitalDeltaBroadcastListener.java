@@ -2,7 +2,9 @@ package de.mhus.nimbus.world.life.redis;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.shared.types.WorldId;
+import de.mhus.nimbus.generated.types.Vector3;
 import de.mhus.nimbus.world.life.model.SimulationState;
+import de.mhus.nimbus.world.life.service.LifeSoundUtil;
 import de.mhus.nimbus.world.life.service.SimulatorService;
 import de.mhus.nimbus.world.life.service.WorldDiscoveryService;
 import de.mhus.nimbus.world.shared.gameplay.CombatResolver;
@@ -148,10 +150,26 @@ public class VitalDeltaBroadcastListener {
                 msg.getCritChance(), msg.getCritMultiplier(),
                 defPhysDef, defPhysEvasion, defMagDef, defMagEvasion, damage);
 
-        // Send attack result back to attacker
+        // Resolve NPC hit sound (only on hit)
+        String hitSound = null;
+        double soundX = 0, soundY = 0, soundZ = 0;
+        if (damage != 0 && state.getEntity() != null) {
+            String soundValue = state.getEntity().getServer() != null
+                    ? state.getEntity().getServer().get("sound_hit") : null;
+            hitSound = LifeSoundUtil.resolveSound(soundValue, LifeSoundUtil.SOUND_NPC_HIT);
+            Vector3 pos = state.getEntity().getPosition();
+            if (pos != null) {
+                soundX = pos.getX();
+                soundY = pos.getY();
+                soundZ = pos.getZ();
+            }
+        }
+
+        // Send attack result back to attacker (with optional NPC hit sound)
         vitalDeltaPublisher.publishAttackResult(
                 worldId.getId(), msg.getSourceEntityId(), msg.getTargetEntityId(),
-                damage != 0, damage);
+                damage != 0, damage,
+                hitSound, soundX, soundY, soundZ);
 
         // Track attacker for loot eligibility (even on miss — they are engaged)
         if (msg.getSourceEntityId() != null) {

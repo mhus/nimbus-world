@@ -2,6 +2,7 @@ package de.mhus.nimbus.world.player.gameplay.adventure;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import de.mhus.nimbus.generated.configs.WEARABLE_SLOT;
+import de.mhus.nimbus.world.player.service.GameplayUtil;
 import de.mhus.nimbus.world.player.gameplay.AdventureData;
 import de.mhus.nimbus.world.player.gameplay.AdventureGameplay;
 import de.mhus.nimbus.world.shared.gameplay.AdventureSkills;
@@ -135,8 +136,9 @@ public class AttackAction implements GameplayAction {
                 physDmg, physAcc, magDmg, magAcc, critChance, critMult,
                 session.getSessionId(), weaponItemId);
 
-        // Play attack sound (weapon-specific or default)
-        String attackSound = getServerProp(weaponItem, "sound_attack", "n:audio/actions/attack.ogg");
+        // Play attack sound (weapon-specific or default, random pick from comma-separated list)
+        String attackSoundValue = getServerProp(weaponItem, "sound_attack", null);
+        String attackSound = GameplayUtil.resolveSound(attackSoundValue, GameplayUtil.SOUND_ATTACK);
         basic.getClientService().sendCommand(session, "playSound", List.of(attackSound));
 
         // Adrenaline gain + combat timer reset

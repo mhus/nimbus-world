@@ -8,6 +8,7 @@ import de.mhus.nimbus.world.shared.world.WChunk;
 import de.mhus.nimbus.world.shared.world.WEntity;
 import de.mhus.nimbus.world.shared.world.WItem;
 import de.mhus.nimbus.world.shared.world.WWorld;
+import de.mhus.nimbus.world.player.service.GameplayUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
 
@@ -52,11 +53,11 @@ public class DoorAction implements GameplayAction {
     }
 
     protected String getDefaultSoundOpen() {
-        return "n:audio/actions/door_open.ogg";
+        return GameplayUtil.SOUND_DOOR_OPEN;
     }
 
     protected String getDefaultSoundClose() {
-        return "n:audio/actions/door_close.ogg";
+        return GameplayUtil.SOUND_DOOR_CLOSE;
     }
 
     @Override
@@ -131,10 +132,9 @@ public class DoorAction implements GameplayAction {
     protected void playSound(PlayerSession session, Map<String, String> serverInfo, String newStatus, int x, int y, int z) {
         boolean isOpen = "open".equals(newStatus);
         String soundKey = isOpen ? "sound_open" : "sound_close";
-        String sound = serverInfo != null ? serverInfo.get(soundKey) : null;
-        if (Strings.isBlank(sound)) {
-            sound = isOpen ? getDefaultSoundOpen() : getDefaultSoundClose();
-        }
+        String soundValue = serverInfo != null ? serverInfo.get(soundKey) : null;
+        String defaultSound = isOpen ? getDefaultSoundOpen() : getDefaultSoundClose();
+        String sound = GameplayUtil.resolveSound(soundValue, defaultSound);
         basic.getBasicClientService().sendCommand(session, "playSoundAtPosition",
                 List.of(sound, String.valueOf(x), String.valueOf(y), String.valueOf(z)));
     }

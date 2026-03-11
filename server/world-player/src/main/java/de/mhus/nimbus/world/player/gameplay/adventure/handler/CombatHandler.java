@@ -3,6 +3,7 @@ package de.mhus.nimbus.world.player.gameplay.adventure.handler;
 import de.mhus.nimbus.generated.configs.WEARABLE_SLOT;
 import de.mhus.nimbus.world.player.gameplay.AdventureData;
 import de.mhus.nimbus.world.player.gameplay.AdventureGameplay;
+import de.mhus.nimbus.world.player.service.GameplayUtil;
 import de.mhus.nimbus.world.player.session.PlayerSession;
 import de.mhus.nimbus.world.shared.gameplay.AdventureSkills;
 import de.mhus.nimbus.world.shared.gameplay.CombatResolver;
@@ -83,7 +84,7 @@ public class CombatHandler {
                     msg.getSourceEntityId(), msg.getTargetEntityId(),
                     defPhysDef, defPhysEvasion, defMagDef, defMagEvasion);
             // Sound: attack blocked
-            gameplay.getClientService().sendCommand(session, "playSound", List.of("n:audio/actions/attack_blocked.ogg"));
+            gameplay.getClientService().sendCommand(session, "playSound", List.of(GameplayUtil.resolveSound(null, GameplayUtil.SOUND_ATTACK_BLOCKED)));
             // Successful active defense: +1 skill experience
             if (data.getCachedCharacterDocId() != null) {
                 gameplay.getCharacterService().addSkillExperience(data.getCachedCharacterDocId(), 1);
@@ -98,7 +99,7 @@ public class CombatHandler {
         gameplay.getVitalsHandler().applyDamage(session, data, damage);
 
         // Sound: attack hit
-        gameplay.getClientService().sendCommand(session, "playSound", List.of("n:audio/actions/attack_hit.ogg"));
+        gameplay.getClientService().sendCommand(session, "playSound", List.of(GameplayUtil.resolveSound(null, GameplayUtil.SOUND_ATTACK_HIT)));
 
         // Armor constitution wear - only wear items matching the incoming damage type
         boolean physicalHit = msg.getPhysicalDamage() > 0;

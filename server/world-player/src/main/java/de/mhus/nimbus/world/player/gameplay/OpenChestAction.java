@@ -1,6 +1,7 @@
 package de.mhus.nimbus.world.player.gameplay;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import de.mhus.nimbus.world.player.service.GameplayUtil;
 import de.mhus.nimbus.world.player.session.PlayerSession;
 import de.mhus.nimbus.world.shared.world.WChest;
 import lombok.extern.slf4j.Slf4j;
@@ -60,6 +61,11 @@ public class OpenChestAction extends AbstractGamplayAction {
                 chest.getTitle(),
                 Map.of("chestId", chestName)
         );
+
+        // Play chest open sound
+        String soundValue = serverParameters.get("sound_chest_open");
+        String sound = GameplayUtil.resolveSound(soundValue, GameplayUtil.SOUND_CHEST_OPEN);
+        basic.getBasicClientService().sendCommand(session, "playSound", List.of(sound));
 
         // Send openComponent command to client
         basic.getBasicClientService().sendCommand(session, "openComponent",

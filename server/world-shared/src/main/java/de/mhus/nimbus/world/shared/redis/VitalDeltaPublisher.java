@@ -128,22 +128,37 @@ public class VitalDeltaPublisher {
      */
     public void publishAttackResult(String worldId, String attackerEntityId, String targetEntityId,
                                      boolean hit, double damage) {
+        publishAttackResult(worldId, attackerEntityId, targetEntityId, hit, damage, null, 0, 0, 0);
+    }
+
+    /**
+     * Publish attack result with optional sound.
+     */
+    public void publishAttackResult(String worldId, String attackerEntityId, String targetEntityId,
+                                     boolean hit, double damage,
+                                     String soundUrl, double soundX, double soundY, double soundZ) {
         if (attackerEntityId == null) return;
 
         try {
-            VitalDeltaBroadcastMessage message = VitalDeltaBroadcastMessage.builder()
+            var builder = VitalDeltaBroadcastMessage.builder()
                     .type(VitalDeltaBroadcastMessage.TYPE_ATTACK_RESULT)
                     .targetEntityId(attackerEntityId)
                     .sourceEntityId(targetEntityId)
                     .worldId(worldId)
-                    .delta(damage)
-                    .build();
+                    .delta(damage);
 
-            String json = objectMapper.writeValueAsString(message);
+            if (soundUrl != null && !soundUrl.isBlank()) {
+                builder.soundUrl(soundUrl)
+                        .soundX(soundX)
+                        .soundY(soundY)
+                        .soundZ(soundZ);
+            }
+
+            String json = objectMapper.writeValueAsString(builder.build());
             redisMessaging.publish(worldId, CHANNEL_PLAYER, json);
 
-            log.debug("Published attack result: {} -> {} hit={} damage={}",
-                    targetEntityId, attackerEntityId, hit, damage);
+            log.debug("Published attack result: {} -> {} hit={} damage={} sound={}",
+                    targetEntityId, attackerEntityId, hit, damage, soundUrl);
 
         } catch (Exception e) {
             log.error("Failed to publish attack result for {} in world {}", attackerEntityId, worldId, e);

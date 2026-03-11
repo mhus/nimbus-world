@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.generated.types.Vector3;
 import de.mhus.nimbus.shared.utils.TypeUtil;
+import de.mhus.nimbus.world.player.service.GameplayUtil;
 import de.mhus.nimbus.world.player.gameplay.adventure.AttackAction;
 import de.mhus.nimbus.world.player.gameplay.adventure.CollectAction;
 import de.mhus.nimbus.world.player.gameplay.adventure.BuffAction;
@@ -309,14 +310,12 @@ public class AdventureGameplay extends BasicGameplay {
         itemBlockUpdatePublisher.publishItemRemoved(session.getWorldId(), itemName, x, y, z);
 
         // Play sound at item position
-        String sound = null;
+        String soundValue = null;
         WItem wItem = itemService.findByItemId(session.getWorldId(), itemName).orElse(null);
         if (wItem != null && wItem.getServer() != null) {
-            sound = wItem.getServer().get("sound_collect");
+            soundValue = wItem.getServer().get("sound_collect");
         }
-        if (sound == null || sound.isBlank()) {
-            sound = "n:audio/actions/item_collect.ogg";
-        }
+        String sound = GameplayUtil.resolveSound(soundValue, GameplayUtil.SOUND_ITEM_COLLECT);
         clientService.sendCommand(session, "playSoundAtPosition",
                 List.of(sound, String.valueOf(x), String.valueOf(y), String.valueOf(z)));
 
