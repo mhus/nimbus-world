@@ -52,6 +52,18 @@ public class WBlockType implements Identifiable {
     @Indexed
     private String worldId;
 
+    /**
+     * Default client-side parameters for blocks of this type.
+     * These are sent to the client when blocks are placed.
+     */
+    private java.util.Map<String, String> defaultClient;
+
+    /**
+     * Default server-side parameters for blocks of this type.
+     * These are stored as serverInfo when blocks are placed.
+     */
+    private java.util.Map<String, String> defaultServer;
+
     private Instant createdAt;
     private Instant updatedAt;
 

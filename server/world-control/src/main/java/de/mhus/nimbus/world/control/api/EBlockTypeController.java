@@ -52,6 +52,8 @@ public class EBlockTypeController extends BaseEditorController {
             BlockType publicData,
             String worldId,
             boolean enabled,
+            Map<String, String> defaultClient,
+            Map<String, String> defaultServer,
             Instant createdAt,
             Instant updatedAt
     ) {
@@ -60,7 +62,8 @@ public class EBlockTypeController extends BaseEditorController {
     public record CreateBlockTypeRequest(String blockId, BlockType publicData, String blockTypeGroup) {
     }
 
-    public record UpdateBlockTypeRequest(BlockType publicData, String blockTypeGroup, Boolean enabled) {
+    public record UpdateBlockTypeRequest(BlockType publicData, String blockTypeGroup, Boolean enabled,
+                                            Map<String, String> defaultClient, Map<String, String> defaultServer) {
     }
 
     /**
@@ -103,8 +106,7 @@ public class EBlockTypeController extends BaseEditorController {
         }
 
         log.debug("Returning blocktype: worldId={}, blockId={}", wid, blockId);
-        // Return publicData with full ID (e.g., "r:wfr" not just "wfr")
-        return ResponseEntity.ok(opt.get().appendWorldPrefix().getPublicData());
+        return ResponseEntity.ok(toDto(opt.get()));
     }
 
     /**
@@ -278,7 +280,8 @@ public class EBlockTypeController extends BaseEditorController {
         var validation = validateId(blockId, "blockId");
         if (validation != null) return validation;
 
-        if (request.publicData() == null && request.blockTypeGroup() == null && request.enabled() == null) {
+        if (request.publicData() == null && request.blockTypeGroup() == null && request.enabled() == null
+                && request.defaultClient() == null && request.defaultServer() == null) {
             return bad("at least one field required for update");
         }
 
@@ -303,6 +306,12 @@ public class EBlockTypeController extends BaseEditorController {
             }
             if (request.enabled() != null) {
                 blockType.setEnabled(request.enabled());
+            }
+            if (request.defaultClient() != null) {
+                blockType.setDefaultClient(request.defaultClient().isEmpty() ? null : request.defaultClient());
+            }
+            if (request.defaultServer() != null) {
+                blockType.setDefaultServer(request.defaultServer().isEmpty() ? null : request.defaultServer());
             }
             // Note: Do NOT change worldId - it should remain the same
         });
@@ -564,6 +573,8 @@ public class EBlockTypeController extends BaseEditorController {
                 entity.appendWorldPrefix().getPublicData(),
                 entity.getWorldId(),
                 entity.isEnabled(),
+                entity.getDefaultClient(),
+                entity.getDefaultServer(),
                 entity.getCreatedAt(),
                 entity.getUpdatedAt()
         );

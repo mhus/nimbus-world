@@ -81,6 +81,8 @@
       v-if="isEditorOpen"
       ref="blockTypeEditorRef"
       :block-type="selectedBlockType"
+      :default-client="selectedBlockTypeDetail?.defaultClient"
+      :default-server="selectedBlockTypeDetail?.defaultServer"
       :world-id="currentWorldId!"
       @close="closeEditor"
       @saved="handleSaved"
@@ -124,6 +126,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue';
 import type { BlockType } from '@nimbus/shared';
+import type { BlockTypeDetailResponse } from '@/services/BlockTypeService';
 import { useWorld } from '@/composables/useWorld';
 import { useBlockTypes } from '@/composables/useBlockTypes';
 import SearchInput from '@components/SearchInput.vue';
@@ -155,6 +158,7 @@ const hasPreviousPage = computed(() => blockTypesComposable.value?.hasPreviousPa
 
 const isEditorOpen = ref(false);
 const selectedBlockType = ref<BlockType | null>(null);
+const selectedBlockTypeDetail = ref<BlockTypeDetailResponse | null>(null);
 const isModifierEditorOpen = ref(false);
 const editingModifier = ref<{ blockType: BlockType; status: string; modifier: any } | null>(null);
 const blockTypeEditorRef = ref<any>(null);
@@ -183,6 +187,7 @@ const handleSearch = (query: string) => {
  */
 const openCreateDialog = () => {
   selectedBlockType.value = null;
+  selectedBlockTypeDetail.value = null;
   isEditorOpen.value = true;
 };
 
@@ -193,14 +198,15 @@ const openDuplicateDialog = async (blockType: BlockType) => {
   if (!blockTypesComposable.value || !currentWorldId.value) return;
 
   // Reload from server to get fresh data
-  const freshBlockType = await blockTypesComposable.value.getBlockType(blockType.id!);
-  const source = freshBlockType || blockType;
+  const detail = await blockTypesComposable.value.getBlockType(blockType.id!);
+  const source = detail ? detail.publicData : blockType;
 
   // Deep copy and clear ID so the editor opens in create mode
   const copy: BlockType = JSON.parse(JSON.stringify(source));
   copy.id = '';
 
   selectedBlockType.value = copy;
+  selectedBlockTypeDetail.value = detail ? { ...detail, publicData: copy } : null;
   isEditorOpen.value = true;
 };
 
@@ -211,15 +217,17 @@ const openDuplicateDialog = async (blockType: BlockType) => {
 const openEditDialog = async (blockType: BlockType) => {
   if (!blockTypesComposable.value || !currentWorldId.value) return;
 
-  // Reload from server to get fresh data
-  const freshBlockType = await blockTypesComposable.value.getBlockType(blockType.id!);
-  if (freshBlockType) {
-    selectedBlockType.value = freshBlockType;
+  // Reload from server to get fresh data (now returns full detail)
+  const detail = await blockTypesComposable.value.getBlockType(blockType.id!);
+  if (detail) {
+    selectedBlockType.value = detail.publicData;
+    selectedBlockTypeDetail.value = detail;
     isEditorOpen.value = true;
   } else {
     console.error('Failed to load block type from server', blockType.id);
     // Fallback to cached data
     selectedBlockType.value = blockType;
+    selectedBlockTypeDetail.value = null;
     isEditorOpen.value = true;
   }
 };
@@ -230,6 +238,7 @@ const openEditDialog = async (blockType: BlockType) => {
 const closeEditor = () => {
   isEditorOpen.value = false;
   selectedBlockType.value = null;
+  selectedBlockTypeDetail.value = null;
 };
 
 /**

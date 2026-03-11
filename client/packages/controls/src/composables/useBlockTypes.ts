@@ -6,6 +6,7 @@
 import { ref, computed } from 'vue';
 import type { BlockType } from '@nimbus/shared';
 import { blockTypeService } from '../services/BlockTypeService';
+import type { BlockTypeDetailResponse } from '../services/BlockTypeService';
 import { getLogger } from '@nimbus/shared';
 
 const logger = getLogger('useBlockTypes');
@@ -97,9 +98,9 @@ export function useBlockTypes(worldId: string) {
   };
 
   /**
-   * Get single block type
+   * Get single block type (returns full detail response)
    */
-  const getBlockType = async (id: number | string): Promise<BlockType | null> => {
+  const getBlockType = async (id: number | string): Promise<BlockTypeDetailResponse | null> => {
     try {
       return await blockTypeService.getBlockType(worldId, id);
     } catch (err) {
@@ -128,9 +129,10 @@ export function useBlockTypes(worldId: string) {
   /**
    * Update block type
    */
-  const updateBlockType = async (id: number | string, blockType: Partial<BlockType>): Promise<boolean> => {
+  const updateBlockType = async (id: number | string, blockType: Partial<BlockType>,
+                                  extra?: { defaultClient?: Record<string, string>; defaultServer?: Record<string, string> }): Promise<boolean> => {
     try {
-      await blockTypeService.updateBlockType(worldId, id, blockType);
+      await blockTypeService.updateBlockType(worldId, id, blockType, extra);
       logger.info('Updated block type', { worldId, id });
       await loadBlockTypes(); // Refresh list
       return true;

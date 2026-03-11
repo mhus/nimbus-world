@@ -24,21 +24,39 @@ import java.util.Optional;
  * - value=open/close/toggle (default: toggle)
  * - position=x,y,z (optional, if not set uses the interacted block position)
  * - defaultDoorState=open/closed (default: closed)
- * - toggleType=auto/single/group (default: auto)
- *   - auto: also toggle adjacent blocks (up/down) with same action=door
+ * - toggleType=auto/single/group (default: auto for door, single for window)
+ *   - auto: also toggle adjacent blocks (up/down) with same action
  *   - single: only toggle this block
- *   - group: toggle all blocks in the chunk with the same toggleGroup and action=door
+ *   - group: toggle all blocks in the chunk with the same toggleGroup and action
  * - toggleGroup=<name> (required when toggleType=group)
+ * - sound_open=<path> (optional, sound to play when opening, default: n:audio/actions/door_open.ogg)
+ * - sound_close=<path> (optional, sound to play when closing, default: n:audio/actions/door_close.ogg)
  */
 @Slf4j
 public class DoorAction implements GameplayAction {
 
     private static final String DEFAULT_DOOR_STATE = "closed";
 
-    private final BasicGameplay basic;
+    protected final BasicGameplay basic;
 
     public DoorAction(BasicGameplay basic) {
         this.basic = basic;
+    }
+
+    protected String getActionName() {
+        return "door";
+    }
+
+    protected String getDefaultToggleType() {
+        return "auto";
+    }
+
+    protected String getDefaultSoundOpen() {
+        return "n:audio/actions/door_open.ogg";
+    }
+
+    protected String getDefaultSoundClose() {
+        return "n:audio/actions/door_close.ogg";
     }
 
     @Override
@@ -103,8 +121,22 @@ public class DoorAction implements GameplayAction {
             }
         }
 
-        log.debug("Door action: worldId={}, chunkKey={}, targets={}, status={}", worldId, chunkKey, blockKeys, newStatus);
+        // Play sound at the interacted block position (only once)
+        playSound(session, serverInfo, newStatus, x, y, z);
+
+        log.debug("{} action: worldId={}, chunkKey={}, targets={}, status={}", getActionName(), worldId, chunkKey, blockKeys, newStatus);
         return true;
+    }
+
+    protected void playSound(PlayerSession session, Map<String, String> serverInfo, String newStatus, int x, int y, int z) {
+        boolean isOpen = "open".equals(newStatus);
+        String soundKey = isOpen ? "sound_open" : "sound_close";
+        String sound = serverInfo != null ? serverInfo.get(soundKey) : null;
+        if (Strings.isBlank(sound)) {
+            sound = isOpen ? getDefaultSoundOpen() : getDefaultSoundClose();
+        }
+        basic.getBasicClientService().sendCommand(session, "playSoundAtPosition",
+                List.of(sound, String.valueOf(x), String.valueOf(y), String.valueOf(z)));
     }
 
     /**
@@ -112,12 +144,12 @@ public class DoorAction implements GameplayAction {
      *
      * @return List of block keys ("x,y,z") to toggle, always includes the target itself
      */
-    private List<String> collectToggleTargets(WorldId worldId, Map<String, String> serverInfo, String chunkKey,
+    protected List<String> collectToggleTargets(WorldId worldId, Map<String, String> serverInfo, String chunkKey,
                                                int targetX, int targetY, int targetZ) {
         String targetKey = targetX + "," + targetY + "," + targetZ;
         String toggleType = serverInfo != null ? serverInfo.get("toggleType") : null;
         if (Strings.isBlank(toggleType)) {
-            toggleType = "auto";
+            toggleType = getDefaultToggleType();
         }
 
         return switch (toggleType.toLowerCase()) {
@@ -128,15 +160,16 @@ public class DoorAction implements GameplayAction {
     }
 
     /**
-     * Auto-detect: find adjacent blocks (up/down) in the same chunk with action=door.
+     * Auto-detect: find adjacent blocks (up/down) in the same chunk with same action.
      */
-    private List<String> collectAutoTargets(WorldId worldId, String chunkKey,
+    protected List<String> collectAutoTargets(WorldId worldId, String chunkKey,
                                              int targetX, int targetY, int targetZ, String targetKey) {
         WChunk chunk = basic.getChunkService().find(worldId, chunkKey).orElse(null);
         if (chunk == null || chunk.getInfoServer() == null) {
             return List.of(targetKey);
         }
 
+        String actionName = getActionName();
         List<String> targets = new ArrayList<>();
         targets.add(targetKey);
 
@@ -145,7 +178,7 @@ public class DoorAction implements GameplayAction {
         for (int[] offset : offsets) {
             String adjacentKey = (targetX + offset[0]) + "," + (targetY + offset[1]) + "," + (targetZ + offset[2]);
             Map<String, String> adjacentInfo = chunk.getInfoServer().get(adjacentKey);
-            if (adjacentInfo != null && "door".equals(adjacentInfo.get("action"))) {
+            if (adjacentInfo != null && actionName.equals(adjacentInfo.get("action"))) {
                 targets.add(adjacentKey);
             }
         }
@@ -154,9 +187,9 @@ public class DoorAction implements GameplayAction {
     }
 
     /**
-     * Group: find all blocks in the same chunk with matching toggleGroup and action=door.
+     * Group: find all blocks in the same chunk with matching toggleGroup and same action.
      */
-    private List<String> collectGroupTargets(WorldId worldId, Map<String, String> serverInfo,
+    protected List<String> collectGroupTargets(WorldId worldId, Map<String, String> serverInfo,
                                               String chunkKey, String targetKey) {
         String groupName = serverInfo != null ? serverInfo.get("toggleGroup") : null;
         if (Strings.isBlank(groupName)) {
@@ -169,10 +202,11 @@ public class DoorAction implements GameplayAction {
             return List.of(targetKey);
         }
 
+        String actionName = getActionName();
         List<String> targets = new ArrayList<>();
         for (var entry : chunk.getInfoServer().entrySet()) {
             Map<String, String> info = entry.getValue();
-            if ("door".equals(info.get("action")) && groupName.equals(info.get("toggleGroup"))) {
+            if (actionName.equals(info.get("action")) && groupName.equals(info.get("toggleGroup"))) {
                 targets.add(entry.getKey());
             }
         }
@@ -185,7 +219,7 @@ public class DoorAction implements GameplayAction {
         return targets;
     }
 
-    private String resolveStatus(String worldId, String chunkKey, String blockKey, String value, String defaultDoorState) {
+    protected String resolveStatus(String worldId, String chunkKey, String blockKey, String value, String defaultDoorState) {
         return switch (value.toLowerCase()) {
             case "open" -> "open";
             case "close", "closed" -> "closed";

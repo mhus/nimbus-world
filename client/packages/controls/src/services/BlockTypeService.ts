@@ -17,6 +17,17 @@ export interface BlockTypeCreateResponse {
   blockId: string;
 }
 
+export interface BlockTypeDetailResponse {
+  blockId: string;
+  publicData: BlockType;
+  worldId: string;
+  enabled: boolean;
+  defaultClient?: Record<string, string>;
+  defaultServer?: Record<string, string>;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface BlockTypePagingParams {
   query?: string;
   limit?: number;
@@ -49,10 +60,10 @@ export class BlockTypeService {
   }
 
   /**
-   * Get single block type by ID
+   * Get single block type by ID (returns full detail including defaultClient/defaultServer)
    */
-  async getBlockType(worldId: string, id: number | string): Promise<BlockType> {
-    return apiService.get<BlockType>(`/control/worlds/${worldId}/blocktypes/type/${id}`);
+  async getBlockType(worldId: string, id: number | string): Promise<BlockTypeDetailResponse> {
+    return apiService.get<BlockTypeDetailResponse>(`/control/worlds/${worldId}/blocktypes/type/${id}`);
   }
 
   /**
@@ -76,11 +87,18 @@ export class BlockTypeService {
   /**
    * Update existing block type
    */
-  async updateBlockType(worldId: string, id: number | string, blockType: Partial<BlockType>): Promise<BlockType> {
+  async updateBlockType(worldId: string, id: number | string, blockType: Partial<BlockType>,
+                         extra?: { defaultClient?: Record<string, string>; defaultServer?: Record<string, string> }): Promise<BlockType> {
     // Server expects UpdateBlockTypeRequest format with publicData wrapper
-    const updateRequest = {
+    const updateRequest: Record<string, unknown> = {
       publicData: blockType
     };
+    if (extra?.defaultClient !== undefined) {
+      updateRequest.defaultClient = extra.defaultClient;
+    }
+    if (extra?.defaultServer !== undefined) {
+      updateRequest.defaultServer = extra.defaultServer;
+    }
 
     return apiService.put<BlockType>(
       `/control/worlds/${worldId}/blocktypes/type/${id}`,

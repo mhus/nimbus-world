@@ -9,7 +9,9 @@ import de.mhus.nimbus.world.player.session.PlayerSession;
 import de.mhus.nimbus.world.shared.world.WEntity;
 import de.mhus.nimbus.world.shared.world.WItem;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.logging.log4j.util.Strings;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -20,6 +22,7 @@ import java.util.Map;
  * ServerInfo parameters:
  * - location: top/bottom/left/right/front/back (default: top) - relative placement to the block
  * - category: if set, only items with matching 'category' in their parameters can be dropped here
+ * - sound: sound to play at block position (default: n:audio/actions/item_drop.ogg)
  */
 @Slf4j
 public class DropItemAction implements GameplayAction {
@@ -126,6 +129,14 @@ public class DropItemAction implements GameplayAction {
 
         // Broadcast placement to all clients
         adventure.getItemBlockUpdatePublisher().publishItemAdded(session.getWorldId(), itemBlockRef);
+
+        // Play sound at block position
+        String sound = serverInfo != null ? serverInfo.get("sound") : null;
+        if (Strings.isBlank(sound)) {
+            sound = "n:audio/actions/item_drop.ogg";
+        }
+        adventure.getClientService().sendCommand(session, "playSoundAtPosition",
+                List.of(sound, String.valueOf(x), String.valueOf(y), String.valueOf(z)));
 
         String title = itemData != null && itemData.getTitle() != null ? itemData.getTitle() : itemId;
         String texture = itemData != null ? itemData.getTexture() : null;

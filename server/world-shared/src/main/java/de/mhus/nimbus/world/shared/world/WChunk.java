@@ -2,6 +2,7 @@ package de.mhus.nimbus.world.shared.world;
 
 import de.mhus.nimbus.shared.persistence.ActualSchemaVersion;
 import de.mhus.nimbus.shared.types.Identifiable;
+import de.mhus.nimbus.shared.types.StorageEntity;
 import lombok.Data;
 import lombok.Builder;
 import lombok.NoArgsConstructor;
@@ -32,7 +33,7 @@ import java.util.Map;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class WChunk implements Identifiable, EpochEntity {
+public class WChunk implements Identifiable, EpochEntity, StorageEntity {
 
     @Id
     private String id;

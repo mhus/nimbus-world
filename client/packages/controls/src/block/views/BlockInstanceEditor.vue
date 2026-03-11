@@ -956,12 +956,79 @@ async function handleBlockTypeSearch(query: string) {
   }
 }
 
-function selectBlockType(blockType: BlockType) {
+async function selectBlockType(blockType: BlockType) {
+  const previousBlockTypeId = blockData.value.blockTypeId;
   blockData.value.blockTypeId = blockType.id;
   loadedBlockType.value = blockType;
   blockTypeSearch.value = '';
   blockTypeSearchResults.value = [];
   showBlockTypeSearch.value = false; // Hide search after selection
+
+  // Load full details to apply defaults (only when changing blockType)
+  if (blockType.id !== previousBlockTypeId) {
+    try {
+      const detail = await getBlockType(blockType.id!);
+      if (detail) {
+        loadedBlockType.value = detail.publicData;
+        applyBlockTypeDefaults(detail.defaultClient, detail.defaultServer);
+      }
+    } catch (err) {
+      console.warn('Failed to load BlockType details for defaults:', err);
+    }
+  }
+}
+
+/**
+ * Apply defaultClient and defaultServer from BlockType to block metadata.
+ * Existing metadata values are NOT overwritten - only missing keys are added.
+ * Special keys in defaultServer starting with '_' are processed but not copied:
+ * - _interactive=true sets metadata.interactive to true
+ * - _title sets metadata.title (if empty)
+ */
+function applyBlockTypeDefaults(
+  defaultClient?: Record<string, string>,
+  defaultServer?: Record<string, string>
+) {
+  if (!defaultClient && !defaultServer) return;
+
+  // Ensure metadata exists
+  if (!blockData.value.metadata) {
+    blockData.value.metadata = {};
+  }
+
+  // Apply defaultServer
+  if (defaultServer) {
+    if (!blockData.value.metadata.server) {
+      blockData.value.metadata.server = {};
+    }
+    for (const [key, value] of Object.entries(defaultServer)) {
+      if (key.startsWith('_')) {
+        // Special keys
+        if (key === '_interactive' && value === 'true') {
+          blockData.value.metadata.interactive = true;
+        } else if (key === '_title' && !blockData.value.metadata.title) {
+          blockData.value.metadata.title = value;
+        }
+      } else {
+        // Regular keys - only add if not already present
+        if (!(key in blockData.value.metadata.server)) {
+          blockData.value.metadata.server[key] = value;
+        }
+      }
+    }
+  }
+
+  // Apply defaultClient
+  if (defaultClient) {
+    if (!blockData.value.metadata.client) {
+      blockData.value.metadata.client = {};
+    }
+    for (const [key, value] of Object.entries(defaultClient)) {
+      if (!(key in blockData.value.metadata.client)) {
+        blockData.value.metadata.client[key] = value;
+      }
+    }
+  }
 }
 
 function clearBlockType() {
@@ -976,9 +1043,9 @@ function clearBlockType() {
 // Load BlockType details
 async function loadBlockTypeDetails(blockTypeId: string) {
   try {
-    const blockType = await getBlockType(blockTypeId);
-    if (blockType) {
-      loadedBlockType.value = blockType;
+    const detail = await getBlockType(blockTypeId);
+    if (detail) {
+      loadedBlockType.value = detail.publicData;
     } else {
       console.warn(`BlockType ${blockTypeId} not found`);
       loadedBlockType.value = null;

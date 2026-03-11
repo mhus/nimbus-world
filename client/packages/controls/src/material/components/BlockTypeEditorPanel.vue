@@ -174,6 +174,80 @@
                     Add Status
                   </button>
                 </div>
+
+                <!-- Default Client Parameters -->
+                <div class="divider">Default Client Parameters</div>
+                <div class="space-y-2">
+                  <div
+                    v-for="(entry, index) in defaultClientEntries"
+                    :key="'dc-' + index"
+                    class="flex gap-2 items-center"
+                  >
+                    <input
+                      v-model="entry.key"
+                      type="text"
+                      class="input input-bordered input-sm flex-1"
+                      placeholder="Key"
+                    />
+                    <input
+                      v-model="entry.value"
+                      type="text"
+                      class="input input-bordered input-sm flex-1"
+                      placeholder="Value"
+                    />
+                    <button
+                      class="btn btn-sm btn-ghost btn-square text-error"
+                      @click="defaultClientEntries.splice(index, 1)"
+                    >
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                  <button class="btn btn-outline btn-sm w-full" @click="defaultClientEntries.push({ key: '', value: '' })">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                    </svg>
+                    Add Entry
+                  </button>
+                </div>
+
+                <!-- Default Server Parameters -->
+                <div class="divider">Default Server Parameters</div>
+                <div class="space-y-2">
+                  <div
+                    v-for="(entry, index) in defaultServerEntries"
+                    :key="'ds-' + index"
+                    class="flex gap-2 items-center"
+                  >
+                    <input
+                      v-model="entry.key"
+                      type="text"
+                      class="input input-bordered input-sm flex-1"
+                      placeholder="Key"
+                    />
+                    <input
+                      v-model="entry.value"
+                      type="text"
+                      class="input input-bordered input-sm flex-1"
+                      placeholder="Value"
+                    />
+                    <button
+                      class="btn btn-sm btn-ghost btn-square text-error"
+                      @click="defaultServerEntries.splice(index, 1)"
+                    >
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                  <button class="btn btn-outline btn-sm w-full" @click="defaultServerEntries.push({ key: '', value: '' })">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                    </svg>
+                    Add Entry
+                  </button>
+                </div>
               </div>
 
               <!-- Actions -->
@@ -385,6 +459,8 @@ import InputDialog from '@components/InputDialog.vue';
 interface Props {
   blockType: BlockType | null;
   worldId: string;
+  defaultClient?: Record<string, string>;
+  defaultServer?: Record<string, string>;
 }
 
 const props = defineProps<Props>();
@@ -457,6 +533,10 @@ const formData = ref<Partial<BlockType>>({
   modifiers: {},
 });
 
+// Default client/server maps (separate from BlockType publicData)
+const defaultClientEntries = ref<Array<{ key: string; value: string }>>([]);
+const defaultServerEntries = ref<Array<{ key: string; value: string }>>([]);
+
 // Expose method to update modifier from parent
 const updateModifier = (status: string, modifier: BlockModifier) => {
   if (formData.value.modifiers) {
@@ -469,6 +549,23 @@ defineExpose({
   updateModifier,
   formData
 });
+
+// Convert map to entries array for editing
+const mapToEntries = (map?: Record<string, string>): Array<{ key: string; value: string }> => {
+  if (!map) return [];
+  return Object.entries(map).map(([key, value]) => ({ key, value }));
+};
+
+// Convert entries array back to map
+const entriesToMap = (entries: Array<{ key: string; value: string }>): Record<string, string> => {
+  const map: Record<string, string> = {};
+  for (const entry of entries) {
+    if (entry.key.trim()) {
+      map[entry.key.trim()] = entry.value;
+    }
+  }
+  return map;
+};
 
 // Initialize form
 const initializeForm = async () => {
@@ -484,6 +581,8 @@ const initializeForm = async () => {
       },
     };
   }
+  defaultClientEntries.value = mapToEntries(props.defaultClient);
+  defaultServerEntries.value = mapToEntries(props.defaultServer);
 };
 
 onMounted(() => {
@@ -671,10 +770,18 @@ const handleSave = async () => {
   saving.value = true;
 
   try {
+    const extraData = {
+      defaultClient: entriesToMap(defaultClientEntries.value),
+      defaultServer: entriesToMap(defaultServerEntries.value),
+    };
     if (isCreate.value) {
       await createBlockType(formData.value);
+      // For create, update defaults in a second call if any entries exist
+      if (Object.keys(extraData.defaultClient).length > 0 || Object.keys(extraData.defaultServer).length > 0) {
+        await updateBlockType(formData.value.id!, formData.value, extraData);
+      }
     } else {
-      await updateBlockType(formData.value.id!, formData.value);
+      await updateBlockType(formData.value.id!, formData.value, extraData);
     }
 
     emit('saved');

@@ -308,6 +308,18 @@ public class AdventureGameplay extends BasicGameplay {
         // Broadcast removal to all clients
         itemBlockUpdatePublisher.publishItemRemoved(session.getWorldId(), itemName, x, y, z);
 
+        // Play sound at item position
+        String sound = null;
+        WItem wItem = itemService.findByItemId(session.getWorldId(), itemName).orElse(null);
+        if (wItem != null && wItem.getServer() != null) {
+            sound = wItem.getServer().get("sound_collect");
+        }
+        if (sound == null || sound.isBlank()) {
+            sound = "n:audio/actions/item_collect.ogg";
+        }
+        clientService.sendCommand(session, "playSoundAtPosition",
+                List.of(sound, String.valueOf(x), String.valueOf(y), String.valueOf(z)));
+
         // Notify player
         String title = itemRef.getTitle() != null ? itemRef.getTitle() : itemName;
         String texture = itemRef.getTexture();
