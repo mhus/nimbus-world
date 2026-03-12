@@ -409,9 +409,13 @@ async function initializeEngine(appContext: AppContext, canvas: HTMLCanvasElemen
 // Initialize application
 const appContextPromise = initializeApp();
 
+// Track exitUrl for error handling outside .then() scope
+let exitUrl: string | undefined;
+
 // Main initialization
 appContextPromise
   .then(async (appContext) => {
+    exitUrl = appContext.config?.exitUrl;
     logger.debug('AppContext ready', {
       hasConfig: !!appContext.config,
       hasClientService: !!appContext.services.client,
@@ -490,7 +494,15 @@ appContextPromise
     ExceptionHandler.handle(error, 'NimbusClient.main');
     logger.fatal('Failed to initialize client', undefined, error as Error);
 
-    // Show error on canvas
+    // Connection or login failure - alert and redirect to exit URL
+    if (exitUrl) {
+      const msg = error instanceof Error ? error.message : 'Connection failed';
+      alert('Connection error: ' + msg);
+      window.location.href = exitUrl;
+      return;
+    }
+
+    // Fallback: show error on canvas
     const canvas = document.getElementById('renderCanvas') as HTMLCanvasElement;
     if (canvas) {
       showErrorMessage(canvas, error instanceof Error ? error.message : 'Unknown error');
