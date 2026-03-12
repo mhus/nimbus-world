@@ -496,8 +496,6 @@ appContextPromise
 
     // Connection or login failure - alert and redirect to exit URL
     if (exitUrl) {
-      const msg = error instanceof Error ? error.message : 'Connection failed';
-      alert('Connection error: ' + msg);
       window.location.href = exitUrl;
       return;
     }

@@ -2166,7 +2166,8 @@ export class NotificationService {
       left: 50%;
       transform: translateX(-50%);
       display: flex;
-      gap: 6px;
+      flex-direction: column;
+      gap: 4px;
       padding: 8px;
       background: rgba(0, 0, 0, 0.8);
       border-radius: 8px;
@@ -2207,8 +2208,112 @@ export class NotificationService {
     `;
     submitBtn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>`;
 
-    const submit = () => {
-      const text = input.value.trim();
+    // Smiley pages with paging via F1 (◀) and F10 (▶)
+    // Always exactly 10 button slots:
+    // Page 0: 9 smileys (F1-F9) + F10=▶   (if only 1 page: 10 smileys)
+    // Middle: F1=◀ + 8 smileys (F2-F9) + F10=▶
+    // Last:   F1=◀ + up to 9 smileys (F2-F10)
+    const allSmileys = [
+      '😀', '😂', '😍', '👍', '👎', '🎉', '🔥', '💀', '❓', '👋',
+      '😎', '🤔', '😢', '😡', '🥳', '🤣', '💪', '🙏', '❤️', '⭐',
+      '🏆', '⚔️', '🛡️', '🎯', '💎', '🌟', '🚀', '☠️', '🤝', '✅',
+    ];
+    // First page: 9 slots for smileys (slot 10 = nav), middle pages: 8, last page: 9
+    const firstPageSize = 9;
+    const middlePageSize = 8;
+    let remaining = allSmileys.length - firstPageSize;
+    let totalPages = 1;
+    if (remaining > 0) {
+      // Calculate how many middle + last pages we need
+      // Last page can hold 9, middle pages hold 8
+      totalPages = 1 + (remaining <= 9 ? 1 : 1 + Math.ceil((remaining - 9) / middlePageSize));
+    }
+    // If everything fits on one page without nav, use all 10 slots
+    const singlePage = allSmileys.length <= 10;
+    if (singlePage) totalPages = 1;
+    let currentPage = 0;
+
+    const smileyBar = document.createElement('div');
+    smileyBar.style.cssText = `
+      display: flex;
+      gap: 2px;
+      justify-content: center;
+      margin-bottom: 4px;
+      font-size: 20px;
+    `;
+
+    const btnStyle = `
+      width: 32px;
+      height: 32px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 4px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      font-size: 18px;
+    `;
+
+    const getPageSmileys = (page: number): string[] => {
+      if (singlePage) return allSmileys.slice(0, 10);
+      if (page === 0) return allSmileys.slice(0, firstPageSize);
+      const start = firstPageSize + (page - 1) * middlePageSize;
+      const isLast = page >= totalPages - 1;
+      const size = isLast ? 9 : middlePageSize;
+      return allSmileys.slice(start, start + size);
+    };
+
+    const renderPage = () => {
+      smileyBar.innerHTML = '';
+      const pageSmileys = getPageSmileys(currentPage);
+      const isFirstPage = currentPage === 0;
+      const isLastPage = currentPage >= totalPages - 1;
+      const hasNav = !singlePage;
+
+      // F1 = left arrow (not on first page)
+      if (hasNav && !isFirstPage) {
+        const navLeft = document.createElement('button');
+        navLeft.textContent = '◀';
+        navLeft.title = 'F1';
+        navLeft.style.cssText = btnStyle;
+        navLeft.addEventListener('click', () => { currentPage--; renderPage(); });
+        smileyBar.appendChild(navLeft);
+      }
+
+      // Smiley buttons
+      for (let i = 0; i < pageSmileys.length; i++) {
+        const btn = document.createElement('button');
+        btn.textContent = pageSmileys[i];
+        let fKey: number;
+        if (singlePage) fKey = i + 1;
+        else if (isFirstPage) fKey = i + 1;
+        else fKey = i + 2; // F1=◀, smileys start at F2
+        btn.title = `F${fKey}`;
+        btn.style.cssText = btnStyle;
+        btn.addEventListener('click', () => { sendMessage(pageSmileys[i]); });
+        smileyBar.appendChild(btn);
+      }
+
+      // F10 = right arrow (not on last page)
+      if (hasNav && !isLastPage) {
+        const navRight = document.createElement('button');
+        navRight.textContent = '▶';
+        navRight.title = 'F10';
+        navRight.style.cssText = btnStyle;
+        navRight.addEventListener('click', () => { currentPage++; renderPage(); });
+        smileyBar.appendChild(navRight);
+      }
+    };
+
+    renderPage();
+
+    const inputRow = document.createElement('div');
+    inputRow.style.cssText = `display: flex; gap: 6px; align-items: center;`;
+
+    const sendMessage = (text: string) => {
+      text = text.trim();
       if (text) {
         const networkService = this.appContext.services.network;
         if (networkService) {
@@ -2218,6 +2323,10 @@ export class NotificationService {
       this.hideInputPanel();
     };
 
+    const submit = () => {
+      sendMessage(input.value);
+    };
+
     input.addEventListener('keydown', (e) => {
       e.stopPropagation(); // prevent engine key handlers
       if (e.key === 'Enter') {
@@ -2225,14 +2334,50 @@ export class NotificationService {
       } else if (e.key === 'Escape') {
         this.hideInputPanel();
       }
+      // F1-F10: smiley send or page navigation
+      const fMatch = e.key.match(/^F(\d+)$/);
+      if (fMatch) {
+        e.preventDefault();
+        const fNum = parseInt(fMatch[1]);
+        if (fNum < 1 || fNum > 10) return;
+
+        const isFirstPage = currentPage === 0;
+        const isLastPage = currentPage >= totalPages - 1;
+        const hasNav = !singlePage;
+
+        // F1 = nav left (not on first page, only if paging)
+        if (hasNav && fNum === 1 && !isFirstPage) {
+          currentPage--;
+          renderPage();
+          return;
+        }
+        // F10 = nav right (not on last page, only if paging)
+        if (hasNav && fNum === 10 && !isLastPage) {
+          currentPage++;
+          renderPage();
+          return;
+        }
+
+        // Map F-key to smiley index
+        const pageSmileys = getPageSmileys(currentPage);
+        let smileyIdx: number;
+        if (singlePage) smileyIdx = fNum - 1;
+        else if (isFirstPage) smileyIdx = fNum - 1;
+        else smileyIdx = fNum - 2;
+        if (smileyIdx >= 0 && smileyIdx < pageSmileys.length) {
+          sendMessage(pageSmileys[smileyIdx]);
+        }
+      }
     });
     input.addEventListener('keyup', (e) => e.stopPropagation());
     input.addEventListener('keypress', (e) => e.stopPropagation());
 
     submitBtn.addEventListener('click', submit);
 
-    this.inputPanelContainer.appendChild(input);
-    this.inputPanelContainer.appendChild(submitBtn);
+    inputRow.appendChild(input);
+    inputRow.appendChild(submitBtn);
+    this.inputPanelContainer.appendChild(smileyBar);
+    this.inputPanelContainer.appendChild(inputRow);
     document.body.appendChild(this.inputPanelContainer);
 
     // Focus input after DOM is ready
