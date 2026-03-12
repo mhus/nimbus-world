@@ -62,6 +62,7 @@ export default defineConfig({
         'hex-editor': resolve(__dirname, 'hex-editor.html'),
         'anything-editor': resolve(__dirname, 'anything-editor.html'),
         'progress-editor': resolve(__dirname, 'progress-editor.html'),
+        'team-editor': resolve(__dirname, 'team-editor.html'),
         'editor-shortcut-panel': resolve(__dirname, 'editor-shortcut-panel.html'),
         'shortcut-panel': resolve(__dirname, 'shortcut-panel.html'),
         'chest-panel': resolve(__dirname, 'chest-panel.html'),
