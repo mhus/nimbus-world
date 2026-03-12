@@ -224,7 +224,13 @@
           </div>
           <!-- 3D Preview -->
           <div class="flex-1 min-h-[300px]">
-            <ModelPreview v-if="previewModelUrl" :model-url="previewModelUrl" class="w-full h-[300px]" />
+            <ModelPreview
+              v-if="previewModelUrl"
+              :model-url="previewModelUrl"
+              :modifier-mapping="selectedModel?.modifierMapping || {}"
+              :modifier-values="modelModifiers"
+              class="w-full h-[300px]"
+            />
           </div>
         </div>
       </section>
@@ -255,6 +261,7 @@ interface AvatarModel {
   gender: string;
   modelPath: string;
   modifierKeys: string[];
+  modifierMapping: Record<string, string>;
 }
 
 const loading = ref(false);
@@ -320,7 +327,8 @@ const currentModifierKeys = computed(() => selectedModel.value?.modifierKeys || 
 const previewModelUrl = computed(() => {
   const model = selectedModel.value;
   if (!model?.modelPath) return '';
-  return apiService.getBaseUrl() + '/control/player/assets/n:' + model.modelPath;
+  // modelPath already includes prefix like "n:models/avatars/male/Worker.glb"
+  return apiService.getBaseUrl() + '/control/player/assets/' + model.modelPath;
 });
 
 const MODIFIER_LABELS: Record<string, string> = {

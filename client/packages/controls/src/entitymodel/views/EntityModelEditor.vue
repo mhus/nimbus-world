@@ -255,6 +255,21 @@
         </div>
       </div>
 
+      <!-- 3D Model Preview Card (sticky) -->
+      <div v-if="modelData && modelData.modelPath" class="card bg-base-100 shadow-xl sticky top-2 z-10">
+        <div class="card-body p-3">
+          <ModelPreview
+            ref="modelPreviewRef"
+            :model-url="previewModelUrl"
+            :modifier-mapping="modelData.modelModifierMapping || {}"
+            :modifier-values="previewTestValues"
+            class="w-full h-[300px]"
+            @animations-loaded="availableAnimations = $event"
+            @model-info-loaded="availableBoneNames = $event.boneNames; availableMaterialNames = $event.materialNames"
+          />
+        </div>
+      </div>
+
       <!-- Pose Mapping Card -->
       <div v-if="modelData" class="card bg-base-100 shadow-xl">
         <div class="card-body">
@@ -269,22 +284,54 @@
             >
               <div class="flex items-center justify-between mb-2">
                 <span class="badge badge-primary">{{ pose }}</span>
-                <button
-                  type="button"
-                  class="btn btn-ghost btn-square btn-xs text-error"
-                  @click="removePose(pose)"
-                >
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
+                <div class="flex gap-1">
+                  <button
+                    v-if="modelData.poseMapping[pose].animationName && modelPreviewRef"
+                    type="button"
+                    class="btn btn-ghost btn-square btn-xs text-success"
+                    title="Play animation"
+                    @click="modelPreviewRef.playAnimation(
+                      modelData.poseMapping[pose].animationName,
+                      modelData.poseMapping[pose].loop,
+                      modelData.poseMapping[pose].speedMultiplier || 1.0
+                    )"
+                  >
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M8 5v14l11-7z" />
+                    </svg>
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-ghost btn-square btn-xs text-error"
+                    @click="removePose(pose)"
+                  >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
               </div>
               <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
                 <div class="form-control">
                   <label class="label py-1">
                     <span class="label-text-alt">Animation Name</span>
                   </label>
+                  <select
+                    v-if="availableAnimations.length > 0"
+                    v-model="modelData.poseMapping[pose].animationName"
+                    class="select select-bordered select-sm"
+                  >
+                    <option value="">-- Select --</option>
+                    <option
+                      v-for="anim in availableAnimations"
+                      :key="anim"
+                      :value="anim"
+                    >
+                      {{ anim }}
+                    </option>
+                  </select>
                   <input
+                    v-else
                     v-model="modelData.poseMapping[pose].animationName"
                     type="text"
                     class="input input-bordered input-sm"
@@ -371,28 +418,137 @@
             </button>
           </div>
 
-          <div class="space-y-2">
+          <div class="space-y-3">
             <div
               v-for="(value, key) in modelData.modelModifierMapping"
               :key="key"
-              class="flex items-center gap-2"
+              class="border border-base-300 rounded-lg p-2"
             >
-              <span class="badge badge-neutral badge-sm min-w-24 justify-center">{{ key }}</span>
+              <div class="flex items-center justify-between mb-2">
+                <span class="badge badge-neutral badge-sm">{{ key }}</span>
+                <div class="flex gap-1 items-center">
+                  <!-- Test value for preview -->
+                  <input
+                    v-if="isColorModifier(modelData.modelModifierMapping[key] as string)"
+                    type="color"
+                    :value="previewTestValues[key as string] || '#ffffff'"
+                    class="w-7 h-7 rounded cursor-pointer border border-base-300"
+                    title="Test color for preview"
+                    @input="previewTestValues[key as string] = ($event.target as HTMLInputElement).value"
+                  />
+                  <input
+                    v-else-if="isBoneModifier(modelData.modelModifierMapping[key] as string)"
+                    type="number"
+                    :value="previewTestValues[key as string] || ''"
+                    step="0.1"
+                    min="0.1"
+                    max="5"
+                    class="input input-bordered input-xs w-16"
+                    placeholder="1.0"
+                    title="Test scale for preview"
+                    @input="previewTestValues[key as string] = ($event.target as HTMLInputElement).value"
+                  />
+                  <button
+                    type="button"
+                    class="btn btn-ghost btn-square btn-xs text-error"
+                    @click="removeModifierMapping(key as string)"
+                  >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+              <!-- Descriptor segments -->
+              <div class="flex flex-wrap gap-1">
+                <div
+                  v-for="(seg, segIdx) in parseDescriptorSegments(modelData.modelModifierMapping[key] as string)"
+                  :key="segIdx"
+                  class="flex items-center gap-1 bg-base-200 rounded px-1 py-0.5"
+                >
+                  <span v-if="segIdx > 0" class="text-base-content/40 text-xs">;</span>
+                  <!-- Category -->
+                  <select
+                    :value="seg.category"
+                    class="select select-bordered select-xs w-20"
+                    @change="updateDescriptorSegment(key as string, segIdx, 'category', ($event.target as HTMLSelectElement).value)"
+                  >
+                    <option value="bone">bone</option>
+                    <option value="color">color</option>
+                  </select>
+                  <!-- Target Name -->
+                  <select
+                    v-if="seg.category === 'bone' && availableBoneNames.length > 0"
+                    :value="seg.targetName"
+                    class="select select-bordered select-xs flex-1"
+                    @change="updateDescriptorSegment(key as string, segIdx, 'targetName', ($event.target as HTMLSelectElement).value)"
+                  >
+                    <option value="">--</option>
+                    <option
+                      v-for="b in availableBoneNames"
+                      :key="b"
+                      :value="b"
+                    >{{ b }}</option>
+                  </select>
+                  <select
+                    v-else-if="seg.category === 'color' && availableMaterialNames.length > 0"
+                    :value="seg.targetName"
+                    class="select select-bordered select-xs flex-1"
+                    @change="updateDescriptorSegment(key as string, segIdx, 'targetName', ($event.target as HTMLSelectElement).value)"
+                  >
+                    <option value="">--</option>
+                    <option
+                      v-for="m in availableMaterialNames"
+                      :key="m"
+                      :value="m"
+                    >{{ m }}</option>
+                  </select>
+                  <input
+                    v-else
+                    :value="seg.targetName"
+                    type="text"
+                    class="input input-bordered input-xs w-24"
+                    placeholder="target"
+                    @change="updateDescriptorSegment(key as string, segIdx, 'targetName', ($event.target as HTMLInputElement).value)"
+                  />
+                  <!-- Property -->
+                  <select
+                    :value="seg.property"
+                    class="select select-bordered select-xs w-24"
+                    @change="updateDescriptorSegment(key as string, segIdx, 'property', ($event.target as HTMLSelectElement).value)"
+                  >
+                    <option v-if="seg.category === 'bone'" value="scale">scale</option>
+                    <option v-if="seg.category === 'color'" value="tint">tint</option>
+                    <option v-if="seg.category === 'color'" value="baseColor">baseColor</option>
+                  </select>
+                  <!-- Remove segment -->
+                  <button
+                    v-if="parseDescriptorSegments(modelData.modelModifierMapping[key] as string).length > 1"
+                    type="button"
+                    class="btn btn-ghost btn-square btn-xs text-error"
+                    @click="removeDescriptorSegment(key as string, segIdx)"
+                  >
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+                <!-- Add segment -->
+                <button
+                  type="button"
+                  class="btn btn-ghost btn-xs"
+                  @click="addDescriptorSegment(key as string)"
+                >
+                  + target
+                </button>
+              </div>
+              <!-- Raw value (editable fallback) -->
               <input
                 v-model="modelData.modelModifierMapping[key]"
                 type="text"
-                class="input input-bordered input-sm flex-1"
+                class="input input-bordered input-xs w-full mt-1 text-base-content/50"
                 :placeholder="getModifierPlaceholder(key as string)"
               />
-              <button
-                type="button"
-                class="btn btn-ghost btn-square btn-xs text-error"
-                @click="removeModifierMapping(key as string)"
-              >
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
             </div>
           </div>
 
@@ -689,10 +845,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, reactive, computed, onMounted } from 'vue';
 import { useWorld } from '@/composables/useWorld';
 import { entityModelService, type EntityModelData } from '../services/EntityModelService';
 import JsonEditorDialog from '@components/JsonEditorDialog.vue';
+import ModelPreview from '@/character-panel/ModelPreview.vue';
+import { apiService } from '@/services/ApiService';
 
 const props = defineProps<{
   entityModel: EntityModelData | 'new';
@@ -718,10 +876,21 @@ const formData = ref({
 });
 
 const modelData = ref<any>(null);
+const modelPreviewRef = ref<InstanceType<typeof ModelPreview> | null>(null);
+const availableAnimations = ref<string[]>([]);
+const availableBoneNames = ref<string[]>([]);
+const availableMaterialNames = ref<string[]>([]);
 const showJsonEditor = ref(false);
 const newPoseKey = ref('');
 const newModifierKey = ref('');
 const newModifierValue = ref('');
+const previewTestValues = reactive<Record<string, string>>({});
+
+const previewModelUrl = computed(() => {
+  const mp = modelData.value?.modelPath;
+  if (!mp || !currentWorldId.value) return '';
+  return apiService.getBaseUrl() + '/control/worlds/' + currentWorldId.value + '/assets/' + mp;
+});
 
 const ALL_POSES = [
   'IDLE', 'WALK', 'RUN', 'SPRINT', 'CROUCH', 'JUMP', 'SWIM', 'FLY', 'DEATH',
@@ -866,6 +1035,56 @@ const addModifierMapping = () => {
 const removeModifierMapping = (key: string) => {
   if (!modelData.value?.modelModifierMapping) return;
   delete modelData.value.modelModifierMapping[key];
+  delete previewTestValues[key];
+};
+
+const isColorModifier = (mapping: string): boolean => {
+  if (!mapping) return false;
+  return mapping.split(';').some(p => p.trim().startsWith('color:'));
+};
+
+const isBoneModifier = (mapping: string): boolean => {
+  if (!mapping) return false;
+  return mapping.split(';').some(p => p.trim().startsWith('bone:'));
+};
+
+interface DescriptorSegment { category: string; targetName: string; property: string; }
+
+const parseDescriptorSegments = (mapping: string): DescriptorSegment[] => {
+  if (!mapping) return [{ category: 'bone', targetName: '', property: 'scale' }];
+  return mapping.split(';').map(part => {
+    const s = part.trim().split(':');
+    if (s.length === 3) return { category: s[0], targetName: s[1], property: s[2] };
+    return { category: s[0] || 'bone', targetName: s[1] || '', property: s[2] || 'scale' };
+  });
+};
+
+const rebuildMapping = (key: string, segments: DescriptorSegment[]) => {
+  modelData.value.modelModifierMapping[key] = segments
+    .map(s => `${s.category}:${s.targetName}:${s.property}`)
+    .join(';');
+};
+
+const updateDescriptorSegment = (key: string, segIdx: number, field: keyof DescriptorSegment, value: string) => {
+  const segments = parseDescriptorSegments(modelData.value.modelModifierMapping[key]);
+  segments[segIdx][field] = value;
+  // Auto-set property when category changes
+  if (field === 'category') {
+    segments[segIdx].property = value === 'bone' ? 'scale' : 'tint';
+  }
+  rebuildMapping(key, segments);
+};
+
+const removeDescriptorSegment = (key: string, segIdx: number) => {
+  const segments = parseDescriptorSegments(modelData.value.modelModifierMapping[key]);
+  segments.splice(segIdx, 1);
+  rebuildMapping(key, segments);
+};
+
+const addDescriptorSegment = (key: string) => {
+  const segments = parseDescriptorSegments(modelData.value.modelModifierMapping[key]);
+  segments.push({ category: 'color', targetName: '', property: 'tint' });
+  rebuildMapping(key, segments);
 };
 
 const addAudio = () => {

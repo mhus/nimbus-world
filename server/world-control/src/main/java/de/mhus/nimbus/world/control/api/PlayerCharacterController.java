@@ -256,6 +256,7 @@ public class PlayerCharacterController extends BaseEditorController {
             String modelPath = pd.getModelPath() != null ? pd.getModelPath() : "";
             var modifierMapping = pd.getModelModifierMapping();
             List<String> modifierKeys = modifierMapping != null ? new ArrayList<>(modifierMapping.keySet()) : List.of();
+            Map<String, String> modifierMappingMap = modifierMapping != null ? new HashMap<>(modifierMapping) : Map.of();
 
             Map<String, Object> model = new HashMap<>();
             model.put("id", modelId);
@@ -263,6 +264,7 @@ public class PlayerCharacterController extends BaseEditorController {
             model.put("gender", gender);
             model.put("modelPath", modelPath);
             model.put("modifierKeys", modifierKeys);
+            model.put("modifierMapping", modifierMappingMap);
             models.add(model);
         }
 
