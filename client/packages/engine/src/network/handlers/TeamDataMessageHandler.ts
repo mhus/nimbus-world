@@ -32,8 +32,8 @@ export class TeamDataMessageHandler extends MessageHandler<TeamData> {
       return;
     }
 
-    // Empty team = team dissolved
-    if (data.members.length === 0) {
+    // Empty team (no id) = team dissolved
+    if (!data.id || data.id === '') {
       this.teamService.clearTeam();
       logger.info('Team cleared');
       return;

@@ -74,6 +74,10 @@ public class RCharacterService {
         return repository.findByRegionId(regionId);
     }
 
+    public Optional<RCharacter> findByRegionAndName(String regionId, String name) {
+        return repository.findByRegionIdAndName(regionId, name);
+    }
+
     public RCharacter updateDisplay(String userId, String regionId, String name, String display) {
         RCharacter c = repository.findByUserIdAndRegionIdAndName(userId, regionId, name)
                 .orElseThrow(() -> new IllegalArgumentException("Character not found"));

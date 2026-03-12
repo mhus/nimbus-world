@@ -115,6 +115,51 @@
       </div>
     </div>
 
+    <!-- Parameters -->
+    <div class="card bg-base-100 shadow">
+      <div class="card-body">
+        <h3 class="card-title text-base">Parameters</h3>
+        <div class="flex gap-2 mb-4">
+          <input v-model="newParamKey" type="text" class="input input-bordered input-sm w-40" placeholder="Key" @keyup.enter="handleAddParameter" />
+          <input v-model="newParamValue" type="text" class="input input-bordered input-sm flex-1" placeholder="Value" @keyup.enter="handleAddParameter" />
+          <button class="btn btn-sm btn-primary" :disabled="!newParamKey.trim()" @click="handleAddParameter">Add</button>
+        </div>
+        <div v-if="Object.keys(editParameters).length === 0" class="text-base-content/50 text-sm">No parameters</div>
+        <div class="overflow-x-auto" v-else>
+          <table class="table table-sm">
+            <thead>
+              <tr>
+                <th>Key</th>
+                <th>Value</th>
+                <th class="w-20"></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="(value, key) in editParameters" :key="key">
+                <td class="font-mono text-sm">{{ key }}</td>
+                <td>
+                  <input v-model="editParameters[key]" type="text" class="input input-bordered input-xs w-full" />
+                </td>
+                <td>
+                  <button class="btn btn-ghost btn-xs text-error" @click="handleRemoveParameter(key as string)">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="flex gap-2 mt-2">
+          <button class="btn btn-primary btn-sm" :disabled="!parametersChanged || saving" @click="handleSaveParameters">
+            <span v-if="saving" class="loading loading-spinner loading-xs"></span>
+            Save Parameters
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- Emigrate Modal -->
     <dialog ref="emigrateDialog" class="modal">
       <div class="modal-box max-w-sm">
@@ -138,7 +183,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, watch } from 'vue';
+import { ref, reactive, computed, watch } from 'vue';
 import { teamServiceFrontend, type Team, type TeamStatus } from '../services/TeamServiceFrontend';
 
 const props = defineProps<{ team: Team }>();
@@ -156,6 +201,19 @@ const saveError = ref<string | null>(null);
 const newMember = ref('');
 const newInvite = ref('');
 
+const newParamKey = ref('');
+const newParamValue = ref('');
+const editParameters = reactive<Record<string, string>>({ ...(props.team.parameters || {}) });
+
+const parametersChanged = computed(() => {
+  const orig = props.team.parameters || {};
+  const keys = new Set([...Object.keys(orig), ...Object.keys(editParameters)]);
+  for (const k of keys) {
+    if (orig[k] !== editParameters[k]) return true;
+  }
+  return false;
+});
+
 const emigrateDialog = ref<HTMLDialogElement | null>(null);
 const emigrateInstanceId = ref('');
 const emigrateSaving = ref(false);
@@ -164,6 +222,9 @@ const emigrateError = ref<string | null>(null);
 watch(() => props.team, (t) => {
   Object.assign(currentTeam, t);
   editTitle.value = t.title;
+  // Sync parameters
+  Object.keys(editParameters).forEach(k => delete editParameters[k]);
+  Object.assign(editParameters, t.parameters || {});
 });
 
 const formatDate = (dateString: string): string => {
@@ -268,6 +329,32 @@ const handleRemoveInvitation = async (name: string) => {
     await refreshTeam();
   } catch (e) {
     saveError.value = e instanceof Error ? e.message : 'Failed to remove invitation';
+  }
+};
+
+const handleAddParameter = () => {
+  const key = newParamKey.value.trim();
+  if (!key) return;
+  editParameters[key] = newParamValue.value;
+  newParamKey.value = '';
+  newParamValue.value = '';
+};
+
+const handleRemoveParameter = (key: string) => {
+  delete editParameters[key];
+};
+
+const handleSaveParameters = async () => {
+  saving.value = true;
+  saveError.value = null;
+  try {
+    const updated = await teamServiceFrontend.updateTeam(currentTeam.teamId, currentTeam.title, { ...editParameters });
+    Object.assign(currentTeam, updated);
+    emit('saved', updated);
+  } catch (e) {
+    saveError.value = e instanceof Error ? e.message : 'Failed to save parameters';
+  } finally {
+    saving.value = false;
   }
 };
 

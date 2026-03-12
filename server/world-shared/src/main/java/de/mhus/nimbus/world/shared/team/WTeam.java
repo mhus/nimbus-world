@@ -14,7 +14,9 @@ import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Document(collection = "w_teams")
 @ActualSchemaVersion("1.0.0")
@@ -50,4 +52,7 @@ public class WTeam implements Identifiable {
 
     @Builder.Default
     private WTeamStatus status = WTeamStatus.LOBBY;
+
+    @Builder.Default
+    private Map<String, String> parameters = new HashMap<>();
 }

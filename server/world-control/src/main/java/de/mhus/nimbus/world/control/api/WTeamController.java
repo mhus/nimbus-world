@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -31,6 +32,7 @@ public class WTeamController extends BaseEditorController {
             List<String> members,
             List<String> invitation,
             WTeamStatus status,
+            Map<String, String> parameters,
             Instant createdAt,
             Instant updatedAt
     ) {}
@@ -42,7 +44,8 @@ public class WTeamController extends BaseEditorController {
     ) {}
 
     public record TeamUpdateRequest(
-            String title
+            String title,
+            Map<String, String> parameters
     ) {}
 
     public record TeamMemberRequest(
@@ -62,6 +65,7 @@ public class WTeamController extends BaseEditorController {
                 team.getMembers() != null ? team.getMembers() : List.of(),
                 team.getInvitation() != null ? team.getInvitation() : List.of(),
                 team.getStatus() != null ? team.getStatus() : WTeamStatus.LOBBY,
+                team.getParameters() != null ? team.getParameters() : Map.of(),
                 team.getCreatedAt(),
                 team.getUpdatedAt()
         );
@@ -148,6 +152,7 @@ public class WTeamController extends BaseEditorController {
 
             WTeam team = teamOpt.get();
             if (request.title() != null) team.setTitle(request.title());
+            if (request.parameters() != null) team.setParameters(new HashMap<>(request.parameters()));
             team.setUpdatedAt(Instant.now());
             // save via repository through service
             return ResponseEntity.ok(toResponse(teamService.save(team)));

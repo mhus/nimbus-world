@@ -2,6 +2,8 @@ package de.mhus.nimbus.world.control.api;
 
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.shared.access.AccessFilterBase;
+import de.mhus.nimbus.world.shared.region.RCharacter;
+import de.mhus.nimbus.world.shared.region.RCharacterService;
 import de.mhus.nimbus.world.shared.rest.BaseEditorController;
 import de.mhus.nimbus.world.shared.team.WTeam;
 import de.mhus.nimbus.world.shared.team.WTeamService;
@@ -14,6 +16,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -22,6 +25,8 @@ import java.util.Optional;
  * Route: /control/player/team
  *
  * worldId, userId and characterId are extracted from the session cookie via ControlAccessFilter.
+ * All player names shown to users are character names only (e.g. "j3sus"),
+ * internally stored as "@userId:characterName".
  */
 @RestController
 @RequestMapping("/control/player/team")
@@ -30,6 +35,7 @@ import java.util.Optional;
 public class PlayerTeamController extends BaseEditorController {
 
     private final WTeamService teamService;
+    private final RCharacterService characterService;
 
     // --- DTOs ---
 
@@ -38,7 +44,8 @@ public class PlayerTeamController extends BaseEditorController {
             String title,
             List<String> members,
             List<String> invitation,
-            String status
+            String status,
+            Map<String, String> parameters
     ) {}
 
     public record InviteResponse(
@@ -56,13 +63,34 @@ public class PlayerTeamController extends BaseEditorController {
 
     public record InvitePlayerRequest(String playerName) {}
 
+    public record InviteResultResponse(List<String> invited, List<String> failed) {}
+
+    /**
+     * Extract character name from playerId format "@userId:characterName".
+     */
+    private String toCharacterName(String playerId) {
+        if (playerId == null) return null;
+        int colonIdx = playerId.indexOf(':');
+        if (colonIdx >= 0) {
+            return playerId.substring(colonIdx + 1);
+        }
+        return playerId.startsWith("@") ? playerId.substring(1) : playerId;
+    }
+
     private TeamResponse toTeamResponse(WTeam team) {
+        List<String> memberNames = team.getMembers() != null
+                ? team.getMembers().stream().map(this::toCharacterName).toList()
+                : List.of();
+        List<String> invitationNames = team.getInvitation() != null
+                ? team.getInvitation().stream().map(this::toCharacterName).toList()
+                : List.of();
         return new TeamResponse(
                 team.getTeamId(),
                 team.getTitle(),
-                team.getMembers() != null ? team.getMembers() : List.of(),
-                team.getInvitation() != null ? team.getInvitation() : List.of(),
-                team.getStatus() != null ? team.getStatus().name() : WTeamStatus.LOBBY.name()
+                memberNames,
+                invitationNames,
+                team.getStatus() != null ? team.getStatus().name() : WTeamStatus.LOBBY.name(),
+                team.getParameters() != null ? team.getParameters() : Map.of()
         );
     }
 
@@ -79,6 +107,17 @@ public class PlayerTeamController extends BaseEditorController {
 
     private String getWorldId(HttpServletRequest request) {
         return (String) request.getAttribute(AccessFilterBase.ATTR_WORLD_ID);
+    }
+
+    /**
+     * Resolve a character name to the full playerId "@userId:characterName"
+     * by looking up the character in the region.
+     */
+    private String resolvePlayerId(String characterName, String regionId) {
+        Optional<RCharacter> charOpt = characterService.findByRegionAndName(regionId, characterName);
+        if (charOpt.isEmpty()) return null;
+        RCharacter c = charOpt.get();
+        return "@" + c.getUserId() + ":" + c.getName();
     }
 
     /**
@@ -244,7 +283,8 @@ public class PlayerTeamController extends BaseEditorController {
     }
 
     /**
-     * Invite another player to my team.
+     * Invite one or more players to my team by character name (comma-separated).
+     * Each character is looked up in the current region to resolve the full playerId.
      * POST /control/player/team/invite
      */
     @PostMapping("/invite")
@@ -260,32 +300,47 @@ public class PlayerTeamController extends BaseEditorController {
         try {
             var worldId = WorldId.unchecked(worldIdStr);
             String mainInstanceId = worldId.getFullMainInstance().getId();
+            String regionId = worldId.getRegionId();
 
             // Find my team
             Optional<WTeam> teamOpt = teamService.findActiveTeamForPlayer(worldIdStr, mainInstanceId, playerName);
             if (teamOpt.isEmpty()) {
                 return bad("Not in a team");
             }
-
             WTeam team = teamOpt.get();
-            String targetPlayer = body.playerName();
 
-            // Cannot invite yourself
-            if (targetPlayer.equals(playerName)) {
-                return bad("Cannot invite yourself");
+            // Split comma-separated names
+            String[] names = body.playerName().split(",");
+            List<String> invited = new java.util.ArrayList<>();
+            List<String> failed = new java.util.ArrayList<>();
+
+            for (String rawName : names) {
+                String characterName = rawName.trim();
+                if (characterName.isEmpty()) continue;
+
+                String targetPlayer = resolvePlayerId(characterName, regionId);
+                if (targetPlayer == null) {
+                    failed.add(characterName + ": not found");
+                    continue;
+                }
+                if (targetPlayer.equals(playerName)) {
+                    failed.add(characterName + ": cannot invite yourself");
+                    continue;
+                }
+                if (team.getMembers().contains(targetPlayer)) {
+                    failed.add(characterName + ": already a member");
+                    continue;
+                }
+
+                boolean ok = teamService.addInvitationAtomic(team.getTeamId(), targetPlayer);
+                if (ok) {
+                    invited.add(characterName);
+                } else {
+                    failed.add(characterName + ": already invited");
+                }
             }
 
-            // Check if already a member
-            if (team.getMembers().contains(targetPlayer)) {
-                return bad("Player is already a member");
-            }
-
-            boolean invited = teamService.addInvitationAtomic(team.getTeamId(), targetPlayer);
-            if (!invited) return bad("Failed to send invitation");
-
-            return teamService.findByTeamId(team.getTeamId())
-                    .<ResponseEntity<?>>map(t -> ResponseEntity.ok(toTeamResponse(t)))
-                    .orElseGet(() -> notFound("Team not found"));
+            return ResponseEntity.ok(new InviteResultResponse(invited, failed));
         } catch (Exception e) {
             log.error("Failed to invite player for {}: {}", playerName, e.getMessage(), e);
             return bad(e.getMessage());
@@ -293,11 +348,11 @@ public class PlayerTeamController extends BaseEditorController {
     }
 
     /**
-     * Kick a member from my team.
-     * DELETE /control/player/team/kick/{targetPlayerName}
+     * Revoke an invitation by character name.
+     * DELETE /control/player/team/uninvite/{characterName}
      */
-    @DeleteMapping("/kick/{targetPlayerName}")
-    public ResponseEntity<?> kickMember(HttpServletRequest request, @PathVariable String targetPlayerName) {
+    @DeleteMapping("/uninvite/{characterName}")
+    public ResponseEntity<?> uninvitePlayer(HttpServletRequest request, @PathVariable String characterName) {
         String playerName = getPlayerName(request);
         String worldIdStr = getWorldId(request);
         if (playerName == null || worldIdStr == null) return bad("Not authenticated");
@@ -305,6 +360,50 @@ public class PlayerTeamController extends BaseEditorController {
         try {
             var worldId = WorldId.unchecked(worldIdStr);
             String mainInstanceId = worldId.getFullMainInstance().getId();
+            String regionId = worldId.getRegionId();
+
+            String targetPlayer = resolvePlayerId(characterName, regionId);
+            if (targetPlayer == null) {
+                return bad("Character not found: " + characterName);
+            }
+
+            Optional<WTeam> teamOpt = teamService.findActiveTeamForPlayer(worldIdStr, mainInstanceId, playerName);
+            if (teamOpt.isEmpty()) {
+                return bad("Not in a team");
+            }
+
+            boolean removed = teamService.removeInvitationAtomic(teamOpt.get().getTeamId(), targetPlayer);
+            if (!removed) return bad("No invitation found for this player");
+
+            return teamService.findByTeamId(teamOpt.get().getTeamId())
+                    .<ResponseEntity<?>>map(t -> ResponseEntity.ok(toTeamResponse(t)))
+                    .orElseGet(() -> notFound("Team not found"));
+        } catch (Exception e) {
+            log.error("Failed to uninvite player for {}: {}", playerName, e.getMessage(), e);
+            return bad(e.getMessage());
+        }
+    }
+
+    /**
+     * Kick a member from my team by character name.
+     * DELETE /control/player/team/kick/{characterName}
+     */
+    @DeleteMapping("/kick/{characterName}")
+    public ResponseEntity<?> kickMember(HttpServletRequest request, @PathVariable String characterName) {
+        String playerName = getPlayerName(request);
+        String worldIdStr = getWorldId(request);
+        if (playerName == null || worldIdStr == null) return bad("Not authenticated");
+
+        try {
+            var worldId = WorldId.unchecked(worldIdStr);
+            String mainInstanceId = worldId.getFullMainInstance().getId();
+            String regionId = worldId.getRegionId();
+
+            // Resolve character name to full playerId
+            String targetPlayer = resolvePlayerId(characterName, regionId);
+            if (targetPlayer == null) {
+                return bad("Character not found: " + characterName);
+            }
 
             // Find my team
             Optional<WTeam> teamOpt = teamService.findActiveTeamForPlayer(worldIdStr, mainInstanceId, playerName);
@@ -313,16 +412,16 @@ public class PlayerTeamController extends BaseEditorController {
             }
 
             // Cannot kick yourself (use leave instead)
-            if (targetPlayerName.equals(playerName)) {
+            if (targetPlayer.equals(playerName)) {
                 return bad("Use leave to remove yourself");
             }
 
             WTeam team = teamOpt.get();
-            if (!team.getMembers().contains(targetPlayerName)) {
+            if (!team.getMembers().contains(targetPlayer)) {
                 return bad("Player is not a member of your team");
             }
 
-            teamService.removeMemberAtomic(team.getTeamId(), targetPlayerName);
+            teamService.removeMemberAtomic(team.getTeamId(), targetPlayer);
 
             return teamService.findByTeamId(team.getTeamId())
                     .<ResponseEntity<?>>map(t -> ResponseEntity.ok(toTeamResponse(t)))

@@ -10,6 +10,7 @@ export interface Team {
   members: string[];
   invitation: string[];
   status: TeamStatus;
+  parameters: Record<string, string>;
   createdAt: string;
   updatedAt: string;
 }
@@ -36,8 +37,8 @@ class TeamServiceFrontend {
     return apiService.post<Team>('/control/teams', request);
   }
 
-  async updateTeam(teamId: string, title: string): Promise<Team> {
-    return apiService.put<Team>(`/control/teams/${teamId}`, { title });
+  async updateTeam(teamId: string, title: string, parameters?: Record<string, string>): Promise<Team> {
+    return apiService.put<Team>(`/control/teams/${teamId}`, { title, parameters });
   }
 
   async deleteTeam(teamId: string): Promise<void> {

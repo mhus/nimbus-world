@@ -80,6 +80,7 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
     private final WorldRedisMessagingService redisMessaging;
     private final WWorldInstanceService worldInstanceService;
     private final ObjectMapper objectMapper;
+    private final de.mhus.nimbus.world.shared.team.WTeamService teamService;
 
     private final BaseEffectProcessor baseEffectProcessor = new BaseEffectProcessor();
 
@@ -947,6 +948,35 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
                 state.getFadeTimeMs() / 1000,
                 state.getRespawnTimeMs() / 1000,
                 state.getAttackers());
+
+        // Credit kill to teams of attackers (one kill per team, not per player)
+        creditKillToTeams(state.getAttackers(), worldId);
+    }
+
+    /**
+     * Credit one kill to each unique team that has an attacker in the set.
+     * Only one kill per team per entity death, regardless of how many team members attacked.
+     */
+    private void creditKillToTeams(Set<String> attackers, WorldId worldId) {
+        if (attackers == null || attackers.isEmpty()) return;
+        try {
+            String mainInstanceId = worldId.getFullMainInstance().getId();
+            Set<String> creditedTeamIds = new HashSet<>();
+            for (String attackerPlayerId : attackers) {
+                var teamOpt = teamService.findActiveTeamForPlayer(worldId.getId(), mainInstanceId, attackerPlayerId);
+                if (teamOpt.isPresent()) {
+                    String teamId = teamOpt.get().getTeamId();
+                    if (creditedTeamIds.add(teamId)) {
+                        teamService.incrementParameterAtomic(teamId,
+                                de.mhus.nimbus.world.shared.team.TeamParameter.KILLS, 1);
+                        log.debug("World {}: Credited kill to team {} for attacker {}",
+                                worldId, teamId, attackerPlayerId);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.warn("World {}: Failed to credit kills to teams: {}", worldId, e.getMessage());
+        }
     }
 
     private void updateEntityChunk(WWorld world, WEntity entity) {

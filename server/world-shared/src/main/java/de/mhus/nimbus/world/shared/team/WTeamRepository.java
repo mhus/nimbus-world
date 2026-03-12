@@ -21,5 +21,7 @@ public interface WTeamRepository extends MongoRepository<WTeam, String> {
 
     void deleteByTeamId(String teamId);
 
+    void deleteByWorldId(String worldId);
+
     boolean existsByTeamId(String teamId);
 }

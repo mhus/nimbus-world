@@ -12,4 +12,5 @@ public interface RCharacterRepository extends MongoRepository<RCharacter, String
     boolean existsByUserIdAndRegionIdAndName(String userId, String regionId, String name);
     List<RCharacter> findByUserIdAndRegionId(String userId, String regionId);
     List<RCharacter> findByRegionId(String regionId);
+    Optional<RCharacter> findByRegionIdAndName(String regionId, String name);
 }

@@ -85,18 +85,37 @@
         <div v-if="data.team.invitation && data.team.invitation.length > 0">
           <h3 class="text-sm font-medium text-gray-400 mb-2">Pending Invitations</h3>
           <div class="flex flex-wrap gap-2">
-            <div v-for="inv in data.team.invitation" :key="inv" class="badge badge-lg badge-warning gap-1">
+            <div v-for="inv in data.team.invitation" :key="inv" class="badge badge-lg badge-warning gap-2">
               <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               {{ formatPlayerName(inv) }}
+              <button @click="uninvitePlayer(inv)"
+                class="btn btn-xs btn-circle btn-ghost text-error"
+                :disabled="actionLoading"
+                title="Revoke invitation">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Team Parameters -->
+        <div v-if="data.team.parameters && Object.keys(data.team.parameters).length > 0" class="mt-3">
+          <h3 class="text-sm font-medium text-gray-400 mb-2">Stats</h3>
+          <div class="flex flex-wrap gap-2">
+            <div v-for="(value, key) in data.team.parameters" :key="key"
+              class="badge badge-lg badge-info gap-1">
+              <span class="font-medium">{{ key }}:</span> {{ value }}
             </div>
           </div>
         </div>
 
         <!-- Invite Player -->
         <div class="mt-4 flex gap-2">
-          <input v-model="invitePlayerName" type="text" placeholder="Player name to invite"
+          <input v-model="invitePlayerName" type="text" placeholder="Character names (comma-separated)"
             class="input input-bordered input-sm flex-1 bg-gray-700 border-gray-600"
             @keyup.enter="invitePlayer" />
           <button @click="invitePlayer" class="btn btn-sm btn-primary" :disabled="actionLoading || !invitePlayerName.trim()">
@@ -166,6 +185,7 @@ interface TeamResponse {
   members: string[];
   invitation: string[];
   status: string;
+  parameters: Record<string, string>;
 }
 
 interface InviteResponse {
@@ -281,9 +301,27 @@ async function invitePlayer() {
   if (!invitePlayerName.value.trim()) return;
   actionLoading.value = true;
   try {
-    await apiService.post(`${API_PATH}/invite`, { playerName: invitePlayerName.value.trim() });
+    const result = await apiService.post<{ invited: string[]; failed: string[] }>(
+      `${API_PATH}/invite`, { playerName: invitePlayerName.value.trim() }
+    );
     invitePlayerName.value = '';
-    showMessage('Invitation sent', true);
+    const parts: string[] = [];
+    if (result.invited?.length) parts.push(`Invited: ${result.invited.join(', ')}`);
+    if (result.failed?.length) parts.push(`Failed: ${result.failed.join(', ')}`);
+    showMessage(parts.join(' | ') || 'Done', result.failed?.length === 0);
+    await refresh();
+  } catch (e: any) {
+    showMessage(e.message, false);
+  } finally {
+    actionLoading.value = false;
+  }
+}
+
+async function uninvitePlayer(characterName: string) {
+  actionLoading.value = true;
+  try {
+    await apiService.delete(`${API_PATH}/uninvite/${encodeURIComponent(characterName)}`);
+    showMessage('Invitation revoked', true);
     await refresh();
   } catch (e: any) {
     showMessage(e.message, false);

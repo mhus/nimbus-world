@@ -70,6 +70,7 @@ public class WTeamService {
         teamRepository.save(team);
         log.info("Created team: worldId={} teamId={} title={} creator={}",
                 worldId, team.getTeamId(), title, creatorPlayerName);
+        publishTeamMembershipEvent(team.getTeamId(), creatorPlayerName, "JOINED");
         return team;
     }
 
@@ -200,6 +201,58 @@ public class WTeamService {
     public void deleteTeam(String teamId) {
         teamRepository.deleteByTeamId(teamId);
         log.info("Deleted team {}", teamId);
+    }
+
+    /**
+     * Set a single team parameter atomically.
+     */
+    public boolean setParameterAtomic(String teamId, String key, String value) {
+        Update update = new Update()
+                .set("parameters." + key, value)
+                .set("updatedAt", Instant.now());
+        var result = mongoTemplate.updateFirst(queryByTeamId(teamId), update, WTeam.class);
+        if (result.getModifiedCount() > 0) {
+            log.debug("Set parameter {}={} on team {}", key, value, teamId);
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Remove a single team parameter atomically.
+     */
+    public boolean removeParameterAtomic(String teamId, String key) {
+        Update update = new Update()
+                .unset("parameters." + key)
+                .set("updatedAt", Instant.now());
+        var result = mongoTemplate.updateFirst(queryByTeamId(teamId), update, WTeam.class);
+        if (result.getModifiedCount() > 0) {
+            log.debug("Removed parameter {} from team {}", key, teamId);
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Increment a numeric team parameter atomically.
+     * If the parameter does not exist yet, it is initialized to the given delta.
+     */
+    public boolean incrementParameterAtomic(String teamId, String key, long delta) {
+        Update update = new Update()
+                .inc("parameters." + key, delta)
+                .set("updatedAt", Instant.now());
+        var result = mongoTemplate.updateFirst(queryByTeamId(teamId), update, WTeam.class);
+        if (result.getModifiedCount() > 0) {
+            log.debug("Incremented parameter {} by {} on team {}", key, delta, teamId);
+            return true;
+        }
+        return false;
+    }
+
+    @Transactional
+    public void deleteByWorldId(String worldId) {
+        teamRepository.deleteByWorldId(worldId);
+        log.info("Deleted all teams for worldId {}", worldId);
     }
 
     @Transactional
