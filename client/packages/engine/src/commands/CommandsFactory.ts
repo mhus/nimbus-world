@@ -23,6 +23,7 @@ import {RegisterFlashSoundsCommand} from "./RegisterFlashSoundsCommand";
 import {NotificationCommand} from "./NotificationCommand";
 import {SplashScreenCommand} from "./SplashScreenCommand";
 import {ShowTeamCommand} from "./ShowTeamCommand";
+import {InputPanelCommand} from "./InputPanelCommand";
 import {SetPlayerInfoCommand} from "./SetPlayerInfoCommand";
 import {SetShortcutCommand} from "./SetShortcutCommand";
 import {ShortcutModifiedCommand} from "./ShortcutModifiedCommand";
@@ -196,6 +197,7 @@ export class CommandsFactory {
         commandService.registerHandler(new NotificationCommand(appContext));
         commandService.registerHandler(new SplashScreenCommand(appContext));
         commandService.registerHandler(new ShowTeamCommand(appContext));
+        commandService.registerHandler(new InputPanelCommand(appContext));
         commandService.registerHandler(new SetPlayerInfoCommand(appContext));
         commandService.registerHandler(new SetShortcutCommand(appContext));
         commandService.registerHandler(new ShortcutModifiedCommand(appContext));

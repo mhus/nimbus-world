@@ -380,6 +380,16 @@ export class WebInputController implements InputController {
       return;
     }
 
+    // Handle N key for input panel
+    if (event.key === 'n' || event.key === 'N') {
+      const notificationService = this.appContext.services.notification;
+      if (notificationService) {
+        notificationService.showInputPanel();
+        event.preventDefault();
+      }
+      return;
+    }
+
     // Handle number keys (1-9, 0) for shortcuts
     if (event.key >= '0' && event.key <= '9') {
       const shortcutNr = event.key === '0' ? 10 : parseInt(event.key, 10);

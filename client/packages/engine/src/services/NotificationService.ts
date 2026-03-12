@@ -42,6 +42,9 @@ export class NotificationService {
   private teamTableContainer: HTMLElement | null = null;
   private teamTableVisible: boolean = false;
 
+  // Input panel
+  private inputPanelContainer: HTMLElement | null = null;
+
   constructor(appContext: AppContext) {
     this.appContext = appContext;
 
@@ -2141,5 +2144,122 @@ export class NotificationService {
       return '#00ff00'; // Alive: grün
     }
     return '#ffffff'; // Default
+  }
+
+  // ============================================
+  // Input Panel
+  // ============================================
+
+  /**
+   * Show input panel with a text field and submit button.
+   * On submit, sends a simple interaction with ac:'msg' and msg:'text'.
+   */
+  showInputPanel(): void {
+    // Already visible
+    if (this.inputPanelContainer) return;
+
+    this.inputPanelContainer = document.createElement('div');
+    this.inputPanelContainer.id = 'input-panel';
+    this.inputPanelContainer.style.cssText = `
+      position: fixed;
+      bottom: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 6px;
+      padding: 8px;
+      background: rgba(0, 0, 0, 0.8);
+      border-radius: 8px;
+      z-index: 950;
+      font-family: 'Courier New', monospace;
+      font-size: 14px;
+      align-items: center;
+    `;
+
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.placeholder = 'Message...';
+    input.style.cssText = `
+      width: 300px;
+      padding: 6px 10px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 4px;
+      color: white;
+      font-family: inherit;
+      font-size: inherit;
+      outline: none;
+    `;
+
+    const submitBtn = document.createElement('button');
+    submitBtn.style.cssText = `
+      width: 32px;
+      height: 32px;
+      background: rgba(255, 255, 255, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 4px;
+      color: white;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+    `;
+    submitBtn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>`;
+
+    const submit = () => {
+      const text = input.value.trim();
+      if (text) {
+        const networkService = this.appContext.services.network;
+        if (networkService) {
+          networkService.sendSimpleInteraction('msg', '', { msg: text });
+        }
+      }
+      this.hideInputPanel();
+    };
+
+    input.addEventListener('keydown', (e) => {
+      e.stopPropagation(); // prevent engine key handlers
+      if (e.key === 'Enter') {
+        submit();
+      } else if (e.key === 'Escape') {
+        this.hideInputPanel();
+      }
+    });
+    input.addEventListener('keyup', (e) => e.stopPropagation());
+    input.addEventListener('keypress', (e) => e.stopPropagation());
+
+    submitBtn.addEventListener('click', submit);
+
+    this.inputPanelContainer.appendChild(input);
+    this.inputPanelContainer.appendChild(submitBtn);
+    document.body.appendChild(this.inputPanelContainer);
+
+    // Focus input after DOM is ready
+    setTimeout(() => { input.focus(); input.click(); }, 100);
+
+    logger.info('Input panel shown');
+  }
+
+  /**
+   * Hide the input panel.
+   */
+  hideInputPanel(): void {
+    if (this.inputPanelContainer) {
+      this.inputPanelContainer.remove();
+      this.inputPanelContainer = null;
+      logger.info('Input panel hidden');
+    }
+  }
+
+  /**
+   * Toggle input panel visibility.
+   */
+  toggleInputPanel(): void {
+    if (this.inputPanelContainer) {
+      this.hideInputPanel();
+    } else {
+      this.showInputPanel();
+    }
   }
 }
