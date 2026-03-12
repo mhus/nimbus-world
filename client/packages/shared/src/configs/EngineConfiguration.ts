@@ -35,6 +35,7 @@ export interface Settings {
     name: string;
     inputController: string;
     inputMappings: Record<string, string>;
+    properties: Record<string, string>;
 }
 
 /**

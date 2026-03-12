@@ -508,6 +508,9 @@ public class WorldConfigController {
         if (settings.getInputMappings() == null) {
             settings.setInputMappings(new java.util.HashMap<>());
         }
+        if (settings.getProperties() == null) {
+            settings.setProperties(new java.util.HashMap<>());
+        }
     }
 
 }

@@ -8110,6 +8110,13 @@
         "visibility" : null,
         "javaTypeHint" : null,
         "comment" : null
+      }, {
+        "name" : "properties",
+        "type" : "Record<string, string>",
+        "optional" : false,
+        "visibility" : null,
+        "javaTypeHint" : null,
+        "comment" : null
       } ],
       "methods" : [ ]
     }, {

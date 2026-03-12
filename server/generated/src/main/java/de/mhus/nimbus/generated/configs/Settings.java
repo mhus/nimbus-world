@@ -16,4 +16,5 @@ public class Settings {
     private String inputController;
     @com.fasterxml.jackson.annotation.JsonProperty("inputMappings")
     private java.util.Map<String, String> inputMappings;
+    private java.util.Map<String, String> properties;
 }

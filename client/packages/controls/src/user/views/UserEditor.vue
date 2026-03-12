@@ -524,6 +524,65 @@
                     No input mappings
                   </div>
                 </div>
+
+                <!-- Properties -->
+                <div class="form-control">
+                  <label class="label">
+                    <span class="label-text-alt">Properties</span>
+                  </label>
+
+                  <!-- Add new property -->
+                  <div class="flex gap-2 mb-2">
+                    <input
+                      v-model="newPropertyKey[clientType]"
+                      type="text"
+                      placeholder="Key"
+                      class="input input-bordered input-sm flex-1"
+                    />
+                    <input
+                      v-model="newPropertyValue[clientType]"
+                      type="text"
+                      placeholder="Value"
+                      class="input input-bordered input-sm flex-1"
+                    />
+                    <button
+                      type="button"
+                      class="btn btn-sm btn-secondary"
+                      @click="handleAddProperty(clientType)"
+                      :disabled="!newPropertyKey[clientType] || !newPropertyValue[clientType]"
+                    >
+                      Add
+                    </button>
+                  </div>
+
+                  <!-- Existing properties -->
+                  <div v-if="settings.properties && Object.keys(settings.properties).length > 0" class="space-y-1">
+                    <div
+                      v-for="(value, key) in settings.properties"
+                      :key="key"
+                      class="flex gap-2 items-center bg-base-200 p-2 rounded"
+                    >
+                      <span class="font-mono text-xs flex-1">{{ key }}</span>
+                      <span class="text-xs">→</span>
+                      <input
+                        :value="value"
+                        @input="handlePropertyValueChange(clientType, key as string, $event)"
+                        type="text"
+                        class="input input-bordered input-xs flex-1 font-mono"
+                      />
+                      <button
+                        type="button"
+                        class="btn btn-xs btn-error"
+                        @click="handleRemoveProperty(clientType, key as string)"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                  <div v-else class="text-xs text-base-content/60 text-center py-2">
+                    No properties
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -577,6 +636,8 @@ const formData = ref({
 const newSettingClientType = ref('');
 const newMappingKey = reactive<Record<string, string>>({});
 const newMappingValue = reactive<Record<string, string>>({});
+const newPropertyKey = reactive<Record<string, string>>({});
+const newPropertyValue = reactive<Record<string, string>>({});
 
 const newRegionId = ref('');
 const newCharLimitRegionId = ref('');
@@ -759,6 +820,72 @@ const handleRemoveMapping = (clientType: string, key: string) => {
       [clientType]: {
         ...currentSettings,
         inputMappings: remainingMappings,
+      },
+    },
+  };
+};
+
+const handleAddProperty = (clientType: string) => {
+  if (!user.value || !newPropertyKey[clientType] || !newPropertyValue[clientType]) {
+    return;
+  }
+
+  const currentSettings = user.value.userSettings?.[clientType] || {};
+  const currentProperties = currentSettings.properties || {};
+
+  user.value = {
+    ...user.value,
+    userSettings: {
+      ...user.value.userSettings,
+      [clientType]: {
+        ...currentSettings,
+        properties: {
+          ...currentProperties,
+          [newPropertyKey[clientType]]: newPropertyValue[clientType],
+        },
+      },
+    },
+  };
+
+  delete newPropertyKey[clientType];
+  delete newPropertyValue[clientType];
+};
+
+const handleRemoveProperty = (clientType: string, key: string) => {
+  if (!user.value) return;
+
+  const currentSettings = user.value.userSettings?.[clientType] || {};
+  const { [key]: removed, ...remainingProperties } = currentSettings.properties || {};
+
+  user.value = {
+    ...user.value,
+    userSettings: {
+      ...user.value.userSettings,
+      [clientType]: {
+        ...currentSettings,
+        properties: remainingProperties,
+      },
+    },
+  };
+};
+
+const handlePropertyValueChange = (clientType: string, key: string, event: Event) => {
+  if (!user.value) return;
+  const value = (event.target as HTMLInputElement).value;
+
+  const currentSettings = user.value.userSettings?.[clientType] || {};
+  const currentProperties = currentSettings.properties || {};
+
+  user.value = {
+    ...user.value,
+    userSettings: {
+      ...user.value.userSettings,
+      [clientType]: {
+        ...currentSettings,
+        properties: {
+          ...currentProperties,
+          [key]: value,
+        },
       },
     },
   };

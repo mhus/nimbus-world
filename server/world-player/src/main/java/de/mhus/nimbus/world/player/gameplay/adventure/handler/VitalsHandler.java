@@ -38,8 +38,16 @@ public class VitalsHandler {
             ArrayNode vitalsArray = objectMapper.createArrayNode();
             for (var vital : data.getVitals().values()) {
                 // Skip vitals with sendThreshold if percentage has not yet crossed the threshold
-                if (vital.getSendThreshold() > 0 && vital.getPercentage() <= vital.getSendThreshold()) {
-                    continue;
+                // For normal vitals (regenRate >= 0): skip when above threshold (not critical yet)
+                // For inverse vitals (baseRegenRate > 0, e.g. hunger/thirst): skip when below threshold (not critical yet)
+                if (vital.getSendThreshold() > 0) {
+                    if (vital.getBaseRegenRate() > 0) {
+                        // Inverse vital (hunger, thirst): value rises over time, critical = high
+                        if (vital.getPercentage() < vital.getSendThreshold()) continue;
+                    } else {
+                        // Normal vital (health, stamina): value drops, critical = low
+                        if (vital.getPercentage() > vital.getSendThreshold()) continue;
+                    }
                 }
                 // Skip air when not underwater and full
                 if ("air".equals(vital.getType()) && !data.isUnderwater() && vital.isFull()) {

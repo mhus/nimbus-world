@@ -75,6 +75,7 @@ export default defineConfig({
         'dialog-widget': resolve(__dirname, 'dialog-widget.html'),
         'library-panel': resolve(__dirname, 'library-panel.html'),
         'team-panel': resolve(__dirname, 'team-panel.html'),
+        'settings-panel': resolve(__dirname, 'settings-panel.html'),
         'panels': resolve(__dirname, 'panels.html'),
       },
     },

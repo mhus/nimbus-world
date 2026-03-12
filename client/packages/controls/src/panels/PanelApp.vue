@@ -130,6 +130,13 @@ const panels = ref<Panel[]>([
     description: 'Team verwalten, Einladungen annehmen oder ablehnen',
     url: './team-panel.html',
     color: '#14B8A6' // teal
+  },
+  {
+    id: 'settings-panel',
+    name: 'Einstellungen',
+    description: 'Audio, Grafik und Gameplay anpassen',
+    url: './settings-panel.html',
+    color: '#6B7280' // gray
   }
 ]);
 

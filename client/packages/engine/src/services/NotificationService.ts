@@ -1501,9 +1501,15 @@ export class NotificationService {
         return;
       }
 
-      // Filter vitals that should be displayed (not full, unless pinned)
+      // Filter vitals that should be displayed (not at safe value, unless pinned)
+      // Normal vitals (health, stamina): show when current < max (depleted = bad)
+      // Inverse vitals (hunger, thirst): show when current > 0 (filling up = bad)
       const visibleVitals = vitals.filter((vital) => {
         if (vital.options?.includes('p')) return true;
+        if (vital.degenRate > 0) {
+          // Inverse vital: degenRate > 0 means it increases over time (hunger, thirst)
+          return vital.current > 0;
+        }
         const maxValue = vital.max + (vital.extended || 0);
         return vital.current < maxValue;
       });
