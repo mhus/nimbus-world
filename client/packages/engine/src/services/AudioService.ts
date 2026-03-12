@@ -571,7 +571,42 @@ export class AudioService implements IDisposable {
       logger.warn('PhysicsService not available - gameplay sounds will not work');
     }
 
+    // Subscribe to settings changes for volume adjustments
+    const configService = this.appContext.services.config;
+    if (configService) {
+      configService.onSettingsChanged((properties) => {
+        this.applySettingsProperties(properties);
+      });
+      // Apply current settings immediately
+      const currentProps = configService.getConfig()?.settings?.properties;
+      if (currentProps) {
+        this.applySettingsProperties(currentProps);
+      }
+      logger.debug('AudioService subscribed to settings changes');
+    }
+
     logger.debug('AudioService initialized with scene');
+  }
+
+  /**
+   * Apply volume settings from properties map.
+   * Properties use 0-10 scale, AudioService uses 0-1 scale.
+   */
+  private applySettingsProperties(properties: Record<string, string>): void {
+    if (properties.audioAmbientVolume !== undefined) {
+      this.setAmbientVolume(parseFloat(properties.audioAmbientVolume) / 10);
+    }
+    if (properties.audioEffectVolume !== undefined) {
+      this.setStepVolume(parseFloat(properties.audioEffectVolume) / 10);
+    }
+    if (properties.speechVolume !== undefined) {
+      this.setSpeechVolume(parseFloat(properties.speechVolume) / 10);
+    }
+    logger.debug('Audio settings applied from properties', {
+      ambientVolume: this.ambientVolume,
+      stepVolume: this.stepVolume,
+      speechVolume: this.speechVolume,
+    });
   }
 
   /**

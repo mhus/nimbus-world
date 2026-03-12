@@ -247,42 +247,6 @@
                 </select>
               </div>
 
-              <!-- View Distance Selection (shown after character selected) -->
-              <div v-if="selectedCharacter" class="form-control">
-                <label class="label">
-                  <span class="label-text">View Distance</span>
-                </label>
-                <div class="flex gap-2 justify-center">
-                  <button
-                    v-for="distance in [2, 3, 4]"
-                    :key="distance"
-                    class="btn btn-sm flex-1"
-                    :class="{ 'btn-primary': viewDistance === distance, 'btn-outline': viewDistance !== distance }"
-                    @click="viewDistance = distance"
-                  >
-                    {{ distance }}
-                  </button>
-                </div>
-              </div>
-
-              <!-- Quality Selection (shown after character selected) -->
-              <div v-if="selectedCharacter" class="form-control">
-                <label class="label">
-                  <span class="label-text">Quality</span>
-                </label>
-                <div class="flex gap-2 justify-center">
-                  <button
-                    v-for="q in qualityOptions"
-                    :key="q.value"
-                    class="btn btn-sm flex-1"
-                    :class="{ 'btn-primary': quality === q.value, 'btn-outline': quality !== q.value }"
-                    @click="quality = q.value"
-                  >
-                    {{ q.label }}
-                  </button>
-                </div>
-              </div>
-
               <!-- Entry Point Selection (shown after character selected) -->
               <div v-if="selectedCharacter" class="form-control">
                 <label class="label">
@@ -452,12 +416,6 @@
               <div v-if="loginType === 'session' && (selectedActor === 'PLAYER' || selectedActor === 'SUPPORT')">
                 <strong>Instance:</strong> {{ selectedInstance === '__last__' ? 'Last Instance' : (selectedInstance ? selectedInstance : (selectedActor === 'PLAYER' ? 'New Instance' : 'None')) }}
               </div>
-              <div v-if="loginType === 'session'">
-                <strong>View Distance:</strong> {{ viewDistance }} (Render: {{ viewDistance - 1 }}, Unload: {{ viewDistance }})
-              </div>
-              <div v-if="loginType === 'session'">
-                <strong>Quality:</strong> {{ qualityOptions[quality].label }}
-              </div>
               <div v-if="loginType === 'agent'">
                 <strong>User:</strong> {{ selectedAgentUser?.username }}
               </div>
@@ -502,8 +460,6 @@ const STORAGE_KEY_AGENT_USER = 'nimbus-devlogin-agent-user';
 const STORAGE_KEY_ENTRY_POINT = 'nimbus-devlogin-entrypoint';
 const STORAGE_KEY_GRID_Q = 'nimbus-devlogin-grid-q';
 const STORAGE_KEY_GRID_R = 'nimbus-devlogin-grid-r';
-const STORAGE_KEY_VIEW_DISTANCE = 'nimbus-devlogin-view-distance';
-const STORAGE_KEY_QUALITY = 'nimbus-devlogin-quality';
 const STORAGE_KEY_EPOCH = 'nimbus-devlogin-epoch';
 const STORAGE_KEY_INSTANCE_MODE = 'nimbus-devlogin-instance-mode';
 
@@ -550,17 +506,6 @@ const selectedInstance = ref<string>(''); // empty = new instance, instanceId = 
 const entryPoint = ref<'last' | 'grid' | 'world'>('world');
 const gridQ = ref<string>('0');
 const gridR = ref<string>('0');
-
-// Session Login - View Distance
-const viewDistance = ref<number>(2);
-
-// Session Login - Quality
-const quality = ref<number>(1);
-const qualityOptions = [
-  { label: 'Low', value: 0 },
-  { label: 'Medium', value: 1 },
-  { label: 'High', value: 2 },
-];
 
 // Agent Login - Users
 const agentUsers = ref<User[]>([]);
@@ -617,12 +562,6 @@ const saveToLocalStorage = () => {
     localStorage.setItem(STORAGE_KEY_ENTRY_POINT, entryPoint.value);
     localStorage.setItem(STORAGE_KEY_GRID_Q, gridQ.value);
     localStorage.setItem(STORAGE_KEY_GRID_R, gridR.value);
-
-    // Save view distance
-    localStorage.setItem(STORAGE_KEY_VIEW_DISTANCE, viewDistance.value.toString());
-
-    // Save quality
-    localStorage.setItem(STORAGE_KEY_QUALITY, quality.value.toString());
 
     // Save epoch
     localStorage.setItem(STORAGE_KEY_EPOCH, selectedEpoch.value.toString());
@@ -703,24 +642,6 @@ const loadFromLocalStorage = async () => {
               const savedGridR = localStorage.getItem(STORAGE_KEY_GRID_R);
               if (savedGridR) {
                 gridR.value = savedGridR;
-              }
-
-              // Load view distance
-              const savedViewDistance = localStorage.getItem(STORAGE_KEY_VIEW_DISTANCE);
-              if (savedViewDistance) {
-                const distance = parseInt(savedViewDistance, 10);
-                if (distance === 2 || distance === 3 || distance === 4) {
-                  viewDistance.value = distance;
-                }
-              }
-
-              // Load quality
-              const savedQuality = localStorage.getItem(STORAGE_KEY_QUALITY);
-              if (savedQuality) {
-                const q = parseInt(savedQuality, 10);
-                if (q === 0 || q === 1 || q === 2) {
-                  quality.value = q;
-                }
               }
 
               // Load epoch
@@ -1038,17 +959,8 @@ const handleLogin = async () => {
       await devLoginService.authorize(response.accessUrls, response.accessToken);
     }
 
-    // Append view distance parameters to jumpUrl (for session login only)
-    let jumpUrl = response.jumpUrl;
-    if (loginType.value === 'session') {
-      const highDensityDistance = viewDistance.value - 1;
-      const lowDensityDistance = viewDistance.value;
-      const separator = jumpUrl.includes('?') ? '&' : '?';
-      jumpUrl = `${jumpUrl}${separator}renderDistance=${highDensityDistance}&unloadDistance=${lowDensityDistance}&quality=${quality.value}`;
-    }
-
     // Redirect to jump URL
-    window.location.href = jumpUrl;
+    window.location.href = response.jumpUrl;
   } catch (e) {
     loginError.value = e instanceof Error ? e.message : 'Login failed';
     console.error('[DevLogin] Login failed:', e);

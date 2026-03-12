@@ -46,20 +46,19 @@ export interface ClientConfig {
 
   /**
    * Render distance for chunks (in chunks)
-   * Loaded from URL query parameter 'renderDistance', defaults to 1
+   * Default: 2, can be overridden by user settings (viewRange)
    */
   renderDistance: number;
 
   /**
    * Unload distance for chunks (in chunks)
-   * Loaded from URL query parameter 'unloadDistance', defaults to 10
+   * Default: 2
    */
   unloadDistance: number;
 
   /**
    * Hardware scaling quality level.
-   * 0 = Low (scaling 2), 1 = Medium (scaling 1), 2 = High (scaling 0.5)
-   * Loaded from URL query parameter 'quality', defaults to 1 (Medium)
+   * Default: 1 (scaling 1.0), overridden by user settings (screenQuality)
    */
   quality: number;
 }
@@ -100,15 +99,10 @@ export async function loadClientConfig(): Promise<ClientConfig> {
   // Get worldId from URL parameter (required)
   const worldId = urlParams.get('worldId');
 
-  // Get renderDistance and unloadDistance from URL parameters (optional, with defaults)
-  const renderDistanceParam = urlParams.get('renderDistance');
-  const unloadDistanceParam = urlParams.get('unloadDistance');
-
-  const renderDistance = renderDistanceParam ? parseInt(renderDistanceParam, 10) : 1;
-  const unloadDistance = unloadDistanceParam ? parseInt(unloadDistanceParam, 10) : 2;
-
-  const qualityParam = urlParams.get('quality');
-  const quality = qualityParam ? parseInt(qualityParam, 10) : 1;
+  // Default values for render settings (overridden by user settings after config load)
+  const renderDistance = 2;
+  const unloadDistance = 2;
+  const quality = 1;
 
   if (usernameFromUrl) {
     logger.info('Username overridden by URL query parameter', { username: usernameFromUrl });

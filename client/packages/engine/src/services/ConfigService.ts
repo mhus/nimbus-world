@@ -18,13 +18,85 @@ import { updateConfigFromServer } from '../config/ClientConfig';
 
 const logger = getLogger('ConfigService');
 
+type SettingsListener = (properties: Record<string, string>) => void;
+
 export class ConfigService {
   private appContext: AppContext;
   private config: EngineConfiguration | null = null;
   private loading: boolean = false;
+  private settingsListeners: SettingsListener[] = [];
 
   constructor(appContext: AppContext) {
     this.appContext = appContext;
+  }
+
+  /**
+   * Register a listener for settings changes.
+   * Called whenever settings are loaded or reloaded.
+   * The listener receives the properties map from Settings.
+   */
+  onSettingsChanged(listener: SettingsListener): void {
+    this.settingsListeners.push(listener);
+  }
+
+  /**
+   * Remove a settings change listener.
+   */
+  offSettingsChanged(listener: SettingsListener): void {
+    this.settingsListeners = this.settingsListeners.filter(l => l !== listener);
+  }
+
+  /**
+   * Emit settings changed event to all listeners.
+   */
+  private emitSettingsChanged(): void {
+    const properties = this.config?.settings?.properties || {};
+    for (const listener of this.settingsListeners) {
+      try {
+        listener(properties);
+      } catch (error) {
+        logger.error('Error in settings listener', { error });
+      }
+    }
+  }
+
+  /**
+   * Get a settings property value, with fallback to default.
+   * Convenience method for reading typed settings from properties map.
+   *
+   * @param key Property key
+   * @param defaultValue Default value if property not set
+   * @returns Property value as string
+   */
+  getSettingsProperty(key: string, defaultValue: string = ''): string {
+    return this.config?.settings?.properties?.[key] ?? defaultValue;
+  }
+
+  /**
+   * Get a settings property as a number, with fallback to default.
+   *
+   * @param key Property key
+   * @param defaultValue Default numeric value
+   * @returns Property value as number
+   */
+  getSettingsPropertyNumber(key: string, defaultValue: number): number {
+    const val = this.config?.settings?.properties?.[key];
+    if (val === undefined) return defaultValue;
+    const num = parseFloat(val);
+    return isNaN(num) ? defaultValue : num;
+  }
+
+  /**
+   * Get a settings property as a boolean, with fallback to default.
+   *
+   * @param key Property key
+   * @param defaultValue Default boolean value
+   * @returns Property value as boolean
+   */
+  getSettingsPropertyBoolean(key: string, defaultValue: boolean): boolean {
+    const val = this.config?.settings?.properties?.[key];
+    if (val === undefined) return defaultValue;
+    return val === 'true';
   }
 
   /**
@@ -134,6 +206,9 @@ export class ConfigService {
           }
         }
       }
+
+      // Notify listeners about settings changes
+      this.emitSettingsChanged();
 
       return config;
     } catch (error) {
@@ -326,6 +401,9 @@ export class ConfigService {
     if (this.config) {
       this.config.settings = settings;
     }
+
+    // Notify listeners about settings changes
+    this.emitSettingsChanged();
 
     return settings;
   }

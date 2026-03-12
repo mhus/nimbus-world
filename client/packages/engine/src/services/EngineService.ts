@@ -79,6 +79,7 @@ export class EngineService {
   private static readonly IDLE_TIMEOUT_MS = 60_000;
   private static readonly IDLE_SCALING_LEVEL = 5;
   private isIdleQualityReduced: boolean = false;
+  private idleQualityEnabled: boolean = true;
   private lastCameraYaw: number = 0;
   private lastCameraPitch: number = 0;
   private lastActivityTime: number = Date.now();
@@ -372,6 +373,20 @@ export class EngineService {
       // Handle window resize
       window.addEventListener('resize', this.onResize);
 
+      // Subscribe to settings changes for quality adjustments
+      const configService = this.appContext.services.config;
+      if (configService) {
+        configService.onSettingsChanged((properties) => {
+          this.applySettingsProperties(properties);
+        });
+        // Apply current settings immediately
+        const currentProps = configService.getConfig()?.settings?.properties;
+        if (currentProps) {
+          this.applySettingsProperties(currentProps);
+        }
+        logger.debug('EngineService subscribed to settings changes');
+      }
+
       this.isInitialized = true;
 
       logger.debug('3D engine initialized successfully');
@@ -500,11 +515,47 @@ export class EngineService {
   }
 
   /**
+   * Apply settings properties from user settings.
+   * screenQuality (0-10): 0 = highest quality (scaling 0.5), 5 = normal (1), 10 = lowest (5)
+   * screenQualityIdle (true/false): enable/disable idle quality reduction
+   * viewRange (2-4): chunk view distance
+   */
+  private applySettingsProperties(properties: Record<string, string>): void {
+    if (properties.screenQuality !== undefined) {
+      const quality = parseFloat(properties.screenQuality);
+      if (!isNaN(quality)) {
+        // Map 0-10 to scaling level: 0→0.5, 5→1, 10→5
+        const scalingLevel = quality <= 5
+          ? 0.5 + (quality / 5) * 0.5  // 0→0.5, 5→1.0
+          : 1 + ((quality - 5) / 5) * 4; // 5→1.0, 10→5.0
+        this.appContext.defaultHardwareScaling = scalingLevel;
+        if (this.engine && !this.isIdleQualityReduced) {
+          this.engine.setHardwareScalingLevel(scalingLevel);
+        }
+        logger.info('Screen quality applied from settings', { quality, scalingLevel });
+      }
+    }
+
+    if (properties.screenQualityIdle !== undefined) {
+      this.idleQualityEnabled = properties.screenQualityIdle === 'true';
+      // If idle reduction is disabled and currently reduced, restore immediately
+      if (!this.idleQualityEnabled && this.isIdleQualityReduced && this.engine) {
+        this.engine.setHardwareScalingLevel(this.appContext.defaultHardwareScaling);
+        this.isIdleQualityReduced = false;
+        logger.info('Idle quality reduction disabled, quality restored');
+      }
+      logger.debug('Idle quality reduction setting', { enabled: this.idleQualityEnabled });
+    }
+
+    // Note: viewRange is read at startup via ChunkService config, not dynamically changeable yet
+  }
+
+  /**
    * Check idle state and adjust hardware scaling level.
    * Tracks both player movement and camera rotation as activity.
    */
   private updateIdleQuality(): void {
-    if (!this.engine) return;
+    if (!this.engine || !this.idleQualityEnabled) return;
 
     const now = Date.now();
 

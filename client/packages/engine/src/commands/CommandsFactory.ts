@@ -27,6 +27,7 @@ import {InputPanelCommand} from "./InputPanelCommand";
 import {SetPlayerInfoCommand} from "./SetPlayerInfoCommand";
 import {SetShortcutCommand} from "./SetShortcutCommand";
 import {ShortcutModifiedCommand} from "./ShortcutModifiedCommand";
+import {SettingsModifiedCommand} from "./SettingsModifiedCommand";
 import {StatusEffectCommand} from "./StatusEffectCommand";
 import {VitalsCommand} from "./VitalsCommand";
 import {OpenComponentCommand} from "./OpenComponentCommand";
@@ -201,6 +202,7 @@ export class CommandsFactory {
         commandService.registerHandler(new SetPlayerInfoCommand(appContext));
         commandService.registerHandler(new SetShortcutCommand(appContext));
         commandService.registerHandler(new ShortcutModifiedCommand(appContext));
+        commandService.registerHandler(new SettingsModifiedCommand(appContext));
         commandService.registerHandler(new StatusEffectCommand(appContext));
         commandService.registerHandler(new VitalsCommand(appContext));
         commandService.registerHandler(new OpenComponentCommand(appContext));

@@ -2,9 +2,11 @@ package de.mhus.nimbus.world.control.api;
 
 import de.mhus.nimbus.generated.configs.Settings;
 import de.mhus.nimbus.world.shared.access.AccessFilterBase;
+import de.mhus.nimbus.world.shared.client.WorldClientService;
 import de.mhus.nimbus.world.shared.rest.BaseEditorController;
 import de.mhus.nimbus.world.shared.sector.RUser;
 import de.mhus.nimbus.world.shared.sector.RUserService;
+import de.mhus.nimbus.world.shared.session.WSessionService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
@@ -15,6 +17,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -30,6 +33,8 @@ import java.util.Map;
 public class PlayerSettingsController extends BaseEditorController {
 
     private final RUserService rUserService;
+    private final WorldClientService worldClientService;
+    private final WSessionService wSessionService;
 
     /**
      * Get the player's settings for a given client type, including the user title.
@@ -103,6 +108,9 @@ public class PlayerSettingsController extends BaseEditorController {
         rUserService.setSettingsForClientType(userId, clientType, settings);
 
         log.info("Updated settings properties: userId={}, clientType={}", userId, clientType);
+
+        notifyPlayer(request);
+
         return ResponseEntity.ok(Map.of("success", true));
     }
 
@@ -140,6 +148,25 @@ public class PlayerSettingsController extends BaseEditorController {
 
         log.info("Updated title: userId={}, title={}", userId, body.title());
         return ResponseEntity.ok(Map.of("success", true));
+    }
+
+    /**
+     * Notify the player's engine client that settings have changed.
+     * Sends a "SettingsModified" command via WebSocket.
+     */
+    private void notifyPlayer(HttpServletRequest request) {
+        String worldId = (String) request.getAttribute(AccessFilterBase.ATTR_WORLD_ID);
+        String sessionId = (String) request.getAttribute(AccessFilterBase.ATTR_SESSION_ID);
+        if (Strings.isBlank(sessionId) || Strings.isBlank(worldId)) {
+            log.warn("No sessionId or worldId available, cannot notify player of settings change");
+            return;
+        }
+        var wSession = wSessionService.getWithPlayerUrl(sessionId);
+        if (wSession.isEmpty() || Strings.isBlank(wSession.get().getPlayerUrl())) {
+            log.warn("No player URL available for session {}, cannot notify player of settings change", sessionId);
+            return;
+        }
+        worldClientService.sendPlayerCommand(worldId, sessionId, wSession.get().getPlayerUrl(), "SettingsModified", List.of(), null);
     }
 
     record UpdatePropertiesRequest(Map<String, String> properties) {}
