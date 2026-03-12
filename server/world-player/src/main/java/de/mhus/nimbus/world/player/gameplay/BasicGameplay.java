@@ -21,6 +21,7 @@ import de.mhus.nimbus.world.shared.world.WChestService;
 import de.mhus.nimbus.world.shared.world.WWorldService;
 import de.mhus.nimbus.world.player.service.ClientService;
 import de.mhus.nimbus.world.player.ws.BlockStatusSenderService;
+import de.mhus.nimbus.world.shared.session.SessionCommandService;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
@@ -28,6 +29,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Slf4j
@@ -87,6 +89,8 @@ public class BasicGameplay implements Gameplay {
     @Autowired
     @Getter
     protected de.mhus.nimbus.world.shared.redis.ItemBlockUpdatePublisher itemBlockUpdatePublisher;
+    @Autowired
+    protected SessionCommandService sessionCommandService;
 
     protected Map<String, GameplayAction> actions = new HashMap<>();
 
@@ -391,9 +395,47 @@ public class BasicGameplay implements Gameplay {
         // no-op by default
     }
 
+    private static final int MAX_MESSAGE_LENGTH = 200;
+
     @Override
     public void onSimpleInteraction(PlayerSession session, String action, JsonNode data) {
+        if ("msg".equals(action)) {
+            handleTeamMessage(session, data);
+        }
+    }
 
+    /**
+     * Handle team message from InputPanel.
+     * Normalizes text (trim, max length), checks team membership,
+     * and broadcasts as notification to all team members.
+     */
+    private void handleTeamMessage(PlayerSession session, JsonNode data) {
+        String teamId = session.getCachedTeamId();
+        if (teamId == null) {
+            basicClientService.sendSystemNotification(session, "Team", "You are not in a team");
+            return;
+        }
+
+        String msg = data != null && data.has("msg") ? data.get("msg").asText("") : "";
+        msg = msg.strip();
+        if (msg.isEmpty()) return;
+        if (msg.length() > MAX_MESSAGE_LENGTH) {
+            msg = msg.substring(0, MAX_MESSAGE_LENGTH);
+        }
+        // Remove control characters
+        msg = msg.replaceAll("[\\p{Cntrl}]", "");
+        if (msg.isEmpty()) return;
+
+        // Extract character name from playerId (@userId:charName)
+        String playerId = session.getEntityId();
+        String charName = playerId;
+        if (playerId != null) {
+            int colonIdx = playerId.indexOf(':');
+            if (colonIdx >= 0) charName = playerId.substring(colonIdx + 1);
+        }
+
+        sessionCommandService.sendToTeam(teamId, "notification", List.of("1", charName, msg));
+        log.debug("Team message from {} to team {}: {}", charName, teamId, msg);
     }
 
     @Override
