@@ -253,6 +253,65 @@
         </div>
       </div>
 
+      <!-- 3D Model Preview (sticky) -->
+      <div v-if="entityModelData && entityModelData.modelPath" class="card bg-base-100 shadow-xl sticky top-2 z-10">
+        <div class="card-body p-3">
+          <ModelPreview
+            ref="modelPreviewRef"
+            :model-url="previewModelUrl"
+            :modifier-mapping="modifierMapping"
+            :modifier-values="entityData?.modelModifier || {}"
+            class="w-full h-[300px]"
+          />
+        </div>
+      </div>
+
+      <!-- Model Modifier Card -->
+      <div v-if="entityData && modifierKeys.length > 0" class="card bg-base-100 shadow-xl">
+        <div class="card-body">
+          <h3 class="card-title">Model Modifier</h3>
+          <p class="text-sm text-base-content/70 mb-4">Visual modifications for this entity instance</p>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div
+              v-for="key in modifierKeys"
+              :key="key"
+              class="form-control"
+            >
+              <label class="label py-1">
+                <span class="label-text font-medium">{{ key }}</span>
+              </label>
+              <div class="flex items-center gap-2">
+                <input
+                  v-if="isColorModifier(key)"
+                  type="color"
+                  :value="entityData.modelModifier[key] || '#ffffff'"
+                  class="w-10 h-10 rounded cursor-pointer border border-base-300"
+                  @input="entityData.modelModifier[key] = ($event.target as HTMLInputElement).value"
+                />
+                <input
+                  v-model="entityData.modelModifier[key]"
+                  type="text"
+                  class="input input-bordered input-sm flex-1"
+                  :placeholder="isColorModifier(key) ? '#ffffff' : '1.0'"
+                />
+                <button
+                  v-if="entityData.modelModifier[key]"
+                  type="button"
+                  class="btn btn-ghost btn-square btn-xs text-error"
+                  title="Clear"
+                  @click="delete entityData.modelModifier[key]"
+                >
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Parameters Card -->
       <div class="card bg-base-100 shadow-xl">
         <div class="card-body">
@@ -319,10 +378,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, reactive, computed, watch, onMounted } from 'vue';
 import { useWorld } from '@/composables/useWorld';
 import { entityService, type EntityData, type EntityType } from '../services/EntityService';
+import { entityModelService } from '../../entitymodel/services/EntityModelService';
 import JsonEditorDialog from '@components/JsonEditorDialog.vue';
+import ModelPreview from '@/character-panel/ModelPreview.vue';
+import { apiService } from '@/services/ApiService';
 
 const props = defineProps<{
   entity: EntityData | 'new';
@@ -354,6 +416,53 @@ const entityData = ref<any>(null);
 const showJsonEditor = ref(false);
 const parameterEntries = ref<{ key: string; value: string }[]>([]);
 const epochesText = ref('');
+
+// Model preview
+const modelPreviewRef = ref<InstanceType<typeof ModelPreview> | null>(null);
+const entityModelData = ref<any>(null);
+const loadingModel = ref(false);
+
+const modifierMapping = computed<Record<string, string>>(() => {
+  return entityModelData.value?.modelModifierMapping || {};
+});
+
+const modifierKeys = computed<string[]>(() => {
+  return Object.keys(modifierMapping.value);
+});
+
+const previewModelUrl = computed(() => {
+  const mp = entityModelData.value?.modelPath;
+  if (!mp || !currentWorldId.value) return '';
+  return apiService.getBaseUrl() + '/control/worlds/' + currentWorldId.value + '/assets/' + mp;
+});
+
+const isColorModifier = (key: string): boolean => {
+  const mapping = modifierMapping.value[key];
+  if (!mapping) return false;
+  return mapping.split(';').some((p: string) => p.trim().startsWith('color:'));
+};
+
+const loadEntityModel = async (modelId: string) => {
+  if (!modelId || !currentWorldId.value) {
+    entityModelData.value = null;
+    return;
+  }
+  loadingModel.value = true;
+  try {
+    const data = await entityModelService.getEntityModel(currentWorldId.value, modelId);
+    entityModelData.value = data;
+  } catch (e) {
+    console.error('[EntityEditor] Failed to load entity model:', e);
+    entityModelData.value = null;
+  } finally {
+    loadingModel.value = false;
+  }
+};
+
+// Watch modelId changes to reload entity model
+watch(() => formData.value.modelId, (newModelId) => {
+  loadEntityModel(newModelId);
+});
 
 const addParameter = () => {
   parameterEntries.value.push({ key: '', value: '' });
@@ -425,6 +534,7 @@ const loadEntity = () => {
     enabled: entity.enabled,
   };
   entityData.value = entity.publicData || {};
+  if (!entityData.value.modelModifier) entityData.value.modelModifier = {};
   loadParametersFromMap(entity.server);
   epochesText.value = (entity.epoches || []).join(',');
 };
@@ -488,5 +598,9 @@ onMounted(() => {
   // Load worlds with mainWorldsAndInstances filter for entity editor
   loadWorlds('mainWorldsAndInstances');
   loadEntity();
+  // Load entity model for preview
+  if (formData.value.modelId) {
+    loadEntityModel(formData.value.modelId);
+  }
 });
 </script>
