@@ -831,6 +831,15 @@ public class RCharacterService {
         return result.getModifiedCount() > 0;
     }
 
+    public boolean updateThirdPersonModelModifiers(String characterId, java.util.Map<String, String> modifiers) {
+        Query query = new Query(Criteria.where("id").is(characterId));
+        Update update = new Update()
+                .set("publicData.thirdPersonModelModifiers", modifiers)
+                .set("modifiedAt", Instant.now());
+        var result = mongoTemplate.updateFirst(query, update, RCharacter.class);
+        return result.getModifiedCount() > 0;
+    }
+
     public long getCharacterCount() {
         return repository.count();
     }

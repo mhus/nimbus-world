@@ -198,6 +198,30 @@
         </p>
       </section>
 
+      <!-- Model Modifiers -->
+      <section v-if="currentModifierKeys.length > 0" class="bg-gray-800 rounded-lg shadow-md border border-gray-700 p-4">
+        <h2 class="text-lg font-bold text-emerald-400 mb-3">Anpassungen</h2>
+        <div class="space-y-3">
+          <div v-for="key in currentModifierKeys" :key="key">
+            <label class="block text-sm text-gray-400 mb-1">{{ MODIFIER_LABELS[key] || key }}</label>
+            <input
+              v-model="modelModifiers[key]"
+              type="text"
+              :placeholder="key"
+              maxlength="100"
+              class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-gray-100 focus:outline-none focus:border-emerald-400"
+            />
+          </div>
+        </div>
+        <button
+          @click="saveModifiers"
+          :disabled="saving"
+          class="mt-4 w-full px-4 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:bg-gray-600 rounded font-medium transition-colors"
+        >
+          {{ saving ? '...' : 'Anpassungen speichern' }}
+        </button>
+      </section>
+
       <!-- Success Message -->
       <div v-if="successMessage" class="bg-emerald-900/30 border border-emerald-700 rounded-lg p-3 text-center">
         <p class="text-emerald-300 text-sm">{{ successMessage }}</p>
@@ -221,6 +245,7 @@ interface AvatarModel {
   id: string;
   name: string;
   gender: string;
+  modifierKeys: string[];
 }
 
 const loading = ref(false);
@@ -240,6 +265,7 @@ const portraitFilter = ref('auto');
 const thirdPersonModelId = ref('');
 const models = ref<AvatarModel[]>([]);
 const modelFilter = ref('auto');
+const modelModifiers = ref<Record<string, string>>({});
 
 const portraitFilters = [
   { value: 'auto', label: 'Passend' },
@@ -280,6 +306,24 @@ function filterModelsByGender(items: AvatarModel[], filter: string, genderVal: s
 const filteredPortraits = computed(() => filterPortraitsByGender(portraits.value, portraitFilter.value, gender.value));
 const filteredModels = computed(() => filterModelsByGender(models.value, modelFilter.value, gender.value));
 
+const selectedModel = computed(() => models.value.find(m => m.id === thirdPersonModelId.value));
+const currentModifierKeys = computed(() => selectedModel.value?.modifierKeys || []);
+
+const MODIFIER_LABELS: Record<string, string> = {
+  headSize: 'Kopfgroesse',
+  bodySize: 'Koerpergroesse',
+  skinColor: 'Hautfarbe',
+  hairColor: 'Haarfarbe',
+  eyeColor: 'Augenfarbe',
+  clothingColor: 'Kleidungsfarbe',
+  mainColor: 'Hauptfarbe',
+  secondaryColor: 'Zweitfarbe',
+  tailSize: 'Schwanzgroesse',
+  wingSize: 'Fluegelgroesse',
+  bodyColor: 'Koerperfarbe',
+  stripeColor: 'Streifenfarbe',
+};
+
 const displayPortraitUrl = computed(() => {
   const path = portraitPath.value || defaultPortrait.value;
   return path ? getPortraitUrl(path) : '';
@@ -307,7 +351,7 @@ async function loadData() {
   error.value = null;
   try {
     const [charResponse, portraitResponse, modelResponse] = await Promise.all([
-      apiService.get<{ title: string; gender: string; portraitPath: string; thirdPersonModelId: string }>('/control/player/character'),
+      apiService.get<{ title: string; gender: string; portraitPath: string; thirdPersonModelId: string; thirdPersonModelModifiers: Record<string, string> }>('/control/player/character'),
       apiService.get<{ portraits: Portrait[]; defaultPortrait: string; assetPrefix: string }>('/control/player/character/portraits'),
       apiService.get<{ models: AvatarModel[] }>('/control/player/character/models'),
     ]);
@@ -315,6 +359,7 @@ async function loadData() {
     gender.value = charResponse.gender || '';
     portraitPath.value = charResponse.portraitPath || '';
     thirdPersonModelId.value = charResponse.thirdPersonModelId || '';
+    modelModifiers.value = charResponse.thirdPersonModelModifiers || {};
     portraits.value = portraitResponse.portraits || [];
     defaultPortrait.value = portraitResponse.defaultPortrait || '';
     assetPrefix.value = portraitResponse.assetPrefix || 'p:';
@@ -371,7 +416,30 @@ async function selectModel(id: string) {
   try {
     await apiService.put('/control/player/character/model', { thirdPersonModelId: newId });
     thirdPersonModelId.value = newId;
+    // Reset modifiers when model changes
+    if (newId) {
+      const model = models.value.find(m => m.id === newId);
+      const newModifiers: Record<string, string> = {};
+      for (const key of model?.modifierKeys || []) {
+        newModifiers[key] = modelModifiers.value[key] || '';
+      }
+      modelModifiers.value = newModifiers;
+    } else {
+      modelModifiers.value = {};
+    }
     showSuccess(newId ? 'Modell gespeichert' : 'Modell entfernt');
+  } catch (e: any) {
+    error.value = e.response?.data?.message || e.message || 'Speichern fehlgeschlagen';
+  } finally {
+    saving.value = false;
+  }
+}
+
+async function saveModifiers() {
+  saving.value = true;
+  try {
+    await apiService.put('/control/player/character/modifiers', { modifiers: modelModifiers.value });
+    showSuccess('Anpassungen gespeichert');
   } catch (e: any) {
     error.value = e.response?.data?.message || e.message || 'Speichern fehlgeschlagen';
   } finally {

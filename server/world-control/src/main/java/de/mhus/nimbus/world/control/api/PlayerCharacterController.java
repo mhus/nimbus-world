@@ -18,10 +18,7 @@ import org.apache.logging.log4j.util.Strings;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 @RestController
 @RequestMapping("/control/player/character")
@@ -68,12 +65,15 @@ public class PlayerCharacterController extends BaseEditorController {
         String portraitPath = pd != null ? pd.getPortraitPath() : null;
         String thirdPersonModelId = pd != null ? pd.getThirdPersonModelId() : null;
 
-        return ResponseEntity.ok(Map.of(
-                "title", title != null ? title : "",
-                "gender", gender != null ? gender : "",
-                "portraitPath", portraitPath != null ? portraitPath : "",
-                "thirdPersonModelId", thirdPersonModelId != null ? thirdPersonModelId : ""
-        ));
+        var modifiers = pd != null ? pd.getThirdPersonModelModifiers() : null;
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("title", title != null ? title : "");
+        result.put("gender", gender != null ? gender : "");
+        result.put("portraitPath", portraitPath != null ? portraitPath : "");
+        result.put("thirdPersonModelId", thirdPersonModelId != null ? thirdPersonModelId : "");
+        result.put("thirdPersonModelModifiers", modifiers != null ? modifiers : Map.of());
+        return ResponseEntity.ok(result);
     }
 
     @GetMapping("/portraits")
@@ -246,18 +246,22 @@ public class PlayerCharacterController extends BaseEditorController {
 
         List<WEntityModel> avatarModels = entityModelService.findByWorldIdAndType(SHARED_N, AVATAR_TYPE);
 
-        List<Map<String, String>> models = new ArrayList<>();
+        List<Map<String, Object>> models = new ArrayList<>();
         for (WEntityModel wem : avatarModels) {
             var pd = wem.getPublicData();
             if (pd == null) continue;
             String modelId = MODEL_PREFIX + wem.getModelId();
             String name = wem.getTitle() != null ? wem.getTitle() : wem.getModelId();
             String gender = pd.getGender() != null ? pd.getGender() : "";
-            models.add(Map.of(
-                    "id", modelId,
-                    "name", name,
-                    "gender", gender
-            ));
+            var modifierMapping = pd.getModelModifierMapping();
+            List<String> modifierKeys = modifierMapping != null ? new ArrayList<>(modifierMapping.keySet()) : List.of();
+
+            Map<String, Object> model = new HashMap<>();
+            model.put("id", modelId);
+            model.put("name", name);
+            model.put("gender", gender);
+            model.put("modifierKeys", modifierKeys);
+            models.add(model);
         }
 
         return ResponseEntity.ok(Map.of("models", models));
@@ -304,6 +308,49 @@ public class PlayerCharacterController extends BaseEditorController {
         return ResponseEntity.ok(Map.of("success", true));
     }
 
+    @PutMapping("/modifiers")
+    @Operation(summary = "Update character model modifiers")
+    public ResponseEntity<?> updateModifiers(
+            @RequestBody UpdateModifiersRequest body,
+            HttpServletRequest request) {
+
+        String userId = (String) request.getAttribute(AccessFilterBase.ATTR_USER_ID);
+        String worldId = (String) request.getAttribute(AccessFilterBase.ATTR_WORLD_ID);
+        String characterId = (String) request.getAttribute(AccessFilterBase.ATTR_CHARACTER_ID);
+        if (Strings.isBlank(userId) || Strings.isBlank(worldId) || Strings.isBlank(characterId)) {
+            return bad("Not authenticated");
+        }
+
+        if (body == null || body.modifiers() == null) {
+            return bad("modifiers required");
+        }
+
+        // Validate: max 20 entries, keys max 50 chars, values max 100 chars
+        var modifiers = body.modifiers();
+        if (modifiers.size() > 20) {
+            return bad("Too many modifiers (max 20)");
+        }
+        for (var entry : modifiers.entrySet()) {
+            if (entry.getKey().length() > 50) return bad("Modifier key too long");
+            if (entry.getValue() != null && entry.getValue().length() > 100) return bad("Modifier value too long");
+        }
+
+        RCharacter character = findCharacter(worldId, userId, characterId);
+        if (character == null) {
+            return notFound("Character not found");
+        }
+
+        log.debug("PUT character modifiers: characterId={}, modifiers={}", character.getId(), modifiers);
+
+        boolean updated = characterService.updateThirdPersonModelModifiers(character.getId(), modifiers);
+        if (!updated) {
+            return notFound("Character not found");
+        }
+
+        log.info("Updated character modifiers: characterId={}", character.getId());
+        return ResponseEntity.ok(Map.of("success", true));
+    }
+
     private RCharacter findCharacter(String worldId, String userId, String characterId) {
         var parsedWorldId = WorldId.of(worldId).orElse(null);
         if (parsedWorldId == null) return null;
@@ -314,4 +361,5 @@ public class PlayerCharacterController extends BaseEditorController {
     record UpdateGenderRequest(String gender) {}
     record UpdatePortraitRequest(String portraitPath) {}
     record UpdateModelRequest(String thirdPersonModelId) {}
+    record UpdateModifiersRequest(Map<String, String> modifiers) {}
 }

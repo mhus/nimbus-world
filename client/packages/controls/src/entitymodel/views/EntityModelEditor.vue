@@ -348,7 +348,28 @@
       <div v-if="modelData" class="card bg-base-100 shadow-xl">
         <div class="card-body">
           <h3 class="card-title">Model Modifier Mapping</h3>
-          <p class="text-sm text-base-content/70 mb-4">Key-value pairs for visual modifications (e.g., skin colors, equipment slots)</p>
+          <p class="text-sm text-base-content/70 mb-2">
+            Key = semantic name, Value = target descriptor: <code class="text-xs bg-base-300 px-1 rounded">category:targetName:property</code>
+          </p>
+          <p class="text-xs text-base-content/50 mb-4">
+            Bone scale: <code class="bg-base-300 px-1 rounded">bone:Head:scale</code> &mdash;
+            Color tint: <code class="bg-base-300 px-1 rounded">color:Skin:tint</code> &mdash;
+            Color replace: <code class="bg-base-300 px-1 rounded">color:Main:baseColor</code> &mdash;
+            Multi-target: separate with <code class="bg-base-300 px-1 rounded">;</code>
+          </p>
+
+          <!-- Preset buttons -->
+          <div v-if="availableModifierPresets.length > 0" class="flex flex-wrap gap-1 mb-4">
+            <button
+              v-for="preset in availableModifierPresets"
+              :key="preset"
+              type="button"
+              class="btn btn-outline btn-xs"
+              @click="addModifierPreset(preset)"
+            >
+              + {{ preset }}
+            </button>
+          </div>
 
           <div class="space-y-2">
             <div
@@ -356,18 +377,12 @@
               :key="key"
               class="flex items-center gap-2"
             >
-              <input
-                :value="key"
-                type="text"
-                class="input input-bordered input-sm flex-1"
-                placeholder="Key"
-                disabled
-              />
+              <span class="badge badge-neutral badge-sm min-w-24 justify-center">{{ key }}</span>
               <input
                 v-model="modelData.modelModifierMapping[key]"
                 type="text"
                 class="input input-bordered input-sm flex-1"
-                placeholder="Value"
+                :placeholder="getModifierPlaceholder(key as string)"
               />
               <button
                 type="button"
@@ -381,20 +396,20 @@
             </div>
           </div>
 
-          <!-- Add Modifier -->
+          <!-- Add custom modifier -->
           <div class="flex gap-2 mt-4">
             <input
               v-model="newModifierKey"
               type="text"
               class="input input-bordered input-sm flex-1"
-              placeholder="New key"
+              placeholder="Custom key"
               @keyup.enter="addModifierMapping"
             />
             <input
               v-model="newModifierValue"
               type="text"
               class="input input-bordered input-sm flex-1"
-              placeholder="Value"
+              placeholder="category:targetName:property"
               @keyup.enter="addModifierMapping"
             />
             <button
@@ -755,6 +770,10 @@ const loadEntityModel = () => {
     enabled: model.enabled,
   };
   modelData.value = model.publicData || {};
+  // Ensure select fields have string values (null/undefined won't match <option value="">)
+  if (modelData.value.gender == null) modelData.value.gender = '';
+  if (modelData.value.poseType == null) modelData.value.poseType = 'Humanoid';
+  if (modelData.value.type == null) modelData.value.type = '';
   // Ensure Vector3 objects exist
   if (!modelData.value.scale) modelData.value.scale = { x: 1, y: 1, z: 1 };
   if (!modelData.value.positionOffset) modelData.value.positionOffset = { x: 0, y: 0, z: 0 };
@@ -788,6 +807,52 @@ const addPose = () => {
 const removePose = (pose: string) => {
   if (!modelData.value?.poseMapping) return;
   delete modelData.value.poseMapping[pose];
+};
+
+// Modifier presets per poseType
+const MODIFIER_PRESETS: Record<string, string[]> = {
+  'Humanoid': ['headSize', 'bodySize', 'skinColor', 'hairColor', 'eyeColor', 'clothingColor'],
+  '2-Legs':   ['headSize', 'bodySize', 'skinColor', 'hairColor', 'eyeColor', 'clothingColor'],
+  '4-Legs':   ['headSize', 'bodySize', 'mainColor', 'secondaryColor', 'tailSize'],
+  '6-Legs':   ['headSize', 'bodySize', 'mainColor', 'secondaryColor'],
+  'Wings':    ['headSize', 'bodySize', 'wingSize', 'mainColor', 'eyeColor'],
+  'Fish':     ['bodySize', 'bodyColor', 'stripeColor', 'tailSize'],
+  'Snake':    ['headSize', 'bodySize', 'mainColor', 'patternColor'],
+  'Slime':    ['bodySize', 'mainColor'],
+};
+
+const MODIFIER_PLACEHOLDERS: Record<string, string> = {
+  headSize:       'bone:Head:scale',
+  bodySize:       'bone:Torso:scale',
+  wingSize:       'bone:Wing1.L:scale;bone:Wing1.R:scale',
+  tailSize:       'bone:Tail1:scale',
+  skinColor:      'color:Skin:tint',
+  hairColor:      'color:Hair:baseColor',
+  eyeColor:       'color:Eye:baseColor',
+  clothingColor:  'color:Green:baseColor;color:LightGreen:baseColor',
+  mainColor:      'color:Main:tint',
+  secondaryColor: 'color:Main_Light:tint',
+  bodyColor:      'color:Body:tint',
+  stripeColor:    'color:Stripes:tint',
+  patternColor:   'color:Main_Light:tint',
+};
+
+const availableModifierPresets = computed(() => {
+  if (!modelData.value) return [];
+  const poseType = modelData.value.poseType || '';
+  const presets = MODIFIER_PRESETS[poseType] || [];
+  const existing = new Set(Object.keys(modelData.value.modelModifierMapping || {}));
+  return presets.filter(p => !existing.has(p));
+});
+
+const addModifierPreset = (key: string) => {
+  if (!modelData.value) return;
+  if (!modelData.value.modelModifierMapping) modelData.value.modelModifierMapping = {};
+  modelData.value.modelModifierMapping[key] = '';
+};
+
+const getModifierPlaceholder = (key: string): string => {
+  return MODIFIER_PLACEHOLDERS[key] || 'category:targetName:property';
 };
 
 const addModifierMapping = () => {
