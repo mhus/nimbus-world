@@ -8,6 +8,13 @@ export default defineConfig({
   server: {
     port: 3002,
     open: '/controls/',
+    proxy: {
+      '/api-proxy': {
+        target: 'http://localhost:9043',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api-proxy/, ''),
+      },
+    },
   },
   resolve: {
     alias: {

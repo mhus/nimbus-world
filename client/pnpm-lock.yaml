@@ -17,6 +17,12 @@ importers:
 
   packages/controls:
     dependencies:
+      '@babylonjs/core':
+        specifier: ^8.41.2
+        version: 8.41.2
+      '@babylonjs/loaders':
+        specifier: ^8.43.0
+        version: 8.43.0(@babylonjs/core@8.41.2)(babylonjs-gltf2interface@8.41.2)
       '@headlessui/vue':
         specifier: ^1.7.0
         version: 1.7.23(vue@3.5.26(typescript@5.9.3))

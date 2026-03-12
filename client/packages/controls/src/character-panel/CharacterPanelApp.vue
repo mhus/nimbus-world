@@ -198,28 +198,35 @@
         </p>
       </section>
 
-      <!-- Model Modifiers -->
-      <section v-if="currentModifierKeys.length > 0" class="bg-gray-800 rounded-lg shadow-md border border-gray-700 p-4">
-        <h2 class="text-lg font-bold text-emerald-400 mb-3">Anpassungen</h2>
-        <div class="space-y-3">
-          <div v-for="key in currentModifierKeys" :key="key">
-            <label class="block text-sm text-gray-400 mb-1">{{ MODIFIER_LABELS[key] || key }}</label>
-            <input
-              v-model="modelModifiers[key]"
-              type="text"
-              :placeholder="key"
-              maxlength="100"
-              class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-gray-100 focus:outline-none focus:border-emerald-400"
-            />
+      <!-- Model Modifiers + Preview -->
+      <section v-if="selectedModel" class="bg-gray-800 rounded-lg shadow-md border border-gray-700 p-4">
+        <h2 class="text-lg font-bold text-emerald-400 mb-3">Anpassungen &amp; Vorschau</h2>
+        <div class="flex gap-4" :class="currentModifierKeys.length > 0 ? 'flex-col lg:flex-row' : ''">
+          <!-- Modifiers -->
+          <div v-if="currentModifierKeys.length > 0" class="flex-1 space-y-3">
+            <div v-for="key in currentModifierKeys" :key="key">
+              <label class="block text-sm text-gray-400 mb-1">{{ MODIFIER_LABELS[key] || key }}</label>
+              <input
+                v-model="modelModifiers[key]"
+                type="text"
+                :placeholder="key"
+                maxlength="100"
+                class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-gray-100 focus:outline-none focus:border-emerald-400"
+              />
+            </div>
+            <button
+              @click="saveModifiers"
+              :disabled="saving"
+              class="w-full px-4 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:bg-gray-600 rounded font-medium transition-colors"
+            >
+              {{ saving ? '...' : 'Anpassungen speichern' }}
+            </button>
+          </div>
+          <!-- 3D Preview -->
+          <div class="flex-1 min-h-[300px]">
+            <ModelPreview v-if="previewModelUrl" :model-url="previewModelUrl" class="w-full h-[300px]" />
           </div>
         </div>
-        <button
-          @click="saveModifiers"
-          :disabled="saving"
-          class="mt-4 w-full px-4 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:bg-gray-600 rounded font-medium transition-colors"
-        >
-          {{ saving ? '...' : 'Anpassungen speichern' }}
-        </button>
       </section>
 
       <!-- Success Message -->
@@ -234,6 +241,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { apiService } from '@/services/ApiService';
+import ModelPreview from './ModelPreview.vue';
 
 interface Portrait {
   path: string;
@@ -245,6 +253,7 @@ interface AvatarModel {
   id: string;
   name: string;
   gender: string;
+  modelPath: string;
   modifierKeys: string[];
 }
 
@@ -308,6 +317,11 @@ const filteredModels = computed(() => filterModelsByGender(models.value, modelFi
 
 const selectedModel = computed(() => models.value.find(m => m.id === thirdPersonModelId.value));
 const currentModifierKeys = computed(() => selectedModel.value?.modifierKeys || []);
+const previewModelUrl = computed(() => {
+  const model = selectedModel.value;
+  if (!model?.modelPath) return '';
+  return apiService.getBaseUrl() + '/control/player/assets/n:' + model.modelPath;
+});
 
 const MODIFIER_LABELS: Record<string, string> = {
   headSize: 'Kopfgroesse',
