@@ -122,7 +122,8 @@ public class ControlAccessFilter extends AccessFilterBase {
         // /control/aaa/ is needed so players can re-login (devlogin, authorize, etc.)
         if ("PLAYER".equalsIgnoreCase(claims.role())) {
             boolean isAllowed = requestUri.startsWith("/control/player/")
-                    || requestUri.startsWith("/control/aaa/");
+                    || requestUri.startsWith("/control/aaa/")
+                    || isPublicAssetPath(requestUri);
             if (!isAllowed) {
                 log.debug("PLAYER actor attempted to access non-player endpoint: userId={}, path={}",
                         claims.userId(), requestUri);

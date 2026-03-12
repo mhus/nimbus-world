@@ -65,31 +65,6 @@
         </div>
       </section>
 
-      <!-- Title -->
-      <section class="bg-gray-800 rounded-lg shadow-md border border-gray-700 p-4">
-        <h2 class="text-lg font-bold text-emerald-400 mb-3">Profil</h2>
-        <div class="space-y-3">
-          <div>
-            <label class="block text-sm text-gray-400 mb-1">Anzeigename</label>
-            <div class="flex gap-2">
-              <input
-                v-model="title"
-                type="text"
-                placeholder="Dein Anzeigename"
-                class="flex-1 bg-gray-700 border border-gray-600 rounded px-3 py-2 text-gray-100 focus:outline-none focus:border-emerald-400"
-              />
-              <button
-                @click="saveTitle"
-                :disabled="saving"
-                class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 rounded text-white font-medium transition-colors disabled:opacity-50"
-              >
-                Speichern
-              </button>
-            </div>
-          </div>
-        </div>
-      </section>
-
       <!-- Audio Settings -->
       <section class="bg-gray-800 rounded-lg shadow-md border border-gray-700 p-4">
         <h2 class="text-lg font-bold text-emerald-400 mb-3">Audio</h2>
@@ -280,7 +255,6 @@ const viewRangeOptions = [
 // --- Interfaces ---
 
 interface SettingsResponse {
-  title: string;
   settings: {
     name: string;
     inputController: string;
@@ -297,11 +271,10 @@ const error = ref<string | null>(null);
 const successMessage = ref<string | null>(null);
 const selectedClientType = ref('web');
 
-const title = ref('');
 const properties = ref<Record<string, string>>({});
 const dirty = ref(false);
 
-const hasData = computed(() => Object.keys(properties.value).length > 0 || title.value !== '');
+const hasData = computed(() => Object.keys(properties.value).length > 0);
 
 // --- Property access ---
 
@@ -322,7 +295,6 @@ const loadData = async () => {
   successMessage.value = null;
   try {
     const response = await apiService.get<SettingsResponse>(`/control/player/settings?client=${selectedClientType.value}`);
-    title.value = response.title || '';
     properties.value = response.settings?.properties ? { ...response.settings.properties } : {};
     dirty.value = false;
   } catch (err) {
@@ -346,23 +318,6 @@ const saveSettings = async () => {
   } catch (err) {
     console.error('[SettingsPanel] Failed to save settings:', err);
     error.value = 'Einstellungen konnten nicht gespeichert werden.';
-  } finally {
-    saving.value = false;
-  }
-};
-
-const saveTitle = async () => {
-  saving.value = true;
-  successMessage.value = null;
-  try {
-    await apiService.put('/control/player/settings/title', {
-      title: title.value,
-    });
-    successMessage.value = 'Anzeigename gespeichert.';
-    setTimeout(() => { successMessage.value = null; }, 3000);
-  } catch (err) {
-    console.error('[SettingsPanel] Failed to save title:', err);
-    error.value = 'Anzeigename konnte nicht gespeichert werden.';
   } finally {
     saving.value = false;
   }

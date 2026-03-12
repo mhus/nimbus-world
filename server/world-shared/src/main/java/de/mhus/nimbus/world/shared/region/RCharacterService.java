@@ -783,6 +783,54 @@ public class RCharacterService {
         return false;
     }
 
+    /**
+     * Atomically update the character's display title.
+     */
+    public boolean updateTitle(String characterId, String title) {
+        Query query = new Query(Criteria.where("id").is(characterId));
+        Update update = new Update()
+                .set("publicData.title", title)
+                .set("modifiedAt", Instant.now());
+        var result = mongoTemplate.updateFirst(query, update, RCharacter.class);
+        return result.getModifiedCount() > 0;
+    }
+
+    /**
+     * Atomically update the character's gender.
+     */
+    public boolean updateGender(String characterId, String gender) {
+        Query query = new Query(Criteria.where("id").is(characterId));
+        Update update = new Update()
+                .set("publicData.gender", gender)
+                .set("modifiedAt", Instant.now());
+        var result = mongoTemplate.updateFirst(query, update, RCharacter.class);
+        return result.getModifiedCount() > 0;
+    }
+
+    /**
+     * Atomically update the character's portrait path.
+     */
+    public boolean updatePortraitPath(String characterId, String portraitPath) {
+        Query query = new Query(Criteria.where("id").is(characterId));
+        Update update = new Update()
+                .set("publicData.portraitPath", portraitPath)
+                .set("modifiedAt", Instant.now());
+        var result = mongoTemplate.updateFirst(query, update, RCharacter.class);
+        return result.getModifiedCount() > 0;
+    }
+
+    /**
+     * Atomically update the character's third person model ID.
+     */
+    public boolean updateThirdPersonModelId(String characterId, String thirdPersonModelId) {
+        Query query = new Query(Criteria.where("id").is(characterId));
+        Update update = new Update()
+                .set("publicData.thirdPersonModelId", thirdPersonModelId)
+                .set("modifiedAt", Instant.now());
+        var result = mongoTemplate.updateFirst(query, update, RCharacter.class);
+        return result.getModifiedCount() > 0;
+    }
+
     public long getCharacterCount() {
         return repository.count();
     }

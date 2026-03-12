@@ -174,6 +174,17 @@ public class WEntityModelService {
         return all;
     }
 
+    /**
+     * Find all enabled entity models for the given world with a specific type (e.g., 'avatar').
+     */
+    @Transactional(readOnly = true)
+    public List<WEntityModel> findByWorldIdAndType(WorldId worldId, String type) {
+        var regionWorldId = worldId.toCollection();
+        return repository.findByWorldIdAndEnabled(regionWorldId.getId(), true).stream()
+                .filter(m -> m.getPublicData() != null && type.equals(m.getPublicData().getType()))
+                .collect(java.util.stream.Collectors.toList());
+    }
+
     private List<WEntityModel> filterByQuery(List<WEntityModel> models, String query) {
         String lowerQuery = query.toLowerCase();
         return models.stream()

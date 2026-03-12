@@ -106,6 +106,19 @@
               />
             </div>
 
+            <!-- Gender -->
+            <div class="form-control">
+              <label class="label">
+                <span class="label-text font-medium">Gender</span>
+              </label>
+              <select v-model="modelData.gender" class="select select-bordered select-sm">
+                <option value="">None</option>
+                <option value="M">M (Male)</option>
+                <option value="F">F (Female)</option>
+                <option value="D">D (Diverse)</option>
+              </select>
+            </div>
+
             <!-- Model Path -->
             <div class="form-control">
               <label class="label">
@@ -331,6 +344,74 @@
         </div>
       </div>
 
+      <!-- Model Modifier Mapping Card -->
+      <div v-if="modelData" class="card bg-base-100 shadow-xl">
+        <div class="card-body">
+          <h3 class="card-title">Model Modifier Mapping</h3>
+          <p class="text-sm text-base-content/70 mb-4">Key-value pairs for visual modifications (e.g., skin colors, equipment slots)</p>
+
+          <div class="space-y-2">
+            <div
+              v-for="(value, key) in modelData.modelModifierMapping"
+              :key="key"
+              class="flex items-center gap-2"
+            >
+              <input
+                :value="key"
+                type="text"
+                class="input input-bordered input-sm flex-1"
+                placeholder="Key"
+                disabled
+              />
+              <input
+                v-model="modelData.modelModifierMapping[key]"
+                type="text"
+                class="input input-bordered input-sm flex-1"
+                placeholder="Value"
+              />
+              <button
+                type="button"
+                class="btn btn-ghost btn-square btn-xs text-error"
+                @click="removeModifierMapping(key as string)"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Add Modifier -->
+          <div class="flex gap-2 mt-4">
+            <input
+              v-model="newModifierKey"
+              type="text"
+              class="input input-bordered input-sm flex-1"
+              placeholder="New key"
+              @keyup.enter="addModifierMapping"
+            />
+            <input
+              v-model="newModifierValue"
+              type="text"
+              class="input input-bordered input-sm flex-1"
+              placeholder="Value"
+              @keyup.enter="addModifierMapping"
+            />
+            <button
+              type="button"
+              class="btn btn-outline btn-sm"
+              :disabled="!newModifierKey"
+              @click="addModifierMapping"
+            >
+              <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+              </svg>
+              Add
+            </button>
+          </div>
+        </div>
+      </div>
+
       <!-- Dimensions Card -->
       <div v-if="modelData" class="card bg-base-100 shadow-xl">
         <div class="card-body">
@@ -469,6 +550,110 @@
           </div>
         </div>
       </div>
+
+      <!-- Audio Definitions Card -->
+      <div v-if="modelData" class="card bg-base-100 shadow-xl">
+        <div class="card-body">
+          <h3 class="card-title">Audio Definitions</h3>
+          <p class="text-sm text-base-content/70 mb-4">Default audio for all instances of this entity model</p>
+
+          <div class="space-y-3">
+            <div
+              v-for="(audio, index) in (modelData.audio || [])"
+              :key="index"
+              class="border border-base-300 rounded-lg p-3"
+            >
+              <div class="flex items-center justify-between mb-2">
+                <span class="badge badge-secondary">{{ audio.type || 'untitled' }}</span>
+                <button
+                  type="button"
+                  class="btn btn-ghost btn-square btn-xs text-error"
+                  @click="removeAudio(index)"
+                >
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                <div class="form-control">
+                  <label class="label py-1">
+                    <span class="label-text-alt">Type</span>
+                  </label>
+                  <input
+                    v-model="audio.type"
+                    type="text"
+                    class="input input-bordered input-sm"
+                    placeholder="e.g. idle, attack, hurt"
+                  />
+                </div>
+                <div class="form-control">
+                  <label class="label py-1">
+                    <span class="label-text-alt">Path</span>
+                  </label>
+                  <input
+                    v-model="audio.path"
+                    type="text"
+                    class="input input-bordered input-sm"
+                    placeholder="audio/entity/..."
+                  />
+                </div>
+                <div class="form-control">
+                  <label class="label py-1">
+                    <span class="label-text-alt">Volume (0-1)</span>
+                  </label>
+                  <input
+                    v-model.number="audio.volume"
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    max="1"
+                    class="input input-bordered input-sm"
+                    placeholder="1.0"
+                  />
+                </div>
+                <div class="form-control">
+                  <label class="label py-1">
+                    <span class="label-text-alt">Max Distance</span>
+                  </label>
+                  <input
+                    v-model.number="audio.maxDistance"
+                    type="number"
+                    step="1"
+                    min="0"
+                    class="input input-bordered input-sm"
+                    placeholder="15"
+                  />
+                </div>
+                <div class="form-control">
+                  <label class="label py-1 cursor-pointer justify-start gap-2">
+                    <span class="label-text-alt">Loop</span>
+                    <input v-model="audio.loop" type="checkbox" class="toggle toggle-sm toggle-success" />
+                  </label>
+                </div>
+                <div class="form-control">
+                  <label class="label py-1 cursor-pointer justify-start gap-2">
+                    <span class="label-text-alt">Enabled</span>
+                    <input v-model="audio.enabled" type="checkbox" class="toggle toggle-sm toggle-success" />
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Add Audio -->
+          <button
+            type="button"
+            class="btn btn-outline btn-sm mt-4"
+            @click="addAudio"
+          >
+            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            </svg>
+            Add Audio
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- Success Message -->
@@ -520,6 +705,8 @@ const formData = ref({
 const modelData = ref<any>(null);
 const showJsonEditor = ref(false);
 const newPoseKey = ref('');
+const newModifierKey = ref('');
+const newModifierValue = ref('');
 
 const ALL_POSES = [
   'IDLE', 'WALK', 'RUN', 'SPRINT', 'CROUCH', 'JUMP', 'SWIM', 'FLY', 'DEATH',
@@ -548,6 +735,7 @@ const loadEntityModel = () => {
     modelData.value = {
       id: '',
       type: '',
+      gender: '',
       modelPath: '',
       positionOffset: { x: 0, y: 0, z: 0 },
       rotationOffset: { x: 0, y: 0, z: 0 },
@@ -572,6 +760,7 @@ const loadEntityModel = () => {
   if (!modelData.value.positionOffset) modelData.value.positionOffset = { x: 0, y: 0, z: 0 };
   if (!modelData.value.rotationOffset) modelData.value.rotationOffset = { x: 0, y: 0, z: 0 };
   if (!modelData.value.poseMapping) modelData.value.poseMapping = {};
+  if (!modelData.value.modelModifierMapping) modelData.value.modelModifierMapping = {};
   if (!modelData.value.dimensions) modelData.value.dimensions = {};
 };
 
@@ -599,6 +788,37 @@ const addPose = () => {
 const removePose = (pose: string) => {
   if (!modelData.value?.poseMapping) return;
   delete modelData.value.poseMapping[pose];
+};
+
+const addModifierMapping = () => {
+  if (!newModifierKey.value || !modelData.value) return;
+  if (!modelData.value.modelModifierMapping) modelData.value.modelModifierMapping = {};
+  modelData.value.modelModifierMapping[newModifierKey.value] = newModifierValue.value;
+  newModifierKey.value = '';
+  newModifierValue.value = '';
+};
+
+const removeModifierMapping = (key: string) => {
+  if (!modelData.value?.modelModifierMapping) return;
+  delete modelData.value.modelModifierMapping[key];
+};
+
+const addAudio = () => {
+  if (!modelData.value) return;
+  if (!modelData.value.audio) modelData.value.audio = [];
+  modelData.value.audio.push({
+    type: '',
+    path: '',
+    volume: 1.0,
+    loop: false,
+    enabled: true,
+    maxDistance: 15,
+  });
+};
+
+const removeAudio = (index: number) => {
+  if (!modelData.value?.audio) return;
+  modelData.value.audio.splice(index, 1);
 };
 
 const handleSave = async () => {
@@ -644,6 +864,7 @@ const handleJsonApply = (jsonData: any) => {
   if (!modelData.value.positionOffset) modelData.value.positionOffset = { x: 0, y: 0, z: 0 };
   if (!modelData.value.rotationOffset) modelData.value.rotationOffset = { x: 0, y: 0, z: 0 };
   if (!modelData.value.poseMapping) modelData.value.poseMapping = {};
+  if (!modelData.value.modelModifierMapping) modelData.value.modelModifierMapping = {};
   if (!modelData.value.dimensions) modelData.value.dimensions = {};
 };
 

@@ -87,23 +87,6 @@ export interface EntityDimensions {
 }
 
 /**
- * Physics properties for entities
- */
-export interface EntityPhysicsProperties {
-  /** Mass of the entity (affects gravity and collisions) */
-  mass: number;
-
-  /** Ground friction coefficient (0 = no friction, 1 = high friction) */
-  friction: number;
-
-  /** Bounciness when colliding with surfaces (0 = no bounce, 1 = perfect bounce) */
-  restitution?: number;
-
-  /** Air drag coefficient (slows down movement over time) */
-  drag?: number;
-}
-
-/**
  * EntityModifier - Modifiers for entity instances
  * Similar to BlockModifier but for entities
  */
@@ -124,6 +107,9 @@ export interface EntityModel {
 
   /** Type/category of entity */
   type: string;
+
+  /** M (Male), F (Female), D (Diverse)  */
+  gender?: string;
 
   /** Path to 3D model file */
   modelPath: string;
@@ -151,9 +137,6 @@ export interface EntityModel {
 
   /** Collision dimensions for different movement states */
   dimensions: EntityDimensions;
-
-  /** Physics properties (optional, for entities with physics enabled) */
-  physicsProperties?: EntityPhysicsProperties;
 
   /** Audio definitions for this entity model (default for all instances) */
   audio?: AudioDefinition[];

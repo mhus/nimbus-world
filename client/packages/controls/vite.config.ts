@@ -76,6 +76,7 @@ export default defineConfig({
         'library-panel': resolve(__dirname, 'library-panel.html'),
         'team-panel': resolve(__dirname, 'team-panel.html'),
         'settings-panel': resolve(__dirname, 'settings-panel.html'),
+        'character-panel': resolve(__dirname, 'character-panel.html'),
         'panels': resolve(__dirname, 'panels.html'),
       },
     },

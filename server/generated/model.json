@@ -1223,39 +1223,6 @@
       } ],
       "methods" : [ ]
     }, {
-      "name" : "EntityPhysicsProperties",
-      "extendsList" : [ ],
-      "properties" : [ {
-        "name" : "mass",
-        "type" : "number",
-        "optional" : false,
-        "visibility" : null,
-        "javaTypeHint" : null,
-        "comment" : null
-      }, {
-        "name" : "friction",
-        "type" : "number",
-        "optional" : false,
-        "visibility" : null,
-        "javaTypeHint" : null,
-        "comment" : null
-      }, {
-        "name" : "restitution",
-        "type" : "number",
-        "optional" : true,
-        "visibility" : null,
-        "javaTypeHint" : null,
-        "comment" : null
-      }, {
-        "name" : "drag",
-        "type" : "number",
-        "optional" : true,
-        "visibility" : null,
-        "javaTypeHint" : null,
-        "comment" : null
-      } ],
-      "methods" : [ ]
-    }, {
       "name" : "EntityModifier",
       "extendsList" : [ ],
       "properties" : [ {
@@ -1281,6 +1248,13 @@
         "name" : "type",
         "type" : "string",
         "optional" : false,
+        "visibility" : null,
+        "javaTypeHint" : null,
+        "comment" : null
+      }, {
+        "name" : "gender",
+        "type" : "string",
+        "optional" : true,
         "visibility" : null,
         "javaTypeHint" : null,
         "comment" : null
@@ -1344,13 +1318,6 @@
         "name" : "dimensions",
         "type" : "EntityDimensions",
         "optional" : false,
-        "visibility" : null,
-        "javaTypeHint" : null,
-        "comment" : null
-      }, {
-        "name" : "physicsProperties",
-        "type" : "EntityPhysicsProperties",
-        "optional" : true,
         "visibility" : null,
         "javaTypeHint" : null,
         "comment" : null
@@ -6668,8 +6635,15 @@
         "javaTypeHint" : null,
         "comment" : null
       }, {
-        "name" : "selectionRadius",
-        "type" : "number",
+        "name" : "portraitPath",
+        "type" : "string",
+        "optional" : true,
+        "visibility" : null,
+        "javaTypeHint" : null,
+        "comment" : null
+      }, {
+        "name" : "gender",
+        "type" : "string",
         "optional" : true,
         "visibility" : null,
         "javaTypeHint" : null,

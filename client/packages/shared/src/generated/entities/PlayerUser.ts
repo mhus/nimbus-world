@@ -6,4 +6,7 @@
 export interface PlayerUser {
   userId: string;
   title: string;
+  gender: string;
+  portraitPath: string;
+  thirdPersonModelId: string;
 }

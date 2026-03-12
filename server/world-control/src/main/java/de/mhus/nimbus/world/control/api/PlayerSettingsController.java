@@ -66,10 +66,7 @@ public class PlayerSettingsController extends BaseEditorController {
             settings.setProperties(new HashMap<>());
         }
 
-        String title = user.getPublicData() != null ? user.getPublicData().getTitle() : null;
-
         return ResponseEntity.ok(Map.of(
-                "title", title != null ? title : "",
                 "settings", settings
         ));
     }
@@ -115,42 +112,6 @@ public class PlayerSettingsController extends BaseEditorController {
     }
 
     /**
-     * Update the player's display title.
-     */
-    @PutMapping("/title")
-    @Operation(summary = "Update player display title")
-    public ResponseEntity<?> updateTitle(
-            @RequestBody UpdateTitleRequest body,
-            HttpServletRequest request) {
-
-        String userId = (String) request.getAttribute(AccessFilterBase.ATTR_USER_ID);
-        if (Strings.isBlank(userId)) {
-            return bad("Not authenticated");
-        }
-
-        if (body == null || body.title() == null) {
-            return bad("title required");
-        }
-
-        log.debug("PUT player title: userId={}, title={}", userId, body.title());
-
-        RUser user = rUserService.getByUsername(userId).orElse(null);
-        if (user == null) {
-            return notFound("User not found");
-        }
-
-        if (user.getPublicData() == null) {
-            user.setPublicData(new de.mhus.nimbus.shared.types.PlayerUser());
-        }
-        user.getPublicData().setTitle(body.title());
-        user.touchUpdate();
-        rUserService.save(user);
-
-        log.info("Updated title: userId={}, title={}", userId, body.title());
-        return ResponseEntity.ok(Map.of("success", true));
-    }
-
-    /**
      * Notify the player's engine client that settings have changed.
      * Sends a "SettingsModified" command via WebSocket.
      */
@@ -170,5 +131,4 @@ public class PlayerSettingsController extends BaseEditorController {
     }
 
     record UpdatePropertiesRequest(Map<String, String> properties) {}
-    record UpdateTitleRequest(String title) {}
 }

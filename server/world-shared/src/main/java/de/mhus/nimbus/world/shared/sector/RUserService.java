@@ -248,6 +248,54 @@ public class RUserService {
     }
 
     /**
+     * Atomically update the user's public title.
+     */
+    public boolean updatePublicTitle(String username, String title) {
+        Query query = new Query(Criteria.where("username").is(username));
+        Update update = new Update()
+                .set("publicData.title", title)
+                .set("modifiedAt", java.time.Instant.now());
+        var result = mongoTemplate.updateFirst(query, update, RUser.class);
+        return result.getModifiedCount() > 0;
+    }
+
+    /**
+     * Atomically update the user's portrait path.
+     */
+    public boolean updatePortraitPath(String username, String portraitPath) {
+        Query query = new Query(Criteria.where("username").is(username));
+        Update update = new Update()
+                .set("publicData.portraitPath", portraitPath)
+                .set("modifiedAt", java.time.Instant.now());
+        var result = mongoTemplate.updateFirst(query, update, RUser.class);
+        return result.getModifiedCount() > 0;
+    }
+
+    /**
+     * Atomically update the user's third person model ID.
+     */
+    public boolean updateThirdPersonModelId(String username, String thirdPersonModelId) {
+        Query query = new Query(Criteria.where("username").is(username));
+        Update update = new Update()
+                .set("publicData.thirdPersonModelId", thirdPersonModelId)
+                .set("modifiedAt", java.time.Instant.now());
+        var result = mongoTemplate.updateFirst(query, update, RUser.class);
+        return result.getModifiedCount() > 0;
+    }
+
+    /**
+     * Atomically update the user's gender.
+     */
+    public boolean updatePublicGender(String username, String gender) {
+        Query query = new Query(Criteria.where("username").is(username));
+        Update update = new Update()
+                .set("publicData.gender", gender)
+                .set("modifiedAt", java.time.Instant.now());
+        var result = mongoTemplate.updateFirst(query, update, RUser.class);
+        return result.getModifiedCount() > 0;
+    }
+
+    /**
      * Atomically change the gold amount for a user.
      * If amount is negative, verifies the user has enough gold first.
      *

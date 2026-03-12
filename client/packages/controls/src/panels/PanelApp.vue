@@ -137,6 +137,13 @@ const panels = ref<Panel[]>([
     description: 'Audio, Grafik und Gameplay anpassen',
     url: './settings-panel.html',
     color: '#6B7280' // gray
+  },
+  {
+    id: 'character-panel',
+    name: 'Character',
+    description: 'Profil bearbeiten: Name, Geschlecht',
+    url: './character-panel.html',
+    color: '#EC4899' // pink
   }
 ]);
 

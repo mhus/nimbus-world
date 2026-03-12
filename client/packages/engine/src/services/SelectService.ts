@@ -682,11 +682,13 @@ export class SelectService {
     const clampedRadius = Math.max(1.0, Math.min(radius, 20.0));
     this.playerSelectionRadius = clampedRadius;
 
-    // Update PlayerInfo if available
+    // Update PlayerInfo stateValues if available
     if (this.appContext.playerInfo) {
-      this.appContext.playerInfo.selectionRadius = clampedRadius;
-      // Trigger update event via PlayerService
-      this.playerService.updatePlayerInfo({ selectionRadius: clampedRadius });
+      const stateKey = this.appContext.services.movement?.getCurrentMovementState() ?? 'default';
+      const stateValues = this.appContext.playerInfo.stateValues?.[stateKey];
+      if (stateValues) {
+        stateValues.selectionRadius = clampedRadius;
+      }
     }
   }
 

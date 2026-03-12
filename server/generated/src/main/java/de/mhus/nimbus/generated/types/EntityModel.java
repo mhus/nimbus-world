@@ -13,6 +13,8 @@ package de.mhus.nimbus.generated.types;
 public class EntityModel {
     private String id;
     private String type;
+    @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
+    private String gender;
     @com.fasterxml.jackson.annotation.JsonProperty("modelPath")
     private String modelPath;
     @com.fasterxml.jackson.annotation.JsonProperty("positionOffset")
@@ -30,9 +32,6 @@ public class EntityModel {
     @com.fasterxml.jackson.annotation.JsonProperty("modelModifierMapping")
     private java.util.Map<String, String> modelModifierMapping;
     private EntityDimensions dimensions;
-    @com.fasterxml.jackson.annotation.JsonProperty("physicsProperties")
-    @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
-    private EntityPhysicsProperties physicsProperties;
     @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
     private java.util.List<AudioDefinition> audio;
 }

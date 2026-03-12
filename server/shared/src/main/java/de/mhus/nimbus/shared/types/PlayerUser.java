@@ -10,4 +10,8 @@ import lombok.Data;
 public class PlayerUser {
     private String userId;
     private String title;
+    /** Leer (unbekannt), M (Male), F (Female), D (Diverse) */
+    private String gender;
+    private String portraitPath;
+    private String thirdPersonModelId;
 }
