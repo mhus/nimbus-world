@@ -123,6 +123,13 @@ const panels = ref<Panel[]>([
     description: 'Gesammelte Dokumente einsehen',
     url: './library-panel.html',
     color: '#A78BFA' // violet
+  },
+  {
+    id: 'team-panel',
+    name: 'Team',
+    description: 'Team verwalten, Einladungen annehmen oder ablehnen',
+    url: './team-panel.html',
+    color: '#14B8A6' // teal
   }
 ]);
 

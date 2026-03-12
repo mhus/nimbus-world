@@ -93,6 +93,10 @@ public class PlayerSession {
     private Integer cachedHexR;
     private String cachedGameMode;
 
+    // Team cache: team membership for this session
+    private volatile String cachedTeamId;
+    private volatile Set<String> cachedTeamMembers = new HashSet<>();
+
     private final Object sendLock = new Object();
 
     public PlayerSession(WebSocketSession webSocketSession) {

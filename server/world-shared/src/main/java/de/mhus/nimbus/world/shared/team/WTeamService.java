@@ -1,5 +1,8 @@
 package de.mhus.nimbus.world.shared.team;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import de.mhus.nimbus.world.shared.redis.WorldRedisMessagingService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -17,12 +20,36 @@ import java.util.UUID;
 @Slf4j
 public class WTeamService {
 
+    private static final String REDIS_CHANNEL_TEAM_MEMBERSHIP = "t.m";
+
     private final WTeamRepository teamRepository;
     private final MongoTemplate mongoTemplate;
+    private final WorldRedisMessagingService redisMessaging;
+    private final ObjectMapper objectMapper;
 
-    public WTeamService(WTeamRepository teamRepository, MongoTemplate mongoTemplate) {
+    public WTeamService(WTeamRepository teamRepository, MongoTemplate mongoTemplate,
+                        WorldRedisMessagingService redisMessaging, ObjectMapper objectMapper) {
         this.teamRepository = teamRepository;
         this.mongoTemplate = mongoTemplate;
+        this.redisMessaging = redisMessaging;
+        this.objectMapper = objectMapper;
+    }
+
+    /**
+     * Publish a team membership change event via Redis global channel.
+     * Status: JOINED, LEFT, OFFLINE, ONLINE, DEAD
+     */
+    public void publishTeamMembershipEvent(String teamId, String playerName, String status) {
+        try {
+            ObjectNode node = objectMapper.createObjectNode();
+            node.put("teamId", teamId);
+            node.put("playerName", playerName);
+            node.put("status", status);
+            redisMessaging.publishGlobal(REDIS_CHANNEL_TEAM_MEMBERSHIP, objectMapper.writeValueAsString(node));
+            log.debug("Published team membership event: teamId={}, player={}, status={}", teamId, playerName, status);
+        } catch (Exception e) {
+            log.error("Failed to publish team membership event: {}", e.getMessage(), e);
+        }
     }
 
     private Query queryByTeamId(String teamId) {
@@ -76,6 +103,23 @@ public class WTeamService {
         return teamRepository.findByMembersContaining(playerName);
     }
 
+    /**
+     * Find the active team for a player in a given world or its main instance.
+     * Searches: exact worldId first, then main instance worldId
+     * (e.g. earth616:westview::instanceId for zone instances).
+     */
+    @Transactional(readOnly = true)
+    public Optional<WTeam> findActiveTeamForPlayer(String worldId, String mainInstanceId, String playerName) {
+        // First try exact worldId
+        var team = teamRepository.findByWorldIdAndMembersContaining(worldId, playerName);
+        if (team.isPresent()) return team;
+        // Then try main instance (strips zone, keeps instance)
+        if (mainInstanceId != null && !mainInstanceId.equals(worldId)) {
+            return teamRepository.findByWorldIdAndMembersContaining(mainInstanceId, playerName);
+        }
+        return Optional.empty();
+    }
+
     // --- Atomic MongoDB Operations ---
 
     public boolean addMemberAtomic(String teamId, String playerName) {
@@ -86,6 +130,7 @@ public class WTeamService {
         var result = mongoTemplate.updateFirst(queryByTeamId(teamId), update, WTeam.class);
         if (result.getModifiedCount() > 0) {
             log.info("Added member {} to team {} (atomic)", playerName, teamId);
+            publishTeamMembershipEvent(teamId, playerName, "JOINED");
             return true;
         }
         return false;
@@ -98,6 +143,8 @@ public class WTeamService {
         var result = mongoTemplate.updateFirst(queryByTeamId(teamId), update, WTeam.class);
         if (result.getModifiedCount() > 0) {
             log.info("Removed member {} from team {} (atomic)", playerName, teamId);
+            publishTeamMembershipEvent(teamId, playerName, "LEFT");
+            deleteIfEmpty(teamId);
             return true;
         }
         return false;
@@ -122,6 +169,7 @@ public class WTeamService {
         var result = mongoTemplate.updateFirst(queryByTeamId(teamId), update, WTeam.class);
         if (result.getModifiedCount() > 0) {
             log.info("Removed invitation for {} from team {} (atomic)", playerName, teamId);
+            deleteIfEmpty(teamId);
             return true;
         }
         return false;
@@ -136,6 +184,16 @@ public class WTeamService {
         teamRepository.save(team);
         log.info("Updated team {} status to {}", teamId, status);
         return team;
+    }
+
+    private void deleteIfEmpty(String teamId) {
+        teamRepository.findByTeamId(teamId).ifPresent(team -> {
+            if ((team.getMembers() == null || team.getMembers().isEmpty())
+                    && (team.getInvitation() == null || team.getInvitation().isEmpty())) {
+                teamRepository.deleteByTeamId(teamId);
+                log.info("Auto-deleted empty team {}", teamId);
+            }
+        });
     }
 
     @Transactional

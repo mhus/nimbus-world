@@ -252,6 +252,35 @@ public class WorldId implements Comparable<WorldId> {
         return new WorldId(regionId + ":" + worldName);
     }
 
+    /**
+     * Returns the main instance WorldId: regionId:worldName::instance.
+     * If this is a zone instance (regionId:worldName:zone:instance),
+     * the zone is stripped to get the main instance (regionId:worldName::instance).
+     * If this is already a main instance or has no instance, returns this.
+     *
+     * Returns always all parts.
+     *
+     * @return Main instance WorldId (regionId:worldName::instance), or this if not an instance
+     */
+    public WorldId getFullMainInstance() {
+        parseId();
+        return new WorldId(regionId + ":" + worldName + "::" + instance);
+    }
+
+    /**
+     * Returns the main instance WorldId: regionId:worldName::instance.
+     * If this is a zone instance (regionId:worldName:zone:instance),
+     * the zone is stripped to get the main instance (regionId:worldName::instance).
+     * If this is already a main instance or has no instance, returns this.
+     *
+     * @return Main instance WorldId (regionId:worldName::instance), or this if not an instance
+     */
+    public WorldId getMainInstance() {
+        parseId();
+        if (instance.isEmpty()) return this;
+        return new WorldId(regionId + ":" + worldName + "::" + instance);
+    }
+
     public String getCollectionRegion() {
         parseId();
         if (isRegionCollection() || isPublicRegion()) return worldName;

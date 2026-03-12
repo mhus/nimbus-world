@@ -74,6 +74,7 @@ export default defineConfig({
         'chest-widget': resolve(__dirname, 'chest-widget.html'),
         'dialog-widget': resolve(__dirname, 'dialog-widget.html'),
         'library-panel': resolve(__dirname, 'library-panel.html'),
+        'team-panel': resolve(__dirname, 'team-panel.html'),
         'panels': resolve(__dirname, 'panels.html'),
       },
     },
