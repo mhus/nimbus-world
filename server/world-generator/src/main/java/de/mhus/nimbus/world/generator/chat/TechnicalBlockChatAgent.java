@@ -84,8 +84,9 @@ public class TechnicalBlockChatAgent implements WChatAgent {
 
     @Override
     public List<WChatMessage> chatWithSession(WorldId worldId, String chatId, String playerId, String message, String sessionId) {
-        log.info("🏗️ Technical Block Builder processing message from player {} (session={}): {}",
-                playerId, sessionId, message);
+        log.info("Technical Block Builder: player={}, session={}, message={}",
+                playerId, sessionId,
+                message != null && message.length() > 100 ? message.substring(0, 100) + "..." : message);
 
         // Check if message is empty
         if (message == null || message.trim().isBlank()) {
@@ -124,7 +125,7 @@ public class TechnicalBlockChatAgent implements WChatAgent {
 
         ObjectNode params = (ObjectNode) paramsNode;
 
-        log.info("Executing manipulator '{}' with params: {} (sessionId={})", manipulatorName, params, sessionId);
+        log.debug("Executing manipulator '{}' with params: {} (sessionId={})", manipulatorName, params, sessionId);
 
         // Extract context fields from params (optional)
         // If sessionId is provided as method parameter, it takes precedence over params
@@ -139,49 +140,29 @@ public class TechnicalBlockChatAgent implements WChatAgent {
 
         // Load missing context fields from EditState if sessionId is available
         if (contextSessionId != null && !contextSessionId.isBlank()) {
-            log.info("🔍 Loading EditState for sessionId: {}", contextSessionId);
             try {
                 var editStateOpt = wSessionService.getEditState(contextSessionId);
                 if (editStateOpt.isPresent()) {
                     var editState = editStateOpt.get();
-                    log.info("✅ EditState found: layer={}, layerDataId={}, modelName={}, group={}",
-                            editState.getSelectedLayer(), editState.getLayerDataId(),
-                            editState.getModelName(), editState.getSelectedGroup());
-
-                    // Load layerDataId if not provided
-                    if (layerDataId == null || layerDataId.isBlank()) {
+                    if (layerDataId == null || layerDataId.isBlank())
                         layerDataId = editState.getLayerDataId();
-                        log.info("📥 Loaded layerDataId from EditState: {}", layerDataId);
-                    }
-
-                    // Load layerName if not provided
-                    if (layerName == null || layerName.isBlank()) {
+                    if (layerName == null || layerName.isBlank())
                         layerName = editState.getSelectedLayer();
-                        log.info("📥 Loaded layerName from EditState: {}", layerName);
-                    }
-
-                    // Load modelName if not provided (for MODEL layers)
-                    if (modelName == null || modelName.isBlank()) {
+                    if (modelName == null || modelName.isBlank())
                         modelName = editState.getModelName();
-                        log.info("📥 Loaded modelName from EditState: {}", modelName);
-                    }
-
-                    // Load groupId if not provided (null is default)
-                    if (groupId == null || groupId.isBlank()) {
+                    if (groupId == null || groupId.isBlank())
                         groupId = editState.getSelectedGroup();
-                        log.info("📥 Loaded groupId from EditState: {}", groupId);
-                    }
                 } else {
-                    log.warn("❌ No EditState found for sessionId: {}", contextSessionId);
+                    log.warn("No EditState found for sessionId: {}", contextSessionId);
                 }
             } catch (Exception e) {
-                log.error("❌ Failed to load EditState for sessionId: {}", contextSessionId, e);
+                log.error("Failed to load EditState for sessionId: {}", contextSessionId, e);
             }
         } else {
-            log.warn("⚠️ No sessionId available to load EditState");
+            log.debug("No sessionId available to load EditState");
         }
 
-        log.info("📊 Final context values: sessionId={}, layerDataId={}, layerName={}, modelName={}, groupId={}",
+        log.debug("Context: sessionId={}, layerDataId={}, layerName={}, modelName={}, groupId={}",
                 contextSessionId, layerDataId, layerName, modelName, groupId);
 
         // Build context
@@ -198,7 +179,6 @@ public class TechnicalBlockChatAgent implements WChatAgent {
                 .build();
 
         executors.execute(() -> {
-            log.info("Started virtual thread for manipulator '{}'", manipulatorName);
             var responses = executeManipulator(manipulatorName, worldId, playerId, context);
             chatService.saveMessages(worldId, chatId, sessionId, true, responses);
         });
@@ -208,7 +188,7 @@ public class TechnicalBlockChatAgent implements WChatAgent {
                         .worldId(worldId.toBaseWorldId().getId())
                         .messageId(UUID.randomUUID().toString())
                         .senderId(AGENT_ID)
-                        .message("⏳ Processing manipulator '" + manipulatorName + "'...")
+                        .message("Processing manipulator '" + manipulatorName + "'...")
                         .type("text")
                         .createdAt(Instant.now())
                         .build()
@@ -246,7 +226,7 @@ public class TechnicalBlockChatAgent implements WChatAgent {
                 List<String> modelSelectorData = ModelSelectorUtil.toStringList(result.getModelSelector());
                 String modelSelectorJson = objectMapper.writeValueAsString(modelSelectorData);
 
-                log.info("Generated ModelSelector: blocks={}", result.getBlockCount());
+                log.debug("Generated ModelSelector: blocks={}", result.getBlockCount());
 
                 // Create command message with ModelSelector data as JSON in message field
                 // world-control will parse this and store in Redis
@@ -276,8 +256,7 @@ public class TechnicalBlockChatAgent implements WChatAgent {
     @Override
     public List<WChatMessage> executeCommand(WorldId worldId, String chatId, String playerId,
                                             String command, Map<String, Object> params) {
-        log.info("🏗️ Technical Block Builder executing command '{}' from player {}, params: {}",
-                command, playerId, params);
+        log.info("Technical Block Builder command '{}' from player={}", command, playerId);
 
         // Handle "model-selector" command - reload ModelSelector from command message and display
         if ("model-selector".equals(command)) {
@@ -329,7 +308,7 @@ public class TechnicalBlockChatAgent implements WChatAgent {
                         .worldId(worldId.toBaseWorldId().getId())
                         .messageId(UUID.randomUUID().toString())
                         .senderId(AGENT_ID)
-                        .message("✅ Model selector re-activated: " + modelSelectorData.size() + " blocks highlighted")
+                        .message("Model selector re-activated: " + modelSelectorData.size() + " blocks highlighted")
                         .type("text")
                         .createdAt(Instant.now())
                         .build();
@@ -365,7 +344,7 @@ public class TechnicalBlockChatAgent implements WChatAgent {
                 .worldId(worldId.toBaseWorldId().getId())
                 .messageId(UUID.randomUUID().toString())
                 .senderId(AGENT_ID)
-                .message("❌ " + errorText)
+                .message("Error: " + errorText)
                 .type("error")
                 .command(false)
                 .createdAt(Instant.now())
