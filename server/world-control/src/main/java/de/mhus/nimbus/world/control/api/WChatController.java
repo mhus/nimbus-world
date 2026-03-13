@@ -2,6 +2,7 @@ package de.mhus.nimbus.world.control.api;
 
 import de.mhus.nimbus.shared.types.PlayerId;
 import de.mhus.nimbus.shared.types.WorldId;
+import de.mhus.nimbus.world.shared.access.AccessFilterBase;
 import de.mhus.nimbus.world.shared.chat.*;
 import de.mhus.nimbus.world.shared.chat.WChatAgentScope;
 import de.mhus.nimbus.world.shared.rest.BaseEditorController;
@@ -24,6 +25,7 @@ import java.util.stream.Collectors;
 /**
  * REST Controller for player chat operations.
  * Provides access to chat functionality for players.
+ * WorldId and playerId are resolved from the JWT cookie (AccessFilter).
  */
 @RestController
 @RequestMapping("/control/player/chats")
@@ -80,45 +82,33 @@ public class WChatController extends BaseEditorController {
     ) {}
 
     /**
-     * Get all chats for a player.
-     * GET /control/player/chats/{worldId}/{playerId}
+     * Get all chats for the authenticated player.
+     * GET /control/player/chats
      */
-    @GetMapping("/{worldId}/{playerId}")
-    @Operation(summary = "Get all chats for a player")
+    @GetMapping
+    @Operation(summary = "Get all chats for the authenticated player")
     public ResponseEntity<?> getChatsForPlayer(
-            @Parameter(description = "World ID") @PathVariable String worldId,
-            @Parameter(description = "Player ID") @PathVariable String playerId,
             @Parameter(description = "Filter by archived status") @RequestParam(required = false, defaultValue = "false") boolean archived,
             HttpServletRequest request) {
 
-        // Get authenticated playerId from AccessFilter (JWT cookie)
-        String userId = (String) request.getAttribute("accessUserId");
-        String characterId = (String) request.getAttribute("accessCharacterId");
+        String worldId = (String) request.getAttribute(AccessFilterBase.ATTR_WORLD_ID);
+        String userId = (String) request.getAttribute(AccessFilterBase.ATTR_USER_ID);
+        String characterId = (String) request.getAttribute(AccessFilterBase.ATTR_CHARACTER_ID);
 
-        log.debug("GET chats for player: worldId={}, pathPlayerId={}, userId={}, characterId={}, archived={}",
-            worldId, playerId, userId, characterId, archived);
+        log.debug("GET chats for player: worldId={}, userId={}, characterId={}, archived={}",
+            worldId, userId, characterId, archived);
 
         if (Strings.isBlank(worldId)) {
-            return bad("worldId required");
+            return bad("worldId required - not authenticated");
         }
-
-        // Build authenticated playerId from JWT claims
-        String actualPlayerId;
-        if (userId != null && characterId != null) {
-            actualPlayerId = PlayerId.of(userId, characterId)
-                .map(PlayerId::getId)
-                .orElse(playerId); // Fallback to path parameter
-        } else {
-            actualPlayerId = playerId; // Fallback to path parameter
-        }
-
-        if (Strings.isBlank(actualPlayerId)) {
+        String playerId = resolvePlayerId(userId, characterId);
+        if (playerId == null) {
             return bad("playerId required - not authenticated");
         }
 
         try {
             WorldId wId = WorldId.unchecked(worldId);
-            List<WChat> chats = chatService.getChatsForOwner(wId, null, actualPlayerId, archived);
+            List<WChat> chats = chatService.getChatsForOwner(wId, null, playerId, archived);
 
             List<ChatResponse> responses = chats.stream()
                     .map(this::toChatResponse)
@@ -133,20 +123,22 @@ public class WChatController extends BaseEditorController {
 
     /**
      * Get messages for a specific chat.
-     * GET /control/player/chats/{worldId}/{chatId}/messages
+     * GET /control/player/chats/{chatId}/messages
      */
-    @GetMapping("/{worldId}/{chatId}/messages")
+    @GetMapping("/{chatId}/messages")
     @Operation(summary = "Get messages for a chat")
     public ResponseEntity<?> getChatMessages(
-            @Parameter(description = "World ID") @PathVariable String worldId,
             @Parameter(description = "Chat ID") @PathVariable String chatId,
             @Parameter(description = "After Message ID") @RequestParam(required = false) String afterMessageId,
-            @Parameter(description = "Limit") @RequestParam(required = false, defaultValue = "50") int limit) {
+            @Parameter(description = "Limit") @RequestParam(required = false, defaultValue = "50") int limit,
+            HttpServletRequest request) {
+
+        String worldId = (String) request.getAttribute(AccessFilterBase.ATTR_WORLD_ID);
 
         log.debug("GET messages: worldId={}, chatId={}, afterMessageId={} limit={}", worldId, chatId, afterMessageId, limit);
 
         if (Strings.isBlank(worldId)) {
-            return bad("worldId required");
+            return bad("worldId required - not authenticated");
         }
         if (Strings.isBlank(chatId)) {
             return bad("chatId required");
@@ -174,37 +166,26 @@ public class WChatController extends BaseEditorController {
 
     /**
      * Create a new chat.
-     * POST /control/player/chats/{worldId}/{playerId}
+     * POST /control/player/chats
      */
-    @PostMapping("/{worldId}/{playerId}")
+    @PostMapping
     @Operation(summary = "Create a new chat")
     public ResponseEntity<?> createChat(
-            @Parameter(description = "World ID") @PathVariable String worldId,
-            @Parameter(description = "Player ID") @PathVariable String playerId,
             @RequestBody CreateChatRequest request,
             HttpServletRequest httpRequest) {
 
-        // Get authenticated playerId from AccessFilter (JWT cookie)
-        String userId = (String) httpRequest.getAttribute("accessUserId");
-        String characterId = (String) httpRequest.getAttribute("accessCharacterId");
+        String worldId = (String) httpRequest.getAttribute(AccessFilterBase.ATTR_WORLD_ID);
+        String userId = (String) httpRequest.getAttribute(AccessFilterBase.ATTR_USER_ID);
+        String characterId = (String) httpRequest.getAttribute(AccessFilterBase.ATTR_CHARACTER_ID);
 
-        // Build authenticated playerId from JWT claims
-        String actualPlayerId;
-        if (userId != null && characterId != null) {
-            actualPlayerId = PlayerId.of(userId, characterId)
-                .map(PlayerId::getId)
-                .orElse(playerId); // Fallback to path parameter
-        } else {
-            actualPlayerId = playerId; // Fallback to path parameter
-        }
+        String playerId = resolvePlayerId(userId, characterId);
 
-        log.debug("POST create chat: worldId={}, pathPlayerId={}, actualPlayerId={}, request={}",
-            worldId, playerId, actualPlayerId, request);
+        log.debug("POST create chat: worldId={}, playerId={}, request={}", worldId, playerId, request);
 
         if (Strings.isBlank(worldId)) {
-            return bad("worldId required");
+            return bad("worldId required - not authenticated");
         }
-        if (Strings.isBlank(actualPlayerId)) {
+        if (playerId == null) {
             return bad("playerId required - not authenticated");
         }
         if (Strings.isBlank(request.name())) {
@@ -218,7 +199,7 @@ public class WChatController extends BaseEditorController {
             WorldId wId = WorldId.unchecked(worldId);
             String chatId = UUID.randomUUID().toString();
 
-            WChat chat = chatService.save(wId, chatId, request.name(), request.type(), actualPlayerId, request.hint());
+            WChat chat = chatService.save(wId, chatId, request.name(), request.type(), playerId, request.hint());
 
             return ResponseEntity.ok(toChatResponse(chat));
         } catch (Exception e) {
@@ -229,27 +210,32 @@ public class WChatController extends BaseEditorController {
 
     /**
      * Send a message to an agent chat.
-     * POST /control/player/chats/{worldId}/{chatId}/messages/{playerId}
+     * POST /control/player/chats/{chatId}/messages
      */
-    @PostMapping("/{worldId}/{chatId}/messages/{playerId}")
+    @PostMapping("/{chatId}/messages")
     @Operation(summary = "Send a message to an agent chat")
     public ResponseEntity<?> sendMessage(
-            @Parameter(description = "World ID") @PathVariable String worldId,
             @Parameter(description = "Chat ID") @PathVariable String chatId,
-            @Parameter(description = "Player ID") @PathVariable String playerId,
             @RequestBody SendMessageRequest request,
             HttpServletRequest httpRequest) {
+
+        String worldId = (String) httpRequest.getAttribute(AccessFilterBase.ATTR_WORLD_ID);
+        String userId = (String) httpRequest.getAttribute(AccessFilterBase.ATTR_USER_ID);
+        String characterId = (String) httpRequest.getAttribute(AccessFilterBase.ATTR_CHARACTER_ID);
+        String sessionId = (String) httpRequest.getAttribute(AccessFilterBase.ATTR_SESSION_ID);
+
+        String playerId = resolvePlayerId(userId, characterId);
 
         log.debug("POST send message: worldId={}, chatId={}, playerId={}", worldId, chatId, playerId);
 
         if (Strings.isBlank(worldId)) {
-            return bad("worldId required");
+            return bad("worldId required - not authenticated");
         }
         if (Strings.isBlank(chatId)) {
             return bad("chatId required");
         }
-        if (Strings.isBlank(playerId)) {
-            return bad("playerId required");
+        if (playerId == null) {
+            return bad("playerId required - not authenticated");
         }
         if (Strings.isBlank(request.message())) {
             return bad("message required");
@@ -267,8 +253,6 @@ public class WChatController extends BaseEditorController {
 
             String playerMessageId = UUID.randomUUID().toString();
 
-            // Extract sessionId from request (set by AccessFilterBase)
-            String sessionId = (String) httpRequest.getAttribute("accessSessionId");
             log.debug("SessionId from request: {}", sessionId);
 
             // Save player message and enqueue for async agent processing
@@ -286,28 +270,33 @@ public class WChatController extends BaseEditorController {
 
     /**
      * Execute a command on an agent chat.
-     * POST /control/player/chats/{worldId}/{chatId}/execute-command/{playerId}
+     * POST /control/player/chats/{chatId}/execute-command
      */
-    @PostMapping("/{worldId}/{chatId}/execute-command/{playerId}")
+    @PostMapping("/{chatId}/execute-command")
     @Operation(summary = "Execute a command on an agent")
     public ResponseEntity<?> executeCommand(
-            @Parameter(description = "World ID") @PathVariable String worldId,
             @Parameter(description = "Chat ID") @PathVariable String chatId,
-            @Parameter(description = "Player ID") @PathVariable String playerId,
             @RequestBody ExecuteCommandRequest request,
             HttpServletRequest httpRequest) {
+
+        String worldId = (String) httpRequest.getAttribute(AccessFilterBase.ATTR_WORLD_ID);
+        String userId = (String) httpRequest.getAttribute(AccessFilterBase.ATTR_USER_ID);
+        String characterId = (String) httpRequest.getAttribute(AccessFilterBase.ATTR_CHARACTER_ID);
+        String sessionId = (String) httpRequest.getAttribute(AccessFilterBase.ATTR_SESSION_ID);
+
+        String playerId = resolvePlayerId(userId, characterId);
 
         log.debug("POST execute command: worldId={}, chatId={}, playerId={}, command={}",
                 worldId, chatId, playerId, request.command());
 
         if (Strings.isBlank(worldId)) {
-            return bad("worldId required");
+            return bad("worldId required - not authenticated");
         }
         if (Strings.isBlank(chatId)) {
             return bad("chatId required");
         }
-        if (Strings.isBlank(playerId)) {
-            return bad("playerId required");
+        if (playerId == null) {
+            return bad("playerId required - not authenticated");
         }
         if (Strings.isBlank(request.command())) {
             return bad("command required");
@@ -322,9 +311,6 @@ public class WChatController extends BaseEditorController {
 
             // For agent chats, use the chat type as agent name
             String agentName = chat.getType();
-
-            // Get sessionId from request attributes (set by AccessFilter)
-            String sessionId = (String) httpRequest.getAttribute("accessSessionId");
 
             // Merge sessionId into params
             Map<String, Object> params = request.params() != null
@@ -379,18 +365,20 @@ public class WChatController extends BaseEditorController {
 
     /**
      * Archive a chat.
-     * PUT /control/player/chats/{worldId}/{chatId}/archive
+     * PUT /control/player/chats/{chatId}/archive
      */
-    @PutMapping("/{worldId}/{chatId}/archive")
+    @PutMapping("/{chatId}/archive")
     @Operation(summary = "Archive a chat")
     public ResponseEntity<?> archiveChat(
-            @Parameter(description = "World ID") @PathVariable String worldId,
-            @Parameter(description = "Chat ID") @PathVariable String chatId) {
+            @Parameter(description = "Chat ID") @PathVariable String chatId,
+            HttpServletRequest request) {
+
+        String worldId = (String) request.getAttribute(AccessFilterBase.ATTR_WORLD_ID);
 
         log.debug("PUT archive chat: worldId={}, chatId={}", worldId, chatId);
 
         if (Strings.isBlank(worldId)) {
-            return bad("worldId required");
+            return bad("worldId required - not authenticated");
         }
         if (Strings.isBlank(chatId)) {
             return bad("chatId required");
@@ -413,18 +401,20 @@ public class WChatController extends BaseEditorController {
 
     /**
      * Unarchive a chat.
-     * PUT /control/player/chats/{worldId}/{chatId}/unarchive
+     * PUT /control/player/chats/{chatId}/unarchive
      */
-    @PutMapping("/{worldId}/{chatId}/unarchive")
+    @PutMapping("/{chatId}/unarchive")
     @Operation(summary = "Unarchive a chat")
     public ResponseEntity<?> unarchiveChat(
-            @Parameter(description = "World ID") @PathVariable String worldId,
-            @Parameter(description = "Chat ID") @PathVariable String chatId) {
+            @Parameter(description = "Chat ID") @PathVariable String chatId,
+            HttpServletRequest request) {
+
+        String worldId = (String) request.getAttribute(AccessFilterBase.ATTR_WORLD_ID);
 
         log.debug("PUT unarchive chat: worldId={}, chatId={}", worldId, chatId);
 
         if (Strings.isBlank(worldId)) {
-            return bad("worldId required");
+            return bad("worldId required - not authenticated");
         }
         if (Strings.isBlank(chatId)) {
             return bad("chatId required");
@@ -446,6 +436,19 @@ public class WChatController extends BaseEditorController {
     }
 
     // Helper methods
+
+    /**
+     * Resolve playerId from JWT claims (userId + characterId).
+     * Returns null if not authenticated.
+     */
+    private String resolvePlayerId(String userId, String characterId) {
+        if (userId != null && characterId != null) {
+            return PlayerId.of(userId, characterId)
+                    .map(PlayerId::getId)
+                    .orElse(null);
+        }
+        return null;
+    }
 
     private ChatResponse toChatResponse(WChat chat) {
         String status = resolveChatStatus(chat);

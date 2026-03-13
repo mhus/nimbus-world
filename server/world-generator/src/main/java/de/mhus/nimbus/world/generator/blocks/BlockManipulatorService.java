@@ -202,8 +202,8 @@ public class BlockManipulatorService {
         applyTransformations(context);
 
         log.info("Executing manipulator '{}' - {}", manipulatorName, manipulator.getTitle());
-        log.debug("Context: originalParams={}, params={}",
-                context.getOriginalParams(), context.getParams());
+        log.debug("Context: originalParams={}, params={}, sessionId={}",
+                context.getOriginalParams(), context.getParams(), context.getSessionId());
 
         try {
             ManipulatorResult result = manipulator.execute(context);

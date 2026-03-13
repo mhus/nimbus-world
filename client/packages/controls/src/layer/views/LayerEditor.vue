@@ -91,6 +91,7 @@
         ref="layerEditorRef"
         :layer="selectedLayer"
         :world-id="currentWorldId!"
+        :current-epoch="effectiveEpoch"
         @close="closeEditor"
         @saved="handleSaved"
         @open-model-editor="handleOpenModelEditor"
@@ -188,16 +189,19 @@ const gridEditorParams = ref<{
   sourceType: 'terrain'
 });
 
+// Convert epoch prop: -1 means "all" (no filter)
+const effectiveEpoch = computed(() => props.epoch === -1 ? undefined : props.epoch);
+
 // Load layers when world changes
 watch(currentWorldId, () => {
   if (currentWorldId.value) {
-    layersComposable.value?.setEpochFilter(props.epoch);
+    layersComposable.value?.setEpochFilter(effectiveEpoch.value);
   }
 }, { immediate: true });
 
 // Reload when epoch changes
 watch(() => props.epoch, () => {
-  layersComposable.value?.setEpochFilter(props.epoch);
+  layersComposable.value?.setEpochFilter(effectiveEpoch.value);
 });
 
 onMounted(() => {

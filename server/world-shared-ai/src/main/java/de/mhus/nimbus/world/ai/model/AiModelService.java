@@ -120,6 +120,44 @@ public class AiModelService {
     }
 
     /**
+     * Create a raw LangChain4j ChatModel for use with AiServices (tool support, memory, etc.).
+     * Format: provider:model or default:name (which resolves via mapping)
+     *
+     * @param fullModelName Full model name (e.g., "openai:gpt-4", "default:chat")
+     * @param options Chat configuration options
+     * @return ChatModel if available
+     */
+    public Optional<dev.langchain4j.model.chat.ChatModel> createChatModel(String fullModelName, AiChatOptions options) {
+        if (fullModelName == null || fullModelName.isBlank()) {
+            log.warn("Empty model name provided");
+            return Optional.empty();
+        }
+
+        String resolvedName = resolveModelName(fullModelName);
+        String[] parts = resolvedName.split(":", 2);
+        if (parts.length != 2) {
+            log.warn("Invalid model name format: {}. Expected 'provider:model'", resolvedName);
+            return Optional.empty();
+        }
+
+        String providerName = parts[0];
+        String modelName = parts[1];
+
+        LangchainModel provider = providerCache.get(providerName);
+        if (provider == null || !provider.isAvailable()) {
+            log.warn("AI provider not available: {}", providerName);
+            return Optional.empty();
+        }
+
+        try {
+            return provider.createChatModel(modelName, options);
+        } catch (Exception e) {
+            log.error("Failed to create ChatModel: {}:{}", providerName, modelName, e);
+            return Optional.empty();
+        }
+    }
+
+    /**
      * Create an AI image model instance by full model name.
      * Format: provider:model or default:name (which resolves via mapping)
      *

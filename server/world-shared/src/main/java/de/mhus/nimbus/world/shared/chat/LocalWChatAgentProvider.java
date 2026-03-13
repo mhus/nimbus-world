@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -17,7 +18,7 @@ import java.util.stream.Collectors;
 @Slf4j
 public class LocalWChatAgentProvider implements WChatAgentProvider {
 
-    @Autowired
+    @Autowired(required = false)
     @Lazy
     private List<WChatAgent> localAgents;
     private Map<String, WChatAgent> agentMap;
@@ -46,9 +47,14 @@ public class LocalWChatAgentProvider implements WChatAgentProvider {
 
     private synchronized void initializeAgentsIfNeeded() {
         if (agentMap == null) {
-            agentMap = localAgents.stream()
-                    .collect(Collectors.toMap(WChatAgent::getName, agent -> agent));
-            log.debug("Initialized agent map with {} agents: {}", agentMap.size(), agentMap.keySet());
+            if (localAgents == null || localAgents.isEmpty()) {
+                agentMap = Collections.emptyMap();
+                log.debug("No local chat agents found");
+            } else {
+                agentMap = localAgents.stream()
+                        .collect(Collectors.toMap(WChatAgent::getName, agent -> agent));
+                log.debug("Initialized agent map with {} agents: {}", agentMap.size(), agentMap.keySet());
+            }
         }
     }
 }

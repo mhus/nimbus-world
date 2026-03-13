@@ -388,6 +388,7 @@ import { apiService } from '@/services/ApiService';
 
 const props = defineProps<{
   entity: EntityData | 'new';
+  currentEpoch?: number;
 }>();
 
 const emit = defineEmits<{
@@ -522,6 +523,9 @@ const loadEntity = () => {
       healthMax: 100,
     };
     parameterEntries.value = [];
+    if (props.currentEpoch !== undefined) {
+      epochesText.value = String(props.currentEpoch);
+    }
     return;
   }
 

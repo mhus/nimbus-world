@@ -127,9 +127,28 @@ public class WChatExecutorService {
 
     @PreDestroy
     public void shutdown() {
-        log.info("Shutting down WChatExecutorService, stopping {} active sessions", activeSessions.size());
+        int count = activeSessions.size();
+        if (count == 0) {
+            log.info("WChatExecutorService shutdown: no active sessions");
+            executor.shutdown();
+            return;
+        }
+        log.info("Shutting down WChatExecutorService, stopping {} active sessions", count);
         activeSessions.values().forEach(WChatSession::requestStop);
         executor.shutdown();
+        try {
+            // Wait for sessions to save their state (threads are interrupted, just need save time)
+            if (!executor.awaitTermination(10, java.util.concurrent.TimeUnit.SECONDS)) {
+                log.warn("Not all chat sessions finished within 10s, {} still active", activeSessions.size());
+                executor.shutdownNow();
+            } else {
+                log.info("All chat sessions saved successfully");
+            }
+        } catch (InterruptedException e) {
+            log.warn("Shutdown interrupted, forcing stop");
+            executor.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
     }
 
     private String chatKey(String worldId, String chatId) {

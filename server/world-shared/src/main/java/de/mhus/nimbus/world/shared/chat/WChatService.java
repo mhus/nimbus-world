@@ -974,7 +974,7 @@ public class WChatService {
      * - Remote agent → route directly to remote pod via agent.routeMessage()
      * - Local agent → enqueue locally (or route to another pod if session is already active there)
      */
-    void enqueueOrRoute(String agentName, WChatSessionMessage sessionMsg) {
+    public void enqueueOrRoute(String agentName, WChatSessionMessage sessionMsg) {
         WChatAgent agent = getAgent(agentName).orElse(null);
         if (agent != null && !agent.isLocal()) {
             log.info("Routing to remote agent: agentName={}, chatId={}", agentName, sessionMsg.getChatId());

@@ -37,6 +37,28 @@ public class GeminiLangchainModel implements LangchainModel {
     }
 
     @Override
+    public Optional<ChatModel> createChatModel(String modelName, AiChatOptions options) {
+        if (!isAvailable()) {
+            return Optional.empty();
+        }
+        try {
+            AiChatOptions adjustedOptions = validateAndAdjustOptions(modelName, options);
+            ChatModel chatModel = GoogleAiGeminiChatModel.builder()
+                    .apiKey(settings.getApiKey())
+                    .modelName(modelName)
+                    .temperature(adjustedOptions.getTemperature())
+                    .maxOutputTokens(adjustedOptions.getMaxTokens())
+                    .timeout(Duration.ofSeconds(adjustedOptions.getTimeoutSeconds()))
+                    .logRequestsAndResponses(adjustedOptions.getLogRequests())
+                    .build();
+            return Optional.of(chatModel);
+        } catch (Exception e) {
+            log.error("Failed to create ChatModel: model={}", modelName, e);
+            return Optional.empty();
+        }
+    }
+
+    @Override
     public Optional<AiChat> createAiChat(String modelName, AiChatOptions options) {
         if (!isAvailable()) {
             log.warn("Gemini API key not configured");

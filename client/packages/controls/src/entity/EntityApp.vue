@@ -20,6 +20,7 @@
             v-model.number="selectedEpoch"
             class="select select-ghost select-sm"
           >
+            <option :value="-1">All</option>
             <option v-for="ep in epoches" :key="ep.epoch" :value="ep.epoch">
               {{ ep.epoch }} - {{ ep.name }}
             </option>
@@ -44,13 +45,14 @@
       <div v-else>
         <EntityList
           v-if="!selectedEntity"
-          :epoch="selectedEpoch"
+          :epoch="effectiveEpoch"
           @select="handleEntitySelect"
           @create="handleCreateNew"
         />
         <EntityEditor
           v-else
           :entity="selectedEntity"
+          :current-epoch="effectiveEpoch"
           @back="handleBack"
           @saved="handleSaved"
         />
@@ -60,7 +62,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { useWorld } from '@/composables/useWorld';
 import { worldService, type EpochMeta } from '@/services/WorldService';
 import WorldSelector from '@material/components/WorldSelector.vue';
@@ -71,7 +73,7 @@ import { entityService, type EntityData } from './services/EntityService';
 const { currentWorldId } = useWorld();
 
 const epoches = ref<EpochMeta[]>([]);
-const selectedEpoch = ref<number>(0);
+const selectedEpoch = ref<number>(-1);
 
 const loadEpoches = async () => {
   if (!currentWorldId.value || currentWorldId.value.startsWith('@')) {
@@ -82,12 +84,15 @@ const loadEpoches = async () => {
     const detail = await worldService.getWorldDetail(currentWorldId.value);
     epoches.value = detail.epoches || [];
     if (epoches.value.length > 0) {
-      selectedEpoch.value = epoches.value[0].epoch;
+      selectedEpoch.value = -1; // Default: show all
     }
   } catch {
     epoches.value = [];
   }
 };
+
+// Convert epoch: -1 means "all" (no filter)
+const effectiveEpoch = computed(() => selectedEpoch.value === -1 ? undefined : selectedEpoch.value);
 
 // Read id from URL query parameter
 const getIdFromUrl = (): string | null => {

@@ -20,6 +20,7 @@
             v-model.number="selectedEpoch"
             class="select select-ghost select-sm"
           >
+            <option :value="-1">All</option>
             <option v-for="ep in epoches" :key="ep.epoch" :value="ep.epoch">
               {{ ep.epoch }} - {{ ep.name }}
             </option>
@@ -47,7 +48,7 @@ import TabNavigation from '@layer/components/TabNavigation.vue';
 const { currentWorldId } = useWorld();
 
 const epoches = ref<EpochMeta[]>([]);
-const selectedEpoch = ref<number>(0);
+const selectedEpoch = ref<number>(-1);
 
 const loadEpoches = async () => {
   if (!currentWorldId.value || currentWorldId.value.startsWith('@')) {
@@ -58,7 +59,7 @@ const loadEpoches = async () => {
     const detail = await worldService.getWorldDetail(currentWorldId.value);
     epoches.value = detail.epoches || [];
     if (epoches.value.length > 0) {
-      selectedEpoch.value = epoches.value[0].epoch;
+      selectedEpoch.value = -1; // Default: show all
     }
   } catch {
     epoches.value = [];

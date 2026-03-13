@@ -21,18 +21,8 @@
 
     <!-- Main Content -->
     <main class="flex-1 px-4 py-4 overflow-hidden">
-      <!-- Missing Parameters -->
-      <div v-if="!worldId || !playerId" class="flex items-center justify-center min-h-[400px]">
-        <div class="alert alert-warning max-w-md">
-          <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-          </svg>
-          <span>Missing worldId or playerId parameters.</span>
-        </div>
-      </div>
-
       <!-- Main Chat Interface -->
-      <div v-else class="max-w-6xl mx-auto h-full flex flex-col">
+      <div class="max-w-6xl mx-auto h-full flex flex-col">
         <!-- Error Display -->
         <div v-if="error" class="alert alert-error mb-4">
           <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
@@ -413,10 +403,22 @@ const { isEmbedded } = useModal();
 // Get API base URL
 const apiBaseUrl = computed(() => apiService.getBaseUrl());
 
-// URL Parameters
-const urlParams = new URLSearchParams(window.location.search);
-const worldId = ref(urlParams.get('worldId') || '');
-const playerId = ref(urlParams.get('playerId') || '');
+// worldId and playerId are resolved from the JWT cookie on the backend
+// We only need them for display purposes — read from sessionData cookie
+function readSessionData(): { worldId: string; playerId: string } {
+  try {
+    const match = document.cookie.split('; ').find(c => c.startsWith('sessionData='));
+    if (!match) return { worldId: '', playerId: '' };
+    const json = JSON.parse(atob(match.split('=')[1]));
+    return {
+      worldId: json.worldId || '',
+      playerId: json.userId && json.characterId ? `@${json.userId}:${json.characterId}` : ''
+    };
+  } catch { return { worldId: '', playerId: '' }; }
+}
+const { worldId: _worldId, playerId: _playerId } = readSessionData();
+const worldId = ref(_worldId);
+const playerId = ref(_playerId);
 
 // Polling configuration
 const POLL_INTERVAL_MS = 3000; // Poll every 3 seconds
@@ -447,14 +449,12 @@ const showArchived = ref(false);
 
 // Load chats
 const loadChats = async () => {
-  if (!worldId.value || !playerId.value) return;
-
   loading.value = true;
   error.value = '';
 
   try {
     const response = await fetch(
-      `${apiBaseUrl.value}/control/player/chats/${worldId.value}/${playerId.value}?archived=${showArchived.value}`,
+      `${apiBaseUrl.value}/control/player/chats?archived=${showArchived.value}`,
       {
         credentials: 'include',
       }
@@ -490,14 +490,12 @@ const selectChat = async (chat: Chat) => {
 
 // Load messages
 const loadMessages = async (chatId: string) => {
-  if (!worldId.value) return;
-
   loadingMessages.value = true;
   error.value = '';
 
   try {
     const response = await fetch(
-      `${apiBaseUrl.value}/control/player/chats/${worldId.value}/${chatId}/messages?limit=50`,
+      `${apiBaseUrl.value}/control/player/chats/${chatId}/messages?limit=50`,
       {
         credentials: 'include',
       }
@@ -526,10 +524,9 @@ const loadMessages = async (chatId: string) => {
 
 // Poll for chat status updates (refreshes chat list silently)
 const pollChatStatus = async () => {
-  if (!worldId.value || !playerId.value) return;
   try {
     const response = await fetch(
-      `${apiBaseUrl.value}/control/player/chats/${worldId.value}/${playerId.value}?archived=${showArchived.value}`,
+      `${apiBaseUrl.value}/control/player/chats?archived=${showArchived.value}`,
       { credentials: 'include' }
     );
     if (!response.ok) return;
@@ -551,7 +548,7 @@ const pollChatStatus = async () => {
 
 // Poll for new messages
 const pollNewMessages = async () => {
-  if (!selectedChat.value || !worldId.value || messages.value.length === 0) return;
+  if (!selectedChat.value || messages.value.length === 0) return;
 
   try {
     // Get the messageId of the last message
@@ -559,7 +556,7 @@ const pollNewMessages = async () => {
     const afterMessageId = lastMessage.messageId;
 
     const response = await fetch(
-      `${apiBaseUrl.value}/control/player/chats/${worldId.value}/${selectedChat.value.chatId}/messages?afterMessageId=${afterMessageId}`,
+      `${apiBaseUrl.value}/control/player/chats/${selectedChat.value.chatId}/messages?afterMessageId=${afterMessageId}`,
       {
         credentials: 'include',
       }
@@ -617,7 +614,7 @@ const sendMessage = async () => {
 
   try {
     const response = await fetch(
-      `${apiBaseUrl.value}/control/player/chats/${worldId.value}/${selectedChat.value.chatId}/messages/${playerId.value}`,
+      `${apiBaseUrl.value}/control/player/chats/${selectedChat.value.chatId}/messages`,
       {
         method: 'POST',
         headers: {
@@ -667,7 +664,7 @@ const executeCommand = async (messageId: string, type: string) => {
 
   try {
     const response = await fetch(
-      `${apiBaseUrl.value}/control/player/chats/${worldId.value}/${selectedChat.value.chatId}/execute-command/${playerId.value}`,
+      `${apiBaseUrl.value}/control/player/chats/${selectedChat.value.chatId}/execute-command`,
       {
         method: 'POST',
         headers: {
@@ -723,7 +720,7 @@ const createChat = async () => {
 
   try {
     const response = await fetch(
-      `${apiBaseUrl.value}/control/player/chats/${worldId.value}/${playerId.value}`,
+      `${apiBaseUrl.value}/control/player/chats`,
       {
         method: 'POST',
         headers: {
@@ -785,7 +782,7 @@ const confirmArchive = async () => {
 
   try {
     const response = await fetch(
-      `${apiBaseUrl.value}/control/player/chats/${worldId.value}/${chatId}/archive`,
+      `${apiBaseUrl.value}/control/player/chats/${chatId}/archive`,
       {
         method: 'PUT',
         credentials: 'include',
@@ -824,7 +821,7 @@ const cancelArchive = () => {
 const unarchiveChat = async (chatId: string) => {
   try {
     const response = await fetch(
-      `${apiBaseUrl.value}/control/player/chats/${worldId.value}/${chatId}/unarchive`,
+      `${apiBaseUrl.value}/control/player/chats/${chatId}/unarchive`,
       {
         method: 'PUT',
         credentials: 'include',

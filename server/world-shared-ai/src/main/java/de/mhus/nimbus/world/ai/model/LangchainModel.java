@@ -27,6 +27,19 @@ public interface LangchainModel {
     Optional<AiChat> createAiChat(String modelName, AiChatOptions options);
 
     /**
+     * Create a raw ChatModel for use with AiServices (tool support, memory, etc.).
+     * Default implementation creates an AiChat and extracts the ChatModel — providers
+     * should override this for direct ChatModel creation.
+     *
+     * @param modelName Name of the specific model
+     * @param options Configuration options
+     * @return ChatModel if available
+     */
+    default Optional<dev.langchain4j.model.chat.ChatModel> createChatModel(String modelName, AiChatOptions options) {
+        return Optional.empty();
+    }
+
+    /**
      * Check if this model provider is available and properly configured.
      *
      * @return true if provider can create chat instances

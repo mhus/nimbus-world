@@ -61,6 +61,28 @@ public class OpenAiLangchainModel implements LangchainModel {
     }
 
     @Override
+    public Optional<ChatModel> createChatModel(String modelName, AiChatOptions options) {
+        if (!isAvailable()) {
+            return Optional.empty();
+        }
+        try {
+            ChatModel chatModel = OpenAiChatModel.builder()
+                    .apiKey(settings.getApiKey())
+                    .modelName(modelName)
+                    .temperature(options.getTemperature())
+                    .maxTokens(options.getMaxTokens())
+                    .timeout(Duration.ofSeconds(options.getTimeoutSeconds()))
+                    .logRequests(options.getLogRequests())
+                    .logResponses(options.getLogRequests())
+                    .build();
+            return Optional.of(chatModel);
+        } catch (Exception e) {
+            log.error("Failed to create ChatModel: model={}", modelName, e);
+            return Optional.empty();
+        }
+    }
+
+    @Override
     public boolean isAvailable() {
         return settings.isAvailable();
     }

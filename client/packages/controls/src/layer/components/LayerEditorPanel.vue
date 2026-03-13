@@ -472,6 +472,7 @@ const logger = getLogger('LayerEditorPanel');
 interface Props {
   layer: WLayer | null;
   worldId: string;
+  currentEpoch?: number;
 }
 
 const props = defineProps<Props>();
@@ -543,6 +544,10 @@ if (props.layer) {
   formData.value = { ...props.layer };
   affectedChunksText.value = (props.layer.affectedChunks || []).join('\n');
   epochesText.value = (props.layer.epoches || []).join(',');
+} else if (props.currentEpoch !== undefined) {
+  // Pre-populate with currently selected epoch for new layers
+  epochesText.value = String(props.currentEpoch);
+  formData.value.epoches = [props.currentEpoch];
 }
 
 // Watch affectedChunksText and update formData

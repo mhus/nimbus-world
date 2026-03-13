@@ -144,6 +144,13 @@ const panels = ref<Panel[]>([
     description: 'Profil bearbeiten: Name, Geschlecht',
     url: './character-panel.html',
     color: '#EC4899' // pink
+  },
+  {
+    id: 'agent-chat-widget',
+    name: 'Agent Chat',
+    description: 'Chat mit AI Agenten',
+    url: './agent-chat-widget.html',
+    color: '#818CF8' // indigo
   }
 ]);
 

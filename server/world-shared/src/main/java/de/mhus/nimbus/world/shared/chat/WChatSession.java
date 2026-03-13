@@ -33,6 +33,7 @@ public class WChatSession implements Runnable {
     private final WChatSessionQueue sessionQueue = new SessionQueueAdapter();
     private volatile boolean running = true;
     private volatile boolean archiveRequested = false;
+    private volatile Thread sessionThread;
     private long lastRedisRefresh;
     private long lastMessageTime;
 
@@ -54,11 +55,16 @@ public class WChatSession implements Runnable {
 
     public void requestStop() {
         running = false;
+        Thread t = sessionThread;
+        if (t != null) {
+            t.interrupt();
+        }
     }
 
     @Override
     public void run() {
         log.info("WChatSession started: chatKey={}", chatKey);
+        sessionThread = Thread.currentThread();
         WChatAgent agent = null;
         try {
             registerInRedis();
@@ -119,6 +125,9 @@ public class WChatSession implements Runnable {
         } catch (Exception e) {
             log.error("WChatSession error: chatKey={}", chatKey, e);
         } finally {
+            // Clear interrupt flag so MongoDB/Redis operations don't fail during shutdown
+            Thread.interrupted();
+
             // Archive chat if requested by agent
             if (archiveRequested) {
                 archiveChat();
