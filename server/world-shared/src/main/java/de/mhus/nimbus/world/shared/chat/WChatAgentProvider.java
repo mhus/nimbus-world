@@ -1,7 +1,5 @@
 package de.mhus.nimbus.world.shared.chat;
 
-import de.mhus.nimbus.shared.types.WorldId;
-
 import java.util.List;
 
 /**
@@ -30,7 +28,7 @@ public interface WChatAgentProvider {
      *
      * @return list of available agents
      */
-    List<WChatAgent> getAvailableAgents(WorldId worldId, String sessionId);
+    List<WChatAgent> getAvailableAgents();
 
     /**
      * Check if this provider is available.

@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.generator.flat.FlatToolService;
 import de.mhus.nimbus.world.shared.chat.WChatAgent;
+import de.mhus.nimbus.world.shared.chat.WChatAgentScope;
 import de.mhus.nimbus.world.shared.chat.WChatMessage;
 import de.mhus.nimbus.world.shared.chat.WChatService;
 import lombok.RequiredArgsConstructor;
@@ -339,8 +340,8 @@ public class TechnicalFlatChatAgent implements WChatAgent {
     }
 
     @Override
-    public boolean isEnabled(WorldId worldId, String sessionId) {
-        return true;
+    public WChatAgentScope getScope() {
+        return WChatAgentScope.EDITOR;
     }
 
 }

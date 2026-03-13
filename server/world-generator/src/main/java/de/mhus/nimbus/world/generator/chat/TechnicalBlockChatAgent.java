@@ -8,6 +8,7 @@ import de.mhus.nimbus.world.generator.blocks.BlockManipulatorService;
 import de.mhus.nimbus.world.generator.blocks.BlockToolService;
 import de.mhus.nimbus.world.generator.blocks.ManipulatorContext;
 import de.mhus.nimbus.world.shared.chat.WChatAgent;
+import de.mhus.nimbus.world.shared.chat.WChatAgentScope;
 import de.mhus.nimbus.world.shared.chat.WChatMessage;
 import de.mhus.nimbus.world.shared.chat.WChatService;
 import de.mhus.nimbus.world.shared.client.WorldClientService;
@@ -415,8 +416,8 @@ public class TechnicalBlockChatAgent implements WChatAgent {
     }
 
     @Override
-    public boolean isEnabled(WorldId worldId, String sessionId) {
-        return true;
+    public WChatAgentScope getScope() {
+        return WChatAgentScope.EDITOR;
     }
 
 }

@@ -575,11 +575,21 @@ const sendMessage = async () => {
       throw new Error(`Failed to send message: ${response.statusText}`);
     }
 
+    const playerMessage: Message = await response.json();
+
     // Clear input
     newMessage.value = '';
 
-    // Reload messages
-    await loadMessages(selectedChat.value.chatId);
+    // Add player message directly to local array (agent response comes via polling)
+    messages.value.push(playerMessage);
+
+    // Scroll to bottom
+    await nextTick();
+    setTimeout(() => {
+      if (messagesContainer.value) {
+        messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight;
+      }
+    }, 50);
   } catch (e: any) {
     error.value = e.message;
     console.error('Error sending message:', e);
@@ -618,8 +628,7 @@ const executeCommand = async (messageId: string, type: string) => {
       throw new Error(`Failed to execute command: ${response.statusText}`);
     }
 
-    // Reload messages to show command results
-    await loadMessages(selectedChat.value.chatId);
+    // Command results come via polling — no need to reload
   } catch (e: any) {
     error.value = e.message;
     console.error('Error executing command:', e);

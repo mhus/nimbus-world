@@ -1,7 +1,7 @@
 package de.mhus.nimbus.world.control.chat;
 
-import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.shared.chat.WChatAgent;
+import de.mhus.nimbus.world.shared.chat.WChatAgentScope;
 import de.mhus.nimbus.world.shared.chat.WChatMessage;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -61,8 +61,8 @@ public class ElizaChatAgent implements WChatAgent {
     }
 
     @Override
-    public boolean isEnabled(WorldId worldId, String sessionId) {
-        return true;
+    public WChatAgentScope getScope() {
+        return WChatAgentScope.ALL;
     }
 
     @Override

@@ -10,6 +10,39 @@ import java.util.UUID;
 /**
  * Interface for chat agent implementations.
  * Chat agents can process player messages and generate responses.
+ *
+ * <h2>Lifecycle</h2>
+ * Each chat has an async session (WChatSession) managed by WChatExecutorService.
+ * The session runs as a virtual thread with a message queue and has two states:
+ *
+ * <pre>
+ *   INACTIVE                          ACTIVE
+ *   (no thread,                       (virtual thread running,
+ *    state in MongoDB)                 queue processing messages)
+ *
+ *       ──── player sends message ────►
+ *            onSessionStarted(chat)     ← agent restores state from chat.getAgentState()
+ *                                       ← chat()/chatWithSession()/chatWithQueue() per message
+ *       ◄──── idle timeout (1 min) ────
+ *            onSessionEnded(chat)       ← agent persists state via chat.setAgentState(...)
+ *                                         chat is saved to MongoDB automatically
+ * </pre>
+ *
+ * <h2>Queue-based processing</h2>
+ * Agents that need to react to follow-up messages while processing (e.g., generator agents)
+ * can override {@link #supportsQueue()} to return true. The session will then call
+ * {@link #chatWithQueue} instead of {@link #chatWithSession}, passing a {@link WChatSessionQueue}
+ * that allows the agent to pull additional messages from the queue during processing.
+ *
+ * <h2>Method hierarchy</h2>
+ * The session calls the most specific method available:
+ * <ol>
+ *   <li>{@link #chatWithQueue} — if {@link #supportsQueue()} returns true</li>
+ *   <li>{@link #chatWithSession} — if a sessionId is present</li>
+ *   <li>{@link #chat} — fallback</li>
+ * </ol>
+ * Each level delegates to the next by default, so implementing only {@link #chat} is sufficient
+ * for simple agents.
  */
 public interface WChatAgent {
 
@@ -30,11 +63,12 @@ public interface WChatAgent {
     String getTitle();
 
     /**
-     * Return true if the agent is enabled for the given world and session.
+     * Get the scope of this agent.
+     * Determines which users can see and interact with this agent.
      *
-     * @return true if enabled, false otherwise
+     * @return the agent scope
      */
-    boolean isEnabled(WorldId worldId, String sessionId);
+    WChatAgentScope getScope();
 
     /**
      * Process a chat message and generate responses.
@@ -60,6 +94,58 @@ public interface WChatAgent {
      */
     default List<WChatMessage> chatWithSession(WorldId worldId, String chatId, String playerId, String message, String sessionId) {
         return chat(worldId, chatId, playerId, message);
+    }
+
+    /**
+     * Process a chat message with access to the session queue.
+     * Agents that support consuming follow-up messages during processing
+     * (e.g., generator agents) should override this method.
+     * The agent can call queue.poll() to pull additional messages while working.
+     *
+     * Default implementation delegates to chatWithSession() ignoring the queue.
+     *
+     * @param worldId The world identifier
+     * @param chatId The chat ID where the message is sent
+     * @param playerId The player ID sending the message
+     * @param message The message content
+     * @param sessionId The session ID for accessing session-specific context (optional)
+     * @param queue The session queue to consume further messages from
+     * @return List of response messages from the agent
+     */
+    default List<WChatMessage> chatWithQueue(WorldId worldId, String chatId, String playerId,
+                                             String message, String sessionId, WChatSessionQueue queue) {
+        return chatWithSession(worldId, chatId, playerId, message, sessionId);
+    }
+
+    /**
+     * Whether this agent supports consuming messages from the queue during processing.
+     * If true, chatWithQueue() will be called instead of chatWithSession().
+     *
+     * @return true if the agent handles queue-based processing
+     */
+    default boolean supportsQueue() {
+        return false;
+    }
+
+    /**
+     * Called when a chat session starts (or resumes after idle).
+     * The agent can restore its internal state from chat.getAgentState().
+     * Default implementation does nothing.
+     *
+     * @param chat The chat entity with persisted agentState
+     */
+    default void onSessionStarted(WChat chat) {
+    }
+
+    /**
+     * Called when a chat session ends (idle timeout or shutdown).
+     * The agent should persist its state into chat.setAgentState(...).
+     * The chat will be saved to MongoDB after this call returns.
+     * Default implementation does nothing.
+     *
+     * @param chat The chat entity — set agentState here for persistence
+     */
+    default void onSessionEnded(WChat chat) {
     }
 
     /**

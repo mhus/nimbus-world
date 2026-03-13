@@ -37,6 +37,7 @@ public class WChatConnectorCommand implements Command {
     private final LocalWChatAgentProvider localProvider;
     private final WChatService chatService;
     private final ObjectMapper objectMapper;
+    private final WChatExecutorService chatExecutorService;
 
     @Override
     public String getName() {
@@ -66,6 +67,8 @@ public class WChatConnectorCommand implements Command {
                     return executeChat(context, args);
                 case "execute-command":
                     return executeAgentCommand(context, args);
+                case "enqueue":
+                    return executeEnqueue(args);
                 default:
                     return CommandResult.error("Unknown subcommand: " + subCommand);
             }
@@ -77,17 +80,17 @@ public class WChatConnectorCommand implements Command {
 
     /**
      * Execute agent-list subcommand.
-     * Returns JSON array in streamMessages.
+     * Returns JSON array with name, title, and scope in streamMessages.
      */
     private CommandResult executeAgentList(WorldId worldId, String sessionId) throws JsonProcessingException {
-        List<WChatAgent> agents = localProvider.getAvailableAgents(worldId, sessionId);
+        List<WChatAgent> agents = localProvider.getAvailableAgents();
 
         List<Map<String, String>> agentList = new ArrayList<>();
         for (WChatAgent agent : agents) {
-            if (!agent.isEnabled(worldId, sessionId)) continue;
             Map<String, String> agentInfo = new HashMap<>();
             agentInfo.put("name", agent.getName());
             agentInfo.put("title", agent.getTitle());
+            agentInfo.put("scope", agent.getScope().name());
             agentList.add(agentInfo);
         }
 
@@ -206,6 +209,29 @@ public class WChatConnectorCommand implements Command {
     }
 
     /**
+     * Execute enqueue subcommand.
+     * Deserializes WChatSessionMessage from args and enqueues it locally.
+     * Used for inter-pod routing of async chat messages.
+     */
+    private CommandResult executeEnqueue(List<String> args) throws JsonProcessingException {
+        if (args.size() < 2) {
+            return CommandResult.error("Usage: enqueue <sessionMessageJson>");
+        }
+
+        String json = args.get(1);
+        WChatSessionMessage sessionMsg = objectMapper.readValue(json, WChatSessionMessage.class);
+
+        WChatExecutorService.EnqueueResult result = chatExecutorService.enqueue(sessionMsg);
+        if (result instanceof WChatExecutorService.EnqueueResult.Remote remote) {
+            log.warn("Enqueue routed to another remote pod (unexpected): url={}", remote.url());
+            return CommandResult.error("Session migrated to another pod: " + remote.url());
+        }
+
+        log.debug("Enqueued remote message locally: chatId={}", sessionMsg.getChatId());
+        return CommandResult.success("Enqueued");
+    }
+
+    /**
      * Helper to get metadata value from context.
      */
     private String getMetadata(CommandContext context, String key) {
@@ -224,6 +250,7 @@ public class WChatConnectorCommand implements Command {
                 "  agent-list                              - Get list of available agents\n" +
                 "  chat <agent> <message>                  - Chat with an agent\n" +
                 "  execute-command <agent> <cmd> <params>  - Execute command on agent\n" +
+                "  enqueue <sessionMessageJson>            - Enqueue async message for processing\n" +
                 "\n" +
                 "Examples:\n" +
                 "  /chat.Connector agent-list\n" +

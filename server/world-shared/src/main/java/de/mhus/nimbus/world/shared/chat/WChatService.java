@@ -8,7 +8,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.lang.ref.SoftReference;
+import org.springframework.context.annotation.Lazy;
+
 import java.time.Instant;
 import java.util.Collections;
 import java.util.HashMap;
@@ -21,11 +22,13 @@ import java.util.function.Consumer;
 /**
  * Service for managing WChat instances, WChatMessage, and WChatAgent in the world.
  * Chats and messages exist per world (no instances).
- * Manages a registry of available chat agents.
+ * Manages a registry of available chat agents with periodic refresh.
  */
 @Service
 @Slf4j
 public class WChatService {
+
+    private static final long AGENT_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
     private final WChatRepository repository;
     private final WChatMessageRepository messageRepository;
@@ -33,51 +36,50 @@ public class WChatService {
     private final de.mhus.nimbus.world.shared.session.WSessionService wSessionService;
     private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
     private final de.mhus.nimbus.world.shared.client.WorldClientService worldClientService;
-    private AgentMapCache agentMapCache = new AgentMapCache();
+    private final WChatExecutorService chatExecutorService;
+
+    private volatile Map<String, WChatAgent> globalAgentMap;
+    private volatile long agentMapTimestamp;
 
     /**
      * Constructor with dependency injection.
-     * Holds a lazy list of available WChatAgentProvider beans.
-     *
-     * @param repository Chat repository
-     * @param messageRepository Message repository
-     * @param agentProviders List of all available WChatAgentProvider implementations
-     * @param wSessionService Session service for storing ModelSelector
-     * @param objectMapper JSON mapper for parsing ModelSelector data
-     * @param worldClientService Client service for sending commands to player
      */
     public WChatService(WChatRepository repository,
                        WChatMessageRepository messageRepository,
                        List<WChatAgentProvider> agentProviders,
                        de.mhus.nimbus.world.shared.session.WSessionService wSessionService,
                        com.fasterxml.jackson.databind.ObjectMapper objectMapper,
-                       de.mhus.nimbus.world.shared.client.WorldClientService worldClientService) {
+                       de.mhus.nimbus.world.shared.client.WorldClientService worldClientService,
+                       @Lazy WChatExecutorService chatExecutorService) {
         this.repository = repository;
         this.messageRepository = messageRepository;
         this.agentProviders = agentProviders;
         this.wSessionService = wSessionService;
         this.objectMapper = objectMapper;
         this.worldClientService = worldClientService;
+        this.chatExecutorService = chatExecutorService;
 
         log.info("WChatService initialized with {} agent providers", agentProviders.size());
     }
 
     /**
-     * Lazy initialization of agent map from all available providers.
-     * Aggregates agents from local and remote providers.
-     * If duplicate agent names exist, qualified names (provider:agent) are used.
+     * Get the global agent map, refreshing if stale (every 5 minutes).
      */
-    private synchronized Map<String, WChatAgent> getAgentMap(WorldId worldId, String sessionId) {
-        String key = worldId + "_" +  sessionId;
-        Map<String, WChatAgent> map = agentMapCache.get(key);
-        if (map == null) {
-            map = createAgentMap(worldId, sessionId);
-            agentMapCache.put(key, map);
+    private Map<String, WChatAgent> getAgentMap() {
+        long now = System.currentTimeMillis();
+        if (globalAgentMap == null || (now - agentMapTimestamp) > AGENT_CACHE_TTL_MS) {
+            synchronized (this) {
+                // Double-check after acquiring lock
+                if (globalAgentMap == null || (now - agentMapTimestamp) > AGENT_CACHE_TTL_MS) {
+                    globalAgentMap = createAgentMap();
+                    agentMapTimestamp = now;
+                }
+            }
         }
-        return map;
+        return globalAgentMap;
     }
 
-    private synchronized Map<String, WChatAgent> createAgentMap(WorldId worldId, String sessionId) {
+    private Map<String, WChatAgent> createAgentMap() {
         var agentMap = new HashMap<String, WChatAgent>();
 
         for (WChatAgentProvider provider : agentProviders) {
@@ -86,7 +88,7 @@ public class WChatService {
                 continue;
             }
 
-            List<WChatAgent> providerAgents = provider.getAvailableAgents(worldId, sessionId);
+            List<WChatAgent> providerAgents = provider.getAvailableAgents();
             log.debug("Loading {} agents from provider: {}", providerAgents.size(), provider.getProviderName());
 
             for (WChatAgent agent : providerAgents) {
@@ -205,15 +207,6 @@ public class WChatService {
         List<WChat> result = repository.findByWorldIdAndOwnerIdAndArchived(
                 lookupWorld.getId(), ownerId, archived);
         log.debug("Found {} chats without type filter", result.size());
-
-        // Debug: Check all chats for this player regardless of archived status
-        List<WChat> allChats = repository.findByWorldIdAndOwnerId(lookupWorld.getId(), ownerId);
-        log.debug("Total chats for player (all archived states): {}", allChats.size());
-        if (!allChats.isEmpty()) {
-            log.debug("Sample chat details: worldId={}, ownerId={}, archived={}, chatId={}",
-                    allChats.get(0).getWorldId(), allChats.get(0).getOwnerId(),
-                    allChats.get(0).isArchived(), allChats.get(0).getChatId());
-        }
 
         return result;
     }
@@ -462,14 +455,6 @@ public class WChatService {
 
     /**
      * Get the last N messages for a specific chat, sorted by createdAt ascending (chronological order).
-     * This method fetches the most recent messages and returns them in chronological order (oldest first).
-     * Useful for displaying chat history where the oldest message appears at the top.
-     * Filters out instances.
-     *
-     * @param worldId The world identifier
-     * @param chatId The chat identifier
-     * @param limit Maximum number of messages to return
-     * @return List of messages sorted by createdAt ascending (oldest to newest)
      */
     @Transactional(readOnly = true)
     public List<WChatMessage> getChatMessages(WorldId worldId, String chatId, int limit) {
@@ -592,31 +577,37 @@ public class WChatService {
      * @param agentName The technical name of the agent
      * @return Optional containing the agent if found
      */
-    public Optional<WChatAgent> getAgent(String agentName, WorldId worldId, String sessionId) {
-        return Optional.ofNullable(getAgentMap(worldId, sessionId).get(agentName));
+    public Optional<WChatAgent> getAgent(String agentName) {
+        return Optional.ofNullable(getAgentMap().get(agentName));
     }
 
     /**
-     * Get all available chat agents from all providers.
+     * Get all available chat agents filtered by scope.
      *
-     * @return List of all available agents
+     * @param scope The scope to filter by (ALL matches all agents, PLAYER/EDITOR filter accordingly)
+     * @return List of agents matching the scope
      */
-    public List<WChatAgent> getAvailableAgents(WorldId worldId, String sessionId) {
-        return List.copyOf(getAgentMap(worldId, sessionId).values());
+    public List<WChatAgent> getAvailableAgents(WChatAgentScope scope) {
+        return getAgentMap().values().stream()
+                .filter(agent -> matchesScope(agent.getScope(), scope))
+                .toList();
+    }
+
+    /**
+     * Check if an agent's scope matches the requested scope filter.
+     * An agent with scope ALL is visible in all contexts.
+     * An agent with scope PLAYER is visible for PLAYER and ALL.
+     * An agent with scope EDITOR is visible for EDITOR and ALL.
+     */
+    private boolean matchesScope(WChatAgentScope agentScope, WChatAgentScope requestedScope) {
+        if (requestedScope == WChatAgentScope.ALL) {
+            return true;
+        }
+        return agentScope == WChatAgentScope.ALL || agentScope == requestedScope;
     }
 
     /**
      * Chat with an agent and save the messages.
-     * Sends a message to an agent, receives responses, and saves both the player message
-     * and agent responses to the database.
-     *
-     * @param worldId The world identifier
-     * @param chatId The chat identifier
-     * @param agentName The technical name of the agent
-     * @param playerId The player ID sending the message
-     * @param playerMessageId The message ID for the player's message
-     * @param message The message content from the player
-     * @return List of agent response messages
      */
     @Transactional
     public List<WChatMessage> chatWithAgent(WorldId worldId, String chatId, String agentName,
@@ -628,15 +619,6 @@ public class WChatService {
     /**
      * Chat with an agent with session context.
      * Saves player message, gets agent responses, and saves them.
-     *
-     * @param worldId The world identifier
-     * @param chatId The chat identifier
-     * @param agentName The technical name of the agent
-     * @param playerId The player ID sending the message
-     * @param playerMessageId The message ID for the player message
-     * @param message The message content
-     * @param sessionId The session ID for accessing session-specific context (optional)
-     * @return List of all messages (player message + agent responses)
      */
     @Transactional
     public List<WChatMessage> chatWithAgent(WorldId worldId, String chatId, String agentName,
@@ -656,7 +638,7 @@ public class WChatService {
         }
 
         // Get the agent
-        WChatAgent agent = getAgent(agentName, worldId, sessionId)
+        WChatAgent agent = getAgent(agentName)
                 .orElseThrow(() -> new IllegalArgumentException("Agent not found: " + agentName));
 
         var lookupWorld = worldId.toBaseWorldId();
@@ -712,8 +694,6 @@ public class WChatService {
                 // Send ShowModelSelectorCommand to player
                 sendShowModelSelectorCommand(lookupWorld.getId(), sessionId);
 
-                // Keep ModelSelector JSON data in message field for later access
-
             } catch (Exception e) {
                 log.error("Failed to store ModelSelector in Redis for sessionId: {}", sessionId, e);
             }
@@ -722,15 +702,6 @@ public class WChatService {
 
     /**
      * Execute a command on an agent and save the responses.
-     * Executes a structured command with parameters on an agent.
-     *
-     * @param worldId The world identifier
-     * @param chatId The chat identifier
-     * @param agentName The technical name of the agent
-     * @param playerId The player ID executing the command
-     * @param command The command to execute
-     * @param params Command parameters
-     * @return List of agent response messages
      */
     @Transactional
     public List<WChatMessage> executeAgentCommand(WorldId worldId, String chatId, String agentName,
@@ -758,7 +729,7 @@ public class WChatService {
         }
 
         // Get the agent
-        WChatAgent agent = getAgent(agentName, worldId, sessionId)
+        WChatAgent agent = getAgent(agentName)
                 .orElseThrow(() -> new IllegalArgumentException("Agent not found: " + agentName));
 
         var lookupWorld = worldId.toBaseWorldId();
@@ -807,14 +778,9 @@ public class WChatService {
 
     /**
      * Send ShowModelSelector command to player.
-     * Loads playerUrl from WSession and sends command to player via WorldClientService.
-     *
-     * @param worldId World ID
-     * @param sessionId Session ID
      */
     private void sendShowModelSelectorCommand(String worldId, String sessionId) {
         try {
-            // Get WSession with playerUrl
             Optional<de.mhus.nimbus.world.shared.session.WSession> wSessionOpt =
                     wSessionService.getWithPlayerUrl(sessionId);
 
@@ -831,7 +797,6 @@ public class WChatService {
                 return;
             }
 
-            // Build command context
             de.mhus.nimbus.world.shared.commands.CommandContext ctx =
                     de.mhus.nimbus.world.shared.commands.CommandContext.builder()
                             .worldId(worldId)
@@ -839,14 +804,12 @@ public class WChatService {
                             .originServer("world-control")
                             .build();
 
-            // Send ShowModelSelectorCommand to player
-            // This command will load ModelSelector from WSession and send to client
             worldClientService.sendPlayerCommand(
                     worldId,
                     sessionId,
                     playerUrl,
                     "client.ShowModelSelector",
-                    List.of(),  // No arguments needed - uses session ID from context
+                    List.of(),
                     ctx
             );
 
@@ -862,60 +825,181 @@ public class WChatService {
         return messageRepository.findByWorldIdAndChatIdAndMessageId(lookupWorld.getId(), chatId, messageId);
     }
 
-    private class AgentMapCache {
-        private static final long CACHE_TIMEOUT_MS = 1000 * 60 * 15; // 1 minute
-        private final Map<String, AgentMapCacheEntry> values = Collections.synchronizedMap(new HashMap<>());
-        private long lastCheck;
+    // ==================== Async Enqueue Methods ====================
 
-        public Map<String, WChatAgent> get(String key) {
-            var entry = values.get(key);
-            if (entry == null) {
-                return null;
-            }
-            var value = entry.getAgentMap();
-            if (value == null) {
-                values.remove(key);
-                return null;
-            }
-            entry.touch();
-            checkCacheEntries();
-            return value;
+    /**
+     * Enqueue a player message for async processing.
+     * Saves the player message to DB immediately, then enqueues for agent processing.
+     * If the session is active on a remote pod, routes the message there.
+     */
+    public WChatMessage enqueuePlayerMessage(WorldId worldId, String chatId, String agentName,
+                                              String playerId, String playerMessageId,
+                                              String message, String sessionId) {
+        var lookupWorld = worldId.toBaseWorldId();
+
+        // Save player message to DB immediately
+        WChatMessage playerMessage = WChatMessage.builder()
+                .worldId(lookupWorld.getId())
+                .chatId(chatId)
+                .messageId(playerMessageId)
+                .senderId(playerId)
+                .message(message)
+                .type("text")
+                .build();
+        playerMessage.touchCreate();
+        messageRepository.save(playerMessage);
+        log.debug("Saved player message: world={}, chatId={}, playerId={}", lookupWorld, chatId, playerId);
+
+        // Build session message for async processing
+        WChatSessionMessage sessionMsg = WChatSessionMessage.builder()
+                .type(WChatSessionMessage.Type.CHAT)
+                .worldId(lookupWorld.getId())
+                .chatId(chatId)
+                .agentName(agentName)
+                .playerId(playerId)
+                .playerMessageId(playerMessageId)
+                .message(message)
+                .sessionId(sessionId)
+                .build();
+
+        // Enqueue for processing
+        WChatExecutorService.EnqueueResult result = chatExecutorService.enqueue(sessionMsg);
+        if (result instanceof WChatExecutorService.EnqueueResult.Remote remote) {
+            routeToRemotePod(remote.url(), sessionMsg);
         }
 
-        private synchronized void checkCacheEntries() {
-            var now = System.currentTimeMillis();
-            var timeoutTimestamp = now - CACHE_TIMEOUT_MS;
-            if (lastCheck > timeoutTimestamp) {
-                return;
-            }
-            lastCheck = now;
-            values.values().removeIf(( v) -> v.isLaterThen(timeoutTimestamp));
-        }
+        return playerMessage;
+    }
 
-        public void put(String key, Map<String, WChatAgent> agentMap) {
-            values.put(key, new AgentMapCacheEntry(agentMap));
+    /**
+     * Enqueue a player command for async processing.
+     * If the session is active on a remote pod, routes the command there.
+     */
+    public void enqueuePlayerCommand(WorldId worldId, String chatId, String agentName,
+                                     String playerId, String command,
+                                     Map<String, Object> params, String sessionId) {
+        var lookupWorld = worldId.toBaseWorldId();
+
+        WChatSessionMessage sessionMsg = WChatSessionMessage.builder()
+                .type(WChatSessionMessage.Type.COMMAND)
+                .worldId(lookupWorld.getId())
+                .chatId(chatId)
+                .agentName(agentName)
+                .playerId(playerId)
+                .command(command)
+                .commandParams(params)
+                .sessionId(sessionId)
+                .build();
+
+        WChatExecutorService.EnqueueResult result = chatExecutorService.enqueue(sessionMsg);
+        if (result instanceof WChatExecutorService.EnqueueResult.Remote remote) {
+            routeToRemotePod(remote.url(), sessionMsg);
         }
     }
 
-    private class AgentMapCacheEntry {
-        private final SoftReference<Map<String, WChatAgent>> agentMap;
-        private long timestamp;
+    /**
+     * Process an agent chat message (called by WChatSession).
+     * Executes the agent and saves responses.
+     * If the agent supports queue-based processing, passes the session queue
+     * so the agent can consume follow-up messages during processing.
+     */
+    void processAgentChat(WChatSessionMessage msg, WChatSessionQueue sessionQueue) {
+        WorldId worldId = WorldId.unchecked(msg.getWorldId());
 
-        public AgentMapCacheEntry(Map<String, WChatAgent> agentMap) {
-            this.agentMap = new SoftReference<>(agentMap);
-            touch();
+        WChatAgent agent = getAgent(msg.getAgentName())
+                .orElse(null);
+        if (agent == null) {
+            log.error("Agent not found for async chat: agentName={}", msg.getAgentName());
+            return;
         }
 
-        public Map<String, WChatAgent> getAgentMap() {
-            return agentMap.get();
+        try {
+            List<WChatMessage> responses;
+            if (agent.supportsQueue()) {
+                responses = agent.chatWithQueue(worldId, msg.getChatId(), msg.getPlayerId(),
+                        msg.getMessage(), msg.getSessionId(), sessionQueue);
+            } else if (msg.getSessionId() != null && !msg.getSessionId().isBlank()) {
+                responses = agent.chatWithSession(worldId, msg.getChatId(), msg.getPlayerId(),
+                        msg.getMessage(), msg.getSessionId());
+            } else {
+                responses = agent.chat(worldId, msg.getChatId(), msg.getPlayerId(), msg.getMessage());
+            }
+
+            saveMessages(worldId, msg.getChatId(), msg.getSessionId(), true, responses);
+
+            log.debug("Async agent {} generated {} responses: chatId={}",
+                    msg.getAgentName(), responses.size(), msg.getChatId());
+        } catch (Exception e) {
+            log.error("Error in async agent chat: agentName={}, chatId={}", msg.getAgentName(), msg.getChatId(), e);
+        }
+    }
+
+    /**
+     * Process an agent command message (called by WChatSession).
+     * Executes the command on the agent and saves responses.
+     */
+    void processAgentCommand(WChatSessionMessage msg) {
+        WorldId worldId = WorldId.unchecked(msg.getWorldId());
+        var lookupWorld = worldId.toBaseWorldId();
+
+        WChatAgent agent = getAgent(msg.getAgentName())
+                .orElse(null);
+        if (agent == null) {
+            log.error("Agent not found for async command: agentName={}", msg.getAgentName());
+            return;
         }
 
-        public boolean isLaterThen(long timeoutTimestamp ) {
-            return timestamp < timeoutTimestamp;
-        }
+        try {
+            Map<String, Object> params = msg.getCommandParams() != null
+                    ? new HashMap<>(msg.getCommandParams())
+                    : new HashMap<>();
+            if (msg.getSessionId() != null && !msg.getSessionId().isBlank()) {
+                params.put("sessionId", msg.getSessionId());
+            }
 
-        public void touch() {
-            timestamp = System.currentTimeMillis();
+            List<WChatMessage> responses = agent.executeCommand(worldId, msg.getChatId(), msg.getPlayerId(), msg.getCommand(), params);
+
+            for (WChatMessage response : responses) {
+                response.setWorldId(lookupWorld.getId());
+                response.setChatId(msg.getChatId());
+                if (response.getCreatedAt() == null) {
+                    response.touchCreate();
+                }
+                messageRepository.save(response);
+            }
+
+            log.debug("Async agent {} executed command {} with {} responses: chatId={}",
+                    msg.getAgentName(), msg.getCommand(), responses.size(), msg.getChatId());
+        } catch (Exception e) {
+            log.error("Error in async agent command: agentName={}, command={}, chatId={}",
+                    msg.getAgentName(), msg.getCommand(), msg.getChatId(), e);
+        }
+    }
+
+    /**
+     * Route a session message to a remote pod via the chat-connector command.
+     */
+    private void routeToRemotePod(String remoteUrl, WChatSessionMessage msg) {
+        try {
+            String json = objectMapper.writeValueAsString(msg);
+
+            de.mhus.nimbus.world.shared.commands.CommandContext ctx =
+                    de.mhus.nimbus.world.shared.commands.CommandContext.builder()
+                            .worldId(msg.getWorldId())
+                            .sessionId(msg.getSessionId())
+                            .originServer("world-control")
+                            .build();
+
+            worldClientService.sendControlCommand(
+                    msg.getWorldId(),
+                    "chat-connector",
+                    List.of("enqueue", json),
+                    ctx
+            );
+
+            log.debug("Routed message to remote pod: url={}, chatId={}", remoteUrl, msg.getChatId());
+        } catch (Exception e) {
+            log.error("Failed to route message to remote pod: url={}, chatId={}", remoteUrl, msg.getChatId(), e);
         }
     }
 }

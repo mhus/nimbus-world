@@ -1,12 +1,10 @@
 package de.mhus.nimbus.world.shared.chat;
 
-import de.mhus.nimbus.shared.types.WorldId;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -23,18 +21,16 @@ public class LocalWChatAgentProvider implements WChatAgentProvider {
     @Lazy
     private List<WChatAgent> localAgents;
     private Map<String, WChatAgent> agentMap;
-    
+
     @Override
     public String getProviderName() {
         return "local";
     }
 
     @Override
-    public List<WChatAgent> getAvailableAgents(WorldId worldId, String sessionId) {
+    public List<WChatAgent> getAvailableAgents() {
         initializeAgentsIfNeeded();
-        return agentMap.values().stream().filter(
-                agent -> agent.isEnabled(worldId, sessionId)
-        ).toList();
+        return List.copyOf(agentMap.values());
     }
 
     @Override

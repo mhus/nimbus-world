@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.shared.chat.WChatAgent;
 import de.mhus.nimbus.world.shared.chat.WChatAgentProvider;
+import de.mhus.nimbus.world.shared.chat.WChatAgentScope;
 import de.mhus.nimbus.world.shared.chat.WChatMessage;
 import de.mhus.nimbus.world.shared.client.WorldClientService;
 import de.mhus.nimbus.world.shared.client.WorldClientService.CommandResponse;
@@ -66,7 +67,7 @@ public abstract class RemoteWChatAgentProvider implements WChatAgentProvider {
     public abstract String getProviderName();
 
     @Override
-    public List<WChatAgent> getAvailableAgents(WorldId worldId, String sessionId) {
+    public List<WChatAgent> getAvailableAgents() {
         refreshCacheIfNeeded();
         return new ArrayList<>(cachedAgents.values());
     }
@@ -105,7 +106,6 @@ public abstract class RemoteWChatAgentProvider implements WChatAgentProvider {
 
         try {
             // Call remote chat-connector agent-list
-            // Use dummy worldId for agent discovery (no specific world needed)
             CommandContext context = CommandContext.builder()
                     .worldId("00000000-0000-0000-0000-000000000000")
                     .build();
@@ -117,7 +117,7 @@ public abstract class RemoteWChatAgentProvider implements WChatAgentProvider {
                     context
             );
 
-            CommandResponse result = future.get(); // Blocking get (within async context)
+            CommandResponse result = future.get(); // Blocking get
 
             if (result.rc() == 0 && result.streamMessages() != null && !result.streamMessages().isEmpty()) {
                 List<Map<String, String>> agents = objectMapper.readValue(
@@ -126,9 +126,11 @@ public abstract class RemoteWChatAgentProvider implements WChatAgentProvider {
                 );
 
                 for (Map<String, String> agentInfo : agents) {
-                    String name = agentInfo.get("title");
+                    String name = agentInfo.get("name");
                     String title = agentInfo.get("title");
-                    newCache.put(name, new RemoteWChatAgentWrapper(name, title, this));
+                    String scopeStr = agentInfo.get("scope");
+                    WChatAgentScope scope = parseScope(scopeStr);
+                    newCache.put(name, new RemoteWChatAgentWrapper(name, title, scope, this));
                 }
                 log.debug("Loaded {} agents from {} (provider: {})",
                         newCache.size(), serverUrl, getProviderName());
@@ -143,6 +145,18 @@ public abstract class RemoteWChatAgentProvider implements WChatAgentProvider {
 
         cachedAgents = newCache;
         lastRefresh = Instant.now();
+    }
+
+    private WChatAgentScope parseScope(String scopeStr) {
+        if (scopeStr == null || scopeStr.isBlank()) {
+            return WChatAgentScope.ALL;
+        }
+        try {
+            return WChatAgentScope.valueOf(scopeStr.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            log.warn("Unknown agent scope: {}, defaulting to ALL", scopeStr);
+            return WChatAgentScope.ALL;
+        }
     }
 
     /**
@@ -243,11 +257,13 @@ public abstract class RemoteWChatAgentProvider implements WChatAgentProvider {
     private static class RemoteWChatAgentWrapper implements WChatAgent {
         private final String name;
         private final String title;
+        private final WChatAgentScope scope;
         private final RemoteWChatAgentProvider provider;
 
-        public RemoteWChatAgentWrapper(String name, String title, RemoteWChatAgentProvider provider) {
+        public RemoteWChatAgentWrapper(String name, String title, WChatAgentScope scope, RemoteWChatAgentProvider provider) {
             this.name = name;
             this.title = title;
+            this.scope = scope;
             this.provider = provider;
         }
 
@@ -257,8 +273,8 @@ public abstract class RemoteWChatAgentProvider implements WChatAgentProvider {
         }
 
         @Override
-        public boolean isEnabled(WorldId worldId, String sessionId) {
-            return true;
+        public WChatAgentScope getScope() {
+            return scope;
         }
 
         @Override
@@ -268,20 +284,17 @@ public abstract class RemoteWChatAgentProvider implements WChatAgentProvider {
 
         @Override
         public List<WChatMessage> chat(WorldId worldId, String chatId, String playerId, String message) {
-            // Delegate to provider - chatId and sessionId must be set in WChatService
             return provider.executeRemoteChat(name, worldId, playerId, chatId, message, null);
         }
 
         @Override
         public List<WChatMessage> chatWithSession(WorldId worldId, String chatId, String playerId, String message, String sessionId) {
-            // Delegate to provider with sessionId
             return provider.executeRemoteChat(name, worldId, playerId, chatId, message, sessionId);
         }
 
         @Override
         public List<WChatMessage> executeCommand(WorldId worldId, String chatId, String playerId,
                                                 String command, Map<String, Object> params) {
-            // Delegate to provider - chatId must be set in WChatService
             return provider.executeRemoteCommand(name, worldId, playerId, chatId, command, params);
         }
     }

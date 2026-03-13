@@ -13,6 +13,7 @@ import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.Instant;
+import java.util.Map;
 
 /**
  * MongoDB Entity for chat instances in the world.
@@ -89,6 +90,14 @@ public class WChat implements Identifiable {
      * Used for builder chats to specify the AI model.
      */
     private String model;
+
+    /**
+     * Agent state persisted across session sleep/wake cycles.
+     * When a WChatSession ends (idle timeout), the agent can store its state here.
+     * When a new session starts, the agent receives this state to restore itself.
+     * Stored as a flexible map to allow each agent to define its own structure.
+     */
+    private Map<String, Object> agentState;
 
     /**
      * Initialize timestamps for new chat.

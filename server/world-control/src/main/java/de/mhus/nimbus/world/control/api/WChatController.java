@@ -3,6 +3,7 @@ package de.mhus.nimbus.world.control.api;
 import de.mhus.nimbus.shared.types.PlayerId;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.shared.chat.*;
+import de.mhus.nimbus.world.shared.chat.WChatAgentScope;
 import de.mhus.nimbus.world.shared.rest.BaseEditorController;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -72,7 +73,8 @@ public class WChatController extends BaseEditorController {
 
     public record AgentResponse(
             String name,
-            String title
+            String title,
+            String scope
     ) {}
 
     /**
@@ -258,8 +260,8 @@ public class WChatController extends BaseEditorController {
             WChat chat = chatService.findByWorldIdAndChatId(wId, chatId)
                     .orElseThrow(() -> new IllegalArgumentException("Chat not found: " + chatId));
 
-            // For agent chats, use the chat type as agent title (or you could store agentName in chat)
-            String agentName = chat.getType(); // Assuming type contains agent title like "eliza"
+            // For agent chats, use the chat type as agent name
+            String agentName = chat.getType();
 
             String playerMessageId = UUID.randomUUID().toString();
 
@@ -267,16 +269,13 @@ public class WChatController extends BaseEditorController {
             String sessionId = (String) httpRequest.getAttribute("accessSessionId");
             log.debug("SessionId from request: {}", sessionId);
 
-            // Chat with agent - this saves both player message and agent responses
-            List<WChatMessage> responses = chatService.chatWithAgent(
+            // Save player message and enqueue for async agent processing
+            WChatMessage playerMessage = chatService.enqueuePlayerMessage(
                     wId, chatId, agentName, playerId, playerMessageId,
                     request.message(), sessionId);
 
-            List<MessageResponse> messageResponses = responses.stream()
-                    .map(this::toMessageResponse)
-                    .collect(Collectors.toList());
-
-            return ResponseEntity.ok(messageResponses);
+            // Return immediately with the player message (agent response comes via polling)
+            return ResponseEntity.ok(toMessageResponse(playerMessage));
         } catch (Exception e) {
             log.error("Error sending message: worldId={}, chatId={}, playerId={}", worldId, chatId, playerId, e);
             return ResponseEntity.status(500).body(Map.of("error", "Failed to send message: " + e.getMessage()));
@@ -319,7 +318,7 @@ public class WChatController extends BaseEditorController {
             WChat chat = chatService.findByWorldIdAndChatId(wId, chatId)
                     .orElseThrow(() -> new IllegalArgumentException("Chat not found: " + chatId));
 
-            // For agent chats, use the chat type as agent title
+            // For agent chats, use the chat type as agent name
             String agentName = chat.getType();
 
             // Get sessionId from request attributes (set by AccessFilter)
@@ -334,16 +333,13 @@ public class WChatController extends BaseEditorController {
                 log.debug("Added sessionId to params: {}", sessionId);
             }
 
-            // Execute command on agent
-            List<WChatMessage> responses = chatService.executeAgentCommand(
+            // Enqueue command for async processing
+            chatService.enqueuePlayerCommand(
                     wId, chatId, agentName, playerId,
-                    request.command(), params);
+                    request.command(), params, sessionId);
 
-            List<MessageResponse> messageResponses = responses.stream()
-                    .map(this::toMessageResponse)
-                    .collect(Collectors.toList());
-
-            return ResponseEntity.ok(messageResponses);
+            // Return immediately (command results come via polling)
+            return ResponseEntity.ok(Map.of("message", "Command enqueued"));
         } catch (Exception e) {
             log.error("Error executing command: worldId={}, chatId={}, playerId={}",
                     worldId, chatId, playerId, e);
@@ -352,33 +348,27 @@ public class WChatController extends BaseEditorController {
     }
 
     /**
-     * Get available chat agents.
-     * GET /control/player/chats/agents
+     * Get available chat agents, optionally filtered by scope.
+     * GET /control/player/chats/agents?scope=ALL|PLAYER|EDITOR
      */
     @GetMapping("/agents")
     @Operation(summary = "Get available chat agents")
-    public ResponseEntity<?> getAvailableAgents(HttpServletRequest request) {
-        log.debug("GET available agents");
-
-        // Extract worldId and sessionId from AccessFilter
-        String worldId = (String) request.getAttribute("accessWorldId");
-        String sessionId = (String) request.getAttribute("accessSessionId");
-
-        log.debug("worldId={}, sessionId={}", worldId, sessionId);
-
-        if (Strings.isBlank(worldId)) {
-            return bad("worldId required - not authenticated");
-        }
+    public ResponseEntity<?> getAvailableAgents(
+            @Parameter(description = "Filter by scope (ALL, PLAYER, EDITOR)") @RequestParam(required = false, defaultValue = "ALL") String scope,
+            HttpServletRequest request) {
+        log.debug("GET available agents, scope={}", scope);
 
         try {
-            WorldId wId = WorldId.unchecked(worldId);
-            List<WChatAgent> agents = chatService.getAvailableAgents(wId, sessionId);
+            WChatAgentScope agentScope = WChatAgentScope.valueOf(scope.toUpperCase());
+            List<WChatAgent> agents = chatService.getAvailableAgents(agentScope);
 
             List<AgentResponse> responses = agents.stream()
-                    .map(agent -> new AgentResponse(agent.getName(), agent.getTitle()))
+                    .map(agent -> new AgentResponse(agent.getName(), agent.getTitle(), agent.getScope().name()))
                     .collect(Collectors.toList());
 
             return ResponseEntity.ok(responses);
+        } catch (IllegalArgumentException e) {
+            return bad("Invalid scope: " + scope + ". Valid values: ALL, PLAYER, EDITOR");
         } catch (Exception e) {
             log.error("Error getting available agents", e);
             return ResponseEntity.status(500).body(Map.of("error", "Failed to get agents: " + e.getMessage()));
