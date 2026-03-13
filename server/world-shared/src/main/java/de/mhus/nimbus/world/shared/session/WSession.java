@@ -18,6 +18,7 @@ public class WSession {
     private String worldId;
     private String playerId;
     private String actor;
+    private boolean serviceSession; // True for agent/service sessions without a player
     private String playerUrl; // Internal URL of the world-player service
     private String entryPoint; // Entry point specification: "last", "grid:q,r", or "world"
     private String teleportation; // Teleportation data for later use

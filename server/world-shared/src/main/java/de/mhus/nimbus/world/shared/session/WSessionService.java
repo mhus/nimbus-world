@@ -36,6 +36,7 @@ public class WSessionService {
     private static final String FIELD_ENTRY_POINT = "entryPoint";
     private static final String FIELD_TELEPORTATION = "teleportation";
     private static final String FIELD_MODEL_SELECTOR = "modelSelector";
+    private static final String FIELD_SERVICE_SESSION = "serviceSession";
     private static final String FIELD_CREATED = "created";
     private static final String FIELD_UPDATED = "updated";
     private static final String FIELD_EXPIRE = "expire";
@@ -69,6 +70,39 @@ public class WSessionService {
         return session;
     }
 
+    /**
+     * Create a service session without a player.
+     * Starts directly in RUNNING status with 12h TTL.
+     * No player session mapping is created.
+     *
+     * @param worldId world ID
+     * @param ownerId owner identifier (e.g. agent name or chatId)
+     * @param actor actor description
+     * @return created service session
+     */
+    public WSession createServiceSession(WorldId worldId, String ownerId, String actor) {
+        String id = randomId();
+        Instant now = Instant.now();
+        Duration effectiveTtl = Duration.ofHours(props.getRunningHours());
+        Instant expire = now.plus(effectiveTtl);
+        WSession session = WSession.builder()
+                .id(id)
+                .status(WSessionStatus.RUNNING)
+                .serviceSession(true)
+                .worldId(worldId.getId())
+                .playerId(ownerId)
+                .actor(actor)
+                .createdAt(now)
+                .updatedAt(now)
+                .expireAt(expire)
+                .build();
+        write(session, effectiveTtl);
+
+        log.debug("Service WSession created id={} world={} owner={} status=RUNNING ttl={}h",
+                id, worldId, ownerId, effectiveTtl.toHours());
+        return session;
+    }
+
     public Optional<WSession> get(String id) {
         var ops = redis.opsForHash();
         var map = ops.entries(key(id));
@@ -87,6 +121,7 @@ public class WSessionService {
             WSession session = WSession.builder()
                     .id(id)
                     .status(WSessionStatus.valueOf((String) map.get(FIELD_STATUS)))
+                    .serviceSession(parseBoolean(map.get(FIELD_SERVICE_SESSION)))
                     .worldId((String) map.get(FIELD_WORLD))
                     .playerId((String) map.get(FIELD_USER))
                     .playerUrl((String) map.get(FIELD_PLAYER_URL))
@@ -129,8 +164,8 @@ public class WSessionService {
             existing.setExpireAt(Instant.now().plus(newTtl));
             write(existing, newTtl);
 
-            // Delete player session entry when status changes to CLOSED
-            if (newStatus == WSessionStatus.CLOSED) {
+            // Delete player session entry when status changes to CLOSED (not for service sessions)
+            if (newStatus == WSessionStatus.CLOSED && !existing.isServiceSession()) {
                 WorldId worldId = WorldId.unchecked(existing.getWorldId());
                 String regionId = worldId.getRegionId();
                 deletePlayerSession(regionId, existing.getPlayerId());
@@ -211,10 +246,28 @@ public class WSessionService {
         return Boolean.TRUE.equals(redis.delete(key(id)));
     }
 
+    /**
+     * Delete a service session and all associated data (EditState, BlockRegister, Position).
+     *
+     * @param id session ID
+     * @return true if session was deleted
+     */
+    public boolean deleteServiceSession(String id) {
+        deleteEditState(id);
+        deleteBlockRegister(id);
+        deletePosition(id);
+        boolean deleted = delete(id);
+        if (deleted) {
+            log.debug("Service session deleted with all associated data: id={}", id);
+        }
+        return deleted;
+    }
+
     private void write(WSession session, Duration ttl) {
         var ops = redis.opsForHash();
         var k = key(session.getId());
         ops.put(k, FIELD_STATUS, session.getStatus().name());
+        ops.put(k, FIELD_SERVICE_SESSION, String.valueOf(session.isServiceSession()));
         ops.put(k, FIELD_WORLD, session.getWorldId());
         ops.put(k, FIELD_USER, session.getPlayerId());
         if (session.getPlayerUrl() != null) {
