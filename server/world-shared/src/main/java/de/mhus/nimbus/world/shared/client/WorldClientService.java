@@ -183,6 +183,26 @@ public class WorldClientService {
     }
 
     /**
+     * Send command to ministry server.
+     *
+     * @param worldId World identifier
+     * @param commandName Command name
+     * @param args Command arguments
+     * @param context Optional context
+     * @return CompletableFuture with CommandResponse
+     */
+    public CompletableFuture<CommandResponse> sendMinistryCommand(
+            String worldId,
+            String commandName,
+            List<String> args,
+            CommandContext context) {
+
+        prepareContext(context, worldId);
+        String baseUrl = properties.getMinistryBaseUrl();
+        return sendCommand(baseUrl, commandName, args, context, SERVER.MINISTRY);
+    }
+
+    /**
      * Generic command sender.
      */
     private CompletableFuture<CommandResponse> sendCommand(

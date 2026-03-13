@@ -28,6 +28,8 @@ public class WorldClientSettings {
     private String controlBaseUrl;
     @Value("${nimbus.pod.generatorBaseUrl:}")
     private String generatorBaseUrl;
+    @Value("${nimbus.pod.ministryBaseUrl:}")
+    private String ministryBaseUrl;
 
     private SettingInteger commandTimeoutMs;
 
@@ -85,6 +87,18 @@ public class WorldClientSettings {
                 "http://localhost:9045"
                 :
                 generatorBaseUrl;
+    }
+
+    /**
+     * Base URL for ministry server.
+     * Example: http://ministry:9046
+     * Default: http://localhost:9046
+     */
+    public String getMinistryBaseUrl() {
+        return Strings.isBlank(ministryBaseUrl) ?
+                "http://localhost:9046"
+                :
+                ministryBaseUrl;
     }
 
     /**
