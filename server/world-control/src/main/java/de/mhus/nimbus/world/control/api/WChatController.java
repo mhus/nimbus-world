@@ -411,6 +411,40 @@ public class WChatController extends BaseEditorController {
         }
     }
 
+    /**
+     * Unarchive a chat.
+     * PUT /control/player/chats/{worldId}/{chatId}/unarchive
+     */
+    @PutMapping("/{worldId}/{chatId}/unarchive")
+    @Operation(summary = "Unarchive a chat")
+    public ResponseEntity<?> unarchiveChat(
+            @Parameter(description = "World ID") @PathVariable String worldId,
+            @Parameter(description = "Chat ID") @PathVariable String chatId) {
+
+        log.debug("PUT unarchive chat: worldId={}, chatId={}", worldId, chatId);
+
+        if (Strings.isBlank(worldId)) {
+            return bad("worldId required");
+        }
+        if (Strings.isBlank(chatId)) {
+            return bad("chatId required");
+        }
+
+        try {
+            WorldId wId = WorldId.unchecked(worldId);
+            boolean success = chatService.unarchive(wId, chatId);
+
+            if (success) {
+                return ResponseEntity.ok(Map.of("message", "Chat unarchived successfully"));
+            } else {
+                return notFound("Chat not found");
+            }
+        } catch (Exception e) {
+            log.error("Error unarchiving chat: worldId={}, chatId={}", worldId, chatId, e);
+            return ResponseEntity.status(500).body(Map.of("error", "Failed to unarchive chat: " + e.getMessage()));
+        }
+    }
+
     // Helper methods
 
     private ChatResponse toChatResponse(WChat chat) {

@@ -71,6 +71,17 @@
                   </button>
                 </div>
 
+                <!-- Show Archived Toggle -->
+                <label class="label cursor-pointer justify-start gap-2 py-1 mb-2">
+                  <input
+                    type="checkbox"
+                    v-model="showArchived"
+                    @change="loadChats()"
+                    class="checkbox checkbox-xs"
+                  />
+                  <span class="label-text text-xs">Show archived</span>
+                </label>
+
                 <!-- Loading State -->
                 <div v-if="loading && chats.length === 0" class="flex justify-center py-8">
                   <span class="loading loading-spinner loading-lg"></span>
@@ -140,13 +151,23 @@
                       </div>
                     </div>
                     <button
-                      v-if="selectedChat"
+                      v-if="selectedChat && !selectedChat.archived"
                       @click="archiveChat(selectedChat.chatId)"
                       class="btn btn-ghost btn-sm"
                       title="Archive chat"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+                      </svg>
+                    </button>
+                    <button
+                      v-if="selectedChat && selectedChat.archived"
+                      @click="unarchiveChat(selectedChat.chatId)"
+                      class="btn btn-ghost btn-sm"
+                      title="Reactivate chat"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                       </svg>
                     </button>
                   </div>
@@ -224,7 +245,7 @@
                 </div>
 
                 <!-- Message Input -->
-                <div v-if="selectedChat" class="p-4 border-t border-base-300 flex-none">
+                <div v-if="selectedChat && !selectedChat.archived" class="p-4 border-t border-base-300 flex-none">
                   <form @submit.prevent="sendMessage" class="flex gap-2">
                     <input
                       v-model="newMessage"
@@ -420,6 +441,7 @@ const messagesContainer = ref<HTMLElement | null>(null);
 const showChatList = ref(true); // Show by default
 const showArchiveDialog = ref(false);
 const chatToArchive = ref<string | null>(null);
+const showArchived = ref(false);
 
 // Load chats
 const loadChats = async () => {
@@ -430,7 +452,7 @@ const loadChats = async () => {
 
   try {
     const response = await fetch(
-      `${apiBaseUrl.value}/control/player/chats/${worldId.value}/${playerId.value}`,
+      `${apiBaseUrl.value}/control/player/chats/${worldId.value}/${playerId.value}?archived=${showArchived.value}`,
       {
         credentials: 'include',
       }
@@ -505,7 +527,7 @@ const pollChatStatus = async () => {
   if (!worldId.value || !playerId.value) return;
   try {
     const response = await fetch(
-      `${apiBaseUrl.value}/control/player/chats/${worldId.value}/${playerId.value}`,
+      `${apiBaseUrl.value}/control/player/chats/${worldId.value}/${playerId.value}?archived=${showArchived.value}`,
       { credentials: 'include' }
     );
     if (!response.ok) return;
@@ -791,6 +813,37 @@ const confirmArchive = async () => {
 const cancelArchive = () => {
   showArchiveDialog.value = false;
   chatToArchive.value = null;
+};
+
+// Unarchive (reactivate) chat
+const unarchiveChat = async (chatId: string) => {
+  try {
+    const response = await fetch(
+      `${apiBaseUrl.value}/control/player/chats/${worldId.value}/${chatId}/unarchive`,
+      {
+        method: 'PUT',
+        credentials: 'include',
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`Failed to reactivate chat: ${response.statusText}`);
+    }
+
+    // Reload chats
+    await loadChats();
+
+    // Update selected chat if it was the one unarchived
+    if (selectedChat.value?.chatId === chatId) {
+      const updated = chats.value.find(c => c.chatId === chatId);
+      if (updated) {
+        selectedChat.value = updated;
+      }
+    }
+  } catch (e: any) {
+    error.value = e.message;
+    console.error('Error reactivating chat:', e);
+  }
 };
 
 // Status dot CSS class based on chat status
