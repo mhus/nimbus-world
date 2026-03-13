@@ -1,13 +1,12 @@
 package de.mhus.nimbus.world.control.chat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import de.mhus.nimbus.shared.utils.LocationService;
+import de.mhus.nimbus.world.shared.chat.RemoteWChatAgentProvider;
 import de.mhus.nimbus.world.shared.client.WorldClientService;
 import de.mhus.nimbus.world.shared.client.WorldClientService.CommandResponse;
 import de.mhus.nimbus.world.shared.commands.CommandContext;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -16,25 +15,30 @@ import java.util.concurrent.CompletableFuture;
 /**
  * Remote chat agent provider for world-life server.
  * Discovers and communicates with chat agents on the world-life server.
+ * Only active when NOT running on world-life itself.
  */
 @Component
 @Slf4j
-@ConditionalOnProperty(name = "nimbus.wchat.remote.life.enabled", havingValue = "true")
 public class LifeRemoteWChatAgentProvider extends RemoteWChatAgentProvider {
 
-    @Value("${nimbus.wchat.remote.life.server-url}")
-    private String serverUrl;
+    private final LocationService locationService;
 
-    @Autowired
     public LifeRemoteWChatAgentProvider(WorldClientService worldClientService,
-                                       ObjectMapper objectMapper) {
+                                       ObjectMapper objectMapper,
+                                       LocationService locationService) {
         super(worldClientService, objectMapper);
+        this.locationService = locationService;
         log.info("LifeRemoteWChatAgentProvider initialized");
     }
 
     @Override
     protected String getServerUrl() {
-        return serverUrl;
+        return "via-worldclient";
+    }
+
+    @Override
+    public boolean isAvailable() {
+        return locationService.getMeServer() != LocationService.SERVER.LIFE;
     }
 
     @Override

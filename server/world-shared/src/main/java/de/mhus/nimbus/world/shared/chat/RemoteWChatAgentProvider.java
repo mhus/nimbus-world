@@ -1,13 +1,8 @@
-package de.mhus.nimbus.world.control.chat;
+package de.mhus.nimbus.world.shared.chat;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.shared.types.WorldId;
-import de.mhus.nimbus.world.shared.chat.WChatAgent;
-import de.mhus.nimbus.world.shared.chat.WChatAgentProvider;
-import de.mhus.nimbus.world.shared.chat.WChatAgentScope;
-import de.mhus.nimbus.world.shared.chat.WChatMessage;
-import de.mhus.nimbus.world.shared.chat.WChatSessionMessage;
 import de.mhus.nimbus.world.shared.client.WorldClientService;
 import de.mhus.nimbus.world.shared.client.WorldClientService.CommandResponse;
 import de.mhus.nimbus.world.shared.commands.CommandContext;

@@ -248,6 +248,7 @@
                 <div v-if="selectedChat && !selectedChat.archived" class="p-4 border-t border-base-300 flex-none">
                   <form @submit.prevent="sendMessage" class="flex gap-2">
                     <input
+                      ref="messageInput"
                       v-model="newMessage"
                       type="text"
                       placeholder="Type your message..."
@@ -438,6 +439,7 @@ const newChatTitle = ref('');
 const selectedAgent = ref('');
 const newChatHint = ref('');
 const messagesContainer = ref<HTMLElement | null>(null);
+const messageInput = ref<HTMLInputElement | null>(null);
 const showChatList = ref(true); // Show by default
 const showArchiveDialog = ref(false);
 const chatToArchive = ref<string | null>(null);
@@ -533,11 +535,13 @@ const pollChatStatus = async () => {
     if (!response.ok) return;
     const updatedChats: Chat[] = await response.json();
     chats.value = updatedChats;
-    // Update selectedChat status if it's in the list
+    // Update selectedChat fields in-place to avoid re-render (preserves input focus)
     if (selectedChat.value) {
       const updated = updatedChats.find(c => c.chatId === selectedChat.value!.chatId);
       if (updated) {
-        selectedChat.value = updated;
+        selectedChat.value.status = updated.status;
+        selectedChat.value.archived = updated.archived;
+        selectedChat.value.modifiedAt = updated.modifiedAt;
       }
     }
   } catch (e) {
@@ -650,6 +654,7 @@ const sendMessage = async () => {
     console.error('Error sending message:', e);
   } finally {
     sending.value = false;
+    setTimeout(() => messageInput.value?.focus(), 100);
   }
 };
 

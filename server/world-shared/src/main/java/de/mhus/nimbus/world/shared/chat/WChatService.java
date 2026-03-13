@@ -5,11 +5,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import org.springframework.context.annotation.Lazy;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.HashMap;
@@ -17,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 /**
@@ -30,12 +33,16 @@ public class WChatService {
 
     private static final long AGENT_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
+    private static final String REPLY_KEY_PREFIX = "wchat:reply:";
+    private static final Duration REPLY_KEY_TTL = Duration.ofSeconds(60);
+
     private final WChatRepository repository;
     private final WChatMessageRepository messageRepository;
     private final List<WChatAgentProvider> agentProviders;
     private final List<WChatMessageProcessor> messageProcessors;
     private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
     private final de.mhus.nimbus.world.shared.client.WorldClientService worldClientService;
+    private final StringRedisTemplate redis;
     private final WChatExecutorService chatExecutorService;
 
     private volatile Map<String, WChatAgent> globalAgentMap;
@@ -50,6 +57,7 @@ public class WChatService {
                        List<WChatMessageProcessor> messageProcessors,
                        com.fasterxml.jackson.databind.ObjectMapper objectMapper,
                        de.mhus.nimbus.world.shared.client.WorldClientService worldClientService,
+                       StringRedisTemplate redis,
                        @Lazy WChatExecutorService chatExecutorService) {
         this.repository = repository;
         this.messageRepository = messageRepository;
@@ -57,6 +65,7 @@ public class WChatService {
         this.messageProcessors = messageProcessors;
         this.objectMapper = objectMapper;
         this.worldClientService = worldClientService;
+        this.redis = redis;
         this.chatExecutorService = chatExecutorService;
 
         log.info("WChatService initialized with {} agent providers, {} message processors",
@@ -511,6 +520,56 @@ public class WChatService {
             }
             saveMessage(message);
         }
+        // Notify any waiting proxy agents that new messages are available
+        notifyReply(lookupWorld.getId(), chatId);
+    }
+
+    /**
+     * Notify waiting consumers that new messages are available for a chat.
+     * Uses Redis LPUSH so BLPOP consumers wake up immediately.
+     */
+    private void notifyReply(String worldId, String chatId) {
+        try {
+            String key = REPLY_KEY_PREFIX + worldId + ":" + chatId;
+            redis.opsForList().leftPush(key, "reply");
+            redis.expire(key, REPLY_KEY_TTL);
+        } catch (Exception e) {
+            log.warn("Failed to notify reply for chatId={}: {}", chatId, e.getMessage());
+        }
+    }
+
+    /**
+     * Wait for new messages in a chat using Redis BLPOP.
+     * Blocks the current (virtual) thread until a notification arrives or timeout expires.
+     * After waking up, reads new messages from MongoDB.
+     *
+     * @param worldId The world identifier
+     * @param chatId The chat ID to wait on
+     * @param afterMessageId The last known message ID (to fetch only new messages)
+     * @param timeout Maximum time to wait
+     * @return New messages, or empty list on timeout
+     */
+    public List<WChatMessage> waitForReply(WorldId worldId, String chatId, String afterMessageId, Duration timeout) {
+        var lookupWorld = worldId.toBaseWorldId();
+        String key = REPLY_KEY_PREFIX + lookupWorld.getId() + ":" + chatId;
+
+        try {
+            // Block until notification or timeout
+            String result = redis.opsForList().rightPop(key, timeout.toSeconds(), TimeUnit.SECONDS);
+            if (result == null) {
+                log.debug("waitForReply timed out: chatId={}", chatId);
+                return Collections.emptyList();
+            }
+
+            // Read new messages from MongoDB
+            if (Strings.isBlank(afterMessageId)) {
+                return getChatMessages(worldId, chatId, 50);
+            }
+            return getChatMessagesAfterMessageId(worldId, chatId, afterMessageId, 50);
+        } catch (Exception e) {
+            log.error("Error waiting for reply: chatId={}", chatId, e);
+            return Collections.emptyList();
+        }
     }
     /**
      * Find message by messageId.
@@ -915,7 +974,7 @@ public class WChatService {
      * - Remote agent → route directly to remote pod via agent.routeMessage()
      * - Local agent → enqueue locally (or route to another pod if session is already active there)
      */
-    private void enqueueOrRoute(String agentName, WChatSessionMessage sessionMsg) {
+    void enqueueOrRoute(String agentName, WChatSessionMessage sessionMsg) {
         WChatAgent agent = getAgent(agentName).orElse(null);
         if (agent != null && !agent.isLocal()) {
             log.info("Routing to remote agent: agentName={}, chatId={}", agentName, sessionMsg.getChatId());
