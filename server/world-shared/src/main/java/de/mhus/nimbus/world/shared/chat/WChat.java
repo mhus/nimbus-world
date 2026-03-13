@@ -23,7 +23,8 @@ import java.util.Map;
 @ActualSchemaVersion("1.0.0")
 @CompoundIndexes({
         @CompoundIndex(name = "worldId_chatId_idx", def = "{ 'worldId': 1, 'chatId': 1 }", unique = true),
-        @CompoundIndex(name = "worldId_ownerId_archived_idx", def = "{ 'worldId': 1, 'ownerId': 1, 'archived': 1 }")
+        @CompoundIndex(name = "worldId_ownerId_archived_idx", def = "{ 'worldId': 1, 'ownerId': 1, 'archived': 1 }"),
+        @CompoundIndex(name = "worldId_parentChatId_idx", def = "{ 'worldId': 1, 'parentChatId': 1 }")
 })
 @Data
 @Builder
@@ -90,6 +91,20 @@ public class WChat implements Identifiable {
      * Additional information or instructions for the agent (e.g., preferred model, context).
      */
     private String hint;
+
+    /**
+     * Optional parent chat ID for internal sub-chats.
+     * When an agent creates sub-chats to delegate work to other agents,
+     * this links the sub-chat to its parent. Used for cascading archive/delete.
+     */
+    private String parentChatId;
+
+    /**
+     * Flag indicating if this is an internal chat.
+     * Internal chats are created by agents for delegation and are not visible in the UI.
+     */
+    @Builder.Default
+    private boolean internal = false;
 
     /**
      * Agent state persisted across session sleep/wake cycles.

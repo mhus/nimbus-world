@@ -33,4 +33,10 @@ public interface WChatRepository extends MongoRepository<WChat, String> {
     boolean existsByWorldIdAndChatId(String worldId, String chatId);
 
     void deleteByWorldIdAndChatId(String worldId, String chatId);
+
+    List<WChat> findByWorldIdAndParentChatId(String worldId, String parentChatId);
+
+    List<WChat> findByWorldIdAndOwnerIdAndArchivedAndInternal(String worldId, String ownerId, boolean archived, boolean internal);
+
+    List<WChat> findByWorldIdAndTypeAndOwnerIdAndArchivedAndInternal(String worldId, String type, String ownerId, boolean archived, boolean internal);
 }

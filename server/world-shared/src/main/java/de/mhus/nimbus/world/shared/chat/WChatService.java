@@ -33,7 +33,7 @@ public class WChatService {
     private final WChatRepository repository;
     private final WChatMessageRepository messageRepository;
     private final List<WChatAgentProvider> agentProviders;
-    private final de.mhus.nimbus.world.shared.session.WSessionService wSessionService;
+    private final List<WChatMessageProcessor> messageProcessors;
     private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
     private final de.mhus.nimbus.world.shared.client.WorldClientService worldClientService;
     private final WChatExecutorService chatExecutorService;
@@ -47,19 +47,20 @@ public class WChatService {
     public WChatService(WChatRepository repository,
                        WChatMessageRepository messageRepository,
                        List<WChatAgentProvider> agentProviders,
-                       de.mhus.nimbus.world.shared.session.WSessionService wSessionService,
+                       List<WChatMessageProcessor> messageProcessors,
                        com.fasterxml.jackson.databind.ObjectMapper objectMapper,
                        de.mhus.nimbus.world.shared.client.WorldClientService worldClientService,
                        @Lazy WChatExecutorService chatExecutorService) {
         this.repository = repository;
         this.messageRepository = messageRepository;
         this.agentProviders = agentProviders;
-        this.wSessionService = wSessionService;
+        this.messageProcessors = messageProcessors;
         this.objectMapper = objectMapper;
         this.worldClientService = worldClientService;
         this.chatExecutorService = chatExecutorService;
 
-        log.info("WChatService initialized with {} agent providers", agentProviders.size());
+        log.info("WChatService initialized with {} agent providers, {} message processors",
+                agentProviders.size(), messageProcessors.size());
     }
 
     /**
@@ -195,17 +196,17 @@ public class WChatService {
         log.debug("getChatsForOwner: worldId={}, lookupWorldId={}, type={}, ownerId={}, archived={}",
                 worldId.getId(), lookupWorld.getId(), type, ownerId, archived);
 
-        // If type is provided, filter by all criteria
+        // If type is provided, filter by all criteria (excluding internal chats)
         if (!Strings.isBlank(type)) {
-            List<WChat> result = repository.findByWorldIdAndTypeAndOwnerIdAndArchived(
-                    lookupWorld.getId(), type, ownerId, archived);
+            List<WChat> result = repository.findByWorldIdAndTypeAndOwnerIdAndArchivedAndInternal(
+                    lookupWorld.getId(), type, ownerId, archived, false);
             log.debug("Found {} chats with type filter", result.size());
             return result;
         }
 
-        // If no type provided, filter only by ownerId and archived
-        List<WChat> result = repository.findByWorldIdAndOwnerIdAndArchived(
-                lookupWorld.getId(), ownerId, archived);
+        // If no type provided, filter only by ownerId and archived (excluding internal chats)
+        List<WChat> result = repository.findByWorldIdAndOwnerIdAndArchivedAndInternal(
+                lookupWorld.getId(), ownerId, archived, false);
         log.debug("Found {} chats without type filter", result.size());
 
         return result;
@@ -290,36 +291,114 @@ public class WChatService {
     }
 
     /**
-     * Archive a chat.
-     * Filters out instances.
+     * Archive a chat and all its child chats (internal sub-chats).
      */
     @Transactional
     public boolean archive(WorldId worldId, String chatId) {
-        return update(worldId, chatId, chat -> chat.setArchived(true)).isPresent();
+        boolean result = update(worldId, chatId, chat -> chat.setArchived(true)).isPresent();
+        if (result) {
+            archiveChildren(worldId, chatId);
+        }
+        return result;
     }
 
     /**
-     * Unarchive a chat.
-     * Filters out instances.
+     * Unarchive a chat and all its child chats (internal sub-chats).
      */
     @Transactional
     public boolean unarchive(WorldId worldId, String chatId) {
-        return update(worldId, chatId, chat -> chat.setArchived(false)).isPresent();
+        boolean result = update(worldId, chatId, chat -> chat.setArchived(false)).isPresent();
+        if (result) {
+            unarchiveChildren(worldId, chatId);
+        }
+        return result;
     }
 
     /**
-     * Delete a chat.
-     * Filters out instances.
+     * Delete a chat and all its child chats (internal sub-chats) including their messages.
      */
     @Transactional
     public boolean delete(WorldId worldId, String chatId) {
         var lookupWorld = worldId.toBaseWorldId();
 
         return repository.findByWorldIdAndChatId(lookupWorld.getId(), chatId).map(chat -> {
+            // Delete children first
+            deleteChildren(worldId, chatId);
+            // Delete messages of this chat
+            messageRepository.deleteByWorldIdAndChatId(lookupWorld.getId(), chatId);
+            // Delete the chat itself
             repository.delete(chat);
-            log.debug("Deleted WChat: world={}, chatId={}", lookupWorld, chatId);
+            log.debug("Deleted WChat with children: world={}, chatId={}", lookupWorld, chatId);
             return true;
         }).orElse(false);
+    }
+
+    /**
+     * Find all child chats (internal sub-chats) of a parent chat.
+     */
+    @Transactional(readOnly = true)
+    public List<WChat> findChildren(WorldId worldId, String parentChatId) {
+        var lookupWorld = worldId.toBaseWorldId();
+        return repository.findByWorldIdAndParentChatId(lookupWorld.getId(), parentChatId);
+    }
+
+    /**
+     * Create an internal sub-chat linked to a parent chat.
+     * Internal chats are not visible in the UI and are cascaded on archive/delete.
+     */
+    @Transactional
+    public WChat createInternalChat(WorldId worldId, String parentChatId, String name, String type, String ownerId, String hint) {
+        var lookupWorld = worldId.toBaseWorldId();
+        String chatId = UUID.randomUUID().toString();
+
+        WChat chat = WChat.builder()
+                .worldId(lookupWorld.getId())
+                .chatId(chatId)
+                .name(name)
+                .type(type)
+                .ownerId(ownerId)
+                .hint(hint)
+                .parentChatId(parentChatId)
+                .internal(true)
+                .archived(false)
+                .build();
+        chat.touchCreate();
+
+        WChat saved = repository.save(chat);
+        log.debug("Created internal WChat: world={}, chatId={}, parentChatId={}, type={}",
+                lookupWorld, chatId, parentChatId, type);
+        return saved;
+    }
+
+    private void archiveChildren(WorldId worldId, String parentChatId) {
+        List<WChat> children = findChildren(worldId, parentChatId);
+        for (WChat child : children) {
+            child.setArchived(true);
+            child.touchUpdate();
+            repository.save(child);
+            archiveChildren(worldId, child.getChatId());
+        }
+    }
+
+    private void unarchiveChildren(WorldId worldId, String parentChatId) {
+        List<WChat> children = findChildren(worldId, parentChatId);
+        for (WChat child : children) {
+            child.setArchived(false);
+            child.touchUpdate();
+            repository.save(child);
+            unarchiveChildren(worldId, child.getChatId());
+        }
+    }
+
+    private void deleteChildren(WorldId worldId, String parentChatId) {
+        var lookupWorld = worldId.toBaseWorldId();
+        List<WChat> children = findChildren(worldId, parentChatId);
+        for (WChat child : children) {
+            deleteChildren(worldId, child.getChatId());
+            messageRepository.deleteByWorldIdAndChatId(lookupWorld.getId(), child.getChatId());
+            repository.delete(child);
+            log.debug("Deleted child WChat: world={}, chatId={}, parentChatId={}", lookupWorld, child.getChatId(), parentChatId);
+        }
     }
 
     /**
@@ -671,31 +750,14 @@ public class WChatService {
     }
 
     private void processMessage(WorldId worldId, String sessionId, WChatMessage response) {
-        var lookupWorld = worldId.toBaseWorldId();
-        // Handle model-selector command: extract ModelSelector data and store in Redis
-        if ("model-selector".equals(response.getType()) &&
-                response.isCommand() &&
-                sessionId != null &&
-                !sessionId.isBlank()) {
-
+        for (WChatMessageProcessor processor : messageProcessors) {
             try {
-                // Parse ModelSelector data from message field (JSON array of strings)
-                List<String> modelSelectorData = objectMapper.readValue(
-                        response.getMessage(),
-                        new com.fasterxml.jackson.core.type.TypeReference<List<String>>() {}
-                );
-
-                // Store in Redis
-                wSessionService.updateModelSelector(sessionId, modelSelectorData);
-
-                log.info("Stored ModelSelector in Redis: sessionId={}, blocks={}",
-                        sessionId, modelSelectorData.size());
-
-                // Send ShowModelSelectorCommand to player
-                sendShowModelSelectorCommand(lookupWorld.getId(), sessionId);
-
+                if (processor.canProcess(response)) {
+                    processor.process(worldId, sessionId, response);
+                }
             } catch (Exception e) {
-                log.error("Failed to store ModelSelector in Redis for sessionId: {}", sessionId, e);
+                log.error("Message processor {} failed for message type={}: {}",
+                        processor.getClass().getSimpleName(), response.getType(), e.getMessage(), e);
             }
         }
     }
@@ -774,50 +836,6 @@ public class WChatService {
                 lookupWorld.getId(), chatId, referenceTimestamp, pageable);
 
         return messages;
-    }
-
-    /**
-     * Send ShowModelSelector command to player.
-     */
-    private void sendShowModelSelectorCommand(String worldId, String sessionId) {
-        try {
-            Optional<de.mhus.nimbus.world.shared.session.WSession> wSessionOpt =
-                    wSessionService.getWithPlayerUrl(sessionId);
-
-            if (wSessionOpt.isEmpty()) {
-                log.warn("No WSession found for sessionId: {}, cannot send ShowModelSelector command", sessionId);
-                return;
-            }
-
-            de.mhus.nimbus.world.shared.session.WSession wSession = wSessionOpt.get();
-            String playerUrl = wSession.getPlayerUrl();
-
-            if (playerUrl == null || playerUrl.isBlank()) {
-                log.warn("No player URL available for session {}, cannot send ShowModelSelector command", sessionId);
-                return;
-            }
-
-            de.mhus.nimbus.world.shared.commands.CommandContext ctx =
-                    de.mhus.nimbus.world.shared.commands.CommandContext.builder()
-                            .worldId(worldId)
-                            .sessionId(sessionId)
-                            .originServer("world-control")
-                            .build();
-
-            worldClientService.sendPlayerCommand(
-                    worldId,
-                    sessionId,
-                    playerUrl,
-                    "client.ShowModelSelector",
-                    List.of(),
-                    ctx
-            );
-
-            log.info("Sent ShowModelSelector command to player: sessionId={}, playerUrl={}", sessionId, playerUrl);
-
-        } catch (Exception e) {
-            log.error("Failed to send ShowModelSelector command for sessionId: {}", sessionId, e);
-        }
     }
 
     public Optional<WChatMessage> findByWorldIdAndChatIdAndMessageId(WorldId worldId, String chatId, String messageId) {
