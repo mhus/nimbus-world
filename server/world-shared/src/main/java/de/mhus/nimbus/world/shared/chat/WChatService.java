@@ -862,11 +862,8 @@ public class WChatService {
                 .sessionId(sessionId)
                 .build();
 
-        // Enqueue for processing
-        WChatExecutorService.EnqueueResult result = chatExecutorService.enqueue(sessionMsg);
-        if (result instanceof WChatExecutorService.EnqueueResult.Remote remote) {
-            routeToRemotePod(remote.url(), sessionMsg);
-        }
+        // Route to remote pod or enqueue locally
+        enqueueOrRoute(agentName, sessionMsg);
 
         return playerMessage;
     }
@@ -890,6 +887,23 @@ public class WChatService {
                 .commandParams(params)
                 .sessionId(sessionId)
                 .build();
+
+        // Route to remote pod or enqueue locally
+        enqueueOrRoute(agentName, sessionMsg);
+    }
+
+    /**
+     * Route a message to the correct destination:
+     * - Remote agent → route directly to remote pod via agent.routeMessage()
+     * - Local agent → enqueue locally (or route to another pod if session is already active there)
+     */
+    private void enqueueOrRoute(String agentName, WChatSessionMessage sessionMsg) {
+        WChatAgent agent = getAgent(agentName).orElse(null);
+        if (agent != null && !agent.isLocal()) {
+            log.info("Routing to remote agent: agentName={}, chatId={}", agentName, sessionMsg.getChatId());
+            agent.routeMessage(sessionMsg);
+            return;
+        }
 
         WChatExecutorService.EnqueueResult result = chatExecutorService.enqueue(sessionMsg);
         if (result instanceof WChatExecutorService.EnqueueResult.Remote remote) {

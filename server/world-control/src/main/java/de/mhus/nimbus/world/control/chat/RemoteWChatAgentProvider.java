@@ -7,6 +7,7 @@ import de.mhus.nimbus.world.shared.chat.WChatAgent;
 import de.mhus.nimbus.world.shared.chat.WChatAgentProvider;
 import de.mhus.nimbus.world.shared.chat.WChatAgentScope;
 import de.mhus.nimbus.world.shared.chat.WChatMessage;
+import de.mhus.nimbus.world.shared.chat.WChatSessionMessage;
 import de.mhus.nimbus.world.shared.client.WorldClientService;
 import de.mhus.nimbus.world.shared.client.WorldClientService.CommandResponse;
 import de.mhus.nimbus.world.shared.commands.CommandContext;
@@ -252,6 +253,23 @@ public abstract class RemoteWChatAgentProvider implements WChatAgentProvider {
     }
 
     /**
+     * Route a session message to the remote pod for async processing via chat-connector enqueue.
+     * The remote pod's WChatExecutorService will create a local session with the real agent.
+     */
+    void routeEnqueue(WChatSessionMessage msg) {
+        try {
+            String json = objectMapper.writeValueAsString(msg);
+            CommandContext ctx = CommandContext.builder()
+                    .worldId(msg.getWorldId())
+                    .build();
+            sendCommand(msg.getWorldId(), "chat-connector", List.of("enqueue", json), ctx);
+            log.debug("Routed enqueue to remote pod (provider: {}): chatId={}", getProviderName(), msg.getChatId());
+        } catch (Exception e) {
+            log.error("Failed to route enqueue to remote pod (provider: {})", getProviderName(), e);
+        }
+    }
+
+    /**
      * Wrapper that implements WChatAgent interface for remote agents.
      */
     private static class RemoteWChatAgentWrapper implements WChatAgent {
@@ -280,6 +298,16 @@ public abstract class RemoteWChatAgentProvider implements WChatAgentProvider {
         @Override
         public String getTitle() {
             return title + " (Remote)";
+        }
+
+        @Override
+        public boolean isLocal() {
+            return false;
+        }
+
+        @Override
+        public void routeMessage(WChatSessionMessage msg) {
+            provider.routeEnqueue(msg);
         }
 
         @Override

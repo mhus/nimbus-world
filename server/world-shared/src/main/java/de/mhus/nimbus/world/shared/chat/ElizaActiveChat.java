@@ -1,11 +1,6 @@
-package de.mhus.nimbus.world.control.chat;
+package de.mhus.nimbus.world.shared.chat;
 
 import de.mhus.nimbus.shared.types.WorldId;
-import de.mhus.nimbus.world.shared.chat.WChat;
-import de.mhus.nimbus.world.shared.chat.WChatAgent;
-import de.mhus.nimbus.world.shared.chat.WChatMessage;
-import de.mhus.nimbus.world.shared.chat.WChatService;
-import de.mhus.nimbus.world.shared.chat.WChatSessionQueue;
 import lombok.extern.slf4j.Slf4j;
 
 import java.time.Instant;
@@ -21,12 +16,12 @@ import java.util.UUID;
  * and session control (sleep/archive).
  */
 @Slf4j
-class ElizaActiveChat {
+public class ElizaActiveChat {
 
-    private static final String AGENT_ID = "eliza-agent";
     private static final int IDLE_NUDGE_THRESHOLD = 3; // ~30s (3 × 10s poll)
     private static final int MAX_NUDGES = 2;
 
+    private final String agentId;
     private final WChatService chatService;
     private final WChatSessionQueue queue;
     private final Random random = new Random();
@@ -93,7 +88,8 @@ class ElizaActiveChat {
             "Until next time! Archiving our conversation.",
     };
 
-    ElizaActiveChat(WChatService chatService, WChat chat, WChatSessionQueue queue) {
+    public ElizaActiveChat(String agentId, WChatService chatService, WChat chat, WChatSessionQueue queue) {
+        this.agentId = agentId;
         this.chatService = chatService;
         this.queue = queue;
         // Restore persisted state
@@ -105,14 +101,15 @@ class ElizaActiveChat {
         }
     }
 
-    void persistState(WChat chat) {
+    public void persistState(WChat chat) {
         chat.setAgentState(Map.of("nudgeCount", nudgeCount));
     }
 
     // ==================== Chat ====================
 
-    List<WChatMessage> chat(WorldId worldId, String chatId, String playerId, String message) {
-        log.debug("Eliza processing message from player {}: {}", playerId, message);
+    public List<WChatMessage> chat(WorldId worldId, String chatId, String playerId, String message) {
+        log.debug("Eliza processing: chatId={}, player={}, queue={}, message='{}'",
+                chatId, playerId, queue != null ? "present" : "NULL", message);
         idleTicks = 0;
 
         // Slash commands
@@ -123,7 +120,7 @@ class ElizaActiveChat {
             return List.of(WChatMessage.builder()
                     .worldId(worldId.toBaseWorldId().getId())
                     .messageId(UUID.randomUUID().toString())
-                    .senderId(AGENT_ID)
+                    .senderId(agentId)
                     .message("Click to execute: " + commandName)
                     .type(commandName)
                     .command(true)
@@ -136,7 +133,7 @@ class ElizaActiveChat {
         // Sleep request
         if (matchesSleep(lower)) {
             String response = randomFrom(SLEEP_RESPONSES);
-            log.info("Eliza going to sleep: chatId={}", chatId);
+            log.info("Eliza going to sleep: agentId={}, chatId={}", agentId, chatId);
             if (queue != null) queue.requestSleep();
             return List.of(textMessage(worldId, response));
         }
@@ -144,7 +141,7 @@ class ElizaActiveChat {
         // Archive request
         if (matchesArchive(lower)) {
             String response = randomFrom(GOODBYE_RESPONSES);
-            log.info("Eliza archiving chat: chatId={}", chatId);
+            log.info("Eliza archiving chat: agentId={}, chatId={}", agentId, chatId);
             if (queue != null) queue.requestArchive();
             return List.of(textMessage(worldId, response));
         }
@@ -161,7 +158,7 @@ class ElizaActiveChat {
 
     // ==================== Idle ====================
 
-    WChatAgent.IdleResult onIdle(WorldId worldId, String chatId, WChatSessionQueue queue) {
+    public WChatAgent.IdleResult onIdle(WorldId worldId, String chatId, WChatSessionQueue queue) {
         idleTicks++;
 
         if (idleTicks >= IDLE_NUDGE_THRESHOLD && nudgeCount < MAX_NUDGES) {
@@ -170,7 +167,7 @@ class ElizaActiveChat {
                     .worldId(worldId.toBaseWorldId().getId())
                     .chatId(chatId)
                     .messageId(UUID.randomUUID().toString())
-                    .senderId(AGENT_ID)
+                    .senderId(agentId)
                     .message(nudge)
                     .type("text")
                     .createdAt(Instant.now())
@@ -208,7 +205,7 @@ class ElizaActiveChat {
                 .worldId(worldId.toBaseWorldId().getId())
                 .chatId(chatId)
                 .messageId(UUID.randomUUID().toString())
-                .senderId(AGENT_ID)
+                .senderId(agentId)
                 .message(filler)
                 .type("text")
                 .createdAt(Instant.now())
@@ -253,7 +250,7 @@ class ElizaActiveChat {
         return WChatMessage.builder()
                 .worldId(worldId.toBaseWorldId().getId())
                 .messageId(UUID.randomUUID().toString())
-                .senderId(AGENT_ID)
+                .senderId(agentId)
                 .message(text)
                 .type("text")
                 .createdAt(Instant.now())

@@ -187,6 +187,29 @@ public interface WChatAgent {
     }
 
     /**
+     * Whether this agent runs locally on this pod.
+     * Remote agents (proxied from another pod) return false.
+     * Used by WChatService to decide whether to create a local session
+     * or route the message to the remote pod.
+     *
+     * @return true for local agents, false for remote agents
+     */
+    default boolean isLocal() {
+        return true;
+    }
+
+    /**
+     * Route a session message to the remote pod for async processing.
+     * Only called for non-local agents (isLocal() == false).
+     * The remote pod will create a local session with the real agent.
+     *
+     * @param msg The session message to route
+     */
+    default void routeMessage(WChatSessionMessage msg) {
+        throw new UnsupportedOperationException("Agent is not remote: " + getName());
+    }
+
+    /**
      * Execute a command on the agent and generate responses.
      * This allows structured interaction with the agent beyond simple chat messages.
      *

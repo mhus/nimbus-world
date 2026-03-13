@@ -1,5 +1,6 @@
 package de.mhus.nimbus.world.shared.chat;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -18,8 +19,8 @@ import java.util.Map;
 public class WChatSessionMessage {
 
     public enum Type {
-        CHAT,
-        COMMAND
+        @JsonProperty("chat") CHAT,
+        @JsonProperty("command") COMMAND
     }
 
     private Type type;
