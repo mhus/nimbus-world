@@ -88,8 +88,11 @@
                       'bg-base-200 hover:bg-base-300': selectedChat?.chatId !== chat.chatId
                     }"
                   >
-                    <div class="font-semibold">{{ chat.name }}</div>
-                    <div class="text-xs opacity-70">
+                    <div class="flex items-center gap-2">
+                      <span class="inline-block w-2.5 h-2.5 rounded-full flex-shrink-0" :class="statusDotClass(chat)"></span>
+                      <span class="font-semibold">{{ chat.name }}</span>
+                    </div>
+                    <div class="text-xs opacity-70 ml-[18px]">
                       {{ chat.type }} • {{ formatDate(chat.createdAt) }}
                     </div>
                   </div>
@@ -126,7 +129,10 @@
                         </svg>
                       </button>
                       <div v-if="selectedChat">
-                        <h2 class="text-xl font-bold">{{ selectedChat.name }}</h2>
+                        <div class="flex items-center gap-2">
+                          <span class="inline-block w-3 h-3 rounded-full flex-shrink-0" :class="statusDotClass(selectedChat)"></span>
+                          <h2 class="text-xl font-bold">{{ selectedChat.name }}</h2>
+                        </div>
                         <div class="text-sm text-base-content/70">{{ selectedChat.type }}</div>
                       </div>
                       <div v-else class="text-base-content/50">
@@ -279,15 +285,15 @@
             </select>
           </div>
 
-          <!-- Model Selector (optional) -->
+          <!-- Hint (optional) -->
           <div class="form-control">
             <label class="label">
-              <span class="label-text">Model (optional)</span>
+              <span class="label-text">Hint (optional)</span>
             </label>
             <input
-              v-model="newChatModel"
+              v-model="newChatHint"
               type="text"
-              placeholder="e.g., gpt-4"
+              placeholder="Additional information for the agent"
               class="input input-bordered"
             />
           </div>
@@ -361,7 +367,8 @@ interface Chat {
   modifiedAt: string;
   archived: boolean;
   ownerId: string;
-  model?: string;
+  hint?: string;
+  status?: string;
 }
 
 interface Message {
@@ -408,7 +415,7 @@ const newMessage = ref('');
 const showNewChatDialog = ref(false);
 const newChatTitle = ref('');
 const selectedAgent = ref('');
-const newChatModel = ref('');
+const newChatHint = ref('');
 const messagesContainer = ref<HTMLElement | null>(null);
 const showChatList = ref(true); // Show by default
 const showArchiveDialog = ref(false);
@@ -493,6 +500,29 @@ const loadMessages = async (chatId: string) => {
   }
 };
 
+// Poll for chat status updates (refreshes chat list silently)
+const pollChatStatus = async () => {
+  if (!worldId.value || !playerId.value) return;
+  try {
+    const response = await fetch(
+      `${apiBaseUrl.value}/control/player/chats/${worldId.value}/${playerId.value}`,
+      { credentials: 'include' }
+    );
+    if (!response.ok) return;
+    const updatedChats: Chat[] = await response.json();
+    chats.value = updatedChats;
+    // Update selectedChat status if it's in the list
+    if (selectedChat.value) {
+      const updated = updatedChats.find(c => c.chatId === selectedChat.value!.chatId);
+      if (updated) {
+        selectedChat.value = updated;
+      }
+    }
+  } catch (e) {
+    // Silently ignore polling errors
+  }
+};
+
 // Poll for new messages
 const pollNewMessages = async () => {
   if (!selectedChat.value || !worldId.value || messages.value.length === 0) return;
@@ -535,10 +565,13 @@ const pollNewMessages = async () => {
   }
 };
 
-// Start polling for new messages
+// Start polling for new messages and status updates
 const startPolling = () => {
   stopPolling(); // Clear any existing interval
-  pollingInterval = window.setInterval(pollNewMessages, POLL_INTERVAL_MS);
+  pollingInterval = window.setInterval(() => {
+    pollNewMessages();
+    pollChatStatus();
+  }, POLL_INTERVAL_MS);
 };
 
 // Stop polling for new messages
@@ -674,7 +707,7 @@ const createChat = async () => {
           name: newChatTitle.value,
           type: selectedAgent.value,
           agentName: selectedAgent.value,
-          model: newChatModel.value || null,
+          hint: newChatHint.value || null,
         }),
       }
     );
@@ -706,7 +739,7 @@ const closeNewChatDialog = () => {
   showNewChatDialog.value = false;
   newChatTitle.value = '';
   selectedAgent.value = '';
-  newChatModel.value = '';
+  newChatHint.value = '';
 };
 
 // Archive chat - show confirmation dialog
@@ -758,6 +791,17 @@ const confirmArchive = async () => {
 const cancelArchive = () => {
   showArchiveDialog.value = false;
   chatToArchive.value = null;
+};
+
+// Status dot CSS class based on chat status
+const statusDotClass = (chat: Chat): string => {
+  switch (chat.status) {
+    case 'ACTIVE_IDLE': return 'bg-success';       // green
+    case 'ACTIVE_BUSY': return 'bg-warning';       // yellow
+    case 'ARCHIVED':    return 'bg-base-content/30'; // gray
+    case 'INACTIVE':
+    default:            return 'bg-error';           // red
+  }
 };
 
 // Format date

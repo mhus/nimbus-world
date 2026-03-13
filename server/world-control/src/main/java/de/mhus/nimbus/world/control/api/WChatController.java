@@ -33,6 +33,7 @@ import java.util.stream.Collectors;
 public class WChatController extends BaseEditorController {
 
     private final WChatService chatService;
+    private final WChatExecutorService chatExecutorService;
 
     // DTOs
     public record ChatResponse(
@@ -43,7 +44,8 @@ public class WChatController extends BaseEditorController {
             Instant modifiedAt,
             boolean archived,
             String ownerId,
-            String model
+            String hint,
+            String status
     ) {}
 
     public record MessageResponse(
@@ -59,7 +61,7 @@ public class WChatController extends BaseEditorController {
             String name,
             String type,
             String agentName,
-            String model
+            String hint
     ) {}
 
     public record SendMessageRequest(
@@ -216,7 +218,7 @@ public class WChatController extends BaseEditorController {
             WorldId wId = WorldId.unchecked(worldId);
             String chatId = UUID.randomUUID().toString();
 
-            WChat chat = chatService.save(wId, chatId, request.name(), request.type(), actualPlayerId, request.model());
+            WChat chat = chatService.save(wId, chatId, request.name(), request.type(), actualPlayerId, request.hint());
 
             return ResponseEntity.ok(toChatResponse(chat));
         } catch (Exception e) {
@@ -412,6 +414,7 @@ public class WChatController extends BaseEditorController {
     // Helper methods
 
     private ChatResponse toChatResponse(WChat chat) {
+        String status = resolveChatStatus(chat);
         return new ChatResponse(
                 chat.getChatId(),
                 chat.getName(),
@@ -420,8 +423,21 @@ public class WChatController extends BaseEditorController {
                 chat.getModifiedAt(),
                 chat.isArchived(),
                 chat.getOwnerId(),
-                chat.getModel()
+                chat.getHint(),
+                status
         );
+    }
+
+    private String resolveChatStatus(WChat chat) {
+        if (chat.isArchived()) {
+            return "ARCHIVED";
+        }
+        String sessionStatus = chatExecutorService.getSessionStatus(
+                chat.getWorldId(), chat.getChatId());
+        if (sessionStatus != null) {
+            return "ACTIVE_" + sessionStatus; // ACTIVE_IDLE or ACTIVE_BUSY
+        }
+        return "INACTIVE";
     }
 
     private MessageResponse toMessageResponse(WChatMessage message) {

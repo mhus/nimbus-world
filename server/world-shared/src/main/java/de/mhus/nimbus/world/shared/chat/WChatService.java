@@ -216,7 +216,7 @@ public class WChatService {
      * Filters out instances - chats are stored per world.
      */
     @Transactional
-    public WChat save(WorldId worldId, String chatId, String name, String type, String ownerId, String model) {
+    public WChat save(WorldId worldId, String chatId, String name, String type, String ownerId, String hint) {
         if (worldId == null) {
             throw new IllegalArgumentException("worldId required");
         }
@@ -239,7 +239,7 @@ public class WChatService {
                     .name(name)
                     .type(type)
                     .ownerId(ownerId)
-                    .model(model)
+                    .hint(hint)
                     .archived(false)
                     .build();
             neu.touchCreate();
@@ -250,7 +250,7 @@ public class WChatService {
         chat.setName(name);
         chat.setType(type);
         chat.setOwnerId(ownerId);
-        chat.setModel(model);
+        chat.setHint(hint);
         chat.touchUpdate();
 
         WChat saved = repository.save(chat);

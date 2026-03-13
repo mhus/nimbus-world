@@ -39,4 +39,18 @@ public interface WChatSessionQueue {
      * @return true if at least one message is available
      */
     boolean hasNext();
+
+    /**
+     * Request the session to end (go inactive / sleep).
+     * The session thread will terminate after the current processing completes.
+     * The agent's onSessionEnded() will still be called for state persistence.
+     */
+    void requestSleep();
+
+    /**
+     * Request the chat to be archived and the session to end.
+     * The chat will be marked as archived in MongoDB before the session terminates.
+     * The agent's onSessionEnded() will still be called for state persistence.
+     */
+    void requestArchive();
 }

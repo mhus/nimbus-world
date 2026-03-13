@@ -32,6 +32,7 @@ public class WChatSession implements Runnable {
     private final LinkedBlockingQueue<WChatSessionMessage> queue = new LinkedBlockingQueue<>();
     private final WChatSessionQueue sessionQueue = new SessionQueueAdapter();
     private volatile boolean running = true;
+    private volatile boolean archiveRequested = false;
     private long lastRedisRefresh;
     private long lastMessageTime;
 
@@ -88,7 +89,24 @@ public class WChatSession implements Runnable {
                     processMessage(msg);
                     lastMessageTime = System.currentTimeMillis();
                 } else {
-                    // No message received — check idle timeout
+                    // Queue empty — give agent a chance to do async work
+                    if (agent != null) {
+                        try {
+                            var idleResult = agent.onIdle(
+                                    de.mhus.nimbus.shared.types.WorldId.unchecked(worldId),
+                                    chatId, sessionQueue);
+                            if (idleResult == WChatAgent.IdleResult.BUSY) {
+                                updateRedisStatus("BUSY");
+                                lastMessageTime = System.currentTimeMillis();
+                                continue;
+                            } else {
+                                updateRedisStatus("IDLE");
+                            }
+                        } catch (Exception e) {
+                            log.warn("Error in agent.onIdle: chatKey={}", chatKey, e);
+                        }
+                    }
+                    // Check idle timeout
                     if (System.currentTimeMillis() - lastMessageTime > IDLE_TIMEOUT_MS) {
                         log.info("Idle timeout reached, ending session: chatKey={}", chatKey);
                         break;
@@ -101,6 +119,10 @@ public class WChatSession implements Runnable {
         } catch (Exception e) {
             log.error("WChatSession error: chatKey={}", chatKey, e);
         } finally {
+            // Archive chat if requested by agent
+            if (archiveRequested) {
+                archiveChat();
+            }
             // Notify agent of session end (agent can persist state)
             notifyAgentSessionEnded(agent);
             cleanupRedis();
@@ -111,12 +133,15 @@ public class WChatSession implements Runnable {
 
     private void processMessage(WChatSessionMessage msg) {
         try {
+            updateRedisStatus("BUSY");
             switch (msg.getType()) {
                 case CHAT -> chatService.processAgentChat(msg, sessionQueue);
                 case COMMAND -> chatService.processAgentCommand(msg);
             }
         } catch (Exception e) {
             log.error("Error processing message: chatKey={}, type={}", chatKey, msg.getType(), e);
+        } finally {
+            updateRedisStatus("IDLE");
         }
     }
 
@@ -140,7 +165,7 @@ public class WChatSession implements Runnable {
                 return null;
             }
             WChatAgent agent = agentOpt.get();
-            agent.onSessionStarted(chat);
+            agent.onSessionStarted(chat, sessionQueue);
             log.debug("Agent {} notified of session start: chatKey={}", agentName, chatKey);
             return agent;
         } catch (Exception e) {
@@ -171,6 +196,16 @@ public class WChatSession implements Runnable {
         }
     }
 
+    private void archiveChat() {
+        try {
+            var wId = de.mhus.nimbus.shared.types.WorldId.unchecked(worldId);
+            chatService.archive(wId, chatId);
+            log.info("Chat archived by agent request: chatKey={}", chatKey);
+        } catch (Exception e) {
+            log.warn("Error archiving chat: chatKey={}", chatKey, e);
+        }
+    }
+
     private boolean isChatDeactivated() {
         try {
             var chatOpt = chatService.findByWorldIdAndChatId(
@@ -186,10 +221,21 @@ public class WChatSession implements Runnable {
         return "wchat:session:" + worldId + ":" + chatId;
     }
 
+    private void updateRedisStatus(String status) {
+        try {
+            String key = redisKey();
+            redis.opsForHash().put(key, "status", status);
+            log.trace("Updated Redis status: key={}, status={}", key, status);
+        } catch (Exception e) {
+            log.warn("Failed to update Redis status: chatKey={}", chatKey, e);
+        }
+    }
+
     private void registerInRedis() {
         try {
             String key = redisKey();
             redis.opsForHash().put(key, "localUrl", localUrl);
+            redis.opsForHash().put(key, "status", "IDLE");
             redis.opsForHash().put(key, "updatedAt", Instant.now().toString());
             redis.expire(key, REDIS_TTL);
             log.debug("Registered in Redis: key={}, localUrl={}", key, localUrl);
@@ -247,6 +293,19 @@ public class WChatSession implements Runnable {
         @Override
         public boolean hasNext() {
             return !queue.isEmpty();
+        }
+
+        @Override
+        public void requestSleep() {
+            log.info("Agent requested sleep: chatKey={}", chatKey);
+            running = false;
+        }
+
+        @Override
+        public void requestArchive() {
+            log.info("Agent requested archive: chatKey={}", chatKey);
+            archiveRequested = true;
+            running = false;
         }
     }
 }

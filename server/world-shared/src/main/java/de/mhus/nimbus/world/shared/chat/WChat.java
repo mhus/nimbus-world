@@ -86,10 +86,10 @@ public class WChat implements Identifiable {
     private String ownerId;
 
     /**
-     * Optional model identifier.
-     * Used for builder chats to specify the AI model.
+     * Optional hint from the player when creating the chat.
+     * Additional information or instructions for the agent (e.g., preferred model, context).
      */
-    private String model;
+    private String hint;
 
     /**
      * Agent state persisted across session sleep/wake cycles.

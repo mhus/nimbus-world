@@ -21,11 +21,16 @@ import java.util.UUID;
  *    state in MongoDB)                 queue processing messages)
  *
  *       ──── player sends message ────►
- *            onSessionStarted(chat)     ← agent restores state from chat.getAgentState()
- *                                       ← chat()/chatWithSession()/chatWithQueue() per message
+ *            onSessionStarted(chat, queue) ← agent restores state, stores queue reference
+ *                                          ← chat()/chatWithSession()/chatWithQueue() per message
+ *                                          ← onIdle(queue) when queue empty (~10s interval)
+ *                                            return BUSY → reset idle timeout
+ *                                            return IDLE → normal timeout check
+ *                                          ← queue.requestSleep()   → agent ends session
+ *                                          ← queue.requestArchive() → agent archives chat + ends
  *       ◄──── idle timeout (1 min) ────
- *            onSessionEnded(chat)       ← agent persists state via chat.setAgentState(...)
- *                                         chat is saved to MongoDB automatically
+ *            onSessionEnded(chat)          ← agent persists state via chat.setAgentState(...)
+ *                                            chat is saved to MongoDB automatically
  * </pre>
  *
  * <h2>Queue-based processing</h2>
@@ -128,13 +133,46 @@ public interface WChatAgent {
     }
 
     /**
+     * Result of an onIdle() call.
+     */
+    enum IdleResult {
+        /** Agent has nothing to do — normal idle timeout applies. */
+        IDLE,
+        /** Agent is still working — reset idle timeout, keep session alive. */
+        BUSY
+    }
+
+    /**
+     * Called periodically when the message queue is empty (every ~10 seconds).
+     * The agent can use this to perform async work (poll external APIs, send progress
+     * messages, run background computations). The session queue is provided so the agent
+     * can also react to incoming messages during this time.
+     *
+     * Return {@link IdleResult#BUSY} to prevent the idle timeout from ending the session.
+     * Return {@link IdleResult#IDLE} for normal timeout behavior.
+     *
+     * Default implementation returns IDLE.
+     *
+     * @param worldId The world identifier
+     * @param chatId The chat ID
+     * @param queue The session queue — check for new messages via queue.poll()/hasNext()
+     * @return BUSY to keep the session alive, IDLE for normal timeout
+     */
+    default IdleResult onIdle(WorldId worldId, String chatId, WChatSessionQueue queue) {
+        return IdleResult.IDLE;
+    }
+
+    /**
      * Called when a chat session starts (or resumes after idle).
      * The agent can restore its internal state from chat.getAgentState().
+     * The queue provides session control: {@link WChatSessionQueue#requestSleep()} and
+     * {@link WChatSessionQueue#requestArchive()} to end or archive the chat from within the agent.
      * Default implementation does nothing.
      *
      * @param chat The chat entity with persisted agentState
+     * @param queue The session queue — store this reference for session control and message access
      */
-    default void onSessionStarted(WChat chat) {
+    default void onSessionStarted(WChat chat, WChatSessionQueue queue) {
     }
 
     /**

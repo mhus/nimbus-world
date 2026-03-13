@@ -103,6 +103,21 @@ public class WChatExecutorService {
     }
 
     /**
+     * Get the session status for a chat from Redis.
+     * Returns "IDLE", "BUSY", or null if no active session.
+     */
+    public String getSessionStatus(String worldId, String chatId) {
+        try {
+            String redisKey = "wchat:session:" + worldId + ":" + chatId;
+            Object status = redis.opsForHash().get(redisKey, "status");
+            return status != null ? status.toString() : null;
+        } catch (Exception e) {
+            log.warn("Failed to get session status from Redis: worldId={}, chatId={}", worldId, chatId, e);
+            return null;
+        }
+    }
+
+    /**
      * Callback from WChatSession when it ends.
      */
     void onSessionEnded(String chatKey) {
