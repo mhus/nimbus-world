@@ -1885,6 +1885,16 @@ public class WLayerService implements StorageProvider {
     }
 
     /**
+     * Find a model summary (without content) by layerDataId and model name.
+     */
+    @Transactional(readOnly = true)
+    public Optional<WLayerModel> findModelSummaryByLayerDataIdAndName(String layerDataId, String name) {
+        Query query = new Query(Criteria.where("layerDataId").is(layerDataId).and("name").is(name));
+        query.fields().exclude("content");
+        return Optional.ofNullable(mongoTemplate.findOne(query, WLayerModel.class));
+    }
+
+    /**
      * Delete a specific model document.
      *
      * @param modelId Model document ID
