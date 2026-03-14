@@ -6,6 +6,7 @@ import de.mhus.nimbus.world.player.session.PlayerSession;
 import de.mhus.nimbus.world.player.session.SessionAuthenticatedConsumer;
 import de.mhus.nimbus.world.player.session.SessionClosedConsumer;
 import de.mhus.nimbus.world.shared.session.WPlayerSessionService;
+import de.mhus.nimbus.world.shared.session.WSessionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -27,6 +28,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class PlayerSessionPersistenceService implements SessionAuthenticatedConsumer, SessionClosedConsumer {
 
     private final WPlayerSessionService sessionService;
+    private final WSessionService wSessionService;
 
     // Tick threads per session (sessionId -> Thread)
     private final Map<String, Thread> tickThreads = new ConcurrentHashMap<>();
@@ -92,6 +94,7 @@ public class PlayerSessionPersistenceService implements SessionAuthenticatedCons
                     // Save every N ticks
                     if (count >= saveIntervalTicks) {
                         saveSessionSafely(session, "periodic");
+                        refreshRedisPosition(session);
                         counter.set(0);  // Reset counter
                     }
                 }
@@ -158,6 +161,29 @@ public class PlayerSessionPersistenceService implements SessionAuthenticatedCons
         // Stop and cleanup tick thread
         if (session.getSessionId() != null) {
             stopTickThread(session.getSessionId());
+        }
+    }
+
+    /**
+     * Refresh player position in Redis to prevent TTL expiry when player is not moving.
+     * Redis position TTL is 5 minutes, this refresh every 60 seconds keeps it alive.
+     */
+    private void refreshRedisPosition(PlayerSession session) {
+        try {
+            Vector3 position = session.getLastPosition();
+            Rotation rotation = session.getLastRotation();
+            if (position == null) return;
+
+            wSessionService.updatePosition(
+                    session.getSessionId(),
+                    position.getX(), position.getY(), position.getZ(),
+                    session.getCurrentChunkX(), session.getCurrentChunkZ(),
+                    rotation != null ? rotation.getY() : null,
+                    rotation != null ? rotation.getP() : null
+            );
+            log.debug("Refreshed Redis position for session: {}", session.getSessionId());
+        } catch (Exception e) {
+            log.warn("Failed to refresh Redis position for session {}: {}", session.getSessionId(), e.getMessage());
         }
     }
 
