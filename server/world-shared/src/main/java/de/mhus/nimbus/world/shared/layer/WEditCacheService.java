@@ -1,6 +1,7 @@
 package de.mhus.nimbus.world.shared.layer;
 
 import de.mhus.nimbus.generated.types.Block;
+import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.shared.edit.BlockUpdateService;
 import de.mhus.nimbus.world.shared.world.BlockUtil;
 import de.mhus.nimbus.world.shared.world.WWorld;
@@ -139,6 +140,13 @@ public class WEditCacheService {
          */
     @Transactional
     public WEditCache setBlock(WWorld world, String layerDataId, String modelName, LayerBlock block) {
+        // WEditCache must always be written with instance worldId, never with base worldId
+        WorldId parsedWorldId = WorldId.unchecked(world.getWorldId());
+        if (!parsedWorldId.isInstance()) {
+            throw new IllegalArgumentException(
+                    "WEditCache requires instance worldId, got base worldId: " + world.getWorldId());
+        }
+
         var x = block.getBlock().getPosition().getX();
         var y = block.getBlock().getPosition().getY();
         var z = block.getBlock().getPosition().getZ();
