@@ -274,7 +274,19 @@ public class WBlockTypeService {
      */
     @Transactional(readOnly = true)
     public List<WBlockType> lookupBlockTypesByQuery(WorldId worldId, String query) {
-        List<WBlockType> all = lookupBlockTypes(worldId);
+
+        // Support collection prefix in query (e.g. "n:door" searches "door" in collection "n:")
+        WorldId lookupWid = worldId;
+        if (Strings.isNotBlank(query)) {
+            int pos = query.indexOf(':');
+            if (pos > 0) {
+                var collection = WorldCollection.of(worldId, query);
+                query = query.substring(pos + 1);
+                lookupWid = collection.worldId();
+            }
+        }
+
+        List<WBlockType> all = lookupBlockTypes(lookupWid);
 
         // Apply search filter if provided
         if (query != null && !query.isBlank()) {
