@@ -199,14 +199,14 @@
                           <time class="text-xs opacity-50 ml-1">{{ formatTime(message.createdAt) }}</time>
                         </div>
                         <div
-                          class="chat-bubble"
+                          class="chat-bubble markdown-content"
                           :class="{
                             'chat-bubble-primary': message.senderId === playerId,
                             'chat-bubble-error': message.type === 'error',
                             'chat-bubble-secondary': message.senderId !== playerId && message.type !== 'error'
                           }"
+                          v-html="renderMarkdown(message.message)"
                         >
-                          {{ message.message }}
                         </div>
                       </div>
                     </div>
@@ -236,8 +236,10 @@
 
                 <!-- Message Input -->
                 <div v-if="selectedChat && !selectedChat.archived" class="p-4 border-t border-base-300 flex-none">
-                  <form @submit.prevent="sendMessage" class="flex gap-2">
+                  <form @submit.prevent="sendMessage" class="flex gap-2 items-end">
+                    <!-- Single-line input -->
                     <input
+                      v-if="!multilineInput"
                       ref="messageInput"
                       v-model="newMessage"
                       type="text"
@@ -245,9 +247,35 @@
                       class="input input-bordered flex-1"
                       :disabled="sending"
                     />
+                    <!-- Multi-line textarea -->
+                    <textarea
+                      v-else
+                      ref="messageInput"
+                      v-model="newMessage"
+                      placeholder="Type your message..."
+                      class="textarea textarea-bordered flex-1 resize-none"
+                      rows="4"
+                      :disabled="sending"
+                      @keydown.ctrl.enter.prevent="sendMessage"
+                      @keydown.meta.enter.prevent="sendMessage"
+                    ></textarea>
+                    <!-- Toggle multi-line -->
                     <button
+                      type="button"
+                      @click="multilineInput = !multilineInput"
+                      class="btn btn-ghost btn-sm btn-square"
+                      :title="multilineInput ? 'Single-line input' : 'Multi-line input'"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path v-if="!multilineInput" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7" />
+                        <path v-else stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 12h16" />
+                      </svg>
+                    </button>
+                    <!-- Send (only in multi-line mode) -->
+                    <button
+                      v-if="multilineInput"
                       type="submit"
-                      class="btn btn-primary"
+                      class="btn btn-primary btn-sm btn-square"
                       :disabled="!newMessage.trim() || sending"
                     >
                       <span v-if="sending" class="loading loading-spinner loading-sm"></span>
@@ -367,6 +395,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, nextTick, computed } from 'vue';
+import { marked } from 'marked';
 import { useModal } from '@/composables/useModal';
 import { apiService } from '@/services/ApiService';
 
@@ -441,7 +470,8 @@ const newChatTitle = ref('');
 const selectedAgent = ref('');
 const newChatHint = ref('');
 const messagesContainer = ref<HTMLElement | null>(null);
-const messageInput = ref<HTMLInputElement | null>(null);
+const messageInput = ref<HTMLInputElement | HTMLTextAreaElement | null>(null);
+const multilineInput = ref(false);
 const showChatList = ref(true); // Show by default
 const showArchiveDialog = ref(false);
 const chatToArchive = ref<string | null>(null);
@@ -859,6 +889,11 @@ const statusDotClass = (chat: Chat): string => {
   }
 };
 
+// Render markdown
+const renderMarkdown = (text: string): string => {
+  return marked.parse(text || '', { async: false }) as string;
+};
+
 // Format date
 const formatDate = (dateString: string) => {
   const date = new Date(dateString);
@@ -905,5 +940,71 @@ onUnmounted(() => {
 
 .overflow-y-auto::-webkit-scrollbar-thumb:hover {
   background: hsl(var(--bc) / 0.3);
+}
+
+/* Markdown in chat bubbles */
+.markdown-content :deep(p) {
+  margin: 0.25em 0;
+}
+
+.markdown-content :deep(p:first-child) {
+  margin-top: 0;
+}
+
+.markdown-content :deep(p:last-child) {
+  margin-bottom: 0;
+}
+
+.markdown-content :deep(pre) {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 0.375rem;
+  padding: 0.5em;
+  margin: 0.5em 0;
+  overflow-x: auto;
+}
+
+.markdown-content :deep(code) {
+  font-size: 0.85em;
+}
+
+.markdown-content :deep(a) {
+  text-decoration: underline;
+}
+
+.markdown-content :deep(ul),
+.markdown-content :deep(ol) {
+  margin: 0.25em 0;
+  padding-left: 1.25em;
+}
+
+.markdown-content :deep(blockquote) {
+  border-left: 3px solid currentColor;
+  padding-left: 0.75em;
+  margin: 0.5em 0;
+  opacity: 0.85;
+}
+
+.markdown-content :deep(h1),
+.markdown-content :deep(h2),
+.markdown-content :deep(h3),
+.markdown-content :deep(h4) {
+  margin: 0.5em 0 0.25em;
+  font-weight: 700;
+}
+
+.markdown-content :deep(table) {
+  border-collapse: collapse;
+  margin: 0.5em 0;
+}
+
+.markdown-content :deep(th),
+.markdown-content :deep(td) {
+  border: 1px solid currentColor;
+  padding: 0.25em 0.5em;
+}
+
+.markdown-content :deep(img) {
+  max-width: 100%;
+  border-radius: 0.375rem;
 }
 </style>
