@@ -3,14 +3,15 @@ package de.mhus.nimbus.world.life.service;
 import de.mhus.nimbus.generated.types.Block;
 import de.mhus.nimbus.generated.types.ChunkData;
 import de.mhus.nimbus.shared.types.WorldId;
-import de.mhus.nimbus.shared.utils.TypeUtil;
-import de.mhus.nimbus.world.shared.world.BlockUtil;
+import de.mhus.nimbus.world.shared.world.ChunksCache;
 import de.mhus.nimbus.world.shared.world.WChunkService;
+import de.mhus.nimbus.world.shared.world.WWorldInstanceService;
 import de.mhus.nimbus.world.shared.world.WWorldService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.lang.ref.SoftReference;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -18,6 +19,7 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Service for accessing terrain data (chunk blocks) for entity positioning.
  * Provides ground height lookup and block queries for terrain-aware movement.
+ * Uses ChunksCache internally so repeated lookups in the same chunk area are fast.
  */
 @Service
 @RequiredArgsConstructor
@@ -26,12 +28,34 @@ public class TerrainService {
 
     private final WChunkService chunkService;
     private final WWorldService worldService;
+    private final WWorldInstanceService instanceService;
 
-    private final Map<WorldId, de.mhus.nimbus.world.shared.world.WWorld> worldCache = new ConcurrentHashMap<>();
+    /** WorldId string → SoftReference<ChunksCache> — one cache per world/instance. */
+    private final Map<String, SoftReference<ChunksCache>> cacheMap = new ConcurrentHashMap<>();
 
-    private de.mhus.nimbus.world.shared.world.WWorld getCachedWorld(WorldId worldId) {
-        return worldCache.computeIfAbsent(worldId, id ->
-                worldService.getByWorldId(id).orElse(null));
+    /**
+     * Get or create a ChunksCache for the given worldId.
+     * Uses SoftReferences so caches can be GC'd under memory pressure.
+     */
+    public ChunksCache getChunksCache(WorldId worldId) {
+        String key = worldId.getId();
+        SoftReference<ChunksCache> ref = cacheMap.get(key);
+        if (ref != null) {
+            ChunksCache cached = ref.get();
+            if (cached != null) {
+                return cached;
+            }
+            cacheMap.remove(key);
+        }
+
+        ChunksCache chunksCache = ChunksCache.builder()
+                .chunkService(chunkService)
+                .worldService(worldService)
+                .instanceService(instanceService)
+                .worldId(worldId)
+                .build();
+        cacheMap.put(key, new SoftReference<>(chunksCache));
+        return chunksCache;
     }
 
     /**
@@ -62,33 +86,20 @@ public class TerrainService {
      */
     public int getGroundHeight(WorldId worldId, int x, int z, int startY, boolean canWalkOnWater, int epoch) {
         try {
-            var world = getCachedWorld(worldId);
-            // Calculate chunk coordinates
-            int chunkX = world.getChunkX(x);
-            int chunkZ = world.getChunkZ(z);
-            String chunkKey = TypeUtil.toStringChunkCoord(chunkX, chunkZ);
+            ChunksCache cache = getChunksCache(worldId);
+            ChunkData chunkData = cache.getChunkData(x, z);
 
-            // Load chunk from database (regionId = worldId for main world, create=false)
-            Optional<ChunkData> chunkDataOpt = chunkService.loadChunkData(worldId, chunkKey, false, epoch);
-
-            if (chunkDataOpt.isEmpty()) {
-                log.trace("Chunk not found for ground height lookup: world={}, chunk={}", worldId, chunkKey);
+            if (chunkData == null) {
+                log.trace("Chunk not found for ground height lookup: world={}, pos=({}, {})", worldId, x, z);
                 return 64; // Default ground level
             }
 
-            var chunkSize = world.getPublicData().getChunkSize();
-            ChunkData chunkData = chunkDataOpt.get();
-
             // Try to use HeightData first (if available) for better performance
             if (chunkData.getHeightData() != null) {
-                int localX = ((x % chunkSize) + chunkSize) % chunkSize;
-                int localZ = ((z % chunkSize) + chunkSize) % chunkSize;
-
-                var heightDataDto = chunkService.getHeightDataForColumn(chunkData, localX, localZ);
+                var heightDataDto = cache.getHeightDataAt(x, z);
                 if (heightDataDto != null) {
                     // Check if there's water at this position
                     if (heightDataDto.waterLevel() != null && !canWalkOnWater) {
-                        // Position has water and entity cannot walk on water
                         log.trace("Skipping position with water: ({}, {}), waterLevel={}", x, z, heightDataDto.waterLevel());
                         return -1; // Indicate invalid position (has water)
                     }
@@ -111,14 +122,12 @@ public class TerrainService {
                     String blockTypeId = block.getBlockTypeId();
 
                     if (isSolidBlock(blockTypeId)) {
-                        // Found solid block, return Y + 1 (stand on top)
                         log.trace("Ground height found at ({}, {}, {}): y={}", x, y, z, y + 1);
                         return y + 1;
                     }
                 }
             }
 
-            // No solid block found, use default ground level
             log.trace("No solid block found at ({}, {}), using default ground level", x, z);
             return 64;
 
@@ -130,19 +139,12 @@ public class TerrainService {
 
     /**
      * Get block at specific world coordinates.
-     *
-     * @param chunkData Chunk data
-     * @param worldX World X coordinate
-     * @param worldY World Y coordinate
-     * @param worldZ World Z coordinate
-     * @return Optional containing the block if found
      */
     private Optional<Block> getBlockAt(ChunkData chunkData, int worldX, int worldY, int worldZ) {
         if (chunkData.getBlocks() == null) {
             return Optional.empty();
         }
 
-        // Search for block with matching position
         for (Block block : chunkData.getBlocks()) {
             if (block.getPosition() == null) continue;
 
@@ -157,20 +159,13 @@ public class TerrainService {
 
     /**
      * Check if block type ID represents a solid block.
-     *
-     * @param blockTypeId Block type identifier
-     * @return True if block is solid (not air or null)
      */
     public boolean isSolidBlock(String blockTypeId) {
-        // "0" is air block, null is also air
         return blockTypeId != null && !blockTypeId.equals("0") && !blockTypeId.isBlank();
     }
 
     /**
      * Check if position is valid (within world bounds).
-     *
-     * @param y Y coordinate
-     * @return True if within valid range
      */
     public boolean isValidHeight(int y) {
         return y >= 0 && y <= 255;
@@ -179,52 +174,28 @@ public class TerrainService {
     /**
      * Get water position at world position (x, z).
      * Returns a valid Y position for water-based entities (fish, etc.).
-     * Position must be between groundLevel and waterLevel.
      *
      * @param worldId World identifier
      * @param x X coordinate (world space)
      * @param z Z coordinate (world space)
+     * @param epoch Current world epoch
      * @return Y coordinate within water bounds, or -1 if no water at this position
      */
     public int getWaterPosition(WorldId worldId, int x, int z, int epoch) {
         try {
-            var world = getCachedWorld(worldId);
-            // Calculate chunk coordinates
-            int chunkX = world.getChunkX(x);
-            int chunkZ = world.getChunkZ(z);
-            String chunkKey = TypeUtil.toStringChunkCoord(chunkX, chunkZ);
+            ChunksCache cache = getChunksCache(worldId);
+            var heightDataDto = cache.getHeightDataAt(x, z);
 
-            // Load chunk from database
-            Optional<ChunkData> chunkDataOpt = chunkService.loadChunkData(worldId, chunkKey, false, epoch);
+            if (heightDataDto != null && heightDataDto.waterLevel() != null) {
+                int groundLevel = heightDataDto.groundLevel();
+                int waterLevel = heightDataDto.waterLevel();
 
-            if (chunkDataOpt.isEmpty()) {
-                log.trace("Chunk not found for water position lookup: world={}, chunk={}", worldId, chunkKey);
-                return -1;
+                int waterY = (groundLevel + waterLevel) / 2;
+                log.trace("Water position at ({}, {}): y={} (ground={}, water={})",
+                        x, z, waterY, groundLevel, waterLevel);
+                return waterY;
             }
 
-            var chunkSize = world.getPublicData().getChunkSize();
-            ChunkData chunkData = chunkDataOpt.get();
-
-            // Use HeightData to find water bounds
-            if (chunkData.getHeightData() != null) {
-                int localX = ((x % chunkSize) + chunkSize) % chunkSize;
-                int localZ = ((z % chunkSize) + chunkSize) % chunkSize;
-
-                var heightDataDto = chunkService.getHeightDataForColumn(chunkData, localX, localZ);
-                if (heightDataDto != null && heightDataDto.waterLevel() != null) {
-                    // Water exists at this position
-                    int groundLevel = heightDataDto.groundLevel();
-                    int waterLevel = heightDataDto.waterLevel();
-
-                    // Return mid-point between ground and water (where fish swim)
-                    int waterY = (groundLevel + waterLevel) / 2;
-                    log.trace("Water position at ({}, {}): y={} (ground={}, water={})",
-                            x, z, waterY, groundLevel, waterLevel);
-                    return waterY;
-                }
-            }
-
-            // No water at this position
             log.trace("No water at position ({}, {})", x, z);
             return -1;
 
