@@ -294,7 +294,9 @@ public class WBlockTypeService {
                             (publicData != null && publicData.getTitle() != null &&
                                     publicData.getTitle().toLowerCase().contains(lowerQuery)) ||
                             (publicData != null && publicData.getDescription() != null &&
-                                    publicData.getDescription().toLowerCase().contains(lowerQuery));
+                                    publicData.getDescription().toLowerCase().contains(lowerQuery)) ||
+                            (publicData != null && publicData.getType() != null &&
+                                    publicData.getType().name().toLowerCase().contains(lowerQuery));
                 })
                 .collect(Collectors.toList());
     }
