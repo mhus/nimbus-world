@@ -2,6 +2,7 @@ package de.mhus.nimbus.world.shared.edit;
 
 import de.mhus.nimbus.generated.types.Block;
 import de.mhus.nimbus.shared.engine.EngineMapper;
+import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.shared.redis.BlockUpdateBroadcastMessage;
 import de.mhus.nimbus.world.shared.redis.WorldRedisMessagingService;
 import de.mhus.nimbus.world.shared.world.WWorld;
@@ -110,8 +111,10 @@ public class BlockUpdateService {
                     .build();
 
             // Serialize and publish to Redis
+            // Publish on base worldId channel (subscribers listen on base), but message contains full worldId for epoch filtering
+            String baseWorldId = WorldId.unchecked(worldId).toBaseWorldId().getId();
             String messageJson = objectMapper.writeValueAsString(broadcast);
-            redisMessaging.publish(worldId, "b.u", messageJson);
+            redisMessaging.publish(baseWorldId, "b.u", messageJson);
 
             log.debug("Broadcast block update via Redis: world={} chunkSize={} chunk=({},{}) pos=({},{},{}) origin={}",
                     worldId, chunkSize, cx, cz, x, y, z, sessionId);
