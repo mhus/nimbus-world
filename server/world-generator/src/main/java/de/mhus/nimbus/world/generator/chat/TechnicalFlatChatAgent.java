@@ -7,6 +7,7 @@ import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.generator.flat.FlatToolService;
 import de.mhus.nimbus.world.shared.chat.WChatAgent;
 import de.mhus.nimbus.world.shared.chat.WChatAgentScope;
+import de.mhus.nimbus.world.shared.chat.WChatContext;
 import de.mhus.nimbus.world.shared.chat.WChatMessage;
 import de.mhus.nimbus.world.shared.chat.WChatService;
 import lombok.RequiredArgsConstructor;
@@ -94,12 +95,12 @@ public class TechnicalFlatChatAgent implements WChatAgent {
     }
 
     @Override
-    public List<WChatMessage> chat(WorldId worldId, String chatId, String playerId, String message) {
-        return chatWithSession(worldId, chatId, playerId, message, null);
+    public List<WChatMessage> chat(WorldId worldId, String chatId, String playerId, String message, WChatContext context) {
+        return chatWithSession(worldId, chatId, playerId, message, null, context);
     }
 
     @Override
-    public List<WChatMessage> chatWithSession(WorldId worldId, String chatId, String playerId, String message, String sessionId) {
+    public List<WChatMessage> chatWithSession(WorldId worldId, String chatId, String playerId, String message, String sessionId, WChatContext context) {
         log.info("🏔️ Technical Flat Builder processing message from player {} (session={}): {}",
                 playerId, sessionId, message);
 

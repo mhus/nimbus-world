@@ -78,27 +78,27 @@ public interface WChatAgent {
     /**
      * Process a chat message and generate responses.
      *
-     * @param worldId The world identifier
+     * @param worldId The world identifier (base worldId without instance suffix)
      * @param chatId The chat ID where the message is sent
      * @param playerId The player ID sending the message
      * @param message The message content
      * @return List of response messages from the agent
      */
-    List<WChatMessage> chat(WorldId worldId, String chatId, String playerId, String message);
+    List<WChatMessage> chat(WorldId worldId, String chatId, String playerId, String message, WChatContext context);
 
     /**
      * Process a chat message with session context and generate responses.
      * Default implementation delegates to chat() without sessionId for backwards compatibility.
      *
-     * @param worldId The world identifier
+     * @param worldId The world identifier (base worldId without instance suffix)
      * @param chatId The chat ID where the message is sent
      * @param playerId The player ID sending the message
      * @param message The message content
      * @param sessionId The session ID for accessing session-specific context (optional)
      * @return List of response messages from the agent
      */
-    default List<WChatMessage> chatWithSession(WorldId worldId, String chatId, String playerId, String message, String sessionId) {
-        return chat(worldId, chatId, playerId, message);
+    default List<WChatMessage> chatWithSession(WorldId worldId, String chatId, String playerId, String message, String sessionId, WChatContext context) {
+        return chat(worldId, chatId, playerId, message, context);
     }
 
     /**
@@ -109,7 +109,7 @@ public interface WChatAgent {
      *
      * Default implementation delegates to chatWithSession() ignoring the queue.
      *
-     * @param worldId The world identifier
+     * @param worldId The world identifier (base worldId without instance suffix)
      * @param chatId The chat ID where the message is sent
      * @param playerId The player ID sending the message
      * @param message The message content
@@ -118,8 +118,8 @@ public interface WChatAgent {
      * @return List of response messages from the agent
      */
     default List<WChatMessage> chatWithQueue(WorldId worldId, String chatId, String playerId,
-                                             String message, String sessionId, WChatSessionQueue queue) {
-        return chatWithSession(worldId, chatId, playerId, message, sessionId);
+                                             String message, String sessionId, WChatSessionQueue queue, WChatContext context) {
+        return chatWithSession(worldId, chatId, playerId, message, sessionId, context);
     }
 
     /**

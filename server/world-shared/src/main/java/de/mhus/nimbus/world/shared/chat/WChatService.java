@@ -794,10 +794,17 @@ public class WChatService {
         messageRepository.save(playerMessage);
         log.debug("Saved player message: world={}, chatId={}, playerId={}", lookupWorld, chatId, playerId);
 
-        // Get agent responses (use chatWithSession if sessionId is available)
-        List<WChatMessage> responses = sessionId != null && !sessionId.isBlank()
-                ? agent.chatWithSession(worldId, chatId, playerId, message, sessionId)
-                : agent.chat(worldId, chatId, playerId, message);
+        // Build context with full worldId and call agent
+        WChatContext context = WChatContext.builder()
+                .fullWorldId(worldId)
+                .sessionId(sessionId)
+                .build();
+        List<WChatMessage> responses;
+        if (sessionId != null && !sessionId.isBlank()) {
+            responses = agent.chatWithSession(lookupWorld, chatId, playerId, message, sessionId, context);
+        } else {
+            responses = agent.chat(lookupWorld, chatId, playerId, message, context);
+        }
 
         // Save agent responses and handle model-selector commands
         saveMessages(worldId, chatId, sessionId, true, responses);
@@ -931,6 +938,7 @@ public class WChatService {
         WChatSessionMessage sessionMsg = WChatSessionMessage.builder()
                 .type(WChatSessionMessage.Type.CHAT)
                 .worldId(lookupWorld.getId())
+                .fullWorldId(worldId.getId())
                 .chatId(chatId)
                 .agentName(agentName)
                 .playerId(playerId)
@@ -957,6 +965,7 @@ public class WChatService {
         WChatSessionMessage sessionMsg = WChatSessionMessage.builder()
                 .type(WChatSessionMessage.Type.COMMAND)
                 .worldId(lookupWorld.getId())
+                .fullWorldId(worldId.getId())
                 .chatId(chatId)
                 .agentName(agentName)
                 .playerId(playerId)
@@ -997,6 +1006,14 @@ public class WChatService {
     void processAgentChat(WChatSessionMessage msg, WChatSessionQueue sessionQueue) {
         WorldId worldId = WorldId.unchecked(msg.getWorldId());
 
+        // Build request context with full worldId (includes instance suffix, e.g. "ymir:Mist::x0")
+        String fullWorldIdStr = msg.getFullWorldId() != null && !msg.getFullWorldId().isBlank()
+                ? msg.getFullWorldId() : msg.getWorldId();
+        WChatContext context = WChatContext.builder()
+                .fullWorldId(WorldId.unchecked(fullWorldIdStr))
+                .sessionId(msg.getSessionId())
+                .build();
+
         WChatAgent agent = getAgent(msg.getAgentName())
                 .orElse(null);
         if (agent == null) {
@@ -1006,14 +1023,15 @@ public class WChatService {
 
         try {
             List<WChatMessage> responses;
-            if (agent.supportsQueue()) {
+            if (agent.supportsQueue() && sessionQueue != null) {
                 responses = agent.chatWithQueue(worldId, msg.getChatId(), msg.getPlayerId(),
-                        msg.getMessage(), msg.getSessionId(), sessionQueue);
+                        msg.getMessage(), msg.getSessionId(), sessionQueue, context);
             } else if (msg.getSessionId() != null && !msg.getSessionId().isBlank()) {
                 responses = agent.chatWithSession(worldId, msg.getChatId(), msg.getPlayerId(),
-                        msg.getMessage(), msg.getSessionId());
+                        msg.getMessage(), msg.getSessionId(), context);
             } else {
-                responses = agent.chat(worldId, msg.getChatId(), msg.getPlayerId(), msg.getMessage());
+                responses = agent.chat(worldId, msg.getChatId(), msg.getPlayerId(),
+                        msg.getMessage(), context);
             }
 
             saveMessages(worldId, msg.getChatId(), msg.getSessionId(), true, responses);

@@ -72,13 +72,13 @@ public abstract class ProxyChatAgent implements WChatAgent {
     }
 
     @Override
-    public List<WChatMessage> chat(WorldId worldId, String chatId, String playerId, String message) {
-        return chatWithSession(worldId, chatId, playerId, message, null);
+    public List<WChatMessage> chat(WorldId worldId, String chatId, String playerId, String message, WChatContext context) {
+        return chatWithSession(worldId, chatId, playerId, message, null, context);
     }
 
     @Override
     public List<WChatMessage> chatWithSession(WorldId worldId, String chatId, String playerId,
-                                               String message, String sessionId) {
+                                               String message, String sessionId, WChatContext context) {
         // Get or create internal chat
         String internalChatId = getOrCreateInternalChat(worldId, chatId, playerId);
 

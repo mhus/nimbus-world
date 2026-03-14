@@ -9,8 +9,10 @@ import de.mhus.nimbus.world.generator.blocks.BlockToolService;
 import de.mhus.nimbus.world.generator.blocks.ManipulatorContext;
 import de.mhus.nimbus.world.shared.chat.WChatAgent;
 import de.mhus.nimbus.world.shared.chat.WChatAgentScope;
+import de.mhus.nimbus.world.shared.chat.WChatContext;
 import de.mhus.nimbus.world.shared.chat.WChatMessage;
 import de.mhus.nimbus.world.shared.chat.WChatService;
+import de.mhus.nimbus.world.shared.chat.WChatSessionQueue;
 import de.mhus.nimbus.world.shared.client.WorldClientService;
 import de.mhus.nimbus.world.shared.commands.CommandContext;
 import de.mhus.nimbus.world.shared.session.WSession;
@@ -78,12 +80,12 @@ public class TechnicalBlockChatAgent implements WChatAgent {
     }
 
     @Override
-    public List<WChatMessage> chat(WorldId worldId, String chatId, String playerId, String message) {
-        return chatWithSession(worldId, chatId, playerId, message, null);
+    public List<WChatMessage> chat(WorldId worldId, String chatId, String playerId, String message, WChatContext context) {
+        return chatWithSession(worldId, chatId, playerId, message, null, context);
     }
 
     @Override
-    public List<WChatMessage> chatWithSession(WorldId worldId, String chatId, String playerId, String message, String sessionId) {
+    public List<WChatMessage> chatWithSession(WorldId worldId, String chatId, String playerId, String message, String sessionId, WChatContext chatContext) {
         log.info("Technical Block Builder: player={}, session={}, message={}",
                 playerId, sessionId,
                 message != null && message.length() > 100 ? message.substring(0, 100) + "..." : message);
@@ -165,10 +167,14 @@ public class TechnicalBlockChatAgent implements WChatAgent {
         log.debug("Context: sessionId={}, layerDataId={}, layerName={}, modelName={}, groupId={}",
                 contextSessionId, layerDataId, layerName, modelName, groupId);
 
+        // Use full worldId (with instance suffix) for block operations if available from chat context
+        WorldId effectiveWorldId = chatContext != null && chatContext.getFullWorldId() != null
+                ? chatContext.getFullWorldId() : worldId;
+
         // Build context
         ManipulatorContext context = ManipulatorContext.builder()
                 .service(blockManipulatorService)
-                .worldId(worldId.getId())
+                .worldId(effectiveWorldId.getId())
                 .sessionId(contextSessionId)
                 .layerDataId(layerDataId)
                 .layerName(layerName)

@@ -25,6 +25,12 @@ public class WChatSessionMessage {
 
     private Type type;
     private String worldId;
+    /**
+     * Full world identifier including instance suffix (e.g. "ymir:Mist::x0").
+     * Used by agents for operations that need the instance context (e.g. WEditCache).
+     * Falls back to worldId if not set.
+     */
+    private String fullWorldId;
     private String chatId;
     private String agentName;
     private String playerId;

@@ -134,8 +134,8 @@ public class WChatConnectorCommand implements Command {
         log.debug("Executing agent {} for player {} with message: {} (sessionId: {})",
                 agentName, playerId, message, sessionId);
         List<WChatMessage> responses = sessionId != null && !sessionId.isBlank()
-                ? agent.chatWithSession(worldId, chatId, playerId, message, sessionId)
-                : agent.chat(worldId, chatId, playerId, message);
+                ? agent.chatWithSession(worldId, chatId, playerId, message, sessionId, null)
+                : agent.chat(worldId, chatId, playerId, message, null);
 
         // Save to DB if chatId provided
         if (chatId != null && !chatId.isBlank()) {

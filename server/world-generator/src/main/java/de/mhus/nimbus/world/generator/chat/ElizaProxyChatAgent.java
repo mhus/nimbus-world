@@ -3,6 +3,7 @@ package de.mhus.nimbus.world.generator.chat;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.shared.chat.ProxyChatAgent;
 import de.mhus.nimbus.world.shared.chat.WChatAgentScope;
+import de.mhus.nimbus.world.shared.chat.WChatContext;
 import de.mhus.nimbus.world.shared.chat.WChatMessage;
 import de.mhus.nimbus.world.shared.chat.WChatService;
 import org.springframework.stereotype.Component;
@@ -44,7 +45,7 @@ public class ElizaProxyChatAgent extends ProxyChatAgent {
 
     @Override
     public List<WChatMessage> chatWithSession(WorldId worldId, String chatId, String playerId,
-                                               String message, String sessionId) {
+                                               String message, String sessionId, WChatContext context) {
         // Test: respond locally when message contains "proxy"
         if (message != null && message.toLowerCase().contains("proxy")) {
             WChatMessage response = WChatMessage.builder()
@@ -56,6 +57,6 @@ public class ElizaProxyChatAgent extends ProxyChatAgent {
                     .build();
             return List.of(response);
         }
-        return super.chatWithSession(worldId, chatId, playerId, message, sessionId);
+        return super.chatWithSession(worldId, chatId, playerId, message, sessionId, context);
     }
 }

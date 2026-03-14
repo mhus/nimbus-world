@@ -42,7 +42,7 @@ public abstract class AbstractElizaChatAgent implements WChatAgent {
     }
 
     @Override
-    public List<WChatMessage> chat(WorldId worldId, String chatId, String playerId, String message) {
+    public List<WChatMessage> chat(WorldId worldId, String chatId, String playerId, String message, WChatContext context) {
         var ac = activeChats.get(chatId);
         if (ac != null) {
             return ac.chat(worldId, chatId, playerId, message);

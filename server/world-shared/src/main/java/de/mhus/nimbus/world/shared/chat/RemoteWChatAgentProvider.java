@@ -306,12 +306,12 @@ public abstract class RemoteWChatAgentProvider implements WChatAgentProvider {
         }
 
         @Override
-        public List<WChatMessage> chat(WorldId worldId, String chatId, String playerId, String message) {
+        public List<WChatMessage> chat(WorldId worldId, String chatId, String playerId, String message, WChatContext context) {
             return provider.executeRemoteChat(name, worldId, playerId, chatId, message, null);
         }
 
         @Override
-        public List<WChatMessage> chatWithSession(WorldId worldId, String chatId, String playerId, String message, String sessionId) {
+        public List<WChatMessage> chatWithSession(WorldId worldId, String chatId, String playerId, String message, String sessionId, WChatContext context) {
             return provider.executeRemoteChat(name, worldId, playerId, chatId, message, sessionId);
         }
 
