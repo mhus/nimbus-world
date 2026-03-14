@@ -359,6 +359,12 @@ public class WorldId implements Comparable<WorldId> {
     }
 
     /**
+     * Don't use this method if not absolutely necessary.
+     * Use instanceService.findByInstanceIdWithValidation(worldId.getId())
+     *       .map(WWorldInstance::getEpoch)
+     *       .orElse(0);
+     *  instead this is generic for editor and player instances.
+     *
      * Get the epoch number from a synthetic editor instance.
      * Only valid when {@link #isEditorInstance()} returns true.
      *
