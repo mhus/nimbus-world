@@ -579,15 +579,16 @@ public class EditorController extends BaseEditorController {
      */
     @GetMapping("/{worldId}/editcache/statistics")
     public ResponseEntity<?> getEditCacheStatistics(@PathVariable String worldId) {
-        WorldId.of(worldId).orElseThrow(
+        WorldId parsedWorldId = WorldId.of(worldId).orElseThrow(
                 () -> new IllegalStateException("Invalid worldId: " + worldId)
         );
 
         try {
+            // Works for both specific epoch (instance worldId) and all epochs (base worldId)
             List<Map<String, Object>> statistics = editService.getEditCacheStatistics(worldId);
 
-            log.debug("Edit cache statistics retrieved: worldId={}, layerCount={}",
-                    worldId, statistics.size());
+            log.debug("Edit cache statistics retrieved: worldId={}, layerCount={}, allEpochs={}",
+                    worldId, statistics.size(), !parsedWorldId.isInstance());
 
             return ResponseEntity.ok(statistics);
 
@@ -607,16 +608,26 @@ public class EditorController extends BaseEditorController {
             @PathVariable String worldId,
             @PathVariable String layerDataId) {
 
-        WorldId.of(worldId).orElseThrow(
+        WorldId parsedWorldId = WorldId.of(worldId).orElseThrow(
                 () -> new IllegalStateException("Invalid worldId: " + worldId)
         );
 
         try {
-            // Discard all cached blocks for this layer
-            long deletedCount = editCacheDirtyService.discardChanges(worldId, layerDataId);
+            long deletedCount;
+            if (parsedWorldId.isInstance()) {
+                // Specific epoch: discard for exact worldId
+                deletedCount = editCacheDirtyService.discardChanges(worldId, layerDataId);
+            } else {
+                // All epochs: find distinct instance worldIds and discard each
+                List<String> instanceWorldIds = editCacheService.findDistinctWorldIdsByBaseWorldIdAndLayerDataId(worldId, layerDataId);
+                deletedCount = 0;
+                for (String instanceWorldId : instanceWorldIds) {
+                    deletedCount += editCacheDirtyService.discardChanges(instanceWorldId, layerDataId);
+                }
+            }
 
-            log.info("Discard edit cache completed: worldId={}, layerDataId={}, deleted={}",
-                    worldId, layerDataId, deletedCount);
+            log.info("Discard edit cache completed: worldId={}, layerDataId={}, deleted={}, allEpochs={}",
+                    worldId, layerDataId, deletedCount, !parsedWorldId.isInstance());
 
             return ResponseEntity.ok().body(Map.of(
                     "deleted", deletedCount,
@@ -640,28 +651,46 @@ public class EditorController extends BaseEditorController {
             @PathVariable String worldId,
             @PathVariable String layerDataId) {
 
-        WorldId.of(worldId).orElseThrow(
+        WorldId parsedWorldId = WorldId.of(worldId).orElseThrow(
                 () -> new IllegalStateException("Invalid worldId: " + worldId)
         );
 
         try {
-            // Count cached blocks before applying
-            long blockCount = editCacheService.countByWorldIdAndLayerDataId(worldId, layerDataId);
+            long blockCount;
+            if (parsedWorldId.isInstance()) {
+                // Specific epoch: apply for exact worldId
+                blockCount = editCacheService.countByWorldIdAndLayerDataId(worldId, layerDataId);
 
-            if (blockCount == 0) {
-                log.debug("No cached blocks to apply: worldId={}, layerDataId={}", worldId, layerDataId);
-                return ResponseEntity.ok().body(Map.of(
-                        "applied", 0L,
-                        "layerDataId", layerDataId,
-                        "message", "No cached blocks to apply"
-                ));
+                if (blockCount == 0) {
+                    log.debug("No cached blocks to apply: worldId={}, layerDataId={}", worldId, layerDataId);
+                    return ResponseEntity.ok().body(Map.of(
+                            "applied", 0L,
+                            "layerDataId", layerDataId,
+                            "message", "No cached blocks to apply"
+                    ));
+                }
+
+                editCacheDirtyService.applyChanges(worldId, layerDataId);
+            } else {
+                // All epochs: find distinct instance worldIds and apply each
+                List<String> instanceWorldIds = editCacheService.findDistinctWorldIdsByBaseWorldIdAndLayerDataId(worldId, layerDataId);
+                blockCount = 0;
+                for (String instanceWorldId : instanceWorldIds) {
+                    blockCount += editCacheService.countByWorldIdAndLayerDataId(instanceWorldId, layerDataId);
+                    editCacheDirtyService.applyChanges(instanceWorldId, layerDataId);
+                }
+
+                if (blockCount == 0) {
+                    return ResponseEntity.ok().body(Map.of(
+                            "applied", 0L,
+                            "layerDataId", layerDataId,
+                            "message", "No cached blocks to apply"
+                    ));
+                }
             }
 
-            // Apply changes immediately (marks dirty and processes)
-            editCacheDirtyService.applyChanges(worldId, layerDataId);
-
-            log.info("Apply edit cache completed: worldId={}, layerDataId={}, applied={}",
-                    worldId, layerDataId, blockCount);
+            log.info("Apply edit cache completed: worldId={}, layerDataId={}, applied={}, allEpochs={}",
+                    worldId, layerDataId, blockCount, !parsedWorldId.isInstance());
 
             return ResponseEntity.ok().body(Map.of(
                     "applied", blockCount,

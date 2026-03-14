@@ -12,6 +12,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * Service for managing WEditCache entities.
@@ -340,5 +342,60 @@ public class WEditCacheService {
     @Transactional(readOnly = true)
     public boolean existsByWorldIdAndChunk(String id, String chunkKey) {
         return repository.existsByWorldIdAndChunk(id, chunkKey);
+    }
+
+    /**
+     * Find all cached blocks for a base worldId across all editor instances (epochs).
+     * Searches with regex pattern matching worldId::x* (all editor instances).
+     *
+     * @param baseWorldId Base world identifier (without instance suffix)
+     * @param layerDataId Layer data identifier
+     * @return List of cached blocks across all epochs
+     */
+    @Transactional(readOnly = true)
+    public List<WEditCache> findByBaseWorldIdAndLayerDataId(String baseWorldId, String layerDataId) {
+        String regex = "^" + Pattern.quote(baseWorldId) + "::x";
+        return repository.findByWorldIdRegexAndLayerDataId(regex, layerDataId);
+    }
+
+    /**
+     * Count cached blocks for a base worldId across all editor instances.
+     *
+     * @param baseWorldId Base world identifier (without instance suffix)
+     * @param layerDataId Layer data identifier
+     * @return Number of cached blocks across all epochs
+     */
+    @Transactional(readOnly = true)
+    public long countByBaseWorldIdAndLayerDataId(String baseWorldId, String layerDataId) {
+        String regex = "^" + Pattern.quote(baseWorldId) + "::x";
+        return repository.countByWorldIdRegexAndLayerDataId(regex, layerDataId);
+    }
+
+    /**
+     * Find all cached blocks for a base worldId across all editor instances.
+     *
+     * @param baseWorldId Base world identifier (without instance suffix)
+     * @return List of cached blocks across all epochs
+     */
+    @Transactional(readOnly = true)
+    public List<WEditCache> findByBaseWorldId(String baseWorldId) {
+        String regex = "^" + Pattern.quote(baseWorldId) + "::x";
+        return repository.findByWorldIdRegex(regex);
+    }
+
+    /**
+     * Get distinct worldIds from cached blocks for a base worldId and layer.
+     * Used to find which epoch instances have cached data for a layer.
+     *
+     * @param baseWorldId Base world identifier
+     * @param layerDataId Layer data identifier
+     * @return Set of distinct worldIds
+     */
+    @Transactional(readOnly = true)
+    public List<String> findDistinctWorldIdsByBaseWorldIdAndLayerDataId(String baseWorldId, String layerDataId) {
+        return findByBaseWorldIdAndLayerDataId(baseWorldId, layerDataId).stream()
+                .map(WEditCache::getWorldId)
+                .distinct()
+                .collect(Collectors.toList());
     }
 }

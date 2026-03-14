@@ -102,4 +102,32 @@ public interface WEditCacheRepository extends MongoRepository<WEditCache, String
      * @return
      */
     boolean existsByWorldIdAndChunk(String id, String chunkKey);
+
+    /**
+     * Find all cached blocks where worldId matches regex and has given layerDataId.
+     * Used for "All epochs" queries where worldId pattern is "^baseWorldId::x".
+     *
+     * @param worldIdRegex Regex pattern for worldId
+     * @param layerDataId Layer data identifier
+     * @return List of cached blocks across matching worldIds
+     */
+    List<WEditCache> findByWorldIdRegexAndLayerDataId(String worldIdRegex, String layerDataId);
+
+    /**
+     * Count cached blocks where worldId matches regex and has given layerDataId.
+     *
+     * @param worldIdRegex Regex pattern for worldId
+     * @param layerDataId Layer data identifier
+     * @return Number of matching cached blocks
+     */
+    long countByWorldIdRegexAndLayerDataId(String worldIdRegex, String layerDataId);
+
+    /**
+     * Find all cached blocks where worldId matches regex.
+     * Used for "All epochs" statistics.
+     *
+     * @param worldIdRegex Regex pattern for worldId
+     * @return List of cached blocks across matching worldIds
+     */
+    List<WEditCache> findByWorldIdRegex(String worldIdRegex);
 }

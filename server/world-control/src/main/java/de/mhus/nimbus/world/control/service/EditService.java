@@ -7,6 +7,7 @@ import de.mhus.nimbus.generated.types.Vector3Int;
 import de.mhus.nimbus.world.shared.client.WorldClientService;
 import de.mhus.nimbus.world.shared.commands.CommandContext;
 import de.mhus.nimbus.world.shared.edit.BlockUpdateService;
+import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.shared.layer.LayerType;
 import de.mhus.nimbus.world.shared.layer.WLayer;
 import de.mhus.nimbus.world.shared.layer.WLayerService;
@@ -520,7 +521,11 @@ public class EditService {
      * @return List of edit cache statistics per layer
      */
     public List<Map<String, Object>> getEditCacheStatistics(String worldId) {
-        // Get all layers for this world
+        WorldId parsedWorldId = WorldId.of(worldId).orElseThrow(
+                () -> new IllegalStateException("Invalid worldId: " + worldId));
+        boolean allEpochs = !parsedWorldId.isInstance();
+
+        // Get all layers for this world (layerService always uses base worldId)
         List<WLayer> layers = layerService.findByWorldId(worldId);
 
         // Build statistics per layer
@@ -529,9 +534,13 @@ public class EditService {
         for (WLayer layer : layers) {
             String layerDataId = layer.getLayerDataId();
 
-            // Get cached blocks for this layer
-            List<de.mhus.nimbus.world.shared.layer.WEditCache> caches =
-                editCacheService.findByWorldIdAndLayerDataId(worldId, layerDataId);
+            // Get cached blocks: either exact worldId or all epochs via regex
+            List<de.mhus.nimbus.world.shared.layer.WEditCache> caches;
+            if (allEpochs) {
+                caches = editCacheService.findByBaseWorldIdAndLayerDataId(worldId, layerDataId);
+            } else {
+                caches = editCacheService.findByWorldIdAndLayerDataId(worldId, layerDataId);
+            }
 
             // Skip layers with no cache entries
             if (caches.isEmpty()) {
@@ -557,6 +566,21 @@ public class EditService {
             stat.put("blockCount", caches.size());
             stat.put("firstDate", firstDate);
             stat.put("lastDate", lastDate);
+
+            // Add per-epoch breakdown when showing all epochs
+            if (allEpochs) {
+                Map<String, Integer> epochBreakdown = new HashMap<>();
+                for (var cache : caches) {
+                    WorldId cacheWorldId = WorldId.of(cache.getWorldId()).orElse(null);
+                    if (cacheWorldId != null && cacheWorldId.isEditorInstance()) {
+                        String epochKey = String.valueOf(cacheWorldId.getEditorEpoch());
+                        epochBreakdown.merge(epochKey, 1, Integer::sum);
+                    } else {
+                        epochBreakdown.merge("?", 1, Integer::sum);
+                    }
+                }
+                stat.put("epochBreakdown", epochBreakdown);
+            }
 
             statistics.add(stat);
         }
