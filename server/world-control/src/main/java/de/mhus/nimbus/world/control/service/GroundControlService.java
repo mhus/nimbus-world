@@ -151,17 +151,22 @@ public class GroundControlService {
             }
         }
 
-        // Fill horizontal gaps by interpolating from neighbors and edges
+        // Fill horizontal gaps by interpolating from neighbors and edges (Laplace interpolation)
         fillHorizontalGaps(targetMinY, targetMaxY, worldXStart, worldZStart, chunkSize, edgeHeights);
+
+        // Extend columns vertically to close diagonal gaps between adjacent positions.
+        // For a watertight heightmap surface, each column must reach down to the
+        // lowest neighbor height. Without this, height differences between adjacent
+        // columns create visible holes when viewed from the side.
+        extendColumnsToNeighbors(targetMinY, targetMaxY, worldXStart, worldZStart, chunkSize, edgeHeights);
 
         // Determine a default block type for filling
         String defaultGroundBlockTypeId = findMostCommonBlockType(blockTypeAtPos, groundBlockTypeIds);
 
         // Build new block list
         List<LayerBlock> newBlocks = new ArrayList<>();
-        Set<String> filledPositions = new HashSet<>();
 
-        // Fill vertical gaps and create blocks
+        // Fill vertical columns and create blocks
         for (int lx = 0; lx < chunkSize; lx++) {
             for (int lz = 0; lz < chunkSize; lz++) {
                 int wx = worldXStart + lx;
@@ -175,13 +180,9 @@ public class GroundControlService {
                 String blockTypeId = blockTypeAtPos.getOrDefault(posKey, defaultGroundBlockTypeId);
                 TreeSet<Integer> existingY = groundHeights.getOrDefault(posKey, new TreeSet<>());
 
-                // Fill from minY to maxY (vertical gap filling)
+                // Fill from minY to maxY
                 for (int y = minY; y <= maxY; y++) {
-                    String fullKey = wx + "," + y + "," + wz;
-                    filledPositions.add(fullKey);
-
                     if (!existingY.contains(y)) {
-                        // Create fill block
                         newBlocks.add(createGroundLayerBlock(wx, y, wz, blockTypeId));
                     }
                 }
@@ -459,6 +460,51 @@ public class GroundControlService {
         }
 
         return edgeHeights;
+    }
+
+    /**
+     * Extend each column's minY downward so adjacent columns overlap vertically.
+     * For a watertight voxel heightmap, each column must extend down to the lowest
+     * of its 4 direct neighbors' maxY. This prevents diagonal holes between columns
+     * at different heights.
+     *
+     * Also considers edge heights from neighboring chunks for boundary positions.
+     */
+    private void extendColumnsToNeighbors(Map<String, Integer> targetMinY, Map<String, Integer> targetMaxY,
+                                           int worldXStart, int worldZStart, int chunkSize,
+                                           Map<String, Integer> edgeHeights) {
+        // Merge edge heights with targetMaxY for a combined reference
+        Map<String, Integer> allHeights = new HashMap<>(edgeHeights);
+        allHeights.putAll(targetMaxY);
+
+        for (int lx = 0; lx < chunkSize; lx++) {
+            for (int lz = 0; lz < chunkSize; lz++) {
+                int wx = worldXStart + lx;
+                int wz = worldZStart + lz;
+                String posKey = wx + "," + wz;
+
+                Integer maxY = targetMaxY.get(posKey);
+                if (maxY == null) continue;
+
+                // Find lowest neighbor height (4 direct neighbors)
+                int lowestNeighbor = maxY;
+                Integer n;
+                n = allHeights.get((wx - 1) + "," + wz);
+                if (n != null && n < lowestNeighbor) lowestNeighbor = n;
+                n = allHeights.get((wx + 1) + "," + wz);
+                if (n != null && n < lowestNeighbor) lowestNeighbor = n;
+                n = allHeights.get(wx + "," + (wz - 1));
+                if (n != null && n < lowestNeighbor) lowestNeighbor = n;
+                n = allHeights.get(wx + "," + (wz + 1));
+                if (n != null && n < lowestNeighbor) lowestNeighbor = n;
+
+                // Extend minY down to lowest neighbor
+                Integer currentMinY = targetMinY.get(posKey);
+                if (currentMinY == null || lowestNeighbor < currentMinY) {
+                    targetMinY.put(posKey, lowestNeighbor);
+                }
+            }
+        }
     }
 
     /**
