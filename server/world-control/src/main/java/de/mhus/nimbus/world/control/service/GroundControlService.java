@@ -300,6 +300,58 @@ public class GroundControlService {
     }
 
     /**
+     * Check and repair all existing chunks of a GROUND layer.
+     *
+     * @param worldId       World identifier
+     * @param layerDataId   Layer data ID of the GROUND layer
+     * @param sides         Bit flags for neighbor sides per chunk
+     * @param cleanupBlocks If true, remove blocks below ground surface
+     * @return number of chunks that were modified
+     */
+    @Transactional
+    public int checkLayerGround(String worldId, String layerDataId, int sides, boolean cleanupBlocks) {
+        // Validate layer
+        Optional<WLayer> layerOpt = layerService.findByWorldIdAndLayerDataId(worldId, layerDataId);
+        if (layerOpt.isEmpty()) {
+            log.warn("Layer not found: worldId={} layerDataId={}", worldId, layerDataId);
+            return 0;
+        }
+        WLayer layer = layerOpt.get();
+        if (layer.getLayerType() != LayerType.GROUND) {
+            log.warn("Layer is not GROUND type: layerDataId={} type={}", layerDataId, layer.getLayerType());
+            return 0;
+        }
+
+        // Get all chunk keys for this layer
+        List<String> chunkKeys = layerService.findTerrainChunkKeys(worldId, layerDataId);
+        if (chunkKeys.isEmpty()) {
+            log.debug("No chunks in layer: layerDataId={}", layerDataId);
+            return 0;
+        }
+
+        log.info("checkLayerGround: worldId={} layerDataId={} chunks={} sides={} cleanup={}",
+                worldId, layerDataId, chunkKeys.size(), sides, cleanupBlocks);
+
+        int modified = 0;
+        for (String chunkKey : chunkKeys) {
+            String[] parts = chunkKey.split(":");
+            if (parts.length != 2) {
+                log.warn("Invalid chunkKey format: {}", chunkKey);
+                continue;
+            }
+            int cx = Integer.parseInt(parts[0]);
+            int cz = Integer.parseInt(parts[1]);
+
+            if (checkGround(worldId, layerDataId, cx, cz, sides, cleanupBlocks)) {
+                modified++;
+            }
+        }
+
+        log.info("checkLayerGround completed: worldId={} layerDataId={} modified={}/{}", worldId, layerDataId, modified, chunkKeys.size());
+        return modified;
+    }
+
+    /**
      * Find the GROUND layer for a specific epoch.
      * Assumption: there is exactly one GROUND layer per epoch.
      *

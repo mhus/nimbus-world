@@ -428,6 +428,19 @@
             Open Grid Editor (Terrain)
           </button>
           <button
+            v-if="isEditMode && isGroundLayer"
+            type="button"
+            class="btn btn-accent btn-outline"
+            :disabled="checkingGround"
+            @click="handleCheckGround"
+          >
+            <span v-if="checkingGround" class="loading loading-spinner"></span>
+            <svg v-else class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+            </svg>
+            {{ checkingGround ? 'Checking...' : 'Check Ground' }}
+          </button>
+          <button
             v-if="isEditMode"
             type="button"
             class="btn btn-warning"
@@ -451,6 +464,16 @@
         </div>
       </form>
 
+      <!-- Job Watch Dialog -->
+      <JobWatch
+        v-if="watchJobId"
+        :world-id="props.worldId"
+        :job-id="watchJobId"
+        @close="watchJobId = null"
+        @completed="handleJobCompleted"
+        @failed="handleJobFailed"
+      />
+
     </div>
   </div>
 </template>
@@ -460,12 +483,15 @@ import { ref, computed, watch, onMounted } from 'vue';
 import type { WLayer, LayerModelDto, CreateLayerRequest, UpdateLayerRequest } from '@nimbus/shared';
 import ErrorAlert from '@components/ErrorAlert.vue';
 import LoadingSpinner from '@components/LoadingSpinner.vue';
+import JobWatch from '@components/JobWatch.vue';
 import ModelList from '@layer/components/ModelList.vue';
 import ModelEditorPanel from '@layer/components/ModelEditorPanel.vue';
 import { useLayers } from '@/composables/useLayers';
+import { useJobs } from '@/composables/useJobs';
 import { layerModelService } from '@/services/LayerModelService';
 import { layerService } from '@/services/LayerService';
 import { getLogger } from '@nimbus/shared';
+import type { Job } from '@/composables/useJobs';
 
 const logger = getLogger('LayerEditorPanel');
 
@@ -511,6 +537,12 @@ const epochesText = ref('');
 const errorMessage = ref('');
 const saving = ref(false);
 const regenerating = ref(false);
+const checkingGround = ref(false);
+const watchJobId = ref<string | null>(null);
+
+const isGroundLayer = computed(() => String(formData.value.layerType).toUpperCase() === 'GROUND');
+
+const { createJob } = useJobs(props.worldId);
 
 // Model management
 const models = ref<LayerModelDto[]>([]);
@@ -783,6 +815,59 @@ onMounted(() => {
 defineExpose({
   loadModels
 });
+
+/**
+ * Handle check ground — creates a job and opens JobWatch
+ */
+const handleCheckGround = async () => {
+  if (!props.layer?.layerDataId) return;
+
+  const confirmed = confirm(
+    'This will check all chunks of this GROUND layer for holes and fill them.\n\n' +
+    'Blocks below the ground surface will be removed.\n\n' +
+    'Continue?'
+  );
+  if (!confirmed) return;
+
+  checkingGround.value = true;
+  errorMessage.value = '';
+
+  try {
+    const job = await createJob({
+      executor: 'ground-control',
+      title: `Check Ground: ${props.layer.name}`,
+      parameters: {
+        type: 'check-layer-ground',
+        layerDataId: props.layer.layerDataId,
+        sides: '15',
+        cleanupBlocks: 'true',
+      },
+    });
+
+    watchJobId.value = job.id;
+    logger.info('Created check-ground job', { jobId: job.id, layerDataId: props.layer.layerDataId });
+  } catch (error: any) {
+    logger.error('Failed to create check-ground job', {}, error);
+    errorMessage.value = error.message || 'Failed to create ground check job';
+  } finally {
+    checkingGround.value = false;
+  }
+};
+
+/**
+ * Handle job completed
+ */
+const handleJobCompleted = (job: Job) => {
+  logger.info('Ground check job completed', { jobId: job.id, result: job.result });
+};
+
+/**
+ * Handle job failed
+ */
+const handleJobFailed = (job: Job) => {
+  logger.error('Ground check job failed', { jobId: job.id, error: job.errorMessage });
+  errorMessage.value = `Ground check failed: ${job.errorMessage}`;
+};
 
 /**
  * Handle save

@@ -641,6 +641,21 @@ public class WLayerService implements StorageProvider {
         return terrains.stream().map(t -> t.getChunkKey()).toList();
     }
 
+    /**
+     * Find all chunk keys for a terrain layer.
+     *
+     * @param worldId     World identifier
+     * @param layerDataId Layer data ID
+     * @return List of chunk keys (format: "cx:cz")
+     */
+    @Transactional(readOnly = true)
+    public List<String> findTerrainChunkKeys(String worldId, String layerDataId) {
+        return terrainRepository.findByWorldIdAndLayerDataId(worldId, layerDataId)
+                .stream()
+                .map(WLayerTerrain::getChunkKey)
+                .toList();
+    }
+
     // ==================== TERRAIN GENERATION FROM MODEL ====================
 
     /**

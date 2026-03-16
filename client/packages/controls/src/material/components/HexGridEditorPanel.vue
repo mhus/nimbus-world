@@ -386,6 +386,19 @@
             <button
               v-if="isEditMode"
               type="button"
+              class="btn btn-accent btn-outline"
+              @click="handleCheckGround"
+              :disabled="checkingGround"
+            >
+              <span v-if="checkingGround" class="loading loading-spinner loading-sm"></span>
+              <svg v-else class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+              </svg>
+              {{ checkingGround ? 'Checking...' : 'Check Ground' }}
+            </button>
+            <button
+              v-if="isEditMode"
+              type="button"
               class="btn btn-warning"
               @click="handleMarkDirty"
               :disabled="markingDirty"
@@ -427,14 +440,26 @@
     :area="editingArea"
     @save="handleAreaSave"
   />
+
+  <!-- Job Watch Dialog -->
+  <JobWatch
+    v-if="watchJobId"
+    :world-id="props.worldId"
+    :job-id="watchJobId"
+    @close="watchJobId = null"
+    @completed="handleJobCompleted"
+    @failed="handleJobFailed"
+  />
 </template>
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
 import { Dialog, DialogPanel, DialogTitle, TransitionRoot, TransitionChild } from '@headlessui/vue';
 import { useHexGrids, type HexGridWithId } from '@/composables/useHexGrids';
+import { useJobs, type Job } from '@/composables/useJobs';
 import { apiService } from '@/services/ApiService';
 import ErrorAlert from '@components/ErrorAlert.vue';
+import JobWatch from '@components/JobWatch.vue';
 import JsonEditorDialog from '@components/JsonEditorDialog.vue';
 import AreaEditorDialog, { type AreaData } from './AreaEditorDialog-simple.vue';
 
@@ -472,7 +497,11 @@ const formData = ref({
 
 const saving = ref(false);
 const markingDirty = ref(false);
+const checkingGround = ref(false);
+const watchJobId = ref<string | null>(null);
 const saveError = ref<string | null>(null);
+
+const { createJob } = useJobs(props.worldId);
 const showJsonEditor = ref(false);
 const showAreaEditor = ref(false);
 const epochesText = ref('');
@@ -621,6 +650,66 @@ const handleSave = async () => {
   } finally {
     saving.value = false;
   }
+};
+
+/**
+ * Handle check ground — creates a job and opens JobWatch
+ */
+const handleCheckGround = async () => {
+  if (!isEditMode.value) return;
+
+  const epoches = parseEpoches();
+  if (epoches.length === 0) {
+    saveError.value = 'No epoches configured — cannot determine which GROUND layer to check.';
+    return;
+  }
+
+  const confirmed = confirm(
+    `This will check the ground for holes in all chunks of this hex grid.\n\n` +
+    `Position: ${formData.value.position.q}:${formData.value.position.r}\n` +
+    `Epoch(s): ${epoches.join(', ')}\n\n` +
+    `A separate job will be created for each epoch.\n\n` +
+    `Continue?`
+  );
+  if (!confirmed) return;
+
+  checkingGround.value = true;
+  saveError.value = null;
+
+  try {
+    // Create a job for the first epoch (most common case: one epoch per hex)
+    const epoch = epoches[0];
+    const job = await createJob({
+      executor: 'ground-control',
+      title: `Check HexGrid Ground: ${formData.value.name} (${formData.value.position.q},${formData.value.position.r}) epoch=${epoch}`,
+      parameters: {
+        type: 'check-hex-grid-ground',
+        epoch: String(epoch),
+        hexQ: String(formData.value.position.q),
+        hexR: String(formData.value.position.r),
+      },
+    });
+
+    watchJobId.value = job.id;
+  } catch (err) {
+    saveError.value = `Failed to create ground check job: ${(err as Error).message}`;
+  } finally {
+    checkingGround.value = false;
+  }
+};
+
+/**
+ * Handle job completed
+ */
+const handleJobCompleted = (_job: Job) => {
+  // Job completed successfully, no further action needed
+};
+
+/**
+ * Handle job failed
+ */
+const handleJobFailed = (job: Job) => {
+  saveError.value = `Ground check failed: ${job.errorMessage}`;
 };
 
 /**
