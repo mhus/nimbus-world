@@ -38,7 +38,7 @@ public class LayerChunkData {
     private List<LayerBlock> blocks = new ArrayList<>();
 
     /**
-     * Height data for terrain generation. Key format: "x,z" -> [maxHeight, minHeight, groundLevel, waterLevel?]
+     * Height data for terrain generation. Key format: "worldX,worldZ" -> [groundLevel, waterLevel (-1=none), maxHeight?]
      * Ignore deserialization errors for backward compatibility with old array format.
      */
     @Builder.Default

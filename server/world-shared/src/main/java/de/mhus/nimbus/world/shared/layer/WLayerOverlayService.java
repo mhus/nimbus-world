@@ -446,14 +446,13 @@ public class WLayerOverlayService {
 
     /**
      * Calculate height data for chunk.
-     * Format: int[chunkSize * chunkSize][3 or 4]
-     * Each entry: [x, z, maxHeight, groundLevel, waterLevel?]
+     * Format: Map key "worldX,worldZ" -> [groundLevel, waterLevel (-1=none), maxHeight?]
      *
      * @param world World for block type lookups
      * @param chunkSize Chunk size
      * @param blocks All blocks in the chunk
      * @param layers All layers (to find baseGround layer)
-     * @return Height data array
+     * @return Height data map
      */
     private Map<String, int[]> calculateHeightData(WWorld world, int chunkSize, Collection<Block> blocks, List<WLayer> layers) {
         int maxHeight = (int) world.getPublicData().getStop().getY();
@@ -507,16 +506,12 @@ public class WLayerOverlayService {
         }
 
         // Convert to Map with key format "worldX,worldZ" (world coordinates)
-        // Format: [maxHeight, minHeight, groundLevel, waterLevel?]
-        // groundLevel = highest GROUND block, minHeight = lowest GROUND block
+        // Format: [groundLevel, waterLevel (-1=none), maxHeight?]
         Map<String, int[]> heightDataMap = new HashMap<>();
         for (ColumnData column : columns.values()) {
             String key = column.x + "," + column.z;
-            if (column.waterLevel != null) {
-                heightDataMap.put(key, new int[]{column.maxHeight, column.minGroundLevel, column.maxGroundLevel, column.waterLevel});
-            } else {
-                heightDataMap.put(key, new int[]{column.maxHeight, column.minGroundLevel, column.maxGroundLevel});
-            }
+            int waterVal = column.waterLevel != null ? column.waterLevel : -1;
+            heightDataMap.put(key, new int[]{column.maxGroundLevel, waterVal});
         }
 
         return heightDataMap;

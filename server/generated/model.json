@@ -2175,7 +2175,7 @@
     "classes" : [ ],
     "typeAliases" : [ {
       "name" : "HeightData",
-      "target" : null
+      "target" : "no water)   maxHeight?: number|undefined // javaType: int ]"
     }, {
       "name" : "Status",
       "target" : null

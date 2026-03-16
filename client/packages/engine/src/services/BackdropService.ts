@@ -581,7 +581,7 @@ export class BackdropService {
         const key = `${worldX},${worldZ}`;
         const height = heightData[key];
         if (height) {
-          const groundLevel = height[2]; // groundLevel is at index 2
+          const groundLevel = height[0]; // groundLevel
           if (groundLevel < minGroundLevel) {
             minGroundLevel = groundLevel;
           }

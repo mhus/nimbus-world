@@ -11,16 +11,17 @@ import type { Block } from './Block';
 import type { ItemBlockRef } from './ItemBlockRef';
 import type { Backdrop } from './Backdrop';
 import {AreaData} from "./AreaData";
-//
-// /**
-//  * Height data for chunk column
-//  * Array of 4 values describing height information for a specific XZ position
-//  */
+/**
+ * Height data for chunk column.
+ * Array of 2-3 values per XZ position:
+ *   [0] groundLevel  - terrain surface Y
+ *   [1] waterLevel   - water surface Y, or -1 if no water
+ *   [2] maxHeight    - optional, only if differs from world default (world.stop.y)
+ */
 export type HeightData = readonly [
-  maxHeight: number, // javaType: int
-  minHeight: number, // javaType: int
   groundLevel: number, // javaType: int
-  waterLevel?: number|undefined // javaType: int
+  waterLevel: number, // javaType: int  (-1 = no water)
+  maxHeight?: number|undefined // javaType: int
 ];
 
 /**
@@ -80,7 +81,8 @@ export interface ChunkData {
 
   /**
    * Height data per XZ position (optional)
-   * Flat array of height values key: "x,z" -> [x, z, maxHeight, groundLevel, (optional) waterLevel]
+   * Key: "worldX,worldZ" -> [groundLevel, waterLevel, maxHeight?]
+   * waterLevel = -1 means no water, maxHeight only if != world.stop.y
    */
   heightData?: Record<string, number[]>; // javaType: java.util.Map<String,int[]>
 

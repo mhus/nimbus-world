@@ -18,6 +18,7 @@ import de.mhus.nimbus.world.shared.world.WHexGrid;
 import de.mhus.nimbus.world.shared.world.WHexGridRepository;
 import de.mhus.nimbus.world.shared.world.WWorld;
 import de.mhus.nimbus.world.shared.world.WWorldService;
+import de.mhus.nimbus.world.shared.dto.HeightDataDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -56,7 +57,6 @@ public class FloraGeneratorService {
     private final WLayerService layerService;
     private final ModelBuilderService modelBuilderService;
 
-    private record HeightInfo(int groundLevel, int waterLevel) {}
 
     private static String toHex(int value) {
         return Integer.toHexString(value);
@@ -120,7 +120,7 @@ public class FloraGeneratorService {
 
         for (Vector2Int flatPos : hexGrid.getFlatPositionSet(world)) {
 
-            HeightInfo heightInfo = getHeightInfo(
+            HeightDataDto heightInfo = getHeightDataDto(
                     worldId, groundLayer,
                     flatPos.getX(), flatPos.getZ(),
                     chunkSize, defaultGroundLevel, groundChunkCache);
@@ -224,7 +224,7 @@ public class FloraGeneratorService {
     }
 
     private Map<String, Object> buildFloraConditionContext(
-            HeightInfo heightInfo, FloraCategory category,
+            HeightDataDto heightInfo, FloraCategory category,
             int waterDepth, int worldX, int worldZ,
             Integer seaLevel, Random random, Map<String, String> hexContext) {
         Map<String, Object> vars = new HashMap<>();
@@ -267,7 +267,7 @@ public class FloraGeneratorService {
      */
     private int buildPlantWithClustering(WWorld world, WLayer floraLayer,
                                           FloraPlantDefinition plant, Vector3Int startPos,
-                                          int waterDepth, FloraCategory category, HeightInfo heightInfo,
+                                          int waterDepth, FloraCategory category, HeightDataDto heightInfo,
                                           String worldId, WLayer groundLayer, int chunkSize, int defaultGroundLevel,
                                           Map<String, LayerChunkData> groundChunkCache, Integer seaLevel,
                                           Random random, Map<String, LayerChunkData> allChunkData,
@@ -286,7 +286,7 @@ public class FloraGeneratorService {
                 int clusterX = startPos.getX() + offsetX;
                 int clusterZ = startPos.getZ() + offsetZ;
 
-                HeightInfo clusterHeight = getHeightInfo(
+                HeightDataDto clusterHeight = getHeightDataDto(
                         worldId, groundLayer, clusterX, clusterZ,
                         chunkSize, defaultGroundLevel, groundChunkCache);
 
@@ -453,11 +453,11 @@ public class FloraGeneratorService {
         return true;
     }
 
-    private HeightInfo getHeightInfo(String worldId, WLayer groundLayer,
+    private HeightDataDto getHeightDataDto(String worldId, WLayer groundLayer,
                                      int worldX, int worldZ,
                                      int chunkSize, int defaultGroundLevel,
                                      Map<String, LayerChunkData> cache) {
-        if (groundLayer == null) return new HeightInfo(defaultGroundLevel, defaultGroundLevel);
+        if (groundLayer == null) return new HeightDataDto(defaultGroundLevel, -1, null);
 
         int cx = Math.floorDiv(worldX, chunkSize);
         int cz = Math.floorDiv(worldZ, chunkSize);
@@ -467,16 +467,16 @@ public class FloraGeneratorService {
                 layerService.loadTerrainChunk(worldId,
                         groundLayer.getLayerDataId(), key).orElse(null));
 
-        if (chunkData == null) return new HeightInfo(defaultGroundLevel, defaultGroundLevel);
+        if (chunkData == null) return new HeightDataDto(defaultGroundLevel, -1, null);
 
-        int localX = Math.floorMod(worldX, chunkSize);
-        int localZ = Math.floorMod(worldZ, chunkSize);
-        String heightKey = localX + "," + localZ;
+        // heightData keys are world coordinates "worldX,worldZ"
+        String heightKey = worldX + "," + worldZ;
         int[] heightData = chunkData.getHeightData().get(heightKey);
-        if (heightData != null && heightData.length > 2) {
-            int groundLevel = heightData[2];
-            int waterLevel = heightData.length > 3 ? heightData[3] : groundLevel;
-            return new HeightInfo(groundLevel, waterLevel);
+        if (heightData != null && heightData.length >= 2) {
+            int groundLevel = heightData[0];
+            int waterLevel = heightData[1]; // -1 = no water
+            Integer maxHeight = heightData.length > 2 ? heightData[2] : null;
+            return new HeightDataDto(groundLevel, waterLevel, maxHeight);
         }
 
         // Fallback: find max Y from blocks at this position
@@ -489,7 +489,7 @@ public class FloraGeneratorService {
         }
 
         int fallbackLevel = maxY > Integer.MIN_VALUE ? maxY : defaultGroundLevel;
-        return new HeightInfo(fallbackLevel, fallbackLevel);
+        return new HeightDataDto(fallbackLevel, -1, null);
     }
 
     private static double parseDouble(String value, double defaultValue) {

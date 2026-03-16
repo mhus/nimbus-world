@@ -4,8 +4,7 @@
 */
 
 export interface HeightDataDto {
-  maxHeight: number;
-  minHeight: number;
   groundLevel: number;
-  waterLevel?: number;
+  waterLevel: number;
+  maxHeight?: number;
 }

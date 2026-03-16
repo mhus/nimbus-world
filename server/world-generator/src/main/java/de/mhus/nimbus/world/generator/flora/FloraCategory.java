@@ -17,7 +17,7 @@ public enum FloraCategory {
      * Determine the flora category for a position based on ground, water, and sea levels.
      *
      * @param groundLevel the ground level at this position
-     * @param waterLevel  the water level at this position (equal to groundLevel if no water)
+     * @param waterLevel  the water level at this position (-1 if no water)
      * @param seaLevel    the global sea level, or null if not defined
      * @return the appropriate flora category
      */

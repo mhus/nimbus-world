@@ -142,18 +142,15 @@ export class PlayerPositionInfoCommand extends CommandHandler {
 
       // 2. Height Data for current column
       if (chunk) {
-        const localX = ((Math.floor(position.x) % chunkSize) + chunkSize) % chunkSize;
-        const localZ = ((Math.floor(position.z) % chunkSize) + chunkSize) % chunkSize;
-        const heightKey = `${localX},${localZ}`;
+        const heightKey = `${Math.floor(position.x)},${Math.floor(position.z)}`;
         const heightData = chunk.heightData[heightKey];
 
         lines.push('Height Data (current column):');
         if (heightData) {
-          lines.push(`  Max Height   : ${heightData[0]}`);
-          lines.push(`  Min Height   : ${heightData[1]}`);
-          lines.push(`  Ground Level : ${heightData[2]}`);
-          if (heightData[3] !== undefined) {
-            lines.push(`  Water Height : ${heightData[3]}`);
+          lines.push(`  Ground Level : ${heightData[0]}`);
+          lines.push(`  Water Level  : ${heightData[1] >= 0 ? heightData[1] : 'none'}`);
+          if (heightData[2] !== undefined) {
+            lines.push(`  Max Height   : ${heightData[2]}`);
           }
         } else {
           lines.push('  No height data available for this column');

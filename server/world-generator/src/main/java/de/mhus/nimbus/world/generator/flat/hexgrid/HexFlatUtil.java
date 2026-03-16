@@ -225,8 +225,8 @@ public class HexFlatUtil {
                 int worldZ = neighborMountZ + lz;
                 String key = worldX + "," + worldZ;
                 int[] heightData = allHeightData.get(key);
-                if (heightData != null && heightData.length >= 3) {
-                    int groundLevel = heightData[2];
+                if (heightData != null && heightData.length >= 2) {
+                    int groundLevel = heightData[0];
                     levels[lx + lz * sizeX] = (byte) Math.min(255, Math.max(0, groundLevel));
                     columns[lx + lz * sizeX] = 6; // BEDROCK material (non-zero = column is SET)
                     filledCount++;

@@ -278,13 +278,12 @@ public class FlatCreateService {
         String key = worldX + "," + worldZ;
         int[] heights = heightData.get(key);
 
-        if (heights == null || heights.length < 3) {
+        if (heights == null || heights.length < 2) {
             return -1;
         }
 
-        // heightData format: [maxHeight, minHeight, groundLevel, waterLevel?]
-        // Return groundLevel (index 2)
-        return heights[2];
+        // heightData format: [groundLevel, waterLevel (-1=none), maxHeight?]
+        return heights[0];
     }
 
     /**

@@ -3,6 +3,8 @@
  Source: de.mhus.nimbus.world.shared.dto.BlockInfoDto
 */
 
+import type { Block } from '../../types/Block';
+
 export interface BlockInfoDto {
   block: Block;
   readOnly: boolean;

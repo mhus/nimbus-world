@@ -16,6 +16,7 @@ import de.mhus.nimbus.world.shared.world.WHexGrid;
 import de.mhus.nimbus.world.shared.world.WHexGridRepository;
 import de.mhus.nimbus.world.shared.world.WWorld;
 import de.mhus.nimbus.world.shared.world.WWorldService;
+import de.mhus.nimbus.world.shared.dto.HeightDataDto;
 import de.mhus.nimbus.world.shared.layer.LayerBlock;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -52,7 +53,6 @@ public class FaunaGeneratorService {
     private final WEntityService entityService;
     private final FaunaNameService nameService;
 
-    private record HeightInfo(int groundLevel, int waterLevel) {}
 
     /**
      * Generate fauna for a single hex grid.
@@ -110,7 +110,7 @@ public class FaunaGeneratorService {
         List<PositionInfo> seaPositions = new ArrayList<>();
 
         for (Vector2Int flatPos : hexGrid.getFlatPositionSet(world)) {
-            HeightInfo heightInfo = getHeightInfo(
+            HeightDataDto heightInfo = getHeightDataDto(
                     worldId, groundLayer,
                     flatPos.getX(), flatPos.getZ(),
                     chunkSize, defaultGroundLevel, groundChunkCache);
@@ -337,11 +337,11 @@ public class FaunaGeneratorService {
         return null;
     }
 
-    private HeightInfo getHeightInfo(String worldId, WLayer groundLayer,
+    private HeightDataDto getHeightDataDto(String worldId, WLayer groundLayer,
                                      int worldX, int worldZ,
                                      int chunkSize, int defaultGroundLevel,
                                      Map<String, LayerChunkData> cache) {
-        if (groundLayer == null) return new HeightInfo(defaultGroundLevel, defaultGroundLevel);
+        if (groundLayer == null) return new HeightDataDto(defaultGroundLevel, -1, null);
 
         int cx = Math.floorDiv(worldX, chunkSize);
         int cz = Math.floorDiv(worldZ, chunkSize);
@@ -351,16 +351,16 @@ public class FaunaGeneratorService {
                 layerService.loadTerrainChunk(worldId,
                         groundLayer.getLayerDataId(), key).orElse(null));
 
-        if (chunkData == null) return new HeightInfo(defaultGroundLevel, defaultGroundLevel);
+        if (chunkData == null) return new HeightDataDto(defaultGroundLevel, -1, null);
 
-        int localX = Math.floorMod(worldX, chunkSize);
-        int localZ = Math.floorMod(worldZ, chunkSize);
-        String heightKey = localX + "," + localZ;
+        // heightData keys are world coordinates "worldX,worldZ"
+        String heightKey = worldX + "," + worldZ;
         int[] heightData = chunkData.getHeightData().get(heightKey);
-        if (heightData != null && heightData.length > 2) {
-            int groundLevel = heightData[2];
-            int waterLevel = heightData.length > 3 ? heightData[3] : groundLevel;
-            return new HeightInfo(groundLevel, waterLevel);
+        if (heightData != null && heightData.length >= 2) {
+            int groundLevel = heightData[0];
+            int waterLevel = heightData[1]; // -1 = no water
+            Integer maxHeight = heightData.length > 2 ? heightData[2] : null;
+            return new HeightDataDto(groundLevel, waterLevel, maxHeight);
         }
 
         // Fallback: find max Y from blocks at this position
@@ -373,7 +373,7 @@ public class FaunaGeneratorService {
         }
 
         int fallbackLevel = maxY > Integer.MIN_VALUE ? maxY : defaultGroundLevel;
-        return new HeightInfo(fallbackLevel, fallbackLevel);
+        return new HeightDataDto(fallbackLevel, -1, null);
     }
 
     private record AnimalIdentity(FaunaGender gender, String displayName) {}
@@ -471,5 +471,5 @@ public class FaunaGeneratorService {
         return min + random.nextInt(max - min + 1);
     }
 
-    private record PositionInfo(int x, int z, HeightInfo heightInfo, FaunaCategory category) {}
+    private record PositionInfo(int x, int z, HeightDataDto heightInfo, FaunaCategory category) {}
 }

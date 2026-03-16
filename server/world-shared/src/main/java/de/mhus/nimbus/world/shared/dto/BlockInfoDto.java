@@ -10,6 +10,7 @@ import de.mhus.nimbus.shared.annotations.TypeScript;
  */
 @GenerateTypeScript("dto")
 public record BlockInfoDto(
+        @TypeScript(importLine = "import type { Block } from '../../types/Block';")
         Block block,
         boolean readOnly,
 

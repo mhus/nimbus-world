@@ -53,13 +53,14 @@ public class ChunksCache {
 
         String key = worldX + "," + worldZ;
         int[] columnData = chunkData.getHeightData().get(key);
-        if (columnData == null || columnData.length < 3) {
+        if (columnData == null || columnData.length < 2) {
             return null;
         }
 
+        // Format: [groundLevel, waterLevel (-1=none), maxHeight?]
         return new HeightDataDto(
-                columnData[0], columnData[1], columnData[2],
-                columnData.length > 3 ? columnData[3] : null
+                columnData[0], columnData[1],
+                columnData.length > 2 ? columnData[2] : null
         );
     }
 

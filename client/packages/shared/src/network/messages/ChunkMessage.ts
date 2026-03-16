@@ -35,7 +35,7 @@ export interface ChunkDataTransferObject {
   /** Item data - Item instances with position, itemType reference, and modifiers */
   i?: ItemBlockRef[];
 
-  /** Height data, maximum height. Key world coordinates format: "x,z" -> [maxHeight, groundLevel, waterLevel] */
+  /** Height data per XZ position. Key: "worldX,worldZ" -> [groundLevel, waterLevel, maxHeight?] */
   h?: Map<string, HeightData>; // javaType: java.util.Map<String,int[]>
 
   /** Area data with effects */

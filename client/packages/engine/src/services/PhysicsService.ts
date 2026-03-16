@@ -393,7 +393,7 @@ export class PhysicsService {
     if (heightData) {
       // We have heightData - use groundLevel for precise positioning
       const oldY = entity.position.y;
-      const targetY = heightData[2]; // 2 = groundLevel
+      const targetY = heightData[0]; // groundLevel
 
       logger.debug('Teleportation ready - positioning player with heightData', {
         entityId,

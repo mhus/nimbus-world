@@ -291,24 +291,15 @@ export function checkUnderwaterState(
 
   const wasInWater = entity.inWater;
 
-  if (heightData && heightData[3] !== undefined) {
-    const [maxHeight, minHeight, groundLevel, waterHeight] = heightData;
+  if (heightData && heightData[1] >= 0) {
+    const [groundLevel, waterLevel] = heightData;
 
     // Player is underwater when eyes are below water surface
-    const waterSurfaceY = waterHeight + 1.0; // Water block top face
+    const waterSurfaceY = waterLevel + 1.0; // Water block top face
     const eyeY = entity.position.y + eyeHeight;
     entity.inWater = eyeY <= waterSurfaceY;
-
-    // Clamp to min/max height boundaries
-    if (entity.position.y < minHeight) {
-      entity.position.y = minHeight;
-      entity.velocity.y = 0;
-    } else if (entity.position.y > maxHeight) {
-      entity.position.y = maxHeight;
-      entity.velocity.y = 0;
-    }
   } else {
-    // No waterHeight data - definitely not underwater
+    // No water at this position
     entity.inWater = false;
   }
 

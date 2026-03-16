@@ -378,10 +378,8 @@ public class WChunkService implements StorageProvider {
                             .append(worldX).append(',').append(worldZ)
                             .toString();
 
-                    // Update height data to use noise-based height
-                    int[] columnHeightData = waterLevel != null
-                            ? new int[]{maxHeight, minHeight, noiseHeight, waterLevel}
-                            : new int[]{maxHeight, minHeight, noiseHeight};
+                    // Height data: [groundLevel, waterLevel (-1=none)]
+                    int[] columnHeightData = new int[]{noiseHeight, waterLevel != null ? waterLevel : -1};
                     heightData.put(heightKey, columnHeightData);
 
                     // Create water blocks at waterLevel - only one flat layer
@@ -711,18 +709,17 @@ public class WChunkService implements StorageProvider {
         String key = worldX + "," + worldZ;
         int[] columnData = chunkData.getHeightData().get(key);
 
-        if (columnData == null || columnData.length < 3) {
+        if (columnData == null || columnData.length < 2) {
             return null;
         }
 
-        // Format: [maxHeight, minHeight, groundLevel, waterLevel?]
-        int maxHeight = columnData[0];
-        int minHeight = columnData[1];
-        int groundLevel = columnData[2];
-        Integer waterLevel = columnData.length > 3 ? columnData[3] : null;
+        // Format: [groundLevel, waterLevel (-1=none), maxHeight?]
+        int groundLevel = columnData[0];
+        int waterLevel = columnData[1];
+        Integer maxHeight = columnData.length > 2 ? columnData[2] : null;
 
         return new de.mhus.nimbus.world.shared.dto.HeightDataDto(
-                maxHeight, minHeight, groundLevel, waterLevel
+                groundLevel, waterLevel, maxHeight
         );
     }
 

@@ -99,7 +99,7 @@ public class TerrainService {
                 var heightDataDto = cache.getHeightDataAt(x, z);
                 if (heightDataDto != null) {
                     // Check if there's water at this position
-                    if (heightDataDto.waterLevel() != null && !canWalkOnWater) {
+                    if (heightDataDto.hasWater() && !canWalkOnWater) {
                         log.trace("Skipping position with water: ({}, {}), waterLevel={}", x, z, heightDataDto.waterLevel());
                         return -1; // Indicate invalid position (has water)
                     }
@@ -186,7 +186,7 @@ public class TerrainService {
             ChunksCache cache = getChunksCache(worldId);
             var heightDataDto = cache.getHeightDataAt(x, z);
 
-            if (heightDataDto != null && heightDataDto.waterLevel() != null) {
+            if (heightDataDto != null && heightDataDto.hasWater()) {
                 int groundLevel = heightDataDto.groundLevel();
                 int waterLevel = heightDataDto.waterLevel();
 

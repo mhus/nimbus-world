@@ -12,8 +12,10 @@ import {
   getLogger,
   ExceptionHandler,
   getStateValues,
+  movementStateToKey,
   type ClientEntity,
   type BlockType,
+  type MovementStateKey,
   type Vector3Color,
 } from '@nimbus/shared';
 import type { AppContext } from '../AppContext';
@@ -684,7 +686,10 @@ export class SelectService {
 
     // Update PlayerInfo stateValues if available
     if (this.appContext.playerInfo) {
-      const stateKey = this.appContext.services.movement?.getCurrentMovementState() ?? 'default';
+      const playerService = this.appContext.services.player;
+      const stateKey: MovementStateKey = playerService
+        ? movementStateToKey(playerService.getMovementState())
+        : 'default';
       const stateValues = this.appContext.playerInfo.stateValues?.[stateKey];
       if (stateValues) {
         stateValues.selectionRadius = clampedRadius;

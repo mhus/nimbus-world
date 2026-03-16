@@ -166,7 +166,7 @@ class WChunkCompressionIntegrationTest {
             int worldX = cx * 32 + localX;
             int worldZ = cz * 32 + localZ;
             String key = worldX + "," + worldZ;
-            heightData.put(key, new int[]{15, 0, 5}); // [maxHeight, minHeight, groundLevel]
+            heightData.put(key, new int[]{5, -1}); // [groundLevel, waterLevel (-1=none)]
         }
         chunkData.setHeightData(heightData);
 

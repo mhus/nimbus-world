@@ -20,7 +20,7 @@ public enum FaunaCategory {
      * Note: AERIAL is not determined by position but by animal definition flags.
      *
      * @param groundLevel the ground level at this position
-     * @param waterLevel  the water level at this position (equal to groundLevel if no water)
+     * @param waterLevel  the water level at this position (-1 if no water)
      * @param seaLevel    the global sea level, or null if not defined
      * @return the appropriate fauna category
      */

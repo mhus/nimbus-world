@@ -567,7 +567,7 @@ public class FlatExportService {
             var key = BlockUtil.positionKey(worldX, worldZ);
             int[] heights = heightData.get(key);
             if (heights != null) {
-                return heights[2];
+                return heights[0];
             }
         }
 
