@@ -28,12 +28,19 @@
             <h2 class="card-title">
               Block at ({{ blockCoordinates.x }}, {{ blockCoordinates.y }}, {{ blockCoordinates.z }})
             </h2>
-            <div class="flex gap-2">
-              <div v-if="blockReadOnly" class="badge badge-warning" title="Block is read-only (no layer selected)">
-                Read-Only
+            <div class="flex flex-col items-end gap-1">
+              <div class="flex gap-2">
+                <div v-if="blockReadOnly" class="badge badge-warning" title="Block is read-only (no layer selected)">
+                  Read-Only
+                </div>
+                <div class="badge" :class="blockExists ? 'badge-primary' : 'badge-success'">
+                  {{ blockExists ? 'Existing Block' : 'New Block' }}
+                </div>
               </div>
-              <div class="badge" :class="blockExists ? 'badge-primary' : 'badge-success'">
-                {{ blockExists ? 'Existing Block' : 'New Block' }}
+              <div v-if="chunkInfoLayer || chunkInfoGroup" class="text-xs text-base-content/60">
+                <span v-if="chunkInfoLayer" title="Source layer (and model)">L: {{ chunkInfoLayer }}</span>
+                <span v-if="chunkInfoLayer && chunkInfoGroup" class="mx-1">|</span>
+                <span v-if="chunkInfoGroup" title="Block group">G: {{ chunkInfoGroup }}</span>
               </div>
             </div>
           </div>
@@ -741,6 +748,8 @@ const saving = ref(false);
 const error = ref<string | null>(null);
 const blockExists = ref(false);
 const blockReadOnly = ref(false);
+const chunkInfoLayer = ref<string | null>(null);
+const chunkInfoGroup = ref<string | null>(null);
 const originalBlock = ref<Block | null>(null);
 const blockData = ref<Block>({
   position: { x: 0, y: 0, z: 0 },
@@ -1132,6 +1141,8 @@ async function loadBlock() {
       const blockInfo = await response.json();
       blockExists.value = blockInfo.block && blockInfo.block.blockTypeId !== 'air';
       blockReadOnly.value = blockInfo.readOnly || false;
+      chunkInfoLayer.value = blockInfo.chunkInfoLayer || null;
+      chunkInfoGroup.value = blockInfo.chunkInfoGroup || null;
 
       // Extract block from BlockInfo
       const block = blockInfo.block || {};

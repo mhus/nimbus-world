@@ -58,6 +58,7 @@ public class WLayerService implements StorageProvider {
     private final ObjectMapper objectMapper;
     private final WWorldService worldService;
     private final MongoTemplate mongoTemplate;
+    private final de.mhus.nimbus.world.shared.world.WChunkService chunkService;
 
     @Value("${nimbus.layer.terrain.compression.enabled:true}")
     private boolean compressionEnabled;
@@ -1960,6 +1961,114 @@ public class WLayerService implements StorageProvider {
 
     /**
      * Find the origin of a block at a specific position.
+     * Uses WChunkInfo for fast lookup when available, falls back to deep search.
+     *
+     * @param worldId World identifier
+     * @param x       Block X coordinate
+     * @param y       Block Y coordinate
+     * @param z       Block Z coordinate
+     * @return BlockOrigin with layer, terrain, and optional model, or null if not found
+     */
+    @Transactional(readOnly = true)
+    public BlockOrigin findBlockOrigin(String worldId, int x, int y, int z) {
+        // Try fast lookup via WChunkInfo
+        var world = worldService.getByWorldId(worldId).orElse(null);
+        if (world != null) {
+            var chunkSize = (byte) world.getPublicData().getChunkSize();
+            int cx = Math.floorDiv(x, chunkSize);
+            int cz = Math.floorDiv(z, chunkSize);
+            String chunkKey = cx + ":" + cz;
+            String coord = x + "," + y + "," + z;
+
+            WorldId wid = WorldId.of(worldId).orElseThrow();
+            var infoOpt = chunkService.getChunkInfo(wid, chunkKey);
+            if (infoOpt.isPresent()) {
+                var info = infoOpt.get();
+                String layerEntry = info.getBlockLayers() != null ? info.getBlockLayers().get(coord) : null;
+                if (layerEntry != null) {
+                    BlockOrigin origin = resolveBlockOriginFromInfo(worldId, chunkKey, x, y, z, layerEntry,
+                            info.getBlockGroups() != null ? info.getBlockGroups().get(coord) : null);
+                    if (origin != null) {
+                        return origin;
+                    }
+                    // layerEntry exists but resolve failed — fall through to deep search
+                    log.debug("Fast lookup failed for block at ({},{},{}) layerEntry={}, falling back to deep search",
+                            x, y, z, layerEntry);
+                }
+                // coord not in blockLayers — block not found
+                if (info.getBlockLayers() != null && !info.getBlockLayers().isEmpty()) {
+                    return null; // WChunkInfo exists and is populated, block simply not there
+                }
+            }
+        }
+
+        // Fallback: deep search
+        return findBlockOriginDeepSearch(worldId, x, y, z);
+    }
+
+    /**
+     * Resolve a BlockOrigin from WChunkInfo layer entry.
+     * Layer entry is either "layerName" (terrain) or "layerName:modelName" (model).
+     */
+    private BlockOrigin resolveBlockOriginFromInfo(String worldId, String chunkKey,
+                                                    int x, int y, int z,
+                                                    String layerEntry, String group) {
+        String layerName;
+        String modelName = null;
+
+        int colonIdx = layerEntry.indexOf(':');
+        if (colonIdx >= 0) {
+            layerName = layerEntry.substring(0, colonIdx);
+            modelName = layerEntry.substring(colonIdx + 1);
+        } else {
+            layerName = layerEntry;
+        }
+
+        // Find layer by name
+        WLayer layer = findByWorldIdAndName(worldId, layerName).orElse(null);
+        if (layer == null) {
+            return null;
+        }
+
+        // Load terrain
+        WLayerTerrain terrain = terrainRepository
+                .findByWorldIdAndLayerDataIdAndChunkKey(worldId, layer.getLayerDataId(), chunkKey)
+                .orElse(null);
+
+        // Find the LayerBlock in terrain data
+        LayerBlock foundBlock = null;
+        if (terrain != null) {
+            var chunkDataOpt = loadTerrainChunk(worldId, layer.getLayerDataId(), chunkKey);
+            if (chunkDataOpt.isPresent() && chunkDataOpt.get().getBlocks() != null) {
+                for (LayerBlock lb : chunkDataOpt.get().getBlocks()) {
+                    if (lb.getBlock() == null || lb.getBlock().getPosition() == null) continue;
+                    var pos = lb.getBlock().getPosition();
+                    if (pos.getX() == x && pos.getY() == y && pos.getZ() == z) {
+                        foundBlock = lb;
+                        break;
+                    }
+                }
+            }
+        }
+
+        // For MODEL layers: load the specific model
+        WLayerModel sourceModel = null;
+        if (modelName != null) {
+            sourceModel = modelRepository.findByLayerDataIdAndName(layer.getLayerDataId(), modelName).orElse(null);
+            if (sourceModel != null && foundBlock == null) {
+                foundBlock = findLayerBlockInModel(sourceModel, x, y, z);
+            }
+        }
+
+        if (foundBlock == null) {
+            return null;
+        }
+
+        return new BlockOrigin(layer, terrain, sourceModel, foundBlock);
+    }
+
+    /**
+     * Deep search for the origin of a block at a specific position.
      * Searches backwards through layers (by order descending) to find which layer
      * defines the block at this position.
      *
@@ -1973,7 +2082,7 @@ public class WLayerService implements StorageProvider {
      * @return BlockOrigin with layer, terrain, and optional model, or null if not found
      */
     @Transactional(readOnly = true)
-    public BlockOrigin findBlockOrigin(String worldId, int x, int y, int z) {
+    public BlockOrigin findBlockOriginDeepSearch(String worldId, int x, int y, int z) {
         // Calculate chunk key
         WorldId parsedWorldId = WorldId.of(worldId).orElseThrow();
         if (parsedWorldId.isInstance() && !parsedWorldId.isEditorInstance()) {

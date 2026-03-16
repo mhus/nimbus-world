@@ -50,6 +50,9 @@ class WChunkServiceCompressionTest {
     @Mock
     private WItemPositionService itemRegistryService;
 
+    @Mock
+    private WChunkInfoRepository chunkInfoRepository;
+
     @Spy
     @InjectMocks
     private WChunkService chunkService;
@@ -93,9 +96,6 @@ class WChunkServiceCompressionTest {
                 .build();
 
         // Mock repository
-        when(repository.findByWorldIdAndChunk(eq(worldId.getId()), eq(chunkKey)))
-                .thenReturn(Optional.empty())
-                .thenReturn(Optional.of(savedChunk));
         when(repository.save(any(WChunk.class))).thenReturn(savedChunk);
 
         // Mock storage service - capture compressed data
@@ -110,7 +110,7 @@ class WChunkServiceCompressionTest {
                 });
 
         // When: Save chunk
-        WChunk result = chunkService.saveChunk(worldId, chunkKey, chunkData);
+        WChunk result = chunkService.saveChunkWithEpoches(worldId, chunkKey, chunkData, List.of(0));
 
         // Then: Verify chunk is marked as compressed
         assertThat(result.isCompressed()).isTrue();
@@ -146,9 +146,6 @@ class WChunkServiceCompressionTest {
                 .build();
 
         // Mock repository
-        when(repository.findByWorldIdAndChunk(eq(worldId.getId()), eq(chunkKey)))
-                .thenReturn(Optional.empty())
-                .thenReturn(Optional.of(savedChunk));
         when(repository.save(any(WChunk.class))).thenReturn(savedChunk);
 
         // Mock storage service
@@ -163,7 +160,7 @@ class WChunkServiceCompressionTest {
                 });
 
         // When: Save chunk
-        WChunk result = chunkService.saveChunk(worldId, chunkKey, chunkData);
+        WChunk result = chunkService.saveChunkWithEpoches(worldId, chunkKey, chunkData, List.of(0));
 
         // Then: Verify chunk is NOT compressed
         assertThat(result.isCompressed()).isFalse();
@@ -187,8 +184,6 @@ class WChunkServiceCompressionTest {
                 .build();
 
         // Mock repository
-        when(repository.findByWorldIdAndChunk(eq(worldId.getId()), eq(chunkKey)))
-                .thenReturn(Optional.empty());
         when(repository.save(any(WChunk.class))).thenAnswer(invocation -> {
             WChunk chunk = invocation.getArgument(0);
             assertThat(chunk.isCompressed()).isTrue();  // Should be set during save
@@ -202,7 +197,7 @@ class WChunkServiceCompressionTest {
                         SchemaVersion.create("1.0.1")));
 
         // When: Save chunk
-        chunkService.saveChunk(worldId, chunkKey, chunkData);
+        chunkService.saveChunkWithEpoches(worldId, chunkKey, chunkData, List.of(0));
 
         // Then: Verify save was called (assertion in mock answer)
         verify(repository, times(1)).save(any(WChunk.class));
@@ -257,8 +252,6 @@ class WChunkServiceCompressionTest {
                 .build();
 
         // Mock repository
-        when(repository.findByWorldIdAndChunk(eq(worldId.getId()), eq(chunkKey)))
-                .thenReturn(Optional.empty());
         when(repository.save(any(WChunk.class))).thenReturn(savedChunk);
 
         // Mock storage service - capture data
@@ -273,7 +266,7 @@ class WChunkServiceCompressionTest {
                 });
 
         // When: Save chunk
-        chunkService.saveChunk(worldId, chunkKey, chunkData);
+        chunkService.saveChunkWithEpoches(worldId, chunkKey, chunkData, List.of(0));
 
         // Then: Verify compression ratio (expect >50% reduction)
         String originalJson = objectMapper.writeValueAsString(chunkData);

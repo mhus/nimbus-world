@@ -207,11 +207,10 @@ public class WorldController extends BaseEditorController {
         if (validation != null) return validation;
 
         try {
-            // Load block info with layer metadata
-            java.util.Map<String, Object> blockInfo = blockInfoService.loadBlockInfo(worldId, sessionId, x, y, z);
+            var blockInfo = blockInfoService.loadBlockInfo(worldId, sessionId, x, y, z);
 
             log.debug("Block info loaded: pos=({},{},{}) layer={} readOnly={}",
-                    x, y, z, blockInfo.get("layer"), blockInfo.get("readOnly"));
+                    x, y, z, blockInfo.layer(), blockInfo.readOnly());
 
             return ResponseEntity.ok(blockInfo);
 

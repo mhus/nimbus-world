@@ -40,6 +40,7 @@ public class WLayerOverlayService {
     private final WWorldService worldService;
     private final de.mhus.nimbus.world.shared.world.WBlockTypeService blockTypeService;
     private final WHexGridService hexGridService;
+    private final de.mhus.nimbus.world.shared.world.WChunkService chunkService;
 
     /**
      * Generate final chunk by overlaying all enabled layers.
@@ -107,6 +108,9 @@ public class WLayerOverlayService {
 
         // Initialize canvas: Map<"x,y,z", Block>
         Map<String, Block> blockMap = new HashMap<>();
+        // Track block group and layer origin for WChunkInfo
+        Map<String, String> blockGroups = new HashMap<>();
+        Map<String, String> blockLayers = new HashMap<>();
 
         // Overlay each layer (bottom to top)
         for (WLayer layer : layers) {
@@ -115,7 +119,7 @@ public class WLayerOverlayService {
             }
 
             try {
-                overlayTerrainLayer(layer, chunkKey, cx, cz, blockMap);
+                overlayTerrainLayer(layer, chunkKey, cx, cz, blockMap, blockGroups, blockLayers);
             } catch (Exception e) {
                 log.error("Failed to overlay layer {} on chunk {}", layer.getName(), chunkKey, e);
             }
@@ -140,6 +144,10 @@ public class WLayerOverlayService {
 
         List<AreaData> areaData = calculateAreaData(world, cx, cz, epoch);
         result.setA(areaData);
+
+        // Save WChunkInfo with block group and layer data
+        List<Integer> epoches = epoch != null ? List.of(epoch) : List.of();
+        chunkService.saveChunkInfo(worldId, chunkKey, epoches, blockGroups, blockLayers);
 
         log.debug("Generated chunk {} from {} layers, {} blocks",
                 chunkKey, layers.size(), blockMap.size());
@@ -257,7 +265,9 @@ public class WLayerOverlayService {
      * - For MODEL layers: First merge all WLayerModel documents into terrain data,
      *   then overlay the merged terrain data
      */
-    private void overlayTerrainLayer(WLayer layer, String chunkKey, int cx, int cz, Map<String, Block> blockMap) {
+    private void overlayTerrainLayer(WLayer layer, String chunkKey, int cx, int cz,
+                                     Map<String, Block> blockMap,
+                                     Map<String, String> blockGroups, Map<String, String> blockLayers) {
         // Load terrain chunk from storage
         Optional<WLayerTerrain> terrainOpt = terrainRepository
                 .findByWorldIdAndLayerDataIdAndChunkKey(layer.getWorldId(), layer.getLayerDataId(), chunkKey);
@@ -265,7 +275,7 @@ public class WLayerOverlayService {
         if (terrainOpt.isEmpty()) {
             // For MODEL layers, terrain might not exist yet - need to generate from models
             if (layer.getLayerType() == LayerType.MODEL) {
-                overlayModelLayersToTerrain(layer, chunkKey, cx, cz, blockMap);
+                overlayModelLayersToTerrain(layer, chunkKey, cx, cz, blockMap, blockGroups, blockLayers);
             } else {
                 log.trace("No terrain data for layer {} chunk {}", layer.getName(), chunkKey);
             }
@@ -305,6 +315,12 @@ public class WLayerOverlayService {
                     String key = blockKey(block.getPosition());
 
                     blockMap.put(key, block); // Overwrite previous layer
+                    blockLayers.put(key, layer.getName());
+                    if (layerBlock.getGroup() != null) {
+                        blockGroups.put(key, layerBlock.getGroup());
+                    } else {
+                        blockGroups.remove(key); // Clear group from previous layer
+                    }
                 }
             }
 
@@ -325,7 +341,9 @@ public class WLayerOverlayService {
      * - Each WLayerModel has its own mount point
      * - Result is overlaid onto the blockMap
      */
-    private void overlayModelLayersToTerrain(WLayer layer, String chunkKey, int cx, int cz, Map<String, Block> blockMap) {
+    private void overlayModelLayersToTerrain(WLayer layer, String chunkKey, int cx, int cz,
+                                              Map<String, Block> blockMap,
+                                              Map<String, String> blockGroups, Map<String, String> blockLayers) {
         // Load all models for this layerDataId (already sorted by order)
         List<WLayerModel> models = modelRepository.findByLayerDataIdOrderByOrder(layer.getLayerDataId());
 
@@ -389,6 +407,12 @@ public class WLayerOverlayService {
                     worldBlock.setPosition(worldPos);
 
                     blockMap.put(key, worldBlock);
+                    blockLayers.put(key, layer.getName() + ":" + model.getName());
+                    if (layerBlock.getGroup() != null) {
+                        blockGroups.put(key, layerBlock.getGroup());
+                    } else {
+                        blockGroups.remove(key);
+                    }
                     overlaidCount++;
                 }
             }

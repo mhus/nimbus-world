@@ -84,39 +84,18 @@ public class ChunkUpdateService {
                     ? world.getEpoches() : List.of();
 
             if (epochMetas.isEmpty()) {
-                // No epochs defined - backward compatible single-chunk rendering
-                return regenerateChunkLegacy(worldId, chunkKey, wid);
+                log.warn("No epochs defined for world={}, deleting chunk={}", worldId, chunkKey);
+                chunkService.deleteAllChunkVersions(wid, chunkKey);
+                publishChunkUpdate(worldId, chunkKey, null, null);
+                return true;
             }
 
-            // Epoch-aware rendering
             return regenerateChunkWithEpoches(worldId, chunkKey, wid, epochMetas);
 
         } catch (Exception e) {
             log.error("Failed to regenerate chunk: world={} chunk={}", worldId, chunkKey, e);
             return false;
         }
-    }
-
-    /**
-     * Legacy single-chunk rendering (no epochs defined).
-     */
-    private boolean regenerateChunkLegacy(String worldId, String chunkKey, WorldId wid) {
-        Optional<ChunkData> chunkDataOpt = overlayService.generateChunk(worldId, chunkKey);
-
-        if (chunkDataOpt.isEmpty()) {
-            log.info("No layers affecting chunk, deleting WChunk: world={} chunk={}", worldId, chunkKey);
-            chunkService.delete(wid, chunkKey);
-            publishChunkUpdate(worldId, chunkKey, null, null);
-            return true;
-        }
-
-        ChunkData chunkData = chunkDataOpt.get();
-        chunkService.saveChunk(wid, chunkKey, chunkData);
-        publishChunkUpdate(worldId, chunkKey, chunkData, null);
-
-        log.info("Regenerated chunk (legacy): world={} chunk={} blocks={}",
-                worldId, chunkKey, chunkData.getBlocks() != null ? chunkData.getBlocks().size() : 0);
-        return true;
     }
 
     /**

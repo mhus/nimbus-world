@@ -50,6 +50,7 @@ public class WChunkService implements StorageProvider {
     public static final SchemaVersion STORAGE_SCHEMA_VERSION = SchemaVersion.create("1.0.1");
 
     private final WChunkRepository repository;
+    private final WChunkInfoRepository chunkInfoRepository;
     private final StorageService storageService;
     private final WWorldService worldService;
     private final WItemPositionService itemRegistryService;
@@ -177,92 +178,6 @@ public class WChunkService implements StorageProvider {
         }
 
         return stream;
-    }
-
-    /**
-     * Save chunk data.
-     * Filters out instances - chunks are stored per world/zone (not per instance).
-     */
-    @Transactional
-    public WChunk saveChunk(WorldId worldId, String chunkKey, ChunkData data) {
-        if (Strings.isBlank(worldId.getId()) || Strings.isBlank(chunkKey)) {
-            throw new IllegalArgumentException("worldId und chunkKey erforderlich");
-        }
-        if (data == null) throw new IllegalArgumentException("ChunkData erforderlich");
-
-        if (worldId.isCollection() || (worldId.isInstance() && !worldId.isEditorInstance())) {
-            throw new IllegalArgumentException("Chunks können nur für Welten/Zonen gespeichert werden, nicht für Player-Instanzen/Collections");
-        }
-
-        // Extract server metadata from blocks and store in separate map
-        Map<String, Map<String, String>> infoServer = extractServerMetadata(data);
-
-        // Felder 'status' und 'i' vor Serialisierung null setzen
-        data.setStatus(null);
-        data.setI(null);
-
-        String json;
-        try {
-            json = objectMapper.writeValueAsString(data);
-        } catch (Exception e) {
-            throw new IllegalStateException("Serialisierung ChunkData fehlgeschlagen", e);
-        }
-
-        WChunk entity = repository.findByWorldIdAndChunk(worldId.getId(), chunkKey)
-                .orElseGet(() -> {
-                    WChunk neu = WChunk.builder().worldId(worldId.getId()).chunk(chunkKey).build();
-                    // hello
-                    neu.touchCreate();
-                    // set hex coordinate
-                    var chunkCoordinates = TypeUtil.parseChunkCoord(chunkKey);
-                    WWorld world = worldService.getByWorldId(worldId).orElseThrow();
-                    var mainHex = HexMathUtil.getDominantHexForChunk(world, chunkCoordinates[0], chunkCoordinates[1]);
-                    neu.setHex(TypeUtil.toStringHexCoord(mainHex));
-                    // fine
-                    return neu;
-                });
-
-        // Komprimierung wenn aktiviert
-        byte[] dataBytes;
-        if (compressionEnabled) {
-            try (ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-                 GZIPOutputStream gzip = new GZIPOutputStream(buffer)) {
-                gzip.write(json.getBytes(java.nio.charset.StandardCharsets.UTF_8));
-                gzip.finish();
-                dataBytes = buffer.toByteArray();
-                entity.setCompressed(true);
-                log.debug("Chunk komprimiert chunkKey={} original={} compressed={} ratio={}",
-                        chunkKey, json.length(), dataBytes.length,
-                        String.format("%.1f%%", 100.0 * dataBytes.length / json.length()));
-            } catch (Exception e) {
-                throw new IllegalStateException("Komprimierung ChunkData fehlgeschlagen", e);
-            }
-        } else {
-            dataBytes = json.getBytes(java.nio.charset.StandardCharsets.UTF_8);
-            entity.setCompressed(false);
-        }
-
-        // Alle Chunks werden jetzt extern über StorageService gespeichert
-        try (InputStream stream = new ByteArrayInputStream(dataBytes)) {
-            StorageService.StorageInfo storageInfo;
-            if (entity.getStorageId() != null) {
-                // Update existing chunk
-                storageInfo = storageService.update(STORAGE_SCHEMA, STORAGE_SCHEMA_VERSION, entity.getStorageId(), stream);
-            } else {
-                // Create new chunk
-                storageInfo = storageService.store(STORAGE_SCHEMA, STORAGE_SCHEMA_VERSION, worldId.getId(), "chunk/" + chunkKey, stream);
-            }
-            entity.setStorageId(storageInfo.id());
-            log.debug("Chunk extern gespeichert chunkKey={} size={} storageId={} world={} compressed={}",
-                    chunkKey, storageInfo.size(), storageInfo.id(), worldId.getId(), entity.isCompressed());
-        } catch (Exception e) {
-            throw new IllegalStateException("Speichern ChunkData fehlgeschlagen", e);
-        }
-
-        entity.setInfoServer(infoServer.isEmpty() ? null : infoServer);
-        entity.setBlockCount(data.getBlocks().size());
-        entity.touchUpdate();
-        return repository.save(entity);
     }
 
     // EPOCH-UNFILTERED: returns data across all epochs. Use the epoch-filtered overload for player/gameplay context.
@@ -542,6 +457,7 @@ public class WChunkService implements StorageProvider {
                 safeDeleteExternal(storageService, c.getStorageId());
             }
             repository.delete(c);
+            chunkInfoRepository.deleteByWorldIdAndChunk(lookupWorld.getId(), chunkKey);
             log.debug("Chunk gelöscht chunkKey={} world={}", chunkKey, lookupWorld.getId());
             return true;
         }).orElse(false);
@@ -564,6 +480,7 @@ public class WChunkService implements StorageProvider {
             }
         }
         repository.deleteAllByWorldIdAndChunk(lookupWorld.getId(), chunkKey);
+        chunkInfoRepository.deleteAllByWorldIdAndChunk(lookupWorld.getId(), chunkKey);
         log.debug("Deleted {} chunk versions: chunkKey={} world={}", allVersions.size(), chunkKey, lookupWorld.getId());
     }
 
@@ -1061,6 +978,61 @@ public class WChunkService implements StorageProvider {
      */
     public Optional<WChunk> findChunkByWorldIdAndKey(String worldId, String chunkKey) {
         return repository.findByWorldIdAndChunk(worldId, chunkKey);
+    }
+
+    // --- WChunkInfo management ---
+
+    /**
+     * Get chunk info (block groups and layers) for a chunk.
+     */
+    @Transactional(readOnly = true)
+    public Optional<WChunkInfo> getChunkInfo(WorldId worldId, String chunkKey) {
+        var lookupWorld = worldId.toBaseWorldId();
+        return chunkInfoRepository.findByWorldIdAndChunk(lookupWorld.getId(), chunkKey);
+    }
+
+    /**
+     * Get chunk info filtered by epoch.
+     */
+    @Transactional(readOnly = true)
+    public Optional<WChunkInfo> getChunkInfo(WorldId worldId, String chunkKey, int epoch) {
+        var lookupWorld = worldId.toBaseWorldId();
+        return chunkInfoRepository.findByWorldIdAndChunkAndEpochesContaining(lookupWorld.getId(), chunkKey, epoch);
+    }
+
+    /**
+     * Save or update WChunkInfo with block group and layer data.
+     * Called by WLayerOverlayService during chunk generation where layer context is available.
+     * If saving fails (e.g. document too large), the error is logged and any existing
+     * WChunkInfo for this chunk is deleted to avoid stale data. The chunk generation
+     * process is NOT interrupted.
+     */
+    public void saveChunkInfo(String worldId, String chunkKey, List<Integer> epoches,
+                              Map<String, String> blockGroups, Map<String, String> blockLayers) {
+        try {
+            WChunkInfo info = chunkInfoRepository.findByWorldIdAndChunk(worldId, chunkKey)
+                    .orElseGet(() -> {
+                        WChunkInfo neu = WChunkInfo.builder()
+                                .worldId(worldId)
+                                .chunk(chunkKey)
+                                .build();
+                        neu.touchCreate();
+                        return neu;
+                    });
+
+            info.setEpoches(epoches != null ? epoches : List.of());
+            info.setBlockGroups(blockGroups);
+            info.setBlockLayers(blockLayers);
+            info.touchUpdate();
+            chunkInfoRepository.save(info);
+        } catch (Exception e) {
+            log.error("Failed to save WChunkInfo for chunk {} world={}, deleting stale info", chunkKey, worldId, e);
+            try {
+                chunkInfoRepository.deleteByWorldIdAndChunk(worldId, chunkKey);
+            } catch (Exception deleteEx) {
+                log.error("Failed to delete stale WChunkInfo for chunk {} world={}", chunkKey, worldId, deleteEx);
+            }
+        }
     }
 
 }

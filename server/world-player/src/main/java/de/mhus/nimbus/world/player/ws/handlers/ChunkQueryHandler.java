@@ -53,26 +53,26 @@ public class ChunkQueryHandler implements MessageHandler {
             String chunkKey = cx + ":" + cz;
             var chunkOpt = chunkService.find(session.getWorldId(), chunkKey, session.getEpoch());
 
-            if (chunkOpt.isEmpty()) {
-                // Generate default chunk if not found
+            ChunkDataTransferObject dto;
+            if (chunkOpt.isPresent()) {
+                // Convert stored chunk to transfer object (uses compressed storage if available)
+                dto = chunkService.toTransferObject(session.getWorldId(), chunkOpt.get());
+                log.trace("Loaded chunk: cx={}, cz={}, worldId={}, compressed={}",
+                        cx, cz, session.getWorldId(), chunkOpt.get().isCompressed());
+            } else {
+                // Generate default chunk on-the-fly without saving to DB
                 var chunkData = chunkService.loadChunkData(session.getWorldId(), chunkKey, true, session.getEpoch());
-                if (chunkData.isPresent()) {
-                    var saved = chunkService.saveChunk(session.getWorldId(), chunkKey, chunkData.get());
-                    chunkOpt = java.util.Optional.of(saved);
-                } else {
+                if (chunkData.isEmpty()) {
                     log.debug("Chunk not found and could not generate: cx={}, cz={}", cx, cz);
                     continue;
                 }
+                dto = chunkService.chunkDataToTransferObject(session.getWorldId(), chunkData.get());
+                log.trace("Generated default chunk on-the-fly: cx={}, cz={}, worldId={}",
+                        cx, cz, session.getWorldId());
             }
 
-            var chunk = chunkOpt.get();
-
-            // Convert to transfer object (uses compressed storage if available)
-            ChunkDataTransferObject dto = chunkService.toTransferObject(session.getWorldId(), chunk);
             if (dto != null) {
                 responseChunks.add(objectMapper.valueToTree(dto));
-                log.trace("Loaded chunk: cx={}, cz={}, worldId={}, compressed={}",
-                        cx, cz, session.getWorldId(), chunk.isCompressed());
             }
         }
 

@@ -216,7 +216,7 @@ public class EditService {
 
             case MARK_BLOCK:
                 // get block definition at position
-                Map<String, Object> blockInfo = blockInfoService.loadBlockInfo(worldId, sessionId, x, y, z);
+                var blockInfo = blockInfoService.loadBlockInfo(worldId, sessionId, x, y, z);
                 // Store marked block and show in client
                 doMarkBlock(worldId, sessionId, x, y, z);
                 // store also blockInfo data in redis to use in copy
@@ -363,7 +363,7 @@ public class EditService {
      * Store marked block info (complete block data with metadata) in Redis.
      * Used for copy/move operations.
      */
-    private void storeBlockDataRegistry(String worldId, String sessionId, Map<String, Object> blockInfo) {
+    private void storeBlockDataRegistry(String worldId, String sessionId, de.mhus.nimbus.world.shared.dto.BlockInfoDto blockInfo) {
         if (blockInfo == null) {
             wSessionService.deleteBlockRegister(sessionId);
             log.debug("Register block info cleared: session={}", sessionId);
@@ -371,19 +371,12 @@ public class EditService {
         }
 
         try {
-            // Convert Map to BlockRegister
-            Block block = objectMapper.convertValue(blockInfo.get("block"), Block.class);
-
-            // Convert group to String (handle both Integer and String from frontend)
-            Object groupObj = blockInfo.get("group");
-            String group = groupObj != null ? String.valueOf(groupObj) : null;
-
             BlockRegister blockRegister = BlockRegister.builder()
-                    .block(block)
-                    .layer((String) blockInfo.get("layer"))
-                    .group(group)
-                    .groupName((String) blockInfo.get("groupName"))
-                    .readOnly((Boolean) blockInfo.get("readOnly"))
+                    .block(blockInfo.block())
+                    .layer(blockInfo.layer())
+                    .group(blockInfo.group())
+                    .groupName(blockInfo.groupName())
+                    .readOnly(blockInfo.readOnly())
                     .build();
 
             wSessionService.updateBlockRegister(sessionId, blockRegister);
@@ -685,24 +678,14 @@ public class EditService {
         log.debug("Clone block: session={} pos=({},{},{})", sessionId, x, y, z);
 
         // Get block info at this position from the layer system
-        Map<String, Object> blockInfo = blockInfoService.loadBlockInfo(worldId, sessionId, x, y, z);
-        if (blockInfo == null || blockInfo.isEmpty()) {
+        var blockInfo = blockInfoService.loadBlockInfo(worldId, sessionId, x, y, z);
+        if (blockInfo == null || blockInfo.block() == null) {
             log.warn("No block found to clone at position: session={} pos=({},{},{})", sessionId, x, y, z);
             return;
         }
 
-        // Extract block data
-        @SuppressWarnings("unchecked")
-        Map<String, Object> blockData = (Map<String, Object>) blockInfo.get("block");
-        if (blockData == null) {
-            log.warn("No block data in blockInfo for clone: session={} pos=({},{},{})", sessionId, x, y, z);
-            return;
-        }
-
         try {
-            // Convert to Block object
-            String blockJson = objectMapper.writeValueAsString(blockData);
-            Block blockToClone = objectMapper.readValue(blockJson, Block.class);
+            Block blockToClone = blockInfo.block();
 
             // Use existing setBlock method to paste at same position
             // This handles all the overlay logic, client updates, etc.
@@ -918,11 +901,9 @@ public class EditService {
             // Parse block JSON
             Block block = objectMapper.readValue(blockJson, Block.class);
 
-            // Create blockInfo map (same format as when marking from world)
-            Map<String, Object> blockInfo = new HashMap<>();
-            blockInfo.put("block", block);
-
-            // Use existing store method
+            // Use existing store method with DTO
+            var blockInfo = new de.mhus.nimbus.world.shared.dto.BlockInfoDto(
+                    block, false, null, null, null, null, null);
             storeBlockDataRegistry(worldId, sessionId, blockInfo);
 
             log.info("Register block set from palette: worldId={}, sessionId={}, blockTypeId={}",
@@ -954,23 +935,13 @@ public class EditService {
 
         // Use blockInfoService which handles the priority correctly
         // It reads from: overlay -> layer -> chunk
-        Map<String, Object> blockInfo = blockInfoService.loadBlockInfo(worldId, sessionId, x, y, z);
+        var blockInfo = blockInfoService.loadBlockInfo(worldId, sessionId, x, y, z);
 
         if (blockInfo == null) {
             return null;
         }
 
-        Object blockObj = blockInfo.get("block");
-        if (blockObj == null) {
-            return null;
-        }
-
-        try {
-            return objectMapper.convertValue(blockObj, Block.class);
-        } catch (Exception e) {
-            log.warn("Failed to convert block at ({},{},{}): {}", x, y, z, e.getMessage());
-            return null;
-        }
+        return blockInfo.block();
     }
 
     /**

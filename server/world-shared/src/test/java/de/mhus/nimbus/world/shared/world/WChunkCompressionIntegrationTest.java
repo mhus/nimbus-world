@@ -58,6 +58,9 @@ class WChunkCompressionIntegrationTest {
     private WItemPositionService itemRegistryService;
 
     @MockBean
+    private WChunkInfoRepository chunkInfoRepository;
+
+    @MockBean
     private MongoTemplate mongoTemplate;
 
     @Test
@@ -90,8 +93,6 @@ class WChunkCompressionIntegrationTest {
         ChunkData originalData = createLargeChunkData(10, 10, 150);
 
         // Mock repository behavior
-        when(repository.findByWorldIdAndChunk(anyString(), anyString()))
-                .thenReturn(Optional.empty());
         when(repository.save(any(WChunk.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -102,7 +103,7 @@ class WChunkCompressionIntegrationTest {
                         SchemaVersion.create("1.0.1")));
 
         // When: Save chunk
-        WChunk savedChunk = chunkService.saveChunk(worldId, chunkKey, originalData);
+        WChunk savedChunk = chunkService.saveChunkWithEpoches(worldId, chunkKey, originalData, List.of(0));
 
         // Then: Verify compression was applied
         assertThat(savedChunk).isNotNull();
