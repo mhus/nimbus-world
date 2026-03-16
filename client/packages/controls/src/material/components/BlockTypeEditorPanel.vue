@@ -76,8 +76,8 @@
                       class="select select-bordered w-full"
                     >
                       <option :value="undefined">-- Not specified --</option>
-                      <option v-for="(value, name) in BlockTypeType" :key="name" :value="value">
-                        {{ name }} ({{ value }})
+                      <option v-for="name in blockTypeTypeNames" :key="name" :value="BlockTypeType[name as keyof typeof BlockTypeType]">
+                        {{ name }} ({{ BlockTypeType[name as keyof typeof BlockTypeType] }})
                       </option>
                     </select>
                     <label class="label">
@@ -210,6 +210,20 @@
                     </svg>
                     Add Entry
                   </button>
+                </div>
+
+                <!-- Interactive Shortcut -->
+                <div class="form-control">
+                  <label class="label cursor-pointer justify-start gap-2">
+                    <input
+                      :checked="isInteractive"
+                      @change="toggleInteractive"
+                      type="checkbox"
+                      class="checkbox checkbox-sm"
+                    />
+                    <span class="label-text">Interactive</span>
+                    <span class="label-text-alt">Player can interact with blocks of this type</span>
+                  </label>
                 </div>
 
                 <!-- Default Server Parameters -->
@@ -536,6 +550,30 @@ const formData = ref<Partial<BlockType>>({
 // Default client/server maps (separate from BlockType publicData)
 const defaultClientEntries = ref<Array<{ key: string; value: string }>>([]);
 const defaultServerEntries = ref<Array<{ key: string; value: string }>>([]);
+
+// Filter numeric enum reverse mappings (TypeScript numeric enums have both name→value and value→name)
+const blockTypeTypeNames = Object.keys(BlockTypeType).filter(k => isNaN(Number(k)));
+
+// Interactive checkbox: reads/writes _interactive in defaultServerEntries
+const isInteractive = computed(() =>
+  defaultServerEntries.value.some(e => e.key === '_interactive' && e.value === 'true')
+);
+
+function toggleInteractive(event: Event) {
+  const checked = (event.target as HTMLInputElement).checked;
+  const idx = defaultServerEntries.value.findIndex(e => e.key === '_interactive');
+  if (checked) {
+    if (idx >= 0) {
+      defaultServerEntries.value[idx].value = 'true';
+    } else {
+      defaultServerEntries.value.push({ key: '_interactive', value: 'true' });
+    }
+  } else {
+    if (idx >= 0) {
+      defaultServerEntries.value.splice(idx, 1);
+    }
+  }
+}
 
 // Expose method to update modifier from parent
 const updateModifier = (status: string, modifier: BlockModifier) => {

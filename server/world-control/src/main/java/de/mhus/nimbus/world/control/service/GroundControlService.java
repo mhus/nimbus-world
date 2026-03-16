@@ -273,12 +273,19 @@ public class GroundControlService {
 
         String layerDataId = groundLayer.getLayerDataId();
 
-        // Get all chunk keys where this hex is dominant
+        // Get all chunk keys affected by this hex (all positions inside the hex mapped to chunks)
         HexVector2 hexPos = HexVector2.builder().q(q).r(r).build();
-        Set<String> chunkKeys = HexMathUtil.getDominantChunkKeysForHex(hexPos, chunkSize, hexGridSize);
+        Set<String> chunkKeys = new HashSet<>();
+        var posIterator = HexMathUtil.createFlatPositionIterator(hexPos, hexGridSize);
+        while (posIterator.hasNext()) {
+            var pos = posIterator.next();
+            int cx2 = Math.floorDiv(pos.getX(), chunkSize);
+            int cz2 = Math.floorDiv(pos.getZ(), chunkSize);
+            chunkKeys.add(cx2 + ":" + cz2);
+        }
 
         if (chunkKeys.isEmpty()) {
-            log.debug("No dominant chunks for hex ({},{}) in worldId={}", q, r, worldId);
+            log.debug("No affected chunks for hex ({},{}) in worldId={}", q, r, worldId);
             return 0;
         }
 
@@ -349,6 +356,40 @@ public class GroundControlService {
 
         log.info("checkLayerGround completed: worldId={} layerDataId={} modified={}/{}", worldId, layerDataId, modified, chunkKeys.size());
         return modified;
+    }
+
+    /**
+     * Check and repair all GROUND layers of a world.
+     *
+     * @param worldId       World identifier
+     * @param sides         Bit flags for neighbor sides per chunk
+     * @param cleanupBlocks If true, remove blocks below ground surface
+     * @return total number of chunks that were modified across all layers
+     */
+    @Transactional
+    public int checkWorldGround(String worldId, int sides, boolean cleanupBlocks) {
+        List<WLayer> allLayers = layerService.findLayersByWorld(worldId);
+        List<WLayer> groundLayers = allLayers.stream()
+                .filter(l -> l.getLayerType() == LayerType.GROUND)
+                .filter(WLayer::isEnabled)
+                .toList();
+
+        if (groundLayers.isEmpty()) {
+            log.warn("No GROUND layers found for worldId={}", worldId);
+            return 0;
+        }
+
+        log.info("checkWorldGround: worldId={} groundLayers={} sides={} cleanup={}",
+                worldId, groundLayers.size(), sides, cleanupBlocks);
+
+        int totalModified = 0;
+        for (WLayer layer : groundLayers) {
+            int modified = checkLayerGround(worldId, layer.getLayerDataId(), sides, cleanupBlocks);
+            totalModified += modified;
+        }
+
+        log.info("checkWorldGround completed: worldId={} totalModified={}", worldId, totalModified);
+        return totalModified;
     }
 
     /**

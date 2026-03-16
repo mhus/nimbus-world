@@ -33,6 +33,11 @@ import java.util.Map;
  *    - layerDataId (required): Layer data ID of the GROUND layer
  *    - sides (optional): Bit flags for neighbor sides (default: 15 = all)
  *    - cleanupBlocks (optional): "true"/"false" (default: "true")
+ *
+ * 4. "check-world-ground" — run checkWorldGround on all GROUND layers of a world.
+ *    Parameters:
+ *    - sides (optional): Bit flags for neighbor sides (default: 15 = all)
+ *    - cleanupBlocks (optional): "true"/"false" (default: "true")
  */
 @Component
 @RequiredArgsConstructor
@@ -54,14 +59,15 @@ public class GroundControlJobExecutor implements JobExecutor {
             String type = params.get("type");
 
             if (type == null || type.isBlank()) {
-                throw new JobExecutionException("Missing required parameter: type (must be 'check-ground', 'check-hex-grid-ground', or 'check-layer-ground')");
+                throw new JobExecutionException("Missing required parameter: type");
             }
 
             return switch (type) {
                 case "check-ground" -> executeCheckGround(worldId, params);
                 case "check-hex-grid-ground" -> executeCheckHexGridGround(worldId, params);
                 case "check-layer-ground" -> executeCheckLayerGround(worldId, params);
-                default -> throw new JobExecutionException("Unknown type: " + type + " (must be 'check-ground', 'check-hex-grid-ground', or 'check-layer-ground')");
+                case "check-world-ground" -> executeCheckWorldGround(worldId, params);
+                default -> throw new JobExecutionException("Unknown type: " + type);
             };
 
         } catch (JobExecutionException e) {
@@ -114,6 +120,19 @@ public class GroundControlJobExecutor implements JobExecutor {
         int modified = groundControlService.checkLayerGround(worldId, layerDataId, sides, cleanupBlocks);
 
         String msg = String.format("check-layer-ground layerDataId=%s: %d chunks modified", layerDataId, modified);
+        log.info(msg);
+        return JobResult.success(msg);
+    }
+
+    private JobResult executeCheckWorldGround(String worldId, Map<String, String> params) throws JobExecutionException {
+        int sides = parseIntParameter(params, "sides", GroundControlService.SIDE_ALL);
+        boolean cleanupBlocks = parseBooleanParameter(params, "cleanupBlocks", true);
+
+        log.info("check-world-ground: worldId={} sides={} cleanup={}", worldId, sides, cleanupBlocks);
+
+        int modified = groundControlService.checkWorldGround(worldId, sides, cleanupBlocks);
+
+        String msg = String.format("check-world-ground worldId=%s: %d chunks modified", worldId, modified);
         log.info(msg);
         return JobResult.success(msg);
     }

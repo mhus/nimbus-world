@@ -372,18 +372,6 @@
                 />
               </div>
 
-              <!-- Interactive -->
-              <div class="form-control">
-                <label class="label cursor-pointer justify-start gap-2">
-                  <input
-                    v-model="blockData.metadata.interactive"
-                    type="checkbox"
-                    class="checkbox checkbox-sm"
-                  />
-                  <span class="label-text">Interactive</span>
-                  <span class="label-text-alt">Player can interact with this block</span>
-                </label>
-              </div>
 
               <!-- Server Metadata -->
               <div class="form-control">
