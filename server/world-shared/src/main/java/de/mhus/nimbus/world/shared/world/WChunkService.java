@@ -511,16 +511,17 @@ public class WChunkService implements StorageProvider {
         }
 
         // Create new WChunk entity
+        WWorld world = worldService.getByWorldId(worldId).orElseThrow();
         WChunk entity = WChunk.builder()
                 .worldId(worldId.getId())
                 .chunk(chunkKey)
+                .chunkSize(world.getPublicData().getChunkSize())
                 .epoches(epoches)
                 .build();
         entity.touchCreate();
 
         // Set hex coordinate
         var chunkCoordinates = TypeUtil.parseChunkCoord(chunkKey);
-        WWorld world = worldService.getByWorldId(worldId).orElseThrow();
         var mainHex = HexMathUtil.getDominantHexForChunk(world, chunkCoordinates[0], chunkCoordinates[1]);
         entity.setHex(TypeUtil.toStringHexCoord(mainHex));
 
