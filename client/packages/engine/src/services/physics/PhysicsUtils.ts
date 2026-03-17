@@ -173,6 +173,9 @@ export function clampToLoadedChunks(
   }
 }
 
+// Track if minHeight interaction was already sent (reset when player leaves minHeight)
+let minHeightHitSent = false;
+
 /**
  * Clamp entity position to world boundaries
  */
@@ -202,10 +205,20 @@ export function clampToWorldBounds(entity: PhysicsEntity, appContext: AppContext
     entity.position.y = start.y;
     entity.velocity.y = 0;
     clamped = true;
-  } else if (entity.position.y > stop.y) {
-    entity.position.y = stop.y;
-    entity.velocity.y = 0;
-    clamped = true;
+    if (!minHeightHitSent) {
+      minHeightHitSent = true;
+      const networkService = appContext.services.network;
+      if (networkService) {
+        networkService.sendSimpleInteraction('minHeight', '');
+      }
+    }
+  } else {
+    minHeightHitSent = false;
+    if (entity.position.y > stop.y) {
+      entity.position.y = stop.y;
+      entity.velocity.y = 0;
+      clamped = true;
+    }
   }
 
   // Clamp Z

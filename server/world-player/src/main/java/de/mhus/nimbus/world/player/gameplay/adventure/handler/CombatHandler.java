@@ -111,9 +111,15 @@ public class CombatHandler {
     }
 
     /**
-     * Handle player death: check for 1up item first, otherwise normal death.
+     * Handle player death: check for 1up item first, otherwise enter death state.
+     * In death state the server sends a "died" command to the client, waits 120 seconds,
+     * then deletes the player session (no save) and closes the connection.
      */
     public void onPlayerDeath(PlayerSession session, AdventureData data) {
+        if (data.getDeathTimestamp() > 0) {
+            return; // Already dead
+        }
+
         // Check backpack for a 1up item
         var oneUpItems = gameplay.getGameplayService().findItemsByEffect(session, "1up");
         String oneUpItemId = oneUpItems.isEmpty() ? null : oneUpItems.getFirst().getItemId();
@@ -131,39 +137,17 @@ public class CombatHandler {
 
             gameplay.getClientService().sendSystemNotification(session, "1Up", "You have been revived!");
             log.info("Player {} used 1Up item {} to revive", session.getEntityId(), oneUpItemId);
-        } else {
-            // Normal death: partial reset
-            var health = data.getVital("health");
-            if (health != null) {
-                health.setCurrent(health.getEffectiveMax());
-            }
-
-            data.getActiveEffects().removeIf(e -> !e.isPermanent());
-
-            var hunger = data.getVital("hunger");
-            if (hunger != null) {
-                hunger.setCurrent(hunger.getEffectiveMax() * 0.5);
-            }
-            var thirst = data.getVital("thirst");
-            if (thirst != null) {
-                thirst.setCurrent(thirst.getEffectiveMax() * 0.5);
-            }
-
-            var adrenaline = data.getVital("adrenaline");
-            if (adrenaline != null) {
-                adrenaline.setCurrent(0);
-            }
-
-            data.setMovementState("WALK");
-            var air = data.getVital("air");
-            if (air != null) {
-                air.setCurrent(air.getEffectiveMax());
-            }
-
-            gameplay.getClientService().sendSystemNotification(session, "Death", "You have died and been revived.");
+            gameplay.getVitalsHandler().sendVitalsUpdate(session, data);
+            return;
         }
 
-        gameplay.getVitalsHandler().sendVitalsUpdate(session, data);
+        // Enter death state
+        data.setDeathTimestamp(System.currentTimeMillis());
+
+        // Send "died" command to client — client enters dead mode (fog, no movement, death pose)
+        gameplay.getClientService().sendCommand(session, "died", List.of());
+
+        log.info("Player {} entered death state in session {}", session.getEntityId(), session.getSessionId());
     }
 
     /**

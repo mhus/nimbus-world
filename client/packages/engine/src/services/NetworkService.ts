@@ -153,6 +153,14 @@ export class NetworkService {
   }
 
   /**
+   * Enable or disable automatic reconnection.
+   * Used by DiedCommand to prevent reconnection after server-initiated death disconnect.
+   */
+  setReconnectEnabled(enabled: boolean): void {
+    this.shouldReconnect = enabled;
+  }
+
+  /**
    * Disconnect from WebSocket server
    */
   async disconnect(): Promise<void> {
@@ -466,21 +474,34 @@ export class NetworkService {
     this.emit('disconnected');
 
     if (wasConnected) {
-      // Set DEAD mode when disconnected
       const playerService = this.appContext.services.player;
-      if (playerService) {
-        playerService.setPlayerDeadState(true);
-      }
+      const playerAlreadyDead = playerService?.isPlayerDead() || false;
 
-      // Show center text notification
-      const notificationService = this.appContext.services.notification;
-      if (notificationService) {
-        notificationService.setCenterText('Disconnected from server');
+      if (!playerAlreadyDead) {
+        // Set DEAD mode when disconnected (only if not already in death state from server)
+        if (playerService) {
+          playerService.setPlayerDeadState(true);
+        }
+
+        // Show center text notification
+        const notificationService = this.appContext.services.notification;
+        if (notificationService) {
+          notificationService.setCenterText('Disconnected from server');
+        }
       }
     }
 
-    // Attempt reconnection
-    if (this.shouldReconnect && wasConnected) {
+    // Attempt reconnection or redirect
+    if (wasConnected && !this.shouldReconnect) {
+      // Death disconnect — redirect to exit URL
+      const exitUrl = this.appContext.config.exitUrl || '/login';
+      logger.info('Death disconnect, redirecting to exit URL', { exitUrl });
+      if (typeof window !== 'undefined' && window.location) {
+        setTimeout(() => {
+          window.location.href = exitUrl;
+        }, 2000);
+      }
+    } else if (this.shouldReconnect && wasConnected) {
       this.attemptReconnect();
     }
   }

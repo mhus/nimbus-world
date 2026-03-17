@@ -14,9 +14,10 @@ import lombok.NoArgsConstructor;
  *
  * Redis channel: world:{worldId}:v.d.p or world:{worldId}:v.d.e
  *
- * Two message types:
+ * Message types:
  * - "DELTA": Direct vital modification (heal, DoT). Uses vitalType + delta.
  * - "ATTACK": Attack broadcast. Receiver calculates damage using own defense stats.
+ * - "REVIVE": Revive a dead player. Receiver exits death state.
  */
 @Data
 @Builder
@@ -28,6 +29,7 @@ public class VitalDeltaBroadcastMessage {
     public static final String TYPE_ATTACK = "ATTACK";
     public static final String TYPE_ATTACK_RESULT = "ATTACK_RESULT";
     public static final String TYPE_PROXIMITY = "PROXIMITY";
+    public static final String TYPE_REVIVE = "REVIVE";
 
     /** Target entity ID, e.g. "@user:char" (player) or "cow2" (NPC) */
     private String targetEntityId;

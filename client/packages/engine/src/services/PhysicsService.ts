@@ -128,9 +128,6 @@ export class PhysicsService {
   // Track if climbable velocity was set this frame (before updateWalkMode runs)
   private climbableVelocitySetThisFrame: Map<string, boolean> = new Map();
 
-  // Track if minHeight interaction was already sent (reset when player leaves minHeight)
-  private minHeightHitSent: boolean = false;
-
   // Step sound throttle interval (per entity)
   private readonly stepInterval: number = 300; // ms between step events
 
@@ -887,20 +884,10 @@ export class PhysicsService {
       entity.position.y = start.y;
       entity.velocity.y = 0;
       clamped = true;
-      if (!this.minHeightHitSent && isPlayerEntity(entity)) {
-        this.minHeightHitSent = true;
-        const networkService = this.appContext.services.network;
-        if (networkService) {
-          networkService.sendSimpleInteraction('minHeight', '');
-        }
-      }
-    } else {
-      this.minHeightHitSent = false;
-      if (entity.position.y > stop.y) {
-        entity.position.y = stop.y;
-        entity.velocity.y = 0;
-        clamped = true;
-      }
+    } else if (entity.position.y > stop.y) {
+      entity.position.y = stop.y;
+      entity.velocity.y = 0;
+      clamped = true;
     }
 
     // Clamp Z

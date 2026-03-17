@@ -166,6 +166,35 @@ public class VitalDeltaPublisher {
     }
 
     /**
+     * Publish a revive request to a dead player.
+     * The target player's gameplay will exit death state and restore vitals.
+     *
+     * @param worldId         World ID
+     * @param targetEntityId  Dead player entity ID (@ prefix)
+     * @param sourceEntityId  Player who is reviving (@ prefix)
+     */
+    public void publishRevive(String worldId, String targetEntityId, String sourceEntityId) {
+        if (targetEntityId == null || sourceEntityId == null) return;
+
+        try {
+            VitalDeltaBroadcastMessage message = VitalDeltaBroadcastMessage.builder()
+                    .type(VitalDeltaBroadcastMessage.TYPE_REVIVE)
+                    .targetEntityId(targetEntityId)
+                    .sourceEntityId(sourceEntityId)
+                    .worldId(worldId)
+                    .build();
+
+            String json = objectMapper.writeValueAsString(message);
+            String channel = targetEntityId.startsWith("@") ? CHANNEL_PLAYER : CHANNEL_ENTITY;
+            redisMessaging.publish(worldId, channel, json);
+
+            log.debug("Published revive: {} -> {}", sourceEntityId, targetEntityId);
+        } catch (Exception e) {
+            log.error("Failed to publish revive for {} in world {}", targetEntityId, worldId, e);
+        }
+    }
+
+    /**
      * Publish a proximity notification to an entity.
      * Used when a player enters an NPC's attention range.
      * The entity decides whether to enter combat based on its properties.

@@ -69,6 +69,8 @@ public class VitalDeltaBroadcastListener {
                 adventureGameplay.handleIncomingAttack(targetSession, data, msg);
             } else if (VitalDeltaBroadcastMessage.TYPE_ATTACK_RESULT.equals(type)) {
                 handleAttackResult(targetSession, msg);
+            } else if (VitalDeltaBroadcastMessage.TYPE_REVIVE.equals(type)) {
+                adventureGameplay.handleIncomingRevive(targetSession, data, msg);
             } else {
                 handleDelta(msg, data);
             }

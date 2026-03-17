@@ -91,9 +91,13 @@ public class PlayerSessionPersistenceService implements SessionAuthenticatedCons
 
                     gameplayTick(session, count);
 
-                    // Save every N ticks
+                    // Save every N ticks (skip if player is dead — session will be deleted on close)
                     if (count >= saveIntervalTicks) {
-                        saveSessionSafely(session, "periodic");
+                        boolean isDead = session.getGameplayData() instanceof de.mhus.nimbus.world.player.gameplay.AdventureData advData
+                                && advData.getDeathTimestamp() > 0;
+                        if (!isDead) {
+                            saveSessionSafely(session, "periodic");
+                        }
                         refreshRedisPosition(session);
                         counter.set(0);  // Reset counter
                     }
@@ -153,8 +157,19 @@ public class PlayerSessionPersistenceService implements SessionAuthenticatedCons
             return;
         }
 
-        // Save final state
-        if (session.isAuthenticated() && session.getLastPosition() != null) {
+        // If player died, do NOT save — delete session data instead (prevents cheating by reconnecting)
+        boolean isDead = session.getGameplayData() instanceof de.mhus.nimbus.world.player.gameplay.AdventureData advData
+                && advData.getDeathTimestamp() > 0;
+
+        if (isDead) {
+            // Delete saved session from MongoDB — player starts fresh on next login
+            String worldId = session.getWorldId() != null ? session.getWorldId().getId() : null;
+            String playerId = session.getEntityId();
+            if (worldId != null && playerId != null) {
+                sessionService.deleteSession(worldId, playerId);
+                log.info("Deleted session for dead player: worldId={}, playerId={}", worldId, playerId);
+            }
+        } else if (session.isAuthenticated() && session.getLastPosition() != null) {
             saveSessionSafely(session, "close");
         }
 

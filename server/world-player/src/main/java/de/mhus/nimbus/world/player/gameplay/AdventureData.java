@@ -60,6 +60,9 @@ public class AdventureData extends EntityCombatData {
     /** Cached gameMode from the current hex grid (transient, not persisted) */
     private transient String cachedGameMode;
 
+    /** Timestamp when player died (0 = alive). Server waits before disconnecting. (transient, not persisted) */
+    private transient long deathTimestamp;
+
     /**
      * Initialize with default vital values and combat stats.
      * Calls super.initBaseDefaults() for health/stamina/mana + all combat stats,

@@ -10,6 +10,7 @@ import de.mhus.nimbus.world.player.service.GameplayUtil;
 import de.mhus.nimbus.world.player.gameplay.adventure.AttackAction;
 import de.mhus.nimbus.world.player.gameplay.adventure.CollectAction;
 import de.mhus.nimbus.world.player.gameplay.adventure.BuffAction;
+import de.mhus.nimbus.world.player.gameplay.adventure.ReviveAction;
 import de.mhus.nimbus.world.player.gameplay.adventure.DropItemAction;
 import de.mhus.nimbus.world.player.gameplay.adventure.EffectAction;
 import de.mhus.nimbus.world.player.gameplay.adventure.IncreaseExpAction;
@@ -33,10 +34,12 @@ import de.mhus.nimbus.world.shared.world.WHexGrid;
 import de.mhus.nimbus.world.shared.world.WHexGridService;
 import de.mhus.nimbus.generated.types.ItemBlockRef;
 import de.mhus.nimbus.world.shared.world.WItem;
+import de.mhus.nimbus.world.player.ws.SessionManager;
 import jakarta.annotation.PostConstruct;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -48,10 +51,15 @@ import java.util.Map;
 public class AdventureGameplay extends BasicGameplay {
 
     private static final int VITALS_SEND_INTERVAL_TICKS = 2;
+    private static final long DEATH_TIMEOUT_MS = 120_000; // 120 seconds death state before disconnect
 
     @Autowired
     @Getter
     private ClientService clientService;
+
+    @Autowired
+    @Lazy
+    private SessionManager sessionManager;
 
     @Autowired
     @Getter
@@ -104,6 +112,7 @@ public class AdventureGameplay extends BasicGameplay {
         actions.put("dialog", new DialogAction(this));
         actions.put("drop.item", new DropItemAction(this));
         actions.put("buff", new BuffAction(this));
+        actions.put("revive", new ReviveAction(this));
     }
 
     // --- Condition delegation ---
@@ -143,6 +152,15 @@ public class AdventureGameplay extends BasicGameplay {
     public void onSessionTick(PlayerSession session, int count) {
         if (!(session.getGameplayData() instanceof AdventureData data)) return;
 
+        // If player is in death state, only check the death timer
+        if (data.getDeathTimestamp() > 0) {
+            long elapsed = System.currentTimeMillis() - data.getDeathTimestamp();
+            if (elapsed >= DEATH_TIMEOUT_MS) {
+                handleDeathTimeout(session, data);
+            }
+            return;
+        }
+
         long now = System.currentTimeMillis();
         double deltaSeconds = (now - data.getLastTickTimestamp()) / 1000.0;
         if (deltaSeconds <= 0 || deltaSeconds > 5.0) {
@@ -178,6 +196,34 @@ public class AdventureGameplay extends BasicGameplay {
         if (count % VITALS_SEND_INTERVAL_TICKS == 0) {
             vitalsHandler.sendVitalsUpdate(session, data);
         }
+    }
+
+    /**
+     * Handle death timeout: close WebSocket connection.
+     * Session deletion happens in PlayerSessionPersistenceService.onSessionClosed()
+     * which checks deathTimestamp > 0 and deletes instead of saving.
+     */
+    private void handleDeathTimeout(PlayerSession session, AdventureData data) {
+        log.info("Death timeout reached for player {} in session {}, disconnecting",
+                session.getEntityId(), session.getSessionId());
+
+        // Close WebSocket connection — triggers removeSession → onSessionClosed → delete session
+        try {
+            sessionManager.removeSession(session.getWebSocketSession().getId());
+            session.getWebSocketSession().close();
+        } catch (Exception e) {
+            log.warn("Failed to close WebSocket for dead player {}: {}", session.getEntityId(), e.getMessage());
+        }
+    }
+
+    /**
+     * Check if the player is currently in death state.
+     */
+    public boolean isPlayerDead(PlayerSession session) {
+        if (session.getGameplayData() instanceof AdventureData data) {
+            return data.getDeathTimestamp() > 0;
+        }
+        return false;
     }
 
     @Override
@@ -280,6 +326,10 @@ public class AdventureGameplay extends BasicGameplay {
                 log.debug("Player {} movement state: {}", session.getEntityId(), state);
             }
             case "fall" -> explorationHandler.handleFallDamage(session, data, messageData);
+            case "minHeight" -> {
+                log.info("Player {} hit minHeight in session {}", session.getEntityId(), session.getSessionId());
+                combatHandler.onPlayerDeath(session, data);
+            }
             default -> super.onSimpleInteraction(session, action, messageData);
         }
     }
@@ -367,6 +417,37 @@ public class AdventureGameplay extends BasicGameplay {
      */
     public void handleIncomingAttack(PlayerSession session, AdventureData data, VitalDeltaBroadcastMessage msg) {
         combatHandler.handleIncomingAttack(session, data, msg);
+    }
+
+    /**
+     * Handle an incoming REVIVE broadcast on the dead player side.
+     * Exits death state, restores vitals, and notifies client.
+     */
+    public void handleIncomingRevive(PlayerSession session, AdventureData data, VitalDeltaBroadcastMessage msg) {
+        if (data.getDeathTimestamp() <= 0) {
+            log.debug("Revive ignored for player {} — not dead", session.getEntityId());
+            return;
+        }
+
+        log.info("Player {} revived by {}", session.getEntityId(), msg.getSourceEntityId());
+
+        // Exit death state
+        data.setDeathTimestamp(0);
+
+        // Restore vitals (partial — same as old death reset)
+        vitalsHandler.resetVitalsToDefaults(data);
+
+        // Remove all non-permanent effects
+        data.getActiveEffects().removeIf(e -> !e.isPermanent());
+        data.setMovementState("WALK");
+
+        // Send vitals update and notification to client
+        vitalsHandler.sendVitalsUpdate(session, data);
+        clientService.sendSystemNotification(session, "Revived",
+                "You have been revived by " + msg.getSourceEntityId());
+
+        // Tell client to exit dead mode
+        clientService.sendCommand(session, "revived", List.of());
     }
 
     /**

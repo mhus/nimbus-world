@@ -48,6 +48,14 @@ public class GameplayService implements SessionAuthenticatedConsumer {
     }
 
     /**
+     * Check if the player is in death state (no interactions allowed).
+     */
+    private boolean isPlayerDead(PlayerSession session) {
+        return session.getGameplayData() instanceof de.mhus.nimbus.world.player.gameplay.AdventureData advData
+                && advData.getDeathTimestamp() > 0;
+    }
+
+    /**
      * Session owner 'interacts' with another player (Space-Key or A-Button on X-Box).
      * If shortcut is provided, the shortcut action (item) will be executed on the other player.
      * Otherwise ...
@@ -60,6 +68,7 @@ public class GameplayService implements SessionAuthenticatedConsumer {
      * @param params
      */
     public void onPlayerPlayerInteraction(PlayerSession session, String entityId, String userAction, String shortcutKey, Long timestamp, JsonNode params) {
+        if (isPlayerDead(session)) return;
         log.info("Player {} interacted with player {}: action={}, shortcut={}, timestamp={}",
                 GameplayUtil.toString(session.getPlayer()), entityId, userAction, shortcutKey, timestamp);
         if (session.getWorldId() == null) {
@@ -86,6 +95,7 @@ public class GameplayService implements SessionAuthenticatedConsumer {
      * @param params
      */
     public void onPlayerEntityInteraction(PlayerSession session, String entityId, String userAction, String shortcutKey, Long timestamp, JsonNode params) {
+        if (isPlayerDead(session)) return;
         log.info("Player {} interacted with entity {}: action={}, shortcut={}, timestamp={}",
                 GameplayUtil.toString(session.getPlayer()), entityId, userAction, shortcutKey, timestamp);
         if (session.getWorldId() == null) {
@@ -111,6 +121,7 @@ public class GameplayService implements SessionAuthenticatedConsumer {
      * @param data
      */
     public void onSimpleInteraction(PlayerSession session, String action, String shortcutKey, JsonNode data) {
+        if (isPlayerDead(session)) return;
         log.info("Player {} simple interaction: action={}, shortcutKey={}",
                 GameplayUtil.toString(session.getPlayer()), action, shortcutKey);
         if (session.getWorldId() == null) {
@@ -162,6 +173,7 @@ public class GameplayService implements SessionAuthenticatedConsumer {
      * @param params
      */
     public void onPlayerBlockInteraction(PlayerSession session, int x, int y, int z, String blockId, String groupId, String userAction, String shortcutKey, JsonNode params) {
+        if (isPlayerDead(session)) return;
         log.info("Player {} interacted with block at ({}, {}, {}): action={}, shortcut={}, blockId={}, groupId={}",
                 GameplayUtil.toString(session.getPlayer()), x, y, z, userAction, shortcutKey, blockId, groupId);
 
@@ -192,6 +204,7 @@ public class GameplayService implements SessionAuthenticatedConsumer {
      * @param params
      */
     public void onPlayerItemInteraction(PlayerSession session, int x, int y, int z, String itemId, String groupId, String userAction, String shortcutKey, JsonNode params) {
+        if (isPlayerDead(session)) return;
         log.info("Player {} interacted with item at ({}, {}, {}): action={}, shortcut={}, itemId={}, groupId={}",
                 GameplayUtil.toString(session.getPlayer()), x, y, z, userAction, shortcutKey, itemId, groupId);
 
@@ -309,6 +322,7 @@ public class GameplayService implements SessionAuthenticatedConsumer {
      */
     @SuppressWarnings("unchecked")
     public boolean useItemEffect(PlayerSession session, String itemId, String targetEntityId) {
+        if (isPlayerDead(session)) return false;
         if (session.getWorldId() == null) return false;
 
         var gameplay = session.getGameplay();

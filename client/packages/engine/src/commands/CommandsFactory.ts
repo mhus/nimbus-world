@@ -160,6 +160,8 @@ import {
     CameraLightInfoCommand
 } from "./camera";
 import {RenderScaleCommand} from "./RenderScaleCommand";
+import {DiedCommand} from "./DiedCommand";
+import {RevivedCommand} from "./RevivedCommand";
 
 // Initialize logger (basic setup before ClientService)
 const logger = getLogger('CommandsFactory');
@@ -378,6 +380,10 @@ export class CommandsFactory {
 
         // Register render scale command
         commandService.registerHandler(new RenderScaleCommand(appContext));
+
+        // Register death/revive commands (server -> client)
+        commandService.registerHandler(new DiedCommand(appContext));
+        commandService.registerHandler(new RevivedCommand(appContext));
 
         logger.debug('CommandService initialized with commands');
 
