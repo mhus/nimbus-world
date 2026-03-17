@@ -114,7 +114,7 @@ export class InputService {
 
     // Action handlers
     this.handlerRegistry.set('jump', new JumpHandler(this.playerService));
-    this.handlerRegistry.set('cycleMovementState', new CycleMovementStateHandler(this.playerService));
+    this.handlerRegistry.set('cycleMovementState', new CycleMovementStateHandler(this.playerService, this.appContext));
     this.handlerRegistry.set('toggleViewMode', new ToggleViewModeHandler(this.playerService));
     this.handlerRegistry.set('toggleShortcuts', new ToggleShortcutsHandler(this.playerService, this.appContext));
     this.handlerRegistry.set('toggleFullscreen', new ToggleFullscreenHandler(this.playerService));

@@ -418,7 +418,7 @@ export class EntityRenderService {
   /**
    * Remove entity from scene
    */
-  private removeEntity(entityId: string): void {
+  removeEntity(entityId: string): void {
     const rendered = this.renderedEntities.get(entityId);
     if (!rendered) {
       return;

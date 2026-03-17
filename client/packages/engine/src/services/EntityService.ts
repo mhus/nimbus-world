@@ -578,6 +578,35 @@ export class EntityService {
   }
 
   /**
+   * Reload entity model - removes and re-adds entity with a different model.
+   * Used when overlay model changes on remote players.
+   */
+  reloadEntityModel(entityId: string, newModelId: string): void {
+    const clientEntity = this.entityCache.get(entityId);
+    if (!clientEntity) {
+      logger.warn('Entity not found for model reload', { entityId });
+      return;
+    }
+
+    // Update model reference on entity
+    clientEntity.entity.model = newModelId;
+
+    // Remove from render cache so it gets re-created with new model
+    this.emit('removed', entityId);
+
+    // Clear cached model so it gets re-fetched
+    clientEntity.model = undefined as any;
+
+    // Re-trigger rendering by emitting a pathway event with current position
+    const pathway = this.entityPathwayCache.get(entityId);
+    if (pathway) {
+      this.emit('pathway', pathway);
+    }
+
+    logger.info('Entity model reload triggered', { entityId, newModelId });
+  }
+
+  /**
    * Clear all caches
    */
   clearCache(): void {

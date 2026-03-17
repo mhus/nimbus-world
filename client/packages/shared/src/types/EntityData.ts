@@ -87,6 +87,24 @@ export interface EntityDimensions {
 }
 
 /**
+ * OverlayMovementConfig - Movement parameters when this model is used as player overlay.
+ * Defines a fixed movement mode with speed and physics overrides.
+ * Used for mounts (Backpack), vehicles (Occupation), and other overlay scenarios.
+ */
+export interface OverlayMovementConfig {
+  /** Fixed movement mode key - player cannot switch to other modes while overlay is active */
+  movementMode: string; // javaType: String
+  /** Movement speed in blocks/second */
+  speed: number; // javaType: float
+  /** Jump speed (0 = no jumping) */
+  jumpSpeed?: number; // javaType: float
+  /** Eye height override for camera positioning */
+  eyeHeight?: number; // javaType: float
+  /** Turn speed override */
+  turnSpeed?: number; // javaType: float
+}
+
+/**
  * EntityModifier - Modifiers for entity instances
  * Similar to BlockModifier but for entities
  */
@@ -140,6 +158,9 @@ export interface EntityModel {
 
   /** Audio definitions for this entity model (default for all instances) */
   audio?: AudioDefinition[];
+
+  /** Movement config when this model is used as player overlay (mount, vehicle, etc.) */
+  overlayMovement?: OverlayMovementConfig;
 }
 
 /**
@@ -207,6 +228,12 @@ export interface Entity {
   health?: number; // javaType: float
   /** Maximum health of the entity */
   healthMax?: number; // javaType: float
+
+  /** Active overlay model ID - when set, this model is rendered instead of the entity's own model.
+   *  Used for mounts, vehicles, and other overlay scenarios. Only relevant for player entities. */
+  overlayModel?: string;
+  /** Custom modifiers for the overlay model instance */
+  overlayModelModifier?: Record<string, string>;
 
 }
 

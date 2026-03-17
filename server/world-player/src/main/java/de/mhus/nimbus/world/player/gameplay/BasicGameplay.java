@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import de.mhus.nimbus.generated.types.ItemBlockRef;
 import de.mhus.nimbus.world.shared.gameplay.CombatConstants;
 import de.mhus.nimbus.world.player.service.GameplayService;
+import de.mhus.nimbus.world.player.service.OccupationService;
 import de.mhus.nimbus.world.player.service.PlayerService;
 import de.mhus.nimbus.world.player.session.PlayerSession;
 import de.mhus.nimbus.world.shared.region.RCharacterService;
@@ -22,6 +23,7 @@ import de.mhus.nimbus.world.shared.world.WWorldService;
 import de.mhus.nimbus.world.player.service.ClientService;
 import de.mhus.nimbus.world.player.ws.BlockStatusSenderService;
 import de.mhus.nimbus.world.shared.session.SessionCommandService;
+import jakarta.annotation.PostConstruct;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
@@ -91,6 +93,9 @@ public class BasicGameplay implements Gameplay {
     protected de.mhus.nimbus.world.shared.redis.ItemBlockUpdatePublisher itemBlockUpdatePublisher;
     @Autowired
     protected SessionCommandService sessionCommandService;
+    @Autowired
+    @Getter
+    protected OccupationService occupationService;
 
     protected Map<String, GameplayAction> actions = new HashMap<>();
 
@@ -111,6 +116,11 @@ public class BasicGameplay implements Gameplay {
             actions.put("door", new DoorAction(this));
         actions.put("window", new WindowAction(this));
         actions.put("toggle", new ToggleAction(this));
+    }
+
+    @PostConstruct
+    protected void initActions() {
+        actions.put("occupy", new OccupyAction(this, occupationService));
     }
 
     @Override
@@ -401,6 +411,8 @@ public class BasicGameplay implements Gameplay {
     public void onSimpleInteraction(PlayerSession session, String action, JsonNode data) {
         if ("msg".equals(action)) {
             handleTeamMessage(session, data);
+        } else if ("dismount".equals(action)) {
+            occupationService.release(session);
         }
     }
 

@@ -96,6 +96,25 @@ export class EntityStatusUpdateMessageHandler extends MessageHandler<EntityStatu
         });
       }
 
+      // Update overlay model (occupation/mount) for remote players
+      if (status.overlayModel !== undefined) {
+        const newOverlay = status.overlayModel === '' ? undefined : String(status.overlayModel);
+        if (clientEntity.entity.overlayModel !== newOverlay) {
+          clientEntity.entity.overlayModel = newOverlay;
+          clientEntity.entity.overlayModelModifier = status.overlayModelModifier || {};
+          hasChanges = true;
+          logger.info('Entity overlay model updated', { entityId, overlayModel: newOverlay });
+
+          // For remote players: reload entity with new model via EntityService
+          // This triggers EntityRenderService to swap the rendered model
+          if (newOverlay) {
+            this.entityService.reloadEntityModel(entityId, newOverlay);
+          } else {
+            this.entityService.reloadEntityModel(entityId, clientEntity.entity.model);
+          }
+        }
+      }
+
       // Update lastAccess for cache management
       clientEntity.lastAccess = Date.now();
 

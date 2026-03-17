@@ -86,6 +86,10 @@ public class PlayerService implements SessionPingConsumer {
     }
 
     public Optional<Entity> getPlayerAsEntity(PlayerId playerId, WorldId worldId) {
+        return getPlayerAsEntity(playerId, worldId, null);
+    }
+
+    public Optional<Entity> getPlayerAsEntity(PlayerId playerId, WorldId worldId, PlayerSession session) {
         // Extract regionId from worldId
         String regionId = worldId.getRegionId();
 
@@ -99,7 +103,7 @@ public class PlayerService implements SessionPingConsumer {
             return Optional.empty();
         }
 
-        var result = Entity.builder()
+        var builder = Entity.builder()
                 .id(playerId.getId())
                 .name(player.character().getPublicData().getTitle())
                 .controlledBy("player")
@@ -112,11 +116,16 @@ public class PlayerService implements SessionPingConsumer {
                 .movementType("dynamic")
                 .physics(false)
                 .notifyOnAttentionRange(getStealthRange(player))
-                .notifyOnCollision(true)
+                .notifyOnCollision(true);
 //                .healthMax(500)
 //                .health(400)
-                .build();
-        return Optional.of(result);
+
+        // Apply overlay model if occupation is active
+        if (session != null && session.getOccupiedModelId() != null) {
+            builder.overlayModel(session.getOccupiedModelId());
+        }
+
+        return Optional.of(builder.build());
     }
 
     private Double getStealthRange(PlayerData player) {

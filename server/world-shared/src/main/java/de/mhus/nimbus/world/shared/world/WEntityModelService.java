@@ -69,18 +69,24 @@ public class WEntityModelService {
         if (publicData == null) {
             throw new IllegalArgumentException("publicData required");
         }
-        if (!worldId.isCollection()) {
+
+        // Strip world prefix from modelId (e.g., "r:rover" → "rover") and resolve worldId
+        var collection = WorldCollection.of(worldId, modelId);
+        final var resolvedWorldId = collection.worldId();
+        final var resolvedModelId = collection.path();
+
+        if (!resolvedWorldId.isCollection()) {
             throw new IllegalArgumentException("worldId must be a collection id");
         }
 
-        WEntityModel entity = repository.findByWorldIdAndModelId(worldId.getId(), modelId).orElseGet(() -> {
+        WEntityModel entity = repository.findByWorldIdAndModelId(resolvedWorldId.getId(), resolvedModelId).orElseGet(() -> {
             WEntityModel neu = WEntityModel.builder()
-                    .modelId(modelId)
-                    .worldId(worldId.getId())
+                    .modelId(resolvedModelId)
+                    .worldId(resolvedWorldId.getId())
                     .enabled(true)
                     .build();
             neu.touchCreate();
-            log.debug("Creating new WEntityModel: {}", modelId);
+            log.debug("Creating new WEntityModel: {}", resolvedModelId);
             return neu;
         });
 
@@ -117,16 +123,20 @@ public class WEntityModelService {
      */
     @Transactional
     public Optional<WEntityModel> update(WorldId worldId, String modelId, Consumer<WEntityModel> updater) {
-        if (!worldId.isCollection()) {
+        // Strip world prefix from modelId and resolve worldId
+        var collection = WorldCollection.of(worldId, modelId);
+        final var resolvedWorldId = collection.worldId();
+        final var resolvedModelId = collection.path();
+
+        if (!resolvedWorldId.isCollection()) {
             throw new IllegalArgumentException("worldId must be a collection id");
         }
-        var collection = WorldCollection.of(worldId, modelId);
-        return repository.findByWorldIdAndModelId(collection.worldId().getId(), collection.path()).map(entity -> {
+        return repository.findByWorldIdAndModelId(resolvedWorldId.getId(), resolvedModelId).map(entity -> {
             updater.accept(entity);
             entity.touchUpdate();
             entity.removeWorldPrefix();
             WEntityModel saved = repository.save(entity);
-            log.debug("Updated WEntityModel: {}", modelId);
+            log.debug("Updated WEntityModel: {}", resolvedModelId);
             return saved;
         });
     }
@@ -137,10 +147,14 @@ public class WEntityModelService {
      */
     @Transactional
     public boolean delete(WorldId worldId, String modelId) {
-        if (!worldId.isCollection()) {
+        var collection = WorldCollection.of(worldId, modelId);
+        final var resolvedWorldId = collection.worldId();
+        final var resolvedModelId = collection.path();
+
+        if (!resolvedWorldId.isCollection()) {
             throw new IllegalArgumentException("worldId must be a collection id");
         }
-        return repository.findByWorldIdAndModelId(worldId.getId(), modelId).map(entity -> {
+        return repository.findByWorldIdAndModelId(resolvedWorldId.getId(), resolvedModelId).map(entity -> {
             repository.delete(entity);
             log.debug("Deleted WEntityModel: {}", modelId);
             return true;

@@ -162,6 +162,7 @@ import {
 import {RenderScaleCommand} from "./RenderScaleCommand";
 import {DiedCommand} from "./DiedCommand";
 import {RevivedCommand} from "./RevivedCommand";
+import {OverlayModelCommand} from "./OverlayModelCommand";
 
 // Initialize logger (basic setup before ClientService)
 const logger = getLogger('CommandsFactory');
@@ -233,6 +234,7 @@ export class CommandsFactory {
         commandService.registerHandler(new SpawnEntityCommand(appContext));
         commandService.registerHandler(new SetEntityStatusCommand(appContext));
         commandService.registerHandler(new SpeedCommand(appContext));
+        commandService.registerHandler(new OverlayModelCommand(appContext));
         commandService.registerHandler(new ToggleEntityPathwaysCommand(appContext));
 
         // Register wind commands

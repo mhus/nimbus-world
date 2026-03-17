@@ -1223,6 +1223,46 @@
       } ],
       "methods" : [ ]
     }, {
+      "name" : "OverlayMovementConfig",
+      "extendsList" : [ ],
+      "properties" : [ {
+        "name" : "movementMode",
+        "type" : "string",
+        "optional" : false,
+        "visibility" : null,
+        "javaTypeHint" : "String",
+        "comment" : "// javaType: String"
+      }, {
+        "name" : "speed",
+        "type" : "number",
+        "optional" : false,
+        "visibility" : null,
+        "javaTypeHint" : "float",
+        "comment" : "// javaType: float"
+      }, {
+        "name" : "jumpSpeed",
+        "type" : "number",
+        "optional" : true,
+        "visibility" : null,
+        "javaTypeHint" : "float",
+        "comment" : "// javaType: float"
+      }, {
+        "name" : "eyeHeight",
+        "type" : "number",
+        "optional" : true,
+        "visibility" : null,
+        "javaTypeHint" : "float",
+        "comment" : "// javaType: float"
+      }, {
+        "name" : "turnSpeed",
+        "type" : "number",
+        "optional" : true,
+        "visibility" : null,
+        "javaTypeHint" : "float",
+        "comment" : "// javaType: float"
+      } ],
+      "methods" : [ ]
+    }, {
       "name" : "EntityModifier",
       "extendsList" : [ ],
       "properties" : [ {
@@ -1324,6 +1364,13 @@
       }, {
         "name" : "audio",
         "type" : "AudioDefinition[]",
+        "optional" : true,
+        "visibility" : null,
+        "javaTypeHint" : null,
+        "comment" : null
+      }, {
+        "name" : "overlayMovement",
+        "type" : "OverlayMovementConfig",
         "optional" : true,
         "visibility" : null,
         "javaTypeHint" : null,
@@ -1445,6 +1492,20 @@
         "visibility" : null,
         "javaTypeHint" : "float",
         "comment" : "// javaType: float"
+      }, {
+        "name" : "overlayModel",
+        "type" : "string",
+        "optional" : true,
+        "visibility" : null,
+        "javaTypeHint" : null,
+        "comment" : null
+      }, {
+        "name" : "overlayModelModifier",
+        "type" : "Record<string, string>",
+        "optional" : true,
+        "visibility" : null,
+        "javaTypeHint" : null,
+        "comment" : null
       } ],
       "methods" : [ ]
     }, {

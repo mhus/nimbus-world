@@ -40,6 +40,16 @@ export class JumpHandler extends InputHandler {
  */
 export class CycleMovementStateHandler extends InputHandler {
   protected onActivate(value: number): void {
+    // If overlay is active, F key triggers dismount instead of movement cycle
+    if (this.playerService.hasOverlayModel()) {
+      logger.debug('Overlay active, sending dismount to server');
+      const networkService = this.appContext?.services?.network;
+      if (networkService) {
+        networkService.sendSimpleInteraction('dismount', '', {});
+      }
+      return;
+    }
+
     const current = this.playerService.getMovementState();
 
     // Get allowed movement modes from WorldInfo

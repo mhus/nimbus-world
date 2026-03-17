@@ -43,4 +43,10 @@ public class Entity {
     @com.fasterxml.jackson.annotation.JsonProperty("healthMax")
     @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
     private float healthMax;
+    @com.fasterxml.jackson.annotation.JsonProperty("overlayModel")
+    @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
+    private String overlayModel;
+    @com.fasterxml.jackson.annotation.JsonProperty("overlayModelModifier")
+    @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
+    private java.util.Map<String, String> overlayModelModifier;
 }

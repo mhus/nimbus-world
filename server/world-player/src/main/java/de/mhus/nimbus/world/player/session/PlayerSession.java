@@ -97,6 +97,12 @@ public class PlayerSession {
     private volatile String cachedTeamId;
     private volatile Set<String> cachedTeamMembers = new HashSet<>();
 
+    // Occupation/Overlay state
+    /** Active overlay EntityModel ID (null = no overlay active) */
+    private String occupiedModelId;
+    /** WItemPosition itemId if occupation is from a world item (null = backpack overlay) */
+    private String occupiedItemId;
+
     private final Object sendLock = new Object();
 
     public PlayerSession(WebSocketSession webSocketSession) {

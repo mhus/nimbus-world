@@ -80,6 +80,17 @@ export class PlayerService {
   // DEAD mode state (active on disconnect or death)
   private isDead: boolean = false;
 
+  // Overlay model state (mount, vehicle, occupation)
+  private overlayModelId?: string;
+  private overlayModelData?: import('@nimbus/shared').EntityModel;
+  private savedMovementState?: {
+    effectiveSpeed: number;
+    effectiveJumpSpeed: number;
+    effectiveTurnSpeed: number;
+    cachedEyeHeight: number;
+    wasEgoView?: boolean;
+  };
+
   /**
    * Get the view mode stack (ego vs third-person)
    * Stack is created centrally in StackModifierCreator
@@ -1151,6 +1162,13 @@ export class PlayerService {
         return;
       }
 
+      // Remove existing avatar mesh before loading new model
+      if (this.playerAvatarEntityId) {
+        logger.debug('Removing existing player avatar before model swap', { oldEntityId: this.playerAvatarEntityId });
+        this.entityRenderService.removeEntity(this.playerAvatarEntityId);
+        entityService.removeEntity(this.playerAvatarEntityId);
+      }
+
       // Use real player ID from AppContext.PlayerInfo
       const avatarEntityId = this.appContext.playerInfo?.playerId || '@player_avatar';
 
@@ -1767,6 +1785,150 @@ export class PlayerService {
       this.thirdPersonMesh.dispose();
     }
 
+    // Clear overlay state
+    this.overlayModelId = undefined;
+    this.overlayModelData = undefined;
+    this.savedMovementState = undefined;
+
     logger.debug('PlayerService disposed');
+  }
+
+  // ============================================
+  // Overlay Model (mount, vehicle, occupation)
+  // ============================================
+
+  /**
+   * Apply an overlay model to the player.
+   * Locks movement mode to the overlay's configured mode and overrides speed/dimensions.
+   * Called by OverlayModelCommand when server sends the command.
+   */
+  async applyOverlayModel(modelId: string): Promise<void> {
+    const entityService = this.appContext.services.entity;
+    if (!entityService) {
+      logger.error('EntityService not available for overlay');
+      return;
+    }
+
+    // Load the overlay EntityModel
+    const entityModel = await entityService.getEntityModel(modelId);
+    if (!entityModel) {
+      logger.error('Overlay entity model not found', { modelId });
+      return;
+    }
+
+    const overlayMovement = entityModel.overlayMovement;
+    if (!overlayMovement) {
+      logger.error('EntityModel has no overlayMovement config', { modelId });
+      return;
+    }
+
+    // Save current movement values for restore on release
+    this.savedMovementState = {
+      effectiveSpeed: this.playerEntity.effectiveSpeed,
+      effectiveJumpSpeed: this.playerEntity.effectiveJumpSpeed,
+      effectiveTurnSpeed: this.playerEntity.effectiveTurnSpeed,
+      cachedEyeHeight: this.playerEntity.cachedEyeHeight,
+    };
+
+    this.overlayModelId = modelId;
+    this.overlayModelData = entityModel;
+
+    // Override movement values from overlay config
+    this.playerEntity.effectiveSpeed = overlayMovement.speed;
+    this.playerEntity.effectiveJumpSpeed = overlayMovement.jumpSpeed ?? 0;
+    if (overlayMovement.eyeHeight) {
+      this.playerEntity.cachedEyeHeight = overlayMovement.eyeHeight;
+    }
+    if (overlayMovement.turnSpeed) {
+      this.playerEntity.effectiveTurnSpeed = overlayMovement.turnSpeed;
+    }
+
+    // Lock movement mode
+    const mode = overlayMovement.movementMode as MovementMode;
+    this.playerEntity.movementMode = mode;
+
+    // Sync camera with new eye height
+    this.syncCameraToPlayer();
+
+    // Switch to third-person view automatically
+    if (this.playerViewModifier && this.isEgoView()) {
+      this.savedMovementState!.wasEgoView = true;
+      this.playerViewModifier.setValue(false); // false = third-person
+    }
+
+    // Swap third-person model to overlay model
+    await this.loadThirdPersonModel(modelId);
+
+    logger.info('Overlay model applied', {
+      modelId,
+      movementMode: mode,
+      speed: overlayMovement.speed,
+      eyeHeight: overlayMovement.eyeHeight,
+    });
+
+    this.emit('overlayChanged', { modelId, active: true });
+  }
+
+  /**
+   * Remove the current overlay model.
+   * Restores original movement values and player model.
+   * Called by OverlayModelCommand when server sends empty args.
+   */
+  async removeOverlayModel(): Promise<void> {
+    if (!this.overlayModelId) {
+      logger.debug('No overlay to remove');
+      return;
+    }
+
+    const previousModelId = this.overlayModelId;
+
+    // Restore saved movement values
+    if (this.savedMovementState) {
+      this.playerEntity.effectiveSpeed = this.savedMovementState.effectiveSpeed;
+      this.playerEntity.effectiveJumpSpeed = this.savedMovementState.effectiveJumpSpeed;
+      this.playerEntity.effectiveTurnSpeed = this.savedMovementState.effectiveTurnSpeed;
+      this.playerEntity.cachedEyeHeight = this.savedMovementState.cachedEyeHeight;
+    }
+
+    // Restore movement mode to walk
+    this.playerEntity.movementMode = 'walk';
+    this.currentMovementState = PlayerMovementState.WALK;
+
+    // Restore view mode if it was ego before overlay
+    if (this.savedMovementState?.wasEgoView && this.playerViewModifier) {
+      this.playerViewModifier.setValue(true); // true = ego view
+    }
+
+    // Sync camera with restored eye height
+    this.syncCameraToPlayer();
+
+    // Restore original third-person model
+    const originalModelId = this.appContext.playerInfo?.thirdPersonModelId;
+    if (originalModelId) {
+      await this.loadThirdPersonModel(originalModelId);
+    }
+
+    // Clear overlay state
+    this.overlayModelId = undefined;
+    this.overlayModelData = undefined;
+    this.savedMovementState = undefined;
+
+    logger.info('Overlay model removed', { previousModelId });
+
+    this.emit('overlayChanged', { modelId: undefined, active: false });
+  }
+
+  /**
+   * Check if an overlay model is currently active.
+   */
+  hasOverlayModel(): boolean {
+    return this.overlayModelId !== undefined;
+  }
+
+  /**
+   * Get the current overlay model ID.
+   */
+  getOverlayModelId(): string | undefined {
+    return this.overlayModelId;
   }
 }

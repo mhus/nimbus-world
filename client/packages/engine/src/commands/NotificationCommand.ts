@@ -69,9 +69,9 @@ export class NotificationCommand extends CommandHandler {
     let texturePath: string | null = null;
     let messageEndIndex = parameters.length;
 
-    // Check if last parameter looks like a path (contains . or /)
+    // Check if last parameter looks like a texture path (contains / AND .)
     const lastParam = toString(parameters[parameters.length - 1]);
-    if (lastParam.includes('/') || lastParam.includes('.')) {
+    if (parameters.length > 3 && lastParam.includes('/') && lastParam.includes('.')) {
       texturePath = lastParam;
       messageEndIndex = parameters.length - 1;
     }

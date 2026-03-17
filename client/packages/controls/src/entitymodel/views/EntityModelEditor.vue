@@ -722,6 +722,98 @@
         </div>
       </div>
 
+      <!-- Overlay Movement Card -->
+      <div v-if="modelData" class="card bg-base-100 shadow-xl">
+        <div class="card-body">
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="card-title">Overlay Movement</h3>
+              <p class="text-sm text-base-content/70 mb-4">Movement parameters when this model is used as player overlay (mount, vehicle)</p>
+            </div>
+            <input
+              type="checkbox"
+              class="toggle toggle-primary"
+              :checked="!!modelData.overlayMovement"
+              @change="toggleOverlayMovement"
+            />
+          </div>
+
+          <div v-if="modelData.overlayMovement" class="space-y-3">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="form-control">
+                <label class="label">
+                  <span class="label-text">Movement Mode</span>
+                  <span class="label-text-alt text-warning">Required</span>
+                </label>
+                <select
+                  v-model="modelData.overlayMovement.movementMode"
+                  class="select select-bordered"
+                >
+                  <option value="walk">Walk</option>
+                  <option value="sprint">Sprint</option>
+                  <option value="riding">Riding</option>
+                  <option value="fly">Fly</option>
+                  <option value="swim">Swim</option>
+                </select>
+              </div>
+              <div class="form-control">
+                <label class="label">
+                  <span class="label-text">Speed (blocks/sec)</span>
+                  <span class="label-text-alt text-warning">Required</span>
+                </label>
+                <input
+                  v-model.number="modelData.overlayMovement.speed"
+                  type="number"
+                  step="0.5"
+                  min="0"
+                  class="input input-bordered"
+                  placeholder="8.0"
+                />
+              </div>
+              <div class="form-control">
+                <label class="label">
+                  <span class="label-text">Jump Speed</span>
+                </label>
+                <input
+                  v-model.number="modelData.overlayMovement.jumpSpeed"
+                  type="number"
+                  step="0.5"
+                  min="0"
+                  class="input input-bordered"
+                  placeholder="10.0"
+                />
+              </div>
+              <div class="form-control">
+                <label class="label">
+                  <span class="label-text">Eye Height</span>
+                </label>
+                <input
+                  v-model.number="modelData.overlayMovement.eyeHeight"
+                  type="number"
+                  step="0.1"
+                  min="0"
+                  class="input input-bordered"
+                  placeholder="2.0"
+                />
+              </div>
+              <div class="form-control">
+                <label class="label">
+                  <span class="label-text">Turn Speed</span>
+                </label>
+                <input
+                  v-model.number="modelData.overlayMovement.turnSpeed"
+                  type="number"
+                  step="0.001"
+                  min="0"
+                  class="input input-bordered"
+                  placeholder="0.003"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Audio Definitions Card -->
       <div v-if="modelData" class="card bg-base-100 shadow-xl">
         <div class="card-body">
@@ -1085,6 +1177,21 @@ const addDescriptorSegment = (key: string) => {
   const segments = parseDescriptorSegments(modelData.value.modelModifierMapping[key]);
   segments.push({ category: 'color', targetName: '', property: 'tint' });
   rebuildMapping(key, segments);
+};
+
+const toggleOverlayMovement = () => {
+  if (!modelData.value) return;
+  if (modelData.value.overlayMovement) {
+    modelData.value.overlayMovement = undefined;
+  } else {
+    modelData.value.overlayMovement = {
+      movementMode: 'riding',
+      speed: 8.0,
+      jumpSpeed: 10.0,
+      eyeHeight: 2.0,
+      turnSpeed: 0.003,
+    };
+  }
 };
 
 const addAudio = () => {
