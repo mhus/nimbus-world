@@ -56,7 +56,7 @@
               <span :class="{ 'tab-active': selected }">Blocks ({{ chunkData.blockCount }})</span>
             </Tab>
             <Tab v-slot="{ selected }" class="tab">
-              <span :class="{ 'tab-active': selected }">Height Data ({{ chunkData.heightData?.length || 0 }})</span>
+              <span :class="{ 'tab-active': selected }">Height Data ({{ chunkData.heightData ? Object.keys(chunkData.heightData).length : 0 }})</span>
             </Tab>
           </TabList>
 
@@ -91,20 +91,18 @@
                 <table class="table table-sm table-zebra">
                   <thead>
                     <tr>
-                      <th>X</th>
-                      <th>Z</th>
-                      <th>Max Height</th>
+                      <th>Position</th>
                       <th>Ground Level</th>
                       <th>Water Level</th>
+                      <th>Max Height</th>
                     </tr>
                   </thead>
                   <tbody>
-                    <tr v-for="(data, idx) in chunkData.heightData" :key="idx">
+                    <tr v-for="(data, key) in chunkData.heightData" :key="key">
+                      <td>{{ key }}</td>
                       <td>{{ data[0] }}</td>
-                      <td>{{ data[1] }}</td>
-                      <td>{{ data[2] }}</td>
-                      <td>{{ data[3] }}</td>
-                      <td>{{ data.length > 4 ? data[4] : '-' }}</td>
+                      <td>{{ data[1] >= 0 ? data[1] : '-' }}</td>
+                      <td>{{ data.length > 2 ? data[2] : '-' }}</td>
                     </tr>
                   </tbody>
                 </table>

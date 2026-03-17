@@ -96,6 +96,8 @@ public class WLayerService implements StorageProvider {
         if (parsedWorldId.isInstance() && !parsedWorldId.isEditorInstance()) {
             throw new IllegalArgumentException("Cannot create layer for player instance worldId");
         }
+        // Normalize to base worldId (without instance suffix)
+        worldId = parsedWorldId.toBaseWorldId().getId();
 
         // Check for duplicate name
         if (layerRepository.findByWorldIdAndName(worldId, name).isPresent()) {
@@ -416,6 +418,8 @@ public class WLayerService implements StorageProvider {
         if (parsedWorldId.isInstance() && !parsedWorldId.isEditorInstance()) {
             throw new IllegalArgumentException("Cannot create layer for player instance worldId");
         }
+        // Normalize to base worldId (without instance suffix)
+        worldId = parsedWorldId.toBaseWorldId().getId();
 
         // Serialize to JSON
         String json;

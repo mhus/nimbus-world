@@ -78,7 +78,7 @@ public class GroundControlService {
         WorldId wid = WorldId.of(worldId).orElseThrow();
         Set<String> groundBlockTypeIds = resolveGroundBlockTypeIds(wid);
         if (groundBlockTypeIds.isEmpty()) {
-            log.warn("No GROUND block types found for world: {}", worldId);
+            log.warn("No GROUND block types found for world: {} chunk {}:{}", worldId, cx, cz);
             return false;
         }
 
@@ -100,9 +100,8 @@ public class GroundControlService {
             }
         }
         if (!hasGround) {
-            log.info("Chunk {} has no GROUND blocks, deleting", chunkKey);
-            layerService.deleteTerrainChunk(worldId, layerDataId, chunkKey);
-            return true;
+            log.warn("Chunk {} has no GROUND blocks, skipping", chunkKey);
+            return false;
         }
 
         // Build height map of existing GROUND blocks: key "x,z" -> sorted set of Y values
@@ -682,9 +681,9 @@ public class GroundControlService {
      */
     private Set<String> resolveGroundBlockTypeIds(WorldId worldId) {
         Set<String> ids = new HashSet<>();
-        List<WBlockType> blockTypes = blockTypeService.findAllEnabled(worldId);
+        List<WBlockType> blockTypes = blockTypeService.lookupBlockTypes(worldId);
         for (WBlockType bt : blockTypes) {
-            if (bt.getPublicData() != null && bt.getPublicData().getType() == BlockTypeType.GROUND) {
+            if (bt.isEnabled() && bt.getPublicData() != null && bt.getPublicData().getType() == BlockTypeType.GROUND) {
                 ids.add(bt.getBlockId());
             }
         }
