@@ -570,6 +570,55 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
         log.info("World {}: Entity {} respawned at middlePoint", worldId, entityId);
     }
 
+    /**
+     * Revive a dead entity in place (no position reset).
+     * Only works if the entity is in DEAD state (before GONE).
+     * Resets health, clears effects, exits combat, and publishes status.
+     *
+     * @return true if the entity was revived
+     */
+    public boolean reviveEntity(WorldId worldId, SimulationState state) {
+        if (state.getLifecycleState() != SimulationState.LifecycleState.DEAD) {
+            return false;
+        }
+
+        WEntity entity = state.getEntity();
+        String entityId = entity.getEntityId();
+
+        // Reset health
+        EntityCombatData combatData = state.getCombatData();
+        if (combatData != null) {
+            var health = combatData.getVital("health");
+            if (health != null) {
+                health.setCurrent(health.getBase());
+                health.clamp();
+            }
+            combatData.getActiveEffects().removeIf(e -> !e.isPermanent());
+        }
+
+        // Reset lifecycle, combat, and attackers (keep position)
+        state.setLifecycleState(SimulationState.LifecycleState.ALIVE);
+        state.setLifecycleTimestamp(0);
+        state.setCurrentPathway(null);
+        state.exitCombat();
+        state.setPathwayEndTime(0);
+        state.getAttackers().clear();
+
+        // Clear Redis state (absence = ALIVE, also removes looters)
+        entityStateRedisService.removeAll(worldId.getId(), entityId);
+
+        // Publish health after revive
+        if (combatData != null) {
+            VitalValue health = combatData.getVital("health");
+            if (health != null) {
+                publishHealthStatus(worldId, entityId, health);
+            }
+        }
+
+        log.info("World {}: Entity {} revived in place by player", worldId, entityId);
+        return true;
+    }
+
     private String getBehaviorType(WEntity entity) {
         String behaviorModel = entity.getBehaviorModel();
         return (behaviorModel != null && !behaviorModel.isBlank()) ? behaviorModel : "PreyAnimalBehavior";

@@ -114,6 +114,8 @@ public class VitalDeltaBroadcastListener {
                 handleProximity(worldId, state, combatData, delta);
             } else if (VitalDeltaBroadcastMessage.TYPE_ATTACK.equals(type)) {
                 handleAttack(worldId, state, combatData, delta);
+            } else if (VitalDeltaBroadcastMessage.TYPE_REVIVE.equals(type)) {
+                handleRevive(worldId, state, combatData, delta);
             } else {
                 handleDelta(worldId, combatData, delta);
             }
@@ -275,6 +277,20 @@ public class VitalDeltaBroadcastListener {
         log.debug("World {}: Applied vital delta to entity {}: {} {} (from {}), now {}",
                 worldId, msg.getTargetEntityId(), vitalType, msg.getDelta(),
                 msg.getSourceEntityId(), vital.getCurrent());
+    }
+
+    /**
+     * Handle a REVIVE message for a dead entity.
+     * Revives the entity in place if it is in DEAD state (before GONE).
+     */
+    private void handleRevive(WorldId worldId, SimulationState state,
+                               EntityCombatData combatData, VitalDeltaBroadcastMessage msg) {
+        boolean revived = simulatorService.reviveEntity(worldId, state);
+        if (revived) {
+            log.info("World {}: Entity {} revived by {}", worldId, msg.getTargetEntityId(), msg.getSourceEntityId());
+        } else {
+            log.debug("World {}: Entity {} cannot be revived (not in DEAD state)", worldId, msg.getTargetEntityId());
+        }
     }
 
     private void publishHealthStatus(WorldId worldId, String entityId, VitalValue health) {
