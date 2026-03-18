@@ -5,7 +5,7 @@ import de.mhus.nimbus.generated.types.Rotation;
 import de.mhus.nimbus.generated.types.Vector3;
 import de.mhus.nimbus.generated.types.Waypoint;
 import de.mhus.nimbus.shared.types.WorldId;
-import de.mhus.nimbus.world.life.service.TerrainService;
+import de.mhus.nimbus.world.shared.world.TerrainService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;

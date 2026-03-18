@@ -203,7 +203,7 @@ export interface Entity {
   /** Movement behavior type */
   movementType: MovementType; // javaType: String
 
-  /** Who controls this entity: 'player', 'server', 'ai', 'client' */
+  /** Who controls this entity: 'player', 'server', 'ai', 'client', 'remote' */
   controlledBy: string;
 
   /** Is this entity solid (blocking)? */

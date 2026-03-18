@@ -17,6 +17,7 @@ import de.mhus.nimbus.world.shared.redis.EntityStatusPublisher;
 import de.mhus.nimbus.world.shared.redis.VitalDeltaBroadcastMessage;
 import de.mhus.nimbus.world.shared.redis.VitalDeltaPublisher;
 import de.mhus.nimbus.world.shared.redis.WorldRedisMessagingService;
+import de.mhus.nimbus.world.shared.world.WEntityType;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -47,6 +48,7 @@ public class VitalDeltaBroadcastListener {
     private final EntityStatusPublisher entityStatusPublisher;
     private final EntityStateRedisService entityStateRedisService;
     private final VitalDeltaPublisher vitalDeltaPublisher;
+    private final RemoteCombatFeedbackPublisher remoteCombatFeedbackPublisher;
     private final ObjectMapper objectMapper;
 
     private final Set<WorldId> subscribedWorlds = new HashSet<>();
@@ -210,6 +212,12 @@ public class VitalDeltaBroadcastListener {
             log.debug("World {}: Entity {} took {} damage from {}, health now {}/{}",
                     worldId, msg.getTargetEntityId(), -damage, msg.getSourceEntityId(),
                     health.getCurrent(), health.getEffectiveMax());
+
+            // Notify remote servers about damage to REMOTE entities
+            if (state.getEntity().getType() == WEntityType.REMOTE) {
+                remoteCombatFeedbackPublisher.publishDamaged(worldId, msg.getTargetEntityId(),
+                        damage, health.getCurrent(), msg.getSourceEntityId());
+            }
         }
     }
 

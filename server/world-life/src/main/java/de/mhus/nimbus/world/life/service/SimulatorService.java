@@ -9,7 +9,10 @@ import de.mhus.nimbus.world.life.behavior.CombatBehaviorHandler;
 import de.mhus.nimbus.world.life.behavior.EntityBehavior;
 import de.mhus.nimbus.world.life.model.ChunkCoordinate;
 import de.mhus.nimbus.world.life.model.SimulationState;
+import de.mhus.nimbus.world.life.behavior.RemotePathwayQueue;
 import de.mhus.nimbus.world.life.redis.PathwayPublisher;
+import de.mhus.nimbus.world.life.redis.RemoteCombatFeedbackPublisher;
+import de.mhus.nimbus.world.life.redis.RemoteEntityActivationPublisher;
 import de.mhus.nimbus.world.shared.gameplay.CombatConstants;
 import de.mhus.nimbus.world.shared.gameplay.BaseEffectProcessor;
 import de.mhus.nimbus.world.shared.gameplay.EntityCombatData;
@@ -22,6 +25,7 @@ import de.mhus.nimbus.world.shared.redis.WorldRedisMessagingService;
 import de.mhus.nimbus.world.shared.world.BlockUtil;
 import de.mhus.nimbus.world.shared.world.WEntity;
 import de.mhus.nimbus.world.shared.world.WEntityService;
+import de.mhus.nimbus.world.shared.world.WEntityType;
 import de.mhus.nimbus.world.shared.world.WWorld;
 import de.mhus.nimbus.world.shared.world.WWorldInstanceService;
 import de.mhus.nimbus.world.shared.world.WWorldService;
@@ -81,6 +85,9 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
     private final WWorldInstanceService worldInstanceService;
     private final ObjectMapper objectMapper;
     private final de.mhus.nimbus.world.shared.team.WTeamService teamService;
+    private final RemoteEntityActivationPublisher remoteEntityActivationPublisher;
+    private final RemotePathwayQueue remotePathwayQueue;
+    private final RemoteCombatFeedbackPublisher remoteCombatFeedbackPublisher;
 
     private final BaseEffectProcessor baseEffectProcessor = new BaseEffectProcessor();
 
@@ -214,6 +221,10 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
         if (!newlyLoaded.isEmpty()) {
             log.info("World {}: Chunk activation loaded {} new entities ({} chunks activated)",
                     worldId, newlyLoaded.size(), added.size());
+            // Notify remote servers about REMOTE entity activations
+            for (SimulationState s : newlyLoaded) {
+                remoteEntityActivationPublisher.publishActivate(worldId, s.getEntity());
+            }
             // Generate and publish initial pathways immediately so clients see entities right away
             generateInitialPathways(worldId, newlyLoaded);
         }
@@ -290,6 +301,12 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
         for (String entityId : entitiesToUnload) {
             SimulationState state = worldStates.remove(entityId);
             chunkRefs.remove(entityId);
+
+            // Notify remote servers before unload
+            if (state != null) {
+                remoteEntityActivationPublisher.publishDeactivate(worldId, state.getEntity());
+                remotePathwayQueue.remove(worldId.getId(), entityId);
+            }
 
             // Release ownership
             ownershipService.releaseEntity(worldId, entityId);
@@ -565,6 +582,12 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
             if (health != null) {
                 publishHealthStatus(worldId, entityId, health);
             }
+        }
+
+        // Notify remote servers about respawn
+        if (entity.getType() == WEntityType.REMOTE && entity.getPosition() != null) {
+            remoteCombatFeedbackPublisher.publishRespawned(worldId, entityId,
+                    entity.getPosition().getX(), entity.getPosition().getY(), entity.getPosition().getZ());
         }
 
         log.info("World {}: Entity {} respawned at middlePoint", worldId, entityId);
@@ -986,6 +1009,12 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
 
         // Remove pathway from Redis so entity stops moving on clients
         pathwayPublisher.removePathway(worldId, entityId);
+
+        // Notify remote servers about death
+        if (state.getEntity().getType() == WEntityType.REMOTE) {
+            String killerId = state.getAttackers().isEmpty() ? null : state.getAttackers().iterator().next();
+            remoteCombatFeedbackPublisher.publishDied(worldId, entityId, killerId);
+        }
 
         // Transition to DEAD lifecycle state
         state.setLifecycleState(SimulationState.LifecycleState.DEAD);

@@ -8,6 +8,8 @@ spring:
       database: world
 
 nimbus:
+  services:
+    terrain: true
   encryption:
     password: ${NIMBUS_ENCRYPTION_PASSWORD}
   chunk:

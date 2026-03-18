@@ -1,14 +1,11 @@
-package de.mhus.nimbus.world.life.service;
+package de.mhus.nimbus.world.shared.world;
 
 import de.mhus.nimbus.generated.types.Block;
 import de.mhus.nimbus.generated.types.ChunkData;
 import de.mhus.nimbus.shared.types.WorldId;
-import de.mhus.nimbus.world.shared.world.ChunksCache;
-import de.mhus.nimbus.world.shared.world.WChunkService;
-import de.mhus.nimbus.world.shared.world.WWorldInstanceService;
-import de.mhus.nimbus.world.shared.world.WWorldService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
 import java.lang.ref.SoftReference;
@@ -20,17 +17,24 @@ import java.util.concurrent.ConcurrentHashMap;
  * Service for accessing terrain data (chunk blocks) for entity positioning.
  * Provides ground height lookup and block queries for terrain-aware movement.
  * Uses ChunksCache internally so repeated lookups in the same chunk area are fast.
+ *
+ * Enabled via property nimbus.services.terrain=true (e.g. in world-life).
  */
 @Service
 @RequiredArgsConstructor
 @Slf4j
+@ConditionalOnProperty(
+        value = "nimbus.services.terrain",
+        havingValue = "true",
+        matchIfMissing = false
+)
 public class TerrainService {
 
     private final WChunkService chunkService;
     private final WWorldService worldService;
     private final WWorldInstanceService instanceService;
 
-    /** WorldId string → SoftReference<ChunksCache> — one cache per world/instance. */
+    /** WorldId string -> SoftReference<ChunksCache> -- one cache per world/instance. */
     private final Map<String, SoftReference<ChunksCache>> cacheMap = new ConcurrentHashMap<>();
 
     /**
