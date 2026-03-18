@@ -47,24 +47,10 @@ services:
     depends_on:
       - redis
 
-  fake-smtp:
-    image: munkyboy/fakesmtp
-    container_name: fake-smtp
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: mailpit
     restart: unless-stopped
     ports:
-      - "25:25"
-    volumes:
-      - ./tmp/fake-smtp-emails:/var/mail
-
-  fake-smtp-web:
-    image: mjstewart/fakesmtp-web:1.0
-    container_name: fake-smtp-web
-    restart: unless-stopped
-    environment:
-      EMAIL_INPUT_DIR_POLL_RATE_SECONDS: 10
-    ports:
-      - "60500:8080"
-    volumes:
-      - ./tmp/fake-smtp-emails:/var/mail
-    depends_on:
-      - fake-smtp
+      - "25:1025"
+      - "8025:8025"
