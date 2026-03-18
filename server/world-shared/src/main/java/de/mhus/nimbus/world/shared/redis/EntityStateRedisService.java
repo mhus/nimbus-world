@@ -42,6 +42,7 @@ public class EntityStateRedisService {
     private static final String FIELD_LIFECYCLE = "lifecycle";
     private static final String FIELD_HEALTH = "health";
     private static final String FIELD_HEALTH_MAX = "healthMax";
+    private static final String FIELD_SCHEDULE_PHASE = "schedulePhase";
 
     private final StringRedisTemplate redis;
     private final ObjectMapper objectMapper;
@@ -105,6 +106,23 @@ public class EntityStateRedisService {
 
     public boolean isAlive(String worldId, String entityId) {
         return LIFECYCLE_ALIVE.equals(getLifecycle(worldId, entityId));
+    }
+
+    /**
+     * Set the current schedule phase name for an entity.
+     */
+    public void setSchedulePhase(String worldId, String entityId, String phaseName) {
+        String key = key(worldId, entityId);
+        redis.opsForHash().put(key, FIELD_SCHEDULE_PHASE, phaseName != null ? phaseName : "");
+        redis.expire(key, TTL);
+    }
+
+    /**
+     * Get the current schedule phase name. Empty string or null means no phase.
+     */
+    public String getSchedulePhase(String worldId, String entityId) {
+        Object val = redis.opsForHash().get(key(worldId, entityId), FIELD_SCHEDULE_PHASE);
+        return val != null ? val.toString() : null;
     }
 
     /**

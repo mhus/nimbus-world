@@ -90,6 +90,9 @@ public class SimulationState {
     /** Number of attacks performed by entity in current combat (for ATTACK_FLEE: attack once then flee) */
     private int combatAttackCount;
 
+    /** Current schedule phase name (null if no schedule or not yet determined) */
+    private String currentSchedulePhase;
+
     /**
      * Get fade time (time entity stays visible after death) from entity server properties.
      * Property: death_fadeTime (seconds), default 120.

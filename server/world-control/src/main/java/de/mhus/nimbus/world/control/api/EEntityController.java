@@ -3,6 +3,7 @@ package de.mhus.nimbus.world.control.api;
 import de.mhus.nimbus.generated.types.Entity;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.shared.rest.BaseEditorController;
+import de.mhus.nimbus.world.shared.world.EntitySchedulePhase;
 import de.mhus.nimbus.world.shared.world.WEntity;
 import de.mhus.nimbus.world.shared.world.WEntityService;
 import de.mhus.nimbus.world.shared.world.WEntityType;
@@ -50,15 +51,16 @@ public class EEntityController extends BaseEditorController {
             String portraitPath,
             Map<String, String> server,
             List<Integer> epoches,
+            List<EntitySchedulePhase> schedule,
             Instant createdAt,
             Instant updatedAt
     ) {
     }
 
-    public record CreateEntityRequest(String entityId, Entity publicData, String modelId, WEntityType type, String portraitPath, Map<String, String> server, List<Integer> epoches) {
+    public record CreateEntityRequest(String entityId, Entity publicData, String modelId, WEntityType type, String portraitPath, Map<String, String> server, List<Integer> epoches, List<EntitySchedulePhase> schedule) {
     }
 
-    public record UpdateEntityRequest(Entity publicData, String modelId, Boolean enabled, WEntityType type, String portraitPath, Map<String, String> server, List<Integer> epoches) {
+    public record UpdateEntityRequest(Entity publicData, String modelId, Boolean enabled, WEntityType type, String portraitPath, Map<String, String> server, List<Integer> epoches, List<EntitySchedulePhase> schedule) {
     }
 
     /**
@@ -202,6 +204,9 @@ public class EEntityController extends BaseEditorController {
                     if (request.epoches() != null) {
                         entity.setEpoches(request.epoches());
                     }
+                    if (request.schedule() != null) {
+                        entity.setSchedule(request.schedule());
+                    }
                 });
             }
 
@@ -267,6 +272,9 @@ public class EEntityController extends BaseEditorController {
             if (request.epoches() != null) {
                 entity.setEpoches(request.epoches());
             }
+            if (request.schedule() != null) {
+                entity.setSchedule(request.schedule());
+            }
         });
 
         if (updated.isEmpty()) {
@@ -324,6 +332,7 @@ public class EEntityController extends BaseEditorController {
                 entity.getPortraitPath(),
                 entity.getServer(),
                 entity.getEpoches() != null ? entity.getEpoches() : List.of(),
+                entity.getSchedule() != null ? entity.getSchedule() : List.of(),
                 entity.getCreatedAt(),
                 entity.getUpdatedAt()
         );

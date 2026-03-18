@@ -23,9 +23,11 @@ import de.mhus.nimbus.world.shared.redis.VitalDeltaBroadcastMessage;
 import de.mhus.nimbus.world.shared.redis.VitalDeltaPublisher;
 import de.mhus.nimbus.world.shared.redis.WorldRedisMessagingService;
 import de.mhus.nimbus.world.shared.world.BlockUtil;
+import de.mhus.nimbus.world.shared.world.EntitySchedulePhase;
 import de.mhus.nimbus.world.shared.world.WEntity;
 import de.mhus.nimbus.world.shared.world.WEntityService;
 import de.mhus.nimbus.world.shared.world.WEntityType;
+import de.mhus.nimbus.world.shared.world.WorldTimeService;
 import de.mhus.nimbus.world.shared.world.WWorld;
 import de.mhus.nimbus.world.shared.world.WWorldInstanceService;
 import de.mhus.nimbus.world.shared.world.WWorldService;
@@ -88,6 +90,7 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
     private final RemoteEntityActivationPublisher remoteEntityActivationPublisher;
     private final RemotePathwayQueue remotePathwayQueue;
     private final RemoteCombatFeedbackPublisher remoteCombatFeedbackPublisher;
+    private final WorldTimeService worldTimeService;
 
     private final BaseEffectProcessor baseEffectProcessor = new BaseEffectProcessor();
 
@@ -206,6 +209,8 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
             if (entityId.startsWith("@")) continue;
             // Skip entities without position
             if (entity.getPosition() == null) continue;
+            // Skip entities whose schedule says they are not present right now
+            if (isScheduledAbsent(entity, worldId)) continue;
 
             // Track active chunk refs for this entity
             Set<String> entityChunks = chunkRefs.computeIfAbsent(entityId, k -> ConcurrentHashMap.newKeySet());
@@ -990,6 +995,27 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
         status.put("healthMax", health.getEffectiveMax());
         entityStatusPublisher.publishStatusUpdate(worldId.getId(), entityId, status, null);
         entityStateRedisService.updateHealth(worldId.getId(), entityId, health.getCurrent(), health.getEffectiveMax());
+    }
+
+    /**
+     * Check if an entity with a schedule is currently absent (present=false).
+     * Returns false (= not absent) if the entity has no schedule.
+     */
+    private boolean isScheduledAbsent(WEntity entity, WorldId worldId) {
+        var schedule = entity.getSchedule();
+        if (schedule == null || schedule.isEmpty()) return false;
+
+        WWorld world = getCachedWorld(worldId);
+        if (world == null || world.getPublicData() == null) return false;
+
+        int currentHour = worldTimeService.getCurrentHourOfDay(world.getPublicData());
+        for (EntitySchedulePhase phase : schedule) {
+            if (phase.matchesHour(currentHour)) {
+                return !phase.isPresent();
+            }
+        }
+        // No matching phase — load normally
+        return false;
     }
 
     /**

@@ -1,6 +1,17 @@
 import { apiService } from '@/services/ApiService';
 
-export type EntityType = 'OTHER' | 'ANIMAL' | 'NPC' | 'PLAYER';
+export type EntityType = 'OTHER' | 'ANIMAL' | 'NPC' | 'PLAYER' | 'REMOTE';
+
+export interface SchedulePhase {
+  name: string;
+  fromHour: number;
+  toHour: number;
+  present: boolean;
+  point?: string;
+  behavior?: string;
+  roamRadius?: number;
+  speed?: number;
+}
 
 export interface EntityData {
   entityId: string;
@@ -13,6 +24,7 @@ export interface EntityData {
   portraitPath: string | null;
   server: Record<string, string> | null;
   epoches: number[];
+  schedule: SchedulePhase[];
   createdAt: string;
   updatedAt: string;
 }
@@ -32,6 +44,7 @@ export interface CreateEntityRequest {
   portraitPath?: string;
   server?: Record<string, string>;
   epoches?: number[];
+  schedule?: SchedulePhase[];
 }
 
 export interface UpdateEntityRequest {
@@ -42,6 +55,7 @@ export interface UpdateEntityRequest {
   portraitPath?: string;
   server?: Record<string, string>;
   epoches?: number[];
+  schedule?: SchedulePhase[];
 }
 
 class EntityService {

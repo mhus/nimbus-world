@@ -163,6 +163,14 @@ public class WEntity implements Identifiable, CowEntity, EpochEntity {
     private List<Integer> epoches = new ArrayList<>();
 
     /**
+     * Daily schedule (timetable) for this entity.
+     * Defines time-based phases with location, behavior, and presence.
+     * Empty list = no schedule = entity behaves normally all the time.
+     */
+    @Builder.Default
+    private List<EntitySchedulePhase> schedule = new ArrayList<>();
+
+    /**
      * Soft delete flag.
      */
     @Indexed

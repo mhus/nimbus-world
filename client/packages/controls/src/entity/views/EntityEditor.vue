@@ -103,6 +103,7 @@
                 <option value="ANIMAL">Animal</option>
                 <option value="NPC">NPC</option>
                 <option value="PLAYER">Player</option>
+                <option value="REMOTE">Remote</option>
               </select>
               <label class="label">
                 <span class="label-text-alt">Classification of this entity</span>
@@ -210,6 +211,7 @@
                 <option value="server">Server</option>
                 <option value="ai">AI</option>
                 <option value="client">Client</option>
+                <option value="remote">Remote</option>
               </select>
             </div>
 
@@ -312,6 +314,83 @@
         </div>
       </div>
 
+      <!-- Schedule (Timetable) Card -->
+      <div class="card bg-base-100 shadow-xl">
+        <div class="card-body">
+          <div class="flex items-center justify-between">
+            <h3 class="card-title">Schedule (Timetable)</h3>
+            <button type="button" class="btn btn-ghost btn-sm" @click="addSchedulePhase">
+              <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+              </svg>
+              Add Phase
+            </button>
+          </div>
+          <p class="text-sm text-base-content/70">Time-based phases for NPC location and behavior. Hours are world-hours.</p>
+          <div v-if="schedulePhases.length === 0" class="text-sm text-base-content/50 py-2">
+            No schedule defined (entity active at all times)
+          </div>
+          <div v-else class="space-y-3 mt-2">
+            <div
+              v-for="(phase, index) in schedulePhases"
+              :key="index"
+              class="border border-base-300 rounded-lg p-3 space-y-2"
+            >
+              <div class="flex items-center justify-between">
+                <span class="font-medium text-sm">Phase {{ index + 1 }}</span>
+                <button
+                  type="button"
+                  class="btn btn-ghost btn-xs btn-square text-error"
+                  @click="removeSchedulePhase(index)"
+                >
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+                <div class="form-control">
+                  <label class="label py-0"><span class="label-text text-xs">Name</span></label>
+                  <input v-model="phase.name" type="text" placeholder="e.g. market_duty" class="input input-bordered input-xs" />
+                </div>
+                <div class="form-control">
+                  <label class="label py-0"><span class="label-text text-xs">From Hour</span></label>
+                  <input v-model.number="phase.fromHour" type="number" min="0" max="23" class="input input-bordered input-xs" />
+                </div>
+                <div class="form-control">
+                  <label class="label py-0"><span class="label-text text-xs">To Hour</span></label>
+                  <input v-model.number="phase.toHour" type="number" min="0" max="23" class="input input-bordered input-xs" />
+                </div>
+                <div class="form-control">
+                  <label class="label py-0 cursor-pointer justify-start gap-2">
+                    <span class="label-text text-xs">Present</span>
+                    <input v-model="phase.present" type="checkbox" class="checkbox checkbox-xs" />
+                  </label>
+                </div>
+              </div>
+              <div v-if="phase.present" class="grid grid-cols-2 md:grid-cols-4 gap-2">
+                <div class="form-control">
+                  <label class="label py-0"><span class="label-text text-xs">Point (x,y,z)</span></label>
+                  <input v-model="phase.point" type="text" placeholder="10,65,20" class="input input-bordered input-xs" />
+                </div>
+                <div class="form-control">
+                  <label class="label py-0"><span class="label-text text-xs">Behavior</span></label>
+                  <input v-model="phase.behavior" type="text" placeholder="e.g. IdleBehavior" class="input input-bordered input-xs" />
+                </div>
+                <div class="form-control">
+                  <label class="label py-0"><span class="label-text text-xs">Roam Radius</span></label>
+                  <input v-model.number="phase.roamRadius" type="number" min="0" class="input input-bordered input-xs" />
+                </div>
+                <div class="form-control">
+                  <label class="label py-0"><span class="label-text text-xs">Speed</span></label>
+                  <input v-model.number="phase.speed" type="number" min="0" step="0.1" class="input input-bordered input-xs" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Parameters Card -->
       <div class="card bg-base-100 shadow-xl">
         <div class="card-body">
@@ -380,7 +459,7 @@
 <script setup lang="ts">
 import { ref, reactive, computed, watch, onMounted } from 'vue';
 import { useWorld } from '@/composables/useWorld';
-import { entityService, type EntityData, type EntityType } from '../services/EntityService';
+import { entityService, type EntityData, type EntityType, type SchedulePhase } from '../services/EntityService';
 import { entityModelService } from '../../entitymodel/services/EntityModelService';
 import JsonEditorDialog from '@components/JsonEditorDialog.vue';
 import ModelPreview from '@/character-panel/ModelPreview.vue';
@@ -417,6 +496,7 @@ const entityData = ref<any>(null);
 const showJsonEditor = ref(false);
 const parameterEntries = ref<{ key: string; value: string }[]>([]);
 const epochesText = ref('');
+const schedulePhases = ref<SchedulePhase[]>([]);
 
 // Model preview
 const modelPreviewRef = ref<InstanceType<typeof ModelPreview> | null>(null);
@@ -473,6 +553,23 @@ const removeParameter = (index: number) => {
   parameterEntries.value.splice(index, 1);
 };
 
+const addSchedulePhase = () => {
+  schedulePhases.value.push({
+    name: '',
+    fromHour: 0,
+    toHour: 24,
+    present: true,
+    point: '',
+    behavior: '',
+    roamRadius: undefined,
+    speed: undefined,
+  });
+};
+
+const removeSchedulePhase = (index: number) => {
+  schedulePhases.value.splice(index, 1);
+};
+
 const parseEpoches = (): number[] => {
   return epochesText.value
     .split(',')
@@ -523,6 +620,7 @@ const loadEntity = () => {
       healthMax: 100,
     };
     parameterEntries.value = [];
+    schedulePhases.value = [];
     if (props.currentEpoch !== undefined) {
       epochesText.value = String(props.currentEpoch);
     }
@@ -541,6 +639,7 @@ const loadEntity = () => {
   if (!entityData.value.modelModifier) entityData.value.modelModifier = {};
   loadParametersFromMap(entity.server);
   epochesText.value = (entity.epoches || []).join(',');
+  schedulePhases.value = (entity.schedule || []).map(p => ({ ...p }));
 };
 
 const handleSave = async () => {
@@ -555,6 +654,7 @@ const handleSave = async () => {
 
   try {
     const params = parametersToMap();
+    const schedule = schedulePhases.value.filter(p => p.name.trim() !== '');
     if (isNew.value) {
       await entityService.createEntity(currentWorldId.value, {
         entityId: formData.value.entityId,
@@ -564,6 +664,7 @@ const handleSave = async () => {
         portraitPath: formData.value.portraitPath || undefined,
         server: params,
         epoches: parseEpoches(),
+        schedule: schedule.length > 0 ? schedule : undefined,
       });
       successMessage.value = 'Entity created successfully';
     } else {
@@ -575,6 +676,7 @@ const handleSave = async () => {
         publicData: entityData.value,
         server: params,
         epoches: parseEpoches(),
+        schedule,
       });
       successMessage.value = 'Entity saved successfully';
     }
