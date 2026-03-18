@@ -36,5 +36,11 @@ public interface WWorldRepository extends MongoRepository<WWorld, String> {
      * Used e.g. to find zones for a main world (prefix = "regionId:worldName:").
      */
     List<WWorld> findByWorldIdStartingWith(String prefix);
+
+    /**
+     * Find all worlds where the given userId is in the owner or editor set.
+     */
+    @Query("{ $or: [ { 'owner': ?0 }, { 'editor': ?0 } ] }")
+    List<WWorld> findByOwnerOrEditor(String userId);
 }
 

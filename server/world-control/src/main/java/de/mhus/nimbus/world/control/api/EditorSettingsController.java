@@ -1,9 +1,11 @@
 package de.mhus.nimbus.world.control.api;
 
 import de.mhus.nimbus.shared.types.WorldId;
+import de.mhus.nimbus.shared.user.WorldRoles;
 import de.mhus.nimbus.world.control.service.EditSettingsService;
 import de.mhus.nimbus.world.control.service.WWorldEditSettings;
 import de.mhus.nimbus.world.control.service.PaletteBlockDefinition;
+import de.mhus.nimbus.world.shared.access.RequireWorldRole;
 import de.mhus.nimbus.world.shared.rest.BaseEditorController;
 import de.mhus.nimbus.world.shared.session.WSession;
 import de.mhus.nimbus.world.shared.session.WSessionService;
@@ -22,12 +24,14 @@ import java.util.Optional;
 /**
  * REST Controller for managing editor settings per world and user.
  * Stores user-specific editor configuration like block palettes.
+ * Only accessible by users with EDITOR role on the world.
  */
 @RestController
 @RequestMapping("/control/editor/settings")
 @RequiredArgsConstructor
 @Slf4j
 @Tag(name = "EditorSettings", description = "Editor settings per world and user")
+@RequireWorldRole(WorldRoles.EDITOR)
 public class EditorSettingsController extends BaseEditorController {
 
     private final EditSettingsService editSettingsService;

@@ -1,5 +1,7 @@
 package de.mhus.nimbus.world.control.api;
 
+import de.mhus.nimbus.shared.user.WorldRoles;
+import de.mhus.nimbus.world.shared.access.RequireWorldRole;
 import de.mhus.nimbus.world.shared.layer.*;
 import de.mhus.nimbus.world.shared.world.WWorld;
 import de.mhus.nimbus.world.shared.world.WWorldService;
@@ -18,6 +20,7 @@ import java.util.*;
 @RequestMapping("/control/worlds/{worldId}/layers/{layerId}/grid")
 @RequiredArgsConstructor
 @Slf4j
+@RequireWorldRole(WorldRoles.EDITOR)
 public class ELayerBlockGridController {
 
     private final WLayerService layerService;

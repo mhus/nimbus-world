@@ -2,6 +2,8 @@ package de.mhus.nimbus.world.control.api;
 
 import de.mhus.nimbus.generated.types.EntityModel;
 import de.mhus.nimbus.shared.types.WorldId;
+import de.mhus.nimbus.shared.user.WorldRoles;
+import de.mhus.nimbus.world.shared.access.RequireWorldRole;
 import de.mhus.nimbus.world.shared.rest.BaseEditorController;
 import de.mhus.nimbus.world.shared.world.WEntityModel;
 import de.mhus.nimbus.world.shared.world.WEntityModelService;
@@ -35,6 +37,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Slf4j
 @Tag(name = "EntityModels", description = "EntityModel template management")
+@RequireWorldRole(WorldRoles.EDITOR)
 public class EEntityModelController extends BaseEditorController {
 
     private final WEntityModelService entityModelService;

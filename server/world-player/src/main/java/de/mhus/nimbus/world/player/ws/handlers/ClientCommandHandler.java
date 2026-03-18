@@ -85,6 +85,18 @@ public class ClientCommandHandler implements MessageHandler {
             return;
         }
 
+        // Client commands are only allowed for EDITOR actors.
+        // PLAYER actors have no legitimate use case for sending commands via WebSocket.
+        if (!session.isEditActor()) {
+            log.warn("Command rejected: PLAYER actor not allowed to send commands. session={}, user={}",
+                    session.getWebSocketSession().getId(), session.getTitle());
+            String requestId = message.getI();
+            if (requestId != null) {
+                sendErrorResponse(session, requestId, -2, "Commands not allowed for player sessions");
+            }
+            return;
+        }
+
         JsonNode data = message.getD();
         String requestId = message.getI();
 

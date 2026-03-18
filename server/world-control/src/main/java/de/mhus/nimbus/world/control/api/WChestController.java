@@ -1,6 +1,8 @@
 package de.mhus.nimbus.world.control.api;
 
 import de.mhus.nimbus.generated.types.ItemRef;
+import de.mhus.nimbus.shared.user.WorldRoles;
+import de.mhus.nimbus.world.shared.access.RequireWorldRole;
 import de.mhus.nimbus.world.shared.rest.BaseEditorController;
 import de.mhus.nimbus.world.shared.world.WChest;
 import de.mhus.nimbus.world.shared.world.WChestService;
@@ -22,6 +24,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/control/world/{worldId}/chests")
 @RequiredArgsConstructor
+@RequireWorldRole(WorldRoles.EDITOR)
 public class WChestController extends BaseEditorController {
 
     private final WChestService chestService;

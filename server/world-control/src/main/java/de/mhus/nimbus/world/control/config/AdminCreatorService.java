@@ -9,11 +9,16 @@ import de.mhus.nimbus.world.shared.region.RCharacterService;
 import de.mhus.nimbus.world.shared.region.RRegion;
 import de.mhus.nimbus.world.shared.region.RRegionService;
 import de.mhus.nimbus.world.shared.sector.RUserService;
+import de.mhus.nimbus.world.shared.world.WWorld;
+import de.mhus.nimbus.world.shared.world.WWorldService;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+
+import java.util.HashSet;
+import java.util.Set;
 
 @Service
 @Slf4j
@@ -24,6 +29,7 @@ public class AdminCreatorService {
     private final RRegionService regionService;
     private final RUserService userService;
     private final RCharacterService characterService;
+    private final WWorldService worldService;
     private SettingBoolean settingEnabled;
     private SettingString settingAdminUsername;
     private SettingString settingAdminEmail;
@@ -50,11 +56,19 @@ public class AdminCreatorService {
         }
         checkSector();
         checkRegions();
+        checkWorldOwnership();
     }
 
     private void checkSector() {
-        var user = userService.getByUsername(settingAdminUsername.get());
-        if (user.isPresent()) {
+        var userOpt = userService.getByUsername(settingAdminUsername.get());
+        if (userOpt.isPresent()) {
+            // Ensure existing admin user has ADMIN role
+            var user = userOpt.get();
+            if (!user.getSectorRoles().contains(SectorRoles.ADMIN)) {
+                user.addSectorRole(SectorRoles.ADMIN);
+                userService.save(user);
+                log.info("Added ADMIN role to existing admin user '{}'", settingAdminUsername.get());
+            }
             return;
         }
         log.debug("Admin user '{}' not found, creating it with email '{}'", settingAdminUsername.get(), settingAdminEmail.get());
@@ -64,6 +78,7 @@ public class AdminCreatorService {
         var newUser = userService.createUser(data, settingAdminEmail.get());
         newUser.addSectorRole(SectorRoles.ADMIN);
         newUser.addSectorRole(SectorRoles.PLAYER);
+        userService.save(newUser);
     }
 
     private void checkRegions() {
@@ -81,6 +96,28 @@ public class AdminCreatorService {
         var created = characterService.createCharacter(settingAdminUsername.get(), region.getName(), settingCharacterName.get(), "Admin character");
         created.getPublicData().setThirdPersonModelId("n:wizard");
         characterService.updateCharater(created);
+    }
+
+    private void checkWorldOwnership() {
+        String adminUsername = settingAdminUsername.get();
+        for (WWorld world : worldService.findAll()) {
+            if (world.getOwner() != null && world.getOwner().contains(adminUsername)) {
+                continue;
+            }
+            Set<String> owners = world.getOwner() != null ? new HashSet<>(world.getOwner()) : new HashSet<>();
+            owners.add(adminUsername);
+            world.setOwner(owners);
+            worldService.save(world);
+            log.debug("Added admin '{}' as owner to world '{}'", adminUsername, world.getWorldId());
+        }
+    }
+
+    /**
+     * Returns the configured admin username.
+     * Used by AccessValidator for sector admin checks.
+     */
+    public String getAdminUsername() {
+        return settingAdminUsername.get();
     }
 
 }

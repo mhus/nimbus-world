@@ -1,7 +1,9 @@
 package de.mhus.nimbus.world.control.api;
 
+import de.mhus.nimbus.world.shared.access.AccessValidator;
 import de.mhus.nimbus.world.shared.rest.BaseEditorController;
 import de.mhus.nimbus.world.shared.world.*;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -24,6 +26,7 @@ public class WWorldInstanceController extends BaseEditorController {
 
     private final WWorldInstanceService instanceService;
     private final WWorldService worldService;
+    private final AccessValidator accessValidator;
 
     // DTOs
     public record InstanceResponse(
@@ -84,12 +87,17 @@ public class WWorldInstanceController extends BaseEditorController {
     @GetMapping
     public ResponseEntity<?> list(
             @RequestParam(required = false) String worldId,
-            @RequestParam(required = false) String creator) {
+            @RequestParam(required = false) String creator,
+            HttpServletRequest request) {
 
         try {
             List<WWorldInstance> instances;
 
             if (worldId != null && !worldId.isBlank()) {
+                // Check access to this specific world
+                if (!accessValidator.hasEditorAccess(request, worldId)) {
+                    return ResponseEntity.status(403).body(Map.of("error", "Access denied for world: " + worldId));
+                }
                 instances = instanceService.findByWorldId(worldId);
             } else if (creator != null && !creator.isBlank()) {
                 instances = instanceService.findByCreator(creator);
@@ -97,7 +105,9 @@ public class WWorldInstanceController extends BaseEditorController {
                 instances = instanceService.findAll();
             }
 
+            // Filter results to accessible worlds
             List<InstanceResponse> result = instances.stream()
+                    .filter(inst -> accessValidator.hasEditorAccess(request, inst.getWorldId()))
                     .map(this::toResponse)
                     .toList();
 
@@ -112,9 +122,13 @@ public class WWorldInstanceController extends BaseEditorController {
      * GET /control/instances/{instanceId}
      */
     @GetMapping("/{instanceId}")
-    public ResponseEntity<?> get(@PathVariable String instanceId) {
+    public ResponseEntity<?> get(@PathVariable String instanceId, HttpServletRequest request) {
         var error = validateId(instanceId, "instanceId");
         if (error != null) return error;
+
+        if (!accessValidator.hasEditorAccess(request, instanceId)) {
+            return ResponseEntity.status(403).body(Map.of("error", "Access denied"));
+        }
 
         return instanceService.findByInstanceId(instanceId)
                 .<ResponseEntity<?>>map(instance -> ResponseEntity.ok(toResponse(instance)))
@@ -129,10 +143,15 @@ public class WWorldInstanceController extends BaseEditorController {
     @PutMapping("/{instanceId}")
     public ResponseEntity<?> update(
             @PathVariable String instanceId,
-            @RequestBody InstanceUpdateRequest request) {
+            @RequestBody InstanceUpdateRequest request,
+            HttpServletRequest httpRequest) {
 
         var error = validateId(instanceId, "instanceId");
         if (error != null) return error;
+
+        if (!accessValidator.hasEditorAccess(httpRequest, instanceId)) {
+            return ResponseEntity.status(403).body(Map.of("error", "Access denied"));
+        }
 
         try {
             var updated = instanceService.update(instanceId, instance -> {
@@ -157,9 +176,13 @@ public class WWorldInstanceController extends BaseEditorController {
      * DELETE /control/instances/{instanceId}
      */
     @DeleteMapping("/{instanceId}")
-    public ResponseEntity<?> delete(@PathVariable String instanceId) {
+    public ResponseEntity<?> delete(@PathVariable String instanceId, HttpServletRequest request) {
         var error = validateId(instanceId, "instanceId");
         if (error != null) return error;
+
+        if (!accessValidator.hasEditorAccess(request, instanceId)) {
+            return ResponseEntity.status(403).body(Map.of("error", "Access denied"));
+        }
 
         if (!instanceService.existsByInstanceId(instanceId)) {
             return notFound("Instance not found: " + instanceId);
@@ -181,10 +204,15 @@ public class WWorldInstanceController extends BaseEditorController {
     @PutMapping("/{instanceId}/epoch")
     public ResponseEntity<?> switchEpoch(
             @PathVariable String instanceId,
-            @RequestBody Map<String, Integer> body) {
+            @RequestBody Map<String, Integer> body,
+            HttpServletRequest request) {
 
         var error = validateId(instanceId, "instanceId");
         if (error != null) return error;
+
+        if (!accessValidator.hasEditorAccess(request, instanceId)) {
+            return ResponseEntity.status(403).body(Map.of("error", "Access denied"));
+        }
 
         Integer newEpoch = body.get("epoch");
         if (newEpoch == null) {
@@ -234,12 +262,16 @@ public class WWorldInstanceController extends BaseEditorController {
     @GetMapping("/stats")
     public ResponseEntity<?> getStats(
             @RequestParam(required = false) String worldId,
-            @RequestParam(required = false) String creator) {
+            @RequestParam(required = false) String creator,
+            HttpServletRequest request) {
 
         try {
             long count;
 
             if (worldId != null && !worldId.isBlank()) {
+                if (!accessValidator.hasEditorAccess(request, worldId)) {
+                    return ResponseEntity.status(403).body(Map.of("error", "Access denied for world: " + worldId));
+                }
                 count = instanceService.countByWorldId(worldId);
             } else if (creator != null && !creator.isBlank()) {
                 count = instanceService.countByCreator(creator);
@@ -258,4 +290,5 @@ public class WWorldInstanceController extends BaseEditorController {
             return bad(e.getMessage());
         }
     }
+
 }

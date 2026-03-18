@@ -2,6 +2,8 @@ package de.mhus.nimbus.world.control.api;
 
 import de.mhus.nimbus.generated.types.Backdrop;
 import de.mhus.nimbus.shared.types.WorldId;
+import de.mhus.nimbus.shared.user.WorldRoles;
+import de.mhus.nimbus.world.shared.access.RequireWorldRole;
 import de.mhus.nimbus.world.shared.rest.BaseEditorController;
 import de.mhus.nimbus.world.shared.world.WBackdrop;
 import de.mhus.nimbus.world.shared.world.WBackdropService;
@@ -34,6 +36,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Slf4j
 @Tag(name = "Backdrops", description = "Backdrop configuration management")
+@RequireWorldRole(WorldRoles.EDITOR)
 public class EBackdropController extends BaseEditorController {
 
     private final WBackdropService backdropService;

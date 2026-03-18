@@ -1,5 +1,6 @@
 package de.mhus.nimbus.world.control.api;
 
+import de.mhus.nimbus.world.shared.access.AccessValidator;
 import de.mhus.nimbus.world.shared.rest.BaseEditorController;
 import de.mhus.nimbus.world.control.service.BlockInfoService;
 import de.mhus.nimbus.world.shared.world.WWorld;
@@ -9,6 +10,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -36,6 +38,7 @@ public class WorldController extends BaseEditorController {
 
     private final WWorldService worldService;
     private final BlockInfoService blockInfoService;
+    private final AccessValidator accessValidator;
 
     // DTOs
     public record WorldListDto(
@@ -83,7 +86,8 @@ public class WorldController extends BaseEditorController {
             @ApiResponse(responseCode = "200", description = "Success")
     })
     public ResponseEntity<?> list(
-            @Parameter(description = "Filter type for world selection") @RequestParam(required = false) String filter) {
+            @Parameter(description = "Filter type for world selection") @RequestParam(required = false) String filter,
+            HttpServletRequest request) {
         log.debug("LIST worlds with filter: {}", filter);
 
         try {
@@ -93,10 +97,11 @@ public class WorldController extends BaseEditorController {
                 // Get main worlds
                 List<WorldListDto> worlds = worldService.findAll().stream()
                         .filter(world -> matchesFilter(world, "mainOnly"))
+                        .filter(world -> accessValidator.isWorldAccessible(request, world))
                         .map(this::toListDto)
                         .collect(Collectors.toList());
 
-                // Get world collections
+                // Get world collections (no access filter, collections are structural)
                 List<WorldListDto> collections = worldService.findWorldCollections().stream()
                         .map(this::toListDtoFromWorldId)
                         .toList();
@@ -108,10 +113,11 @@ public class WorldController extends BaseEditorController {
                 // Get main worlds
                 List<WorldListDto> worlds = worldService.findAll().stream()
                         .filter(world -> matchesFilter(world, "mainOnly"))
+                        .filter(world -> accessValidator.isWorldAccessible(request, world))
                         .map(this::toListDto)
                         .collect(Collectors.toList());
 
-                // Get world collections
+                // Get world collections (no access filter, collections are structural)
                 List<WorldListDto> collections = worldService.findWorldCollections().stream()
                         .map(this::toListDtoFromWorldId)
                         .toList();
@@ -123,6 +129,7 @@ public class WorldController extends BaseEditorController {
                                 de.mhus.nimbus.shared.types.WorldId.unchecked(world.getWorldId());
                             return worldId.isZone();
                         })
+                        .filter(world -> accessValidator.isWorldAccessible(request, world))
                         .map(this::toListDto)
                         .toList();
 
@@ -134,11 +141,13 @@ public class WorldController extends BaseEditorController {
                 // Apply filter to regular worlds
                 dtos = worldService.findAll().stream()
                         .filter(world -> matchesFilter(world, filter))
+                        .filter(world -> accessValidator.isWorldAccessible(request, world))
                         .map(this::toListDto)
                         .collect(Collectors.toList());
             } else {
                 // No filter
                 dtos = worldService.findAll().stream()
+                        .filter(world -> accessValidator.isWorldAccessible(request, world))
                         .map(this::toListDto)
                         .collect(Collectors.toList());
             }
@@ -160,15 +169,22 @@ public class WorldController extends BaseEditorController {
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "World found"),
             @ApiResponse(responseCode = "400", description = "Invalid parameters"),
+            @ApiResponse(responseCode = "403", description = "Access denied"),
             @ApiResponse(responseCode = "404", description = "World not found")
     })
     public ResponseEntity<?> get(
-            @Parameter(description = "World identifier") @PathVariable String worldId) {
+            @Parameter(description = "World identifier") @PathVariable String worldId,
+            HttpServletRequest request) {
 
         log.debug("GET world: worldId={}", worldId);
 
         ResponseEntity<?> validation = validateId(worldId, "worldId");
         if (validation != null) return validation;
+
+        // Check editor access
+        if (!accessValidator.hasEditorAccess(request, worldId)) {
+            return ResponseEntity.status(403).body(java.util.Map.of("error", "Access denied for world: " + worldId));
+        }
 
         Optional<WWorld> opt = worldService.getByWorldId(worldId);
         if (opt.isEmpty()) {
@@ -196,7 +212,8 @@ public class WorldController extends BaseEditorController {
             @Parameter(description = "Session identifier") @PathVariable String sessionId,
             @Parameter(description = "Block X coordinate") @PathVariable int x,
             @Parameter(description = "Block Y coordinate") @PathVariable int y,
-            @Parameter(description = "Block Z coordinate") @PathVariable int z) {
+            @Parameter(description = "Block Z coordinate") @PathVariable int z,
+            HttpServletRequest request) {
 
         log.debug("GET block: worldId={} session={} pos=({},{},{})", worldId, sessionId, x, y, z);
 
@@ -205,6 +222,11 @@ public class WorldController extends BaseEditorController {
 
         validation = validateId(sessionId, "sessionId");
         if (validation != null) return validation;
+
+        // Check editor access
+        if (!accessValidator.hasEditorAccess(request, worldId)) {
+            return ResponseEntity.status(403).body(java.util.Map.of("error", "Access denied for world: " + worldId));
+        }
 
         try {
             var blockInfo = blockInfoService.loadBlockInfo(worldId, sessionId, x, y, z);

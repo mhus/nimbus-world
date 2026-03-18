@@ -304,6 +304,19 @@ public class AccessService {
         WWorld world = worldService.getByWorldId(worldId)
                 .orElseThrow(() -> new IllegalArgumentException("World not found: " + request.getWorldId()));
 
+        // Load main world for permission checks (zones/instances inherit permissions from main world)
+        WorldId mainWorldId = worldId.toMainWorld();
+        WWorld mainWorld = mainWorldId.getId().equals(worldId.getId())
+                ? world
+                : worldService.getByWorldId(mainWorldId)
+                        .orElseThrow(() -> new IllegalArgumentException("Main world not found: " + mainWorldId.getId()));
+
+        // Validate actor permissions against main world
+        UserId loginUserId = UserId.of(request.getUserId())
+                .orElseThrow(() -> new IllegalArgumentException("Invalid userId: " + request.getUserId()));
+
+        validateActorPermission(request.getActor(), loginUserId, mainWorld);
+
         // Validate character exists
         RCharacter character = characterService.getCharacter(request.getUserId(), world.getRegionId(), request.getCharacterId()).orElseThrow(
                 () -> new IllegalArgumentException("Character not found: " + request.getCharacterId())
@@ -428,6 +441,42 @@ public class AccessService {
         url = url.replace("{userId}", request.getUserId());
         url = url.replace("{characterId}", request.getCharacterId());
         return url;
+    }
+
+    /**
+     * Validates that the user has the required permissions for the requested actor role.
+     * Always checks against the main world (not zone/instance).
+     *
+     * @param actor The requested actor role
+     * @param userId The user attempting to login
+     * @param mainWorld The main world to check permissions against
+     * @throws IllegalArgumentException if the user does not have the required permissions
+     */
+    private void validateActorPermission(ActorRoles actor, UserId userId, WWorld mainWorld) {
+        switch (actor) {
+            case PLAYER:
+                if (!mainWorld.isPlayerAllowed(userId)) {
+                    throw new IllegalArgumentException("User " + userId.getId()
+                            + " is not allowed as PLAYER in world " + mainWorld.getWorldId());
+                }
+                break;
+            case EDITOR:
+                if (!mainWorld.isEditorAllowed(userId) && !mainWorld.isOwnerAllowed(userId)) {
+                    throw new IllegalArgumentException("User " + userId.getId()
+                            + " is not allowed as EDITOR in world " + mainWorld.getWorldId());
+                }
+                break;
+            case SUPPORT:
+                if (!mainWorld.isSupporterAllowed(userId) && !mainWorld.isOwnerAllowed(userId)) {
+                    throw new IllegalArgumentException("User " + userId.getId()
+                            + " is not allowed as SUPPORT in world " + mainWorld.getWorldId());
+                }
+                break;
+            default:
+                throw new IllegalArgumentException("Unknown actor role: " + actor);
+        }
+        log.debug("Actor permission validated: user={}, actor={}, world={}",
+                userId.getId(), actor, mainWorld.getWorldId());
     }
 
     private String findJumpUrl(AccessSettings properties, DevAgentLoginRequest request) {

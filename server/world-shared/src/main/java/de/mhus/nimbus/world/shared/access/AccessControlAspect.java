@@ -24,6 +24,7 @@ import java.lang.reflect.Method;
  * - @RequireAgent: Requires agent authentication
  * - @RequireSession: Requires session authentication
  * - @RequireWorldIsNotInstance: Requires world to not be an instance
+ * - @RequireRegionMaintainer: Requires the user to be a region maintainer
  *
  * If access is denied, returns HTTP 403 Forbidden.
  */
@@ -116,6 +117,12 @@ public class AccessControlAspect {
             }
         }
 
+        if (clazz.isAnnotationPresent(RequireRegionMaintainer.class)) {
+            if (!accessUtil.isRegionMaintainer(request)) {
+                return "Region maintainer access required";
+            }
+        }
+
         return null; // Access granted
     }
 
@@ -152,6 +159,12 @@ public class AccessControlAspect {
         if (method.isAnnotationPresent(RequireWorldIsNotInstance.class)) {
             if (accessUtil.isWorldInstance(request)) {
                 return "Operation not allowed on instance worlds";
+            }
+        }
+
+        if (method.isAnnotationPresent(RequireRegionMaintainer.class)) {
+            if (!accessUtil.isRegionMaintainer(request)) {
+                return "Region maintainer access required";
             }
         }
 

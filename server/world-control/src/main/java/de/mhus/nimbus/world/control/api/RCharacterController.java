@@ -11,6 +11,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import de.mhus.nimbus.world.shared.access.RequireRegionMaintainer;
+
 import java.net.URI;
 import java.time.Instant;
 import java.util.List;
@@ -23,6 +25,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/control/regions/{regionId}/characters")
 @RequiredArgsConstructor
+@RequireRegionMaintainer
 public class RCharacterController extends BaseEditorController {
 
     private final RCharacterService characterService;

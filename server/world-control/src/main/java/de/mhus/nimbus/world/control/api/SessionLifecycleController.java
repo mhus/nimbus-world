@@ -1,5 +1,6 @@
 package de.mhus.nimbus.world.control.api;
 
+import de.mhus.nimbus.world.shared.access.RequireAgent;
 import de.mhus.nimbus.world.shared.world.WWorldInstanceService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -9,11 +10,13 @@ import org.springframework.web.bind.annotation.*;
 /**
  * REST Controller for session lifecycle events.
  * Used by world-player to notify world-control about session state changes.
+ * Only accessible via agent (server-to-server) authentication.
  */
 @RestController
 @RequestMapping("/control/session-lifecycle")
 @RequiredArgsConstructor
 @Slf4j
+@RequireAgent
 public class SessionLifecycleController {
 
     private final WWorldInstanceService instanceService;

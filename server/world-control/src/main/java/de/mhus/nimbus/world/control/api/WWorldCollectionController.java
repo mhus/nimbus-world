@@ -1,8 +1,10 @@
 package de.mhus.nimbus.world.control.api;
 
+import de.mhus.nimbus.world.shared.access.AccessValidator;
 import de.mhus.nimbus.world.shared.rest.BaseEditorController;
 import de.mhus.nimbus.world.shared.world.WWorldCollection;
 import de.mhus.nimbus.world.shared.world.WWorldCollectionService;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.http.HttpStatus;
@@ -17,6 +19,7 @@ import java.util.Map;
 /**
  * REST Controller for managing World Collections.
  * World Collections group related worlds and are identified by worldId starting with '@'.
+ * Access: @region:X and @public:X collections by region maintainers, others by sector admin only.
  */
 @RestController
 @RequestMapping("/control/collections")
@@ -24,6 +27,7 @@ import java.util.Map;
 public class WWorldCollectionController extends BaseEditorController {
 
     private final WWorldCollectionService collectionService;
+    private final AccessValidator accessValidator;
 
     // DTOs
     public record CollectionRequest(
@@ -59,9 +63,10 @@ public class WWorldCollectionController extends BaseEditorController {
      * GET /control/collections
      */
     @GetMapping
-    public ResponseEntity<?> list() {
+    public ResponseEntity<?> list(HttpServletRequest request) {
         try {
             List<CollectionResponse> result = collectionService.findAll().stream()
+                    .filter(c -> accessValidator.hasEditorAccess(request, c.getWorldId()))
                     .map(this::toResponse)
                     .toList();
             return ResponseEntity.ok(result);
@@ -75,9 +80,11 @@ public class WWorldCollectionController extends BaseEditorController {
      * GET /control/collections/{worldId}
      */
     @GetMapping("/{worldId}")
-    public ResponseEntity<?> get(@PathVariable String worldId) {
+    public ResponseEntity<?> get(@PathVariable String worldId, HttpServletRequest request) {
         var error = validateId(worldId, "worldId");
         if (error != null) return error;
+        if (!accessValidator.hasEditorAccess(request, worldId))
+            return ResponseEntity.status(403).body(Map.of("error", "Access denied"));
 
         if (!worldId.startsWith("@")) {
             return bad("Collection worldId must start with '@'");
@@ -94,10 +101,12 @@ public class WWorldCollectionController extends BaseEditorController {
      * POST /control/collections
      */
     @PostMapping
-    public ResponseEntity<?> create(@RequestBody CollectionRequest request) {
+    public ResponseEntity<?> create(@RequestBody CollectionRequest request, HttpServletRequest httpRequest) {
         if (Strings.isBlank(request.worldId())) {
             return bad("worldId is required");
         }
+        if (!accessValidator.hasEditorAccess(httpRequest, request.worldId()))
+            return ResponseEntity.status(403).body(Map.of("error", "Access denied"));
 
         if (!request.worldId().startsWith("@")) {
             return bad("Collection worldId must start with '@'");
@@ -128,10 +137,12 @@ public class WWorldCollectionController extends BaseEditorController {
     @PutMapping("/{worldId}")
     public ResponseEntity<?> update(
             @PathVariable String worldId,
-            @RequestBody CollectionRequest request) {
+            @RequestBody CollectionRequest request, HttpServletRequest httpRequest) {
 
         var error = validateId(worldId, "worldId");
         if (error != null) return error;
+        if (!accessValidator.hasEditorAccess(httpRequest, worldId))
+            return ResponseEntity.status(403).body(Map.of("error", "Access denied"));
 
         if (!worldId.startsWith("@")) {
             return bad("Collection worldId must start with '@'");
@@ -158,9 +169,11 @@ public class WWorldCollectionController extends BaseEditorController {
      * DELETE /control/collections/{worldId}
      */
     @DeleteMapping("/{worldId}")
-    public ResponseEntity<?> delete(@PathVariable String worldId) {
+    public ResponseEntity<?> delete(@PathVariable String worldId, HttpServletRequest request) {
         var error = validateId(worldId, "worldId");
         if (error != null) return error;
+        if (!accessValidator.hasEditorAccess(request, worldId))
+            return ResponseEntity.status(403).body(Map.of("error", "Access denied"));
 
         if (!worldId.startsWith("@")) {
             return bad("Collection worldId must start with '@'");

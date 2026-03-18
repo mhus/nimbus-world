@@ -3,6 +3,8 @@ package de.mhus.nimbus.world.control.api;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.generated.types.ChunkData;
 import de.mhus.nimbus.shared.types.WorldId;
+import de.mhus.nimbus.shared.user.WorldRoles;
+import de.mhus.nimbus.world.shared.access.RequireWorldRole;
 import de.mhus.nimbus.world.shared.rest.BaseEditorController;
 import de.mhus.nimbus.world.shared.world.WChunk;
 import de.mhus.nimbus.world.shared.world.WChunkService;
@@ -31,6 +33,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Slf4j
 @Tag(name = "Chunks", description = "Chunk viewing and management for editors")
+@RequireWorldRole(WorldRoles.EDITOR)
 public class EChunkController extends BaseEditorController {
 
     private final WChunkService chunkService;

@@ -1,5 +1,7 @@
 package de.mhus.nimbus.world.control.api;
 
+import de.mhus.nimbus.shared.user.WorldRoles;
+import de.mhus.nimbus.world.shared.access.RequireWorldRole;
 import de.mhus.nimbus.world.shared.job.JobSettings;
 import de.mhus.nimbus.world.shared.job.JobStatus;
 import de.mhus.nimbus.world.shared.job.WJob;
@@ -23,6 +25,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/control/worlds/{worldId}/jobs")
 @RequiredArgsConstructor
+@RequireWorldRole(WorldRoles.EDITOR)
 public class JobController extends BaseEditorController {
 
     private final WJobService jobService;

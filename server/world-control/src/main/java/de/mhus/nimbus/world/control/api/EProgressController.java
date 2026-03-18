@@ -1,5 +1,7 @@
 package de.mhus.nimbus.world.control.api;
 
+import de.mhus.nimbus.shared.user.WorldRoles;
+import de.mhus.nimbus.world.shared.access.RequireWorldRole;
 import de.mhus.nimbus.world.shared.rest.BaseEditorController;
 import de.mhus.nimbus.world.shared.world.WProgress;
 import de.mhus.nimbus.world.shared.world.WProgressService;
@@ -23,6 +25,7 @@ import java.util.stream.Collectors;
 @RequestMapping("/control/worlds/{worldId}/progress")
 @RequiredArgsConstructor
 @Slf4j
+@RequireWorldRole(WorldRoles.EDITOR)
 public class EProgressController extends BaseEditorController {
 
     private final WProgressService progressService;

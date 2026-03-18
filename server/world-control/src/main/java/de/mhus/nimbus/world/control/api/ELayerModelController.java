@@ -1,6 +1,8 @@
 package de.mhus.nimbus.world.control.api;
 
 import de.mhus.nimbus.shared.types.WorldId;
+import de.mhus.nimbus.shared.user.WorldRoles;
+import de.mhus.nimbus.world.shared.access.RequireWorldRole;
 import de.mhus.nimbus.world.shared.dto.CreateLayerModelRequest;
 import de.mhus.nimbus.world.shared.dto.LayerModelDto;
 import de.mhus.nimbus.world.shared.dto.UpdateLayerModelRequest;
@@ -36,6 +38,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Slf4j
 @Tag(name = "Layer Models", description = "Layer model management for MODEL type layers")
+@RequireWorldRole(WorldRoles.EDITOR)
 public class ELayerModelController extends BaseEditorController {
 
     private final WLayerService layerService;

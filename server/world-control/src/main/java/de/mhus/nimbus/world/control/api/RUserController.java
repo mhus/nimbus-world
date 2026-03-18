@@ -8,6 +8,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import de.mhus.nimbus.shared.user.SectorRoles;
+import de.mhus.nimbus.world.shared.access.RequireSectorRole;
+
 import java.util.List;
 
 /**
@@ -17,6 +20,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/control/users")
 @RequiredArgsConstructor
+@RequireSectorRole(SectorRoles.ADMIN)
 public class RUserController extends BaseEditorController {
 
     private final RUserService userService;

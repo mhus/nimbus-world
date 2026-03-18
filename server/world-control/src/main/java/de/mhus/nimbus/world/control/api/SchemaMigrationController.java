@@ -8,6 +8,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import de.mhus.nimbus.shared.user.SectorRoles;
+import de.mhus.nimbus.world.shared.access.RequireSectorRole;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -24,6 +27,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 @RequestMapping("/control/schema")
 @RequiredArgsConstructor
 @Slf4j
+@RequireSectorRole(SectorRoles.ADMIN)
 public class SchemaMigrationController {
 
     private final MongoRawDocumentService rawDocumentService;

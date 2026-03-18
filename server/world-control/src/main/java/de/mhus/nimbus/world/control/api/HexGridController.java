@@ -3,7 +3,9 @@ package de.mhus.nimbus.world.control.api;
 import de.mhus.nimbus.generated.types.HexGrid;
 import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.generated.types.Vector2Int;
+import de.mhus.nimbus.shared.user.WorldRoles;
 import de.mhus.nimbus.shared.utils.TypeUtil;
+import de.mhus.nimbus.world.shared.access.RequireWorldRole;
 import de.mhus.nimbus.world.shared.rest.BaseEditorController;
 import de.mhus.nimbus.world.shared.util.HexMathUtil;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
@@ -28,6 +30,7 @@ import java.util.Map;
 @RequestMapping("/control/worlds/{worldId}/hexgrid")
 @RequiredArgsConstructor
 @Slf4j
+@RequireWorldRole(WorldRoles.EDITOR)
 public class HexGridController extends BaseEditorController {
 
     private final WHexGridService hexGridService;

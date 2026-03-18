@@ -1,5 +1,7 @@
 package de.mhus.nimbus.world.control.api;
 
+import de.mhus.nimbus.shared.user.WorldRoles;
+import de.mhus.nimbus.world.shared.access.RequireWorldRole;
 import de.mhus.nimbus.world.shared.rest.BaseEditorController;
 import de.mhus.nimbus.world.shared.workflow.StartRecord;
 import de.mhus.nimbus.world.shared.workflow.WWorkflowJournalRecord;
@@ -21,6 +23,7 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/control/worlds/{worldId}/workflows")
 @RequiredArgsConstructor
+@RequireWorldRole(WorldRoles.EDITOR)
 public class WorkflowController extends BaseEditorController {
 
     private final WWorkflowJournalService workflowJournalService;

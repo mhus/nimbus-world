@@ -11,6 +11,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import de.mhus.nimbus.shared.user.SectorRoles;
+import de.mhus.nimbus.world.shared.access.RequireSectorRole;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -24,6 +27,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 @Slf4j
 @Tag(name = "Settings", description = "Global application settings management")
+@RequireSectorRole(SectorRoles.ADMIN)
 public class SettingsController extends BaseEditorController {
 
     private final SSettingsService settingsService;

@@ -14,6 +14,8 @@ import org.springframework.web.bind.annotation.*;
 
 import de.mhus.nimbus.world.shared.world.WEpochMeta;
 
+import de.mhus.nimbus.world.shared.access.RequireRegionMaintainer;
+
 import java.net.URI;
 import java.time.Instant;
 import java.util.List;
@@ -29,6 +31,7 @@ import java.util.Set;
 @RequestMapping("/control/regions/{regionId}/worlds")
 @RequiredArgsConstructor
 @Slf4j
+@RequireRegionMaintainer
 public class WWorldController extends BaseEditorController {
 
     private final WWorldService worldService;

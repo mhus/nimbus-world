@@ -1,8 +1,10 @@
 package de.mhus.nimbus.world.control.api;
 
+import de.mhus.nimbus.world.shared.access.AccessValidator;
 import de.mhus.nimbus.world.shared.rest.BaseEditorController;
 import de.mhus.nimbus.world.shared.world.WAnything;
 import de.mhus.nimbus.world.shared.world.WAnythingService;
+import jakarta.servlet.http.HttpServletRequest;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -37,6 +39,7 @@ import java.util.stream.Collectors;
 public class WAnythingController extends BaseEditorController {
 
     private final WAnythingService anythingService;
+    private final AccessValidator accessValidator;
 
     @PostConstruct
     public void init() {
@@ -93,11 +96,14 @@ public class WAnythingController extends BaseEditorController {
     public ResponseEntity<?> getByWorld(
             @Parameter(description = "World identifier (supports @region:regionId)") @RequestParam String worldId,
             @Parameter(description = "Collection identifier") @RequestParam String collection,
-            @Parameter(description = "Name identifier") @RequestParam String name) {
+            @Parameter(description = "Name identifier") @RequestParam String name,
+            HttpServletRequest request) {
 
         log.debug("GET anything: worldId={}, collection={}, name={}", worldId, collection, name);
 
         if (Strings.isBlank(worldId)) return bad("worldId required");
+        if (!accessValidator.hasEditorAccess(request, worldId))
+            return ResponseEntity.status(403).body(Map.of("error", "Access denied"));
         if (Strings.isBlank(collection)) return bad("collection required");
         if (Strings.isBlank(name)) return bad("name required");
 
@@ -121,11 +127,14 @@ public class WAnythingController extends BaseEditorController {
             @ApiResponse(responseCode = "400", description = "Invalid parameters")
     })
     public ResponseEntity<?> getCollections(
-            @Parameter(description = "World identifier (supports @region:regionId)") @RequestParam String worldId) {
+            @Parameter(description = "World identifier (supports @region:regionId)") @RequestParam String worldId,
+            HttpServletRequest request) {
 
         log.debug("GET collections: worldId={}", worldId);
 
         if (Strings.isBlank(worldId)) return bad("worldId required");
+        if (!accessValidator.hasEditorAccess(request, worldId))
+            return ResponseEntity.status(403).body(Map.of("error", "Access denied"));
 
         List<String> collections = anythingService.findDistinctCollections(worldId);
 
@@ -151,12 +160,15 @@ public class WAnythingController extends BaseEditorController {
             @Parameter(description = "Optional type filter") @RequestParam(required = false) String type,
             @Parameter(description = "Only enabled entities") @RequestParam(defaultValue = "true") boolean enabledOnly,
             @Parameter(description = "Pagination offset") @RequestParam(defaultValue = "0") int offset,
-            @Parameter(description = "Pagination limit") @RequestParam(defaultValue = "50") int limit) {
+            @Parameter(description = "Pagination limit") @RequestParam(defaultValue = "50") int limit,
+            HttpServletRequest request) {
 
         log.debug("LIST anything: worldId={}, collection={}, type={}, enabledOnly={}, offset={}, limit={}",
                 worldId, collection, type, enabledOnly, offset, limit);
 
         if (Strings.isBlank(worldId)) return bad("worldId required");
+        if (!accessValidator.hasEditorAccess(request, worldId))
+            return ResponseEntity.status(403).body(Map.of("error", "Access denied"));
         if (Strings.isBlank(collection)) return bad("collection required");
 
         var validation = validatePagination(offset, limit);
@@ -201,12 +213,14 @@ public class WAnythingController extends BaseEditorController {
             @ApiResponse(responseCode = "400", description = "Invalid request"),
             @ApiResponse(responseCode = "409", description = "Entity already exists")
     })
-    public ResponseEntity<?> create(@RequestBody CreateAnythingRequest request) {
+    public ResponseEntity<?> create(@RequestBody CreateAnythingRequest request, HttpServletRequest httpRequest) {
 
         log.debug("CREATE anything: worldId={}, collection={}, name={}",
                 request.worldId(), request.collection(), request.name());
 
         if (Strings.isBlank(request.worldId())) return bad("worldId required");
+        if (!accessValidator.hasEditorAccess(httpRequest, request.worldId()))
+            return ResponseEntity.status(403).body(Map.of("error", "Access denied"));
         if (Strings.isBlank(request.collection())) return bad("collection required");
         if (Strings.isBlank(request.name())) return bad("name required");
 
@@ -242,11 +256,17 @@ public class WAnythingController extends BaseEditorController {
     })
     public ResponseEntity<?> update(
             @Parameter(description = "Entity ID") @PathVariable String id,
-            @RequestBody UpdateAnythingRequest request) {
+            @RequestBody UpdateAnythingRequest request,
+            HttpServletRequest httpRequest) {
 
         log.debug("UPDATE anything: id={}", id);
 
         if (Strings.isBlank(id)) return bad("id required");
+
+        // Check access via entity's worldId
+        Optional<WAnything> existing = anythingService.findById(id);
+        if (existing.isPresent() && !accessValidator.hasEditorAccess(httpRequest, existing.get().getWorldId()))
+            return ResponseEntity.status(403).body(Map.of("error", "Access denied"));
 
         if (request.title() == null && request.description() == null && request.type() == null &&
                 request.data() == null && request.enabled() == null) {
@@ -293,11 +313,14 @@ public class WAnythingController extends BaseEditorController {
     public ResponseEntity<?> deleteByWorld(
             @Parameter(description = "World identifier (supports @region:regionId)") @RequestParam String worldId,
             @Parameter(description = "Collection identifier") @RequestParam String collection,
-            @Parameter(description = "Name identifier") @RequestParam String name) {
+            @Parameter(description = "Name identifier") @RequestParam String name,
+            HttpServletRequest request) {
 
         log.debug("DELETE anything: worldId={}, collection={}, name={}", worldId, collection, name);
 
         if (Strings.isBlank(worldId)) return bad("worldId required");
+        if (!accessValidator.hasEditorAccess(request, worldId))
+            return ResponseEntity.status(403).body(Map.of("error", "Access denied"));
         if (Strings.isBlank(collection)) return bad("collection required");
         if (Strings.isBlank(name)) return bad("name required");
 

@@ -213,17 +213,17 @@ public class WWorld implements Identifiable {
         if (publicFlag) return true;
         if (player.contains("*")) return true;
         if (userId == null) return false;
-        return player.contains(userId.getId());
+        return player.contains(userId.getId()) || owner.contains(userId.getId());
     }
 
     public boolean isEditorAllowed(UserId userId) {
         if (userId == null) return false;
-        return editor.contains(userId.getId());
+        return editor.contains(userId.getId()) || owner.contains(userId.getId());
     }
 
     public boolean isSupporterAllowed(UserId userId) {
         if (userId == null) return false;
-        return supporter.contains(userId.getId());
+        return supporter.contains(userId.getId()) || owner.contains(userId.getId());
     }
 
     public boolean isOwnerAllowed(UserId userId) {

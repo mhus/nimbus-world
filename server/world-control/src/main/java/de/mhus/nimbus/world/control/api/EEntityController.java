@@ -2,6 +2,8 @@ package de.mhus.nimbus.world.control.api;
 
 import de.mhus.nimbus.generated.types.Entity;
 import de.mhus.nimbus.shared.types.WorldId;
+import de.mhus.nimbus.shared.user.WorldRoles;
+import de.mhus.nimbus.world.shared.access.RequireWorldRole;
 import de.mhus.nimbus.world.shared.rest.BaseEditorController;
 import de.mhus.nimbus.world.shared.world.EntitySchedulePhase;
 import de.mhus.nimbus.world.shared.world.WEntity;
@@ -36,6 +38,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Slf4j
 @Tag(name = "Entities", description = "Entity instance management")
+@RequireWorldRole(WorldRoles.EDITOR)
 public class EEntityController extends BaseEditorController {
 
     private final WEntityService entityService;

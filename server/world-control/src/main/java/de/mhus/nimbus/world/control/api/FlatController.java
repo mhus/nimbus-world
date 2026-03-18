@@ -1,8 +1,10 @@
 package de.mhus.nimbus.world.control.api;
 
+import de.mhus.nimbus.world.shared.access.AccessValidator;
 import de.mhus.nimbus.world.shared.generator.WFlat;
 import de.mhus.nimbus.world.shared.generator.WFlatService;
 import de.mhus.nimbus.world.shared.rest.BaseEditorController;
+import jakarta.servlet.http.HttpServletRequest;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -36,6 +38,17 @@ import java.util.stream.Collectors;
 public class FlatController extends BaseEditorController {
 
     private final WFlatService flatService;
+    private final AccessValidator accessValidator;
+
+    /**
+     * Check editor access for a flat by its ID. Returns 403 response if denied, null if OK.
+     */
+    private ResponseEntity<?> checkFlatAccess(String id, HttpServletRequest request) {
+        var flat = flatService.findById(id);
+        if (flat.isPresent() && !accessValidator.hasEditorAccess(request, flat.get().getWorldId()))
+            return ResponseEntity.status(403).body(Map.of("error", "Access denied"));
+        return null;
+    }
 
     // DTOs
     public record FlatListDto(
@@ -123,9 +136,13 @@ public class FlatController extends BaseEditorController {
             @ApiResponse(responseCode = "200", description = "Success"),
             @ApiResponse(responseCode = "400", description = "Missing worldId parameter")
     })
-    public ResponseEntity<List<FlatListDto>> listFlats(
+    public ResponseEntity<?> listFlats(
             @Parameter(description = "World ID", required = true)
-            @RequestParam String worldId) {
+            @RequestParam String worldId,
+            HttpServletRequest request) {
+
+        if (!accessValidator.hasEditorAccess(request, worldId))
+            return ResponseEntity.status(403).build(); // generic type inferred
 
         log.debug("Listing flats for worldId: {}", worldId);
 
@@ -163,10 +180,11 @@ public class FlatController extends BaseEditorController {
             @ApiResponse(responseCode = "200", description = "Success"),
             @ApiResponse(responseCode = "404", description = "Flat not found")
     })
-    public ResponseEntity<FlatDetailDto> getFlat(
+    public ResponseEntity<?> getFlat(
             @Parameter(description = "Flat ID", required = true)
-            @PathVariable String id) {
+            @PathVariable String id, HttpServletRequest request) {
 
+        var ac = checkFlatAccess(id, request); if (ac != null) return ac;
         log.debug("Getting flat details: id={}", id);
 
         Optional<WFlat> flatOpt = flatService.findById(id);
@@ -210,11 +228,12 @@ public class FlatController extends BaseEditorController {
             @ApiResponse(responseCode = "200", description = "Success"),
             @ApiResponse(responseCode = "404", description = "Flat not found")
     })
-    public ResponseEntity<FlatDetailDto> updateFlatMetadata(
+    public ResponseEntity<?> updateFlatMetadata(
             @Parameter(description = "Flat ID", required = true)
             @PathVariable String id,
-            @RequestBody UpdateFlatMetadataRequest request) {
+            @RequestBody UpdateFlatMetadataRequest request, HttpServletRequest httpRequest) {
 
+        var ac = checkFlatAccess(id, httpRequest); if (ac != null) return ac;
         log.info("Updating flat metadata: id={}", id);
 
         // Load flat
@@ -271,10 +290,11 @@ public class FlatController extends BaseEditorController {
             @ApiResponse(responseCode = "204", description = "Deleted successfully"),
             @ApiResponse(responseCode = "404", description = "Flat not found")
     })
-    public ResponseEntity<Void> deleteFlat(
+    public ResponseEntity<?> deleteFlat(
             @Parameter(description = "Flat ID", required = true)
-            @PathVariable String id) {
+            @PathVariable String id, HttpServletRequest request) {
 
+        var ac = checkFlatAccess(id, request); if (ac != null) return ac;
         log.info("Deleting flat: id={}", id);
 
         // Check if exists
@@ -300,10 +320,11 @@ public class FlatController extends BaseEditorController {
             @ApiResponse(responseCode = "200", description = "Success"),
             @ApiResponse(responseCode = "404", description = "Flat not found")
     })
-    public ResponseEntity<byte[]> getHeightMap(
+    public ResponseEntity<?> getHeightMap(
             @Parameter(description = "Flat ID", required = true)
-            @PathVariable String id) {
+            @PathVariable String id, HttpServletRequest request) {
 
+        var ac = checkFlatAccess(id, request); if (ac != null) return ac;
         log.debug("Generating height map for flat: id={}", id);
 
         // Load flat
@@ -340,10 +361,11 @@ public class FlatController extends BaseEditorController {
             @ApiResponse(responseCode = "200", description = "Success"),
             @ApiResponse(responseCode = "404", description = "Flat not found")
     })
-    public ResponseEntity<byte[]> getBlockMap(
+    public ResponseEntity<?> getBlockMap(
             @Parameter(description = "Flat ID", required = true)
-            @PathVariable String id) {
+            @PathVariable String id, HttpServletRequest request) {
 
+        var ac = checkFlatAccess(id, request); if (ac != null) return ac;
         log.debug("Generating block map for flat: id={}", id);
 
         // Load flat
@@ -381,10 +403,11 @@ public class FlatController extends BaseEditorController {
             @ApiResponse(responseCode = "200", description = "Success"),
             @ApiResponse(responseCode = "404", description = "Flat not found")
     })
-    public ResponseEntity<byte[]> exportFlat(
+    public ResponseEntity<?> exportFlat(
             @Parameter(description = "Flat ID", required = true)
-            @PathVariable String id) {
+            @PathVariable String id, HttpServletRequest request) {
 
+        var ac = checkFlatAccess(id, request); if (ac != null) return ac;
         log.info("Exporting flat data: id={}", id);
 
         try {
@@ -477,12 +500,13 @@ public class FlatController extends BaseEditorController {
             @ApiResponse(responseCode = "404", description = "Flat not found"),
             @ApiResponse(responseCode = "400", description = "Invalid file or data")
     })
-    public ResponseEntity<FlatDetailDto> importFlat(
+    public ResponseEntity<?> importFlat(
             @Parameter(description = "Flat ID", required = true)
             @PathVariable String id,
             @Parameter(description = "JSON file to import", required = true)
-            @RequestParam("file") MultipartFile file) {
+            @RequestParam("file") MultipartFile file, HttpServletRequest request) {
 
+        var ac = checkFlatAccess(id, request); if (ac != null) return ac;
         log.info("Importing flat data: id={}, filename={}", id, file.getOriginalFilename());
 
         try {
@@ -663,10 +687,11 @@ public class FlatController extends BaseEditorController {
             @ApiResponse(responseCode = "200", description = "Success"),
             @ApiResponse(responseCode = "404", description = "Flat not found")
     })
-    public ResponseEntity<List<MaterialDefinitionDto>> listMaterials(
+    public ResponseEntity<?> listMaterials(
             @Parameter(description = "Flat ID", required = true)
-            @PathVariable String id) {
+            @PathVariable String id, HttpServletRequest request) {
 
+        var ac = checkFlatAccess(id, request); if (ac != null) return ac;
         log.debug("Listing materials for flat: id={}", id);
 
         Optional<WFlat> flatOpt = flatService.findById(id);
@@ -721,11 +746,12 @@ public class FlatController extends BaseEditorController {
             @ApiResponse(responseCode = "200", description = "Success"),
             @ApiResponse(responseCode = "404", description = "Flat or material not found")
     })
-    public ResponseEntity<MaterialDefinitionDto> getMaterial(
+    public ResponseEntity<?> getMaterial(
             @Parameter(description = "Flat ID", required = true)
             @PathVariable String id,
             @Parameter(description = "Material ID (1-255)", required = true)
-            @PathVariable int materialId) {
+            @PathVariable int materialId, HttpServletRequest request) {
+        var ac = checkFlatAccess(id, request); if (ac != null) return ac;
 
         log.debug("Getting material: flatId={}, materialId={}", id, materialId);
 
@@ -779,12 +805,13 @@ public class FlatController extends BaseEditorController {
             @ApiResponse(responseCode = "404", description = "Flat not found"),
             @ApiResponse(responseCode = "400", description = "Invalid material data")
     })
-    public ResponseEntity<MaterialDefinitionDto> updateMaterial(
+    public ResponseEntity<?> updateMaterial(
             @Parameter(description = "Flat ID", required = true)
             @PathVariable String id,
             @Parameter(description = "Material ID (1-254)", required = true)
             @PathVariable int materialId,
-            @RequestBody UpdateMaterialRequest request) {
+            @RequestBody UpdateMaterialRequest request, HttpServletRequest httpRequest) {
+        var ac = checkFlatAccess(id, httpRequest); if (ac != null) return ac;
 
         log.info("Updating material: flatId={}, materialId={}", id, materialId);
 
@@ -880,12 +907,13 @@ public class FlatController extends BaseEditorController {
             @ApiResponse(responseCode = "404", description = "Flat not found"),
             @ApiResponse(responseCode = "400", description = "Cannot delete protected material")
     })
-    public ResponseEntity<Void> deleteMaterial(
+    public ResponseEntity<?> deleteMaterial(
             @Parameter(description = "Flat ID", required = true)
             @PathVariable String id,
             @Parameter(description = "Material ID (1-254)", required = true)
-            @PathVariable int materialId) {
+            @PathVariable int materialId, HttpServletRequest request) {
 
+        var ac = checkFlatAccess(id, request); if (ac != null) return ac;
         log.info("Deleting material: flatId={}, materialId={}", id, materialId);
 
         // Cannot delete material 0 (protected)
@@ -932,11 +960,12 @@ public class FlatController extends BaseEditorController {
             @ApiResponse(responseCode = "404", description = "Flat not found"),
             @ApiResponse(responseCode = "400", description = "Invalid palette title")
     })
-    public ResponseEntity<List<MaterialDefinitionDto>> applyPalette(
+    public ResponseEntity<?> applyPalette(
             @Parameter(description = "Flat ID", required = true)
             @PathVariable String id,
-            @RequestBody ApplyPaletteRequest request) {
+            @RequestBody ApplyPaletteRequest request, HttpServletRequest httpRequest) {
 
+        var ac = checkFlatAccess(id, httpRequest); if (ac != null) return ac;
         log.info("Applying palette: flatId={}, palette={}", id, request.paletteName());
 
         String paletteName = request.paletteName().toLowerCase();

@@ -1,6 +1,8 @@
 package de.mhus.nimbus.world.control.api;
 
 import de.mhus.nimbus.shared.types.WorldId;
+import de.mhus.nimbus.shared.user.WorldRoles;
+import de.mhus.nimbus.world.shared.access.RequireWorldRole;
 import de.mhus.nimbus.world.shared.rest.BaseEditorController;
 import de.mhus.nimbus.world.shared.world.SAssetService;
 import de.mhus.nimbus.world.shared.world.AssetMetadata;
@@ -28,6 +30,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 @Slf4j
 @Tag(name = "WorldAssetLicense", description = "Asset license management")
+@RequireWorldRole(WorldRoles.EDITOR)
 public class WorldAssetLicenseController extends BaseEditorController {
 
     private final SAssetService assetService;

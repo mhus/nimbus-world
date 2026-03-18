@@ -4,9 +4,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.control.service.sync.ResourceSyncService;
 import de.mhus.nimbus.world.shared.dto.ExternalResourceDTO;
+import de.mhus.nimbus.world.shared.access.AccessValidator;
 import de.mhus.nimbus.world.shared.rest.BaseEditorController;
 import de.mhus.nimbus.world.shared.world.WAnything;
 import de.mhus.nimbus.world.shared.world.WAnythingService;
+import jakarta.servlet.http.HttpServletRequest;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +34,13 @@ public class ExternalResourceController extends BaseEditorController {
     private final WAnythingService anythingService;
     private final ResourceSyncService syncService;
     private final ObjectMapper objectMapper;
+    private final AccessValidator accessValidator;
+
+    private ResponseEntity<?> checkWorldAccess(String worldId, HttpServletRequest request) {
+        if (!accessValidator.hasEditorAccess(request, worldId))
+            return ResponseEntity.status(403).body(Map.of("error", "Access denied"));
+        return null;
+    }
 
     // ==================== DTOs ====================
 
@@ -83,7 +92,7 @@ public class ExternalResourceController extends BaseEditorController {
 
     @PostMapping
     @Operation(summary = "Create external resource definition")
-    public ResponseEntity<?> create(@RequestBody CreateResourceRequest request) {
+    public ResponseEntity<?> create(@RequestBody CreateResourceRequest request, HttpServletRequest httpRequest) {
         if (Strings.isBlank(request.name())) {
             return bad("Name is required");
         }
@@ -93,6 +102,8 @@ public class ExternalResourceController extends BaseEditorController {
         if (Strings.isBlank(request.worldId())) {
             return bad("World ID is required");
         }
+        var accessCheck = checkWorldAccess(request.worldId(), httpRequest);
+        if (accessCheck != null) return accessCheck;
 
         // Validate world ID
         try {
@@ -136,10 +147,12 @@ public class ExternalResourceController extends BaseEditorController {
 
     @GetMapping
     @Operation(summary = "List all external resource definitions")
-    public ResponseEntity<?> list(@RequestParam String worldId) {
+    public ResponseEntity<?> list(@RequestParam String worldId, HttpServletRequest request) {
         if (Strings.isBlank(worldId)) {
             return bad("World ID is required");
         }
+        var accessCheck = checkWorldAccess(worldId, request);
+        if (accessCheck != null) return accessCheck;
 
         List<WAnything> entities = anythingService.findByWorldIdAndCollection(worldId, COLLECTION_NAME);
 
@@ -152,10 +165,12 @@ public class ExternalResourceController extends BaseEditorController {
 
     @GetMapping("/{name}")
     @Operation(summary = "Get external resource definition")
-    public ResponseEntity<?> get(@RequestParam String worldId, @PathVariable String name) {
+    public ResponseEntity<?> get(@RequestParam String worldId, @PathVariable String name, HttpServletRequest request) {
         if (Strings.isBlank(worldId)) {
             return bad("World ID is required");
         }
+        var accessCheck = checkWorldAccess(worldId, request);
+        if (accessCheck != null) return accessCheck;
 
         var entity = anythingService.findByWorldIdAndCollectionAndName(worldId, COLLECTION_NAME, name);
         if (entity.isEmpty()) {
@@ -169,10 +184,13 @@ public class ExternalResourceController extends BaseEditorController {
     @Operation(summary = "Update external resource definition")
     public ResponseEntity<?> update(@RequestParam String worldId,
                                     @PathVariable String name,
-                                    @RequestBody UpdateResourceRequest request) {
+                                    @RequestBody UpdateResourceRequest request,
+                                    HttpServletRequest httpRequest) {
         if (Strings.isBlank(worldId)) {
             return bad("World ID is required");
         }
+        var accessCheck = checkWorldAccess(worldId, httpRequest);
+        if (accessCheck != null) return accessCheck;
 
         var entity = anythingService.findByWorldIdAndCollectionAndName(worldId, COLLECTION_NAME, name);
         if (entity.isEmpty()) {
@@ -205,10 +223,12 @@ public class ExternalResourceController extends BaseEditorController {
 
     @DeleteMapping("/{name}")
     @Operation(summary = "Delete external resource definition")
-    public ResponseEntity<?> delete(@RequestParam String worldId, @PathVariable String name) {
+    public ResponseEntity<?> delete(@RequestParam String worldId, @PathVariable String name, HttpServletRequest request) {
         if (Strings.isBlank(worldId)) {
             return bad("World ID is required");
         }
+        var accessCheck = checkWorldAccess(worldId, request);
+        if (accessCheck != null) return accessCheck;
 
         var entity = anythingService.findByWorldIdAndCollectionAndName(worldId, COLLECTION_NAME, name);
         if (entity.isEmpty()) {
@@ -226,10 +246,13 @@ public class ExternalResourceController extends BaseEditorController {
     public ResponseEntity<?> export(@RequestParam String worldId,
                                     @PathVariable String name,
                                     @RequestParam(defaultValue = "false") boolean force,
-                                    @RequestParam(defaultValue = "false") boolean remove) {
+                                    @RequestParam(defaultValue = "false") boolean remove,
+                                    HttpServletRequest request) {
         if (Strings.isBlank(worldId)) {
             return bad("World ID is required");
         }
+        var accessCheck = checkWorldAccess(worldId, request);
+        if (accessCheck != null) return accessCheck;
 
         // Load resource definition
         var entity = anythingService.findByWorldIdAndCollectionAndName(worldId, COLLECTION_NAME, name);
@@ -277,10 +300,13 @@ public class ExternalResourceController extends BaseEditorController {
     public ResponseEntity<?> importData(@RequestParam String worldId,
                                        @PathVariable String name,
                                        @RequestParam(defaultValue = "false") boolean force,
-                                       @RequestParam(defaultValue = "false") boolean remove) {
+                                       @RequestParam(defaultValue = "false") boolean remove,
+                                       HttpServletRequest request) {
         if (Strings.isBlank(worldId)) {
             return bad("World ID is required");
         }
+        var accessCheck = checkWorldAccess(worldId, request);
+        if (accessCheck != null) return accessCheck;
 
         // Load resource definition
         var entity = anythingService.findByWorldIdAndCollectionAndName(worldId, COLLECTION_NAME, name);

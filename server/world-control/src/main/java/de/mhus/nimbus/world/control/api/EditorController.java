@@ -4,7 +4,9 @@ import de.mhus.nimbus.generated.types.Block;
 import de.mhus.nimbus.generated.types.EditAction;
 import de.mhus.nimbus.shared.engine.EngineMapper;
 import de.mhus.nimbus.shared.types.WorldId;
+import de.mhus.nimbus.shared.user.WorldRoles;
 import de.mhus.nimbus.world.control.service.EditService;
+import de.mhus.nimbus.world.shared.access.RequireWorldRole;
 import de.mhus.nimbus.world.shared.client.WorldClientService;
 import de.mhus.nimbus.world.shared.commands.CommandContext;
 import de.mhus.nimbus.world.shared.edit.BlockUpdateService;
@@ -32,12 +34,14 @@ import java.util.Optional;
 /**
  * Editor REST API controller.
  * Manages edit mode configuration and layer selection.
+ * Only accessible by users with EDITOR role on the world.
  */
 @RestController
 @RequestMapping("/control/editor")
 @RequiredArgsConstructor
 @Slf4j
 @Tag(name = "Editor", description = "Edit mode and layer editing")
+@RequireWorldRole(WorldRoles.EDITOR)
 public class EditorController extends BaseEditorController {
 
     private final EditService editService;

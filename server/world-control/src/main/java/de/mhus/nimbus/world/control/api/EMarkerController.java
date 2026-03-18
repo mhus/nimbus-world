@@ -1,6 +1,8 @@
 package de.mhus.nimbus.world.control.api;
 
 import de.mhus.nimbus.shared.types.WorldId;
+import de.mhus.nimbus.shared.user.WorldRoles;
+import de.mhus.nimbus.world.shared.access.RequireWorldRole;
 import de.mhus.nimbus.world.control.service.EditService;
 import de.mhus.nimbus.world.shared.rest.BaseEditorController;
 import io.swagger.v3.oas.annotations.Operation;
@@ -24,6 +26,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 @Slf4j
 @Tag(name = "Marker", description = "Block marker operations for edit mode")
+@RequireWorldRole(WorldRoles.EDITOR)
 public class EMarkerController extends BaseEditorController {
 
     private final EditService editService;

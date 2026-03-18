@@ -25,6 +25,11 @@ public class WAnythingService {
     private final WAnythingRepository repository;
     private final MongoTemplate mongoTemplate;
 
+    @Transactional(readOnly = true)
+    public Optional<WAnything> findById(String id) {
+        return repository.findById(id);
+    }
+
     /**
      * Find single entity by worldId, collection, and name.
      * If multiple entities exist (data inconsistency), returns the newest one and logs a warning.

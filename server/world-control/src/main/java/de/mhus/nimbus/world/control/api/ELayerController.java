@@ -2,6 +2,8 @@ package de.mhus.nimbus.world.control.api;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.shared.types.WorldId;
+import de.mhus.nimbus.shared.user.WorldRoles;
+import de.mhus.nimbus.world.shared.access.RequireWorldRole;
 import de.mhus.nimbus.world.control.service.LayerModelImporter;
 import de.mhus.nimbus.world.shared.dto.CreateLayerRequest;
 import de.mhus.nimbus.world.shared.dto.ImportLayerModelRequest;
@@ -40,6 +42,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Slf4j
 @Tag(name = "Layers", description = "Layer management for world content organization")
+@RequireWorldRole(WorldRoles.EDITOR)
 public class ELayerController extends BaseEditorController {
 
     private final WLayerService layerService;

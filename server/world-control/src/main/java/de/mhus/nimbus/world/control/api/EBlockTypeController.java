@@ -4,6 +4,8 @@ import de.mhus.nimbus.generated.types.BlockStatus;
 import de.mhus.nimbus.generated.types.BlockType;
 import de.mhus.nimbus.generated.types.BlockTypeType;
 import de.mhus.nimbus.shared.types.WorldId;
+import de.mhus.nimbus.shared.user.WorldRoles;
+import de.mhus.nimbus.world.shared.access.RequireWorldRole;
 import de.mhus.nimbus.world.shared.rest.BaseEditorController;
 import de.mhus.nimbus.world.shared.world.BlockUtil;
 import de.mhus.nimbus.world.shared.world.WBlockType;
@@ -41,6 +43,7 @@ import static de.mhus.nimbus.world.shared.world.BlockUtil.extractCollectionFromB
 @RequiredArgsConstructor
 @Slf4j
 @Tag(name = "BlockTypes", description = "BlockType template management")
+@RequireWorldRole(WorldRoles.EDITOR)
 public class EBlockTypeController extends BaseEditorController {
 
     private final WBlockTypeService blockTypeService;

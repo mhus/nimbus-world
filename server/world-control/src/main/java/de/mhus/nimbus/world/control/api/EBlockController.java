@@ -1,6 +1,8 @@
 package de.mhus.nimbus.world.control.api;
 
 import de.mhus.nimbus.shared.types.WorldId;
+import de.mhus.nimbus.shared.user.WorldRoles;
+import de.mhus.nimbus.world.shared.access.RequireWorldRole;
 import de.mhus.nimbus.world.shared.dto.BlockOriginDto;
 import de.mhus.nimbus.world.shared.layer.WLayerService;
 import de.mhus.nimbus.world.shared.rest.BaseEditorController;
@@ -25,6 +27,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 @Slf4j
 @Tag(name = "Blocks", description = "Block inspection and debugging")
+@RequireWorldRole(WorldRoles.EDITOR)
 public class EBlockController extends BaseEditorController {
 
     private final WLayerService layerService;

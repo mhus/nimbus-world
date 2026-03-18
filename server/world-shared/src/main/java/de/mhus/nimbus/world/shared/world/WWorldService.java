@@ -1,17 +1,24 @@
 package de.mhus.nimbus.world.shared.world;
 
 import de.mhus.nimbus.generated.types.WorldInfo;
+import de.mhus.nimbus.shared.service.SSettingsService;
+import de.mhus.nimbus.shared.settings.SettingString;
 import de.mhus.nimbus.shared.types.WorldId;
+import de.mhus.nimbus.world.shared.access.EditorWorldAccessService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -22,6 +29,20 @@ public class WWorldService {
     private final WWorldRepository repository;
     private final WWorldCollectionRepository worldCollectionRepository;
     private final WWorldInstanceService instanceService;
+    private final SSettingsService settingsService;
+
+    @Autowired
+    @Lazy
+    private EditorWorldAccessService editorWorldAccessService;
+
+    private SettingString adminUsername;
+
+    private String getAdminUsername() {
+        if (adminUsername == null) {
+            adminUsername = settingsService.getString("control.admin.create.username", "mhus");
+        }
+        return adminUsername.get();
+    }
 
     @Transactional(readOnly = true)
     public Optional<WWorld> getByWorldId(WorldId worldId) {
@@ -382,10 +403,18 @@ public class WWorldService {
         // Initialize Era 1 with current time
         initializeEra(info);
 
+        // Ensure admin is always owner of new worlds
+        Set<String> owners = new HashSet<>();
+        String admin = getAdminUsername();
+        if (admin != null && !admin.isBlank()) {
+            owners.add(admin);
+        }
+
         WWorld entity = WWorld.builder()
                 .worldId(worldId.getId())
                 .regionId(worldId.getRegionId())
                 .publicData(info)
+                .owner(owners)
                 .epoches(List.of(
                         WEpochMeta.builder()
                                 .epoch(0)
@@ -396,7 +425,8 @@ public class WWorldService {
                 .build();
         entity.touchForCreate();
         repository.save(entity);
-        log.debug("WWorld angelegt: {} (Era 1 started, Epoch 0 created)", worldId);
+        editorWorldAccessService.evictAll();
+        log.debug("WWorld angelegt: {} (Era 1 started, Epoch 0 created, admin owner: {})", worldId, admin);
         return entity;
     }
 
@@ -407,6 +437,7 @@ public class WWorldService {
             updater.accept(existing);
             existing.touchForUpdate();
             repository.save(existing);
+            editorWorldAccessService.evictAll();
             log.debug("WWorld aktualisiert: {}", worldId);
             return existing;
         });
@@ -416,6 +447,7 @@ public class WWorldService {
     public WWorld save(WWorld world) {
         world.touchForUpdate();
         WWorld saved = repository.save(world);
+        editorWorldAccessService.evictAll();
         log.debug("WWorld gespeichert: {}", world.getWorldId());
         return saved;
     }
@@ -424,6 +456,7 @@ public class WWorldService {
     public boolean deleteWorld(WorldId worldId) {
         return repository.findByWorldId(worldId.getId()).map(e -> {
             repository.delete(e);
+            editorWorldAccessService.evictAll();
             log.debug("WWorld geloescht: {}", worldId);
             return true;
         }).orElse(false);

@@ -2,7 +2,9 @@ package de.mhus.nimbus.world.control.api;
 
 import de.mhus.nimbus.generated.types.ItemBlockRef;
 import de.mhus.nimbus.shared.types.WorldId;
+import de.mhus.nimbus.shared.user.WorldRoles;
 import de.mhus.nimbus.shared.utils.TypeUtil;
+import de.mhus.nimbus.world.shared.access.RequireWorldRole;
 import de.mhus.nimbus.world.shared.rest.BaseEditorController;
 import de.mhus.nimbus.world.shared.world.BlockUtil;
 import de.mhus.nimbus.world.shared.world.WItemPosition;
@@ -38,6 +40,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Slf4j
 @Tag(name = "ItemPositions", description = "Item position management (placed items in world)")
+@RequireWorldRole(WorldRoles.EDITOR)
 public class EItemPositionController extends BaseEditorController {
 
     private final WItemPositionService itemRegistryService;

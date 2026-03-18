@@ -20,6 +20,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import de.mhus.nimbus.shared.user.SectorRoles;
+import de.mhus.nimbus.world.shared.access.RequireSectorRole;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -31,6 +34,7 @@ import java.util.Optional;
 @RestController
 @RequestMapping("/control/key")
 @Validated
+@RequireSectorRole(SectorRoles.ADMIN)
 public class SharedKeyController {
 
     private final SKeyRepository repository;
