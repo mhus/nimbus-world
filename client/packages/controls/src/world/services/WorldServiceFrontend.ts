@@ -108,6 +108,7 @@ export interface World {
   supporter: string[];
   player: string[];
   publicFlag: boolean;
+  universeSync: boolean;
   epoches: { epoch: number; name: string; description: string }[];
 }
 

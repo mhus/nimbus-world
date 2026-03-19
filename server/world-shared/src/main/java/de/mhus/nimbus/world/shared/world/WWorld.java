@@ -60,10 +60,15 @@ public class WWorld implements Identifiable {
     @Builder.Default
     private Set<String> supporter = Set.of(); // liste von userIds
     @Builder.Default
-    private Set<String> player = Set.of(); // liste von userIds oder ['*'] für alle
+    private Set<String> player = Set.of(); // liste von userIds
 
+    /** If true, any player can join this world (no player list check). */
     @Builder.Default
-    private boolean publicFlag = false; // ob Welt öffentlich zugänglich ist
+    private boolean publicFlag = false;
+
+    /** If true, this world is synced to the universe for discovery. */
+    @Builder.Default
+    private boolean universeSync = false;
 
     /**
      * Whether this world can create instances.
@@ -211,7 +216,6 @@ public class WWorld implements Identifiable {
 
     public boolean isPlayerAllowed(UserId userId) {
         if (publicFlag) return true;
-        if (player.contains("*")) return true;
         if (userId == null) return false;
         return player.contains(userId.getId()) || owner.contains(userId.getId());
     }

@@ -56,6 +56,8 @@ public class WWorldController extends BaseEditorController {
             String seaBlockType,
             Long noiseSeed,
             Double noiseFrequency,
+            Boolean publicFlag,
+            Boolean universeSync,
             List<WEpochMeta> epoches
     ) {}
 
@@ -81,6 +83,7 @@ public class WWorldController extends BaseEditorController {
             Set<String> supporter,
             Set<String> player,
             boolean publicFlag,
+            boolean universeSync,
             List<WEpochMeta> epoches
     ) {}
 
@@ -106,6 +109,7 @@ public class WWorldController extends BaseEditorController {
             Set<String> supporter,
             Set<String> player,
             boolean publicFlag,
+            boolean universeSync,
             List<WEpochMeta> epoches,
             String jobId
     ) {}
@@ -139,6 +143,7 @@ public class WWorldController extends BaseEditorController {
                 world.getSupporter(),
                 world.getPlayer(),
                 world.isPublicFlag(),
+                world.isUniverseSync(),
                 world.getEpoches()
         );
     }
@@ -169,6 +174,7 @@ public class WWorldController extends BaseEditorController {
                 Set.of(),  // empty supporter set
                 Set.of(),  // empty player set
                 false,  // not public
+                false,  // no universe sync
                 List.of()  // empty epoches
         );
     }
@@ -403,6 +409,7 @@ public class WWorldController extends BaseEditorController {
                     worldResponse.supporter(),
                     worldResponse.player(),
                     worldResponse.publicFlag(),
+                    worldResponse.universeSync(),
                     worldResponse.epoches(),
                     job.getId()
             );
@@ -484,6 +491,8 @@ public class WWorldController extends BaseEditorController {
             if (request.seaBlockType() != null) existing.setSeaBlockType(request.seaBlockType());
             if (request.noiseSeed() != null) existing.setNoiseSeed(request.noiseSeed());
             if (request.noiseFrequency() != null) existing.setNoiseFrequency(request.noiseFrequency());
+            if (request.publicFlag() != null) existing.setPublicFlag(request.publicFlag());
+            if (request.universeSync() != null) existing.setUniverseSync(request.universeSync());
             if (request.epoches() != null) existing.setEpoches(request.epoches());
 
             WWorld updated = worldService.save(existing);

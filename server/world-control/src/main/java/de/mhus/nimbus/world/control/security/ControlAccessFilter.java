@@ -1,13 +1,24 @@
 package de.mhus.nimbus.world.control.security;
 
 import de.mhus.nimbus.shared.security.JwtService;
+import de.mhus.nimbus.shared.security.KeyIntent;
+import de.mhus.nimbus.shared.security.KeyType;
+import de.mhus.nimbus.shared.service.SSettingsService;
 import de.mhus.nimbus.world.shared.access.AccessFilterBase;
 import de.mhus.nimbus.world.shared.access.AccessSettings;
 import de.mhus.nimbus.world.shared.region.RegionSettings;
 import de.mhus.nimbus.world.shared.session.WSessionService;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jws;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
+import java.util.Optional;
 import java.util.regex.Pattern;
 
 /**
@@ -26,6 +37,8 @@ import java.util.regex.Pattern;
 public class ControlAccessFilter extends AccessFilterBase {
 
     private final AccessSettings accessProperties;
+    private final JwtService jwtService;
+    private final SSettingsService settingsService;
 
     /**
      * Pattern for public asset paths: /control/worlds/{worldId}/assets/{p|rp}:**
@@ -38,9 +51,42 @@ public class ControlAccessFilter extends AccessFilterBase {
             "^/control/worlds/[^/]+/assets/(p|rp):.*$"
     );
 
-    public ControlAccessFilter(JwtService jwtService, WSessionService sessionService, AccessSettings accessProperties, RegionSettings regionProperties) {
+    public ControlAccessFilter(JwtService jwtService, WSessionService sessionService, AccessSettings accessProperties, RegionSettings regionProperties, SSettingsService settingsService) {
         super(jwtService, sessionService, regionProperties);
         this.accessProperties = accessProperties;
+        this.jwtService = jwtService;
+        this.settingsService = settingsService;
+    }
+
+    @Override
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
+        // Universe-to-sector communication: validate Universe Bearer token separately
+        if (request.getRequestURI().startsWith("/control/universe/") && !"OPTIONS".equals(request.getMethod())) {
+            if (validateUniverseBearer(request)) {
+                filterChain.doFilter(request, response);
+                return;
+            }
+            // Fall through to normal auth (allows admin UI access via session cookie)
+        }
+        super.doFilterInternal(request, response, filterChain);
+    }
+
+    private boolean validateUniverseBearer(HttpServletRequest request) {
+        String auth = request.getHeader("Authorization");
+        if (auth == null || !auth.startsWith("Bearer ")) return false;
+        String token = auth.substring(7).trim();
+        String sectorName = settingsService.getStringValue("universe.name", "");
+        if (sectorName.isBlank()) return false;
+        KeyIntent universeIntent = KeyIntent.of(sectorName, KeyIntent.MAIN_JWT_TOKEN);
+        Optional<Jws<Claims>> result = jwtService.validateTokenWithPublicKey(token, KeyType.UNIVERSE, universeIntent);
+        if (result.isPresent()) {
+            log.info("Universe bearer token validated for sector '{}'", sectorName);
+            request.setAttribute(AccessFilterBase.ATTR_IS_AUTHENTICATED, true);
+            request.setAttribute(AccessFilterBase.ATTR_IS_AGENT, true);
+            request.setAttribute(AccessFilterBase.ATTR_USER_ID, "universe:" + sectorName);
+            return true;
+        }
+        return false;
     }
 
     @Override

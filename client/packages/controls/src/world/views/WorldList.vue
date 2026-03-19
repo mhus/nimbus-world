@@ -90,6 +90,12 @@
                 >
                   Public
                 </span>
+                <span
+                  v-if="world.universeSync"
+                  class="badge badge-sm badge-accent"
+                >
+                  Universe
+                </span>
               </div>
               <div v-if="world.description" class="text-xs text-base-content/70 line-clamp-2">
                 {{ world.description }}

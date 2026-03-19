@@ -142,7 +142,22 @@
                 />
               </label>
               <label class="label">
-                <span class="label-text-alt">Allow public access to this world</span>
+                <span class="label-text-alt">Allow any player to join this world</span>
+              </label>
+            </div>
+
+            <!-- Universe Sync Flag -->
+            <div class="form-control">
+              <label class="label cursor-pointer justify-start gap-4">
+                <span class="label-text font-medium">Universe Sync</span>
+                <input
+                  v-model="formData.universeSync"
+                  type="checkbox"
+                  class="toggle toggle-accent"
+                />
+              </label>
+              <label class="label">
+                <span class="label-text-alt">Sync this world to the universe for discovery</span>
               </label>
             </div>
 
@@ -1724,6 +1739,7 @@ const formData = ref({
   description: '',
   enabled: true,
   publicFlag: false,
+  universeSync: false,
   instanceable: false,
   owner: [] as string[],
   editor: [] as string[],
@@ -1835,6 +1851,7 @@ const loadWorld = () => {
       description: '',
       enabled: true,
       publicFlag: false,
+      universeSync: false,
       instanceable: false,
       owner: [],
       editor: [],
@@ -2042,6 +2059,7 @@ const loadWorld = () => {
     description: world.description || '',
     enabled: world.enabled,
     publicFlag: world.publicFlag,
+    universeSync: world.universeSync,
     instanceable: world.instanceable,
     owner: world.owner ? [...world.owner] : [],
     editor: world.editor ? [...world.editor] : [],
@@ -2278,6 +2296,8 @@ const performSave = async () => {
       title: formData.value.title,
       description: formData.value.description,
       enabled: formData.value.enabled,
+      publicFlag: formData.value.publicFlag,
+      universeSync: formData.value.universeSync,
       instanceable: formData.value.instanceable,
       owner: formData.value.owner.length > 0 ? formData.value.owner : undefined,
       editor: formData.value.editor.length > 0 ? formData.value.editor : undefined,
