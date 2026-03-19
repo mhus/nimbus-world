@@ -4,6 +4,11 @@ import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.shared.user.ActorRoles;
 import de.mhus.nimbus.shared.user.SectorRoles;
 import de.mhus.nimbus.shared.types.UserId;
+import de.mhus.nimbus.world.shared.session.WPlayerSessionService;
+import de.mhus.nimbus.world.shared.world.WHexGrid;
+import de.mhus.nimbus.world.shared.world.WHexGridService;
+import de.mhus.nimbus.world.shared.world.WProgressService;
+import de.mhus.nimbus.world.shared.world.WWorldInstance;
 import de.mhus.nimbus.world.control.service.UniverseClientService;
 import de.mhus.nimbus.world.shared.access.AccessService;
 import de.mhus.nimbus.world.shared.access.RequireSectorRole;
@@ -36,6 +41,9 @@ public class UniverseController extends BaseEditorController {
     private final RUserService userService;
     private final RCharacterService characterService;
     private final AccessService accessService;
+    private final WPlayerSessionService playerSessionService;
+    private final WHexGridService hexGridService;
+    private final WProgressService progressService;
 
     // --- Admin endpoints (require SECTOR_ADMIN via session cookie) ---
 
@@ -222,5 +230,125 @@ public class UniverseController extends BaseEditorController {
         } catch (Exception e) {
             return bad("Agent login failed: " + e.getMessage());
         }
+    }
+
+    // --- Universe-to-Sector: Instances ---
+
+    public record InstancesRequest(String worldId, String playerId) {}
+    public record InstanceInfo(String instanceId, String title, String creator, List<String> players, java.time.Instant createdAt) {}
+
+    @Operation(summary = "List instances for player",
+            description = "Returns instances accessible by the player. Authenticated via Universe Bearer token.")
+    @PostMapping("/instances")
+    public ResponseEntity<?> listInstances(@RequestBody InstancesRequest req) {
+        if (req.worldId() == null || req.worldId().isBlank()) {
+            return bad("worldId is required");
+        }
+        try {
+            var instances = accessService.getInstancesForPlayer(req.worldId(), req.playerId(), false);
+            var result = instances.stream()
+                    .map(i -> new InstanceInfo(
+                            i.getInstanceId(),
+                            i.getTitle(),
+                            i.getCreator(),
+                            i.getPlayers(),
+                            i.getCreatedAt()
+                    ))
+                    .toList();
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            return bad("Failed to list instances: " + e.getMessage());
+        }
+    }
+
+    // --- Universe-to-Sector: Session Login ---
+
+    public record SessionLoginRequest(String userId, String worldId, String characterId, String actor, String instanceId, String entryPoint) {}
+
+    @Operation(summary = "Session login from universe",
+            description = "Creates a session login for a universe user. Authenticated via Universe Bearer token.")
+    @PostMapping("/sessionLogin")
+    public ResponseEntity<?> sessionLogin(@RequestBody SessionLoginRequest req) {
+        if (req.userId() == null || req.worldId() == null || req.characterId() == null || req.actor() == null) {
+            return bad("userId, worldId, characterId and actor are required");
+        }
+        try {
+            var sessionRequest = de.mhus.nimbus.world.shared.dto.DevSessionLoginRequest.builder()
+                    .worldId(req.worldId())
+                    .userId(req.userId())
+                    .characterId(req.characterId())
+                    .actor(ActorRoles.valueOf(req.actor()))
+                    .entryPoint(req.entryPoint())
+                    .instanceId(req.instanceId())
+                    .build();
+            var response = accessService.devSessionLogin(sessionRequest);
+            return ResponseEntity.ok(new AgentLoginResponse(
+                    response.getAccessToken(),
+                    response.getAccessUrls(),
+                    response.getJumpUrl()
+            ));
+        } catch (Exception e) {
+            return bad("Session login failed: " + e.getMessage());
+        }
+    }
+
+    // --- Universe-to-Sector: Entry Points ---
+
+    public record EntryPointsRequest(String worldId, String userId, String characterId, String instanceId) {}
+    public record HexGridInfo(int q, int r, String title, String icon, boolean hasEntryPoint) {}
+    public record EntryPointsResponse(boolean hasLastPosition, List<HexGridInfo> visitedGrids) {}
+
+    @Operation(summary = "Get available entry points",
+            description = "Returns last position availability and visited hex grids. Authenticated via Universe Bearer token.")
+    @PostMapping("/entryPoints")
+    public ResponseEntity<?> getEntryPoints(@RequestBody EntryPointsRequest req) {
+        if (req.worldId() == null || req.userId() == null || req.characterId() == null) {
+            return bad("worldId, userId and characterId are required");
+        }
+
+        String playerId = "@" + req.userId() + ":" + req.characterId();
+
+        // Determine effective worldId (with instance if provided)
+        String effectiveWorldId = req.worldId();
+        if (req.instanceId() != null && !req.instanceId().isBlank()) {
+            // Append instance to worldId: regionId:worldName::instanceId
+            var wid = WorldId.of(req.worldId());
+            if (wid.isPresent()) {
+                effectiveWorldId = wid.get().toWorldWithInstance(req.instanceId()).getFullId();
+            }
+        }
+
+        // Check if last position exists
+        boolean hasLastPosition = playerSessionService.loadSession(effectiveWorldId, playerId).isPresent();
+
+        // Get visited hex grids from progress (type="exploration")
+        List<HexGridInfo> visitedGrids = List.of();
+        if (req.instanceId() != null && !req.instanceId().isBlank()) {
+            // Only for existing instances, not new ones
+            var progressEntries = progressService.findByWorldIdAndPlayerIdAndType(effectiveWorldId, playerId, "exploration");
+            var allHexGrids = hexGridService.findByWorldId(req.worldId()); // base world hex grids
+            var hexGridMap = new java.util.HashMap<String, WHexGrid>();
+            allHexGrids.forEach(g -> hexGridMap.put(g.getPosition(), g));
+
+            visitedGrids = progressEntries.stream()
+                    .filter(p -> p.getProgressData() != null && p.getProgressData().containsKey("hexPosition"))
+                    .map(p -> {
+                        String hexPos = (String) p.getProgressData().get("hexPosition");
+                        WHexGrid grid = hexGridMap.get(hexPos);
+                        if (grid == null || grid.getPublicData() == null) return null;
+                        var pd = grid.getPublicData();
+                        return new HexGridInfo(
+                                pd.getPosition() != null ? pd.getPosition().getQ() : 0,
+                                pd.getPosition() != null ? pd.getPosition().getR() : 0,
+                                pd.getTitle(),
+                                pd.getIcon(),
+                                pd.getEntryPoint() != null
+                        );
+                    })
+                    .filter(java.util.Objects::nonNull)
+                    .toList();
+        }
+
+        return ResponseEntity.ok(new EntryPointsResponse(hasLastPosition, visitedGrids));
     }
 }
