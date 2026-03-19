@@ -20,6 +20,7 @@ import de.mhus.nimbus.world.shared.world.WWorldService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -34,6 +35,7 @@ import java.util.Set;
 @RequestMapping("/control/universe")
 @RequiredArgsConstructor
 @Tag(name = "Universe", description = "Manage universe connection")
+@Slf4j
 public class UniverseController extends BaseEditorController {
 
     private final UniverseClientService universeClientService;
@@ -309,45 +311,63 @@ public class UniverseController extends BaseEditorController {
         }
 
         String playerId = "@" + req.userId() + ":" + req.characterId();
+        log.info("entryPoints: worldId={}, userId={}, characterId={}, instanceId={}, playerId={}",
+                req.worldId(), req.userId(), req.characterId(), req.instanceId(), playerId);
 
         // Determine effective worldId (with instance if provided)
+        // instanceId may be a full worldId (region:world::uuid) or just a UUID
         String effectiveWorldId = req.worldId();
         if (req.instanceId() != null && !req.instanceId().isBlank()) {
-            // Append instance to worldId: regionId:worldName::instanceId
-            var wid = WorldId.of(req.worldId());
-            if (wid.isPresent()) {
-                effectiveWorldId = wid.get().toWorldWithInstance(req.instanceId()).getFullId();
+            if (req.instanceId().contains(":")) {
+                // Already a full worldId with instance
+                effectiveWorldId = req.instanceId();
+            } else {
+                // Just a UUID — append to base worldId
+                effectiveWorldId = WorldId.worldWithInstance(req.worldId(), req.instanceId());
             }
         }
 
+        log.info("entryPoints: effectiveWorldId={}", effectiveWorldId);
+
         // Check if last position exists
         boolean hasLastPosition = playerSessionService.loadSession(effectiveWorldId, playerId).isPresent();
+        log.info("entryPoints: hasLastPosition={}", hasLastPosition);
 
-        // Get visited hex grids from progress (type="exploration")
+        // Get visited hex grids from progress — stored with effective worldId (with instance)
         List<HexGridInfo> visitedGrids = List.of();
         if (req.instanceId() != null && !req.instanceId().isBlank()) {
             // Only for existing instances, not new ones
-            var progressEntries = progressService.findByWorldIdAndPlayerIdAndType(effectiveWorldId, playerId, "exploration");
+            var progressEntries = progressService.findByWorldIdAndPlayerIdAndType(effectiveWorldId, playerId, "EXPLORED_HEX");
+            log.info("entryPoints: progressEntries={}", progressEntries.size());
             var allHexGrids = hexGridService.findByWorldId(req.worldId()); // base world hex grids
+            log.info("entryPoints: allHexGrids={}", allHexGrids.size());
             var hexGridMap = new java.util.HashMap<String, WHexGrid>();
             allHexGrids.forEach(g -> hexGridMap.put(g.getPosition(), g));
 
             visitedGrids = progressEntries.stream()
-                    .filter(p -> p.getProgressData() != null && p.getProgressData().containsKey("hexPosition"))
+                    .filter(p -> p.getQuest() != null)
                     .map(p -> {
-                        String hexPos = (String) p.getProgressData().get("hexPosition");
+                        // quest field contains hex position as "q;r"
+                        String hexPos = p.getQuest();
                         WHexGrid grid = hexGridMap.get(hexPos);
-                        if (grid == null || grid.getPublicData() == null) return null;
-                        var pd = grid.getPublicData();
-                        return new HexGridInfo(
-                                pd.getPosition() != null ? pd.getPosition().getQ() : 0,
-                                pd.getPosition() != null ? pd.getPosition().getR() : 0,
-                                pd.getTitle(),
-                                pd.getIcon(),
-                                pd.getEntryPoint() != null
-                        );
+                        int q = 0, r = 0;
+                        if (p.getProgressData() != null) {
+                            Object qObj = p.getProgressData().get("q");
+                            Object rObj = p.getProgressData().get("r");
+                            if (qObj instanceof Number) q = ((Number) qObj).intValue();
+                            if (rObj instanceof Number) r = ((Number) rObj).intValue();
+                        }
+                        String title = hexPos;
+                        String icon = null;
+                        boolean hasEntryPoint = false;
+                        if (grid != null && grid.getPublicData() != null) {
+                            var pd = grid.getPublicData();
+                            if (pd.getTitle() != null) title = pd.getTitle();
+                            icon = pd.getIcon();
+                            hasEntryPoint = pd.getEntryPoint() != null;
+                        }
+                        return new HexGridInfo(q, r, title, icon, hasEntryPoint);
                     })
-                    .filter(java.util.Objects::nonNull)
                     .toList();
         }
 

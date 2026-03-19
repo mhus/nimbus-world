@@ -58,6 +58,18 @@ public class AccessControlAspect {
 
         HttpServletRequest request = attributes.getRequest();
 
+        // Skip access control for universe-to-sector requests (authenticated via ControlAccessFilter)
+        Object userId = request.getAttribute(AccessFilterBase.ATTR_USER_ID);
+        if (userId instanceof String uid && uid.startsWith("universe:")) {
+            return joinPoint.proceed();
+        }
+
+        // Skip access control for public asset paths (p: and rp: prefixes)
+        String requestUri = request.getRequestURI();
+        if (requestUri != null && requestUri.matches(".*/assets/(p|rp):.*")) {
+            return joinPoint.proceed();
+        }
+
         // Check class-level annotations first
         Class<?> declaringClass = method.getDeclaringClass();
         String accessDeniedReason = checkClassAnnotations(declaringClass, request);
