@@ -51,4 +51,7 @@ public class DevSessionLoginRequest {
      * If set, the player will rejoin the specified instance.
      */
     private String instanceId;
+
+    /** Login source identifier (e.g., "universe", "dev"). Null = default. */
+    private String loginSource;
 }

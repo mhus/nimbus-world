@@ -206,7 +206,7 @@ public class UniverseController extends BaseEditorController {
 
     // --- Universe-to-Sector: Agent Login ---
 
-    public record AgentLoginRequest(String userId, String worldId) {}
+    public record AgentLoginRequest(String userId, String worldId, String loginSource) {}
     public record AgentLoginResponse(String accessToken, List<String> accessUrls, String jumpUrl) {}
 
     @Operation(summary = "Agent login from universe",
@@ -220,6 +220,7 @@ public class UniverseController extends BaseEditorController {
             var agentRequest = de.mhus.nimbus.world.shared.dto.DevAgentLoginRequest.builder()
                     .worldId(req.worldId())
                     .userId(req.userId())
+                    .loginSource(req.loginSource())
                     .build();
             var response = accessService.devAgentLogin(agentRequest);
             return ResponseEntity.ok(new AgentLoginResponse(
@@ -263,7 +264,7 @@ public class UniverseController extends BaseEditorController {
 
     // --- Universe-to-Sector: Session Login ---
 
-    public record SessionLoginRequest(String userId, String worldId, String characterId, String actor, String instanceId, String entryPoint) {}
+    public record SessionLoginRequest(String userId, String worldId, String characterId, String actor, String instanceId, String entryPoint, String loginSource) {}
 
     @Operation(summary = "Session login from universe",
             description = "Creates a session login for a universe user. Authenticated via Universe Bearer token.")
@@ -280,6 +281,7 @@ public class UniverseController extends BaseEditorController {
                     .actor(ActorRoles.valueOf(req.actor()))
                     .entryPoint(req.entryPoint())
                     .instanceId(req.instanceId())
+                    .loginSource(req.loginSource())
                     .build();
             var response = accessService.devSessionLogin(sessionRequest);
             return ResponseEntity.ok(new AgentLoginResponse(

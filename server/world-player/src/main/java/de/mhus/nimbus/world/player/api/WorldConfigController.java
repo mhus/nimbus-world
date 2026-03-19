@@ -10,6 +10,7 @@ import de.mhus.nimbus.shared.types.PlayerData;
 import de.mhus.nimbus.shared.types.PlayerId;
 import de.mhus.nimbus.world.player.config.ServerSettings;
 import de.mhus.nimbus.world.player.service.PlayerService;
+import de.mhus.nimbus.world.shared.access.AccessSettings;
 import de.mhus.nimbus.world.shared.access.AccessValidator;
 import de.mhus.nimbus.world.shared.session.WPlayerSession;
 import de.mhus.nimbus.world.shared.session.WPlayerSessionService;
@@ -47,6 +48,7 @@ public class WorldConfigController {
     private final WWorldService worldService;
     private final PlayerService playerService;
     private final AccessValidator accessUtil;
+    private final AccessSettings accessSettings;
     private final ServerSettings serverSettings;
     private final WSessionService sessionService;
     private final WPlayerSessionService playerSessionService;
@@ -98,9 +100,18 @@ public class WorldConfigController {
         setPlayerBackpackDefaults(playerBackpack);
         setSettingsDefaults(settings);
 
-        // Build ServerInfo from ServerSettings
+        // Build ServerInfo from ServerSettings, resolve exitUrl from session loginSource
+        String exitUrl = null;
+        String sessionId = accessUtil.getSessionId(request);
+        if (sessionId != null) {
+            var sessionOpt = sessionService.get(sessionId);
+            if (sessionOpt.isPresent() && sessionOpt.get().getLoginSource() != null) {
+                exitUrl = accessSettings.getLogoutUrlForSource(sessionOpt.get().getLoginSource());
+            }
+        }
         ServerInfo serverInfo = ServerInfo.builder()
                 .websocketUrl(serverSettings.getWebsocketUrl())
+                .exitUrl(exitUrl)
                 .build();
 
         // Build complete configuration

@@ -165,12 +165,17 @@ export class ConfigService {
         this.appContext.playerInfo = config.playerInfo;
       }
 
-      // Update client config with server-provided websocketUrl
+      // Update client config with server-provided websocketUrl and exitUrl
       if (config.serverInfo && this.appContext.config) {
         updateConfigFromServer(
           this.appContext.config,
-          config.serverInfo.websocketUrl
+          config.serverInfo.websocketUrl,
+          config.serverInfo.exitUrl
         );
+        // Cache exitUrl in sessionStorage so it survives session expiry
+        if (config.serverInfo.exitUrl) {
+          sessionStorage.setItem('nimbus_exitUrl', config.serverInfo.exitUrl);
+        }
 
         // Update NetworkService with new websocketUrl
         if (this.appContext.services.network) {
@@ -213,7 +218,7 @@ export class ConfigService {
       return config;
     } catch (error) {
         logger.error('Error loading configuration', {error});
-      window.location.href = this.appContext.config?.exitUrl || '/login';
+      window.location.href = sessionStorage.getItem('nimbus_exitUrl') || this.appContext.config?.exitUrl || '/login';
       throw ExceptionHandler.handleAndRethrow(
         error,
         'ConfigService.loadConfig',
@@ -417,6 +422,6 @@ export class ConfigService {
   }
 
   public gotoLoginScreen() {
-    window.location.href = this.appContext.config?.exitUrl || '/login';
+    window.location.href = sessionStorage.getItem('nimbus_exitUrl') || this.appContext.config?.exitUrl || '/login';
   }
 }

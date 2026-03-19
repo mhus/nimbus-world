@@ -495,8 +495,9 @@ appContextPromise
     logger.fatal('Failed to initialize client', undefined, error as Error);
 
     // Connection or login failure - alert and redirect to exit URL
-    if (exitUrl) {
-      window.location.href = exitUrl;
+    const effectiveExitUrl = sessionStorage.getItem('nimbus_exitUrl') || exitUrl;
+    if (effectiveExitUrl) {
+      window.location.href = effectiveExitUrl;
       return;
     }
 

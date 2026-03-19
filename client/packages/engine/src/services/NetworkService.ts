@@ -494,7 +494,7 @@ export class NetworkService {
     // Attempt reconnection or redirect
     if (wasConnected && !this.shouldReconnect) {
       // Death disconnect — redirect to exit URL
-      const exitUrl = this.appContext.config.exitUrl || '/login';
+      const exitUrl = sessionStorage.getItem('nimbus_exitUrl') || this.appContext.config.exitUrl || '/login';
       logger.info('Death disconnect, redirecting to exit URL', { exitUrl });
       if (typeof window !== 'undefined' && window.location) {
         setTimeout(() => {
@@ -526,7 +526,7 @@ export class NetworkService {
       }
 
       // Redirect to exit URL
-      const exitUrl = this.appContext.config.exitUrl || '/login';
+      const exitUrl = sessionStorage.getItem('nimbus_exitUrl') || this.appContext.config.exitUrl || '/login';
       logger.debug('Redirecting to exit URL', { exitUrl });
 
       // Use window.location for redirect

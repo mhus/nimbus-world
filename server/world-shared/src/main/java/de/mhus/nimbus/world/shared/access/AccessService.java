@@ -387,6 +387,12 @@ public class AccessService {
             log.debug("Entry point set for session: sessionId={}, entryPoint={}", session.getId(), request.getEntryPoint());
         }
 
+        // Set login source if provided (e.g., "universe")
+        if (request.getLoginSource() != null && !request.getLoginSource().isBlank()) {
+            session.setLoginSource(request.getLoginSource());
+            sessionService.updateLoginSource(session.getId(), request.getLoginSource());
+        }
+
         // Create JWT token
         String token = createSessionToken(
                 world.getRegionId(),
@@ -552,7 +558,8 @@ public class AccessService {
         String token = createAgentToken(
                 world.getRegionId(),
                 request.getUserId(),
-                request.getWorldId()
+                request.getWorldId(),
+                request.getLoginSource()
         );
 
         // Build response with configured URLs (no sessionId/playerId)
@@ -568,13 +575,16 @@ public class AccessService {
     /**
      * Creates a JWT token for agent access.
      */
-    private String createAgentToken(String regionId, String userId, String worldId) {
+    private String createAgentToken(String regionId, String userId, String worldId, String loginSource) {
         // Build claims map (agent mode - no characterId, role, or sessionId)
         Map<String, Object> claims = new HashMap<>();
         claims.put("agent", true);
         claims.put("worldId", worldId);
         claims.put("userId", userId);
         claims.put("regionId", regionId);
+        if (loginSource != null && !loginSource.isBlank()) {
+            claims.put("loginSource", loginSource);
+        }
 
         // Calculate expiration (use agentTokenTtlSeconds for agent tokens)
         Instant expiresAt = Instant.now().plusSeconds(properties.getAgentTokenTtlSeconds());
@@ -601,7 +611,8 @@ public class AccessService {
             String characterId,  // null for agent
             String role,         // null for agent
             String sessionId,    // null for agent
-            String regionId
+            String regionId,
+            String loginSource   // null if not set
     ) {}
 
     /**
@@ -635,6 +646,25 @@ public class AccessService {
 
         // 5. Set cookies
         setCookies(response, tokenWithExpiry.token(), tokenWithExpiry.expiresAt(), claims);
+
+        // 6. Set login source on session if provided (e.g., "universe")
+        if (claims.loginSource() != null && !claims.loginSource().isBlank()) {
+            String sid = claims.sessionId();
+            if (sid == null) {
+                // Agent sessions: extract sessionId from the new session token
+                try {
+                    var newClaims = jwtService.validateTokenWithPublicKey(
+                            tokenWithExpiry.token(), KeyType.SECTOR,
+                            KeyIntent.of(regionProperties.getSectorServerId(), KeyIntent.SECTOR_SERVER_JWT_TOKEN));
+                    if (newClaims.isPresent()) {
+                        sid = newClaims.get().getPayload().get("sessionId", String.class);
+                    }
+                } catch (Exception ignore) {}
+            }
+            if (sid != null) {
+                sessionService.updateLoginSource(sid, claims.loginSource());
+            }
+        }
 
         log.info("Authorization successful - worldId={}, userId={}, agent={}",
                 claims.worldId(), claims.userId(), claims.agent());
@@ -678,6 +708,7 @@ public class AccessService {
         String characterId = claims.get("characterId", String.class);
         String role = claims.get("role", String.class);
         String sessionId = claims.get("sessionId", String.class);
+        String loginSource = claims.get("loginSource", String.class);
 
         // Validate required fields
         if (agent == null || worldId == null || userId == null) {
@@ -689,7 +720,7 @@ public class AccessService {
             throw new IllegalArgumentException("Session access token missing required claims");
         }
 
-        return new AccessTokenClaims(agent, worldId, userId, characterId, role, sessionId, regionId);
+        return new AccessTokenClaims(agent, worldId, userId, characterId, role, sessionId, regionId, loginSource);
     }
 
     /**
@@ -966,6 +997,18 @@ public class AccessService {
             // Build logout URLs
             List<String> accessUrls = properties.getAccessUrls();
 
+            // Resolve logoutUrl from session's loginSource via settings, fallback to default
+            String logoutUrl = properties.getLogoutUrl();
+            if (sessionId != null) {
+                var sessionOpt = sessionService.get(sessionId);
+                if (sessionOpt.isPresent() && sessionOpt.get().getLoginSource() != null && !sessionOpt.get().getLoginSource().isBlank()) {
+                    String sourceUrl = properties.getLogoutUrlForSource(sessionOpt.get().getLoginSource());
+                    if (sourceUrl != null) {
+                        logoutUrl = sourceUrl;
+                    }
+                }
+            }
+
             return SessionStatusResponse.builder()
                     .authenticated(true)
                     .agent(agent != null && agent)
@@ -977,7 +1020,7 @@ public class AccessService {
                     .sessionId(sessionId)
                     .accessUrls(accessUrls)
                     .loginUrl(properties.getLoginUrl())
-                    .logoutUrl(properties.getLogoutUrl())
+                    .logoutUrl(logoutUrl)
                     .build();
 
         } catch (Exception e) {

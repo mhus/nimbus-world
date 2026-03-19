@@ -180,6 +180,16 @@ public class AccessSettings {
             logoutUrl;
     }
 
+    /**
+     * Resolves a logout URL for a specific login source (e.g., "universe").
+     * Looks up setting "access.logoutUrl.{source}". Returns null if not configured.
+     */
+    public String getLogoutUrlForSource(String loginSource) {
+        if (loginSource == null || loginSource.isBlank()) return null;
+        String url = settingsService.getStringValue("access.logoutUrl." + loginSource, "");
+        return url.isBlank() ? null : url;
+    }
+
     public String getTeleportUrl() {
         return Strings.isBlank(teleportUrl) ?
             "http://localhost:3002/controls/teleport-login.html"

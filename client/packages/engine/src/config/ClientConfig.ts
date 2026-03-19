@@ -165,11 +165,15 @@ export async function loadClientConfig(): Promise<ClientConfig> {
  * Update client config with server-provided websocketUrl
  * Called after EngineConfiguration is loaded from server
  */
-export function updateConfigFromServer(config: ClientConfig, websocketUrl: string): void {
+export function updateConfigFromServer(config: ClientConfig, websocketUrl: string, exitUrl?: string): void {
   config.websocketUrl = websocketUrl + "/world/" + config.worldId;
+  if (exitUrl) {
+    config.exitUrl = exitUrl;
+  }
 
-  logger.info('Client configuration updated with server websocketUrl', {
+  logger.info('Client configuration updated with server config', {
     websocketUrl: config.websocketUrl,
+    exitUrl: config.exitUrl,
   });
 }
 

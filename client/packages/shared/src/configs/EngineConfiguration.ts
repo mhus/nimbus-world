@@ -45,6 +45,8 @@ export interface Settings {
 export interface ServerInfo {
     /** WebSocket URL for game server connection (e.g., "ws://game-server:9042/ws") */
     websocketUrl: string;
+    /** Exit/logout URL override from server (based on login source). Optional. */
+    exitUrl?: string;
 }
 
 export interface EngineConfiguration {
