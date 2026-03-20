@@ -173,6 +173,96 @@ public class UniverseClientService {
         }
     }
 
+    // --- User Lookup ---
+
+    /**
+     * Queries the universe for user info by username.
+     * @return UserInfo or null if not found or not paired
+     */
+    public UserInfo getUserInfo(String username) {
+        String url = getUniverseUrl();
+        String name = getUniverseName();
+        if (url.isBlank() || name.isBlank() || !isPaired()) {
+            return null;
+        }
+        try {
+            String token = jwtService.createTokenWithPrivateKey(
+                    KeyType.SECTOR,
+                    KeyIntent.of(name, KeyIntent.SECTOR_SERVER_JWT_TOKEN),
+                    "sector:" + name,
+                    Map.of("action", "getUserInfo"),
+                    java.time.Instant.now().plusSeconds(60)
+            );
+            HttpHeaders headers = new HttpHeaders();
+            headers.setBearerAuth(token);
+            var response = restTemplate.exchange(
+                    url + "/universe/sector/" + name + "/user/" + username,
+                    HttpMethod.GET,
+                    new HttpEntity<>(headers),
+                    Map.class
+            );
+            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+                return new UserInfo(
+                        (String) response.getBody().get("username"),
+                        (String) response.getBody().get("email")
+                );
+            }
+            return null;
+        } catch (org.springframework.web.client.HttpClientErrorException.NotFound e) {
+            return null;
+        } catch (Exception e) {
+            log.warn("getUserInfo failed for '{}': {}", username, e.getMessage());
+            return null;
+        }
+    }
+
+    public record UserInfo(String username, String email) {}
+
+    // --- Sync World ---
+
+    /**
+     * Syncs a single world with the universe based on its flags:
+     * - universeSync=true + enabled=true → register/update at universe
+     * - universeSync=false OR enabled=false → unregister from universe
+     * Does nothing if not paired.
+     */
+    public PairResult syncWorld(de.mhus.nimbus.world.shared.world.WWorld world) {
+        if (!isPaired()) return PairResult.fail("Not paired");
+        if (world.isUniverseSync() && world.isEnabled()) {
+            return registerWorld(world);
+        } else {
+            return removeWorldFromUniverse(world.getWorldId());
+        }
+    }
+
+    /**
+     * Removes a world from the universe regardless of sync flag.
+     * Silently succeeds if the world doesn't exist at universe.
+     */
+    private PairResult removeWorldFromUniverse(String worldId) {
+        String url = getUniverseUrl();
+        String name = getUniverseName();
+        try {
+            String token = createSectorToken(name, "unregisterWorld");
+            HttpHeaders headers = new HttpHeaders();
+            headers.setBearerAuth(token);
+            restTemplate.exchange(
+                    url + "/universe/sector/" + name + "/world/" + worldId,
+                    HttpMethod.DELETE,
+                    new HttpEntity<>(headers),
+                    Map.class
+            );
+            log.info("World '{}' removed from universe", worldId);
+            return PairResult.ok(worldId);
+        } catch (org.springframework.web.client.HttpClientErrorException.NotFound e) {
+            log.debug("World '{}' not found at universe (already removed)", worldId);
+            return PairResult.ok(worldId);
+        } catch (Exception e) {
+            log.warn("removeWorldFromUniverse failed for '{}': {}", worldId, e.getMessage());
+            return PairResult.fail(e.getMessage());
+        }
+    }
+
     // --- Pair ---
 
     /**
@@ -259,6 +349,151 @@ public class UniverseClientService {
             log.error("Pairing failed for sector '{}': {}", sectorName, e.getMessage());
             return PairResult.fail(e.getMessage());
         }
+    }
+
+    // --- World Register/Unregister ---
+
+    /**
+     * Registers or updates a world at the universe.
+     * Checks that the world has universeSync=true before sending.
+     */
+    public PairResult registerWorld(de.mhus.nimbus.world.shared.world.WWorld world) {
+        if (!isPaired()) return PairResult.fail("Not paired");
+        if (!world.isUniverseSync()) return PairResult.fail("World does not have universeSync enabled");
+        if (!world.isEnabled()) return PairResult.fail("World is not enabled");
+
+        String url = getUniverseUrl();
+        String name = getUniverseName();
+
+        boolean isPublic = world.isPublicFlag();
+        java.util.List<String> members;
+        if (isPublic) {
+            members = java.util.List.of("*");
+        } else {
+            var all = new java.util.LinkedHashSet<String>();
+            if (world.getOwner() != null) all.addAll(world.getOwner());
+            if (world.getEditor() != null) all.addAll(world.getEditor());
+            if (world.getSupporter() != null) all.addAll(world.getSupporter());
+            if (world.getPlayer() != null) all.addAll(world.getPlayer());
+            members = new java.util.ArrayList<>(all);
+        }
+
+        try {
+            String token = createSectorToken(name, "registerWorld");
+            HttpHeaders headers = new HttpHeaders();
+            headers.setBearerAuth(token);
+            headers.setContentType(MediaType.APPLICATION_JSON);
+
+            var body = Map.of(
+                    "worldId", world.getWorldId(),
+                    "name", world.getPublicData() != null && world.getPublicData().getTitle() != null ? world.getPublicData().getTitle() : world.getWorldId(),
+                    "description", world.getDescription() != null ? world.getDescription() : "",
+                    "publicWorld", isPublic,
+                    "members", members
+            );
+
+            restTemplate.exchange(
+                    url + "/universe/sector/" + name + "/world",
+                    HttpMethod.POST,
+                    new HttpEntity<>(body, headers),
+                    Map.class
+            );
+            log.info("World '{}' registered at universe", world.getWorldId());
+            return PairResult.ok(world.getWorldId());
+        } catch (Exception e) {
+            log.error("registerWorld failed for '{}': {}", world.getWorldId(), e.getMessage());
+            return PairResult.fail(e.getMessage());
+        }
+    }
+
+    /**
+     * Unregisters a world from the universe.
+     * Checks that the world has universeSync=true before sending.
+     */
+    public PairResult unregisterWorld(de.mhus.nimbus.world.shared.world.WWorld world) {
+        if (!isPaired()) return PairResult.fail("Not paired");
+        if (!world.isUniverseSync()) return PairResult.fail("World does not have universeSync enabled");
+
+        String url = getUniverseUrl();
+        String name = getUniverseName();
+
+        try {
+            String token = createSectorToken(name, "unregisterWorld");
+            HttpHeaders headers = new HttpHeaders();
+            headers.setBearerAuth(token);
+
+            restTemplate.exchange(
+                    url + "/universe/sector/" + name + "/world/" + world.getWorldId(),
+                    HttpMethod.DELETE,
+                    new HttpEntity<>(headers),
+                    Map.class
+            );
+            log.info("World '{}' unregistered from universe", world.getWorldId());
+            return PairResult.ok(world.getWorldId());
+        } catch (Exception e) {
+            log.error("unregisterWorld failed for '{}': {}", world.getWorldId(), e.getMessage());
+            return PairResult.fail(e.getMessage());
+        }
+    }
+
+    private String createSectorToken(String sectorName, String action) {
+        return jwtService.createTokenWithPrivateKey(
+                KeyType.SECTOR,
+                KeyIntent.of(sectorName, KeyIntent.SECTOR_SERVER_JWT_TOKEN),
+                "sector:" + sectorName,
+                Map.of("action", action),
+                java.time.Instant.now().plusSeconds(60)
+        );
+    }
+
+    // --- Unpair ---
+
+    /**
+     * Unpairs this sector from the universe.
+     * 1. Calls universe to delete keys and worlds
+     * 2. Deletes local universe public key
+     * 3. Resets paired status
+     */
+    public PairResult unpair() {
+        String url = getUniverseUrl();
+        String name = getUniverseName();
+        if (url.isBlank() || name.isBlank() || !isPaired()) {
+            return PairResult.fail("Not paired");
+        }
+
+        // Call universe unpair endpoint
+        try {
+            String token = jwtService.createTokenWithPrivateKey(
+                    KeyType.SECTOR,
+                    KeyIntent.of(name, KeyIntent.SECTOR_SERVER_JWT_TOKEN),
+                    "sector:" + name,
+                    Map.of("action", "unpair"),
+                    java.time.Instant.now().plusSeconds(60)
+            );
+            HttpHeaders headers = new HttpHeaders();
+            headers.setBearerAuth(token);
+            restTemplate.exchange(
+                    url + "/universe/sector/" + name + "/unpair",
+                    HttpMethod.DELETE,
+                    new HttpEntity<>(headers),
+                    Map.class
+            );
+            log.info("Universe unpair successful for sector '{}'", name);
+        } catch (Exception e) {
+            log.warn("Universe unpair call failed (continuing with local cleanup): {}", e.getMessage());
+        }
+
+        // Delete local universe public key
+        KeyIntent universeIntent = KeyIntent.of(name, KeyIntent.MAIN_JWT_TOKEN);
+        keyService.deleteAllForIntent(KeyType.UNIVERSE, universeIntent);
+        log.info("Deleted local universe public key for sector '{}'", name);
+
+        // Reset status
+        settingsService.setBooleanValue(SETTING_UNIVERSE_PAIRED, false);
+        settingsService.setStringValue(SETTING_UNIVERSE_NAME, "");
+        log.info("Sector '{}' unpaired", name);
+
+        return PairResult.ok("Unpaired");
     }
 
     // --- Records ---

@@ -27,6 +27,12 @@
             </div>
             <span v-if="status.name" class="text-sm font-mono">{{ status.name }}</span>
           </div>
+          <div v-if="status.paired" class="card-actions justify-end mt-2">
+            <button class="btn btn-error btn-sm btn-outline" @click="doUnpair" :disabled="unpairing">
+              <span v-if="unpairing" class="loading loading-spinner loading-xs"></span>
+              Unpair
+            </button>
+          </div>
         </div>
       </div>
 
@@ -105,6 +111,7 @@ const inviteToken = ref('');
 const saving = ref(false);
 const pinging = ref(false);
 const pairing = ref(false);
+const unpairing = ref(false);
 const statusMessage = ref('');
 const statusOk = ref(false);
 const status = ref({ url: '', paired: false, name: '' });
@@ -151,6 +158,24 @@ async function ping() {
     showMsg(err.response?.data?.error || 'Connection failed', false);
   } finally {
     pinging.value = false;
+  }
+}
+
+async function doUnpair() {
+  if (!confirm('Are you sure you want to unpair from the universe? This will delete all keys and world references.')) return;
+  unpairing.value = true;
+  try {
+    const data = await apiService.delete<any>(BASE + '/unpair');
+    if (data.ok) {
+      showMsg('Unpaired from universe', true);
+      await loadStatus();
+    } else {
+      showMsg(data.error || 'Unpair failed', false);
+    }
+  } catch (err: any) {
+    showMsg(err.response?.data?.error || 'Unpair failed', false);
+  } finally {
+    unpairing.value = false;
   }
 }
 

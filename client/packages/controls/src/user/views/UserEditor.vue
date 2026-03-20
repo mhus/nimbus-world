@@ -142,14 +142,28 @@
             </div>
 
             <!-- Action Buttons -->
-            <div class="card-actions justify-end mt-6">
-              <button type="button" class="btn btn-ghost" @click="handleBack">
-                Cancel
+            <div class="card-actions justify-between mt-6">
+              <button type="button" class="btn btn-outline btn-info" @click="handleSyncUniverse" :disabled="syncing">
+                <span v-if="syncing" class="loading loading-spinner loading-sm"></span>
+                <span v-else>Sync with Universe</span>
               </button>
-              <button type="submit" class="btn btn-primary" :disabled="saving">
-                <span v-if="saving" class="loading loading-spinner loading-sm"></span>
-                <span v-else>Save</span>
-              </button>
+              <div class="flex gap-2">
+                <button type="button" class="btn btn-ghost" @click="handleBack">
+                  Cancel
+                </button>
+                <button type="submit" class="btn btn-primary" :disabled="saving">
+                  <span v-if="saving" class="loading loading-spinner loading-sm"></span>
+                  <span v-else>Save</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Universe Sync Warning -->
+            <div v-if="universeWarning" class="alert alert-warning mt-4">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
+              <span>{{ universeWarning }}</span>
             </div>
           </form>
         </div>
@@ -608,6 +622,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue';
+import { apiService } from '@/services/ApiService';
 import { userService, type RUser, type Settings, SectorRoles } from '../services/UserService';
 import { useRegion } from '@/composables/useRegion';
 import { ClientType } from '@nimbus/shared/network/MessageTypes';
@@ -625,8 +640,10 @@ const { regions, loadRegions } = useRegion();
 const user = ref<RUser | null>(null);
 const loading = ref(false);
 const saving = ref(false);
+const syncing = ref(false);
 const error = ref<string | null>(null);
 const successMessage = ref<string | null>(null);
+const universeWarning = ref<string | null>(null);
 
 const formData = ref({
   displayName: '',
@@ -1039,6 +1056,26 @@ const handleRemoveAttribute = (key: string) => {
     ...user.value,
     attributes: remainingAttributes,
   };
+};
+
+const handleSyncUniverse = async () => {
+  if (!user.value) return;
+  syncing.value = true;
+  universeWarning.value = null;
+  successMessage.value = null;
+  try {
+    const data = await apiService.get<any>(`/control/universe/user/${encodeURIComponent(user.value.username)}/sync`);
+    if (data.found) {
+      formData.value.email = data.email;
+      successMessage.value = 'Synced with Universe — email updated';
+    } else {
+      universeWarning.value = 'User not found in Universe. The user may have been deleted.';
+    }
+  } catch (e) {
+    universeWarning.value = 'Failed to sync with Universe (not paired or unreachable)';
+  } finally {
+    syncing.value = false;
+  }
 };
 
 const handleBack = () => {

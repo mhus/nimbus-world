@@ -101,6 +101,43 @@ public class UniverseController extends BaseEditorController {
         return ResponseEntity.ok(Map.of("ok", false, "error", result.error()));
     }
 
+    @Operation(summary = "Unpair from universe", description = "Disconnects from universe, deletes keys and worlds")
+    @DeleteMapping("/unpair")
+    @RequireSectorRole(SectorRoles.ADMIN)
+    public ResponseEntity<?> unpair() {
+        var result = universeClientService.unpair();
+        if (result.ok()) {
+            return ResponseEntity.ok(Map.of("ok", true));
+        }
+        return ResponseEntity.ok(Map.of("ok", false, "error", result.error()));
+    }
+
+    @Operation(summary = "Sync world with universe", description = "Registers or unregisters a world at the universe based on its sync flag")
+    @PostMapping("/world/{worldId}/sync")
+    @RequireSectorRole(SectorRoles.ADMIN)
+    public ResponseEntity<?> syncWorld(@PathVariable String worldId) {
+        var worldOpt = worldService.getByWorldId(worldId);
+        if (worldOpt.isEmpty()) {
+            return notFound("World not found: " + worldId);
+        }
+        var result = universeClientService.syncWorld(worldOpt.get());
+        if (result.ok()) {
+            return ResponseEntity.ok(Map.of("ok", true, "name", result.name()));
+        }
+        return ResponseEntity.ok(Map.of("ok", false, "error", result.error()));
+    }
+
+    @Operation(summary = "Sync user with universe", description = "Queries universe for user data and returns it")
+    @GetMapping("/user/{username}/sync")
+    @RequireSectorRole(SectorRoles.ADMIN)
+    public ResponseEntity<?> syncUser(@PathVariable String username) {
+        var info = universeClientService.getUserInfo(username);
+        if (info == null) {
+            return ResponseEntity.ok(Map.of("found", false));
+        }
+        return ResponseEntity.ok(Map.of("found", true, "username", info.username(), "email", info.email()));
+    }
+
     // --- Universe-to-Sector endpoints (authenticated via Universe Bearer token in ControlAccessFilter) ---
 
     public record WorldInfo(String worldId, String name, String description, boolean publicWorld, List<String> members) {}

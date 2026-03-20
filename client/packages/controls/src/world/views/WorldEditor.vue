@@ -1530,6 +1530,10 @@
         <button type="button" class="btn btn-ghost" @click="handleBack">
           Cancel
         </button>
+        <button v-if="!isNew" type="button" class="btn btn-outline btn-accent" :disabled="syncingUniverse" @click="handleSyncUniverse">
+          <span v-if="syncingUniverse" class="loading loading-spinner loading-sm"></span>
+          <span v-else>Sync Universe</span>
+        </button>
         <button type="submit" class="btn btn-primary" :disabled="saving" @click="handleSave">
           <span v-if="saving" class="loading loading-spinner loading-sm"></span>
           <span v-else>{{ isNew ? 'Create' : 'Save' }}</span>
@@ -1589,6 +1593,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useRegion } from '@/composables/useRegion';
+import { apiService } from '@/services/ApiService';
 import { worldServiceFrontend, type World, type WorldInfo } from '../services/WorldServiceFrontend';
 import JobWatch from '@/components/JobWatch.vue';
 import { useJobs } from '@/composables/useJobs';
@@ -1607,6 +1612,7 @@ const { currentRegionId } = useRegion();
 const isNew = computed(() => props.world === 'new');
 
 const saving = ref(false);
+const syncingUniverse = ref(false);
 const error = ref<string | null>(null);
 const successMessage = ref<string | null>(null);
 
@@ -2246,6 +2252,25 @@ const handleZoneInput = (event: Event) => {
     } else {
       formData.value.worldId = `${currentRegionId.value}:${worldNameInput.value}`;
     }
+  }
+};
+
+const handleSyncUniverse = async () => {
+  if (!formData.value.worldId || isNew.value) return;
+  syncingUniverse.value = true;
+  error.value = null;
+  successMessage.value = null;
+  try {
+    const data = await apiService.post<any>(`/control/universe/world/${encodeURIComponent(formData.value.worldId)}/sync`);
+    if (data.ok) {
+      successMessage.value = 'Universe sync: ' + (data.name || 'OK');
+    } else {
+      error.value = 'Universe sync failed: ' + (data.error || 'Unknown error');
+    }
+  } catch (e: any) {
+    error.value = e.response?.data?.error || 'Universe sync failed';
+  } finally {
+    syncingUniverse.value = false;
   }
 };
 
