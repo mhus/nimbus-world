@@ -336,7 +336,7 @@ public class UniverseController extends BaseEditorController {
     // --- Universe-to-Sector: Entry Points ---
 
     public record EntryPointsRequest(String worldId, String userId, String characterId, String instanceId) {}
-    public record HexGridInfo(int q, int r, String title, String icon, boolean hasEntryPoint) {}
+    public record HexGridInfo(int q, int r, String title, String icon, boolean hasEntryPoint, String color) {}
     public record EntryPointsResponse(boolean hasLastPosition, List<HexGridInfo> visitedGrids) {}
 
     @Operation(summary = "Get available entry points",
@@ -403,7 +403,9 @@ public class UniverseController extends BaseEditorController {
                             icon = pd.getIcon();
                             hasEntryPoint = pd.getEntryPoint() != null;
                         }
-                        return new HexGridInfo(q, r, title, icon, hasEntryPoint);
+                        String color = grid != null && grid.getParameters() != null
+                                ? grid.getParameters().get("p_color") : null;
+                        return new HexGridInfo(q, r, title, icon, hasEntryPoint, color);
                     })
                     .toList();
         }
