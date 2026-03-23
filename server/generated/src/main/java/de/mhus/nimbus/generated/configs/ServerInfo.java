@@ -14,5 +14,6 @@ public class ServerInfo {
     @com.fasterxml.jackson.annotation.JsonProperty("websocketUrl")
     private String websocketUrl;
     @com.fasterxml.jackson.annotation.JsonProperty("exitUrl")
+    @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
     private String exitUrl;
 }

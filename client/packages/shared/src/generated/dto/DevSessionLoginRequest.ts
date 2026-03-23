@@ -12,4 +12,5 @@ export interface DevSessionLoginRequest {
   actor: ActorRoles;
   entryPoint: string;
   instanceId: string;
+  loginSource: string;
 }
