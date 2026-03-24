@@ -4,6 +4,7 @@ import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.player.readiness.WebSocketSessionTracker;
 import de.mhus.nimbus.world.player.session.PlayerSession;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
@@ -24,13 +25,16 @@ public class WorldWebSocketHandler extends TextWebSocketHandler {
     private final SessionManager sessionManager;
     private final MessageRouter messageRouter;
 
+    @Value("${nimbus.websocket.message-size-limit:10485760}")
+    private int messageSizeLimit; // default 10MB
+
     @Override
     public void afterConnectionEstablished(WebSocketSession webSocketSession) throws Exception {
         tracker.increment();
 
-        // Allow large binary messages for compressed chunk data (default 8KB is too small)
-        webSocketSession.setBinaryMessageSizeLimit(512 * 1024); // 512KB
-        webSocketSession.setTextMessageSizeLimit(512 * 1024);   // 512KB
+        // Allow large binary messages for compressed chunk data
+        webSocketSession.setBinaryMessageSizeLimit(messageSizeLimit);
+        webSocketSession.setTextMessageSizeLimit(messageSizeLimit);
 
         String worldId = extractWorldId(webSocketSession);
         log.info("WebSocket connection established: session={}, worldId={}",
