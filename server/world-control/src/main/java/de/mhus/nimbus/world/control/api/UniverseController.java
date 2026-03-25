@@ -13,8 +13,11 @@ import de.mhus.nimbus.world.control.service.UniverseClientService;
 import de.mhus.nimbus.world.shared.access.AccessService;
 import de.mhus.nimbus.world.shared.access.RequireSectorRole;
 import de.mhus.nimbus.world.shared.region.RCharacterService;
+import de.mhus.nimbus.world.shared.region.RegionCharacterSettings;
 import de.mhus.nimbus.world.shared.rest.BaseEditorController;
 import de.mhus.nimbus.world.shared.sector.RUserService;
+import de.mhus.nimbus.world.shared.world.WAnything;
+import de.mhus.nimbus.world.shared.world.WAnythingService;
 import de.mhus.nimbus.world.shared.world.WWorld;
 import de.mhus.nimbus.world.shared.world.WWorldService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -46,6 +49,8 @@ public class UniverseController extends BaseEditorController {
     private final WPlayerSessionService playerSessionService;
     private final WHexGridService hexGridService;
     private final WProgressService progressService;
+    private final WAnythingService anythingService;
+    private final RegionCharacterSettings characterSettings;
 
     // --- Admin endpoints (require SECTOR_ADMIN via session cookie) ---
 
@@ -241,6 +246,156 @@ public class UniverseController extends BaseEditorController {
                 .toList();
 
         return ResponseEntity.ok(new PrepareLoginResponse(true, actors, characters));
+    }
+
+    // --- Universe-to-Sector: Prepare New Character ---
+
+    public record PrepareNewCharacterRequest(String userId, String worldId) {}
+    public record CharacterTemplateInfo(String name, String title, String description) {}
+    public record PrepareNewCharacterResponse(boolean canCreate, int currentCount, int maxCount, List<CharacterTemplateInfo> templates) {}
+
+    @Operation(summary = "Prepare new character creation",
+            description = "Returns available character templates and whether the user can create more characters. Authenticated via Universe Bearer token.")
+    @PostMapping("/prepareNewCharacter")
+    public ResponseEntity<?> prepareNewCharacter(@RequestBody PrepareNewCharacterRequest req) {
+        if (req.userId() == null || req.userId().isBlank() || req.worldId() == null || req.worldId().isBlank()) {
+            return bad("userId and worldId are required");
+        }
+
+        var userOpt = userService.getByUsername(req.userId());
+        if (userOpt.isEmpty()) {
+            return bad("User not found: " + req.userId());
+        }
+
+        var worldOpt = worldService.getByWorldId(req.worldId());
+        if (worldOpt.isEmpty()) {
+            return bad("World not found: " + req.worldId());
+        }
+
+        var worldId = WorldId.of(req.worldId());
+        String regionId = worldId.get().getRegionId();
+
+        // Check character limit
+        var user = userOpt.get();
+        Integer userLimit = user.getCharacterLimitForRegion(regionId);
+        int effectiveLimit = userLimit != null ? userLimit : characterSettings.getMaxPerRegion();
+        int currentCount = characterService.listCharacters(req.userId(), regionId).size();
+        boolean canCreate = currentCount < effectiveLimit;
+
+        // Load character templates from WAnything with collection 'character-templates' for the region
+        String regionWorldId = WorldId.of(WorldId.COLLECTION_REGION, regionId).get().getId();
+        var templates = anythingService.findByWorldIdAndCollectionAndEnabled(regionWorldId, "character-templates", true)
+                .stream()
+                .map(a -> new CharacterTemplateInfo(
+                        a.getName(),
+                        a.getTitle() != null ? a.getTitle() : a.getName(),
+                        a.getDescription()
+                ))
+                .toList();
+
+        return ResponseEntity.ok(new PrepareNewCharacterResponse(canCreate, currentCount, effectiveLimit, templates));
+    }
+
+    // --- Universe-to-Sector: Create Character ---
+
+    public record CreateCharacterRequest(String userId, String worldId, String name, String title, String templateName) {}
+    public record CreateCharacterResponse(String name, String title) {}
+
+    @Operation(summary = "Create a new character",
+            description = "Creates a new character for the user in the region. Authenticated via Universe Bearer token.")
+    @PostMapping("/createCharacter")
+    public ResponseEntity<?> createCharacter(@RequestBody CreateCharacterRequest req) {
+        if (req.userId() == null || req.userId().isBlank() || req.worldId() == null || req.worldId().isBlank()
+                || req.name() == null || req.name().isBlank()) {
+            return bad("userId, worldId and name are required");
+        }
+
+        // Validate character name format
+        if (!req.name().matches("[a-zA-Z0-9_-]{3,64}")) {
+            return bad("Character name must be 3-64 characters, only a-zA-Z0-9_-");
+        }
+
+        var worldOpt = worldService.getByWorldId(req.worldId());
+        if (worldOpt.isEmpty()) {
+            return bad("World not found: " + req.worldId());
+        }
+
+        var worldId = WorldId.of(req.worldId());
+        String regionId = worldId.get().getRegionId();
+
+        // Check if character name already exists in the region
+        if (characterService.findByRegionAndName(regionId, req.name()).isPresent()) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", "Character name already exists in this region: " + req.name()));
+        }
+
+        String display = req.title() != null && !req.title().isBlank() ? req.title() : req.name();
+
+        try {
+            var character = characterService.createCharacter(req.userId(), regionId, req.name(), display);
+
+            // If a template was specified, apply template data
+            if (req.templateName() != null && !req.templateName().isBlank()) {
+                String regionWorldId = WorldId.of(WorldId.COLLECTION_REGION, regionId).get().getId();
+                var templateOpt = anythingService.findByWorldIdAndCollectionAndName(regionWorldId, "character-templates", req.templateName());
+                if (templateOpt.isPresent()) {
+                    applyCharacterTemplate(character, templateOpt.get());
+                }
+            }
+
+            return ResponseEntity.status(HttpStatus.CREATED).body(new CreateCharacterResponse(character.getName(),
+                    character.getPublicData() != null ? character.getPublicData().getTitle() : character.getName()));
+        } catch (IllegalStateException e) {
+            return bad(e.getMessage());
+        } catch (IllegalArgumentException e) {
+            return bad(e.getMessage());
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private void applyCharacterTemplate(de.mhus.nimbus.world.shared.region.RCharacter character, WAnything template) {
+        if (template.getData() == null) return;
+        try {
+            Map<String, Object> data;
+            if (template.getData() instanceof Map) {
+                data = (Map<String, Object>) template.getData();
+            } else {
+                return;
+            }
+
+            // Apply portrait path from template
+            if (data.containsKey("portraitPath") && character.getPublicData() != null) {
+                character.getPublicData().setPortraitPath((String) data.get("portraitPath"));
+            }
+
+            // Apply third person model from template
+            if (data.containsKey("thirdPersonModelId") && character.getPublicData() != null) {
+                character.getPublicData().setThirdPersonModelId((String) data.get("thirdPersonModelId"));
+            }
+
+            // Apply skills from template
+            if (data.containsKey("skills") && data.get("skills") instanceof Map) {
+                Map<String, Object> skills = (Map<String, Object>) data.get("skills");
+                for (var entry : skills.entrySet()) {
+                    if (entry.getValue() instanceof Number) {
+                        character.setSkill(entry.getKey(), ((Number) entry.getValue()).intValue());
+                    }
+                }
+            }
+
+            // Apply skill points from template
+            if (data.containsKey("skillPoints") && data.get("skillPoints") instanceof Number) {
+                character.setSkillPoints(((Number) data.get("skillPoints")).intValue());
+            }
+
+            // Apply silver from template
+            if (data.containsKey("silver") && data.get("silver") instanceof Number) {
+                character.setSilver(((Number) data.get("silver")).longValue());
+            }
+
+            characterService.updateCharater(character);
+        } catch (Exception e) {
+            log.warn("Failed to apply character template '{}': {}", template.getName(), e.getMessage());
+        }
     }
 
     // --- Universe-to-Sector: Agent Login ---
