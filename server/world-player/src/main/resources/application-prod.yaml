@@ -1,0 +1,21 @@
+# Production profile for world-player
+# Activate with: SPRING_PROFILES_ACTIVE=prod
+
+logging:
+  level:
+    root: WARN
+    de.mhus.nimbus: INFO
+    org.springframework.web: WARN
+    org.springframework.data.mongodb.core.MongoTemplate: WARN
+
+server:
+  error:
+    include-message: never
+    include-binding-errors: never
+    include-exception: false
+    include-stacktrace: never
+
+management:
+  endpoint:
+    health:
+      show-details: when-authorized
