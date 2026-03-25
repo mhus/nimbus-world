@@ -15,6 +15,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import de.mhus.nimbus.shared.user.ActorRoles;
+import de.mhus.nimbus.shared.types.UserId;
+
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -271,6 +275,56 @@ public class WWorldService {
                     mainPublicData.getSeasonProgress(),
                     mainWorldTime.getCurrentEra());
         }
+    }
+
+    /**
+     * Returns synthetic editor instances for a world based on its defined epochs.
+     * Each epoch produces one instance with instanceId "x{epoch}".
+     * Validates that the user has the EDITOR actor role for this world.
+     *
+     * @param worldId The base worldId (must be a main world)
+     * @param userId The userId to check editor access for
+     * @return List of synthetic WWorldInstance objects, empty if user is not an editor or world not found
+     */
+    @Transactional(readOnly = true)
+    public List<WWorldInstance> getEditorInstances(String worldId, String username) {
+        UserId userId = UserId.of(username).orElse(null);
+        if (userId == null) {
+            log.warn("getEditorInstances: invalid username: {}", username);
+            return List.of();
+        }
+        Optional<WWorld> worldOpt = repository.findByWorldId(worldId);
+        if (worldOpt.isEmpty()) {
+            log.warn("getEditorInstances: world not found: {}", worldId);
+            return List.of();
+        }
+        WWorld world = worldOpt.get();
+
+        // Verify user has EDITOR role
+        if (!world.getActorRolesForUser(userId).contains(ActorRoles.EDITOR)) {
+            log.warn("getEditorInstances: user {} does not have EDITOR role for world {}", userId, worldId);
+            return List.of();
+        }
+
+        List<WEpochMeta> epochs = world.getEpoches();
+        if (epochs == null || epochs.isEmpty()) {
+            log.debug("getEditorInstances: no epochs defined for world {}", worldId);
+            return List.of();
+        }
+
+        List<WWorldInstance> result = new ArrayList<>();
+        for (WEpochMeta epoch : epochs) {
+            WWorldInstance synthetic = new WWorldInstance();
+            synthetic.setInstanceId("x" + epoch.getEpoch());
+            synthetic.setWorldId(worldId);
+            synthetic.setTitle("Epoch " + epoch.getEpoch() + ": " + epoch.getName());
+            synthetic.setCreator("system");
+            synthetic.setPlayers(List.of());
+            result.add(synthetic);
+        }
+
+        log.debug("getEditorInstances: returning {} synthetic instances for world {}", result.size(), worldId);
+        return result;
     }
 
     /**

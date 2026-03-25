@@ -274,18 +274,47 @@ public class UniverseController extends BaseEditorController {
 
     // --- Universe-to-Sector: Instances ---
 
-    public record InstancesRequest(String worldId, String playerId) {}
+    public record InstancesRequest(String worldId, String playerId, String actor) {}
     public record InstanceInfo(String instanceId, String title, String creator, List<String> players, java.time.Instant createdAt) {}
 
     @Operation(summary = "List instances for player",
-            description = "Returns instances accessible by the player. Authenticated via Universe Bearer token.")
+            description = "Returns instances accessible by the player. For EDITOR actor, returns synthetic epoch instances. Authenticated via Universe Bearer token.")
     @PostMapping("/instances")
     public ResponseEntity<?> listInstances(@RequestBody InstancesRequest req) {
         if (req.worldId() == null || req.worldId().isBlank()) {
             return bad("worldId is required");
         }
         try {
-            var instances = accessService.getInstancesForPlayer(req.worldId(), req.playerId(), false);
+            // EDITOR actor: return synthetic epoch instances
+            if ("EDITOR".equals(req.actor())) {
+                String username = extractUsername(req.playerId());
+                var editorInstances = worldService.getEditorInstances(req.worldId(), username);
+                var result = editorInstances.stream()
+                        .map(i -> new InstanceInfo(
+                                i.getInstanceId(),
+                                i.getTitle(),
+                                i.getCreator(),
+                                i.getPlayers(),
+                                i.getCreatedAt()
+                        ))
+                        .toList();
+                return ResponseEntity.ok(result);
+            }
+
+            // SUPPORT actor: return all instances (if user has SUPPORT role)
+            boolean allInstances = false;
+            if ("SUPPORT".equals(req.actor())) {
+                String username = extractUsername(req.playerId());
+                UserId userId = UserId.of(username).orElse(null);
+                if (userId != null) {
+                    var world = worldService.getByWorldId(req.worldId()).orElse(null);
+                    if (world != null && world.getActorRolesForUser(userId).contains(ActorRoles.SUPPORT)) {
+                        allInstances = true;
+                    }
+                }
+            }
+
+            var instances = accessService.getInstancesForPlayer(req.worldId(), req.playerId(), allInstances);
             var result = instances.stream()
                     .map(i -> new InstanceInfo(
                             i.getInstanceId(),
@@ -301,6 +330,14 @@ public class UniverseController extends BaseEditorController {
         }
     }
 
+    private String extractUsername(String playerId) {
+        if (playerId == null) return null;
+        // playerId format: @username:characterId
+        String id = playerId.startsWith("@") ? playerId.substring(1) : playerId;
+        int colonIdx = id.indexOf(':');
+        return colonIdx > 0 ? id.substring(0, colonIdx) : id;
+    }
+
     // --- Universe-to-Sector: Session Login ---
 
     public record SessionLoginRequest(String userId, String worldId, String characterId, String actor, String instanceId, String entryPoint, String loginSource) {}
@@ -313,11 +350,19 @@ public class UniverseController extends BaseEditorController {
             return bad("userId, worldId, characterId and actor are required");
         }
         try {
+            ActorRoles actor = ActorRoles.valueOf(req.actor());
+
+            // Validate actor role and instance combination
+            var validationError = validateActorInstance(req.userId(), req.worldId(), actor, req.instanceId(), req.characterId());
+            if (validationError != null) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", validationError));
+            }
+
             var sessionRequest = de.mhus.nimbus.world.shared.dto.DevSessionLoginRequest.builder()
                     .worldId(req.worldId())
                     .userId(req.userId())
                     .characterId(req.characterId())
-                    .actor(ActorRoles.valueOf(req.actor()))
+                    .actor(actor)
                     .entryPoint(req.entryPoint())
                     .instanceId(req.instanceId())
                     .loginSource(req.loginSource())
@@ -331,6 +376,58 @@ public class UniverseController extends BaseEditorController {
         } catch (Exception e) {
             return bad("Session login failed: " + e.getMessage());
         }
+    }
+
+    /**
+     * Validates that the actor role matches the chosen instance.
+     * - EDITOR: only synthetic instances (x-prefix), requires EDITOR role
+     * - SUPPORT: any instance, requires SUPPORT role
+     * - PLAYER: only instances where player is allowed
+     *
+     * @return error message if validation fails, null if ok
+     */
+    private String validateActorInstance(String userId, String worldId, ActorRoles actor, String instanceId, String characterId) {
+        UserId uid = UserId.of(userId).orElse(null);
+        if (uid == null) return "Invalid userId";
+
+        var world = worldService.getByWorldId(worldId).orElse(null);
+        if (world == null) return "World not found";
+
+        var allowedActors = world.getActorRolesForUser(uid);
+        if (!allowedActors.contains(actor)) {
+            return "User does not have " + actor + " role for this world";
+        }
+
+        if (instanceId == null || instanceId.isBlank()) {
+            // No instance selected — only allowed for PLAYER (new instance)
+            if (actor == ActorRoles.EDITOR || actor == ActorRoles.SUPPORT) {
+                return actor + " must select an instance";
+            }
+            return null;
+        }
+
+        switch (actor) {
+            case EDITOR -> {
+                // EDITOR may only use synthetic epoch instances (x-prefix)
+                if (!instanceId.startsWith("x")) {
+                    return "Editor can only use epoch instances";
+                }
+            }
+            case SUPPORT -> {
+                // SUPPORT can access all instances — no further check needed
+            }
+            case PLAYER -> {
+                // PLAYER must be allowed in the instance
+                String playerId = "@" + userId + ":" + characterId;
+                var instance = accessService.getInstancesForPlayer(worldId, playerId, false).stream()
+                        .filter(i -> instanceId.equals(i.getInstanceId()))
+                        .findFirst();
+                if (instance.isEmpty()) {
+                    return "Player does not have access to this instance";
+                }
+            }
+        }
+        return null;
     }
 
     // --- Universe-to-Sector: Entry Points ---
