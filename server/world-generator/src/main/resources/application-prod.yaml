@@ -7,6 +7,9 @@ logging:
     de.mhus.nimbus: INFO
     org.springframework.web: WARN
     org.springframework.data.mongodb.core.MongoTemplate: WARN
+  structured:
+    format:
+      console: logstash
 
 server:
   error:
@@ -20,6 +23,13 @@ nimbus:
     auto-migrate: false
 
 management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
   endpoint:
     health:
       show-details: when-authorized
+  metrics:
+    tags:
+      application: ${spring.application.name}

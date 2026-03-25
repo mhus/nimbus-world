@@ -11,6 +11,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -20,11 +21,13 @@ import java.util.Map;
 /**
  * REST Controller for Authentication, Authorization, and Access (AAA).
  * Provides development login endpoints for session and agent access.
+ * Can be disabled via nimbus.devlogin.enabled=false.
  */
 @RestController
 @RequestMapping("/control/aaa")
 @RequiredArgsConstructor
 @Slf4j
+@ConditionalOnProperty(name = "nimbus.devlogin.enabled", havingValue = "true", matchIfMissing = true)
 public class ControlAaaController extends BaseEditorController {
 
     private final AccessService accessService;

@@ -8,6 +8,8 @@ spring:
       database: world
 
 nimbus:
+  devlogin:
+    enabled: ${NIMBUS_DEVLOGIN_ENABLED:true}
   services:
     job-processing: true
     storage-cleanup: true

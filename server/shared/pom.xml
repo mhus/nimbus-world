@@ -140,6 +140,10 @@
             <artifactId>spring-boot-actuator</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-registry-prometheus</artifactId>
+        </dependency>
+        <dependency>
             <groupId>de.mhus.nimbus</groupId>
             <artifactId>generated</artifactId>
             <version>${project.version}</version>
