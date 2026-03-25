@@ -3,6 +3,7 @@ package de.mhus.nimbus.world.shared.access;
 import de.mhus.nimbus.shared.security.JwtService;
 import de.mhus.nimbus.shared.security.KeyIntent;
 import de.mhus.nimbus.shared.security.KeyType;
+import de.mhus.nimbus.shared.service.MetricService;
 import de.mhus.nimbus.world.shared.region.RegionSettings;
 import de.mhus.nimbus.world.shared.session.WSession;
 import de.mhus.nimbus.world.shared.session.WSessionService;
@@ -14,7 +15,6 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -30,7 +30,6 @@ import java.util.Optional;
  * Currently in logging-only mode - does not block unauthorized requests.
  */
 @Slf4j
-@RequiredArgsConstructor
 public abstract class AccessFilterBase extends OncePerRequestFilter {
 
     // Request attributes for downstream use
@@ -42,9 +41,24 @@ public abstract class AccessFilterBase extends OncePerRequestFilter {
     public static final String ATTR_IS_AGENT = "accessIsAgent";
     public static final String ATTR_IS_AUTHENTICATED = "accessIsAuthenticated";
 
+    private static final String METRIC_NAME = "access.filter.denied";
+
     private final JwtService jwtService;
     private final WSessionService sessionService;
     private final RegionSettings regionProperties;
+    private final MetricService metricService;
+
+    protected AccessFilterBase(JwtService jwtService, WSessionService sessionService,
+                                RegionSettings regionProperties, MetricService metricService) {
+        this.jwtService = jwtService;
+        this.sessionService = sessionService;
+        this.regionProperties = regionProperties;
+        this.metricService = metricService;
+    }
+
+    private void denyMetric(String reason) {
+        metricService.counter(METRIC_NAME, "reason", reason).increment();
+    }
 
     /**
      * Determines if the given request path requires authentication.
@@ -121,6 +135,7 @@ public abstract class AccessFilterBase extends OncePerRequestFilter {
                     authenticated = true;
                     log.info("Server-to-server authentication successful");
                 } else {
+                    denyMetric("invalid_bearer");
                     log.warn("Invalid bearer token");
                     request.setAttribute(ATTR_IS_AUTHENTICATED, false);
                 }
@@ -131,6 +146,7 @@ public abstract class AccessFilterBase extends OncePerRequestFilter {
                 String sessionToken = extractSessionTokenFromCookie(request);
 
                 if (sessionToken == null) {
+                    denyMetric("no_session_token");
                     log.debug("No sessionToken cookie found");
                     request.setAttribute(ATTR_IS_AUTHENTICATED, false);
                 } else {
@@ -138,11 +154,13 @@ public abstract class AccessFilterBase extends OncePerRequestFilter {
                     SessionTokenClaims claims = validateSessionToken(sessionToken);
 
                     if (claims == null) {
+                        denyMetric("invalid_session_token");
                         log.warn("Invalid or expired sessionToken");
                         request.setAttribute(ATTR_IS_AUTHENTICATED, false);
                     } else {
                         // 4. Check if claims are acceptable for this service (e.g., reject agent tokens)
                         if (!isClaimsAcceptable(claims)) {
+                            denyMetric("claims_not_acceptable");
                             log.warn("Claims not acceptable for this service - agent={}", claims.agent());
                             request.setAttribute(ATTR_IS_AUTHENTICATED, false);
                         } else {
@@ -150,6 +168,7 @@ public abstract class AccessFilterBase extends OncePerRequestFilter {
                             if (!claims.agent() && claims.sessionId() != null) {
                                 boolean sessionValid = validateRedisSession(claims, request.getRequestURI());
                                 if (!sessionValid) {
+                                    denyMetric("session_invalid");
                                     log.warn("Redis session validation failed - sessionId={}", claims.sessionId());
                                     request.setAttribute(ATTR_IS_AUTHENTICATED, false);
                                 } else {
@@ -180,6 +199,8 @@ public abstract class AccessFilterBase extends OncePerRequestFilter {
             }
 
         } catch (Exception e) {
+            denyMetric("error");
+            metricService.exception(getClass(), "filter", e);
             log.error("AccessFilter error: {}", e.getMessage(), e);
             request.setAttribute(ATTR_IS_AUTHENTICATED, false);
             authenticated = false;
@@ -191,6 +212,7 @@ public abstract class AccessFilterBase extends OncePerRequestFilter {
         } else
         if (!authenticated && shouldRequireAuthentication(request.getRequestURI(), request.getMethod())) {
             // Check if authentication is required for this path
+            denyMetric("auth_required");
             log.warn("Access denied - authentication required for: {} {}", request.getMethod(), request.getRequestURI());
             handleUnauthorized(request, response);
             return;
@@ -199,6 +221,7 @@ public abstract class AccessFilterBase extends OncePerRequestFilter {
         // Check role-based path restrictions for authenticated users
         if (authenticated && validatedClaims != null) {
             if (!isPathAllowedForRole(request.getRequestURI(), validatedClaims)) {
+                denyMetric("role_forbidden");
                 log.warn("Access denied - path not allowed for role={}: {} {}",
                         validatedClaims.role(), request.getMethod(), request.getRequestURI());
                 response.setStatus(HttpServletResponse.SC_FORBIDDEN);
@@ -395,6 +418,7 @@ public abstract class AccessFilterBase extends OncePerRequestFilter {
             return new SessionTokenClaims(agent, worldId, userId, characterId, role, sessionId, regionId);
 
         } catch (Exception e) {
+            metricService.exception(getClass(), "token_validation", e);
             log.warn("Token validation error: {}", e.getMessage());
             return null;
         }
@@ -462,6 +486,7 @@ public abstract class AccessFilterBase extends OncePerRequestFilter {
             return true;
 
         } catch (Exception e) {
+            metricService.exception(getClass(), "session_validation", e);
             log.error("Redis session validation error: {}", e.getMessage(), e);
             return false;
         }
@@ -531,6 +556,7 @@ public abstract class AccessFilterBase extends OncePerRequestFilter {
             return true;
 
         } catch (Exception e) {
+            metricService.exception(getClass(), "bearer_validation", e);
             log.warn("Bearer token validation error: {}", e.getMessage());
             return false;
         }

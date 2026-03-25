@@ -3,6 +3,7 @@ package de.mhus.nimbus.world.control.security;
 import de.mhus.nimbus.shared.security.JwtService;
 import de.mhus.nimbus.shared.security.KeyIntent;
 import de.mhus.nimbus.shared.security.KeyType;
+import de.mhus.nimbus.shared.service.MetricService;
 import de.mhus.nimbus.shared.service.SSettingsService;
 import de.mhus.nimbus.world.shared.access.AccessFilterBase;
 import de.mhus.nimbus.world.shared.access.AccessSettings;
@@ -51,8 +52,8 @@ public class ControlAccessFilter extends AccessFilterBase {
             "^/control/worlds/[^/]+/assets/(p|rp):.*$"
     );
 
-    public ControlAccessFilter(JwtService jwtService, WSessionService sessionService, AccessSettings accessProperties, RegionSettings regionProperties, SSettingsService settingsService) {
-        super(jwtService, sessionService, regionProperties);
+    public ControlAccessFilter(JwtService jwtService, WSessionService sessionService, AccessSettings accessProperties, RegionSettings regionProperties, SSettingsService settingsService, MetricService metricService) {
+        super(jwtService, sessionService, regionProperties, metricService);
         this.accessProperties = accessProperties;
         this.jwtService = jwtService;
         this.settingsService = settingsService;

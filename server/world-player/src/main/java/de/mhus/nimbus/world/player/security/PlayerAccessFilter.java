@@ -1,6 +1,7 @@
 package de.mhus.nimbus.world.player.security;
 
 import de.mhus.nimbus.shared.security.JwtService;
+import de.mhus.nimbus.shared.service.MetricService;
 import de.mhus.nimbus.world.shared.access.AccessFilterBase;
 import de.mhus.nimbus.world.shared.access.AccessSettings;
 import de.mhus.nimbus.world.shared.region.RegionSettings;
@@ -25,8 +26,8 @@ public class PlayerAccessFilter extends AccessFilterBase {
 
     private final AccessSettings accessProperties;
 
-    public PlayerAccessFilter(JwtService jwtService, WSessionService sessionService, AccessSettings accessProperties, RegionSettings regionProperties) {
-        super(jwtService, sessionService, regionProperties);
+    public PlayerAccessFilter(JwtService jwtService, WSessionService sessionService, AccessSettings accessProperties, RegionSettings regionProperties, MetricService metricService) {
+        super(jwtService, sessionService, regionProperties, metricService);
         this.accessProperties = accessProperties;
     }
 

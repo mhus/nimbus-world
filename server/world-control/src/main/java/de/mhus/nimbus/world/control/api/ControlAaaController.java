@@ -8,10 +8,10 @@ import de.mhus.nimbus.world.shared.dto.DevSessionLoginRequest;
 import de.mhus.nimbus.world.shared.dto.WorldInfoDto;
 import de.mhus.nimbus.world.shared.rest.BaseEditorController;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -21,16 +21,28 @@ import java.util.Map;
 /**
  * REST Controller for Authentication, Authorization, and Access (AAA).
  * Provides development login endpoints for session and agent access.
- * Can be disabled via nimbus.devlogin.enabled=false.
+ * Disabled at runtime via nimbus.devlogin.enabled=false.
  */
 @RestController
 @RequestMapping("/control/aaa")
-@RequiredArgsConstructor
 @Slf4j
-@ConditionalOnProperty(name = "nimbus.devlogin.enabled", havingValue = "true", matchIfMissing = true)
 public class ControlAaaController extends BaseEditorController {
 
     private final AccessService accessService;
+
+    @Value("${nimbus.devlogin.enabled:false}")
+    private boolean devLoginEnabled;
+
+    public ControlAaaController(AccessService accessService) {
+        this.accessService = accessService;
+    }
+
+    private ResponseEntity<?> checkDevLoginEnabled() {
+        if (!devLoginEnabled) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "Dev login is disabled"));
+        }
+        return null;
+    }
 
     // ===== Request/Response DTOs =====
 
@@ -67,6 +79,8 @@ public class ControlAaaController extends BaseEditorController {
             @RequestParam(required = false) String search,
             @RequestParam(required = false, defaultValue = "100") int limit
     ) {
+        var blocked = checkDevLoginEnabled();
+        if (blocked != null) return blocked;
         log.debug("GET /control/aaa/devlogin - search={}, limit={}", search, limit);
 
         try {
@@ -96,6 +110,8 @@ public class ControlAaaController extends BaseEditorController {
             @RequestParam(required = false) String search,
             @RequestParam(required = false, defaultValue = "100") int limit
     ) {
+        var blocked = checkDevLoginEnabled();
+        if (blocked != null) return blocked;
         log.debug("GET /control/aaa/devlogin/users - search={}, limit={}", search, limit);
 
         try {
@@ -120,6 +136,8 @@ public class ControlAaaController extends BaseEditorController {
      */
     @GetMapping("/devlogin/zones")
     public ResponseEntity<?> getDevLoginZones(@RequestParam String worldId) {
+        var blocked = checkDevLoginEnabled();
+        if (blocked != null) return blocked;
         log.debug("GET /control/aaa/devlogin/zones - worldId={}", worldId);
 
         ResponseEntity<?> validation = validateId(worldId, "worldId");
@@ -151,6 +169,8 @@ public class ControlAaaController extends BaseEditorController {
             @RequestParam(required = false) String playerId,
             @RequestParam(required = false, defaultValue = "false") boolean all
     ) {
+        var blocked = checkDevLoginEnabled();
+        if (blocked != null) return blocked;
         log.debug("GET /control/aaa/devlogin/instances - worldId={}, playerId={}, all={}", worldId, playerId, all);
 
         ResponseEntity<?> validation = validateId(worldId, "worldId");
@@ -181,6 +201,8 @@ public class ControlAaaController extends BaseEditorController {
             @RequestParam String userId,
             @RequestParam String worldId
     ) {
+        var blocked = checkDevLoginEnabled();
+        if (blocked != null) return blocked;
         log.debug("GET /control/aaa/devlogin/characters - userId={}, worldId={}", userId, worldId);
 
         // Validate parameters
@@ -218,6 +240,8 @@ public class ControlAaaController extends BaseEditorController {
      */
     @PostMapping("/devlogin")
     public ResponseEntity<?> devLogin(@RequestBody DevLoginRequest request) {
+        var blocked = checkDevLoginEnabled();
+        if (blocked != null) return blocked;
         log.debug("POST /control/aaa/devlogin - worldId={}, userId={}, agent={}, characterId={}, actor={}",
                 request.worldId(), request.userId(), request.agent(),
                 request.characterId(), request.actor());

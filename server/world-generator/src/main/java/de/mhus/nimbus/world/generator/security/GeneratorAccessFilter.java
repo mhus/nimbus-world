@@ -1,6 +1,7 @@
 package de.mhus.nimbus.world.generator.security;
 
 import de.mhus.nimbus.shared.security.JwtService;
+import de.mhus.nimbus.shared.service.MetricService;
 import de.mhus.nimbus.shared.service.SSettingsService;
 import de.mhus.nimbus.shared.settings.SettingString;
 import de.mhus.nimbus.world.shared.access.AccessFilterBase;
@@ -38,8 +39,8 @@ public class GeneratorAccessFilter extends AccessFilterBase {
 
     private SettingString settingMcpToken;
 
-    public GeneratorAccessFilter(JwtService jwtService, WSessionService sessionService, AccessSettings accessProperties, RegionSettings regionProperties, SSettingsService settingsService) {
-        super(jwtService, sessionService, regionProperties);
+    public GeneratorAccessFilter(JwtService jwtService, WSessionService sessionService, AccessSettings accessProperties, RegionSettings regionProperties, SSettingsService settingsService, MetricService metricService) {
+        super(jwtService, sessionService, regionProperties, metricService);
         this.accessProperties = accessProperties;
         this.settingsService = settingsService;
     }
