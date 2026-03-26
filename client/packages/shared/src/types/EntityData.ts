@@ -21,7 +21,8 @@ export type PoseType =
   | 'Fish'      // Schwimmend (Fische)
   | 'Snake'     // Kriechend (Schlangen)
   | 'Humanoid'  // Menschenähnlich
-  | 'Slime';    // Gleitend/formlos
+  | 'Slime'     // Gleitend/formlos
+  | 'Vehicle';  // Fahrzeug (Kutschen, Wagen, Boote)
 
 /**
  * PoseAnimation - Animation configuration for a pose

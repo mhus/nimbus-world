@@ -219,6 +219,7 @@ const loadEntities = async () => {
       portraitPath: dto.portraitPath || null,
       server: dto.server || null,
       epoches: dto.epoches || [],
+      schedule: dto.schedule || [],
       createdAt: dto.createdAt || new Date().toISOString(),
       updatedAt: dto.updatedAt || new Date().toISOString(),
     }));

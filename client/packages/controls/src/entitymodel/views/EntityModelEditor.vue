@@ -146,6 +146,7 @@
                 <option value="Snake">Snake</option>
                 <option value="Humanoid">Humanoid</option>
                 <option value="Slime">Slime</option>
+                <option value="Vehicle">Vehicle</option>
               </select>
             </div>
 
@@ -1080,6 +1081,7 @@ const MODIFIER_PRESETS: Record<string, string[]> = {
   'Fish':     ['bodySize', 'bodyColor', 'stripeColor', 'tailSize'],
   'Snake':    ['headSize', 'bodySize', 'mainColor', 'patternColor'],
   'Slime':    ['bodySize', 'mainColor'],
+  'Vehicle':  ['mainColor', 'secondaryColor'],
 };
 
 const MODIFIER_PLACEHOLDERS: Record<string, string> = {

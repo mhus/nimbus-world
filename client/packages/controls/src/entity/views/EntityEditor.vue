@@ -227,6 +227,88 @@
                 placeholder="100"
               />
             </div>
+
+            <!-- Behavior Model -->
+            <div class="form-control">
+              <label class="label">
+                <span class="label-text font-medium">Behavior Model</span>
+              </label>
+              <input
+                v-model="entityData.behaviorModel"
+                type="text"
+                class="input input-bordered input-sm"
+                placeholder="e.g. PreyAnimalBehavior"
+              />
+            </div>
+
+            <!-- Speed -->
+            <div class="form-control">
+              <label class="label">
+                <span class="label-text font-medium">Speed</span>
+              </label>
+              <input
+                v-model.number="entityData.speed"
+                type="number"
+                class="input input-bordered input-sm"
+                placeholder="1.0"
+                step="0.1"
+                min="0"
+              />
+              <label class="label">
+                <span class="label-text-alt">Blocks per second</span>
+              </label>
+            </div>
+
+            <!-- Radius -->
+            <div class="form-control">
+              <label class="label">
+                <span class="label-text font-medium">Radius</span>
+              </label>
+              <input
+                v-model.number="entityData.radius"
+                type="number"
+                class="input input-bordered input-sm"
+                placeholder="20"
+                step="1"
+                min="0"
+              />
+              <label class="label">
+                <span class="label-text-alt">Movement radius around middle point (blocks)</span>
+              </label>
+            </div>
+
+            <!-- Middle Point -->
+            <div class="form-control md:col-span-2">
+              <label class="label">
+                <span class="label-text font-medium">Middle Point</span>
+              </label>
+              <div class="grid grid-cols-3 gap-2">
+                <input
+                  v-model.number="middlePointX"
+                  type="number"
+                  class="input input-bordered input-sm"
+                  placeholder="X"
+                  step="0.1"
+                />
+                <input
+                  v-model.number="middlePointY"
+                  type="number"
+                  class="input input-bordered input-sm"
+                  placeholder="Y"
+                  step="0.1"
+                />
+                <input
+                  v-model.number="middlePointZ"
+                  type="number"
+                  class="input input-bordered input-sm"
+                  placeholder="Z"
+                  step="0.1"
+                />
+              </div>
+              <label class="label">
+                <span class="label-text-alt">Center of roaming area (X, Y, Z)</span>
+              </label>
+            </div>
           </div>
 
           <!-- Checkboxes -->
@@ -515,6 +597,32 @@ const previewModelUrl = computed(() => {
   const mp = entityModelData.value?.modelPath;
   if (!mp || !currentWorldId.value) return '';
   return apiService.getBaseUrl() + '/control/worlds/' + currentWorldId.value + '/assets/' + mp;
+});
+
+// Middle Point computed properties (Vector3 with x, y, z)
+const middlePointX = computed({
+  get: () => entityData.value?.middlePoint?.x ?? null,
+  set: (val: number | null) => {
+    if (!entityData.value) return;
+    if (!entityData.value.middlePoint) entityData.value.middlePoint = { x: 0, y: 0, z: 0 };
+    entityData.value.middlePoint.x = val;
+  },
+});
+const middlePointY = computed({
+  get: () => entityData.value?.middlePoint?.y ?? null,
+  set: (val: number | null) => {
+    if (!entityData.value) return;
+    if (!entityData.value.middlePoint) entityData.value.middlePoint = { x: 0, y: 0, z: 0 };
+    entityData.value.middlePoint.y = val;
+  },
+});
+const middlePointZ = computed({
+  get: () => entityData.value?.middlePoint?.z ?? null,
+  set: (val: number | null) => {
+    if (!entityData.value) return;
+    if (!entityData.value.middlePoint) entityData.value.middlePoint = { x: 0, y: 0, z: 0 };
+    entityData.value.middlePoint.z = val;
+  },
 });
 
 const isColorModifier = (key: string): boolean => {
