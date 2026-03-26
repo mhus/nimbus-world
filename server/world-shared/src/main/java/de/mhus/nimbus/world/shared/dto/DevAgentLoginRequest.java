@@ -24,7 +24,4 @@ public class DevAgentLoginRequest {
 
     @NotBlank(message = "userId is required")
     private String userId;
-
-    /** Login source identifier (e.g., "universe", "dev"). Null = default. */
-    private String loginSource;
 }

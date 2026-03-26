@@ -100,18 +100,10 @@ public class WorldConfigController {
         setPlayerBackpackDefaults(playerBackpack);
         setSettingsDefaults(settings);
 
-        // Build ServerInfo from ServerSettings, resolve exitUrl from session loginSource
-        String exitUrl = null;
-        String sessionId = accessUtil.getSessionId(request);
-        if (sessionId != null) {
-            var sessionOpt = sessionService.get(sessionId);
-            if (sessionOpt.isPresent() && sessionOpt.get().getLoginSource() != null) {
-                exitUrl = accessSettings.getLogoutUrlForSource(sessionOpt.get().getLoginSource());
-            }
-        }
+        // Build ServerInfo from ServerSettings
         ServerInfo serverInfo = ServerInfo.builder()
                 .websocketUrl(serverSettings.getWebsocketUrl())
-                .exitUrl(exitUrl)
+                .exitUrl(accessSettings.getLogoutUrl())
                 .build();
 
         // Build complete configuration

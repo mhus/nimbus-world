@@ -21,7 +21,6 @@ public class WSession {
     private boolean serviceSession; // True for agent/service sessions without a player
     private String playerUrl; // Internal URL of the world-player service
     private String entryPoint; // Entry point specification: "last", "grid:q,r", or "world"
-    private String loginSource; // Login source identifier (e.g., "universe", "dev"). Null = default.
     private String teleportation; // Teleportation data for later use
     private List<String> modelSelector; // Model selector for block build operations (config + selected blocks in Vector3Color format)
     private Instant createdAt;

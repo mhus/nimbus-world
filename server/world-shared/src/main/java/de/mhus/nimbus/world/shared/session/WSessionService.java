@@ -35,7 +35,6 @@ public class WSessionService {
     private static final String FIELD_PLAYER_URL = "playerUrl";
     private static final String FIELD_ENTRY_POINT = "entryPoint";
     private static final String FIELD_TELEPORTATION = "teleportation";
-    private static final String FIELD_LOGIN_SOURCE = "loginSource";
     private static final String FIELD_MODEL_SELECTOR = "modelSelector";
     private static final String FIELD_SERVICE_SESSION = "serviceSession";
     private static final String FIELD_CREATED = "created";
@@ -129,7 +128,6 @@ public class WSessionService {
                     .actor((String) map.get(FIELD_ACTOR))
                     .entryPoint((String) map.get(FIELD_ENTRY_POINT))
                     .teleportation((String) map.get(FIELD_TELEPORTATION))
-                    .loginSource((String) map.get(FIELD_LOGIN_SOURCE))
                     .modelSelector(modelSelector)
                     .createdAt(Instant.parse((String) map.get(FIELD_CREATED)))
                     .updatedAt(Instant.parse((String) map.get(FIELD_UPDATED)))
@@ -191,22 +189,6 @@ public class WSessionService {
             existing.setExpireAt(Instant.now().plus(ttl));
             write(existing, ttl);
             log.debug("WSession playerUrl aktualisiert id={} playerUrl={}", id, playerUrl);
-            return existing;
-        });
-    }
-
-    public Optional<WSession> updateLoginSource(String id, String loginSource) {
-        return get(id).map(existing -> {
-            existing.setLoginSource(loginSource);
-            existing.touchUpdate();
-            Duration ttl = switch (existing.getStatus()) {
-                case WAITING -> Duration.ofMinutes(props.getWaitingMinutes());
-                case RUNNING -> Duration.ofHours(props.getRunningHours());
-                case CLOSED -> Duration.ofMinutes(props.getDeprecatedMinutes());
-            };
-            existing.setExpireAt(Instant.now().plus(ttl));
-            write(existing, ttl);
-            log.debug("WSession loginSource aktualisiert id={} loginSource={}", id, loginSource);
             return existing;
         });
     }
@@ -296,9 +278,6 @@ public class WSessionService {
         }
         if (session.getTeleportation() != null) {
             ops.put(k, FIELD_TELEPORTATION, session.getTeleportation());
-        }
-        if (session.getLoginSource() != null) {
-            ops.put(k, FIELD_LOGIN_SOURCE, session.getLoginSource());
         }
         if (session.getModelSelector() != null) {
             try {

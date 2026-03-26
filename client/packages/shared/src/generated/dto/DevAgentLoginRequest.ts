@@ -6,5 +6,4 @@
 export interface DevAgentLoginRequest {
   worldId: string;
   userId: string;
-  loginSource: string;
 }
