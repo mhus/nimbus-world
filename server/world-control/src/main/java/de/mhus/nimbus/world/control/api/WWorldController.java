@@ -13,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import de.mhus.nimbus.world.shared.world.WEpochMeta;
+import de.mhus.nimbus.world.shared.world.WorldInstanceType;
 
 import de.mhus.nimbus.world.shared.access.RequireRegionMaintainer;
 
@@ -45,7 +46,8 @@ public class WWorldController extends BaseEditorController {
             String description,
             WorldInfo publicData,
             Boolean enabled,
-            Boolean instanceable,
+            WorldInstanceType instanceType,
+            Integer maxPlayersPerInstance,
             Set<String> owner,
             Set<String> editor,
             Set<String> supporter,
@@ -71,7 +73,8 @@ public class WWorldController extends BaseEditorController {
             Instant createdAt,
             Instant updatedAt,
             boolean enabled,
-            boolean instanceable,
+            WorldInstanceType instanceType,
+            int maxPlayersPerInstance,
             int groundLevel,
             Integer oceanLevel,
             String groundBlockType,
@@ -97,7 +100,8 @@ public class WWorldController extends BaseEditorController {
             Instant createdAt,
             Instant updatedAt,
             boolean enabled,
-            boolean instanceable,
+            WorldInstanceType instanceType,
+            int maxPlayersPerInstance,
             int groundLevel,
             Integer oceanLevel,
             String groundBlockType,
@@ -131,7 +135,8 @@ public class WWorldController extends BaseEditorController {
                 world.getCreatedAt(),
                 world.getUpdatedAt(),
                 world.isEnabled(),
-                world.isInstanceable(),
+                world.getInstanceType(),
+                world.getMaxPlayersPerInstance(),
                 world.getGroundLevel(),
                 world.getSeaLevel(),
                 world.getGroundBlockType(),
@@ -162,7 +167,8 @@ public class WWorldController extends BaseEditorController {
                 null,  // no createdAt
                 null,  // no updatedAt
                 true,  // collections are always enabled
-                false, // collections are not instanceable
+                WorldInstanceType.NONE, // collections have no instances
+                0,     // default maxPlayersPerInstance
                 0,     // default groundLevel
                 null,  // no oceanLevel
                 null,  // no groundBlockType
@@ -397,7 +403,8 @@ public class WWorldController extends BaseEditorController {
                     worldResponse.createdAt(),
                     worldResponse.updatedAt(),
                     worldResponse.enabled(),
-                    worldResponse.instanceable(),
+                    worldResponse.instanceType(),
+                    worldResponse.maxPlayersPerInstance(),
                     worldResponse.groundLevel(),
                     worldResponse.oceanLevel(),
                     worldResponse.groundBlockType(),
@@ -480,7 +487,8 @@ public class WWorldController extends BaseEditorController {
             if (request.description() != null) existing.setDescription(request.description());
             if (request.publicData() != null) existing.setPublicData(request.publicData());
             if (request.enabled() != null) existing.setEnabled(request.enabled());
-            if (request.instanceable() != null) existing.setInstanceable(request.instanceable());
+            if (request.instanceType() != null) existing.setInstanceType(request.instanceType());
+            if (request.maxPlayersPerInstance() != null) existing.setMaxPlayersPerInstance(request.maxPlayersPerInstance());
             if (request.owner() != null) existing.setOwner(request.owner());
             if (request.editor() != null) existing.setEditor(request.editor());
             if (request.supporter() != null) existing.setSupporter(request.supporter());
@@ -679,7 +687,8 @@ public class WWorldController extends BaseEditorController {
                 w.setSeaBlockType(source.getSeaBlockType());
                 w.setNoiseSeed(source.getNoiseSeed());
                 w.setNoiseFrequency(source.getNoiseFrequency());
-                w.setInstanceable(source.isInstanceable());
+                w.setInstanceType(source.getInstanceType());
+                w.setMaxPlayersPerInstance(source.getMaxPlayersPerInstance());
                 w.setOwner(source.getOwner());
                 w.setEditor(source.getEditor());
                 w.setSupporter(source.getSupporter());

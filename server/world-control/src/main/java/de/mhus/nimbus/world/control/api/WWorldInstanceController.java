@@ -38,7 +38,6 @@ public class WWorldInstanceController extends BaseEditorController {
             String creator,
             List<String> players,
             List<String> activePlayers,
-            InstanceAccessType accessType,
             InstanceDurationType durationType,
             Instant expiresAt,
             Instant createdAt,
@@ -50,7 +49,6 @@ public class WWorldInstanceController extends BaseEditorController {
     public record InstanceUpdateRequest(
             String title,
             String description,
-            InstanceAccessType accessType,
             InstanceDurationType durationType,
             Instant expiresAt,
             Boolean enabled
@@ -66,7 +64,6 @@ public class WWorldInstanceController extends BaseEditorController {
                 instance.getCreator(),
                 instance.getPlayers() != null ? instance.getPlayers() : List.of(),
                 instance.getActivePlayers() != null ? instance.getActivePlayers() : List.of(),
-                instance.getAccessType() != null ? instance.getAccessType() : InstanceAccessType.PRIVATE,
                 instance.getDurationType() != null ? instance.getDurationType() : InstanceDurationType.SHORT,
                 instance.getExpiresAt(),
                 instance.getCreatedAt(),
@@ -157,7 +154,6 @@ public class WWorldInstanceController extends BaseEditorController {
             var updated = instanceService.update(instanceId, instance -> {
                 if (request.title() != null) instance.setTitle(request.title());
                 if (request.description() != null) instance.setDescription(request.description());
-                if (request.accessType() != null) instance.setAccessType(request.accessType());
                 if (request.durationType() != null) instance.setDurationType(request.durationType());
                 if (request.expiresAt() != null) instance.setExpiresAt(request.expiresAt());
                 if (request.enabled() != null) instance.setEnabled(request.enabled());

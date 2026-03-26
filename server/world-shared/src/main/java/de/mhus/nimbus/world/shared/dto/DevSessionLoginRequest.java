@@ -47,7 +47,7 @@ public class DevSessionLoginRequest {
 
     /**
      * Optional instance ID for rejoining an existing instance.
-     * If null/blank, a new instance will be created for PLAYER actors in instanceable worlds.
+     * If null/blank, a new instance will be created for PLAYER actors in worlds with instanceType != NONE.
      * If set, the player will rejoin the specified instance.
      */
     private String instanceId;

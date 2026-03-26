@@ -71,11 +71,20 @@ public class WWorld implements Identifiable {
     private boolean universeSync = false;
 
     /**
-     * Whether this world can create instances.
-     * If true, players can create independent copies (instances) of this world.
+     * Instance type for this world.
+     * Defines how instances are managed and who can join them.
+     * NONE = no instances, PUBLIC = anyone can join, TEAM = team-based, PRIVATE = creator only.
      */
     @Builder.Default
-    private boolean instanceable = false;
+    private WorldInstanceType instanceType = WorldInstanceType.NONE;
+
+    /**
+     * Maximum number of players allowed per instance.
+     * Only relevant for PUBLIC and TEAM instance types.
+     * 0 means unlimited.
+     */
+    @Builder.Default
+    private int maxPlayersPerInstance = 0;
 
     /**
      * Default ground level for chunk generation (Y coordinate).

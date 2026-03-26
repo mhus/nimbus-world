@@ -96,7 +96,8 @@ export interface World {
   updatedAt: string;
   enabled: boolean;
   parent: string;
-  instanceable: boolean;
+  instanceType: string;
+  maxPlayersPerInstance: number;
   groundLevel: number;
   oceanLevel: number | null;
   groundBlockType: string;
@@ -119,7 +120,8 @@ export interface WorldRequest {
   publicData?: WorldInfo;
   enabled?: boolean;
   parent?: string;
-  instanceable?: boolean;
+  instanceType?: string;
+  maxPlayersPerInstance?: number;
   owner?: string[];
   editor?: string[];
   supporter?: string[];

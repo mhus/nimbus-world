@@ -565,7 +565,8 @@ public class WWorldService {
                 .description(sourceWorld.getDescription())
                 .publicData(zonePublicData)  // Copy publicData with updated worldId
                 .enabled(sourceWorld.isEnabled())
-                .instanceable(sourceWorld.isInstanceable())
+                .instanceType(sourceWorld.getInstanceType())
+                .maxPlayersPerInstance(sourceWorld.getMaxPlayersPerInstance())
                 .groundLevel(sourceWorld.getGroundLevel())
                 .seaLevel(sourceWorld.getSeaLevel())
                 .groundBlockType(sourceWorld.getGroundBlockType())

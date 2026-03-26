@@ -121,6 +121,18 @@ public class WTeamService {
         return Optional.empty();
     }
 
+    /**
+     * Check if a player is invited to any team for a given world/instance.
+     *
+     * @param worldId The worldId (including instance part)
+     * @param playerName The player name to check
+     * @return true if the player is in the invitation list of any team for this worldId
+     */
+    @Transactional(readOnly = true)
+    public boolean isPlayerInvitedToTeam(String worldId, String playerName) {
+        return !teamRepository.findByWorldIdAndInvitationContaining(worldId, playerName).isEmpty();
+    }
+
     // --- Atomic MongoDB Operations ---
 
     public boolean addMemberAtomic(String teamId, String playerName) {

@@ -19,6 +19,8 @@ public interface WTeamRepository extends MongoRepository<WTeam, String> {
 
     Optional<WTeam> findByWorldIdAndMembersContaining(String worldId, String playerName);
 
+    List<WTeam> findByWorldIdAndInvitationContaining(String worldId, String playerName);
+
     void deleteByTeamId(String teamId);
 
     void deleteByWorldId(String worldId);

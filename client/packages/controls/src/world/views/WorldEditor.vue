@@ -161,18 +161,36 @@
               </label>
             </div>
 
-            <!-- Instanceable Flag -->
+            <!-- Instance Type -->
             <div class="form-control">
-              <label class="label cursor-pointer justify-start gap-4">
-                <span class="label-text font-medium">Instanceable</span>
-                <input
-                  v-model="formData.instanceable"
-                  type="checkbox"
-                  class="toggle toggle-warning"
-                />
-              </label>
               <label class="label">
-                <span class="label-text-alt">Allow players to create instances (copies) of this world</span>
+                <span class="label-text font-medium">Instance Type</span>
+              </label>
+              <select v-model="formData.instanceType" class="select select-bordered w-full">
+                <option value="NONE">None</option>
+                <option value="PUBLIC">Public</option>
+                <option value="TEAM">Team</option>
+                <option value="PRIVATE">Private</option>
+              </select>
+              <label class="label">
+                <span class="label-text-alt">How instances of this world are managed</span>
+              </label>
+            </div>
+
+            <!-- Max Players Per Instance -->
+            <div v-if="formData.instanceType !== 'NONE'" class="form-control">
+              <label class="label">
+                <span class="label-text font-medium">Max Players Per Instance</span>
+              </label>
+              <input
+                v-model.number="formData.maxPlayersPerInstance"
+                type="number"
+                min="0"
+                class="input input-bordered w-full"
+                placeholder="0 = unlimited"
+              />
+              <label class="label">
+                <span class="label-text-alt">Maximum players per instance (0 = unlimited)</span>
               </label>
             </div>
 
@@ -1746,7 +1764,8 @@ const formData = ref({
   enabled: true,
   publicFlag: false,
   universeSync: false,
-  instanceable: false,
+  instanceType: 'NONE' as string,
+  maxPlayersPerInstance: 0,
   owner: [] as string[],
   editor: [] as string[],
   supporter: [] as string[],
@@ -1858,7 +1877,8 @@ const loadWorld = () => {
       enabled: true,
       publicFlag: false,
       universeSync: false,
-      instanceable: false,
+      instanceType: 'NONE' as string,
+  maxPlayersPerInstance: 0,
       owner: [],
       editor: [],
       supporter: [],
@@ -2066,7 +2086,8 @@ const loadWorld = () => {
     enabled: world.enabled,
     publicFlag: world.publicFlag,
     universeSync: world.universeSync,
-    instanceable: world.instanceable,
+    instanceType: world.instanceType || 'NONE',
+    maxPlayersPerInstance: world.maxPlayersPerInstance || 0,
     owner: world.owner ? [...world.owner] : [],
     editor: world.editor ? [...world.editor] : [],
     supporter: world.supporter ? [...world.supporter] : [],
@@ -2323,7 +2344,8 @@ const performSave = async () => {
       enabled: formData.value.enabled,
       publicFlag: formData.value.publicFlag,
       universeSync: formData.value.universeSync,
-      instanceable: formData.value.instanceable,
+      instanceType: formData.value.instanceType,
+      maxPlayersPerInstance: formData.value.maxPlayersPerInstance,
       owner: formData.value.owner.length > 0 ? formData.value.owner : undefined,
       editor: formData.value.editor.length > 0 ? formData.value.editor : undefined,
       supporter: formData.value.supporter.length > 0 ? formData.value.supporter : undefined,

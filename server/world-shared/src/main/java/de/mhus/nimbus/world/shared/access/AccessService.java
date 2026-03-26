@@ -15,9 +15,11 @@ import de.mhus.nimbus.world.shared.region.RCharacterService;
 import de.mhus.nimbus.world.shared.region.RegionSettings;
 import de.mhus.nimbus.world.shared.session.WSession;
 import de.mhus.nimbus.world.shared.session.WSessionStatus;
+import de.mhus.nimbus.world.shared.team.WTeamService;
 import de.mhus.nimbus.world.shared.world.WWorld;
 import de.mhus.nimbus.world.shared.world.WWorldInstance;
 import de.mhus.nimbus.world.shared.world.WWorldService;
+import de.mhus.nimbus.world.shared.world.WorldInstanceType;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
 import jakarta.servlet.http.Cookie;
@@ -56,6 +58,7 @@ public class AccessService {
     private final de.mhus.nimbus.world.shared.sector.RUserService userService;
     private final de.mhus.nimbus.world.shared.session.WSessionService sessionService;
     private final de.mhus.nimbus.world.shared.world.WWorldInstanceService worldInstanceService;
+    private final WTeamService teamService;
     private final JwtService jwtService;
     private final AccessSettings properties;
     private final Base64Service base64Service;
@@ -133,9 +136,15 @@ public class AccessService {
     // ===== 1c. getInstancesForPlayer =====
 
     /**
-     * Retrieves instances for a player in a specific world.
+     * Retrieves instances accessible by a player in a specific world.
      * If allInstances is true, returns all instances (for SUPPORT actors).
-     * Otherwise, only returns instances where the player is registered.
+     * Otherwise, access depends on the world's instanceType:
+     * <ul>
+     *   <li>All types: creator or in players list → access</li>
+     *   <li>TEAM: additionally, player invited via a team for the instance → access</li>
+     *   <li>PUBLIC: additionally, anyone can join if activePlayers &lt; maxPlayersPerInstance
+     *       (creator/players bypass the limit)</li>
+     * </ul>
      *
      * @param worldId The main world's worldId
      * @param playerId The playerId (used for filtering when allInstances=false)
@@ -149,9 +158,32 @@ public class AccessService {
         if (allInstances) {
             return all;
         }
+
+        var world = worldService.getByWorldId(worldId).orElse(null);
+        WorldInstanceType instanceType = world != null && world.getInstanceType() != null
+                ? world.getInstanceType() : WorldInstanceType.PRIVATE;
+        int maxPlayers = world != null ? world.getMaxPlayersPerInstance() : 0;
+
         return all.stream()
-                .filter(i -> i.isPlayerAllowed(playerId))
+                .filter(instance -> isInstanceAccessible(instance, playerId, instanceType, maxPlayers))
                 .toList();
+    }
+
+    /**
+     * Check if a player can access a specific instance based on the world's instance type.
+     */
+    private boolean isInstanceAccessible(WWorldInstance instance, String playerId,
+                                         WorldInstanceType instanceType, int maxPlayers) {
+        // Creator or in players list → always allowed
+        if (instance.isPlayerAllowed(playerId)) {
+            return true;
+        }
+
+        return switch (instanceType) {
+            case NONE, PRIVATE -> false;
+            case TEAM -> teamService.isPlayerInvitedToTeam(instance.getWorldWithInstanceId(), playerId);
+            case PUBLIC -> maxPlayers <= 0 || instance.getActivePlayerCount() < maxPlayers;
+        };
     }
 
     // ===== 2. getUsers =====
@@ -333,7 +365,7 @@ public class AccessService {
         // Close any existing session for this player to prevent multiple logins
         closePlayerSession(world.getRegionId(), playerId.getId());
 
-        // Determine effective worldId (might be an instanceId for instanceable worlds)
+        // Determine effective worldId (might include an instanceId)
         String effectiveWorldId = worldId.getId();
 
         // Remove player from all other instances of this world (player can only be in one instance)

@@ -16,7 +16,8 @@ class WWorldTest {
         assertNotNull(w.getOwner());
         assertTrue(w.getOwner().isEmpty());
         assertFalse(w.isPublicFlag());
-        assertFalse(w.isInstanceable());
+        assertEquals(WorldInstanceType.NONE, w.getInstanceType());
+        assertEquals(0, w.getMaxPlayersPerInstance());
     }
 
 }

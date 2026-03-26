@@ -118,11 +118,13 @@ public class PlayerTeleportController {
             log.info("Creating new session for teleport: playerId={}, targetWorld={}, entryPoint={}",
                     playerId.getId(), target.worldId, target.entryPoint);
 
-            // Determine effective worldId (might be an instanceId for instanceable worlds)
+            // Determine effective worldId (might include an instanceId)
             String effectiveWorldId = target.worldId;
 
-            // Auto-create instance for PLAYER actors in instanceable worlds
-            if (targetWorld.isInstanceable() && "PLAYER".equals(actor)) {
+            // Auto-create instance for PLAYER actors in worlds that support instances
+            if (targetWorld.getInstanceType() != null
+                    && targetWorld.getInstanceType() != de.mhus.nimbus.world.shared.world.WorldInstanceType.NONE
+                    && "PLAYER".equals(actor)) {
                 RCharacter character = characterService.getCharacter(
                         playerId.getUserId(),
                         targetWorld.getRegionId(),
