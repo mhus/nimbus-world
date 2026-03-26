@@ -945,6 +945,57 @@ public class WWorldService {
     }
 
     /**
+     * Returns the epoch chain from the given epochId back to the root (epoch 0).
+     * Follows the parentEpoch references to build the lineage.
+     *
+     * @param worldId The base worldId
+     * @param epochId The epoch to start from
+     * @return Ordered list of WEpochMeta from epochId back to the root, empty if world or epoch not found
+     */
+    @Transactional(readOnly = true)
+    public List<WEpochMeta> getEpochOrder(String worldId, int epochId) {
+        Optional<WWorld> worldOpt = repository.findByWorldId(worldId);
+        if (worldOpt.isEmpty()) {
+            log.warn("getEpochOrder: world not found: {}", worldId);
+            return List.of();
+        }
+
+        WWorld world = worldOpt.get();
+        List<WEpochMeta> allEpochs = world.getEpoches();
+        if (allEpochs == null || allEpochs.isEmpty()) {
+            return List.of();
+        }
+
+        // Build lookup map
+        java.util.Map<Integer, WEpochMeta> epochMap = new java.util.HashMap<>();
+        for (WEpochMeta meta : allEpochs) {
+            epochMap.put(meta.getEpoch(), meta);
+        }
+
+        // Walk the chain from epochId to root
+        List<WEpochMeta> chain = new ArrayList<>();
+        Set<Integer> visited = new HashSet<>();
+        Integer current = epochId;
+
+        while (current != null) {
+            if (visited.contains(current)) {
+                log.warn("getEpochOrder: circular parentEpoch reference detected at epoch {} in world {}", current, worldId);
+                break;
+            }
+            WEpochMeta meta = epochMap.get(current);
+            if (meta == null) {
+                log.warn("getEpochOrder: epoch {} not found in world {}", current, worldId);
+                break;
+            }
+            visited.add(current);
+            chain.add(meta);
+            current = meta.getParentEpoch();
+        }
+
+        return chain;
+    }
+
+    /**
      * Result wrapper for world search with pagination info.
      */
     public record WorldSearchResult(

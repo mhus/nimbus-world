@@ -207,7 +207,7 @@ public abstract class HexCompositeBuilderAbstract {
             try {
                 WFlat flat = initializeFlat(hexGrid);
                 de.mhus.nimbus.generated.types.HexVector2 coord = hexGrid.getPublicData().getPosition();
-                flats.put("genesis_" + coord.getQ() + "_" + coord.getR(), flat);
+                flats.put("genesis_0_" + coord.getQ() + "_" + coord.getR(), flat);
             } catch (Exception e) {
                 de.mhus.nimbus.generated.types.HexVector2 coord = hexGrid.getPublicData().getPosition();
                 log.warn("CREATE failed for grid {}: {}", coord, e.getMessage(), e);
@@ -288,7 +288,7 @@ public abstract class HexCompositeBuilderAbstract {
         de.mhus.nimbus.generated.types.HexVector2 coord = hexGrid.getPublicData().getPosition();
 
         // Generate flatId using hex coordinates (like Day3Generation does)
-        String flatId = "genesis_" + coord.getQ() + "_" + coord.getR();
+        String flatId = "genesis_0_" + coord.getQ() + "_" + coord.getR();
 
         // Use production FlatCreateService to create the flat
         WFlat flat = flatCreateService.createEmptyHexGridFlat(
@@ -672,7 +672,7 @@ public abstract class HexCompositeBuilderAbstract {
 
         // Use the HexGridCompositeImageCreator helper class with builder pattern
         HexGridCompositeImageCreator creator = HexGridCompositeImageCreator.builder()
-            .flatProvider(new MapFlatProvider(flatsByCoord))
+            .flatProvider(new MapFlatProvider(0, flatsByCoord))
             .hexGridSize(HEX_GRID_SIZE)  // Use HEX_GRID_SIZE (400)
             .outputDirectory(outputDir.toString())
             .imageName(name)

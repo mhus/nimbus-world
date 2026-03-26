@@ -4,7 +4,6 @@ import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.shared.utils.TypeUtil;
 import de.mhus.nimbus.world.shared.generator.WFlat;
 import de.mhus.nimbus.world.shared.generator.WFlatService;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Collection;
@@ -13,15 +12,28 @@ import java.util.stream.Collectors;
 
 /**
  * FlatProvider implementation that loads flats on demand from the database.
- * Uses a suffix pattern to filter flats by flatId (e.g., "genesis_" to match "genesis_0_0", "genesis_0_1", etc.)
+ * Uses a suffix pattern to filter flats by flatId (e.g., "genesis_0_" to match "genesis_0_0_0", "genesis_0_0_1", etc.
+ * Format: genesis_{epoch}_{q}_{r})
  */
 @Slf4j
-@RequiredArgsConstructor
 public class DatabaseFlatProvider implements FlatProvider {
 
     private final WFlatService flatService;
     private final String worldId;
     private final String flatIdSuffix;
+    private final int epoch;
+
+    public DatabaseFlatProvider(WFlatService flatService, String worldId, String flatIdSuffix, int epoch) {
+        this.flatService = flatService;
+        this.worldId = worldId;
+        this.flatIdSuffix = flatIdSuffix;
+        this.epoch = epoch;
+    }
+
+    @Override
+    public int getEpoch() {
+        return epoch;
+    }
 
     @Override
     public WFlat getFlat(HexVector2 coordinate) {

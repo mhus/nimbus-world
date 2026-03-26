@@ -48,7 +48,7 @@ import static de.mhus.nimbus.world.generator.translator.TranslateInstructionJobE
  * <p>
  * Optional parameters:
  * - drawGridLines: Whether to draw hex grid lines (default: false)
- * - flatIdSuffix: Prefix pattern for flatIds (e.g., "genesis_" matches "genesis_0_0", "genesis_1_0", etc.)
+ * - flatIdSuffix: Prefix pattern for flatIds (e.g., "genesis_0_" matches "genesis_0_0_0", "genesis_0_1_0", etc. Format: genesis_{epoch}_{q}_{r}). Defaults to "genesis_{compositionEpoch}_" if not set.
  * <p>
  * Images are stored in the archive at:
  * - "composites/{worldId}_{compositionId}_level.png"
@@ -88,7 +88,7 @@ public class HexGridCompositeImageJobExecutor implements JobExecutor {
 
             // Extract optional parameters
             boolean drawGridLines = getOptionalBooleanParameter(job, "drawGridLines", false);
-            String flatIdSuffix = getOptionalParameter(job, "flatIdSuffix", "genesis_");
+            String flatIdSuffix = getOptionalParameter(job, "flatIdSuffix", null);
 
             int hexGridSize = world.getPublicData().getHexGridSize();
 
@@ -101,7 +101,12 @@ public class HexGridCompositeImageJobExecutor implements JobExecutor {
                 throw new JobExecutionException("No FeatureHexGrids found in composition: " + compositionId);
             }
 
-            log.info("Loaded composition with {} FeatureHexGrids", composition.getFeatureHexGridRegistry().size());
+            // Default flatIdSuffix from composition epoch if not explicitly provided
+            if (flatIdSuffix == null) {
+                flatIdSuffix = "genesis_" + composition.getEpoch() + "_";
+            }
+
+            log.info("Loaded composition with {} FeatureHexGrids, epoch={}", composition.getFeatureHexGridRegistry().size(), composition.getEpoch());
 
             // Step 2: Extract coordinates from FeatureHexGrids
             Set<HexVector2> validCoordinates = new HashSet<>();
@@ -114,7 +119,8 @@ public class HexGridCompositeImageJobExecutor implements JobExecutor {
             log.info("Found {} valid coordinates from FeatureHexGrids", validCoordinates.size());
 
             // Step 3: Create filtered flat provider that only loads flats from FeatureHexGrids
-            FilteredFlatProvider flatProvider = new FilteredFlatProvider(flatService, worldId, flatIdSuffix, validCoordinates);
+            int epoch = composition.getEpoch();
+            FilteredFlatProvider flatProvider = new FilteredFlatProvider(flatService, worldId, flatIdSuffix, epoch, validCoordinates);
 
             // Check that we have grids to render
             int gridCount = flatProvider.getCoordinates().size();
@@ -463,13 +469,20 @@ public class HexGridCompositeImageJobExecutor implements JobExecutor {
         private final WFlatService flatService;
         private final String worldId;
         private final String flatIdPrefix;
+        private final int epoch;
         private final Set<HexVector2> validCoordinates;
 
-        public FilteredFlatProvider(WFlatService flatService, String worldId, String flatIdPrefix, Set<HexVector2> validCoordinates) {
+        public FilteredFlatProvider(WFlatService flatService, String worldId, String flatIdPrefix, int epoch, Set<HexVector2> validCoordinates) {
             this.flatService = flatService;
             this.worldId = worldId;
             this.flatIdPrefix = flatIdPrefix;
+            this.epoch = epoch;
             this.validCoordinates = validCoordinates;
+        }
+
+        @Override
+        public int getEpoch() {
+            return epoch;
         }
 
         @Override

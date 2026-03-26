@@ -1378,6 +1378,7 @@
                 <thead>
                   <tr>
                     <th class="w-20">Epoch</th>
+                    <th class="w-24">Parent</th>
                     <th>Name</th>
                     <th>Description</th>
                     <th class="w-24">World Status</th>
@@ -1395,6 +1396,17 @@
                         min="0"
                         class="input input-bordered input-sm w-16"
                       />
+                    </td>
+                    <td>
+                      <select
+                        v-model="ep.parentEpoch"
+                        class="select select-bordered select-sm w-20"
+                      >
+                        <option :value="null">-</option>
+                        <option v-for="other in formData.epoches.filter(e => e.epoch !== ep.epoch)" :key="other.epoch" :value="other.epoch">
+                          {{ other.epoch }}
+                        </option>
+                      </select>
                     </td>
                     <td>
                       <input
@@ -1456,7 +1468,7 @@
                     </td>
                   </tr>
                   <tr v-if="formData.epoches.length === 0">
-                    <td colspan="7" class="text-center text-base-content/50">No epochs defined</td>
+                    <td colspan="8" class="text-center text-base-content/50">No epochs defined</td>
                   </tr>
                 </tbody>
               </table>
@@ -1770,7 +1782,7 @@ const formData = ref({
   editor: [] as string[],
   supporter: [] as string[],
   player: [] as string[],
-  epoches: [] as { epoch: number; name: string; description: string; worldStatus: string; splashScreen: string; splashScreenAudio: string }[],
+  epoches: [] as { epoch: number; parentEpoch: number | null; name: string; description: string; worldStatus: string; splashScreen: string; splashScreenAudio: string }[],
   groundLevel: 20,
   oceanLevel: 50,
   groundBlockType: 'n:g',
@@ -2092,7 +2104,7 @@ const loadWorld = () => {
     editor: world.editor ? [...world.editor] : [],
     supporter: world.supporter ? [...world.supporter] : [],
     player: world.player ? [...world.player] : [],
-    epoches: world.epoches ? world.epoches.map(e => ({ ...e, worldStatus: e.worldStatus ?? 'default', splashScreen: e.splashScreen ?? '', splashScreenAudio: e.splashScreenAudio ?? '' })) : [],
+    epoches: world.epoches ? world.epoches.map(e => ({ ...e, parentEpoch: e.parentEpoch ?? null, worldStatus: e.worldStatus ?? 'default', splashScreen: e.splashScreen ?? '', splashScreenAudio: e.splashScreenAudio ?? '' })) : [],
     groundLevel: world.groundLevel,
     oceanLevel: world.oceanLevel,
     groundBlockType: world.groundBlockType,
@@ -2135,7 +2147,7 @@ const addEpoch = () => {
   const nextEpoch = formData.value.epoches.length > 0
     ? Math.max(...formData.value.epoches.map(e => e.epoch)) + 1
     : 0;
-  formData.value.epoches.push({ epoch: nextEpoch, name: '', description: '', worldStatus: 'default', splashScreen: '', splashScreenAudio: '' });
+  formData.value.epoches.push({ epoch: nextEpoch, parentEpoch: null, name: '', description: '', worldStatus: 'default', splashScreen: '', splashScreenAudio: '' });
 };
 
 const removeEpoch = (index: number) => {

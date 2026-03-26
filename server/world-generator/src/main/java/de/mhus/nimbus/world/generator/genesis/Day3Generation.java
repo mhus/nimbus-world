@@ -233,7 +233,7 @@ public class Day3Generation extends MethodBasedWorkflow {
                 }
             }
             case "createAll" -> {
-                String flatId = "genesis_" + coord.getQ() + "_" + coord.getR();
+                String flatId = "genesis_" + state.getEpoch() + "_" + coord.getQ() + "_" + coord.getR();
                 // delete if exists
                 if (flatService.exists(context.getWorldId(), flatId)) {
                     log.debug("Flat {} already exists for world {}, deleting before creation", flatId, context.getWorldId());
@@ -259,7 +259,7 @@ public class Day3Generation extends MethodBasedWorkflow {
                 // Execute directly
                 for (int i = index; i < total; i++) {
                     Day3ProcessingState.HexCoordinate c = state.getCoordinates().get(i);
-                    String flatId = "genesis_" + c.getQ() + "_" + c.getR();
+                    String flatId = "genesis_" + state.getEpoch() + "_" + c.getQ() + "_" + c.getR();
                     var flatOpt = flatService.findByWorldAndFlatId(context.getWorldId(), flatId);
                     if (flatOpt == null) {
                         throw new WorkflowException(null, "Error checking flat existence: flatService returned null for world " + context.getWorldId() + " and flatId " + flatId);
@@ -345,7 +345,7 @@ public class Day3Generation extends MethodBasedWorkflow {
                             "Create Composite Images",
                             Map.of(
                                     "compositionId", compositionId,
-                                    "flatIdSuffix", "genesis_",
+                                    "flatIdSuffix", "genesis_" + state.getEpoch() + "_",
                                     "drawGridLines", "false"
                             ));
                 } else {
@@ -366,7 +366,8 @@ public class Day3Generation extends MethodBasedWorkflow {
                             "Structures for " + gridLabel,
                             Map.of(
                                     "hexQ", String.valueOf(coord.getQ()),
-                                    "hexR", String.valueOf(coord.getR())
+                                    "hexR", String.valueOf(coord.getR()),
+                                    "epoch", String.valueOf(state.getEpoch())
                             ));
                 } else {
                     log.info("Skipping structures for {} - no g_village defined", gridLabel);

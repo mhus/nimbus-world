@@ -57,16 +57,21 @@ public class HexGridStructurePlacerJobExecutor implements JobExecutor {
         try {
             String hexQStr = job.getParameters().get("hexQ");
             String hexRStr = job.getParameters().get("hexR");
+            String epochStr = job.getParameters().get("epoch");
 
             if (hexQStr == null || hexRStr == null) {
                 throw new JobExecutionException("Missing required parameters: hexQ, hexR");
             }
+            if (epochStr == null || epochStr.isBlank()) {
+                throw new JobExecutionException("Missing required parameter: epoch");
+            }
 
             int hexQ = Integer.parseInt(hexQStr);
             int hexR = Integer.parseInt(hexRStr);
+            int epoch = Integer.parseInt(epochStr);
             String worldId = job.getWorldId();
 
-            log.info("Placing structures for hex {},{} in world {}", hexQ, hexR, worldId);
+            log.info("Placing structures for hex {},{} epoch {} in world {}", hexQ, hexR, epoch, worldId);
 
             // Load world
             WWorld world = worldService.getByWorldId(worldId)
@@ -79,7 +84,7 @@ public class HexGridStructurePlacerJobExecutor implements JobExecutor {
                     .orElseThrow(() -> new JobExecutionException("HexGrid not found: " + position));
 
             // Load flat for coordinate mapping
-            String flatId = "genesis_" + hexQ + "_" + hexR;
+            String flatId = "genesis_" + epoch + "_" + hexQ + "_" + hexR;
             WFlat flat = wFlatService.findByWorldAndFlatId(worldId, flatId);
             if (flat == null) {
                 throw new JobExecutionException("WFlat not found: " + flatId);

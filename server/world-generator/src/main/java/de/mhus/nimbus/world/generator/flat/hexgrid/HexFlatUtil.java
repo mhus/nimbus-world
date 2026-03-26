@@ -31,7 +31,7 @@ public class HexFlatUtil {
 
     /**
      * Calculate all neighbor flat IDs for a given flat ID.
-     * Flat IDs follow the format "prefix_q_r" (e.g., "genesis_0_0").
+     * Flat IDs follow the format "prefix_epoch_q_r" (e.g., "genesis_0_0_0").
      * Uses Z-flipped odd-r offset hex coordinates.
      *
      * @param flatId The center flat ID
@@ -41,18 +41,19 @@ public class HexFlatUtil {
         Map<WHexGrid.EDGE, String> neighbors = new HashMap<>();
 
         String[] parts = flatId.split("_");
-        if (parts.length != 3) {
+        if (parts.length != 4) {
             return neighbors;
         }
 
         try {
             String prefix = parts[0];
-            int q = Integer.parseInt(parts[1]);
-            int r = Integer.parseInt(parts[2]);
+            String epoch = parts[1];
+            int q = Integer.parseInt(parts[2]);
+            int r = Integer.parseInt(parts[3]);
 
             for (WHexGrid.EDGE side : WHexGrid.EDGE.values()) {
                 int[] delta = getFlatNeighborDelta(side, r);
-                String neighborId = prefix + "_" + (q + delta[0]) + "_" + (r + delta[1]);
+                String neighborId = prefix + "_" + epoch + "_" + (q + delta[0]) + "_" + (r + delta[1]);
                 neighbors.put(side, neighborId);
             }
         } catch (NumberFormatException e) {

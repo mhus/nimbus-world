@@ -23,6 +23,12 @@ public class WEpochMeta {
     private int epoch;
 
     /**
+     * Parent epoch from which this epoch was derived.
+     * Null for the base epoch (epoch 0). Used to track epoch lineage.
+     */
+    private Integer parentEpoch;
+
+    /**
      * Technical name for this epoch (e.g., "base", "farming", "magic").
      */
     private String name;

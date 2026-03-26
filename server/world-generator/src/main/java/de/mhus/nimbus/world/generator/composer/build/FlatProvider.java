@@ -12,6 +12,13 @@ import java.util.Collection;
 public interface FlatProvider {
 
     /**
+     * Get the epoch this provider operates on.
+     *
+     * @return The epoch number
+     */
+    int getEpoch();
+
+    /**
      * Get a flat for the given hex coordinate.
      *
      * @param coordinate The hex coordinate

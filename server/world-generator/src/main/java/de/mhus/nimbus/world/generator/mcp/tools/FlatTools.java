@@ -39,7 +39,7 @@ public class FlatTools {
     @Tool(name = "get_flat", description = "Get flat metadata including mountX, mountZ, sizeX, sizeZ, materials and hex grid info")
     public Map<String, Object> getFlat(
             @ToolParam(description = "World ID") String worldId,
-            @ToolParam(description = "Flat ID (e.g. genesis_0_0)") String flatId) {
+            @ToolParam(description = "Flat ID (e.g. genesis_0_0_0 = genesis_{epoch}_{q}_{r})") String flatId) {
         log.debug("MCP: Get flat: worldId={}, flatId={}", worldId, flatId);
 
         WFlat flat = flatService.findByWorldAndFlatId(worldId, flatId);
@@ -53,7 +53,7 @@ public class FlatTools {
     @Tool(name = "get_flat_data", description = "Get flat column data at a world position (x,z). Returns level, column material, extraBlocks, and neighbor info. Converts world coordinates to local flat coordinates.")
     public Map<String, Object> getFlatData(
             @ToolParam(description = "World ID") String worldId,
-            @ToolParam(description = "Flat ID (e.g. genesis_0_0)") String flatId,
+            @ToolParam(description = "Flat ID (e.g. genesis_0_0_0 = genesis_{epoch}_{q}_{r})") String flatId,
             @ToolParam(description = "World X coordinate") int x,
             @ToolParam(description = "World Z coordinate") int z) {
         log.debug("MCP: Get flat data: worldId={}, flatId={}, x={}, z={}", worldId, flatId, x, z);
