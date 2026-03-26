@@ -6,7 +6,7 @@
         <div class="flex items-center justify-between">
           <div>
             <h1 class="text-2xl font-bold text-emerald-400">Nimbus Panels</h1>
-            <p class="text-gray-400 text-sm mt-1">Panel navigation and management</p>
+            <p class="text-gray-400 text-sm mt-1">Panel navigation and management<span v-if="worldId"> ({{ worldId }})</span></p>
           </div>
         </div>
       </div>
@@ -50,7 +50,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
+import { authService } from '../home/services/AuthService';
 
 interface Panel {
   id: string;
@@ -60,6 +61,8 @@ interface Panel {
   color: string;
   editorOnly?: boolean;
 }
+
+const worldId = ref<string | null>(null);
 
 // Read actor from URL query params
 const urlParams = new URLSearchParams(window.location.search);
@@ -164,4 +167,13 @@ const visiblePanels = computed(() =>
 const navigateToPanel = (panel: Panel) => {
   window.location.href = panel.url;
 };
+
+onMounted(async () => {
+  try {
+    const status = await authService.getStatus();
+    worldId.value = status.worldId;
+  } catch (error) {
+    console.error('[PanelApp] Failed to load auth status:', error);
+  }
+});
 </script>

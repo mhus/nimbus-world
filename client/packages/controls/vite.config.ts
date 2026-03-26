@@ -49,6 +49,7 @@ export default defineConfig({
         'item-editor': resolve(__dirname, 'item-editor.html'),
 
         'scrawl-editor': resolve(__dirname, 'scrawl-editor.html'),
+        'login-forward': resolve(__dirname, 'login-forward.html'),
         'dev-login': resolve(__dirname, 'dev-login.html'),
         'logout': resolve(__dirname, 'logout.html'),
         'region-editor': resolve(__dirname, 'region-editor.html'),

@@ -57,8 +57,8 @@ export class ApiService {
           }, error);
 
           // Check if it might be an authentication issue (CORS often fails when not authenticated)
-          // Skip redirect if we're on dev-login.html page
-          const isDevLogin = window.location.pathname.includes('dev-login.html');
+          // Skip redirect if we're on a login page
+          const isDevLogin = window.location.pathname.includes('dev-login.html') || window.location.pathname.includes('login-forward.html');
 
           if (error.message === 'Network Error' && method === 'GET' && !isDevLogin) {
             logger.info('Network error on GET request - might be authentication issue, redirecting to login', {
@@ -83,8 +83,8 @@ export class ApiService {
         }, error);
 
         // Handle 401 Unauthorized
-        // Skip redirect if we're on dev-login.html page
-        const isDevLogin = window.location.pathname.includes('dev-login.html');
+        // Skip redirect if we're on a login page
+        const isDevLogin = window.location.pathname.includes('dev-login.html') || window.location.pathname.includes('login-forward.html');
 
         if (status === 401) {
           if (method === 'GET' && !isDevLogin) {

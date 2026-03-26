@@ -31,7 +31,7 @@ class LogoutService {
       }
       return {
         accessUrls: response.accessUrls,
-        loginUrl: response.loginUrl || 'dev-login.html',
+        loginUrl: response.loginUrl || 'login-forward.html',
       };
     } catch (error) {
       logger.error('Failed to get logout URLs', {}, error instanceof Error ? error : undefined);

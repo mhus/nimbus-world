@@ -175,7 +175,7 @@ public class AccessSettings {
 
     public String getLogoutUrl() {
         return Strings.isBlank(logoutUrl) ?
-            "http://localhost:3002/controls/dev-login.html"
+            "http://localhost:3002/controls/login-forward.html"
                 :
             logoutUrl;
     }

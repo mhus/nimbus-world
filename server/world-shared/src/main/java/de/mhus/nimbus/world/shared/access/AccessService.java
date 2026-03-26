@@ -1020,6 +1020,21 @@ public class AccessService {
     }
 
     /**
+     * Returns a minimal unauthenticated status response with loginUrl and logoutUrl.
+     * Used when no valid session exists so clients can discover the configured login page.
+     */
+    public SessionStatusResponse getUnauthenticatedStatus() {
+        return SessionStatusResponse.builder()
+                .authenticated(false)
+                .agent(false)
+                .roles(List.of())
+                .accessUrls(List.of())
+                .loginUrl(properties.getLoginUrl())
+                .logoutUrl(properties.getLogoutUrl())
+                .build();
+    }
+
+    /**
      * Gets status from Bearer token (server-to-server authentication).
      */
     private SessionStatusResponse getStatusFromBearerToken(String bearerToken) {

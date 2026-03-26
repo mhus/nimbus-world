@@ -384,8 +384,8 @@ public class ControlAaaController extends BaseEditorController {
             return ResponseEntity.ok(statusResponse);
 
         } catch (IllegalArgumentException e) {
-            log.warn("Status check failed: {}", e.getMessage());
-            return unauthorized("Not authenticated or invalid token");
+            log.debug("Status check: not authenticated - {}", e.getMessage());
+            return ResponseEntity.ok(accessService.getUnauthenticatedStatus());
 
         } catch (Exception e) {
             log.error("Status check failed unexpectedly", e);

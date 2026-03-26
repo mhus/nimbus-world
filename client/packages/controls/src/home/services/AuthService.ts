@@ -50,7 +50,7 @@ class AuthService {
         roles: response.roles || [],
         sessionId: response.sessionId || null,
         accessUrls: response.accessUrls || [],
-        loginUrl: response.loginUrl || 'dev-login.html',
+        loginUrl: response.loginUrl || 'login-forward.html',
         logoutUrl: response.logoutUrl || null,
       };
     } catch (error) {
@@ -67,7 +67,7 @@ class AuthService {
         roles: [],
         sessionId: null,
         accessUrls: [],
-        loginUrl: 'dev-login.html',
+        loginUrl: 'login-forward.html',
         logoutUrl: null,
       };
     }

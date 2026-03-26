@@ -76,7 +76,7 @@ function showSuccess() {
  * Redirect to login page
  */
 function redirectToLogin(loginUrl?: string) {
-  const url = loginUrl || '/controls/dev-login.html';
+  const url = loginUrl || '/controls/login-forward.html';
   logger.info('Redirecting to login', { url });
   window.location.href = url;
 }
@@ -103,9 +103,9 @@ async function performLogout() {
     // Show success message
     showSuccess();
 
-    // Redirect to login after short delay
+    // Redirect to login-forward after short delay (login-forward resolves the actual login page)
     setTimeout(() => {
-      redirectToLogin(loginUrl);
+      redirectToLogin();
     }, 1500);
 
   } catch (error) {
