@@ -124,6 +124,7 @@ export class PhysicsService {
   // Used when player is teleported to a new location
   private teleportationPending: boolean = true;
   private teleportCheckTimer: NodeJS.Timeout | null = null;
+  private suppressFallDamage: boolean = true;
 
   // Track if climbable velocity was set this frame (before updateWalkMode runs)
   private climbableVelocitySetThisFrame: Map<string, boolean> = new Map();
@@ -151,6 +152,11 @@ export class PhysicsService {
 
     // Listen for fall events and send to server async
     this.on('player:fall', (data: { fallDistance: number; landingBlockPos: Vector3 }) => {
+      if (this.suppressFallDamage) {
+        logger.debug('Fall damage suppressed (post-teleport landing)', { fallDistance: data.fallDistance });
+        this.suppressFallDamage = false;
+        return;
+      }
       const networkService = this.appContext.services.network;
       if (networkService) {
         networkService.sendSimpleInteraction('fall', '', {
@@ -341,6 +347,12 @@ export class PhysicsService {
       entity.rotation = rotation;
     }
     entity.velocity.set(0, 0, 0);
+
+    // Reset fall tracking and suppress fall damage for the post-teleport fall
+    entity.fallDistance = 0;
+    entity.wasFalling = false;
+    this.fallModifier.setEnabled(false);
+    this.suppressFallDamage = true;
 
     this.teleportationPending = true;
     this.physicsEnabled = false;
