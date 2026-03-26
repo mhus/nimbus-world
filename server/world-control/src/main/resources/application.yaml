@@ -36,6 +36,7 @@ nimbus:
     jumpUrlAgent: ${NIMBUS_JUMP_URL_AGENT:}
     jumpUrlEditor: ${NIMBUS_JUMP_URL_EDITOR:}
     jumpUrlViewer: ${NIMBUS_JUMP_URL_VIEWER:}
+    controlsBaseUrl: ${NIMBUS_CONTROLS_BASE_URL:}
     loginUrl: ${NIMBUS_LOGIN_URL:}
     logoutUrl: ${NIMBUS_LOGOUT_URL:}
   server:

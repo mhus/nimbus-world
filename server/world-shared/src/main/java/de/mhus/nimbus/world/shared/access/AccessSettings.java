@@ -36,6 +36,8 @@ public class AccessSettings {
     private String jumpUrlEditor;
     @Value( "${nimbus.access.jumpUrlViewer:}")
     private String jumpUrlViewer;
+    @Value( "${nimbus.access.controlsBaseUrl:}")
+    private String controlsBaseUrl;
     @Value( "${nimbus.access.loginUrl:}")
     private String loginUrl;
     @Value( "${nimbus.access.logoutUrl:}")
@@ -166,23 +168,27 @@ public class AccessSettings {
             cookieDomain;
     }
 
+    private String getControlsBase() {
+        return Strings.isBlank(controlsBaseUrl) ? "http://localhost:3002/controls" : controlsBaseUrl;
+    }
+
     public String getLoginUrl() {
         return Strings.isBlank(loginUrl) ?
-            "http://localhost:3002/controls/dev-login.html"
+            getControlsBase() + "/dev-login.html"
                 :
             loginUrl;
     }
 
     public String getLogoutUrl() {
         return Strings.isBlank(logoutUrl) ?
-            "http://localhost:3002/controls/login-forward.html"
+            getControlsBase() + "/login-forward.html"
                 :
             logoutUrl;
     }
 
     public String getTeleportUrl() {
         return Strings.isBlank(teleportUrl) ?
-            "http://localhost:3002/controls/teleport-login.html"
+            getControlsBase() + "/teleport-login.html"
                 :
             teleportUrl;
     }

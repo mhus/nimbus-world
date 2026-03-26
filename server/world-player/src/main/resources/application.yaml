@@ -34,6 +34,7 @@ nimbus:
     lifeBaseUrl: ${NIMBUS_POD_LIFE_BASE_URL:}
     generatorBaseUrl: ${NIMBUS_POD_GENERATOR_BASE_URL:}
   access:
+    controlsBaseUrl: ${NIMBUS_CONTROLS_BASE_URL:}
     teleportUrl: ${NIMBUS_TELEPORT_URL:}
 
 world:

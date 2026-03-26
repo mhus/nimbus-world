@@ -1,4 +1,4 @@
 {
   "apiUrl": "http://localhost:9042",
-  "exitUrl": "/controls/login-forward.html"
+  "exitUrl": "http://localhost:3002/controls/login-forward.html"
 }
