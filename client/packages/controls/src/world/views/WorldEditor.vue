@@ -167,10 +167,10 @@
                 <span class="label-text font-medium">Instance Type</span>
               </label>
               <select v-model="formData.instanceType" class="select select-bordered w-full">
-                <option value="NONE">None</option>
-                <option value="PUBLIC">Public</option>
-                <option value="TEAM">Team</option>
-                <option value="PRIVATE">Private</option>
+                <option value="none">None</option>
+                <option value="public">Public</option>
+                <option value="team">Team</option>
+                <option value="private">Private</option>
               </select>
               <label class="label">
                 <span class="label-text-alt">How instances of this world are managed</span>
@@ -178,7 +178,7 @@
             </div>
 
             <!-- Max Players Per Instance -->
-            <div v-if="formData.instanceType !== 'NONE'" class="form-control">
+            <div v-if="formData.instanceType !== 'none'" class="form-control">
               <label class="label">
                 <span class="label-text font-medium">Max Players Per Instance</span>
               </label>
@@ -1764,7 +1764,7 @@ const formData = ref({
   enabled: true,
   publicFlag: false,
   universeSync: false,
-  instanceType: 'NONE' as string,
+  instanceType: 'none' as string,
   maxPlayersPerInstance: 0,
   owner: [] as string[],
   editor: [] as string[],
@@ -1877,7 +1877,7 @@ const loadWorld = () => {
       enabled: true,
       publicFlag: false,
       universeSync: false,
-      instanceType: 'NONE' as string,
+      instanceType: 'none' as string,
   maxPlayersPerInstance: 0,
       owner: [],
       editor: [],
@@ -2086,7 +2086,7 @@ const loadWorld = () => {
     enabled: world.enabled,
     publicFlag: world.publicFlag,
     universeSync: world.universeSync,
-    instanceType: world.instanceType || 'NONE',
+    instanceType: world.instanceType || 'none',
     maxPlayersPerInstance: world.maxPlayersPerInstance || 0,
     owner: world.owner ? [...world.owner] : [],
     editor: world.editor ? [...world.editor] : [],
