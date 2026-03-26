@@ -32,6 +32,7 @@ public class WWorldInstanceService {
     private final WJobService jobService;
     private final List<WWorldInstanceListener> listeners;
     private final WorldRedisMessagingService redisMessaging;
+    private final InstanceIdGenerator instanceIdGenerator;
 
     /**
      * Constructor with lazy initialization to avoid circular dependencies.
@@ -48,13 +49,15 @@ public class WWorldInstanceService {
             @Lazy WWorldService worldService,
             @Lazy Optional<WJobService> jobService,
             @Lazy List<WWorldInstanceListener> listeners,
-            WorldRedisMessagingService redisMessaging) {
+            WorldRedisMessagingService redisMessaging,
+            InstanceIdGenerator instanceIdGenerator) {
         this.repository = repository;
         this.mongoTemplate = mongoTemplate;
         this.worldService = worldService;
         this.jobService = jobService.orElse(null);
         this.listeners = listeners;
         this.redisMessaging = redisMessaging;
+        this.instanceIdGenerator = instanceIdGenerator;
     }
 
     /**
@@ -246,10 +249,10 @@ public class WWorldInstanceService {
             throw new IllegalArgumentException("World does not exist: " + worldId);
         }
 
-        // Generate unique instanceId using WorldId class
-        String uuid = java.util.UUID.randomUUID().toString();
+        // Generate human-readable instanceId
+        String readableId = instanceIdGenerator.generate();
         WorldId baseWorldId = WorldId.unchecked(worldId);
-        String instanceId = baseWorldId.toWorldWithInstance(uuid).getId();
+        String instanceId = baseWorldId.toWorldWithInstance(readableId).getId();
 
         // Create instance
         String title = (worldTitle != null ? worldTitle : baseWorldId) + " - " +
