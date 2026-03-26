@@ -448,6 +448,72 @@ public class WWorldService {
         log.debug("Initialized Era 1 with epoch delta: {}", currentUnixMinutes);
     }
 
+    /**
+     * Initializes default environment scripts for a new world.
+     * Registers weather scenarios, daytime transitions, and season scripts.
+     * Scripts reference assets in the shared n: collection.
+     *
+     * @param info The WorldInfo to initialize (must not be null)
+     */
+    private void initializeDefaultEnvironmentScripts(WorldInfo info) {
+        if (info == null) {
+            return;
+        }
+
+        // Ensure settings exist
+        if (info.getSettings() == null) {
+            info.setSettings(new de.mhus.nimbus.generated.types.WorldInfoSettingsDTO());
+        }
+
+        // Only set defaults if no scripts are configured yet
+        if (info.getSettings().getEnvironmentScripts() != null
+                && !info.getSettings().getEnvironmentScripts().isEmpty()) {
+            log.debug("Environment scripts already configured, skipping defaults");
+            return;
+        }
+
+        var scripts = new ArrayList<de.mhus.nimbus.generated.types.WorldInfoSettingsDTOEnvironmentScriptsDTO>();
+
+        // Daytime transition scripts (triggered by World Time System)
+        scripts.add(envScript("daytime_change_morning", "n:scripts/weather_daytime_morning.scrawl.json"));
+        scripts.add(envScript("daytime_change_day", "n:scripts/weather_daytime_day.scrawl.json"));
+        scripts.add(envScript("daytime_change_evening", "n:scripts/weather_daytime_evening.scrawl.json"));
+        scripts.add(envScript("daytime_change_night", "n:scripts/weather_daytime_night.scrawl.json"));
+
+        // Season scripts (triggered by World Time System)
+        scripts.add(envScript("season_spring", "n:scripts/weather_season_spring.scrawl.json"));
+        scripts.add(envScript("season_summer", "n:scripts/weather_season_summer.scrawl.json"));
+        scripts.add(envScript("season_autumn", "n:scripts/weather_season_autumn.scrawl.json"));
+        scripts.add(envScript("season_winter", "n:scripts/weather_season_winter.scrawl.json"));
+
+        // Weather scenarios (triggered by server weather system)
+        scripts.add(envScript("clear", "n:scripts/weather_clear.scrawl.json"));
+        scripts.add(envScript("cloudy", "n:scripts/weather_cloudy.scrawl.json"));
+        scripts.add(envScript("overcast", "n:scripts/weather_overcast.scrawl.json"));
+        scripts.add(envScript("rain", "n:scripts/weather_rain.scrawl.json"));
+        scripts.add(envScript("snow", "n:scripts/weather_snow.scrawl.json"));
+        scripts.add(envScript("fog", "n:scripts/weather_fog.scrawl.json"));
+        scripts.add(envScript("wind", "n:scripts/weather_wind.scrawl.json"));
+        scripts.add(envScript("thunderstorm", "n:scripts/weather_thunderstorm.scrawl.json"));
+        scripts.add(envScript("blizzard", "n:scripts/weather_blizzard.scrawl.json"));
+        scripts.add(envScript("sandstorm", "n:scripts/weather_sandstorm.scrawl.json"));
+        scripts.add(envScript("heatwave", "n:scripts/weather_heatwave.scrawl.json"));
+        scripts.add(envScript("eclipse", "n:scripts/weather_eclipse.scrawl.json"));
+        scripts.add(envScript("aurora", "n:scripts/weather_aurora.scrawl.json"));
+        scripts.add(envScript("meteor_shower", "n:scripts/weather_meteor_shower.scrawl.json"));
+        scripts.add(envScript("volcanic_ash", "n:scripts/weather_volcanic_ash.scrawl.json"));
+
+        info.getSettings().setEnvironmentScripts(scripts);
+        log.debug("Initialized {} default environment scripts", scripts.size());
+    }
+
+    private static de.mhus.nimbus.generated.types.WorldInfoSettingsDTOEnvironmentScriptsDTO envScript(String name, String script) {
+        return de.mhus.nimbus.generated.types.WorldInfoSettingsDTOEnvironmentScriptsDTO.builder()
+                .name(name)
+                .script(script)
+                .build();
+    }
+
     @Transactional
     public WWorld createWorld(WorldId worldId, WorldInfo info) {
         if (repository.existsByWorldId(worldId.getId())) {
@@ -456,6 +522,9 @@ public class WWorldService {
 
         // Initialize Era 1 with current time
         initializeEra(info);
+
+        // Initialize default environment scripts (weather, daytime, seasons)
+        initializeDefaultEnvironmentScripts(info);
 
         // Ensure admin is always owner of new worlds
         Set<String> owners = new HashSet<>();

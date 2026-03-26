@@ -142,6 +142,7 @@ import {DeleteEnvironmentScriptCommand} from "./DeleteEnvironmentScriptCommand";
 import {StartEnvironmentScriptCommand} from "./StartEnvironmentScriptCommand";
 import {StopEnvironmentScriptCommand} from "./StopEnvironmentScriptCommand";
 import {GetCurrentEnvironmentScriptCommand} from "./GetCurrentEnvironmentScriptCommand";
+import {EnvironmentScriptParamCommand} from "./EnvironmentScriptParamCommand";
 import {ListEnvironmentScriptsCommand} from "./ListEnvironmentScriptsCommand";
 import {ResetEnvironmentCommand} from "./ResetEnvironmentCommand";
 import {StartEnvironmentCommand} from "./StartEnvironmentCommand";
@@ -354,6 +355,7 @@ export class CommandsFactory {
         commandService.registerHandler(new DeleteEnvironmentScriptCommand(appContext));
         commandService.registerHandler(new StartEnvironmentScriptCommand(appContext));
         commandService.registerHandler(new StopEnvironmentScriptCommand(appContext));
+        commandService.registerHandler(new EnvironmentScriptParamCommand(appContext));
         commandService.registerHandler(new GetCurrentEnvironmentScriptCommand(appContext));
         commandService.registerHandler(new ListEnvironmentScriptsCommand(appContext));
         commandService.registerHandler(new ResetEnvironmentCommand(appContext));

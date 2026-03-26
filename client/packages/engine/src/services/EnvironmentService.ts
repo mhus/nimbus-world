@@ -205,6 +205,7 @@ export class EnvironmentService {
   // Environment script management
   private environmentScripts: Map<string, EnvironmentScript> = new Map();
   private runningScripts: Map<string, RunningEnvironmentScript> = new Map();
+  private scriptParameters: Record<string, any> = {};
 
   // World Time management
   private worldTimeConfig: WorldTimeConfig;
@@ -1116,14 +1117,52 @@ export class EnvironmentService {
   }
 
   /**
+   * Set a persistent script parameter
+   * Parameters are passed to every environment script on start
+   *
+   * @param key Parameter name (e.g. 'intensity', 'windStrength')
+   * @param value Parameter value
+   */
+  setScriptParameter(key: string, value: any): void {
+    this.scriptParameters[key] = value;
+    logger.debug('Script parameter set', { key, value });
+  }
+
+  /**
+   * Remove a persistent script parameter
+   *
+   * @param key Parameter name
+   */
+  removeScriptParameter(key: string): void {
+    delete this.scriptParameters[key];
+    logger.debug('Script parameter removed', { key });
+  }
+
+  /**
+   * Get all persistent script parameters
+   */
+  getScriptParameters(): Record<string, any> {
+    return { ...this.scriptParameters };
+  }
+
+  /**
+   * Clear all persistent script parameters
+   */
+  clearScriptParameters(): void {
+    this.scriptParameters = {};
+    logger.debug('All script parameters cleared');
+  }
+
+  /**
    * Start an environment script
    * If a script with the same action name is already running, it will be stopped first
    * If the script is not found in environmentScripts, it will try to start it directly by name
    *
    * @param name Action name (or script name if not in environmentScripts)
+   * @param inlineParameters Optional parameters that override persistent parameters for this start
    * @returns Executor ID or null if ScrawlService unavailable or script execution failed
    */
-  async startEnvironmentScript(name: string): Promise<string | null> {
+  async startEnvironmentScript(name: string, inlineParameters?: Record<string, any>): Promise<string | null> {
     const scrawlService = this.appContext.services.scrawl;
     if (!scrawlService) {
       logger.error('ScrawlService not available');
@@ -1152,11 +1191,17 @@ export class EnvironmentService {
         });
       }
 
+      // Merge persistent parameters with inline overrides
+      const parameters = { ...this.scriptParameters, ...(inlineParameters || {}) };
+
       // Get script from script registry by ID
       const scriptAction: ScriptActionDefinition = {
         scriptId: scriptId,
         sendToServer: false, // Execute locally only
+        parameters: Object.keys(parameters).length > 0 ? parameters : undefined,
       };
+
+      logger.debug('Starting script with parameters', { name, parameters });
 
       const executorId = await scrawlService.executeAction(scriptAction);
 

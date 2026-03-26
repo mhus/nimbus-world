@@ -63,8 +63,19 @@ export class StartEnvironmentScriptCommand extends CommandHandler {
       return { error: 'Script name must be a non-empty string' };
     }
 
+    // Parse optional inline parameters: startEnvironmentScript("rain", "intensity", 0.7, "windStrength", 0.3)
+    let inlineParameters: Record<string, any> | undefined;
+    if (parameters.length > 1) {
+      inlineParameters = {};
+      for (let i = 1; i < parameters.length - 1; i += 2) {
+        const key = String(parameters[i]);
+        const value = parameters[i + 1];
+        inlineParameters[key] = value;
+      }
+    }
+
     // Start the script
-    const executorId = await environmentService.startEnvironmentScript(name);
+    const executorId = await environmentService.startEnvironmentScript(name, inlineParameters);
 
     if (executorId) {
       const message = `Environment script started: ${name} (executor: ${executorId})`;

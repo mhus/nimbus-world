@@ -476,7 +476,9 @@ export class ScrawlService {
           }
 
           // Build asset path for script
-          const scriptPath = `scrawl/${id}.scrawl.json`;
+          // If id already contains .scrawl.json extension, use as-is (supports direct paths like "n:scripts/weather_fog.scrawl.json")
+          // Otherwise, build legacy path: scrawl/{id}.scrawl.json
+          const scriptPath = id.endsWith('.scrawl.json') ? id : `scrawl/${id}.scrawl.json`;
           const scriptUrl = networkService.getAssetUrl(scriptPath);
 
           logger.debug('Loading script from asset server', { id, scriptUrl });

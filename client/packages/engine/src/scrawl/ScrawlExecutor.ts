@@ -474,6 +474,51 @@ export class ScrawlExecutor {
     }
   }
 
+  /**
+   * Resolve a single parameter value.
+   *
+   * Supported syntax:
+   *   "$varName"         - resolve variable, keep "$varName" if not found
+   *   "$varName:default" - resolve variable, use default if not found
+   *
+   * Default values are parsed as number if possible, otherwise kept as string.
+   */
+  private resolveParam(value: any): any {
+    if (typeof value !== 'string' || !value.startsWith('$')) {
+      return value;
+    }
+
+    const expr = value.substring(1); // remove $
+    const colonIdx = expr.indexOf(':');
+
+    let varName: string;
+    let defaultValue: any = undefined;
+
+    if (colonIdx >= 0) {
+      varName = expr.substring(0, colonIdx);
+      const defaultStr = expr.substring(colonIdx + 1);
+      // Parse default: try number, then boolean, otherwise string
+      const num = Number(defaultStr);
+      if (!isNaN(num) && defaultStr.trim() !== '') {
+        defaultValue = num;
+      } else if (defaultStr === 'true') {
+        defaultValue = true;
+      } else if (defaultStr === 'false') {
+        defaultValue = false;
+      } else {
+        defaultValue = defaultStr;
+      }
+    } else {
+      varName = expr;
+    }
+
+    const resolved = this.vars.get(varName);
+    if (resolved !== undefined) {
+      return resolved;
+    }
+    return defaultValue !== undefined ? defaultValue : value;
+  }
+
   private async execStepCmd(ctx: ScrawlExecContext, step: any): Promise<void> {
     const commandService = ctx.appContext.services.command;
     if (!commandService) {
@@ -489,14 +534,16 @@ export class ScrawlExecutor {
     }
 
     try {
-      // Pass parameters as-is - commands should use CastUtil for type conversion
+      // Resolve $variable references in parameters
+      const resolvedParameters = parameters.map((p: any) => this.resolveParam(p));
+
       logger.debug('Executing command from Cmd step', {
         cmd,
-        parameters,
+        parameters: resolvedParameters,
         scriptId: this.script.id,
       });
 
-      await commandService.executeCommand(cmd, parameters);
+      await commandService.executeCommand(cmd, resolvedParameters);
     } catch (error) {
       // Log error but continue script execution
       ExceptionHandler.handle(error, 'ScrawlExecutor.execStepCmd', {
@@ -655,37 +702,15 @@ export class ScrawlExecutor {
 
   /**
    * Sets default variables in the context.
-   * These are automatically available in all scripts.
+   * All ctx.vars are copied to this.vars so they can be referenced via $varName in scripts.
    */
   private setDefaultVariables(ctx: ScrawlExecContext): void {
-    // $source, $target, $targets - These come from vars (parameters)
-    if (ctx.vars?.source) {
-      this.vars.set('source', ctx.vars.source);
-    }
-
-    if (ctx.vars?.target) {
-      this.vars.set('target', ctx.vars.target);
-    }
-
-    if (ctx.vars?.targets) {
-      this.vars.set('targets', ctx.vars.targets);
-    }
-
-    // $item, $itemId, $itemName, $itemTexture - These come from vars
-    if (ctx.vars?.item) {
-      this.vars.set('item', ctx.vars.item);
-    }
-
-    if (ctx.vars?.itemId) {
-      this.vars.set('itemId', ctx.vars.itemId);
-    }
-
-    if (ctx.vars?.itemName) {
-      this.vars.set('itemName', ctx.vars.itemName);
-    }
-
-    if (ctx.vars?.itemTexture) {
-      this.vars.set('itemTexture', ctx.vars.itemTexture);
+    if (ctx.vars) {
+      for (const [key, value] of Object.entries(ctx.vars)) {
+        if (value !== undefined && value !== null) {
+          this.vars.set(key, value);
+        }
+      }
     }
   }
 
