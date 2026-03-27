@@ -475,33 +475,33 @@ public class WWorldService {
         var scripts = new ArrayList<de.mhus.nimbus.generated.types.WorldInfoSettingsDTOEnvironmentScriptsDTO>();
 
         // Daytime transition scripts (triggered by World Time System)
-        scripts.add(envScript("daytime_change_morning", "n:scripts/weather_daytime_morning.scrawl.json"));
-        scripts.add(envScript("daytime_change_day", "n:scripts/weather_daytime_day.scrawl.json"));
-        scripts.add(envScript("daytime_change_evening", "n:scripts/weather_daytime_evening.scrawl.json"));
-        scripts.add(envScript("daytime_change_night", "n:scripts/weather_daytime_night.scrawl.json"));
+        scripts.add(envScript("daytime_change_morning", "n:scrawl/weather_daytime_morning.scrawl.json"));
+        scripts.add(envScript("daytime_change_day", "n:scrawl/weather_daytime_day.scrawl.json"));
+        scripts.add(envScript("daytime_change_evening", "n:scrawl/weather_daytime_evening.scrawl.json"));
+        scripts.add(envScript("daytime_change_night", "n:scrawl/weather_daytime_night.scrawl.json"));
 
         // Season scripts (triggered by World Time System)
-        scripts.add(envScript("season_spring", "n:scripts/weather_season_spring.scrawl.json"));
-        scripts.add(envScript("season_summer", "n:scripts/weather_season_summer.scrawl.json"));
-        scripts.add(envScript("season_autumn", "n:scripts/weather_season_autumn.scrawl.json"));
-        scripts.add(envScript("season_winter", "n:scripts/weather_season_winter.scrawl.json"));
+        scripts.add(envScript("season_spring", "n:scrawl/weather_season_spring.scrawl.json"));
+        scripts.add(envScript("season_summer", "n:scrawl/weather_season_summer.scrawl.json"));
+        scripts.add(envScript("season_autumn", "n:scrawl/weather_season_autumn.scrawl.json"));
+        scripts.add(envScript("season_winter", "n:scrawl/weather_season_winter.scrawl.json"));
 
         // Weather scenarios (triggered by server weather system)
-        scripts.add(envScript("clear", "n:scripts/weather_clear.scrawl.json"));
-        scripts.add(envScript("cloudy", "n:scripts/weather_cloudy.scrawl.json"));
-        scripts.add(envScript("overcast", "n:scripts/weather_overcast.scrawl.json"));
-        scripts.add(envScript("rain", "n:scripts/weather_rain.scrawl.json"));
-        scripts.add(envScript("snow", "n:scripts/weather_snow.scrawl.json"));
-        scripts.add(envScript("fog", "n:scripts/weather_fog.scrawl.json"));
-        scripts.add(envScript("wind", "n:scripts/weather_wind.scrawl.json"));
-        scripts.add(envScript("thunderstorm", "n:scripts/weather_thunderstorm.scrawl.json"));
-        scripts.add(envScript("blizzard", "n:scripts/weather_blizzard.scrawl.json"));
-        scripts.add(envScript("sandstorm", "n:scripts/weather_sandstorm.scrawl.json"));
-        scripts.add(envScript("heatwave", "n:scripts/weather_heatwave.scrawl.json"));
-        scripts.add(envScript("eclipse", "n:scripts/weather_eclipse.scrawl.json"));
-        scripts.add(envScript("aurora", "n:scripts/weather_aurora.scrawl.json"));
-        scripts.add(envScript("meteor_shower", "n:scripts/weather_meteor_shower.scrawl.json"));
-        scripts.add(envScript("volcanic_ash", "n:scripts/weather_volcanic_ash.scrawl.json"));
+        scripts.add(envScript("clear", "n:scrawl/weather_clear.scrawl.json"));
+        scripts.add(envScript("cloudy", "n:scrawl/weather_cloudy.scrawl.json"));
+        scripts.add(envScript("overcast", "n:scrawl/weather_overcast.scrawl.json"));
+        scripts.add(envScript("rain", "n:scrawl/weather_rain.scrawl.json"));
+        scripts.add(envScript("snow", "n:scrawl/weather_snow.scrawl.json"));
+        scripts.add(envScript("fog", "n:scrawl/weather_fog.scrawl.json"));
+        scripts.add(envScript("wind", "n:scrawl/weather_wind.scrawl.json"));
+        scripts.add(envScript("thunderstorm", "n:scrawl/weather_thunderstorm.scrawl.json"));
+        scripts.add(envScript("blizzard", "n:scrawl/weather_blizzard.scrawl.json"));
+        scripts.add(envScript("sandstorm", "n:scrawl/weather_sandstorm.scrawl.json"));
+        scripts.add(envScript("heatwave", "n:scrawl/weather_heatwave.scrawl.json"));
+        scripts.add(envScript("eclipse", "n:scrawl/weather_eclipse.scrawl.json"));
+        scripts.add(envScript("aurora", "n:scrawl/weather_aurora.scrawl.json"));
+        scripts.add(envScript("meteor_shower", "n:scrawl/weather_meteor_shower.scrawl.json"));
+        scripts.add(envScript("volcanic_ash", "n:scrawl/weather_volcanic_ash.scrawl.json"));
 
         info.getSettings().setEnvironmentScripts(scripts);
         log.debug("Initialized {} default environment scripts", scripts.size());
