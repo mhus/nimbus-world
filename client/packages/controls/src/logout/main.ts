@@ -8,6 +8,7 @@
  */
 
 import { logoutService } from './services/LogoutService';
+import { apiService } from '@/services/ApiService';
 import { getLogger } from '@nimbus/shared';
 import './style.css';
 
@@ -89,6 +90,9 @@ async function performLogout() {
 
   try {
     logger.info('Starting logout process');
+
+    // Initialize ApiService with runtime config (resolves correct API URL)
+    await apiService.initialize();
 
     // Get logout URLs and login URL from status endpoint
     const { accessUrls, loginUrl } = await logoutService.getLogoutUrls();

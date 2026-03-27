@@ -17,7 +17,9 @@ set -e
 GOOGLE_DRIVE_URL=""
 GOOGLE_DRIVE_ID=""
 MONGODB_URI="${MONGODB_URI:-}"
+PRESERVE_SETTINGS="${PRESERVE_SETTINGS:-true}"
 WORK_DIR="/tmp/installer"
+SETTINGS_FILE="$WORK_DIR/s_settings_backup.ndjson"
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -47,6 +49,7 @@ while [[ $# -gt 0 ]]; do
             echo ""
             echo "Environment variables:"
             echo "  MONGODB_URI         MongoDB connection URI (alternative to --mongodb-uri)"
+            echo "  PRESERVE_SETTINGS   Preserve s_settings collection across restore (default: true)"
             exit 0
             ;;
         *)
@@ -80,6 +83,7 @@ echo "Nimbus World Database Installer"
 echo "========================================"
 echo "  File ID: $GOOGLE_DRIVE_ID"
 echo "  MongoDB: ${MONGODB_URI%%@*}@***"
+echo "  Preserve settings: $PRESERVE_SETTINGS"
 echo ""
 
 # Create work directory
@@ -115,9 +119,21 @@ if [ -z "$BACKUP_DIR" ]; then
 fi
 echo "  Backup directory: $BACKUP_DIR"
 
-# Step 4: Restore
+# Step 4: Preserve s_settings if enabled
+if [ "$PRESERVE_SETTINGS" = "true" ]; then
+    echo ""
+    echo "[3/6] Backing up s_settings collection..."
+    if mongoexport --uri="$MONGODB_URI" --collection="s_settings" --out="$SETTINGS_FILE" 2>/dev/null; then
+        echo "  Saved $(wc -l < "$SETTINGS_FILE") documents"
+    else
+        echo "  No existing s_settings collection found (skipping)"
+        rm -f "$SETTINGS_FILE"
+    fi
+fi
+
+# Step 5: Restore
 echo ""
-echo "[3/4] Restoring database..."
+echo "[4/6] Restoring database..."
 
 NDJSON_COUNT=$(find "$BACKUP_DIR" -name "*.ndjson" | wc -l)
 BSON_COUNT=$(find "$BACKUP_DIR" -name "*.bson" | wc -l)
@@ -139,9 +155,17 @@ else
     exit 1
 fi
 
-# Step 5: Cleanup
+# Step 6: Restore preserved s_settings
+if [ "$PRESERVE_SETTINGS" = "true" ] && [ -f "$SETTINGS_FILE" ]; then
+    echo ""
+    echo "[5/6] Restoring preserved s_settings..."
+    mongoimport --uri="$MONGODB_URI" --collection="s_settings" --mode=upsert --file="$SETTINGS_FILE"
+    echo "  s_settings restored"
+fi
+
+# Step 7: Cleanup
 echo ""
-echo "[4/4] Cleanup..."
+echo "[6/6] Cleanup..."
 rm -rf "$WORK_DIR"
 
 echo ""
