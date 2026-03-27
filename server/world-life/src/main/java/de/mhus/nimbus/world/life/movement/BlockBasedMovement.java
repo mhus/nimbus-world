@@ -112,6 +112,9 @@ public class BlockBasedMovement {
         double dirX = direction.getX() / dirLength;
         double dirZ = direction.getZ() / dirLength;
 
+        int waterSkips = 0;
+        int steepSkips = 0;
+
         for (int i = 0; i < waypointCount; i++) {
             // Random step distance (2.0 to 3.0 blocks)
             double stepDistance = 2.0 + random.nextDouble();
@@ -134,6 +137,7 @@ public class BlockBasedMovement {
             // Check if position is invalid (water or not found)
             if (groundY < 0) {
                 // Position has water and entity cannot walk on it, skip
+                waterSkips++;
                 log.trace("Skipping waypoint due to water: pos=({}, {})", (int)nextX, (int)nextZ);
                 continue;
             }
@@ -142,8 +146,9 @@ public class BlockBasedMovement {
             int heightDiff = Math.abs(groundY - (int) currentY);
             if (heightDiff > 3) {
                 // Too steep, skip this waypoint
-                log.trace("Skipping waypoint due to steep terrain: heightDiff={}, pos=({}, {})",
-                        heightDiff, (int)nextX, (int)nextZ);
+                steepSkips++;
+                log.trace("Skipping waypoint due to steep terrain: heightDiff={}, groundY={}, currentY={}, pos=({}, {})",
+                        heightDiff, groundY, (int)currentY, (int)nextX, (int)nextZ);
                 continue;
             }
 

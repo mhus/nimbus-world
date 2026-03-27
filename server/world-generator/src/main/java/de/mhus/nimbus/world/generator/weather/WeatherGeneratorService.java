@@ -2,6 +2,7 @@ package de.mhus.nimbus.world.generator.weather;
 
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.shared.utils.TypeUtil;
+import de.mhus.nimbus.world.generator.composer.biome.BiomeType;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
 import de.mhus.nimbus.world.shared.world.WHexGridService;
 import lombok.RequiredArgsConstructor;
@@ -85,8 +86,13 @@ public class WeatherGeneratorService {
 
         String descriptor = params.get(PARAM_WEATHER);
         if (descriptor == null || descriptor.isBlank()) {
-            log.debug("No ge_weather parameter on hex grid at {},{}", hexQ, hexR);
-            return false;
+            // Fallback: derive weather from biomeType if ge_weather is not set (legacy worlds)
+            descriptor = deriveWeatherFromBiomeType(params);
+            if (descriptor == null) {
+                log.debug("No ge_weather and no biomeType on hex grid at {},{}", hexQ, hexR);
+                return false;
+            }
+            log.debug("Derived weather from biomeType for hex {},{}", hexQ, hexR);
         }
 
         // Store weather descriptor for the epoch
@@ -96,8 +102,33 @@ public class WeatherGeneratorService {
         hexGrid.getParameters().put(weatherKey, descriptor);
         hexGridService.save(hexGrid);
 
-        log.info("Generated weather for hex {},{} epoch {} in world {} (from ge_weather)",
+        log.info("Generated weather for hex {},{} epoch {} in world {}",
                 hexQ, hexR, epoch, worldId);
         return true;
+    }
+
+    /**
+     * Derive a weather descriptor from the biomeType parameter on the hex grid.
+     * Fallback for legacy worlds that were generated before ge_weather was added to BiomeType.
+     *
+     * @param params WHexGrid parameters
+     * @return Weather descriptor JSON string, or null if biomeType is unknown
+     */
+    private String deriveWeatherFromBiomeType(Map<String, String> params) {
+        String biomeTypeStr = params.get("biomeType");
+        if (biomeTypeStr == null || biomeTypeStr.isBlank()) {
+            biomeTypeStr = params.get("biome");
+        }
+        if (biomeTypeStr == null || biomeTypeStr.isBlank()) {
+            return null;
+        }
+
+        try {
+            BiomeType biomeType = BiomeType.valueOf(biomeTypeStr.toUpperCase());
+            return biomeType.getDefaultParameters().get(PARAM_WEATHER);
+        } catch (IllegalArgumentException e) {
+            log.debug("Unknown biomeType for weather derivation: {}", biomeTypeStr);
+            return null;
+        }
     }
 }

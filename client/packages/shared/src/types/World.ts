@@ -59,7 +59,7 @@ export interface WorldInfo {
    seasonMonths = [0,3,6,9]  0=January, 3=April, 6=July, 9=October
    Every season starts at the first day of the month given in the array.
    */
-  seasonMonths: Array<number>;
+  seasonMonths: Array<number>; // javaType: java.util.List<Integer>
 
   /** Creation timestamp */
   createdAt: string;

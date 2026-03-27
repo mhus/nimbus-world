@@ -34,7 +34,7 @@ public class WorldInfo {
     @com.fasterxml.jackson.annotation.JsonProperty("seasonProgress")
     private double seasonProgress;
     @com.fasterxml.jackson.annotation.JsonProperty("seasonMonths")
-    private java.util.List<java.lang.Double> seasonMonths;
+    private java.util.List<Integer> seasonMonths;
     @com.fasterxml.jackson.annotation.JsonProperty("createdAt")
     private String createdAt;
     @com.fasterxml.jackson.annotation.JsonProperty("updatedAt")

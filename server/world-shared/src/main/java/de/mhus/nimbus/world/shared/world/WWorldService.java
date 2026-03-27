@@ -1023,7 +1023,11 @@ public class WWorldService {
      */
     @Transactional(readOnly = true)
     public List<WEpochMeta> getEpochOrder(String worldId, int epochId) {
-        Optional<WWorld> worldOpt = repository.findByWorldId(worldId);
+        // Resolve to base worldId (strip instance/zone) since WWorld is stored by base worldId
+        String baseWorldId = WorldId.of(worldId)
+                .map(wid -> wid.toBaseWorldId().getId())
+                .orElse(worldId);
+        Optional<WWorld> worldOpt = repository.findByWorldId(baseWorldId);
         if (worldOpt.isEmpty()) {
             log.warn("getEpochOrder: world not found: {}", worldId);
             return List.of();

@@ -130,6 +130,43 @@ public class WorldTimeService {
         }
     }
 
+    /**
+     * Get the current season name: "winter", "spring", "summer", "autumn".
+     * Based on seasonMonths from WorldInfo [winterStart, springStart, summerStart, autumnStart].
+     * Returns "summer" as default if seasonMonths is not configured.
+     */
+    public String getCurrentSeason(WorldInfo worldInfo) {
+        if (worldInfo == null || worldInfo.getSeasonMonths() == null || worldInfo.getSeasonMonths().size() < 4) {
+            return "summer";
+        }
+
+        WorldTime time = getCurrentWorldTime(worldInfo);
+        var wt = getWorldTime(worldInfo);
+        int monthsPerYear = wt != null && wt.getMonthsPerYear() != null ? wt.getMonthsPerYear() : DEFAULT_MONTHS_PER_YEAR;
+
+        // seasonMonths = [winterStart, springStart, summerStart, autumnStart] (0-based months)
+        var seasonMonths = worldInfo.getSeasonMonths();
+        int currentMonth = time.month() - 1; // Convert to 0-based
+
+        // Normalize month to year range
+        currentMonth = ((currentMonth % monthsPerYear) + monthsPerYear) % monthsPerYear;
+
+        int winterStart = seasonMonths.get(0);
+        int springStart = seasonMonths.get(1);
+        int summerStart = seasonMonths.get(2);
+        int autumnStart = seasonMonths.get(3);
+
+        if (currentMonth >= autumnStart) {
+            return "autumn";
+        } else if (currentMonth >= summerStart) {
+            return "summer";
+        } else if (currentMonth >= springStart) {
+            return "spring";
+        } else {
+            return "winter";
+        }
+    }
+
     private WorldInfoSettingsDTOWorldTimeDTO getWorldTime(WorldInfo worldInfo) {
         if (worldInfo == null || worldInfo.getSettings() == null) return null;
         return worldInfo.getSettings().getWorldTime();

@@ -5,6 +5,7 @@
 
 export interface WEpochMeta {
   epoch: number;
+  parentEpoch: number;
   name: string;
   description: string;
   worldStatus: string;

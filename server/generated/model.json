@@ -5227,8 +5227,8 @@
         "type" : "Array<number>",
         "optional" : false,
         "visibility" : null,
-        "javaTypeHint" : null,
-        "comment" : null
+        "javaTypeHint" : "java.util.List<Integer>",
+        "comment" : "// javaType: java.util.List<Integer>"
       }, {
         "name" : "createdAt",
         "type" : "string",
