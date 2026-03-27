@@ -40,6 +40,7 @@ import {MaterialInfoCommand} from "./MaterialInfoCommand";
 import {WireframeCommand} from "./WireframeCommand";
 import {UnderwaterCommand} from "./UnderwaterCommand";
 import {FogCommand} from "./FogCommand";
+import {FogColorCommand} from "./FogColorCommand";
 import {FlashImageCommand} from "./FlashImageCommand";
 import {CenterTextCommand} from "./CenterTextCommand";
 import {LogLevelCommand} from "./LogLevelCommand";
@@ -219,6 +220,7 @@ export class CommandsFactory {
         commandService.registerHandler(new WireframeCommand(appContext));
         commandService.registerHandler(new UnderwaterCommand(appContext));
         commandService.registerHandler(new FogCommand(appContext));
+        commandService.registerHandler(new FogColorCommand(appContext));
         commandService.registerHandler(new FlashImageCommand(appContext));
         commandService.registerHandler(new CenterTextCommand(appContext));
         commandService.registerHandler(new LogLevelCommand());

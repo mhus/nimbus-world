@@ -1,8 +1,9 @@
 /**
  * SkyBoxService - Manages skybox visualization
  *
- * Creates a skybox mesh that renders the sky environment.
- * Supports both solid color and 6-sided cube texture modes.
+ * Creates a skybox from 6 textured planes that renders the sky environment.
+ * Supports both solid color and 6-sided texture modes.
+ * Textures are loaded with credentials via fetch + blob URLs.
  */
 
 import { getLogger } from '@nimbus/shared';
@@ -13,22 +14,33 @@ import {
   MeshBuilder,
   StandardMaterial,
   Color3,
-  CubeTexture,
   Texture,
+  Vector3,
 } from '@babylonjs/core';
 import type { AppContext } from '../AppContext';
 import type { CameraService } from './CameraService';
 import type { NetworkService } from './NetworkService';
 import { RENDERING_GROUPS } from '../config/renderingGroups';
+import { loadTextureUrlWithCredentials } from '../utils/ImageLoader';
 
 const logger = getLogger('SkyBoxService');
+
+/** Face definitions for the 6 sides of the skybox cube */
+const SKYBOX_FACES = [
+  { name: 'px', suffix: '_px.png', rotation: { x: 0, y: -Math.PI / 2, z: 0 } },  // +X (right)
+  { name: 'nx', suffix: '_nx.png', rotation: { x: 0, y: Math.PI / 2, z: 0 } },   // -X (left)
+  { name: 'py', suffix: '_py.png', rotation: { x: Math.PI / 2, y: 0, z: 0 } },   // +Y (top)
+  { name: 'ny', suffix: '_ny.png', rotation: { x: -Math.PI / 2, y: 0, z: 0 } },  // -Y (bottom)
+  { name: 'pz', suffix: '_pz.png', rotation: { x: 0, y: 0, z: 0 } },             // +Z (front)
+  { name: 'nz', suffix: '_nz.png', rotation: { x: 0, y: Math.PI, z: 0 } },       // -Z (back)
+];
 
 /**
  * SkyBoxService - Manages skybox for sky rendering
  *
  * Features:
- * - Color mode: Solid color skybox
- * - Texture mode: 6-sided cube texture skybox
+ * - Color mode: Solid color skybox (single box mesh)
+ * - Texture mode: 6 textured planes with credential-aware loading
  * - Attached to camera (follows camera movement)
  * - Configurable size and rotation
  * - WorldInfo integration
@@ -41,8 +53,10 @@ export class SkyBoxService {
 
   // SkyBox components
   private skyBoxRoot?: TransformNode;
-  private skyBoxMesh?: Mesh;
-  private skyBoxMaterial?: StandardMaterial;
+  private skyBoxMesh?: Mesh; // Used for color mode
+  private skyBoxMaterial?: StandardMaterial; // Used for color mode
+  private texturePlanes: Mesh[] = []; // Used for texture mode
+  private textureMaterials: StandardMaterial[] = []; // Used for texture mode
 
   // Configuration
   private enabled: boolean = false; // Disabled by default
@@ -73,17 +87,12 @@ export class SkyBoxService {
 
     const skyBoxSettings = settings.skyBox;
 
-    // Load enabled state
     if (skyBoxSettings.enabled !== undefined) {
       this.enabled = skyBoxSettings.enabled;
     }
-
-    // Load mode
     if (skyBoxSettings.mode) {
       this.mode = skyBoxSettings.mode;
     }
-
-    // Load color (for color mode)
     if (skyBoxSettings.color) {
       this.skyBoxColor = new Color3(
         skyBoxSettings.color.r,
@@ -91,18 +100,12 @@ export class SkyBoxService {
         skyBoxSettings.color.b
       );
     }
-
-    // Load texture path (for texture mode)
     if (skyBoxSettings.texturePath) {
       this.texturePath = skyBoxSettings.texturePath;
     }
-
-    // Load size
     if (skyBoxSettings.size !== undefined) {
       this.size = skyBoxSettings.size;
     }
-
-    // Load rotation
     if (skyBoxSettings.rotation !== undefined) {
       this.rotationY = skyBoxSettings.rotation;
     }
@@ -117,7 +120,6 @@ export class SkyBoxService {
   }
 
   private async initialize(): Promise<void> {
-    // Load initial parameters from WorldInfo
     this.loadParametersFromWorldInfo();
 
     // Store original clear color from WorldInfo or default
@@ -140,19 +142,12 @@ export class SkyBoxService {
     this.skyBoxRoot = new TransformNode('skyBoxRoot', this.scene);
     this.skyBoxRoot.parent = cameraRoot;
 
-    // Create skybox mesh
-    this.createSkyBoxMesh();
-
     // Apply material based on mode
     if (this.mode === 'texture' && this.texturePath) {
       await this.applyTextureMaterial(this.texturePath);
     } else {
+      this.createColorSkyBox();
       this.applyColorMaterial();
-    }
-
-    // Set enabled state and update clear color
-    if (this.skyBoxMesh) {
-      this.skyBoxMesh.setEnabled(this.enabled);
     }
 
     // Update scene clear color based on enabled state
@@ -168,50 +163,41 @@ export class SkyBoxService {
   }
 
   /**
-   * Create skybox mesh
+   * Create single box mesh for color mode
    */
-  private createSkyBoxMesh(): void {
+  private createColorSkyBox(): void {
     if (!this.skyBoxRoot) return;
 
-    // Create box mesh with inside visible
     this.skyBoxMesh = MeshBuilder.CreateBox(
       'skyBox',
-      {
-        size: this.size,
-        sideOrientation: Mesh.BACKSIDE, // Inside visible
-      },
+      { size: this.size, sideOrientation: Mesh.BACKSIDE },
       this.scene
     );
-
     this.skyBoxMesh.parent = this.skyBoxRoot;
-    this.skyBoxMesh.infiniteDistance = true; // Always at horizon
-    this.skyBoxMesh.renderingGroupId = RENDERING_GROUPS.ENVIRONMENT; // Render behind everything
+    this.skyBoxMesh.infiniteDistance = true;
+    this.skyBoxMesh.renderingGroupId = RENDERING_GROUPS.ENVIRONMENT;
 
-    // Set initial rotation
     if (this.rotationY !== 0) {
       this.skyBoxMesh.rotation.y = this.rotationY * (Math.PI / 180);
     }
-
-    logger.debug('SkyBox mesh created', { size: this.size });
   }
 
   /**
-   * Apply color material to skybox
+   * Apply color material to skybox box mesh
    */
   private applyColorMaterial(): void {
     if (!this.skyBoxMesh) return;
 
-    // Dispose old material
     this.skyBoxMaterial?.dispose();
 
-    // Create new material
     this.skyBoxMaterial = new StandardMaterial('skyBoxMaterial', this.scene);
     this.skyBoxMaterial.diffuseColor = this.skyBoxColor;
-    this.skyBoxMaterial.emissiveColor = this.skyBoxColor; // Self-illuminated
+    this.skyBoxMaterial.emissiveColor = this.skyBoxColor;
     this.skyBoxMaterial.disableLighting = true;
     this.skyBoxMaterial.backFaceCulling = false;
 
     this.skyBoxMesh.material = this.skyBoxMaterial;
+    this.skyBoxMesh.setEnabled(this.enabled);
 
     logger.debug('SkyBox color material applied', {
       color: { r: this.skyBoxColor.r, g: this.skyBoxColor.g, b: this.skyBoxColor.b },
@@ -219,67 +205,119 @@ export class SkyBoxService {
   }
 
   /**
-   * Load cube texture from base path
-   * @param basePath Base path for textures (e.g., "textures/skybox/stars")
-   */
-  private async loadCubeTexture(basePath: string): Promise<CubeTexture | null> {
-    if (!this.networkService) {
-      logger.error('NetworkService not available for texture loading');
-      return null;
-    }
-
-    try {
-      // Get base URL from network service
-      const baseUrl = this.networkService.getAssetUrl(basePath);
-
-      // Create cube texture (Babylon.js automatically appends _px.png, _nx.png, etc.)
-      const cubeTexture = new CubeTexture(
-        baseUrl,
-        this.scene,
-        ['_px.png', '_nx.png', '_py.png', '_ny.png', '_pz.png', '_nz.png']
-      );
-
-      logger.debug('CubeTexture loaded', { basePath });
-      return cubeTexture;
-    } catch (error) {
-      logger.error('Failed to load CubeTexture', { basePath, error });
-      return null;
-    }
-  }
-
-  /**
-   * Apply texture material to skybox
-   * @param basePath Base path for cube textures
+   * Apply texture material: creates 6 planes with individually loaded textures.
+   * Each face texture is loaded with credentials via blob URLs.
    */
   private async applyTextureMaterial(basePath: string): Promise<void> {
-    if (!this.skyBoxMesh) return;
+    if (!this.skyBoxRoot || !this.networkService) return;
 
-    const cubeTexture = await this.loadCubeTexture(basePath);
-    if (!cubeTexture) {
-      logger.warn('CubeTexture loading failed, keeping current material');
+    // Dispose previous texture planes and color box
+    this.disposeTexturePlanes();
+    this.skyBoxMesh?.dispose();
+    this.skyBoxMesh = undefined;
+    this.skyBoxMaterial?.dispose();
+    this.skyBoxMaterial = undefined;
+
+    const baseUrl = this.networkService.getAssetUrl(basePath);
+    const halfSize = this.size / 2;
+
+    // Load all 6 face textures with credentials in parallel
+    const blobUrls = await Promise.all(
+      SKYBOX_FACES.map(async (face) => {
+        try {
+          return await loadTextureUrlWithCredentials(baseUrl + face.suffix);
+        } catch (error) {
+          logger.error('Failed to load skybox face', { face: face.name, error });
+          return null;
+        }
+      })
+    );
+
+    // Check if all textures loaded
+    if (blobUrls.some(url => url === null)) {
+      logger.warn('Some skybox textures failed to load, falling back to color mode');
+      this.createColorSkyBox();
+      this.applyColorMaterial();
       return;
     }
 
-    // Dispose old material
-    this.skyBoxMaterial?.dispose();
+    logger.debug('All 6 skybox face textures loaded', { basePath });
 
-    // Create new material with cube texture
-    this.skyBoxMaterial = new StandardMaterial('skyBoxMaterial', this.scene);
-    this.skyBoxMaterial.reflectionTexture = cubeTexture;
-    this.skyBoxMaterial.reflectionTexture.coordinatesMode = Texture.SKYBOX_MODE;
-    this.skyBoxMaterial.diffuseColor = new Color3(0, 0, 0);
-    this.skyBoxMaterial.specularColor = new Color3(0, 0, 0);
-    this.skyBoxMaterial.disableLighting = true;
-    this.skyBoxMaterial.backFaceCulling = false;
+    // Create a plane for each face
+    for (let i = 0; i < SKYBOX_FACES.length; i++) {
+      const face = SKYBOX_FACES[i];
+      const blobUrl = blobUrls[i]!;
 
-    this.skyBoxMesh.material = this.skyBoxMaterial;
+      // Create plane
+      const plane = MeshBuilder.CreatePlane(
+        `skyBox_${face.name}`,
+        { size: this.size, sideOrientation: Mesh.BACKSIDE },
+        this.scene
+      );
+      plane.parent = this.skyBoxRoot;
+      plane.infiniteDistance = true;
+      plane.renderingGroupId = RENDERING_GROUPS.ENVIRONMENT;
 
-    logger.debug('SkyBox texture material applied', { basePath });
+      // Position plane at the face of the cube
+      plane.rotation.set(face.rotation.x, face.rotation.y, face.rotation.z);
+      // Move plane outward along its normal (after rotation)
+      plane.position = new Vector3(0, 0, 0);
+      switch (face.name) {
+        case 'px': plane.position.x = halfSize; break;
+        case 'nx': plane.position.x = -halfSize; break;
+        case 'py': plane.position.y = halfSize; break;
+        case 'ny': plane.position.y = -halfSize; break;
+        case 'pz': plane.position.z = halfSize; break;
+        case 'nz': plane.position.z = -halfSize; break;
+      }
+
+      // Apply rotation offset
+      if (this.rotationY !== 0) {
+        // Rotation is applied to the root node instead
+      }
+
+      // Create material with texture
+      const material = new StandardMaterial(`skyBoxMat_${face.name}`, this.scene);
+      const texture = new Texture(blobUrl, this.scene, false, false);
+      texture.hasAlpha = false;
+      material.diffuseTexture = texture;
+      material.emissiveTexture = texture;
+      material.disableLighting = true;
+      material.backFaceCulling = false;
+
+      plane.material = material;
+      plane.setEnabled(this.enabled);
+
+      this.texturePlanes.push(plane);
+      this.textureMaterials.push(material);
+    }
+
+    // Apply rotation to root
+    if (this.rotationY !== 0 && this.skyBoxRoot) {
+      this.skyBoxRoot.rotation.y = this.rotationY * (Math.PI / 180);
+    }
+
+    logger.debug('SkyBox texture planes created', { basePath, faceCount: this.texturePlanes.length });
+  }
+
+  /**
+   * Dispose texture planes and materials
+   */
+  private disposeTexturePlanes(): void {
+    for (const mat of this.textureMaterials) {
+      mat.diffuseTexture?.dispose();
+      mat.emissiveTexture?.dispose();
+      mat.dispose();
+    }
+    for (const plane of this.texturePlanes) {
+      plane.dispose();
+    }
+    this.texturePlanes = [];
+    this.textureMaterials = [];
   }
 
   /**
    * Enable/disable skybox visibility
-   * @param enabled True to show skybox, false to hide
    */
   setEnabled(enabled: boolean): void {
     this.enabled = enabled;
@@ -287,9 +325,10 @@ export class SkyBoxService {
     if (this.skyBoxMesh) {
       this.skyBoxMesh.setEnabled(enabled);
     }
+    for (const plane of this.texturePlanes) {
+      plane.setEnabled(enabled);
+    }
 
-    // When skybox is enabled, set scene clear color to black
-    // When disabled, restore original clear color from WorldInfo
     if (enabled) {
       this.scene.clearColor = new Color3(0, 0, 0).toColor4();
     } else {
@@ -301,11 +340,15 @@ export class SkyBoxService {
 
   /**
    * Set skybox to color mode
-   * @param color RGB color
    */
   setColorMode(color: Color3): void {
     this.mode = 'color';
     this.skyBoxColor = color;
+    this.disposeTexturePlanes();
+
+    if (!this.skyBoxMesh) {
+      this.createColorSkyBox();
+    }
     this.applyColorMaterial();
 
     logger.debug('SkyBox switched to color mode', {
@@ -315,7 +358,6 @@ export class SkyBoxService {
 
   /**
    * Set skybox to texture mode
-   * @param basePath Base path for cube textures (e.g., "textures/skybox/stars")
    */
   async setTextureMode(basePath: string): Promise<void> {
     this.mode = 'texture';
@@ -327,14 +369,19 @@ export class SkyBoxService {
 
   /**
    * Set skybox size
-   * @param size Box size
    */
   setSize(size: number): void {
     this.size = size;
 
     if (this.skyBoxMesh) {
-      // Scale mesh relative to default size
       this.skyBoxMesh.scaling.setAll(size / 2000);
+    }
+    // For texture planes, we'd need to recreate them - size changes are rare
+    if (this.texturePlanes.length > 0) {
+      const scale = size / 2000;
+      for (const plane of this.texturePlanes) {
+        plane.scaling.setAll(scale);
+      }
     }
 
     logger.debug('SkyBox size updated', { size });
@@ -342,13 +389,15 @@ export class SkyBoxService {
 
   /**
    * Set skybox rotation
-   * @param degrees Rotation angle in degrees (around Y axis)
    */
   setRotation(degrees: number): void {
     this.rotationY = degrees;
 
     if (this.skyBoxMesh) {
       this.skyBoxMesh.rotation.y = degrees * (Math.PI / 180);
+    }
+    if (this.skyBoxRoot && this.texturePlanes.length > 0) {
+      this.skyBoxRoot.rotation.y = degrees * (Math.PI / 180);
     }
 
     logger.debug('SkyBox rotation updated', { degrees });
@@ -372,6 +421,7 @@ export class SkyBoxService {
    * Cleanup and dispose resources
    */
   dispose(): void {
+    this.disposeTexturePlanes();
     this.skyBoxMesh?.dispose();
     this.skyBoxMaterial?.dispose();
     this.skyBoxRoot?.dispose();

@@ -61,6 +61,7 @@ export class CameraService {
   private fogSphereMesh?: Mesh;
   private fogMaterial?: StandardMaterial;
   private fogIntensity: number = 0; // 0 = disabled, 0.1-1.0 = intensity
+  private fogColorOverride?: Color3; // Custom fog color (default: gray 0.5)
 
   // Camera environment root - parent for all camera-attached effects
   private cameraEnvironmentRoot?: TransformNode;
@@ -562,6 +563,23 @@ export class CameraService {
   }
 
   /**
+   * Set custom fog color. Affects both scene fog and fog sphere.
+   * Call without arguments or with undefined to reset to default gray.
+   */
+  setFogColor(r?: number, g?: number, b?: number): void {
+    if (r === undefined || g === undefined || b === undefined) {
+      this.fogColorOverride = undefined;
+    } else {
+      this.fogColorOverride = new Color3(r, g, b);
+    }
+    // Re-apply if fog is currently active
+    if (this.fogIntensity > 0) {
+      this.updateFogIntensity(this.fogIntensity);
+    }
+    logger.debug('Fog color set', { r, g, b, hasOverride: !!this.fogColorOverride });
+  }
+
+  /**
    * Enable fog visual effects with given intensity
    *
    * @param intensity Fog intensity (0.1-1.0)
@@ -638,14 +656,17 @@ export class CameraService {
     // Map intensity to sphere alpha (0.05 - 0.25)
     const sphereAlpha = 0.05 + intensity * 0.2;
 
-    // Enable fog with gray tint
+    // Enable fog with configurable color
+    const fogColor = this.fogColorOverride ?? new Color3(0.5, 0.5, 0.5);
     this.scene.fogMode = Scene.FOGMODE_EXP2;
     this.scene.fogDensity = fogDensity;
-    this.scene.fogColor = new Color3(0.5, 0.5, 0.5); // Gray fog
+    this.scene.fogColor = fogColor;
 
-    // Update sphere alpha
+    // Update sphere alpha and color
     if (this.fogMaterial) {
       this.fogMaterial.alpha = sphereAlpha;
+      this.fogMaterial.diffuseColor = fogColor;
+      this.fogMaterial.emissiveColor = fogColor;
     }
 
     logger.debug('🌫️ Fog intensity updated', {
