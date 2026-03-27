@@ -11,5 +11,7 @@ public enum SessionCommandTarget {
     /** A specific player (target = playerId) */
     PLAYER,
     /** All sessions in a specific world (target = worldId) */
-    WORLD
+    WORLD,
+    /** Sessions in a specific hex grid of a world instance (target = worldId, requires hexQ/hexR) */
+    HEX_GRID
 }

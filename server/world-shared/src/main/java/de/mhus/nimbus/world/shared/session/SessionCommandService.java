@@ -16,7 +16,7 @@ import java.util.List;
  * to send commands to connected clients across all pods.
  *
  * Redis channel: world:global:s.cmd
- * Message format: { "targetType": "ALL|TEAM|PLAYER|WORLD", "target": "...", "cmd": "...", "args": [...] }
+ * Message format: { "targetType": "ALL|TEAM|PLAYER|WORLD|HEX_GRID", "target": "...", "cmd": "...", "args": [...], "hexQ": int, "hexR": int }
  */
 @Service
 @Slf4j
@@ -95,6 +95,38 @@ public class SessionCommandService {
      */
     public void sendToWorld(String worldId, String cmd, List<String> args) {
         sendCommand(SessionCommandTarget.WORLD, worldId, cmd, args);
+    }
+
+    /**
+     * Send a command to all sessions in a specific hex grid of a world instance.
+     *
+     * @param worldId the full world instance ID (e.g., "ymir:Mist:instance1")
+     * @param hexQ hex grid axial Q coordinate
+     * @param hexR hex grid axial R coordinate
+     * @param cmd command name
+     * @param args command arguments
+     */
+    public void sendToHexGrid(String worldId, int hexQ, int hexR, String cmd, List<String> args) {
+        try {
+            ObjectNode node = objectMapper.createObjectNode();
+            node.put("targetType", SessionCommandTarget.HEX_GRID.name());
+            if (worldId != null) {
+                node.put("target", worldId);
+            }
+            node.put("hexQ", hexQ);
+            node.put("hexR", hexR);
+            node.put("cmd", cmd);
+            ArrayNode argsNode = objectMapper.createArrayNode();
+            if (args != null) {
+                args.forEach(argsNode::add);
+            }
+            node.set("args", argsNode);
+
+            redisMessaging.publishGlobal(REDIS_CHANNEL_SESSION_CMD, objectMapper.writeValueAsString(node));
+            log.debug("Published hex grid command: worldId={}, hex={};{}, cmd={}", worldId, hexQ, hexR, cmd);
+        } catch (Exception e) {
+            log.error("Failed to publish hex grid command: {}", e.getMessage(), e);
+        }
     }
 
     /**

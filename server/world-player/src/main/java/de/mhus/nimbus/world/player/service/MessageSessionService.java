@@ -24,6 +24,7 @@ import java.util.List;
  * - TEAM: sessions whose cachedTeamId matches the target
  * - PLAYER: session whose entityId matches the target
  * - WORLD: sessions whose worldId starts with the target (prefix match for region/world/instance)
+ * - HEX_GRID: sessions whose worldId matches exactly and cachedHexQ/R match hexQ/hexR from message
  */
 @Service
 @Slf4j
@@ -59,6 +60,8 @@ public class MessageSessionService {
             String targetTypeStr = node.has("targetType") ? node.get("targetType").asText() : null;
             String target = node.has("target") ? node.get("target").asText() : null;
             String cmd = node.has("cmd") ? node.get("cmd").asText() : null;
+            Integer hexQ = node.has("hexQ") ? node.get("hexQ").asInt() : null;
+            Integer hexR = node.has("hexR") ? node.get("hexR").asInt() : null;
 
             if (targetTypeStr == null || cmd == null) {
                 log.warn("Invalid session command message: {}", message);
@@ -86,7 +89,7 @@ public class MessageSessionService {
             for (PlayerSession session : sessionManager.getAllSessions().values()) {
                 if (!session.isAuthenticated()) continue;
 
-                if (matchesTarget(session, targetType, target)) {
+                if (matchesTarget(session, targetType, target, hexQ, hexR)) {
                     clientService.sendCommand(session, cmd, args);
                     count++;
                 }
@@ -99,13 +102,20 @@ public class MessageSessionService {
         }
     }
 
-    private boolean matchesTarget(PlayerSession session, SessionCommandTarget targetType, String target) {
+    private boolean matchesTarget(PlayerSession session, SessionCommandTarget targetType, String target,
+                                   Integer hexQ, Integer hexR) {
         return switch (targetType) {
             case ALL -> true;
             case TEAM -> target != null && target.equals(session.getCachedTeamId());
             case PLAYER -> target != null && target.equals(session.getEntityId());
             case WORLD -> target != null && session.getWorldId() != null
                     && session.getWorldId().getFullId().startsWith(target);
+            case HEX_GRID -> target != null
+                    && hexQ != null && hexR != null
+                    && session.getWorldId() != null
+                    && session.getWorldId().getFullId().equals(target)
+                    && hexQ.equals(session.getCachedHexQ())
+                    && hexR.equals(session.getCachedHexR());
         };
     }
 }
