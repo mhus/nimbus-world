@@ -178,7 +178,10 @@ public class EntityTools {
                     entity.setPosition(TypeUtil.vector3(posX.floatValue(), posY.floatValue(), posZ.floatValue()));
                     entity.setMiddlePoint(TypeUtil.vector3(posX.floatValue(), posY.floatValue(), posZ.floatValue()));
                 }
-                if (radius != null) entity.setRadius(radius);
+                if (radius != null) {
+                    if (entity.getServer() == null) entity.setServer(new java.util.HashMap<>());
+                    entity.getServer().put("roam_radius", String.valueOf(radius));
+                }
                 if (speed != null) entity.setSpeed(speed);
                 if (Strings.isNotBlank(behaviorModel)) entity.setBehaviorModel(behaviorModel);
                 if (server != null) entity.setServer(server);
@@ -249,7 +252,10 @@ public class EntityTools {
             if (posX != null && posY != null && posZ != null) {
                 entity.setPosition(TypeUtil.vector3(posX.floatValue(), posY.floatValue(), posZ.floatValue()));
             }
-            if (radius != null) entity.setRadius(radius);
+            if (radius != null) {
+                if (entity.getServer() == null) entity.setServer(new HashMap<>());
+                entity.getServer().put("roam_radius", String.valueOf(radius));
+            }
             if (speed != null) entity.setSpeed(speed);
             if (behaviorModel != null) entity.setBehaviorModel(behaviorModel);
             if (server != null) {

@@ -259,21 +259,22 @@
               </label>
             </div>
 
-            <!-- Radius -->
+            <!-- Roam Radius (stored in server map as roam_radius) -->
             <div class="form-control">
               <label class="label">
-                <span class="label-text font-medium">Radius</span>
+                <span class="label-text font-medium">Roam Radius</span>
               </label>
               <input
-                v-model.number="entityData.radius"
+                :value="getServerParam('roam_radius')"
+                @input="setServerParam('roam_radius', ($event.target as HTMLInputElement).value)"
                 type="number"
                 class="input input-bordered input-sm"
-                placeholder="20"
+                placeholder="100"
                 step="1"
                 min="0"
               />
               <label class="label">
-                <span class="label-text-alt">Movement radius around middle point (blocks)</span>
+                <span class="label-text-alt">Movement radius around middle point (blocks, stored in server params)</span>
               </label>
             </div>
 
@@ -694,6 +695,20 @@ const parametersToMap = (): Record<string, string> => {
     }
   }
   return map;
+};
+
+const getServerParam = (key: string): string => {
+  const entry = parameterEntries.value.find(e => e.key === key);
+  return entry?.value ?? '';
+};
+
+const setServerParam = (key: string, value: string) => {
+  const entry = parameterEntries.value.find(e => e.key === key);
+  if (entry) {
+    entry.value = value;
+  } else {
+    parameterEntries.value.push({ key, value });
+  }
 };
 
 const loadParametersFromMap = (params: Record<string, string> | null | undefined) => {
