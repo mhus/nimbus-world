@@ -1,6 +1,7 @@
 package de.mhus.nimbus.world.generator.weather;
 
 import de.mhus.nimbus.shared.types.WorldId;
+import de.mhus.nimbus.shared.utils.TypeUtil;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
 import de.mhus.nimbus.world.shared.world.WHexGridService;
 import lombok.RequiredArgsConstructor;
@@ -17,11 +18,11 @@ import java.util.Map;
  * Weather descriptors are stored in WHexGrid.parameters with the key prefix "w_".
  * The key is epoch-based: w_0 for epoch 0, w_1 for epoch 1, etc.
  *
- * The weather descriptor JSON comes from the biome default parameter "gw_weather"
+ * The weather descriptor JSON comes from the biome default parameter "ge_weather"
  * which is set on the WHexGrid during composition (via BiomeType defaults).
  *
  * Weather can come from:
- * 1. Default biome weather (gw_weather parameter, set by BiomeComposer from BiomeType)
+ * 1. Default biome weather (ge_weather parameter, set by BiomeComposer from BiomeType)
  * 2. Explicit model definition (if w_{epoch} parameter already exists on the hex grid)
  *
  * If a hex grid already has a weather descriptor for the given epoch, it is NOT overwritten.
@@ -31,12 +32,12 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class WeatherGeneratorService {
 
-    private static final String PARAM_WEATHER = "gw_weather";
+    private static final String PARAM_WEATHER = "ge_weather";
 
     private final WHexGridService hexGridService;
 
     /**
-     * Generate weather descriptor for a hex grid based on its gw_weather parameter.
+     * Generate weather descriptor for a hex grid based on its ge_weather parameter.
      * Does nothing if the hex grid already has a weather descriptor for the given epoch.
      *
      * @param worldId World ID
@@ -49,8 +50,7 @@ public class WeatherGeneratorService {
         WorldId wid = WorldId.of(worldId).orElseThrow(
                 () -> new IllegalArgumentException("Invalid worldId: " + worldId));
 
-        String positionKey = hexQ + ";" + hexR;
-        List<WHexGrid> grids = hexGridService.findByWorldIdAndPosition(wid.getId(), positionKey);
+        List<WHexGrid> grids = hexGridService.findAllByWorldIdAndPosition(wid.getId(), TypeUtil.hexVector2(hexQ, hexR));
 
         if (grids.isEmpty()) {
             log.warn("No hex grid found at {},{} in world {}", hexQ, hexR, worldId);
@@ -76,7 +76,7 @@ public class WeatherGeneratorService {
             return false;
         }
 
-        // Get weather descriptor from biome defaults (gw_weather parameter)
+        // Get weather descriptor from biome defaults (ge_weather parameter)
         Map<String, String> params = hexGrid.getParameters();
         if (params == null) {
             log.debug("No parameters on hex grid at {},{}", hexQ, hexR);
@@ -85,7 +85,7 @@ public class WeatherGeneratorService {
 
         String descriptor = params.get(PARAM_WEATHER);
         if (descriptor == null || descriptor.isBlank()) {
-            log.debug("No gw_weather parameter on hex grid at {},{}", hexQ, hexR);
+            log.debug("No ge_weather parameter on hex grid at {},{}", hexQ, hexR);
             return false;
         }
 
@@ -96,7 +96,7 @@ public class WeatherGeneratorService {
         hexGrid.getParameters().put(weatherKey, descriptor);
         hexGridService.save(hexGrid);
 
-        log.info("Generated weather for hex {},{} epoch {} in world {} (from gw_weather)",
+        log.info("Generated weather for hex {},{} epoch {} in world {} (from ge_weather)",
                 hexQ, hexR, epoch, worldId);
         return true;
     }

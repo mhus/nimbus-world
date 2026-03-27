@@ -54,11 +54,11 @@ public class Day5Environment extends MethodBasedWorkflow {
             throw new WorkflowException(null, "composition document not found: " + compositionId);
         }
 
-        String epochStr = params.getOrDefault("epoch", "0");
+        String epochStr = params.getOrDefault(GenesisConst.EPOCH, "0");
 
         return Map.of(
                 GenesisConst.COMPOSITION_ID, compositionId,
-                "epoch", epochStr
+                GenesisConst.EPOCH, epochStr
         );
     }
 
@@ -66,8 +66,10 @@ public class Day5Environment extends MethodBasedWorkflow {
     public void start(WorkflowContext context) throws WorkflowException {
         // Load hex grid coordinates from composition
         context.updateWorkflowStatus("loadModel");
+        String epoch = String.valueOf(context.getParameters().get(GenesisConst.EPOCH));
         context.enqueueJob("generator-generate-hexgrid-from-composite", "", Map.of(
-                "documentId", (String) context.getParameters().get(GenesisConst.COMPOSITION_ID)
+                "documentId", (String) context.getParameters().get(GenesisConst.COMPOSITION_ID),
+                "epoch", epoch
         ));
     }
 

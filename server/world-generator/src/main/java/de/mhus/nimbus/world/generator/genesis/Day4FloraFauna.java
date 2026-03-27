@@ -73,17 +73,22 @@ public class Day4FloraFauna extends MethodBasedWorkflow {
             log.info("Custom phases configured: {}", phases);
         }
 
+        String epochStr = params.getOrDefault(GenesisConst.EPOCH, "0");
+
         return Map.of(
                 GenesisConst.COMPOSITION_ID, compositionId,
-                GenesisConst.PHASES, phases
+                GenesisConst.PHASES, phases,
+                GenesisConst.EPOCH, epochStr
         );
     }
 
     @Override
     public void start(WorkflowContext context) throws WorkflowException {
         context.updateWorkflowStatus("loadModel");
+        String epoch = String.valueOf(context.getParameters().get(GenesisConst.EPOCH));
         context.enqueueJob("generator-generate-hexgrid-from-composite", "", Map.of(
-                "documentId", (String) context.getParameters().get(GenesisConst.COMPOSITION_ID)
+                "documentId", (String) context.getParameters().get(GenesisConst.COMPOSITION_ID),
+                "epoch", epoch
         ));
     }
 

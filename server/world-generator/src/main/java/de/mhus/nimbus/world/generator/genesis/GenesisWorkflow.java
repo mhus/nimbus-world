@@ -239,7 +239,8 @@ public class GenesisWorkflow extends MethodBasedWorkflow {
             "genesis-day4-flora-fauna",
             locationService.getApplicationServiceName(),
             "Day4: Flora & Fauna",
-            Map.of(GenesisConst.COMPOSITION_ID, compositionDocId)
+            Map.of(GenesisConst.COMPOSITION_ID, compositionDocId,
+                   GenesisConst.EPOCH, "0")
         );
     }
 
@@ -259,7 +260,8 @@ public class GenesisWorkflow extends MethodBasedWorkflow {
             "genesis-day5-environment",
             locationService.getApplicationServiceName(),
             "Day5: Environment",
-            Map.of(GenesisConst.COMPOSITION_ID, compositionDocId)
+            Map.of(GenesisConst.COMPOSITION_ID, compositionDocId,
+                   GenesisConst.EPOCH, "0")
         );
     }
 
