@@ -65,7 +65,6 @@ public class DuplicateEntitiesService implements DuplicateToWorld {
                     .position(sourceEntity.getPosition())
                     .rotation(sourceEntity.getRotation())
                     .middlePoint(sourceEntity.getMiddlePoint())
-                    .radius(sourceEntity.getRadius())
                     .speed(sourceEntity.getSpeed())
                     .behaviorModel(sourceEntity.getBehaviorModel())
                     .behaviorConfig(sourceEntity.getBehaviorConfig())

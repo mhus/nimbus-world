@@ -119,7 +119,6 @@ public class EntityTools {
                     "z", entity.getMiddlePoint().getZ()
             ));
         }
-        result.put("radius", entity.getRadius());
         result.put("speed", entity.getSpeed());
         result.put("behaviorModel", entity.getBehaviorModel());
         if (entity.getBehaviorConfig() != null) {

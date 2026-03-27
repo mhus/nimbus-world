@@ -207,6 +207,9 @@ public class FaunaGeneratorService {
                             .clientPhysics(true)
                             .build();
 
+                    Map<String, String> serverParams = new HashMap<>();
+                    serverParams.put("roam_radius", String.valueOf(animal.getRadius()));
+
                     WEntity entity = WEntity.builder()
                             .worldId(worldId)
                             .entityId(entityId)
@@ -218,10 +221,10 @@ public class FaunaGeneratorService {
                                     .z(middlePoint.getZ())
                                     .build())
                             .middlePoint(middlePoint)
-                            .radius(animal.getRadius())
                             .speed(animal.getSpeed())
                             .behaviorModel(animal.getBehaviorModel())
                             .behaviorConfig(buildBehaviorConfig(animal))
+                            .server(serverParams)
                             .source(SOURCE)
                             .enabled(true)
                             .build();

@@ -50,7 +50,7 @@ public class FaunaAnimalDefinition {
 
     /** Roaming radius around middle point (blocks) */
     @Builder.Default
-    private double radius = 30.0;
+    private double radius = 100.0;
 
     /** Movement speed (blocks per second) */
     @Builder.Default

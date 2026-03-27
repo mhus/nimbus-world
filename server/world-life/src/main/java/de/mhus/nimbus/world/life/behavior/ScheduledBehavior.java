@@ -164,7 +164,7 @@ public class ScheduledBehavior implements EntityBehavior {
 
     private void applyPhaseOverrides(WEntity entity, EntitySchedulePhase phase) {
         if (phase.getRoamRadius() != null) {
-            entity.setRadius(phase.getRoamRadius());
+            entity.getServer().put("roam_radius", String.valueOf(phase.getRoamRadius()));
         }
         if (phase.getSpeed() != null) {
             entity.setSpeed(phase.getSpeed());

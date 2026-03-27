@@ -96,11 +96,6 @@ public class WEntity implements Identifiable, CowEntity, EpochEntity {
     private Vector3 middlePoint;
 
     /**
-     * Movement radius around middle point (blocks).
-     */
-    private Double radius;
-
-    /**
      * Movement speed (blocks per second).
      */
     private Double speed;
