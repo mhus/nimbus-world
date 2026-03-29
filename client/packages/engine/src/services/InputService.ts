@@ -58,6 +58,11 @@ export interface InputController {
    * Get all handlers
    */
   getHandlers(): InputHandler[];
+
+  /**
+   * Optional per-frame update (e.g. for polling touch overlay state)
+   */
+  update?(deltaTime: number): void;
 }
 
 /**
@@ -184,6 +189,9 @@ export class InputService {
     }
 
     try {
+      // Let controller poll its state (e.g. touch overlay joysticks)
+      this.controller?.update?.(deltaTime);
+
       for (const handler of this.handlers) {
         handler.update(deltaTime);
       }

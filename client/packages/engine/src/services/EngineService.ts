@@ -28,6 +28,7 @@ import { HorizonGradientService } from './HorizonGradientService';
 import { PrecipitationService } from './PrecipitationService';
 import { IlluminationService } from './IlluminationService';
 import { WebInputController } from '../input/WebInputController';
+import { TouchController } from '../input/TouchController';
 import { RENDERING_GROUPS } from '../config/renderingGroups';
 
 const logger = getLogger('EngineService');
@@ -312,11 +313,20 @@ export class EngineService {
         logger.warn('BackdropService not initialized: missing Scene or ChunkService');
       }
 
-      // Initialize input service
+      // Initialize input service with appropriate controller for device
       this.inputService = new InputService(this.appContext, this.playerService);
-      this.appContext.services.input = this.inputService; // Register in AppContext
-      const webInputController = new WebInputController(this.canvas, this.playerService, this.appContext);
-      this.inputService.setController(webInputController);
+      this.appContext.services.input = this.inputService;
+      const useTouch = __INPUT_CONTROLLER__ === 'touch' ||
+          (__INPUT_CONTROLLER__ === 'auto' && this.isTouchDevice());
+      if (useTouch) {
+        const touchController = new TouchController(this.canvas, this.playerService, this.appContext);
+        this.inputService.setController(touchController);
+        logger.info('Using TouchController (mobile/touch input)');
+      } else {
+        const webInputController = new WebInputController(this.canvas, this.playerService, this.appContext);
+        this.inputService.setController(webInputController);
+        logger.info('Using WebInputController (desktop input)');
+      }
       logger.debug('InputService initialized');
 
       // Initialize select service (requires ChunkService and PlayerService)
@@ -753,5 +763,17 @@ export class EngineService {
     this.isRunning = false;
 
     logger.debug('Engine disposed');
+  }
+
+  /**
+   * Detect if the current device is a touch-primary device (mobile/tablet).
+   * Checks for touch capability AND small screen or lack of fine pointer (mouse).
+   */
+  private isTouchDevice(): boolean {
+    const hasTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    const hasCoarsePointer = window.matchMedia('(pointer: coarse)').matches;
+    const hasNoFinePointer = !window.matchMedia('(pointer: fine)').matches;
+    // Touch device = has touch AND primary pointer is coarse (finger, not mouse)
+    return hasTouch && (hasCoarsePointer || hasNoFinePointer);
   }
 }

@@ -10,3 +10,4 @@ declare const __VIEWER__: boolean;
 declare const __DEBUG_COMMANDS__: boolean;
 declare const __BUILD_MODE__: 'viewer' | 'editor' | 'development';
 declare const __PAKO_MODE__: 'safari' | 'all';
+declare const __INPUT_CONTROLLER__: 'auto' | 'touch' | 'web';

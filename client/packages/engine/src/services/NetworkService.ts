@@ -413,12 +413,11 @@ export class NetworkService {
       }
 
       // Handle text frames (normal JSON messages)
-      const message: BaseMessage = JSON.parse(event.data);
+      const raw = JSON.parse(event.data);
 
       // Handle base64-encoded binary chunk data sent as text
       // (workaround for Safari which truncates large binary WebSocket frames)
-      if (message.t === 'CHUNK_BINARY') {
-        const raw = JSON.parse(event.data);
+      if (raw.t === 'CHUNK_BINARY') {
         const base64 = raw.c as string;
         const binaryString = atob(base64);
         const bytes = new Uint8Array(binaryString.length);
@@ -439,6 +438,8 @@ export class NetworkService {
         }
         return;
       }
+
+      const message: BaseMessage = raw;
 
       logger.debug('Received message', { type: message.t, responseId: message.r });
 
