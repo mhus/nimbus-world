@@ -37,9 +37,16 @@ export class TouchController implements InputController {
   private jumpHandler?: InputHandler;
   private rotateHandler?: RotateHandler;
   private clickHandler?: InputHandler;
+  private cycleMovementStateHandler?: InputHandler;
+  private shortcutHandler?: InputHandler;
+  private toggleViewModeHandler?: InputHandler;
+  private toggleFullscreenHandler?: InputHandler;
+  private toggleShortcutsHandler?: InputHandler;
+  private panelActivateHandler?: InputHandler;
 
   private readonly movementThreshold = 0.15;
-  private readonly rotationSpeed = 3.0; // radians per second at full deflection
+  private readonly yawSpeed = 2.0; // radians per second at full deflection (horizontal)
+  private readonly maxPitchDeg = 60; // max pitch in degrees at full stick deflection
 
   constructor(canvas: HTMLCanvasElement, playerService: PlayerService, appContext: AppContext) {
     this.canvas = canvas;
@@ -64,9 +71,14 @@ export class TouchController implements InputController {
     this.jumpHandler = inputService.getHandler('jump');
     this.rotateHandler = inputService.getHandler('rotate') as RotateHandler | undefined;
     this.clickHandler = inputService.getHandler('click');
+    this.cycleMovementStateHandler = inputService.getHandler('cycleMovementState');
+    this.shortcutHandler = inputService.getHandler('shortcut');
+    this.toggleViewModeHandler = inputService.getHandler('toggleViewMode');
+    this.toggleFullscreenHandler = inputService.getHandler('toggleFullscreen');
+    this.toggleShortcutsHandler = inputService.getHandler('toggleShortcuts');
+    this.panelActivateHandler = inputService.getHandler('panelActivate');
 
     // Build handlers array for update loop
-    // Note: we add a virtual handler for polling overlay state
     const handlerList = [
       this.moveForwardHandler,
       this.moveBackwardHandler,
@@ -75,6 +87,8 @@ export class TouchController implements InputController {
       this.jumpHandler,
       this.rotateHandler as InputHandler | undefined,
       this.clickHandler,
+      this.cycleMovementStateHandler,
+      this.shortcutHandler,
     ];
     this.handlers = handlerList.filter((h): h is InputHandler => h !== undefined);
 
@@ -147,11 +161,20 @@ export class TouchController implements InputController {
     const state = this.touchOverlay.getRotationState();
     if (!state.active || state.strength < this.movementThreshold) return;
 
-    // Continuous rotation: stick position × speed × deltaTime → pixels of "virtual mouse movement"
-    // RotateHandler.setDelta expects pixel-like values (multiplied internally by sensitivity 0.002)
-    const pixelsPerSecond = this.rotationSpeed / 0.002; // convert radians/s to pixels/s
-    const deltaX = state.dx * pixelsPerSecond * deltaTime;
-    const deltaY = state.dy * pixelsPerSecond * deltaTime;
+    // Yaw (horizontal): continuous rotation - stick held right = keep turning right
+    const yawPixelsPerSecond = this.yawSpeed / 0.002; // convert radians/s to pixels/s
+    const deltaX = state.dx * yawPixelsPerSecond * deltaTime;
+
+    // Pitch (vertical): absolute position - stick position maps to target pitch angle
+    // dy: -1 = up (look up = negative pitch), +1 = down (look down = positive pitch)
+    const targetPitchDeg = state.dy * this.maxPitchDeg;
+    const cameraService = this.appContext.services.camera;
+    const currentPitchDeg = cameraService?.getCameraPitch() ?? 0;
+    const pitchDiffDeg = targetPitchDeg - currentPitchDeg;
+    // Convert degree diff to the "pixel-like" value that RotateHandler expects
+    const pitchDiffRad = pitchDiffDeg * (Math.PI / 180);
+    const deltaY = pitchDiffRad / 0.002;
+
     this.rotateHandler?.setDelta(deltaX, deltaY);
   }
 
@@ -162,6 +185,40 @@ export class TouchController implements InputController {
     if (this.touchOverlay.consumeTapRequest()) {
       this.clickHandler?.activate(0);
       setTimeout(() => this.clickHandler?.deactivate(), 50);
+    }
+    if (this.touchOverlay.consumeMovementToggleRequest()) {
+      this.cycleMovementStateHandler?.activate();
+    }
+
+    // Shortcut keys 1-9
+    const shortcutNr = this.touchOverlay.consumeShortcutRequest();
+    if (shortcutNr !== null) {
+      this.shortcutHandler?.activate(shortcutNr);
+      setTimeout(() => this.shortcutHandler?.deactivate(), 50);
+    }
+
+    // Shortcut display toggle (T key equivalent)
+    if (this.touchOverlay.consumeShortcutToggleRequest()) {
+      this.toggleShortcutsHandler?.activate();
+    }
+
+    // Menu actions
+    const menuAction = this.touchOverlay.consumeMenuAction();
+    if (menuAction) {
+      switch (menuAction) {
+        case 'message':
+          this.appContext.services.notification?.toggleInputPanel();
+          break;
+        case 'panel':
+          this.panelActivateHandler?.activate();
+          break;
+        case 'viewToggle':
+          this.toggleViewModeHandler?.activate();
+          break;
+        case 'fullscreen':
+          this.toggleFullscreenHandler?.activate();
+          break;
+      }
     }
   }
 

@@ -39,6 +39,7 @@ const JOYSTICK_SIZE = 130;
 const KNOB_SIZE = 50;
 const DEADZONE = 15;
 const MARGIN = 30;
+const ACTION_BUTTON_SIZE = 50;
 
 export class TouchOverlayService {
   private container: HTMLDivElement | null = null;
@@ -64,6 +65,24 @@ export class TouchOverlayService {
   private rightTouchStartX = 0;
   private rightTouchStartY = 0;
   private tapRequested = false;
+
+  // Action buttons
+  private movementToggleButton: HTMLDivElement | null = null;
+  private movementToggleRequested = false;
+
+  // Shortcut display toggle (T key equivalent)
+  private shortcutToggleButton: HTMLDivElement | null = null;
+  private shortcutToggleRequested = false;
+
+  // Shortcut bar (keys 1-9)
+  private shortcutBar: HTMLDivElement | null = null;
+  private shortcutRequested: number | null = null;
+
+  // Menu
+  private menuButton: HTMLDivElement | null = null;
+  private menuPanel: HTMLDivElement | null = null;
+  private menuOpen = false;
+  private menuActionRequested: string | null = null;
 
   initialize(): void {
     this.createOverlay();
@@ -101,6 +120,15 @@ export class TouchOverlayService {
     return false;
   }
 
+  /** Check and consume movement toggle request */
+  consumeMovementToggleRequest(): boolean {
+    if (this.movementToggleRequested) {
+      this.movementToggleRequested = false;
+      return true;
+    }
+    return false;
+  }
+
   /** Check and consume tap request (single tap right, no drag) */
   consumeTapRequest(): boolean {
     if (this.tapRequested) {
@@ -108,6 +136,29 @@ export class TouchOverlayService {
       return true;
     }
     return false;
+  }
+
+  /** Check and consume shortcut key request (returns 1-9 or null) */
+  consumeShortcutRequest(): number | null {
+    const nr = this.shortcutRequested;
+    this.shortcutRequested = null;
+    return nr;
+  }
+
+  /** Check and consume shortcut display toggle request (T key equivalent) */
+  consumeShortcutToggleRequest(): boolean {
+    if (this.shortcutToggleRequested) {
+      this.shortcutToggleRequested = false;
+      return true;
+    }
+    return false;
+  }
+
+  /** Check and consume menu action request */
+  consumeMenuAction(): string | null {
+    const action = this.menuActionRequested;
+    this.menuActionRequested = null;
+    return action;
   }
 
   private createOverlay(): void {
@@ -131,8 +182,56 @@ export class TouchOverlayService {
       right: ${MARGIN}px; bottom: ${MARGIN}px;
     `;
 
+    // Movement toggle button - above the left joystick
+    this.movementToggleButton = this.createActionButton('move-toggle', '\u{1F3C3}');
+    this.movementToggleButton.style.cssText += `
+      left: ${MARGIN + (JOYSTICK_SIZE - ACTION_BUTTON_SIZE) / 2}px;
+      bottom: ${MARGIN + JOYSTICK_SIZE + 20}px;
+    `;
+    this.movementToggleButton.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      this.movementToggleRequested = true;
+      this.flashButton(this.movementToggleButton);
+    }, { passive: false });
+
+    // Shortcut display toggle button - above the right joystick (T key equivalent)
+    this.shortcutToggleButton = this.createActionButton('shortcut-toggle', '\u2606');
+    this.shortcutToggleButton.style.cssText += `
+      right: ${MARGIN + (JOYSTICK_SIZE - ACTION_BUTTON_SIZE) / 2}px;
+      bottom: ${MARGIN + JOYSTICK_SIZE + 20}px;
+    `;
+    this.shortcutToggleButton.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      this.shortcutToggleRequested = true;
+      this.flashButton(this.shortcutToggleButton);
+    }, { passive: false });
+
+    // Menu button - top right
+    this.menuButton = this.createActionButton('menu', '\u2630');
+    this.menuButton.style.cssText += `
+      right: ${MARGIN}px; top: ${MARGIN}px;
+    `;
+    this.menuButton.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      this.toggleMenu();
+    }, { passive: false });
+
+    // Menu panel (hidden by default)
+    this.menuPanel = this.createMenuPanel();
+
     this.container.appendChild(this.leftBase);
     this.container.appendChild(this.rightBase);
+    this.container.appendChild(this.movementToggleButton);
+    // Shortcut bar (keys 1-9, always visible)
+    this.shortcutBar = this.createShortcutBar();
+
+    this.container.appendChild(this.shortcutToggleButton);
+    this.container.appendChild(this.shortcutBar);
+    this.container.appendChild(this.menuButton);
+    this.container.appendChild(this.menuPanel);
     document.body.appendChild(this.container);
 
     // Touch events on the full container (not individual joysticks)
@@ -322,6 +421,121 @@ export class TouchOverlayService {
       this.rightKnob.style.left = `${center + normDx * clampedDist}px`;
       this.rightKnob.style.top = `${center + normDy * clampedDist}px`;
     }
+  }
+
+  private createActionButton(id: string, label: string): HTMLDivElement {
+    const btn = document.createElement('div');
+    btn.id = `touch-btn-${id}`;
+    btn.style.cssText = `
+      position: fixed;
+      width: ${ACTION_BUTTON_SIZE}px; height: ${ACTION_BUTTON_SIZE}px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.05);
+      border: 2px solid rgba(255,255,255,0.15);
+      pointer-events: auto;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px; color: rgba(255,255,255,0.4);
+      user-select: none; -webkit-user-select: none;
+      transition: background 0.15s;
+    `;
+    btn.textContent = label;
+    return btn;
+  }
+
+  private createShortcutBar(): HTMLDivElement {
+    const bar = document.createElement('div');
+    bar.id = 'touch-shortcut-bar';
+    bar.style.cssText = `
+      position: fixed;
+      bottom: ${MARGIN}px;
+      left: 50%; transform: translateX(-50%);
+      display: flex;
+      flex-direction: row; gap: 6px;
+      pointer-events: auto;
+    `;
+
+    for (let i = 1; i <= 9; i++) {
+      const btn = document.createElement('div');
+      btn.style.cssText = `
+        width: 36px; height: 36px;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.05);
+        border: 2px solid rgba(255,255,255,0.15);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 14px; color: rgba(255,255,255,0.4);
+        user-select: none; -webkit-user-select: none;
+        transition: background 0.15s;
+      `;
+      btn.textContent = `${i}`;
+      const shortcutNr = i;
+      btn.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        this.shortcutRequested = shortcutNr;
+        btn.style.background = 'rgba(255,255,255,0.2)';
+        setTimeout(() => { btn.style.background = 'rgba(255,255,255,0.05)'; }, 150);
+      }, { passive: false });
+      bar.appendChild(btn);
+    }
+
+    return bar;
+  }
+
+  private createMenuPanel(): HTMLDivElement {
+    const panel = document.createElement('div');
+    panel.id = 'touch-menu-panel';
+    panel.style.cssText = `
+      position: fixed;
+      right: ${MARGIN}px; top: ${MARGIN + ACTION_BUTTON_SIZE + 10}px;
+      display: none;
+      flex-direction: column; gap: 8px;
+      pointer-events: auto;
+    `;
+
+    const items: { id: string; label: string; icon: string }[] = [
+      { id: 'message', label: 'Nachricht', icon: '\u2709' },
+      { id: 'panel', label: 'Panel', icon: '\u25A3' },
+      { id: 'viewToggle', label: 'Ansicht', icon: '\u{1F441}' },
+      { id: 'fullscreen', label: 'Vollbild', icon: '\u26F6' },
+    ];
+
+    for (const item of items) {
+      const btn = document.createElement('div');
+      btn.style.cssText = `
+        display: flex; align-items: center; gap: 8px;
+        padding: 8px 14px;
+        border-radius: 25px;
+        background: rgba(0,0,0,0.6);
+        border: 2px solid rgba(255,255,255,0.15);
+        color: rgba(255,255,255,0.5);
+        font-size: 14px;
+        user-select: none; -webkit-user-select: none;
+        transition: background 0.15s;
+      `;
+      btn.innerHTML = `<span style="font-size:18px">${item.icon}</span> ${item.label}`;
+      btn.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        this.menuActionRequested = item.id;
+        this.toggleMenu();
+      }, { passive: false });
+      panel.appendChild(btn);
+    }
+
+    return panel;
+  }
+
+  private toggleMenu(): void {
+    this.menuOpen = !this.menuOpen;
+    if (this.menuPanel) {
+      this.menuPanel.style.display = this.menuOpen ? 'flex' : 'none';
+    }
+  }
+
+  private flashButton(btn: HTMLDivElement | null): void {
+    if (!btn) return;
+    btn.style.background = 'rgba(255,255,255,0.2)';
+    setTimeout(() => { btn.style.background = 'rgba(255,255,255,0.05)'; }, 150);
   }
 
   private resetKnobVisual(knob: HTMLDivElement | null): void {
