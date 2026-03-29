@@ -33,6 +33,7 @@ export default defineConfig(({ mode }) => {
       __VIEWER__: JSON.stringify(isViewer),
       __BUILD_MODE__: JSON.stringify(mode),
       __DEBUG_COMMANDS__: JSON.stringify(env.VITE_DEBUG_COMMANDS === 'true'),
+      __PAKO_MODE__: JSON.stringify(env.VITE_PAKO_MODE || 'safari'),
     },
     resolve: {
       alias: {

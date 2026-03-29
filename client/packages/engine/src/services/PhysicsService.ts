@@ -351,7 +351,7 @@ export class PhysicsService {
     // Reset fall tracking and suppress fall damage for the post-teleport fall
     entity.fallDistance = 0;
     entity.wasFalling = false;
-    this.fallModifier.setEnabled(false);
+    this.fallModifier?.setEnabled(false);
     this.suppressFallDamage = true;
 
     this.teleportationPending = true;

@@ -35,8 +35,18 @@ import {
   getChunkKey,
 } from '../utils/ChunkUtils';
 import { mergeBlockModifier, getBlockPositionKey } from '../utils/BlockModifierMerge';
+import { decompressSync } from 'fflate';
 
 const logger = getLogger('ChunkService');
+
+/**
+ * Determines whether to use fflate for gzip decompression instead of native DecompressionStream.
+ * Controlled by VITE_PAKO_MODE: 'all' = always use fflate, 'safari' = only on Safari.
+ */
+function useFflate(): boolean {
+  if (__PAKO_MODE__ === 'all') return true;
+  return /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+}
 
 /**
  * Default backdrop configuration used when chunk data doesn't provide backdrop
@@ -247,10 +257,16 @@ export class ChunkService {
             });
 
             // Decompress the complete ChunkData object
-            const decompressedStream = new Response(
-              new Blob([chunkData.c as BlobPart]).stream().pipeThrough(new DecompressionStream('gzip'))
-            );
-            const decompressedText = await decompressedStream.text();
+            let decompressedText: string;
+            if (useFflate()) {
+              const decompressedBytes = decompressSync(new Uint8Array(chunkData.c));
+              decompressedText = new TextDecoder().decode(decompressedBytes);
+            } else {
+              const decompressedStream = new Response(
+                new Blob([chunkData.c as BlobPart]).stream().pipeThrough(new DecompressionStream('gzip'))
+              );
+              decompressedText = await decompressedStream.text();
+            }
             const cChunk = JSON.parse(decompressedText);
 
             // Extract fields from decompressed ChunkData and map to ChunkDataTransferObject

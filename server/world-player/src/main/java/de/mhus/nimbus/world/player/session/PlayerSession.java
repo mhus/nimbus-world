@@ -34,6 +34,7 @@ public class PlayerSession {
     private WorldId worldId;
     private ClientType clientType;
     private String actor;
+    private boolean safariClient;
 
     /**
      * Current epoch for this session. Volatile because it is written by EpochSwitchBroadcastListener

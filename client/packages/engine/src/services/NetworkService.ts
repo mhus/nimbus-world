@@ -123,7 +123,10 @@ export class NetworkService {
       logger.debug('Connecting to WebSocket server', { url: this.websocketUrl });
 
       this.ws = new WebSocket(this.websocketUrl);
-      this.ws.binaryType = 'arraybuffer';  // Enable binary frames
+      // Safari has issues with large ArrayBuffer WebSocket messages (truncation),
+      // so use 'blob' on Safari and convert async. Chrome/Firefox use 'arraybuffer' directly.
+      const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+      this.ws.binaryType = isSafari ? 'blob' : 'arraybuffer';
 
       this.ws.onopen = () => this.onOpen();
       this.ws.onmessage = (event) => this.onMessage(event);
@@ -404,9 +407,38 @@ export class NetworkService {
         this.handleBinaryChunkMessage(event.data);
         return;
       }
+      if (event.data instanceof Blob) {
+        event.data.arrayBuffer().then(ab => this.handleBinaryChunkMessage(ab));
+        return;
+      }
 
       // Handle text frames (normal JSON messages)
       const message: BaseMessage = JSON.parse(event.data);
+
+      // Handle base64-encoded binary chunk data sent as text
+      // (workaround for Safari which truncates large binary WebSocket frames)
+      if (message.t === 'CHUNK_BINARY') {
+        const raw = JSON.parse(event.data);
+        const base64 = raw.c as string;
+        const binaryString = atob(base64);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+        const chunkData: ChunkDataTransferObject = {
+          cx: raw.cx,
+          cz: raw.cz,
+          b: [],
+          i: raw.i,
+          s: raw.s,
+          c: bytes,
+        };
+        const chunkService = this.appContext.services.chunk;
+        if (chunkService) {
+          chunkService.onChunkUpdate([chunkData]);
+        }
+        return;
+      }
 
       logger.debug('Received message', { type: message.t, responseId: message.r });
 

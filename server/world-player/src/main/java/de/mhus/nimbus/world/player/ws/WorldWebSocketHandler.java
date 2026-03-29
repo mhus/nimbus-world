@@ -44,6 +44,15 @@ public class WorldWebSocketHandler extends TextWebSocketHandler {
         PlayerSession playerSession = sessionManager.createSession(webSocketSession);
         playerSession.setWorldId(WorldId.of(worldId).get());
 
+        // Detect Safari from User-Agent to use base64 text transport for binary chunks
+        // (Safari truncates large binary WebSocket frames due to WebKit fragmentation bugs)
+        var headers = webSocketSession.getHandshakeHeaders();
+        String userAgent = headers.getFirst("User-Agent");
+        if (userAgent != null && userAgent.contains("Safari") && !userAgent.contains("Chrome")) {
+            playerSession.setSafariClient(true);
+            log.info("Safari client detected, using base64 text transport for chunks: session={}", webSocketSession.getId());
+        }
+
     }
 
     @Override

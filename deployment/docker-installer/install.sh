@@ -19,7 +19,7 @@ GOOGLE_DRIVE_ID=""
 MONGODB_URI="${MONGODB_URI:-}"
 PRESERVE_SETTINGS="${PRESERVE_SETTINGS:-true}"
 WORK_DIR="/tmp/installer"
-SETTINGS_FILE="$WORK_DIR/s_settings_backup.ndjson"
+PRESERVE_COLLECTIONS=("s_settings" "s_keys")
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -49,7 +49,7 @@ while [[ $# -gt 0 ]]; do
             echo ""
             echo "Environment variables:"
             echo "  MONGODB_URI         MongoDB connection URI (alternative to --mongodb-uri)"
-            echo "  PRESERVE_SETTINGS   Preserve s_settings collection across restore (default: true)"
+            echo "  PRESERVE_SETTINGS   Preserve s_settings and s_keys collections across restore (default: true)"
             exit 0
             ;;
         *)
@@ -119,16 +119,19 @@ if [ -z "$BACKUP_DIR" ]; then
 fi
 echo "  Backup directory: $BACKUP_DIR"
 
-# Step 4: Preserve s_settings if enabled
+# Step 4: Preserve collections if enabled
 if [ "$PRESERVE_SETTINGS" = "true" ]; then
     echo ""
-    echo "[3/6] Backing up s_settings collection..."
-    if mongoexport --uri="$MONGODB_URI" --collection="s_settings" --out="$SETTINGS_FILE" 2>/dev/null; then
-        echo "  Saved $(wc -l < "$SETTINGS_FILE") documents"
-    else
-        echo "  No existing s_settings collection found (skipping)"
-        rm -f "$SETTINGS_FILE"
-    fi
+    echo "[3/6] Backing up preserved collections..."
+    for COLL in "${PRESERVE_COLLECTIONS[@]}"; do
+        local_file="$WORK_DIR/${COLL}_backup.ndjson"
+        if mongoexport --uri="$MONGODB_URI" --collection="$COLL" --out="$local_file" 2>/dev/null; then
+            echo "  $COLL: saved $(wc -l < "$local_file") documents"
+        else
+            echo "  $COLL: not found (skipping)"
+            rm -f "$local_file"
+        fi
+    done
 fi
 
 # Step 5: Restore
@@ -155,12 +158,17 @@ else
     exit 1
 fi
 
-# Step 6: Restore preserved s_settings
-if [ "$PRESERVE_SETTINGS" = "true" ] && [ -f "$SETTINGS_FILE" ]; then
+# Step 6: Restore preserved collections
+if [ "$PRESERVE_SETTINGS" = "true" ]; then
     echo ""
-    echo "[5/6] Restoring preserved s_settings..."
-    mongoimport --uri="$MONGODB_URI" --collection="s_settings" --mode=upsert --file="$SETTINGS_FILE"
-    echo "  s_settings restored"
+    echo "[5/6] Restoring preserved collections..."
+    for COLL in "${PRESERVE_COLLECTIONS[@]}"; do
+        local_file="$WORK_DIR/${COLL}_backup.ndjson"
+        if [ -f "$local_file" ]; then
+            mongoimport --uri="$MONGODB_URI" --collection="$COLL" --mode=upsert --file="$local_file"
+            echo "  $COLL: restored"
+        fi
+    done
 fi
 
 # Step 7: Cleanup

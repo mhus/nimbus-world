@@ -21,6 +21,7 @@ import org.springframework.web.socket.TextMessage;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -193,11 +194,23 @@ public class ChunkSenderService {
     }
 
     /**
-     * Send compressed chunk as binary WebSocket frame.
-     * Format: [4 bytes header length][header JSON][GZIP compressed data]
+     * Send compressed chunk data to the client.
+     * Uses binary WebSocket frames for most browsers, but falls back to base64-encoded
+     * text messages for Safari which truncates large binary frames due to WebKit bugs.
      */
     private void sendCompressedChunkBinary(PlayerSession session, ChunkDataTransferObject dto) throws Exception {
-        // 1. Build header with metadata (small data, stays JSON)
+        if (session.isSafariClient()) {
+            sendChunkAsBase64Text(session, dto);
+        } else {
+            sendChunkAsBinary(session, dto);
+        }
+    }
+
+    /**
+     * Send chunk as binary WebSocket frame.
+     * Format: [4 bytes header length][header JSON][GZIP compressed data]
+     */
+    private void sendChunkAsBinary(PlayerSession session, ChunkDataTransferObject dto) throws Exception {
         Map<String, Object> header = new LinkedHashMap<>();
         header.put("cx", dto.getCx());
         header.put("cz", dto.getCz());
@@ -211,17 +224,41 @@ public class ChunkSenderService {
         String headerJson = objectMapper.writeValueAsString(header);
         byte[] headerBytes = headerJson.getBytes(StandardCharsets.UTF_8);
 
-        // 2. Build binary frame: [4 bytes length][header][compressed data]
         ByteBuffer buffer = ByteBuffer.allocate(4 + headerBytes.length + dto.getC().length);
-        buffer.putInt(headerBytes.length);  // Header length as int32 (big-endian)
-        buffer.put(headerBytes);             // Header JSON
-        buffer.put(dto.getC());              // GZIP compressed data
+        buffer.putInt(headerBytes.length);
+        buffer.put(headerBytes);
+        buffer.put(dto.getC());
 
-        // 3. Send as binary WebSocket frame
         session.sendMessage(new BinaryMessage(buffer.array()));
 
         log.debug("Sent binary chunk: cx={}, cz={}, header={} bytes, compressed={} bytes, total={} bytes",
-                dto.getCx(), dto.getCz(), headerBytes.length, dto.getC().length, buffer.position());
+                dto.getCx(), dto.getCz(), headerBytes.length, dto.getC().length, buffer.capacity());
+    }
+
+    /**
+     * Send chunk as base64-encoded JSON text message (Safari workaround).
+     * Safari truncates large binary WebSocket frames due to WebKit fragmentation bugs,
+     * so we encode the compressed data as base64 within a JSON text message.
+     * Format: JSON {t: "CHUNK_BINARY", cx, cz, i?, s?, c: base64-gzip-data}
+     */
+    private void sendChunkAsBase64Text(PlayerSession session, ChunkDataTransferObject dto) throws Exception {
+        Map<String, Object> message = new LinkedHashMap<>();
+        message.put("t", "CHUNK_BINARY");
+        message.put("cx", dto.getCx());
+        message.put("cz", dto.getCz());
+        if (dto.getI() != null && !dto.getI().isEmpty()) {
+            message.put("i", dto.getI());
+        }
+        if (dto.getS() != null && !dto.getS().isEmpty()) {
+            message.put("s", dto.getS());
+        }
+        message.put("c", Base64.getEncoder().encodeToString(dto.getC()));
+
+        String json = objectMapper.writeValueAsString(message);
+        session.sendMessage(new TextMessage(json));
+
+        log.debug("Sent chunk as base64 text: cx={}, cz={}, compressed={} bytes, json={} bytes",
+                dto.getCx(), dto.getCz(), dto.getC().length, json.length());
     }
 
     /**
