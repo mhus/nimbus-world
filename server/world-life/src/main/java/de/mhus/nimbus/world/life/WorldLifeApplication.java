@@ -11,6 +11,7 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.ReflectiveScan;
 import org.springframework.data.mongodb.config.EnableMongoAuditing;
 import org.springframework.data.mongodb.repository.config.EnableMongoRepositories;
+import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 /**
@@ -45,6 +46,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 )
 @SpringBootApplication
 @ConfigurationPropertiesScan
+@EnableAsync
 @EnableScheduling
 @ComponentScan(basePackages = {
         "de.mhus.nimbus.world.life",
