@@ -26,16 +26,16 @@ public class WLogicRuleService {
     private final WLogicRuleRepository repository;
 
     /**
-     * Matches fully qualified flag references: "flags.pkg.flag"
+     * Matches fully qualified state references: "state.pkg.key"
      */
-    private static final Pattern QUALIFIED_FLAG = Pattern.compile(
-            "flags\\.([a-zA-Z_]\\w*)\\.([a-zA-Z_]\\w*)");
+    private static final Pattern QUALIFIED_STATE = Pattern.compile(
+            "state\\.([a-zA-Z_]\\w*)\\.([a-zA-Z_]\\w*)");
 
     /**
-     * Matches unqualified flag references: "flags.xxx" NOT followed by ".yyy"
+     * Matches unqualified state references: "state.xxx" NOT followed by ".yyy"
      */
-    private static final Pattern UNQUALIFIED_FLAG = Pattern.compile(
-            "flags\\.([a-zA-Z_]\\w*)(?!\\.)");
+    private static final Pattern UNQUALIFIED_STATE = Pattern.compile(
+            "state\\.([a-zA-Z_]\\w*)(?!\\.)");
 
     private static final String DEFAULT_PACKAGE = "default";
 
@@ -87,8 +87,8 @@ public class WLogicRuleService {
 
         Set<String> affected = new LinkedHashSet<>();
 
-        // 1. Extract flags from spelCondition
-        affected.addAll(extractFlagsFromExpression(rule.getSpelCondition(), pkg));
+        // 1. Extract state keys from spelCondition
+        affected.addAll(extractKeysFromExpression(rule.getSpelCondition(), pkg));
 
         // 2. Extract output flags from effects
         if (rule.getEffects() != null) {
@@ -101,27 +101,25 @@ public class WLogicRuleService {
     }
 
     /**
-     * Extract qualified flag names from a SpEL expression.
-     * - "flags.pkg.flag" -> "pkg.flag" (already qualified)
-     * - "flags.flag"     -> "{rulePackage}.flag" (shorthand resolved)
+     * Extract qualified state keys from a SpEL expression.
+     * - "state.pkg.key" -> "pkg.key" (already qualified)
+     * - "state.key"     -> "{rulePackage}.key" (shorthand resolved)
      */
-    static Set<String> extractFlagsFromExpression(String expression, String rulePackage) {
-        Set<String> flags = new LinkedHashSet<>();
-        if (expression == null || expression.isBlank()) return flags;
+    static Set<String> extractKeysFromExpression(String expression, String rulePackage) {
+        Set<String> keys = new LinkedHashSet<>();
+        if (expression == null || expression.isBlank()) return keys;
 
-        // First: find fully qualified "flags.pkg.flag"
-        Matcher qualified = QUALIFIED_FLAG.matcher(expression);
+        Matcher qualified = QUALIFIED_STATE.matcher(expression);
         while (qualified.find()) {
-            flags.add(qualified.group(1) + "." + qualified.group(2));
+            keys.add(qualified.group(1) + "." + qualified.group(2));
         }
 
-        // Then: find unqualified "flags.flag" (not followed by .xxx)
-        Matcher unqualified = UNQUALIFIED_FLAG.matcher(expression);
+        Matcher unqualified = UNQUALIFIED_STATE.matcher(expression);
         while (unqualified.find()) {
-            flags.add(rulePackage + "." + unqualified.group(1));
+            keys.add(rulePackage + "." + unqualified.group(1));
         }
 
-        return flags;
+        return keys;
     }
 
     /**

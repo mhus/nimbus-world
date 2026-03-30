@@ -114,7 +114,7 @@ public class BasicGameplay implements Gameplay {
     }
 
     /**
-     * Check the "condition" parameter in serverInfo against Logic Machine flags.
+     * Check the "condition" parameter in serverInfo against Logic Machine state.
      * If no condition is set, returns true (action allowed).
      * If condition evaluates to false, the action is blocked.
      *
@@ -130,9 +130,9 @@ public class BasicGameplay implements Gameplay {
      *   {closed}  - "true" if status is "closed", "false" otherwise
      *
      * Example serverInfo entries:
-     *   logic=flags.flag1 = true                       (simple assignment)
-     *   logic=flags.doorOpen = {open}                  (replaced with true/false)
-     *   logic=flags.doorState = '{status}'             (replaced with 'open' or 'closed')
+     *   logic=state.pkg.key1 = true                     (simple assignment)
+     *   logic=state.pkg.doorOpen = {open}              (replaced with true/false)
+     *   logic=state.pkg.doorState = '{status}'         (replaced with 'open' or 'closed')
      *
      * @param session    player session
      * @param serverInfo block metadata containing optional "logic" SpEL expression(s)

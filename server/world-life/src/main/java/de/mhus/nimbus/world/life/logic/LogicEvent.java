@@ -22,7 +22,7 @@ public class LogicEvent {
 
     /**
      * Ordered SpEL assignment expressions to evaluate.
-     * Example: ["flags.flag1 = !flags.flag1", "flags.counter = flags.counter + 1"]
+     * Example: ["state.pkg.key1 = !state.pkg.key1", "state.pkg.counter = state.pkg.counter + 1"]
      */
     private List<String> eval;
 

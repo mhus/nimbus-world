@@ -10,11 +10,11 @@ import java.util.Set;
  * Package-scoped flag storage for the Logic Machine.
  * Outer map: package name -> inner map (flag name -> value).
  *
- * SpEL navigates naturally: flags.puzzle_door.flag1
+ * SpEL navigates naturally: state.puzzle_door.flag1
  *   -> outer.get("puzzle_door") returns inner TrackingMap
  *   -> inner.get("flag1") returns the value
  *
- * Assignments: flags.puzzle_door.flag1 = true
+ * Assignments: state.puzzle_door.flag1 = true
  *   -> outer.get("puzzle_door") returns inner TrackingMap
  *   -> inner.put("flag1", true) is tracked
  *
@@ -51,7 +51,7 @@ public class LogicFlagMap extends HashMap<String, Object> {
 
     /**
      * When SpEL accesses a package that doesn't exist yet, auto-create it.
-     * This allows "flags.newPkg.flag1 = true" to work even if newPkg didn't exist.
+     * This allows "state.newPkg.flag1 = true" to work even if newPkg didn't exist.
      */
     @Override
     public Object get(Object key) {

@@ -75,11 +75,11 @@
           <textarea
             v-model="formData.spelCondition"
             class="textarea textarea-bordered font-mono text-sm"
-            placeholder="e.g. flags.hasKey == true (shorthand for flags.{package}.hasKey)"
+            placeholder="e.g. state.hasKey == true (shorthand for state.{package}.hasKey)"
             rows="3"
           ></textarea>
           <label class="label">
-            <span class="label-text-alt">Boolean SpEL expression. "flags.x" = same package, "flags.pkg.x" = cross-package. Empty = always true.</span>
+            <span class="label-text-alt">Boolean SpEL expression. "state.x" = same package, "state.pkg.x" = cross-package. Empty = always true.</span>
           </label>
         </div>
 
@@ -238,7 +238,7 @@
               rows="3"
             ></textarea>
             <label class="label">
-              <span class="label-text-alt">Nested by package: {"package": {"flag": "value"}}. flags.flag1 in condition resolves to flags.&lt;package&gt;.flag1</span>
+              <span class="label-text-alt">Nested by package: {"package": {"key": "value"}}. state.key1 in condition resolves to state.&lt;package&gt;.key1</span>
             </label>
           </div>
 

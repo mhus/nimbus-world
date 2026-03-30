@@ -12,14 +12,16 @@ import java.util.*;
 import java.util.regex.Pattern;
 
 /**
- * Read-only service for evaluating SpEL conditions against Logic Machine flags.
+ * Read-only service for evaluating SpEL conditions against Logic Machine state.
  * Can be used in any module (world-player, world-life, world-control) since
  * it only reads from WProgress.
  *
  * Also provides test and simulate methods for the rule editor.
  *
- * Flags are stored in WProgress with playerId="logic", type="logic-flag"
- * as a nested map: { "package": { "flag": value } }.
+ * State is stored in WProgress with playerId="logic", type="logic-flag"
+ * as a nested map: { "package": { "key": value } }.
+ *
+ * SpEL expressions use "state." prefix: state.pkg.key or state.key (shorthand).
  */
 @Service
 @RequiredArgsConstructor
@@ -31,19 +33,19 @@ public class LogicConditionService {
     private static final SpelExpressionParser PARSER = new SpelExpressionParser();
 
     /**
-     * Matches unqualified flag references: "flags.xxx" NOT followed by ".yyy"
+     * Matches unqualified state references: "state.xxx" NOT followed by ".yyy"
      */
-    private static final Pattern UNQUALIFIED_FLAG = Pattern.compile(
-            "flags\\.([a-zA-Z_]\\w*)(?!\\.)");
+    private static final Pattern UNQUALIFIED_STATE = Pattern.compile(
+            "state\\.([a-zA-Z_]\\w*)(?!\\.)");
 
     private final WProgressService progressService;
 
     /**
-     * Evaluate a SpEL condition against the current logic flags of a world.
+     * Evaluate a SpEL condition against the current logic state of a world.
      * Used by BasicGameplay for serverInfo condition checks (always fully qualified).
      *
-     * @param worldId        world identifier (includes instance if applicable)
-     * @param spelExpression boolean SpEL expression, e.g. "flags.pkg.flag == true"
+     * @param worldId        world identifier
+     * @param spelExpression boolean SpEL expression, e.g. "state.pkg.key == true"
      * @return true if condition matches, false otherwise
      */
     public boolean checkCondition(String worldId, String spelExpression) {
@@ -51,8 +53,8 @@ public class LogicConditionService {
             return true;
         }
         try {
-            Map<String, Object> flags = loadFlags(worldId);
-            return evaluateCondition(spelExpression, flags);
+            Map<String, Object> state = loadState(worldId);
+            return evaluateCondition(spelExpression, state);
         } catch (Exception e) {
             log.warn("Failed to evaluate logic condition '{}' for worldId={}: {}",
                     spelExpression, worldId, e.getMessage());
@@ -61,13 +63,8 @@ public class LogicConditionService {
     }
 
     /**
-     * Test: evaluate a rule's condition against live flags of a world instance.
-     * Read-only, no state changes. Returns detailed result for the rule editor.
-     *
-     * @param worldId    world instance ID (required)
-     * @param ruleId     rule ID (optional, if null uses inline spelCondition/rulePackage)
-     * @param inlineData optional inline data with "spelCondition" and "rulePackage"
-     * @return detailed test result
+     * Test: evaluate a rule's condition against live state of a world instance.
+     * Read-only, no state changes.
      */
     public Map<String, Object> testCondition(String worldId, String ruleId,
                                               WLogicRuleRepository ruleRepository,
@@ -98,15 +95,13 @@ public class LogicConditionService {
                 return result;
             }
 
-            // Load live flags
-            Map<String, Object> flags = loadFlags(worldId);
-            result.put("flags", flags);
+            Map<String, Object> state = loadState(worldId);
+            result.put("state", state);
 
-            // Resolve shorthand and evaluate
             String resolvedCondition = resolveShorthand(spelCondition, rulePackage);
             result.put("spelCondition", spelCondition);
             result.put("resolvedCondition", resolvedCondition);
-            result.put("conditionResult", evaluateCondition(resolvedCondition, flags));
+            result.put("conditionResult", evaluateCondition(resolvedCondition, state));
 
         } catch (Exception e) {
             result.put("error", e.getMessage());
@@ -115,19 +110,17 @@ public class LogicConditionService {
     }
 
     /**
-     * Simulate: dry-run a rule with user-provided flags (pure sandbox).
-     * No DB access for flags, no persistence, no broadcasts.
-     * Only LogicFlagUpdate effects are simulated (block_status and apply_rule are skipped).
+     * Simulate: dry-run a rule with user-provided state (pure sandbox).
+     * No DB access, no persistence, no broadcasts.
      *
      * @param ruleId         rule ID
      * @param ruleRepository repository for rule lookup
-     * @param userFlags      user-provided flags as nested map: {"pkg": {"flag": value}}
-     * @return simulation result
+     * @param userState      user-provided state as nested map: {"pkg": {"key": value}}
      */
     @SuppressWarnings("unchecked")
     public Map<String, Object> simulate(String ruleId,
                                         WLogicRuleRepository ruleRepository,
-                                        Map<String, Object> userFlags) {
+                                        Map<String, Object> userState) {
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("mode", "simulate");
 
@@ -142,19 +135,16 @@ public class LogicConditionService {
             String rulePackage = rule.getRulePackage() != null ? rule.getRulePackage() : "default";
             result.put("rulePackage", rulePackage);
 
-            // Deep copy user flags for sandbox (expected format: {"pkg": {"flag": value}})
-            Map<String, Object> flags = deepCopyFlags(userFlags);
-            result.put("flagsBefore", deepCopyFlags(flags));
+            Map<String, Object> state = deepCopyState(userState);
+            result.put("stateBefore", deepCopyState(state));
 
-            // Evaluate condition
             String resolvedCondition = resolveShorthand(rule.getSpelCondition(), rulePackage);
             result.put("spelCondition", rule.getSpelCondition());
             result.put("resolvedCondition", resolvedCondition);
 
-            boolean conditionResult = evaluateCondition(resolvedCondition, flags);
+            boolean conditionResult = evaluateCondition(resolvedCondition, state);
             result.put("conditionResult", conditionResult);
 
-            // Simulate effects
             List<Map<String, Object>> effectResults = new ArrayList<>();
             if (conditionResult && rule.getEffects() != null) {
                 for (LogicEffect effect : rule.getEffects()) {
@@ -166,16 +156,15 @@ public class LogicConditionService {
                     if (delayStr != null && !delayStr.isBlank()) {
                         er.put("status", "would be delayed " + delayStr + "s");
                     } else if ("LogicFlagUpdate".equals(effect.getType()) && effect.getParameters() != null) {
-                        // Simulate flag updates
                         Set<String> changed = new LinkedHashSet<>();
                         for (Map.Entry<String, String> param : effect.getParameters().entrySet()) {
                             String key = param.getKey();
                             String qualifiedKey = key.contains(".") ? key : rulePackage + "." + key;
                             Object newValue = parseValue(param.getValue());
-                            setNestedFlag(flags, qualifiedKey, newValue);
+                            setNestedValue(state, qualifiedKey, newValue);
                             changed.add(qualifiedKey);
                         }
-                        er.put("changedFlags", changed);
+                        er.put("changedKeys", changed);
                         er.put("status", "simulated");
                     } else {
                         er.put("status", "skipped in simulation (" + effect.getType() + ")");
@@ -184,7 +173,7 @@ public class LogicConditionService {
                 }
             }
             result.put("effects", effectResults);
-            result.put("flagsAfter", flags);
+            result.put("stateAfter", state);
 
         } catch (Exception e) {
             result.put("error", e.getMessage());
@@ -194,19 +183,18 @@ public class LogicConditionService {
 
     // --- Internal helpers ---
 
-    private boolean evaluateCondition(String resolvedExpression, Map<String, Object> flags) {
+    private boolean evaluateCondition(String resolvedExpression, Map<String, Object> state) {
         if (resolvedExpression == null || resolvedExpression.isBlank()) {
-            return true; // no condition = always true
+            return true;
         }
 
-        // Validate that expression uses "flags." prefix
-        if (!resolvedExpression.contains("flags.")) {
+        if (!resolvedExpression.contains("state.")) {
             throw new IllegalArgumentException(
-                    "SpEL condition must use 'flags.' prefix, e.g. 'flags.myFlag == true'. Got: " + resolvedExpression);
+                    "SpEL condition must use 'state.' prefix, e.g. 'state.myKey == true'. Got: " + resolvedExpression);
         }
 
         Map<String, Object> root = new HashMap<>();
-        root.put("flags", flags);
+        root.put("state", state);
 
         StandardEvaluationContext context = new StandardEvaluationContext();
         context.addPropertyAccessor(new MapAccessor());
@@ -221,11 +209,11 @@ public class LogicConditionService {
         if (expression == null || rulePackage == null || rulePackage.isBlank()) {
             return expression;
         }
-        return UNQUALIFIED_FLAG.matcher(expression)
-                .replaceAll("flags." + rulePackage + ".$1");
+        return UNQUALIFIED_STATE.matcher(expression)
+                .replaceAll("state." + rulePackage + ".$1");
     }
 
-    private Map<String, Object> loadFlags(String worldId) {
+    private Map<String, Object> loadState(String worldId) {
         return progressService
                 .findByWorldIdAndPlayerIdAndTypeAndQuest(worldId, LOGIC_PLAYER_ID, LOGIC_FLAG_TYPE, null)
                 .map(WProgress::getProgressData)
@@ -233,17 +221,17 @@ public class LogicConditionService {
     }
 
     @SuppressWarnings("unchecked")
-    private void setNestedFlag(Map<String, Object> flags, String qualifiedKey, Object value) {
+    private void setNestedValue(Map<String, Object> state, String qualifiedKey, Object value) {
         int dot = qualifiedKey.indexOf('.');
         if (dot < 0) return;
         String pkg = qualifiedKey.substring(0, dot);
-        String flag = qualifiedKey.substring(dot + 1);
-        Map<String, Object> pkgMap = (Map<String, Object>) flags.computeIfAbsent(pkg, k -> new HashMap<>());
-        pkgMap.put(flag, value);
+        String key = qualifiedKey.substring(dot + 1);
+        Map<String, Object> pkgMap = (Map<String, Object>) state.computeIfAbsent(pkg, k -> new HashMap<>());
+        pkgMap.put(key, value);
     }
 
     @SuppressWarnings("unchecked")
-    private Map<String, Object> deepCopyFlags(Map<String, Object> source) {
+    private Map<String, Object> deepCopyState(Map<String, Object> source) {
         if (source == null) return new HashMap<>();
         Map<String, Object> copy = new LinkedHashMap<>();
         for (Map.Entry<String, Object> entry : source.entrySet()) {

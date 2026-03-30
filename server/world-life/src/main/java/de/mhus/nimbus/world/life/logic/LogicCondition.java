@@ -19,7 +19,7 @@ public class LogicCondition {
 
     /**
      * SpEL boolean expression to evaluate.
-     * Example: "flags.hasKey == true && flags.doorOpen"
+     * Example: "state.pkg.hasKey == true && state.pkg.doorOpen"
      */
     private String spelExpression;
 }

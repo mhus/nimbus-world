@@ -61,8 +61,8 @@ public class WLogicRule implements Identifiable, EpochEntity {
     private List<String> affected;
 
     /**
-     * SpEL boolean expression evaluated against the current flag state.
-     * Example: "flags.hasKey == true && flags.doorOpen == false"
+     * SpEL boolean expression evaluated against the current state.
+     * Example: "state.hasKey == true && state.doorOpen == false"
      */
     private String spelCondition;
 
