@@ -454,7 +454,9 @@ export class TouchOverlayService {
       pointer-events: auto;
     `;
 
-    for (let i = 1; i <= 9; i++) {
+    // Keys 1-9 then 0 (matching keyboard shortcut order)
+    const keys = [1, 2, 3, 4, 5, 6, 7, 8, 9, 0];
+    for (const key of keys) {
       const btn = document.createElement('div');
       btn.style.cssText = `
         width: 36px; height: 36px;
@@ -466,8 +468,8 @@ export class TouchOverlayService {
         user-select: none; -webkit-user-select: none;
         transition: background 0.15s;
       `;
-      btn.textContent = `${i}`;
-      const shortcutNr = i;
+      btn.textContent = `${key}`;
+      const shortcutNr = key;
       btn.addEventListener('touchstart', (e) => {
         e.preventDefault();
         e.stopPropagation();
