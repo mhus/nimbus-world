@@ -15,6 +15,7 @@ export interface LogicRuleDto {
   worldId: string;
   name: string;
   description?: string;
+  rulePackage?: string;
   affected: string[];
   spelCondition: string;
   effects: LogicEffect[];
@@ -30,11 +31,13 @@ export interface LogicRuleListResponse {
   count: number;
   limit: number;
   offset: number;
+  packages: string[];
 }
 
 export interface LogicRulePagingParams {
   query?: string;
   epoch?: number;
+  rulePackage?: string;
   limit?: number;
   offset?: number;
 }
@@ -42,6 +45,7 @@ export interface LogicRulePagingParams {
 export interface CreateLogicRuleRequest {
   name: string;
   description?: string;
+  rulePackage?: string;
   spelCondition: string;
   effects: LogicEffect[];
   epoches: number[];
@@ -52,6 +56,7 @@ export interface CreateLogicRuleRequest {
 export interface UpdateLogicRuleRequest {
   name?: string;
   description?: string;
+  rulePackage?: string;
   spelCondition?: string;
   effects?: LogicEffect[];
   epoches?: number[];

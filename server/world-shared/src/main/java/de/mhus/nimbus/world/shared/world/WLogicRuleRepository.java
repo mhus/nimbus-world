@@ -19,6 +19,8 @@ public interface WLogicRuleRepository extends MongoRepository<WLogicRule, String
 
     List<WLogicRule> findByWorldId(String worldId);
 
+    List<WLogicRule> findByWorldIdAndRulePackage(String worldId, String rulePackage);
+
     void deleteByWorldId(String worldId);
 
     // --- EPOCH-AWARE: use for gameplay/logic machine context ---

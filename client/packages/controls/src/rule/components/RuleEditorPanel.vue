@@ -28,17 +28,30 @@
           />
         </div>
 
-        <!-- Description -->
-        <div class="form-control">
-          <label class="label">
-            <span class="label-text">Description</span>
-          </label>
-          <input
-            v-model="formData.description"
-            type="text"
-            class="input input-bordered"
-            placeholder="What does this rule do?"
-          />
+        <!-- Name row: Description + Package -->
+        <div class="grid grid-cols-2 gap-4">
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text">Description</span>
+            </label>
+            <input
+              v-model="formData.description"
+              type="text"
+              class="input input-bordered"
+              placeholder="What does this rule do?"
+            />
+          </div>
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text">Package</span>
+            </label>
+            <input
+              v-model="formData.rulePackage"
+              type="text"
+              class="input input-bordered"
+              placeholder="e.g. puzzle_door, quest_forest"
+            />
+          </div>
         </div>
 
         <!-- Affected Flags (auto-computed, read-only) -->
@@ -245,6 +258,7 @@ const { createRule, updateRule } = useLogicRules(props.worldId);
 const formData = ref<{
   name: string;
   description: string;
+  rulePackage: string;
   spelCondition: string;
   effects: LogicEffect[];
   enabled: boolean;
@@ -252,6 +266,7 @@ const formData = ref<{
 }>({
   name: '',
   description: '',
+  rulePackage: '',
   spelCondition: '',
   effects: [],
   enabled: true,
@@ -298,6 +313,7 @@ if (props.rule) {
   formData.value = {
     name: props.rule.name || '',
     description: props.rule.description || '',
+    rulePackage: props.rule.rulePackage || '',
     spelCondition: props.rule.spelCondition || '',
     effects: (props.rule.effects || []).map(e => ({ ...e, parameters: { ...(e.parameters || {}) } })),
     enabled: props.rule.enabled,
@@ -366,6 +382,7 @@ const handleSave = async () => {
       const updateData: UpdateLogicRuleRequest = {
         name: formData.value.name.trim(),
         description: formData.value.description || undefined,
+        rulePackage: formData.value.rulePackage || undefined,
         spelCondition: formData.value.spelCondition,
         effects: formData.value.effects,
         epoches,
@@ -380,6 +397,7 @@ const handleSave = async () => {
       const createData: CreateLogicRuleRequest = {
         name: formData.value.name.trim(),
         description: formData.value.description || undefined,
+        rulePackage: formData.value.rulePackage || undefined,
         spelCondition: formData.value.spelCondition,
         effects: formData.value.effects,
         epoches,

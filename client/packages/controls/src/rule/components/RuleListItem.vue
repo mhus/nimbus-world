@@ -24,6 +24,11 @@
       </div>
 
       <div class="mt-4 flex flex-wrap gap-2">
+        <!-- Package Badge -->
+        <div v-if="rule.rulePackage" class="badge badge-neutral badge-outline">
+          {{ rule.rulePackage }}
+        </div>
+
         <!-- Enabled/Disabled Badge -->
         <div :class="[
           'badge',

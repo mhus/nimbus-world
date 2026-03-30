@@ -12,10 +12,12 @@ const logger = getLogger('useLogicRules');
 
 export function useLogicRules(worldId: string) {
   const rules = ref<LogicRuleDto[]>([]);
+  const packages = ref<string[]>([]);
   const loading = ref(false);
   const error = ref<string | null>(null);
   const searchQuery = ref('');
   const epochFilter = ref<number | undefined>(undefined);
+  const packageFilter = ref<string | undefined>(undefined);
 
   // Paging state
   const totalCount = ref(0);
@@ -37,12 +39,14 @@ export function useLogicRules(worldId: string) {
       const response = await logicRuleService.getRules(worldId, {
         query: searchQuery.value || undefined,
         epoch: epochFilter.value,
+        rulePackage: packageFilter.value,
         limit: pageSize.value,
         offset,
       });
 
       rules.value = response.rules;
       totalCount.value = response.count;
+      packages.value = response.packages || [];
 
       logger.info('Loaded logic rules', {
         count: rules.value.length,
@@ -127,12 +131,20 @@ export function useLogicRules(worldId: string) {
     await loadRules(1);
   };
 
+  const setPackageFilter = async (pkg: string | undefined) => {
+    packageFilter.value = pkg;
+    currentPage.value = 1;
+    await loadRules(1);
+  };
+
   return {
     rules,
+    packages,
     loading,
     error,
     searchQuery,
     epochFilter,
+    packageFilter,
     totalCount,
     currentPage,
     pageSize,
@@ -142,6 +154,7 @@ export function useLogicRules(worldId: string) {
     loadRules,
     searchRules,
     setEpochFilter,
+    setPackageFilter,
     nextPage,
     previousPage,
     goToPage,

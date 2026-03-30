@@ -10,14 +10,24 @@
 
     <!-- Rule Editor Content -->
     <template v-else>
-      <!-- Header with Search and Actions -->
+      <!-- Header with Search, Package Filter and Actions -->
       <div class="flex flex-col sm:flex-row gap-4 items-stretch sm:items-center justify-between">
-        <div class="flex-1">
+        <div class="flex-1 flex gap-2">
           <SearchInput
             v-model="searchQuery"
             placeholder="Search rules by name..."
             @search="handleSearch"
           />
+          <!-- Package Filter -->
+          <select
+            v-if="packages.length > 0"
+            v-model="selectedPackage"
+            class="select select-bordered select-sm min-w-[140px]"
+            @change="handlePackageChange"
+          >
+            <option value="">All Packages</option>
+            <option v-for="pkg in packages" :key="pkg" :value="pkg">{{ pkg }}</option>
+          </select>
         </div>
         <div class="flex gap-2">
           <button
@@ -115,9 +125,11 @@ const rulesComposable = computed(() => {
 });
 
 const rules = computed(() => rulesComposable.value?.rules.value || []);
+const packages = computed(() => rulesComposable.value?.packages.value || []);
 const loading = computed(() => rulesComposable.value?.loading.value || false);
 const error = computed(() => rulesComposable.value?.error.value || null);
 const searchQuery = ref('');
+const selectedPackage = ref('');
 
 const totalCount = computed(() => rulesComposable.value?.totalCount.value || 0);
 const currentPage = computed(() => rulesComposable.value?.currentPage.value || 1);
@@ -144,6 +156,11 @@ watch(() => props.epoch, () => {
 const handleSearch = (query: string) => {
   if (!rulesComposable.value) return;
   rulesComposable.value.searchRules(query);
+};
+
+const handlePackageChange = () => {
+  if (!rulesComposable.value) return;
+  rulesComposable.value.setPackageFilter(selectedPackage.value || undefined);
 };
 
 const openCreateDialog = () => {

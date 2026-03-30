@@ -49,6 +49,12 @@ public class WLogicRule implements Identifiable, EpochEntity {
     private String description;
 
     /**
+     * Optional package name for organizing rules (e.g. "puzzle_door", "quest_forest").
+     */
+    @Indexed
+    private String rulePackage;
+
+    /**
      * Flag names this rule depends on. When any of these flags change,
      * the rule's spelCondition is evaluated.
      */

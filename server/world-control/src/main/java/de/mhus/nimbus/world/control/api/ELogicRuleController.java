@@ -51,10 +51,11 @@ public class ELogicRuleController extends BaseEditorController {
             @Parameter(description = "World identifier") @PathVariable String worldId,
             @Parameter(description = "Search query on name") @RequestParam(required = false) String query,
             @Parameter(description = "Filter by epoch") @RequestParam(required = false) Integer epoch,
+            @Parameter(description = "Filter by rulePackage") @RequestParam(required = false) String rulePackage,
             @Parameter(description = "Pagination offset") @RequestParam(defaultValue = "0") int offset,
             @Parameter(description = "Pagination limit") @RequestParam(defaultValue = "50") int limit) {
 
-        log.debug("LIST logic rules: worldId={}, query={}, epoch={}, offset={}, limit={}", worldId, query, epoch, offset, limit);
+        log.debug("LIST logic rules: worldId={}, query={}, epoch={}, rulePackage={}, offset={}, limit={}", worldId, query, epoch, rulePackage, offset, limit);
 
         var wid = WorldId.of(worldId).orElseThrow(
                 () -> new IllegalStateException("Invalid worldId: " + worldId)
@@ -64,7 +65,12 @@ public class ELogicRuleController extends BaseEditorController {
 
         String lookupWorldId = wid.toBaseWorldId().getId();
 
-        List<WLogicRule> all = ruleRepository.findByWorldId(lookupWorldId);
+        List<WLogicRule> all;
+        if (!Strings.isBlank(rulePackage)) {
+            all = ruleRepository.findByWorldIdAndRulePackage(lookupWorldId, rulePackage);
+        } else {
+            all = ruleRepository.findByWorldId(lookupWorldId);
+        }
 
         // Filter by query (name contains)
         if (!Strings.isBlank(query)) {
@@ -89,12 +95,21 @@ public class ELogicRuleController extends BaseEditorController {
                 .map(this::toDto)
                 .collect(Collectors.toList());
 
-        return ResponseEntity.ok(Map.of(
-                "rules", ruleDtos,
-                "count", totalCount,
-                "limit", limit,
-                "offset", offset
-        ));
+        // Collect distinct packages from ALL rules (unfiltered) for dropdown
+        List<String> packages = ruleRepository.findByWorldId(lookupWorldId).stream()
+                .map(WLogicRule::getRulePackage)
+                .filter(p -> p != null && !p.isBlank())
+                .distinct()
+                .sorted()
+                .collect(Collectors.toList());
+
+        Map<String, Object> response = new java.util.LinkedHashMap<>();
+        response.put("rules", ruleDtos);
+        response.put("count", totalCount);
+        response.put("limit", limit);
+        response.put("offset", offset);
+        response.put("packages", packages);
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/{id}")
@@ -156,6 +171,7 @@ public class ELogicRuleController extends BaseEditorController {
                 .worldId(lookupWorldId)
                 .name(name)
                 .description((String) request.get("description"))
+                .rulePackage((String) request.get("rulePackage"))
                 .spelCondition((String) request.get("spelCondition"))
                 .effects(toEffectList(request.get("effects")))
                 .epoches(toIntList(request.get("epoches")))
@@ -205,6 +221,10 @@ public class ELogicRuleController extends BaseEditorController {
         }
         if (request.containsKey("description")) {
             rule.setDescription((String) request.get("description"));
+            changed = true;
+        }
+        if (request.containsKey("rulePackage")) {
+            rule.setRulePackage((String) request.get("rulePackage"));
             changed = true;
         }
         // affected is auto-computed by ruleService.save() from spelCondition + effects
@@ -279,6 +299,7 @@ public class ELogicRuleController extends BaseEditorController {
         dto.put("worldId", rule.getWorldId());
         dto.put("name", rule.getName());
         dto.put("description", rule.getDescription());
+        dto.put("rulePackage", rule.getRulePackage());
         dto.put("affected", rule.getAffected());
         dto.put("spelCondition", rule.getSpelCondition());
         dto.put("effects", rule.getEffects());
