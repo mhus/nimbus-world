@@ -3,8 +3,8 @@ package de.mhus.nimbus.world.life.logic;
 import de.mhus.nimbus.world.shared.world.LogicEffect;
 import de.mhus.nimbus.world.shared.world.WLogicRule;
 import de.mhus.nimbus.world.shared.world.WLogicRuleRepository;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
@@ -15,7 +15,6 @@ import java.util.Set;
 /**
  * Effect handler that executes another rule by package and name.
  * The target rule's condition is checked before execution.
- * Execution is asynchronous (returns immediately, rule fires in background).
  *
  * Parameters:
  *   - rulePackage: package of the target rule (optional, defaults to current rule's package)
@@ -26,7 +25,6 @@ import java.util.Set;
  *   {"type": "apply_rule", "parameters": {"rulePackage": "quest_forest", "ruleName": "complete_step"}}
  */
 @Component
-@RequiredArgsConstructor
 @Slf4j
 public class LogicRuleApplyHandler implements LogicEffectHandler {
 
@@ -35,6 +33,14 @@ public class LogicRuleApplyHandler implements LogicEffectHandler {
     private final WLogicRuleRepository ruleRepository;
     private final LogicSpelService spelService;
     private final LogicEffectRegistry effectRegistry;
+
+    public LogicRuleApplyHandler(WLogicRuleRepository ruleRepository,
+                                 LogicSpelService spelService,
+                                 @Lazy LogicEffectRegistry effectRegistry) {
+        this.ruleRepository = ruleRepository;
+        this.spelService = spelService;
+        this.effectRegistry = effectRegistry;
+    }
 
     @Override
     public Set<String> execute(Map<String, String> parameters, LogicContext context) {

@@ -211,6 +211,85 @@
           </label>
         </div>
 
+        <!-- Test Section (only in edit mode) -->
+        <div v-if="isEditMode" class="divider">Test / Simulate</div>
+        <div v-if="isEditMode" class="space-y-3">
+          <!-- World Instance Input -->
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text">World Instance ID (for Test / Execute)</span>
+            </label>
+            <input
+              v-model="testWorldInstanceId"
+              type="text"
+              class="input input-bordered input-sm"
+              placeholder="e.g. region:world::instance1"
+            />
+          </div>
+
+          <!-- Simulate Flags Input -->
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text">Simulate Flags (JSON, for Simulate only)</span>
+            </label>
+            <textarea
+              v-model="simulateFlagsText"
+              class="textarea textarea-bordered textarea-sm font-mono text-xs"
+              rows="3"
+            ></textarea>
+            <label class="label">
+              <span class="label-text-alt">Nested by package: {"package": {"flag": "value"}}. flags.flag1 in condition resolves to flags.&lt;package&gt;.flag1</span>
+            </label>
+          </div>
+
+          <!-- Test Buttons -->
+          <div class="flex gap-2">
+            <button
+              type="button"
+              class="btn btn-sm btn-info btn-outline"
+              :disabled="testing || !testWorldInstanceId"
+              @click="handleTest"
+            >
+              <span v-if="testing" class="loading loading-spinner loading-xs"></span>
+              Test Live
+            </button>
+            <button
+              type="button"
+              class="btn btn-sm btn-warning btn-outline"
+              :disabled="simulating"
+              @click="handleSimulate"
+            >
+              <span v-if="simulating" class="loading loading-spinner loading-xs"></span>
+              Simulate
+            </button>
+            <button
+              type="button"
+              class="btn btn-sm btn-error btn-outline"
+              :disabled="executing || !testWorldInstanceId"
+              @click="handleExecute"
+            >
+              <span v-if="executing" class="loading loading-spinner loading-xs"></span>
+              Execute
+            </button>
+          </div>
+
+          <!-- Test Result -->
+          <div v-if="testResult" class="bg-base-200 rounded-lg p-3 text-sm">
+            <div class="flex items-center gap-2 mb-2">
+              <span class="font-semibold">{{ testResult.mode }}:</span>
+              <span v-if="testResult.conditionResult !== undefined"
+                :class="testResult.conditionResult ? 'badge badge-success badge-sm' : 'badge badge-error badge-sm'">
+                {{ testResult.conditionResult ? 'TRUE' : 'FALSE' }}
+              </span>
+              <span v-if="testResult.executed !== undefined"
+                :class="testResult.executed ? 'badge badge-success badge-sm' : 'badge badge-warning badge-sm'">
+                {{ testResult.executed ? 'Executed' : 'Not executed' }}
+              </span>
+            </div>
+            <pre class="text-xs overflow-auto max-h-48">{{ JSON.stringify(testResult, null, 2) }}</pre>
+          </div>
+        </div>
+
         <!-- Action Buttons -->
         <div class="modal-action">
           <button
@@ -219,6 +298,15 @@
             @click="emit('close')"
           >
             Cancel
+          </button>
+          <button
+            type="button"
+            class="btn btn-secondary btn-outline"
+            :disabled="saving"
+            @click="handleApply"
+          >
+            <span v-if="applying" class="loading loading-spinner"></span>
+            {{ applying ? 'Applying...' : 'Apply' }}
           </button>
           <button
             type="submit"
@@ -237,6 +325,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
 import type { LogicRuleDto, LogicEffect, CreateLogicRuleRequest, UpdateLogicRuleRequest } from '@/services/LogicRuleService';
+import { logicRuleService } from '@/services/LogicRuleService';
 import ErrorAlert from '@components/ErrorAlert.vue';
 import { useLogicRules } from '@/composables/useLogicRules';
 
@@ -360,62 +449,144 @@ const parseEpoches = (): number[] => {
     .map(s => Number(s));
 };
 
+// --- Test / Simulate / Execute ---
+const testWorldInstanceId = ref('');
+const defaultPkg = props.rule?.rulePackage || formData.value.rulePackage || 'default';
+const simulateFlagsText = ref(
+  props.rule?.testFlags || JSON.stringify({ [defaultPkg]: {} }, null, 2)
+);
+const testing = ref(false);
+const simulating = ref(false);
+const executing = ref(false);
+const testResult = ref<any>(null);
+
+const handleTest = async () => {
+  if (!props.rule?.id || !testWorldInstanceId.value) return;
+  testing.value = true;
+  testResult.value = null;
+  try {
+    testResult.value = await logicRuleService.testCondition(
+      props.worldId, props.rule.id, testWorldInstanceId.value);
+  } catch (e: any) {
+    testResult.value = { error: e.message };
+  } finally {
+    testing.value = false;
+  }
+};
+
+const handleSimulate = async () => {
+  if (!props.rule?.id) return;
+  simulating.value = true;
+  testResult.value = null;
+  try {
+    let flags = {};
+    try { flags = JSON.parse(simulateFlagsText.value || '{}'); } catch { /* use empty */ }
+    testResult.value = await logicRuleService.simulate(props.worldId, props.rule.id, flags);
+  } catch (e: any) {
+    testResult.value = { error: e.message };
+  } finally {
+    simulating.value = false;
+  }
+};
+
+const handleExecute = async () => {
+  if (!props.rule?.id || !testWorldInstanceId.value) return;
+  if (!confirm('Execute this rule live? This will modify state.')) return;
+  executing.value = true;
+  testResult.value = null;
+  try {
+    testResult.value = await logicRuleService.execute(
+      props.worldId, props.rule.id, testWorldInstanceId.value);
+  } catch (e: any) {
+    testResult.value = { error: e.message };
+  } finally {
+    executing.value = false;
+  }
+};
+
+const applying = ref(false);
+const savedRuleId = ref<string | null>(props.rule?.id || null);
+
+/**
+ * Core save logic. Returns the saved rule ID (for create) or true (for update).
+ */
+const doSave = async (): Promise<string | null> => {
+  if (!formData.value.name?.trim()) {
+    throw new Error('Name is required');
+  }
+
+  // Sync all effect parameters from key-value entries
+  for (let i = 0; i < formData.value.effects.length; i++) {
+    syncEffectParams(i);
+    if (!formData.value.effects[i].type) {
+      throw new Error(`Effect ${i + 1}: type is required`);
+    }
+  }
+
+  const epoches = parseEpoches();
+
+  if (savedRuleId.value) {
+    // Update existing rule
+    const updateData: UpdateLogicRuleRequest = {
+      name: formData.value.name.trim(),
+      description: formData.value.description || undefined,
+      rulePackage: formData.value.rulePackage || undefined,
+      spelCondition: formData.value.spelCondition,
+      effects: formData.value.effects,
+      epoches,
+      enabled: formData.value.enabled,
+      priority: formData.value.priority,
+      testFlags: simulateFlagsText.value || undefined,
+    };
+    const success = await updateRule(savedRuleId.value, updateData);
+    if (!success) {
+      throw new Error('Failed to update rule');
+    }
+    return savedRuleId.value;
+  } else {
+    // Create new rule
+    const createData: CreateLogicRuleRequest = {
+      name: formData.value.name.trim(),
+      description: formData.value.description || undefined,
+      rulePackage: formData.value.rulePackage || undefined,
+      spelCondition: formData.value.spelCondition,
+      effects: formData.value.effects,
+      epoches,
+      enabled: formData.value.enabled,
+      priority: formData.value.priority,
+      testFlags: simulateFlagsText.value || undefined,
+    };
+    const id = await createRule(createData);
+    if (!id) {
+      throw new Error('Failed to create rule');
+    }
+    savedRuleId.value = id; // Now we have an ID for subsequent Apply/Test
+    return id;
+  }
+};
+
 const handleSave = async () => {
   errorMessage.value = '';
   saving.value = true;
-
   try {
-    if (!formData.value.name?.trim()) {
-      throw new Error('Name is required');
-    }
-
-    // Sync all effect parameters from key-value entries
-    for (let i = 0; i < formData.value.effects.length; i++) {
-      syncEffectParams(i);
-      if (!formData.value.effects[i].type) {
-        throw new Error(`Effect ${i + 1}: type is required`);
-      }
-    }
-
-    const epoches = parseEpoches();
-
-    if (isEditMode.value && props.rule?.id) {
-      const updateData: UpdateLogicRuleRequest = {
-        name: formData.value.name.trim(),
-        description: formData.value.description || undefined,
-        rulePackage: formData.value.rulePackage || undefined,
-        spelCondition: formData.value.spelCondition,
-        effects: formData.value.effects,
-        epoches,
-        enabled: formData.value.enabled,
-        priority: formData.value.priority,
-      };
-      const success = await updateRule(props.rule.id, updateData);
-      if (!success) {
-        throw new Error('Failed to update rule');
-      }
-    } else {
-      const createData: CreateLogicRuleRequest = {
-        name: formData.value.name.trim(),
-        description: formData.value.description || undefined,
-        rulePackage: formData.value.rulePackage || undefined,
-        spelCondition: formData.value.spelCondition,
-        effects: formData.value.effects,
-        epoches,
-        enabled: formData.value.enabled,
-        priority: formData.value.priority,
-      };
-      const id = await createRule(createData);
-      if (!id) {
-        throw new Error('Failed to create rule');
-      }
-    }
-
+    await doSave();
     emit('saved');
   } catch (error: any) {
     errorMessage.value = error.message || 'Failed to save rule';
   } finally {
     saving.value = false;
+  }
+};
+
+const handleApply = async () => {
+  errorMessage.value = '';
+  applying.value = true;
+  try {
+    await doSave();
+  } catch (error: any) {
+    errorMessage.value = error.message || 'Failed to apply rule';
+  } finally {
+    applying.value = false;
   }
 };
 </script>

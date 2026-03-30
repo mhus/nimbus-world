@@ -22,6 +22,7 @@ export interface LogicRuleDto {
   epoches: number[];
   enabled: boolean;
   priority: number;
+  testFlags?: string;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -51,6 +52,7 @@ export interface CreateLogicRuleRequest {
   epoches: number[];
   enabled?: boolean;
   priority?: number;
+  testFlags?: string;
 }
 
 export interface UpdateLogicRuleRequest {
@@ -62,6 +64,7 @@ export interface UpdateLogicRuleRequest {
   epoches?: number[];
   enabled?: boolean;
   priority?: number;
+  testFlags?: string;
 }
 
 export class LogicRuleService {
@@ -97,6 +100,27 @@ export class LogicRuleService {
 
   async deleteRule(worldId: string, id: string): Promise<void> {
     return apiService.delete<void>(`/control/worlds/${worldId}/logic-rules/${id}`);
+  }
+
+  async testCondition(worldId: string, ruleId: string, worldInstanceId: string): Promise<any> {
+    return apiService.post(`/control/worlds/${worldId}/logic-rules/test`, {
+      ruleId,
+      worldInstanceId,
+    });
+  }
+
+  async simulate(worldId: string, ruleId: string, flags: Record<string, any>): Promise<any> {
+    return apiService.post(`/control/worlds/${worldId}/logic-rules/simulate`, {
+      ruleId,
+      flags,
+    });
+  }
+
+  async execute(worldId: string, ruleId: string, worldInstanceId: string): Promise<any> {
+    return apiService.post(`/control/worlds/${worldId}/logic-rules/execute`, {
+      ruleId,
+      worldInstanceId,
+    });
   }
 }
 

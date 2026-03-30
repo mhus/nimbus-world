@@ -40,6 +40,8 @@ public class ELogicRuleController extends BaseEditorController {
 
     private final WLogicRuleRepository ruleRepository;
     private final de.mhus.nimbus.world.shared.world.WLogicRuleService ruleService;
+    private final de.mhus.nimbus.world.shared.world.LogicConditionService conditionService;
+    private final de.mhus.nimbus.world.shared.client.WorldClientService worldClientService;
 
     @GetMapping
     @Operation(summary = "List all Logic Rules")
@@ -172,6 +174,7 @@ public class ELogicRuleController extends BaseEditorController {
                 .name(name)
                 .description((String) request.get("description"))
                 .rulePackage((String) request.get("rulePackage"))
+                .testFlags((String) request.get("testFlags"))
                 .spelCondition((String) request.get("spelCondition"))
                 .effects(toEffectList(request.get("effects")))
                 .epoches(toIntList(request.get("epoches")))
@@ -225,6 +228,10 @@ public class ELogicRuleController extends BaseEditorController {
         }
         if (request.containsKey("rulePackage")) {
             rule.setRulePackage((String) request.get("rulePackage"));
+            changed = true;
+        }
+        if (request.containsKey("testFlags")) {
+            rule.setTestFlags((String) request.get("testFlags"));
             changed = true;
         }
         // affected is auto-computed by ruleService.save() from spelCondition + effects
@@ -291,6 +298,84 @@ public class ELogicRuleController extends BaseEditorController {
         return ResponseEntity.noContent().build();
     }
 
+    // --- Test / Simulate / Execute ---
+
+    /**
+     * Test: evaluate rule condition against live flags.
+     * POST /control/worlds/{worldId}/logic-rules/test
+     * Body: { ruleId?, spelCondition?, rulePackage?, worldInstanceId }
+     */
+    @PostMapping("/test")
+    @Operation(summary = "Test rule condition against live flags")
+    public ResponseEntity<?> testCondition(
+            @PathVariable String worldId,
+            @RequestBody Map<String, Object> request) {
+
+        String instanceId = (String) request.get("worldInstanceId");
+        if (Strings.isBlank(instanceId)) {
+            return bad("worldInstanceId required");
+        }
+        String ruleId = (String) request.get("ruleId");
+        return ResponseEntity.ok(conditionService.testCondition(instanceId, ruleId, ruleRepository, request));
+    }
+
+    /**
+     * Simulate: dry-run rule with user-provided flags (sandbox).
+     * POST /control/worlds/{worldId}/logic-rules/simulate
+     * Body: { ruleId, flags: { "pkg": { "flag": value } } }
+     */
+    @SuppressWarnings("unchecked")
+    @PostMapping("/simulate")
+    @Operation(summary = "Simulate rule with custom flags (sandbox)")
+    public ResponseEntity<?> simulate(
+            @PathVariable String worldId,
+            @RequestBody Map<String, Object> request) {
+
+        String ruleId = (String) request.get("ruleId");
+        if (Strings.isBlank(ruleId)) {
+            return bad("ruleId required");
+        }
+        Map<String, Object> flags = (Map<String, Object>) request.get("flags");
+        return ResponseEntity.ok(conditionService.simulate(ruleId, ruleRepository, flags));
+    }
+
+    /**
+     * Execute: run rule live against a world instance.
+     * Delegates to world-life via REST (fire & forget with result).
+     * POST /control/worlds/{worldId}/logic-rules/execute
+     * Body: { ruleId, worldInstanceId }
+     */
+    @PostMapping("/execute")
+    @Operation(summary = "Execute rule live on a world instance")
+    public ResponseEntity<?> execute(
+            @PathVariable String worldId,
+            @RequestBody Map<String, Object> request) {
+
+        String instanceId = (String) request.get("worldInstanceId");
+        String ruleId = (String) request.get("ruleId");
+        if (Strings.isBlank(instanceId) || Strings.isBlank(ruleId)) {
+            return bad("worldInstanceId and ruleId required");
+        }
+
+        // Delegate to world-life
+        try {
+            worldClientService.sendLogicEvent(instanceId,
+                    List.of(), // no eval, execute is handled by world-life test endpoint
+                    "execute:" + ruleId);
+
+            // For now, return that we triggered execution.
+            // A proper implementation would call the /life/logic/execute endpoint synchronously.
+            return ResponseEntity.ok(Map.of(
+                    "mode", "execute",
+                    "worldInstanceId", instanceId,
+                    "ruleId", ruleId,
+                    "status", "delegated to world-life"
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
+        }
+    }
+
     // --- Helper methods ---
 
     private Map<String, Object> toDto(WLogicRule rule) {
@@ -306,6 +391,7 @@ public class ELogicRuleController extends BaseEditorController {
         dto.put("epoches", rule.getEpoches());
         dto.put("enabled", rule.isEnabled());
         dto.put("priority", rule.getPriority());
+        dto.put("testFlags", rule.getTestFlags());
         dto.put("createdAt", rule.getCreatedAt());
         dto.put("updatedAt", rule.getUpdatedAt());
         return dto;

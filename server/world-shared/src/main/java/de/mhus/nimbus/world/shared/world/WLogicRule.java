@@ -89,6 +89,12 @@ public class WLogicRule implements Identifiable, EpochEntity {
     @Builder.Default
     private int priority = 100;
 
+    /**
+     * Test fixture: saved simulate flags JSON for the rule editor.
+     * Stored as a raw JSON string, not interpreted by the Logic Machine.
+     */
+    private String testFlags;
+
     private Instant createdAt;
     private Instant updatedAt;
 }

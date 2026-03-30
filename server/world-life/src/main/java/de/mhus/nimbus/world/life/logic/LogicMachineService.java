@@ -50,6 +50,7 @@ public class LogicMachineService {
     private final LogicSpelService spelService;
     private final WorldRedisLockService lockService;
     private final WWorldInstanceService worldInstanceService;
+    private final LogicMetricsService metricsService;
 
     @Value("${logic.machine.max-execution-depth:10}")
     private int maxExecutionDepth;
@@ -95,6 +96,57 @@ public class LogicMachineService {
     }
 
     /**
+     * Execute a specific rule directly with proper locking and cascade.
+     * Used by the test/execute feature in the rule editor.
+     */
+    public void executeRuleDirectly(String worldId, WLogicRule rule) {
+        String lockKey = "logic:" + worldId;
+        String token = lockService.acquireGenericLock(lockKey, LOCK_TTL);
+        if (token == null) {
+            throw new LogicEvaluationException("Could not acquire lock for worldId=" + worldId, null);
+        }
+
+        List<LogicContext.DelayedEffect> delayedEffects = List.of();
+        try {
+            String rulePackage = rule.getRulePackage() != null ? rule.getRulePackage() : "default";
+            LogicFlagMap flags = loadFlags(worldId);
+
+            LogicContext context = LogicContext.builder()
+                    .worldId(worldId)
+                    .source("execute:" + rule.getName())
+                    .rulePackage(rulePackage)
+                    .flags(flags)
+                    .changedFlags(new HashSet<>())
+                    .build();
+
+            Set<String> changedFlags = new HashSet<>();
+            for (LogicEffect effect : rule.getEffects()) {
+                Set<String> effectChanges = effectRegistry.executeEffect(effect, context);
+                changedFlags.addAll(effectChanges);
+            }
+
+            if (!changedFlags.isEmpty()) {
+                saveFlags(worldId, flags);
+                flags.clearChanges();
+
+                // Cascade
+                int epoch = resolveEpoch(worldId);
+                cascadeRules(worldId, changedFlags, flags, context, epoch, 0);
+
+                if (!flags.getChangedKeys().isEmpty()) {
+                    saveFlags(worldId, flags);
+                }
+            }
+
+            delayedEffects = context.getDelayedEffects();
+        } finally {
+            lockService.releaseGenericLock(lockKey, token);
+        }
+
+        scheduleDelayedEffects(worldId, "execute:" + rule.getName(), delayedEffects);
+    }
+
+    /**
      * Check a condition against the current flag state (read-only, no locking needed).
      */
     public LogicConditionResult checkCondition(LogicCondition condition) {
@@ -118,6 +170,8 @@ public class LogicMachineService {
 
         log.debug("Logic Machine: processing event for worldId={}, source={}, eval={}",
                 worldId, event.getSource(), event.getEval());
+
+        metricsService.recordEventProcessed();
 
         // Execute eval expressions sequentially (no shorthand -- serverInfo is always fully qualified)
         if (event.getEval() != null) {
@@ -175,16 +229,15 @@ public class LogicMachineService {
         Set<String> newChangedFlags = new HashSet<>();
 
         for (WLogicRule rule : affectedRules) {
+            long startNanos = System.nanoTime();
             try {
                 String rulePackage = rule.getRulePackage() != null ? rule.getRulePackage() : "default";
                 boolean conditionMet = spelService.evaluateCondition(rule.getSpelCondition(), flags, rulePackage);
 
                 if (!conditionMet) {
+                    metricsService.recordRuleSkipped(worldId, rule.getName());
                     continue;
                 }
-
-                log.debug("Logic Machine: rule '{}' fired for worldId={} (epoch={})",
-                        rule.getName(), worldId, epoch);
 
                 // Execute effects with rule's package context
                 context.setRulePackage(rulePackage);
@@ -193,16 +246,22 @@ public class LogicMachineService {
                     newChangedFlags.addAll(effectChanges);
                 }
 
-                // Update lastFired timestamp
+                long durationMs = (System.nanoTime() - startNanos) / 1_000_000;
+                metricsService.recordRuleFired(worldId, rule.getName(), durationMs);
+                log.debug("Logic Machine: rule '{}' fired for worldId={} (epoch={}, {}ms)",
+                        rule.getName(), worldId, epoch, durationMs);
+
                 rule.setUpdatedAt(Instant.now());
 
             } catch (LogicEvaluationException e) {
+                metricsService.recordRuleError(worldId, rule.getName());
                 log.error("Logic Machine: disabling rule '{}' due to evaluation error: {}",
                         rule.getName(), e.getMessage());
                 rule.setEnabled(false);
                 rule.setUpdatedAt(Instant.now());
                 ruleRepository.save(rule);
             } catch (Exception e) {
+                metricsService.recordRuleError(worldId, rule.getName());
                 log.error("Logic Machine: error executing rule '{}': {}",
                         rule.getName(), e.getMessage(), e);
             }
@@ -266,6 +325,7 @@ public class LogicMachineService {
                 }
             }, delayed.delaySeconds(), TimeUnit.SECONDS);
 
+            metricsService.recordDelayedEffect();
             log.debug("Logic Machine: scheduled delayed effect '{}' in {}s for worldId={}",
                     delayed.effect().getType(), delayed.delaySeconds(), worldId);
         }
