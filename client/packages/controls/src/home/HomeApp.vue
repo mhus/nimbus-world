@@ -234,6 +234,18 @@
           </svg>
         </EditorCard>
 
+        <!-- Flag Editor -->
+        <EditorCard
+          v-if="hasAccess('LAYER_EDITOR')"
+          title="Flag Editor"
+          description="Manage Logic Machine flag definitions"
+          url="/controls/flag-editor.html"
+        >
+          <svg class="w-8 h-8 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9" />
+          </svg>
+        </EditorCard>
+
         <!-- Edit Cache Editor -->
         <EditorCard
           v-if="hasAccess('EDITCACHE_EDITOR')"
