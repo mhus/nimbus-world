@@ -37,11 +37,11 @@ public class LogicBlockStatusHandler implements LogicEffectHandler {
     private final WProgressService progressService;
 
     @Override
-    public Set<String> execute(Map<String, Object> parameters, LogicContext context) {
-        String chunkKey = (String) parameters.get("chunkKey");
-        String blockKey = (String) parameters.get("blockKey");
-        String value = (String) parameters.get("value");
-        String defaultState = (String) parameters.getOrDefault("defaultState", DEFAULT_STATE);
+    public Set<String> execute(Map<String, String> parameters, LogicContext context) {
+        String chunkKey = parameters.get("chunkKey");
+        String blockKey = parameters.get("blockKey");
+        String value = parameters.get("value");
+        String defaultState = parameters.getOrDefault("defaultState", DEFAULT_STATE);
 
         if (chunkKey == null || blockKey == null || value == null) {
             log.error("block_status: missing required parameters (chunkKey, blockKey, value) in {}", parameters);

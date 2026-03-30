@@ -98,6 +98,17 @@ public class ToggleAction implements GameplayAction {
         basic.getBasicClientService().sendCommand(session, "playSoundAtPosition",
                 List.of(sound, String.valueOf(x), String.valueOf(y), String.valueOf(z)));
 
+        // Fire logic effect with status variables for placeholder replacement
+        // {status} = raw state, {index} = state index (0-based)
+        int stateIndex = 0;
+        for (int i = 0; i < states.length; i++) {
+            if (states[i].equals(newStatus)) { stateIndex = i; break; }
+        }
+        basic.fireLogicEffect(session, serverInfo, Map.of(
+                "status", newStatus,
+                "index", String.valueOf(stateIndex)
+        ));
+
         log.debug("Toggle action: worldId={}, block=({},{},{}), {} -> {}", worldId, x, y, z, currentStatus, newStatus);
         return true;
     }

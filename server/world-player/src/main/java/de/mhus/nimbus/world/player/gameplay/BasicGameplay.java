@@ -17,6 +17,7 @@ import de.mhus.nimbus.world.shared.world.WItem;
 import de.mhus.nimbus.world.shared.world.WItemService;
 import de.mhus.nimbus.world.shared.world.WDocumentService;
 import de.mhus.nimbus.world.shared.world.WProgressService;
+import de.mhus.nimbus.world.shared.world.LogicConditionService;
 import de.mhus.nimbus.world.shared.world.WAnythingService;
 import de.mhus.nimbus.world.shared.world.WChestService;
 import de.mhus.nimbus.world.shared.world.WWorldService;
@@ -95,7 +96,12 @@ public class BasicGameplay implements Gameplay {
     protected SessionCommandService sessionCommandService;
     @Autowired
     @Getter
+    protected LogicConditionService logicConditionService;
+    @Autowired
+    @Getter
     protected OccupationService occupationService;
+    @Autowired
+    protected de.mhus.nimbus.world.shared.client.WorldClientService worldClientService;
 
     protected Map<String, GameplayAction> actions = new HashMap<>();
 
@@ -105,6 +111,81 @@ public class BasicGameplay implements Gameplay {
      */
     public boolean canUseBlock(PlayerSession session, int x, int y, int z, Map<String, String> serverInfo) {
         return true;
+    }
+
+    /**
+     * Check the "condition" parameter in serverInfo against Logic Machine flags.
+     * If no condition is set, returns true (action allowed).
+     * If condition evaluates to false, the action is blocked.
+     *
+     * @param session    player session (provides worldId)
+     * @param serverInfo block metadata containing optional "condition" SpEL expression
+     * @return true if action is allowed
+     */
+    /**
+     * Fire a LogicEvent based on the "logic" parameter in serverInfo.
+     * Supports variable placeholders that get replaced before sending:
+     *   {status}  - raw status string (e.g. "open", "closed")
+     *   {open}    - "true" if status is "open", "false" otherwise
+     *   {closed}  - "true" if status is "closed", "false" otherwise
+     *
+     * Example serverInfo entries:
+     *   logic=flags.flag1 = true                       (simple assignment)
+     *   logic=flags.doorOpen = {open}                  (replaced with true/false)
+     *   logic=flags.doorState = '{status}'             (replaced with 'open' or 'closed')
+     *
+     * @param session    player session
+     * @param serverInfo block metadata containing optional "logic" SpEL expression(s)
+     * @param variables  action result variables for placeholder replacement (may be empty)
+     */
+    public void fireLogicEffect(PlayerSession session, Map<String, String> serverInfo, Map<String, String> variables) {
+        if (serverInfo == null) return;
+        String logic = serverInfo.get("logic");
+        if (logic == null || logic.isBlank()) return;
+
+        // Replace placeholders
+        String resolved = logic;
+        for (var entry : variables.entrySet()) {
+            resolved = resolved.replace("{" + entry.getKey() + "}", entry.getValue());
+        }
+
+        String worldId = session.getWorldId().getId();
+        String source = "session:" + session.getSessionId();
+
+        // Split multiple expressions by semicolon
+        List<String> eval = java.util.Arrays.stream(resolved.split(";"))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .toList();
+
+        if (!eval.isEmpty()) {
+            worldClientService.sendLogicEvent(worldId, eval, source);
+            log.debug("Fired logic effect: worldId={}, eval={}, source={}", worldId, eval, source);
+        }
+    }
+
+    /**
+     * Check if the "logic" parameter contains placeholders that require
+     * action-specific variable replacement (e.g. {status}, {open}).
+     * If true, the action itself must call fireLogicEffect with variables.
+     */
+    protected boolean logicHasPlaceholders(Map<String, String> serverInfo) {
+        if (serverInfo == null) return false;
+        String logic = serverInfo.get("logic");
+        return logic != null && logic.contains("{");
+    }
+
+    protected boolean checkLogicCondition(PlayerSession session, Map<String, String> serverInfo) {
+        if (serverInfo == null) return true;
+        String condition = serverInfo.get("condition");
+        if (condition == null || condition.isBlank()) return true;
+
+        String worldId = session.getWorldId().getId();
+        boolean result = logicConditionService.checkCondition(worldId, condition);
+        if (!result) {
+            log.debug("Logic condition blocked action: worldId={}, condition={}", worldId, condition);
+        }
+        return result;
     }
 
     public BasicGameplay() {
@@ -140,13 +221,17 @@ public class BasicGameplay implements Gameplay {
 
             if (forceAction && blockAction != null && !blockAction.isBlank()) {
                 // Block forces interaction: use block's action with shortcut context
+                if (!checkLogicCondition(session, serverInfo)) return;
                 var handler = actions.get(blockAction);
                 if (handler == null) {
                     log.warn("Unknown forced block action '{}' at {} ({}, {}, {})", blockAction, worldId, x, y, z);
                     return;
                 }
                 boolean success = handler.handleBlockAction(session, x, y, z, blockId, groupId, blockAction, params, userAction, shortcutKey, serverInfo);
-                if (success) sendItemUseFeedback(session, shortcutKey);
+                if (success) {
+                    sendItemUseFeedback(session, shortcutKey);
+                    if (!logicHasPlaceholders(serverInfo)) fireLogicEffect(session, serverInfo, Map.of());
+                }
                 return;
             }
 
@@ -157,13 +242,17 @@ public class BasicGameplay implements Gameplay {
                 return;
             }
             if (!SHORTCUT_INTERACT_ACTION.equals(itemAction)) { // in case of interact shortcut do the same as regular interaction, skip item action routing
+                if (!checkLogicCondition(session, serverInfo)) return;
                 var handler = actions.get(itemAction);
                 if (handler == null) {
                     log.trace("No handler for item action '{}' on block at ({}, {}, {})", itemAction, x, y, z);
                     return;
                 }
                 boolean success = handler.handleBlockAction(session, x, y, z, blockId, groupId, itemAction, params, userAction, shortcutKey, serverInfo);
-                if (success) sendItemUseFeedback(session, shortcutKey);
+                if (success) {
+                    sendItemUseFeedback(session, shortcutKey);
+                    if (!logicHasPlaceholders(serverInfo)) fireLogicEffect(session, serverInfo, Map.of());
+                }
                 return;
             }
         }
@@ -177,12 +266,16 @@ public class BasicGameplay implements Gameplay {
             log.warn("No action entry in server metadata for block at {} ({}, {}, {})", worldId, x, y, z);
             return;
         }
+        if (!checkLogicCondition(session, serverInfo)) return;
         var handler = actions.get(blockAction);
         if (handler == null) {
             log.warn("Unknown block action '{}' in server metadata for block at {} ({}, {}, {})", blockAction, worldId, x, y, z);
             return;
         }
-        handler.handleBlockAction(session, x, y, z, blockId, groupId, blockAction, params, userAction, null, serverInfo);
+        boolean success = handler.handleBlockAction(session, x, y, z, blockId, groupId, blockAction, params, userAction, null, serverInfo);
+        if (success) {
+            fireLogicEffect(session, serverInfo, Map.of());
+        }
     }
 
     @Override

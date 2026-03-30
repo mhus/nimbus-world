@@ -125,6 +125,13 @@ public class DoorAction implements GameplayAction {
         // Play sound at the interacted block position (only once)
         playSound(session, serverInfo, newStatus, x, y, z);
 
+        // Fire logic effect with status variables for placeholder replacement
+        basic.fireLogicEffect(session, serverInfo, Map.of(
+                "status", newStatus,
+                "open", String.valueOf("open".equals(newStatus)),
+                "closed", String.valueOf("closed".equals(newStatus))
+        ));
+
         log.debug("{} action: worldId={}, chunkKey={}, targets={}, status={}", getActionName(), worldId, chunkKey, blockKeys, newStatus);
         return true;
     }

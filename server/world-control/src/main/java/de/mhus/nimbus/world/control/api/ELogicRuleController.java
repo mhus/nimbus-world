@@ -39,6 +39,7 @@ import java.util.stream.Collectors;
 public class ELogicRuleController extends BaseEditorController {
 
     private final WLogicRuleRepository ruleRepository;
+    private final de.mhus.nimbus.world.shared.world.WLogicRuleService ruleService;
 
     @GetMapping
     @Operation(summary = "List all Logic Rules")
@@ -155,17 +156,15 @@ public class ELogicRuleController extends BaseEditorController {
                 .worldId(lookupWorldId)
                 .name(name)
                 .description((String) request.get("description"))
-                .affected(toStringList(request.get("affected")))
                 .spelCondition((String) request.get("spelCondition"))
                 .effects(toEffectList(request.get("effects")))
                 .epoches(toIntList(request.get("epoches")))
                 .enabled(request.containsKey("enabled") ? Boolean.TRUE.equals(request.get("enabled")) : true)
                 .priority(request.containsKey("priority") ? ((Number) request.get("priority")).intValue() : 100)
-                .createdAt(Instant.now())
-                .updatedAt(Instant.now())
                 .build();
+        // affected is auto-computed by ruleService.save()
 
-        WLogicRule saved = ruleRepository.save(rule);
+        WLogicRule saved = ruleService.save(rule);
         log.info("Created logic rule: id={}, name={}, worldId={}", saved.getId(), saved.getName(), lookupWorldId);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("id", saved.getId()));
@@ -208,10 +207,7 @@ public class ELogicRuleController extends BaseEditorController {
             rule.setDescription((String) request.get("description"));
             changed = true;
         }
-        if (request.containsKey("affected")) {
-            rule.setAffected(toStringList(request.get("affected")));
-            changed = true;
-        }
+        // affected is auto-computed by ruleService.save() from spelCondition + effects
         if (request.containsKey("spelCondition")) {
             rule.setSpelCondition((String) request.get("spelCondition"));
             changed = true;
@@ -237,8 +233,8 @@ public class ELogicRuleController extends BaseEditorController {
             return bad("at least one field required for update");
         }
 
-        rule.setUpdatedAt(Instant.now());
-        WLogicRule saved = ruleRepository.save(rule);
+        // updatedAt and affected are set by ruleService.save()
+        WLogicRule saved = ruleService.save(rule);
 
         log.info("Updated logic rule: id={}, name={}", id, saved.getName());
         return ResponseEntity.ok(toDto(saved));
@@ -322,9 +318,18 @@ public class ELogicRuleController extends BaseEditorController {
                     .filter(v -> v instanceof Map)
                     .map(v -> {
                         Map<String, Object> map = (Map<String, Object>) v;
+                        // Convert parameters to Map<String, String>
+                        Map<String, String> params = new java.util.LinkedHashMap<>();
+                        Object rawParams = map.get("parameters");
+                        if (rawParams instanceof Map<?, ?> paramMap) {
+                            paramMap.forEach((k, val) -> params.put(
+                                    String.valueOf(k),
+                                    val != null ? String.valueOf(val) : null
+                            ));
+                        }
                         return LogicEffect.builder()
                                 .type((String) map.get("type"))
-                                .parameters((Map<String, Object>) map.get("parameters"))
+                                .parameters(params)
                                 .build();
                     })
                     .collect(Collectors.toList());

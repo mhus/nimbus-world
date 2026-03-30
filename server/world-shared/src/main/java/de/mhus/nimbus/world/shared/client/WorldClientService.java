@@ -345,4 +345,43 @@ public class WorldClientService {
             }
         });
     }
+
+    /**
+     * Fire-and-forget: Send a LogicEvent to world-life for rule processing.
+     * Uses the configured life service base URL.
+     *
+     * @param worldId full world ID (includes instance)
+     * @param eval    list of SpEL assignment expressions
+     * @param source  event source for debugging (e.g. "block:5,3,8")
+     */
+    public void sendLogicEvent(String worldId, List<String> eval, String source) {
+        CompletableFuture.runAsync(() -> {
+            try {
+                String baseUrl = properties.getLifeBaseUrl();
+                String url = baseUrl + "/life/logic/event";
+
+                Map<String, Object> requestBody = Map.of(
+                        "worldId", worldId,
+                        "eval", eval,
+                        "source", source != null ? source : ""
+                );
+
+                HttpHeaders headers = new HttpHeaders();
+                headers.set("Content-Type", "application/json");
+                String bearerToken = accessService.getWorldToken();
+                if (!Strings.isBlank(bearerToken)) {
+                    headers.set("Authorization", "Bearer " + bearerToken);
+                }
+
+                HttpEntity<Map<String, Object>> httpEntity = new HttpEntity<>(requestBody, headers);
+
+                restTemplate.postForEntity(URI.create(url), httpEntity, Void.class);
+
+                log.debug("LogicEvent sent: worldId={}, eval={}, source={}", worldId, eval, source);
+            } catch (Exception e) {
+                log.warn("Failed to send LogicEvent: worldId={}, eval={}, error={}",
+                        worldId, eval, e.getMessage());
+            }
+        });
+    }
 }

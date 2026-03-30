@@ -25,5 +25,5 @@ public class LogicEffect {
     /**
      * Handler-specific parameters.
      */
-    private Map<String, Object> parameters;
+    private Map<String, String> parameters;
 }

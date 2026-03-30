@@ -16,7 +16,7 @@ public interface LogicEffectHandler {
      * @param context    current execution context with flag state
      * @return set of flag names that were changed by this effect (for cascade), empty set if none
      */
-    Set<String> execute(Map<String, Object> parameters, LogicContext context);
+    Set<String> execute(Map<String, String> parameters, LogicContext context);
 
     /**
      * The effect type this handler is responsible for.

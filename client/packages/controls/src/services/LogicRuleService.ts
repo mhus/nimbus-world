@@ -7,7 +7,7 @@ import { apiService } from './ApiService';
 
 export interface LogicEffect {
   type: string;
-  parameters: Record<string, any>;
+  parameters: Record<string, string>;
 }
 
 export interface LogicRuleDto {
@@ -42,7 +42,6 @@ export interface LogicRulePagingParams {
 export interface CreateLogicRuleRequest {
   name: string;
   description?: string;
-  affected: string[];
   spelCondition: string;
   effects: LogicEffect[];
   epoches: number[];
@@ -53,7 +52,6 @@ export interface CreateLogicRuleRequest {
 export interface UpdateLogicRuleRequest {
   name?: string;
   description?: string;
-  affected?: string[];
   spelCondition?: string;
   effects?: LogicEffect[];
   epoches?: number[];

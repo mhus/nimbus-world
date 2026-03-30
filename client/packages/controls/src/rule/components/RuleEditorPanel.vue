@@ -41,19 +41,16 @@
           />
         </div>
 
-        <!-- Affected Flags -->
-        <div class="form-control">
+        <!-- Affected Flags (auto-computed, read-only) -->
+        <div v-if="isEditMode && props.rule?.affected?.length" class="form-control">
           <label class="label">
-            <span class="label-text">Affected Flags *</span>
+            <span class="label-text">Affected Flags (auto-computed)</span>
           </label>
-          <input
-            v-model="affectedText"
-            type="text"
-            class="input input-bordered"
-            placeholder="Comma-separated flag names, e.g. hasKey, doorOpen"
-          />
+          <div class="flex flex-wrap gap-1">
+            <span v-for="flag in props.rule.affected" :key="flag" class="badge badge-outline badge-sm">{{ flag }}</span>
+          </div>
           <label class="label">
-            <span class="label-text-alt">Flag names that trigger this rule when changed</span>
+            <span class="label-text-alt">Automatically derived from condition and effects on save</span>
           </label>
         </div>
 
@@ -91,13 +88,45 @@
                     <option value="block_status">block_status</option>
                   </select>
                 </div>
-                <textarea
-                  v-model="effectParamsText[index]"
-                  class="textarea textarea-bordered textarea-sm w-full font-mono text-xs"
-                  :placeholder="getEffectPlaceholder(effect.type)"
-                  rows="2"
-                  @blur="parseEffectParams(index)"
-                ></textarea>
+                <!-- Key-Value Parameter Editor -->
+                <div class="space-y-1">
+                  <div
+                    v-for="(paramEntry, pIdx) in effectParamEntries[index]"
+                    :key="pIdx"
+                    class="flex gap-1 items-center"
+                  >
+                    <input
+                      v-model="paramEntry.key"
+                      type="text"
+                      class="input input-bordered input-xs flex-1 font-mono"
+                      placeholder="key"
+                      @blur="syncEffectParams(index)"
+                    />
+                    <input
+                      v-model="paramEntry.value"
+                      type="text"
+                      class="input input-bordered input-xs flex-1 font-mono"
+                      placeholder="value"
+                      @blur="syncEffectParams(index)"
+                    />
+                    <button
+                      type="button"
+                      class="btn btn-ghost btn-xs btn-square"
+                      @click="removeEffectParam(index, pIdx)"
+                    >
+                      <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                  <button
+                    type="button"
+                    class="btn btn-ghost btn-xs"
+                    @click="addEffectParam(index)"
+                  >
+                    + Add Parameter
+                  </button>
+                </div>
               </div>
               <button
                 type="button"
@@ -229,11 +258,40 @@ const formData = ref<{
   priority: 100,
 });
 
-const affectedText = ref('');
 const epochesText = ref('');
-const effectParamsText = ref<string[]>([]);
 const errorMessage = ref('');
 const saving = ref(false);
+
+interface ParamEntry {
+  key: string;
+  value: string;
+}
+
+/**
+ * Reactive key-value entries for each effect's parameters.
+ * Each effect has its own array of {key, value} pairs.
+ */
+const effectParamEntries = ref<ParamEntry[][]>([]);
+
+/**
+ * Convert a parameters map to key-value entries for the editor.
+ */
+function paramsToEntries(params: Record<string, string> | undefined): ParamEntry[] {
+  if (!params) return [];
+  return Object.entries(params).map(([key, value]) => ({ key, value: value ?? '' }));
+}
+
+/**
+ * Convert key-value entries back to a parameters map (all strings).
+ */
+function entriesToParams(entries: ParamEntry[]): Record<string, string> {
+  const params: Record<string, string> = {};
+  for (const entry of entries) {
+    if (!entry.key.trim()) continue;
+    params[entry.key.trim()] = entry.value;
+  }
+  return params;
+}
 
 // Initialize form data
 if (props.rule) {
@@ -241,54 +299,40 @@ if (props.rule) {
     name: props.rule.name || '',
     description: props.rule.description || '',
     spelCondition: props.rule.spelCondition || '',
-    effects: (props.rule.effects || []).map(e => ({ ...e })),
+    effects: (props.rule.effects || []).map(e => ({ ...e, parameters: { ...(e.parameters || {}) } })),
     enabled: props.rule.enabled,
     priority: props.rule.priority,
   };
-  affectedText.value = (props.rule.affected || []).join(', ');
   epochesText.value = (props.rule.epoches || []).join(', ');
-  effectParamsText.value = formData.value.effects.map(e =>
-    JSON.stringify(e.parameters || {}, null, 2)
-  );
+  effectParamEntries.value = formData.value.effects.map(e => paramsToEntries(e.parameters));
 } else if (props.currentEpoch !== undefined) {
   epochesText.value = String(props.currentEpoch);
 }
 
-const getEffectPlaceholder = (type: string): string => {
-  switch (type) {
-    case 'LogicFlagUpdate':
-      return '{"doorOpen": true, "counter": 5}';
-    case 'block_status':
-      return '{"chunkKey": "1:2", "blockKey": "5,3,8", "value": "toggle", "defaultState": "closed"}';
-    default:
-      return '{"key": "value"}';
-  }
-};
-
 const addEffect = () => {
   formData.value.effects.push({ type: '', parameters: {} });
-  effectParamsText.value.push('{}');
+  effectParamEntries.value.push([]);
 };
 
 const removeEffect = (index: number) => {
   formData.value.effects.splice(index, 1);
-  effectParamsText.value.splice(index, 1);
+  effectParamEntries.value.splice(index, 1);
 };
 
-const parseEffectParams = (index: number) => {
-  try {
-    const parsed = JSON.parse(effectParamsText.value[index] || '{}');
-    formData.value.effects[index].parameters = parsed;
-  } catch {
-    // Leave as-is, will validate on save
-  }
+const addEffectParam = (effectIndex: number) => {
+  effectParamEntries.value[effectIndex].push({ key: '', value: '' });
 };
 
-const parseAffected = (): string[] => {
-  return affectedText.value
-    .split(',')
-    .map(s => s.trim())
-    .filter(s => s.length > 0);
+const removeEffectParam = (effectIndex: number, paramIndex: number) => {
+  effectParamEntries.value[effectIndex].splice(paramIndex, 1);
+  syncEffectParams(effectIndex);
+};
+
+/**
+ * Sync key-value entries back to the effect's parameters map.
+ */
+const syncEffectParams = (effectIndex: number) => {
+  formData.value.effects[effectIndex].parameters = entriesToParams(effectParamEntries.value[effectIndex]);
 };
 
 const parseEpoches = (): number[] => {
@@ -308,14 +352,9 @@ const handleSave = async () => {
       throw new Error('Name is required');
     }
 
-    const affected = parseAffected();
-    if (affected.length === 0) {
-      throw new Error('At least one affected flag is required');
-    }
-
-    // Parse all effect parameters
+    // Sync all effect parameters from key-value entries
     for (let i = 0; i < formData.value.effects.length; i++) {
-      parseEffectParams(i);
+      syncEffectParams(i);
       if (!formData.value.effects[i].type) {
         throw new Error(`Effect ${i + 1}: type is required`);
       }
@@ -327,7 +366,6 @@ const handleSave = async () => {
       const updateData: UpdateLogicRuleRequest = {
         name: formData.value.name.trim(),
         description: formData.value.description || undefined,
-        affected,
         spelCondition: formData.value.spelCondition,
         effects: formData.value.effects,
         epoches,
@@ -342,7 +380,6 @@ const handleSave = async () => {
       const createData: CreateLogicRuleRequest = {
         name: formData.value.name.trim(),
         description: formData.value.description || undefined,
-        affected,
         spelCondition: formData.value.spelCondition,
         effects: formData.value.effects,
         epoches,
