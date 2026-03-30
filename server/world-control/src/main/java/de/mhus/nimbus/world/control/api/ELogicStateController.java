@@ -4,8 +4,8 @@ import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.shared.user.WorldRoles;
 import de.mhus.nimbus.world.shared.access.RequireWorldRole;
 import de.mhus.nimbus.world.shared.rest.BaseEditorController;
-import de.mhus.nimbus.world.shared.world.WLogicFlag;
-import de.mhus.nimbus.world.shared.world.WLogicFlagRepository;
+import de.mhus.nimbus.world.shared.world.WLogicStateDef;
+import de.mhus.nimbus.world.shared.world.WLogicStateDefRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -24,20 +24,20 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/control/worlds/{worldId}/logic-flags")
+@RequestMapping("/control/worlds/{worldId}/logic-states")
 @RequiredArgsConstructor
 @Slf4j
-@Tag(name = "Logic Flags", description = "Logic Machine flag definitions")
+@Tag(name = "Logic States", description = "Logic Machine flag definitions")
 @RequireWorldRole(WorldRoles.EDITOR)
-public class ELogicFlagController extends BaseEditorController {
+public class ELogicStateController extends BaseEditorController {
 
-    private final WLogicFlagRepository flagRepository;
+    private final WLogicStateDefRepository stateDefRepository;
 
     @GetMapping
-    @Operation(summary = "List all Logic Flag definitions")
+    @Operation(summary = "List all Logic State definitions")
     public ResponseEntity<?> list(
             @Parameter(description = "World identifier") @PathVariable String worldId,
-            @Parameter(description = "Search query on flagName") @RequestParam(required = false) String query,
+            @Parameter(description = "Search query on name") @RequestParam(required = false) String query,
             @Parameter(description = "Pagination offset") @RequestParam(defaultValue = "0") int offset,
             @Parameter(description = "Pagination limit") @RequestParam(defaultValue = "50") int limit) {
 
@@ -47,12 +47,12 @@ public class ELogicFlagController extends BaseEditorController {
         if (validation != null) return validation;
 
         String lookupWorldId = wid.toBaseWorldId().getId();
-        List<WLogicFlag> all = flagRepository.findByWorldId(lookupWorldId);
+        List<WLogicStateDef> all = stateDefRepository.findByWorldId(lookupWorldId);
 
         if (!Strings.isBlank(query)) {
             String lowerQuery = query.toLowerCase();
             all = all.stream()
-                    .filter(f -> f.getFlagName() != null && f.getFlagName().toLowerCase().contains(lowerQuery))
+                    .filter(f -> f.getName() != null && f.getName().toLowerCase().contains(lowerQuery))
                     .collect(Collectors.toList());
         }
 
@@ -73,7 +73,7 @@ public class ELogicFlagController extends BaseEditorController {
     }
 
     @GetMapping("/{id}")
-    @Operation(summary = "Get Logic Flag by ID")
+    @Operation(summary = "Get Logic State by ID")
     public ResponseEntity<?> get(
             @PathVariable String worldId,
             @PathVariable String id) {
@@ -81,17 +81,17 @@ public class ELogicFlagController extends BaseEditorController {
         var validation = validateId(id, "id");
         if (validation != null) return validation;
 
-        Optional<WLogicFlag> opt = flagRepository.findById(id);
-        if (opt.isEmpty()) return notFound("flag not found");
+        Optional<WLogicStateDef> opt = stateDefRepository.findById(id);
+        if (opt.isEmpty()) return notFound("state definition not found");
 
-        WLogicFlag flag = opt.get();
-        if (!flag.getWorldId().equals(worldId)) return notFound("flag not found");
+        WLogicStateDef flag = opt.get();
+        if (!flag.getWorldId().equals(worldId)) return notFound("state definition not found");
 
         return ResponseEntity.ok(toDto(flag));
     }
 
     @PostMapping
-    @Operation(summary = "Create new Logic Flag definition")
+    @Operation(summary = "Create new Logic State definition")
     public ResponseEntity<?> create(
             @PathVariable String worldId,
             @RequestBody Map<String, Object> request) {
@@ -99,18 +99,18 @@ public class ELogicFlagController extends BaseEditorController {
         var wid = WorldId.of(worldId).orElseThrow(
                 () -> new IllegalStateException("Invalid worldId: " + worldId));
 
-        String flagName = (String) request.get("flagName");
-        if (Strings.isBlank(flagName)) return bad("flagName required");
+        String name = (String) request.get("name");
+        if (Strings.isBlank(name)) return bad("name required");
 
         String lookupWorldId = wid.toBaseWorldId().getId();
 
-        if (flagRepository.findByWorldIdAndFlagName(lookupWorldId, flagName).isPresent()) {
-            return conflict("flag name already exists");
+        if (stateDefRepository.findByWorldIdAndName(lookupWorldId, name).isPresent()) {
+            return conflict("state name already exists");
         }
 
-        WLogicFlag flag = WLogicFlag.builder()
+        WLogicStateDef flag = WLogicStateDef.builder()
                 .worldId(lookupWorldId)
-                .flagName(flagName)
+                .name(name)
                 .defaultValue(request.get("defaultValue"))
                 .type((String) request.get("type"))
                 .description((String) request.get("description"))
@@ -118,13 +118,13 @@ public class ELogicFlagController extends BaseEditorController {
                 .createdAt(Instant.now())
                 .build();
 
-        WLogicFlag saved = flagRepository.save(flag);
-        log.info("Created logic flag: id={}, flagName={}, worldId={}", saved.getId(), saved.getFlagName(), lookupWorldId);
+        WLogicStateDef saved = stateDefRepository.save(flag);
+        log.info("Created logic state: id={}, name={}, worldId={}", saved.getId(), saved.getName(), lookupWorldId);
         return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("id", saved.getId()));
     }
 
     @PutMapping("/{id}")
-    @Operation(summary = "Update Logic Flag definition")
+    @Operation(summary = "Update Logic State definition")
     public ResponseEntity<?> update(
             @PathVariable String worldId,
             @PathVariable String id,
@@ -133,11 +133,11 @@ public class ELogicFlagController extends BaseEditorController {
         var validation = validateId(id, "id");
         if (validation != null) return validation;
 
-        Optional<WLogicFlag> opt = flagRepository.findById(id);
-        if (opt.isEmpty()) return notFound("flag not found");
+        Optional<WLogicStateDef> opt = stateDefRepository.findById(id);
+        if (opt.isEmpty()) return notFound("state definition not found");
 
-        WLogicFlag flag = opt.get();
-        if (!flag.getWorldId().equals(worldId)) return notFound("flag not found");
+        WLogicStateDef flag = opt.get();
+        if (!flag.getWorldId().equals(worldId)) return notFound("state definition not found");
 
         boolean changed = false;
         if (request.containsKey("defaultValue")) {
@@ -155,13 +155,13 @@ public class ELogicFlagController extends BaseEditorController {
 
         if (!changed) return bad("at least one field required for update");
 
-        WLogicFlag saved = flagRepository.save(flag);
-        log.info("Updated logic flag: id={}, flagName={}", id, saved.getFlagName());
+        WLogicStateDef saved = stateDefRepository.save(flag);
+        log.info("Updated logic state: id={}, name={}", id, saved.getName());
         return ResponseEntity.ok(toDto(saved));
     }
 
     @DeleteMapping("/{id}")
-    @Operation(summary = "Delete Logic Flag definition")
+    @Operation(summary = "Delete Logic State definition")
     public ResponseEntity<?> delete(
             @PathVariable String worldId,
             @PathVariable String id) {
@@ -169,22 +169,22 @@ public class ELogicFlagController extends BaseEditorController {
         var validation = validateId(id, "id");
         if (validation != null) return validation;
 
-        Optional<WLogicFlag> opt = flagRepository.findById(id);
-        if (opt.isEmpty()) return notFound("flag not found");
+        Optional<WLogicStateDef> opt = stateDefRepository.findById(id);
+        if (opt.isEmpty()) return notFound("state definition not found");
 
-        WLogicFlag flag = opt.get();
-        if (!flag.getWorldId().equals(worldId)) return notFound("flag not found");
+        WLogicStateDef flag = opt.get();
+        if (!flag.getWorldId().equals(worldId)) return notFound("state definition not found");
 
-        flagRepository.delete(flag);
-        log.info("Deleted logic flag: id={}, flagName={}", id, flag.getFlagName());
+        stateDefRepository.delete(flag);
+        log.info("Deleted logic state: id={}, name={}", id, flag.getName());
         return ResponseEntity.noContent().build();
     }
 
-    private Map<String, Object> toDto(WLogicFlag flag) {
+    private Map<String, Object> toDto(WLogicStateDef flag) {
         Map<String, Object> dto = new LinkedHashMap<>();
         dto.put("id", flag.getId());
         dto.put("worldId", flag.getWorldId());
-        dto.put("flagName", flag.getFlagName());
+        dto.put("name", flag.getName());
         dto.put("defaultValue", flag.getDefaultValue());
         dto.put("type", flag.getType());
         dto.put("description", flag.getDescription());

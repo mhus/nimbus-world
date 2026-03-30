@@ -6,7 +6,7 @@
         <input
           v-model="searchQuery"
           type="text"
-          placeholder="Search by flag name..."
+          placeholder="Search by state name..."
           class="input input-bordered w-full"
           @keyup.enter="handleSearch"
         />
@@ -19,7 +19,7 @@
         <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
         </svg>
-        New Flag
+        New State
       </button>
     </div>
 
@@ -35,16 +35,16 @@
 
     <!-- Empty -->
     <div v-else-if="!loading && items.length === 0" class="text-center py-12">
-      <p class="text-base-content/70 text-lg">No flag definitions found</p>
-      <p class="text-base-content/50 text-sm mt-2">Flags are auto-created when rules fire, or create one manually</p>
+      <p class="text-base-content/70 text-lg">No state definitions found</p>
+      <p class="text-base-content/50 text-sm mt-2">States are auto-created when rules fire, or create one manually</p>
     </div>
 
-    <!-- Flag Table -->
+    <!-- State Table -->
     <div v-else class="overflow-x-auto">
       <table class="table table-sm">
         <thead>
           <tr>
-            <th>Flag Name</th>
+            <th>State Name</th>
             <th>Type</th>
             <th>Default</th>
             <th>Description</th>
@@ -99,7 +99,7 @@
     </div>
 
     <!-- Create/Edit Dialog -->
-    <FlagDialog
+    <StateDialog
       v-if="isDialogOpen"
       :world-id="currentWorldId!"
       :flag="selectedFlag"
@@ -113,9 +113,9 @@
 import { ref, watch } from 'vue';
 import { useWorld } from '@/composables/useWorld';
 import { apiService } from '@/services/ApiService';
-import FlagDialog from './FlagDialog.vue';
+import StateDialog from './StateDialog.vue';
 
-interface FlagItem {
+interface StateDefItem {
   id: string;
   worldId: string;
   flagName: string;
@@ -128,7 +128,7 @@ interface FlagItem {
 
 const { currentWorldId } = useWorld();
 
-const items = ref<FlagItem[]>([]);
+const items = ref<StateDefItem[]>([]);
 const loading = ref(false);
 const error = ref<string | null>(null);
 const searchQuery = ref('');
@@ -137,7 +137,7 @@ const offset = ref(0);
 const pageSize = 50;
 
 const isDialogOpen = ref(false);
-const selectedFlag = ref<FlagItem | null>(null);
+const selectedFlag = ref<StateDefItem | null>(null);
 
 const loadData = async () => {
   if (!currentWorldId.value) return;
@@ -150,8 +150,8 @@ const loadData = async () => {
     };
     if (searchQuery.value) params.query = searchQuery.value;
     const qs = new URLSearchParams(params).toString();
-    const response = await apiService.get<{ flags: FlagItem[]; count: number }>(
-      `/control/worlds/${currentWorldId.value}/logic-flags?${qs}`
+    const response = await apiService.get<{ flags: StateDefItem[]; count: number }>(
+      `/control/worlds/${currentWorldId.value}/logic-states?${qs}`
     );
     items.value = response.flags || [];
     totalCount.value = response.count || 0;
@@ -166,15 +166,15 @@ const loadData = async () => {
 const handleSearch = () => { offset.value = 0; loadData(); };
 
 const openCreateDialog = () => { selectedFlag.value = null; isDialogOpen.value = true; };
-const openEditDialog = (item: FlagItem) => { selectedFlag.value = item; isDialogOpen.value = true; };
+const openEditDialog = (item: StateDefItem) => { selectedFlag.value = item; isDialogOpen.value = true; };
 const closeDialog = () => { isDialogOpen.value = false; selectedFlag.value = null; };
 const handleSaved = () => { closeDialog(); loadData(); };
 
-const handleDelete = async (item: FlagItem) => {
+const handleDelete = async (item: StateDefItem) => {
   if (!currentWorldId.value) return;
-  if (!confirm(`Delete flag definition "${item.flagName}"?`)) return;
+  if (!confirm(`Delete state definition "${item.flagName}"?`)) return;
   try {
-    await apiService.delete(`/control/worlds/${currentWorldId.value}/logic-flags/${item.id}`);
+    await apiService.delete(`/control/worlds/${currentWorldId.value}/logic-states/${item.id}`);
     loadData();
   } catch (err: any) {
     error.value = err.message || 'Failed to delete';

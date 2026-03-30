@@ -155,7 +155,7 @@ public class LogicConditionService {
                     String delayStr = effect.getParameters() != null ? effect.getParameters().get("delay") : null;
                     if (delayStr != null && !delayStr.isBlank()) {
                         er.put("status", "would be delayed " + delayStr + "s");
-                    } else if ("LogicFlagUpdate".equals(effect.getType()) && effect.getParameters() != null) {
+                    } else if ("state_update".equals(effect.getType()) && effect.getParameters() != null) {
                         Set<String> changed = new LinkedHashSet<>();
                         for (Map.Entry<String, String> param : effect.getParameters().entrySet()) {
                             String key = param.getKey();

@@ -97,7 +97,7 @@
                     class="select select-bordered select-sm flex-1"
                   >
                     <option value="">Select type</option>
-                    <option value="LogicFlagUpdate">LogicFlagUpdate</option>
+                    <option value="state_update">state_update</option>
                     <option value="block_status">block_status</option>
                     <option value="apply_rule">apply_rule</option>
                   </select>

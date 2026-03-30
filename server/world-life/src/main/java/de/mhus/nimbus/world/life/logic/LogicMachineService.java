@@ -3,8 +3,8 @@ package de.mhus.nimbus.world.life.logic;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.shared.redis.WorldRedisLockService;
 import de.mhus.nimbus.world.shared.world.LogicEffect;
-import de.mhus.nimbus.world.shared.world.WLogicFlag;
-import de.mhus.nimbus.world.shared.world.WLogicFlagRepository;
+import de.mhus.nimbus.world.shared.world.WLogicStateDef;
+import de.mhus.nimbus.world.shared.world.WLogicStateDefRepository;
 import de.mhus.nimbus.world.shared.world.WLogicRule;
 import de.mhus.nimbus.world.shared.world.WLogicRuleRepository;
 import de.mhus.nimbus.world.shared.world.WProgressService;
@@ -45,7 +45,7 @@ public class LogicMachineService {
 
     private final WProgressService progressService;
     private final WLogicRuleRepository ruleRepository;
-    private final WLogicFlagRepository flagRepository;
+    private final WLogicStateDefRepository stateDefRepository;
     private final LogicEffectRegistry effectRegistry;
     private final LogicSpelService spelService;
     private final WorldRedisLockService lockService;
@@ -109,7 +109,7 @@ public class LogicMachineService {
         List<LogicContext.DelayedEffect> delayedEffects = List.of();
         try {
             String rulePackage = rule.getRulePackage() != null ? rule.getRulePackage() : "default";
-            LogicFlagMap flags = loadFlags(worldId);
+            LogicStateMap flags = loadFlags(worldId);
 
             LogicContext context = LogicContext.builder()
                     .worldId(worldId)
@@ -151,7 +151,7 @@ public class LogicMachineService {
      */
     public LogicConditionResult checkCondition(LogicCondition condition) {
         try {
-            LogicFlagMap flags = loadFlags(condition.getWorldId());
+            LogicStateMap flags = loadFlags(condition.getWorldId());
             boolean result = spelService.evaluateCondition(condition.getSpelExpression(), flags);
             return LogicConditionResult.of(result);
         } catch (Exception e) {
@@ -166,7 +166,7 @@ public class LogicMachineService {
      */
     private List<LogicContext.DelayedEffect> doProcessEvent(LogicEvent event) {
         String worldId = event.getWorldId();
-        LogicFlagMap flags = loadFlags(worldId);
+        LogicStateMap flags = loadFlags(worldId);
 
         log.debug("Logic Machine: processing event for worldId={}, source={}, eval={}",
                 worldId, event.getSource(), event.getEval());
@@ -210,7 +210,7 @@ public class LogicMachineService {
         return context.getDelayedEffects();
     }
 
-    private void cascadeRules(String worldId, Set<String> changedFlags, LogicFlagMap flags,
+    private void cascadeRules(String worldId, Set<String> changedFlags, LogicStateMap flags,
                               LogicContext context, int epoch, int depth) {
         if (depth >= maxExecutionDepth) {
             log.error("Logic Machine: max cascade depth {} reached for worldId={}, changedFlags={}",
@@ -296,7 +296,7 @@ public class LogicMachineService {
                             delayed.effect().getType(), delayed.delaySeconds(), worldId);
 
                     // Build a minimal context for the delayed execution
-                    LogicFlagMap flags = loadFlags(worldId);
+                    LogicStateMap flags = loadFlags(worldId);
                     LogicContext ctx = LogicContext.builder()
                             .worldId(worldId)
                             .source(source)
@@ -349,35 +349,35 @@ public class LogicMachineService {
     /**
      * Load flags from WProgress for the given world.
      */
-    private LogicFlagMap loadFlags(String worldId) {
+    private LogicStateMap loadFlags(String worldId) {
         return progressService
                 .findByWorldIdAndPlayerIdAndTypeAndQuest(worldId, LOGIC_PLAYER_ID, LOGIC_FLAG_TYPE, null)
-                .map(progress -> new LogicFlagMap(progress.getProgressData()))
-                .orElseGet(LogicFlagMap::new);
+                .map(progress -> new LogicStateMap(progress.getProgressData()))
+                .orElseGet(LogicStateMap::new);
     }
 
     /**
      * Persist the current flag state to WProgress.
      */
-    private void saveFlags(String worldId, LogicFlagMap flags) {
+    private void saveFlags(String worldId, LogicStateMap flags) {
         progressService.save(worldId, LOGIC_PLAYER_ID, LOGIC_FLAG_TYPE, null, flags.toProgressData());
     }
 
     /**
-     * Auto-create WLogicFlag definitions for flags that don't exist yet.
+     * Auto-create WLogicStateDef definitions for flags that don't exist yet.
      */
-    private void autoCreateFlagDefinitions(String worldId, Set<String> flagNames) {
-        for (String flagName : flagNames) {
-            if (flagRepository.findByWorldIdAndFlagName(worldId, flagName).isEmpty()) {
-                WLogicFlag flag = WLogicFlag.builder()
+    private void autoCreateFlagDefinitions(String worldId, Set<String> names) {
+        for (String name : names) {
+            if (stateDefRepository.findByWorldIdAndName(worldId, name).isEmpty()) {
+                WLogicStateDef flag = WLogicStateDef.builder()
                         .worldId(worldId)
-                        .flagName(flagName)
+                        .name(name)
                         .autoCreated(true)
                         .description("auto-created")
                         .createdAt(Instant.now())
                         .build();
-                flagRepository.save(flag);
-                log.info("Logic Machine: auto-created flag definition '{}' for worldId={}", flagName, worldId);
+                stateDefRepository.save(flag);
+                log.info("Logic Machine: auto-created flag definition '{}' for worldId={}", name, worldId);
             }
         }
     }

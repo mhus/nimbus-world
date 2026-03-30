@@ -7,11 +7,11 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface WLogicFlagRepository extends MongoRepository<WLogicFlag, String> {
+public interface WLogicStateDefRepository extends MongoRepository<WLogicStateDef, String> {
 
-    Optional<WLogicFlag> findByWorldIdAndFlagName(String worldId, String flagName);
+    Optional<WLogicStateDef> findByWorldIdAndName(String worldId, String name);
 
-    List<WLogicFlag> findByWorldId(String worldId);
+    List<WLogicStateDef> findByWorldId(String worldId);
 
     void deleteByWorldId(String worldId);
 }

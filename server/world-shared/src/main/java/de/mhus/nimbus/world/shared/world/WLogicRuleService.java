@@ -55,7 +55,7 @@ public class WLogicRuleService {
      * Save a rule with auto-computed affected flags.
      * The affected field is derived from:
      * 1. Flag names referenced in spelCondition (e.g. "flags.hasKey" → "hasKey")
-     * 2. Flag names produced by effects (e.g. LogicFlagUpdate parameters)
+     * 2. Flag names produced by effects (e.g. state_update parameters)
      */
     public WLogicRule save(WLogicRule rule) {
         rule.setAffected(computeAffected(rule));
@@ -78,7 +78,7 @@ public class WLogicRuleService {
 
     /**
      * Compute the affected flag list from condition and effects.
-     * All flag names are fully qualified: "package.flagName".
+     * All flag names are fully qualified: "package.name".
      * Unqualified references are resolved using the rule's rulePackage.
      */
     List<String> computeAffected(WLogicRule rule) {
@@ -125,14 +125,14 @@ public class WLogicRuleService {
     /**
      * Extract output flag names from an effect definition.
      * Keys without "." are resolved with the rule's package.
-     * - LogicFlagUpdate: parameter keys are the output flag names
+     * - state_update: parameter keys are the output flag names
      * - block_status: no logic flag output
      */
     static Set<String> extractOutputFlags(LogicEffect effect, String rulePackage) {
         Set<String> flags = new LinkedHashSet<>();
         if (effect == null || effect.getType() == null) return flags;
 
-        if ("LogicFlagUpdate".equals(effect.getType()) && effect.getParameters() != null) {
+        if ("state_update".equals(effect.getType()) && effect.getParameters() != null) {
             for (String key : effect.getParameters().keySet()) {
                 flags.add(key.contains(".") ? key : rulePackage + "." + key);
             }

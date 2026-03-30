@@ -1,8 +1,8 @@
 package de.mhus.nimbus.world.control.service.delete.impl;
 
 import de.mhus.nimbus.world.control.service.delete.DeleteWorldResources;
-import de.mhus.nimbus.world.shared.world.WLogicFlag;
-import de.mhus.nimbus.world.shared.world.WLogicFlagRepository;
+import de.mhus.nimbus.world.shared.world.WLogicStateDef;
+import de.mhus.nimbus.world.shared.world.WLogicStateDefRepository;
 import de.mhus.nimbus.world.shared.world.WLogicRule;
 import de.mhus.nimbus.world.shared.world.WLogicRuleRepository;
 import lombok.RequiredArgsConstructor;
@@ -21,7 +21,7 @@ import java.util.Set;
 public class DeleteLogicRulesService implements DeleteWorldResources {
 
     private final WLogicRuleRepository ruleRepository;
-    private final WLogicFlagRepository flagRepository;
+    private final WLogicStateDefRepository stateDefRepository;
     private final MongoTemplate mongoTemplate;
 
     @Override
@@ -36,8 +36,8 @@ public class DeleteLogicRulesService implements DeleteWorldResources {
         List<WLogicRule> rules = ruleRepository.findByWorldId(worldId);
         ruleRepository.deleteAll(rules);
 
-        List<WLogicFlag> flags = flagRepository.findByWorldId(worldId);
-        flagRepository.deleteAll(flags);
+        List<WLogicStateDef> flags = stateDefRepository.findByWorldId(worldId);
+        stateDefRepository.deleteAll(flags);
 
         log.info("Deleted {} logic rules and {} flag definitions for world {}",
                 rules.size(), flags.size(), worldId);
@@ -50,7 +50,7 @@ public class DeleteLogicRulesService implements DeleteWorldResources {
         worldIds.addAll(mongoTemplate.findDistinct(
                 new Query(), "worldId", WLogicRule.class, String.class));
         worldIds.addAll(mongoTemplate.findDistinct(
-                new Query(), "worldId", WLogicFlag.class, String.class));
+                new Query(), "worldId", WLogicStateDef.class, String.class));
 
         return worldIds.stream().sorted().toList();
     }

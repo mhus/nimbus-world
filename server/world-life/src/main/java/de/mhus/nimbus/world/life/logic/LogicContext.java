@@ -32,7 +32,7 @@ public class LogicContext {
     /**
      * Current flag state (mutable, nested by package, loaded from WProgress).
      */
-    private LogicFlagMap flags;
+    private LogicStateMap flags;
 
     /**
      * Tracks flag names that were changed during effect execution.
@@ -43,8 +43,8 @@ public class LogicContext {
     /**
      * Record a flag change.
      */
-    public void flagChanged(String flagName) {
-        changedFlags.add(flagName);
+    public void flagChanged(String name) {
+        changedFlags.add(name);
     }
 
     /**

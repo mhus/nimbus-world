@@ -46,7 +46,7 @@ public class LogicSpelService {
      * @param stateMap     mutable state map (nested by package)
      * @param rulePackage  current rule's package (null = no shorthand resolution)
      */
-    public void evaluateAssignment(String expression, LogicFlagMap stateMap, String rulePackage) {
+    public void evaluateAssignment(String expression, LogicStateMap stateMap, String rulePackage) {
         String resolved = resolveShorthand(expression, rulePackage);
         try {
             StandardEvaluationContext context = createContext(stateMap);
@@ -66,7 +66,7 @@ public class LogicSpelService {
      * @param rulePackage   current rule's package (null = no shorthand resolution)
      * @return true if condition matches
      */
-    public boolean evaluateCondition(String spelCondition, LogicFlagMap stateMap, String rulePackage) {
+    public boolean evaluateCondition(String spelCondition, LogicStateMap stateMap, String rulePackage) {
         if (spelCondition == null || spelCondition.isBlank()) {
             return true;
         }
@@ -85,14 +85,14 @@ public class LogicSpelService {
     /**
      * Evaluate a condition without shorthand resolution (fully qualified only).
      */
-    public boolean evaluateCondition(String spelCondition, LogicFlagMap stateMap) {
+    public boolean evaluateCondition(String spelCondition, LogicStateMap stateMap) {
         return evaluateCondition(spelCondition, stateMap, null);
     }
 
     /**
      * Evaluate an assignment without shorthand resolution.
      */
-    public void evaluateAssignment(String expression, LogicFlagMap stateMap) {
+    public void evaluateAssignment(String expression, LogicStateMap stateMap) {
         evaluateAssignment(expression, stateMap, null);
     }
 
@@ -108,7 +108,7 @@ public class LogicSpelService {
                 .replaceAll("state." + rulePackage + ".$1");
     }
 
-    private StandardEvaluationContext createContext(LogicFlagMap stateMap) {
+    private StandardEvaluationContext createContext(LogicStateMap stateMap) {
         Map<String, Object> root = new HashMap<>();
         root.put("state", stateMap);
 

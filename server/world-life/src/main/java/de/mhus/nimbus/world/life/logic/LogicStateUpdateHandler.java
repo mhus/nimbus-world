@@ -10,7 +10,7 @@ import java.util.Set;
 
 /**
  * Effect handler that updates flags in the current context.
- * Parameters are key-value pairs (String -> String) to set on the flag map.
+ * Parameters are key-value pairs (String -> String) to set on the state map.
  * Values are auto-parsed: "true"/"false" -> Boolean, numeric -> Number, else String.
  *
  * Keys follow package scoping:
@@ -21,14 +21,14 @@ import java.util.Set;
  */
 @Component
 @Slf4j
-public class LogicFlagUpdateHandler implements LogicEffectHandler {
+public class LogicStateUpdateHandler implements LogicEffectHandler {
 
-    public static final String TYPE = "LogicFlagUpdate";
+    public static final String TYPE = "state_update";
 
     @Override
     public Set<String> execute(Map<String, String> parameters, LogicContext context) {
         Set<String> changed = new HashSet<>();
-        LogicFlagMap flags = context.getFlags();
+        LogicStateMap flags = context.getFlags();
         String rulePackage = context.getRulePackage() != null ? context.getRulePackage() : "default";
 
         for (Map.Entry<String, String> entry : parameters.entrySet()) {
@@ -43,7 +43,7 @@ public class LogicFlagUpdateHandler implements LogicEffectHandler {
             if (!Objects.equals(oldValue, newValue)) {
                 flags.putQualified(qualifiedKey, newValue);
                 changed.add(qualifiedKey);
-                log.debug("LogicFlagUpdate: {} = {} (was {})", qualifiedKey, newValue, oldValue);
+                log.debug("state_update: {} = {} (was {})", qualifiedKey, newValue, oldValue);
             }
         }
         return changed;

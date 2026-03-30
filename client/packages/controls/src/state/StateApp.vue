@@ -9,7 +9,7 @@
         </a>
       </div>
       <div class="flex-1">
-        <h1 class="text-xl font-bold px-4">Nimbus Logic Flag Editor</h1>
+        <h1 class="text-xl font-bold px-4">Nimbus Logic State Editor</h1>
       </div>
       <div class="flex-none flex items-center gap-2">
         <WorldSelector filter="withCollectionsAndZones" />
@@ -19,7 +19,7 @@
     <main class="flex-1 container mx-auto px-4 py-6">
       <div class="card bg-base-100 shadow-xl">
         <div class="card-body">
-          <FlagEditor />
+          <StateEditor />
         </div>
       </div>
     </main>
@@ -28,5 +28,5 @@
 
 <script setup lang="ts">
 import WorldSelector from '@material/components/WorldSelector.vue';
-import FlagEditor from '@flag/FlagEditor.vue';
+import StateEditor from '@state/StateEditor.vue';
 </script>

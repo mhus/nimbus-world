@@ -15,20 +15,20 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import java.time.Instant;
 
 /**
- * Flag definition for the Logic Machine.
- * Describes known flags and their default values.
- * Auto-created when a flag is first written if not already defined.
+ * State definition for the Logic Machine.
+ * Describes known state keys and their default values.
+ * Auto-created when a key is first written if not already defined.
  */
-@Document(collection = "w_logic_flags")
+@Document(collection = "w_logic_states")
 @ActualSchemaVersion("1.0.0")
 @CompoundIndexes({
-        @CompoundIndex(name = "world_flag_idx", def = "{ 'worldId': 1, 'flagName': 1 }", unique = true)
+        @CompoundIndex(name = "world_name_idx", def = "{ 'worldId': 1, 'name': 1 }", unique = true)
 })
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class WLogicFlag implements Identifiable {
+public class WLogicStateDef implements Identifiable {
 
     @Id
     private String id;
@@ -36,7 +36,10 @@ public class WLogicFlag implements Identifiable {
     @Indexed
     private String worldId;
 
-    private String flagName;
+    /**
+     * Qualified state key name (e.g. "puzzle.hasKey", "quest.completed").
+     */
+    private String name;
 
     private Object defaultValue;
 
@@ -48,7 +51,7 @@ public class WLogicFlag implements Identifiable {
     private String description;
 
     /**
-     * True if this flag was auto-created on first write (not explicitly defined).
+     * True if auto-created on first write (not explicitly defined).
      */
     @Builder.Default
     private boolean autoCreated = false;

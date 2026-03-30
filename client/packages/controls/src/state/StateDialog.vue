@@ -2,7 +2,7 @@
   <div class="modal modal-open" @click.self="emit('close')">
     <div class="modal-box max-w-lg" @click.stop>
       <h3 class="font-bold text-lg mb-4">
-        {{ isEditMode ? 'Edit Flag' : 'Create Flag' }}
+        {{ isEditMode ? 'Edit State' : 'Create State' }}
       </h3>
 
       <div v-if="errorMessage" class="alert alert-error mb-4">
@@ -15,9 +15,9 @@
       </div>
 
       <form @submit.prevent="handleSave" class="space-y-4">
-        <!-- Flag Name -->
+        <!-- State Name -->
         <div class="form-control">
-          <label class="label"><span class="label-text">Flag Name *</span></label>
+          <label class="label"><span class="label-text">State Name *</span></label>
           <input
             v-model="formData.flagName"
             type="text"
@@ -80,7 +80,7 @@
 import { ref, computed } from 'vue';
 import { apiService } from '@/services/ApiService';
 
-interface FlagItem {
+interface StateDefItem {
   id: string;
   worldId: string;
   flagName: string;
@@ -93,7 +93,7 @@ interface FlagItem {
 
 interface Props {
   worldId: string;
-  flag: FlagItem | null;
+  flag: StateDefItem | null;
 }
 
 const props = defineProps<Props>();
@@ -127,15 +127,15 @@ const handleSave = async () => {
     };
 
     if (isEditMode.value && props.flag?.id) {
-      await apiService.put(`/control/worlds/${props.worldId}/logic-flags/${props.flag.id}`, body);
+      await apiService.put(`/control/worlds/${props.worldId}/logic-states/${props.flag.id}`, body);
     } else {
       body.flagName = formData.value.flagName.trim();
-      await apiService.post(`/control/worlds/${props.worldId}/logic-flags`, body);
+      await apiService.post(`/control/worlds/${props.worldId}/logic-states`, body);
     }
 
     emit('saved');
   } catch (err: any) {
-    errorMessage.value = err.message || 'Failed to save flag';
+    errorMessage.value = err.message || 'Failed to save state';
   } finally {
     saving.value = false;
   }

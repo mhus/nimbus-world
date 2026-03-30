@@ -2,8 +2,8 @@ package de.mhus.nimbus.world.control.service.duplicate.impl;
 
 import de.mhus.nimbus.world.control.service.duplicate.DuplicateToWorld;
 import de.mhus.nimbus.world.shared.world.LogicEffect;
-import de.mhus.nimbus.world.shared.world.WLogicFlag;
-import de.mhus.nimbus.world.shared.world.WLogicFlagRepository;
+import de.mhus.nimbus.world.shared.world.WLogicStateDef;
+import de.mhus.nimbus.world.shared.world.WLogicStateDefRepository;
 import de.mhus.nimbus.world.shared.world.WLogicRule;
 import de.mhus.nimbus.world.shared.world.WLogicRuleRepository;
 import lombok.RequiredArgsConstructor;
@@ -20,7 +20,7 @@ import java.util.List;
 public class DuplicateLogicRulesService implements DuplicateToWorld {
 
     private final WLogicRuleRepository ruleRepository;
-    private final WLogicFlagRepository flagRepository;
+    private final WLogicStateDefRepository stateDefRepository;
 
     @Override
     public String name() {
@@ -55,19 +55,19 @@ public class DuplicateLogicRulesService implements DuplicateToWorld {
         }
 
         // Duplicate flag definitions
-        List<WLogicFlag> sourceFlags = flagRepository.findByWorldId(sourceWorldId);
+        List<WLogicStateDef> sourceFlags = stateDefRepository.findByWorldId(sourceWorldId);
         int flagCount = 0;
-        for (WLogicFlag source : sourceFlags) {
-            WLogicFlag target = WLogicFlag.builder()
+        for (WLogicStateDef source : sourceFlags) {
+            WLogicStateDef target = WLogicStateDef.builder()
                     .worldId(targetWorldId)
-                    .flagName(source.getFlagName())
+                    .name(source.getName())
                     .defaultValue(source.getDefaultValue())
                     .type(source.getType())
                     .description(source.getDescription())
                     .autoCreated(source.isAutoCreated())
                     .createdAt(Instant.now())
                     .build();
-            flagRepository.save(target);
+            stateDefRepository.save(target);
             flagCount++;
         }
 

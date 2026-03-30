@@ -18,7 +18,7 @@ import java.util.Map;
 public class LogicEffect {
 
     /**
-     * Effect handler type, e.g. "LogicFlagUpdate", "LogicBlockStatus".
+     * Effect handler type, e.g. "state_update", "LogicBlockStatus".
      */
     private String type;
 

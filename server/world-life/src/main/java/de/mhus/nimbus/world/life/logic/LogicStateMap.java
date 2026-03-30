@@ -7,24 +7,24 @@ import java.util.Objects;
 import java.util.Set;
 
 /**
- * Package-scoped flag storage for the Logic Machine.
+ * Package-scoped state storage for the Logic Machine.
  * Outer map: package name -> inner map (flag name -> value).
  *
- * SpEL navigates naturally: state.puzzle_door.flag1
+ * SpEL navigates naturally: state.puzzle_door.key1
  *   -> outer.get("puzzle_door") returns inner TrackingMap
- *   -> inner.get("flag1") returns the value
+ *   -> inner.get("key1") returns the value
  *
- * Assignments: state.puzzle_door.flag1 = true
+ * Assignments: state.puzzle_door.key1 = true
  *   -> outer.get("puzzle_door") returns inner TrackingMap
- *   -> inner.put("flag1", true) is tracked
+ *   -> inner.put("key1", true) is tracked
  *
- * Changed flags are tracked as qualified names: "puzzle_door.flag1".
+ * Changed flags are tracked as qualified names: "puzzle_door.key1".
  */
-public class LogicFlagMap extends HashMap<String, Object> {
+public class LogicStateMap extends HashMap<String, Object> {
 
     private final Set<String> changedKeys = new HashSet<>();
 
-    public LogicFlagMap() {
+    public LogicStateMap() {
         super();
     }
 
@@ -33,7 +33,7 @@ public class LogicFlagMap extends HashMap<String, Object> {
      * Each entry in source is a package -> map of flags.
      */
     @SuppressWarnings("unchecked")
-    public LogicFlagMap(Map<String, Object> source) {
+    public LogicStateMap(Map<String, Object> source) {
         super();
         if (source != null) {
             for (Map.Entry<String, Object> entry : source.entrySet()) {
@@ -51,7 +51,7 @@ public class LogicFlagMap extends HashMap<String, Object> {
 
     /**
      * When SpEL accesses a package that doesn't exist yet, auto-create it.
-     * This allows "state.newPkg.flag1 = true" to work even if newPkg didn't exist.
+     * This allows "state.newPkg.key1 = true" to work even if newPkg didn't exist.
      */
     @Override
     public Object get(Object key) {
@@ -66,7 +66,7 @@ public class LogicFlagMap extends HashMap<String, Object> {
     }
 
     /**
-     * Returns all qualified flag names that were changed (e.g. "puzzle_door.flag1").
+     * Returns all qualified flag names that were changed (e.g. "puzzle_door.key1").
      */
     public Set<String> getChangedKeys() {
         return changedKeys;
@@ -121,7 +121,7 @@ public class LogicFlagMap extends HashMap<String, Object> {
     }
 
     /**
-     * Inner map that tracks changes and reports them to the parent LogicFlagMap.
+     * Inner map that tracks changes and reports them to the parent LogicStateMap.
      */
     class TrackingMap extends HashMap<String, Object> {
         private final String packageName;
