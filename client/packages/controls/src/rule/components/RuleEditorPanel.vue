@@ -99,6 +99,7 @@
                     <option value="">Select type</option>
                     <option value="LogicFlagUpdate">LogicFlagUpdate</option>
                     <option value="block_status">block_status</option>
+                    <option value="apply_rule">apply_rule</option>
                   </select>
                 </div>
                 <!-- Key-Value Parameter Editor -->

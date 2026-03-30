@@ -3,6 +3,9 @@ package de.mhus.nimbus.world.life.logic;
 import lombok.Builder;
 import lombok.Data;
 
+import de.mhus.nimbus.world.shared.world.LogicEffect;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -43,4 +46,16 @@ public class LogicContext {
     public void flagChanged(String flagName) {
         changedFlags.add(flagName);
     }
+
+    /**
+     * Delayed effects collected during cascade, scheduled after lock release.
+     */
+    @Builder.Default
+    private List<DelayedEffect> delayedEffects = new ArrayList<>();
+
+    public void addDelayedEffect(LogicEffect effect, String rulePackage, int delaySeconds) {
+        delayedEffects.add(new DelayedEffect(effect, rulePackage, delaySeconds));
+    }
+
+    public record DelayedEffect(LogicEffect effect, String rulePackage, int delaySeconds) {}
 }

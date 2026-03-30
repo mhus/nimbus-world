@@ -22,6 +22,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Core Logic Machine service.
@@ -51,6 +54,8 @@ public class LogicMachineService {
     @Value("${logic.machine.max-execution-depth:10}")
     private int maxExecutionDepth;
 
+    private final ScheduledExecutorService delayScheduler = Executors.newScheduledThreadPool(2);
+
     /**
      * Process a LogicEvent asynchronously.
      * Acquires an instance-level lock, executes eval expressions,
@@ -75,14 +80,18 @@ public class LogicMachineService {
             return;
         }
 
+        List<LogicContext.DelayedEffect> delayedEffects = List.of();
         try {
-            doProcessEvent(event);
+            delayedEffects = doProcessEvent(event);
         } catch (Exception e) {
             log.error("Logic Machine: error processing event for worldId={}: {}",
                     worldId, e.getMessage(), e);
         } finally {
             lockService.releaseGenericLock(lockKey, token);
         }
+
+        // Schedule delayed effects AFTER lock release
+        scheduleDelayedEffects(worldId, event.getSource(), delayedEffects);
     }
 
     /**
@@ -100,7 +109,10 @@ public class LogicMachineService {
         }
     }
 
-    private void doProcessEvent(LogicEvent event) {
+    /**
+     * Process event inside lock. Returns delayed effects to be scheduled after lock release.
+     */
+    private List<LogicContext.DelayedEffect> doProcessEvent(LogicEvent event) {
         String worldId = event.getWorldId();
         LogicFlagMap flags = loadFlags(worldId);
 
@@ -118,7 +130,7 @@ public class LogicMachineService {
 
         if (changedFlags.isEmpty()) {
             log.debug("Logic Machine: no flags changed for worldId={}", worldId);
-            return;
+            return List.of();
         }
 
         // Persist changed flags
@@ -140,6 +152,8 @@ public class LogicMachineService {
 
         // Cascade rules
         cascadeRules(worldId, changedFlags, flags, context, epoch, 0);
+
+        return context.getDelayedEffects();
     }
 
     private void cascadeRules(String worldId, Set<String> changedFlags, LogicFlagMap flags,
@@ -204,6 +218,56 @@ public class LogicMachineService {
 
             log.debug("Logic Machine: cascading with new changes: {} (depth={})", newChangedFlags, depth + 1);
             cascadeRules(worldId, newChangedFlags, flags, context, epoch, depth + 1);
+        }
+    }
+
+    /**
+     * Schedule delayed effects after lock release.
+     * Each delayed effect runs independently after its delay.
+     * If a delayed effect changes flags, it fires a new LogicEvent for cascade.
+     */
+    private void scheduleDelayedEffects(String worldId, String source,
+                                        List<LogicContext.DelayedEffect> delayedEffects) {
+        if (delayedEffects == null || delayedEffects.isEmpty()) return;
+
+        for (LogicContext.DelayedEffect delayed : delayedEffects) {
+            delayScheduler.schedule(() -> {
+                try {
+                    log.debug("Logic Machine: executing delayed effect '{}' after {}s for worldId={}",
+                            delayed.effect().getType(), delayed.delaySeconds(), worldId);
+
+                    // Build a minimal context for the delayed execution
+                    LogicFlagMap flags = loadFlags(worldId);
+                    LogicContext ctx = LogicContext.builder()
+                            .worldId(worldId)
+                            .source(source)
+                            .rulePackage(delayed.rulePackage())
+                            .flags(flags)
+                            .changedFlags(new HashSet<>())
+                            .build();
+
+                    Set<String> changedFlags = effectRegistry.executeEffectDirect(delayed.effect(), ctx);
+
+                    // If the delayed effect changed flags, trigger cascade via new event
+                    if (!changedFlags.isEmpty()) {
+                        log.debug("Logic Machine: delayed effect changed flags {}, triggering cascade", changedFlags);
+                        // Build eval expressions from changed flags to trigger cascade
+                        // Re-process as a new event (acquires its own lock)
+                        LogicEvent cascadeEvent = LogicEvent.builder()
+                                .worldId(worldId)
+                                .eval(List.of()) // no eval, just cascade
+                                .source("delayed:" + delayed.effect().getType())
+                                .build();
+                        processEvent(cascadeEvent);
+                    }
+                } catch (Exception e) {
+                    log.error("Logic Machine: delayed effect '{}' failed for worldId={}: {}",
+                            delayed.effect().getType(), worldId, e.getMessage(), e);
+                }
+            }, delayed.delaySeconds(), TimeUnit.SECONDS);
+
+            log.debug("Logic Machine: scheduled delayed effect '{}' in {}s for worldId={}",
+                    delayed.effect().getType(), delayed.delaySeconds(), worldId);
         }
     }
 
