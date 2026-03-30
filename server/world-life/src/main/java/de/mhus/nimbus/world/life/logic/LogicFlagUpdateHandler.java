@@ -10,10 +10,14 @@ import java.util.Set;
 
 /**
  * Effect handler that updates flags in the current context.
- * Parameters are key-value pairs (String → String) to set on the flag map.
- * Values are auto-parsed: "true"/"false" → Boolean, numeric → Number, else String.
+ * Parameters are key-value pairs (String -> String) to set on the flag map.
+ * Values are auto-parsed: "true"/"false" -> Boolean, numeric -> Number, else String.
  *
- * Example parameters: {"doorOpen": "true", "counter": "5", "label": "hello"}
+ * Keys follow package scoping:
+ *   "flag1"           -> resolved to "{rulePackage}.flag1" (shorthand)
+ *   "otherPkg.flag2"  -> fully qualified cross-package access
+ *
+ * Example parameters: {"doorOpen": "true", "quest.completed": "true"}
  */
 @Component
 @Slf4j
@@ -24,17 +28,22 @@ public class LogicFlagUpdateHandler implements LogicEffectHandler {
     @Override
     public Set<String> execute(Map<String, String> parameters, LogicContext context) {
         Set<String> changed = new HashSet<>();
-        Map<String, Object> flags = context.getFlags();
+        LogicFlagMap flags = context.getFlags();
+        String rulePackage = context.getRulePackage() != null ? context.getRulePackage() : "default";
 
         for (Map.Entry<String, String> entry : parameters.entrySet()) {
             String key = entry.getKey();
             Object newValue = parseValue(entry.getValue());
-            Object oldValue = flags.get(key);
+
+            // Resolve package: "flag1" -> "rulePackage.flag1", "pkg.flag" stays as-is
+            String qualifiedKey = key.contains(".") ? key : rulePackage + "." + key;
+
+            Object oldValue = flags.getQualified(qualifiedKey);
 
             if (!Objects.equals(oldValue, newValue)) {
-                flags.put(key, newValue);
-                changed.add(key);
-                log.debug("LogicFlagUpdate: {} = {} (was {})", key, newValue, oldValue);
+                flags.putQualified(qualifiedKey, newValue);
+                changed.add(qualifiedKey);
+                log.debug("LogicFlagUpdate: {} = {} (was {})", qualifiedKey, newValue, oldValue);
             }
         }
         return changed;
@@ -42,7 +51,7 @@ public class LogicFlagUpdateHandler implements LogicEffectHandler {
 
     /**
      * Parse a string value to a typed object.
-     * "true"/"false" → Boolean, numeric strings → Number, null → null, else String.
+     * "true"/"false" -> Boolean, numeric strings -> Number, null -> null, else String.
      */
     static Object parseValue(String raw) {
         if (raw == null || "null".equals(raw)) return null;

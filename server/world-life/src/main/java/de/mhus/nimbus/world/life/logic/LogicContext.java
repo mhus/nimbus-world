@@ -3,7 +3,6 @@ package de.mhus.nimbus.world.life.logic;
 import lombok.Builder;
 import lombok.Data;
 
-import java.util.Map;
 import java.util.Set;
 
 /**
@@ -22,9 +21,15 @@ public class LogicContext {
     private String source;
 
     /**
-     * Current flag state (mutable, loaded from WProgress).
+     * The current rule's package for shorthand resolution.
+     * Effect handlers use this to resolve unqualified flag names.
      */
-    private Map<String, Object> flags;
+    private String rulePackage;
+
+    /**
+     * Current flag state (mutable, nested by package, loaded from WProgress).
+     */
+    private LogicFlagMap flags;
 
     /**
      * Tracks flag names that were changed during effect execution.

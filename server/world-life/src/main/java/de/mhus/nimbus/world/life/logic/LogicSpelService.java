@@ -9,66 +9,111 @@ import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 /**
  * SpEL evaluation service for the Logic Machine.
  * Handles both assignments (eval) and conditions (boolean checks).
+ *
+ * Supports package-scoped flags:
+ * - flags.pkg.flag1       -> fully qualified (package "pkg", flag "flag1")
+ * - flags.flag1           -> shorthand, resolved to flags.{rulePackage}.flag1
+ *
+ * Shorthand resolution is applied when a rulePackage is provided.
  */
 @Service
 @Slf4j
 public class LogicSpelService {
 
     private static final SpelExpressionParser PARSER = new SpelExpressionParser();
+    private static final String DEFAULT_PACKAGE = "default";
 
     /**
-     * Evaluate an assignment expression against the flag map.
-     * Example: "flag1 = !flag1", "counter = counter + 1"
+     * Matches "flags.xxx" where xxx is NOT followed by ".identifier"
+     * (i.e., unqualified flag references that need package prefix insertion).
      *
-     * The expression operates directly on the map keys (no "flags." prefix needed
-     * since the map IS the root object).
-     *
-     * @param expression SpEL assignment expression
-     * @param flags      mutable flag map (tracks changes)
+     * flags.flag1          -> match (unqualified)
+     * flags.pkg.flag1      -> no match on "flags.pkg" because followed by ".flag1"
+     * flags.flag1 == true  -> match on "flags.flag1"
      */
-    public void evaluateAssignment(String expression, LogicFlagMap flags) {
+    private static final Pattern UNQUALIFIED_FLAG = Pattern.compile(
+            "flags\\.([a-zA-Z_]\\w*)(?!\\.)");
+
+    /**
+     * Evaluate an assignment expression with package-scoped shorthand resolution.
+     *
+     * @param expression   SpEL assignment, e.g. "flags.flag1 = true"
+     * @param flags        mutable flag map (nested by package)
+     * @param rulePackage  current rule's package (null = no shorthand resolution)
+     */
+    public void evaluateAssignment(String expression, LogicFlagMap flags, String rulePackage) {
+        String resolved = resolveShorthand(expression, rulePackage);
         try {
             StandardEvaluationContext context = createContext(flags);
-            Expression expr = PARSER.parseExpression(expression);
+            Expression expr = PARSER.parseExpression(resolved);
             expr.getValue(context);
         } catch (Exception e) {
-            log.error("Failed to evaluate assignment '{}': {}", expression, e.getMessage());
+            log.error("Failed to evaluate assignment '{}' (resolved: '{}'): {}", expression, resolved, e.getMessage());
             throw new LogicEvaluationException("Assignment failed: " + expression, e);
         }
     }
 
     /**
-     * Evaluate a boolean condition expression against the flag map.
-     * Example: "flags.hasKey == true && flags.doorOpen == false"
+     * Evaluate a boolean condition with package-scoped shorthand resolution.
      *
      * @param spelCondition SpEL boolean expression
-     * @param flags         current flag state
-     * @return true if condition matches, false otherwise
+     * @param flags         current flag state (nested by package)
+     * @param rulePackage   current rule's package (null = no shorthand resolution)
+     * @return true if condition matches
      */
-    public boolean evaluateCondition(String spelCondition, LogicFlagMap flags) {
+    public boolean evaluateCondition(String spelCondition, LogicFlagMap flags, String rulePackage) {
         if (spelCondition == null || spelCondition.isBlank()) {
             return true;
         }
+        String resolved = resolveShorthand(spelCondition, rulePackage);
         try {
             StandardEvaluationContext context = createContext(flags);
-            Expression expr = PARSER.parseExpression(spelCondition);
+            Expression expr = PARSER.parseExpression(resolved);
             Boolean result = expr.getValue(context, Boolean.class);
             return result != null && result;
         } catch (Exception e) {
-            log.warn("Failed to evaluate condition '{}': {}", spelCondition, e.getMessage());
+            log.warn("Failed to evaluate condition '{}' (resolved: '{}'): {}", spelCondition, resolved, e.getMessage());
             return false;
         }
     }
 
     /**
-     * Creates a SpEL context with a root object containing "flags" as a key.
-     * This allows expressions like "flags.hasKey == true" and "flags.flag1 = !flags.flag1".
-     * MapAccessor enables property-style access on Map objects.
+     * Evaluate a condition without shorthand resolution (fully qualified only).
+     * Used by LogicConditionService in world-shared (serverInfo conditions).
      */
+    public boolean evaluateCondition(String spelCondition, LogicFlagMap flags) {
+        return evaluateCondition(spelCondition, flags, null);
+    }
+
+    /**
+     * Evaluate an assignment without shorthand resolution.
+     * Used for LogicEvents from serverInfo (always fully qualified).
+     */
+    public void evaluateAssignment(String expression, LogicFlagMap flags) {
+        evaluateAssignment(expression, flags, null);
+    }
+
+    /**
+     * Resolve shorthand flag references by inserting the rule's package.
+     * "flags.flag1" -> "flags.{package}.flag1" when flag1 is not followed by ".xxx".
+     *
+     * @param expression  SpEL expression
+     * @param rulePackage package name (null = no resolution)
+     * @return resolved expression
+     */
+    static String resolveShorthand(String expression, String rulePackage) {
+        if (expression == null || rulePackage == null || rulePackage.isBlank()) {
+            return expression;
+        }
+        return UNQUALIFIED_FLAG.matcher(expression)
+                .replaceAll("flags." + rulePackage + ".$1");
+    }
+
     private StandardEvaluationContext createContext(LogicFlagMap flags) {
         Map<String, Object> root = new HashMap<>();
         root.put("flags", flags);

@@ -26,10 +26,18 @@ public class WLogicRuleService {
     private final WLogicRuleRepository repository;
 
     /**
-     * Regex to find flag references in SpEL expressions.
-     * Matches "flags.xxx" where xxx is a valid identifier (letters, digits, underscores).
+     * Matches fully qualified flag references: "flags.pkg.flag"
      */
-    private static final Pattern FLAGS_PATTERN = Pattern.compile("flags\\.([a-zA-Z_][a-zA-Z0-9_]*)");
+    private static final Pattern QUALIFIED_FLAG = Pattern.compile(
+            "flags\\.([a-zA-Z_]\\w*)\\.([a-zA-Z_]\\w*)");
+
+    /**
+     * Matches unqualified flag references: "flags.xxx" NOT followed by ".yyy"
+     */
+    private static final Pattern UNQUALIFIED_FLAG = Pattern.compile(
+            "flags\\.([a-zA-Z_]\\w*)(?!\\.)");
+
+    private static final String DEFAULT_PACKAGE = "default";
 
     public Optional<WLogicRule> findById(String id) {
         return repository.findById(id);
@@ -70,17 +78,22 @@ public class WLogicRuleService {
 
     /**
      * Compute the affected flag list from condition and effects.
+     * All flag names are fully qualified: "package.flagName".
+     * Unqualified references are resolved using the rule's rulePackage.
      */
     List<String> computeAffected(WLogicRule rule) {
+        String pkg = rule.getRulePackage() != null && !rule.getRulePackage().isBlank()
+                ? rule.getRulePackage() : DEFAULT_PACKAGE;
+
         Set<String> affected = new LinkedHashSet<>();
 
         // 1. Extract flags from spelCondition
-        affected.addAll(extractFlagsFromExpression(rule.getSpelCondition()));
+        affected.addAll(extractFlagsFromExpression(rule.getSpelCondition(), pkg));
 
         // 2. Extract output flags from effects
         if (rule.getEffects() != null) {
             for (LogicEffect effect : rule.getEffects()) {
-                affected.addAll(extractOutputFlags(effect));
+                affected.addAll(extractOutputFlags(effect, pkg));
             }
         }
 
@@ -88,33 +101,44 @@ public class WLogicRuleService {
     }
 
     /**
-     * Extract flag names from a SpEL expression by finding "flags.xxx" patterns.
+     * Extract qualified flag names from a SpEL expression.
+     * - "flags.pkg.flag" -> "pkg.flag" (already qualified)
+     * - "flags.flag"     -> "{rulePackage}.flag" (shorthand resolved)
      */
-    static Set<String> extractFlagsFromExpression(String expression) {
+    static Set<String> extractFlagsFromExpression(String expression, String rulePackage) {
         Set<String> flags = new LinkedHashSet<>();
         if (expression == null || expression.isBlank()) return flags;
 
-        Matcher matcher = FLAGS_PATTERN.matcher(expression);
-        while (matcher.find()) {
-            flags.add(matcher.group(1));
+        // First: find fully qualified "flags.pkg.flag"
+        Matcher qualified = QUALIFIED_FLAG.matcher(expression);
+        while (qualified.find()) {
+            flags.add(qualified.group(1) + "." + qualified.group(2));
         }
+
+        // Then: find unqualified "flags.flag" (not followed by .xxx)
+        Matcher unqualified = UNQUALIFIED_FLAG.matcher(expression);
+        while (unqualified.find()) {
+            flags.add(rulePackage + "." + unqualified.group(1));
+        }
+
         return flags;
     }
 
     /**
      * Extract output flag names from an effect definition.
-     * Uses static knowledge of known effect types:
+     * Keys without "." are resolved with the rule's package.
      * - LogicFlagUpdate: parameter keys are the output flag names
      * - block_status: no logic flag output
      */
-    static Set<String> extractOutputFlags(LogicEffect effect) {
+    static Set<String> extractOutputFlags(LogicEffect effect, String rulePackage) {
         Set<String> flags = new LinkedHashSet<>();
         if (effect == null || effect.getType() == null) return flags;
 
         if ("LogicFlagUpdate".equals(effect.getType()) && effect.getParameters() != null) {
-            flags.addAll(effect.getParameters().keySet());
+            for (String key : effect.getParameters().keySet()) {
+                flags.add(key.contains(".") ? key : rulePackage + "." + key);
+            }
         }
-        // block_status and other effects don't produce logic flags
 
         return flags;
     }

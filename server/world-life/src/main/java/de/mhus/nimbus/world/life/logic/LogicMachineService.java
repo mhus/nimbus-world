@@ -107,7 +107,7 @@ public class LogicMachineService {
         log.debug("Logic Machine: processing event for worldId={}, source={}, eval={}",
                 worldId, event.getSource(), event.getEval());
 
-        // Execute eval expressions sequentially
+        // Execute eval expressions sequentially (no shorthand -- serverInfo is always fully qualified)
         if (event.getEval() != null) {
             for (String expression : event.getEval()) {
                 spelService.evaluateAssignment(expression, flags);
@@ -162,7 +162,8 @@ public class LogicMachineService {
 
         for (WLogicRule rule : affectedRules) {
             try {
-                boolean conditionMet = spelService.evaluateCondition(rule.getSpelCondition(), flags);
+                String rulePackage = rule.getRulePackage() != null ? rule.getRulePackage() : "default";
+                boolean conditionMet = spelService.evaluateCondition(rule.getSpelCondition(), flags, rulePackage);
 
                 if (!conditionMet) {
                     continue;
@@ -171,7 +172,8 @@ public class LogicMachineService {
                 log.debug("Logic Machine: rule '{}' fired for worldId={} (epoch={})",
                         rule.getName(), worldId, epoch);
 
-                // Execute effects
+                // Execute effects with rule's package context
+                context.setRulePackage(rulePackage);
                 for (LogicEffect effect : rule.getEffects()) {
                     Set<String> effectChanges = effectRegistry.executeEffect(effect, context);
                     newChangedFlags.addAll(effectChanges);
@@ -234,7 +236,7 @@ public class LogicMachineService {
      * Persist the current flag state to WProgress.
      */
     private void saveFlags(String worldId, LogicFlagMap flags) {
-        progressService.save(worldId, LOGIC_PLAYER_ID, LOGIC_FLAG_TYPE, null, new HashMap<>(flags));
+        progressService.save(worldId, LOGIC_PLAYER_ID, LOGIC_FLAG_TYPE, null, flags.toProgressData());
     }
 
     /**

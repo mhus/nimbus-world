@@ -75,11 +75,11 @@
           <textarea
             v-model="formData.spelCondition"
             class="textarea textarea-bordered font-mono text-sm"
-            placeholder="e.g. flags.hasKey == true && flags.doorOpen == false"
+            placeholder="e.g. flags.hasKey == true (shorthand for flags.{package}.hasKey)"
             rows="3"
           ></textarea>
           <label class="label">
-            <span class="label-text-alt">Boolean SpEL expression. Empty = always true when affected flags change.</span>
+            <span class="label-text-alt">Boolean SpEL expression. "flags.x" = same package, "flags.pkg.x" = cross-package. Empty = always true.</span>
           </label>
         </div>
 
