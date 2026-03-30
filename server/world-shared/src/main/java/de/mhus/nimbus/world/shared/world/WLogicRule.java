@@ -26,13 +26,14 @@ import java.util.List;
 @ActualSchemaVersion("1.0.0")
 @CompoundIndexes({
         @CompoundIndex(name = "world_affected_idx", def = "{ 'worldId': 1, 'affected': 1, 'enabled': 1 }"),
-        @CompoundIndex(name = "world_priority_idx", def = "{ 'worldId': 1, 'priority': 1 }")
+        @CompoundIndex(name = "world_priority_idx", def = "{ 'worldId': 1, 'priority': 1 }"),
+        @CompoundIndex(name = "world_epoches_idx", def = "{ 'worldId': 1, 'epoches': 1, 'enabled': 1 }")
 })
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class WLogicRule implements Identifiable {
+public class WLogicRule implements Identifiable, EpochEntity {
 
     @Id
     private String id;
@@ -63,6 +64,12 @@ public class WLogicRule implements Identifiable {
      * Ordered list of effects to execute when spelCondition is true.
      */
     private List<LogicEffect> effects;
+
+    /**
+     * Epoch assignment. Rule is only active in these epochs.
+     * Empty list means not visible in any epoch.
+     */
+    private List<Integer> epoches;
 
     /**
      * Whether this rule is active. Disabled rules are skipped during evaluation.

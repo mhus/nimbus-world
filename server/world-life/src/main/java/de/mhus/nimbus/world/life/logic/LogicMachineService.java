@@ -1,5 +1,6 @@
 package de.mhus.nimbus.world.life.logic;
 
+import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.shared.redis.WorldRedisLockService;
 import de.mhus.nimbus.world.shared.world.LogicEffect;
 import de.mhus.nimbus.world.shared.world.WLogicFlag;
@@ -7,6 +8,7 @@ import de.mhus.nimbus.world.shared.world.WLogicFlagRepository;
 import de.mhus.nimbus.world.shared.world.WLogicRule;
 import de.mhus.nimbus.world.shared.world.WLogicRuleRepository;
 import de.mhus.nimbus.world.shared.world.WProgressService;
+import de.mhus.nimbus.world.shared.world.WWorldInstanceService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -25,6 +27,9 @@ import java.util.Set;
  * Core Logic Machine service.
  * Processes events by evaluating SpEL assignments, then cascading affected rules.
  * All state is stored in WProgress with playerId="logic", type="logic-flag".
+ *
+ * Rules are epoch-aware: only rules matching the current epoch of the world instance
+ * are evaluated during event processing.
  */
 @Service
 @RequiredArgsConstructor
@@ -41,6 +46,7 @@ public class LogicMachineService {
     private final LogicEffectRegistry effectRegistry;
     private final LogicSpelService spelService;
     private final WorldRedisLockService lockService;
+    private final WWorldInstanceService worldInstanceService;
 
     @Value("${logic.machine.max-execution-depth:10}")
     private int maxExecutionDepth;
@@ -121,6 +127,9 @@ public class LogicMachineService {
 
         log.debug("Logic Machine: flags changed: {} for worldId={}", changedFlags, worldId);
 
+        // Resolve current epoch for the world instance
+        int epoch = resolveEpoch(worldId);
+
         // Build context for effect execution
         LogicContext context = LogicContext.builder()
                 .worldId(worldId)
@@ -130,20 +139,21 @@ public class LogicMachineService {
                 .build();
 
         // Cascade rules
-        cascadeRules(worldId, changedFlags, flags, context, 0);
+        cascadeRules(worldId, changedFlags, flags, context, epoch, 0);
     }
 
     private void cascadeRules(String worldId, Set<String> changedFlags, LogicFlagMap flags,
-                              LogicContext context, int depth) {
+                              LogicContext context, int epoch, int depth) {
         if (depth >= maxExecutionDepth) {
             log.error("Logic Machine: max cascade depth {} reached for worldId={}, changedFlags={}",
                     maxExecutionDepth, worldId, changedFlags);
             return;
         }
 
-        // Find rules affected by the changed flags
+        // Find rules affected by the changed flags, filtered by epoch
         List<WLogicRule> affectedRules = ruleRepository
-                .findByWorldIdAndAffectedInAndEnabledTrue(worldId, List.copyOf(changedFlags));
+                .findByWorldIdAndAffectedInAndEnabledTrueAndEpochesContaining(
+                        worldId, List.copyOf(changedFlags), epoch);
 
         // Sort by priority (lower = first)
         affectedRules.sort((a, b) -> Integer.compare(a.getPriority(), b.getPriority()));
@@ -158,7 +168,8 @@ public class LogicMachineService {
                     continue;
                 }
 
-                log.debug("Logic Machine: rule '{}' fired for worldId={}", rule.getName(), worldId);
+                log.debug("Logic Machine: rule '{}' fired for worldId={} (epoch={})",
+                        rule.getName(), worldId, epoch);
 
                 // Execute effects
                 for (LogicEffect effect : rule.getEffects()) {
@@ -183,8 +194,6 @@ public class LogicMachineService {
 
         // Track changes from effects in the flag map and persist
         if (!newChangedFlags.isEmpty()) {
-            // Effects may have changed flags in the context map directly
-            // Sync context flags back to the flag map
             saveFlags(worldId, flags);
             flags.clearChanges();
 
@@ -192,8 +201,23 @@ public class LogicMachineService {
             autoCreateFlagDefinitions(worldId, newChangedFlags);
 
             log.debug("Logic Machine: cascading with new changes: {} (depth={})", newChangedFlags, depth + 1);
-            cascadeRules(worldId, newChangedFlags, flags, context, depth + 1);
+            cascadeRules(worldId, newChangedFlags, flags, context, epoch, depth + 1);
         }
+    }
+
+    /**
+     * Resolve the current epoch for a worldId.
+     * If the worldId refers to an instance, the epoch is read from the WWorldInstance.
+     * Otherwise (base world), epoch defaults to 0.
+     */
+    private int resolveEpoch(String worldId) {
+        WorldId wid = WorldId.of(worldId).orElse(null);
+        if (wid != null && wid.isInstance()) {
+            return worldInstanceService.findByInstanceIdWithValidation(wid.getId())
+                    .map(instance -> instance.getEpoch())
+                    .orElse(0);
+        }
+        return 0;
     }
 
     /**

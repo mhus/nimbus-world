@@ -9,6 +9,8 @@ import java.util.Optional;
 @Repository
 public interface WLogicRuleRepository extends MongoRepository<WLogicRule, String> {
 
+    // --- EPOCH-UNFILTERED: use for editor/admin context only ---
+
     List<WLogicRule> findByWorldIdAndEnabledTrue(String worldId);
 
     List<WLogicRule> findByWorldIdAndAffectedInAndEnabledTrue(String worldId, List<String> affectedFlags);
@@ -18,4 +20,11 @@ public interface WLogicRuleRepository extends MongoRepository<WLogicRule, String
     List<WLogicRule> findByWorldId(String worldId);
 
     void deleteByWorldId(String worldId);
+
+    // --- EPOCH-AWARE: use for gameplay/logic machine context ---
+
+    List<WLogicRule> findByWorldIdAndEnabledTrueAndEpochesContaining(String worldId, int epoch);
+
+    List<WLogicRule> findByWorldIdAndAffectedInAndEnabledTrueAndEpochesContaining(
+            String worldId, List<String> affectedFlags, int epoch);
 }
