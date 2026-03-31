@@ -6,6 +6,7 @@ import de.mhus.nimbus.shared.utils.TypeUtil;
 import de.mhus.nimbus.world.generator.mcp.McpToolException;
 import de.mhus.nimbus.world.shared.world.WEntity;
 import de.mhus.nimbus.world.shared.world.WEntityService;
+import de.mhus.nimbus.world.shared.world.WEntityType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
@@ -148,7 +149,10 @@ public class EntityTools {
             @ToolParam(description = "Movement speed (blocks per second)", required = false) Double speed,
             @ToolParam(description = "Behavior model identifier (e.g. 'PreyAnimalBehavior')", required = false) String behaviorModel,
             @ToolParam(description = "Server-side parameters as key-value pairs for gameplay configuration", required = false) Map<String, String> server,
-            @ToolParam(description = "Epoch numbers this entity belongs to (e.g. [0,1,2]). If not specified, defaults to empty list (= not visible in any epoch).", required = false) List<Integer> epoches) {
+            @ToolParam(description = "Epoch numbers this entity belongs to (e.g. [0,1,2]). If not specified, defaults to empty list (= not visible in any epoch).", required = false) List<Integer> epoches,
+            @ToolParam(description = "Entity type: OTHER, ANIMAL, NPC, PLAYER, REMOTE. Default: OTHER", required = false) String entityType,
+            @ToolParam(description = "Path to portrait image (e.g. for dialog UI)", required = false) String portraitPath,
+            @ToolParam(description = "Source/generator identifier (e.g. 'npc-generator')", required = false) String source) {
         log.debug("MCP: Create entity: worldId={}, entityId={}, modelId={}", worldId, entityId, modelId);
 
         if (Strings.isBlank(worldId) || Strings.isBlank(entityId) || Strings.isBlank(modelId)) {
@@ -188,6 +192,15 @@ public class EntityTools {
                 if (epoches != null) {
                     entity.setEpoches(new ArrayList<>(epoches));
                 }
+                if (Strings.isNotBlank(entityType)) {
+                    try {
+                        entity.setType(WEntityType.valueOf(entityType.toUpperCase()));
+                    } catch (IllegalArgumentException e) {
+                        log.warn("Invalid entity type: {}", entityType);
+                    }
+                }
+                if (Strings.isNotBlank(portraitPath)) entity.setPortraitPath(portraitPath);
+                if (Strings.isNotBlank(source)) entity.setSource(source);
             });
 
             return Map.of(
@@ -220,7 +233,10 @@ public class EntityTools {
             @ToolParam(description = "Movement speed (blocks per second)", required = false) Double speed,
             @ToolParam(description = "Behavior model identifier", required = false) String behaviorModel,
             @ToolParam(description = "Server-side parameters to merge into existing server parameters", required = false) Map<String, String> server,
-            @ToolParam(description = "Epoch numbers this entity belongs to (replaces existing epoches)", required = false) List<Integer> epoches) {
+            @ToolParam(description = "Epoch numbers this entity belongs to (replaces existing epoches)", required = false) List<Integer> epoches,
+            @ToolParam(description = "Entity type: OTHER, ANIMAL, NPC, PLAYER, REMOTE", required = false) String entityType,
+            @ToolParam(description = "Path to portrait image", required = false) String portraitPath,
+            @ToolParam(description = "Source/generator identifier", required = false) String source) {
         log.debug("MCP: Update entity: worldId={}, entityId={}", worldId, entityId);
 
         if (Strings.isBlank(worldId) || Strings.isBlank(entityId)) {
@@ -269,6 +285,15 @@ public class EntityTools {
             if (epoches != null) {
                 entity.setEpoches(new ArrayList<>(epoches));
             }
+            if (entityType != null) {
+                try {
+                    entity.setType(WEntityType.valueOf(entityType.toUpperCase()));
+                } catch (IllegalArgumentException e) {
+                    log.warn("Invalid entity type: {}", entityType);
+                }
+            }
+            if (portraitPath != null) entity.setPortraitPath(portraitPath);
+            if (source != null) entity.setSource(source);
         });
 
         if (updated.isEmpty()) {

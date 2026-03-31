@@ -22,7 +22,7 @@ import java.io.File;
 @SpringBootApplication
 @ConfigurationPropertiesScan
 @EnableScheduling
-@ComponentScan(basePackages = {"de.mhus.nimbus.world.control","de.mhus.nimbus.world.shared","de.mhus.nimbus.shared"})
+@ComponentScan(basePackages = {"de.mhus.nimbus.world.control","de.mhus.nimbus.world.shared","de.mhus.nimbus.world.ai","de.mhus.nimbus.shared"})
 public class WorldControlApplication {
     public static void main(String[] args) {
         System.out.println("CWD: " + new File(".").getAbsolutePath());

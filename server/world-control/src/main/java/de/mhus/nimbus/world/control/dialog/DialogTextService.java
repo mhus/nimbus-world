@@ -306,11 +306,16 @@ public class DialogTextService {
         }
 
         Map<String, Object> buckets = ctx.getNpcProfile().cacheConfig().buckets();
-        if (buckets == null || !buckets.containsKey(key)) {
+        if (buckets == null) return rawValue;
+
+        // Lookup with original key or underscore variant (MongoDB doesn't allow dots in map keys)
+        Object bucketDef = buckets.get(key);
+        if (bucketDef == null) {
+            bucketDef = buckets.get(key.replace('.', '_'));
+        }
+        if (bucketDef == null) {
             return rawValue;
         }
-
-        Object bucketDef = buckets.get(key);
 
         // "direct" means use value as-is
         if ("direct".equals(bucketDef)) {
