@@ -435,8 +435,8 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
             Set<ChunkCoordinate> affectedChunks = calculateAffectedChunks(world, newPathways);
             pathwayPublisher.publishPathways(worldId, newPathways, affectedChunks);
 
-            log.debug("World {}: Generated {} pathways, affecting {} chunks",
-                    worldId, newPathways.size(), affectedChunks.size());
+            log.debug("World {}: Generated {} pathways, affecting {} chunks, Entities: {}",
+                    worldId, newPathways.size(), affectedChunks.size(), newPathways.stream().map(p -> p.getEntityId()).toList());
         }
     }
 

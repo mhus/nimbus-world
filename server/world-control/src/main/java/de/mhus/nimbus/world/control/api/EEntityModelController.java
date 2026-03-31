@@ -237,7 +237,6 @@ public class EEntityModelController extends BaseEditorController {
             if (request.enabled() != null) {
                 model.setEnabled(request.enabled());
             }
-            model.setWorldId(worldId);
         });
 
         if (updated.isEmpty()) {

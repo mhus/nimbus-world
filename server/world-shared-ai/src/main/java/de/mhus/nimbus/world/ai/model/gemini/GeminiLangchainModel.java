@@ -119,15 +119,15 @@ public class GeminiLangchainModel implements LangchainModel {
      * If maxTokens is 0, uses the model's maximum limit.
      */
     private AiChatOptions validateAndAdjustOptions(String modelName, AiChatOptions options) {
-        int maxTokens = options.getMaxTokens();
+        int maxTokens = options.getMaxTokens() != null ? options.getMaxTokens() : 0;
         int adjustedMaxTokens = maxTokens;
 
         // Get model-specific limits
         int modelMaxTokens = getModelMaxTokens(modelName);
 
-        // If maxTokens is 0, use model maximum
-        if (maxTokens == 0) {
-            log.info("maxTokens set to 0, using model maximum: {}", modelMaxTokens);
+        // If maxTokens is 0 or negative, use model maximum
+        if (maxTokens <= 0) {
+            log.info("maxTokens set to {}, using model maximum: {}", maxTokens, modelMaxTokens);
             adjustedMaxTokens = modelMaxTokens;
         }
         // Warn and adjust if exceeds model limit

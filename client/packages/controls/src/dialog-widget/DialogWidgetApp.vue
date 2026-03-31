@@ -46,7 +46,7 @@
       </div>
 
       <!-- Options -->
-      <div v-if="!submitting && !isTyping" class="flex flex-col gap-2 mb-4">
+      <div v-if="!submitting" class="flex flex-col gap-2 mb-4">
         <button
           v-for="option in dialog.options"
           :key="option.index"
@@ -69,7 +69,7 @@
       </div>
 
       <!-- Free Text Input -->
-      <div v-if="dialog.freeTextEnabled && !submitting && !isTyping" class="mt-auto">
+      <div v-if="dialog.freeTextEnabled && !submitting" class="mt-auto">
         <div class="flex gap-2">
           <input
             v-model="freeTextInput"
@@ -218,11 +218,10 @@ async function loadDialog() {
 }
 
 async function selectOption(optionIndex: number) {
+  if (submitting.value) return;
   if (isTyping.value) {
     skipTypewriter();
-    return;
   }
-  if (submitting.value) return;
 
   submitting.value = true;
   try {

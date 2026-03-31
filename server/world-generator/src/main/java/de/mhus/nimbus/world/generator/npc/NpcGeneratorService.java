@@ -321,8 +321,8 @@ public class NpcGeneratorService {
                 .id(entityId)
                 .name(generated.title != null ? generated.title : entityId)
                 .model(modelId)
-                .movementType("passive")
-                .controlledBy("server")
+                .movementType(null)
+                .controlledBy(null)
                 .solid(true)
                 .interactive(true)
                 .healthMax(100)
@@ -353,7 +353,7 @@ public class NpcGeneratorService {
 
             // Server params for dialog
             Map<String, String> server = new HashMap<>();
-            server.put("int_action", "dialog");
+            server.put("action", "dialog");
             server.put("int_playbook", "dialogs/" + entityId);
             server.put("profile", entityId);
             server.put("roam_radius", "5");
@@ -402,7 +402,7 @@ public class NpcGeneratorService {
                 "maxVersions", 10,
                 "warmUpCount", 3,
                 "buckets", Map.of(
-                        "memory.conversationCount", Map.of("first", List.of(0, 0), "few", List.of(1, 3), "many", List.of(4, 1000))
+                        "memory_conversationCount", Map.of("first", List.of(0, 0), "few", List.of(1, 3), "many", List.of(4, 1000))
                 )
         ));
         profileData.put("freeText", Map.of(
@@ -456,12 +456,13 @@ public class NpcGeneratorService {
                 "conditions", List.of()
         ));
 
-        // Topic nodes
+        // Topic nodes — each topic shows all options so the player can navigate freely
         for (var topic : generated.smalltalkTopics()) {
+            // Reuse the same options as greeting (all topics + goodbye)
             nodes.put("topic_" + topic.id(), Map.of(
                     "textPrompt", topic.prompt(),
                     "cacheKeys", List.of(),
-                    "options", List.of(Map.of("text", "Weiter", "next", "greeting")),
+                    "options", greetingOptions,
                     "effects", List.of(),
                     "conditions", List.of()
             ));

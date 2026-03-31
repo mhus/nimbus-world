@@ -42,7 +42,12 @@ public class DialogService {
         if (!worldId.equals(progress.getWorldId())) {
             throw new DialogException("Progress does not belong to this world");
         }
-        if (!userId.equals(progress.getPlayerId())) {
+        // PlayerId in progress is "@userId:characterName" (from session.getEntityId()),
+        // userId from AccessFilter is just the userId. Check both formats.
+        String progressPlayerId = progress.getPlayerId();
+        if (!userId.equals(progressPlayerId)
+                && !progressPlayerId.startsWith("@" + userId + ":")
+                && !progressPlayerId.endsWith(":" + userId)) {
             throw new DialogException("Progress does not belong to this player");
         }
 
@@ -272,23 +277,27 @@ public class DialogService {
         String currentNodeId = ctx.getCurrentNodeId();
         DialogNode currentNode = situation.nodes().get(currentNodeId);
 
+        log.info("advanceDialog: currentNode={}, optionIndex={}, totalOptions={}",
+                currentNodeId, optionIndex, currentNode != null ? currentNode.options().size() : -1);
+
         if (currentNode == null) {
             throw new DialogException("Current node not found: " + currentNodeId);
         }
 
-        // Build visible options (same filtering as evaluateNode)
-        List<DialogOption> visibleOptions = new ArrayList<>();
-        for (DialogOption opt : currentNode.options()) {
-            if (conditionEvaluator.evaluateAll(opt.conditions(), ctx)) {
-                visibleOptions.add(opt);
-            }
+        // Resolve option by original index (as sent by evaluateNode in OptionView.index)
+        List<DialogOption> allOptions = currentNode.options();
+        if (optionIndex < 0 || optionIndex >= allOptions.size()) {
+            throw new DialogException("Invalid option index: " + optionIndex + " (options count: " + allOptions.size() + ")");
         }
 
-        if (optionIndex < 0 || optionIndex >= visibleOptions.size()) {
-            throw new DialogException("Invalid option index: " + optionIndex);
-        }
+        DialogOption selected = allOptions.get(optionIndex);
 
-        DialogOption selected = visibleOptions.get(optionIndex);
+        log.info("advanceDialog: selected option text='{}', next='{}'", selected.text(), selected.next());
+
+        // Verify the selected option is actually visible (conditions pass)
+        if (!conditionEvaluator.evaluateAll(selected.conditions(), ctx)) {
+            throw new DialogException("Selected option is not available");
+        }
         String nextNodeId = selected.next();
 
         // null next = close dialog

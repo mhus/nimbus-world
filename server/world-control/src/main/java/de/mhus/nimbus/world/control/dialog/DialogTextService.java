@@ -99,7 +99,7 @@ public class DialogTextService {
         Optional<AiChat> chatOpt = aiModelService.createChat(modelName, AiChatOptions.builder()
                 .systemMessage(buildSystemPrompt(ctx, language))
                 .temperature(0.9)
-                .maxTokens(300)
+                .maxTokens(0)
                 .timeoutSeconds(30)
                 .build());
 
@@ -244,7 +244,7 @@ public class DialogTextService {
                 Optional<AiChat> chatOpt = aiModelService.createChat(modelName, AiChatOptions.builder()
                         .systemMessage(systemPrompt)
                         .temperature(0.9)
-                        .maxTokens(300)
+                        .maxTokens(0)
                         .timeoutSeconds(30)
                         .build());
 

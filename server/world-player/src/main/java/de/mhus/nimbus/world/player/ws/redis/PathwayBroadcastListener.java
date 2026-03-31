@@ -120,7 +120,7 @@ public class PathwayBroadcastListener {
                     );
 
                     if (sentCount > 0) {
-                        log.debug("Sent {} NPC pathways to {} clients for chunk ({}, {}) in world {} - {}",
+                        log.trace("Sent {} NPC pathways to {} clients for chunk ({}, {}) in world {} - {}",
                                 pathways.size(), sentCount, cx, cz, worldId, pathways.stream().map(EntityPathway::getEntityId).toList());
                     }
                 }
