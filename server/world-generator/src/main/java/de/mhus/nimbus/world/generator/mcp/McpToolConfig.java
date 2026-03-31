@@ -26,7 +26,8 @@ public class McpToolConfig {
             ChestTools chestTools,
             ProgressTools progressTools,
             EntityTools entityTools,
-            EntityModelTools entityModelTools) {
+            EntityModelTools entityModelTools,
+            NpcGeneratorTools npcGeneratorTools) {
         return MethodToolCallbackProvider.builder()
                 .toolObjects(
                         worldTools,
@@ -44,7 +45,8 @@ public class McpToolConfig {
                         chestTools,
                         progressTools,
                         entityTools,
-                        entityModelTools)
+                        entityModelTools,
+                        npcGeneratorTools)
                 .build();
     }
 }
