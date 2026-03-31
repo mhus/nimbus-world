@@ -100,9 +100,9 @@ public class WorldConfigController {
         setPlayerBackpackDefaults(playerBackpack);
         setSettingsDefaults(settings);
 
-        // Build ServerInfo from ServerSettings
+        // Build ServerInfo from ServerSettings (derive WebSocket URL from request if not configured)
         ServerInfo serverInfo = ServerInfo.builder()
-                .websocketUrl(serverSettings.getWebsocketUrl())
+                .websocketUrl(serverSettings.getWebsocketUrl(request))
                 .exitUrl(accessSettings.getLogoutUrl())
                 .build();
 

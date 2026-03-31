@@ -1,6 +1,6 @@
 {
   "files" : [ {
-    "path" : "/Users/hummel/sources/mhus/nimbus-wb/nimbus-world/generated/../client_shared_src/dto/SKeyDto.ts",
+    "path" : "/Users/hummel/sources/mhus/nimbus-wb/repos/nimbus-world/server/generated/../client_shared_src/dto/SKeyDto.ts",
     "imports" : [ ],
     "interfaces" : [ {
       "name" : "mirroring",
@@ -129,7 +129,7 @@
     "classes" : [ ],
     "typeAliases" : [ ]
   }, {
-    "path" : "/Users/hummel/sources/mhus/nimbus-wb/nimbus-world/generated/../client_shared_src/dto/RegionCharacterResponse.ts",
+    "path" : "/Users/hummel/sources/mhus/nimbus-wb/repos/nimbus-world/server/generated/../client_shared_src/dto/RegionCharacterResponse.ts",
     "imports" : [ "../types/RegionItemInfo" ],
     "interfaces" : [ {
       "name" : "mirroring",
@@ -202,7 +202,7 @@
     "classes" : [ ],
     "typeAliases" : [ ]
   }, {
-    "path" : "/Users/hummel/sources/mhus/nimbus-wb/nimbus-world/generated/../client_shared_src/dto/UpdateSKeyNameRequest.ts",
+    "path" : "/Users/hummel/sources/mhus/nimbus-wb/repos/nimbus-world/server/generated/../client_shared_src/dto/UpdateSKeyNameRequest.ts",
     "imports" : [ ],
     "interfaces" : [ {
       "name" : "mirroring",
@@ -233,7 +233,7 @@
     "classes" : [ ],
     "typeAliases" : [ ]
   }, {
-    "path" : "/Users/hummel/sources/mhus/nimbus-wb/nimbus-world/generated/../client_shared_src/dto/CreateSKeyRequest.ts",
+    "path" : "/Users/hummel/sources/mhus/nimbus-wb/repos/nimbus-world/server/generated/../client_shared_src/dto/CreateSKeyRequest.ts",
     "imports" : [ ],
     "interfaces" : [ {
       "name" : "mirroring",
@@ -320,7 +320,7 @@
     "classes" : [ ],
     "typeAliases" : [ ]
   }, {
-    "path" : "/Users/hummel/sources/mhus/nimbus-wb/nimbus-world/generated/../client_shared_src/scrawl/ScriptActionDefinition.ts",
+    "path" : "/Users/hummel/sources/mhus/nimbus-wb/repos/nimbus-world/server/generated/../client_shared_src/scrawl/ScriptActionDefinition.ts",
     "imports" : [ "./ScrawlScript" ],
     "interfaces" : [ {
       "name" : "ScriptActionDefinition",
@@ -360,7 +360,7 @@
     "classes" : [ ],
     "typeAliases" : [ ]
   }, {
-    "path" : "/Users/hummel/sources/mhus/nimbus-wb/nimbus-world/generated/../client_shared_src/scrawl/ScrawlStep.ts",
+    "path" : "/Users/hummel/sources/mhus/nimbus-wb/repos/nimbus-world/server/generated/../client_shared_src/scrawl/ScrawlStep.ts",
     "imports" : [ "./ScrawlCondition", "./ScrawlTypes" ],
     "interfaces" : [ {
       "name" : "StepPlay",
@@ -774,7 +774,7 @@
       "target" : null
     } ]
   }, {
-    "path" : "/Users/hummel/sources/mhus/nimbus-wb/nimbus-world/generated/../client_shared_src/scrawl/ScrawlTypes.ts",
+    "path" : "/Users/hummel/sources/mhus/nimbus-wb/repos/nimbus-world/server/generated/../client_shared_src/scrawl/ScrawlTypes.ts",
     "imports" : [ "../types/Vector3" ],
     "interfaces" : [ {
       "name" : "ScrawlSubject",
@@ -839,7 +839,7 @@
       "target" : null
     } ]
   }, {
-    "path" : "/Users/hummel/sources/mhus/nimbus-wb/nimbus-world/generated/../client_shared_src/scrawl/ScrawlScript.ts",
+    "path" : "/Users/hummel/sources/mhus/nimbus-wb/repos/nimbus-world/server/generated/../client_shared_src/scrawl/ScrawlScript.ts",
     "imports" : [ "./ScrawlStep", "./ScrawlTypes" ],
     "interfaces" : [ {
       "name" : "ScrawlParameterDefinition",
@@ -969,7 +969,7 @@
     "classes" : [ ],
     "typeAliases" : [ ]
   }, {
-    "path" : "/Users/hummel/sources/mhus/nimbus-wb/nimbus-world/generated/../client_shared_src/scrawl/ScrawlCondition.ts",
+    "path" : "/Users/hummel/sources/mhus/nimbus-wb/repos/nimbus-world/server/generated/../client_shared_src/scrawl/ScrawlCondition.ts",
     "imports" : [ ],
     "interfaces" : [ {
       "name" : "CondVarEquals",
@@ -1126,14 +1126,14 @@
       "target" : null
     } ]
   }, {
-    "path" : "/Users/hummel/sources/mhus/nimbus-wb/nimbus-world/generated/../client_shared_src/scrawl/index.ts",
+    "path" : "/Users/hummel/sources/mhus/nimbus-wb/repos/nimbus-world/server/generated/../client_shared_src/scrawl/index.ts",
     "imports" : [ ],
     "interfaces" : [ ],
     "enums" : [ ],
     "classes" : [ ],
     "typeAliases" : [ ]
   }, {
-    "path" : "/Users/hummel/sources/mhus/nimbus-wb/nimbus-world/generated/../client_shared_src/types/EntityData.ts",
+    "path" : "/Users/hummel/sources/mhus/nimbus-wb/repos/nimbus-world/server/generated/../client_shared_src/types/EntityData.ts",
     "imports" : [ "./Vector3", "./Rotation", "./BlockModifier" ],
     "interfaces" : [ {
       "name" : "PoseAnimation",
@@ -1935,7 +1935,7 @@
       "target" : null
     } ]
   }, {
-    "path" : "/Users/hummel/sources/mhus/nimbus-wb/nimbus-world/generated/../client_shared_src/types/Item.ts",
+    "path" : "/Users/hummel/sources/mhus/nimbus-wb/repos/nimbus-world/server/generated/../client_shared_src/types/Item.ts",
     "imports" : [ "../scrawl/ScriptActionDefinition" ],
     "interfaces" : [ {
       "name" : "FullItem",
@@ -2074,7 +2074,7 @@
       "target" : null
     } ]
   }, {
-    "path" : "/Users/hummel/sources/mhus/nimbus-wb/nimbus-world/generated/../client_shared_src/types/Vector3Color.ts",
+    "path" : "/Users/hummel/sources/mhus/nimbus-wb/repos/nimbus-world/server/generated/../client_shared_src/types/Vector3Color.ts",
     "imports" : [ ],
     "interfaces" : [ {
       "name" : "Vector3Color",
@@ -2114,7 +2114,7 @@
     "classes" : [ ],
     "typeAliases" : [ ]
   }, {
-    "path" : "/Users/hummel/sources/mhus/nimbus-wb/nimbus-world/generated/../client_shared_src/types/ChunkData.ts",
+    "path" : "/Users/hummel/sources/mhus/nimbus-wb/repos/nimbus-world/server/generated/../client_shared_src/types/ChunkData.ts",
     "imports" : [ "./Block", "./ItemBlockRef", "./Backdrop", "./AreaData" ],
     "interfaces" : [ {
       "name" : "ChunkData",
@@ -2245,7 +2245,7 @@
       "target" : null
     } ]
   }, {
-    "path" : "/Users/hummel/sources/mhus/nimbus-wb/nimbus-world/generated/../client_shared_src/types/PlayerMovementState.ts",
+    "path" : "/Users/hummel/sources/mhus/nimbus-wb/repos/nimbus-world/server/generated/../client_shared_src/types/PlayerMovementState.ts",
     "imports" : [ ],
     "interfaces" : [ {
       "name" : "PlayerMovementStateChangedEvent",
@@ -2309,7 +2309,7 @@
     "classes" : [ ],
     "typeAliases" : [ ]
   }, {
-    "path" : "/Users/hummel/sources/mhus/nimbus-wb/nimbus-world/generated/../client_shared_src/types/BlockMetadata.ts",
+    "path" : "/Users/hummel/sources/mhus/nimbus-wb/repos/nimbus-world/server/generated/../client_shared_src/types/BlockMetadata.ts",
     "imports" : [ ],
     "interfaces" : [ {
       "name" : "BlockMetadata",
@@ -2363,7 +2363,7 @@
     "classes" : [ ],
     "typeAliases" : [ ]
   }, {
-    "path" : "/Users/hummel/sources/mhus/nimbus-wb/nimbus-world/generated/../client_shared_src/types/Area.ts",
+    "path" : "/Users/hummel/sources/mhus/nimbus-wb/repos/nimbus-world/server/generated/../client_shared_src/types/Area.ts",
     "imports" : [ "./Vector3Int" ],
     "interfaces" : [ {
       "name" : "Area",
@@ -2389,7 +2389,7 @@
     "classes" : [ ],
     "typeAliases" : [ ]
   }, {
-    "path" : "/Users/hummel/sources/mhus/nimbus-wb/nimbus-world/generated/../client_shared_src/types/Rotation.ts",
+    "path" : "/Users/hummel/sources/mhus/nimbus-wb/repos/nimbus-world/server/generated/../client_shared_src/types/Rotation.ts",
     "imports" : [ "./Vector3" ],
     "interfaces" : [ {
       "name" : "Rotation",
@@ -2422,7 +2422,7 @@
     "classes" : [ ],
     "typeAliases" : [ ]
   }, {
-    "path" : "/Users/hummel/sources/mhus/nimbus-wb/nimbus-world/generated/../client_shared_src/types/AnimationData.ts",
+    "path" : "/Users/hummel/sources/mhus/nimbus-wb/repos/nimbus-world/server/generated/../client_shared_src/types/AnimationData.ts",
     "imports" : [ "./Vector3" ],
     "interfaces" : [ {
       "name" : "AnimationEffect",
@@ -2808,7 +2808,7 @@
       "target" : null
     } ]
   }, {
-    "path" : "/Users/hummel/sources/mhus/nimbus-wb/nimbus-world/generated/../client_shared_src/types/ItemBlockRef.ts",
+    "path" : "/Users/hummel/sources/mhus/nimbus-wb/repos/nimbus-world/server/generated/../client_shared_src/types/ItemBlockRef.ts",
     "imports" : [ "./Vector3" ],
     "interfaces" : [ {
       "name" : "ItemBlockRef",
@@ -2876,7 +2876,7 @@
     "classes" : [ ],
     "typeAliases" : [ ]
   }, {
-    "path" : "/Users/hummel/sources/mhus/nimbus-wb/nimbus-world/generated/../client_shared_src/types/Block.ts",
+    "path" : "/Users/hummel/sources/mhus/nimbus-wb/repos/nimbus-world/server/generated/../client_shared_src/types/Block.ts",
     "imports" : [ "./Vector3", "./BlockMetadata", "./BlockModifier", "./RotationXY" ],
     "interfaces" : [ {
       "name" : "FaceVisibility",
@@ -3010,7 +3010,7 @@
       "target" : null
     } ]
   }, {
-    "path" : "/Users/hummel/sources/mhus/nimbus-wb/nimbus-world/generated/../client_shared_src/types/Vector2Pair.ts",
+    "path" : "/Users/hummel/sources/mhus/nimbus-wb/repos/nimbus-world/server/generated/../client_shared_src/types/Vector2Pair.ts",
     "imports" : [ "./Vector2" ],
     "interfaces" : [ {
       "name" : "Vector2Pair",
@@ -3036,7 +3036,7 @@
     "classes" : [ ],
     "typeAliases" : [ ]
   }, {
-    "path" : "/Users/hummel/sources/mhus/nimbus-wb/nimbus-world/generated/../client_shared_src/types/RegionItemInfo.ts",
+    "path" : "/Users/hummel/sources/mhus/nimbus-wb/repos/nimbus-world/server/generated/../client_shared_src/types/RegionItemInfo.ts",
     "imports" : [ ],
     "interfaces" : [ {
       "name" : "mirroring",
@@ -3095,7 +3095,7 @@
     "classes" : [ ],
     "typeAliases" : [ ]
   }, {
-    "path" : "/Users/hummel/sources/mhus/nimbus-wb/nimbus-world/generated/../client_shared_src/types/Shape.ts",
+    "path" : "/Users/hummel/sources/mhus/nimbus-wb/repos/nimbus-world/server/generated/../client_shared_src/types/Shape.ts",
     "imports" : [ ],
     "interfaces" : [ ],
     "enums" : [ {
@@ -3196,7 +3196,7 @@
     "classes" : [ ],
     "typeAliases" : [ ]
   }, {
-    "path" : "/Users/hummel/sources/mhus/nimbus-wb/nimbus-world/generated/../client_shared_src/types/Modal.ts",
+    "path" : "/Users/hummel/sources/mhus/nimbus-wb/repos/nimbus-world/server/generated/../client_shared_src/types/Modal.ts",
     "imports" : [ ],
     "interfaces" : [ ],
     "enums" : [ {
@@ -3287,7 +3287,7 @@
       "target" : null
     } ]
   }, {
-    "path" : "/Users/hummel/sources/mhus/nimbus-wb/nimbus-world/generated/../client_shared_src/types/HexData.ts",
+    "path" : "/Users/hummel/sources/mhus/nimbus-wb/repos/nimbus-world/server/generated/../client_shared_src/types/HexData.ts",
     "imports" : [ "./HexVector2", "./Area" ],
     "interfaces" : [ {
       "name" : "HexGrid",
@@ -3355,7 +3355,7 @@
     "classes" : [ ],
     "typeAliases" : [ ]
   }, {
-    "path" : "/Users/hummel/sources/mhus/nimbus-wb/nimbus-world/generated/../client_shared_src/types/BlockModifier.ts",
+    "path" : "/Users/hummel/sources/mhus/nimbus-wb/repos/nimbus-world/server/generated/../client_shared_src/types/BlockModifier.ts",
     "imports" : [ "./Shape", "./Vector3", "./RotationXY" ],
     "interfaces" : [ {
       "name" : "serves",
@@ -3940,7 +3940,7 @@
       "target" : null
     } ]
   }, {
-    "path" : "/Users/hummel/sources/mhus/nimbus-wb/nimbus-world/generated/../client_shared_src/types/RotationXY.ts",
+    "path" : "/Users/hummel/sources/mhus/nimbus-wb/repos/nimbus-world/server/generated/../client_shared_src/types/RotationXY.ts",
     "imports" : [ ],
     "interfaces" : [ {
       "name" : "RotationXY",
@@ -3966,7 +3966,7 @@
     "classes" : [ ],
     "typeAliases" : [ ]
   }, {
-    "path" : "/Users/hummel/sources/mhus/nimbus-wb/nimbus-world/generated/../client_shared_src/types/ShortcutDefinition.ts",
+    "path" : "/Users/hummel/sources/mhus/nimbus-wb/repos/nimbus-world/server/generated/../client_shared_src/types/ShortcutDefinition.ts",
     "imports" : [ ],
     "interfaces" : [ {
       "name" : "ShortcutDefinition",
@@ -4043,7 +4043,7 @@
       "target" : null
     } ]
   }, {
-    "path" : "/Users/hummel/sources/mhus/nimbus-wb/nimbus-world/generated/../client_shared_src/types/ItemRef.ts",
+    "path" : "/Users/hummel/sources/mhus/nimbus-wb/repos/nimbus-world/server/generated/../client_shared_src/types/ItemRef.ts",
     "imports" : [ ],
     "interfaces" : [ {
       "name" : "ItemRef",
@@ -4083,7 +4083,7 @@
     "classes" : [ ],
     "typeAliases" : [ ]
   }, {
-    "path" : "/Users/hummel/sources/mhus/nimbus-wb/nimbus-world/generated/../client_shared_src/types/VitalsData.ts",
+    "path" : "/Users/hummel/sources/mhus/nimbus-wb/repos/nimbus-world/server/generated/../client_shared_src/types/VitalsData.ts",
     "imports" : [ ],
     "interfaces" : [ {
       "name" : "VitalsData",
@@ -4172,7 +4172,7 @@
     "classes" : [ ],
     "typeAliases" : [ ]
   }, {
-    "path" : "/Users/hummel/sources/mhus/nimbus-wb/nimbus-world/generated/../client_shared_src/types/EditSettings.ts",
+    "path" : "/Users/hummel/sources/mhus/nimbus-wb/repos/nimbus-world/server/generated/../client_shared_src/types/EditSettings.ts",
     "imports" : [ "./Block" ],
     "interfaces" : [ {
       "name" : "PaletteBlockDefinition",
@@ -4238,7 +4238,7 @@
     "classes" : [ ],
     "typeAliases" : [ ]
   }, {
-    "path" : "/Users/hummel/sources/mhus/nimbus-wb/nimbus-world/generated/../client_shared_src/types/TeamData.ts",
+    "path" : "/Users/hummel/sources/mhus/nimbus-wb/repos/nimbus-world/server/generated/../client_shared_src/types/TeamData.ts",
     "imports" : [ "./Vector3" ],
     "interfaces" : [ {
       "name" : "TeamMember",
@@ -4330,7 +4330,7 @@
     "classes" : [ ],
     "typeAliases" : [ ]
   }, {
-    "path" : "/Users/hummel/sources/mhus/nimbus-wb/nimbus-world/generated/../client_shared_src/types/Vector3.ts",
+    "path" : "/Users/hummel/sources/mhus/nimbus-wb/repos/nimbus-world/server/generated/../client_shared_src/types/Vector3.ts",
     "imports" : [ ],
     "interfaces" : [ {
       "name" : "Vector3",
@@ -4363,7 +4363,7 @@
     "classes" : [ ],
     "typeAliases" : [ ]
   }, {
-    "path" : "/Users/hummel/sources/mhus/nimbus-wb/nimbus-world/generated/../client_shared_src/types/Backdrop.ts",
+    "path" : "/Users/hummel/sources/mhus/nimbus-wb/repos/nimbus-world/server/generated/../client_shared_src/types/Backdrop.ts",
     "imports" : [ ],
     "interfaces" : [ {
       "name" : "Backdrop",
@@ -4501,7 +4501,7 @@
     "classes" : [ ],
     "typeAliases" : [ ]
   }, {
-    "path" : "/Users/hummel/sources/mhus/nimbus-wb/nimbus-world/generated/../client_shared_src/types/Vector3Int.ts",
+    "path" : "/Users/hummel/sources/mhus/nimbus-wb/repos/nimbus-world/server/generated/../client_shared_src/types/Vector3Int.ts",
     "imports" : [ ],
     "interfaces" : [ {
       "name" : "Vector3Int",
@@ -4534,7 +4534,7 @@
     "classes" : [ ],
     "typeAliases" : [ ]
   }, {
-    "path" : "/Users/hummel/sources/mhus/nimbus-wb/nimbus-world/generated/../client_shared_src/types/ClientEntity.ts",
+    "path" : "/Users/hummel/sources/mhus/nimbus-wb/repos/nimbus-world/server/generated/../client_shared_src/types/ClientEntity.ts",
     "imports" : [ "./EntityData", "./Vector3", "./Rotation" ],
     "interfaces" : [ {
       "name" : "ClientEntity",
@@ -4637,7 +4637,7 @@
     "classes" : [ ],
     "typeAliases" : [ ]
   }, {
-    "path" : "/Users/hummel/sources/mhus/nimbus-wb/nimbus-world/generated/../client_shared_src/types/Vector2.ts",
+    "path" : "/Users/hummel/sources/mhus/nimbus-wb/repos/nimbus-world/server/generated/../client_shared_src/types/Vector2.ts",
     "imports" : [ ],
     "interfaces" : [ {
       "name" : "Vector2",
@@ -4663,7 +4663,7 @@
     "classes" : [ ],
     "typeAliases" : [ ]
   }, {
-    "path" : "/Users/hummel/sources/mhus/nimbus-wb/nimbus-world/generated/../client_shared_src/types/HexVector2.ts",
+    "path" : "/Users/hummel/sources/mhus/nimbus-wb/repos/nimbus-world/server/generated/../client_shared_src/types/HexVector2.ts",
     "imports" : [ ],
     "interfaces" : [ {
       "name" : "HexVector2",
@@ -4689,7 +4689,7 @@
     "classes" : [ ],
     "typeAliases" : [ ]
   }, {
-    "path" : "/Users/hummel/sources/mhus/nimbus-wb/nimbus-world/generated/../client_shared_src/types/Vector3Pair.ts",
+    "path" : "/Users/hummel/sources/mhus/nimbus-wb/repos/nimbus-world/server/generated/../client_shared_src/types/Vector3Pair.ts",
     "imports" : [ "./Vector3" ],
     "interfaces" : [ {
       "name" : "Vector3Pair",
@@ -4715,7 +4715,7 @@
     "classes" : [ ],
     "typeAliases" : [ ]
   }, {
-    "path" : "/Users/hummel/sources/mhus/nimbus-wb/nimbus-world/generated/../client_shared_src/types/ServerEntitySpawnDefinition.ts",
+    "path" : "/Users/hummel/sources/mhus/nimbus-wb/repos/nimbus-world/server/generated/../client_shared_src/types/ServerEntitySpawnDefinition.ts",
     "imports" : [ "./Vector3", "./Rotation", "./EntityData", "./Vector2" ],
     "interfaces" : [ {
       "name" : "BehaviorConfig",
@@ -4891,7 +4891,7 @@
     "classes" : [ ],
     "typeAliases" : [ ]
   }, {
-    "path" : "/Users/hummel/sources/mhus/nimbus-wb/nimbus-world/generated/../client_shared_src/types/BlockType.ts",
+    "path" : "/Users/hummel/sources/mhus/nimbus-wb/repos/nimbus-world/server/generated/../client_shared_src/types/BlockType.ts",
     "imports" : [ "./BlockModifier" ],
     "interfaces" : [ {
       "name" : "BlockType",
@@ -5043,7 +5043,7 @@
     "classes" : [ ],
     "typeAliases" : [ ]
   }, {
-    "path" : "/Users/hummel/sources/mhus/nimbus-wb/nimbus-world/generated/../client_shared_src/types/EditAction.ts",
+    "path" : "/Users/hummel/sources/mhus/nimbus-wb/repos/nimbus-world/server/generated/../client_shared_src/types/EditAction.ts",
     "imports" : [ ],
     "interfaces" : [ ],
     "enums" : [ {
@@ -5078,14 +5078,14 @@
     "classes" : [ ],
     "typeAliases" : [ ]
   }, {
-    "path" : "/Users/hummel/sources/mhus/nimbus-wb/nimbus-world/generated/../client_shared_src/types/index.ts",
+    "path" : "/Users/hummel/sources/mhus/nimbus-wb/repos/nimbus-world/server/generated/../client_shared_src/types/index.ts",
     "imports" : [ ],
     "interfaces" : [ ],
     "enums" : [ ],
     "classes" : [ ],
     "typeAliases" : [ ]
   }, {
-    "path" : "/Users/hummel/sources/mhus/nimbus-wb/nimbus-world/generated/../client_shared_src/types/AreaData.ts",
+    "path" : "/Users/hummel/sources/mhus/nimbus-wb/repos/nimbus-world/server/generated/../client_shared_src/types/AreaData.ts",
     "imports" : [ "./Vector3" ],
     "interfaces" : [ {
       "name" : "AreaData",
@@ -5118,7 +5118,7 @@
     "classes" : [ ],
     "typeAliases" : [ ]
   }, {
-    "path" : "/Users/hummel/sources/mhus/nimbus-wb/nimbus-world/generated/../client_shared_src/types/Color.ts",
+    "path" : "/Users/hummel/sources/mhus/nimbus-wb/repos/nimbus-world/server/generated/../client_shared_src/types/Color.ts",
     "imports" : [ ],
     "interfaces" : [ ],
     "enums" : [ ],
@@ -5140,7 +5140,7 @@
       "target" : null
     } ]
   }, {
-    "path" : "/Users/hummel/sources/mhus/nimbus-wb/nimbus-world/generated/../client_shared_src/types/World.ts",
+    "path" : "/Users/hummel/sources/mhus/nimbus-wb/repos/nimbus-world/server/generated/../client_shared_src/types/World.ts",
     "imports" : [ "./Vector3", "./Area", "./Rotation" ],
     "interfaces" : [ {
       "name" : "WorldInfo",
@@ -6260,7 +6260,7 @@
     "classes" : [ ],
     "typeAliases" : [ ]
   }, {
-    "path" : "/Users/hummel/sources/mhus/nimbus-wb/nimbus-world/generated/../client_shared_src/types/TargetingTypes.ts",
+    "path" : "/Users/hummel/sources/mhus/nimbus-wb/repos/nimbus-world/server/generated/../client_shared_src/types/TargetingTypes.ts",
     "imports" : [ "./ClientEntity" ],
     "interfaces" : [ {
       "name" : "ClientBlock",
@@ -6507,7 +6507,7 @@
       "target" : null
     } ]
   }, {
-    "path" : "/Users/hummel/sources/mhus/nimbus-wb/nimbus-world/generated/../client_shared_src/types/Vector2Int.ts",
+    "path" : "/Users/hummel/sources/mhus/nimbus-wb/repos/nimbus-world/server/generated/../client_shared_src/types/Vector2Int.ts",
     "imports" : [ ],
     "interfaces" : [ {
       "name" : "Vector2Int",
@@ -6533,7 +6533,7 @@
     "classes" : [ ],
     "typeAliases" : [ ]
   }, {
-    "path" : "/Users/hummel/sources/mhus/nimbus-wb/nimbus-world/generated/../client_shared_src/types/PlayerInfo.ts",
+    "path" : "/Users/hummel/sources/mhus/nimbus-wb/repos/nimbus-world/server/generated/../client_shared_src/types/PlayerInfo.ts",
     "imports" : [ "./ShortcutDefinition" ],
     "interfaces" : [ {
       "name" : "MovementStateDomensions",
@@ -6719,21 +6719,21 @@
       "target" : null
     } ]
   }, {
-    "path" : "/Users/hummel/sources/mhus/nimbus-wb/nimbus-world/generated/../client_shared_src/constants/NimbusConstants.ts",
+    "path" : "/Users/hummel/sources/mhus/nimbus-wb/repos/nimbus-world/server/generated/../client_shared_src/constants/NimbusConstants.ts",
     "imports" : [ ],
     "interfaces" : [ ],
     "enums" : [ ],
     "classes" : [ ],
     "typeAliases" : [ ]
   }, {
-    "path" : "/Users/hummel/sources/mhus/nimbus-wb/nimbus-world/generated/../client_shared_src/constants/index.ts",
+    "path" : "/Users/hummel/sources/mhus/nimbus-wb/repos/nimbus-world/server/generated/../client_shared_src/constants/index.ts",
     "imports" : [ ],
     "interfaces" : [ ],
     "enums" : [ ],
     "classes" : [ ],
     "typeAliases" : [ ]
   }, {
-    "path" : "/Users/hummel/sources/mhus/nimbus-wb/nimbus-world/generated/../client_shared_src/network/messages/LogoutMessage.ts",
+    "path" : "/Users/hummel/sources/mhus/nimbus-wb/repos/nimbus-world/server/generated/../client_shared_src/network/messages/LogoutMessage.ts",
     "imports" : [ "../BaseMessage" ],
     "interfaces" : [ ],
     "enums" : [ ],
@@ -6743,7 +6743,7 @@
       "target" : null
     } ]
   }, {
-    "path" : "/Users/hummel/sources/mhus/nimbus-wb/nimbus-world/generated/../client_shared_src/network/messages/AnimationMessage.ts",
+    "path" : "/Users/hummel/sources/mhus/nimbus-wb/repos/nimbus-world/server/generated/../client_shared_src/network/messages/AnimationMessage.ts",
     "imports" : [ "../BaseMessage", "../../types/AnimationData" ],
     "interfaces" : [ {
       "name" : "AnimationStartData",
@@ -6786,7 +6786,7 @@
       "target" : null
     } ]
   }, {
-    "path" : "/Users/hummel/sources/mhus/nimbus-wb/nimbus-world/generated/../client_shared_src/network/messages/CommandMessage.ts",
+    "path" : "/Users/hummel/sources/mhus/nimbus-wb/repos/nimbus-world/server/generated/../client_shared_src/network/messages/CommandMessage.ts",
     "imports" : [ "../BaseMessage" ],
     "interfaces" : [ {
       "name" : "CommandData",
@@ -6859,7 +6859,7 @@
       "target" : null
     } ]
   }, {
-    "path" : "/Users/hummel/sources/mhus/nimbus-wb/nimbus-world/generated/../client_shared_src/network/messages/ServerCommandMessage.ts",
+    "path" : "/Users/hummel/sources/mhus/nimbus-wb/repos/nimbus-world/server/generated/../client_shared_src/network/messages/ServerCommandMessage.ts",
     "imports" : [ "../BaseMessage" ],
     "interfaces" : [ {
       "name" : "SingleServerCommandData",
@@ -6950,7 +6950,7 @@
       "target" : null
     } ]
   }, {
-    "path" : "/Users/hummel/sources/mhus/nimbus-wb/nimbus-world/generated/../client_shared_src/network/messages/BlockMessage.ts",
+    "path" : "/Users/hummel/sources/mhus/nimbus-wb/repos/nimbus-world/server/generated/../client_shared_src/network/messages/BlockMessage.ts",
     "imports" : [ "../BaseMessage", "../../types/Block" ],
     "interfaces" : [ {
       "name" : "BlockProgressStatusData",
@@ -7046,7 +7046,7 @@
       "target" : null
     } ]
   }, {
-    "path" : "/Users/hummel/sources/mhus/nimbus-wb/nimbus-world/generated/../client_shared_src/network/messages/InteractionMessage.ts",
+    "path" : "/Users/hummel/sources/mhus/nimbus-wb/repos/nimbus-world/server/generated/../client_shared_src/network/messages/InteractionMessage.ts",
     "imports" : [ "../BaseMessage" ],
     "interfaces" : [ {
       "name" : "InteractionRequestData",
@@ -7159,7 +7159,7 @@
       "target" : null
     } ]
   }, {
-    "path" : "/Users/hummel/sources/mhus/nimbus-wb/nimbus-world/generated/../client_shared_src/network/messages/ChunkMessage.ts",
+    "path" : "/Users/hummel/sources/mhus/nimbus-wb/repos/nimbus-world/server/generated/../client_shared_src/network/messages/ChunkMessage.ts",
     "imports" : [ "../BaseMessage", "../../types/Block", "../../types/AreaData", "../../types/Backdrop", "../../types" ],
     "interfaces" : [ {
       "name" : "ChunkCoordinate",
@@ -7347,7 +7347,7 @@
       "target" : null
     } ]
   }, {
-    "path" : "/Users/hummel/sources/mhus/nimbus-wb/nimbus-world/generated/../client_shared_src/network/messages/EffectTriggerMessage.ts",
+    "path" : "/Users/hummel/sources/mhus/nimbus-wb/repos/nimbus-world/server/generated/../client_shared_src/network/messages/EffectTriggerMessage.ts",
     "imports" : [ "../BaseMessage", "../../scrawl/ScriptActionDefinition", "./ChunkMessage" ],
     "interfaces" : [ {
       "name" : "EffectTriggerData",
@@ -7393,7 +7393,7 @@
       "target" : null
     } ]
   }, {
-    "path" : "/Users/hummel/sources/mhus/nimbus-wb/nimbus-world/generated/../client_shared_src/network/messages/EntityMessage.ts",
+    "path" : "/Users/hummel/sources/mhus/nimbus-wb/repos/nimbus-world/server/generated/../client_shared_src/network/messages/EntityMessage.ts",
     "imports" : [ "../BaseMessage", "../../types/EntityData", "../../types/Vector3", "../../types/Rotation" ],
     "interfaces" : [ {
       "name" : "EntityPositionUpdateData",
@@ -7536,7 +7536,7 @@
       "target" : null
     } ]
   }, {
-    "path" : "/Users/hummel/sources/mhus/nimbus-wb/nimbus-world/generated/../client_shared_src/network/messages/WorldMessage.ts",
+    "path" : "/Users/hummel/sources/mhus/nimbus-wb/repos/nimbus-world/server/generated/../client_shared_src/network/messages/WorldMessage.ts",
     "imports" : [ "../BaseMessage" ],
     "interfaces" : [ {
       "name" : "WorldStatusUpdateData",
@@ -7558,7 +7558,7 @@
       "target" : null
     } ]
   }, {
-    "path" : "/Users/hummel/sources/mhus/nimbus-wb/nimbus-world/generated/../client_shared_src/network/messages/PingMessage.ts",
+    "path" : "/Users/hummel/sources/mhus/nimbus-wb/repos/nimbus-world/server/generated/../client_shared_src/network/messages/PingMessage.ts",
     "imports" : [ "../BaseMessage" ],
     "interfaces" : [ {
       "name" : "PingData",
@@ -7620,14 +7620,14 @@
     "classes" : [ ],
     "typeAliases" : [ ]
   }, {
-    "path" : "/Users/hummel/sources/mhus/nimbus-wb/nimbus-world/generated/../client_shared_src/network/messages/index.ts",
+    "path" : "/Users/hummel/sources/mhus/nimbus-wb/repos/nimbus-world/server/generated/../client_shared_src/network/messages/index.ts",
     "imports" : [ ],
     "interfaces" : [ ],
     "enums" : [ ],
     "classes" : [ ],
     "typeAliases" : [ ]
   }, {
-    "path" : "/Users/hummel/sources/mhus/nimbus-wb/nimbus-world/generated/../client_shared_src/network/messages/EffectParameterUpdateMessage.ts",
+    "path" : "/Users/hummel/sources/mhus/nimbus-wb/repos/nimbus-world/server/generated/../client_shared_src/network/messages/EffectParameterUpdateMessage.ts",
     "imports" : [ "../BaseMessage", "./ChunkMessage", "../../types/TargetingTypes" ],
     "interfaces" : [ {
       "name" : "EffectParameterUpdateData",
@@ -7680,7 +7680,7 @@
       "target" : null
     } ]
   }, {
-    "path" : "/Users/hummel/sources/mhus/nimbus-wb/nimbus-world/generated/../client_shared_src/network/messages/UserMessage.ts",
+    "path" : "/Users/hummel/sources/mhus/nimbus-wb/repos/nimbus-world/server/generated/../client_shared_src/network/messages/UserMessage.ts",
     "imports" : [ "../BaseMessage", "../../types/Rotation" ],
     "interfaces" : [ {
       "name" : "UserMovementData",
@@ -7783,7 +7783,7 @@
       "target" : null
     } ]
   }, {
-    "path" : "/Users/hummel/sources/mhus/nimbus-wb/nimbus-world/generated/../client_shared_src/network/messages/LoginMessage.ts",
+    "path" : "/Users/hummel/sources/mhus/nimbus-wb/repos/nimbus-world/server/generated/../client_shared_src/network/messages/LoginMessage.ts",
     "imports" : [ "../BaseMessage", "../MessageTypes" ],
     "interfaces" : [ {
       "name" : "LoginRequestData",
@@ -7909,7 +7909,7 @@
       "target" : null
     } ]
   }, {
-    "path" : "/Users/hummel/sources/mhus/nimbus-wb/nimbus-world/generated/../client_shared_src/network/MessageTypes.ts",
+    "path" : "/Users/hummel/sources/mhus/nimbus-wb/repos/nimbus-world/server/generated/../client_shared_src/network/MessageTypes.ts",
     "imports" : [ ],
     "interfaces" : [ ],
     "enums" : [ {
@@ -8029,7 +8029,7 @@
     "classes" : [ ],
     "typeAliases" : [ ]
   }, {
-    "path" : "/Users/hummel/sources/mhus/nimbus-wb/nimbus-world/generated/../client_shared_src/network/BaseMessage.ts",
+    "path" : "/Users/hummel/sources/mhus/nimbus-wb/repos/nimbus-world/server/generated/../client_shared_src/network/BaseMessage.ts",
     "imports" : [ "./MessageTypes" ],
     "interfaces" : [ {
       "name" : "BaseMessage",
@@ -8093,14 +8093,14 @@
     "classes" : [ ],
     "typeAliases" : [ ]
   }, {
-    "path" : "/Users/hummel/sources/mhus/nimbus-wb/nimbus-world/generated/../client_shared_src/network/index.ts",
+    "path" : "/Users/hummel/sources/mhus/nimbus-wb/repos/nimbus-world/server/generated/../client_shared_src/network/index.ts",
     "imports" : [ ],
     "interfaces" : [ ],
     "enums" : [ ],
     "classes" : [ ],
     "typeAliases" : [ ]
   }, {
-    "path" : "/Users/hummel/sources/mhus/nimbus-wb/nimbus-world/generated/../client_shared_src/configs/EngineConfiguration.ts",
+    "path" : "/Users/hummel/sources/mhus/nimbus-wb/repos/nimbus-world/server/generated/../client_shared_src/configs/EngineConfiguration.ts",
     "imports" : [ "../types" ],
     "interfaces" : [ {
       "name" : "PlayerBackpack",
@@ -8286,14 +8286,14 @@
     "classes" : [ ],
     "typeAliases" : [ ]
   }, {
-    "path" : "/Users/hummel/sources/mhus/nimbus-wb/nimbus-world/generated/../client_shared_src/configs/index.ts",
+    "path" : "/Users/hummel/sources/mhus/nimbus-wb/repos/nimbus-world/server/generated/../client_shared_src/configs/index.ts",
     "imports" : [ ],
     "interfaces" : [ ],
     "enums" : [ ],
     "classes" : [ ],
     "typeAliases" : [ ]
   }, {
-    "path" : "/Users/hummel/sources/mhus/nimbus-wb/nimbus-world/generated/../client_shared_src/index.ts",
+    "path" : "/Users/hummel/sources/mhus/nimbus-wb/repos/nimbus-world/server/generated/../client_shared_src/index.ts",
     "imports" : [ ],
     "interfaces" : [ ],
     "enums" : [ ],

@@ -34,8 +34,8 @@ RUN apt-get update && apt-get install -y wget && rm -rf /var/lib/apt/lists/*
 # Create a non-root user
 RUN groupadd -r spring && useradd -r -g spring spring
 
-# Copy the built world-player artifact from build stage
-COPY --from=build /build/world-player/target/*.jar app.jar
+# Copy the built world-player artifact from build stage (exec classifier = Spring Boot fat JAR)
+COPY --from=build /build/world-player/target/*-exec.jar app.jar
 
 # Change ownership
 RUN chown -R spring:spring /app
@@ -64,8 +64,8 @@ RUN apt-get update && apt-get install -y wget && rm -rf /var/lib/apt/lists/*
 # Create a non-root user
 RUN groupadd -r spring && useradd -r -g spring spring
 
-# Copy the built world-control artifact from build stage
-COPY --from=build /build/world-control/target/*.jar app.jar
+# Copy the built world-control artifact from build stage (exec classifier = Spring Boot fat JAR)
+COPY --from=build /build/world-control/target/*-exec.jar app.jar
 
 # Change ownership
 RUN chown -R spring:spring /app
@@ -94,8 +94,8 @@ RUN apt-get update && apt-get install -y wget && rm -rf /var/lib/apt/lists/*
 # Create a non-root user
 RUN groupadd -r spring && useradd -r -g spring spring
 
-# Copy the built world-life artifact from build stage
-COPY --from=build /build/world-life/target/*.jar app.jar
+# Copy the built world-life artifact from build stage (exec classifier = Spring Boot fat JAR)
+COPY --from=build /build/world-life/target/*-exec.jar app.jar
 
 # Change ownership
 RUN chown -R spring:spring /app
@@ -124,8 +124,8 @@ RUN apt-get update && apt-get install -y wget && rm -rf /var/lib/apt/lists/*
 # Create a non-root user
 RUN groupadd -r spring && useradd -r -g spring spring
 
-# Copy the built world-generator artifact from build stage
-COPY --from=build /build/world-generator/target/*.jar app.jar
+# Copy the built world-generator artifact from build stage (exec classifier = Spring Boot fat JAR)
+COPY --from=build /build/world-generator/target/*-exec.jar app.jar
 
 # Change ownership
 RUN chown -R spring:spring /app
