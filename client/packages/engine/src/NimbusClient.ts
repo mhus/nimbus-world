@@ -699,6 +699,9 @@ function showErrorMessage(canvas: HTMLCanvasElement, message: string): void {
  * - testQuestNotifications() - Test quest area
  */
 
+// Expose appContext for E2E testing and debugging
+(window as any).__appContextPromise = appContextPromise;
+
 // Make test functions globally available
 (window as any).testNotifications = () => {
   appContextPromise.then((appContext) => {
