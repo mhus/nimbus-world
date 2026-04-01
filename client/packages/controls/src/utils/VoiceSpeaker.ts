@@ -134,7 +134,7 @@ export function parseVoiceDef(voiceDef: string | null | undefined): { voiceIndex
 }
 
 export class VoiceSpeaker {
-  private currentUtterance: SpeechSynthesisUtterance | null = null;
+
   private speaking = false;
   private chunks: string[] = [];
   private chunkIndex = 0;

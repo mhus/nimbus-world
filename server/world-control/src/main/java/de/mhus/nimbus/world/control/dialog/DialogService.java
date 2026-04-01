@@ -291,9 +291,6 @@ public class DialogService {
         String currentNodeId = ctx.getCurrentNodeId();
         DialogNode currentNode = situation.nodes().get(currentNodeId);
 
-        log.info("advanceDialog: currentNode={}, optionIndex={}, totalOptions={}",
-                currentNodeId, optionIndex, currentNode != null ? currentNode.options().size() : -1);
-
         if (currentNode == null) {
             throw new DialogException("Current node not found: " + currentNodeId);
         }
@@ -305,8 +302,6 @@ public class DialogService {
         }
 
         DialogOption selected = allOptions.get(optionIndex);
-
-        log.info("advanceDialog: selected option text='{}', next='{}'", selected.text(), selected.next());
 
         // Verify the selected option is actually visible (conditions pass)
         if (!conditionEvaluator.evaluateAll(selected.conditions(), ctx)) {
