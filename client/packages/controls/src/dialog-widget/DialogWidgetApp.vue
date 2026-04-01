@@ -303,6 +303,10 @@ function handleBeforeUnload() {
   notifyDialogClose();
 }
 
+function handlePageHide() {
+  notifyDialogClose();
+}
+
 // Initialize
 onMounted(async () => {
   const params = new URLSearchParams(window.location.search);
@@ -329,12 +333,14 @@ onMounted(async () => {
 
   loadDialog();
 
-  // Listen for window/iframe close
+  // Listen for window/iframe close — multiple events for reliability
   window.addEventListener('beforeunload', handleBeforeUnload);
+  window.addEventListener('pagehide', handlePageHide);
 });
 
 onBeforeUnmount(() => {
   window.removeEventListener('beforeunload', handleBeforeUnload);
+  window.removeEventListener('pagehide', handlePageHide);
   notifyDialogClose();
 });
 </script>

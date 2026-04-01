@@ -208,6 +208,15 @@
                           v-html="renderMarkdown(message.message)"
                         >
                         </div>
+                        <!-- Speech button for non-player messages -->
+                        <div v-if="message.senderId !== playerId && message.type !== 'error'" class="chat-footer mt-1">
+                          <SpeechPlayer
+                            :text="stripHtml(message.message)"
+                            :voice="defaultVoice"
+                            :settings-volume="speechVolume"
+                            :settings-speed="speechSpeed"
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -398,6 +407,8 @@ import { ref, onMounted, onUnmounted, nextTick, computed } from 'vue';
 import { marked } from 'marked';
 import { useModal } from '@/composables/useModal';
 import { apiService } from '@/services/ApiService';
+import SpeechPlayer from '@/components/SpeechPlayer.vue';
+import type { VoiceInfo } from '@/utils/VoiceSpeaker';
 
 // Types
 interface Chat {
@@ -467,6 +478,17 @@ const error = ref('');
 const newMessage = ref('');
 const showNewChatDialog = ref(false);
 const newChatTitle = ref('');
+
+// Speech settings
+const speechVolume = ref(5);
+const speechSpeed = ref(10);
+const defaultVoice = ref<VoiceInfo>({ lang: 'de', gender: 'D', voiceIndex: 0, rate: 1.0, pitch: 1.0 });
+
+function stripHtml(html: string): string {
+  const div = document.createElement('div');
+  div.innerHTML = html;
+  return div.textContent || div.innerText || '';
+}
 const selectedAgent = ref('');
 const newChatHint = ref('');
 const messagesContainer = ref<HTMLElement | null>(null);
@@ -908,6 +930,16 @@ const formatTime = (dateString: string) => {
 
 // Initialize
 onMounted(async () => {
+  // Load speech settings
+  try {
+    const settingsRes = await apiService.get<any>('/control/player/settings?client=web');
+    const props = settingsRes?.settings?.properties;
+    if (props) {
+      speechVolume.value = parseInt(props['speechVolume']) || 5;
+      speechSpeed.value = parseInt(props['speechSpeed']) || 10;
+    }
+  } catch { /* use defaults */ }
+
   await loadChats();
   await loadAgents();
 

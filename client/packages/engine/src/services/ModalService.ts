@@ -1362,12 +1362,26 @@ export class ModalService {
 
       logger.debug('Opening dialog widget modal', { dialogUrl, progressId });
 
+      // Build close URL to notify server when dialog modal is closed
+      // componentBaseUrl is like "http://localhost:9043/controls/" — strip "/controls/" for API base
+      const apiBaseUrl = componentBaseUrl.replace(/\/controls\/?$/, '');
+      const closeUrl = `${apiBaseUrl}/control/player/dialog/close?progressId=${encodeURIComponent(progressId)}`;
+
       return this.openModal(
         `dialog-${progressId}`,
         'Dialog',
         dialogUrl,
         ModalSizePreset.CENTER_MEDIUM,
-        ModalFlags.CLOSEABLE | ModalFlags.MOVEABLE | ModalFlags.NO_BACKGROUND_LOCK | ModalFlags.RESIZEABLE | ModalFlags.MINIMIZABLE
+        ModalFlags.CLOSEABLE | ModalFlags.MOVEABLE | ModalFlags.NO_BACKGROUND_LOCK | ModalFlags.RESIZEABLE | ModalFlags.MINIMIZABLE,
+        () => {
+          // Notify server that dialog is closed (NPC can resume movement)
+          try {
+            navigator.sendBeacon(closeUrl, '');
+            logger.debug('Sent dialog close notification', { progressId });
+          } catch {
+            fetch(closeUrl, { method: 'POST', credentials: 'include' }).catch(() => {});
+          }
+        }
       );
     } catch (error) {
       throw ExceptionHandler.handleAndRethrow(error, 'ModalService.openDialog', { progressId });

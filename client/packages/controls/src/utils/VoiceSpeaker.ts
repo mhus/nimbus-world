@@ -154,8 +154,11 @@ export class VoiceSpeaker {
     this.currentVoiceInfo = voice;
     this.volume = clamp(volume, 0, 1);
 
+    // Clean text for speech: remove markdown/special characters
+    const cleanedText = cleanTextForSpeech(text);
+
     // Split into sentences for Chrome 15s workaround
-    this.chunks = splitIntoSentences(text);
+    this.chunks = splitIntoSentences(cleanedText);
     this.chunkIndex = 0;
     this.speaking = true;
 
@@ -220,6 +223,16 @@ export class VoiceSpeaker {
       window.speechSynthesis.speak(utterance);
     });
   }
+}
+
+/** Clean text for speech synthesis: remove markdown and special characters */
+function cleanTextForSpeech(text: string): string {
+  return text
+    .replace(/[*_~`#>|]/g, ' ')   // markdown: bold, italic, strikethrough, code, headers, quotes, tables
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')  // markdown links: [text](url) → text
+    .replace(/<[^>]*>/g, ' ')      // HTML tags
+    .replace(/\s{2,}/g, ' ')       // collapse multiple spaces
+    .trim();
 }
 
 /** Split text into sentences, keeping chunks under ~200 chars to stay within Chrome limits */
