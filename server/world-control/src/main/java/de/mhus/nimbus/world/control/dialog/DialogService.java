@@ -278,7 +278,8 @@ public class DialogService {
                 text,
                 visibleOptions,
                 freeTextEnabled,
-                finished
+                finished,
+                buildVoiceInfo(ctx)
         );
     }
 
@@ -323,7 +324,8 @@ public class DialogService {
                     null,
                     List.of(),
                     false,
-                    true
+                    true,
+                    null
             );
         }
 
@@ -440,6 +442,41 @@ public class DialogService {
     }
 
     // --- Private helpers ---
+
+    /**
+     * Build VoiceInfo from context: lang from RUser, gender from Entity, voice params from NPC profile or entity.
+     */
+    VoiceInfo buildVoiceInfo(DialogContext ctx) {
+        String lang = ctx.getLanguage() != null ? ctx.getLanguage() : "de";
+        String gender = "D";
+        if (ctx.getNpcEntity() != null && ctx.getNpcEntity().getPublicData() != null
+                && ctx.getNpcEntity().getPublicData().getGender() != null) {
+            gender = ctx.getNpcEntity().getPublicData().getGender();
+        }
+
+        // Parse voice definition from NPC profile or entity server params
+        int voiceIndex = 0;
+        double rate = 1.0;
+        double pitch = 1.0;
+
+        String voiceDef = null;
+        if (ctx.getNpcProfile() != null) {
+            // Profile may have a "voice" field — access via raw data
+            // NpcProfile record doesn't have voice field yet, check entity server params
+        }
+        if (ctx.getNpcEntity() != null && ctx.getNpcEntity().getServer() != null) {
+            voiceDef = ctx.getNpcEntity().getServer().get("voice");
+        }
+
+        if (voiceDef != null && !voiceDef.isBlank()) {
+            String[] parts = voiceDef.split(":");
+            if (parts.length > 0) try { voiceIndex = Integer.parseInt(parts[0]); } catch (NumberFormatException ignored) {}
+            if (parts.length > 1) try { rate = Double.parseDouble(parts[1]); } catch (NumberFormatException ignored) {}
+            if (parts.length > 2) try { pitch = Double.parseDouble(parts[2]); } catch (NumberFormatException ignored) {}
+        }
+
+        return new VoiceInfo(lang, gender, voiceIndex, rate, pitch);
+    }
 
     private boolean isFreeTextEnabled(DialogContext ctx, DialogNode node) {
         // Node level override

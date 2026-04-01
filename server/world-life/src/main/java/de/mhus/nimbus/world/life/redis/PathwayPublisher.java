@@ -81,7 +81,7 @@ public class PathwayPublisher {
                 updateChunkEntityIndex(worldId, pathway.getEntityId(), affectedChunks);
             }
 
-            log.debug("World {}: Published {} pathways to Redis, affecting {} chunks",
+            log.trace("World {}: Published {} pathways to Redis, affecting {} chunks",
                     worldId, pathways.size(), affectedChunks.size());
 
         } catch (Exception e) {

@@ -34,9 +34,17 @@
         <div v-else class="w-16 h-16 rounded-lg bg-gray-700 flex items-center justify-center flex-shrink-0">
           <span class="text-2xl text-gray-500">?</span>
         </div>
-        <div>
+        <div class="flex-1">
           <h1 class="text-xl font-bold text-amber-400">{{ dialog.npcTitle }}</h1>
         </div>
+        <SpeechPlayer
+          ref="speechPlayerRef"
+          :text="dialog.text || ''"
+          :voice="dialog.voice"
+          :auto-play="autoSpeech"
+          :settings-volume="speechVolume"
+          :settings-speed="speechSpeed"
+        />
       </div>
 
       <!-- NPC Text -->
@@ -117,6 +125,8 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue';
 import { ApiService } from '@/services/ApiService';
+import { type VoiceInfo } from '@/utils/VoiceSpeaker';
+import SpeechPlayer from '@/components/SpeechPlayer.vue';
 
 const apiService = new ApiService();
 
@@ -142,10 +152,17 @@ interface DialogNodeResponse {
   options: OptionView[];
   freeTextEnabled: boolean;
   finished: boolean;
+  voice: VoiceInfo | null;
 }
 
 const dialog = ref<DialogNodeResponse | null>(null);
 const progressId = ref('');
+const speechPlayerRef = ref<InstanceType<typeof SpeechPlayer> | null>(null);
+
+// User speech settings
+const autoSpeech = ref(false);
+const speechVolume = ref(5);
+const speechSpeed = ref(5);
 
 // Typewriter effect
 const displayedText = ref('');
@@ -190,6 +207,7 @@ function applyResponse(response: DialogNodeResponse) {
   dialog.value = response;
 
   if (response.finished) {
+    speechPlayerRef.value?.stop();
     state.value = 'FINISHED';
     return;
   }
@@ -198,6 +216,7 @@ function applyResponse(response: DialogNodeResponse) {
 
   if (response.text) {
     startTypewriter(response.text);
+    // SpeechPlayer handles auto-play via its autoPlay prop + watch on text
   } else {
     displayedText.value = '';
     isTyping.value = false;
@@ -219,6 +238,7 @@ async function loadDialog() {
 
 async function selectOption(optionIndex: number) {
   if (submitting.value) return;
+  speechPlayerRef.value?.stop();
   if (isTyping.value) {
     skipTypewriter();
   }
@@ -266,6 +286,7 @@ async function sendFreeText() {
 }
 
 function closeWidget() {
+  speechPlayerRef.value?.stop();
   notifyDialogClose();
   window.close();
 }
@@ -283,7 +304,7 @@ function handleBeforeUnload() {
 }
 
 // Initialize
-onMounted(() => {
+onMounted(async () => {
   const params = new URLSearchParams(window.location.search);
   const pid = params.get('progressId');
 
@@ -294,6 +315,18 @@ onMounted(() => {
   }
 
   progressId.value = pid;
+
+  // Load user speech settings
+  try {
+    const settingsRes = await apiService.get<any>('/control/player/settings?client=web');
+    const props = settingsRes?.settings?.properties;
+    if (props) {
+      autoSpeech.value = props['autoSpeech'] === 'true';
+      speechVolume.value = parseInt(props['speechVolume']) || 5;
+      speechSpeed.value = parseInt(props['speechSpeed']) || 5;
+    }
+  } catch { /* use defaults */ }
+
   loadDialog();
 
   // Listen for window/iframe close

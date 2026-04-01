@@ -58,7 +58,7 @@ public class NpcGeneratorTools {
 
         try {
             NpcGenerationRequest request = new NpcGenerationRequest(
-                    worldId, entityId, modelId,
+                    worldId, entityId, modelId, null, // gender from entity or lore
                     posX, posY, posZ,
                     null, null, null, // environment, description, background — loaded from lore document
                     portraitPath, aiModel, epoches,

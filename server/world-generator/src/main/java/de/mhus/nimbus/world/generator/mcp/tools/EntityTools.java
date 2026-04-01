@@ -137,6 +137,7 @@ public class EntityTools {
             @ToolParam(description = "Unique entity identifier within the world") String entityId,
             @ToolParam(description = "Reference to an EntityModel ID (e.g. 'cow1', 'farmer1')") String modelId,
             @ToolParam(description = "Display name of the entity", required = false) String name,
+            @ToolParam(description = "Gender: 'M' (male), 'W' (female), 'D' (diverse)", required = false) String gender,
             @ToolParam(description = "Movement type: 'static', 'passive', 'slow', 'dynamic'", required = false) String movementType,
             @ToolParam(description = "Controlled by: 'player', 'server', 'ai', 'client'", required = false) String controlledBy,
             @ToolParam(description = "Whether the entity is solid (collision)", required = false) Boolean solid,
@@ -166,6 +167,7 @@ public class EntityTools {
             Entity publicData = Entity.builder()
                     .id(entityId)
                     .name(name)
+                    .gender(gender)
                     .model(modelId)
                     .movementType(movementType)
                     .controlledBy(controlledBy)
@@ -220,6 +222,7 @@ public class EntityTools {
             @ToolParam(description = "Entity ID to update") String entityId,
             @ToolParam(description = "New model ID", required = false) String modelId,
             @ToolParam(description = "New display name", required = false) String name,
+            @ToolParam(description = "Gender: 'M' (male), 'W' (female), 'D' (diverse)", required = false) String gender,
             @ToolParam(description = "Movement type: 'static', 'passive', 'slow', 'dynamic'", required = false) String movementType,
             @ToolParam(description = "Controlled by: 'player', 'server', 'ai', 'client'", required = false) String controlledBy,
             @ToolParam(description = "Whether the entity is solid", required = false) Boolean solid,
@@ -253,6 +256,7 @@ public class EntityTools {
             }
 
             if (name != null) publicData.setName(name);
+            if (gender != null) publicData.setGender(gender);
             if (movementType != null) publicData.setMovementType(movementType);
             if (controlledBy != null) publicData.setControlledBy(controlledBy);
             if (solid != null) publicData.setSolid(solid);

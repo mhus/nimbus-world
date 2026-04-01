@@ -59,6 +59,7 @@ public class NpcGeneratorJobExecutor implements JobExecutor {
                     job.getWorldId(),
                     entityId,
                     params.get("modelId"),
+                    params.get("gender"),
                     parseDouble(params.get("posX")),
                     parseDouble(params.get("posY")),
                     parseDouble(params.get("posZ")),

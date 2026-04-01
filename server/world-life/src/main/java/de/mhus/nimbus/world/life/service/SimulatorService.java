@@ -688,16 +688,27 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
      * Create an idle pathway that keeps the entity at its current position.
      */
     private EntityPathway createIdlePathway(WEntity entity, long currentTime, long durationMs) {
-        var pos = entity.getPosition();
+        var pos = entity.getPosition() != null ? entity.getPosition()
+                : de.mhus.nimbus.shared.utils.TypeUtil.vector3(0.0, 0.0, 0.0);
+        var rot = entity.getRotation() != null ? entity.getRotation()
+                : de.mhus.nimbus.generated.types.Rotation.builder().y(0).build();
         return de.mhus.nimbus.generated.types.EntityPathway.builder()
                 .entityId(entity.getEntityId())
                 .startAt(currentTime)
                 .queryAt(currentTime)
                 .waypoints(java.util.List.of(
+                        // Start waypoint at current position
+                        de.mhus.nimbus.generated.types.Waypoint.builder()
+                                .timestamp(currentTime)
+                                .target(pos)
+                                .rotation(rot)
+                                .pose(de.mhus.nimbus.generated.types.ENTITY_POSES.IDLE)
+                                .build(),
+                        // End waypoint at same position (stay idle)
                         de.mhus.nimbus.generated.types.Waypoint.builder()
                                 .timestamp(currentTime + durationMs)
                                 .target(pos)
-                                .rotation(entity.getRotation())
+                                .rotation(rot)
                                 .pose(de.mhus.nimbus.generated.types.ENTITY_POSES.IDLE)
                                 .build()
                 ))

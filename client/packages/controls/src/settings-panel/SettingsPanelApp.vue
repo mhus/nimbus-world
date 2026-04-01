@@ -93,6 +93,11 @@
             :min="0" :max="10" :step="1"
             @update="setProperty('speechSpeed', $event)"
           />
+          <ToggleSetting
+            label="Dialog automatisch vorlesen"
+            :value="getProperty('autoSpeech', 'false')"
+            @update="setProperty('autoSpeech', $event)"
+          />
         </div>
       </section>
 

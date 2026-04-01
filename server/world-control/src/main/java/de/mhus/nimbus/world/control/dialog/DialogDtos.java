@@ -210,7 +210,17 @@ public final class DialogDtos {
             String text,
             List<OptionView> options,
             boolean freeTextEnabled,
-            boolean finished
+            boolean finished,
+            VoiceInfo voice
+    ) {}
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record VoiceInfo(
+            String lang,
+            String gender,
+            int voiceIndex,
+            double rate,
+            double pitch
     ) {}
 
     public record OptionView(

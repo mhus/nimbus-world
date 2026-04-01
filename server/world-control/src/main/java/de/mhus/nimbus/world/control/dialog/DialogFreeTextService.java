@@ -265,7 +265,7 @@ public class DialogFreeTextService {
                     return new DialogNodeResponse(
                             ctx.getDialogProgress().getProgressId(),
                             ctx.getNpcTitle(), ctx.getNpcPortrait(),
-                            aiResponse.npcText(), List.of(), false, true
+                            aiResponse.npcText(), List.of(), false, true, null
                     );
                 }
 
@@ -283,7 +283,8 @@ public class DialogFreeTextService {
                 // Use AI-generated text for the response instead of cached/generated node text
                 return new DialogNodeResponse(
                         nextNode.progressId(), nextNode.npcTitle(), nextNode.npcPortrait(),
-                        aiResponse.npcText(), nextNode.options(), nextNode.freeTextEnabled(), nextNode.finished()
+                        aiResponse.npcText(), nextNode.options(), nextNode.freeTextEnabled(), nextNode.finished(),
+                        nextNode.voice()
                 );
             }
         }
@@ -307,7 +308,8 @@ public class DialogFreeTextService {
         return new DialogNodeResponse(
                 ctx.getDialogProgress().getProgressId(),
                 ctx.getNpcTitle(), ctx.getNpcPortrait(),
-                npcText, options, freeTextEnabled, false
+                npcText, options, freeTextEnabled, false,
+                dialogService.buildVoiceInfo(ctx)
         );
     }
 

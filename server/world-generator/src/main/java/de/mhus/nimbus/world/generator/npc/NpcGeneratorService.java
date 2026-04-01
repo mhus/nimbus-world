@@ -52,7 +52,7 @@ public class NpcGeneratorService {
 
         // Build effective request with lore-overridden fields
         NpcGenerationRequest effectiveRequest = new NpcGenerationRequest(
-                request.worldId(), request.entityId(), request.modelId(),
+                request.worldId(), request.entityId(), request.modelId(), request.gender(),
                 request.posX(), request.posY(), request.posZ(),
                 npcDesc.environment() != null ? npcDesc.environment() : request.environment(),
                 npcDesc.characterDescription() != null ? npcDesc.characterDescription() : request.characterDescription(),
@@ -320,6 +320,7 @@ public class NpcGeneratorService {
         Entity publicData = Entity.builder()
                 .id(entityId)
                 .name(generated.title != null ? generated.title : entityId)
+                .gender(request.gender() != null ? request.gender() : "D")
                 .model(modelId)
                 .movementType(null)
                 .controlledBy(null)
@@ -503,6 +504,7 @@ public class NpcGeneratorService {
             String worldId,
             String entityId,
             String modelId,
+            String gender,
             Double posX,
             Double posY,
             Double posZ,
