@@ -1,7 +1,9 @@
 package de.mhus.nimbus.world.control.dialog;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.control.dialog.DialogDtos.*;
+import de.mhus.nimbus.world.shared.redis.WorldRedisMessagingService;
 import de.mhus.nimbus.world.shared.region.RCharacterService;
 import de.mhus.nimbus.world.shared.world.*;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +30,8 @@ public class DialogService {
     private final DialogConditionEvaluator conditionEvaluator;
     private final DialogEffectExecutor effectExecutor;
     private final DialogTextService dialogTextService;
+    private final WorldRedisMessagingService redisMessaging;
+    private final ObjectMapper objectMapper;
 
     /**
      * Load the full dialog context from a progress entry.
@@ -343,7 +347,29 @@ public class DialogService {
                 "lastVisit", Instant.now().toString()
         ));
 
+        // Notify world-life to resume entity movement
+        sendDialogEnd(ctx);
+
         log.debug("Closed dialog for playbook {}, conversation #{}", ctx.getPlaybookName(), count);
+    }
+
+    /**
+     * Send dialog_end signal to world-life via Redis.
+     * Called when dialog is closed (by option or by client).
+     */
+    public void sendDialogEnd(DialogContext ctx) {
+        if (ctx.getNpcEntity() == null) return;
+        try {
+            var message = objectMapper.createObjectNode();
+            message.put("entityId", ctx.getNpcEntity().getEntityId());
+            message.put("action", "dialog_end");
+            message.put("timestamp", System.currentTimeMillis());
+            message.put("userId", ctx.getPlayerId());
+            redisMessaging.publish(ctx.getWorldId(), "e.int", objectMapper.writeValueAsString(message));
+            log.debug("Sent dialog_end for entity {} by player {}", ctx.getNpcEntity().getEntityId(), ctx.getPlayerId());
+        } catch (Exception e) {
+            log.warn("Failed to send dialog_end: {}", e.getMessage());
+        }
     }
 
     /**

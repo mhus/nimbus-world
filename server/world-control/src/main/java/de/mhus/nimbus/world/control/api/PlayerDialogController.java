@@ -137,4 +137,36 @@ public class PlayerDialogController extends BaseEditorController {
             return bad("Internal error");
         }
     }
+
+    @PostMapping("/close")
+    @Operation(summary = "Close dialog and resume NPC movement")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Dialog closed"),
+            @ApiResponse(responseCode = "400", description = "Invalid request")
+    })
+    public ResponseEntity<?> closeDialog(
+            @RequestParam String progressId,
+            HttpServletRequest request) {
+
+        String worldId = (String) request.getAttribute(AccessFilterBase.ATTR_WORLD_ID);
+        String userId = (String) request.getAttribute(AccessFilterBase.ATTR_USER_ID);
+        String characterId = (String) request.getAttribute(AccessFilterBase.ATTR_CHARACTER_ID);
+
+        if (Strings.isBlank(worldId) || Strings.isBlank(userId)) {
+            return bad("Not authenticated");
+        }
+
+        try {
+            DialogContext ctx = dialogService.loadDialogContext(progressId, worldId, userId,
+                    characterId != null ? characterId : "");
+            dialogService.closeDialog(ctx);
+            return ResponseEntity.ok(java.util.Map.of("closed", true));
+        } catch (DialogException e) {
+            log.warn("Close dialog error: {}", e.getMessage());
+            return bad(e.getMessage());
+        } catch (Exception e) {
+            log.error("Unexpected close dialog error", e);
+            return bad("Internal error");
+        }
+    }
 }

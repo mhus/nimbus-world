@@ -122,6 +122,9 @@ public class ScheduledBehavior implements EntityBehavior {
 
         log.info("World {}: Entity {} phase change -> {}", worldId, entityId, phaseName);
 
+        // Clear dialog list on phase change — timetable takes priority
+        state.clearDialogs();
+
         // Update Redis
         entityStateRedisService.setSchedulePhase(worldId.getId(), entityId, phaseName);
 

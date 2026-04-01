@@ -17,9 +17,8 @@ import java.util.Map;
  *
  * Receives interactions via Redis from world-player pods and processes them:
  * - Checks if this pod owns the entity
+ * - Handles dialog_start/dialog_end to pause/resume entity movement
  * - Passes interaction to entity's behavior
- * - Behavior may generate new pathways in response
- * - Publishes new pathways to Redis if generated
  */
 @Service
 @RequiredArgsConstructor
@@ -34,15 +33,6 @@ public class EntityInteractionService {
 
     /**
      * Handle entity interaction from a player.
-     *
-     * @param worldId World ID
-     * @param entityId Entity being interacted with
-     * @param action Interaction action type
-     * @param timestamp Client timestamp
-     * @param params Action-specific parameters
-     * @param userId User ID of player
-     * @param sessionId Session ID of player
-     * @param displayName Display name of player
      */
     public void handleInteraction(
             WorldId worldId,
@@ -63,25 +53,43 @@ public class EntityInteractionService {
         log.info("World {}: Processing entity interaction: entityId={}, action={}, user={}",
                 worldId, entityId, action, displayName);
 
-        // TODO: Pass interaction to behavior
-        // For now, behaviors don't have interaction handlers
-        // Future: EntityBehavior.onInteraction(entity, action, params, player)
+        // Handle dialog pause/resume
+        if ("dialog_start".equals(action)) {
+            handleDialogStart(worldId, entityId, userId);
+            return;
+        }
+        if ("dialog_end".equals(action)) {
+            handleDialogEnd(worldId, entityId, userId);
+            return;
+        }
 
-        // Example: Some interactions might trigger immediate pathway changes
-        // e.g., "attack" → entity flees, "talk" → entity stops moving
-
-        // Placeholder: Log interaction for owned entity
-        log.debug("Entity interaction received for owned entity: entityId={}, action={}, userId={}",
-                entityId, action, userId);
+        log.debug("Entity interaction received: entityId={}, action={}, userId={}", entityId, action, userId);
     }
 
-    /**
-     * Get simulation state map from SimulatorService.
-     * Note: This creates a coupling - consider refactoring if it becomes problematic.
-     */
-    private Map<String, SimulationState> getSimulationStates() {
-        // Access via reflection or make simulationStates package-private
-        // For now, we'll keep it simple and just log
-        return Map.of();
+    private void handleDialogStart(WorldId worldId, String entityId, String playerId) {
+        SimulationState state = simulatorService.getSimulationState(worldId, entityId);
+        if (state == null) {
+            log.warn("World {}: dialog_start for unknown entity: {}", worldId, entityId);
+            return;
+        }
+
+        boolean wasFirst = state.dialogStart(playerId);
+        log.info("World {}: Entity {} dialog_start by player {} (first={})", worldId, entityId, playerId, wasFirst);
+
+        if (wasFirst) {
+            // Immediately stop the entity by publishing an idle pathway
+            simulatorService.forceIdlePathway(worldId, entityId, state);
+        }
+    }
+
+    private void handleDialogEnd(WorldId worldId, String entityId, String playerId) {
+        SimulationState state = simulatorService.getSimulationState(worldId, entityId);
+        if (state == null) {
+            log.warn("World {}: dialog_end for unknown entity: {}", worldId, entityId);
+            return;
+        }
+
+        boolean nowEmpty = state.dialogEnd(playerId);
+        log.info("World {}: Entity {} dialog_end by player {} (resumeMovement={})", worldId, entityId, playerId, nowEmpty);
     }
 }

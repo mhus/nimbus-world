@@ -93,6 +93,54 @@ public class SimulationState {
     /** Current schedule phase name (null if no schedule or not yet determined) */
     private String currentSchedulePhase;
 
+    // --- Dialog pause state (in-memory only) ---
+
+    /** Player IDs currently in dialog with this entity, mapped to start timestamp. */
+    private final java.util.Map<String, Long> dialogList = new java.util.concurrent.ConcurrentHashMap<>();
+
+    private static final long DIALOG_STALE_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
+
+    /**
+     * Add a player to the dialog list.
+     * @return true if this was the first player (NPC should stop moving)
+     */
+    public boolean dialogStart(String playerId) {
+        boolean wasEmpty = dialogList.isEmpty();
+        dialogList.put(playerId, System.currentTimeMillis());
+        return wasEmpty;
+    }
+
+    /**
+     * Remove a player from the dialog list.
+     * @return true if the list is now empty (NPC can move again)
+     */
+    public boolean dialogEnd(String playerId) {
+        dialogList.remove(playerId);
+        return dialogList.isEmpty();
+    }
+
+    /**
+     * Remove stale dialog entries (older than 30 minutes).
+     */
+    public void cleanupStaleDialogs() {
+        long now = System.currentTimeMillis();
+        dialogList.entrySet().removeIf(e -> (now - e.getValue()) > DIALOG_STALE_TIMEOUT_MS);
+    }
+
+    /**
+     * Clear all dialogs (e.g. on schedule phase change).
+     */
+    public void clearDialogs() {
+        dialogList.clear();
+    }
+
+    /**
+     * Check if entity is currently in dialog with any player.
+     */
+    public boolean isInDialog() {
+        return !dialogList.isEmpty();
+    }
+
     /**
      * Get fade time (time entity stays visible after death) from entity server properties.
      * Property: death_fadeTime (seconds), default 120.

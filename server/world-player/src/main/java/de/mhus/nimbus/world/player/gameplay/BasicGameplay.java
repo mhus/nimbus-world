@@ -102,6 +102,9 @@ public class BasicGameplay implements Gameplay {
     protected OccupationService occupationService;
     @Autowired
     protected de.mhus.nimbus.world.shared.client.WorldClientService worldClientService;
+    @Autowired
+    @Getter
+    protected de.mhus.nimbus.world.player.service.PlayerRedisSenderService playerRedisSenderService;
 
     protected Map<String, GameplayAction> actions = new HashMap<>();
 

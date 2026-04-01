@@ -465,6 +465,14 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
             }
         }
 
+        // Check dialog pause — entity should stay idle while in dialog
+        state.cleanupStaleDialogs();
+        if (state.isInDialog() && state.isPathwayExpired(currentTime)) {
+            // Generate idle pathway at current position for 10 seconds
+            EntityPathway idlePathway = createIdlePathway(entity, currentTime, 10_000);
+            return finishPathway(entity, state, idlePathway, currentTime, worldId);
+        }
+
         String behaviorType = getBehaviorType(entity);
         EntityBehavior behavior = behaviorRegistry.getBehavior(behaviorType);
 
@@ -645,6 +653,57 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
 
         log.info("World {}: Entity {} revived in place by player", worldId, entityId);
         return true;
+    }
+
+    /**
+     * Get the simulation state for an entity (used by EntityInteractionService).
+     */
+    public SimulationState getSimulationState(WorldId worldId, String entityId) {
+        Map<String, SimulationState> worldStates = worldSimulationStates.get(worldId);
+        if (worldStates == null) return null;
+        return worldStates.get(entityId);
+    }
+
+    /**
+     * Force an entity to idle at its current position and publish the pathway immediately.
+     * Used when a dialog starts to stop the entity from moving.
+     */
+    public void forceIdlePathway(WorldId worldId, String entityId, SimulationState state) {
+        WEntity entity = state.getEntity();
+        long currentTime = System.currentTimeMillis();
+        EntityPathway idlePathway = createIdlePathway(entity, currentTime, 10_000);
+
+        state.setLastPathwayTime(currentTime);
+        state.setCurrentPathway(idlePathway);
+        state.updatePathwayEndTime();
+
+        // Publish immediately so clients see the stop
+        var chunks = calculateAffectedChunks(getCachedWorld(worldId), java.util.List.of(idlePathway));
+        pathwayPublisher.publishPathways(worldId, java.util.List.of(idlePathway), chunks);
+
+        log.info("World {}: Forced idle pathway for entity {} (dialog pause)", worldId, entityId);
+    }
+
+    /**
+     * Create an idle pathway that keeps the entity at its current position.
+     */
+    private EntityPathway createIdlePathway(WEntity entity, long currentTime, long durationMs) {
+        var pos = entity.getPosition();
+        return de.mhus.nimbus.generated.types.EntityPathway.builder()
+                .entityId(entity.getEntityId())
+                .startAt(currentTime)
+                .queryAt(currentTime)
+                .waypoints(java.util.List.of(
+                        de.mhus.nimbus.generated.types.Waypoint.builder()
+                                .timestamp(currentTime + durationMs)
+                                .target(pos)
+                                .rotation(entity.getRotation())
+                                .pose(de.mhus.nimbus.generated.types.ENTITY_POSES.IDLE)
+                                .build()
+                ))
+                .isLooping(false)
+                .idlePose(de.mhus.nimbus.generated.types.ENTITY_POSES.IDLE)
+                .build();
     }
 
     private String getBehaviorType(WEntity entity) {

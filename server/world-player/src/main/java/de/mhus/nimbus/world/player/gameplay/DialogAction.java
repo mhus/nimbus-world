@@ -89,6 +89,10 @@ public class DialogAction extends AbstractGamplayAction {
                 progressData
         );
 
+        // Notify world-life to pause entity movement
+        basic.getPlayerRedisSenderService().publishEntityInteraction(
+                session, entity.getEntityId(), "dialog_start", System.currentTimeMillis(), null);
+
         // Send openComponent command to client
         basic.getBasicClientService().sendCommand(session, "openComponent",
                 List.of("dialog", progress.getProgressId()));

@@ -115,7 +115,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue';
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue';
 import { ApiService } from '@/services/ApiService';
 
 const apiService = new ApiService();
@@ -266,7 +266,20 @@ async function sendFreeText() {
 }
 
 function closeWidget() {
+  notifyDialogClose();
   window.close();
+}
+
+/** Notify server that dialog is closed so NPC can resume movement. */
+function notifyDialogClose() {
+  if (!progressId.value) return;
+  const url = `${apiService.getBaseUrl()}/control/player/dialog/close?progressId=${encodeURIComponent(progressId.value)}`;
+  // sendBeacon is reliable during page unload (sends POST)
+  navigator.sendBeacon(url, '');
+}
+
+function handleBeforeUnload() {
+  notifyDialogClose();
 }
 
 // Initialize
@@ -282,5 +295,13 @@ onMounted(() => {
 
   progressId.value = pid;
   loadDialog();
+
+  // Listen for window/iframe close
+  window.addEventListener('beforeunload', handleBeforeUnload);
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener('beforeunload', handleBeforeUnload);
+  notifyDialogClose();
 });
 </script>
