@@ -2,22 +2,8 @@
   <div class="min-h-screen flex flex-col bg-gray-900 text-gray-100">
     <!-- Header -->
     <header class="bg-gray-800 shadow-lg border-b border-gray-700">
-      <div class="container mx-auto px-4 py-3">
-        <div class="flex items-center justify-between">
-          <div>
-            <h1 class="text-xl font-bold text-orange-400">Werkstatt</h1>
-            <p class="text-gray-400 text-sm">{{ categoryLabel }}</p>
-          </div>
-          <button
-            @click="closeWidget"
-            class="p-2 rounded bg-gray-700 hover:bg-gray-600 transition-colors"
-            title="Schliessen"
-          >
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
+      <div class="container mx-auto px-4 py-2">
+        <p class="text-gray-400 text-sm">{{ categoryLabel }}</p>
       </div>
     </header>
 
@@ -50,7 +36,15 @@
             @click="openSlotPicker(idx)"
           >
             <template v-if="slot.itemId">
-              <span class="text-sm font-medium text-orange-300">{{ slot.itemId }}</span>
+              <img
+                v-if="getItemTexture(slot.itemId)"
+                :src="getAssetUrl(getItemTexture(slot.itemId)!)"
+                :alt="getItemName(slot.itemId)"
+                class="w-10 h-10 object-contain"
+                style="image-rendering: pixelated;"
+                @error="onImageError($event)"
+              />
+              <span v-else class="text-xs font-medium text-orange-300 text-center leading-tight">{{ getItemName(slot.itemId) }}</span>
               <span class="text-xs text-gray-400">x{{ slot.amount }}</span>
               <button
                 class="text-xs text-red-400 hover:text-red-300 mt-1"
@@ -69,15 +63,28 @@
       <!-- Item Picker (inline) -->
       <section v-if="showPicker" class="bg-gray-800 rounded-lg shadow-md border border-gray-700 p-4">
         <h2 class="text-sm font-bold text-gray-400 mb-2">Item waehlen (Rucksack)</h2>
-        <div class="flex flex-wrap gap-2">
-          <button
-            v-for="(amount, itemId) in backpackItems"
-            :key="itemId"
-            class="px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded text-sm transition-colors"
-            @click="selectItem(itemId as string, amount as number)"
+        <div class="grid grid-cols-5 sm:grid-cols-8 gap-2">
+          <div
+            v-for="item in availableBackpackItems"
+            :key="item.itemId"
+            class="relative w-14 h-14 rounded-lg border-2 border-gray-600 bg-gray-700 flex items-center justify-center cursor-pointer hover:border-orange-500 transition-all"
+            :title="item.name + ' (' + item.count + ')'"
+            @click="selectItem(item.itemId, item.count)"
           >
-            {{ itemId }} <span class="text-gray-400">({{ amount }})</span>
-          </button>
+            <img
+              v-if="item.texture"
+              :src="getAssetUrl(item.texture)"
+              :alt="item.name"
+              class="w-10 h-10 object-contain"
+              style="image-rendering: pixelated;"
+              @error="onImageError($event)"
+            />
+            <span v-else class="text-xs text-gray-400 text-center leading-tight px-1">{{ item.name?.substring(0, 6) }}</span>
+            <span
+              v-if="item.count > 1"
+              class="absolute -bottom-1 -right-1 bg-orange-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center"
+            >{{ item.count > 99 ? '99+' : item.count }}</span>
+          </div>
         </div>
         <button class="text-xs text-gray-500 hover:text-gray-400 mt-2" @click="showPicker = false">Abbrechen</button>
       </section>
@@ -86,9 +93,20 @@
       <section v-if="matchResult" class="bg-gray-800 rounded-lg shadow-md border border-gray-700 p-4">
         <div v-if="matchResult.found" class="text-center">
           <p class="text-emerald-400 font-bold text-lg mb-2">Rezept gefunden!</p>
-          <p class="text-gray-300">
-            Ergebnis: <span class="text-orange-300 font-medium">{{ matchResult.resultAmount }}x {{ matchResult.resultItemId }}</span>
-          </p>
+          <div class="flex items-center justify-center gap-3">
+            <div class="w-14 h-14 rounded-lg border-2 border-orange-600 bg-gray-700 flex items-center justify-center">
+              <img
+                v-if="matchResult.resultTexture"
+                :src="getAssetUrl(matchResult.resultTexture)"
+                :alt="matchResult.resultTitle"
+                class="w-10 h-10 object-contain"
+                style="image-rendering: pixelated;"
+                @error="onImageError($event)"
+              />
+              <span v-else class="text-xs text-gray-400">?</span>
+            </div>
+            <span class="text-orange-300 font-medium text-lg">{{ matchResult.resultAmount }}x {{ matchResult.resultTitle || matchResult.resultItemId }}</span>
+          </div>
 
           <!-- Spell Word Selection -->
           <div v-if="allowSpells && matchResult.allowSpells && spellWords.length > 0" class="mt-4">
@@ -131,8 +149,20 @@
       <!-- Craft Result -->
       <section v-if="craftResult" class="bg-gray-800 rounded-lg shadow-md border border-gray-700 p-4">
         <div v-if="craftResult.success" class="text-center">
-          <p class="text-emerald-400 font-bold text-lg">Hergestellt!</p>
-          <p class="text-gray-300 mt-1">{{ craftResult.resultItemId }}</p>
+          <p class="text-emerald-400 font-bold text-lg mb-2">Hergestellt!</p>
+          <div class="flex items-center justify-center gap-3">
+            <div class="w-14 h-14 rounded-lg border-2 border-emerald-600 bg-gray-700 flex items-center justify-center">
+              <img
+                v-if="craftResultTexture"
+                :src="getAssetUrl(craftResultTexture)"
+                class="w-10 h-10 object-contain"
+                style="image-rendering: pixelated;"
+                @error="onImageError($event)"
+              />
+              <span v-else class="text-xs text-gray-400">?</span>
+            </div>
+            <span class="text-emerald-300 font-medium text-lg">{{ craftResultTitle }}</span>
+          </div>
         </div>
         <div v-else class="text-center text-red-400">
           {{ craftResult.message || 'Herstellung fehlgeschlagen' }}
@@ -158,6 +188,13 @@
 import { ref, computed, onMounted } from 'vue';
 import { apiService } from '@/services/ApiService';
 
+interface BackpackItem {
+  itemId: string;
+  name: string;
+  texture: string | null;
+  count: number;
+}
+
 interface MaterialSlot {
   itemId: string | null;
   amount: number;
@@ -174,6 +211,8 @@ interface MatchResult {
   found: boolean;
   recipeName?: string;
   resultItemId?: string;
+  resultTitle?: string;
+  resultTexture?: string | null;
   resultAmount?: number;
   allowSpells?: boolean;
   allowedSpellWords?: string[];
@@ -182,8 +221,10 @@ interface MatchResult {
 interface CraftResult {
   success: boolean;
   resultItemId?: string;
+  resultTitle?: string;
+  resultTexture?: string | null;
   message?: string;
-  backpackItems?: Record<string, number>;
+  backpackItems?: BackpackItem[];
 }
 
 const progressId = new URLSearchParams(window.location.search).get('progressId') || '';
@@ -194,7 +235,7 @@ const category = ref('');
 const slots = ref(4);
 const allowSpells = ref(false);
 const craftingLevel = ref(0);
-const backpackItems = ref<Record<string, number>>({});
+const backpackItems = ref<BackpackItem[]>([]);
 const spellWords = ref<SpellWord[]>([]);
 
 const materialSlots = ref<MaterialSlot[]>([]);
@@ -205,6 +246,8 @@ const craftResult = ref<CraftResult | null>(null);
 const selectedSpellWords = ref<string[]>([]);
 const trying = ref(false);
 const crafting = ref(false);
+const craftResultTexture = ref<string | null>(null);
+const craftResultTitle = ref('');
 
 const categoryLabels: Record<string, string> = {
   smithing: 'Schmiede',
@@ -222,6 +265,43 @@ const availableSpellWords = computed(() => {
   if (!matchResult.value?.allowedSpellWords?.length) return spellWords.value;
   const allowed = new Set(matchResult.value.allowedSpellWords);
   return spellWords.value.filter(w => allowed.has(w.name));
+});
+
+const getAssetUrl = (texturePath: string): string => {
+  if (!texturePath) return '';
+  return `${apiService.getBaseUrl()}/control/player/assets/${texturePath}`;
+};
+
+const onImageError = (event: Event) => {
+  const img = event.target as HTMLImageElement;
+  img.style.display = 'none';
+};
+
+function getItemTexture(itemId: string): string | null {
+  const item = backpackItems.value.find(i => i.itemId === itemId);
+  return item?.texture || null;
+}
+
+function getItemName(itemId: string): string {
+  const item = backpackItems.value.find(i => i.itemId === itemId);
+  return item?.name || itemId;
+}
+
+const availableBackpackItems = computed(() => {
+  // Count how many of each item are used in slots
+  const usedCounts: Record<string, number> = {};
+  for (const slot of materialSlots.value) {
+    if (slot.itemId) {
+      usedCounts[slot.itemId] = (usedCounts[slot.itemId] || 0) + slot.amount;
+    }
+  }
+  // Subtract used from backpack and filter out depleted items
+  return backpackItems.value
+    .map(item => ({
+      ...item,
+      count: item.count - (usedCounts[item.itemId] || 0),
+    }))
+    .filter(item => item.count > 0);
 });
 
 function initSlots(count: number) {
@@ -301,6 +381,8 @@ async function doCraft() {
     );
 
     craftResult.value = result;
+    craftResultTexture.value = result.resultTexture || null;
+    craftResultTitle.value = result.resultTitle || result.resultItemId || '';
 
     if (result.success && result.backpackItems) {
       backpackItems.value = result.backpackItems;
@@ -336,7 +418,7 @@ onMounted(async () => {
       slots: number;
       allowSpells: boolean;
       craftingLevel: number;
-      backpackItems: Record<string, number>;
+      backpackItems: BackpackItem[];
       spellWords: SpellWord[];
     }>(`/control/player/crafting-widget?progressId=${encodeURIComponent(progressId)}`);
 
@@ -344,7 +426,7 @@ onMounted(async () => {
     slots.value = data.slots;
     allowSpells.value = data.allowSpells;
     craftingLevel.value = data.craftingLevel;
-    backpackItems.value = data.backpackItems || {};
+    backpackItems.value = data.backpackItems || [];
     spellWords.value = data.spellWords || [];
     initSlots(data.slots);
   } catch (e: any) {

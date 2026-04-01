@@ -1430,6 +1430,46 @@ export class ModalService {
   }
 
   /**
+   * Open crafting widget modal for crafting items at a station via progress reference.
+   *
+   * @param progressId The progress ID referencing the crafting station access
+   * @returns Modal reference
+   */
+  openCrafting(progressId: string): ModalReference {
+    try {
+      if (document.pointerLockElement) {
+        document.exitPointerLock();
+        logger.debug('Exited pointer lock for crafting widget');
+      }
+
+      const componentBaseUrl = this.appContext?.services.network?.getComponentBaseUrl();
+
+      if (!componentBaseUrl) {
+        logger.warn('No component URL configured for this world');
+        throw new Error('Crafting widget is not available in this world');
+      }
+
+      const separator = componentBaseUrl.includes('?') ? '&' : '?';
+      const worldId = this.appContext.worldInfo?.worldId;
+      const sessionId = this.appContext.sessionId;
+
+      const craftingUrl = `${componentBaseUrl}crafting-widget.html${separator}embedded=true&worldId=${worldId}&sessionId=${sessionId}&progressId=${encodeURIComponent(progressId)}`;
+
+      logger.debug('Opening crafting widget modal', { craftingUrl, progressId });
+
+      return this.openModal(
+        `crafting-${progressId}`,
+        'Werkstatt',
+        craftingUrl,
+        ModalSizePreset.CENTER_MEDIUM,
+        ModalFlags.CLOSEABLE | ModalFlags.MOVEABLE | ModalFlags.NO_BACKGROUND_LOCK | ModalFlags.RESIZEABLE | ModalFlags.MINIMIZABLE
+      );
+    } catch (error) {
+      throw ExceptionHandler.handleAndRethrow(error, 'ModalService.openCrafting', { progressId });
+    }
+  }
+
+  /**
    * Open a predefined component modal
    *
    * @param component Component name (e.g., 'block_editor', 'settings', 'inventory')
@@ -1491,6 +1531,13 @@ export class ModalService {
             throw new Error('chest requires 1 attribute: progressId');
           }
           return this.openChest(attributes[0]);
+
+        case 'crafting':
+          // Expect attributes: [progressId]
+          if (attributes.length < 1) {
+            throw new Error('crafting requires 1 attribute: progressId');
+          }
+          return this.openCrafting(attributes[0]);
 
         default:
           throw new Error(`Unknown component: ${component}`);

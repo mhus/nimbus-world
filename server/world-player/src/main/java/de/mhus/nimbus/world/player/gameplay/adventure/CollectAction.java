@@ -150,6 +150,19 @@ public class CollectAction implements GameplayAction {
                 return true;
             }
             default -> {
+                // Spell word learning: _spell_word_<wordName> e.g. _spell_word_fire
+                if (itemId.startsWith("_spell_word_")) {
+                    String wordName = itemId.substring("_spell_word_".length());
+                    boolean learned = adventure.getCharacterService().learnSpellWord(docId, wordName);
+                    if (learned) {
+                        adventure.getClientService().sendNotification(session, 3, "",
+                                "Neues Zauberwort: " + wordName, "r:textures/items/enchanted_book.png");
+                    } else {
+                        adventure.getClientService().sendNotification(session, 3, "",
+                                "Zauberwort bereits bekannt: " + wordName, null);
+                    }
+                    return true;
+                }
                 return false;
             }
         }

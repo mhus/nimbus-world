@@ -174,6 +174,40 @@
         </section>
       </div>
 
+      <!-- Tab: Magie -->
+      <div v-show="activeTab === 'magic'" class="space-y-6">
+        <section v-if="spellWords.length > 0">
+          <div v-for="cat in spellWordCategories" :key="cat.key" class="mb-4">
+            <h2 class="text-lg font-bold text-emerald-400 mb-3">{{ cat.label }}</h2>
+            <div class="bg-gray-800 rounded-lg shadow-md border border-gray-700 divide-y divide-gray-700">
+              <div
+                v-for="word in spellWordsByCategory(cat.key)"
+                :key="word.name"
+                class="p-4 flex items-center justify-between"
+              >
+                <span class="font-semibold text-gray-200">{{ word.title || word.name }}</span>
+                <div class="flex items-center gap-3">
+                  <div class="flex gap-1">
+                    <span
+                      v-for="i in 5"
+                      :key="i"
+                      :class="[
+                        'w-3 h-3 rounded-full',
+                        i <= word.level ? 'bg-emerald-400' : 'bg-gray-600'
+                      ]"
+                    ></span>
+                  </div>
+                  <span class="text-xs text-gray-500 w-16 text-right">{{ word.xp }} XP</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+        <div v-else class="text-center py-8 text-gray-500">
+          Keine Zauberworte gelernt
+        </div>
+      </div>
+
       <!-- Tab: Reputation -->
       <div v-show="activeTab === 'reputation'" class="space-y-6">
         <section v-for="group in reputationGroups" :key="group.name">
@@ -282,11 +316,20 @@ interface StatusResponse {
   characterName: string;
 }
 
-type TabId = 'combat' | 'skills' | 'reputation';
+interface SpellWord {
+  name: string;
+  title: string;
+  category: string;
+  xp: number;
+  level: number;
+}
+
+type TabId = 'combat' | 'skills' | 'magic' | 'reputation';
 
 const tabs: { id: TabId; label: string }[] = [
   { id: 'combat', label: 'Kampf' },
   { id: 'skills', label: 'Skills' },
+  { id: 'magic', label: 'Magie' },
   { id: 'reputation', label: 'Reputation' },
 ];
 
@@ -303,6 +346,17 @@ const gold = ref(0);
 const silver = ref(0);
 const username = ref('');
 const characterName = ref('');
+const spellWords = ref<SpellWord[]>([]);
+
+const spellWordCategories = [
+  { key: 'element', label: 'Elemente' },
+  { key: 'form', label: 'Formen' },
+  { key: 'modifier', label: 'Modifikatoren' },
+];
+
+function spellWordsByCategory(category: string): SpellWord[] {
+  return spellWords.value.filter(w => w.category === category);
+}
 
 const getAssetUrl = (texturePath: string): string => {
   return `${apiService.getBaseUrl()}/control/player/assets/${texturePath}`;
@@ -394,7 +448,10 @@ const loadData = async () => {
   loading.value = true;
   error.value = null;
   try {
-    const response = await apiService.get<StatusResponse>('/control/player/status');
+    const [response, spellWordResponse] = await Promise.all([
+      apiService.get<StatusResponse>('/control/player/status'),
+      apiService.get<{ words: SpellWord[] }>('/control/player/spell-words').catch(() => ({ words: [] })),
+    ]);
     skills.value = response.skills || [];
     reputations.value = response.reputations || [];
     constitution.value = response.constitution || [];
@@ -404,6 +461,7 @@ const loadData = async () => {
     silver.value = response.silver || 0;
     username.value = response.username || '';
     characterName.value = response.characterName || '';
+    spellWords.value = spellWordResponse.words || [];
   } catch (err) {
     console.error('[StatusPanel] Failed to load data:', err);
     error.value = 'Daten konnten nicht geladen werden.';
