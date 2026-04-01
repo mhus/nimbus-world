@@ -53,6 +53,9 @@ public class DialogContext {
     @Builder.Default
     private List<DialogDtos.Situation> backgroundSituations = List.of();
 
+    // User language (from RUser, null = default "de")
+    private String language;
+
     // Current node within dialog
     private String currentNodeId;
 

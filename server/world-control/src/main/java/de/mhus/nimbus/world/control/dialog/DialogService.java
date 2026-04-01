@@ -5,6 +5,7 @@ import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.control.dialog.DialogDtos.*;
 import de.mhus.nimbus.world.shared.redis.WorldRedisMessagingService;
 import de.mhus.nimbus.world.shared.region.RCharacterService;
+import de.mhus.nimbus.world.shared.sector.RUserService;
 import de.mhus.nimbus.world.shared.world.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,6 +31,7 @@ public class DialogService {
     private final DialogConditionEvaluator conditionEvaluator;
     private final DialogEffectExecutor effectExecutor;
     private final DialogTextService dialogTextService;
+    private final RUserService userService;
     private final WorldRedisMessagingService redisMessaging;
     private final ObjectMapper objectMapper;
 
@@ -138,6 +140,12 @@ public class DialogService {
         var character = characterService.getCharacter(userId, parsedWorldId.getRegionId(), characterId)
                 .orElse(null);
 
+        // 8. Load user language
+        String language = userService.getByUsername(userId)
+                .map(u -> u.getLanguage())
+                .filter(l -> l != null && !l.isBlank())
+                .orElse(null);
+
         return DialogContext.builder()
                 .dialogProgress(progress)
                 .playbook(playbook)
@@ -154,6 +162,7 @@ public class DialogService {
                 .worldId(worldId)
                 .playerId(userId)
                 .characterId(characterId)
+                .language(language)
                 .currentNodeId(String.valueOf(progressData.getOrDefault("currentNode", "greeting")))
                 .build();
     }
@@ -254,7 +263,7 @@ public class DialogService {
         }
 
         // Resolve text: AI generation with cache, fallback to textPrompt
-        String language = "de"; // TODO: resolve from RUser settings
+        String language = ctx.getLanguage() != null ? ctx.getLanguage() : "de";
         String text = dialogTextService.resolveText(node, ctx, language);
 
         // Determine freeTextEnabled
