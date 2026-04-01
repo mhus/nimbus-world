@@ -77,6 +77,8 @@ public class RUser implements Identifiable {
     // Account-based currency (shared across all characters)
     private long gold;
 
+    private String language;
+
     private Map<String,String> attributes; // Zusätzliche Attribute
 
     public RUser() { this.enabled = true; }

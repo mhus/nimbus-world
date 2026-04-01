@@ -204,7 +204,9 @@ public class UniverseClientService {
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
                 return new UserInfo(
                         (String) response.getBody().get("username"),
-                        (String) response.getBody().get("email")
+                        (String) response.getBody().get("email"),
+                        (String) response.getBody().get("language"),
+                        (Boolean) response.getBody().get("enabled")
                 );
             }
             return null;
@@ -216,7 +218,7 @@ public class UniverseClientService {
         }
     }
 
-    public record UserInfo(String username, String email) {}
+    public record UserInfo(String username, String email, String language, Boolean enabled) {}
 
     // --- Sync World ---
 

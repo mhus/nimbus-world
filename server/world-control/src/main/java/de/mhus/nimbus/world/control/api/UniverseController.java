@@ -140,7 +140,13 @@ public class UniverseController extends BaseEditorController {
         if (info == null) {
             return ResponseEntity.ok(Map.of("found", false));
         }
-        return ResponseEntity.ok(Map.of("found", true, "username", info.username(), "email", info.email()));
+        var result = new java.util.HashMap<String, Object>();
+        result.put("found", true);
+        result.put("username", info.username());
+        result.put("email", info.email());
+        if (info.language() != null) result.put("language", info.language());
+        if (info.enabled() != null) result.put("enabled", info.enabled());
+        return ResponseEntity.ok(result);
     }
 
     // --- Universe-to-Sector endpoints (authenticated via Universe Bearer token in ControlAccessFilter) ---
@@ -183,21 +189,50 @@ public class UniverseController extends BaseEditorController {
 
     // --- Universe-to-Sector: User management ---
 
-    public record CreateUserRequest(String username, String email) {}
+    public record CreateUserRequest(String username, String email, String language, Boolean enabled) {}
 
-    @Operation(summary = "Create user from universe", description = "Creates a sector user if not exists. Authenticated via Universe Bearer token.")
+    @Operation(summary = "Create user from universe", description = "Creates a sector user if not exists, or updates language if exists. Authenticated via Universe Bearer token.")
     @PostMapping("/user")
     public ResponseEntity<?> createUser(@RequestBody CreateUserRequest req) {
         if (req.username() == null || req.username().isBlank() || req.email() == null || req.email().isBlank()) {
             return bad("username and email are required");
         }
-        if (userService.getByUsername(req.username()).isPresent()) {
+        var existingOpt = userService.getByUsername(req.username());
+        if (existingOpt.isPresent()) {
+            // Sync language and enabled from universe
+            var existing = existingOpt.get();
+            boolean changed = false;
+            if (req.language() != null && !req.language().equals(existing.getLanguage())) {
+                existing.setLanguage(req.language());
+                changed = true;
+            }
+            if (req.enabled() != null && req.enabled() != existing.isEnabled()) {
+                if (req.enabled()) existing.enable(); else existing.disable();
+                changed = true;
+            }
+            if (changed) {
+                existing.touchUpdate();
+                userService.save(existing);
+            }
             return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", "User already exists"));
         }
         var publicData = new de.mhus.nimbus.shared.types.PlayerUser();
         publicData.setUserId(req.username());
         publicData.setTitle(req.username());
         var user = userService.createUser(publicData, req.email());
+        boolean needsSave = false;
+        if (req.language() != null) {
+            user.setLanguage(req.language());
+            needsSave = true;
+        }
+        if (req.enabled() != null && !req.enabled()) {
+            user.disable();
+            needsSave = true;
+        }
+        if (needsSave) {
+            user.touchUpdate();
+            userService.save(user);
+        }
         return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("username", user.getUsername()));
     }
 
