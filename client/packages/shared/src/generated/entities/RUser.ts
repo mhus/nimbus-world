@@ -22,5 +22,6 @@ export interface RUser {
   characterLimits: Record<string, number>;
   userSettings: Record<string, Settings>;
   gold: number;
+  language: string;
   attributes: Record<string, string>;
 }

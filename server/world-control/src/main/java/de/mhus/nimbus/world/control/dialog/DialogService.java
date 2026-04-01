@@ -354,19 +354,40 @@ public class DialogService {
     }
 
     /**
+     * Send dialog_start signal to world-life via Redis.
+     * Called when a new dialog is opened (first GET).
+     */
+    public void sendDialogStart(DialogContext ctx) {
+        if (ctx.getNpcEntity() == null) return;
+        try {
+            String playerId = ctx.getDialogProgress().getPlayerId(); // @mhus:j3sus format
+            var message = objectMapper.createObjectNode();
+            message.put("entityId", ctx.getNpcEntity().getEntityId());
+            message.put("action", "dialog_start");
+            message.put("timestamp", System.currentTimeMillis());
+            message.put("userId", playerId);
+            redisMessaging.publish(ctx.getWorldId(), "e.int", objectMapper.writeValueAsString(message));
+            log.info("Sent dialog_start for entity {} by player {}", ctx.getNpcEntity().getEntityId(), playerId);
+        } catch (Exception e) {
+            log.warn("Failed to send dialog_start: {}", e.getMessage());
+        }
+    }
+
+    /**
      * Send dialog_end signal to world-life via Redis.
      * Called when dialog is closed (by option or by client).
      */
     public void sendDialogEnd(DialogContext ctx) {
         if (ctx.getNpcEntity() == null) return;
         try {
+            String playerId = ctx.getDialogProgress().getPlayerId();
             var message = objectMapper.createObjectNode();
             message.put("entityId", ctx.getNpcEntity().getEntityId());
             message.put("action", "dialog_end");
             message.put("timestamp", System.currentTimeMillis());
-            message.put("userId", ctx.getPlayerId());
+            message.put("userId", playerId);
             redisMessaging.publish(ctx.getWorldId(), "e.int", objectMapper.writeValueAsString(message));
-            log.debug("Sent dialog_end for entity {} by player {}", ctx.getNpcEntity().getEntityId(), ctx.getPlayerId());
+            log.info("Sent dialog_end for entity {} by player {}", ctx.getNpcEntity().getEntityId(), playerId);
         } catch (Exception e) {
             log.warn("Failed to send dialog_end: {}", e.getMessage());
         }

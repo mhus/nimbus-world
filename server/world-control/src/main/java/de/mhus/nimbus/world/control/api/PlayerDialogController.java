@@ -66,7 +66,8 @@ public class PlayerDialogController extends BaseEditorController {
                 DialogNodeResponse response = dialogService.evaluateNode(ctx, nodeId);
                 return ResponseEntity.ok(response);
             } else {
-                // New dialog: select situation, start at greeting
+                // New dialog: pause NPC movement, select situation, start at greeting
+                dialogService.sendDialogStart(ctx);
                 dialogService.selectSituation(ctx);
                 DialogNodeResponse response = dialogService.evaluateNode(ctx, "greeting");
                 return ResponseEntity.ok(response);

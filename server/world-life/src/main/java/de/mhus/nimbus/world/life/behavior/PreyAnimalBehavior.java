@@ -112,7 +112,7 @@ public class PreyAnimalBehavior implements EntityBehavior {
         );
 
         if (movementWaypoints.isEmpty()) {
-            log.debug("No valid waypoints generated for entity {}", entity.getEntityId());
+            log.trace("No valid waypoints generated for entity {}", entity.getEntityId());
             return null;
         }
 
