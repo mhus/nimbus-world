@@ -78,7 +78,7 @@
 
       <!-- Free Text Input -->
       <div v-if="dialog.freeTextEnabled && !submitting" class="mt-auto">
-        <div class="flex gap-2">
+        <div class="flex gap-2 items-center">
           <input
             v-model="freeTextInput"
             @keyup.enter="sendFreeText"
@@ -88,6 +88,10 @@
             :disabled="freeTextDisabled"
             class="flex-1 px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-gray-200
                    placeholder-gray-500 focus:border-amber-400 focus:outline-none disabled:opacity-50"
+          />
+          <SpeechInput
+            :lang="speechLang"
+            @result="onDialogSpeechResult"
           />
           <button
             @click="sendFreeText"
@@ -127,6 +131,7 @@ import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue';
 import { ApiService } from '@/services/ApiService';
 import { type VoiceInfo } from '@/utils/VoiceSpeaker';
 import SpeechPlayer from '@/components/SpeechPlayer.vue';
+import SpeechInput from '@/components/SpeechInput.vue';
 
 const apiService = new ApiService();
 
@@ -163,6 +168,15 @@ const speechPlayerRef = ref<InstanceType<typeof SpeechPlayer> | null>(null);
 const autoSpeech = ref(false);
 const speechVolume = ref(5);
 const speechSpeed = ref(5);
+
+// Speech recognition language (derived from user language or voice lang)
+const speechLang = ref('de-DE');
+
+function onDialogSpeechResult(text: string, isFinal: boolean) {
+  if (isFinal) {
+    freeTextInput.value = (freeTextInput.value + ' ' + text).trim();
+  }
+}
 
 // Typewriter effect
 const displayedText = ref('');

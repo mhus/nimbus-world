@@ -268,6 +268,11 @@
                       @keydown.ctrl.enter.prevent="sendMessage"
                       @keydown.meta.enter.prevent="sendMessage"
                     ></textarea>
+                    <!-- Speech input -->
+                    <SpeechInput
+                      :lang="speechLang"
+                      @result="onSpeechResult"
+                    />
                     <!-- Toggle multi-line -->
                     <button
                       type="button"
@@ -408,6 +413,7 @@ import { marked } from 'marked';
 import { useModal } from '@/composables/useModal';
 import { apiService } from '@/services/ApiService';
 import SpeechPlayer from '@/components/SpeechPlayer.vue';
+import SpeechInput from '@/components/SpeechInput.vue';
 import type { VoiceInfo } from '@/utils/VoiceSpeaker';
 
 // Types
@@ -484,10 +490,19 @@ const speechVolume = ref(5);
 const speechSpeed = ref(10);
 const defaultVoice = ref<VoiceInfo>({ lang: 'de', gender: 'D', voiceIndex: 0, rate: 1.0, pitch: 1.0 });
 
+const speechLang = ref('de-DE');
+
 function stripHtml(html: string): string {
   const div = document.createElement('div');
   div.innerHTML = html;
   return div.textContent || div.innerText || '';
+}
+
+function onSpeechResult(text: string, isFinal: boolean) {
+  if (isFinal) {
+    // Append final text to message input
+    newMessage.value = (newMessage.value + ' ' + text).trim();
+  }
 }
 const selectedAgent = ref('');
 const newChatHint = ref('');

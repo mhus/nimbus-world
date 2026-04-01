@@ -411,6 +411,7 @@ export class ModalService {
     iframe.className = 'nimbus-modal-iframe';
     iframe.src = url;
     iframe.setAttribute('sandbox', 'allow-same-origin allow-scripts allow-forms allow-popups');
+    iframe.setAttribute('allow', 'microphone; speaker-selection');
     iframe.setAttribute('data-modal-id', id);
 
     // Assemble structure
