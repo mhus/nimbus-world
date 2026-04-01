@@ -159,35 +159,35 @@ class CombatSystemTest {
 
         @Test
         void meleeSkill_level200_factorIs2() {
-            Map<String, Integer> skills = Map.of("combat.melee", 200);
+            Map<String, Integer> skills = Map.of("combat_melee", 200);
             int level = AdventureSkills.COMBAT_MELEE.getValue(skills);
             assertThat(level / 100.0).isEqualTo(2.0);
         }
 
         @Test
         void rangedSkill_level150_factorIs1point5() {
-            Map<String, Integer> skills = Map.of("combat.ranged", 150);
+            Map<String, Integer> skills = Map.of("combat_ranged", 150);
             int level = AdventureSkills.COMBAT_RANGED.getValue(skills);
             assertThat(level / 100.0).isEqualTo(1.5);
         }
 
         @Test
         void magicSkill_level50_factorIs0point5() {
-            Map<String, Integer> skills = Map.of("combat.magic", 50);
+            Map<String, Integer> skills = Map.of("combat_magic", 50);
             int level = AdventureSkills.COMBAT_MAGIC.getValue(skills);
             assertThat(level / 100.0).isEqualTo(0.5);
         }
 
         @Test
         void skill_clampedToMax() {
-            Map<String, Integer> skills = Map.of("combat.melee", 9999);
+            Map<String, Integer> skills = Map.of("combat_melee", 9999);
             int level = AdventureSkills.COMBAT_MELEE.getValue(skills);
             assertThat(level).isEqualTo(500); // max is 500
         }
 
         @Test
         void skill_clampedToMin() {
-            Map<String, Integer> skills = Map.of("combat.melee", 0);
+            Map<String, Integer> skills = Map.of("combat_melee", 0);
             int level = AdventureSkills.COMBAT_MELEE.getValue(skills);
             assertThat(level).isEqualTo(50); // min is 50
         }
@@ -206,7 +206,7 @@ class CombatSystemTest {
 
         @Test
         void weaponCareSkill_level200_halvesWear() {
-            Map<String, Integer> skills = Map.of("combat.weaponCare", 200);
+            Map<String, Integer> skills = Map.of("combat_weaponCare", 200);
             double skillFactor = AdventureSkills.COMBAT_WEAPON_CARE.getValue(skills) / 100.0;
             double baseWear = 0.01;
             double actualWear = baseWear / skillFactor;
@@ -215,7 +215,7 @@ class CombatSystemTest {
 
         @Test
         void armorCareSkill_level50_doublesWear() {
-            Map<String, Integer> skills = Map.of("combat.armorCare", 50);
+            Map<String, Integer> skills = Map.of("combat_armorCare", 50);
             double skillFactor = AdventureSkills.COMBAT_ARMOR_CARE.getValue(skills) / 100.0;
             double baseWear = 0.01;
             double actualWear = baseWear / skillFactor;
@@ -224,7 +224,7 @@ class CombatSystemTest {
 
         @Test
         void applyMultiplicative_convenience() {
-            Map<String, Integer> skills = Map.of("combat.melee", 200);
+            Map<String, Integer> skills = Map.of("combat_melee", 200);
             double result = AdventureSkills.COMBAT_MELEE.applyMultiplicative(skills, 10.0);
             assertThat(result).isEqualTo(20.0);
         }
@@ -313,31 +313,31 @@ class CombatSystemTest {
 
         @Test
         void melee_usesMeleeSkill() {
-            var skills = Map.of("combat.melee", 200, "combat.ranged", 100);
+            var skills = Map.of("combat_melee", 200, "combat_ranged", 100);
             assertThat(calculateRangeSkillFactor(skills, "melee")).isEqualTo(2.0);
         }
 
         @Test
         void ranged_usesRangedSkill() {
-            var skills = Map.of("combat.melee", 200, "combat.ranged", 150);
+            var skills = Map.of("combat_melee", 200, "combat_ranged", 150);
             assertThat(calculateRangeSkillFactor(skills, "ranged")).isEqualTo(1.5);
         }
 
         @Test
         void hybrid_usesHigherSkill_meleeHigher() {
-            var skills = Map.of("combat.melee", 200, "combat.ranged", 100);
+            var skills = Map.of("combat_melee", 200, "combat_ranged", 100);
             assertThat(calculateRangeSkillFactor(skills, "melee,ranged")).isEqualTo(2.0);
         }
 
         @Test
         void hybrid_usesHigherSkill_rangedHigher() {
-            var skills = Map.of("combat.melee", 100, "combat.ranged", 300);
+            var skills = Map.of("combat_melee", 100, "combat_ranged", 300);
             assertThat(calculateRangeSkillFactor(skills, "melee,ranged")).isEqualTo(3.0);
         }
 
         @Test
         void defaultRangeType_isMelee() {
-            var skills = Map.of("combat.melee", 150);
+            var skills = Map.of("combat_melee", 150);
             // Default (no rangeType on item) = "melee"
             assertThat(calculateRangeSkillFactor(skills, "melee")).isEqualTo(1.5);
         }
@@ -528,7 +528,7 @@ class CombatSystemTest {
 
         @Test
         void meleePhysicalWeapon_skillBoostsPhysicalDamage() {
-            var data = createDataWithSkills(Map.of("combat.melee", 200, "combat.magic", 100));
+            var data = createDataWithSkills(Map.of("combat_melee", 200, "combat_magic", 100));
             data.getCombatStats().put("physical.damage", CombatStat.of("physical.damage", 10));
             data.getCombatStats().put("physical.accuracy", CombatStat.of("physical.accuracy", 0.8));
             data.getCombatStats().put("magical.damage", CombatStat.of("magical.damage", 5));
@@ -550,7 +550,7 @@ class CombatSystemTest {
 
         @Test
         void rangedMagicalWand_skillBoostsMagicalDamage() {
-            var data = createDataWithSkills(Map.of("combat.ranged", 100, "combat.magic", 200));
+            var data = createDataWithSkills(Map.of("combat_ranged", 100, "combat_magic", 200));
             data.getCombatStats().put("physical.damage", CombatStat.of("physical.damage", 3));
             data.getCombatStats().put("magical.damage", CombatStat.of("magical.damage", 15));
             data.setCachedConstitution(Map.of("weapon", 0.8));
@@ -570,7 +570,7 @@ class CombatSystemTest {
 
         @Test
         void hybridWeapon_physicalMagical_bothChannels() {
-            var data = createDataWithSkills(Map.of("combat.melee", 150, "combat.ranged", 100, "combat.magic", 120));
+            var data = createDataWithSkills(Map.of("combat_melee", 150, "combat_ranged", 100, "combat_magic", 120));
             data.getCombatStats().put("physical.damage", CombatStat.of("physical.damage", 10));
             data.getCombatStats().put("magical.damage", CombatStat.of("magical.damage", 8));
             data.setCachedConstitution(Map.of("weapon", 1.0));
@@ -590,7 +590,7 @@ class CombatSystemTest {
 
         @Test
         void wornWeapon_reducesDamage() {
-            var data = createDataWithSkills(Map.of("combat.melee", 100));
+            var data = createDataWithSkills(Map.of("combat_melee", 100));
             data.getCombatStats().put("physical.damage", CombatStat.of("physical.damage", 10));
             data.setCachedConstitution(Map.of("weapon", 0.3)); // 70% worn
 
@@ -602,7 +602,7 @@ class CombatSystemTest {
 
         @Test
         void defenseWithSkills_physicalAndMagical() {
-            var data = createDataWithSkills(Map.of("combat.defense", 200, "combat.magicDefense", 150));
+            var data = createDataWithSkills(Map.of("combat_defense", 200, "combat_magicDefense", 150));
             data.getCombatStats().put("physical.defense", CombatStat.of("physical.defense", 10));
             data.getCombatStats().put("physical.evasion", CombatStat.of("physical.evasion", 0.2));
             data.getCombatStats().put("magical.defense", CombatStat.of("magical.defense", 8));

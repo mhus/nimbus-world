@@ -108,28 +108,71 @@
             <span class="text-orange-300 font-medium text-lg">{{ matchResult.resultAmount }}x {{ matchResult.resultTitle || matchResult.resultItemId }}</span>
           </div>
 
-          <!-- Spell Word Selection -->
+          <!-- Spell Word Selection: 3 Slots -->
           <div v-if="allowSpells && matchResult.allowSpells && spellWords.length > 0" class="mt-4">
-            <h3 class="text-sm font-bold text-purple-400 mb-2">Zauberworte (optional)</h3>
-            <div class="flex flex-wrap gap-2 justify-center">
-              <button
-                v-for="word in availableSpellWords"
-                :key="word.name"
-                @click="toggleSpellWord(word.name)"
-                :class="[
-                  'px-3 py-1.5 rounded text-sm font-medium transition-colors border',
-                  selectedSpellWords.includes(word.name)
-                    ? 'bg-purple-700 border-purple-500 text-purple-100'
-                    : 'bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600'
-                ]"
-              >
-                {{ word.title || word.name }}
-                <span class="text-xs opacity-70">(Lv{{ word.level }})</span>
-              </button>
+            <h3 class="text-sm font-bold text-purple-400 mb-3">Zauberworte (optional)</h3>
+            <div class="grid grid-cols-3 gap-2">
+              <!-- Element Slot -->
+              <div class="bg-gray-700/30 rounded-lg border border-gray-600 p-2">
+                <p class="text-xs text-gray-500 uppercase tracking-wider mb-2 text-center">Element</p>
+                <div class="space-y-1">
+                  <button
+                    v-for="word in spellWordsByCategory('element')"
+                    :key="word.name"
+                    @click="selectSpellSlot('element', word.name)"
+                    :class="[
+                      'w-full px-2 py-1.5 rounded text-sm font-medium transition-colors border text-left',
+                      selectedSpellSlots.element === word.name
+                        ? 'bg-purple-700 border-purple-500 text-purple-100'
+                        : 'bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600'
+                    ]"
+                  >
+                    {{ word.title || word.name }}
+                    <span class="text-xs opacity-70">Lv{{ word.level }}</span>
+                  </button>
+                </div>
+              </div>
+              <!-- Form Slot -->
+              <div class="bg-gray-700/30 rounded-lg border border-gray-600 p-2">
+                <p class="text-xs text-gray-500 uppercase tracking-wider mb-2 text-center">Form</p>
+                <div class="space-y-1">
+                  <button
+                    v-for="word in spellWordsByCategory('form')"
+                    :key="word.name"
+                    @click="selectSpellSlot('form', word.name)"
+                    :class="[
+                      'w-full px-2 py-1.5 rounded text-sm font-medium transition-colors border text-left',
+                      selectedSpellSlots.form === word.name
+                        ? 'bg-purple-700 border-purple-500 text-purple-100'
+                        : 'bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600'
+                    ]"
+                  >
+                    {{ word.title || word.name }}
+                    <span class="text-xs opacity-70">Lv{{ word.level }}</span>
+                  </button>
+                </div>
+              </div>
+              <!-- Modifier Slot -->
+              <div class="bg-gray-700/30 rounded-lg border border-gray-600 p-2">
+                <p class="text-xs text-gray-500 uppercase tracking-wider mb-2 text-center">Modifikator</p>
+                <div class="space-y-1">
+                  <button
+                    v-for="word in spellWordsByCategory('modifier')"
+                    :key="word.name"
+                    @click="selectSpellSlot('modifier', word.name)"
+                    :class="[
+                      'w-full px-2 py-1.5 rounded text-sm font-medium transition-colors border text-left',
+                      selectedSpellSlots.modifier === word.name
+                        ? 'bg-purple-700 border-purple-500 text-purple-100'
+                        : 'bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600'
+                    ]"
+                  >
+                    {{ word.title || word.name }}
+                    <span class="text-xs opacity-70">Lv{{ word.level }}</span>
+                  </button>
+                </div>
+              </div>
             </div>
-            <p v-if="selectedSpellWords.length > 0" class="text-xs text-gray-500 mt-2">
-              {{ selectedSpellWords.length }}/3 Worte gewaehlt
-            </p>
           </div>
 
           <!-- Craft Button -->
@@ -243,7 +286,14 @@ const showPicker = ref(false);
 const pickerSlotIdx = ref(0);
 const matchResult = ref<MatchResult | null>(null);
 const craftResult = ref<CraftResult | null>(null);
-const selectedSpellWords = ref<string[]>([]);
+const selectedSpellSlots = ref<{ element: string | null; form: string | null; modifier: string | null }>({
+  element: null, form: null, modifier: null,
+});
+
+const selectedSpellWords = computed<string[]>(() => {
+  return [selectedSpellSlots.value.element, selectedSpellSlots.value.form, selectedSpellSlots.value.modifier]
+    .filter((w): w is string => w !== null);
+});
 const trying = ref(false);
 const crafting = ref(false);
 const craftResultTexture = ref<string | null>(null);
@@ -328,12 +378,15 @@ function clearSlot(idx: number) {
   craftResult.value = null;
 }
 
-function toggleSpellWord(word: string) {
-  const idx = selectedSpellWords.value.indexOf(word);
-  if (idx >= 0) {
-    selectedSpellWords.value.splice(idx, 1);
-  } else if (selectedSpellWords.value.length < 3) {
-    selectedSpellWords.value.push(word);
+function spellWordsByCategory(cat: string): SpellWord[] {
+  return availableSpellWords.value.filter(w => w.category === cat);
+}
+
+function selectSpellSlot(slot: 'element' | 'form' | 'modifier', word: string) {
+  if (selectedSpellSlots.value[slot] === word) {
+    selectedSpellSlots.value[slot] = null; // deselect
+  } else {
+    selectedSpellSlots.value[slot] = word;
   }
 }
 
@@ -351,7 +404,7 @@ async function tryRecipe() {
   trying.value = true;
   matchResult.value = null;
   craftResult.value = null;
-  selectedSpellWords.value = [];
+  selectedSpellSlots.value = { element: null, form: null, modifier: null };
 
   try {
     const materials = buildMaterialsMap();
@@ -392,7 +445,7 @@ async function doCraft() {
     if (result.success) {
       initSlots(slots.value);
       matchResult.value = null;
-      selectedSpellWords.value = [];
+      selectedSpellSlots.value = { element: null, form: null, modifier: null };
     }
   } catch (e: any) {
     craftResult.value = { success: false, message: e.message || 'Fehler beim Herstellen' };
