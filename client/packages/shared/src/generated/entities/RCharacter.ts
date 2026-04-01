@@ -20,6 +20,7 @@ export interface RCharacter {
   silver: number;
   constitution: Record<string, number>;
   reputation: Record<string, number>;
+  spellWords: Record<string, number>;
   attributes: Record<string, string>;
   regionId: string;
 }

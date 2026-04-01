@@ -50,9 +50,12 @@ public class RCharacterController extends BaseEditorController {
             PlayerInfo publicData,
             PlayerBackpack backpack,
             Map<String, Integer> skills,
-            Map<String, String> attributes
+            Map<String, String> attributes,
+            Map<String, Integer> spellWords
     ) {}
     public record SkillRequest(String skill, Integer level) {}
+
+    public record SpellWordRequest(String word, Integer xp) {}
 
     private CharacterResponse toResponse(RCharacter character) {
         return new CharacterResponse(
@@ -65,7 +68,8 @@ public class RCharacterController extends BaseEditorController {
                 character.getPublicData(),
                 character.getBackpack(),
                 character.getSkills(),
-                character.getAttributes()
+                character.getAttributes(),
+                character.getSpellWords()
         );
     }
 
@@ -342,6 +346,77 @@ public class RCharacterController extends BaseEditorController {
 
         try {
             RCharacter updated = characterService.incrementSkill(userId, regionId, name, skill, delta);
+            return ResponseEntity.ok(toResponse(updated));
+        } catch (IllegalArgumentException e) {
+            return notFound(e.getMessage());
+        }
+    }
+
+    /**
+     * Set spell word XP (learn word if not known, or update XP)
+     * PUT /control/regions/{regionId}/characters/{characterId}/spell-words/{word}
+     */
+    @PutMapping("/{characterId}/spell-words/{word}")
+    public ResponseEntity<?> setSpellWord(
+            @PathVariable String regionId,
+            @PathVariable String characterId,
+            @PathVariable String word,
+            @RequestParam(name = "userId") String userId,
+            @RequestParam(name = "name") String name,
+            @RequestBody SpellWordRequest request) {
+
+        var error = validateId(regionId, "regionId");
+        if (error != null) return error;
+
+        var error2 = validateId(characterId, "characterId");
+        if (error2 != null) return error2;
+
+        if (Strings.isBlank(userId) || Strings.isBlank(name)) {
+            return bad("userId and name parameters are required");
+        }
+
+        if (request.xp() == null) {
+            return bad("xp is required");
+        }
+
+        try {
+            RCharacter c = characterService.getCharacter(userId, regionId, name)
+                    .orElseThrow(() -> new IllegalArgumentException("Character not found"));
+            characterService.setSpellWordXp(c.getId(), word, request.xp());
+            RCharacter updated = characterService.getCharacter(userId, regionId, name).orElseThrow();
+            return ResponseEntity.ok(toResponse(updated));
+        } catch (IllegalArgumentException e) {
+            return notFound(e.getMessage());
+        }
+    }
+
+    /**
+     * Remove a spell word
+     * DELETE /control/regions/{regionId}/characters/{characterId}/spell-words/{word}
+     */
+    @DeleteMapping("/{characterId}/spell-words/{word}")
+    public ResponseEntity<?> removeSpellWord(
+            @PathVariable String regionId,
+            @PathVariable String characterId,
+            @PathVariable String word,
+            @RequestParam(name = "userId") String userId,
+            @RequestParam(name = "name") String name) {
+
+        var error = validateId(regionId, "regionId");
+        if (error != null) return error;
+
+        var error2 = validateId(characterId, "characterId");
+        if (error2 != null) return error2;
+
+        if (Strings.isBlank(userId) || Strings.isBlank(name)) {
+            return bad("userId and name parameters are required");
+        }
+
+        try {
+            RCharacter c = characterService.getCharacter(userId, regionId, name)
+                    .orElseThrow(() -> new IllegalArgumentException("Character not found"));
+            characterService.removeSpellWord(c.getId(), word);
+            RCharacter updated = characterService.getCharacter(userId, regionId, name).orElseThrow();
             return ResponseEntity.ok(toResponse(updated));
         } catch (IllegalArgumentException e) {
             return notFound(e.getMessage());

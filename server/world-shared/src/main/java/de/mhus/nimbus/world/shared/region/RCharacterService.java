@@ -66,6 +66,10 @@ public class RCharacterService {
         return repository.findByUserIdAndRegionIdAndName(userId, regionId, name);
     }
 
+    public Optional<RCharacter> getCharacter(String characterId) {
+        return repository.findById(characterId);
+    }
+
     public List<RCharacter> listCharacters(String userId, String regionId) {
         return repository.findByUserIdAndRegionId(userId, regionId);
     }
@@ -754,6 +758,107 @@ public class RCharacterService {
             .build());
 
         playerInfo.setStateValues(stateValues);
+    }
+
+    // ── Spell Words ──────────────────────────────────────────────────────
+
+    /**
+     * Atomically learn a new spell word (set XP to 0 if not yet known).
+     *
+     * @param characterId MongoDB document id
+     * @param word        spell word name (e.g. "fire")
+     * @return true if the update was applied
+     */
+    public boolean learnSpellWord(String characterId, String word) {
+        Query query = new Query(Criteria.where("id").is(characterId)
+                .and("spellWords." + word).exists(false));
+
+        Update update = new Update()
+                .set("spellWords." + word, 0)
+                .set("modifiedAt", Instant.now());
+
+        var result = mongoTemplate.updateFirst(query, update, RCharacter.class);
+        return result.getModifiedCount() > 0;
+    }
+
+    /**
+     * Atomically add XP to a spell word. The word must already be learned.
+     *
+     * @param characterId MongoDB document id
+     * @param word        spell word name
+     * @param xp          XP to add (positive)
+     * @return true if the update was applied
+     */
+    public boolean addSpellWordXp(String characterId, String word, int xp) {
+        if (xp <= 0) return false;
+
+        Query query = new Query(Criteria.where("id").is(characterId)
+                .and("spellWords." + word).exists(true));
+
+        Update update = new Update()
+                .inc("spellWords." + word, xp)
+                .set("modifiedAt", Instant.now());
+
+        var result = mongoTemplate.updateFirst(query, update, RCharacter.class);
+
+        if (result.getModifiedCount() > 0) {
+            return true;
+        }
+
+        log.warn("addSpellWordXp failed: characterId={}, word={}, xp={} - word not learned or character not found",
+                characterId, word, xp);
+        return false;
+    }
+
+    /**
+     * Atomically set the XP of a spell word to a specific value.
+     *
+     * @param characterId MongoDB document id
+     * @param word        spell word name
+     * @param xp          XP value (clamped to >= 0)
+     * @return true if the update was applied
+     */
+    public boolean setSpellWordXp(String characterId, String word, int xp) {
+        Query query = new Query(Criteria.where("id").is(characterId));
+
+        Update update = new Update()
+                .set("spellWords." + word, Math.max(0, xp))
+                .set("modifiedAt", Instant.now());
+
+        var result = mongoTemplate.updateFirst(query, update, RCharacter.class);
+        return result.getModifiedCount() > 0;
+    }
+
+    /**
+     * Atomically remove a spell word from the character.
+     *
+     * @param characterId MongoDB document id
+     * @param word        spell word name to remove
+     * @return true if the update was applied
+     */
+    public boolean removeSpellWord(String characterId, String word) {
+        Query query = new Query(Criteria.where("id").is(characterId)
+                .and("spellWords." + word).exists(true));
+
+        Update update = new Update()
+                .unset("spellWords." + word)
+                .set("modifiedAt", Instant.now());
+
+        var result = mongoTemplate.updateFirst(query, update, RCharacter.class);
+        return result.getModifiedCount() > 0;
+    }
+
+    /**
+     * Calculate the spell word level from XP.
+     * Thresholds: 0-99=L0, 100-199=L1, 200-499=L2, 500-999=L3, 1000-1999=L4, 2000+=L5
+     */
+    public static int calculateSpellWordLevel(int xp) {
+        if (xp >= 2000) return 5;
+        if (xp >= 1000) return 4;
+        if (xp >= 500) return 3;
+        if (xp >= 200) return 2;
+        if (xp >= 100) return 1;
+        return 0;
     }
 
     /**

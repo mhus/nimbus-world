@@ -235,6 +235,40 @@
         </div>
       </section>
 
+      <!-- Spell Words -->
+      <section v-if="spellWords.length > 0" class="bg-gray-800 rounded-lg shadow-md border border-gray-700 p-4">
+        <h2 class="text-lg font-bold text-emerald-400 mb-3">Magische Worte</h2>
+
+        <!-- Group by category -->
+        <div v-for="cat in spellWordCategories" :key="cat.key" class="mb-4 last:mb-0">
+          <h3 class="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-2">{{ cat.label }}</h3>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div
+              v-for="word in spellWordsByCategory(cat.key)"
+              :key="word.name"
+              class="flex items-center justify-between bg-gray-700/50 rounded-lg px-3 py-2"
+            >
+              <div class="flex items-center gap-2">
+                <span class="text-gray-100 font-medium">{{ word.title || word.name }}</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <div class="flex gap-0.5">
+                  <span
+                    v-for="i in 5"
+                    :key="i"
+                    :class="[
+                      'w-3 h-3 rounded-full',
+                      i <= word.level ? 'bg-emerald-400' : 'bg-gray-600'
+                    ]"
+                  ></span>
+                </div>
+                <span class="text-xs text-gray-500 w-12 text-right">{{ word.xp }} XP</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <!-- Success Message -->
       <div v-if="successMessage" class="bg-emerald-900/30 border border-emerald-700 rounded-lg p-3 text-center">
         <p class="text-emerald-300 text-sm">{{ successMessage }}</p>
@@ -282,6 +316,27 @@ const thirdPersonModelId = ref('');
 const models = ref<AvatarModel[]>([]);
 const modelFilter = ref('auto');
 const modelModifiers = ref<Record<string, string>>({});
+
+interface SpellWord {
+  name: string;
+  title: string;
+  description: string;
+  category: string;
+  xp: number;
+  level: number;
+  icon?: string;
+}
+
+const spellWords = ref<SpellWord[]>([]);
+const spellWordCategories = [
+  { key: 'element', label: 'Elemente' },
+  { key: 'form', label: 'Formen' },
+  { key: 'modifier', label: 'Modifikatoren' },
+];
+
+function spellWordsByCategory(category: string): SpellWord[] {
+  return spellWords.value.filter(w => w.category === category);
+}
 
 const portraitFilters = [
   { value: 'auto', label: 'Passend' },
@@ -372,10 +427,11 @@ async function loadData() {
   loading.value = true;
   error.value = null;
   try {
-    const [charResponse, portraitResponse, modelResponse] = await Promise.all([
+    const [charResponse, portraitResponse, modelResponse, spellWordResponse] = await Promise.all([
       apiService.get<{ title: string; gender: string; portraitPath: string; thirdPersonModelId: string; thirdPersonModelModifiers: Record<string, string> }>('/control/player/character'),
       apiService.get<{ portraits: Portrait[]; defaultPortrait: string; assetPrefix: string }>('/control/player/character/portraits'),
       apiService.get<{ models: AvatarModel[] }>('/control/player/character/models'),
+      apiService.get<{ words: SpellWord[] }>('/control/player/spell-words').catch(() => ({ words: [] })),
     ]);
     title.value = charResponse.title || '';
     gender.value = charResponse.gender || '';
@@ -386,6 +442,7 @@ async function loadData() {
     defaultPortrait.value = portraitResponse.defaultPortrait || '';
     assetPrefix.value = portraitResponse.assetPrefix || 'p:';
     models.value = modelResponse.models || [];
+    spellWords.value = spellWordResponse.words || [];
     hasData.value = true;
   } catch (e: any) {
     error.value = e.response?.data?.message || e.message || 'Laden fehlgeschlagen';

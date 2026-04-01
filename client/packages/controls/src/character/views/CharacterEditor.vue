@@ -472,6 +472,77 @@
         </div>
       </div>
 
+      <!-- Spell Words Card (only for existing characters) -->
+      <div v-if="!isNew" class="card bg-base-100 shadow-xl">
+        <div class="card-body">
+          <h3 class="card-title">Spell Words</h3>
+
+          <!-- Add New Spell Word -->
+          <div class="flex gap-2 mb-4">
+            <input
+              v-model="newSpellWord"
+              type="text"
+              placeholder="Word name (e.g., fire, shield)"
+              class="input input-bordered flex-1"
+            />
+            <input
+              v-model.number="newSpellWordXp"
+              type="number"
+              min="0"
+              placeholder="XP"
+              class="input input-bordered w-24"
+            />
+            <button
+              type="button"
+              class="btn btn-secondary"
+              @click="handleAddSpellWord"
+              :disabled="!newSpellWord.trim()"
+            >
+              Add Word
+            </button>
+          </div>
+
+          <!-- Existing Spell Words -->
+          <div v-if="character?.spellWords && Object.keys(character.spellWords).length > 0" class="space-y-2">
+            <div
+              v-for="(xp, wordName) in character.spellWords"
+              :key="wordName"
+              class="flex items-center gap-4 p-3 border border-base-300 rounded-lg"
+            >
+              <span class="font-medium flex-1">{{ wordName }}</span>
+              <div class="flex items-center gap-2">
+                <span class="badge badge-lg">XP {{ xp }}</span>
+                <span class="badge badge-primary">Level {{ calculateSpellWordLevel(xp as number) }}</span>
+              </div>
+              <div class="flex items-center gap-1">
+                <input
+                  type="number"
+                  min="0"
+                  :value="xp"
+                  class="input input-bordered input-sm w-24"
+                  @change="(e: Event) => handleSetSpellWordXp(wordName as string, parseInt((e.target as HTMLInputElement).value))"
+                  :disabled="saving"
+                />
+                <button
+                  type="button"
+                  class="btn btn-sm btn-error"
+                  @click="handleRemoveSpellWord(wordName as string)"
+                  :disabled="saving"
+                >
+                  Remove
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Empty State -->
+          <div v-else class="text-center py-8">
+            <p class="text-base-content/70">No spell words yet</p>
+            <p class="text-base-content/50 text-sm mt-2">Add a spell word using the form above</p>
+          </div>
+        </div>
+      </div>
+
       <!-- Movement State Values Card (only for existing characters) -->
       <div v-if="!isNew" class="card bg-base-100 shadow-xl">
         <div class="card-body">
@@ -841,6 +912,8 @@ const newSkillName = ref('');
 const newSkillLevel = ref(1);
 const newAttributeKey = ref('');
 const newAttributeValue = ref('');
+const newSpellWord = ref('');
+const newSpellWordXp = ref(0);
 
 // Shortcuts JSON editors
 const showShortcutsEditor = ref(false);
@@ -1107,6 +1180,95 @@ const handleIncrementSkill = async (skillName: string, delta: number) => {
   } catch (e) {
     error.value = e instanceof Error ? e.message : 'Failed to increment skill';
     console.error('Failed to increment skill:', e);
+  } finally {
+    saving.value = false;
+  }
+};
+
+// ── Spell Words ──────────────────────────────────────────────────────
+
+const calculateSpellWordLevel = (xp: number): number => {
+  if (xp >= 2000) return 5;
+  if (xp >= 1000) return 4;
+  if (xp >= 500) return 3;
+  if (xp >= 200) return 2;
+  if (xp >= 100) return 1;
+  return 0;
+};
+
+const handleAddSpellWord = async () => {
+  if (!newSpellWord.value.trim() || !currentRegionId.value || !character.value) {
+    return;
+  }
+
+  saving.value = true;
+  error.value = null;
+  successMessage.value = null;
+
+  try {
+    character.value = await characterService.setSpellWord(
+      currentRegionId.value,
+      character.value.id,
+      character.value.userId,
+      character.value.name,
+      newSpellWord.value.trim(),
+      newSpellWordXp.value
+    );
+    successMessage.value = `Spell word "${newSpellWord.value}" added successfully`;
+    newSpellWord.value = '';
+    newSpellWordXp.value = 0;
+  } catch (e) {
+    error.value = e instanceof Error ? e.message : 'Failed to add spell word';
+    console.error('Failed to add spell word:', e);
+  } finally {
+    saving.value = false;
+  }
+};
+
+const handleSetSpellWordXp = async (word: string, xp: number) => {
+  if (!currentRegionId.value || !character.value) return;
+
+  saving.value = true;
+  error.value = null;
+  successMessage.value = null;
+
+  try {
+    character.value = await characterService.setSpellWord(
+      currentRegionId.value,
+      character.value.id,
+      character.value.userId,
+      character.value.name,
+      word,
+      xp
+    );
+    successMessage.value = `Spell word "${word}" XP updated to ${xp}`;
+  } catch (e) {
+    error.value = e instanceof Error ? e.message : 'Failed to update spell word';
+    console.error('Failed to update spell word:', e);
+  } finally {
+    saving.value = false;
+  }
+};
+
+const handleRemoveSpellWord = async (word: string) => {
+  if (!currentRegionId.value || !character.value) return;
+
+  saving.value = true;
+  error.value = null;
+  successMessage.value = null;
+
+  try {
+    character.value = await characterService.removeSpellWord(
+      currentRegionId.value,
+      character.value.id,
+      character.value.userId,
+      character.value.name,
+      word
+    );
+    successMessage.value = `Spell word "${word}" removed`;
+  } catch (e) {
+    error.value = e instanceof Error ? e.message : 'Failed to remove spell word';
+    console.error('Failed to remove spell word:', e);
   } finally {
     saving.value = false;
   }

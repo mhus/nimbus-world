@@ -90,6 +90,32 @@ class CharacterService {
       `/control/regions/${regionId}/characters/${characterId}/skills/${skill}/increment?userId=${userId}&name=${name}&delta=${delta}`
     );
   }
+
+  async setSpellWord(
+    regionId: string,
+    characterId: string,
+    userId: string,
+    name: string,
+    word: string,
+    xp: number
+  ): Promise<RCharacter> {
+    return apiService.put<RCharacter>(
+      `/control/regions/${regionId}/characters/${characterId}/spell-words/${word}?userId=${userId}&name=${name}`,
+      { word, xp }
+    );
+  }
+
+  async removeSpellWord(
+    regionId: string,
+    characterId: string,
+    userId: string,
+    name: string,
+    word: string
+  ): Promise<RCharacter> {
+    return apiService.delete<RCharacter>(
+      `/control/regions/${regionId}/characters/${characterId}/spell-words/${word}?userId=${userId}&name=${name}`
+    );
+  }
 }
 
 export const characterService = new CharacterService();

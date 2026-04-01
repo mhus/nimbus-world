@@ -35,7 +35,35 @@
 
     <!-- Main Content -->
     <main v-else class="flex-1 container mx-auto px-4 py-6">
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
+
+      <!-- Tabs -->
+      <div class="flex gap-1 mb-4">
+        <button
+          @click="activeTab = 'documents'"
+          :class="[
+            'px-4 py-2 rounded-t-lg font-medium text-sm transition-colors',
+            activeTab === 'documents'
+              ? 'bg-gray-800 text-amber-400 border border-gray-700 border-b-gray-800'
+              : 'bg-gray-700/50 text-gray-400 hover:text-gray-200 border border-transparent'
+          ]"
+        >
+          Dokumente
+        </button>
+        <button
+          @click="activeTab = 'recipes'; loadRecipes()"
+          :class="[
+            'px-4 py-2 rounded-t-lg font-medium text-sm transition-colors',
+            activeTab === 'recipes'
+              ? 'bg-gray-800 text-amber-400 border border-gray-700 border-b-gray-800'
+              : 'bg-gray-700/50 text-gray-400 hover:text-gray-200 border border-transparent'
+          ]"
+        >
+          Rezepte
+        </button>
+      </div>
+
+      <!-- Documents Tab -->
+      <div v-if="activeTab === 'documents'" class="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
         <!-- Left: Document List -->
         <div class="lg:col-span-1">
           <div class="bg-gray-800 rounded-lg shadow-md border border-gray-700 p-4">
@@ -93,6 +121,97 @@
           </div>
         </div>
       </div>
+
+      <!-- Recipes Tab -->
+      <div v-if="activeTab === 'recipes'">
+        <div class="bg-gray-800 rounded-lg shadow-md border border-gray-700 p-4">
+
+          <!-- Category Filter -->
+          <div class="flex gap-2 mb-4 flex-wrap">
+            <button
+              @click="recipeFilter = ''"
+              :class="[
+                'px-3 py-1 rounded text-sm font-medium transition-colors',
+                recipeFilter === '' ? 'bg-amber-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+              ]"
+            >
+              Alle
+            </button>
+            <button
+              v-for="cat in recipeCategories"
+              :key="cat.key"
+              @click="recipeFilter = cat.key"
+              :class="[
+                'px-3 py-1 rounded text-sm font-medium transition-colors',
+                recipeFilter === cat.key ? 'bg-amber-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+              ]"
+            >
+              {{ cat.label }}
+            </button>
+          </div>
+
+          <!-- Loading -->
+          <div v-if="recipesLoading" class="flex justify-center py-8">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-400"></div>
+          </div>
+
+          <!-- Empty -->
+          <div v-else-if="filteredRecipes.length === 0" class="text-center py-8 text-gray-500">
+            Keine Rezepte bekannt
+          </div>
+
+          <!-- Recipe List -->
+          <div v-else class="space-y-2">
+            <div
+              v-for="recipe in filteredRecipes"
+              :key="recipe.name"
+              class="bg-gray-700/50 rounded-lg border border-gray-700 p-4"
+            >
+              <div class="flex items-start justify-between mb-2">
+                <div>
+                  <h3 class="font-bold text-amber-300">{{ recipe.name }}</h3>
+                  <span class="text-xs text-gray-500 uppercase">{{ recipeCategoryLabel(recipe.category) }}</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span v-if="recipe.allowSpells" class="text-xs bg-purple-900/50 text-purple-300 border border-purple-700 rounded px-2 py-0.5">
+                    Verzauberbar
+                  </span>
+                  <span class="text-xs bg-gray-600 text-gray-300 rounded px-2 py-0.5">
+                    Level {{ recipe.minLevel }}+
+                  </span>
+                </div>
+              </div>
+
+              <!-- Materials -->
+              <div class="text-sm text-gray-400">
+                <span class="text-gray-500">Materialien:</span>
+                <span v-for="(amount, itemId, idx) in recipe.materials" :key="itemId">
+                  {{ idx > 0 ? ', ' : ' ' }}{{ amount }}x {{ itemId }}
+                </span>
+              </div>
+
+              <!-- Result -->
+              <div class="text-sm text-gray-400 mt-1">
+                <span class="text-gray-500">Ergebnis:</span>
+                {{ recipe.resultAmount }}x {{ recipe.resultItemId }}
+              </div>
+
+              <!-- Allowed Spell Words -->
+              <div v-if="recipe.allowSpells && recipe.allowedSpellWords && recipe.allowedSpellWords.length > 0" class="mt-2">
+                <span class="text-xs text-gray-500">Erlaubte Worte:</span>
+                <span
+                  v-for="word in recipe.allowedSpellWords"
+                  :key="word"
+                  class="inline-block text-xs bg-purple-900/30 text-purple-300 border border-purple-800 rounded px-1.5 py-0.5 ml-1 mb-1"
+                >
+                  {{ word }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
     </main>
   </div>
 </template>
@@ -115,6 +234,8 @@ interface DocumentResponse {
   format: string;
 }
 
+const activeTab = ref<'documents' | 'recipes'>('documents');
+
 const loading = ref(true);
 const error = ref<string | null>(null);
 const items = ref<LibraryItem[]>([]);
@@ -125,6 +246,58 @@ const docError = ref<string | null>(null);
 const docTitle = ref('');
 const docContent = ref('');
 const docFormat = ref('');
+
+// ── Recipes ──────────────────────────────────────────────────────────
+
+interface Recipe {
+  name: string;
+  category: string;
+  minLevel: number;
+  allowSpells: boolean;
+  allowedSpellWords: string[] | null;
+  materials: Record<string, number>;
+  resultItemId: string;
+  resultAmount: number;
+  successChance: number;
+}
+
+const recipes = ref<Recipe[]>([]);
+const recipesLoading = ref(false);
+const recipesLoaded = ref(false);
+const recipeFilter = ref('');
+
+const recipeCategories = [
+  { key: 'smithing', label: 'Schmiede' },
+  { key: 'weaving', label: 'Webstuhl' },
+  { key: 'alchemy', label: 'Alchemie' },
+  { key: 'writing', label: 'Schreibtisch' },
+  { key: 'woodworking', label: 'Werkbank' },
+];
+
+const filteredRecipes = computed(() => {
+  if (!recipeFilter.value) return recipes.value;
+  return recipes.value.filter(r => r.category === recipeFilter.value);
+});
+
+function recipeCategoryLabel(category: string): string {
+  return recipeCategories.find(c => c.key === category)?.label || category;
+}
+
+async function loadRecipes() {
+  if (recipesLoaded.value) return;
+  recipesLoading.value = true;
+  try {
+    const response = await apiService.get<{ recipes: Recipe[] }>('/control/player/crafting/recipes');
+    recipes.value = response.recipes || [];
+    recipesLoaded.value = true;
+  } catch (e: any) {
+    console.error('Failed to load recipes:', e);
+  } finally {
+    recipesLoading.value = false;
+  }
+}
+
+// ── Documents ────────────────────────────────────────────────────────
 
 const renderedContent = computed(() => {
   if (docFormat.value !== 'markdown') return '';

@@ -200,6 +200,7 @@ public class BasicGameplay implements Gameplay {
             actions.put("door", new DoorAction(this));
         actions.put("window", new WindowAction(this));
         actions.put("toggle", new ToggleAction(this));
+        actions.put("crafting", new CraftingAction(this));
     }
 
     @PostConstruct

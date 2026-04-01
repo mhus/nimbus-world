@@ -66,6 +66,9 @@ public class RCharacter {
     // Reputation per faction/group (e.g. "villagers" -> 10, "bandits" -> -5)
     private Map<String, Integer> reputation;
 
+    // Spell Words: word name -> XP (level derived from thresholds: 0-99=L0, 100-199=L1, 200-499=L2, 500-999=L3, 1000-1999=L4, 2000+=L5)
+    private Map<String, Integer> spellWords;
+
     private Map<String, String> attributes; // neu: Attribute
 
     @Indexed
@@ -81,6 +84,7 @@ public class RCharacter {
     public Map<String, Integer> getSkills() { if (skills == null) skills = new HashMap<>(); return skills; }
     public Map<String, Integer> getReputation() { if (reputation == null) reputation = new HashMap<>(); return reputation; }
     public Map<String, Double> getConstitution() { if (constitution == null) constitution = new HashMap<>(); return constitution; }
+    public Map<String, Integer> getSpellWords() { if (spellWords == null) spellWords = new HashMap<>(); return spellWords; }
 
     /**
      * Get constitution value for a category. Returns 1.0 if not set.
