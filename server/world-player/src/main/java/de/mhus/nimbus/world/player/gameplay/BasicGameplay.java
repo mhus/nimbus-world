@@ -300,7 +300,9 @@ public class BasicGameplay implements Gameplay {
     @Override
     public void onPlayerInteraction(PlayerSession session, String entityId, String userAction, String shortcutKey, Long timestamp, JsonNode params) {
         if (Strings.isBlank(shortcutKey)) {
-            log.trace("Player interaction '{}' with {} without shortcut in world {}", userAction, entityId, session.getWorldId());
+            // No shortcut: open player-interact widget
+            var interactAction = new PlayerInteractAction(this);
+            interactAction.handlePlayerAction(session, entityId, userAction, null, timestamp, params);
             return;
         }
         String itemAction = resolveShortcutItemAction(session, shortcutKey, params);

@@ -1470,6 +1470,46 @@ export class ModalService {
   }
 
   /**
+   * Open player-interact widget modal for player-to-player interaction.
+   *
+   * @param progressId The progress ID referencing the player-interact lease
+   * @returns Modal reference
+   */
+  openPlayerInteract(progressId: string): ModalReference {
+    try {
+      if (document.pointerLockElement) {
+        document.exitPointerLock();
+        logger.debug('Exited pointer lock for player-interact widget');
+      }
+
+      const componentBaseUrl = this.appContext?.services.network?.getComponentBaseUrl();
+
+      if (!componentBaseUrl) {
+        logger.warn('No component URL configured for this world');
+        throw new Error('Player interact widget is not available in this world');
+      }
+
+      const separator = componentBaseUrl.includes('?') ? '&' : '?';
+      const worldId = this.appContext.worldInfo?.worldId;
+      const sessionId = this.appContext.sessionId;
+
+      const widgetUrl = `${componentBaseUrl}player-interact-widget.html${separator}embedded=true&worldId=${worldId}&sessionId=${sessionId}&progressId=${encodeURIComponent(progressId)}`;
+
+      logger.debug('Opening player-interact widget modal', { widgetUrl, progressId });
+
+      return this.openModal(
+        `player-interact-${progressId}`,
+        'Interaction',
+        widgetUrl,
+        ModalSizePreset.CENTER_SMALL,
+        ModalFlags.CLOSEABLE | ModalFlags.MOVEABLE | ModalFlags.NO_BACKGROUND_LOCK
+      );
+    } catch (error) {
+      throw ExceptionHandler.handleAndRethrow(error, 'ModalService.openPlayerInteract', { progressId });
+    }
+  }
+
+  /**
    * Open crafting widget modal for crafting items at a station via progress reference.
    *
    * @param progressId The progress ID referencing the crafting station access
@@ -1585,6 +1625,13 @@ export class ModalService {
             throw new Error('trade requires 1 attribute: progressId');
           }
           return this.openTrade(attributes[0]);
+
+        case 'player-interact':
+          // Expect attributes: [progressId]
+          if (attributes.length < 1) {
+            throw new Error('player-interact requires 1 attribute: progressId');
+          }
+          return this.openPlayerInteract(attributes[0]);
 
         default:
           throw new Error(`Unknown component: ${component}`);

@@ -948,4 +948,49 @@ public class RCharacterService {
     public long getCharacterCount() {
         return repository.count();
     }
+
+    /**
+     * Atomically add a player to the blocked list.
+     *
+     * @param characterId MongoDB document id
+     * @param entityId    the player to block ("@userId:characterName")
+     * @return true if the update was applied
+     */
+    public boolean blockPlayer(String characterId, String entityId) {
+        Query query = new Query(Criteria.where("id").is(characterId));
+        Update update = new Update()
+                .addToSet("blockedPlayers", entityId)
+                .set("modifiedAt", Instant.now());
+        var result = mongoTemplate.updateFirst(query, update, RCharacter.class);
+        return result.getModifiedCount() > 0;
+    }
+
+    /**
+     * Atomically remove a player from the blocked list.
+     *
+     * @param characterId MongoDB document id
+     * @param entityId    the player to unblock ("@userId:characterName")
+     * @return true if the update was applied
+     */
+    public boolean unblockPlayer(String characterId, String entityId) {
+        Query query = new Query(Criteria.where("id").is(characterId));
+        Update update = new Update()
+                .pull("blockedPlayers", entityId)
+                .set("modifiedAt", Instant.now());
+        var result = mongoTemplate.updateFirst(query, update, RCharacter.class);
+        return result.getModifiedCount() > 0;
+    }
+
+    /**
+     * Check if a player is blocked by looking up the character document.
+     *
+     * @param characterId MongoDB document id of the blocker
+     * @param entityId    the player to check ("@userId:characterName")
+     * @return true if the player is blocked
+     */
+    public boolean isPlayerBlocked(String characterId, String entityId) {
+        Query query = new Query(Criteria.where("id").is(characterId)
+                .and("blockedPlayers").is(entityId));
+        return mongoTemplate.exists(query, RCharacter.class);
+    }
 }

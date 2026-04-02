@@ -18,7 +18,9 @@ import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Document(collection = "r_characters")
@@ -71,6 +73,9 @@ public class RCharacter {
 
     private Map<String, String> attributes; // neu: Attribute
 
+    // Blocked players: list of entityIds ("@userId:characterName")
+    private List<String> blockedPlayers;
+
     @Indexed
     private String regionId; // neu: Region-Zuordnung
 
@@ -85,6 +90,8 @@ public class RCharacter {
     public Map<String, Integer> getReputation() { if (reputation == null) reputation = new HashMap<>(); return reputation; }
     public Map<String, Double> getConstitution() { if (constitution == null) constitution = new HashMap<>(); return constitution; }
     public Map<String, Integer> getSpellWords() { if (spellWords == null) spellWords = new HashMap<>(); return spellWords; }
+    public List<String> getBlockedPlayers() { if (blockedPlayers == null) blockedPlayers = new ArrayList<>(); return blockedPlayers; }
+    public boolean isPlayerBlocked(String entityId) { return blockedPlayers != null && blockedPlayers.contains(entityId); }
 
     /**
      * Get constitution value for a category. Returns 1.0 if not set.

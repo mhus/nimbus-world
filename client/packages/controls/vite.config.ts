@@ -89,6 +89,7 @@ export default defineConfig({
         'dialog-widget': resolve(__dirname, 'dialog-widget.html'),
         'crafting-widget': resolve(__dirname, 'crafting-widget.html'),
         'trade-widget': resolve(__dirname, 'trade-widget.html'),
+        'player-interact-widget': resolve(__dirname, 'player-interact-widget.html'),
         'library-panel': resolve(__dirname, 'library-panel.html'),
         'team-panel': resolve(__dirname, 'team-panel.html'),
         'settings-panel': resolve(__dirname, 'settings-panel.html'),

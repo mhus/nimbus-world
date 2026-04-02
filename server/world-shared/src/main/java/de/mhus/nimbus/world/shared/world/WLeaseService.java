@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -87,6 +88,13 @@ public class WLeaseService {
      */
     public Optional<WLease> findByLeaseId(String leaseId) {
         return repository.findByLeaseId(leaseId);
+    }
+
+    /**
+     * Find all leases for a player in a world with a specific type.
+     */
+    public List<WLease> findByWorldIdAndPlayerIdAndType(String worldId, String playerId, String type) {
+        return repository.findByWorldIdAndPlayerIdAndType(worldId, playerId, type);
     }
 
     /**
