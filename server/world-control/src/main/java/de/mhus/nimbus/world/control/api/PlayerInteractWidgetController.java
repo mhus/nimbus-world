@@ -381,17 +381,42 @@ public class PlayerInteractWidgetController extends BaseEditorController {
         // Release the offer lease
         leaseService.release(offerId);
 
-        // Notify sender that trade was accepted
-        if (fromEntityId != null) {
-            sessionCommandService.sendNotification(
-                    SessionCommandTarget.PLAYER, fromEntityId,
-                    1, characterId, "Trade offer accepted"
-            );
-        }
+        if (Strings.isBlank(fromEntityId)) return bad("No sender in trade offer");
 
-        // TODO: Open P2P trade widget for both players (separate feature)
-        log.info("Player {} accepted trade from {}", playerName, fromEntityId);
-        return ResponseEntity.ok(Map.of("accepted", true));
+        // Create two exchange leases (one per player)
+        Map<String, Object> leaseDataA = new HashMap<>();
+        leaseDataA.put("silverOffer", 0);
+        leaseDataA.put("goldOffer", 0);
+        leaseDataA.put("accepted", false);
+        leaseDataA.put("message", "");
+
+        Map<String, Object> leaseDataB = new HashMap<>();
+        leaseDataB.put("silverOffer", 0);
+        leaseDataB.put("goldOffer", 0);
+        leaseDataB.put("accepted", false);
+        leaseDataB.put("message", "");
+
+        var leaseA = leaseService.acquire(worldId, fromEntityId, "player-exchange", playerName, null, leaseDataA);
+        var leaseB = leaseService.acquire(worldId, playerName, "player-exchange", fromEntityId, null, leaseDataB);
+
+        // Cross-reference partner lease IDs
+        leaseService.setLeaseDataValue(leaseA.getLeaseId(), "partnerLeaseId", leaseB.getLeaseId());
+        leaseService.setLeaseDataValue(leaseB.getLeaseId(), "partnerLeaseId", leaseA.getLeaseId());
+
+        // Open exchange widget for both players
+        sessionCommandService.sendCommand(
+                SessionCommandTarget.PLAYER, fromEntityId,
+                "openComponent", List.of("exchange", leaseA.getLeaseId())
+        );
+        sessionCommandService.sendCommand(
+                SessionCommandTarget.PLAYER, playerName,
+                "openComponent", List.of("exchange", leaseB.getLeaseId())
+        );
+
+        log.info("Player {} accepted trade from {} — exchange leases: {}, {}",
+                playerName, fromEntityId, leaseA.getLeaseId(), leaseB.getLeaseId());
+        return ResponseEntity.ok(Map.of("accepted", true,
+                "exchangeLeaseId", leaseB.getLeaseId()));
     }
 
     /**

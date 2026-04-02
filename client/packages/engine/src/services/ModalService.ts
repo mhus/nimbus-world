@@ -1510,6 +1510,46 @@ export class ModalService {
   }
 
   /**
+   * Open exchange widget modal for P2P item/currency exchange.
+   *
+   * @param progressId The progress ID referencing the player-exchange lease
+   * @returns Modal reference
+   */
+  openExchange(progressId: string): ModalReference {
+    try {
+      if (document.pointerLockElement) {
+        document.exitPointerLock();
+        logger.debug('Exited pointer lock for exchange widget');
+      }
+
+      const componentBaseUrl = this.appContext?.services.network?.getComponentBaseUrl();
+
+      if (!componentBaseUrl) {
+        logger.warn('No component URL configured for this world');
+        throw new Error('Exchange widget is not available in this world');
+      }
+
+      const separator = componentBaseUrl.includes('?') ? '&' : '?';
+      const worldId = this.appContext.worldInfo?.worldId;
+      const sessionId = this.appContext.sessionId;
+
+      const widgetUrl = `${componentBaseUrl}exchange-widget.html${separator}embedded=true&worldId=${worldId}&sessionId=${sessionId}&progressId=${encodeURIComponent(progressId)}`;
+
+      logger.debug('Opening exchange widget modal', { widgetUrl, progressId });
+
+      return this.openModal(
+        `exchange-${progressId}`,
+        'Exchange',
+        widgetUrl,
+        ModalSizePreset.CENTER_MEDIUM,
+        ModalFlags.CLOSEABLE | ModalFlags.MOVEABLE | ModalFlags.NO_BACKGROUND_LOCK | ModalFlags.RESIZEABLE
+      );
+    } catch (error) {
+      throw ExceptionHandler.handleAndRethrow(error, 'ModalService.openExchange', { progressId });
+    }
+  }
+
+  /**
    * Open crafting widget modal for crafting items at a station via progress reference.
    *
    * @param progressId The progress ID referencing the crafting station access
@@ -1632,6 +1672,13 @@ export class ModalService {
             throw new Error('player-interact requires 1 attribute: progressId');
           }
           return this.openPlayerInteract(attributes[0]);
+
+        case 'exchange':
+          // Expect attributes: [progressId]
+          if (attributes.length < 1) {
+            throw new Error('exchange requires 1 attribute: progressId');
+          }
+          return this.openExchange(attributes[0]);
 
         default:
           throw new Error(`Unknown component: ${component}`);
