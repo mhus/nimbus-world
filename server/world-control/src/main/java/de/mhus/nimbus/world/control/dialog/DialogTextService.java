@@ -65,7 +65,7 @@ public class DialogTextService {
                         asyncGenerateAndAppend(node, ctx, language, cacheName, mainWorldId);
                     }
 
-                    return text;
+                    return replacePlaceholders(text, ctx);
                 }
             }
 
@@ -81,14 +81,14 @@ public class DialogTextService {
                     asyncGenerateAndAppend(node, ctx, language, cacheName, mainWorldId);
                 }
 
-                return generated;
+                return replacePlaceholders(generated, ctx);
             }
         } catch (Exception e) {
             log.warn("Failed to resolve AI text for node, falling back to textPrompt: {}", e.getMessage());
         }
 
         // Fallback
-        return node.textPrompt();
+        return replacePlaceholders(node.textPrompt(), ctx);
     }
 
     /**
@@ -194,6 +194,7 @@ public class DialogTextService {
         }
 
         sb.append("\nSprache: ").append(language != null ? language : "de").append("\n");
+        sb.append("Wenn du den Spieler mit Namen ansprechen willst, verwende %character% als Platzhalter.\n");
         sb.append("Antworte NUR mit dem gesprochenen Text. Keine Regieanweisungen, keine Anfuehrungszeichen.\n");
 
         return sb.toString();
@@ -201,6 +202,20 @@ public class DialogTextService {
 
     private String buildUserPrompt(DialogNode node, DialogContext ctx) {
         return node.textPrompt();
+    }
+
+    /**
+     * Replace placeholders in text with actual values.
+     * Placeholders are resolved AFTER cache lookup so cached texts stay generic.
+     * Supported: %character% = character name
+     */
+    private String replacePlaceholders(String text, DialogContext ctx) {
+        if (text == null) return null;
+        String characterName = ctx.getCharacterId();
+        if (characterName != null && !characterName.isBlank()) {
+            text = text.replace("%character%", characterName);
+        }
+        return text;
     }
 
     // --- Cache management ---
@@ -286,13 +301,20 @@ public class DialogTextService {
     // --- Context resolution ---
 
     private String resolveContextValue(String key, DialogContext ctx) {
-        if (key.startsWith("npcState.")) {
-            String field = key.substring("npcState.".length());
+        // Support both dot and underscore separators (underscore for MongoDB compatibility)
+        String prefix;
+        String field;
+        int sep = key.indexOf('.');
+        if (sep < 0) sep = key.indexOf('_');
+        if (sep < 0) return "unknown";
+        prefix = key.substring(0, sep);
+        field = key.substring(sep + 1);
+
+        if ("npcState".equals(prefix)) {
             Object val = ctx.getNpcStateValue(field);
             return val != null ? val.toString() : "none";
         }
-        if (key.startsWith("memory.")) {
-            String field = key.substring("memory.".length());
+        if ("memory".equals(prefix)) {
             Object val = ctx.getMemoryValue(field);
             return val != null ? val.toString() : "none";
         }

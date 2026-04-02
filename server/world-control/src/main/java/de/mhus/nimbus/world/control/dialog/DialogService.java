@@ -128,9 +128,9 @@ public class DialogService {
                 ? new HashMap<>(npcStateProgress.getProgressData())
                 : new HashMap<>();
 
-        // 6. Load NPC-player memory
+        // 6. Load NPC-player memory (use progress playerId = @user:character, not just userId)
         WProgress playerMemoryProgress = progressService
-                .findByWorldIdAndPlayerIdAndTypeAndQuest(worldId, userId, "npc-memory", entityId)
+                .findByWorldIdAndPlayerIdAndTypeAndQuest(worldId, progressPlayerId, "npc-memory", entityId)
                 .orElse(null);
         Map<String, Object> playerMemory = playerMemoryProgress != null && playerMemoryProgress.getProgressData() != null
                 ? new HashMap<>(playerMemoryProgress.getProgressData())
@@ -160,7 +160,7 @@ public class DialogService {
                 .playerMemory(playerMemory)
                 .character(character)
                 .worldId(worldId)
-                .playerId(userId)
+                .playerId(progressPlayerId) // @mhus:j3sus — full player entity ID
                 .characterId(characterId)
                 .language(language)
                 .currentNodeId(String.valueOf(progressData.getOrDefault("currentNode", "greeting")))
@@ -224,7 +224,7 @@ public class DialogService {
             // Update memory with new situation
             ensurePlayerMemory(ctx);
             progressService.setProgressDataValue(
-                    ctx.getPlayerMemoryProgress().getProgressId(), "lastSituation", primary.name());
+                    ctx.getPlayerMemoryProgress().getId(), "lastSituation", primary.name());
             ctx.getPlayerMemory().put("lastSituation", primary.name());
         }
 

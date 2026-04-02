@@ -158,13 +158,13 @@ public class WProgressService {
     /**
      * Atomically set a single key in progressData.
      *
-     * @param progressId MongoDB document id
+     * @param progressId WProgress.progressId (UUID)
      * @param key        the key to set
      * @param value      the value to set
      * @return true if the update was applied
      */
     public boolean setProgressDataValue(String progressId, String key, Object value) {
-        Query query = new Query(Criteria.where("id").is(progressId));
+        Query query = new Query(Criteria.where("progressId").is(progressId));
         Update update = new Update()
                 .set("progressData." + key, value)
                 .set("updatedAt", Instant.now());
@@ -181,12 +181,12 @@ public class WProgressService {
      * Atomically set multiple keys in progressData.
      * Existing keys not in the map are preserved.
      *
-     * @param progressId MongoDB document id
+     * @param progressId WProgress.progressId (UUID)
      * @param values     key-value pairs to set
      * @return true if the update was applied
      */
     public boolean setProgressDataValues(String progressId, Map<String, Object> values) {
-        Query query = new Query(Criteria.where("id").is(progressId));
+        Query query = new Query(Criteria.where("progressId").is(progressId));
         Update update = new Update()
                 .set("updatedAt", Instant.now());
 
@@ -205,12 +205,12 @@ public class WProgressService {
     /**
      * Atomically remove a key from progressData.
      *
-     * @param progressId MongoDB document id
+     * @param progressId WProgress.progressId (UUID)
      * @param key        the key to remove
      * @return true if the update was applied
      */
     public boolean removeProgressDataValue(String progressId, String key) {
-        Query query = new Query(Criteria.where("id").is(progressId)
+        Query query = new Query(Criteria.where("progressId").is(progressId)
                 .and("progressData." + key).exists(true));
         Update update = new Update()
                 .unset("progressData." + key)
@@ -227,13 +227,13 @@ public class WProgressService {
     /**
      * Atomically increment a numeric value in progressData.
      *
-     * @param progressId MongoDB document id
+     * @param progressId WProgress.progressId (UUID)
      * @param key        the key to increment
      * @param delta      amount to add (can be negative)
      * @return true if the update was applied
      */
     public boolean incProgressDataValue(String progressId, String key, int delta) {
-        Query query = new Query(Criteria.where("id").is(progressId));
+        Query query = new Query(Criteria.where("progressId").is(progressId));
         Update update = new Update()
                 .inc("progressData." + key, delta)
                 .set("updatedAt", Instant.now());
@@ -254,7 +254,7 @@ public class WProgressService {
      * @return true if the update was applied
      */
     public boolean replaceProgressData(String progressId, Map<String, Object> progressData) {
-        Query query = new Query(Criteria.where("id").is(progressId));
+        Query query = new Query(Criteria.where("progressId").is(progressId));
         Update update = new Update()
                 .set("progressData", progressData)
                 .set("updatedAt", Instant.now());

@@ -85,7 +85,7 @@ public class DialogAction extends AbstractGamplayAction {
                 worldId.getId(),
                 playerId,
                 "dialog",
-                null,
+                entity.getEntityId(),  // quest = entityId so each NPC has its own progress
                 progressData
         );
 
@@ -124,7 +124,7 @@ public class DialogAction extends AbstractGamplayAction {
 
         String playerId = session.getEntityId();
         var progress = basic.getProgressService().save(
-                worldId.getId(), playerId, "dialog", null,
+                worldId.getId(), playerId, "dialog", playbookRef,
                 Map.of("playbook", playbookRef)
         );
 

@@ -449,8 +449,8 @@ public class NpcGeneratorService {
         nodes.put("greeting", Map.of(
                 "textPrompt", generated.defaultGreeting() != null
                         ? generated.defaultGreeting()
-                        : "Begruesse den Spieler freundlich.",
-                "cacheKeys", List.of("memory.conversationCount"),
+                        : "Begruesse den Spieler. Beim ersten Besuch sei neugierig. Bei wiederholtem Besuch erkenne ihn wieder und sei vertrauter. Bei haeufigem Besuch behandle ihn wie einen alten Bekannten.",
+                "cacheKeys", List.of("memory_conversationCount"),
                 "freeTextAllowed", true,
                 "options", greetingOptions,
                 "effects", List.of(),
