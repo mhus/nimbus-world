@@ -105,6 +105,21 @@ public class WTeamService {
     }
 
     /**
+     * Find teams with pending invitations for a player in a given world or its main instance.
+     * Mirrors the logic of findActiveTeamForPlayer: checks exact worldId first, then main instance.
+     */
+    @Transactional(readOnly = true)
+    public List<WTeam> findInvitationsForPlayer(String worldId, String mainInstanceId, String playerName) {
+        var result = new java.util.ArrayList<>(teamRepository.findByWorldIdAndInvitationContaining(worldId, playerName));
+        if (mainInstanceId != null && !mainInstanceId.equals(worldId)) {
+            teamRepository.findByWorldIdAndInvitationContaining(mainInstanceId, playerName).stream()
+                    .filter(t -> result.stream().noneMatch(r -> r.getTeamId().equals(t.getTeamId())))
+                    .forEach(result::add);
+        }
+        return result;
+    }
+
+    /**
      * Find the active team for a player in a given world or its main instance.
      * Searches: exact worldId first, then main instance worldId
      * (e.g. earth616:westview::instanceId for zone instances).

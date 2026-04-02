@@ -138,9 +138,8 @@ public class PlayerTeamController extends BaseEditorController {
             Optional<WTeam> teamOpt = teamService.findActiveTeamForPlayer(worldIdStr, mainInstanceId, playerName);
             TeamResponse teamResponse = teamOpt.map(this::toTeamResponse).orElse(null);
 
-            // Find invitations for this player
-            List<InviteResponse> invitations = teamService.findAllTeamsOfPlayer(playerName).stream()
-                    .filter(t -> t.getInvitation() != null && t.getInvitation().contains(playerName))
+            // Find invitations for this player (check both exact worldId and main instance)
+            List<InviteResponse> invitations = teamService.findInvitationsForPlayer(worldIdStr, mainInstanceId, playerName).stream()
                     .filter(t -> !t.getMembers().contains(playerName))
                     .map(this::toInviteResponse)
                     .toList();
