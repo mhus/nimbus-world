@@ -107,7 +107,7 @@
 
           <!-- Message -->
           <div class="border-t border-gray-700 pt-2">
-            <input v-model="message" type="text" maxlength="100" placeholder="Short message..."
+            <input v-model="message" type="text" maxlength="140" placeholder="Short message..."
                    :disabled="data.myAccepted"
                    class="bg-gray-700 rounded px-2 py-1 text-xs w-full disabled:opacity-50" />
           </div>

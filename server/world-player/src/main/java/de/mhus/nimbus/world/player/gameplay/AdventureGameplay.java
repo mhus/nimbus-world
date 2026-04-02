@@ -174,7 +174,7 @@ public class AdventureGameplay extends BasicGameplay {
         String worldId = session.getWorldId() != null ? session.getWorldId().getId() : null;
         String sourceEntityId = session.getEntityId();
 
-        boolean died = effectProcessor.processTick(data, deltaSeconds, outgoingDeltas, worldId, sourceEntityId);
+        boolean died = getEffectProcessor().processTick(data, deltaSeconds, outgoingDeltas, worldId, sourceEntityId);
 
         // Publish collected remote vital deltas
         if (!outgoingDeltas.isEmpty()) {

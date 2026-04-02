@@ -33,7 +33,6 @@ public class VitalDeltaBroadcastListener {
     private final WorldRedisMessagingService redisMessaging;
     private final SessionManager sessionManager;
     private final ObjectMapper objectMapper;
-    private final AdventureGameplay adventureGameplay;
     private final ClientService clientService;
 
     @PostConstruct
@@ -63,12 +62,17 @@ public class VitalDeltaBroadcastListener {
                 return;
             }
 
+            if (!(targetSession.getGameplay() instanceof AdventureGameplay adventureGameplay)) {
+                log.trace("Target session {} has no AdventureGameplay", msg.getTargetEntityId());
+                return;
+            }
+
             String type = msg.getType();
             log.debug("Received vital delta: type={}, target={}, source={}", type, msg.getTargetEntityId(), msg.getSourceEntityId());
             if (VitalDeltaBroadcastMessage.TYPE_ATTACK.equals(type)) {
                 adventureGameplay.handleIncomingAttack(targetSession, data, msg);
             } else if (VitalDeltaBroadcastMessage.TYPE_ATTACK_RESULT.equals(type)) {
-                handleAttackResult(targetSession, msg);
+                handleAttackResult(targetSession, adventureGameplay, msg);
             } else if (VitalDeltaBroadcastMessage.TYPE_REVIVE.equals(type)) {
                 adventureGameplay.handleIncomingRevive(targetSession, data, msg);
             } else {
@@ -80,7 +84,7 @@ public class VitalDeltaBroadcastListener {
         }
     }
 
-    private void handleAttackResult(PlayerSession session, VitalDeltaBroadcastMessage msg) {
+    private void handleAttackResult(PlayerSession session, AdventureGameplay adventureGameplay, VitalDeltaBroadcastMessage msg) {
         boolean hit = msg.getDelta() != 0;
         String texture = hit
                 ? "n:textures/actions/attack_hit.png"

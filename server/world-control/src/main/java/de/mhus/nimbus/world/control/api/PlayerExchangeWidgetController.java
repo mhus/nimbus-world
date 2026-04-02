@@ -17,6 +17,7 @@ import de.mhus.nimbus.world.shared.world.WItem;
 import de.mhus.nimbus.world.shared.world.WItemService;
 import de.mhus.nimbus.world.shared.world.WLease;
 import de.mhus.nimbus.world.shared.world.WLeaseService;
+import de.mhus.nimbus.world.control.service.ForbiddenWordFilter;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
@@ -51,6 +52,7 @@ public class PlayerExchangeWidgetController extends BaseEditorController {
     private final RCharacterService characterService;
     private final RUserService userService;
     private final SessionCommandService sessionCommandService;
+    private final ForbiddenWordFilter forbiddenWordFilter;
 
     // --- DTOs ---
 
@@ -163,12 +165,15 @@ public class PlayerExchangeWidgetController extends BaseEditorController {
 
         if (body.silverOffer() < 0 || body.goldOffer() < 0) return bad("Offers must be non-negative");
 
+        String msg = forbiddenWordFilter.filter(body.message() != null ? body.message() : "");
+        if (msg.length() > 140) return bad("Message must be 140 characters or less");
+
         // Update my offer
         leaseService.setLeaseDataValues(myLease.getLeaseId(), Map.of(
                 "selectedItems", body.selectedItems() != null ? body.selectedItems() : List.of(),
                 "silverOffer", body.silverOffer(),
                 "goldOffer", body.goldOffer(),
-                "message", body.message() != null ? body.message() : "",
+                "message", msg,
                 "accepted", false
         ));
 
@@ -217,10 +222,12 @@ public class PlayerExchangeWidgetController extends BaseEditorController {
         // Save own offer values + set accepted=true (do NOT reset partner's accepted)
         Map<String, Object> updates = new HashMap<>();
         if (body != null) {
+            String msg = forbiddenWordFilter.filter(body.message() != null ? body.message() : "");
+            if (msg.length() > 140) return bad("Message must be 140 characters or less");
             updates.put("selectedItems", body.selectedItems() != null ? body.selectedItems() : List.of());
             updates.put("silverOffer", Math.max(0, body.silverOffer()));
             updates.put("goldOffer", Math.max(0, body.goldOffer()));
-            updates.put("message", body.message() != null ? body.message() : "");
+            updates.put("message", msg);
         }
         updates.put("accepted", true);
         leaseService.setLeaseDataValues(myLease.getLeaseId(), updates);
