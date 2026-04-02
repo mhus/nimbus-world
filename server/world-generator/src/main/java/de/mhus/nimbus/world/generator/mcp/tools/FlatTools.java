@@ -1,5 +1,6 @@
 package de.mhus.nimbus.world.generator.mcp.tools;
 
+import de.mhus.nimbus.world.generator.mcp.McpToolBean;
 import de.mhus.nimbus.world.generator.mcp.McpToolException;
 import de.mhus.nimbus.world.shared.generator.WFlat;
 import de.mhus.nimbus.world.shared.generator.WFlatService;
@@ -15,7 +16,7 @@ import java.util.stream.Collectors;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class FlatTools {
+public class FlatTools implements McpToolBean {
 
     private final WFlatService flatService;
 

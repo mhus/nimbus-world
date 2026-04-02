@@ -1,52 +1,23 @@
 package de.mhus.nimbus.world.generator.mcp;
 
-import de.mhus.nimbus.world.generator.mcp.tools.*;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.ai.tool.method.MethodToolCallbackProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import java.util.List;
+
 @Configuration
+@Slf4j
 public class McpToolConfig {
 
     @Bean
-    public ToolCallbackProvider mcpToolCallbackProvider(
-            WorldTools worldTools,
-            LayerTools layerTools,
-            LayerModelTools layerModelTools,
-            ChunkTools chunkTools,
-            TerrainTools terrainTools,
-            BlockTypeTools blockTypeTools,
-            AssetTools assetTools,
-            JobTools jobTools,
-            DocumentTools documentTools,
-            FlatTools flatTools,
-            AnythingTools anythingTools,
-            ItemTools itemTools,
-            ChestTools chestTools,
-            ProgressTools progressTools,
-            EntityTools entityTools,
-            EntityModelTools entityModelTools,
-            NpcGeneratorTools npcGeneratorTools) {
+    public ToolCallbackProvider mcpToolCallbackProvider(List<McpToolBean> tools) {
+        log.info("Registering {} MCP tools: {}", tools.size(),
+                tools.stream().map(t -> t.getClass().getSimpleName()).toList());
         return MethodToolCallbackProvider.builder()
-                .toolObjects(
-                        worldTools,
-                        layerTools,
-                        layerModelTools,
-                        chunkTools,
-                        terrainTools,
-                        blockTypeTools,
-                        assetTools,
-                        jobTools,
-                        documentTools,
-                        flatTools,
-                        anythingTools,
-                        itemTools,
-                        chestTools,
-                        progressTools,
-                        entityTools,
-                        entityModelTools,
-                        npcGeneratorTools)
+                .toolObjects(tools.toArray())
                 .build();
     }
 }

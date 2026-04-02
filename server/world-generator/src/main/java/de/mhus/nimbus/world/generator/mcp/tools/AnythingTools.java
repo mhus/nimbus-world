@@ -1,5 +1,6 @@
 package de.mhus.nimbus.world.generator.mcp.tools;
 
+import de.mhus.nimbus.world.generator.mcp.McpToolBean;
 import de.mhus.nimbus.world.generator.mcp.McpToolException;
 import de.mhus.nimbus.world.shared.world.WAnything;
 import de.mhus.nimbus.world.shared.world.WAnythingService;
@@ -15,7 +16,7 @@ import java.util.*;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class AnythingTools {
+public class AnythingTools implements McpToolBean {
 
     private final WAnythingService anythingService;
 

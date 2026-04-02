@@ -237,6 +237,71 @@
             </div>
           </div>
 
+          <!-- Trading / Pricing -->
+          <div class="divider">Trading / Pricing</div>
+          <div class="space-y-4">
+            <div class="grid grid-cols-2 gap-4">
+              <div class="form-control">
+                <label class="label">
+                  <span class="label-text font-semibold">Item Tier</span>
+                </label>
+                <select v-model="tradingFields.itemTier" class="select select-bordered">
+                  <option value="">-- none --</option>
+                  <option value="NONE">NONE</option>
+                  <option value="LEATHER">LEATHER</option>
+                  <option value="IRON">IRON</option>
+                  <option value="STEEL">STEEL</option>
+                  <option value="SILVER">SILVER</option>
+                  <option value="GOLD">GOLD</option>
+                  <option value="MYTHRIL">MYTHRIL</option>
+                  <option value="ADAMANT">ADAMANT</option>
+                  <option value="ORICHALCUM">ORICHALCUM</option>
+                </select>
+              </div>
+              <div class="form-control">
+                <label class="label">
+                  <span class="label-text font-semibold">Rarity</span>
+                </label>
+                <select v-model="tradingFields.rarityCategory" class="select select-bordered">
+                  <option value="">-- none --</option>
+                  <option value="COMMON">COMMON</option>
+                  <option value="UNCOMMON">UNCOMMON</option>
+                  <option value="RARE">RARE</option>
+                  <option value="EPIC">EPIC</option>
+                  <option value="LEGENDARY">LEGENDARY</option>
+                  <option value="MYTHIC">MYTHIC</option>
+                </select>
+              </div>
+            </div>
+            <div class="grid grid-cols-3 gap-4">
+              <div class="form-control">
+                <label class="label"><span class="label-text">Material Price</span></label>
+                <input v-model.number="tradingFields.materialPrice" type="number" step="0.5" class="input input-bordered" placeholder="0" />
+              </div>
+              <div class="form-control">
+                <label class="label"><span class="label-text">Crafting Cost</span></label>
+                <input v-model.number="tradingFields.craftingCost" type="number" step="0.5" class="input input-bordered" placeholder="0" />
+              </div>
+              <div class="form-control">
+                <label class="label"><span class="label-text">Usage Bonus</span></label>
+                <input v-model.number="tradingFields.usageBonus" type="number" step="0.5" class="input input-bordered" placeholder="0" />
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+              <div class="form-control">
+                <label class="label"><span class="label-text">Rarity Bonus</span></label>
+                <input v-model.number="tradingFields.rarityBonus" type="number" step="0.5" class="input input-bordered" placeholder="0" />
+              </div>
+              <div class="form-control">
+                <label class="label"><span class="label-text font-semibold">Base Price</span></label>
+                <input v-model.number="tradingFields.basePrice" type="number" step="0.5" class="input input-bordered" placeholder="calculated" />
+                <label class="label">
+                  <span class="label-text-alt text-xs opacity-50">Override or leave empty to calculate</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
           <!-- Public Parameters -->
           <div class="divider">Parameters (Public)</div>
           <div class="space-y-2">
@@ -366,6 +431,24 @@ const showJsonEditor = ref(false);
 const publicParamEntries = ref<{ key: string; value: string }[]>([]);
 // Key-value entries for WItem.server
 const serverParamEntries = ref<{ key: string; value: string }[]>([]);
+// Trading/price fields (stored directly on WItem, not in publicData or server)
+const tradingFields = ref<{
+  itemTier: string;
+  rarityCategory: string;
+  basePrice: number | null;
+  materialPrice: number | null;
+  craftingCost: number | null;
+  usageBonus: number | null;
+  rarityBonus: number | null;
+}>({
+  itemTier: '',
+  rarityCategory: '',
+  basePrice: null,
+  materialPrice: null,
+  craftingCost: null,
+  usageBonus: null,
+  rarityBonus: null,
+});
 
 const addPublicParam = () => publicParamEntries.value.push({ key: '', value: '' });
 const removePublicParam = (index: number) => publicParamEntries.value.splice(index, 1);
@@ -453,6 +536,17 @@ async function loadItem() {
     publicParamEntries.value = mapToEntries(itemData.parameters, ['wearableSlots']);
     // Load WItem.server parameters
     serverParamEntries.value = mapToEntries((serverItem as any).server);
+    // Load trading/price fields from WItem wrapper
+    const wi = serverItem as any;
+    tradingFields.value = {
+      itemTier: wi.itemTier || '',
+      rarityCategory: wi.rarityCategory || '',
+      basePrice: wi.basePrice ?? null,
+      materialPrice: wi.materialPrice ?? null,
+      craftingCost: wi.craftingCost ?? null,
+      usageBonus: wi.usageBonus ?? null,
+      rarityBonus: wi.rarityBonus ?? null,
+    };
 
     console.log('Item loaded:', itemData);
   } catch (e: any) {
@@ -484,7 +578,7 @@ async function save() {
     if (props.isNew) {
       await ItemApiService.createItem(localItem.value, currentWorldId.value, serverMap);
     } else {
-      await ItemApiService.updateItem(props.itemId, localItem.value, currentWorldId.value, serverMap);
+      await ItemApiService.updateItem(props.itemId, localItem.value, currentWorldId.value, serverMap, tradingFields.value);
     }
     emit('save');
   } catch (e: any) {

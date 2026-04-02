@@ -120,7 +120,9 @@ public final class DialogDtos {
             String fact,
             // triggerScrawl
             String script,
-            String sequence
+            String sequence,
+            // navigate
+            String path
     ) {}
 
     // --- NPC Profile (stored in WAnything collection="npc-profiles") ---
@@ -211,7 +213,8 @@ public final class DialogDtos {
             List<OptionView> options,
             boolean freeTextEnabled,
             boolean finished,
-            VoiceInfo voice
+            VoiceInfo voice,
+            String navigate
     ) {}
 
     @JsonInclude(JsonInclude.Include.NON_NULL)

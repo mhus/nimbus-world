@@ -1,5 +1,6 @@
 package de.mhus.nimbus.world.generator.mcp.tools;
 
+import de.mhus.nimbus.world.generator.mcp.McpToolBean;
 import de.mhus.nimbus.generated.types.HexGrid;
 import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.shared.types.WorldId;
@@ -19,7 +20,7 @@ import java.util.stream.Collectors;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class HexGridTools {
+public class HexGridTools implements McpToolBean {
 
     private final WHexGridService hexGridService;
 

@@ -158,6 +158,7 @@ interface DialogNodeResponse {
   freeTextEnabled: boolean;
   finished: boolean;
   voice: VoiceInfo | null;
+  navigate: string | null;
 }
 
 const dialog = ref<DialogNodeResponse | null>(null);
@@ -219,6 +220,12 @@ function skipTypewriter() {
 
 function applyResponse(response: DialogNodeResponse) {
   dialog.value = response;
+
+  // Navigate to another page if requested by a dialog effect
+  if (response.navigate) {
+    window.location.href = response.navigate;
+    return;
+  }
 
   if (response.finished) {
     speechPlayerRef.value?.stop();

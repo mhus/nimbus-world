@@ -3,6 +3,8 @@ package de.mhus.nimbus.world.control.api;
 import de.mhus.nimbus.generated.types.Item;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.shared.rest.BaseEditorController;
+import de.mhus.nimbus.world.shared.world.ItemTier;
+import de.mhus.nimbus.world.shared.world.RarityCategory;
 import de.mhus.nimbus.world.shared.world.WItem;
 import de.mhus.nimbus.world.shared.world.WItemService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -83,7 +85,15 @@ public class EItemController extends BaseEditorController {
             Boolean exclusive,
             Boolean generic,
             java.util.Map<String, String> parameters,
-            java.util.Map<String, String> server
+            java.util.Map<String, String> server,
+            // Trading/price fields
+            String itemTier,
+            String rarityCategory,
+            Double basePrice,
+            Double materialPrice,
+            Double craftingCost,
+            Double usageBonus,
+            Double rarityBonus
     ) {
     }
 
@@ -272,8 +282,26 @@ public class EItemController extends BaseEditorController {
             }
 
             WItem result = updated.get();
+            boolean needsSave = false;
             if (request.server() != null) {
                 result.setServer(request.server());
+                needsSave = true;
+            }
+            // Trading/price fields
+            if (!Strings.isBlank(request.itemTier())) {
+                result.setItemTier(ItemTier.valueOf(request.itemTier().toUpperCase().trim()));
+                needsSave = true;
+            }
+            if (!Strings.isBlank(request.rarityCategory())) {
+                result.setRarityCategory(RarityCategory.valueOf(request.rarityCategory().toUpperCase().trim()));
+                needsSave = true;
+            }
+            if (request.basePrice() != null) { result.setBasePrice(request.basePrice()); needsSave = true; }
+            if (request.materialPrice() != null) { result.setMaterialPrice(request.materialPrice()); needsSave = true; }
+            if (request.craftingCost() != null) { result.setCraftingCost(request.craftingCost()); needsSave = true; }
+            if (request.usageBonus() != null) { result.setUsageBonus(request.usageBonus()); needsSave = true; }
+            if (request.rarityBonus() != null) { result.setRarityBonus(request.rarityBonus()); needsSave = true; }
+            if (needsSave) {
                 result = itemService.saveEntity(result);
             }
 

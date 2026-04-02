@@ -1,8 +1,11 @@
 package de.mhus.nimbus.world.generator.mcp.tools;
 
+import de.mhus.nimbus.world.generator.mcp.McpToolBean;
 import de.mhus.nimbus.generated.types.Item;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.generator.mcp.McpToolException;
+import de.mhus.nimbus.world.shared.world.ItemTier;
+import de.mhus.nimbus.world.shared.world.RarityCategory;
 import de.mhus.nimbus.world.shared.world.WItem;
 import de.mhus.nimbus.world.shared.world.WItemService;
 import lombok.RequiredArgsConstructor;
@@ -17,7 +20,7 @@ import java.util.*;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class ItemTools {
+public class ItemTools implements McpToolBean {
 
     private final WItemService itemService;
 
@@ -51,6 +54,9 @@ public class ItemTools {
                 map.put("texture", e.getPublicData().getTexture() != null ? e.getPublicData().getTexture() : "");
             }
             map.put("enabled", e.isEnabled());
+            if (e.getItemTier() != null) map.put("itemTier", e.getItemTier().name());
+            if (e.getRarityCategory() != null) map.put("rarityCategory", e.getRarityCategory().name());
+            if (e.getBasePrice() != null) map.put("basePrice", e.getBasePrice());
             return map;
         }).toList();
 
@@ -86,6 +92,14 @@ public class ItemTools {
         if (entity.getServer() != null) {
             result.put("server", entity.getServer());
         }
+        // Trading/price fields
+        if (entity.getItemTier() != null) result.put("itemTier", entity.getItemTier().name());
+        if (entity.getRarityCategory() != null) result.put("rarityCategory", entity.getRarityCategory().name());
+        if (entity.getBasePrice() != null) result.put("basePrice", entity.getBasePrice());
+        if (entity.getMaterialPrice() != null) result.put("materialPrice", entity.getMaterialPrice());
+        if (entity.getCraftingCost() != null) result.put("craftingCost", entity.getCraftingCost());
+        if (entity.getUsageBonus() != null) result.put("usageBonus", entity.getUsageBonus());
+        if (entity.getRarityBonus() != null) result.put("rarityBonus", entity.getRarityBonus());
         return result;
     }
 
@@ -203,19 +217,23 @@ public class ItemTools {
         );
     }
 
-    @Tool(name = "update_item", description = "Update parameters and/or server properties on an existing item by itemId. Merges the given values into the item's existing maps.")
+    @Tool(name = "update_item", description = "Update parameters, server properties, and/or trading fields on an existing item by itemId. Merges the given values into the item's existing maps. Trading fields (itemTier, rarityCategory, basePrice, etc.) are set directly.")
     public Map<String, Object> updateItem(
             @ToolParam(description = "World ID or region (e.g. '@region:earth616')") String worldId,
             @ToolParam(description = "Item ID to update") String itemId,
             @ToolParam(description = "Parameters to merge into the item's public parameters", required = false) Map<String, String> parameters,
-            @ToolParam(description = "Server-side parameters to merge into the item's server map (e.g. action, effects)", required = false) Map<String, String> server) {
-        log.debug("MCP: Update item: worldId={}, itemId={}, parameters={}, server={}", worldId, itemId, parameters, server);
+            @ToolParam(description = "Server-side parameters to merge into the item's server map (e.g. action, effects)", required = false) Map<String, String> server,
+            @ToolParam(description = "Item tier: NONE, LEATHER, IRON, STEEL, SILVER, GOLD, MYTHRIL, ADAMANT, ORICHALCUM", required = false) String itemTier,
+            @ToolParam(description = "Rarity: COMMON, UNCOMMON, RARE, EPIC, LEGENDARY, MYTHIC", required = false) String rarityCategory,
+            @ToolParam(description = "Base price in silver (overrides calculated value)", required = false) Double basePrice,
+            @ToolParam(description = "Material price component", required = false) Double materialPrice,
+            @ToolParam(description = "Crafting cost component", required = false) Double craftingCost,
+            @ToolParam(description = "Usage bonus component (combat stats, utility)", required = false) Double usageBonus,
+            @ToolParam(description = "Rarity bonus component", required = false) Double rarityBonus) {
+        log.debug("MCP: Update item: worldId={}, itemId={}", worldId, itemId);
 
         if (Strings.isBlank(worldId) || Strings.isBlank(itemId)) {
             throw new McpToolException("worldId and itemId are required");
-        }
-        if ((parameters == null || parameters.isEmpty()) && (server == null || server.isEmpty())) {
-            throw new McpToolException("At least one of parameters or server is required");
         }
 
         var wid = WorldId.of(worldId).orElseThrow(
@@ -242,6 +260,27 @@ public class ItemTools {
                 item.getServer().putAll(server);
             }
         }
+
+        // Trading/price fields
+        if (!Strings.isBlank(itemTier)) {
+            try {
+                item.setItemTier(ItemTier.valueOf(itemTier.toUpperCase().trim()));
+            } catch (IllegalArgumentException e) {
+                throw new McpToolException("Invalid itemTier: " + itemTier);
+            }
+        }
+        if (!Strings.isBlank(rarityCategory)) {
+            try {
+                item.setRarityCategory(RarityCategory.valueOf(rarityCategory.toUpperCase().trim()));
+            } catch (IllegalArgumentException e) {
+                throw new McpToolException("Invalid rarityCategory: " + rarityCategory);
+            }
+        }
+        if (basePrice != null) item.setBasePrice(basePrice);
+        if (materialPrice != null) item.setMaterialPrice(materialPrice);
+        if (craftingCost != null) item.setCraftingCost(craftingCost);
+        if (usageBonus != null) item.setUsageBonus(usageBonus);
+        if (rarityBonus != null) item.setRarityBonus(rarityBonus);
 
         itemService.saveEntity(item);
 

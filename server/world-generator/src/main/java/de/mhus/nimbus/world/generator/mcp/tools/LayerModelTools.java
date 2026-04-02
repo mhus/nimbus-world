@@ -1,5 +1,6 @@
 package de.mhus.nimbus.world.generator.mcp.tools;
 
+import de.mhus.nimbus.world.generator.mcp.McpToolBean;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
@@ -23,7 +24,7 @@ import java.util.stream.Collectors;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class LayerModelTools {
+public class LayerModelTools implements McpToolBean {
 
     private final WLayerService layerService;
     private final WLayerModelRepository modelRepository;

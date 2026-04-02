@@ -61,12 +61,35 @@ export class ItemApiService {
   /**
    * Update an existing item
    */
-  static async updateItem(itemId: string, item: ItemData, worldId: string, server?: Record<string, string>): Promise<void> {
+  static async updateItem(
+    itemId: string,
+    item: ItemData,
+    worldId: string,
+    server?: Record<string, string>,
+    trading?: {
+      itemTier?: string;
+      rarityCategory?: string;
+      basePrice?: number | null;
+      materialPrice?: number | null;
+      craftingCost?: number | null;
+      usageBonus?: number | null;
+      rarityBonus?: number | null;
+    }
+  ): Promise<void> {
     const url = `/control/worlds/${worldId}/item/${encodeURIComponent(itemId)}`;
 
     const body: any = { ...item };
     if (server !== undefined) {
       body.server = server;
+    }
+    if (trading) {
+      if (trading.itemTier) body.itemTier = trading.itemTier;
+      if (trading.rarityCategory) body.rarityCategory = trading.rarityCategory;
+      if (trading.basePrice != null) body.basePrice = trading.basePrice;
+      if (trading.materialPrice != null) body.materialPrice = trading.materialPrice;
+      if (trading.craftingCost != null) body.craftingCost = trading.craftingCost;
+      if (trading.usageBonus != null) body.usageBonus = trading.usageBonus;
+      if (trading.rarityBonus != null) body.rarityBonus = trading.rarityBonus;
     }
     await this.apiService.put(url, body);
   }

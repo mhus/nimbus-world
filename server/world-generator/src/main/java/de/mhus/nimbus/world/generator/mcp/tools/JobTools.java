@@ -1,5 +1,6 @@
 package de.mhus.nimbus.world.generator.mcp.tools;
 
+import de.mhus.nimbus.world.generator.mcp.McpToolBean;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.generator.mcp.McpJobException;
 import de.mhus.nimbus.world.generator.mcp.McpJobExecutor;
@@ -20,7 +21,7 @@ import java.util.Optional;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class JobTools {
+public class JobTools implements McpToolBean {
 
     private final McpJobExecutor mcpJobExecutor;
     private final WJobService jobService;

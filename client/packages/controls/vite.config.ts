@@ -68,6 +68,7 @@ export default defineConfig({
         'workflow-editor': resolve(__dirname, 'workflow-editor.html'),
         'flat-editor': resolve(__dirname, 'flat-editor.html'),
         'chest-editor': resolve(__dirname, 'chest-editor.html'),
+        'trader-editor': resolve(__dirname, 'trader-editor.html'),
         'chunk-editor': resolve(__dirname, 'chunk-editor.html'),
         'editcache-editor': resolve(__dirname, 'editcache-editor.html'),
         'hex-editor': resolve(__dirname, 'hex-editor.html'),

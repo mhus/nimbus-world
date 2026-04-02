@@ -265,7 +265,8 @@ public class DialogFreeTextService {
                     return new DialogNodeResponse(
                             ctx.getDialogProgress().getProgressId(),
                             ctx.getNpcTitle(), ctx.getNpcPortrait(),
-                            aiResponse.npcText(), List.of(), false, true, null
+                            aiResponse.npcText(), List.of(), false, true, null,
+                            ctx.getNavigate()
                     );
                 }
 
@@ -284,7 +285,7 @@ public class DialogFreeTextService {
                 return new DialogNodeResponse(
                         nextNode.progressId(), nextNode.npcTitle(), nextNode.npcPortrait(),
                         aiResponse.npcText(), nextNode.options(), nextNode.freeTextEnabled(), nextNode.finished(),
-                        nextNode.voice()
+                        nextNode.voice(), nextNode.navigate()
                 );
             }
         }
@@ -309,7 +310,8 @@ public class DialogFreeTextService {
                 ctx.getDialogProgress().getProgressId(),
                 ctx.getNpcTitle(), ctx.getNpcPortrait(),
                 npcText, options, freeTextEnabled, false,
-                dialogService.buildVoiceInfo(ctx)
+                dialogService.buildVoiceInfo(ctx),
+                ctx.getNavigate()
         );
     }
 

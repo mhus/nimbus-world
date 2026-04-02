@@ -1,5 +1,6 @@
 package de.mhus.nimbus.world.generator.mcp.tools;
 
+import de.mhus.nimbus.world.generator.mcp.McpToolBean;
 import de.mhus.nimbus.generated.types.ItemRef;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.generator.mcp.McpToolException;
@@ -17,7 +18,7 @@ import java.util.*;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class ChestTools {
+public class ChestTools implements McpToolBean {
 
     private final WChestService chestService;
 
@@ -76,11 +77,11 @@ public class ChestTools {
         return result;
     }
 
-    @Tool(name = "create_chest", description = "Create a new chest. Type must be REGION, WORLD, PLAYER, BANK, or TRANSFER. For PLAYER, BANK, and TRANSFER chests, playerId is required.")
+    @Tool(name = "create_chest", description = "Create a new chest. Type must be REGION, WORLD, PLAYER, BANK, TRANSFER, MERCHANT, or MERCHANT_POOL. For PLAYER, BANK, and TRANSFER chests, playerId is required.")
     public Map<String, Object> createChest(
             @ToolParam(description = "World ID (e.g. 'ymir:Mist' or '@region:earth616')") String worldId,
             @ToolParam(description = "Unique chest name (technical identifier)") String name,
-            @ToolParam(description = "Chest type: REGION, WORLD, or PLAYER") String type,
+            @ToolParam(description = "Chest type: REGION, WORLD, PLAYER, BANK, TRANSFER, MERCHANT, or MERCHANT_POOL") String type,
             @ToolParam(description = "Display title", required = false) String title,
             @ToolParam(description = "Description", required = false) String description,
             @ToolParam(description = "Player ID for PLAYER type chests (format: @userId:characterId)", required = false) String playerId,
@@ -97,7 +98,7 @@ public class ChestTools {
         try {
             chestType = WChest.ChestType.valueOf(type.toUpperCase());
         } catch (IllegalArgumentException e) {
-            throw new McpToolException("Invalid chest type: " + type + ". Must be REGION, WORLD, PLAYER, BANK, or TRANSFER");
+            throw new McpToolException("Invalid chest type: " + type + ". Must be REGION, WORLD, PLAYER, BANK, TRANSFER, MERCHANT, or MERCHANT_POOL");
         }
 
         if ((chestType == WChest.ChestType.PLAYER || chestType == WChest.ChestType.BANK || chestType == WChest.ChestType.TRANSFER)

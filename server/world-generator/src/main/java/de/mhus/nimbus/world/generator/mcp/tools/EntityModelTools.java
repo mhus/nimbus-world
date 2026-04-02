@@ -1,5 +1,6 @@
 package de.mhus.nimbus.world.generator.mcp.tools;
 
+import de.mhus.nimbus.world.generator.mcp.McpToolBean;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.generated.types.EntityModel;
 import de.mhus.nimbus.shared.types.WorldId;
@@ -21,7 +22,7 @@ import java.util.stream.Collectors;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class EntityModelTools {
+public class EntityModelTools implements McpToolBean {
 
     private final WEntityModelService entityModelService;
     private final ObjectMapper objectMapper;

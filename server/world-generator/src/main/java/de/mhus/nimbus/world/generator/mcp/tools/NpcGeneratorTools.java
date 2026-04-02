@@ -1,5 +1,6 @@
 package de.mhus.nimbus.world.generator.mcp.tools;
 
+import de.mhus.nimbus.world.generator.mcp.McpToolBean;
 import de.mhus.nimbus.world.generator.mcp.McpToolException;
 import de.mhus.nimbus.world.generator.npc.NpcGeneratorService;
 import de.mhus.nimbus.world.generator.npc.NpcGeneratorService.NpcGenerationRequest;
@@ -17,7 +18,7 @@ import java.util.Map;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class NpcGeneratorTools {
+public class NpcGeneratorTools implements McpToolBean {
 
     private final NpcGeneratorService npcGeneratorService;
 

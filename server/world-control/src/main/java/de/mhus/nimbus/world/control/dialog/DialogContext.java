@@ -59,6 +59,9 @@ public class DialogContext {
     // Current node within dialog
     private String currentNodeId;
 
+    // Navigation target set by "navigate" effect — tells the client to open this path
+    private String navigate;
+
     // Helpers
 
     public Object getNpcStateValue(String key) {

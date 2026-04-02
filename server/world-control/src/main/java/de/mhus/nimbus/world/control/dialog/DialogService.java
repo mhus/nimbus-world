@@ -279,7 +279,8 @@ public class DialogService {
                 visibleOptions,
                 freeTextEnabled,
                 finished,
-                buildVoiceInfo(ctx)
+                buildVoiceInfo(ctx),
+                ctx.getNavigate()
         );
     }
 
@@ -320,7 +321,8 @@ public class DialogService {
                     List.of(),
                     false,
                     true,
-                    null
+                    null,
+                    ctx.getNavigate()
             );
         }
 

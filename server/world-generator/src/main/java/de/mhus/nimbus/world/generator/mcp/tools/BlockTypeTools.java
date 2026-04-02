@@ -1,5 +1,6 @@
 package de.mhus.nimbus.world.generator.mcp.tools;
 
+import de.mhus.nimbus.world.generator.mcp.McpToolBean;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.generator.mcp.McpToolException;
 import de.mhus.nimbus.world.generator.mcp.dto.CreateBillboardBlockTypeRequest;
@@ -20,7 +21,7 @@ import java.util.stream.Collectors;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class BlockTypeTools {
+public class BlockTypeTools implements McpToolBean {
 
     private final WBlockTypeService blockTypeService;
 

@@ -1,5 +1,6 @@
 package de.mhus.nimbus.world.generator.mcp.tools;
 
+import de.mhus.nimbus.world.generator.mcp.McpToolBean;
 import de.mhus.nimbus.world.generator.mcp.McpToolException;
 import de.mhus.nimbus.world.shared.world.WProgress;
 import de.mhus.nimbus.world.shared.world.WProgressService;
@@ -15,7 +16,7 @@ import java.util.*;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class ProgressTools {
+public class ProgressTools implements McpToolBean {
 
     private final WProgressService progressService;
 
