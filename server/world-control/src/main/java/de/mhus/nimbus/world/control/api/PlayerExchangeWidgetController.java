@@ -56,7 +56,8 @@ public class PlayerExchangeWidgetController extends BaseEditorController {
 
     // --- DTOs ---
 
-    public record UpdateRequest(List<String> selectedItems, int silverOffer, int goldOffer, String message) {}
+    public record SelectedItem(String itemId, int amount) {}
+    public record UpdateRequest(List<SelectedItem> selectedItems, int silverOffer, int goldOffer, String message) {}
 
     /**
      * Load exchange data: both transfer chests (enriched with item details), currency balances, offer state.
@@ -124,14 +125,14 @@ public class PlayerExchangeWidgetController extends BaseEditorController {
         result.put("myGold", myGold);
         result.put("mySilverOffer", toInt(myLease.getLeaseData().get("silverOffer")));
         result.put("myGoldOffer", toInt(myLease.getLeaseData().get("goldOffer")));
-        result.put("mySelectedItems", toStringList(myLease.getLeaseData().get("selectedItems")));
+        result.put("mySelectedItems", toSelectedItemList(myLease.getLeaseData().get("selectedItems")));
         result.put("myMessage", toString(myLease.getLeaseData().get("message")));
         result.put("myAccepted", toBool(myLease.getLeaseData().get("accepted")));
 
         // Partner offer
         result.put("partnerSilverOffer", toInt(partnerLease.getLeaseData().get("silverOffer")));
         result.put("partnerGoldOffer", toInt(partnerLease.getLeaseData().get("goldOffer")));
-        result.put("partnerSelectedItems", toStringList(partnerLease.getLeaseData().get("selectedItems")));
+        result.put("partnerSelectedItems", toSelectedItemList(partnerLease.getLeaseData().get("selectedItems")));
         result.put("partnerMessage", toString(partnerLease.getLeaseData().get("message")));
         result.put("partnerAccepted", toBool(partnerLease.getLeaseData().get("accepted")));
 
@@ -320,10 +321,10 @@ public class PlayerExchangeWidgetController extends BaseEditorController {
         var playerIdB = PlayerId.of(playerB).orElse(null);
         if (playerIdA == null || playerIdB == null) return bad("Invalid player IDs");
 
-        // A wants these items from B's chest
-        List<String> wantedByA = toStringList(leaseA.getLeaseData().get("selectedItems"));
-        // B wants these items from A's chest
-        List<String> wantedByB = toStringList(leaseB.getLeaseData().get("selectedItems"));
+        // A wants these items (with amounts) from B's chest
+        List<SelectedItem> wantedByA = toSelectedItemList(leaseA.getLeaseData().get("selectedItems"));
+        // B wants these items (with amounts) from A's chest
+        List<SelectedItem> wantedByB = toSelectedItemList(leaseB.getLeaseData().get("selectedItems"));
 
         int silverOfferA = toInt(leaseA.getLeaseData().get("silverOffer"));
         int silverOfferB = toInt(leaseB.getLeaseData().get("silverOffer"));
@@ -333,15 +334,19 @@ public class PlayerExchangeWidgetController extends BaseEditorController {
         WChest chestA = chestService.getOrCreateUserTransferChest(worldId, playerIdA);
         WChest chestB = chestService.getOrCreateUserTransferChest(worldId, playerIdB);
 
-        // Validate: requested items must actually be in the chest
+        // Validate: requested items must be in chest with sufficient amount
         Map<String, ItemRef> chestAItems = indexByItemId(chestA.getItems());
         Map<String, ItemRef> chestBItems = indexByItemId(chestB.getItems());
 
-        for (String itemId : wantedByA) {
-            if (!chestBItems.containsKey(itemId)) return bad("Item " + itemId + " not in partner's chest");
+        for (SelectedItem sel : wantedByA) {
+            ItemRef ref = chestBItems.get(sel.itemId());
+            if (ref == null) return bad("Item " + sel.itemId() + " not in partner's chest");
+            if (ref.getAmount() < sel.amount()) return bad("Not enough " + sel.itemId() + " in partner's chest");
         }
-        for (String itemId : wantedByB) {
-            if (!chestAItems.containsKey(itemId)) return bad("Item " + itemId + " not in your chest");
+        for (SelectedItem sel : wantedByB) {
+            ItemRef ref = chestAItems.get(sel.itemId());
+            if (ref == null) return bad("Item " + sel.itemId() + " not in your chest");
+            if (ref.getAmount() < sel.amount()) return bad("Not enough " + sel.itemId() + " in your chest");
         }
 
         var regionId = WorldId.unchecked(worldId).getRegionId();
@@ -381,17 +386,27 @@ public class PlayerExchangeWidgetController extends BaseEditorController {
         }
 
         // --- Phase 2: Move items ---
-        // Items B wanted from A's chest → remove from A's chest, add to B's backpack
-        for (String itemId : wantedByB) {
-            ItemRef ref = chestAItems.get(itemId);
-            chestService.removeItemAtomic(chestA.getId(), itemId);
-            characterService.addBackpackItem(charB.get().getId(), itemId, ref.getAmount());
+        // Items B wanted from A's chest → reduce in A's chest, add to B's backpack
+        for (SelectedItem sel : wantedByB) {
+            ItemRef ref = chestAItems.get(sel.itemId());
+            if (ref.getAmount() <= sel.amount()) {
+                // Take all — remove entire item from chest
+                chestService.removeItemAtomic(chestA.getId(), sel.itemId());
+            } else {
+                // Take partial — reduce amount in chest
+                chestService.updateItemAmount(chestA.getId(), sel.itemId(), ref.getAmount() - sel.amount());
+            }
+            characterService.addBackpackItem(charB.get().getId(), sel.itemId(), sel.amount());
         }
-        // Items A wanted from B's chest → remove from B's chest, add to A's backpack
-        for (String itemId : wantedByA) {
-            ItemRef ref = chestBItems.get(itemId);
-            chestService.removeItemAtomic(chestB.getId(), itemId);
-            characterService.addBackpackItem(charA.get().getId(), itemId, ref.getAmount());
+        // Items A wanted from B's chest → reduce in B's chest, add to A's backpack
+        for (SelectedItem sel : wantedByA) {
+            ItemRef ref = chestBItems.get(sel.itemId());
+            if (ref.getAmount() <= sel.amount()) {
+                chestService.removeItemAtomic(chestB.getId(), sel.itemId());
+            } else {
+                chestService.updateItemAmount(chestB.getId(), sel.itemId(), ref.getAmount() - sel.amount());
+            }
+            characterService.addBackpackItem(charA.get().getId(), sel.itemId(), sel.amount());
         }
 
         // --- Phase 3: Distribute currency ---
@@ -483,10 +498,22 @@ public class PlayerExchangeWidgetController extends BaseEditorController {
     }
 
     @SuppressWarnings("unchecked")
-    private List<String> toStringList(Object value) {
+    private List<SelectedItem> toSelectedItemList(Object value) {
         if (value == null) return List.of();
         if (value instanceof List<?> list) {
-            return list.stream().map(Object::toString).toList();
+            List<SelectedItem> result = new ArrayList<>();
+            for (Object item : list) {
+                if (item instanceof SelectedItem si) {
+                    result.add(si);
+                } else if (item instanceof Map<?, ?> map) {
+                    String itemId = map.get("itemId") != null ? map.get("itemId").toString() : null;
+                    int amount = map.get("amount") instanceof Number n ? n.intValue() : 1;
+                    if (itemId != null && amount > 0) {
+                        result.add(new SelectedItem(itemId, amount));
+                    }
+                }
+            }
+            return result;
         }
         return List.of();
     }

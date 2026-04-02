@@ -59,7 +59,7 @@
           <h2 class="text-sm font-bold text-amber-300">
             My Transfer Chest
             <span class="text-xs font-normal text-gray-500 ml-1">
-              ({{ data.partnerSelectedItems.length }} selected by {{ data.partnerName }})
+              ({{ data.partnerSelectedItems.length }} items selected by {{ data.partnerName }})
             </span>
           </h2>
 
@@ -71,7 +71,7 @@
               v-for="item in data.myTransferItems"
               :key="'my-' + item.itemId"
               class="relative w-14 h-14 rounded border-2 flex items-center justify-center bg-gray-700"
-              :class="data.partnerSelectedItems.includes(item.itemId)
+              :class="getPartnerSelectedAmount(item.itemId) > 0
                 ? 'border-blue-400 shadow-lg shadow-blue-400/20'
                 : 'border-gray-600'"
               :title="item.name + (item.description ? ' — ' + item.description : '')"
@@ -84,6 +84,11 @@
                     class="absolute -bottom-1 -right-1 bg-amber-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
                 {{ item.amount > 99 ? '99+' : item.amount }}
               </span>
+              <!-- Partner wants this many -->
+              <div v-if="getPartnerSelectedAmount(item.itemId) > 0"
+                   class="absolute -top-1 -left-1 bg-blue-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs">
+                {{ getPartnerSelectedAmount(item.itemId) }}
+              </div>
             </div>
           </div>
 
@@ -118,7 +123,7 @@
           <h2 class="text-sm font-bold text-blue-300">
             {{ data.partnerName }}'s Transfer Chest
             <span class="text-xs font-normal text-gray-500 ml-1">
-              ({{ selectedItems.length }} selected)
+              ({{ selectedItems.length }} items selected)
             </span>
           </h2>
 
@@ -131,7 +136,7 @@
               :key="'partner-' + item.itemId"
               class="relative w-14 h-14 rounded border-2 transition-all flex items-center justify-center bg-gray-700"
               :class="[
-                selectedItems.includes(item.itemId)
+                isSelected(item.itemId)
                   ? 'border-green-400 shadow-lg shadow-green-400/20'
                   : 'border-gray-600',
                 data.myAccepted ? 'opacity-50 cursor-default' : 'cursor-pointer hover:border-gray-400'
@@ -147,10 +152,10 @@
                     class="absolute -bottom-1 -right-1 bg-amber-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
                 {{ item.amount > 99 ? '99+' : item.amount }}
               </span>
-              <!-- Selection checkmark -->
-              <div v-if="selectedItems.includes(item.itemId)"
+              <!-- Selection checkmark with amount -->
+              <div v-if="isSelected(item.itemId)"
                    class="absolute -top-1 -left-1 bg-green-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs">
-                ✓
+                {{ getSelectedAmount(item.itemId) }}
               </div>
             </div>
           </div>
@@ -191,7 +196,19 @@
             <h3 class="font-semibold text-amber-300 truncate text-sm">{{ selectedItemDetail.name }}</h3>
             <p class="text-xs text-gray-400">{{ selectedItemDetail.itemType || 'Unknown type' }}</p>
             <p v-if="selectedItemDetail.description" class="text-xs text-gray-500 mt-0.5">{{ selectedItemDetail.description }}</p>
-            <p class="text-xs text-gray-500 mt-0.5">Amount: {{ selectedItemDetail.amount }}</p>
+            <p class="text-xs text-gray-500 mt-0.5">Available: {{ selectedItemDetail.amount }}</p>
+          </div>
+          <!-- Amount selector (only when item is selected) -->
+          <div v-if="isSelected(selectedItemDetail.itemId)" class="flex items-center gap-1 flex-shrink-0">
+            <label class="text-xs text-gray-400">Want:</label>
+            <input
+              :value="getSelectedAmount(selectedItemDetail.itemId)"
+              @input="setSelectedAmount(selectedItemDetail.itemId, Number(($event.target as HTMLInputElement).value))"
+              type="number" min="1" :max="selectedItemDetail.amount"
+              :disabled="data.myAccepted"
+              class="bg-gray-700 rounded px-2 py-1 text-xs w-14 text-right disabled:opacity-50"
+            />
+            <span class="text-xs text-gray-500">/ {{ selectedItemDetail.amount }}</span>
           </div>
         </div>
       </div>
@@ -245,6 +262,8 @@ interface EnrichedItem {
   amount: number;
 }
 
+interface SelectedItem { itemId: string; amount: number; }
+
 interface ExchangeData {
   myLeaseId: string;
   partnerLeaseId: string;
@@ -255,12 +274,12 @@ interface ExchangeData {
   myGold: number;
   mySilverOffer: number;
   myGoldOffer: number;
-  mySelectedItems: string[];
+  mySelectedItems: SelectedItem[];
   myMessage: string;
   myAccepted: boolean;
   partnerSilverOffer: number;
   partnerGoldOffer: number;
-  partnerSelectedItems: string[];
+  partnerSelectedItems: SelectedItem[];
   partnerMessage: string;
   partnerAccepted: boolean;
 }
@@ -269,14 +288,14 @@ const data = ref<ExchangeData>({
   myLeaseId: '', partnerLeaseId: '', partnerName: '',
   myTransferItems: [], partnerTransferItems: [],
   mySilver: 0, myGold: 0,
-  mySilverOffer: 0, myGoldOffer: 0, mySelectedItems: [], myMessage: '', myAccepted: false,
-  partnerSilverOffer: 0, partnerGoldOffer: 0, partnerSelectedItems: [], partnerMessage: '', partnerAccepted: false,
+  mySilverOffer: 0, myGoldOffer: 0, mySelectedItems: [] as SelectedItem[], myMessage: '', myAccepted: false,
+  partnerSilverOffer: 0, partnerGoldOffer: 0, partnerSelectedItems: [] as SelectedItem[], partnerMessage: '', partnerAccepted: false,
 });
 
 const silverOffer = ref(0);
 const goldOffer = ref(0);
 const message = ref('');
-const selectedItems = ref<string[]>([]);
+const selectedItems = ref<SelectedItem[]>([]);
 const lastClickedItemId = ref<string | null>(null);
 
 let progressId = '';
@@ -303,13 +322,37 @@ const onImageError = (event: Event) => {
   img.style.display = 'none';
 };
 
+function isSelected(itemId: string): boolean {
+  return selectedItems.value.some(s => s.itemId === itemId);
+}
+
+function getSelectedAmount(itemId: string): number {
+  const sel = selectedItems.value.find(s => s.itemId === itemId);
+  return sel ? sel.amount : 0;
+}
+
+function getPartnerSelectedAmount(itemId: string): number {
+  const sel = data.value.partnerSelectedItems.find(s => s.itemId === itemId);
+  return sel ? sel.amount : 0;
+}
+
 function toggleItemSelection(itemId: string) {
   lastClickedItemId.value = itemId;
-  const idx = selectedItems.value.indexOf(itemId);
+  const idx = selectedItems.value.findIndex(s => s.itemId === itemId);
   if (idx >= 0) {
     selectedItems.value.splice(idx, 1);
   } else {
-    selectedItems.value.push(itemId);
+    selectedItems.value.push({ itemId, amount: 1 });
+  }
+}
+
+function setSelectedAmount(itemId: string, amount: number) {
+  const item = data.value.partnerTransferItems.find(i => i.itemId === itemId);
+  const maxAmount = item ? item.amount : 1;
+  amount = Math.max(1, Math.min(amount, maxAmount));
+  const sel = selectedItems.value.find(s => s.itemId === itemId);
+  if (sel) {
+    sel.amount = amount;
   }
 }
 
@@ -345,7 +388,7 @@ async function loadData(silent = false) {
       silverOffer.value = result.mySilverOffer;
       goldOffer.value = result.myGoldOffer;
       message.value = result.myMessage;
-      selectedItems.value = [...result.mySelectedItems];
+      selectedItems.value = result.mySelectedItems.map(s => ({ ...s }));
     }
 
     state.value = 'ACTIVE';
