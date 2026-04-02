@@ -28,6 +28,7 @@ export interface InstanceUpdateRequest {
   durationType?: InstanceDurationType;
   expiresAt?: string;
   enabled?: boolean;
+  players?: string[];
 }
 
 export interface InstanceStats {

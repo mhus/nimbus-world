@@ -17,6 +17,7 @@ import de.mhus.nimbus.world.shared.session.WSession;
 import de.mhus.nimbus.world.shared.session.WSessionStatus;
 import de.mhus.nimbus.world.shared.team.WTeamService;
 import de.mhus.nimbus.world.shared.world.WWorld;
+import de.mhus.nimbus.world.shared.world.InstanceAccessType;
 import de.mhus.nimbus.world.shared.world.WWorldInstance;
 import de.mhus.nimbus.world.shared.world.WWorldService;
 import de.mhus.nimbus.world.shared.world.WorldInstanceType;
@@ -170,13 +171,23 @@ public class AccessService {
     }
 
     /**
-     * Check if a player can access a specific instance based on the world's instance type.
+     * Check if a player can access a specific instance based on the instance's own accessType
+     * (if set) or the world's instance type as fallback.
      */
     private boolean isInstanceAccessible(WWorldInstance instance, String playerId,
                                          WorldInstanceType instanceType, int maxPlayers) {
         // Creator or in players list → always allowed
         if (instance.isPlayerAllowed(playerId)) {
             return true;
+        }
+
+        // Instance-level accessType overrides world-level instanceType
+        if (instance.getAccessType() != null) {
+            return switch (instance.getAccessType()) {
+                case PRIVATE -> false;
+                case TEAM -> teamService.isPlayerInvitedToTeam(instance.getWorldWithInstanceId(), playerId);
+                case PUBLIC -> maxPlayers <= 0 || instance.getActivePlayerCount() < maxPlayers;
+            };
         }
 
         return switch (instanceType) {
@@ -383,9 +394,14 @@ public class AccessService {
             var existingInstance = worldInstanceService.findByInstanceIdWithValidation(resolvedInstanceId)
                     .orElseThrow(() -> new IllegalArgumentException("Instance not found: " + resolvedInstanceId));
 
-            // PLAYER: must be in players list; SUPPORT: can join any instance
-            if (request.getActor() == ActorRoles.PLAYER && !existingInstance.isPlayerAllowed(playerId.getId())) {
-                throw new IllegalArgumentException("Player not allowed in instance: " + request.getInstanceId());
+            // PLAYER: must pass instance access check; SUPPORT: can join any instance
+            if (request.getActor() == ActorRoles.PLAYER) {
+                WorldInstanceType worldInstanceType = world.getInstanceType() != null
+                        ? world.getInstanceType() : WorldInstanceType.PRIVATE;
+                int maxPlayers = world.getMaxPlayersPerInstance();
+                if (!isInstanceAccessible(existingInstance, playerId.getId(), worldInstanceType, maxPlayers)) {
+                    throw new IllegalArgumentException("Player not allowed in instance: " + request.getInstanceId());
+                }
             }
 
             worldInstanceService.addActivePlayerAtomic(existingInstance.getInstanceId(), playerId.getId());

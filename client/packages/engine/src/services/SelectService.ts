@@ -502,8 +502,9 @@ export class SelectService {
           return false;
         }
 
-        // Filter out player entities BEFORE picking
-        if (entity.entity.controlledBy === 'player') {
+        // Filter out own player avatar (but allow other players to be selected)
+        const myPlayerId = this.appContext.playerInfo?.playerId;
+        if (myPlayerId && entity.id === myPlayerId) {
           return false;
         }
 
@@ -1573,8 +1574,9 @@ export class SelectService {
         continue;
       }
 
-      // Skip player-controlled entities
-      if (entity.entity.controlledBy === 'player') {
+      // Skip own player avatar (but allow other players)
+      const myPlayerId = this.appContext.playerInfo?.playerId;
+      if (myPlayerId && entity.id === myPlayerId) {
         continue;
       }
 

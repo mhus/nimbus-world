@@ -242,7 +242,7 @@
                   <option v-if="selectedActor === 'PLAYER'" value="">New Instance</option>
                   <option v-if="selectedActor === 'PLAYER' && instances.length > 0" value="__last__">Last Instance</option>
                   <option v-for="inst in instances" :key="inst.instanceId" :value="inst.instanceId">
-                    [{{ inst.accessType || 'PRIVATE' }}] {{ inst.title }} - {{ inst.createdAt ? new Date(inst.createdAt).toLocaleDateString() : '' }}
+                    [{{ inst.accessType || 'PRIVATE' }}] {{ inst.title }} - {{ inst.createdAt ? new Date(inst.createdAt).toLocaleDateString() : '' }} ({{ inst.instanceId }})
                   </option>
                 </select>
               </div>

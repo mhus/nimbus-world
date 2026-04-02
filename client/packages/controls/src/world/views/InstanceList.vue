@@ -280,12 +280,29 @@
             </label>
           </div>
 
-          <!-- Players (read-only) -->
+          <!-- Players -->
           <div class="form-control">
-            <label class="label"><span class="label-text">Players ({{ editInstance.players.length }})</span></label>
-            <div class="bg-base-200 rounded-lg p-2 max-h-24 overflow-y-auto">
-              <div v-if="editInstance.players.length === 0" class="text-xs text-base-content/50">No players</div>
-              <div v-for="player in editInstance.players" :key="player" class="text-xs font-mono">{{ player }}</div>
+            <label class="label"><span class="label-text">Players ({{ editForm.players.length }})</span></label>
+            <div v-if="editForm.players.length > 0" class="flex flex-wrap gap-2 mb-2">
+              <span
+                v-for="player in editForm.players"
+                :key="player"
+                class="badge badge-lg badge-primary gap-2 font-mono text-xs"
+              >
+                {{ player }}
+                <button type="button" class="btn btn-ghost btn-xs px-0" @click="removePlayer(player)">&times;</button>
+              </span>
+            </div>
+            <div v-else class="text-xs text-base-content/50 mb-2">No players</div>
+            <div class="join w-full">
+              <input
+                v-model="newPlayerInput"
+                type="text"
+                placeholder="Add player ID..."
+                class="input input-bordered input-sm join-item flex-1"
+                @keyup.enter="addPlayer"
+              />
+              <button type="button" class="btn btn-primary btn-sm join-item" @click="addPlayer">Add</button>
             </div>
           </div>
 
@@ -369,9 +386,11 @@ const editForm = ref({
   durationType: 'SHORT' as InstanceDurationType,
   expiresAt: '',
   enabled: true,
+  players: [] as string[],
 });
 const editSaving = ref(false);
 const editError = ref<string | null>(null);
+const newPlayerInput = ref('');
 
 // Epoch switch modal state
 const epochDialog = ref<HTMLDialogElement | null>(null);
@@ -495,13 +514,30 @@ const handleEdit = (instance: Instance) => {
   editForm.value = {
     title: instance.title || '',
     description: instance.description || '',
-    accessType: instance.accessType || 'PRIVATE',
-    durationType: instance.durationType || 'SHORT',
+    accessType: (instance.accessType?.toUpperCase() as InstanceAccessType) || 'PRIVATE',
+    durationType: (instance.durationType?.toUpperCase() as InstanceDurationType) || 'SHORT',
     expiresAt: toLocalDatetime(instance.expiresAt),
     enabled: instance.enabled,
+    players: [...(instance.players || [])],
   };
+  newPlayerInput.value = '';
   editError.value = null;
   editDialog.value?.showModal();
+};
+
+const addPlayer = () => {
+  const playerId = newPlayerInput.value.trim();
+  if (!playerId) return;
+  if (editForm.value.players.includes(playerId)) {
+    newPlayerInput.value = '';
+    return;
+  }
+  editForm.value.players.push(playerId);
+  newPlayerInput.value = '';
+};
+
+const removePlayer = (playerId: string) => {
+  editForm.value.players = editForm.value.players.filter(p => p !== playerId);
 };
 
 const closeEditDialog = () => {
@@ -522,6 +558,7 @@ const handleSaveEdit = async () => {
       durationType: editForm.value.durationType,
       expiresAt: editForm.value.expiresAt ? new Date(editForm.value.expiresAt).toISOString() : undefined,
       enabled: editForm.value.enabled,
+      players: editForm.value.players,
     };
     await instanceServiceFrontend.updateInstance(editInstance.value.instanceId, request);
     closeEditDialog();

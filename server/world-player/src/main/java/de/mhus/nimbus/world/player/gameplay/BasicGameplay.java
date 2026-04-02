@@ -300,9 +300,11 @@ public class BasicGameplay implements Gameplay {
     @Override
     public void onPlayerInteraction(PlayerSession session, String entityId, String userAction, String shortcutKey, Long timestamp, JsonNode params) {
         if (Strings.isBlank(shortcutKey)) {
-            // No shortcut: open player-interact widget
-            var interactAction = new PlayerInteractAction(this);
-            interactAction.handlePlayerAction(session, entityId, userAction, null, timestamp, params);
+            // Only open interact widget on explicit user actions (click, interact), not on proximity/collision
+            if ("interact".equals(userAction) || "click".equals(userAction)) {
+                var interactAction = new PlayerInteractAction(this);
+                interactAction.handlePlayerAction(session, entityId, userAction, null, timestamp, params);
+            }
             return;
         }
         String itemAction = resolveShortcutItemAction(session, shortcutKey, params);
