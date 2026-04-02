@@ -54,7 +54,7 @@ public class OpenTradeAction extends AbstractGamplayAction {
         // Trigger pool sync if due
         basic.getTraderService().syncPoolIfDue(trader);
 
-        String playerId = session.getEntityId();
+        String playerId = session.getPlayer().user().getUserId();
 
         // Store trade configuration in progress data
         Map<String, Object> progressData = new HashMap<>();

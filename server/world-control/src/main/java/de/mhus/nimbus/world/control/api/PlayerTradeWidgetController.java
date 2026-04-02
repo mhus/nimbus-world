@@ -25,8 +25,7 @@ import java.util.*;
 
 /**
  * REST Controller for trade widget operations.
- * Allows players to buy/sell items from NPC traders via a WProgress reference.
- * The WProgress (type "trade-access") contains trader configuration in progressData.
+ * Players prepare a trade (buy/sell cart) in the UI and submit it as one atomic action via /apply.
  */
 @RestController
 @RequestMapping("/control/player/trade-widget")
@@ -70,12 +69,10 @@ public class PlayerTradeWidgetController extends BaseEditorController {
             return bad("Invalid worldId format");
         }
 
-        // Resolve trader from progress
         var resolve = resolveTraderFromProgress(progressId, worldId, userId);
         if (resolve.error != null) return resolve.error;
         WTrader trader = resolve.trader;
 
-        // Load character
         var character = findCharacter(worldId, userId, characterId);
         if (character == null) {
             return notFound("Character not found");
@@ -96,7 +93,6 @@ public class PlayerTradeWidgetController extends BaseEditorController {
         List<Map<String, Object>> backpackItems = enrichBackpackItemsWithSellPrice(
                 parsedWorldId, itemIds, trader, character, worldId);
 
-        // Build response
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("worldId", worldId);
         result.put("traderEntityId", trader.getEntityId());
@@ -112,12 +108,12 @@ public class PlayerTradeWidgetController extends BaseEditorController {
     }
 
     /**
-     * Buy an item from the trader.
+     * Apply a complete trade: buy items, sell items, exchange gold — all in one atomic action.
      */
-    @PostMapping("/buy")
-    @Operation(summary = "Buy item from trader")
-    public ResponseEntity<?> buy(
-            @RequestBody TradeItemRequest body,
+    @PostMapping("/apply")
+    @Operation(summary = "Apply a complete trade (buy + sell + gold exchange)")
+    public ResponseEntity<?> apply(
+            @RequestBody TradeApplyRequest body,
             HttpServletRequest request) {
 
         String worldId = (String) request.getAttribute(AccessFilterBase.ATTR_WORLD_ID);
@@ -127,8 +123,8 @@ public class PlayerTradeWidgetController extends BaseEditorController {
         if (Strings.isBlank(worldId) || Strings.isBlank(userId) || Strings.isBlank(characterId)) {
             return bad("Not authenticated");
         }
-        if (body == null || Strings.isBlank(body.progressId()) || Strings.isBlank(body.itemId()) || body.amount() <= 0) {
-            return bad("progressId, itemId and amount (> 0) required");
+        if (body == null || Strings.isBlank(body.progressId())) {
+            return bad("progressId required");
         }
 
         var resolve = resolveTraderFromProgress(body.progressId(), worldId, userId);
@@ -141,173 +137,169 @@ public class PlayerTradeWidgetController extends BaseEditorController {
         var parsedWorldId = WorldId.of(worldId).orElse(null);
         if (parsedWorldId == null) return bad("Invalid worldId");
 
-        // Load item for price calculation
-        Optional<WItem> itemOpt = wItemService.findByItemId(parsedWorldId, body.itemId());
-        if (itemOpt.isEmpty()) return notFound("Item not found");
+        // Load shop chest (read-only for validation, COW-write only for buy operations)
+        var shopChestOpt = chestService.getByWorldIdAndName(worldId, trader.getChestId());
+        if (shopChestOpt.isEmpty()) return notFound("Shop chest not found");
+        WChest shopChest = shopChestOpt.get();
 
-        long buyPrice = priceCalculator.calculateBuyPrice(itemOpt.get(), trader, character, worldId);
-        long totalCost = buyPrice * body.amount();
+        // Calculate totals
+        long totalBuyCost = 0;
+        long totalSellRevenue = 0;
+        long goldExchangeSilver = 0;
 
-        // Check shop chest has the item
-        var shopChest = chestService.getForWrite(worldId, trader.getChestId());
-        if (shopChest.isEmpty()) return notFound("Shop chest not found");
-
-        ItemRef chestItem = findItemInChest(shopChest.get(), body.itemId());
-        if (chestItem == null || chestItem.getAmount() < body.amount()) {
-            return bad("Not enough items in shop");
+        // Validate buys
+        List<TradeItem> buys = body.buys() != null ? body.buys() : List.of();
+        for (TradeItem buy : buys) {
+            if (buy.amount() <= 0) return bad("Buy amount must be > 0");
+            ItemRef chestItem = findItemInChest(shopChest, buy.itemId());
+            if (chestItem == null || chestItem.getAmount() < buy.amount()) {
+                return bad("Not enough items in shop: " + buy.itemId());
+            }
+            Optional<WItem> itemOpt = wItemService.findByItemId(parsedWorldId, buy.itemId());
+            if (itemOpt.isEmpty()) return bad("Item not found: " + buy.itemId());
+            long price = priceCalculator.calculateBuyPrice(itemOpt.get(), trader, character, worldId);
+            totalBuyCost += price * buy.amount();
         }
 
-        // Take silver from player first
-        if (!characterService.changeSilver(character.getId(), -totalCost)) {
+        // Validate sells
+        List<TradeItem> sells = body.sells() != null ? body.sells() : List.of();
+        PlayerBackpack backpack = character.getBackpack();
+        Map<String, Integer> backpackItems = backpack != null ? backpack.getItemIds() : Map.of();
+        for (TradeItem sell : sells) {
+            if (sell.amount() <= 0) return bad("Sell amount must be > 0");
+            int available = backpackItems.getOrDefault(sell.itemId(), 0);
+            if (available < sell.amount()) {
+                return bad("Not enough items in backpack: " + sell.itemId());
+            }
+            Optional<WItem> itemOpt = wItemService.findByItemId(parsedWorldId, sell.itemId());
+            if (itemOpt.isEmpty()) return bad("Item not found: " + sell.itemId());
+            long price = priceCalculator.calculateSellPrice(itemOpt.get(), trader, character, worldId);
+            totalSellRevenue += price * sell.amount();
+        }
+
+        // Validate gold exchange
+        long goldAmount = body.goldExchange() != null ? body.goldExchange() : 0;
+        if (goldAmount > 0) {
+            goldExchangeSilver = priceCalculator.calculateGoldToSilver(goldAmount, trader);
+        }
+
+        // Check player can afford (net silver change)
+        long netSilverChange = totalSellRevenue + goldExchangeSilver - totalBuyCost;
+        if (netSilverChange < 0 && character.getSilver() < -netSilverChange) {
             return bad("Not enough silver");
         }
 
-        // Remove item from shop chest
-        if (chestItem.getAmount() <= body.amount()) {
-            chestService.removeItemAtomic(shopChest.get().getId(), body.itemId());
-        } else {
-            chestService.updateItemAmountAtomic(shopChest.get().getId(), body.itemId(), chestItem.getAmount() - body.amount());
-        }
-
-        // Add item to player backpack
-        characterService.addBackpackItem(character.getId(), body.itemId(), body.amount());
-
-        // Add silver to trader
-        traderService.changeSilverAmount(trader.getId(), totalCost);
-
-        log.info("Trade buy: player={} bought {}x {} for {} silver from trader={}",
-                userId, body.amount(), body.itemId(), totalCost, trader.getEntityId());
-
-        notifyPlayer(worldId, request);
-        return ResponseEntity.ok(Map.of("totalCost", totalCost, "amount", body.amount()));
-    }
-
-    /**
-     * Sell an item to the trader.
-     */
-    @PostMapping("/sell")
-    @Operation(summary = "Sell item to trader")
-    public ResponseEntity<?> sell(
-            @RequestBody TradeItemRequest body,
-            HttpServletRequest request) {
-
-        String worldId = (String) request.getAttribute(AccessFilterBase.ATTR_WORLD_ID);
-        String userId = (String) request.getAttribute(AccessFilterBase.ATTR_USER_ID);
-        String characterId = (String) request.getAttribute(AccessFilterBase.ATTR_CHARACTER_ID);
-
-        if (Strings.isBlank(worldId) || Strings.isBlank(userId) || Strings.isBlank(characterId)) {
-            return bad("Not authenticated");
-        }
-        if (body == null || Strings.isBlank(body.progressId()) || Strings.isBlank(body.itemId()) || body.amount() <= 0) {
-            return bad("progressId, itemId and amount (> 0) required");
-        }
-
-        var resolve = resolveTraderFromProgress(body.progressId(), worldId, userId);
-        if (resolve.error != null) return resolve.error;
-        WTrader trader = resolve.trader;
-
-        var character = findCharacter(worldId, userId, characterId);
-        if (character == null) return notFound("Character not found");
-
-        var parsedWorldId = WorldId.of(worldId).orElse(null);
-        if (parsedWorldId == null) return bad("Invalid worldId");
-
-        // Check backpack has the item
-        PlayerBackpack backpack = character.getBackpack();
-        Map<String, Integer> itemIds = backpack != null ? backpack.getItemIds() : null;
-        if (itemIds == null || !itemIds.containsKey(body.itemId()) || itemIds.get(body.itemId()) < body.amount()) {
-            return bad("Not enough items in backpack");
-        }
-
-        // Load item for price calculation
-        Optional<WItem> itemOpt = wItemService.findByItemId(parsedWorldId, body.itemId());
-        if (itemOpt.isEmpty()) return notFound("Item not found");
-
-        long sellPrice = priceCalculator.calculateSellPrice(itemOpt.get(), trader, character, worldId);
-        long totalRevenue = sellPrice * body.amount();
-
-        // Check trader has enough silver
-        if (trader.getSilverAmount() < totalRevenue) {
+        // Check trader can afford sells
+        if (totalSellRevenue > 0 && trader.getSilverAmount() < totalSellRevenue) {
             return bad("Trader does not have enough silver");
         }
 
-        // Take item from player first
-        if (!characterService.removeBackpackItem(character.getId(), body.itemId(), body.amount())) {
-            return bad("Failed to remove item from backpack");
-        }
-
-        // Add item to trader's pool chest (sold items go to pool, not shop)
-        var poolChest = chestService.getForWrite(worldId, trader.getPoolChestId());
-        if (poolChest.isPresent()) {
-            ItemRef existing = findItemInChest(poolChest.get(), body.itemId());
-            if (existing != null) {
-                chestService.incItemAmountAtomic(poolChest.get().getId(), body.itemId(), body.amount());
-            } else {
-                chestService.addItemAtomic(poolChest.get().getId(), ItemRef.builder()
-                        .itemId(body.itemId())
-                        .amount(body.amount())
-                        .build());
+        // Check gold
+        if (goldAmount > 0) {
+            long userGold = userService.getByUsername(userId).map(u -> u.getGold()).orElse(0L);
+            if (userGold < goldAmount) {
+                return bad("Not enough gold");
             }
         }
 
-        // Give silver to player
-        characterService.changeSilver(character.getId(), totalRevenue);
+        // === Phase 1: Take resources (can fail — validates availability) ===
 
-        // Take silver from trader
-        traderService.changeSilverAmount(trader.getId(), -totalRevenue);
+        // 1a. Take gold from user
+        if (goldAmount > 0) {
+            if (!userService.changeGold(userId, -goldAmount)) {
+                return bad("Not enough gold");
+            }
+        }
 
-        log.info("Trade sell: player={} sold {}x {} for {} silver to trader={}",
-                userId, body.amount(), body.itemId(), totalRevenue, trader.getEntityId());
+        // 1b. Take silver from player
+        if (totalBuyCost > 0) {
+            if (!characterService.changeSilver(character.getId(), -totalBuyCost)) {
+                if (goldAmount > 0) userService.changeGold(userId, goldAmount);
+                return bad("Not enough silver");
+            }
+        }
+
+        // 1c. Take silver from trader (for sells)
+        if (totalSellRevenue > 0) {
+            if (!traderService.changeSilverAmount(trader.getId(), -totalSellRevenue)) {
+                // Rollback player silver and gold
+                if (totalBuyCost > 0) characterService.changeSilver(character.getId(), totalBuyCost);
+                if (goldAmount > 0) userService.changeGold(userId, goldAmount);
+                return bad("Trader does not have enough silver");
+            }
+        }
+
+        // 1d. Take items from player backpack (sells)
+        for (TradeItem sell : sells) {
+            if (!characterService.removeBackpackItem(character.getId(), sell.itemId(), sell.amount())) {
+                log.error("Trade partial failure: could not remove backpack item {}x{} for player={}",
+                        sell.itemId(), sell.amount(), userId);
+            }
+        }
+
+        // 1e. Remove items from shop chest (buys)
+        if (!buys.isEmpty()) {
+            WChest writeShopChest = chestService.ensureCowCopy(worldId, shopChest);
+            for (TradeItem buy : buys) {
+                ItemRef chestItem = findItemInChest(writeShopChest, buy.itemId());
+                if (chestItem != null) {
+                    if (chestItem.getAmount() <= buy.amount()) {
+                        chestService.removeItemAtomic(writeShopChest.getId(), buy.itemId());
+                    } else {
+                        chestService.updateItemAmountAtomic(writeShopChest.getId(), buy.itemId(), chestItem.getAmount() - buy.amount());
+                    }
+                }
+            }
+        }
+
+        // === Phase 2: Give resources (should not fail) ===
+
+        // 2a. Give items to player backpack (buys)
+        for (TradeItem buy : buys) {
+            characterService.addBackpackItem(character.getId(), buy.itemId(), buy.amount());
+        }
+
+        // 2b. Add sold items to pool chest (no COW — merchant pool belongs to base world)
+        if (!sells.isEmpty() && !Strings.isBlank(trader.getPoolChestId())) {
+            var poolChestOpt = chestService.getByWorldIdAndName(worldId, trader.getPoolChestId());
+            if (poolChestOpt.isPresent()) {
+                WChest poolChest = poolChestOpt.get();
+                for (TradeItem sell : sells) {
+                    ItemRef existing = findItemInChest(poolChest, sell.itemId());
+                    if (existing != null) {
+                        chestService.incItemAmountAtomic(poolChest.getId(), sell.itemId(), sell.amount());
+                    } else {
+                        chestService.addItemAtomic(poolChest.getId(), ItemRef.builder()
+                                .itemId(sell.itemId())
+                                .amount(sell.amount())
+                                .build());
+                    }
+                }
+            }
+        }
+
+        // 2c. Give silver to player (sells + gold exchange)
+        long silverToGive = totalSellRevenue + goldExchangeSilver;
+        if (silverToGive > 0) {
+            characterService.changeSilver(character.getId(), silverToGive);
+        }
+
+        // 2d. Give silver to trader (buys)
+        if (totalBuyCost > 0) {
+            traderService.changeSilverAmount(trader.getId(), totalBuyCost);
+        }
+
+        log.info("Trade applied: player={}, buyCost={}, sellRevenue={}, goldExchange={}, trader={}",
+                userId, totalBuyCost, totalSellRevenue, goldAmount, trader.getEntityId());
 
         notifyPlayer(worldId, request);
-        return ResponseEntity.ok(Map.of("totalRevenue", totalRevenue, "amount", body.amount()));
-    }
 
-    /**
-     * Exchange gold for silver.
-     */
-    @PostMapping("/exchange-gold")
-    @Operation(summary = "Exchange gold for silver at the trader")
-    public ResponseEntity<?> exchangeGold(
-            @RequestBody GoldExchangeRequest body,
-            HttpServletRequest request) {
-
-        String worldId = (String) request.getAttribute(AccessFilterBase.ATTR_WORLD_ID);
-        String userId = (String) request.getAttribute(AccessFilterBase.ATTR_USER_ID);
-        String characterId = (String) request.getAttribute(AccessFilterBase.ATTR_CHARACTER_ID);
-
-        if (Strings.isBlank(worldId) || Strings.isBlank(userId) || Strings.isBlank(characterId)) {
-            return bad("Not authenticated");
-        }
-        if (body == null || Strings.isBlank(body.progressId()) || body.goldAmount() <= 0) {
-            return bad("progressId and goldAmount (> 0) required");
-        }
-
-        var resolve = resolveTraderFromProgress(body.progressId(), worldId, userId);
-        if (resolve.error != null) return resolve.error;
-        WTrader trader = resolve.trader;
-
-        long silverAmount = priceCalculator.calculateGoldToSilver(body.goldAmount(), trader);
-
-        // Take gold from user first
-        if (!userService.changeGold(userId, -body.goldAmount())) {
-            return bad("Not enough gold");
-        }
-
-        // Give silver to character
-        var character = findCharacter(worldId, userId, characterId);
-        if (character == null) {
-            // Rollback gold
-            userService.changeGold(userId, body.goldAmount());
-            return notFound("Character not found");
-        }
-        characterService.changeSilver(character.getId(), silverAmount);
-
-        log.info("Gold exchange: player={} exchanged {} gold for {} silver at trader={}",
-                userId, body.goldAmount(), silverAmount, trader.getEntityId());
-
-        notifyPlayer(worldId, request);
-        return ResponseEntity.ok(Map.of("goldSpent", body.goldAmount(), "silverReceived", silverAmount));
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("totalBuyCost", totalBuyCost);
+        result.put("totalSellRevenue", totalSellRevenue);
+        result.put("goldExchanged", goldAmount);
+        result.put("silverFromGold", goldExchangeSilver);
+        return ResponseEntity.ok(result);
     }
 
     // --- Helper methods ---
@@ -323,6 +315,7 @@ public class PlayerTradeWidgetController extends BaseEditorController {
             return TradeResolveResult.ofError(bad("Access denied"));
         }
         if (!userId.equals(progress.getPlayerId())) {
+            log.warn("Trade widget access denied: playerId mismatch. expected={}, actual={}", userId, progress.getPlayerId());
             return TradeResolveResult.ofError(bad("Access denied"));
         }
         if (!"trade-access".equals(progress.getType())) {
@@ -443,8 +436,13 @@ public class PlayerTradeWidgetController extends BaseEditorController {
 
     // --- DTOs ---
 
-    record TradeItemRequest(String progressId, String itemId, int amount) {}
-    record GoldExchangeRequest(String progressId, long goldAmount) {}
+    record TradeItem(String itemId, int amount) {}
+    record TradeApplyRequest(
+            String progressId,
+            List<TradeItem> buys,
+            List<TradeItem> sells,
+            Long goldExchange
+    ) {}
 
     private static class TradeResolveResult {
         final WTrader trader;
