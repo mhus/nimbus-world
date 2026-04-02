@@ -27,9 +27,12 @@
         <div class="w-12 h-12 bg-gray-700 rounded-full flex items-center justify-center text-2xl">
           👤
         </div>
-        <div>
+        <div class="flex-1">
           <h1 class="text-lg font-bold text-amber-400">{{ data.targetName }}</h1>
         </div>
+        <button @click="reload" class="w-8 h-8 flex items-center justify-center bg-gray-700 hover:bg-gray-600 rounded-lg text-gray-400 hover:text-gray-200 transition-colors" title="Refresh">
+          ↻
+        </button>
       </div>
 
       <!-- Emoji Bar -->

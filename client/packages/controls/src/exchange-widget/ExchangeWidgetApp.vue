@@ -92,13 +92,15 @@
             <div class="flex items-center gap-2">
               <label class="text-xs text-gray-400 w-12">Silver:</label>
               <input v-model.number="silverOffer" type="number" min="0" :max="data.mySilver"
-                     class="bg-gray-700 rounded px-2 py-1 text-xs w-20 text-right" />
+                     :disabled="data.myAccepted"
+                     class="bg-gray-700 rounded px-2 py-1 text-xs w-20 text-right disabled:opacity-50" />
               <span class="text-xs text-gray-500">/ {{ data.mySilver }}</span>
             </div>
             <div class="flex items-center gap-2">
               <label class="text-xs text-gray-400 w-12">Gold:</label>
               <input v-model.number="goldOffer" type="number" min="0" :max="data.myGold"
-                     class="bg-gray-700 rounded px-2 py-1 text-xs w-20 text-right" />
+                     :disabled="data.myAccepted"
+                     class="bg-gray-700 rounded px-2 py-1 text-xs w-20 text-right disabled:opacity-50" />
               <span class="text-xs text-gray-500">/ {{ data.myGold }}</span>
             </div>
           </div>
@@ -106,7 +108,8 @@
           <!-- Message -->
           <div class="border-t border-gray-700 pt-2">
             <input v-model="message" type="text" maxlength="100" placeholder="Short message..."
-                   class="bg-gray-700 rounded px-2 py-1 text-xs w-full" />
+                   :disabled="data.myAccepted"
+                   class="bg-gray-700 rounded px-2 py-1 text-xs w-full disabled:opacity-50" />
           </div>
         </div>
 
@@ -126,12 +129,15 @@
             <div
               v-for="item in data.partnerTransferItems"
               :key="'partner-' + item.itemId"
-              class="relative w-14 h-14 rounded border-2 cursor-pointer transition-all hover:border-gray-400 flex items-center justify-center bg-gray-700"
-              :class="selectedItems.includes(item.itemId)
-                ? 'border-green-400 shadow-lg shadow-green-400/20'
-                : 'border-gray-600'"
+              class="relative w-14 h-14 rounded border-2 transition-all flex items-center justify-center bg-gray-700"
+              :class="[
+                selectedItems.includes(item.itemId)
+                  ? 'border-green-400 shadow-lg shadow-green-400/20'
+                  : 'border-gray-600',
+                data.myAccepted ? 'opacity-50 cursor-default' : 'cursor-pointer hover:border-gray-400'
+              ]"
               :title="item.name + (item.description ? ' — ' + item.description : '')"
-              @click="toggleItemSelection(item.itemId)"
+              @click="!data.myAccepted && toggleItemSelection(item.itemId)"
             >
               <img v-if="item.texture" :src="getAssetUrl(item.texture)" :alt="item.name"
                    class="w-10 h-10 object-contain" style="image-rendering: pixelated;"
@@ -192,14 +198,18 @@
 
       <!-- Actions -->
       <div class="flex gap-2">
-        <button @click="updateOffer" class="flex-1 px-3 py-2 bg-blue-700 hover:bg-blue-600 rounded text-sm font-medium">
+        <button @click="updateOffer"
+                :disabled="data.myAccepted"
+                class="flex-1 px-3 py-2 bg-blue-700 hover:bg-blue-600 rounded text-sm font-medium disabled:bg-gray-700 disabled:text-gray-500 disabled:cursor-default">
           Update Offer
         </button>
-        <button @click="acceptExchange"
-                class="flex-1 px-3 py-2 rounded text-sm font-medium"
-                :class="data.myAccepted ? 'bg-green-800 text-green-300 cursor-default' : 'bg-green-700 hover:bg-green-600'"
-                :disabled="data.myAccepted">
-          {{ data.myAccepted ? 'Accepted' : 'Accept' }}
+        <button v-if="!data.myAccepted" @click="acceptExchange"
+                class="flex-1 px-3 py-2 bg-green-700 hover:bg-green-600 rounded text-sm font-medium">
+          Accept
+        </button>
+        <button v-else @click="revokeAccept"
+                class="flex-1 px-3 py-2 bg-yellow-700 hover:bg-yellow-600 rounded text-sm font-medium">
+          Revoke Accept
         </button>
         <button @click="cancelExchange" class="px-3 py-2 bg-red-800 hover:bg-red-700 rounded text-sm font-medium">
           Cancel
@@ -396,6 +406,22 @@ async function acceptExchange() {
     }
   } catch (e: any) {
     showStatus(e.response?.data?.message || 'Failed to accept', true);
+  }
+}
+
+async function revokeAccept() {
+  try {
+    // Just send an update with current values — this sets accepted=false
+    await apiService.post('/control/player/exchange/update', {
+      selectedItems: selectedItems.value,
+      silverOffer: silverOffer.value,
+      goldOffer: goldOffer.value,
+      message: message.value,
+    }, { params: { progressId } });
+    showStatus('Accept revoked');
+    await loadData(true);
+  } catch (e: any) {
+    showStatus(e.response?.data?.message || 'Failed to revoke', true);
   }
 }
 
