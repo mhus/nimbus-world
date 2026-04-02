@@ -11,7 +11,15 @@ import de.mhus.nimbus.world.shared.rest.BaseEditorController;
 import de.mhus.nimbus.world.shared.client.WorldClientService;
 import de.mhus.nimbus.world.shared.sector.RUserService;
 import de.mhus.nimbus.world.shared.session.WSessionService;
-import de.mhus.nimbus.world.shared.world.*;
+import de.mhus.nimbus.world.shared.world.WChestService;
+import de.mhus.nimbus.world.shared.world.WChest;
+import de.mhus.nimbus.world.shared.world.WItem;
+import de.mhus.nimbus.world.shared.world.WItemService;
+import de.mhus.nimbus.world.shared.world.WLease;
+import de.mhus.nimbus.world.shared.world.WLeaseService;
+import de.mhus.nimbus.world.shared.world.WTrader;
+import de.mhus.nimbus.world.shared.world.WTraderService;
+import de.mhus.nimbus.world.shared.world.TradePriceCalculator;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
@@ -36,7 +44,7 @@ public class PlayerTradeWidgetController extends BaseEditorController {
 
     private final WTraderService traderService;
     private final WChestService chestService;
-    private final WProgressService progressService;
+    private final WLeaseService leaseService;
     private final RCharacterService characterService;
     private final RUserService userService;
     private final WItemService wItemService;
@@ -69,7 +77,7 @@ public class PlayerTradeWidgetController extends BaseEditorController {
             return bad("Invalid worldId format");
         }
 
-        var resolve = resolveTraderFromProgress(progressId, worldId, userId);
+        var resolve = resolveTraderFromLease(progressId, worldId, userId);
         if (resolve.error != null) return resolve.error;
         WTrader trader = resolve.trader;
 
@@ -127,7 +135,7 @@ public class PlayerTradeWidgetController extends BaseEditorController {
             return bad("progressId required");
         }
 
-        var resolve = resolveTraderFromProgress(body.progressId(), worldId, userId);
+        var resolve = resolveTraderFromLease(body.progressId(), worldId, userId);
         if (resolve.error != null) return resolve.error;
         WTrader trader = resolve.trader;
 
@@ -304,27 +312,16 @@ public class PlayerTradeWidgetController extends BaseEditorController {
 
     // --- Helper methods ---
 
-    private TradeResolveResult resolveTraderFromProgress(String progressId, String worldId, String userId) {
-        Optional<WProgress> progressOpt = progressService.findByProgressId(progressId);
-        if (progressOpt.isEmpty()) {
-            return TradeResolveResult.ofError(notFound("Progress not found"));
+    private TradeResolveResult resolveTraderFromLease(String leaseId, String worldId, String userId) {
+        var leaseOpt = leaseService.validate(leaseId, worldId, userId, "trade-access");
+        if (leaseOpt.isEmpty()) {
+            return TradeResolveResult.ofError(notFound("Lease not found or access denied"));
         }
-        WProgress progress = progressOpt.get();
+        WLease lease = leaseOpt.get();
 
-        if (!worldId.equals(progress.getWorldId())) {
-            return TradeResolveResult.ofError(bad("Access denied"));
-        }
-        if (!userId.equals(progress.getPlayerId())) {
-            log.warn("Trade widget access denied: playerId mismatch. expected={}, actual={}", userId, progress.getPlayerId());
-            return TradeResolveResult.ofError(bad("Access denied"));
-        }
-        if (!"trade-access".equals(progress.getType())) {
-            return TradeResolveResult.ofError(bad("Invalid progress type"));
-        }
-
-        String traderEntityId = progress.getQuest();
+        String traderEntityId = lease.getResourceId();
         if (Strings.isBlank(traderEntityId)) {
-            return TradeResolveResult.ofError(bad("Progress does not reference a trader"));
+            return TradeResolveResult.ofError(bad("Lease does not reference a trader"));
         }
 
         Optional<WTrader> traderOpt = traderService.findByWorldIdAndEntityId(worldId, traderEntityId);

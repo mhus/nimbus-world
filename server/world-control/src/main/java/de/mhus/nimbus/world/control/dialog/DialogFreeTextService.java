@@ -7,7 +7,7 @@ import de.mhus.nimbus.world.ai.model.AiChatOptions;
 import de.mhus.nimbus.world.ai.model.AiModelService;
 import de.mhus.nimbus.world.control.dialog.DialogDtos.*;
 import de.mhus.nimbus.world.shared.world.WAnythingService;
-import de.mhus.nimbus.world.shared.world.WProgressService;
+import de.mhus.nimbus.world.shared.world.WLeaseService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -29,7 +29,7 @@ public class DialogFreeTextService {
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     private final AiModelService aiModelService;
-    private final WProgressService progressService;
+    private final WLeaseService leaseService;
     private final DialogEffectExecutor effectExecutor;
     private final DialogService dialogService;
     private final DialogTextService dialogTextService;
@@ -201,7 +201,7 @@ public class DialogFreeTextService {
         var sb = new StringBuilder();
 
         // Conversation history
-        Map<String, Object> progressData = ctx.getDialogProgress().getProgressData();
+        Map<String, Object> progressData = ctx.getDialogLease().getLeaseData();
         Object historyObj = progressData != null ? progressData.get("freeTextHistory") : null;
         if (historyObj instanceof List<?> history && !history.isEmpty()) {
             sb.append("Bisheriger Verlauf:\n");
@@ -263,7 +263,7 @@ public class DialogFreeTextService {
                 if (opt.next() == null) {
                     dialogService.closeDialog(ctx);
                     return new DialogNodeResponse(
-                            ctx.getDialogProgress().getProgressId(),
+                            ctx.getDialogLease().getLeaseId(),
                             ctx.getNpcTitle(), ctx.getNpcPortrait(),
                             aiResponse.npcText(), List.of(), false, true, null,
                             ctx.getNavigate()
@@ -276,8 +276,8 @@ public class DialogFreeTextService {
                     effectExecutor.executeAll(targetNode.effects(), ctx);
                 }
 
-                progressService.setProgressDataValue(
-                        ctx.getDialogProgress().getProgressId(), "currentNode", opt.next());
+                leaseService.setLeaseDataValue(
+                        ctx.getDialogLease().getLeaseId(), "currentNode", opt.next());
 
                 // Return the AI-generated text for the transition, then evaluate new node
                 DialogNodeResponse nextNode = dialogService.evaluateNode(ctx, opt.next());
@@ -307,7 +307,7 @@ public class DialogFreeTextService {
         boolean freeTextEnabled = isFreeTextEnabled(ctx, currentNode);
 
         return new DialogNodeResponse(
-                ctx.getDialogProgress().getProgressId(),
+                ctx.getDialogLease().getLeaseId(),
                 ctx.getNpcTitle(), ctx.getNpcPortrait(),
                 npcText, options, freeTextEnabled, false,
                 dialogService.buildVoiceInfo(ctx),
@@ -319,7 +319,7 @@ public class DialogFreeTextService {
 
     @SuppressWarnings("unchecked")
     private void updateHistory(DialogContext ctx, String playerInput, String npcResponse) {
-        Map<String, Object> data = ctx.getDialogProgress().getProgressData();
+        Map<String, Object> data = ctx.getDialogLease().getLeaseData();
         List<Map<String, String>> history = data != null && data.get("freeTextHistory") instanceof List<?> list
                 ? new ArrayList<>((List<Map<String, String>>) (List<?>) list)
                 : new ArrayList<>();
@@ -339,19 +339,19 @@ public class DialogFreeTextService {
             history.removeFirst();
         }
 
-        progressService.setProgressDataValue(
-                ctx.getDialogProgress().getProgressId(), "freeTextHistory", history);
+        leaseService.setLeaseDataValue(
+                ctx.getDialogLease().getLeaseId(), "freeTextHistory", history);
     }
 
     private void clearHistory(DialogContext ctx) {
-        progressService.setProgressDataValue(
-                ctx.getDialogProgress().getProgressId(), "freeTextHistory", List.of());
+        leaseService.setLeaseDataValue(
+                ctx.getDialogLease().getLeaseId(), "freeTextHistory", List.of());
     }
 
     // --- Rate limiting ---
 
     private void checkRateLimit(DialogContext ctx) {
-        Map<String, Object> data = ctx.getDialogProgress().getProgressData();
+        Map<String, Object> data = ctx.getDialogLease().getLeaseData();
         Object countObj = data != null ? data.get("freeTextRequestCount") : null;
         int count = countObj instanceof Number n ? n.intValue() : 0;
 
@@ -363,8 +363,8 @@ public class DialogFreeTextService {
     }
 
     private void incrementRequestCount(DialogContext ctx) {
-        progressService.incProgressDataValue(
-                ctx.getDialogProgress().getProgressId(), "freeTextRequestCount", 1);
+        leaseService.incLeaseDataValue(
+                ctx.getDialogLease().getLeaseId(), "freeTextRequestCount", 1);
     }
 
     // --- Effects filtering ---

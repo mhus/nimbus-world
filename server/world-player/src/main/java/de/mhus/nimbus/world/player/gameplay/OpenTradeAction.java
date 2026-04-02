@@ -20,7 +20,7 @@ import java.util.Optional;
  * Flow:
  * 1. Resolve WTrader by entityId and worldId
  * 2. Trigger pool sync if interval has elapsed
- * 3. Create WProgress (type="trade-access") with trade configuration
+ * 3. Acquire WLease (type="trade-access") with trade configuration
  * 4. Send openComponent command to client with the progressId
  */
 @Slf4j
@@ -56,26 +56,26 @@ public class OpenTradeAction extends AbstractGamplayAction {
 
         String playerId = session.getPlayer().user().getUserId();
 
-        // Store trade configuration in progress data
-        Map<String, Object> progressData = new HashMap<>();
-        progressData.put("traderEntityId", trader.getEntityId());
-        progressData.put("traderType", trader.getTraderType().name());
-        progressData.put("chestId", trader.getChestId());
+        // Acquire lease for trade access
+        Map<String, Object> leaseData = new HashMap<>();
+        leaseData.put("traderEntityId", trader.getEntityId());
+        leaseData.put("traderType", trader.getTraderType().name());
+        leaseData.put("chestId", trader.getChestId());
 
-        var progress = basic.getProgressService().save(
+        var lease = basic.getLeaseService().acquire(
                 worldId,
                 playerId,
                 "trade-access",
                 traderEntityId,
                 "Trade",
-                progressData
+                leaseData
         );
 
         basic.getBasicClientService().sendCommand(session, "openComponent",
-                List.of("trade", progress.getProgressId()));
+                List.of("trade", lease.getLeaseId()));
 
-        log.debug("Sent open.trade to player {}: trader={}, progressId={}",
-                playerId, traderEntityId, progress.getProgressId());
+        log.debug("Sent open.trade to player {}: trader={}, leaseId={}",
+                playerId, traderEntityId, lease.getLeaseId());
         return true;
     }
 }

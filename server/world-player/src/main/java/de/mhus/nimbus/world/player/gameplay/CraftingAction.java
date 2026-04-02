@@ -53,27 +53,27 @@ public class CraftingAction extends AbstractGamplayAction {
         WorldId worldId = session.getWorldId();
         String playerId = session.getEntityId();
 
-        // Create WProgress contract with station configuration
-        Map<String, Object> progressData = new HashMap<>();
-        progressData.put("category", category);
-        progressData.put("slots", slots);
-        progressData.put("allowSpells", allowSpells);
+        // Acquire lease for crafting station access
+        Map<String, Object> leaseData = new HashMap<>();
+        leaseData.put("category", category);
+        leaseData.put("slots", slots);
+        leaseData.put("allowSpells", allowSpells);
 
-        var progress = basic.getProgressService().save(
+        var lease = basic.getLeaseService().acquire(
                 worldId.getId(),
                 playerId,
                 "crafting-station",
                 category,
                 "Crafting: " + category,
-                progressData
+                leaseData
         );
 
         // Send openComponent command to client
         basic.getBasicClientService().sendCommand(session, "openComponent",
-                List.of("crafting", progress.getProgressId()));
+                List.of("crafting", lease.getLeaseId()));
 
-        log.debug("Sent crafting to player {}: category={}, slots={}, allowSpells={}, progressId={}",
-                playerId, category, slots, allowSpells, progress.getProgressId());
+        log.debug("Sent crafting to player {}: category={}, slots={}, allowSpells={}, leaseId={}",
+                playerId, category, slots, allowSpells, lease.getLeaseId());
         return true;
     }
 }

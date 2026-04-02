@@ -71,30 +71,31 @@ public class DialogAction extends AbstractGamplayAction {
             return false;
         }
 
-        // Create WProgress for this dialog session with entity info
+        // Acquire lease for this dialog session with entity info
         String playerId = session.getEntityId();
 
-        Map<String, Object> progressData = new HashMap<>();
-        progressData.put("playbook", playbookRef);
-        progressData.put("entityId", entity.getEntityId());
+        Map<String, Object> leaseData = new HashMap<>();
+        leaseData.put("playbook", playbookRef);
+        leaseData.put("entityId", entity.getEntityId());
         if (entity.getPortraitPath() != null) {
-            progressData.put("portraitPath", entity.getPortraitPath());
+            leaseData.put("portraitPath", entity.getPortraitPath());
         }
 
-        var progress = basic.getProgressService().save(
+        var lease = basic.getLeaseService().acquire(
                 worldId.getId(),
                 playerId,
                 "dialog",
-                entity.getEntityId(),  // quest = entityId so each NPC has its own progress
-                progressData
+                entity.getEntityId(),  // resourceId = entityId so each NPC has its own lease
+                null,
+                leaseData
         );
 
         // Send openComponent command to client (dialog_start is sent by world-control on first GET)
         basic.getBasicClientService().sendCommand(session, "openComponent",
-                List.of("dialog", progress.getProgressId()));
+                List.of("dialog", lease.getLeaseId()));
 
-        log.debug("Sent dialog to player {}: playbook={}, entityId={}, progressId={}",
-                playerId, playbookRef, entity.getEntityId(), progress.getProgressId());
+        log.debug("Sent dialog to player {}: playbook={}, entityId={}, leaseId={}",
+                playerId, playbookRef, entity.getEntityId(), lease.getLeaseId());
         return true;
     }
 
@@ -123,16 +124,16 @@ public class DialogAction extends AbstractGamplayAction {
         }
 
         String playerId = session.getEntityId();
-        var progress = basic.getProgressService().save(
+        var lease = basic.getLeaseService().acquire(
                 worldId.getId(), playerId, "dialog", playbookRef,
-                Map.of("playbook", playbookRef)
+                null, Map.of("playbook", playbookRef)
         );
 
         basic.getBasicClientService().sendCommand(session, "openComponent",
-                List.of("dialog", progress.getProgressId()));
+                List.of("dialog", lease.getLeaseId()));
 
-        log.debug("Sent dialog to player {}: playbook={}, progressId={}",
-                playerId, playbookRef, progress.getProgressId());
+        log.debug("Sent dialog to player {}: playbook={}, leaseId={}",
+                playerId, playbookRef, lease.getLeaseId());
         return true;
     }
 }

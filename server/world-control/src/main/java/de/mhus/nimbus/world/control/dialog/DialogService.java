@@ -6,7 +6,14 @@ import de.mhus.nimbus.world.control.dialog.DialogDtos.*;
 import de.mhus.nimbus.world.shared.redis.WorldRedisMessagingService;
 import de.mhus.nimbus.world.shared.region.RCharacterService;
 import de.mhus.nimbus.world.shared.sector.RUserService;
-import de.mhus.nimbus.world.shared.world.*;
+import de.mhus.nimbus.world.shared.world.WAnythingService;
+import de.mhus.nimbus.world.shared.world.WAnything;
+import de.mhus.nimbus.world.shared.world.WEntity;
+import de.mhus.nimbus.world.shared.world.WEntityService;
+import de.mhus.nimbus.world.shared.world.WLease;
+import de.mhus.nimbus.world.shared.world.WLeaseService;
+import de.mhus.nimbus.world.shared.world.WProgress;
+import de.mhus.nimbus.world.shared.world.WProgressService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
@@ -24,6 +31,7 @@ import java.util.stream.Collectors;
 @Slf4j
 public class DialogService {
 
+    private final WLeaseService leaseService;
     private final WProgressService progressService;
     private final WAnythingService anythingService;
     private final WEntityService entityService;
@@ -40,30 +48,20 @@ public class DialogService {
      *
      * @throws DialogException if validation fails
      */
-    public DialogContext loadDialogContext(String progressId, String worldId, String userId, String characterId) {
-        // 1. Load and validate progress
-        WProgress progress = progressService.findByProgressId(progressId)
-                .orElseThrow(() -> new DialogException("Progress not found"));
+    public DialogContext loadDialogContext(String leaseId, String worldId, String userId, String characterId) {
+        // 1. Load and validate lease
+        WLease lease = leaseService.validate(leaseId, worldId, userId, "dialog")
+                .orElseThrow(() -> new DialogException("Dialog lease not found or access denied"));
 
-        if (!worldId.equals(progress.getWorldId())) {
-            throw new DialogException("Progress does not belong to this world");
-        }
-        // PlayerId in progress is "@userId:characterName" (from session.getEntityId()),
-        // userId from AccessFilter is just the userId. Check both formats.
-        String progressPlayerId = progress.getPlayerId();
-        if (!userId.equals(progressPlayerId)
-                && !progressPlayerId.startsWith("@" + userId + ":")
-                && !progressPlayerId.endsWith(":" + userId)) {
-            throw new DialogException("Progress does not belong to this player");
-        }
+        String leasePlayerId = lease.getPlayerId();
 
-        Map<String, Object> progressData = progress.getProgressData();
-        if (progressData == null || !progressData.containsKey("playbook")) {
-            throw new DialogException("Progress has no playbook reference");
+        Map<String, Object> leaseData = lease.getLeaseData();
+        if (leaseData == null || !leaseData.containsKey("playbook")) {
+            throw new DialogException("Lease has no playbook reference");
         }
 
         // 2. Load playbook
-        String playbookRef = String.valueOf(progressData.get("playbook"));
+        String playbookRef = String.valueOf(leaseData.get("playbook"));
         if (!playbookRef.contains("/")) {
             throw new DialogException("Invalid playbook reference: " + playbookRef);
         }
@@ -85,8 +83,8 @@ public class DialogService {
         // 3. Load NPC entity
         String entityId = playbook.npcEntityId();
         if (Strings.isBlank(entityId)) {
-            // Fallback: entityId from progressData (set by DialogAction)
-            entityId = String.valueOf(progressData.getOrDefault("entityId", ""));
+            // Fallback: entityId from leaseData (set by DialogAction)
+            entityId = String.valueOf(leaseData.getOrDefault("entityId", ""));
         }
 
         WEntity npcEntity = null;
@@ -102,9 +100,9 @@ public class DialogService {
                 }
             }
         }
-        // Override from progressData if available (set by DialogAction directly)
-        if (progressData.containsKey("portraitPath")) {
-            npcPortrait = String.valueOf(progressData.get("portraitPath"));
+        // Override from leaseData if available (set by DialogAction directly)
+        if (leaseData.containsKey("portraitPath")) {
+            npcPortrait = String.valueOf(leaseData.get("portraitPath"));
         }
 
         // 4. Load NPC profile
@@ -119,7 +117,7 @@ public class DialogService {
             }
         }
 
-        // 5. Load NPC world-instance state
+        // 5. Load NPC world-instance state (real progress, not lease)
         String npcProgressPlayerId = "npc:" + entityId;
         WProgress npcStateProgress = progressService
                 .findByWorldIdAndPlayerIdAndTypeAndQuest(worldId, npcProgressPlayerId, "npc-state", null)
@@ -128,9 +126,9 @@ public class DialogService {
                 ? new HashMap<>(npcStateProgress.getProgressData())
                 : new HashMap<>();
 
-        // 6. Load NPC-player memory (use progress playerId = @user:character, not just userId)
+        // 6. Load NPC-player memory (real progress, use lease playerId = @user:character, not just userId)
         WProgress playerMemoryProgress = progressService
-                .findByWorldIdAndPlayerIdAndTypeAndQuest(worldId, progressPlayerId, "npc-memory", entityId)
+                .findByWorldIdAndPlayerIdAndTypeAndQuest(worldId, leasePlayerId, "npc-memory", entityId)
                 .orElse(null);
         Map<String, Object> playerMemory = playerMemoryProgress != null && playerMemoryProgress.getProgressData() != null
                 ? new HashMap<>(playerMemoryProgress.getProgressData())
@@ -147,7 +145,7 @@ public class DialogService {
                 .orElse(null);
 
         return DialogContext.builder()
-                .dialogProgress(progress)
+                .dialogLease(lease)
                 .playbook(playbook)
                 .playbookName(playbookName)
                 .npcProfile(npcProfile)
@@ -160,10 +158,10 @@ public class DialogService {
                 .playerMemory(playerMemory)
                 .character(character)
                 .worldId(worldId)
-                .playerId(progressPlayerId) // @mhus:j3sus — full player entity ID
+                .playerId(leasePlayerId) // @mhus:j3sus — full player entity ID
                 .characterId(characterId)
                 .language(language)
-                .currentNodeId(String.valueOf(progressData.getOrDefault("currentNode", "greeting")))
+                .currentNodeId(String.valueOf(leaseData.getOrDefault("currentNode", "greeting")))
                 .build();
     }
 
@@ -228,9 +226,9 @@ public class DialogService {
             ctx.getPlayerMemory().put("lastSituation", primary.name());
         }
 
-        // Store situation in dialog progress
-        progressService.setProgressDataValue(
-                ctx.getDialogProgress().getProgressId(), "situation", primary.name());
+        // Store situation in dialog lease
+        leaseService.setLeaseDataValue(
+                ctx.getDialogLease().getLeaseId(), "situation", primary.name());
 
         log.debug("Selected situation '{}' (priority {}) for playbook {}",
                 primary.name(), primary.situation().priority(), ctx.getPlaybookName());
@@ -272,7 +270,7 @@ public class DialogService {
         boolean finished = visibleOptions.isEmpty() && !freeTextEnabled;
 
         return new DialogNodeResponse(
-                ctx.getDialogProgress().getProgressId(),
+                ctx.getDialogLease().getLeaseId(),
                 ctx.getNpcTitle(),
                 ctx.getNpcPortrait(),
                 text,
@@ -314,7 +312,7 @@ public class DialogService {
         if (nextNodeId == null) {
             closeDialog(ctx);
             return new DialogNodeResponse(
-                    ctx.getDialogProgress().getProgressId(),
+                    ctx.getDialogLease().getLeaseId(),
                     ctx.getNpcTitle(),
                     ctx.getNpcPortrait(),
                     null,
@@ -334,9 +332,9 @@ public class DialogService {
 
         effectExecutor.executeAll(targetNode.effects(), ctx);
 
-        // Update progress
-        progressService.setProgressDataValue(
-                ctx.getDialogProgress().getProgressId(), "currentNode", nextNodeId);
+        // Update lease
+        leaseService.setLeaseDataValue(
+                ctx.getDialogLease().getLeaseId(), "currentNode", nextNodeId);
 
         return evaluateNode(ctx, nextNodeId);
     }
@@ -368,7 +366,7 @@ public class DialogService {
     public void sendDialogStart(DialogContext ctx) {
         if (ctx.getNpcEntity() == null) return;
         try {
-            String playerId = ctx.getDialogProgress().getPlayerId(); // @mhus:j3sus format
+            String playerId = ctx.getDialogLease().getPlayerId(); // @mhus:j3sus format
             var message = objectMapper.createObjectNode();
             message.put("entityId", ctx.getNpcEntity().getEntityId());
             message.put("action", "dialog_start");
@@ -388,7 +386,7 @@ public class DialogService {
     public void sendDialogEnd(DialogContext ctx) {
         if (ctx.getNpcEntity() == null) return;
         try {
-            String playerId = ctx.getDialogProgress().getPlayerId();
+            String playerId = ctx.getDialogLease().getPlayerId();
             var message = objectMapper.createObjectNode();
             message.put("entityId", ctx.getNpcEntity().getEntityId());
             message.put("action", "dialog_end");
@@ -405,7 +403,7 @@ public class DialogService {
      * Get the current node ID from dialog progress, or "greeting" as default.
      */
     public String getCurrentNodeId(DialogContext ctx) {
-        Map<String, Object> data = ctx.getDialogProgress().getProgressData();
+        Map<String, Object> data = ctx.getDialogLease().getLeaseData();
         if (data != null && data.containsKey("currentNode")) {
             return String.valueOf(data.get("currentNode"));
         }
@@ -416,7 +414,7 @@ public class DialogService {
      * Check if the dialog is being continued (has a stored situation).
      */
     public boolean isContinuing(DialogContext ctx) {
-        Map<String, Object> data = ctx.getDialogProgress().getProgressData();
+        Map<String, Object> data = ctx.getDialogLease().getLeaseData();
         return data != null && data.containsKey("situation");
     }
 
@@ -424,7 +422,7 @@ public class DialogService {
      * Restore the active situation from stored state (for continuing dialogs).
      */
     public void restoreSituation(DialogContext ctx) {
-        Map<String, Object> data = ctx.getDialogProgress().getProgressData();
+        Map<String, Object> data = ctx.getDialogLease().getLeaseData();
         String situationName = String.valueOf(data.get("situation"));
 
         Situation situation = ctx.getPlaybook().situations().get(situationName);

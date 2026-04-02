@@ -2,6 +2,7 @@ package de.mhus.nimbus.world.control.dialog;
 
 import de.mhus.nimbus.world.shared.region.RCharacter;
 import de.mhus.nimbus.world.shared.world.WEntity;
+import de.mhus.nimbus.world.shared.world.WLease;
 import de.mhus.nimbus.world.shared.world.WProgress;
 import lombok.Builder;
 import lombok.Data;
@@ -19,7 +20,7 @@ import java.util.Map;
 public class DialogContext {
 
     // Dialog session
-    private WProgress dialogProgress;
+    private WLease dialogLease;
     private DialogDtos.Playbook playbook;
     private String playbookName;
 

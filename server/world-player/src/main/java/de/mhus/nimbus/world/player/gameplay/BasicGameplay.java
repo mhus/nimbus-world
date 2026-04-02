@@ -20,6 +20,7 @@ import de.mhus.nimbus.world.shared.world.WProgressService;
 import de.mhus.nimbus.world.shared.world.LogicConditionService;
 import de.mhus.nimbus.world.shared.world.WAnythingService;
 import de.mhus.nimbus.world.shared.world.WChestService;
+import de.mhus.nimbus.world.shared.world.WLeaseService;
 import de.mhus.nimbus.world.shared.world.WWorldService;
 import de.mhus.nimbus.world.player.service.ClientService;
 import de.mhus.nimbus.world.player.ws.BlockStatusSenderService;
@@ -83,6 +84,9 @@ public class BasicGameplay implements Gameplay {
     @Autowired
     @Getter
     protected WChestService chestService;
+    @Autowired
+    @Getter
+    protected WLeaseService leaseService;
     @Autowired
     @Getter
     protected BlockStatusSenderService blockStatusSenderService;

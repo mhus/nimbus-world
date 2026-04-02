@@ -19,7 +19,7 @@ import java.util.Optional;
  *
  * Flow:
  * 1. Resolve WChest by name and worldId
- * 2. Create or update WProgress (type="chest-access", quest=chestName)
+ * 2. Acquire WLease (type="chest-access", resourceId=chestName)
  * 3. Send openComponent command to client with the progressId
  */
 @Slf4j
@@ -52,8 +52,8 @@ public class OpenChestAction extends AbstractGamplayAction {
         WChest chest = chestOpt.get();
         String playerId = session.getEntityId();
 
-        // Create or update WProgress for this chest access
-        var progress = basic.getProgressService().save(
+        // Acquire lease for chest access
+        var lease = basic.getLeaseService().acquire(
                 worldId,
                 playerId,
                 "chest-access",
@@ -69,10 +69,10 @@ public class OpenChestAction extends AbstractGamplayAction {
 
         // Send openComponent command to client
         basic.getBasicClientService().sendCommand(session, "openComponent",
-                List.of("chest", progress.getProgressId()));
+                List.of("chest", lease.getLeaseId()));
 
-        log.debug("Sent open.chest to player {}: chest={}, progressId={}",
-                playerId, chestName, progress.getProgressId());
+        log.debug("Sent open.chest to player {}: chest={}, leaseId={}",
+                playerId, chestName, lease.getLeaseId());
         return true;
     }
 }

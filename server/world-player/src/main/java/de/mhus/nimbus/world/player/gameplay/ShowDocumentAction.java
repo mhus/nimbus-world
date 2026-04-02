@@ -62,9 +62,9 @@ public class ShowDocumentAction extends AbstractGamplayAction {
 
         WDocument doc = docOpt.get();
 
-        // Create WProgress with document reference, title and documentRef as quest for uniqueness
+        // Acquire lease for document access
         String playerId = session.getEntityId();
-        var progress = basic.getProgressService().save(
+        var lease = basic.getLeaseService().acquire(
                 worldId.getId(),
                 playerId,
                 collection,
@@ -75,10 +75,10 @@ public class ShowDocumentAction extends AbstractGamplayAction {
 
         // Send openComponent command to client
         basic.getBasicClientService().sendCommand(session, "openComponent",
-                List.of("document", progress.getProgressId()));
+                List.of("document", lease.getLeaseId()));
 
-        log.debug("Sent show.document to player {}: document={}, collection={}, progressId={}",
-                playerId, documentRef, collection, progress.getProgressId());
+        log.debug("Sent show.document to player {}: document={}, collection={}, leaseId={}",
+                playerId, documentRef, collection, lease.getLeaseId());
         return true;
     }
 }

@@ -14,7 +14,8 @@ import de.mhus.nimbus.world.shared.world.WChest;
 import de.mhus.nimbus.world.shared.world.WChestService;
 import de.mhus.nimbus.world.shared.world.WItem;
 import de.mhus.nimbus.world.shared.world.WItemService;
-import de.mhus.nimbus.world.shared.world.WProgress;
+import de.mhus.nimbus.world.shared.world.WLease;
+import de.mhus.nimbus.world.shared.world.WLeaseService;
 import de.mhus.nimbus.world.shared.world.WProgressService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -31,9 +32,9 @@ import java.util.*;
 
 /**
  * REST Controller for chest widget operations.
- * Allows players to interact with world chests via a WProgress reference.
- * The WProgress (type "chest-access") contains a chestId in progressData.
- * Validates that the WProgress belongs to the requesting player and world.
+ * Allows players to interact with world chests via a WLease reference.
+ * The WLease (type "chest-access") contains a chestId as resourceId.
+ * Validates that the WLease belongs to the requesting player and world.
  * Accessible by players under /control/player/chest-widget.
  */
 @RestController
@@ -44,6 +45,7 @@ import java.util.*;
 public class PlayerChestWidgetController extends BaseEditorController {
 
     private final WChestService chestService;
+    private final WLeaseService leaseService;
     private final WProgressService progressService;
     private final RCharacterService characterService;
     private final WItemService wItemService;
@@ -84,7 +86,7 @@ public class PlayerChestWidgetController extends BaseEditorController {
         }
 
         // Load and validate WProgress
-        var resolveResult = resolveChestFromProgress(progressId, worldId, userId);
+        var resolveResult = resolveChestFromLease(progressId, worldId, userId);
         if (resolveResult.error != null) {
             return resolveResult.error;
         }
@@ -156,7 +158,7 @@ public class PlayerChestWidgetController extends BaseEditorController {
             return bad("progressId and pin required");
         }
 
-        var resolveResult = resolveChestFromProgress(body.progressId(), worldId, userId);
+        var resolveResult = resolveChestFromLease(body.progressId(), worldId, userId);
         if (resolveResult.error != null) {
             return resolveResult.error;
         }
@@ -198,7 +200,7 @@ public class PlayerChestWidgetController extends BaseEditorController {
             return bad("progressId, itemId and amount (> 0) required");
         }
 
-        var resolveResult = resolveChestFromProgress(body.progressId(), worldId, userId);
+        var resolveResult = resolveChestFromLease(body.progressId(), worldId, userId);
         if (resolveResult.error != null) {
             return resolveResult.error;
         }
@@ -278,7 +280,7 @@ public class PlayerChestWidgetController extends BaseEditorController {
             return bad("progressId, itemId and amount (> 0) required");
         }
 
-        var resolveResult = resolveChestFromProgress(body.progressId(), worldId, userId);
+        var resolveResult = resolveChestFromLease(body.progressId(), worldId, userId);
         if (resolveResult.error != null) {
             return resolveResult.error;
         }
@@ -357,36 +359,21 @@ public class PlayerChestWidgetController extends BaseEditorController {
     // --- Helper methods ---
 
     /**
-     * Resolve chest from a WProgress entry.
-     * Validates that the progress belongs to the requesting player and world,
-     * is of type "chest-access", and uses the quest field as chest name.
+     * Resolve chest from a WLease entry.
+     * Validates that the lease belongs to the requesting player and world,
+     * and is of type "chest-access".
      */
-    private ChestResolveResult resolveChestFromProgress(String progressId, String worldId, String userId) {
-        Optional<WProgress> progressOpt = progressService.findByProgressId(progressId);
-        if (progressOpt.isEmpty()) {
-            return ChestResolveResult.ofError(notFound("Progress not found"));
+    private ChestResolveResult resolveChestFromLease(String leaseId, String worldId, String userId) {
+        var leaseOpt = leaseService.validate(leaseId, worldId, userId, "chest-access");
+        if (leaseOpt.isEmpty()) {
+            return ChestResolveResult.ofError(notFound("Lease not found or access denied"));
         }
-        WProgress progress = progressOpt.get();
+        WLease lease = leaseOpt.get();
 
-        // Validate ownership: playerId and worldId must match
-        if (!worldId.equals(progress.getWorldId())) {
-            log.warn("Chest widget access denied: worldId mismatch. expected={}, actual={}", worldId, progress.getWorldId());
-            return ChestResolveResult.ofError(bad("Access denied"));
-        }
-        if (!userId.equals(progress.getPlayerId())) {
-            log.warn("Chest widget access denied: playerId mismatch. expected={}, actual={}", userId, progress.getPlayerId());
-            return ChestResolveResult.ofError(bad("Access denied"));
-        }
-
-        // Validate type
-        if (!"chest-access".equals(progress.getType())) {
-            return ChestResolveResult.ofError(bad("Invalid progress type"));
-        }
-
-        // quest field contains the chest name
-        String chestName = progress.getQuest();
+        // resourceId contains the chest name
+        String chestName = lease.getResourceId();
         if (Strings.isBlank(chestName)) {
-            return ChestResolveResult.ofError(bad("Progress does not reference a chest"));
+            return ChestResolveResult.ofError(bad("Lease does not reference a chest"));
         }
 
         // Load chest by name (COW-aware: for instance worlds, resolves from base world too)

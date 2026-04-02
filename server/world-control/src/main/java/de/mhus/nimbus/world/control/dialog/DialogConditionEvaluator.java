@@ -116,8 +116,8 @@ public class DialogConditionEvaluator {
     }
 
     private boolean evaluateProgress(Condition condition, DialogContext ctx) {
-        if (ctx.getDialogProgress() == null || ctx.getDialogProgress().getProgressData() == null) return false;
-        Object value = ctx.getDialogProgress().getProgressData().get(condition.key());
+        if (ctx.getDialogLease() == null || ctx.getDialogLease().getLeaseData() == null) return false;
+        Object value = ctx.getDialogLease().getLeaseData().get(condition.key());
         return matchValue(value, condition.equals(), condition.min(), condition.max());
     }
 

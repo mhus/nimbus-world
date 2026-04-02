@@ -1,6 +1,7 @@
 package de.mhus.nimbus.world.shared.instance;
 
 import de.mhus.nimbus.shared.types.WorldId;
+import de.mhus.nimbus.world.shared.world.WLeaseService;
 import de.mhus.nimbus.world.shared.world.WProgressService;
 import de.mhus.nimbus.world.shared.world.WWorldInstance;
 import de.mhus.nimbus.world.shared.world.WWorldInstanceListener;
@@ -10,8 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 /**
- * Cleans up WProgress instance-specific data when a world instance is deleted.
- * WProgress is always created per instance, not COW.
+ * Cleans up WProgress and WLease instance-specific data when a world instance is deleted.
  */
 @Service
 @RequiredArgsConstructor
@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 public class WProgressInstanceListener implements WWorldInstanceListener {
 
     private final WProgressService progressService;
+    private final WLeaseService leaseService;
 
     @Override
     public void worldInstanceCreated(WorldInstanceEvent event) {
@@ -34,6 +35,7 @@ public class WProgressInstanceListener implements WWorldInstanceListener {
         if (!WorldId.unchecked(instanceWorldId).isInstance()) return;
 
         progressService.deleteByWorldId(instanceWorldId);
-        log.info("Deleted WProgress data for instance {}", instanceWorldId);
+        leaseService.releaseByWorldId(instanceWorldId);
+        log.info("Deleted WProgress and WLease data for instance {}", instanceWorldId);
     }
 }

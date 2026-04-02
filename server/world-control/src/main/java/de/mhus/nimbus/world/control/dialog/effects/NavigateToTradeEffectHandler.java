@@ -3,7 +3,7 @@ package de.mhus.nimbus.world.control.dialog.effects;
 import de.mhus.nimbus.world.control.dialog.DialogContext;
 import de.mhus.nimbus.world.control.dialog.DialogDtos.Effect;
 import de.mhus.nimbus.world.control.dialog.DialogEffectHandler;
-import de.mhus.nimbus.world.shared.world.WProgressService;
+import de.mhus.nimbus.world.shared.world.WLeaseService;
 import de.mhus.nimbus.world.shared.world.WTrader;
 import de.mhus.nimbus.world.shared.world.WTraderService;
 import lombok.RequiredArgsConstructor;
@@ -24,7 +24,7 @@ import java.util.Map;
 public class NavigateToTradeEffectHandler implements DialogEffectHandler {
 
     private final WTraderService traderService;
-    private final WProgressService progressService;
+    private final WLeaseService leaseService;
 
     @Override
     public String getEffectType() { return "navigateToTrade"; }
@@ -47,22 +47,22 @@ public class NavigateToTradeEffectHandler implements DialogEffectHandler {
 
         traderService.syncPoolIfDue(trader);
 
-        Map<String, Object> progressData = new HashMap<>();
-        progressData.put("traderEntityId", trader.getEntityId());
-        progressData.put("traderType", trader.getTraderType().name());
-        progressData.put("chestId", trader.getChestId());
+        Map<String, Object> leaseData = new HashMap<>();
+        leaseData.put("traderEntityId", trader.getEntityId());
+        leaseData.put("traderType", trader.getTraderType().name());
+        leaseData.put("chestId", trader.getChestId());
 
-        var progress = progressService.save(
+        var lease = leaseService.acquire(
                 ctx.getWorldId(),
                 ctx.getPlayerId(),
                 "trade-access",
                 entityId,
                 "Trade",
-                progressData
+                leaseData
         );
 
-        String progressId = progress.getProgressId();
-        ctx.setNavigate("trade-widget.html?progressId=" + progressId);
-        log.debug("navigateToTrade: trader={}, progressId={}", entityId, progressId);
+        String leaseId = lease.getLeaseId();
+        ctx.setNavigate("trade-widget.html?progressId=" + leaseId);
+        log.debug("navigateToTrade: trader={}, leaseId={}", entityId, leaseId);
     }
 }

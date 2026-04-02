@@ -9,8 +9,8 @@ import de.mhus.nimbus.world.shared.region.RCharacterService;
 import de.mhus.nimbus.world.shared.rest.BaseEditorController;
 import de.mhus.nimbus.world.shared.world.SpellWordService;
 import de.mhus.nimbus.world.shared.world.WItemService;
-import de.mhus.nimbus.world.shared.world.WProgress;
-import de.mhus.nimbus.world.shared.world.WProgressService;
+import de.mhus.nimbus.world.shared.world.WLease;
+import de.mhus.nimbus.world.shared.world.WLeaseService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
@@ -25,7 +25,7 @@ import java.util.*;
 /**
  * REST Controller for the crafting widget.
  * Accessed by players via /control/player/crafting-widget.
- * Uses WProgress as contract item (type "crafting-station") to validate access.
+ * Uses WLease (type "crafting-station") to validate access.
  */
 @RestController
 @RequestMapping("/control/player/crafting-widget")
@@ -34,7 +34,7 @@ import java.util.*;
 @Tag(name = "Player Crafting Widget", description = "Crafting station widget for players")
 public class PlayerCraftingWidgetController extends BaseEditorController {
 
-    private final WProgressService progressService;
+    private final WLeaseService leaseService;
     private final RCharacterService characterService;
     private final CraftingService craftingService;
     private final SpellWordService spellWordService;
@@ -57,9 +57,9 @@ public class PlayerCraftingWidgetController extends BaseEditorController {
             return bad("Not authenticated");
         }
 
-        // Validate WProgress contract
-        var progress = validateProgress(progressId, worldId, userId);
-        if (progress == null) {
+        // Validate lease
+        var lease = validateLease(progressId, worldId, userId);
+        if (lease == null) {
             return notFound("Crafting station not found");
         }
 
@@ -69,9 +69,9 @@ public class PlayerCraftingWidgetController extends BaseEditorController {
         var character = characterService.getCharacter(userId, parsedWorldId.getRegionId(), characterId).orElse(null);
         if (character == null) return notFound("Character not found");
 
-        String category = (String) progress.getProgressData().getOrDefault("category", "");
-        int slots = progress.getProgressData().get("slots") instanceof Number n ? n.intValue() : 4;
-        boolean allowSpells = Boolean.TRUE.equals(progress.getProgressData().get("allowSpells"));
+        String category = (String) lease.getLeaseData().getOrDefault("category", "");
+        int slots = lease.getLeaseData().get("slots") instanceof Number n ? n.intValue() : 4;
+        boolean allowSpells = Boolean.TRUE.equals(lease.getLeaseData().get("allowSpells"));
 
         // Get backpack items with details
         List<Map<String, Object>> backpackItems = buildBackpackItemList(character, parsedWorldId);
@@ -126,8 +126,8 @@ public class PlayerCraftingWidgetController extends BaseEditorController {
             return bad("Not authenticated");
         }
 
-        var progress = validateProgress(progressId, worldId, userId);
-        if (progress == null) return notFound("Crafting station not found");
+        var lease = validateLease(progressId, worldId, userId);
+        if (lease == null) return notFound("Crafting station not found");
 
         var parsedWorldId = WorldId.of(worldId).orElse(null);
         if (parsedWorldId == null) return bad("Invalid worldId");
@@ -135,7 +135,7 @@ public class PlayerCraftingWidgetController extends BaseEditorController {
         var character = characterService.getCharacter(userId, parsedWorldId.getRegionId(), characterId).orElse(null);
         if (character == null) return notFound("Character not found");
 
-        String category = (String) progress.getProgressData().getOrDefault("category", "");
+        String category = (String) lease.getLeaseData().getOrDefault("category", "");
         int craftingLevel = character.getSkills().getOrDefault("crafting_" + category, 0);
         String regionWorldId = parsedWorldId.toRegionCollection().getId();
 
@@ -196,8 +196,8 @@ public class PlayerCraftingWidgetController extends BaseEditorController {
             return bad("recipeName required");
         }
 
-        var progress = validateProgress(progressId, worldId, userId);
-        if (progress == null) return notFound("Crafting station not found");
+        var lease = validateLease(progressId, worldId, userId);
+        if (lease == null) return notFound("Crafting station not found");
 
         var parsedWorldId = WorldId.of(worldId).orElse(null);
         if (parsedWorldId == null) return bad("Invalid worldId");
@@ -273,33 +273,8 @@ public class PlayerCraftingWidgetController extends BaseEditorController {
         return items;
     }
 
-    private WProgress validateProgress(String progressId, String worldId, String userId) {
-        var progressOpt = progressService.findByProgressId(progressId);
-        if (progressOpt.isEmpty()) {
-            log.warn("Progress not found: progressId={}", progressId);
-            return null;
-        }
-
-        var progress = progressOpt.get();
-        if (!progress.getWorldId().equals(worldId)) {
-            log.warn("Progress worldId mismatch: expected={}, actual={}", worldId, progress.getWorldId());
-            return null;
-        }
-        // playerId can be "@userId:characterName" or "userId:characterName" or just "userId"
-        String playerId = progress.getPlayerId();
-        if (!playerId.equals(userId)
-                && !playerId.startsWith(userId + ":")
-                && !playerId.equals("@" + userId)
-                && !playerId.startsWith("@" + userId + ":")) {
-            log.warn("Progress playerId mismatch: userId={}, playerId={}", userId, playerId);
-            return null;
-        }
-        if (!"crafting-station".equals(progress.getType())) {
-            log.warn("Progress type mismatch: expected=crafting-station, actual={}", progress.getType());
-            return null;
-        }
-
-        return progress;
+    private WLease validateLease(String leaseId, String worldId, String userId) {
+        return leaseService.validate(leaseId, worldId, userId, "crafting-station").orElse(null);
     }
 
     record CraftRequest(String recipeName, List<String> spellWords) {}

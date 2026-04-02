@@ -5,8 +5,7 @@ import de.mhus.nimbus.world.shared.access.AccessFilterBase;
 import de.mhus.nimbus.world.shared.rest.BaseEditorController;
 import de.mhus.nimbus.world.shared.world.WDocument;
 import de.mhus.nimbus.world.shared.world.WDocumentService;
-import de.mhus.nimbus.world.shared.world.WProgress;
-import de.mhus.nimbus.world.shared.world.WProgressService;
+import de.mhus.nimbus.world.shared.world.WLeaseService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -36,7 +35,7 @@ import java.util.Optional;
 @Tag(name = "Player Document", description = "Player document viewing")
 public class PlayerDocumentController extends BaseEditorController {
 
-    private final WProgressService progressService;
+    private final WLeaseService leaseService;
     private final WDocumentService documentService;
 
     @GetMapping
@@ -67,27 +66,21 @@ public class PlayerDocumentController extends BaseEditorController {
             return bad("Invalid worldId format");
         }
 
-        // Load progress and verify ownership
-        Optional<WProgress> progressOpt = progressService.findByProgressId(progressId);
-        if (progressOpt.isEmpty()) {
-            return notFound("Progress not found");
+        // Load and validate lease
+        var leaseOpt = leaseService.validate(progressId, worldId, userId, null);
+        if (leaseOpt.isEmpty()) {
+            return notFound("Lease not found or access denied");
         }
 
-        WProgress progress = progressOpt.get();
-        if (!worldId.equals(progress.getWorldId())) {
-            return bad("Progress does not belong to this world");
-        }
-        if (!userId.equals(progress.getPlayerId())) {
-            return bad("Progress does not belong to this player");
+        var lease = leaseOpt.get();
+
+        // Extract document reference from leaseData
+        Map<String, Object> leaseData = lease.getLeaseData();
+        if (leaseData == null || !leaseData.containsKey("document")) {
+            return bad("Lease has no document reference");
         }
 
-        // Extract document reference from progressData
-        Map<String, Object> progressData = progress.getProgressData();
-        if (progressData == null || !progressData.containsKey("document")) {
-            return bad("Progress has no document reference");
-        }
-
-        String documentRef = String.valueOf(progressData.get("document"));
+        String documentRef = String.valueOf(leaseData.get("document"));
         if (Strings.isBlank(documentRef)) {
             return bad("Empty document reference");
         }
