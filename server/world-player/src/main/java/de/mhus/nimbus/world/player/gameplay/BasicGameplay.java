@@ -101,6 +101,9 @@ public class BasicGameplay implements Gameplay {
     @Getter
     protected OccupationService occupationService;
     @Autowired
+    @Getter
+    protected de.mhus.nimbus.world.shared.world.WTraderService traderService;
+    @Autowired
     protected de.mhus.nimbus.world.shared.client.WorldClientService worldClientService;
     @Autowired
     @Getter
@@ -201,6 +204,7 @@ public class BasicGameplay implements Gameplay {
         actions.put("window", new WindowAction(this));
         actions.put("toggle", new ToggleAction(this));
         actions.put("crafting", new CraftingAction(this));
+        actions.put("open.trade", new OpenTradeAction(this));
     }
 
     @PostConstruct

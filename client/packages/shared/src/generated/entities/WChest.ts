@@ -10,7 +10,9 @@ export enum ChestType {
   WORLD,
   PLAYER,
   BANK,
-  TRANSFER
+  TRANSFER,
+  MERCHANT,
+  MERCHANT_POOL
 }
 
 export interface WChest {

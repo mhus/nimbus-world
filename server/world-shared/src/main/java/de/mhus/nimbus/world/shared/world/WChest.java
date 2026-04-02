@@ -177,6 +177,16 @@ public class WChest implements Identifiable, CowEntity {
         /**
          * Player transfer chest, requires playerId. Used for item transfers between players or systems.
          */
-        TRANSFER
+        TRANSFER,
+
+        /**
+         * Merchant's visible shop chest, linked to a WTrader.
+         */
+        MERCHANT,
+
+        /**
+         * Merchant's hidden pool chest for inventory cycling, linked to a WTrader.
+         */
+        MERCHANT_POOL
     }
 }

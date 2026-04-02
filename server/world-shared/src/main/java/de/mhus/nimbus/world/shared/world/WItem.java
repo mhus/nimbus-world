@@ -64,6 +64,29 @@ public class WItem implements Identifiable {
     @TypeScript(ignore = true)
     private Map<String, String> server;
 
+    // --- Trading/Price fields (server-side only, not sent to clients) ---
+
+    @TypeScript(ignore = true)
+    private ItemTier itemTier;
+
+    @TypeScript(ignore = true)
+    private RarityCategory rarityCategory;
+
+    @TypeScript(ignore = true)
+    private Double basePrice;
+
+    @TypeScript(ignore = true)
+    private Double materialPrice;
+
+    @TypeScript(ignore = true)
+    private Double craftingCost;
+
+    @TypeScript(ignore = true)
+    private Double usageBonus;
+
+    @TypeScript(ignore = true)
+    private Double rarityBonus;
+
     private Instant createdAt;
     private Instant updatedAt;
 

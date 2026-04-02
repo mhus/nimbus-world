@@ -1430,6 +1430,46 @@ export class ModalService {
   }
 
   /**
+   * Open trade widget modal for buying/selling items from an NPC trader.
+   *
+   * @param progressId The progress ID referencing the trade access
+   * @returns Modal reference
+   */
+  openTrade(progressId: string): ModalReference {
+    try {
+      if (document.pointerLockElement) {
+        document.exitPointerLock();
+        logger.debug('Exited pointer lock for trade widget');
+      }
+
+      const componentBaseUrl = this.appContext?.services.network?.getComponentBaseUrl();
+
+      if (!componentBaseUrl) {
+        logger.warn('No component URL configured for this world');
+        throw new Error('Trade widget is not available in this world');
+      }
+
+      const separator = componentBaseUrl.includes('?') ? '&' : '?';
+      const worldId = this.appContext.worldInfo?.worldId;
+      const sessionId = this.appContext.sessionId;
+
+      const tradeUrl = `${componentBaseUrl}trade-widget.html${separator}embedded=true&worldId=${worldId}&sessionId=${sessionId}&progressId=${encodeURIComponent(progressId)}`;
+
+      logger.debug('Opening trade widget modal', { tradeUrl, progressId });
+
+      return this.openModal(
+        `trade-${progressId}`,
+        'Trade',
+        tradeUrl,
+        ModalSizePreset.CENTER_MEDIUM,
+        ModalFlags.CLOSEABLE | ModalFlags.MOVEABLE | ModalFlags.NO_BACKGROUND_LOCK | ModalFlags.RESIZEABLE | ModalFlags.MINIMIZABLE
+      );
+    } catch (error) {
+      throw ExceptionHandler.handleAndRethrow(error, 'ModalService.openTrade', { progressId });
+    }
+  }
+
+  /**
    * Open crafting widget modal for crafting items at a station via progress reference.
    *
    * @param progressId The progress ID referencing the crafting station access
@@ -1538,6 +1578,13 @@ export class ModalService {
             throw new Error('crafting requires 1 attribute: progressId');
           }
           return this.openCrafting(attributes[0]);
+
+        case 'trade':
+          // Expect attributes: [progressId]
+          if (attributes.length < 1) {
+            throw new Error('trade requires 1 attribute: progressId');
+          }
+          return this.openTrade(attributes[0]);
 
         default:
           throw new Error(`Unknown component: ${component}`);
