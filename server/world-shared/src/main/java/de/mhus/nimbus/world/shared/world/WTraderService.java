@@ -28,6 +28,7 @@ public class WTraderService {
 
     private final WTraderRepository repository;
     private final WChestService chestService;
+    private final WItemService itemService;
     private final MongoTemplate mongoTemplate;
 
     // ===== Read operations =====
@@ -145,10 +146,44 @@ public class WTraderService {
             return false;
         }
 
-        // TODO implement pool cycling logic:
+        WChest shop = shopChest.get();
+        WChest pool = poolChest.get();
+        List<String> portfolio = trader.getCategories() != null ? trader.getCategories() : List.of();
+        int maxDisplay = trader.getMaxDisplayItems() > 0 ? trader.getMaxDisplayItems() : 12;
+
+        var parsedWorldId = WorldId.of(worldId).orElse(null);
+
         // 1. Move items outside portfolio from shop → pool
+        if (!portfolio.isEmpty() && shop.getItems() != null) {
+            List<String> toMoveToPool = new ArrayList<>();
+            for (ItemRef ref : shop.getItems()) {
+                String itemType = resolveItemType(parsedWorldId, ref.getItemId());
+                if (itemType != null && !portfolio.contains(itemType)) {
+                    toMoveToPool.add(ref.getItemId());
+                }
+            }
+            for (String itemId : toMoveToPool) {
+                moveItem(shop, pool, itemId);
+            }
+        }
+
         // 2. Move items inside portfolio from pool → shop (up to maxDisplayItems)
-        // 3. Prefer items that match trader categories
+        int shopCount = shop.getItems() != null ? shop.getItems().size() : 0;
+        if (pool.getItems() != null && shopCount < maxDisplay) {
+            // Shuffle pool items for variety
+            List<ItemRef> poolItems = new ArrayList<>(pool.getItems());
+            Collections.shuffle(poolItems);
+
+            for (ItemRef ref : poolItems) {
+                if (shopCount >= maxDisplay) break;
+                String itemType = resolveItemType(parsedWorldId, ref.getItemId());
+                // Prefer items that match portfolio, or move any if portfolio is empty
+                if (portfolio.isEmpty() || (itemType != null && portfolio.contains(itemType))) {
+                    moveItem(pool, shop, ref.getItemId());
+                    shopCount++;
+                }
+            }
+        }
 
         // Update last sync time
         Query query = new Query(Criteria.where("id").is(trader.getId()));
@@ -157,7 +192,77 @@ public class WTraderService {
                 .set("updatedAt", Instant.now());
         mongoTemplate.updateFirst(query, update, WTrader.class);
 
-        log.info("Pool synced for trader entityId={}", trader.getEntityId());
+        log.info("Pool synced for trader entityId={}: shop={} items, pool={} items",
+                trader.getEntityId(),
+                shop.getItems() != null ? shop.getItems().size() : 0,
+                pool.getItems() != null ? pool.getItems().size() : 0);
         return true;
+    }
+
+    /**
+     * Move an item from source chest to target chest (full amount).
+     */
+    private void moveItem(WChest source, WChest target, String itemId) {
+        ItemRef sourceRef = null;
+        if (source.getItems() != null) {
+            for (ItemRef ref : source.getItems()) {
+                if (ref.getItemId().equals(itemId)) {
+                    sourceRef = ref;
+                    break;
+                }
+            }
+        }
+        if (sourceRef == null) return;
+
+        // Check if target already has this item
+        ItemRef targetRef = null;
+        if (target.getItems() != null) {
+            for (ItemRef ref : target.getItems()) {
+                if (ref.getItemId().equals(itemId)) {
+                    targetRef = ref;
+                    break;
+                }
+            }
+        }
+
+        // Remove from source
+        chestService.removeItemAtomic(source.getId(), itemId);
+        source.getItems().removeIf(r -> r.getItemId().equals(itemId));
+
+        // Add to target
+        if (targetRef != null) {
+            chestService.incItemAmountAtomic(target.getId(), itemId, sourceRef.getAmount());
+            targetRef = ItemRef.builder()
+                    .itemId(targetRef.getItemId())
+                    .name(targetRef.getName())
+                    .texture(targetRef.getTexture())
+                    .amount(targetRef.getAmount() + sourceRef.getAmount())
+                    .build();
+        } else {
+            chestService.addItemAtomic(target.getId(), sourceRef);
+            if (target.getItems() == null) {
+                // Should not happen with builder default, but be safe
+                return;
+            }
+            target.getItems().add(sourceRef);
+        }
+
+        log.debug("Moved item {} (x{}) from chest {} to {}", itemId, sourceRef.getAmount(), source.getName(), target.getName());
+    }
+
+    /**
+     * Resolve the item type (category) for a given itemId.
+     * Returns Item.type (e.g., "food", "weapon") or null if not found.
+     */
+    private String resolveItemType(WorldId worldId, String itemId) {
+        if (worldId == null) return null;
+        try {
+            return itemService.findByItemId(worldId, itemId)
+                    .map(item -> item.getPublicData() != null ? item.getPublicData().getType() : null)
+                    .orElse(null);
+        } catch (Exception e) {
+            log.debug("Could not resolve item type for {}: {}", itemId, e.getMessage());
+            return null;
+        }
     }
 }

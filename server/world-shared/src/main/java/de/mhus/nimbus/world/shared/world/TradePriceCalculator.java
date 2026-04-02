@@ -32,7 +32,10 @@ public class TradePriceCalculator {
     private static final double DEFAULT_SELL_FACTOR = 0.5;
     private static final String REPUTATION_KEY_PREFIX = "trade_";
 
+    private static final String INDIVIDUAL_MODIFIER_TYPE = "trade-individual";
+
     private final WAnythingService anythingService;
+    private final WProgressService progressService;
 
     /**
      * Calculate the buy price (player buys from trader).
@@ -45,7 +48,7 @@ public class TradePriceCalculator {
         double modifier = 1.0
                 + trader.getPersonalityModifier()
                 + getReputationModifier(trader, character)
-                + getIndividualModifier(trader, character);
+                + getIndividualModifier(trader, character, worldId);
 
         double balance = getBalanceModifier(worldId);
         double price = base * modifier * balance;
@@ -64,7 +67,7 @@ public class TradePriceCalculator {
         double modifier = 1.0
                 - trader.getPersonalityModifier()
                 + getReputationModifier(trader, character)
-                + getIndividualModifier(trader, character);
+                + getIndividualModifier(trader, character, worldId);
 
         double balance = getBalanceModifier(worldId);
         double price = base * modifier * balance * DEFAULT_SELL_FACTOR;
@@ -114,11 +117,24 @@ public class TradePriceCalculator {
 
     /**
      * Get individual modifier for a specific character-trader relationship.
-     * Currently returns 0; can be extended via WProgress or WAnything to track
-     * per-character trader relationships (e.g., quest rewards).
+     * Stored in WProgress (type="trade-individual", playerId=userId, quest=traderEntityId).
+     * progressData contains {"modifier": double}.
+     * Can be set by dialog effects, quest rewards, etc.
      */
-    private double getIndividualModifier(WTrader trader, RCharacter character) {
-        // TODO: extend with per-character trader relationship data
+    private double getIndividualModifier(WTrader trader, RCharacter character, String worldId) {
+        if (character == null || character.getUserId() == null) return 0;
+        try {
+            var progressOpt = progressService.findByWorldIdAndPlayerIdAndTypeAndQuest(
+                    worldId, character.getUserId(), INDIVIDUAL_MODIFIER_TYPE, trader.getEntityId());
+            if (progressOpt.isPresent() && progressOpt.get().getProgressData() != null) {
+                Object mod = progressOpt.get().getProgressData().get("modifier");
+                if (mod instanceof Number number) {
+                    return number.doubleValue();
+                }
+            }
+        } catch (Exception e) {
+            log.debug("Could not load individual modifier for trader={}: {}", trader.getEntityId(), e.getMessage());
+        }
         return 0;
     }
 

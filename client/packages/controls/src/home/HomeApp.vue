@@ -77,8 +77,10 @@
 
     <!-- Main Content -->
     <main v-else class="flex-1 container mx-auto px-4 py-8">
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <!-- Region Editor -->
+
+      <!-- Welt -->
+      <h2 class="text-xl font-bold text-gray-700 mb-4">Welt</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
         <EditorCard
           v-if="hasAccess('REGION_EDITOR')"
           title="Region Editor"
@@ -90,319 +92,6 @@
           </svg>
         </EditorCard>
 
-        <!-- User Editor -->
-        <EditorCard
-          v-if="hasAccess('USER_EDITOR')"
-          title="User Editor"
-          description="Manage users, roles, and settings"
-          url="/controls/user-editor.html"
-        >
-          <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-          </svg>
-        </EditorCard>
-
-        <!-- Character Editor -->
-        <EditorCard
-          v-if="hasAccess('CHARACTER_EDITOR')"
-          title="Character Editor"
-          description="Manage player characters and skills"
-          url="/controls/character-editor.html"
-        >
-          <svg class="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-          </svg>
-        </EditorCard>
-
-        <!-- World Editor -->
-        <EditorCard
-          v-if="hasAccess('WORLD_EDITOR')"
-          title="World Editor"
-          description="Manage game worlds and settings"
-          url="/controls/world-editor.html"
-        >
-          <svg class="w-8 h-8 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064" />
-          </svg>
-        </EditorCard>
-
-        <!-- Entity Editor -->
-        <EditorCard
-          v-if="hasAccess('ENTITY_EDITOR')"
-          title="Entity Editor"
-          description="Manage game entities and objects"
-          url="/controls/entity-editor.html"
-        >
-          <svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-          </svg>
-        </EditorCard>
-
-        <!-- Entity Model Editor -->
-        <EditorCard
-          v-if="hasAccess('ENTITYMODEL_EDITOR')"
-          title="Entity Model Editor"
-          description="Manage entity templates and models"
-          url="/controls/entitymodel-editor.html"
-        >
-          <svg class="w-8 h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 16a1 1 0 011-1h4a1 1 0 011 1v3a1 1 0 01-1 1H5a1 1 0 01-1-1v-3z" />
-          </svg>
-        </EditorCard>
-
-        <!-- Backdrop Editor -->
-        <EditorCard
-          v-if="hasAccess('BACKDROP_EDITOR')"
-          title="Backdrop Editor"
-          description="Manage scene backdrops and backgrounds"
-          url="/controls/backdrop-editor.html"
-        >
-          <svg class="w-8 h-8 text-pink-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-          </svg>
-        </EditorCard>
-
-        <!-- Material Editor -->
-        <EditorCard
-          v-if="hasAccess('MATERIAL_EDITOR')"
-          title="Material Editor"
-          description="Manage materials and textures"
-          url="/controls/material-editor.html"
-        >
-          <svg class="w-8 h-8 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
-          </svg>
-        </EditorCard>
-
-        <!-- Block Type Editor -->
-        <EditorCard
-          v-if="hasAccess('BLOCKTYPE_EDITOR')"
-          title="BlockType Editor"
-          description="Manage block types and definitions"
-          url="/controls/blocktype-editor.html"
-        >
-          <svg class="w-8 h-8 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-          </svg>
-        </EditorCard>
-
-        <!-- Asset Editor -->
-        <EditorCard
-          v-if="hasAccess('ASSET_EDITOR')"
-          title="Asset Editor"
-          description="Manage game assets and resources"
-          url="/controls/asset-editor.html"
-        >
-          <svg class="w-8 h-8 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-          </svg>
-        </EditorCard>
-
-        <!-- MC Asset Editor -->
-        <EditorCard
-          v-if="hasAccess('ASSET_EDITOR')"
-          title="MC Asset Editor"
-          description="Midnight Commander-style dual-panel asset browser with folder navigation"
-          url="/controls/mc-asset-editor.html"
-        >
-          <svg class="w-8 h-8 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-          </svg>
-        </EditorCard>
-
-        <!-- Layer Editor -->
-        <EditorCard
-          v-if="hasAccess('LAYER_EDITOR')"
-          title="Layer Editor"
-          description="Manage rendering layers"
-          url="/controls/layer-editor.html"
-        >
-          <svg class="w-8 h-8 text-lime-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-          </svg>
-        </EditorCard>
-
-        <!-- Rule Editor -->
-        <EditorCard
-          v-if="hasAccess('LAYER_EDITOR')"
-          title="Rule Editor"
-          description="Manage Logic Machine rules"
-          url="/controls/rule-editor.html"
-        >
-          <svg class="w-8 h-8 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
-          </svg>
-        </EditorCard>
-
-        <!-- State Editor -->
-        <EditorCard
-          v-if="hasAccess('LAYER_EDITOR')"
-          title="State Editor"
-          description="Manage Logic Machine state definitions"
-          url="/controls/state-editor.html"
-        >
-          <svg class="w-8 h-8 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9" />
-          </svg>
-        </EditorCard>
-
-        <!-- Edit Cache Editor -->
-        <EditorCard
-          v-if="hasAccess('EDITCACHE_EDITOR')"
-          title="Edit Cache Editor"
-          description="View and manage pending edit cache entries"
-          url="/controls/editcache-editor.html"
-        >
-          <svg class="w-8 h-8 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
-          </svg>
-        </EditorCard>
-
-        <!-- Chunk Editor -->
-        <EditorCard
-          v-if="hasAccess('CHUNK_EDITOR')"
-          title="Chunk Editor"
-          description="View and inspect chunk data"
-          url="/controls/chunk-editor.html"
-        >
-          <svg class="w-8 h-8 text-stone-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 16a1 1 0 011-1h4a1 1 0 011 1v3a1 1 0 01-1 1H5a1 1 0 01-1-1v-3zM14 16a1 1 0 011-1h4a1 1 0 011 1v3a1 1 0 01-1 1h-4a1 1 0 01-1-1v-3z" />
-          </svg>
-        </EditorCard>
-
-        <!-- Flat Editor -->
-        <EditorCard
-          v-if="hasAccess('FLAT_EDITOR')"
-          title="Flat Editor"
-          description="Manage flat terrain data with height and block visualization"
-          url="/controls/flat-editor.html"
-        >
-          <svg class="w-8 h-8 text-brown-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
-          </svg>
-        </EditorCard>
-
-        <!-- Item Editor -->
-        <EditorCard
-          v-if="hasAccess('ITEM_EDITOR')"
-          title="Item Editor"
-          description="Manage game items and inventory"
-          url="/controls/item-editor.html"
-        >
-          <svg class="w-8 h-8 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-          </svg>
-        </EditorCard>
-
-        <!-- Chest Editor -->
-        <EditorCard
-          v-if="hasAccess('CHEST_EDITOR')"
-          title="Chest Editor"
-          description="Manage chests and item storage"
-          url="/controls/chest-editor.html"
-        >
-          <svg class="w-8 h-8 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-          </svg>
-        </EditorCard>
-
-        <!-- Trader Editor -->
-        <EditorCard
-          v-if="hasAccess('CHEST_EDITOR')"
-          title="Trader Editor"
-          description="Manage NPC traders, shops, and services"
-          url="/controls/trader-editor.html"
-        >
-          <svg class="w-8 h-8 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z" />
-          </svg>
-        </EditorCard>
-
-        <!-- Scrawl Editor -->
-        <EditorCard
-          v-if="hasAccess('SCRAWL_EDITOR')"
-          title="Scrawl Script Editor"
-          description="Create and edit game scripts"
-          url="/controls/scrawl-editor.html"
-        >
-          <svg class="w-8 h-8 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
-          </svg>
-        </EditorCard>
-
-        <!-- Block Editor -->
-        <EditorCard
-          v-if="hasAccess('BLOCK_EDITOR')"
-          title="Block Instance Editor"
-          description="Edit individual block instances"
-          url="/controls/block-editor.html"
-        >
-          <svg class="w-8 h-8 text-fuchsia-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1h-4a1 1 0 01-1-1V5z" />
-          </svg>
-        </EditorCard>
-
-        <!-- Hex Grid Editor -->
-        <EditorCard
-          v-if="hasAccess('HEXGRID_EDITOR')"
-          title="Hex Grid Editor"
-          description="Manage hexagonal world grids"
-          url="/controls/hex-editor.html"
-        >
-          <svg class="w-8 h-8 text-sky-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-          </svg>
-        </EditorCard>
-
-        <!-- Job Editor -->
-        <EditorCard
-          v-if="hasAccess('JOB_CONTROLLER')"
-          title="Job Editor"
-          description="Manage and monitor background jobs"
-          url="/controls/job-editor.html"
-        >
-          <svg class="w-8 h-8 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-        </EditorCard>
-
-        <!-- Workflow Editor -->
-        <EditorCard
-          v-if="hasAccess('WORKFLOW_EDITOR')"
-          title="Workflow Editor"
-          description="View and manage workflow journal entries"
-          url="/controls/workflow-editor.html"
-        >
-          <svg class="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-          </svg>
-        </EditorCard>
-
-        <!-- Anything Editor -->
-        <EditorCard
-          v-if="hasAccess('ANYTHING_EDITOR')"
-          title="Anything Editor"
-          description="Manage flexible data storage with region/world scoping"
-          url="/controls/anything-editor.html"
-        >
-          <svg class="w-8 h-8 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
-          </svg>
-        </EditorCard>
-
-        <!-- Team Editor -->
-        <EditorCard
-          v-if="hasAccess('TEAM_EDITOR')"
-          title="Team Editor"
-          description="Manage player teams, members, and invitations"
-          url="/controls/team-editor.html"
-        >
-          <svg class="w-8 h-8 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-          </svg>
-        </EditorCard>
-
-        <!-- Universe Editor -->
         <EditorCard
           v-if="hasAccess('UNIVERSE_EDITOR')"
           title="Universe Editor"
@@ -414,7 +103,342 @@
           </svg>
         </EditorCard>
 
-        <!-- Settings Editor -->
+        <EditorCard
+          v-if="hasAccess('WORLD_EDITOR')"
+          title="World Editor"
+          description="Manage game worlds and settings"
+          url="/controls/world-editor.html"
+        >
+          <svg class="w-8 h-8 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064" />
+          </svg>
+        </EditorCard>
+      </div>
+
+      <!-- Benutzer -->
+      <h2 class="text-xl font-bold text-gray-700 mb-4">Benutzer</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        <EditorCard
+          v-if="hasAccess('CHARACTER_EDITOR')"
+          title="Character Editor"
+          description="Manage player characters and skills"
+          url="/controls/character-editor.html"
+        >
+          <svg class="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+          </svg>
+        </EditorCard>
+
+        <EditorCard
+          v-if="hasAccess('TEAM_EDITOR')"
+          title="Team Editor"
+          description="Manage player teams, members, and invitations"
+          url="/controls/team-editor.html"
+        >
+          <svg class="w-8 h-8 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+          </svg>
+        </EditorCard>
+
+        <EditorCard
+          v-if="hasAccess('USER_EDITOR')"
+          title="User Editor"
+          description="Manage users, roles, and settings"
+          url="/controls/user-editor.html"
+        >
+          <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+          </svg>
+        </EditorCard>
+      </div>
+
+      <!-- Entities -->
+      <h2 class="text-xl font-bold text-gray-700 mb-4">Entities</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        <EditorCard
+          v-if="hasAccess('ENTITY_EDITOR')"
+          title="Entity Editor"
+          description="Manage game entities and objects"
+          url="/controls/entity-editor.html"
+        >
+          <svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+          </svg>
+        </EditorCard>
+
+        <EditorCard
+          v-if="hasAccess('ENTITYMODEL_EDITOR')"
+          title="Entity Model Editor"
+          description="Manage entity templates and models"
+          url="/controls/entitymodel-editor.html"
+        >
+          <svg class="w-8 h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 16a1 1 0 011-1h4a1 1 0 011 1v3a1 1 0 01-1 1H5a1 1 0 01-1-1v-3z" />
+          </svg>
+        </EditorCard>
+
+        <EditorCard
+          v-if="hasAccess('CHEST_EDITOR')"
+          title="Trader Editor"
+          description="Manage NPC traders, shops, and services"
+          url="/controls/trader-editor.html"
+        >
+          <svg class="w-8 h-8 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z" />
+          </svg>
+        </EditorCard>
+      </div>
+
+      <!-- Blöcke & Terrain -->
+      <h2 class="text-xl font-bold text-gray-700 mb-4">Blöcke & Terrain</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        <EditorCard
+          v-if="hasAccess('BACKDROP_EDITOR')"
+          title="Backdrop Editor"
+          description="Manage scene backdrops and backgrounds"
+          url="/controls/backdrop-editor.html"
+        >
+          <svg class="w-8 h-8 text-pink-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+        </EditorCard>
+
+        <EditorCard
+          v-if="hasAccess('BLOCK_EDITOR')"
+          title="Block Instance Editor"
+          description="Edit individual block instances"
+          url="/controls/block-editor.html"
+        >
+          <svg class="w-8 h-8 text-fuchsia-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1h-4a1 1 0 01-1-1V5z" />
+          </svg>
+        </EditorCard>
+
+        <EditorCard
+          v-if="hasAccess('BLOCKTYPE_EDITOR')"
+          title="BlockType Editor"
+          description="Manage block types and definitions"
+          url="/controls/blocktype-editor.html"
+        >
+          <svg class="w-8 h-8 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+          </svg>
+        </EditorCard>
+
+        <EditorCard
+          v-if="hasAccess('CHUNK_EDITOR')"
+          title="Chunk Editor"
+          description="View and inspect chunk data"
+          url="/controls/chunk-editor.html"
+        >
+          <svg class="w-8 h-8 text-stone-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 16a1 1 0 011-1h4a1 1 0 011 1v3a1 1 0 01-1 1H5a1 1 0 01-1-1v-3zM14 16a1 1 0 011-1h4a1 1 0 011 1v3a1 1 0 01-1 1h-4a1 1 0 01-1-1v-3z" />
+          </svg>
+        </EditorCard>
+
+        <EditorCard
+          v-if="hasAccess('EDITCACHE_EDITOR')"
+          title="Edit Cache Editor"
+          description="View and manage pending edit cache entries"
+          url="/controls/editcache-editor.html"
+        >
+          <svg class="w-8 h-8 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
+          </svg>
+        </EditorCard>
+
+        <EditorCard
+          v-if="hasAccess('FLAT_EDITOR')"
+          title="Flat Editor"
+          description="Manage flat terrain data with height and block visualization"
+          url="/controls/flat-editor.html"
+        >
+          <svg class="w-8 h-8 text-brown-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
+          </svg>
+        </EditorCard>
+
+        <EditorCard
+          v-if="hasAccess('HEXGRID_EDITOR')"
+          title="Hex Grid Editor"
+          description="Manage hexagonal world grids"
+          url="/controls/hex-editor.html"
+        >
+          <svg class="w-8 h-8 text-sky-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+          </svg>
+        </EditorCard>
+
+        <EditorCard
+          v-if="hasAccess('LAYER_EDITOR')"
+          title="Layer Editor"
+          description="Manage rendering layers"
+          url="/controls/layer-editor.html"
+        >
+          <svg class="w-8 h-8 text-lime-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+          </svg>
+        </EditorCard>
+      </div>
+
+      <!-- Items -->
+      <h2 class="text-xl font-bold text-gray-700 mb-4">Items</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        <EditorCard
+          v-if="hasAccess('CHEST_EDITOR')"
+          title="Chest Editor"
+          description="Manage chests and item storage"
+          url="/controls/chest-editor.html"
+        >
+          <svg class="w-8 h-8 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+          </svg>
+        </EditorCard>
+
+        <EditorCard
+          v-if="hasAccess('ITEM_EDITOR')"
+          title="Item Editor"
+          description="Manage game items and inventory"
+          url="/controls/item-editor.html"
+        >
+          <svg class="w-8 h-8 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+          </svg>
+        </EditorCard>
+      </div>
+
+      <!-- Assets & Materialien -->
+      <h2 class="text-xl font-bold text-gray-700 mb-4">Assets & Materialien</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        <EditorCard
+          v-if="hasAccess('ASSET_EDITOR')"
+          title="Asset Editor"
+          description="Manage game assets and resources"
+          url="/controls/asset-editor.html"
+        >
+          <svg class="w-8 h-8 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+        </EditorCard>
+
+        <EditorCard
+          v-if="hasAccess('MATERIAL_EDITOR')"
+          title="Material Editor"
+          description="Manage materials and textures"
+          url="/controls/material-editor.html"
+        >
+          <svg class="w-8 h-8 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+          </svg>
+        </EditorCard>
+
+        <EditorCard
+          v-if="hasAccess('ASSET_EDITOR')"
+          title="MC Asset Editor"
+          description="Midnight Commander-style dual-panel asset browser with folder navigation"
+          url="/controls/mc-asset-editor.html"
+        >
+          <svg class="w-8 h-8 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+          </svg>
+        </EditorCard>
+
+        <EditorCard
+          v-if="hasAccess('STORAGE_EDITOR')"
+          title="Storage Editor"
+          description="Browse and download binary storage data (chunks, assets, layers)"
+          url="/controls/storage-editor.html"
+        >
+          <svg class="w-8 h-8 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
+          </svg>
+        </EditorCard>
+      </div>
+
+      <!-- Scripting & Logik -->
+      <h2 class="text-xl font-bold text-gray-700 mb-4">Scripting & Logik</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        <EditorCard
+          v-if="hasAccess('LAYER_EDITOR')"
+          title="Rule Editor"
+          description="Manage Logic Machine rules"
+          url="/controls/rule-editor.html"
+        >
+          <svg class="w-8 h-8 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
+          </svg>
+        </EditorCard>
+
+        <EditorCard
+          v-if="hasAccess('SCRAWL_EDITOR')"
+          title="Scrawl Script Editor"
+          description="Create and edit game scripts"
+          url="/controls/scrawl-editor.html"
+        >
+          <svg class="w-8 h-8 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+          </svg>
+        </EditorCard>
+
+        <EditorCard
+          v-if="hasAccess('LAYER_EDITOR')"
+          title="State Editor"
+          description="Manage Logic Machine state definitions"
+          url="/controls/state-editor.html"
+        >
+          <svg class="w-8 h-8 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9" />
+          </svg>
+        </EditorCard>
+      </div>
+
+      <!-- Verwaltung -->
+      <h2 class="text-xl font-bold text-gray-700 mb-4">Verwaltung</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        <EditorCard
+          v-if="hasAccess('ANYTHING_EDITOR')"
+          title="Anything Editor"
+          description="Manage flexible data storage with region/world scoping"
+          url="/controls/anything-editor.html"
+        >
+          <svg class="w-8 h-8 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
+          </svg>
+        </EditorCard>
+
+        <EditorCard
+          v-if="hasAccess('DOCUMENT_EDITOR')"
+          title="Document Editor"
+          description="Manage text documents in collections (lore, quests, etc.)"
+          url="/controls/document-editor.html"
+        >
+          <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+        </EditorCard>
+
+        <EditorCard
+          v-if="hasAccess('JOB_CONTROLLER')"
+          title="Job Editor"
+          description="Manage and monitor background jobs"
+          url="/controls/job-editor.html"
+        >
+          <svg class="w-8 h-8 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </EditorCard>
+
+        <EditorCard
+          v-if="hasAccess('PROGRESS_EDITOR')"
+          title="Progress Editor"
+          description="Manage player progress, quests, and achievements"
+          url="/controls/progress-editor.html"
+        >
+          <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+          </svg>
+        </EditorCard>
+
         <EditorCard
           v-if="hasAccess('SETTINGS_EDITOR')"
           title="Settings Editor"
@@ -427,39 +451,14 @@
           </svg>
         </EditorCard>
 
-        <!-- Storage Editor -->
         <EditorCard
-          v-if="hasAccess('STORAGE_EDITOR')"
-          title="Storage Editor"
-          description="Browse and download binary storage data (chunks, assets, layers)"
-          url="/controls/storage-editor.html"
+          v-if="hasAccess('WORKFLOW_EDITOR')"
+          title="Workflow Editor"
+          description="View and manage workflow journal entries"
+          url="/controls/workflow-editor.html"
         >
-          <svg class="w-8 h-8 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
-          </svg>
-        </EditorCard>
-
-        <!-- Document Editor -->
-        <EditorCard
-          v-if="hasAccess('DOCUMENT_EDITOR')"
-          title="Document Editor"
-          description="Manage text documents in collections (lore, quests, etc.)"
-          url="/controls/document-editor.html"
-        >
-          <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-          </svg>
-        </EditorCard>
-
-        <!-- Progress Editor -->
-        <EditorCard
-          v-if="hasAccess('PROGRESS_EDITOR')"
-          title="Progress Editor"
-          description="Manage player progress, quests, and achievements"
-          url="/controls/progress-editor.html"
-        >
-          <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
           </svg>
         </EditorCard>
       </div>
