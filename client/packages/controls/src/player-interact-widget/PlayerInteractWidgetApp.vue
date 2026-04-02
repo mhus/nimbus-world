@@ -223,8 +223,8 @@ async function sendEmoji(emojiId: string) {
 
 async function inviteToTeam() {
   try {
-    await apiService.post('/control/player/team/invite', {
-      playerName: data.value.targetName,
+    await apiService.post('/control/player/interact/invite-team', {}, {
+      params: { progressId },
     });
     showStatus('Team invitation sent');
   } catch (e: any) {

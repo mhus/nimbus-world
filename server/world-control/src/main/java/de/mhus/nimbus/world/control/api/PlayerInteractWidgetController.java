@@ -36,6 +36,17 @@ public class PlayerInteractWidgetController extends BaseEditorController {
 
     private static final long EMOJI_COOLDOWN_MS = 10_000; // 10 seconds
 
+    private static final Map<String, String> EMOJI_SYMBOLS = Map.of(
+            "wave", "\uD83D\uDC4B",
+            "ok", "\uD83D\uDC4D",
+            "smile", "\uD83D\uDE0A",
+            "angry", "\uD83D\uDE20",
+            "sad", "\uD83D\uDE22",
+            "laugh", "\uD83D\uDE02",
+            "heart", "❤\uFE0F",
+            "question", "❓"
+    );
+
     private final WLeaseService leaseService;
     private final RCharacterService characterService;
     private final WTeamService teamService;
@@ -61,7 +72,7 @@ public class PlayerInteractWidgetController extends BaseEditorController {
     public record TradeOfferRequest() {}
 
     // In-memory cooldown tracking (per-pod, sufficient for spam prevention)
-    private final Map<String, Long> emojiCooldowns = new java.util.concurrent.ConcurrentHashMap<>();
+    private final Map<String, Long> actionCooldowns = new java.util.concurrent.ConcurrentHashMap<>();
 
     /**
      * Load widget data: target player info, team invitations, trade offers, block status.
@@ -147,6 +158,9 @@ public class PlayerInteractWidgetController extends BaseEditorController {
 
         if (Strings.isBlank(body.emoji())) return bad("Emoji is required");
 
+        String emojiSymbol = EMOJI_SYMBOLS.get(body.emoji());
+        if (emojiSymbol == null) return bad("Unknown emoji: " + body.emoji());
+
         // Validate lease
         var leaseOpt = leaseService.validate(progressId, worldId, playerName, "player-interact");
         if (leaseOpt.isEmpty()) return notFound("Lease not found");
@@ -159,20 +173,16 @@ public class PlayerInteractWidgetController extends BaseEditorController {
         }
 
         // Cooldown check
-        String cooldownKey = playerName + ">" + targetEntityId;
-        Long lastSent = emojiCooldowns.get(cooldownKey);
-        if (lastSent != null && System.currentTimeMillis() - lastSent < EMOJI_COOLDOWN_MS) {
-            return bad("Please wait before sending another emoji");
-        }
-        emojiCooldowns.put(cooldownKey, System.currentTimeMillis());
+        var cooldownError = checkCooldown(playerName, targetEntityId, "emoji");
+        if (cooldownError != null) return cooldownError;
 
-        // Send notification to target player
+        // Send notification to target player with emoji symbol
         sessionCommandService.sendNotification(
                 SessionCommandTarget.PLAYER, targetEntityId,
-                1, characterId, body.emoji()
+                1, characterId, emojiSymbol
         );
 
-        log.debug("Player {} sent emoji '{}' to {}", playerName, body.emoji(), targetEntityId);
+        log.debug("Player {} sent emoji '{}' ({}) to {}", playerName, body.emoji(), emojiSymbol, targetEntityId);
         return ResponseEntity.ok(Map.of("sent", true));
     }
 
@@ -237,6 +247,61 @@ public class PlayerInteractWidgetController extends BaseEditorController {
     }
 
     /**
+     * Invite target player to my team (with notification).
+     */
+    @PostMapping("/invite-team")
+    @Operation(summary = "Invite target player to team")
+    public ResponseEntity<?> inviteToTeam(
+            HttpServletRequest request,
+            @RequestParam String progressId) {
+
+        String userId = (String) request.getAttribute(AccessFilterBase.ATTR_USER_ID);
+        String worldId = (String) request.getAttribute(AccessFilterBase.ATTR_WORLD_ID);
+        String characterId = (String) request.getAttribute(AccessFilterBase.ATTR_CHARACTER_ID);
+        if (userId == null || worldId == null || characterId == null) return bad("Not authenticated");
+
+        String playerName = "@" + userId + ":" + characterId;
+
+        var leaseOpt = leaseService.validate(progressId, worldId, playerName, "player-interact");
+        if (leaseOpt.isEmpty()) return notFound("Lease not found");
+
+        String targetEntityId = (String) leaseOpt.get().getLeaseData().get("targetEntityId");
+
+        // Check block
+        if (isBlockedByTarget(targetEntityId, playerName, worldId)) {
+            return ResponseEntity.ok(Map.of("invited", true)); // neutral response
+        }
+
+        // Cooldown check
+        var cooldownError = checkCooldown(playerName, targetEntityId, "invite");
+        if (cooldownError != null) return cooldownError;
+
+        // Find my team
+        String mainInstanceId = WorldId.unchecked(worldId).getFullMainInstance().getId();
+        Optional<WTeam> myTeamOpt = teamService.findActiveTeamForPlayer(worldId, mainInstanceId, playerName);
+        if (myTeamOpt.isEmpty()) {
+            return bad("Not in a team");
+        }
+
+        WTeam team = myTeamOpt.get();
+
+        // Add invitation
+        boolean ok = teamService.addInvitationAtomic(team.getTeamId(), targetEntityId);
+        if (!ok) {
+            return bad("Already invited");
+        }
+
+        // Send notification to target player
+        sessionCommandService.sendNotification(
+                SessionCommandTarget.PLAYER, targetEntityId,
+                1, characterId, "Team invitation: " + team.getTitle()
+        );
+
+        log.info("Player {} invited {} to team {}", playerName, targetEntityId, team.getTeamId());
+        return ResponseEntity.ok(Map.of("invited", true));
+    }
+
+    /**
      * Offer a trade to the target player.
      */
     @PostMapping("/offer-trade")
@@ -261,6 +326,10 @@ public class PlayerInteractWidgetController extends BaseEditorController {
         if (isBlockedByTarget(targetEntityId, playerName, worldId)) {
             return ResponseEntity.ok(Map.of("offered", true)); // neutral response
         }
+
+        // Cooldown check
+        var cooldownError = checkCooldown(playerName, targetEntityId, "trade");
+        if (cooldownError != null) return cooldownError;
 
         // Create trade offer lease for target player
         Map<String, Object> leaseData = new HashMap<>();
@@ -386,5 +455,19 @@ public class PlayerInteractWidgetController extends BaseEditorController {
         if (targetCharOpt.isEmpty()) return false;
 
         return targetCharOpt.get().isPlayerBlocked(requesterEntityId);
+    }
+
+    /**
+     * Check cooldown for an action from one player to another.
+     * Returns a bad-request response if still on cooldown, null otherwise.
+     */
+    private ResponseEntity<?> checkCooldown(String playerName, String targetEntityId, String action) {
+        String cooldownKey = playerName + ">" + targetEntityId + ":" + action;
+        Long lastSent = actionCooldowns.get(cooldownKey);
+        if (lastSent != null && System.currentTimeMillis() - lastSent < EMOJI_COOLDOWN_MS) {
+            return bad("Please wait before repeating this action");
+        }
+        actionCooldowns.put(cooldownKey, System.currentTimeMillis());
+        return null;
     }
 }
