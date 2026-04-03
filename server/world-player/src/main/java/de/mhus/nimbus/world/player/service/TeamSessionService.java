@@ -172,9 +172,19 @@ public class TeamSessionService implements SessionAuthenticatedConsumer, Session
             for (String memberName : team.getMembers()) {
                 if (memberName.equals(sessionPlayer)) continue;
 
+                // Try to get display title from session (if on same pod), otherwise extract char name
+                String displayName = memberName;
+                PlayerSession memberSession = sessionManager.findByEntityId(memberName);
+                if (memberSession != null && memberSession.getTitle() != null) {
+                    displayName = memberSession.getTitle();
+                } else {
+                    int colonIdx = memberName.indexOf(':');
+                    if (colonIdx >= 0) displayName = memberName.substring(colonIdx + 1);
+                }
+
                 TeamMember member = TeamMember.builder()
                         .playerId(memberName)
-                        .name(memberName)
+                        .name(displayName)
                         .status(1) // alive by default
                         .health(100)
                         .build();
