@@ -7,7 +7,7 @@ import { Item } from '../../types';
 
 export interface WItem {
   worldId: string;
-  itemId: string;
+  name: string;
   publicData: Item;
   createdAt: Date;
   updatedAt: Date;

@@ -73,7 +73,7 @@ public class OccupyAction extends AbstractGamplayAction {
         }
 
         if (overlayModelId == null || overlayModelId.isBlank()) {
-            log.warn("Item {} has no overlayModelId", item.getItemId());
+            log.warn("Item {} has no overlayModelId", item.getName());
             basic.getBasicClientService().sendSystemNotification(session, "Occupy", "This item cannot be used as mount.");
             return false;
         }

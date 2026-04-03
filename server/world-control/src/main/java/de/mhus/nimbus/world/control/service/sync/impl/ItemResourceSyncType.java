@@ -65,9 +65,9 @@ public class ItemResourceSyncType implements ResourceSyncType {
 
         for (Document doc : documents) {
             try {
-                String itemId = doc.getString("itemId");
+                String itemId = doc.getString("name");
                 if (itemId == null) {
-                    log.warn("Item without itemId, skipping");
+                    log.warn("Item without name, skipping");
                     continue;
                 }
 
@@ -94,7 +94,7 @@ public class ItemResourceSyncType implements ResourceSyncType {
                 for (Path file : files.filter(f -> f.toString().endsWith(".yaml")).toList()) {
                     try {
                         Document doc = yamlMapper.readValue(file.toFile(), Document.class);
-                        String itemId = doc.getString("itemId");
+                        String itemId = doc.getString("name");
 
                         if (!dbItemIds.contains(itemId)) {
                             Files.delete(file);
@@ -128,7 +128,7 @@ public class ItemResourceSyncType implements ResourceSyncType {
                 try {
                     // Read YAML as Document
                     Document doc = yamlMapper.readValue(file.toFile(), Document.class);
-                    String itemId = doc.getString("itemId");
+                    String itemId = doc.getString("name");
                     filesystemItemIds.add(itemId);
 
                     String json = objectMapper.writeValueAsString(doc);
@@ -148,7 +148,7 @@ public class ItemResourceSyncType implements ResourceSyncType {
                     // Find existing by unique constraint (worldId + itemId)
                     Query findQuery = new Query(
                             Criteria.where("worldId").is(migratedDoc.getString("worldId"))
-                                    .and("itemId").is(migratedDoc.getString("itemId"))
+                                    .and("itemId").is(migratedDoc.getString("name"))
                     );
                     Document existing = mongoTemplate.findOne(findQuery, Document.class, COLLECTION_NAME);
 
@@ -190,9 +190,9 @@ public class ItemResourceSyncType implements ResourceSyncType {
             List<WItem> dbItems = itemService.findByWorldId(worldId);
 
             for (WItem item : dbItems) {
-                if (!filesystemItemIds.contains(item.getItemId())) {
-                    itemService.delete(worldId, item.getItemId());
-                    log.info("Deleted item not in filesystem: {}", item.getItemId());
+                if (!filesystemItemIds.contains(item.getName())) {
+                    itemService.delete(worldId, item.getName());
+                    log.info("Deleted item not in filesystem: {}", item.getName());
                     deleted++;
                 }
             }

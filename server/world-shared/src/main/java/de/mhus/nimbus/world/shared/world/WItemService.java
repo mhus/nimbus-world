@@ -63,7 +63,7 @@ public class WItemService {
         if (!regionWorldId.isRegionCollection()) {
             throw new IllegalArgumentException("worldId must be a region collection: " + worldId);
         }
-        return repository.findByWorldIdAndItemId(regionWorldId.getId(), itemId);
+        return repository.findByWorldIdAndName(regionWorldId.getId(), itemId);
     }
 
     /**
@@ -80,7 +80,7 @@ public class WItemService {
         if (!regionWorldId.isRegionCollection()) {
             throw new IllegalArgumentException("worldId must be a region collection: " + worldId);
         }
-        var existing = repository.findByWorldIdAndItemId(regionWorldId.getId(), itemId)
+        var existing = repository.findByWorldIdAndName(regionWorldId.getId(), itemId)
                 .orElseThrow(() -> new IllegalArgumentException("Item not found: " + itemId));
         var publicData = existing.getPublicData();
         publicData.setName(newName);
@@ -96,7 +96,7 @@ public class WItemService {
         } else {
             itemId = publicData.getName();
             var regionWorldId = worldId.toRegionCollection();
-            if (repository.findByWorldIdAndItemId(regionWorldId.getId(), itemId).isPresent()) {
+            if (repository.findByWorldIdAndName(regionWorldId.getId(), itemId).isPresent()) {
                 throw new IllegalArgumentException("Item with itemId already exists: " + itemId);
             }
         }
@@ -121,7 +121,7 @@ public class WItemService {
             throw new IllegalArgumentException("worldId must be a region collection: " + worldId);
         }
 
-        Optional<WItem> existing = repository.findByWorldIdAndItemId(regionWorldId.getId(), itemId);
+        Optional<WItem> existing = repository.findByWorldIdAndName(regionWorldId.getId(), itemId);
         if (existing.isPresent()) {
             WItem item = existing.get();
             item.setPublicData(publicData);
@@ -132,7 +132,7 @@ public class WItemService {
 
         WItem item = WItem.builder()
                 .worldId(regionWorldId.getId())
-                .itemId(itemId)
+                .name(itemId)
                 .publicData(publicData)
                 .enabled(true)
                 .build();
@@ -152,7 +152,7 @@ public class WItemService {
         if (!regionWorldId.isRegionCollection()) {
             throw new IllegalArgumentException("worldId must be a region collection: " + worldId);
         }
-        return repository.findByWorldIdAndItemId(regionWorldId.getId(), itemId).map(item -> {
+        return repository.findByWorldIdAndName(regionWorldId.getId(), itemId).map(item -> {
             item.setPublicData(publicData);
             item.touchUpdate();
             log.debug("Updated item publicData: regionWorldId={}, itemId={}", regionWorldId, itemId);
@@ -173,15 +173,15 @@ public class WItemService {
         if (!regionWorldId.isRegionCollection()) {
             throw new IllegalArgumentException("worldId must be a region collection: " + worldId);
         }
-        WItem item = repository.findByWorldIdAndItemId(regionWorldId.getId(), oldItemId)
+        WItem item = repository.findByWorldIdAndName(regionWorldId.getId(), oldItemId)
                 .orElseThrow(() -> new IllegalArgumentException("Item not found: " + oldItemId));
         if (oldItemId.equals(newItemId)) {
             return item;
         }
-        if (repository.findByWorldIdAndItemId(regionWorldId.getId(), newItemId).isPresent()) {
+        if (repository.findByWorldIdAndName(regionWorldId.getId(), newItemId).isPresent()) {
             throw new IllegalArgumentException("Item with itemId already exists: " + newItemId);
         }
-        item.setItemId(newItemId);
+        item.setName(newItemId);
         item.getPublicData().setName(newItemId);
         item.touchUpdate();
         log.debug("Renamed item: regionWorldId={}, oldItemId={}, newItemId={}", regionWorldId, oldItemId, newItemId);
@@ -198,7 +198,7 @@ public class WItemService {
         if (!regionWorldId.isRegionCollection()) {
             throw new IllegalArgumentException("worldId must be a region collection: " + worldId);
         }
-        return repository.findByWorldIdAndItemId(regionWorldId.getId(), itemId).map(item -> {
+        return repository.findByWorldIdAndName(regionWorldId.getId(), itemId).map(item -> {
             if (!item.isEnabled()) return false;
             item.setEnabled(false);
             item.touchUpdate();
@@ -218,7 +218,7 @@ public class WItemService {
         if (!regionWorldId.isRegionCollection()) {
             throw new IllegalArgumentException("worldId must be a region collection: " + worldId);
         }
-        return repository.findByWorldIdAndItemId(regionWorldId.getId(), itemId).map(item -> {
+        return repository.findByWorldIdAndName(regionWorldId.getId(), itemId).map(item -> {
             repository.delete(item);
             log.debug("Deleted item: regionWorldId={}, itemId={}", regionWorldId, itemId);
             return true;
@@ -301,7 +301,7 @@ public class WItemService {
         if (!regionWorldId.isRegionCollection()) {
             throw new IllegalArgumentException("worldId must be a region collection: " + worldId);
         }
-        return repository.findByWorldIdAndItemId(regionWorldId.getId(), itemId).map(item -> {
+        return repository.findByWorldIdAndName(regionWorldId.getId(), itemId).map(item -> {
             Item publicData = item.getPublicData();
             if (publicData.getParameters() == null) {
                 publicData.setParameters(new HashMap<>(parameters));

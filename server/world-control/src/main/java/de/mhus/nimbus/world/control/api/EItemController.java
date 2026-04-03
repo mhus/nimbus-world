@@ -213,7 +213,7 @@ public class EItemController extends BaseEditorController {
                 saved.setServer(request.server());
                 itemService.saveEntity(saved);
             }
-            log.info("Created item: itemId={}", saved.getItemId());
+            log.info("Created item: itemId={}", saved.getName());
 
             // Return full WItem entity with metadata
             return ResponseEntity.status(HttpStatus.CREATED).body(saved);
@@ -352,7 +352,7 @@ public class EItemController extends BaseEditorController {
 
         try {
             WItem duplicated = itemService.duplicate(wid, itemId, newName);
-            log.info("Duplicated item: {} -> {}", itemId, duplicated.getItemId());
+            log.info("Duplicated item: {} -> {}", itemId, duplicated.getName());
             return ResponseEntity.status(HttpStatus.CREATED).body(duplicated);
         } catch (IllegalArgumentException e) {
             log.warn("Error duplicating item: {}", e.getMessage());
@@ -397,11 +397,11 @@ public class EItemController extends BaseEditorController {
     private ItemSearchResult toSearchResult(WItem item) {
         Item publicData = item.getPublicData();
         if (publicData == null) {
-            return new ItemSearchResult(item.getItemId(), null, null, null, null);
+            return new ItemSearchResult(item.getName(), null, null, null, null);
         }
 
         return new ItemSearchResult(
-                item.getItemId(),
+                item.getName(),
                 publicData.getItemType(),
                 publicData.getType(),
                 publicData.getTitle(),

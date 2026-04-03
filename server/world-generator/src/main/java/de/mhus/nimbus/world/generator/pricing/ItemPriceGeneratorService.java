@@ -86,7 +86,7 @@ public class ItemPriceGeneratorService {
         List<Map<String, String>> itemDescriptions = new ArrayList<>();
         for (WItem item : batch) {
             Map<String, String> desc = new LinkedHashMap<>();
-            desc.put("itemId", item.getItemId());
+            desc.put("itemId", item.getName());
             if (item.getPublicData() != null) {
                 desc.put("name", item.getPublicData().getName());
                 desc.put("type", item.getPublicData().getType());
@@ -118,9 +118,9 @@ public class ItemPriceGeneratorService {
 
         // Apply categorizations and calculate prices
         for (WItem item : batch) {
-            AiItemCategorization cat = catMap.get(item.getItemId());
+            AiItemCategorization cat = catMap.get(item.getName());
             if (cat == null) {
-                log.warn("No AI categorization for item {}", item.getItemId());
+                log.warn("No AI categorization for item {}", item.getName());
                 continue;
             }
 
@@ -159,7 +159,7 @@ public class ItemPriceGeneratorService {
         item.setBasePrice(basePrice);
 
         log.debug("Item {} priced: tier={}, rarity={}, basePrice={} (mat={}, craft={}, use={}, rare={})",
-                item.getItemId(), tier, rarity, basePrice, materialPrice, craftingCost, usageBonus, rarityBonus);
+                item.getName(), tier, rarity, basePrice, materialPrice, craftingCost, usageBonus, rarityBonus);
     }
 
     private double calculateCraftingCost(ItemTier tier) {

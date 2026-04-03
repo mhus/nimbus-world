@@ -344,7 +344,7 @@ public class PlayerTradeWidgetController extends BaseEditorController {
     private ItemRef findItemInChest(WChest chest, String itemId) {
         if (chest.getItems() == null) return null;
         for (ItemRef item : chest.getItems()) {
-            if (item.getItemId().equals(itemId)) return item;
+            if (item.getName().equals(itemId)) return item;
         }
         return null;
     }

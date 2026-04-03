@@ -124,7 +124,7 @@ public class ItemController {
     private ItemSearchResult toSearchResult(WItem item) {
         Item publicData = item.getPublicData();
         if (publicData == null) {
-            return new ItemSearchResult(item.getItemId(), item.getItemId(), null);
+            return new ItemSearchResult(item.getName(), item.getName(), null);
         }
 
         return new ItemSearchResult(

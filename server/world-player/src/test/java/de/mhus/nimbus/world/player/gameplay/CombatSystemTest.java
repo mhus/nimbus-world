@@ -45,7 +45,7 @@ class CombatSystemTest {
         if (damageType != null) server.put("damageType", damageType);
         if (type != null) server.put("type", type);
         if (wear != null) server.put("wear", wear);
-        return WItem.builder().itemId("test-weapon").server(server).build();
+        return WItem.builder().name("test-weapon").server(server).build();
     }
 
     private WItem createArmor(String damageType, String wear) {
@@ -57,7 +57,7 @@ class CombatSystemTest {
         if (damageType != null) server.put("damageType", damageType);
         if (wear != null) server.put("wear", wear);
         if (type != null) server.put("type", type);
-        return WItem.builder().itemId("test-armor").server(server).build();
+        return WItem.builder().name("test-armor").server(server).build();
     }
 
     // =========================================================================

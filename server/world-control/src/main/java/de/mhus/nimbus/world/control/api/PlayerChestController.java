@@ -135,7 +135,7 @@ public class PlayerChestController extends BaseEditorController {
         // Find item in chest
         ItemRef chestItem = null;
         for (ItemRef item : chest.getItems()) {
-            if (item.getItemId().equals(body.itemId())) {
+            if (item.getName().equals(body.itemId())) {
                 chestItem = item;
                 break;
             }
@@ -245,7 +245,7 @@ public class PlayerChestController extends BaseEditorController {
         // Atomic chest update: add or increase item
         ItemRef existingChestItem = null;
         for (ItemRef item : chest.getItems()) {
-            if (item.getItemId().equals(body.itemId())) {
+            if (item.getName().equals(body.itemId())) {
                 existingChestItem = item;
                 break;
             }

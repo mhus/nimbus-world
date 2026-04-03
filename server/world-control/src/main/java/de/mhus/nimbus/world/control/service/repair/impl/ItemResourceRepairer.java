@@ -26,7 +26,7 @@ public class ItemResourceRepairer implements ResourceRepairer {
         return DuplicateRepairHelper.repairDuplicates(
                 mongoTemplate, "w_items", worldId.getId(), name(),
                 doc -> {
-                    String itemId = doc.getString("itemId");
+                    String itemId = doc.getString("name");
                     return itemId != null ? doc.getString("worldId") + "|" + itemId : null;
                 }
         );

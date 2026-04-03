@@ -70,7 +70,7 @@ public class BuffAction implements GameplayAction {
 
         boolean applied = applyBuff(session, serverParams, itemTexture);
         if (applied) {
-            adventure.getGameplayService().reduceItem(session, item.getItemId(), 1);
+            adventure.getGameplayService().reduceItem(session, item.getName(), 1);
         }
         return applied;
     }

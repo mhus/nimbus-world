@@ -51,7 +51,7 @@ public class EffectAction implements GameplayAction {
     @Override
     public boolean handleItemAction(PlayerSession session, WItem item, String itemAction, JsonNode params) {
         // Item used directly → self-application
-        basic.getGameplayService().useItemEffect(session, item.getItemId(), null);
+        basic.getGameplayService().useItemEffect(session, item.getName(), null);
         return true;
     }
 

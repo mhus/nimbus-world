@@ -134,7 +134,7 @@ public class WChestService {
         if (chest.getItems() != null) {
             for (ItemRef item : chest.getItems()) {
                 copiedItems.add(ItemRef.builder()
-                        .itemId(item.getItemId())
+                        .itemId(item.getName())
                         .name(item.getName())
                         .texture(item.getTexture())
                         .amount(item.getAmount())
@@ -350,7 +350,7 @@ public class WChestService {
             if (existingIndex >= 0) {
                 ItemRef existing = chest.getItems().get(existingIndex);
                 ItemRef updated = ItemRef.builder()
-                        .itemId(existing.getItemId())
+                        .itemId(existing.getName())
                         .name(existing.getName())
                         .texture(existing.getTexture())
                         .amount(newAmount)

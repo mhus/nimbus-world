@@ -235,7 +235,7 @@ public class InventoryHandler {
         double physAcc = 0.6 + melee * 0.005;
 
         return WItem.builder()
-                .itemId(BasicGameplay.FIST_ITEM_ID)
+                .name(BasicGameplay.FIST_ITEM_ID)
                 .publicData(Item.builder()
                         .name(BasicGameplay.FIST_ITEM_ID)
                         .title("Fist")
@@ -259,7 +259,7 @@ public class InventoryHandler {
         double physEvasion = 0.1 + defense * 0.005;
 
         return WItem.builder()
-                .itemId(BasicGameplay.BLOCK_ITEM_ID)
+                .name(BasicGameplay.BLOCK_ITEM_ID)
                 .publicData(Item.builder()
                         .name(BasicGameplay.BLOCK_ITEM_ID)
                         .title("Block")

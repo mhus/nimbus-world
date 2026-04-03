@@ -36,7 +36,7 @@ public class IncreaseSkillAction implements GameplayAction {
 
     @Override
     public boolean handleItemAction(PlayerSession session, WItem item, String itemAction, JsonNode params) {
-        return applySkill(session, GameplayUtil.extractParams("act_", item.getPublicData().getParameters(), item.getServer()), item.getItemId());
+        return applySkill(session, GameplayUtil.extractParams("act_", item.getPublicData().getParameters(), item.getServer()), item.getName());
     }
 
     @Override

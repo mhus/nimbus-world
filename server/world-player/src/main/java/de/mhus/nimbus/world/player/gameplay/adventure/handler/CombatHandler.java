@@ -122,7 +122,7 @@ public class CombatHandler {
 
         // Check backpack for a 1up item
         var oneUpItems = gameplay.getGameplayService().findItemsByEffect(session, "1up");
-        String oneUpItemId = oneUpItems.isEmpty() ? null : oneUpItems.getFirst().getItemId();
+        String oneUpItemId = oneUpItems.isEmpty() ? null : oneUpItems.getFirst().getName();
         if (oneUpItemId != null) {
             // Consume the 1up item
             gameplay.getGameplayService().reduceItem(session, oneUpItemId, 1);

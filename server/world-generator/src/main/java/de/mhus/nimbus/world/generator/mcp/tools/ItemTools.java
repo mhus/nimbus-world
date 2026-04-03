@@ -46,7 +46,7 @@ public class ItemTools implements McpToolBean {
 
         var dtos = entities.stream().map(e -> {
             Map<String, Object> map = new LinkedHashMap<>();
-            map.put("itemId", e.getItemId());
+            map.put("name", e.getName());
             if (e.getPublicData() != null) {
                 map.put("itemType", e.getPublicData().getItemType() != null ? e.getPublicData().getItemType() : "");
                 map.put("type", e.getPublicData().getType() != null ? e.getPublicData().getType() : "");
@@ -84,7 +84,7 @@ public class ItemTools implements McpToolBean {
                 .orElseThrow(() -> new McpToolException("Item not found: " + itemId));
 
         Map<String, Object> result = new LinkedHashMap<>();
-        result.put("itemId", entity.getItemId());
+        result.put("name", entity.getName());
         result.put("enabled", entity.isEnabled());
         if (entity.getPublicData() != null) {
             result.put("publicData", entity.getPublicData());
@@ -156,7 +156,7 @@ public class ItemTools implements McpToolBean {
                 itemService.saveEntity(saved);
             }
             return Map.of(
-                    "itemId", saved.getItemId(),
+                    "itemId", saved.getName(),
                     "worldId", saved.getWorldId(),
                     "status", "created"
             );
@@ -182,7 +182,7 @@ public class ItemTools implements McpToolBean {
         try {
             WItem duplicated = itemService.duplicate(wid, itemId, title);
             return Map.of(
-                    "itemId", duplicated.getItemId(),
+                    "itemId", duplicated.getName(),
                     "worldId", duplicated.getWorldId(),
                     "sourceItemId", itemId,
                     "status", "duplicated"
@@ -285,7 +285,7 @@ public class ItemTools implements McpToolBean {
         itemService.saveEntity(item);
 
         return Map.of(
-                "itemId", item.getItemId(),
+                "itemId", item.getName(),
                 "worldId", item.getWorldId(),
                 "status", "updated"
         );
@@ -309,7 +309,7 @@ public class ItemTools implements McpToolBean {
             WItem renamed = itemService.renameItemId(wid, oldItemId, newItemId);
             return Map.of(
                     "oldItemId", oldItemId,
-                    "newItemId", renamed.getItemId(),
+                    "newItemId", renamed.getName(),
                     "worldId", renamed.getWorldId(),
                     "status", "renamed"
             );

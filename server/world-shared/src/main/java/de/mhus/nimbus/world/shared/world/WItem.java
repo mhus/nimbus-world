@@ -24,9 +24,9 @@ import java.util.Map;
  * For placed items with position, see WItemPosition.
  */
 @Document(collection = "w_items")
-@ActualSchemaVersion("1.0.0")
+@ActualSchemaVersion("1.0.1")
 @CompoundIndexes({
-        @CompoundIndex(name = "world_itemId_idx", def = "{ 'worldId': 1, 'itemId': 1 }", unique = true)
+        @CompoundIndex(name = "world_name_idx", def = "{ 'worldId': 1, 'name': 1 }", unique = true)
 })
 @Data
 @Builder
@@ -46,9 +46,9 @@ public class WItem implements Identifiable {
     private String worldId;
 
     /**
-     * Item identifier (unique within world).
+     * Unique technical name for this item (unique within world).
      */
-    private String itemId;
+    private String name;
 
     /**
      * Public data containing the Item DTO.

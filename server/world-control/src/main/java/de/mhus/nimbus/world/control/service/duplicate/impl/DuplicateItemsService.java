@@ -37,7 +37,7 @@ public class DuplicateItemsService implements DuplicateToWorld {
         for (WItem source : sourceItems) {
             WItem target = WItem.builder()
                     .worldId(targetWorldId)
-                    .itemId(source.getItemId())
+                    .name(source.getName())
                     .publicData(source.getPublicData())
                     .server(source.getServer() != null ? new HashMap<>(source.getServer()) : null)
                     .enabled(source.isEnabled())

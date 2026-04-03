@@ -25,12 +25,12 @@ public interface WItemRepository extends MongoRepository<WItem, String> {
     /**
      * Find item by worldId and itemId.
      */
-    Optional<WItem> findByWorldIdAndItemId(String worldId, String itemId);
+    Optional<WItem> findByWorldIdAndName(String worldId, String name);
 
     /**
-     * Delete item by worldId and itemId.
+     * Delete item by worldId and name.
      */
-    void deleteByWorldIdAndItemId(String worldId, String itemId);
+    void deleteByWorldIdAndName(String worldId, String name);
 
     /**
      * Find all items for a world with a specific itemType.
