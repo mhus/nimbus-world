@@ -62,7 +62,7 @@ public class RCharacterController extends BaseEditorController {
                 character.getId(),
                 character.getName(),
                 character.getRegionId(),
-                character.getName(),
+                character.getUserId(),
                 character.getCreatedAt(),
                 character.getModifiedAt(),
                 character.getPublicData(),

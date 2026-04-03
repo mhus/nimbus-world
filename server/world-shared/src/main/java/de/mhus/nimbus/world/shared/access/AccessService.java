@@ -283,7 +283,7 @@ public class AccessService {
                 .id(character.getName())
                 .name(character.getName())
                 .display(character.getPublicData().getTitle())
-                .userId(character.getName())
+                .userId(character.getUserId())
                 .regionId(character.getRegionId())
                 .build();
     }
@@ -314,8 +314,8 @@ public class AccessService {
                 .orElseThrow(() -> new IllegalArgumentException("Character not found: " + characterId));
 
         // Get roles from world using userId
-        UserId userId = UserId.of(character.getName())
-                .orElseThrow(() -> new IllegalArgumentException("Invalid userId: " + character.getName()));
+        UserId userId = UserId.of(character.getUserId())
+                .orElseThrow(() -> new IllegalArgumentException("Invalid userId: " + character.getUserId()));
 
         List<WorldRoles> roles = world.getRolesForUser(userId);
 
@@ -366,7 +366,7 @@ public class AccessService {
         );
 
         // Validate userId matches
-        if (!character.getName().equals(request.getUserId())) {
+        if (!character.getUserId().equals(request.getUserId())) {
             throw new IllegalArgumentException("Character does not belong to user: " + request.getUserId());
         }
 
