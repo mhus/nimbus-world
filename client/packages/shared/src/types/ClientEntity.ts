@@ -68,7 +68,7 @@ export function createClientEntity(
   initialRotation?: Rotation
 ): ClientEntity {
   return {
-    id: entity.id,
+    id: entity.name,
     model,
     entity,
     visible: true,

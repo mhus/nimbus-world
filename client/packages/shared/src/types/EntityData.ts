@@ -183,11 +183,11 @@ export type MovementType =
  * direkt in der Instanz definiert.
  */
 export interface Entity {
-  /** Unique identifier for this entity instance */
-  id: string;
-
-  /** Display name of the entity */
+  /** Unique technical name for this entity instance (unique within scope) */
   name: string;
+
+  /** Display title of the entity */
+  title: string;
 
   /** M (Male), F (Female), D (Diverse)  */
   gender: string;
@@ -318,15 +318,15 @@ export function createEntityModel(
  * Helper: Create a basic Entity instance
  */
 export function createEntity(
-  id: string,
   name: string,
+  title: string,
   modelId: string,
   movementType: MovementType = 'static',
   controlledBy: string = 'server'
 ): Entity {
   return {
-      id,
     name,
+    title,
     model: modelId,
     modelModifier: {},
     movementType,

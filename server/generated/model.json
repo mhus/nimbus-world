@@ -1381,14 +1381,14 @@
       "name" : "Entity",
       "extendsList" : [ ],
       "properties" : [ {
-        "name" : "id",
+        "name" : "name",
         "type" : "string",
         "optional" : false,
         "visibility" : null,
         "javaTypeHint" : null,
         "comment" : null
       }, {
-        "name" : "name",
+        "name" : "title",
         "type" : "string",
         "optional" : false,
         "visibility" : null,
@@ -3280,9 +3280,19 @@
         "name" : "NOTIFICATION",
         "value" : "NOTIFICATION"
       } ]
+    }, {
+      "name" : "IFrameParentMessageType",
+      "values" : [ "CLOSING" ],
+      "enumValues" : [ {
+        "name" : "CLOSING",
+        "value" : "PARENT_CLOSING"
+      } ]
     } ],
     "classes" : [ ],
     "typeAliases" : [ {
+      "name" : "IFrameMessageFromParent",
+      "target" : null
+    }, {
       "name" : "IFrameMessageFromChild",
       "target" : null
     } ]

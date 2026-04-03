@@ -95,8 +95,8 @@ public class DialogService {
             npcEntity = entityService.findByWorldIdAndEntityId(parsedWorldId, entityId).orElse(null);
             if (npcEntity != null) {
                 npcPortrait = npcEntity.getPortraitPath();
-                if (npcEntity.getPublicData() != null && npcEntity.getPublicData().getName() != null) {
-                    npcTitle = npcEntity.getPublicData().getName();
+                if (npcEntity.getPublicData() != null && npcEntity.getPublicData().getTitle() != null) {
+                    npcTitle = npcEntity.getPublicData().getTitle();
                 }
             }
         }

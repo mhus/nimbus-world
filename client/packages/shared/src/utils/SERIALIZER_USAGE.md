@@ -403,7 +403,7 @@ broadcastToAll({ t: 'e.u', d: [obj] });
 // Client receives
 const entities = message.d as EntityData[];
 entities.forEach(entity => {
-  entityCache.set(entity.id, entity);
+  entityCache.set(entity.name, entity);
   renderEntity(entity);
 });
 ```

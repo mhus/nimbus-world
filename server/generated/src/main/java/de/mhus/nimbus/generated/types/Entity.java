@@ -11,8 +11,8 @@ package de.mhus.nimbus.generated.types;
 @lombok.NoArgsConstructor
 @lombok.AllArgsConstructor(access = lombok.AccessLevel.PROTECTED)
 public class Entity {
-    private String id;
     private String name;
+    private String title;
     private String gender;
     private String model;
     @com.fasterxml.jackson.annotation.JsonProperty("modelModifier")

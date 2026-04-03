@@ -134,14 +134,14 @@ export namespace EntityValidator {
     const errors: string[] = [];
     const warnings: string[] = [];
 
-    // Validate ID
-    if (!isValidEntityId(entity.id)) {
-      errors.push(`Invalid entity ID: ${entity.id}`);
+    // Validate name (unique technical identifier)
+    if (!isValidEntityId(entity.name)) {
+      errors.push(`Invalid entity name: ${entity.name}`);
     }
 
-    // Validate name
-    if (!entity.name || typeof entity.name !== 'string') {
-      errors.push('Entity name is required');
+    // Validate title (display name)
+    if (!entity.title || typeof entity.title !== 'string') {
+      errors.push('Entity title is required');
     }
 
     // Validate model reference
@@ -305,10 +305,10 @@ export namespace EntityValidator {
     // Check for duplicate IDs
     const ids = new Set<string>();
     entities.forEach((entity, index) => {
-      if (ids.has(entity.id)) {
-        errors.push(`Duplicate entity ID at index ${index}: ${entity.id}`);
+      if (ids.has(entity.name)) {
+        errors.push(`Duplicate entity name at index ${index}: ${entity.name}`);
       }
-      ids.add(entity.id);
+      ids.add(entity.name);
     });
 
     return { valid: errors.length === 0, errors, warnings };
@@ -363,8 +363,8 @@ export namespace EntityValidator {
    */
   export function isValid(entity: Entity): boolean {
     return (
-      isValidEntityId(entity.id) &&
-      typeof entity.name === 'string' &&
+      isValidEntityId(entity.name) &&
+      typeof entity.title === 'string' &&
       typeof entity.model === 'string' &&
       isValidMovementType(entity.movementType)
     );

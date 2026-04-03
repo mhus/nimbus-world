@@ -81,7 +81,7 @@ export class EntityPhysicsController {
     velocity: Vector3 = { x: 0, y: 0, z: 0 },
     grounded: boolean = false
   ): void {
-    this.physicsStates.set(clientEntity.entity.id, {
+    this.physicsStates.set(clientEntity.entity.name, {
       velocity: { ...velocity },
       grounded,
       framesSinceLastUpdate: 0,
@@ -102,10 +102,10 @@ export class EntityPhysicsController {
     isBlockSolid: (x: number, y: number, z: number) => boolean
   ): boolean {
     // Get or create physics state
-    let state = this.physicsStates.get(clientEntity.entity.id);
+    let state = this.physicsStates.get(clientEntity.entity.name);
     if (!state) {
       this.initializePhysics(clientEntity);
-      state = this.physicsStates.get(clientEntity.entity.id)!;
+      state = this.physicsStates.get(clientEntity.entity.name)!;
     }
 
     // Distance-based update rate
@@ -187,7 +187,7 @@ export class EntityPhysicsController {
    * Used when receiving physics pathways from server
    */
   applyServerVelocity(clientEntity: ClientEntity, velocity: Vector3): void {
-    let state = this.physicsStates.get(clientEntity.entity.id);
+    let state = this.physicsStates.get(clientEntity.entity.name);
     if (!state) {
       this.initializePhysics(clientEntity, velocity);
     } else {

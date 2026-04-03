@@ -106,7 +106,7 @@ export class EntityLabelRenderer {
 
     // Name text block (always shown)
     const nameText = new TextBlock();
-    nameText.text = entity.name || clientEntity.id;
+    nameText.text = entity.title || clientEntity.id;
     nameText.color = "white";
     nameText.fontSize = hasHealth ? 36 : 40;
     nameText.fontWeight = "bold";
@@ -119,7 +119,7 @@ export class EntityLabelRenderer {
 
     logger.info('Name text created', {
       entityId: clientEntity.id,
-      name: entity.name || clientEntity.id,
+      name: entity.title || clientEntity.id,
       fontSize: nameText.fontSize,
     });
 
@@ -140,7 +140,7 @@ export class EntityLabelRenderer {
 
     logger.debug('Entity label created', {
       entityId: clientEntity.id,
-      name: entity.name,
+      name: entity.title,
       hasHealth,
     });
   }
@@ -251,7 +251,7 @@ export class EntityLabelRenderer {
     label.planeMesh.position.copyFrom(labelPos);
 
     // Update name (in case it changed)
-    label.nameTextBlock.text = entity.name || clientEntity.id;
+    label.nameTextBlock.text = entity.title || clientEntity.id;
 
     // Update health bar if it exists and values are defined
     if (label.healthFill && label.healthText && entity.health !== undefined && entity.healthMax !== undefined) {

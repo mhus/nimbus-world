@@ -27,7 +27,7 @@ import java.util.Set;
  * Entities are actual instances of EntityModels placed in the world (e.g., specific NPCs, players).
  */
 @Document(collection = "w_entities")
-@ActualSchemaVersion("1.0.0")
+@ActualSchemaVersion("1.0.1")
 @CompoundIndexes({
         @CompoundIndex(name = "worldId_entityId_idx", def = "{ 'worldId': 1, 'entityId': 1 }", unique = true),
         @CompoundIndex(name = "world_epoches_idx", def = "{ 'worldId': 1, 'epoches': 1, 'enabled': 1 }")

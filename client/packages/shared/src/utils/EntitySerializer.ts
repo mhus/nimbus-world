@@ -44,7 +44,7 @@ export namespace EntitySerializer {
       return null;
     }
 
-    if (!obj.id || !obj.name || !obj.model || !obj.movementType) {
+    if (!obj.name || !obj.title || !obj.model || !obj.movementType) {
       return null;
     }
 

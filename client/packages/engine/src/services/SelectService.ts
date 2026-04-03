@@ -525,7 +525,7 @@ export class SelectService {
           if (entity) {
             logger.debug('Interactive entity selected (raycast)', {
               entityId: entity.id,
-              name: entity.entity.name,
+              title: entity.entity.title,
               distance: pickInfo.distance?.toFixed(2),
             });
             return entity;
@@ -540,7 +540,7 @@ export class SelectService {
       if (nearestEntity) {
         logger.debug('Interactive entity selected (cone fallback)', {
           entityId: nearestEntity.id,
-          name: nearestEntity.entity.name,
+          title: nearestEntity.entity.title,
         });
       }
 
@@ -859,8 +859,8 @@ export class SelectService {
       return;
     }
 
-    // Use entity name for label (from entity.entity.name)
-    const displayName = entity.entity.name || entity.id;
+    // Use entity title for label (from entity.entity.title)
+    const displayName = entity.entity.title || entity.id;
 
     // Position label above entity (use currentPosition)
     const pos = entity.currentPosition;

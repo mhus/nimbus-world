@@ -318,8 +318,8 @@ public class NpcGeneratorService {
         String modelId = request.modelId() != null ? request.modelId() : "human_male_1";
 
         Entity publicData = Entity.builder()
-                .id(entityId)
-                .name(generated.title != null ? generated.title : entityId)
+                .name(entityId)
+                .title(generated.title != null ? generated.title : entityId)
                 .gender(request.gender() != null ? request.gender() : "D")
                 .model(modelId)
                 .movementType(null)

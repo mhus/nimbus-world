@@ -62,8 +62,8 @@
           @click="handleSelect(entity)"
         >
           <div class="card-body p-4">
-            <h3 class="card-title text-base truncate" :title="entity.publicData?.id || entity.entityId">
-              {{ entity.publicData?.id || entity.entityId }}
+            <h3 class="card-title text-base truncate" :title="entity.publicData?.name || entity.entityId">
+              {{ entity.publicData?.name || entity.entityId }}
             </h3>
             <div class="space-y-2">
               <div class="text-xs text-base-content/70 truncate" :title="entity.modelId">
@@ -209,7 +209,7 @@ const loadEntities = async () => {
       props.epoch
     );
     entities.value = response.entities.map((dto: any) => ({
-      entityId: dto.entityId || dto.publicData?.id || `entity-${offset.value}`,
+      entityId: dto.entityId || dto.publicData?.name || `entity-${offset.value}`,
       publicData: dto.publicData || dto,
       worldId: dto.worldId || currentWorldId.value!,
       chunk: '',

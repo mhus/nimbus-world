@@ -198,8 +198,8 @@ public class FaunaGeneratorService {
                             + "_" + groupIdx + "_" + shortId;
 
                     Entity publicData = Entity.builder()
-                            .id(entityId)
-                            .name(identity.displayName())
+                            .name(entityId)
+                            .title(identity.displayName())
                             .gender(identity.gender().name())
                             .model(animal.getModel())
                             .solid(true)

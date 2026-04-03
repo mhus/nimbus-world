@@ -58,7 +58,7 @@ public class EntityTools implements McpToolBean {
             map.put("entityId", e.getEntityId());
             map.put("modelId", e.getModelId() != null ? e.getModelId() : "");
             if (e.getPublicData() != null) {
-                map.put("name", e.getPublicData().getName() != null ? e.getPublicData().getName() : "");
+                map.put("title", e.getPublicData().getTitle() != null ? e.getPublicData().getTitle() : "");
             }
             map.put("enabled", e.isEnabled());
             map.put("epoches", e.getEpoches() != null ? e.getEpoches() : List.of());
@@ -166,8 +166,8 @@ public class EntityTools implements McpToolBean {
 
         try {
             Entity publicData = Entity.builder()
-                    .id(entityId)
-                    .name(name)
+                    .name(entityId)
+                    .title(name)
                     .gender(gender)
                     .model(modelId)
                     .movementType(movementType)
@@ -253,10 +253,10 @@ public class EntityTools implements McpToolBean {
         var updated = entityService.update(wid, entityId, entity -> {
             Entity publicData = entity.getPublicData();
             if (publicData == null) {
-                publicData = Entity.builder().id(entityId).build();
+                publicData = Entity.builder().name(entityId).build();
             }
 
-            if (name != null) publicData.setName(name);
+            if (name != null) publicData.setTitle(name);
             if (gender != null) publicData.setGender(gender);
             if (movementType != null) publicData.setMovementType(movementType);
             if (controlledBy != null) publicData.setControlledBy(controlledBy);

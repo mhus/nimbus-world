@@ -71,7 +71,7 @@ export class EntityInfoCommand extends CommandHandler {
     // Basic info
     lines.push('Entity:');
     lines.push(`  ID              : ${clientEntity.id}`);
-    lines.push(`  Name            : ${clientEntity.entity.name || '(unnamed)'}`);
+    lines.push(`  Title           : ${clientEntity.entity.title || '(unnamed)'}`);
     lines.push(`  Model ID        : ${clientEntity.model.id}`);
     lines.push(`  Model Type      : ${clientEntity.model.type}`);
     lines.push(`  Visible         : ${clientEntity.visible ? 'Yes' : 'No'}`);

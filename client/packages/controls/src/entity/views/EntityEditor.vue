@@ -162,16 +162,16 @@
         <div class="card-body">
           <h3 class="card-title">Entity Properties</h3>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <!-- Name -->
+            <!-- Title (Display Name) -->
             <div class="form-control">
               <label class="label">
-                <span class="label-text font-medium">Name</span>
+                <span class="label-text font-medium">Title</span>
               </label>
               <input
-                v-model="entityData.name"
+                v-model="entityData.title"
                 type="text"
                 class="input input-bordered input-sm"
-                placeholder="Entity display name"
+                placeholder="Entity display title"
               />
             </div>
 
@@ -729,8 +729,8 @@ const loadEntity = () => {
       enabled: true,
     };
     entityData.value = {
-      id: '',
       name: '',
+      title: '',
       model: '',
       modelModifier: {},
       movementType: 'static',

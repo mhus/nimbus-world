@@ -304,11 +304,11 @@ export class EntityService {
    * Update entity in cache
    */
   updateEntity(entity: Entity): void {
-    const clientEntity = this.entityCache.get(entity.id);
+    const clientEntity = this.entityCache.get(entity.name);
     if (clientEntity) {
       clientEntity.entity = entity;
       clientEntity.lastAccess = Date.now();
-      logger.debug('Entity updated in cache', { entityId: entity.id });
+      logger.debug('Entity updated in cache', { entityId: entity.name });
     }
   }
 
@@ -939,13 +939,13 @@ export class EntityService {
 
     if (wasUpdated) {
       // Get velocity for animation
-      const velocity = this.physicsController.getVelocity(clientEntity.entity.id);
+      const velocity = this.physicsController.getVelocity(clientEntity.entity.name);
       const speed = velocity
         ? Math.sqrt(velocity.x * velocity.x + velocity.z * velocity.z)
         : 0;
 
       // Determine pose based on velocity and grounded state
-      const isGrounded = this.physicsController.isGrounded(clientEntity.entity.id);
+      const isGrounded = this.physicsController.isGrounded(clientEntity.entity.name);
       let pose = ENTITY_POSES.IDLE;
       if (!isGrounded) {
         pose = ENTITY_POSES.JUMP;
@@ -1308,7 +1308,7 @@ export class EntityService {
       const dimensions = this.getEntityDimensions(clientEntity.model, movementMode);
 
       entitiesInRadius.push({
-        entityId: clientEntity.entity.id,
+        entityId: clientEntity.entity.name,
         position: new Vector3(clientEntity.currentPosition.x, clientEntity.currentPosition.y, clientEntity.currentPosition.z),
         rotation: clientEntity.currentRotation,
         dimensions,
