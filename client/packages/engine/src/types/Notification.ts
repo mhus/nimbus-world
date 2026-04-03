@@ -46,6 +46,7 @@ export interface Notification {
   timestamp: number;
   area: NotificationArea;
   texturePath?: string | null; // Optional asset path for icon (e.g., 'items/sword.png')
+  action?: string; // Optional action on click (e.g., 'modal:player-interact:leaseId')
 }
 
 /**

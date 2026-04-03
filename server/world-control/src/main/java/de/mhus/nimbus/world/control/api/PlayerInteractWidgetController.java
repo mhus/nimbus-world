@@ -9,6 +9,7 @@ import de.mhus.nimbus.world.shared.session.SessionCommandService;
 import de.mhus.nimbus.world.shared.session.SessionCommandTarget;
 import de.mhus.nimbus.world.shared.team.WTeam;
 import de.mhus.nimbus.world.shared.team.WTeamService;
+import de.mhus.nimbus.world.shared.util.I18nUtil;
 import de.mhus.nimbus.world.shared.world.WLease;
 import de.mhus.nimbus.world.shared.world.WLeaseService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -176,10 +177,14 @@ public class PlayerInteractWidgetController extends BaseEditorController {
         var cooldownError = checkCooldown(playerName, targetEntityId, "emoji");
         if (cooldownError != null) return cooldownError;
 
-        // Send notification to target player with emoji symbol
+        // Send notification to target player with emoji symbol + interact action
         sessionCommandService.sendNotification(
                 SessionCommandTarget.PLAYER, targetEntityId,
-                1, characterId, emojiSymbol
+                1, characterId,
+                I18nUtil.builder()
+                        .en(emojiSymbol)
+                        .put("action", "interact:" + playerName)
+                        .build()
         );
 
         log.debug("Player {} sent emoji '{}' ({}) to {}", playerName, body.emoji(), emojiSymbol, targetEntityId);
@@ -291,10 +296,15 @@ public class PlayerInteractWidgetController extends BaseEditorController {
             return bad("Already invited");
         }
 
-        // Send notification to target player
+        // Send notification to target player — opens team panel on click
         sessionCommandService.sendNotification(
                 SessionCommandTarget.PLAYER, targetEntityId,
-                1, characterId, "Team invitation: " + team.getTitle()
+                1, characterId,
+                I18nUtil.builder()
+                        .en("Team invitation: " + team.getTitle())
+                        .de("Team Einladung: " + team.getTitle())
+                        .put("action", "modal:team-panel")
+                        .build()
         );
 
         log.info("Player {} invited {} to team {}", playerName, targetEntityId, team.getTeamId());
@@ -345,10 +355,15 @@ public class PlayerInteractWidgetController extends BaseEditorController {
                 leaseData
         );
 
-        // Notify target player
+        // Notify target player with interact action
         sessionCommandService.sendNotification(
                 SessionCommandTarget.PLAYER, targetEntityId,
-                1, characterId, "Trade offer received"
+                1, characterId,
+                I18nUtil.builder()
+                        .en("Trade offer received")
+                        .de("Tauschangebot erhalten")
+                        .put("action", "interact:" + playerName)
+                        .build()
         );
 
         log.info("Player {} offered trade to {}", playerName, targetEntityId);

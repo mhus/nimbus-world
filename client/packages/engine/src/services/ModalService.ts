@@ -1153,6 +1153,38 @@ export class ModalService {
   }
 
   /**
+   * Open team panel modal.
+   */
+  openTeamPanel(): ModalReference {
+    try {
+      if (document.pointerLockElement) {
+        document.exitPointerLock();
+      }
+
+      const componentBaseUrl = this.appContext?.services.network?.getComponentBaseUrl();
+      if (!componentBaseUrl) {
+        throw new Error('Team panel is not available in this world');
+      }
+
+      const separator = componentBaseUrl.includes('?') ? '&' : '?';
+      const worldId = this.appContext.worldInfo?.worldId;
+      const sessionId = this.appContext.sessionId;
+
+      const url = `${componentBaseUrl}team-panel.html${separator}embedded=true&worldId=${worldId}&sessionId=${sessionId}`;
+
+      return this.openModal(
+        'team-panel',
+        'Team',
+        url,
+        ModalSizePreset.CENTER_MEDIUM,
+        ModalFlags.CLOSEABLE | ModalFlags.MOVEABLE | ModalFlags.NO_BACKGROUND_LOCK | ModalFlags.RESIZEABLE | ModalFlags.MINIMIZABLE
+      );
+    } catch (error) {
+      throw ExceptionHandler.handleAndRethrow(error, 'ModalService.openTeamPanel');
+    }
+  }
+
+  /**
    * Open map panel directly (for M key)
    */
   openMap(): ModalReference {
@@ -1644,6 +1676,11 @@ export class ModalService {
         case 'panels':
           // No attributes required
           return this.openPanel();
+
+        case 'team-panel':
+        case 'team':
+          // No attributes required
+          return this.openTeamPanel();
 
         case 'document':
           // Expect attributes: [progressId]

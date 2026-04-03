@@ -8,7 +8,7 @@
  * - Quest (top-right): Quest info (no auto-hide, max 2)
  */
 
-import { getLogger, ExceptionHandler, type TeamMember } from '@nimbus/shared';
+import { getLogger, ExceptionHandler, i18n, i18nMeta, type TeamMember } from '@nimbus/shared';
 import type { AppContext } from '../AppContext';
 import { StackName, type Modifier } from './ModifierService';
 import type {
@@ -327,15 +327,20 @@ export class NotificationService {
       // Get area config
       const config = NOTIFICATION_AREA_CONFIGS[area];
 
+      // Extract action meta and resolve i18n text
+      const action = i18nMeta(message, 'action');
+      const resolvedMessage = i18n(message);
+
       // Create notification
       const notification: Notification = {
         id: `notification-${this.nextNotificationId++}`,
         type,
         from,
-        message,
+        message: resolvedMessage,
         timestamp: Date.now(),
         area,
         texturePath: texturePath || null,
+        action: action || undefined,
       };
 
       // Add to storage
@@ -492,10 +497,19 @@ export class NotificationService {
 
       element.appendChild(textContainer);
 
+      // Add click handler if action is present
+      if (notification.action) {
+        element.style.cursor = 'pointer';
+        element.addEventListener('click', () => {
+          this.handleNotificationAction(notification);
+          this.hideNotification(notification);
+        });
+      }
+
       // Add to container
       container.appendChild(element);
 
-      logger.debug('Notification rendered', { id: notification.id, hasIcon: !!notification.texturePath });
+      logger.debug('Notification rendered', { id: notification.id, hasIcon: !!notification.texturePath, action: notification.action });
     } catch (error) {
       ExceptionHandler.handle(error, 'NotificationService.renderNotification', {
         notification,
@@ -526,6 +540,59 @@ export class NotificationService {
   /**
    * Hide a notification with animation
    */
+  /**
+   * Handle notification click action.
+   * Supported formats:
+   *   "modal:<component>:<arg1>:<arg2>:..." — opens a modal via ModalService.openComponent()
+   *   "interact:<entityId>" — sends entity interaction to server (as if player clicked on entity)
+   */
+  private handleNotificationAction(notification: Notification): void {
+    if (!notification.action) return;
+    try {
+      const colonIdx = notification.action.indexOf(':');
+      const actionType = colonIdx >= 0 ? notification.action.substring(0, colonIdx) : notification.action;
+      const actionData = colonIdx >= 0 ? notification.action.substring(colonIdx + 1) : '';
+
+      switch (actionType) {
+        case 'modal': {
+          const parts = actionData.split(':');
+          const component = parts[0];
+          const attributes = parts.slice(1);
+          const modalService = this.appContext.services.modal;
+          if (modalService) {
+            modalService.openComponent(component, attributes);
+            logger.debug('Notification action: opened modal', { component, attributes });
+          } else {
+            logger.warn('ModalService not available for notification action');
+          }
+          break;
+        }
+        case 'interact': {
+          const entityId = actionData;
+          const networkService = this.appContext.services.network;
+          if (networkService && entityId) {
+            networkService.sendEntityInteraction(entityId, 'interact');
+            logger.debug('Notification action: sent entity interaction', { entityId });
+          } else {
+            logger.warn('NetworkService not available or no entityId for interact action');
+          }
+          break;
+        }
+        case 'message': {
+          this.showInputPanel();
+          logger.debug('Notification action: opened message input panel');
+          break;
+        }
+        default:
+          logger.warn('Unknown notification action type', { action: notification.action });
+      }
+    } catch (error) {
+      ExceptionHandler.handle(error, 'NotificationService.handleNotificationAction', {
+        action: notification.action,
+      });
+    }
+  }
+
   private hideNotification(notification: Notification): void {
     try {
       const element = document.getElementById(notification.id);
