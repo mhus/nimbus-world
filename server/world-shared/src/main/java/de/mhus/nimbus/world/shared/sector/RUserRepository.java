@@ -6,8 +6,8 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface RUserRepository extends MongoRepository<RUser, String> {
-    Optional<RUser> findByUsername(String username);
+    Optional<RUser> findByName(String name);
     Optional<RUser> findByEmail(String email);
-    boolean existsByUsername(String username);
+    boolean existsByName(String name);
     boolean existsByEmail(String email);
 }

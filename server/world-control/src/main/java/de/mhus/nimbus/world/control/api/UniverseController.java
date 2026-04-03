@@ -217,7 +217,7 @@ public class UniverseController extends BaseEditorController {
             return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", "User already exists"));
         }
         var publicData = new de.mhus.nimbus.shared.types.PlayerUser();
-        publicData.setUserId(req.username());
+        publicData.setName(req.username());
         publicData.setTitle(req.username());
         var user = userService.createUser(publicData, req.email());
         boolean needsSave = false;
@@ -233,7 +233,7 @@ public class UniverseController extends BaseEditorController {
             user.touchUpdate();
             userService.save(user);
         }
-        return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("username", user.getUsername()));
+        return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("username", user.getName()));
     }
 
     // --- Universe-to-Sector: Prepare Login ---

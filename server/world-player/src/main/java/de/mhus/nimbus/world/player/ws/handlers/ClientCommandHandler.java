@@ -165,7 +165,7 @@ public class ClientCommandHandler implements MessageHandler {
         CommandContext context = CommandContext.builder()
                 .worldId(session.getWorldId().getId())
                 .sessionId(session.getSessionId())
-                .userId(session.getPlayer().user().getUserId())
+                .userId(session.getPlayer().user().getName())
                 .title(session.getTitle())
                 .build();
 
@@ -206,7 +206,7 @@ public class ClientCommandHandler implements MessageHandler {
         CommandContext context = CommandContext.builder()
                 .worldId(session.getWorldId().getId())
                 .sessionId(session.getSessionId())
-                .userId(session.getPlayer().user().getUserId())
+                .userId(session.getPlayer().user().getName())
                 .title(session.getTitle())
                 .build();
 

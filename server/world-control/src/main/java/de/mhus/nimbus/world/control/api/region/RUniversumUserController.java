@@ -31,7 +31,7 @@ public class RUniversumUserController {
     public record QUserResponse(String id, String username, String email, String roles) {}
 
     private QUserResponse toResponse(RUser u) {
-        return new QUserResponse(u.getId(), u.getUsername(), u.getEmail(), service.getRolesRaw(u.getId()));
+        return new QUserResponse(u.getId(), u.getName(), u.getEmail(), service.getRolesRaw(u.getId()));
     }
 
     @Operation(summary = "List users")

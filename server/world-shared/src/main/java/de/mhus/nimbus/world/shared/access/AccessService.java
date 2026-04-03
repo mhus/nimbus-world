@@ -217,7 +217,7 @@ public class AccessService {
         if (searchQuery != null && !searchQuery.isBlank()) {
             String queryLower = searchQuery.toLowerCase();
             users = users.stream()
-                    .filter(u -> (u.getUsername() != null && u.getUsername().toLowerCase().contains(queryLower)) ||
+                    .filter(u -> (u.getName() != null && u.getName().toLowerCase().contains(queryLower)) ||
                                  (u.getEmail() != null && u.getEmail().toLowerCase().contains(queryLower)))
                     .collect(Collectors.toList());
         }
@@ -238,7 +238,7 @@ public class AccessService {
     private UserInfoDto mapToUserInfoDto(de.mhus.nimbus.world.shared.sector.RUser user) {
         return UserInfoDto.builder()
                 .id(user.getId())
-                .username(user.getUsername())
+                .username(user.getName())
                 .email(user.getEmail())
                 .enabled(user.isEnabled())
                 .build();
@@ -283,7 +283,7 @@ public class AccessService {
                 .id(character.getName())
                 .name(character.getName())
                 .display(character.getPublicData().getTitle())
-                .userId(character.getUserId())
+                .userId(character.getName())
                 .regionId(character.getRegionId())
                 .build();
     }
@@ -314,8 +314,8 @@ public class AccessService {
                 .orElseThrow(() -> new IllegalArgumentException("Character not found: " + characterId));
 
         // Get roles from world using userId
-        UserId userId = UserId.of(character.getUserId())
-                .orElseThrow(() -> new IllegalArgumentException("Invalid userId: " + character.getUserId()));
+        UserId userId = UserId.of(character.getName())
+                .orElseThrow(() -> new IllegalArgumentException("Invalid userId: " + character.getName()));
 
         List<WorldRoles> roles = world.getRolesForUser(userId);
 
@@ -366,7 +366,7 @@ public class AccessService {
         );
 
         // Validate userId matches
-        if (!character.getUserId().equals(request.getUserId())) {
+        if (!character.getName().equals(request.getUserId())) {
             throw new IllegalArgumentException("Character does not belong to user: " + request.getUserId());
         }
 

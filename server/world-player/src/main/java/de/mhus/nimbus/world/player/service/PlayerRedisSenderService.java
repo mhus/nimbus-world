@@ -48,7 +48,7 @@ public class PlayerRedisSenderService {
             }
 
             // Add session/player context
-            message.put("userId", session.getPlayer().user().getUserId());
+            message.put("userId", session.getPlayer().user().getName());
             message.put("sessionId", session.getSessionId());
             message.put("title", session.getTitle());
 

@@ -127,7 +127,7 @@ public class UserMovementUpdateHandler implements MessageHandler {
             // Build enriched message with session info and chunk coordinates
             ObjectNode enriched = objectMapper.createObjectNode();
             enriched.put("sessionId", session.getSessionId());
-            enriched.put("userId", session.getPlayer().user().getUserId());
+            enriched.put("userId", session.getPlayer().user().getName());
             enriched.put("title", session.getTitle());
 
             // Copy original data

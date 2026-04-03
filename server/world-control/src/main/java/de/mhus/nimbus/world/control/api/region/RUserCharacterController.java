@@ -57,7 +57,7 @@ public class RUserCharacterController {
 //        var opt = characterService.getByIdAndRegion(characterId, regionId);
 //        if (opt.isEmpty()) return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error","character not found"));
 //        var c = opt.get();
-//        var updated = characterService.updateDisplay(c.getUserId(), regionId, c.getName(), req.display());
+//        var updated = characterService.updateDisplay(c.getName(), regionId, c.getName(), req.display());
 //        return ResponseEntity.ok(toResponse(updated));
 //    }
 //
@@ -66,7 +66,7 @@ public class RUserCharacterController {
 //        var opt = characterService.getByIdAndRegion(characterId, regionId);
 //        if (opt.isEmpty()) return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error","character not found"));
 //        var c = opt.get();
-//        var updated = characterService.addBackpackItem(c.getUserId(), regionId, c.getName(), req.key(), req.item());
+//        var updated = characterService.addBackpackItem(c.getName(), regionId, c.getName(), req.key(), req.item());
 //        return ResponseEntity.ok(toResponse(updated));
 //    }
 //
@@ -75,7 +75,7 @@ public class RUserCharacterController {
 //        var opt = characterService.getByIdAndRegion(characterId, regionId);
 //        if (opt.isEmpty()) return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error","character not found"));
 //        var c = opt.get();
-//        var updated = characterService.removeBackpackItem(c.getUserId(), regionId, c.getName(), key);
+//        var updated = characterService.removeBackpackItem(c.getName(), regionId, c.getName(), key);
 //        return ResponseEntity.ok(toResponse(updated));
 //    }
 //
@@ -84,7 +84,7 @@ public class RUserCharacterController {
 //        var opt = characterService.getByIdAndRegion(characterId, regionId);
 //        if (opt.isEmpty()) return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error","character not found"));
 //        var c = opt.get();
-//        var updated = characterService.wearItem(c.getUserId(), regionId, c.getName(), req.slot(), req.item());
+//        var updated = characterService.wearItem(c.getName(), regionId, c.getName(), req.slot(), req.item());
 //        return ResponseEntity.ok(toResponse(updated));
 //    }
 //
@@ -93,7 +93,7 @@ public class RUserCharacterController {
 //        var opt = characterService.getByIdAndRegion(characterId, regionId);
 //        if (opt.isEmpty()) return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error","character not found"));
 //        var c = opt.get();
-//        var updated = characterService.removeWearingItem(c.getUserId(), regionId, c.getName(), slot);
+//        var updated = characterService.removeWearingItem(c.getName(), regionId, c.getName(), slot);
 //        return ResponseEntity.ok(toResponse(updated));
 //    }
 //
@@ -105,9 +105,9 @@ public class RUserCharacterController {
 //        var c = opt.get();
 //        RCharacter updated;
 //        if (req.level() != null) {
-//            updated = characterService.setSkill(c.getUserId(), regionId, c.getName(), req.skill(), req.level());
+//            updated = characterService.setSkill(c.getName(), regionId, c.getName(), req.skill(), req.level());
 //        } else if (req.delta() != null) {
-//            updated = characterService.incrementSkill(c.getUserId(), regionId, c.getName(), req.skill(), req.delta());
+//            updated = characterService.incrementSkill(c.getName(), regionId, c.getName(), req.skill(), req.delta());
 //        } else {
 //            return ResponseEntity.badRequest().body(Map.of("error","either level or delta required"));
 //        }
@@ -119,7 +119,7 @@ public class RUserCharacterController {
 //        var opt = characterService.getByIdAndRegion(characterId, regionId);
 //        if (opt.isEmpty()) return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error","character not found"));
 //        var c = opt.get();
-//        characterService.deleteCharacter(c.getUserId(), regionId, c.getName());
+//        characterService.deleteCharacter(c.getName(), regionId, c.getName());
 //        return ResponseEntity.noContent().build();
 //    }
 //
@@ -131,7 +131,7 @@ public class RUserCharacterController {
 //        c.getSkills().forEach((k,v) -> skillsConv.put(k, v.intValue()));
 //        return RegionCharacterResponse.builder()
 //                .id(c.getId())
-//                .userId(c.getUserId())
+//                .userId(c.getName())
 //                .regionId(c.getRegionId())
 //                .title(c.getName())
 //                .display(c.getDisplay())

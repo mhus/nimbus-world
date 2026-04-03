@@ -124,7 +124,7 @@ public class InitSetupProvider {
                 continue;
             }
             var player = playerOpt.get();
-            characterService.getCharacter(player.user().getUserId(), "earth616", playerId.getCharacterId())
+            characterService.getCharacter(player.user().getName(), "earth616", playerId.getCharacterId())
                     .orElseGet(() -> {
                         var character = characterService.createCharacter(
                                 playerId.getUserId(),
@@ -135,7 +135,7 @@ public class InitSetupProvider {
                         character.setBackpack(player.character().getBackpack());
                         character.setPublicData(player.character().getPublicData());
                         characterService.updateCharater(character);
-                        log.info("Imported character: {} for user: {}", character.getName(), player.user().getUserId());
+                        log.info("Imported character: {} for user: {}", character.getName(), player.user().getName());
                         return character;
                     });
         }
@@ -153,10 +153,10 @@ public class InitSetupProvider {
                 continue;
             }
             var player = playerOpt.get();
-            var userId = player.user().getUserId();
+            var userId = player.user().getName();
             var user = userService.getByUsername(userId);
             if (user.isEmpty()) {
-                userService.createUser(player.user(), player.user().getUserId() + "@local");
+                userService.createUser(player.user(), player.user().getName() + "@local");
                 log.info("Imported user: {}", userId);
             } else {
                 log.debug("User already exists: {}", userId);

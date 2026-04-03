@@ -122,10 +122,10 @@ public class TradePriceCalculator {
      * Can be set by dialog effects, quest rewards, etc.
      */
     private double getIndividualModifier(WTrader trader, RCharacter character, String worldId) {
-        if (character == null || character.getUserId() == null) return 0;
+        if (character == null || character.getName() == null) return 0;
         try {
             var progressOpt = progressService.findByWorldIdAndPlayerIdAndTypeAndQuest(
-                    worldId, character.getUserId(), INDIVIDUAL_MODIFIER_TYPE, trader.getEntityId());
+                    worldId, character.getName(), INDIVIDUAL_MODIFIER_TYPE, trader.getEntityId());
             if (progressOpt.isPresent() && progressOpt.get().getProgressData() != null) {
                 Object mod = progressOpt.get().getProgressData().get("modifier");
                 if (mod instanceof Number number) {

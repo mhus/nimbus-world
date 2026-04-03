@@ -73,7 +73,7 @@ public class AdminCreatorService {
         }
         log.debug("Admin user '{}' not found, creating it with email '{}'", settingAdminUsername.get(), settingAdminEmail.get());
         var data = new PlayerUser();
-        data.setUserId(settingAdminUsername.get());
+        data.setName(settingAdminUsername.get());
         data.setTitle("Admin");
         var newUser = userService.createUser(data, settingAdminEmail.get());
         newUser.addSectorRole(SectorRoles.ADMIN);

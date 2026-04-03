@@ -4,7 +4,7 @@
 */
 
 export interface PlayerUser {
-  userId: string;
+  name: string;
   title: string;
   gender: string;
   portraitPath: string;

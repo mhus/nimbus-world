@@ -11,7 +11,7 @@ import { RegionRoles } from './RegionRoles';
 export const DEFAULT_REGION_ROLE = "PLAYER";
 
 export interface RUser {
-  username: string;
+  name: string;
   email: string;
   createdAt: Date;
   modifiedAt: Date;

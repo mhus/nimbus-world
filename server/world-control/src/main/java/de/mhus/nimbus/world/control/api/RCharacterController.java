@@ -60,7 +60,7 @@ public class RCharacterController extends BaseEditorController {
     private CharacterResponse toResponse(RCharacter character) {
         return new CharacterResponse(
                 character.getId(),
-                character.getUserId(),
+                character.getName(),
                 character.getRegionId(),
                 character.getName(),
                 character.getCreatedAt(),

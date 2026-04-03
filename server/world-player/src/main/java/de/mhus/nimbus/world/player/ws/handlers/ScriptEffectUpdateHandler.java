@@ -79,7 +79,7 @@ public class ScriptEffectUpdateHandler implements MessageHandler {
             ObjectNode enriched = objectMapper.createObjectNode();
             enriched.put("sessionId", session.getSessionId());
             enriched.put("worldId", session.getWorldId().getId());
-            enriched.put("userId", session.getPlayer().user().getUserId());
+            enriched.put("userId", session.getPlayer().user().getName());
             enriched.put("title", session.getTitle());
 
             // Copy original data

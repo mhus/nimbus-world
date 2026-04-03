@@ -8,7 +8,7 @@ import lombok.Data;
 @GenerateTypeScript("entities")
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class PlayerUser {
-    private String userId;
+    private String name;
     private String title;
     /** Leer (unbekannt), M (Male), F (Female), D (Diverse) */
     private String gender;

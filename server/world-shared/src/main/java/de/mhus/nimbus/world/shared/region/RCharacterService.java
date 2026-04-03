@@ -43,7 +43,7 @@ public class RCharacterService {
             throw new IllegalArgumentException("Character name already exists for user/region: " + name);
         }
         // Limit prüfen
-        RUser user = userRepository.findByUsername(username).orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
+        RUser user = userRepository.findByName(username).orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
         Integer userLimit = user.getCharacterLimitForRegion(regionId);
         int effectiveLimit = userLimit != null ? userLimit : limitProperties.getMaxPerRegion();
         int currentCount = repository.findByUserIdAndRegionId(username, regionId).size();

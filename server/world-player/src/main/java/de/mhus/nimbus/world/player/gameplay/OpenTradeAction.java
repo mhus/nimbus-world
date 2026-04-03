@@ -54,7 +54,7 @@ public class OpenTradeAction extends AbstractGamplayAction {
         // Trigger pool sync if due
         basic.getTraderService().syncPoolIfDue(trader);
 
-        String playerId = session.getPlayer().user().getUserId();
+        String playerId = session.getPlayer().user().getName();
 
         // Acquire lease for trade access
         Map<String, Object> leaseData = new HashMap<>();

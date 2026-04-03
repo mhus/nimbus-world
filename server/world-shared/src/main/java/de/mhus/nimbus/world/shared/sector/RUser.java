@@ -32,7 +32,7 @@ import org.springframework.data.mongodb.core.mapping.Field;
 import de.mhus.nimbus.shared.user.RegionRoles;
 
 @Document(collection = "r_users")
-@ActualSchemaVersion("1.0.0")
+@ActualSchemaVersion("1.0.1")
 @Data
 @Builder
 @AllArgsConstructor
@@ -46,7 +46,7 @@ public class RUser implements Identifiable {
     private String id;
 
     @Indexed(unique = true)
-    private String username;
+    private String name;
 
     @Indexed(unique = true)
     private String email;
@@ -237,7 +237,7 @@ public class RUser implements Identifiable {
      */
     public void touchUpdate() {
         if (publicData != null)
-            publicData.setUserId(getUsername());
+            publicData.setName(getName());
         modifiedAt = Instant.now();
     }
 
