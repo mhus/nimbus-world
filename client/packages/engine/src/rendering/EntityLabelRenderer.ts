@@ -19,6 +19,19 @@ const logger = getLogger('EntityLabelRenderer');
  * Format number to human-readable string
  * Examples: 1500 -> '1.5K', 4500000 -> '4.5M'
  */
+/**
+ * Get display title for an entity.
+ * Uses entity.title if available, otherwise extracts character name from player IDs
+ * (e.g., "@wadewatts:parzival" → "parzival").
+ */
+function getDisplayTitle(entity: { title?: string }, entityId: string): string {
+  if (entity.title) return entity.title;
+  if (entityId.startsWith('@') && entityId.includes(':')) {
+    return entityId.substring(entityId.indexOf(':') + 1);
+  }
+  return entityId;
+}
+
 function formatNumber(value: number): string {
   if (value >= 1000000) {
     return `${(value / 1000000).toFixed(1)}M`;
@@ -106,7 +119,7 @@ export class EntityLabelRenderer {
 
     // Name text block (always shown)
     const nameText = new TextBlock();
-    nameText.text = entity.title || clientEntity.id;
+    nameText.text = getDisplayTitle(entity, clientEntity.id);
     nameText.color = "white";
     nameText.fontSize = hasHealth ? 36 : 40;
     nameText.fontWeight = "bold";
@@ -119,7 +132,7 @@ export class EntityLabelRenderer {
 
     logger.info('Name text created', {
       entityId: clientEntity.id,
-      name: entity.title || clientEntity.id,
+      name: getDisplayTitle(entity, clientEntity.id),
       fontSize: nameText.fontSize,
     });
 
@@ -251,7 +264,7 @@ export class EntityLabelRenderer {
     label.planeMesh.position.copyFrom(labelPos);
 
     // Update name (in case it changed)
-    label.nameTextBlock.text = entity.title || clientEntity.id;
+    label.nameTextBlock.text = getDisplayTitle(entity, clientEntity.id);
 
     // Update health bar if it exists and values are defined
     if (label.healthFill && label.healthText && entity.health !== undefined && entity.healthMax !== undefined) {
