@@ -61,7 +61,7 @@
                 <span class="label-text font-medium">Model ID</span>
               </label>
               <input
-                v-model="formData.modelId"
+                v-model="formData.name"
                 type="text"
                 placeholder="Enter unique model ID"
                 class="input input-bordered w-full"
@@ -964,7 +964,7 @@ const error = ref<string | null>(null);
 const successMessage = ref<string | null>(null);
 
 const formData = ref({
-  modelId: '',
+  name: '',
   enabled: true,
 });
 
@@ -1006,7 +1006,7 @@ const availablePoses = computed(() => {
 const loadEntityModel = () => {
   if (isNew.value) {
     formData.value = {
-      modelId: '',
+      name: '',
       enabled: true,
     };
     modelData.value = {
@@ -1028,7 +1028,7 @@ const loadEntityModel = () => {
 
   const model = props.entityModel as EntityModelData;
   formData.value = {
-    modelId: model.modelId,
+    name: model.name,
     enabled: model.enabled,
   };
   modelData.value = model.publicData || {};
@@ -1227,12 +1227,12 @@ const handleSave = async () => {
   try {
     if (isNew.value) {
       await entityModelService.createEntityModel(currentWorldId.value, {
-        modelId: formData.value.modelId,
+        name: formData.value.name,
         publicData: modelData.value,
       });
       successMessage.value = 'Entity model created successfully';
     } else {
-      await entityModelService.updateEntityModel(currentWorldId.value, formData.value.modelId, {
+      await entityModelService.updateEntityModel(currentWorldId.value, formData.value.name, {
         enabled: formData.value.enabled,
         publicData: modelData.value,
       });

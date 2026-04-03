@@ -529,7 +529,7 @@ export class EntityRenderService {
       // Only warn once per entityId:pose combination to avoid spam
       const warnKey = `${entityId}:${pose}`;
       if (!this.warnedMissingPoses.has(warnKey)) {
-        const modelId = clientEntity.model.id;
+        const modelId = clientEntity.model.name;
         logger.warn('No animation config found for pose', { entityId, pose, modelId });
         this.warnedMissingPoses.add(warnKey);
       }

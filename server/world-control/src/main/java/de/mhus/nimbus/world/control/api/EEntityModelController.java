@@ -53,7 +53,7 @@ public class EEntityModelController extends BaseEditorController {
     ) {
     }
 
-    public record CreateEntityModelRequest(String modelId, EntityModel publicData) {
+    public record CreateEntityModelRequest(String name, EntityModel publicData) {
     }
 
     public record UpdateEntityModelRequest(EntityModel publicData, Boolean enabled) {
@@ -166,12 +166,12 @@ public class EEntityModelController extends BaseEditorController {
             @Parameter(description = "World identifier") @PathVariable String worldId,
             @RequestBody CreateEntityModelRequest request) {
 
-        log.debug("CREATE entitymodel: worldId={}, modelId={}", worldId, request.modelId());
+        log.debug("CREATE entitymodel: worldId={}, modelId={}", worldId, request.name());
 
         var wid = WorldId.of(worldId).orElseThrow(
                 () -> new IllegalStateException("Invalid worldId: " + worldId)
         );
-        if (Strings.isBlank(request.modelId())) {
+        if (Strings.isBlank(request.name())) {
             return bad("modelId required");
         }
 
@@ -180,13 +180,13 @@ public class EEntityModelController extends BaseEditorController {
         }
 
         // Check if EntityModel already exists
-        if (entityModelService.findByModelId(wid, request.modelId()).isPresent()) {
+        if (entityModelService.findByModelId(wid, request.name()).isPresent()) {
             return conflict("entitymodel already exists");
         }
 
         try {
-            WEntityModel saved = entityModelService.save(wid, request.modelId(), request.publicData());
-            log.info("Created entitymodel: modelId={}", request.modelId());
+            WEntityModel saved = entityModelService.save(wid, request.name(), request.publicData());
+            log.info("Created entitymodel: modelId={}", request.name());
             return ResponseEntity.status(HttpStatus.CREATED).body(toDto(saved));
         } catch (IllegalArgumentException e) {
             log.warn("Validation error creating entitymodel: {}", e.getMessage());
@@ -285,7 +285,7 @@ public class EEntityModelController extends BaseEditorController {
 
     private EntityModelDto toDto(WEntityModel entity) {
         return new EntityModelDto(
-                entity.getModelId(),
+                entity.getName(),
                 entity.getPublicData(),
                 entity.getWorldId(),
                 entity.isEnabled(),

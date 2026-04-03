@@ -124,7 +124,7 @@ export namespace EntitySerializer {
       return null;
     }
 
-    if (!obj.id || !obj.type || !obj.modelPath || !obj.poseType || !obj.dimensions) {
+    if (!obj.name || !obj.type || !obj.modelPath || !obj.poseType || !obj.dimensions) {
       return null;
     }
 

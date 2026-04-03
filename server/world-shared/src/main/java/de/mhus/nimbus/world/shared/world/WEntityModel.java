@@ -21,9 +21,9 @@ import java.time.Instant;
  * EntityModels are templates that define 3D models, animations, and physics for entities.
  */
 @Document(collection = "w_entity_models")
-@ActualSchemaVersion("1.0.0")
+@ActualSchemaVersion("1.0.1")
 @CompoundIndexes({
-        @CompoundIndex(name = "world_modelId_idx", def = "{ 'worldId': 1, 'modelId': 1 }", unique = true)
+        @CompoundIndex(name = "world_name_idx", def = "{ 'worldId': 1, 'name': 1 }", unique = true)
 })
 @Data
 @Builder
@@ -35,10 +35,10 @@ public class WEntityModel implements Identifiable {
     private String id;
 
     /**
-     * Model identifier (e.g., "cow1", "farmer1", "pig1").
+     * Unique technical name for this entity model (e.g., "cow1", "farmer1", "pig1").
      * Unique per world (compound index with worldId).
      */
-    private String modelId;
+    private String name;
 
     private String title;
 
@@ -81,19 +81,19 @@ public class WEntityModel implements Identifiable {
     public void touchUpdate() {
         updatedAt = Instant.now();
         if (publicData != null) {
-            publicData.setId(getModelId());
+            publicData.setName(getName());
         }
     }
 
     public WEntityModel appendWorldPrefix() {
         if (publicData == null) return this;
-        publicData.setId(WorldCollection.appendPrefix(worldId, publicData.getId()));
+        publicData.setName(WorldCollection.appendPrefix(worldId, publicData.getName()));
         return this;
     }
 
-    public  WEntityModel removeWorldPrefix() {
+    public WEntityModel removeWorldPrefix() {
         if (publicData == null) return this;
-        publicData.setId(WorldCollection.removePrefix(publicData.getId()));
+        publicData.setName(WorldCollection.removePrefix(publicData.getName()));
         return this;
     }
 

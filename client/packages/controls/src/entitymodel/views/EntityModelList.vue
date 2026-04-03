@@ -57,17 +57,17 @@
       <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
         <div
           v-for="model in paginatedEntityModels"
-          :key="model.modelId"
+          :key="model.name"
           class="card bg-base-100 shadow hover:shadow-lg transition-shadow cursor-pointer"
           @click="handleSelect(model)"
         >
           <div class="card-body p-4">
-            <h3 class="card-title text-base truncate" :title="model.publicData?.id || model.modelId">
-              {{ model.publicData?.id || model.modelId }}
+            <h3 class="card-title text-base truncate" :title="model.publicData?.id || model.name">
+              {{ model.publicData?.id || model.name }}
             </h3>
             <div class="space-y-2">
-              <div class="text-xs text-base-content/70 truncate" :title="model.modelId">
-                ID: {{ model.modelId }}
+              <div class="text-xs text-base-content/70 truncate" :title="model.name">
+                ID: {{ model.name }}
               </div>
               <div class="flex items-center gap-2">
                 <span
@@ -89,7 +89,7 @@
               </button>
               <button
                 class="btn btn-ghost btn-xs text-error"
-                @click.stop="handleDelete(model.modelId)"
+                @click.stop="handleDelete(model.name)"
               >
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />

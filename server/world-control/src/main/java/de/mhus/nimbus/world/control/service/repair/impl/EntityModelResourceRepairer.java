@@ -26,7 +26,7 @@ public class EntityModelResourceRepairer implements ResourceRepairer {
         return DuplicateRepairHelper.repairDuplicates(
                 mongoTemplate, "w_entity_models", worldId.getId(), name(),
                 doc -> {
-                    String modelId = doc.getString("modelId");
+                    String modelId = doc.getString("name");
                     return modelId != null ? doc.getString("worldId") + "|" + modelId : null;
                 }
         );

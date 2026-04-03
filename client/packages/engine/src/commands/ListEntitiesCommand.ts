@@ -81,7 +81,7 @@ export class ListEntitiesCommand extends CommandHandler {
     // List entities
     for (const entity of sortedEntities) {
       const id = entity.id.padEnd(21).substring(0, 21);
-      const modelId = entity.model.id.padEnd(10).substring(0, 10);
+      const modelId = entity.model.name.padEnd(10).substring(0, 10);
       const visible = entity.visible ? 'Yes    ' : 'No     ';
       const pos = `${entity.currentPosition.x.toFixed(1)}, ${entity.currentPosition.y.toFixed(1)}, ${entity.currentPosition.z.toFixed(1)}`;
       const posFormatted = pos.padEnd(28);
@@ -114,7 +114,7 @@ export class ListEntitiesCommand extends CommandHandler {
       visibilityRadius: entityService.visibilityRadius,
       entities: entities.map(e => ({
         id: e.id,
-        modelId: e.model.id,
+        modelId: e.model.name,
         visible: e.visible,
         position: e.currentPosition,
         rotation: e.currentRotation,

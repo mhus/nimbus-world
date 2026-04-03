@@ -72,7 +72,7 @@ export class EntityInfoCommand extends CommandHandler {
     lines.push('Entity:');
     lines.push(`  ID              : ${clientEntity.id}`);
     lines.push(`  Title           : ${clientEntity.entity.title || '(unnamed)'}`);
-    lines.push(`  Model ID        : ${clientEntity.model.id}`);
+    lines.push(`  Model ID        : ${clientEntity.model.name}`);
     lines.push(`  Model Type      : ${clientEntity.model.type}`);
     lines.push(`  Visible         : ${clientEntity.visible ? 'Yes' : 'No'}`);
     lines.push('');
@@ -235,7 +235,7 @@ export class EntityInfoCommand extends CommandHandler {
     return {
       entity: clientEntity.entity,
       model: {
-        id: clientEntity.model.id,
+        id: clientEntity.model.name,
         type: clientEntity.model.type,
         modelPath: clientEntity.model.modelPath,
         dimensions: clientEntity.model.dimensions,

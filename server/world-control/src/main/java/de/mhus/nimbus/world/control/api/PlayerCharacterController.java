@@ -250,8 +250,8 @@ public class PlayerCharacterController extends BaseEditorController {
         for (WEntityModel wem : avatarModels) {
             var pd = wem.getPublicData();
             if (pd == null) continue;
-            String modelId = MODEL_PREFIX + wem.getModelId();
-            String name = wem.getTitle() != null ? wem.getTitle() : wem.getModelId();
+            String modelId = MODEL_PREFIX + wem.getName();
+            String name = wem.getTitle() != null ? wem.getTitle() : wem.getName();
             String gender = pd.getGender() != null ? pd.getGender() : "";
             String modelPath = pd.getModelPath() != null ? pd.getModelPath() : "";
             var modifierMapping = pd.getModelModifierMapping();

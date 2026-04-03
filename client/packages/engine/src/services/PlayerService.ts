@@ -1174,8 +1174,8 @@ export class PlayerService {
 
       // Create Entity for player avatar
       const playerAvatarEntity: any = {
-        id: avatarEntityId,
-        name: this.playerEntity.playerInfo.title,
+        name: avatarEntityId,
+        title: this.playerEntity.playerInfo.title,
         model: modelId,
         modelModifier: this.playerEntity.playerInfo.thirdPersonModelModifiers || {},
         movementType: 'dynamic' as const,

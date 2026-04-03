@@ -65,9 +65,9 @@ public class EntityModelResourceSyncType implements ResourceSyncType {
 
         for (Document doc : documents) {
             try {
-                String modelId = doc.getString("modelId");
+                String modelId = doc.getString("name");
                 if (modelId == null) {
-                    log.warn("EntityModel without modelId, skipping");
+                    log.warn("EntityModel without name, skipping");
                     continue;
                 }
 
@@ -94,7 +94,7 @@ public class EntityModelResourceSyncType implements ResourceSyncType {
                 for (Path file : files.filter(f -> f.toString().endsWith(".yaml")).toList()) {
                     try {
                         Document doc = yamlMapper.readValue(file.toFile(), Document.class);
-                        String modelId = doc.getString("modelId");
+                        String modelId = doc.getString("name");
 
                         if (!dbEntityModelIds.contains(modelId)) {
                             Files.delete(file);
@@ -128,7 +128,7 @@ public class EntityModelResourceSyncType implements ResourceSyncType {
                 try {
                     // Read YAML as Document
                     Document doc = yamlMapper.readValue(file.toFile(), Document.class);
-                    String modelId = doc.getString("modelId");
+                    String modelId = doc.getString("name");
                     filesystemEntityModelIds.add(modelId);
 
                     String json = objectMapper.writeValueAsString(doc);
@@ -148,7 +148,7 @@ public class EntityModelResourceSyncType implements ResourceSyncType {
                     // Find existing by unique constraint (worldId + modelId)
                     Query findQuery = new Query(
                             Criteria.where("worldId").is(migratedDoc.getString("worldId"))
-                                    .and("modelId").is(migratedDoc.getString("modelId"))
+                                    .and("modelId").is(migratedDoc.getString("name"))
                     );
                     Document existing = mongoTemplate.findOne(findQuery, Document.class, COLLECTION_NAME);
 
@@ -190,9 +190,9 @@ public class EntityModelResourceSyncType implements ResourceSyncType {
             List<WEntityModel> dbEntityModels = entityModelService.findByWorldId(worldId);
 
             for (WEntityModel entityModel : dbEntityModels) {
-                if (!filesystemEntityModelIds.contains(entityModel.getModelId())) {
-                    entityModelService.delete(worldId, entityModel.getModelId());
-                    log.info("Deleted entity model not in filesystem: {}", entityModel.getModelId());
+                if (!filesystemEntityModelIds.contains(entityModel.getName())) {
+                    entityModelService.delete(worldId, entityModel.getName());
+                    log.info("Deleted entity model not in filesystem: {}", entityModel.getName());
                     deleted++;
                 }
             }

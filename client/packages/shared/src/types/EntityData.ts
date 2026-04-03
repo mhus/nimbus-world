@@ -121,8 +121,8 @@ export interface EntityModifier {
  * Wird im Registry gespeichert und von Entity-Instanzen referenziert.
  */
 export interface EntityModel {
-  /** Unique identifier for this entity model */
-  id: string;
+  /** Unique technical name for this entity model */
+  name: string;
 
   /** Type/category of entity */
   type: string;
@@ -294,14 +294,14 @@ export interface EntityPathway {
  * Helper: Create a basic EntityModel
  */
 export function createEntityModel(
-  id: string,
+  name: string,
   type: string,
   modelPath: string,
   poseType: PoseType,
   dimensions: EntityDimensions
 ): EntityModel {
   return {
-    id,
+    name,
     type,
     modelPath,
     positionOffset: { x: 0, y: 0, z: 0 },

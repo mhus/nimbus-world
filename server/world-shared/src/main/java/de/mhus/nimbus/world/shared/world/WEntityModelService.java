@@ -34,7 +34,7 @@ public class WEntityModelService {
         var collection = WorldCollection.of(lookupWorld, modelId);
         lookupWorld = collection.worldId();
         lookupWorld = lookupWorld.toCollection(); // if the result is a world id, convert to region collection
-        return repository.findByWorldIdAndModelId(lookupWorld.getId(), collection.path());
+        return repository.findByWorldIdAndName(lookupWorld.getId(), collection.path());
     }
 
     /**
@@ -79,9 +79,9 @@ public class WEntityModelService {
             throw new IllegalArgumentException("worldId must be a collection id");
         }
 
-        WEntityModel entity = repository.findByWorldIdAndModelId(resolvedWorldId.getId(), resolvedModelId).orElseGet(() -> {
+        WEntityModel entity = repository.findByWorldIdAndName(resolvedWorldId.getId(), resolvedModelId).orElseGet(() -> {
             WEntityModel neu = WEntityModel.builder()
-                    .modelId(resolvedModelId)
+                    .name(resolvedModelId)
                     .worldId(resolvedWorldId.getId())
                     .enabled(true)
                     .build();
@@ -131,7 +131,7 @@ public class WEntityModelService {
         if (!resolvedWorldId.isCollection()) {
             throw new IllegalArgumentException("worldId must be a collection id");
         }
-        return repository.findByWorldIdAndModelId(resolvedWorldId.getId(), resolvedModelId).map(entity -> {
+        return repository.findByWorldIdAndName(resolvedWorldId.getId(), resolvedModelId).map(entity -> {
             updater.accept(entity);
             entity.touchUpdate();
             entity.removeWorldPrefix();
@@ -154,7 +154,7 @@ public class WEntityModelService {
         if (!resolvedWorldId.isCollection()) {
             throw new IllegalArgumentException("worldId must be a collection id");
         }
-        return repository.findByWorldIdAndModelId(resolvedWorldId.getId(), resolvedModelId).map(entity -> {
+        return repository.findByWorldIdAndName(resolvedWorldId.getId(), resolvedModelId).map(entity -> {
             repository.delete(entity);
             log.debug("Deleted WEntityModel: {}", modelId);
             return true;
@@ -203,7 +203,7 @@ public class WEntityModelService {
         String lowerQuery = query.toLowerCase();
         return models.stream()
                 .filter(model -> {
-                    String modelId = model.getModelId();
+                    String modelId = model.getName();
                     return (modelId != null && modelId.toLowerCase().contains(lowerQuery));
                 })
                 .collect(java.util.stream.Collectors.toList());

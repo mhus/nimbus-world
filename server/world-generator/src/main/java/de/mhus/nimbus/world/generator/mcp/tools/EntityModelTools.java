@@ -68,7 +68,7 @@ public class EntityModelTools implements McpToolBean {
         }
 
         EntityModel entityModel = objectMapper.convertValue(publicData, EntityModel.class);
-        entityModel.setId(modelId);
+        entityModel.setName(modelId);
 
         var saved = entityModelService.save(wid, modelId, entityModel);
         if (description != null) {
@@ -116,7 +116,7 @@ public class EntityModelTools implements McpToolBean {
                     EntityModel entityModel = objectMapper.readValue(json, EntityModel.class);
 
                     // Derive modelId from the JSON id field (strip prefix like "n:")
-                    String modelId = entityModel.getId();
+                    String modelId = entityModel.getName();
                     if (modelId != null && modelId.contains(":")) {
                         modelId = modelId.substring(modelId.indexOf(':') + 1);
                     }
@@ -136,7 +136,7 @@ public class EntityModelTools implements McpToolBean {
                         entityModel.setModelPath(prefix + glbFileName);
                     }
 
-                    entityModel.setId(modelId);
+                    entityModel.setName(modelId);
 
                     var saved = entityModelService.save(wid, modelId, entityModel);
                     // Derive title from modelId
@@ -166,8 +166,8 @@ public class EntityModelTools implements McpToolBean {
 
     private Map<String, Object> toModelDto(WEntityModel model) {
         Map<String, Object> dto = new HashMap<>();
-        dto.put("id", model.getId());
-        dto.put("modelId", model.getModelId());
+        dto.put("name", model.getName());
+        dto.put("name", model.getName());
         dto.put("worldId", model.getWorldId());
         dto.put("title", model.getTitle());
         dto.put("description", model.getDescription());

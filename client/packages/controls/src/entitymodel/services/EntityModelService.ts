@@ -1,7 +1,7 @@
 import { apiService } from '@/services/ApiService';
 
 export interface EntityModelData {
-  modelId: string;
+  name: string;
   publicData: any;
   worldId: string;
   enabled: boolean;
@@ -17,7 +17,7 @@ export interface EntityModelListResponse {
 }
 
 export interface CreateEntityModelRequest {
-  modelId: string;
+  name: string;
   publicData: any;
 }
 
@@ -34,7 +34,7 @@ class EntityModelService {
     return apiService.get<EntityModelListResponse>(`/control/worlds/${worldId}/entitymodels`, params);
   }
 
-  async getEntityModel(worldId: string, modelId: string): Promise<any> {
+  async getEntityModel(worldId: string, name: string): Promise<any> {
     return apiService.get<any>(`/control/worlds/${worldId}/entitymodels/${modelId}`);
   }
 
@@ -42,11 +42,11 @@ class EntityModelService {
     return apiService.post<any>(`/control/worlds/${worldId}/entitymodels`, request);
   }
 
-  async updateEntityModel(worldId: string, modelId: string, request: UpdateEntityModelRequest): Promise<any> {
+  async updateEntityModel(worldId: string, name: string, request: UpdateEntityModelRequest): Promise<any> {
     return apiService.put<any>(`/control/worlds/${worldId}/entitymodels/${modelId}`, request);
   }
 
-  async deleteEntityModel(worldId: string, modelId: string): Promise<void> {
+  async deleteEntityModel(worldId: string, name: string): Promise<void> {
     return apiService.delete<void>(`/control/worlds/${worldId}/entitymodels/${modelId}`);
   }
 }

@@ -12,13 +12,13 @@ import java.util.Optional;
 @Repository
 public interface WEntityModelRepository extends MongoRepository<WEntityModel, String> {
 
-    Optional<WEntityModel> findByWorldIdAndModelId(String worldId, String modelId);
+    Optional<WEntityModel> findByWorldIdAndName(String worldId, String name);
 
     List<WEntityModel> findByWorldId(String worldId);
 
     List<WEntityModel> findByWorldIdAndEnabled(String worldId, boolean enabled);
 
-    boolean existsByWorldIdAndModelId(String worldId, String modelId);
+    boolean existsByWorldIdAndName(String worldId, String name);
 
-    void deleteByWorldIdAndModelId(String worldId, String modelId);
+    void deleteByWorldIdAndName(String worldId, String name);
 }

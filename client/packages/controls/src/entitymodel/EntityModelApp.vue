@@ -72,7 +72,7 @@ const loadEntityModelFromUrl = async () => {
   try {
     const publicData = await entityModelService.getEntityModel(currentWorldId.value, urlModelId);
     selectedEntityModel.value = {
-      modelId: urlModelId,
+      name: urlModelId,
       publicData,
       worldId: currentWorldId.value,
       enabled: true,

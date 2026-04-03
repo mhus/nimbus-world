@@ -172,8 +172,8 @@ export namespace EntityValidator {
     const warnings: string[] = [];
 
     // Validate ID
-    if (!isValidEntityId(model.id)) {
-      errors.push(`Invalid entity model ID: ${model.id}`);
+    if (!isValidEntityId(model.name)) {
+      errors.push(`Invalid entity model ID: ${model.name}`);
     }
 
     // Validate type
@@ -347,10 +347,10 @@ export namespace EntityValidator {
     // Check for duplicate IDs
     const ids = new Set<string>();
     models.forEach((model, index) => {
-      if (ids.has(model.id)) {
-        errors.push(`Duplicate entity model ID at index ${index}: ${model.id}`);
+      if (ids.has(model.name)) {
+        errors.push(`Duplicate entity model ID at index ${index}: ${model.name}`);
       }
-      ids.add(model.id);
+      ids.add(model.name);
     });
 
     return { valid: errors.length === 0, errors, warnings };
@@ -377,7 +377,7 @@ export namespace EntityValidator {
    */
   export function isValidModel(model: EntityModel): boolean {
     return (
-      isValidEntityId(model.id) &&
+      isValidEntityId(model.name) &&
       typeof model.type === 'string' &&
       typeof model.modelPath === 'string' &&
       isValidPoseType(model.poseType) &&
