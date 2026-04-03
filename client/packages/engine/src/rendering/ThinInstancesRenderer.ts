@@ -99,7 +99,7 @@ export class ThinInstancesRenderer extends BlockRenderer {
     if (!clientBlock.chunk) {
       logger.error('ClientBlock missing chunk coordinates', {
         blockPosition: block.position,
-        blockTypeId: clientBlock.blockType.id
+        blockTypeId: clientBlock.blockType.name
       });
       return; // Cannot render without chunk information
     }

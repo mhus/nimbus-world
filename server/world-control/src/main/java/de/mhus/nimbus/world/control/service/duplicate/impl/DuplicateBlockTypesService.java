@@ -36,7 +36,7 @@ public class DuplicateBlockTypesService implements DuplicateToWorld {
 
         for (WBlockType sourceBlockType : sourceBlockTypes) {
             WBlockType targetBlockType = WBlockType.builder()
-                    .blockId(sourceBlockType.getBlockId())
+                    .name(sourceBlockType.getName())
                     .publicData(sourceBlockType.getPublicData())
                     .worldId(targetWorldId)
                     .enabled(sourceBlockType.isEnabled())

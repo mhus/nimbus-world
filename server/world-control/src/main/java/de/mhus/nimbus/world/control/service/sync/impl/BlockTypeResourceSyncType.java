@@ -221,9 +221,9 @@ public class BlockTypeResourceSyncType implements ResourceSyncType {
             List<WBlockType> dbBlockTypes = blockTypeService.findByWorldId(worldId);
 
             for (WBlockType blockType : dbBlockTypes) {
-                if (!filesystemBlockIds.contains(blockType.getBlockId())) {
-                    blockTypeService.delete(worldId, blockType.getBlockId());
-                    log.info("Deleted blocktype not in filesystem: {}", blockType.getBlockId());
+                if (!filesystemBlockIds.contains(blockType.getName())) {
+                    blockTypeService.delete(worldId, blockType.getName());
+                    log.info("Deleted blocktype not in filesystem: {}", blockType.getName());
                     deleted++;
                 }
             }
@@ -237,7 +237,10 @@ public class BlockTypeResourceSyncType implements ResourceSyncType {
      * Legacy documents may have blockId as Integer, newer ones as String.
      */
     private String getBlockIdAsString(Document doc) {
-        Object blockIdObj = doc.get("blockId");
+        Object blockIdObj = doc.get("name");
+        if (blockIdObj == null) {
+            blockIdObj = doc.get("blockId"); // legacy fallback
+        }
         if (blockIdObj == null) {
             return null;
         }

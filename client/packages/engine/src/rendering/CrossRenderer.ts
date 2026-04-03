@@ -68,19 +68,19 @@ export class CrossRenderer extends BlockRenderer {
     const modifier = block.currentModifier;
 
     if (!modifier || !modifier.visibility) {
-      logger.debug('Block has no visibility modifier', { blockTypeId: block.blockType.id });
+      logger.debug('Block has no visibility modifier', { blockTypeId: block.blockType.name });
       return;
     }
 
     // Get textures from modifier
     const textures = modifier.visibility.textures;
     if (!textures) {
-      logger.warn('Block has no textures', { blockTypeId: block.blockType.id });
+      logger.warn('Block has no textures', { blockTypeId: block.blockType.name });
       return;
     }
 
     logger.debug('Rendering cross block', {
-      blockTypeId: block.blockType.id,
+      blockTypeId: block.blockType.name,
       position: { x: worldX, y: worldY, z: worldZ },
       hasTextures: !!textures,
       textureCount: Object.keys(textures).length
@@ -215,7 +215,7 @@ export class CrossRenderer extends BlockRenderer {
     }
 
     logger.debug('Cross rendered', {
-      blockTypeId: block.blockType.id,
+      blockTypeId: block.blockType.name,
       position: { x: worldX, y: worldY, z: worldZ },
       planesRendered: (texture1 ? 1 : 0) + (texture2 ? 1 : 0)
     });

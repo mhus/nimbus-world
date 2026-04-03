@@ -4,7 +4,7 @@
       <div class="flex items-start justify-between">
         <div class="flex-1">
           <h3 class="card-title text-lg">
-            ID: {{ blockType.id }}
+            ID: {{ blockType.name }}
           </h3>
           <p v-if="blockType.title" class="text-base-content/90 text-sm font-semibold">
             {{ blockType.title }}

@@ -487,7 +487,7 @@ const emit = defineEmits<{
 
 const { createBlockType, updateBlockType } = useBlockTypes(props.worldId);
 
-const isCreate = computed(() => !props.blockType || !props.blockType.id);
+const isCreate = computed(() => !props.blockType || !props.blockType.name);
 const saving = ref(false);
 const showJsonEditor = ref(false);
 
@@ -865,7 +865,7 @@ const handleDuplicate = async () => {
 
   try {
     const apiUrl = apiService.getBaseUrl();
-    const sourceBlockId = props.blockType.id;
+    const sourceBlockId = props.blockType.name;
     const url = `${apiUrl}/control/worlds/${props.worldId}/blocktypes/duplicate/${encodeURIComponent(sourceBlockId)}`;
 
     const response = await fetch(url, {
@@ -891,7 +891,7 @@ const handleDuplicate = async () => {
     closeDuplicateDialog();
 
     // Show success message
-    alert(`BlockType duplicated successfully!\n\nNew ID: ${result.blockId}\n\nThe page will reload to show the updated list.`);
+    alert(`BlockType duplicated successfully!\n\nNew Name: ${result.name}\n\nThe page will reload to show the updated list.`);
 
     // Emit saved event to refresh the list
     emit('saved');

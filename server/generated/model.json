@@ -4907,7 +4907,7 @@
       "name" : "BlockType",
       "extendsList" : [ ],
       "properties" : [ {
-        "name" : "id",
+        "name" : "name",
         "type" : "string",
         "optional" : false,
         "visibility" : null,

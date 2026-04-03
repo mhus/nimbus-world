@@ -21,9 +21,9 @@ import java.time.Instant;
  * BlockTypes are templates that define how blocks look and behave.
  */
 @Document(collection = "w_blocktypes")
-@ActualSchemaVersion("1.1.0")
+@ActualSchemaVersion("1.2.0")
 @CompoundIndexes({
-        @CompoundIndex(name = "world_blockId_idx", def = "{ 'worldId': 1, 'blockId': 1 }", unique = true)
+        @CompoundIndex(name = "world_name_idx", def = "{ 'worldId': 1, 'name': 1 }", unique = true)
 })
 @Data
 @Builder
@@ -35,10 +35,10 @@ public class WBlockType implements Identifiable {
     private String id;
 
     /**
-     * External block identifier (e.g., "stone", "123").
+     * Unique technical name for this block type (e.g., "stone", "oak_planks").
      * Unique per world (compound index with worldId).
      */
-    private String blockId;
+    private String name;
 
     /**
      * Public data containing the generated BlockType DTO.
@@ -89,20 +89,20 @@ public class WBlockType implements Identifiable {
     public void touchUpdate() {
         updatedAt = Instant.now();
         if (publicData != null)
-            publicData.setId(getBlockId());
+            publicData.setName(getName());
     }
 
     public WBlockType appendWorldPrefix() {
         if (publicData == null) return this;
-        publicData.setId(WorldCollection.appendPrefix(worldId, publicData.getId()));
+        publicData.setName(WorldCollection.appendPrefix(worldId, publicData.getName()));
         return this;
     }
 
-    public  WBlockType removeWorldPrefix() {
+    public WBlockType removeWorldPrefix() {
         if (publicData == null) return this;
-        setBlockId(WorldCollection.removePrefix(getBlockId())); // for secure
+        setName(WorldCollection.removePrefix(getName())); // for secure
         if (publicData != null)
-            publicData.setId(WorldCollection.removePrefix(publicData.getId()));
+            publicData.setName(WorldCollection.removePrefix(publicData.getName()));
         return this;
     }
 

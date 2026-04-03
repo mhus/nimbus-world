@@ -37,7 +37,7 @@ export async function saveBlockAsBlockType(
     const result = await response.json();
     return {
       success: true,
-      blockId: result.blockId,
+      blockId: result.name,
     };
   } catch (err) {
     return {

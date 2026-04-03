@@ -60,7 +60,7 @@ const DEFAULT_BACKDROP: Backdrop = {
 };
 
 const ERROR_BLOCK_TYPE: BlockType = {
-    id: 'error:block',
+    name: 'error:block',
     description: 'This block type is used when the specified block type cannot be found.',
     modifiers: {
       0: {
@@ -1418,13 +1418,13 @@ export class ChunkService {
         logger.debug('Audio preloaded into pool', {
           path: audioDef.path,
           type: audioDef.type,
-          blockTypeId: clientBlock.blockType.id,
+          blockTypeId: clientBlock.blockType.name,
         });
       } catch (error) {
         logger.warn('Failed to preload block audio', {
           path: audioDef.path,
           type: audioDef.type,
-          blockTypeId: clientBlock.blockType.id,
+          blockTypeId: clientBlock.blockType.name,
           error: (error as Error).message,
         });
       }
@@ -1494,14 +1494,14 @@ export class ChunkService {
 
           logger.debug('Permanent sound registered for block (will play when audio unlocks)', {
             path: audioDef.path,
-            blockTypeId: clientBlock.blockType.id,
+            blockTypeId: clientBlock.blockType.name,
             position: clientBlock.block.position,
           });
         }
       } catch (error) {
         logger.warn('Failed to create permanent sound for block', {
           path: audioDef.path,
-          blockTypeId: clientBlock.blockType.id,
+          blockTypeId: clientBlock.blockType.name,
           position: clientBlock.block.position,
           error: (error as Error).message,
         });
@@ -1589,14 +1589,14 @@ export class ChunkService {
 
         logger.debug('Permanent sound registered for block update (will play when audio unlocks)', {
           path: audioDef.path,
-          blockTypeId: clientBlock.blockType.id,
+          blockTypeId: clientBlock.blockType.name,
           position: clientBlock.block.position,
         });
       }
     } catch (error) {
       logger.warn('Failed to create permanent sound for block update', {
         path: audioDef.path,
-        blockTypeId: clientBlock.blockType.id,
+        blockTypeId: clientBlock.blockType.name,
         position: clientBlock.block.position,
         error: (error as Error).message,
       });

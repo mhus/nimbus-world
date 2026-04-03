@@ -54,9 +54,9 @@ export enum BlockTypeType {
  */
 export interface BlockType {
   /**
-   * Unique block type ID
+   * Unique block type name (technical identifier, unique within scope)
    */
-  id: string;
+  name: string;
 
   type?: BlockTypeType;
 

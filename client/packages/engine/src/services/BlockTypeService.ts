@@ -70,7 +70,7 @@ export class BlockTypeService {
    */
   private createAirBlockType(): BlockType {
     const airBlockType: BlockType = {
-      id: '0',
+      name: '0',
       initialStatus: 'default',
       modifiers: {
         'default': {
@@ -163,7 +163,7 @@ export class BlockTypeService {
       for (const blockType of blockTypes) {
         if (this.validateBlockType(blockType)) {
           // Ensure BlockType ID has correct group prefix
-          const originalId = String(blockType.id);
+          const originalId = String(blockType.name);
           let correctedId: string;
 
           if (originalId.includes(':')) {
@@ -192,7 +192,7 @@ export class BlockTypeService {
           }
 
           // Store BlockType with corrected ID in group map
-          blockType.id = correctedId;
+          blockType.name = correctedId;
           groupMap.set(correctedId, blockType);
           validCount++;
         } else {
@@ -261,7 +261,7 @@ export class BlockTypeService {
       return false;
     }
 
-    if (typeof blockType.id !== 'string' && typeof blockType.id !== 'number') {
+    if (typeof blockType.name !== 'string' && typeof blockType.name !== 'number') {
       logger.warn('BlockType missing valid id', { blockType });
       return false;
     }

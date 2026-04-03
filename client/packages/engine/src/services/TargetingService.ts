@@ -238,7 +238,7 @@ export class TargetingService {
 
     if (selectedBlock) {
       // Check if it's an AIR block by checking the block type ID (0 = AIR)
-      const isAir = selectedBlock.blockType?.id && isAirBlockTypeId(selectedBlock.blockType.id);
+      const isAir = selectedBlock.blockType?.name && isAirBlockTypeId(selectedBlock.blockType.name);
 
       if (isAir) {
         // AIR block - treat as ground position

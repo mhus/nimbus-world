@@ -109,11 +109,11 @@
                   >
                     <div
                       v-for="blockType in blockTypeSearchResults"
-                      :key="blockType.id"
+                      :key="blockType.name"
                       class="p-3 hover:bg-base-200 cursor-pointer border-b border-base-300 last:border-b-0"
                       @click="selectBlockType(blockType)"
                     >
-                      <span class="font-mono font-bold">ID {{ blockType.id }}</span>
+                      <span class="font-mono font-bold">ID {{ blockType.name }}</span>
                       <span class="mx-2">-</span>
                       <span>{{ blockType.description || 'Unnamed' }}</span>
                     </div>
@@ -955,16 +955,16 @@ async function handleBlockTypeSearch(query: string) {
 
 async function selectBlockType(blockType: BlockType) {
   const previousBlockTypeId = blockData.value.blockTypeId;
-  blockData.value.blockTypeId = blockType.id;
+  blockData.value.blockTypeId = blockType.name;
   loadedBlockType.value = blockType;
   blockTypeSearch.value = '';
   blockTypeSearchResults.value = [];
   showBlockTypeSearch.value = false; // Hide search after selection
 
   // Load full details to apply defaults (only when changing blockType)
-  if (blockType.id !== previousBlockTypeId) {
+  if (blockType.name !== previousBlockTypeId) {
     try {
-      const detail = await getBlockType(blockType.id!);
+      const detail = await getBlockType(blockType.name!);
       if (detail) {
         loadedBlockType.value = detail.publicData;
         applyBlockTypeDefaults(detail.defaultClient, detail.defaultServer);

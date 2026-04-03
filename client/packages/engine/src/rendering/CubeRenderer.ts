@@ -85,19 +85,19 @@ export class CubeRenderer extends BlockRenderer {
     const modifier = block.currentModifier;
 
     if (!modifier || !modifier.visibility) {
-      logger.debug('Block has no visibility modifier', { blockTypeId: block.blockType.id });
+      logger.debug('Block has no visibility modifier', { blockTypeId: block.blockType.name });
       return;
     }
 
     // Get textures from modifier
     const textures = modifier.visibility.textures;
     if (!textures) {
-      logger.warn('Block has no textures', { blockTypeId: block.blockType.id });
+      logger.warn('Block has no textures', { blockTypeId: block.blockType.name });
       return;
     }
 
     logger.debug('Rendering cube block', {
-      blockTypeId: block.blockType.id,
+      blockTypeId: block.blockType.name,
       position: { x: worldX, y: worldY, z: worldZ },
       hasTextures: !!textures,
       textureCount: Object.keys(textures).length
@@ -338,7 +338,7 @@ export class CubeRenderer extends BlockRenderer {
     }
 
     logger.debug('Cube rendered', {
-      blockTypeId: block.blockType.id,
+      blockTypeId: block.blockType.name,
       position: { x: worldX, y: worldY, z: worldZ },
       facesRendered
     });

@@ -101,7 +101,7 @@ public class BlockTypeTools implements McpToolBean {
         }
 
         de.mhus.nimbus.generated.types.BlockType publicData = de.mhus.nimbus.generated.types.BlockType.builder()
-                .id(blockTypeId)
+                .name(blockTypeId)
                 .title(title)
                 .description(description)
                 .type(parseBlockTypeType(type))
@@ -124,10 +124,10 @@ public class BlockTypeTools implements McpToolBean {
 
         WBlockType saved = blockTypeService.save(wid, blockTypeId, publicData);
 
-        log.info("MCP: Created cube block type: id={}, blockTypeId={}", saved.getId(), saved.getBlockId());
+        log.info("MCP: Created cube block type: id={}, blockTypeId={}", saved.getId(), saved.getName());
         return Map.of(
                 "id", saved.getId(),
-                "blockTypeId", saved.getBlockId(),
+                "blockTypeId", saved.getName(),
                 "worldId", saved.getWorldId()
         );
     }
@@ -164,7 +164,7 @@ public class BlockTypeTools implements McpToolBean {
         }
 
         de.mhus.nimbus.generated.types.BlockType publicData = de.mhus.nimbus.generated.types.BlockType.builder()
-                .id(blockTypeId)
+                .name(blockTypeId)
                 .title(title)
                 .description(description)
                 .type(parseBlockTypeType(type != null ? type : "DECORATION"))
@@ -194,10 +194,10 @@ public class BlockTypeTools implements McpToolBean {
 
         WBlockType saved = blockTypeService.save(wid, blockTypeId, publicData);
 
-        log.info("MCP: Created billboard block type: id={}, blockTypeId={}", saved.getId(), saved.getBlockId());
+        log.info("MCP: Created billboard block type: id={}, blockTypeId={}", saved.getId(), saved.getName());
         return Map.of(
                 "id", saved.getId(),
-                "blockTypeId", saved.getBlockId(),
+                "blockTypeId", saved.getName(),
                 "worldId", saved.getWorldId()
         );
     }
@@ -216,7 +216,7 @@ public class BlockTypeTools implements McpToolBean {
 
     private Map<String, Object> toBlockTypeDto(WBlockType blockType) {
         Map<String, Object> dto = new HashMap<>();
-        dto.put("blockId", blockType.getBlockId());
+        dto.put("name", blockType.getName());
         dto.put("enabled", blockType.isEnabled());
         if (blockType.getPublicData() != null) {
             dto.put("description", blockType.getPublicData().getDescription());

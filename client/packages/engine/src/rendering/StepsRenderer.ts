@@ -67,18 +67,18 @@ export class StepsRenderer extends BlockRenderer {
     const modifier = block.currentModifier;
 
     if (!modifier || !modifier.visibility) {
-      logger.debug('Block has no visibility modifier', { blockTypeId: block.blockType.id });
+      logger.debug('Block has no visibility modifier', { blockTypeId: block.blockType.name });
       return;
     }
 
     const textures = modifier.visibility.textures;
     if (!textures) {
-      logger.warn('Block has no textures', { blockTypeId: block.blockType.id });
+      logger.warn('Block has no textures', { blockTypeId: block.blockType.name });
       return;
     }
 
     logger.debug('Rendering steps block', {
-      blockTypeId: block.blockType.id,
+      blockTypeId: block.blockType.name,
       position: { x: worldX, y: worldY, z: worldZ },
     });
 
@@ -313,7 +313,7 @@ export class StepsRenderer extends BlockRenderer {
     facesRendered++;
 
     logger.debug('Steps rendered', {
-      blockTypeId: block.blockType.id,
+      blockTypeId: block.blockType.name,
       position: { x: worldX, y: worldY, z: worldZ },
       facesRendered
     });

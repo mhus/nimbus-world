@@ -684,7 +684,7 @@ public class GroundControlService {
         List<WBlockType> blockTypes = blockTypeService.lookupBlockTypes(worldId);
         for (WBlockType bt : blockTypes) {
             if (bt.isEnabled() && bt.getPublicData() != null && bt.getPublicData().getType() == BlockTypeType.GROUND) {
-                ids.add(bt.getBlockId());
+                ids.add(bt.getName());
             }
         }
         return ids;

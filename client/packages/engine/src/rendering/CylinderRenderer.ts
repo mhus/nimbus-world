@@ -72,19 +72,19 @@ export class CylinderRenderer extends BlockRenderer {
     const modifier = block.currentModifier;
 
     if (!modifier || !modifier.visibility) {
-      logger.debug('Block has no visibility modifier', { blockTypeId: block.blockType.id });
+      logger.debug('Block has no visibility modifier', { blockTypeId: block.blockType.name });
       return;
     }
 
     // Get textures from modifier
     const textures = modifier.visibility.textures;
     if (!textures) {
-      logger.warn('Block has no textures', { blockTypeId: block.blockType.id });
+      logger.warn('Block has no textures', { blockTypeId: block.blockType.name });
       return;
     }
 
     logger.debug('Rendering cylinder block', {
-      blockTypeId: block.blockType.id,
+      blockTypeId: block.blockType.name,
       position: { x: worldX, y: worldY, z: worldZ },
       hasTextures: !!textures,
     });
@@ -364,7 +364,7 @@ export class CylinderRenderer extends BlockRenderer {
     renderContext.vertexOffset += vertices.length;
 
     logger.debug('Cylinder rendered', {
-      blockTypeId: block.blockType.id,
+      blockTypeId: block.blockType.name,
       position: { x: worldX, y: worldY, z: worldZ },
       vertices: vertices.length,
       triangles: indices.length / 3,

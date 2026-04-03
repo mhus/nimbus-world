@@ -222,7 +222,7 @@ export function mergeBlockModifier(
 
   // If no instance modifiers, check cache
   if (!hasInstanceModifiers) {
-    const cacheKey = `${blockType.id}:${status}`;
+    const cacheKey = `${blockType.name}:${status}`;
     const cached = modifierCache.get(cacheKey);
     if (cached) {
       return cached; // Return cached result

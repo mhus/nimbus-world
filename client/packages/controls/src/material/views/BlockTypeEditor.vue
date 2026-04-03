@@ -198,7 +198,7 @@ const openDuplicateDialog = async (blockType: BlockType) => {
   if (!blockTypesComposable.value || !currentWorldId.value) return;
 
   // Reload from server to get fresh data
-  const detail = await blockTypesComposable.value.getBlockType(blockType.id!);
+  const detail = await blockTypesComposable.value.getBlockType(blockType.name!);
   const source = detail ? detail.publicData : blockType;
 
   // Deep copy and clear ID so the editor opens in create mode
@@ -218,13 +218,13 @@ const openEditDialog = async (blockType: BlockType) => {
   if (!blockTypesComposable.value || !currentWorldId.value) return;
 
   // Reload from server to get fresh data (now returns full detail)
-  const detail = await blockTypesComposable.value.getBlockType(blockType.id!);
+  const detail = await blockTypesComposable.value.getBlockType(blockType.name!);
   if (detail) {
     selectedBlockType.value = detail.publicData;
     selectedBlockTypeDetail.value = detail;
     isEditorOpen.value = true;
   } else {
-    console.error('Failed to load block type from server', blockType.id);
+    console.error('Failed to load block type from server', blockType.name);
     // Fallback to cached data
     selectedBlockType.value = blockType;
     selectedBlockTypeDetail.value = null;

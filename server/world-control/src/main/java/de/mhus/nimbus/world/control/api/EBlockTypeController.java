@@ -51,7 +51,7 @@ public class EBlockTypeController extends BaseEditorController {
 
     // DTOs
     public record BlockTypeDto(
-            String blockId,
+            String name,
             BlockType publicData,
             String worldId,
             boolean enabled,
@@ -62,7 +62,7 @@ public class EBlockTypeController extends BaseEditorController {
     ) {
     }
 
-    public record CreateBlockTypeRequest(String blockId, BlockType publicData, String blockTypeGroup) {
+    public record CreateBlockTypeRequest(String name, BlockType publicData, String blockTypeGroup) {
     }
 
     public record UpdateBlockTypeRequest(BlockType publicData, String blockTypeGroup, Boolean enabled,
@@ -96,7 +96,7 @@ public class EBlockTypeController extends BaseEditorController {
         // AIR block type (id "air" or "0") is implicit and never stored in DB
         if ("air".equalsIgnoreCase(blockId) || "0".equals(blockId) || "n:0".equalsIgnoreCase(blockId)) {
             BlockType airType = new BlockType();
-            airType.setId("air");
+            airType.setName("air");
             airType.setTitle("Air");
             airType.setType(BlockTypeType.AIR);
             return ResponseEntity.ok(airType);
@@ -218,12 +218,12 @@ public class EBlockTypeController extends BaseEditorController {
             @Parameter(description = "World identifier") @PathVariable String worldId,
             @RequestBody CreateBlockTypeRequest request) {
 
-        log.debug("CREATE blocktype: worldId={}, blockId={}", worldId, request.blockId());
+        log.debug("CREATE blocktype: worldId={}, blockId={}", worldId, request.name());
 
         var wid = WorldId.of(worldId).orElseThrow(
                 () -> new IllegalStateException("Invalid worldId: " + worldId)
         );
-        if (Strings.isBlank(request.blockId())) {
+        if (Strings.isBlank(request.name())) {
             return bad("blockId required");
         }
 
@@ -232,23 +232,23 @@ public class EBlockTypeController extends BaseEditorController {
         }
 
         // Check if BlockType already exists
-        if (blockTypeService.findByBlockId(wid, request.blockId()).isPresent()) {
+        if (blockTypeService.findByBlockId(wid, request.name()).isPresent()) {
             return conflict("blocktype already exists");
         }
 
         try {
             // Extract or set blockTypeGroup
             final String blockTypeGroup = Strings.isBlank(request.blockTypeGroup())
-                    ? extractCollectionFromBlockId(request.blockId())
+                    ? extractCollectionFromBlockId(request.name())
                     : request.blockTypeGroup();
 
-            WBlockType saved = blockTypeService.save(wid, request.blockId(), request.publicData());
+            WBlockType saved = blockTypeService.save(wid, request.name(), request.publicData());
 
             // Reload to get updated entity
-            saved = blockTypeService.findByBlockId(wid, request.blockId()).orElse(saved);
+            saved = blockTypeService.findByBlockId(wid, request.name()).orElse(saved);
 
-            log.info("Created blocktype: blockId={}, group={}", request.blockId(), blockTypeGroup);
-            return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("blockId", saved.getBlockId()));
+            log.info("Created blocktype: blockId={}, group={}", request.name(), blockTypeGroup);
+            return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("name", saved.getName()));
         } catch (IllegalArgumentException e) {
             log.warn("Validation error creating blocktype: {}", e.getMessage());
             return bad(e.getMessage());
@@ -423,7 +423,7 @@ public class EBlockTypeController extends BaseEditorController {
             );
 
             // Set the new ID
-            newPublicData.setId(newBlockId);
+            newPublicData.setName(newBlockId);
 
             // Update description to indicate it's a copy
             String originalDescription = newPublicData.getDescription() != null
@@ -449,7 +449,7 @@ public class EBlockTypeController extends BaseEditorController {
                      sourceBlockId, newBlockId, blockTypeGroup);
 
             return ResponseEntity.status(HttpStatus.CREATED).body(Map.of(
-                    "blockId", saved.getBlockId(),
+                    "name", saved.getName(),
                     "message", "BlockType duplicated successfully"
             ));
         } catch (Exception e) {
@@ -502,7 +502,7 @@ public class EBlockTypeController extends BaseEditorController {
             BlockType blockType = convertBlockToBlockType(blockPayload);
 
             // Set the ID in the BlockType
-            blockType.setId(blockTypeId);
+            blockType.setName(blockTypeId);
 
             // Extract blockTypeGroup from blockTypeId (e.g., "custom" from "custom:stone" or "w" from "w/123")
             String blockTypeGroup = extractCollectionFromBlockId(blockTypeId);
@@ -515,7 +515,7 @@ public class EBlockTypeController extends BaseEditorController {
 
             log.info("Created blocktype from block: blockTypeId={}, group={}", blockTypeId, blockTypeGroup);
             return ResponseEntity.status(HttpStatus.CREATED).body(Map.of(
-                    "blockId", saved.getBlockId(),
+                    "name", saved.getName(),
                     "message", "BlockType created successfully"
             ));
         } catch (IllegalArgumentException e) {
@@ -572,7 +572,7 @@ public class EBlockTypeController extends BaseEditorController {
 
     private BlockTypeDto toDto(WBlockType entity) {
         return new BlockTypeDto(
-                entity.getBlockId(),
+                entity.getName(),
                 entity.appendWorldPrefix().getPublicData(),
                 entity.getWorldId(),
                 entity.isEnabled(),

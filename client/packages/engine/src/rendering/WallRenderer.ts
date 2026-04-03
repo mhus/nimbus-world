@@ -65,13 +65,13 @@ export class WallRenderer extends BlockRenderer {
     const modifier = block.currentModifier;
 
     if (!modifier || !modifier.visibility) {
-      logger.debug('Wall block has no visibility modifier', { blockTypeId: block.blockType.id });
+      logger.debug('Wall block has no visibility modifier', { blockTypeId: block.blockType.name });
       return;
     }
 
     const textures = modifier.visibility.textures;
     if (!textures) {
-      logger.warn('Wall block has no textures', { blockTypeId: block.blockType.id });
+      logger.warn('Wall block has no textures', { blockTypeId: block.blockType.name });
       return;
     }
 
@@ -762,7 +762,7 @@ export class WallRenderer extends BlockRenderer {
     }
 
     logger.debug('Wall rendered', {
-      blockTypeId: block.blockType.id,
+      blockTypeId: block.blockType.name,
       position: { x: worldX, y: worldY, z: worldZ },
     });
   }

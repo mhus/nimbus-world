@@ -61,7 +61,7 @@ export class SelectedBlockInfoCommand extends CommandHandler {
     lines.push(`  Position     : (${block.position.x}, ${block.position.y}, ${block.position.z})`);
     lines.push(`  Block Type ID: ${block.blockTypeId}`);
     if (blockType) {
-      lines.push(`  Block Type   : ${blockType.id}`);
+      lines.push(`  Block Type   : ${blockType.name}`);
     }
     lines.push(`  Chunk        : (${selectedBlock.chunk.cx}, ${selectedBlock.chunk.cz})`);
     lines.push('');

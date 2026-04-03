@@ -35,7 +35,7 @@ public class WBlockTypeService {
         var lookupWorld = worldId.toMainWorld();
         var collection = WorldCollection.of(lookupWorld, blockId);
 
-        return repository.findByWorldIdAndBlockId(collection.worldId().getId(), collection.path());
+        return repository.findByWorldIdAndName(collection.worldId().getId(), collection.path());
     }
 
     /**
@@ -95,11 +95,11 @@ public class WBlockTypeService {
             throw new IllegalArgumentException("publicData.modifiers keys must be valid block statuses");
         }
         var collection = WorldCollection.of(worldId.toMainWorld(), blockId);
-        var entityOpt = repository.findByWorldIdAndBlockId(collection.worldId().getId(), collection.path());
+        var entityOpt = repository.findByWorldIdAndName(collection.worldId().getId(), collection.path());
         WBlockType entity = null;
         if (entityOpt.isEmpty()) {
             entity = WBlockType.builder()
-                    .blockId(collection.path())
+                    .name(collection.path())
                     .worldId(collection.worldId().getId())
                     .enabled(true)
                     .build();
@@ -109,11 +109,10 @@ public class WBlockTypeService {
             entity = entityOpt.get();
         }
 
-        entity.setBlockId(collection.path()); // maybe update if group changed
+        entity.setName(collection.path()); // maybe update if group changed
 
-        // Ensure publicData.id has NOT full blockId with prefix (e.g., "wfr" not "r:wfr")
-        String fullBlockId = collection.path();
-        publicData.setId(fullBlockId);
+        // Ensure publicData.name has full name with path (e.g., "wfr" not "r:wfr")
+        publicData.setName(collection.path());
 
         entity.setPublicData(publicData);
         entity.removeWorldPrefix();
@@ -131,7 +130,7 @@ public class WBlockTypeService {
     @Transactional
     public Optional<WBlockType> update(WorldId worldId, String blockId, Consumer<WBlockType> updater) {
         var collection = WorldCollection.of(worldId.toMainWorld(), blockId);
-        return repository.findByWorldIdAndBlockId(collection.worldId().getId(), collection.path()).map(entity -> {
+        return repository.findByWorldIdAndName(collection.worldId().getId(), collection.path()).map(entity -> {
             updater.accept(entity);
             entity.touchUpdate();
             entity.removeWorldPrefix();
@@ -161,7 +160,7 @@ public class WBlockTypeService {
     public boolean delete(WorldId worldId, String blockId) {
         var collection = WorldCollection.of(worldId.toMainWorld(), blockId);
 
-        return repository.findByWorldIdAndBlockId(collection.worldId().getId(), collection.path()).map(entity -> {
+        return repository.findByWorldIdAndName(collection.worldId().getId(), collection.path()).map(entity -> {
             repository.delete(entity);
             log.debug("Deleted WBlockType: {}", blockId);
             return true;
@@ -228,7 +227,7 @@ public class WBlockTypeService {
             if (sharedCollection != null) {
                 List<WBlockType> sharedBlocks = repository.findByWorldId(sharedCollection.getId());
                 for (WBlockType block : sharedBlocks) {
-                    String key = block.getWorldId() + ":" + block.getBlockId();
+                    String key = block.getWorldId() + ":" + block.getName();
                     if (uniqueIds.add(key)) {
                         results.add(block);
                     }
@@ -242,7 +241,7 @@ public class WBlockTypeService {
             WorldId regionCollection = worldId.toRegionCollection();
             List<WBlockType> regionBlocks = repository.findByWorldId(regionCollection.getId());
             for (WBlockType block : regionBlocks) {
-                String key = block.getWorldId() + ":" + block.getBlockId();
+                String key = block.getWorldId() + ":" + block.getName();
                 if (uniqueIds.add(key)) {
                     results.add(block);
                 }
@@ -253,7 +252,7 @@ public class WBlockTypeService {
         // 3. Search in the specified worldId last
         List<WBlockType> worldBlocks = repository.findByWorldId(worldId.getId());
         for (WBlockType block : worldBlocks) {
-            String key = block.getWorldId() + ":" + block.getBlockId();
+            String key = block.getWorldId() + ":" + block.getName();
             if (uniqueIds.add(key)) {
                 results.add(block);
             }
@@ -300,7 +299,7 @@ public class WBlockTypeService {
         String lowerQuery = query.toLowerCase();
         return blockTypes.stream()
                 .filter(blockType -> {
-                    String blockId = blockType.getBlockId();
+                    String blockId = blockType.getName();
                     BlockType publicData = blockType.getPublicData();
                     return (blockId != null && blockId.toLowerCase().contains(lowerQuery)) ||
                             (publicData != null && publicData.getTitle() != null &&

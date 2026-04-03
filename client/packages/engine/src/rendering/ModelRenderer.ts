@@ -46,7 +46,7 @@ export class ModelRenderer extends BlockRenderer {
     const modifier = block.currentModifier;
 
     if (!modifier || !modifier.visibility) {
-      logger.debug('Block has no visibility modifier', { blockTypeId: block.blockType.id });
+      logger.debug('Block has no visibility modifier', { blockTypeId: block.blockType.name });
       return;
     }
 
@@ -55,7 +55,7 @@ export class ModelRenderer extends BlockRenderer {
 
     if (!modelPath) {
       logger.warn('No model path found in visibility.path', {
-        blockTypeId: block.blockType.id,
+        blockTypeId: block.blockType.name,
         position: { x: worldX, y: worldY, z: worldZ }
       });
       return;
@@ -66,7 +66,7 @@ export class ModelRenderer extends BlockRenderer {
     const networkService = renderContext.renderService.appContext.services.network;
     if (!networkService) {
       logger.error('NetworkService not available', {
-        blockTypeId: block.blockType.id,
+        blockTypeId: block.blockType.name,
         position: { x: worldX, y: worldY, z: worldZ }
       });
       return;
@@ -107,7 +107,7 @@ export class ModelRenderer extends BlockRenderer {
       const engineService = renderContext.renderService.appContext.services.engine;
       if (!engineService) {
         logger.error('EngineService not available', {
-          blockTypeId: block.blockType.id,
+          blockTypeId: block.blockType.name,
           position: { x: worldX, y: worldY, z: worldZ }
         });
         return;
@@ -116,7 +116,7 @@ export class ModelRenderer extends BlockRenderer {
       const modelService = engineService.getModelService();
       if (!modelService) {
         logger.error('ModelService not available', {
-          blockTypeId: block.blockType.id,
+          blockTypeId: block.blockType.name,
           position: { x: worldX, y: worldY, z: worldZ }
         });
         return;
@@ -128,7 +128,7 @@ export class ModelRenderer extends BlockRenderer {
         logger.error('Failed to load model', {
           modelPath,
           fullModelUrl,
-          blockTypeId: block.blockType.id,
+          blockTypeId: block.blockType.name,
           position: { x: worldX, y: worldY, z: worldZ }
         });
         return;
@@ -197,7 +197,7 @@ export class ModelRenderer extends BlockRenderer {
       renderContext.resourcesToDispose.addMesh(modelMesh);
 
       logger.debug('Model rendered', {
-        blockTypeId: block.blockType.id,
+        blockTypeId: block.blockType.name,
         position: { x: worldX, y: worldY, z: worldZ },
         modelPath,
         finalScaling: modelMesh.scaling,
@@ -212,7 +212,7 @@ export class ModelRenderer extends BlockRenderer {
           modelPath,
           fullModelUrl,
           position: { x: worldX, y: worldY, z: worldZ },
-          blockTypeId: block.blockType.id,
+          blockTypeId: block.blockType.name,
           troubleshooting: [
             'Make sure the model file exists in the assets directory on the server',
             'Check that the file path is correct (e.g., "models/skull.babylon")',

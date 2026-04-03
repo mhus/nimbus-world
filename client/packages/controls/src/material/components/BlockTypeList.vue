@@ -2,7 +2,7 @@
   <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
     <BlockTypeListItem
       v-for="blockType in blockTypes"
-      :key="blockType.id"
+      :key="blockType.name"
       :block-type="blockType"
       @edit="emit('edit', $event)"
       @duplicate="emit('duplicate', $event)"

@@ -55,7 +55,7 @@ export class BlockTypeInfoCommand extends CommandHandler {
       // Format BlockType information
       const info = [
         `=== BlockType Info ===\n`,
-        `BlockType ID: ${blockType.id}`,
+        `BlockType ID: ${blockType.name}`,
         `Description: ${blockType.description || 'N/A'}`,
         `Initial Status: ${blockType.initialStatus ?? 0}`,
         `\nModifiers:`,

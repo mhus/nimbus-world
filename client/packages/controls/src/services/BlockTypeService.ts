@@ -14,11 +14,11 @@ export interface BlockTypeListResponse {
 }
 
 export interface BlockTypeCreateResponse {
-  blockId: string;
+  name: string;
 }
 
 export interface BlockTypeDetailResponse {
-  blockId: string;
+  name: string;
   publicData: BlockType;
   worldId: string;
   enabled: boolean;
@@ -72,16 +72,16 @@ export class BlockTypeService {
   async createBlockType(worldId: string, blockType: Partial<BlockType>): Promise<string> {
     // Map to CreateBlockTypeRequest format expected by backend
     const request = {
-      blockId: blockType.id,
+      name: blockType.name,
       publicData: blockType,
-      blockTypeGroup: undefined  // Optional, will be extracted from blockId on server
+      blockTypeGroup: undefined  // Optional, will be extracted from name on server
     };
 
     const response = await apiService.post<BlockTypeCreateResponse>(
       `/control/worlds/${worldId}/blocktypes/type`,
       request
     );
-    return response.blockId;
+    return response.name;
   }
 
   /**

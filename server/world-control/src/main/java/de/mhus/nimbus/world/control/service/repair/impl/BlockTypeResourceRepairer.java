@@ -26,8 +26,8 @@ public class BlockTypeResourceRepairer implements ResourceRepairer {
         return DuplicateRepairHelper.repairDuplicates(
                 mongoTemplate, "w_blocktypes", worldId.getId(), name(),
                 doc -> {
-                    Object blockId = doc.get("blockId");
-                    return blockId != null ? doc.getString("worldId") + "|" + blockId : null;
+                    Object name = doc.get("name");
+                    return name != null ? doc.getString("worldId") + "|" + name : null;
                 }
         );
     }

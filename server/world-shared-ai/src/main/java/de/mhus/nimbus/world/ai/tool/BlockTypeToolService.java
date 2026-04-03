@@ -70,7 +70,7 @@ public class BlockTypeToolService {
 
             for (WBlockType blockType : blockTypes) {
                 BlockType publicData = blockType.getPublicData();
-                result.append(String.format("Block ID: %s\n", blockType.getBlockId()));
+                result.append(String.format("Block ID: %s\n", blockType.getName()));
                 result.append(String.format("World: %s\n", blockType.getWorldId()));
                 if (publicData != null) {
                     result.append(String.format("Title: %s\n", publicData.getTitle() != null ? publicData.getTitle() : "(no title)"));
@@ -130,7 +130,7 @@ public class BlockTypeToolService {
 
             for (WBlockType blockType : blockTypes) {
                 BlockType publicData = blockType.getPublicData();
-                result.append(String.format("Block ID: %s\n", blockType.getBlockId()));
+                result.append(String.format("Block ID: %s\n", blockType.getName()));
                 result.append(String.format("World: %s\n", blockType.getWorldId()));
                 if (publicData != null) {
                     result.append(String.format("Title: %s\n", publicData.getTitle() != null ? publicData.getTitle() : "(no title)"));
@@ -187,7 +187,7 @@ public class BlockTypeToolService {
             BlockType publicData = blockType.getPublicData();
 
             StringBuilder result = new StringBuilder();
-            result.append(String.format("Block ID: %s\n", blockType.getBlockId()));
+            result.append(String.format("Block ID: %s\n", blockType.getName()));
             result.append(String.format("World: %s\n", blockType.getWorldId()));
             result.append(String.format("Enabled: %s\n", blockType.isEnabled()));
 
@@ -247,7 +247,7 @@ public class BlockTypeToolService {
 
             for (WBlockType blockType : blockTypes) {
                 BlockType publicData = blockType.getPublicData();
-                result.append(String.format("Block ID: %s\n", blockType.getBlockId()));
+                result.append(String.format("Block ID: %s\n", blockType.getName()));
                 if (publicData != null) {
                     result.append(String.format("Title: %s\n", publicData.getTitle() != null ? publicData.getTitle() : "(no title)"));
                     result.append(String.format("Type: %s\n", publicData.getType() != null ? publicData.getType() : "(no type)"));
@@ -306,7 +306,7 @@ public class BlockTypeToolService {
 
             for (WBlockType blockType : blockTypes) {
                 BlockType publicData = blockType.getPublicData();
-                result.append(String.format("Block ID: %s\n", blockType.getBlockId()));
+                result.append(String.format("Block ID: %s\n", blockType.getName()));
                 if (publicData != null) {
                     result.append(String.format("Title: %s\n", publicData.getTitle() != null ? publicData.getTitle() : "(no title)"));
                     result.append(String.format("Type: %s\n", publicData.getType() != null ? publicData.getType() : "(no type)"));
@@ -366,7 +366,7 @@ public class BlockTypeToolService {
 
             for (WBlockType blockType : enabledBlockTypes) {
                 BlockType publicData = blockType.getPublicData();
-                result.append(String.format("Block ID: %s\n", blockType.getBlockId()));
+                result.append(String.format("Block ID: %s\n", blockType.getName()));
                 result.append(String.format("World: %s\n", blockType.getWorldId()));
                 if (publicData != null) {
                     result.append(String.format("Title: %s\n", publicData.getTitle() != null ? publicData.getTitle() : "(no title)"));

@@ -58,7 +58,7 @@ export class FogRenderer extends BlockRenderer {
     const modifier = block.currentModifier;
 
     if (!modifier || !modifier.visibility) {
-      logger.debug('Fog block has no visibility modifier', { blockTypeId: block.blockType.id });
+      logger.debug('Fog block has no visibility modifier', { blockTypeId: block.blockType.name });
       return;
     }
 
@@ -148,7 +148,7 @@ export class FogRenderer extends BlockRenderer {
       renderContext.resourcesToDispose.addMesh(fogMesh);
 
       logger.debug('Volumetric fog block rendered', {
-        blockTypeId: block.blockType.id,
+        blockTypeId: block.blockType.name,
         position: { x: worldX, y: worldY, z: worldZ },
         dimensions: { width, height, depth },
         rotation: { x: rotationX, y: rotationY },

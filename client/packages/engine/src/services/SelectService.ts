@@ -350,7 +350,7 @@ export class SelectService {
     // Fallback: Create minimal AIR BlockType if not found
     if (!airBlockType) {
       airBlockType = {
-        id: '0',
+        name: '0',
         initialStatus: 'default',
         modifiers: {
           'default': {
