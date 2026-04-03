@@ -105,6 +105,23 @@ interface RunningEnvironmentScript {
 }
 
 /**
+ * History entry for environment script execution
+ */
+export interface EnvironmentScriptHistoryEntry {
+  /** Action name */
+  name: string;
+
+  /** Script ID that was executed */
+  scriptId: string;
+
+  /** Timestamp when the script was started */
+  timestamp: number;
+
+  /** Parameters passed to the script */
+  parameters?: Record<string, any>;
+}
+
+/**
  * World Time configuration
  */
 export interface WorldTimeConfig {
@@ -206,6 +223,8 @@ export class EnvironmentService {
   private environmentScripts: Map<string, EnvironmentScript> = new Map();
   private runningScripts: Map<string, RunningEnvironmentScript> = new Map();
   private scriptParameters: Record<string, any> = {};
+  private scriptHistory: EnvironmentScriptHistoryEntry[] = [];
+  private static readonly MAX_SCRIPT_HISTORY = 10;
 
   // World Time management
   private worldTimeConfig: WorldTimeConfig;
@@ -1213,6 +1232,17 @@ export class EnvironmentService {
 
       this.runningScripts.set(name, runningScript);
 
+      // Add to script history
+      this.scriptHistory.push({
+        name,
+        scriptId,
+        timestamp: Date.now(),
+        parameters: Object.keys(parameters).length > 0 ? { ...parameters } : undefined,
+      });
+      if (this.scriptHistory.length > EnvironmentService.MAX_SCRIPT_HISTORY) {
+        this.scriptHistory.shift();
+      }
+
       logger.debug('Environment script started', {
         name: name,
         scriptId: scriptId,
@@ -1291,6 +1321,13 @@ export class EnvironmentService {
    */
   isEnvironmentScriptRunning(name: string): boolean {
     return this.runningScripts.has(name);
+  }
+
+  /**
+   * Get the script execution history (last 10 entries)
+   */
+  getScriptHistory(): EnvironmentScriptHistoryEntry[] {
+    return [...this.scriptHistory];
   }
 
   /**

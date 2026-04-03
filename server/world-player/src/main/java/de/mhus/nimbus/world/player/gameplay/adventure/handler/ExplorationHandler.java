@@ -19,7 +19,7 @@ import java.util.Map;
 @Slf4j
 public class ExplorationHandler {
 
-    private static final double FALL_DAMAGE_PER_METER = 3.0;
+    private static final double FALL_DAMAGE_FACTOR = 0.5;
 
     private final AdventureGameplay gameplay;
 
@@ -76,7 +76,8 @@ public class ExplorationHandler {
     /**
      * Handle fall damage based on fall height and acrobatics skill.
      * Safe fall height = acrobatics skill level (start=2, min=2, max=100).
-     * Damage = 3 per block exceeding safe height.
+     * Damage grows quadratically: factor * excessBlocks^2
+     * This means small falls barely hurt while high falls are devastating.
      */
     public void handleFallDamage(PlayerSession session, AdventureData data, JsonNode messageData) {
         double fallHeight = messageData != null && messageData.has("fallHeight")
@@ -91,10 +92,10 @@ public class ExplorationHandler {
         }
 
         double excessBlocks = fallHeight - safeFallHeight;
-        double damage = excessBlocks * FALL_DAMAGE_PER_METER;
+        double damage = FALL_DAMAGE_FACTOR * excessBlocks * excessBlocks;
 
-        log.debug("Player {} fell {} blocks (safe: {}), taking {} fall damage",
-                session.getEntityId(), fallHeight, safeFallHeight, damage);
+        log.debug("Player {} fell {} blocks (safe: {}, excess: {}), taking {} fall damage",
+                session.getEntityId(), fallHeight, safeFallHeight, excessBlocks, damage);
 
         gameplay.getVitalsHandler().applyDamage(session, data, damage);
     }
