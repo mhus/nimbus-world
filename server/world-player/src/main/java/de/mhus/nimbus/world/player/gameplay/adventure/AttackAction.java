@@ -44,7 +44,7 @@ public class AttackAction implements GameplayAction {
     @Override
     public boolean handleEntityAction(PlayerSession session, WEntity entity, String userAction, String entityAction, String shortcutKey, JsonNode params) {
         if (entity == null) return false;
-        String targetEntityId = entity.getEntityId();
+        String targetEntityId = entity.getName();
         if (targetEntityId == null) return false;
 
         return performAttack(session, targetEntityId, shortcutKey, params);

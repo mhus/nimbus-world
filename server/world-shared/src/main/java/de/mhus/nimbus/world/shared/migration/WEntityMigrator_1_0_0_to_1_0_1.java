@@ -10,11 +10,12 @@ import org.springframework.stereotype.Component;
 /**
  * Schema migrator for WEntity from version 1.0.0 to 1.0.1.
  *
- * Changes in publicData (Entity):
- * - id -> name (unique technical identifier)
- * - name -> title (display name)
+ * Changes:
+ * - WEntity field: entityId -> name
+ * - publicData (Entity): id -> name (unique technical identifier)
+ * - publicData (Entity): name -> title (display name)
  *
- * Detection: If publicData.id exists, migration is needed.
+ * Detection: If "entityId" or publicData.id exists, migration is needed.
  */
 @Component
 public class WEntityMigrator_1_0_0_to_1_0_1 implements SchemaMigrator {
@@ -39,6 +40,14 @@ public class WEntityMigrator_1_0_0_to_1_0_1 implements SchemaMigrator {
     @Override
     public String migrate(String entityJson) throws Exception {
         ObjectNode root = (ObjectNode) MAPPER.readTree(entityJson);
+
+        // Migrate root level: entityId -> name
+        JsonNode entityIdNode = root.get("entityId");
+        if (entityIdNode != null) {
+            root.set("name", entityIdNode);
+            root.remove("entityId");
+        }
+
         JsonNode publicData = root.get("publicData");
         if (publicData == null || !publicData.isObject()) {
             return entityJson;

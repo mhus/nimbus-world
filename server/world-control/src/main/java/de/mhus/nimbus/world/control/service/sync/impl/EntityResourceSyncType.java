@@ -191,9 +191,9 @@ public class EntityResourceSyncType implements ResourceSyncType {
             List<WEntity> dbEntities = entityService.findByWorldId(worldId);
 
             for (WEntity entity : dbEntities) {
-                if (!filesystemEntityIds.contains(entity.getEntityId())) {
-                    entityService.delete(worldId, entity.getEntityId());
-                    log.info("Deleted entity not in filesystem: {}", entity.getEntityId());
+                if (!filesystemEntityIds.contains(entity.getName())) {
+                    entityService.delete(worldId, entity.getName());
+                    log.info("Deleted entity not in filesystem: {}", entity.getName());
                     deleted++;
                 }
             }

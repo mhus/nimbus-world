@@ -35,7 +35,7 @@ public class EffectAction implements GameplayAction {
             // 'use' on entity → apply item effects to entity
             String itemId = basic.resolveShortcutItemId(session, shortcutKey, params);
             if (itemId == null) return false;
-            String targetEntityId = entity != null ? entity.getEntityId() : null;
+            String targetEntityId = entity != null ? entity.getName() : null;
             basic.getGameplayService().useItemEffect(session, itemId, targetEntityId);
             return true;
         } else {

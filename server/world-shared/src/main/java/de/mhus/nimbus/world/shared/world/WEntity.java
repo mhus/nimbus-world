@@ -29,7 +29,7 @@ import java.util.Set;
 @Document(collection = "w_entities")
 @ActualSchemaVersion("1.0.1")
 @CompoundIndexes({
-        @CompoundIndex(name = "worldId_entityId_idx", def = "{ 'worldId': 1, 'entityId': 1 }", unique = true),
+        @CompoundIndex(name = "worldId_name_idx", def = "{ 'worldId': 1, 'name': 1 }", unique = true),
         @CompoundIndex(name = "world_epoches_idx", def = "{ 'worldId': 1, 'epoches': 1, 'enabled': 1 }")
 })
 @Data
@@ -49,10 +49,10 @@ public class WEntity implements Identifiable, CowEntity, EpochEntity {
     private String worldId;
 
     /**
-     * Unique entity identifier within the world.
+     * Unique technical name for this entity within the world.
      * Combined with worldId forms a unique constraint.
      */
-    private String entityId;
+    private String name;
 
     /**
      * Public data containing the generated Entity DTO.
@@ -175,7 +175,7 @@ public class WEntity implements Identifiable, CowEntity, EpochEntity {
     @Override
     @org.springframework.data.annotation.Transient
     public String getCowId() {
-        return entityId;
+        return name;
     }
 
     @Override

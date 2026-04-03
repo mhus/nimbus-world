@@ -45,7 +45,7 @@ public class DialogAction extends AbstractGamplayAction {
 
         String playbookRef = serverParameters.get("playbook");
         if (Strings.isBlank(playbookRef)) {
-            log.warn("dialog action missing 'playbook' parameter on entity {}", entity.getEntityId());
+            log.warn("dialog action missing 'playbook' parameter on entity {}", entity.getName());
             return false;
         }
 
@@ -76,7 +76,7 @@ public class DialogAction extends AbstractGamplayAction {
 
         Map<String, Object> leaseData = new HashMap<>();
         leaseData.put("playbook", playbookRef);
-        leaseData.put("entityId", entity.getEntityId());
+        leaseData.put("entityId", entity.getName());
         if (entity.getPortraitPath() != null) {
             leaseData.put("portraitPath", entity.getPortraitPath());
         }
@@ -85,7 +85,7 @@ public class DialogAction extends AbstractGamplayAction {
                 worldId.getId(),
                 playerId,
                 "dialog",
-                entity.getEntityId(),  // resourceId = entityId so each NPC has its own lease
+                entity.getName(),  // resourceId = entityId so each NPC has its own lease
                 null,
                 leaseData
         );
@@ -95,7 +95,7 @@ public class DialogAction extends AbstractGamplayAction {
                 List.of("dialog", lease.getLeaseId()));
 
         log.debug("Sent dialog to player {}: playbook={}, entityId={}, leaseId={}",
-                playerId, playbookRef, entity.getEntityId(), lease.getLeaseId());
+                playerId, playbookRef, entity.getName(), lease.getLeaseId());
         return true;
     }
 

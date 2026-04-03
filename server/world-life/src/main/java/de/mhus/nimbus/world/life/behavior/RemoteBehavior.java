@@ -29,9 +29,9 @@ public class RemoteBehavior implements EntityBehavior {
 
     @Override
     public EntityPathway update(WEntity entity, SimulationState state, long currentTime, WorldId worldId, int epoch) {
-        EntityPathway pathway = remotePathwayQueue.poll(worldId.getId(), entity.getEntityId());
+        EntityPathway pathway = remotePathwayQueue.poll(worldId.getId(), entity.getName());
         if (pathway != null) {
-            log.trace("Remote pathway received for entity {} in world {}", entity.getEntityId(), worldId);
+            log.trace("Remote pathway received for entity {} in world {}", entity.getName(), worldId);
         }
         return pathway;
     }

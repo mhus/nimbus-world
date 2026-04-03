@@ -62,7 +62,7 @@ public class EntityController {
 
         int epoch = sessionManager.getBySessionId(accessUtil.getSessionId(request))
                 .map(s -> s.getEpoch()).orElse(0);
-        return service.findByWorldIdAndEntityId(worldId, entityId, epoch)
+        return service.findByWorldIdAndName(worldId, entityId, epoch)
                         .map(WEntity::getPublicData)
                         .map(ResponseEntity::ok)
                         .orElseGet(() -> ResponseEntity.notFound().build());

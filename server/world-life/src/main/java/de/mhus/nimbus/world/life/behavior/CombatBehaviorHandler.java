@@ -56,7 +56,7 @@ public class CombatBehaviorHandler {
         // Find nearest attacker position
         Vector3 attackerPos = findNearestAttackerPosition(state);
         if (attackerPos == null) {
-            log.debug("No attacker position found for entity {}, exiting combat", entity.getEntityId());
+            log.debug("No attacker position found for entity {}, exiting combat", entity.getName());
             state.exitCombat();
             return null;
         }
@@ -69,7 +69,7 @@ public class CombatBehaviorHandler {
         double distToAttacker = distance(entityPos, attackerPos);
         if (distToAttacker > maxRange) {
             log.debug("World {}: Entity {} attacker too far (dist={}, max={}), exiting combat",
-                    worldId, entity.getEntityId(), String.format("%.1f", distToAttacker), maxRange);
+                    worldId, entity.getName(), String.format("%.1f", distToAttacker), maxRange);
             state.exitCombat();
             return null;
         }
@@ -98,7 +98,7 @@ public class CombatBehaviorHandler {
         waypoints.forEach(wp -> wp.setPose(ENTITY_POSES.RUN));
 
         return EntityPathway.builder()
-                .entityId(entity.getEntityId())
+                .entityId(entity.getName())
                 .startAt(currentTime)
                 .waypoints(waypoints)
                 .isLooping(false)
@@ -171,7 +171,7 @@ public class CombatBehaviorHandler {
         waypoints.forEach(wp -> wp.setPose(ENTITY_POSES.RUN));
 
         return EntityPathway.builder()
-                .entityId(entity.getEntityId())
+                .entityId(entity.getName())
                 .startAt(currentTime)
                 .waypoints(waypoints)
                 .isLooping(false)
@@ -203,7 +203,7 @@ public class CombatBehaviorHandler {
                 .build();
 
         return EntityPathway.builder()
-                .entityId(entity.getEntityId())
+                .entityId(entity.getName())
                 .startAt(currentTime)
                 .waypoints(List.of(attackWp, idleWp))
                 .isLooping(false)
@@ -232,12 +232,12 @@ public class CombatBehaviorHandler {
         String weaponItemId = combatData.getWeaponItemId();
 
         vitalDeltaPublisher.publishAttack(
-                worldId.getId(), targetEntityId, entity.getEntityId(),
+                worldId.getId(), targetEntityId, entity.getName(),
                 physDmg, physAcc, magDmg, magAcc, critChance, critMult,
                 null, weaponItemId);
 
         log.debug("Entity {} attacked player {} with weapon {} [phys={}/{}, mag={}/{}]",
-                entity.getEntityId(), targetEntityId, weaponItemId, physDmg, physAcc, magDmg, magAcc);
+                entity.getName(), targetEntityId, weaponItemId, physDmg, physAcc, magDmg, magAcc);
     }
 
     private double getEffective(EntityCombatData data, String statName) {

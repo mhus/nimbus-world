@@ -25,7 +25,7 @@ public class NpcStateEffectHandler implements DialogEffectHandler {
     public void execute(Effect effect, DialogContext ctx) {
         var npcState = ctx.getNpcStateProgress();
         if (npcState == null) {
-            String entityId = ctx.getNpcEntity() != null ? ctx.getNpcEntity().getEntityId() : "unknown";
+            String entityId = ctx.getNpcEntity() != null ? ctx.getNpcEntity().getName() : "unknown";
             Map<String, Object> data = new HashMap<>();
             data.put(effect.key(), effect.value());
             var saved = progressService.save(ctx.getWorldId(), "npc:" + entityId, "npc-state", null, data);

@@ -353,14 +353,14 @@ public class BasicGameplay implements Gameplay {
                     log.trace("No handler for item action '{}' on entity {}", itemAction, entityId);
                     return;
                 }
-                WEntity entity = entityService.findByWorldIdAndEntityId(session.getWorldId(), entityId, session.getEpoch()).orElse(null);
+                WEntity entity = entityService.findByWorldIdAndName(session.getWorldId(), entityId, session.getEpoch()).orElse(null);
                 boolean success = handler.handleEntityAction(session, entity, userAction, itemAction, shortcutKey, params);
                 if (success) sendItemUseFeedback(session, shortcutKey);
                 return;
             }
         }
         // Regular interaction: route via entity server metadata
-        WEntity entity = entityService.findByWorldIdAndEntityId(session.getWorldId(), entityId, session.getEpoch()).orElse(null);
+        WEntity entity = entityService.findByWorldIdAndName(session.getWorldId(), entityId, session.getEpoch()).orElse(null);
         if (entity == null) {
             log.warn("Entity with ID {} not found in world {}", entityId, session.getWorldId());
             return;

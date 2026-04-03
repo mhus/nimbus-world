@@ -82,7 +82,7 @@ public class PreyAnimalBehavior implements EntityBehavior {
         // Get entity's current position (server-side simulation data)
         Vector3 currentPosition = entity.getPosition();
         if (currentPosition == null) {
-            log.warn("Entity has no position: {}", entity.getEntityId());
+            log.warn("Entity has no position: {}", entity.getName());
             return null;
         }
 
@@ -112,7 +112,7 @@ public class PreyAnimalBehavior implements EntityBehavior {
         );
 
         if (movementWaypoints.isEmpty()) {
-            log.trace("No valid waypoints generated for entity {}", entity.getEntityId());
+            log.trace("No valid waypoints generated for entity {}", entity.getName());
             return null;
         }
 
@@ -121,7 +121,7 @@ public class PreyAnimalBehavior implements EntityBehavior {
 
         // Create pathway
         EntityPathway pathway = EntityPathway.builder()
-                .entityId(entity.getEntityId())
+                .entityId(entity.getName())
                 .startAt(currentTime)
                 .waypoints(waypointsWithIdle)
                 .isLooping(false)
@@ -129,7 +129,7 @@ public class PreyAnimalBehavior implements EntityBehavior {
                 .build();
 
         log.trace("Generated pathway for entity {}: {} waypoints (includes idle)",
-                entity.getEntityId(), waypointsWithIdle.size());
+                entity.getName(), waypointsWithIdle.size());
 
         return pathway;
     }
@@ -154,7 +154,7 @@ public class PreyAnimalBehavior implements EntityBehavior {
             // Head back towards home
             double length = distFromHome;
             log.trace("Entity {} is {} blocks from home (radius={}), heading back",
-                    entity.getEntityId(), String.format("%.1f", distFromHome), roamRadius);
+                    entity.getName(), String.format("%.1f", distFromHome), roamRadius);
             return Vector3.builder()
                     .x(-dx / length)
                     .y(0.0)

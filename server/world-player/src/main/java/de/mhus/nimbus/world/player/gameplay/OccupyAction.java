@@ -91,7 +91,7 @@ public class OccupyAction extends AbstractGamplayAction {
         // Entity occupation: overlayModelId from entity server metadata
         String overlayModelId = entity.getServer() != null ? entity.getServer().get("overlayModelId") : null;
         if (overlayModelId == null || overlayModelId.isBlank()) {
-            log.warn("Entity {} has no overlayModelId in server metadata", entity.getEntityId());
+            log.warn("Entity {} has no overlayModelId in server metadata", entity.getName());
             basic.getBasicClientService().sendSystemNotification(session, "Occupy", "This entity cannot be occupied.");
             return false;
         }

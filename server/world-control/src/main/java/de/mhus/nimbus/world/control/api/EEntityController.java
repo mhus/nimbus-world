@@ -89,7 +89,7 @@ public class EEntityController extends BaseEditorController {
         var validation = validateId(entityId, "entityId");
         if (validation != null) return validation;
 
-        Optional<WEntity> opt = entityService.findByWorldIdAndEntityId(wid, entityId);
+        Optional<WEntity> opt = entityService.findByWorldIdAndName(wid, entityId);
         if (opt.isEmpty()) {
             log.warn("Entity not found: worldId={}, entityId={}", worldId, entityId);
             return notFound("entity not found");
@@ -182,7 +182,7 @@ public class EEntityController extends BaseEditorController {
         }
 
         // Check if Entity already exists
-        if (entityService.findByWorldIdAndEntityId(wid, request.entityId()).isPresent()) {
+        if (entityService.findByWorldIdAndName(wid, request.entityId()).isPresent()) {
             return conflict("entity already exists");
         }
 
@@ -326,7 +326,7 @@ public class EEntityController extends BaseEditorController {
 
     private EntityDto toDto(WEntity entity) {
         return new EntityDto(
-                entity.getEntityId(),
+                entity.getName(),
                 entity.getPublicData(),
                 entity.getWorldId(),
                 entity.getModelId(),

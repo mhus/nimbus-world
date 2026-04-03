@@ -35,7 +35,7 @@ public class RemoteEntityActivationPublisher {
         try {
             Map<String, Object> payload = new LinkedHashMap<>();
             payload.put("action", "activate");
-            payload.put("entityId", entity.getEntityId());
+            payload.put("entityId", entity.getName());
             if (entity.getPosition() != null) {
                 payload.put("x", entity.getPosition().getX());
                 payload.put("y", entity.getPosition().getY());
@@ -44,10 +44,10 @@ public class RemoteEntityActivationPublisher {
 
             String json = objectMapper.writeValueAsString(payload);
             redisMessaging.publish(worldId.getId(), "remote.entity.activate", json);
-            log.debug("World {}: Published REMOTE entity activate: {}", worldId, entity.getEntityId());
+            log.debug("World {}: Published REMOTE entity activate: {}", worldId, entity.getName());
 
         } catch (Exception e) {
-            log.error("World {}: Failed to publish remote entity activate for {}", worldId, entity.getEntityId(), e);
+            log.error("World {}: Failed to publish remote entity activate for {}", worldId, entity.getName(), e);
         }
     }
 
@@ -60,7 +60,7 @@ public class RemoteEntityActivationPublisher {
         try {
             Map<String, Object> payload = new LinkedHashMap<>();
             payload.put("action", "deactivate");
-            payload.put("entityId", entity.getEntityId());
+            payload.put("entityId", entity.getName());
             if (entity.getPosition() != null) {
                 payload.put("x", entity.getPosition().getX());
                 payload.put("y", entity.getPosition().getY());
@@ -69,10 +69,10 @@ public class RemoteEntityActivationPublisher {
 
             String json = objectMapper.writeValueAsString(payload);
             redisMessaging.publish(worldId.getId(), "remote.entity.activate", json);
-            log.debug("World {}: Published REMOTE entity deactivate: {}", worldId, entity.getEntityId());
+            log.debug("World {}: Published REMOTE entity deactivate: {}", worldId, entity.getName());
 
         } catch (Exception e) {
-            log.error("World {}: Failed to publish remote entity deactivate for {}", worldId, entity.getEntityId(), e);
+            log.error("World {}: Failed to publish remote entity deactivate for {}", worldId, entity.getName(), e);
         }
     }
 }

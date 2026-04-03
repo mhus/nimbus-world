@@ -92,7 +92,7 @@ public class DialogService {
         String npcPortrait = null;
 
         if (!Strings.isBlank(entityId)) {
-            npcEntity = entityService.findByWorldIdAndEntityId(parsedWorldId, entityId).orElse(null);
+            npcEntity = entityService.findByWorldIdAndName(parsedWorldId, entityId).orElse(null);
             if (npcEntity != null) {
                 npcPortrait = npcEntity.getPortraitPath();
                 if (npcEntity.getPublicData() != null && npcEntity.getPublicData().getTitle() != null) {
@@ -368,12 +368,12 @@ public class DialogService {
         try {
             String playerId = ctx.getDialogLease().getPlayerId(); // @mhus:j3sus format
             var message = objectMapper.createObjectNode();
-            message.put("entityId", ctx.getNpcEntity().getEntityId());
+            message.put("entityId", ctx.getNpcEntity().getName());
             message.put("action", "dialog_start");
             message.put("timestamp", System.currentTimeMillis());
             message.put("userId", playerId);
             redisMessaging.publish(ctx.getWorldId(), "e.int", objectMapper.writeValueAsString(message));
-            log.info("Sent dialog_start for entity {} by player {}", ctx.getNpcEntity().getEntityId(), playerId);
+            log.info("Sent dialog_start for entity {} by player {}", ctx.getNpcEntity().getName(), playerId);
         } catch (Exception e) {
             log.warn("Failed to send dialog_start: {}", e.getMessage());
         }
@@ -388,12 +388,12 @@ public class DialogService {
         try {
             String playerId = ctx.getDialogLease().getPlayerId();
             var message = objectMapper.createObjectNode();
-            message.put("entityId", ctx.getNpcEntity().getEntityId());
+            message.put("entityId", ctx.getNpcEntity().getName());
             message.put("action", "dialog_end");
             message.put("timestamp", System.currentTimeMillis());
             message.put("userId", playerId);
             redisMessaging.publish(ctx.getWorldId(), "e.int", objectMapper.writeValueAsString(message));
-            log.info("Sent dialog_end for entity {} by player {}", ctx.getNpcEntity().getEntityId(), playerId);
+            log.info("Sent dialog_end for entity {} by player {}", ctx.getNpcEntity().getName(), playerId);
         } catch (Exception e) {
             log.warn("Failed to send dialog_end: {}", e.getMessage());
         }
@@ -491,7 +491,7 @@ public class DialogService {
     private void ensurePlayerMemory(DialogContext ctx) {
         if (ctx.getPlayerMemoryProgress() != null) return;
 
-        String entityId = ctx.getNpcEntity() != null ? ctx.getNpcEntity().getEntityId() : "unknown";
+        String entityId = ctx.getNpcEntity() != null ? ctx.getNpcEntity().getName() : "unknown";
         var saved = progressService.save(
                 ctx.getWorldId(), ctx.getPlayerId(), "npc-memory", entityId,
                 new HashMap<>(Map.of("conversationCount", 0))

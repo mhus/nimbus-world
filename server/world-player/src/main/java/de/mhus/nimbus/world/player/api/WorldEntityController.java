@@ -75,7 +75,7 @@ public class WorldEntityController {
         // Not a player entity or not found in sessions - search database
         int epoch = sessionManager.getBySessionId(accessUtil.getSessionId(request))
                 .map(PlayerSession::getEpoch).orElse(0);
-        return service.findByWorldIdAndEntityId(worldId, entityId, epoch)
+        return service.findByWorldIdAndName(worldId, entityId, epoch)
                         .map(WEntity::getPublicData)
                         .map(ResponseEntity::ok)
                         .orElseGet(() -> {

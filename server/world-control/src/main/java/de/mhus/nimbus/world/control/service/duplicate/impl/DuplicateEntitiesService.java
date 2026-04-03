@@ -58,7 +58,7 @@ public class DuplicateEntitiesService implements DuplicateToWorld {
         for (WEntity sourceEntity : sourceEntities) {
             WEntity targetEntity = WEntity.builder()
                     .worldId(targetWorldId)
-                    .entityId(sourceEntity.getEntityId())
+                    .name(sourceEntity.getName())
                     .publicData(sourceEntity.getPublicData())
                     .chunks(sourceEntity.getChunks())
                     .modelId(sourceEntity.getModelId())

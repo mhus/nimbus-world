@@ -13,7 +13,7 @@ import java.util.Optional;
 public interface WEntityRepository extends MongoRepository<WEntity, String> {
 
     // EPOCH-UNFILTERED: returns data across all epochs. Use the epoch-filtered overload for player/gameplay context.
-    Optional<WEntity> findByWorldIdAndEntityId(String worldId, String entityId);
+    Optional<WEntity> findByWorldIdAndName(String worldId, String entityId);
 
     // EPOCH-UNFILTERED: returns data across all epochs. Use the epoch-filtered overload for player/gameplay context.
     List<WEntity> findByWorldId(String worldId);
@@ -25,12 +25,12 @@ public interface WEntityRepository extends MongoRepository<WEntity, String> {
     List<WEntity> findByWorldIdAndEnabled(String worldId, boolean enabled);
 
     // EPOCH-UNFILTERED: returns data across all epochs. Use the epoch-filtered overload for player/gameplay context.
-    boolean existsByWorldIdAndEntityId(String worldId, String entityId);
+    boolean existsByWorldIdAndName(String worldId, String entityId);
 
-    void deleteByWorldIdAndEntityId(String worldId, String entityId);
+    void deleteByWorldIdAndName(String worldId, String entityId);
 
     // EPOCH-UNFILTERED: returns data across all epochs. Use the epoch-filtered overload for player/gameplay context.
-    List<WEntity> findByWorldIdAndEntityIdStartingWith(String worldId, String entityIdPrefix);
+    List<WEntity> findByWorldIdAndNameStartingWith(String worldId, String entityIdPrefix);
 
     // EPOCH-UNFILTERED: returns data across all epochs. Use the epoch-filtered overload for player/gameplay context.
     List<WEntity> findByWorldIdAndSourceAndAffectedChunksIn(String worldId, String source, java.util.Collection<String> chunkKeys);
@@ -40,7 +40,7 @@ public interface WEntityRepository extends MongoRepository<WEntity, String> {
 
     // Epoch-aware queries
 
-    Optional<WEntity> findByWorldIdAndEntityIdAndEpochesContaining(String worldId, String entityId, int epoch);
+    Optional<WEntity> findByWorldIdAndNameAndEpochesContaining(String worldId, String entityId, int epoch);
 
     List<WEntity> findByWorldIdAndEpochesContaining(String worldId, int epoch);
 

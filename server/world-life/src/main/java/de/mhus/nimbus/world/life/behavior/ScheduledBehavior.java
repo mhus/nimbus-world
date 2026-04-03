@@ -117,7 +117,7 @@ public class ScheduledBehavior implements EntityBehavior {
 
     private void onPhaseChange(WEntity entity, SimulationState state,
                                 EntitySchedulePhase newPhase, WorldId worldId, WorldInfo worldInfo) {
-        String entityId = entity.getEntityId();
+        String entityId = entity.getName();
         String phaseName = newPhase != null ? newPhase.getName() : "none";
 
         log.info("World {}: Entity {} phase change -> {}", worldId, entityId, phaseName);
@@ -183,7 +183,7 @@ public class ScheduledBehavior implements EntityBehavior {
         EntityBehavior subBehavior = behaviorRegistry.getBehavior(behaviorName);
         if (subBehavior == null) {
             log.warn("World {}: Sub-behavior '{}' not found for scheduled entity {}",
-                    worldId, behaviorName, entity.getEntityId());
+                    worldId, behaviorName, entity.getName());
             return null;
         }
         return subBehavior.update(entity, state, currentTime, worldId, epoch);

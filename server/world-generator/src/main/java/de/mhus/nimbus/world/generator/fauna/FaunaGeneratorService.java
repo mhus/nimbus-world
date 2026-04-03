@@ -212,7 +212,7 @@ public class FaunaGeneratorService {
 
                     WEntity entity = WEntity.builder()
                             .worldId(worldId)
-                            .entityId(entityId)
+                            .name(entityId)
                             .publicData(publicData)
                             .modelId(animal.getModel())
                             .position(Vector3.builder()

@@ -31,7 +31,7 @@ public class SetTradeModifierEffectHandler implements DialogEffectHandler {
 
     @Override
     public void execute(Effect effect, DialogContext ctx) {
-        String entityId = ctx.getNpcEntity() != null ? ctx.getNpcEntity().getEntityId() : null;
+        String entityId = ctx.getNpcEntity() != null ? ctx.getNpcEntity().getName() : null;
         if (entityId == null) {
             log.warn("setTradeModifier: no NPC entity in context");
             return;

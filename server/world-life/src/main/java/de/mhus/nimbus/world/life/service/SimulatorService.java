@@ -203,7 +203,7 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
 
         List<SimulationState> newlyLoaded = new ArrayList<>();
         for (WEntity entity : entities) {
-            String entityId = entity.getEntityId();
+            String entityId = entity.getName();
 
             // Skip system/player entities
             if (entityId.startsWith("@")) continue;
@@ -248,7 +248,7 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
 
         for (SimulationState state : newStates) {
             WEntity entity = state.getEntity();
-            String entityId = entity.getEntityId();
+            String entityId = entity.getName();
 
             try {
                 // Try to claim ownership
@@ -454,7 +454,7 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
         if (state.isInCombat()) {
             if (currentTime >= state.getCombatEndTime()) {
                 state.exitCombat();
-                log.debug("World {}: Entity {} combat ended (timeout)", worldId, entity.getEntityId());
+                log.debug("World {}: Entity {} combat ended (timeout)", worldId, entity.getName());
             } else {
                 // Generate combat pathway
                 int epoch = getWorldEpoch(worldId);
@@ -477,7 +477,7 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
         EntityBehavior behavior = behaviorRegistry.getBehavior(behaviorType);
 
         if (behavior == null) {
-            log.warn("World {}: Behavior not found: {}, entity: {}", worldId, behaviorType, entity.getEntityId());
+            log.warn("World {}: Behavior not found: {}, entity: {}", worldId, behaviorType, entity.getName());
             return Optional.empty();
         }
         int epoch = getWorldEpoch(worldId);
@@ -513,7 +513,7 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
         state.updatePathwayEndTime();
 
         log.trace("Generated pathway for entity {}: {} waypoints",
-                entity.getEntityId(),
+                entity.getName(),
                 pathway.getWaypoints() != null ? pathway.getWaypoints().size() : 0);
 
         return Optional.of(pathway);
@@ -525,7 +525,7 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
      */
     private Optional<EntityPathway> handleLifecycleTick(WEntity entity, SimulationState state, long currentTime, WorldId worldId) {
         long elapsed = currentTime - state.getLifecycleTimestamp();
-        String entityId = entity.getEntityId();
+        String entityId = entity.getName();
 
         if (state.getLifecycleState() == SimulationState.LifecycleState.DEAD) {
             if (elapsed >= state.getFadeTimeMs()) {
@@ -552,7 +552,7 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
      * Respawn entity: reset health, position to middlePoint, and lifecycle to ALIVE.
      */
     private void respawnEntity(WEntity entity, SimulationState state, long currentTime, WorldId worldId) {
-        String entityId = entity.getEntityId();
+        String entityId = entity.getName();
 
         // Reset health
         EntityCombatData combatData = state.getCombatData();
@@ -619,7 +619,7 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
         }
 
         WEntity entity = state.getEntity();
-        String entityId = entity.getEntityId();
+        String entityId = entity.getName();
 
         // Reset health
         EntityCombatData combatData = state.getCombatData();
@@ -693,7 +693,7 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
         var rot = entity.getRotation() != null ? entity.getRotation()
                 : de.mhus.nimbus.generated.types.Rotation.builder().y(0).build();
         return de.mhus.nimbus.generated.types.EntityPathway.builder()
-                .entityId(entity.getEntityId())
+                .entityId(entity.getName())
                 .startAt(currentTime)
                 .queryAt(currentTime)
                 .waypoints(java.util.List.of(
@@ -857,7 +857,7 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
         }
 
         log.debug("World {}: Immediate combat tick for entity {} (spread reaction)",
-                worldId, entity.getEntityId());
+                worldId, entity.getName());
     }
 
     /**
@@ -895,7 +895,7 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
                 neighborState.enterCombat(attackerEntityId, sessionId, now);
                 triggerImmediateCombatTick(worldId, neighborState);
                 log.info("World {}: Combat spread from {} to {} (dist={}, radius={})",
-                        worldId, attackedEntityId, neighborState.getEntity().getEntityId(),
+                        worldId, attackedEntityId, neighborState.getEntity().getName(),
                         String.format("%.1f", dist), spreadRadius);
             }
         }
@@ -987,11 +987,11 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
                 // Publish initial health so clients show correct values
                 VitalValue health = combatData.getVital("health");
                 if (health != null) {
-                    publishHealthStatus(worldId, entity.getEntityId(), health);
+                    publishHealthStatus(worldId, entity.getName(), health);
                 }
 
                 log.debug("Initialized combat data for entity {}: health={}, strategy={}, weapon={}",
-                        entity.getEntityId(),
+                        entity.getName(),
                         health != null ? health.getBase() : "none",
                         combatData.getCombatStrategy(),
                         combatData.getWeaponItemId());
@@ -1017,7 +1017,7 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
         var weaponOpt = itemService.findByItemId(worldId, weaponId);
         if (weaponOpt.isEmpty()) {
             log.warn("Weapon item '{}' not found for entity {} — falling back to fist",
-                    weaponId, entity.getEntityId());
+                    weaponId, entity.getName());
             combatData.setWeaponItemId(CombatConstants.FIST_ITEM_ID);
             return;
         }
@@ -1036,7 +1036,7 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
         if (combatData == null) return;
 
         List<VitalDeltaBroadcastMessage> outgoingDeltas = new ArrayList<>();
-        String entityId = state.getEntity().getEntityId();
+        String entityId = state.getEntity().getName();
 
         // Snapshot health before tick to detect changes from regen
         VitalValue health = combatData.getVital("health");
@@ -1092,7 +1092,7 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
      * Handle entity death: publish death status and start death/respawn lifecycle.
      */
     private void handleEntityDeath(SimulationState state, WorldId worldId) {
-        String entityId = state.getEntity().getEntityId();
+        String entityId = state.getEntity().getName();
 
         // Publish death status to clients
         entityStatusPublisher.publishStatusUpdate(worldId.getId(), entityId,

@@ -55,7 +55,7 @@ public class EntityTools implements McpToolBean {
 
         var dtos = entities.stream().map(e -> {
             Map<String, Object> map = new LinkedHashMap<>();
-            map.put("entityId", e.getEntityId());
+            map.put("entityId", e.getName());
             map.put("modelId", e.getModelId() != null ? e.getModelId() : "");
             if (e.getPublicData() != null) {
                 map.put("title", e.getPublicData().getTitle() != null ? e.getPublicData().getTitle() : "");
@@ -95,11 +95,11 @@ public class EntityTools implements McpToolBean {
         var wid = WorldId.of(worldId).orElseThrow(
                 () -> new McpToolException("Invalid worldId: " + worldId));
 
-        WEntity entity = entityService.findByWorldIdAndEntityId(wid, entityId)
+        WEntity entity = entityService.findByWorldIdAndName(wid, entityId)
                 .orElseThrow(() -> new McpToolException("Entity not found: " + entityId));
 
         Map<String, Object> result = new LinkedHashMap<>();
-        result.put("entityId", entity.getEntityId());
+        result.put("entityId", entity.getName());
         result.put("modelId", entity.getModelId());
         result.put("enabled", entity.isEnabled());
         result.put("epoches", entity.getEpoches() != null ? entity.getEpoches() : List.of());
@@ -207,7 +207,7 @@ public class EntityTools implements McpToolBean {
             });
 
             return Map.of(
-                    "entityId", saved.getEntityId(),
+                    "entityId", saved.getName(),
                     "worldId", worldId,
                     "modelId", modelId,
                     "status", "created"

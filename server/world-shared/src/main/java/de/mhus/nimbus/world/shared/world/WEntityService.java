@@ -34,12 +34,12 @@ public class WEntityService {
      * Instances always look up in their world.
      */
     @Transactional(readOnly = true)
-    public Optional<WEntity> findByWorldIdAndEntityId(WorldId worldId, String entityId) {
+    public Optional<WEntity> findByWorldIdAndName(WorldId worldId, String entityId) {
         if (worldId.isCollection()) {
             throw new IllegalArgumentException("worldId must not be a collection id");
         }
         var lookupWorld = worldId.toBaseWorldId();
-        return repository.findByWorldIdAndEntityId(lookupWorld.getId(), entityId);
+        return repository.findByWorldIdAndName(lookupWorld.getId(), entityId);
     }
 
     // EPOCH-UNFILTERED: returns data across all epochs. Use the epoch-filtered overload for player/gameplay context.
@@ -105,10 +105,10 @@ public class WEntityService {
         }
         var lookupWorld = worldId.toBaseWorldId();
 
-        WEntity entity = repository.findByWorldIdAndEntityId(lookupWorld.getId(), entityId).orElseGet(() -> {
+        WEntity entity = repository.findByWorldIdAndName(lookupWorld.getId(), entityId).orElseGet(() -> {
             WEntity neu = WEntity.builder()
                     .worldId(lookupWorld.getId())
-                    .entityId(entityId)
+                    .name(entityId)
                     .modelId(modelId)
                     .enabled(true)
                     .build();
@@ -154,7 +154,7 @@ public class WEntityService {
         }
         var lookupWorld = worldId.toBaseWorldId();
 
-        return repository.findByWorldIdAndEntityId(lookupWorld.getId(), entityId).map(entity -> {
+        return repository.findByWorldIdAndName(lookupWorld.getId(), entityId).map(entity -> {
             updater.accept(entity);
             computeAffectedChunks(entity);
             entity.touchUpdate();
@@ -175,7 +175,7 @@ public class WEntityService {
         }
         var lookupWorld = worldId.toBaseWorldId();
 
-        return repository.findByWorldIdAndEntityId(lookupWorld.getId(), entityId).map(entity -> {
+        return repository.findByWorldIdAndName(lookupWorld.getId(), entityId).map(entity -> {
             repository.delete(entity);
             log.debug("Deleted WEntity: world={}, entityId={}", lookupWorld, entityId);
             return true;
@@ -206,7 +206,7 @@ public class WEntityService {
             throw new IllegalArgumentException("worldId must be a world id (no player instance, no collection)");
         }
         var lookupWorld = worldId.toBaseWorldId();
-        List<WEntity> entities = repository.findByWorldIdAndEntityIdStartingWith(
+        List<WEntity> entities = repository.findByWorldIdAndNameStartingWith(
                 lookupWorld.getId(), prefix);
         if (!entities.isEmpty()) {
             repository.deleteAll(entities);
@@ -285,12 +285,12 @@ public class WEntityService {
      * Find entity by entityId filtered by epoch.
      */
     @Transactional(readOnly = true)
-    public Optional<WEntity> findByWorldIdAndEntityId(WorldId worldId, String entityId, int epoch) {
+    public Optional<WEntity> findByWorldIdAndName(WorldId worldId, String entityId, int epoch) {
         if (worldId.isCollection()) {
             throw new IllegalArgumentException("worldId must not be a collection id");
         }
         var lookupWorld = worldId.toBaseWorldId();
-        return repository.findByWorldIdAndEntityIdAndEpochesContaining(lookupWorld.getId(), entityId, epoch);
+        return repository.findByWorldIdAndNameAndEpochesContaining(lookupWorld.getId(), entityId, epoch);
     }
 
     /**
@@ -385,7 +385,7 @@ public class WEntityService {
         String lowerQuery = query.toLowerCase();
         return entities.stream()
                 .filter(entity -> {
-                    String entityId = entity.getEntityId();
+                    String entityId = entity.getName();
                     Entity publicData = entity.getPublicData();
                     return (entityId != null && entityId.toLowerCase().contains(lowerQuery)) ||
                             (publicData != null && publicData.getName() != null &&
