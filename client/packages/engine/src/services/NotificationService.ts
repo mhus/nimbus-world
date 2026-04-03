@@ -2252,7 +2252,8 @@ export class NotificationService {
 
     const input = document.createElement('input');
     input.type = 'text';
-    input.placeholder = 'Message...';
+    input.maxLength = 140;
+    input.placeholder = 'Message (max 140)...';
     input.style.cssText = `
       width: 300px;
       padding: 6px 10px;

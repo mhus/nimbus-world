@@ -17,7 +17,7 @@ import de.mhus.nimbus.world.shared.world.WItem;
 import de.mhus.nimbus.world.shared.world.WItemService;
 import de.mhus.nimbus.world.shared.world.WLease;
 import de.mhus.nimbus.world.shared.world.WLeaseService;
-import de.mhus.nimbus.world.control.service.ForbiddenWordFilter;
+import de.mhus.nimbus.world.shared.util.ForbiddenWordFilter;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;

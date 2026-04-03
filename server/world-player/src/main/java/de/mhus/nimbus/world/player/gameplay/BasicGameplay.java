@@ -20,6 +20,7 @@ import de.mhus.nimbus.world.shared.world.WProgressService;
 import de.mhus.nimbus.world.shared.world.LogicConditionService;
 import de.mhus.nimbus.world.shared.world.WAnythingService;
 import de.mhus.nimbus.world.shared.world.WChestService;
+import de.mhus.nimbus.world.shared.util.I18nUtil;
 import de.mhus.nimbus.world.shared.world.WLeaseService;
 import de.mhus.nimbus.world.shared.world.WWorldService;
 import de.mhus.nimbus.world.player.service.ClientService;
@@ -112,6 +113,8 @@ public class BasicGameplay implements Gameplay {
     @Autowired
     @Getter
     protected de.mhus.nimbus.world.player.service.PlayerRedisSenderService playerRedisSenderService;
+    @Autowired
+    protected de.mhus.nimbus.world.shared.util.ForbiddenWordFilter forbiddenWordFilter;
 
     protected Map<String, GameplayAction> actions = new HashMap<>();
 
@@ -514,7 +517,7 @@ public class BasicGameplay implements Gameplay {
         // no-op by default
     }
 
-    private static final int MAX_MESSAGE_LENGTH = 200;
+    private static final int MAX_MESSAGE_LENGTH = 140;
 
     @Override
     public void onSimpleInteraction(PlayerSession session, String action, JsonNode data) {
@@ -546,6 +549,8 @@ public class BasicGameplay implements Gameplay {
         // Remove control characters
         msg = msg.replaceAll("[\\p{Cntrl}]", "");
         if (msg.isEmpty()) return;
+        // Filter forbidden words
+        msg = forbiddenWordFilter.filter(msg);
 
         // Extract character name from playerId (@userId:charName)
         String playerId = session.getEntityId();
@@ -555,7 +560,11 @@ public class BasicGameplay implements Gameplay {
             if (colonIdx >= 0) charName = playerId.substring(colonIdx + 1);
         }
 
-        sessionCommandService.sendToTeam(teamId, "notification", List.of("1", charName, msg));
+        String encodedMsg = I18nUtil.builder()
+                .en(msg)
+                .put("action", "message")
+                .build();
+        sessionCommandService.sendToTeam(teamId, "notification", List.of("1", charName, encodedMsg));
         log.debug("Team message from {} to team {}: {}", charName, teamId, msg);
     }
 
