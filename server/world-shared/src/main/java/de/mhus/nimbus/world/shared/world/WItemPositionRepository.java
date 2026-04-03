@@ -52,6 +52,9 @@ public interface WItemPositionRepository extends MongoRepository<WItemPosition, 
     List<WItemPosition> findByWorldIdAndChunkAndEnabled(
             String worldId, String chunk, boolean enabled);
 
+    List<WItemPosition> findByWorldIdAndChunkAndEnabledAndTombstone(
+            String worldId, String chunk, boolean enabled, boolean tombstone);
+
     // EPOCH-UNFILTERED: returns data across all epochs. Use the epoch-filtered overload for player/gameplay context.
     Optional<WItemPosition> findByWorldIdAndItemId(String worldId, String itemId);
 
@@ -76,6 +79,9 @@ public interface WItemPositionRepository extends MongoRepository<WItemPosition, 
 
     List<WItemPosition> findByWorldIdAndChunkAndEnabledAndEpochesContaining(
             String worldId, String chunk, boolean enabled, int epoch);
+
+    List<WItemPosition> findByWorldIdAndChunkAndEnabledAndTombstoneAndEpochesContaining(
+            String worldId, String chunk, boolean enabled, boolean tombstone, int epoch);
 
     List<WItemPosition> findByWorldIdAndEpochesContaining(String worldId, int epoch);
 }

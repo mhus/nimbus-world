@@ -112,12 +112,19 @@ public class WChest implements Identifiable, CowEntity {
     private List<ItemRef> items = new ArrayList<>();
 
     /**
-     * Soft delete flag. Used as tombstone marker in COW instances.
+     * Gameplay visibility flag.
      */
     @Indexed
     @Builder.Default
     @TypeScript(ignore = true)
     private boolean enabled = true;
+
+    /**
+     * COW tombstone flag. When true, marks this chest as deleted in this instance.
+     */
+    @Builder.Default
+    @TypeScript(ignore = true)
+    private boolean tombstone = false;
 
     private Instant createdAt;
     private Instant updatedAt;
@@ -132,6 +139,12 @@ public class WChest implements Identifiable, CowEntity {
     @org.springframework.data.annotation.Transient
     public boolean isCowEnabled() {
         return enabled;
+    }
+
+    @Override
+    @org.springframework.data.annotation.Transient
+    public boolean isCowTombstone() {
+        return tombstone;
     }
 
     /**

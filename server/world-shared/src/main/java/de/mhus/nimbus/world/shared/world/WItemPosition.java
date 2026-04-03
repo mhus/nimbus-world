@@ -74,11 +74,17 @@ public class WItemPosition implements Identifiable, CowEntity, EpochEntity {
     private Instant updatedAt;
 
     /**
-     * Soft delete flag.
+     * Gameplay visibility flag.
      */
     @Indexed
     @Builder.Default
     private boolean enabled = true;
+
+    /**
+     * COW tombstone flag. When true, marks this item position as deleted in this instance.
+     */
+    @Builder.Default
+    private boolean tombstone = false;
 
     @Override
     @org.springframework.data.annotation.Transient
@@ -90,6 +96,12 @@ public class WItemPosition implements Identifiable, CowEntity, EpochEntity {
     @org.springframework.data.annotation.Transient
     public boolean isCowEnabled() {
         return enabled;
+    }
+
+    @Override
+    @org.springframework.data.annotation.Transient
+    public boolean isCowTombstone() {
+        return tombstone;
     }
 
     /**

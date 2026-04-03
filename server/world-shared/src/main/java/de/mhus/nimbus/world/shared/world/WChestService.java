@@ -121,8 +121,8 @@ public class WChestService {
         var existingCopy = repository.findByWorldIdAndName(worldId, chest.getName());
         if (existingCopy.isPresent()) {
             var copy = existingCopy.get();
-            // Tombstone check: if disabled, the chest is "deleted" in this instance
-            if (!copy.isEnabled()) {
+            // Tombstone check: if tombstoned, the chest is "deleted" in this instance
+            if (copy.isTombstone()) {
                 log.warn("COW chest is tombstoned in instance: worldId={}, name={}", worldId, chest.getName());
                 return copy;
             }
@@ -547,7 +547,7 @@ public class WChestService {
                         .name(name)
                         .title(baseEntry.get().getTitle())
                         .type(baseEntry.get().getType())
-                        .enabled(false)
+                        .tombstone(true)
                         .build();
                 tombstone.touchCreate();
                 repository.save(tombstone);

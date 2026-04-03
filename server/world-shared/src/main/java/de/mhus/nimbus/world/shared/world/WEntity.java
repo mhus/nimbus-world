@@ -166,11 +166,19 @@ public class WEntity implements Identifiable, CowEntity, EpochEntity {
     private List<EntitySchedulePhase> schedule = new ArrayList<>();
 
     /**
-     * Soft delete flag.
+     * Gameplay visibility flag (GM enable/disable).
      */
     @Indexed
     @Builder.Default
     private boolean enabled = true;
+
+    /**
+     * COW tombstone flag. When true, marks this entity as deleted in this instance.
+     * Independent of {@code enabled} which controls gameplay visibility.
+     */
+    @Indexed
+    @Builder.Default
+    private boolean tombstone = false;
 
     @Override
     @org.springframework.data.annotation.Transient
@@ -182,6 +190,12 @@ public class WEntity implements Identifiable, CowEntity, EpochEntity {
     @org.springframework.data.annotation.Transient
     public boolean isCowEnabled() {
         return enabled;
+    }
+
+    @Override
+    @org.springframework.data.annotation.Transient
+    public boolean isCowTombstone() {
+        return tombstone;
     }
 
     /**

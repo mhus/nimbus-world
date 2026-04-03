@@ -21,22 +21,19 @@ public interface WEntityRepository extends MongoRepository<WEntity, String> {
     // EPOCH-UNFILTERED: returns data across all epochs. Use the epoch-filtered overload for player/gameplay context.
     List<WEntity> findByWorldIdAndModelId(String worldId, String modelId);
 
-    // EPOCH-UNFILTERED: returns data across all epochs. Use the epoch-filtered overload for player/gameplay context.
     List<WEntity> findByWorldIdAndEnabled(String worldId, boolean enabled);
+    List<WEntity> findByWorldIdAndEnabledAndTombstone(String worldId, boolean enabled, boolean tombstone);
 
-    // EPOCH-UNFILTERED: returns data across all epochs. Use the epoch-filtered overload for player/gameplay context.
     boolean existsByWorldIdAndName(String worldId, String entityId);
 
     void deleteByWorldIdAndName(String worldId, String entityId);
 
-    // EPOCH-UNFILTERED: returns data across all epochs. Use the epoch-filtered overload for player/gameplay context.
     List<WEntity> findByWorldIdAndNameStartingWith(String worldId, String entityIdPrefix);
 
-    // EPOCH-UNFILTERED: returns data across all epochs. Use the epoch-filtered overload for player/gameplay context.
     List<WEntity> findByWorldIdAndSourceAndAffectedChunksIn(String worldId, String source, java.util.Collection<String> chunkKeys);
 
-    // EPOCH-UNFILTERED: returns data across all epochs. Use the epoch-filtered overload for player/gameplay context.
     List<WEntity> findByWorldIdAndEnabledAndAffectedChunksIn(String worldId, boolean enabled, java.util.Collection<String> chunkKeys);
+    List<WEntity> findByWorldIdAndEnabledAndTombstoneAndAffectedChunksIn(String worldId, boolean enabled, boolean tombstone, java.util.Collection<String> chunkKeys);
 
     // Epoch-aware queries
 
@@ -45,8 +42,10 @@ public interface WEntityRepository extends MongoRepository<WEntity, String> {
     List<WEntity> findByWorldIdAndEpochesContaining(String worldId, int epoch);
 
     List<WEntity> findByWorldIdAndEnabledAndEpochesContaining(String worldId, boolean enabled, int epoch);
+    List<WEntity> findByWorldIdAndEnabledAndTombstoneAndEpochesContaining(String worldId, boolean enabled, boolean tombstone, int epoch);
 
     List<WEntity> findByWorldIdAndEnabledAndAffectedChunksInAndEpochesContaining(String worldId, boolean enabled, java.util.Collection<String> chunkKeys, int epoch);
+    List<WEntity> findByWorldIdAndEnabledAndTombstoneAndAffectedChunksInAndEpochesContaining(String worldId, boolean enabled, boolean tombstone, java.util.Collection<String> chunkKeys, int epoch);
 
     /**
      * Delete all entities for a world.

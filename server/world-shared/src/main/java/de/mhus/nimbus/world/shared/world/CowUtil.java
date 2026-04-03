@@ -15,8 +15,9 @@ import java.util.Map;
  * <p>Merge rules:
  * <ul>
  *   <li>Instance entries override base entries with the same cowId</li>
- *   <li>Instance entries with enabled=false (tombstones) remove the base entry</li>
- *   <li>Instance entries with enabled=true that have no base counterpart are new additions</li>
+ *   <li>Instance entries with tombstone=true mark deletions (removed from result)</li>
+ *   <li>Instance entries without tombstone that have no base counterpart are new additions</li>
+ *   <li>The {@code enabled} field is independent and controls gameplay visibility</li>
  * </ul>
  */
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
@@ -25,7 +26,7 @@ public final class CowUtil {
     /**
      * Merge base and instance entity lists.
      * Instance entries override base entries by cowId.
-     * Tombstones (enabled=false) remove the corresponding base entry from the result.
+     * Tombstones are removed from the result.
      *
      * @param baseList     entities from the base world
      * @param instanceList entities from the instance (overrides + tombstones)
@@ -35,7 +36,7 @@ public final class CowUtil {
         if (instanceList == null || instanceList.isEmpty()) return baseList;
         if (baseList == null || baseList.isEmpty()) {
             return instanceList.stream()
-                    .filter(CowEntity::isCowEnabled)
+                    .filter(e -> !e.isCowTombstone())
                     .collect(ArrayList::new, ArrayList::add, ArrayList::addAll);
         }
 
@@ -46,7 +47,7 @@ public final class CowUtil {
         for (T e : instanceList) {
             merged.put(e.getCowId(), e);
         }
-        merged.values().removeIf(e -> !e.isCowEnabled());
+        merged.values().removeIf(CowEntity::isCowTombstone);
         return new ArrayList<>(merged.values());
     }
 
@@ -60,7 +61,7 @@ public final class CowUtil {
      */
     public static <T extends CowEntity> T findOne(T instanceEntry, T baseEntry) {
         if (instanceEntry != null) {
-            return instanceEntry.isCowEnabled() ? instanceEntry : null;
+            return instanceEntry.isCowTombstone() ? null : instanceEntry;
         }
         return baseEntry;
     }

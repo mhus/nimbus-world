@@ -181,7 +181,7 @@ public class WItemPositionService {
 
     /**
      * Delete an item position.
-     * Performs soft delete by setting enabled=false.
+     * Performs soft delete by creating a COW tombstone.
      * For player instance worlds: creates a tombstone in the instance layer (COW).
      * For editor instances: deletes directly from base world (no COW).
      *
@@ -231,7 +231,7 @@ public class WItemPositionService {
                         .worldId(worldId.getId())
                         .itemId(itemId)
                         .chunk(baseOpt.get().getChunk())
-                        .enabled(false)
+                        .tombstone(true)
                         .build();
                 tombstone.touchCreate();
                 repository.save(tombstone);
