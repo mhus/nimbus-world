@@ -26,7 +26,8 @@
  * ```
  */
 
-import { IFrameMessageType, ModalSizePreset } from '@nimbus/shared';
+import { IFrameMessageType, IFrameParentMessageType, ModalSizePreset } from '@nimbus/shared';
+import type { IFrameMessageFromParent } from '@nimbus/shared';
 
 /**
  * Get parent window origin (for security)
@@ -133,6 +134,26 @@ export function useModal() {
     });
   }
 
+  /**
+   * Register a callback for when the parent closes this modal.
+   * Returns a cleanup function to remove the listener.
+   *
+   * @param callback Called with optional reason when parent closes the modal
+   */
+  function onParentClose(callback: (reason?: string) => void): () => void {
+    const handler = (event: MessageEvent<IFrameMessageFromParent>) => {
+      try {
+        if (event.data && event.data.type === IFrameParentMessageType.CLOSING) {
+          callback(event.data.reason);
+        }
+      } catch (e) {
+        // ignore
+      }
+    };
+    window.addEventListener('message', handler);
+    return () => window.removeEventListener('message', handler);
+  }
+
   return {
     isEmbedded,
     isInIFrame,
@@ -140,6 +161,7 @@ export function useModal() {
     changePosition,
     sendNotification,
     notifyReady,
+    onParentClose,
   };
 }
 

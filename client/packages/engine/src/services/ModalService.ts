@@ -4,8 +4,8 @@
  * Provides modal dialogs with IFrame content, configurable size and position.
  */
 
-import { getLogger, ExceptionHandler, ModalFlags, IFrameMessageType, ModalSizePreset } from '@nimbus/shared';
-import type { IFrameMessageFromChild } from '@nimbus/shared';
+import { getLogger, ExceptionHandler, ModalFlags, IFrameMessageType, IFrameParentMessageType, ModalSizePreset } from '@nimbus/shared';
+import type { IFrameMessageFromChild, IFrameMessageFromParent } from '@nimbus/shared';
 import type { AppContext } from '../AppContext';
 import type {
   ModalOptions,
@@ -212,10 +212,24 @@ export class ModalService {
         }
       }
 
-      // Remove from DOM
-      if (ref.element.parentNode) {
-        ref.element.parentNode.removeChild(ref.element);
+      // Notify IFrame that it is being closed, then remove after short delay
+      // to give the IFrame time to handle cleanup (e.g. cancel requests)
+      try {
+        if (ref.iframe.contentWindow) {
+          const msg: IFrameMessageFromParent = { type: IFrameParentMessageType.CLOSING, reason };
+          ref.iframe.contentWindow.postMessage(msg, '*');
+        }
+      } catch (e) {
+        // IFrame may already be unloaded
       }
+
+      // Hide immediately, remove after delay
+      ref.element.style.display = 'none';
+      setTimeout(() => {
+        if (ref.element.parentNode) {
+          ref.element.parentNode.removeChild(ref.element);
+        }
+      }, 500);
 
       // Remove from tracking
       this.modals.delete(ref.id);

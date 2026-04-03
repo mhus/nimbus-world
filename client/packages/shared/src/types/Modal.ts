@@ -89,6 +89,20 @@ export enum IFrameMessageType {
 }
 
 /**
+ * Message types for Parent -> IFrame communication
+ */
+export enum IFrameParentMessageType {
+  /** Parent is closing the modal */
+  CLOSING = 'PARENT_CLOSING',
+}
+
+/**
+ * IFrame message from parent to child
+ */
+export type IFrameMessageFromParent =
+  | { type: IFrameParentMessageType.CLOSING; reason?: string };
+
+/**
  * IFrame message from child to parent
  */
 export type IFrameMessageFromChild =

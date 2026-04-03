@@ -244,8 +244,10 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 import { ApiService } from '@/services/ApiService';
+import { useModal } from '@/composables/useModal';
 
 const apiService = new ApiService();
+const { closeModal, onParentClose } = useModal();
 
 type WidgetState = 'LOADING' | 'ERROR' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED';
 const state = ref<WidgetState>('LOADING');
@@ -300,6 +302,7 @@ const lastClickedItemId = ref<string | null>(null);
 
 let progressId = '';
 let refreshInterval: ReturnType<typeof setInterval> | null = null;
+let cleanupParentClose: (() => void) | null = null;
 
 const selectedItemDetail = computed(() => {
   if (!lastClickedItemId.value) return null;
@@ -366,6 +369,18 @@ onMounted(async () => {
     return;
   }
 
+  // Listen for parent closing this modal (X button) — treat as cancel
+  cleanupParentClose = onParentClose(async () => {
+    if (refreshInterval) clearInterval(refreshInterval);
+    if (state.value === 'ACTIVE' && progressId) {
+      try {
+        await apiService.post('/control/player/exchange/cancel', {}, { params: { progressId } });
+      } catch (e) {
+        // ignore — modal is closing
+      }
+    }
+  });
+
   await loadData();
 
   refreshInterval = setInterval(async () => {
@@ -377,6 +392,7 @@ onMounted(async () => {
 
 onBeforeUnmount(() => {
   if (refreshInterval) clearInterval(refreshInterval);
+  if (cleanupParentClose) cleanupParentClose();
 });
 
 async function loadData(silent = false) {
@@ -478,6 +494,6 @@ async function cancelExchange() {
 }
 
 function closeWidget() {
-  window.close();
+  closeModal('user_close');
 }
 </script>

@@ -119,8 +119,10 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue';
 import { ApiService } from '@/services/ApiService';
+import { useModal } from '@/composables/useModal';
 
 const apiService = new ApiService();
+const { closeModal } = useModal();
 
 type WidgetState = 'LOADING' | 'ERROR' | 'ACTIVE';
 const state = ref<WidgetState>('LOADING');
@@ -330,7 +332,7 @@ async function reload() {
 }
 
 function closeWidget() {
-  window.close();
+  closeModal('user_close');
 }
 </script>
 
