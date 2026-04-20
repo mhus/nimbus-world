@@ -474,7 +474,13 @@ public class WWorldController extends BaseEditorController {
                 }
             }
 
-            // Update title in publicData if provided
+            if (request.description() != null) existing.setDescription(request.description());
+            if (request.publicData() != null) existing.setPublicData(request.publicData());
+
+            // Update title in publicData if provided. Must run AFTER
+            // setPublicData so a wholesale publicData replacement doesn't
+            // overwrite the new title (request.publicData often carries
+            // a stale title from the form's initial load).
             if (request.title() != null) {
                 WorldInfo publicData = existing.getPublicData();
                 if (publicData == null) {
@@ -483,9 +489,6 @@ public class WWorldController extends BaseEditorController {
                 }
                 publicData.setTitle(request.title());
             }
-
-            if (request.description() != null) existing.setDescription(request.description());
-            if (request.publicData() != null) existing.setPublicData(request.publicData());
             if (request.enabled() != null) existing.setEnabled(request.enabled());
             if (request.instanceType() != null) existing.setInstanceType(request.instanceType());
             if (request.maxPlayersPerInstance() != null) existing.setMaxPlayersPerInstance(request.maxPlayersPerInstance());
