@@ -35,7 +35,7 @@ class EntityModelService {
   }
 
   async getEntityModel(worldId: string, name: string): Promise<any> {
-    return apiService.get<any>(`/control/worlds/${worldId}/entitymodels/${modelId}`);
+    return apiService.get<any>(`/control/worlds/${worldId}/entitymodels/${name}`);
   }
 
   async createEntityModel(worldId: string, request: CreateEntityModelRequest): Promise<any> {
@@ -43,11 +43,11 @@ class EntityModelService {
   }
 
   async updateEntityModel(worldId: string, name: string, request: UpdateEntityModelRequest): Promise<any> {
-    return apiService.put<any>(`/control/worlds/${worldId}/entitymodels/${modelId}`, request);
+    return apiService.put<any>(`/control/worlds/${worldId}/entitymodels/${name}`, request);
   }
 
   async deleteEntityModel(worldId: string, name: string): Promise<void> {
-    return apiService.delete<void>(`/control/worlds/${worldId}/entitymodels/${modelId}`);
+    return apiService.delete<void>(`/control/worlds/${worldId}/entitymodels/${name}`);
   }
 }
 

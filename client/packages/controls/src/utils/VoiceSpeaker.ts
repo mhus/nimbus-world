@@ -170,7 +170,6 @@ export class VoiceSpeaker {
     this.speaking = false;
     this.chunks = [];
     this.chunkIndex = 0;
-    this.currentUtterance = null;
     if (window.speechSynthesis) {
       window.speechSynthesis.cancel();
     }
@@ -192,7 +191,6 @@ export class VoiceSpeaker {
 
     return new Promise<void>((resolve) => {
       const utterance = new SpeechSynthesisUtterance(text);
-      this.currentUtterance = utterance;
 
       // Set voice
       const selectedVoice = selectVoice(this.currentVoiceInfo!);
