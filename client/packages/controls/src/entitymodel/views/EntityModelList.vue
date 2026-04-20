@@ -62,8 +62,8 @@
           @click="handleSelect(model)"
         >
           <div class="card-body p-4">
-            <h3 class="card-title text-base truncate" :title="model.publicData?.id || model.name">
-              {{ model.publicData?.id || model.name }}
+            <h3 class="card-title text-base truncate" :title="model.publicData?.name || model.name">
+              {{ model.publicData?.name || model.name }}
             </h3>
             <div class="space-y-2">
               <div class="text-xs text-base-content/70 truncate" :title="model.name">
@@ -196,7 +196,7 @@ const loadEntityModels = async () => {
       pageSize.value
     );
     entityModels.value = response.entityModels.map((publicData, index) => ({
-      modelId: publicData.id || `model-${offset.value + index}`,
+      name: publicData.name || `model-${offset.value + index}`,
       publicData,
       worldId: currentWorldId.value!,
       enabled: true,

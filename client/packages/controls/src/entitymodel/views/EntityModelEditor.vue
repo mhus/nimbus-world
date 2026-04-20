@@ -1010,7 +1010,7 @@ const loadEntityModel = () => {
       enabled: true,
     };
     modelData.value = {
-      id: '',
+      name: '',
       type: '',
       gender: '',
       modelPath: '',
