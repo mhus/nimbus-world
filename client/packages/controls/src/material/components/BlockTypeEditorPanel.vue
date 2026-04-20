@@ -26,7 +26,7 @@
           >
             <DialogPanel class="w-full max-w-4xl transform overflow-hidden rounded-2xl bg-base-100 p-6 text-left align-middle shadow-xl transition-all">
               <DialogTitle class="text-2xl font-bold mb-4">
-                {{ isCreate ? 'Create Block Type' : `Edit Block Type #${formData.id}` }}
+                {{ isCreate ? 'Create Block Type' : `Edit Block Type #${formData.name}` }}
               </DialogTitle>
 
               <div class="space-y-6 max-h-[70vh] overflow-y-auto pr-2">
@@ -34,10 +34,10 @@
                 <div class="form-control">
                   <label class="label">
                     <span class="label-text font-semibold">ID</span>
-                    <span class="label-text-alt text-error" v-if="isCreate && !formData.id">Required</span>
+                    <span class="label-text-alt text-error" v-if="isCreate && !formData.name">Required</span>
                   </label>
                   <input
-                    v-model="formData.id"
+                    v-model="formData.name"
                     type="text"
                     class="input input-bordered"
                     :disabled="!isCreate"
@@ -541,7 +541,7 @@ const handleInputCancel = () => {
 
 // Form data
 const formData = ref<Partial<BlockType>>({
-  id: '',
+  name: '',
   description: '',
   initialStatus: 'default',
   modifiers: {},
@@ -611,7 +611,7 @@ const initializeForm = async () => {
     formData.value = JSON.parse(JSON.stringify(props.blockType));
   } else {
     formData.value = {
-      id: '', // Must be provided by user
+      name: '', // Must be provided by user
       description: '',
       initialStatus: 'default',
       modifiers: {
@@ -795,7 +795,7 @@ const duplicateModifier = async (sourceStatus: string) => {
 
 // Handle save
 const handleSave = async () => {
-  if (isCreate.value && !formData.value.id) {
+  if (isCreate.value && !formData.value.name) {
     alert('ID is required');
     return;
   }
@@ -816,10 +816,10 @@ const handleSave = async () => {
       await createBlockType(formData.value);
       // For create, update defaults in a second call if any entries exist
       if (Object.keys(extraData.defaultClient).length > 0 || Object.keys(extraData.defaultServer).length > 0) {
-        await updateBlockType(formData.value.id!, formData.value, extraData);
+        await updateBlockType(formData.value.name!, formData.value, extraData);
       }
     } else {
-      await updateBlockType(formData.value.id!, formData.value, extraData);
+      await updateBlockType(formData.value.name!, formData.value, extraData);
     }
 
     emit('saved');
@@ -856,7 +856,7 @@ const closeDuplicateDialog = () => {
 };
 
 const handleDuplicate = async () => {
-  if (!newBlockTypeId.value || duplicating.value || !props.blockType?.id) {
+  if (!newBlockTypeId.value || duplicating.value || !props.blockType?.name) {
     return;
   }
 

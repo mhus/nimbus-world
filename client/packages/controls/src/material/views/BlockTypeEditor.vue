@@ -105,7 +105,7 @@
         <h3 class="font-bold text-lg">Delete Block Type</h3>
         <p class="py-4">
           Are you sure you want to delete block type
-          <strong>"{{ blockTypeToDelete?.description || blockTypeToDelete?.id }}"</strong>?
+          <strong>"{{ blockTypeToDelete?.description || blockTypeToDelete?.name }}"</strong>?
         </p>
         <p class="text-sm text-warning pb-4">
           This action cannot be undone.
@@ -201,9 +201,9 @@ const openDuplicateDialog = async (blockType: BlockType) => {
   const detail = await blockTypesComposable.value.getBlockType(blockType.name!);
   const source = detail ? detail.publicData : blockType;
 
-  // Deep copy and clear ID so the editor opens in create mode
+  // Deep copy and clear name so the editor opens in create mode
   const copy: BlockType = JSON.parse(JSON.stringify(source));
-  copy.id = '';
+  copy.name = '';
 
   selectedBlockType.value = copy;
   selectedBlockTypeDetail.value = detail ? { ...detail, publicData: copy } : null;
@@ -270,7 +270,7 @@ const cancelDelete = () => {
 const confirmDeleteAction = async () => {
   if (!blockTypesComposable.value || !blockTypeToDelete.value) return;
 
-  await blockTypesComposable.value.deleteBlockType(blockTypeToDelete.value.id);
+  await blockTypesComposable.value.deleteBlockType(blockTypeToDelete.value.name);
 
   // Close confirmation dialog
   showDeleteConfirmation.value = false;
