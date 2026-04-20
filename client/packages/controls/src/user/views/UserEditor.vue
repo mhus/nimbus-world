@@ -39,7 +39,7 @@
                 <span class="label-text font-medium">Username</span>
               </label>
               <input
-                :value="user?.username"
+                :value="user?.name"
                 type="text"
                 class="input input-bordered w-full"
                 disabled
@@ -688,7 +688,7 @@ const loadUser = async () => {
     };
 
     formData.value = {
-      displayName: user.value.publicData?.displayName || '',
+      displayName: user.value.publicData?.title || '',
       email: user.value.email,
     };
   } catch (e) {
@@ -709,12 +709,12 @@ const handleSave = async () => {
   try {
     // Create clean RUser object
     const updatedUser: RUser = {
-      username: user.value.username,
+      name: user.value.name,
       email: formData.value.email,
       createdAt: user.value.createdAt,
       publicData: {
-        userId: props.username,
-        displayName: formData.value.displayName,
+        name: props.username,
+        title: formData.value.displayName,
       },
       enabled: user.value.enabled,
       sectorRoles: user.value.sectorRoles || [],
