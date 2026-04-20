@@ -4,7 +4,7 @@
  */
 
 import type { WItem } from '@nimbus/shared/generated/entities/WItem';
-import { ApiService } from '../../services/ApiService';
+import { apiService } from '../../services/ApiService';
 
 // Use WItem as primary type (includes metadata)
 type ItemData = WItem;
@@ -16,7 +16,7 @@ export interface ItemSearchResult {
 }
 
 export class ItemApiService {
-  private static apiService = new ApiService();
+  private static apiService = apiService;
 
   /**
    * Search for items

@@ -88,9 +88,7 @@ import { ref, watch } from 'vue';
 import { useWorld } from '@/composables/useWorld';
 import { ItemApiService } from '../services/itemApiService';
 import type { ItemSearchResult } from '../services/itemApiService';
-import { ApiService } from '../../services/ApiService';
-
-const apiService = new ApiService();
+import { apiService } from '../../services/ApiService';
 
 const emit = defineEmits<{
   select: [itemId: string];
