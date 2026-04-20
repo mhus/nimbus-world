@@ -19,7 +19,6 @@ export interface Character {
 export interface CharacterRequest {
   userId: string;
   name: string;
-  display?: string;
   skills?: Record<string, number>;
   publicData?: PlayerInfo;
   backpack?: PlayerBackpack;

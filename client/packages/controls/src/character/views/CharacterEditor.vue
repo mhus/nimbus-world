@@ -47,8 +47,8 @@
                 required
               >
                 <option value="">Select a user...</option>
-                <option v-for="user in users" :key="user.username" :value="user.username">
-                  {{ user.username }} ({{ user.publicData?.displayName || 'No display name' }})
+                <option v-for="user in users" :key="user.name" :value="user.name">
+                  {{ user.name }} ({{ user.publicData?.title || 'No display name' }})
                 </option>
               </select>
               <input
@@ -87,7 +87,7 @@
                 <span class="label-text font-medium">Display Name</span>
               </label>
               <input
-                v-model="formData.display"
+                v-model="formData.title"
                 type="text"
                 placeholder="Enter display name"
                 class="input input-bordered w-full"
@@ -872,7 +872,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { useRegion } from '@/composables/useRegion';
-import { characterService, type RCharacter } from '../services/CharacterService';
+import { characterService, type RCharacter, type PlayerInfo } from '../services/CharacterService';
 import { userService, type RUser } from '../../user/services/UserService';
 import EntityModelSelectorDialog from '@components/EntityModelSelectorDialog.vue';
 import ItemSelectorDialog from '@components/ItemSelectorDialog.vue';
@@ -905,7 +905,7 @@ const loadingUsers = ref(false);
 const formData = ref({
   userId: '',
   name: '',
-  display: '',
+  title: '',
 });
 
 const newSkillName = ref('');
@@ -988,7 +988,7 @@ const loadCharacter = () => {
     formData.value = {
       userId: '',
       name: '',
-      display: '',
+      title: '',
     };
     shortcutsJson.value = '';
     editorShortcutsJson.value = '';
@@ -1005,7 +1005,7 @@ const loadCharacter = () => {
   formData.value = {
     userId: character.value.userId,
     name: character.value.name,
-    display: character.value.publicData?.title || character.value.name,
+    title: character.value.publicData?.title || character.value.name,
   };
 
   // Initialize JSON strings for shortcuts
@@ -1041,13 +1041,14 @@ const handleSave = async () => {
       await characterService.createCharacter(currentRegionId.value, {
         userId: formData.value.userId,
         name: formData.value.name,
-        display: formData.value.display,
+        publicData: { title: formData.value.title } as PlayerInfo,
       });
       successMessage.value = 'Character created successfully';
     } else if (character.value) {
       // Update publicData with current thirdPersonModelId, modifiers, and stateValues
       const updatedPublicData = {
         ...character.value.publicData,
+        title: formData.value.title,
         thirdPersonModelId: thirdPersonModelId.value || undefined,
         thirdPersonModelModifiers: Object.keys(thirdPersonModelModifiers.value).length > 0
           ? thirdPersonModelModifiers.value
@@ -1075,7 +1076,6 @@ const handleSave = async () => {
         {
           userId: character.value.userId,
           name: character.value.name,
-          display: formData.value.display,
           publicData: updatedPublicData,
           backpack: updatedBackpack,
           skills: character.value.skills,

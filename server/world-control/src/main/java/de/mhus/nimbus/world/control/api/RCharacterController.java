@@ -34,7 +34,6 @@ public class RCharacterController extends BaseEditorController {
     public record CharacterRequest(
             String userId,
             String name,
-            String display,
             Map<String, Integer> skills,
             PlayerInfo publicData,
             PlayerBackpack backpack,
@@ -60,9 +59,9 @@ public class RCharacterController extends BaseEditorController {
     private CharacterResponse toResponse(RCharacter character) {
         return new CharacterResponse(
                 character.getId(),
-                character.getName(),
-                character.getRegionId(),
                 character.getUserId(),
+                character.getRegionId(),
+                character.getName(),
                 character.getCreatedAt(),
                 character.getModifiedAt(),
                 character.getPublicData(),
@@ -158,11 +157,15 @@ public class RCharacterController extends BaseEditorController {
         }
 
         try {
+            // Use title from publicData as the initial display name; falls
+            // back to the character name when no publicData is provided.
+            String title = request.publicData() != null ? request.publicData().getTitle() : null;
+
             RCharacter created = characterService.createCharacter(
                     request.userId(),
                     regionId,
                     request.name(),
-                    request.display()
+                    title
             );
 
             // Update publicData if provided (merge with defaults)
