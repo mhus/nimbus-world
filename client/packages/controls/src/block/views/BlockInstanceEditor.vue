@@ -96,11 +96,23 @@
 
                 <!-- Search Field (shown when changing or no block type selected) -->
                 <div v-if="showBlockTypeSearch || blockData.blockTypeId === ''">
-                  <SearchInput
-                    v-model="blockTypeSearch"
-                    placeholder="Search block types by ID or description..."
-                    @search="handleBlockTypeSearch"
-                  />
+                  <div class="flex gap-2 items-center">
+                    <div class="flex-1">
+                      <SearchInput
+                        v-model="blockTypeSearch"
+                        placeholder="Search block types by ID or description..."
+                        @search="handleBlockTypeSearch"
+                      />
+                    </div>
+                    <button
+                      v-if="blockData.blockTypeId"
+                      class="btn btn-sm btn-ghost"
+                      @click="cancelBlockTypeChange"
+                      title="Keep current selection"
+                    >
+                      Cancel
+                    </button>
+                  </div>
 
                   <!-- Search Results (shown when searching) -->
                   <div
@@ -1029,12 +1041,20 @@ function applyBlockTypeDefaults(
 }
 
 function clearBlockType() {
-  blockData.value.blockTypeId = '';
-  loadedBlockType.value = null;
+  // Keep blockTypeId/loadedBlockType — the current selection stays valid
+  // until the user picks a new one. Prevents a spurious "Required" badge
+  // and lets the user cancel the change without losing their selection.
   blockTypeSearch.value = '';
   blockTypeSearchResults.value = [];
-  hasSearched.value = false; // Reset search state
-  showBlockTypeSearch.value = true; // Show search when changing
+  hasSearched.value = false;
+  showBlockTypeSearch.value = true;
+}
+
+function cancelBlockTypeChange() {
+  blockTypeSearch.value = '';
+  blockTypeSearchResults.value = [];
+  hasSearched.value = false;
+  showBlockTypeSearch.value = false;
 }
 
 // Load BlockType details
