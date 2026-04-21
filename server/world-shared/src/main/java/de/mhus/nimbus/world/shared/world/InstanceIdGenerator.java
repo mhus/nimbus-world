@@ -19,7 +19,7 @@ import java.util.UUID;
  *
  * The words are derived deterministically from UUID segments using a word list.
  * The trailing 8 hex chars ensure uniqueness.
- * Prefix "i-" marks player instance IDs (vs "x-" for editor instances).
+ * Prefix "i-" marks player instance IDs (vs "e-" for editor instances).
  */
 @Component
 @Slf4j

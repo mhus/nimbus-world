@@ -444,14 +444,14 @@ class WorldIdTest {
     class EditorInstanceTests {
 
         @Test
-        void isEditorInstance_WithXPrefix_ShouldReturnTrue() {
-            WorldId worldId = WorldId.of("region1:world1::x0").orElseThrow();
+        void isEditorInstance_WithEPrefix_ShouldReturnTrue() {
+            WorldId worldId = WorldId.of("region1:world1::e-0").orElseThrow();
             assertTrue(worldId.isEditorInstance());
         }
 
         @Test
-        void isEditorInstance_WithXAndEpoch_ShouldReturnTrue() {
-            WorldId worldId = WorldId.of("region1:world1::x2").orElseThrow();
+        void isEditorInstance_WithEAndEpoch_ShouldReturnTrue() {
+            WorldId worldId = WorldId.of("region1:world1::e-2").orElseThrow();
             assertTrue(worldId.isEditorInstance());
         }
 
@@ -462,38 +462,44 @@ class WorldIdTest {
         }
 
         @Test
+        void isEditorInstance_WithPlayerInstancePrefix_ShouldReturnFalse() {
+            WorldId worldId = WorldId.of("region1:world1::i-word-word-word-12345678").orElseThrow();
+            assertFalse(worldId.isEditorInstance());
+        }
+
+        @Test
         void isEditorInstance_WithBaseWorld_ShouldReturnFalse() {
             WorldId worldId = WorldId.of("region1:world1").orElseThrow();
             assertFalse(worldId.isEditorInstance());
         }
 
         @Test
-        void isEditorInstance_WithZoneAndXPrefix_ShouldReturnTrue() {
-            WorldId worldId = WorldId.of("region1:world1:zone1:x3").orElseThrow();
+        void isEditorInstance_WithZoneAndEPrefix_ShouldReturnTrue() {
+            WorldId worldId = WorldId.of("region1:world1:zone1:e-3").orElseThrow();
             assertTrue(worldId.isEditorInstance());
         }
 
         @Test
         void getEditorEpoch_ShouldReturnEpochNumber() {
-            WorldId worldId = WorldId.of("region1:world1::x2").orElseThrow();
+            WorldId worldId = WorldId.of("region1:world1::e-2").orElseThrow();
             assertEquals(2, worldId.getEditorEpoch());
         }
 
         @Test
         void getEditorEpoch_WithZero_ShouldReturnZero() {
-            WorldId worldId = WorldId.of("region1:world1::x0").orElseThrow();
+            WorldId worldId = WorldId.of("region1:world1::e-0").orElseThrow();
             assertEquals(0, worldId.getEditorEpoch());
         }
 
         @Test
         void getEditorEpoch_WithLargeNumber_ShouldReturn() {
-            WorldId worldId = WorldId.of("region1:world1::x42").orElseThrow();
+            WorldId worldId = WorldId.of("region1:world1::e-42").orElseThrow();
             assertEquals(42, worldId.getEditorEpoch());
         }
 
         @Test
         void editorInstance_ToBaseWorldId_ShouldStripInstance() {
-            WorldId worldId = WorldId.of("region1:world1::x2").orElseThrow();
+            WorldId worldId = WorldId.of("region1:world1::e-2").orElseThrow();
             assertEquals("region1:world1", worldId.toBaseWorldId().getId());
             assertFalse(worldId.toBaseWorldId().isEditorInstance());
         }

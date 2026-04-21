@@ -568,7 +568,7 @@ public class UniverseController extends BaseEditorController {
 
     /**
      * Validates that the actor role matches the chosen instance.
-     * - EDITOR: only synthetic instances (x-prefix), requires EDITOR role
+     * - EDITOR: only synthetic instances (e- prefix), requires EDITOR role
      * - SUPPORT: any instance, requires SUPPORT role
      * - PLAYER: only instances where player is allowed
      *
@@ -596,8 +596,8 @@ public class UniverseController extends BaseEditorController {
 
         switch (actor) {
             case EDITOR -> {
-                // EDITOR may only use synthetic epoch instances (x-prefix)
-                if (!instanceId.startsWith("x")) {
+                // EDITOR may only use synthetic epoch instances (e- prefix)
+                if (!instanceId.startsWith("e-")) {
                     return "Editor can only use epoch instances";
                 }
             }

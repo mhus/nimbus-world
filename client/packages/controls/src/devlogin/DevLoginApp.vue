@@ -918,10 +918,10 @@ const handleLogin = async () => {
       }
 
       // Instance: PLAYER can rejoin or create new, SUPPORT can only join existing
-      // EDITOR uses synthetic epoch instance (xN)
+      // EDITOR uses synthetic epoch instance (e-N)
       let instanceId: string | undefined;
       if (selectedActor.value === 'EDITOR' && selectedWorld.value.epoches && selectedWorld.value.epoches.length > 0) {
-        instanceId = `x${selectedEpoch.value}`;
+        instanceId = `e-${selectedEpoch.value}`;
       } else if (selectedInstance.value === '__last__') {
         // Resolve "Last Instance" to the most recently created instance
         const lastInstance = resolveLastInstance();

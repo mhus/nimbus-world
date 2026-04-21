@@ -81,7 +81,7 @@ public class WWorldService {
     /**
      * Loads an instance world.
      * Steps:
-     * 1. Check for synthetic editor instance (x-prefix)
+     * 1. Check for synthetic editor instance (e- prefix)
      * 2. Validate instance exists and extract main worldId from instance
      * 3. Load main world (with zone enrichment if applicable)
      * 4. Load instance data
@@ -94,7 +94,7 @@ public class WWorldService {
         try {
             WorldId parsedId = WorldId.unchecked(fullInstanceId);
 
-            // Check for synthetic editor instance (x-prefix, e.g. "x0", "x2")
+            // Check for synthetic editor instance (e-prefix, e.g. "e-0", "e-2")
             if (parsedId.isEditorInstance()) {
                 return loadSyntheticEditorInstance(parsedId, fullInstanceId);
             }
@@ -155,7 +155,7 @@ public class WWorldService {
     /**
      * Loads a synthetic editor instance.
      * No DB lookup, no COW - returns the base world with the synthetic instance worldId.
-     * The epoch is extracted from the instance ID (e.g. "x2" -> epoch 2).
+     * The epoch is extracted from the instance ID (e.g. "e-2" -> epoch 2).
      *
      * @param parsedId The parsed WorldId
      * @param fullInstanceId The full instance ID string
@@ -279,7 +279,7 @@ public class WWorldService {
 
     /**
      * Returns synthetic editor instances for a world based on its defined epochs.
-     * Each epoch produces one instance with instanceId "x{epoch}".
+     * Each epoch produces one instance with instanceId "e-{epoch}".
      * Validates that the user has the EDITOR actor role for this world.
      *
      * @param worldId The base worldId (must be a main world)
@@ -315,7 +315,7 @@ public class WWorldService {
         List<WWorldInstance> result = new ArrayList<>();
         for (WEpochMeta epoch : epochs) {
             WWorldInstance synthetic = new WWorldInstance();
-            synthetic.setInstanceId("x" + epoch.getEpoch());
+            synthetic.setInstanceId("e-" + epoch.getEpoch());
             synthetic.setWorldId(worldId);
             synthetic.setTitle("Epoch " + epoch.getEpoch() + ": " + epoch.getName());
             synthetic.setCreator("system");

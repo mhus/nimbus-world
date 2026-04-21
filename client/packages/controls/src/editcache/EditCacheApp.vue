@@ -101,7 +101,7 @@
                           :key="epoch"
                           class="badge badge-outline badge-sm mr-1"
                           :title="count + ' blocks in epoch ' + epoch"
-                        >x{{ epoch }}: {{ count }}</span>
+                        >e-{{ epoch }}: {{ count }}</span>
                       </td>
                       <td class="text-sm text-base-content/70">
                         {{ formatDate(stat.firstDate) }}
