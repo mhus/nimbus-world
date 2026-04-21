@@ -24,6 +24,7 @@ export interface WorldInfoEnvironment {
   sunAngleY?: number;
   sunElevation?: number;
   sunColor?: RGBColor;
+  nightBrightness?: number;
   skyBoxEnabled?: boolean;
   skyBoxMode?: string;
   skyBoxColor?: RGBColor;

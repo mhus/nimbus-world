@@ -6165,6 +6165,13 @@
         "javaTypeHint" : null,
         "comment" : null
       }, {
+        "name" : "nightBrightness",
+        "type" : "number",
+        "optional" : true,
+        "visibility" : null,
+        "javaTypeHint" : null,
+        "comment" : null
+      }, {
         "name" : "skyBox",
         "type" : "WorldInfoSettingsDTOSkyBoxDTO",
         "optional" : true,

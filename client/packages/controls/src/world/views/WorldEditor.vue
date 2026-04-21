@@ -796,6 +796,15 @@
                            class="input input-bordered input-sm" />
                   </div>
                 </div>
+                <div class="form-control">
+                  <label class="label"><span class="label-text">Night Brightness (0.0 - 1.0)</span></label>
+                  <input v-model.number="formData.publicData.settings.environment.nightBrightness"
+                         type="number" step="0.05" min="0" max="1"
+                         class="input input-bordered input-sm" />
+                  <label class="label">
+                    <span class="label-text-alt">0.0 = pitch black, 1.0 = bright as day (default: 0.15)</span>
+                  </label>
+                </div>
               </div>
             </div>
 
@@ -1840,6 +1849,7 @@ const formData = ref({
         sunAngleY: 0,
         sunElevation: 45,
         sunColor: { r: 1.0, g: 1.0, b: 0.9 },
+        nightBrightness: 0.15,
         skyBoxEnabled: true,
         skyBoxMode: 'texture',
         skyBoxColor: { r: 0.5, g: 0.7, b: 1.0 },
@@ -1953,6 +1963,7 @@ const loadWorld = () => {
             sunAngleY: 0,
             sunElevation: 45,
             sunColor: { r: 1.0, g: 1.0, b: 0.9 },
+            nightBrightness: 0.15,
             skyBoxEnabled: true,
             skyBoxMode: 'texture',
             skyBoxColor: { r: 0.5, g: 0.7, b: 1.0 },
@@ -2041,6 +2052,7 @@ const loadWorld = () => {
           sunAngleY: worldData?.settings?.environment?.sunAngleY || 0,
           sunElevation: worldData?.settings?.environment?.sunElevation || 45,
           sunColor: worldData?.settings?.environment?.sunColor || { r: 1.0, g: 1.0, b: 0.9 },
+          nightBrightness: worldData?.settings?.environment?.nightBrightness ?? 0.15,
           skyBoxEnabled: worldData?.settings?.environment?.skyBoxEnabled ?? true,
           skyBoxMode: worldData?.settings?.environment?.skyBoxMode || 'texture',
           skyBoxColor: worldData?.settings?.environment?.skyBoxColor || { r: 0.5, g: 0.7, b: 1.0 },

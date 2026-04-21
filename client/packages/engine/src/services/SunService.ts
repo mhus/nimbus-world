@@ -568,7 +568,9 @@ export class SunService {
     // Calculate ambient light intensity with multiplier
     // Ambient light should be softer and always present
     const ambientBaseIntensity = 0.3 + (intensityFactor * 0.7); // Range: 0.3-1.0
-    const ambientLightIntensity = ambientBaseIntensity * this.ambientLightIntensityMultiplier;
+    const ambientLightIntensityRaw = ambientBaseIntensity * this.ambientLightIntensityMultiplier;
+    const nightBrightness = this.appContext.worldInfo?.settings?.nightBrightness ?? 0.15;
+    const ambientLightIntensity = Math.max(nightBrightness, ambientLightIntensityRaw);
     environmentService.setAmbientLightIntensity(ambientLightIntensity);
 
     logger.debug('Automatic lighting updated', {

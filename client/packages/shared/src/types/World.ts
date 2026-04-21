@@ -121,6 +121,9 @@ export interface WorldInfo {
     /** Sun enabled (optional, default: true) */
     sunEnabled?: boolean;
 
+    /** Minimum ambient brightness at night (0.0 = pitch black, 1.0 = bright as day, default: 0.15) */
+    nightBrightness?: number;
+
     /** SkyBox settings */
     /** SkyBox configuration (optional) */
     skyBox?: {

@@ -55,6 +55,9 @@ public class WorldInfoSettingsDTO {
     @com.fasterxml.jackson.annotation.JsonProperty("sunEnabled")
     @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
     private java.lang.Boolean sunEnabled;
+    @com.fasterxml.jackson.annotation.JsonProperty("nightBrightness")
+    @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
+    private java.lang.Double nightBrightness;
     @com.fasterxml.jackson.annotation.JsonProperty("skyBox")
     @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
     private WorldInfoSettingsDTOSkyBoxDTO skyBox;
