@@ -3100,7 +3100,7 @@
     "interfaces" : [ ],
     "enums" : [ {
       "name" : "Shape",
-      "values" : [ "INVISIBLE", "CUBE", "CROSS", "HASH", "MODEL", "GLASS", "GLASS_FLAT", "FLAT", "SPHERE", "CYLINDER", "ROUND_CUBE", "STEPS", "STAIR", "BILLBOARD", "SPRITE", "FLAME", "OCEAN", "CAMPFIRE", "OCEAN_MAELSTROM", "RIVER", "RIVER_WATERFALL", "RIVER_WATERFALL_WHIRLPOOL", "WATER", "LAVA", "FOG", "THIN_INSTANCES", "WALL", "FLIPBOX", "ITEM", "BUSH" ],
+      "values" : [ "INVISIBLE", "CUBE", "CROSS", "HASH", "MODEL", "GLASS", "GLASS_FLAT", "FLAT", "SPHERE", "CYLINDER", "WIREFRAME", "STEPS", "STAIR", "BILLBOARD", "SPRITE", "FLAME", "OCEAN", "CAMPFIRE", "OCEAN_MAELSTROM", "RIVER", "RIVER_WATERFALL", "RIVER_WATERFALL_WHIRLPOOL", "WATER", "LAVA", "FOG", "THIN_INSTANCES", "WALL", "FLIPBOX", "ITEM", "BUSH" ],
       "enumValues" : [ {
         "name" : "INVISIBLE",
         "value" : "0"
@@ -3132,7 +3132,7 @@
         "name" : "CYLINDER",
         "value" : "9"
       }, {
-        "name" : "ROUND_CUBE",
+        "name" : "WIREFRAME",
         "value" : "10"
       }, {
         "name" : "STEPS",

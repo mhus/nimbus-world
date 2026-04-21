@@ -15,7 +15,7 @@ public enum Shape implements de.mhus.nimbus.types.TsEnum {
     FLAT(7),
     SPHERE(8),
     CYLINDER(9),
-    ROUND_CUBE(10),
+    WIREFRAME(10),
     STEPS(11),
     STAIR(12),
     BILLBOARD(13),

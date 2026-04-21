@@ -35,8 +35,8 @@ export enum Shape {
   /** Cylinder/pillar */
   CYLINDER = 9,
 
-  /** Rounded cube */
-  ROUND_CUBE = 10,
+  /** Wireframe cube (only grid lines, no faces) */
+  WIREFRAME = 10,
 
   /** Steps */
   STEPS = 11,
@@ -110,7 +110,7 @@ export const ShapeNames: Record<Shape, string> = {
   [Shape.FLAT]: 'flat',
   [Shape.SPHERE]: 'sphere',
   [Shape.CYLINDER]: 'cylinder',
-  [Shape.ROUND_CUBE]: 'round_cube',
+  [Shape.WIREFRAME]: 'wireframe',
   [Shape.STEPS]: 'steps',
   [Shape.STAIR]: 'stair',
   [Shape.BILLBOARD]: 'billboard',
