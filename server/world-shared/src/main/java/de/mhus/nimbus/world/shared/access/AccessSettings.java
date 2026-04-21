@@ -3,14 +3,17 @@ package de.mhus.nimbus.world.shared.access;
 import de.mhus.nimbus.shared.service.SSettingsService;
 import de.mhus.nimbus.shared.settings.SettingBoolean;
 import de.mhus.nimbus.shared.settings.SettingInteger;
+import de.mhus.nimbus.shared.settings.SettingString;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Configuration properties for AccessService.
@@ -18,6 +21,7 @@ import java.util.List;
  */
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class AccessSettings {
 
     private final SSettingsService settingsService;
@@ -27,6 +31,8 @@ public class AccessSettings {
     private SettingInteger agentTokenTtlSeconds;
     private SettingBoolean secureCookies;
     private SettingInteger closeSessionTimeoutSeconds;
+    private SettingBoolean devLoginEnabled;
+    private SettingString devLoginAccessKey;
 
     @Value( "${nimbus.access.accessUrls:}")
     private String accessUrls;
@@ -71,6 +77,15 @@ public class AccessSettings {
                 "access.closeSessionTimeoutSeconds",
                 10
         );
+        devLoginEnabled = settingsService.getBoolean(
+                "access.devLoginEnabled",
+                true
+        );
+        devLoginAccessKey = settingsService.getString(
+                "access.devLoginAccessKey",
+                UUID.randomUUID() + "-" + UUID.randomUUID()
+        );
+        log.warn("dev-login access key: {}", devLoginAccessKey.get());
     }
 
     /**
@@ -199,5 +214,21 @@ public class AccessSettings {
      */
     public int getCloseSessionTimeoutSeconds() {
         return closeSessionTimeoutSeconds.get();
+    }
+
+    /**
+     * Runtime toggle for dev-login. Acts as a soft-gate on top of the
+     * environment-based hard-gate {@code nimbus.devlogin.enabled}.
+     */
+    public boolean isDevLoginEnabled() {
+        return devLoginEnabled.get();
+    }
+
+    /**
+     * Access key required in addition to a valid dev-login request.
+     * Generated on first startup and logged at WARN level if not set.
+     */
+    public String getDevLoginAccessKey() {
+        return devLoginAccessKey.get();
     }
 }

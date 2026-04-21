@@ -10,6 +10,29 @@
     <!-- Main Content -->
     <main class="flex-1 container mx-auto px-4 py-6 max-w-4xl">
       <div class="space-y-6">
+        <!-- Access Key -->
+        <div class="card bg-base-100 shadow-xl">
+          <div class="card-body">
+            <h2 class="card-title">Access Key</h2>
+            <form autocomplete="on" @submit.prevent>
+              <!-- Hidden username field so password managers store the key per-host -->
+              <input type="text" name="username" value="devlogin" autocomplete="username" class="hidden" />
+              <input
+                v-model="accessKey"
+                type="password"
+                name="devlogin-access-key"
+                autocomplete="current-password"
+                placeholder="Dev-Login Access Key"
+                class="input input-bordered w-full"
+                @input="handleAccessKeyInput"
+              />
+            </form>
+            <p class="text-xs text-base-content/60 mt-1">
+              Aus dem Server-Log beim Start (WARN: "Generated new dev-login access key: ...").
+            </p>
+          </div>
+        </div>
+
         <!-- Step 1: World Selection -->
         <div class="card bg-base-100 shadow-xl">
           <div class="card-body">
@@ -462,8 +485,12 @@ const STORAGE_KEY_GRID_Q = 'nimbus-devlogin-grid-q';
 const STORAGE_KEY_GRID_R = 'nimbus-devlogin-grid-r';
 const STORAGE_KEY_EPOCH = 'nimbus-devlogin-epoch';
 const STORAGE_KEY_INSTANCE_MODE = 'nimbus-devlogin-instance-mode';
+const STORAGE_KEY_ACCESS_KEY = 'nimbus-devlogin-access-key';
 
 // ===== STATE =====
+
+// Access Key
+const accessKey = ref<string>('');
 
 // Worlds
 const worlds = ref<World[]>([]);
@@ -536,6 +563,22 @@ const canLogin = computed(() => {
 // ===== METHODS =====
 
 /**
+ * Handle access key input (debounced reload of worlds)
+ */
+let accessKeyTimeout: ReturnType<typeof setTimeout> | null = null;
+const handleAccessKeyInput = () => {
+  devLoginService.setAccessKey(accessKey.value);
+  localStorage.setItem(STORAGE_KEY_ACCESS_KEY, accessKey.value);
+
+  if (accessKeyTimeout) clearTimeout(accessKeyTimeout);
+  accessKeyTimeout = setTimeout(() => {
+    if (accessKey.value) {
+      loadWorlds();
+    }
+  }, 400);
+};
+
+/**
  * Save state to localStorage
  */
 const saveToLocalStorage = () => {
@@ -578,6 +621,13 @@ const saveToLocalStorage = () => {
  */
 const loadFromLocalStorage = async () => {
   try {
+    // Load access key
+    const savedAccessKey = localStorage.getItem(STORAGE_KEY_ACCESS_KEY);
+    if (savedAccessKey) {
+      accessKey.value = savedAccessKey;
+      devLoginService.setAccessKey(savedAccessKey);
+    }
+
     // Load login type
     const savedLoginType = localStorage.getItem(STORAGE_KEY_LOGIN_TYPE);
     if (savedLoginType === 'session' || savedLoginType === 'agent') {
@@ -1048,7 +1098,17 @@ watch(selectedCharacter, (newChar) => {
  * Load initial data on mount
  */
 onMounted(async () => {
-  await loadWorlds(); // Load first 100 worlds on mount
+  // Restore access key from localStorage first so the request is accepted
+  const savedAccessKey = localStorage.getItem(STORAGE_KEY_ACCESS_KEY);
+  if (savedAccessKey) {
+    accessKey.value = savedAccessKey;
+    devLoginService.setAccessKey(savedAccessKey);
+  }
+
+  // Only load worlds if we already have an access key
+  if (accessKey.value) {
+    await loadWorlds();
+  }
   await loadFromLocalStorage(); // Restore previous selections
 });
 </script>

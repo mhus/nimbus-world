@@ -2,6 +2,7 @@ package de.mhus.nimbus.world.control.api;
 
 import de.mhus.nimbus.shared.user.ActorRoles;
 import de.mhus.nimbus.world.shared.access.AccessService;
+import de.mhus.nimbus.world.shared.access.AccessSettings;
 import de.mhus.nimbus.world.shared.dto.DevAgentLoginRequest;
 import de.mhus.nimbus.world.shared.dto.DevLoginResponse;
 import de.mhus.nimbus.world.shared.dto.DevSessionLoginRequest;
@@ -28,18 +29,29 @@ import java.util.Map;
 @Slf4j
 public class ControlAaaController extends BaseEditorController {
 
+    private static final String ACCESS_KEY_HEADER = "X-DevLogin-Key";
+
     private final AccessService accessService;
+    private final AccessSettings accessSettings;
 
     @Value("${nimbus.devlogin.enabled:false}")
-    private boolean devLoginEnabled;
+    private boolean devLoginEnvEnabled;
 
-    public ControlAaaController(AccessService accessService) {
+    public ControlAaaController(AccessService accessService, AccessSettings accessSettings) {
         this.accessService = accessService;
+        this.accessSettings = accessSettings;
     }
 
-    private ResponseEntity<?> checkDevLoginEnabled() {
-        if (!devLoginEnabled) {
+    private ResponseEntity<?> checkDevLoginEnabled(String accessKey) {
+        if (!devLoginEnvEnabled) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "Dev login is disabled"));
+        }
+        if (!accessSettings.isDevLoginEnabled()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "Dev login is disabled"));
+        }
+        String expected = accessSettings.getDevLoginAccessKey();
+        if (Strings.isBlank(expected) || !expected.equals(accessKey)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Invalid access key"));
         }
         return null;
     }
@@ -77,9 +89,10 @@ public class ControlAaaController extends BaseEditorController {
     @GetMapping("/devlogin")
     public ResponseEntity<?> getDevLoginData(
             @RequestParam(required = false) String search,
-            @RequestParam(required = false, defaultValue = "100") int limit
+            @RequestParam(required = false, defaultValue = "100") int limit,
+            @RequestHeader(value = ACCESS_KEY_HEADER, required = false) String accessKey
     ) {
-        var blocked = checkDevLoginEnabled();
+        var blocked = checkDevLoginEnabled(accessKey);
         if (blocked != null) return blocked;
         log.debug("GET /control/aaa/devlogin - search={}, limit={}", search, limit);
 
@@ -108,9 +121,10 @@ public class ControlAaaController extends BaseEditorController {
     @GetMapping("/devlogin/users")
     public ResponseEntity<?> getDevLoginUsers(
             @RequestParam(required = false) String search,
-            @RequestParam(required = false, defaultValue = "100") int limit
+            @RequestParam(required = false, defaultValue = "100") int limit,
+            @RequestHeader(value = ACCESS_KEY_HEADER, required = false) String accessKey
     ) {
-        var blocked = checkDevLoginEnabled();
+        var blocked = checkDevLoginEnabled(accessKey);
         if (blocked != null) return blocked;
         log.debug("GET /control/aaa/devlogin/users - search={}, limit={}", search, limit);
 
@@ -135,8 +149,11 @@ public class ControlAaaController extends BaseEditorController {
      * @return List of zone worlds
      */
     @GetMapping("/devlogin/zones")
-    public ResponseEntity<?> getDevLoginZones(@RequestParam String worldId) {
-        var blocked = checkDevLoginEnabled();
+    public ResponseEntity<?> getDevLoginZones(
+            @RequestParam String worldId,
+            @RequestHeader(value = ACCESS_KEY_HEADER, required = false) String accessKey
+    ) {
+        var blocked = checkDevLoginEnabled(accessKey);
         if (blocked != null) return blocked;
         log.debug("GET /control/aaa/devlogin/zones - worldId={}", worldId);
 
@@ -167,9 +184,10 @@ public class ControlAaaController extends BaseEditorController {
     public ResponseEntity<?> getDevLoginInstances(
             @RequestParam String worldId,
             @RequestParam(required = false) String playerId,
-            @RequestParam(required = false, defaultValue = "false") boolean all
+            @RequestParam(required = false, defaultValue = "false") boolean all,
+            @RequestHeader(value = ACCESS_KEY_HEADER, required = false) String accessKey
     ) {
-        var blocked = checkDevLoginEnabled();
+        var blocked = checkDevLoginEnabled(accessKey);
         if (blocked != null) return blocked;
         log.debug("GET /control/aaa/devlogin/instances - worldId={}, playerId={}, all={}", worldId, playerId, all);
 
@@ -199,9 +217,10 @@ public class ControlAaaController extends BaseEditorController {
     @GetMapping("/devlogin/characters")
     public ResponseEntity<?> getDevLoginCharacters(
             @RequestParam String userId,
-            @RequestParam String worldId
+            @RequestParam String worldId,
+            @RequestHeader(value = ACCESS_KEY_HEADER, required = false) String accessKey
     ) {
-        var blocked = checkDevLoginEnabled();
+        var blocked = checkDevLoginEnabled(accessKey);
         if (blocked != null) return blocked;
         log.debug("GET /control/aaa/devlogin/characters - userId={}, worldId={}", userId, worldId);
 
@@ -239,8 +258,11 @@ public class ControlAaaController extends BaseEditorController {
      * @return DevLoginResponse with access token and URLs
      */
     @PostMapping("/devlogin")
-    public ResponseEntity<?> devLogin(@RequestBody DevLoginRequest request) {
-        var blocked = checkDevLoginEnabled();
+    public ResponseEntity<?> devLogin(
+            @RequestBody DevLoginRequest request,
+            @RequestHeader(value = ACCESS_KEY_HEADER, required = false) String accessKey
+    ) {
+        var blocked = checkDevLoginEnabled(accessKey);
         if (blocked != null) return blocked;
         log.debug("POST /control/aaa/devlogin - worldId={}, userId={}, agent={}, characterId={}, actor={}",
                 request.worldId(), request.userId(), request.agent(),

@@ -20,7 +20,7 @@ server:
 
 nimbus:
   devlogin:
-    enabled: false
+    enabled: ${NIMBUS_DEVLOGIN_ENABLED:true}
   schema:
     auto-migrate: false
 

@@ -76,7 +76,29 @@ export interface LoginResponse {
 
 // ===== Service Class =====
 
+const ACCESS_KEY_HEADER = 'X-DevLogin-Key';
+
 class DevLoginService {
+  private accessKey: string = '';
+
+  setAccessKey(key: string): void {
+    this.accessKey = key ?? '';
+  }
+
+  private buildConfig(params?: any): any {
+    const config: any = {};
+    if (params !== undefined) config.params = params;
+    if (this.accessKey) {
+      config.headers = { [ACCESS_KEY_HEADER]: this.accessKey };
+    }
+    return config;
+  }
+
+  private async get<T>(url: string, params?: any): Promise<T> {
+    const response = await apiService.getClient().get<T>(url, this.buildConfig(params));
+    return response.data;
+  }
+
   /**
    * Get list of available worlds with optional search filter
    */
@@ -85,7 +107,7 @@ class DevLoginService {
     if (searchQuery) {
       params.search = searchQuery;
     }
-    return apiService.get<World[]>('/control/aaa/devlogin', params);
+    return this.get<World[]>('/control/aaa/devlogin', params);
   }
 
   /**
@@ -96,7 +118,7 @@ class DevLoginService {
     if (searchQuery) {
       params.search = searchQuery;
     }
-    return apiService.get<User[]>('/control/aaa/devlogin/users', params);
+    return this.get<User[]>('/control/aaa/devlogin/users', params);
   }
 
   /**
@@ -104,14 +126,14 @@ class DevLoginService {
    */
   async getCharacters(userId: string, worldId: string): Promise<Character[]> {
     const params = { userId, worldId };
-    return apiService.get<Character[]>('/control/aaa/devlogin/characters', params);
+    return this.get<Character[]>('/control/aaa/devlogin/characters', params);
   }
 
   /**
    * Get zones for a main world
    */
   async getZones(worldId: string): Promise<World[]> {
-    return apiService.get<World[]>('/control/aaa/devlogin/zones', { worldId });
+    return this.get<World[]>('/control/aaa/devlogin/zones', { worldId });
   }
 
   /**
@@ -122,14 +144,14 @@ class DevLoginService {
     const params: any = { worldId };
     if (playerId) params.playerId = playerId;
     if (all) params.all = true;
-    return apiService.get<WorldInstance[]>('/control/aaa/devlogin/instances', params);
+    return this.get<WorldInstance[]>('/control/aaa/devlogin/instances', params);
   }
 
   /**
    * Perform login (session or agent)
    */
   async login(request: LoginRequest): Promise<LoginResponse> {
-    return apiService.post<LoginResponse>('/control/aaa/devlogin', request);
+    return apiService.post<LoginResponse>('/control/aaa/devlogin', request, this.buildConfig());
   }
 
   /**
