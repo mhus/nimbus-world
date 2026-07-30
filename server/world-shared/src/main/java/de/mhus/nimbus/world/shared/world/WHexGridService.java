@@ -10,6 +10,7 @@ import org.apache.logging.log4j.util.Strings;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -105,6 +106,30 @@ public class WHexGridService {
 
         List<WHexGrid> all = repository.findAllByWorldIdAndPosition(lookupWorld.getId(), positionKey);
         return all.isEmpty() ? Optional.empty() : Optional.of(all.getFirst());
+    }
+
+    /**
+     * Batch position lookup (epoch-unfiltered): resolves several hex positions in
+     * a single query. Returns a map positionKey ("q;r") -> hex grid (first epoch
+     * variant per position); positions without a hex grid are simply absent.
+     */
+    @Transactional(readOnly = true)
+    public Map<String, WHexGrid> findByWorldIdAndPositions(String worldId, List<HexVector2> positions) {
+        if (Strings.isBlank(worldId) || positions == null || positions.isEmpty()) {
+            return Map.of();
+        }
+        WorldId parsedWorldId = WorldId.of(worldId).orElseThrow();
+        if (parsedWorldId.isCollection()) {
+            throw new IllegalArgumentException("WHexGrid cannot be in a collection");
+        }
+        var lookupWorld = parsedWorldId.toBaseWorldId();
+
+        List<String> keys = positions.stream().map(TypeUtil::toStringHexCoord).distinct().toList();
+        Map<String, WHexGrid> result = new HashMap<>();
+        for (WHexGrid grid : repository.findAllByWorldIdAndPositionIn(lookupWorld.getId(), keys)) {
+            result.putIfAbsent(grid.getPosition(), grid); // first epoch variant per position
+        }
+        return result;
     }
 
     // --- Find by world ---

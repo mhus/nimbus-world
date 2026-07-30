@@ -3,6 +3,7 @@ package de.mhus.nimbus.world.shared.world;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -18,6 +19,10 @@ public interface WHexGridRepository extends MongoRepository<WHexGrid, String> {
      * Finds all hex grids at the given world and position (may be multiple with different epoches).
      */
     List<WHexGrid> findAllByWorldIdAndPosition(String worldId, String position);
+
+    // EPOCH-UNFILTERED: returns data across all epochs. Batch variant for looking
+    // up several positions (e.g. hex neighbors) in a single query.
+    List<WHexGrid> findAllByWorldIdAndPositionIn(String worldId, Collection<String> positions);
 
     /**
      * Finds a hex grid by world ID, position, and epoch.

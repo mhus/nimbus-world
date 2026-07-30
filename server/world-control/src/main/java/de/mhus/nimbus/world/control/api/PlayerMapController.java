@@ -167,17 +167,25 @@ public class PlayerMapController extends BaseEditorController {
             result.put("mapImage", EMPTY_MAP_IMAGE);
         }
 
-        // Build neighbor info
+        // Build neighbor info. Batch-load all 6 neighbor hex grids in a single
+        // query (instead of one findByWorldIdAndPosition per edge).
+        List<HexVector2> neighborPositions = new ArrayList<>();
+        for (WHexGrid.EDGE edge : WHexGrid.EDGE.values()) {
+            neighborPositions.add(HexMathUtil.getNeighborPosition(hexPos, edge));
+        }
+        Map<String, WHexGrid> neighborGrids = hexGridService.findByWorldIdAndPositions(worldId, neighborPositions);
+
         List<Map<String, Object>> neighbors = new ArrayList<>();
         for (WHexGrid.EDGE edge : WHexGrid.EDGE.values()) {
             HexVector2 neighborPos = HexMathUtil.getNeighborPosition(hexPos, edge);
+            String hexKey = neighborPos.getQ() + ";" + neighborPos.getR();
             Map<String, Object> neighborInfo = new LinkedHashMap<>();
             neighborInfo.put("edge", edge.getShortName());
             neighborInfo.put("q", neighborPos.getQ());
             neighborInfo.put("r", neighborPos.getR());
 
-            // Check if neighbor hex grid exists
-            var neighborGrid = hexGridService.findByWorldIdAndPosition(worldId, neighborPos).orElse(null);
+            // Neighbor hex grid from the batch result
+            var neighborGrid = neighborGrids.get(hexKey);
             neighborInfo.put("exists", neighborGrid != null);
 
             if (neighborGrid != null && neighborGrid.getPublicData() != null) {
@@ -189,7 +197,6 @@ public class PlayerMapController extends BaseEditorController {
             }
 
             // Check if player has explored this neighbor (in-memory, batched above)
-            String hexKey = neighborPos.getQ() + ";" + neighborPos.getR();
             neighborInfo.put("explored", exploredHexKeys.contains(hexKey));
 
             neighbors.add(neighborInfo);
