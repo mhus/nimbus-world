@@ -18,6 +18,8 @@ import org.apache.logging.log4j.util.Strings;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 
 /**
  * Access filter for world-generator service.
@@ -48,6 +50,30 @@ public class GeneratorAccessFilter extends AccessFilterBase {
     @PostConstruct
     private void init() {
         settingMcpToken = settingsService.getString("mcp.token", "");
+        if (Strings.isBlank(settingMcpToken.get())) {
+            log.warn("SECURITY: 'mcp.token' is not set - MCP endpoints (/sse, /mcp/) are exposed "
+                    + "WITHOUT authentication. Set 'mcp.token' or restrict network access to this port.");
+        }
+    }
+
+    /**
+     * Matches the MCP surface exactly ({@code /sse}, {@code /sse/...}, {@code /mcp},
+     * {@code /mcp/...}) so unrelated paths like {@code /mcpanything} are not treated
+     * as MCP endpoints and fall through to standard authentication.
+     */
+    private boolean isMcpPath(String uri) {
+        return uri.equals("/sse") || uri.startsWith("/sse/")
+                || uri.equals("/mcp") || uri.startsWith("/mcp/");
+    }
+
+    private boolean tokenMatches(String authHeader, String mcpToken) {
+        if (authHeader == null) {
+            return false;
+        }
+        byte[] provided = authHeader.getBytes(StandardCharsets.UTF_8);
+        byte[] expected = ("Bearer " + mcpToken).getBytes(StandardCharsets.UTF_8);
+        // Constant-time comparison to avoid a timing side-channel on the token.
+        return MessageDigest.isEqual(provided, expected);
     }
 
     @Override
@@ -57,16 +83,16 @@ public class GeneratorAccessFilter extends AccessFilterBase {
         String requestUri = request.getRequestURI();
 
         // MCP endpoints: check MCP token instead of session auth
-        if (requestUri.startsWith("/sse") || requestUri.startsWith("/mcp")) {
+        if (isMcpPath(requestUri)) {
             String mcpToken = settingMcpToken.get();
 
             if (Strings.isBlank(mcpToken)) {
+                log.warn("MCP: unauthenticated access to {} (mcp.token not set)", requestUri);
                 filterChain.doFilter(request, response);
                 return;
             }
 
-            String authHeader = request.getHeader("Authorization");
-            if (authHeader != null && authHeader.equals("Bearer " + mcpToken)) {
+            if (tokenMatches(request.getHeader("Authorization"), mcpToken)) {
                 filterChain.doFilter(request, response);
                 return;
             }

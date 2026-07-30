@@ -1,10 +1,12 @@
 package de.mhus.nimbus.world.player.api;
 
 import de.mhus.nimbus.shared.types.WorldId;
+import de.mhus.nimbus.world.shared.access.AccessValidator;
 import de.mhus.nimbus.world.shared.world.SAssetService;
 import de.mhus.nimbus.world.shared.world.AssetMetadata;
 import de.mhus.nimbus.world.shared.world.SAsset;
 import de.mhus.nimbus.world.shared.world.SAssetRepository;
+import jakarta.servlet.http.HttpServletRequest;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -39,6 +41,7 @@ public class AssetController {
 
     private final SAssetService assetService;
     private final SAssetRepository assetRepository;
+    private final AccessValidator accessUtil;
 
     /**
      * Serve binary asset file (alternative with explicit path).
@@ -52,7 +55,8 @@ public class AssetController {
     })
     public ResponseEntity<?> getAssetByPath(
             @PathVariable String worldId,
-            @PathVariable String assetPath) {
+            @PathVariable String assetPath,
+            HttpServletRequest request) {
 
         // Remove leading slash if present (Spring path variable includes it)
         if (assetPath != null && assetPath.startsWith("/")) {
@@ -62,9 +66,21 @@ public class AssetController {
 
         log.trace("Asset request: worldId={}, path={}", worldId, finalAssetPath);
 
+        // Ensure the path worldId matches the authenticated session, so a player
+        // authenticated for world A cannot read assets of another world B.
+        WorldId pathWorldId = WorldId.of(worldId).orElse(null);
+        if (pathWorldId == null) {
+            return ResponseEntity.badRequest().build();
+        }
+        WorldId sessionWorldId = accessUtil.getWorldId(request).orElse(null);
+        if (sessionWorldId == null
+                || !sessionWorldId.toBaseWorldId().equals(pathWorldId.toBaseWorldId())) {
+            log.debug("Denied cross-world asset access: session={} path={}", sessionWorldId, pathWorldId);
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
         // Find asset in database
-        // Try with worldId as regionId first (for main worlds), then fallback to null regionId
-        SAsset asset = assetService.findByPath(WorldId.of(worldId).orElse(null), finalAssetPath)
+        SAsset asset = assetService.findByPath(pathWorldId, finalAssetPath)
                 .orElse(null);
 
         if (asset == null) {

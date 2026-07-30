@@ -3,6 +3,7 @@ package de.mhus.nimbus.world.control.api;
 import de.mhus.nimbus.shared.storage.StorageData;
 import de.mhus.nimbus.shared.storage.StorageService;
 import jakarta.servlet.http.HttpServletResponse;
+import java.util.regex.Pattern;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -61,7 +62,10 @@ public class StorageController {
 
         // Add search criteria if query provided
         if (query != null && !query.trim().isEmpty()) {
-            String searchTerm = query.trim();
+            // Escape the user input to a literal pattern so regex metacharacters
+            // cannot inject a catastrophic/backtracking expression (ReDoS) or
+            // a ".*" match-all against the shared MongoDB instance.
+            String searchTerm = Pattern.quote(query.trim());
             Criteria searchCriteria = new Criteria().orOperator(
                     Criteria.where("uuid").regex(searchTerm, "i"),
                     Criteria.where("path").regex(searchTerm, "i"),

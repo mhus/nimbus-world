@@ -134,6 +134,9 @@ public class WChatController extends BaseEditorController {
             HttpServletRequest request) {
 
         String worldId = (String) request.getAttribute(AccessFilterBase.ATTR_WORLD_ID);
+        String userId = (String) request.getAttribute(AccessFilterBase.ATTR_USER_ID);
+        String characterId = (String) request.getAttribute(AccessFilterBase.ATTR_CHARACTER_ID);
+        String playerId = resolvePlayerId(userId, characterId);
 
         log.debug("GET messages: worldId={}, chatId={}, afterMessageId={} limit={}", worldId, chatId, afterMessageId, limit);
 
@@ -143,9 +146,15 @@ public class WChatController extends BaseEditorController {
         if (Strings.isBlank(chatId)) {
             return bad("chatId required");
         }
+        if (playerId == null) {
+            return bad("playerId required - not authenticated");
+        }
 
         try {
             WorldId wId = WorldId.unchecked(worldId);
+            if (loadOwnedChat(wId, chatId, playerId) == null) {
+                return notFound("Chat not found");
+            }
             List<WChatMessage> messages =
                     Strings.isBlank(afterMessageId)
                         ?
@@ -244,9 +253,11 @@ public class WChatController extends BaseEditorController {
         try {
             WorldId wId = WorldId.unchecked(worldId);
 
-            // Get chat to determine agent
-            WChat chat = chatService.findByWorldIdAndChatId(wId, chatId)
-                    .orElseThrow(() -> new IllegalArgumentException("Chat not found: " + chatId));
+            // Get chat to determine agent (verifies caller owns the chat)
+            WChat chat = loadOwnedChat(wId, chatId, playerId);
+            if (chat == null) {
+                return notFound("Chat not found");
+            }
 
             // For agent chats, use the chat type as agent name
             String agentName = chat.getType();
@@ -305,9 +316,11 @@ public class WChatController extends BaseEditorController {
         try {
             WorldId wId = WorldId.unchecked(worldId);
 
-            // Get chat to determine agent
-            WChat chat = chatService.findByWorldIdAndChatId(wId, chatId)
-                    .orElseThrow(() -> new IllegalArgumentException("Chat not found: " + chatId));
+            // Get chat to determine agent (verifies caller owns the chat)
+            WChat chat = loadOwnedChat(wId, chatId, playerId);
+            if (chat == null) {
+                return notFound("Chat not found");
+            }
 
             // For agent chats, use the chat type as agent name
             String agentName = chat.getType();
@@ -374,6 +387,9 @@ public class WChatController extends BaseEditorController {
             HttpServletRequest request) {
 
         String worldId = (String) request.getAttribute(AccessFilterBase.ATTR_WORLD_ID);
+        String userId = (String) request.getAttribute(AccessFilterBase.ATTR_USER_ID);
+        String characterId = (String) request.getAttribute(AccessFilterBase.ATTR_CHARACTER_ID);
+        String playerId = resolvePlayerId(userId, characterId);
 
         log.debug("PUT archive chat: worldId={}, chatId={}", worldId, chatId);
 
@@ -383,9 +399,15 @@ public class WChatController extends BaseEditorController {
         if (Strings.isBlank(chatId)) {
             return bad("chatId required");
         }
+        if (playerId == null) {
+            return bad("playerId required - not authenticated");
+        }
 
         try {
             WorldId wId = WorldId.unchecked(worldId);
+            if (loadOwnedChat(wId, chatId, playerId) == null) {
+                return notFound("Chat not found");
+            }
             boolean success = chatService.archive(wId, chatId);
 
             if (success) {
@@ -410,6 +432,9 @@ public class WChatController extends BaseEditorController {
             HttpServletRequest request) {
 
         String worldId = (String) request.getAttribute(AccessFilterBase.ATTR_WORLD_ID);
+        String userId = (String) request.getAttribute(AccessFilterBase.ATTR_USER_ID);
+        String characterId = (String) request.getAttribute(AccessFilterBase.ATTR_CHARACTER_ID);
+        String playerId = resolvePlayerId(userId, characterId);
 
         log.debug("PUT unarchive chat: worldId={}, chatId={}", worldId, chatId);
 
@@ -419,9 +444,15 @@ public class WChatController extends BaseEditorController {
         if (Strings.isBlank(chatId)) {
             return bad("chatId required");
         }
+        if (playerId == null) {
+            return bad("playerId required - not authenticated");
+        }
 
         try {
             WorldId wId = WorldId.unchecked(worldId);
+            if (loadOwnedChat(wId, chatId, playerId) == null) {
+                return notFound("Chat not found");
+            }
             boolean success = chatService.unarchive(wId, chatId);
 
             if (success) {
@@ -448,6 +479,24 @@ public class WChatController extends BaseEditorController {
                     .orElse(null);
         }
         return null;
+    }
+
+    /**
+     * Loads a chat and verifies it belongs to the calling player. Returns the
+     * chat when the caller is the owner, otherwise {@code null} — callers must
+     * treat {@code null} as "not found" (404) so foreign chat ids are neither
+     * readable nor enumerable (IDOR guard).
+     */
+    private WChat loadOwnedChat(WorldId worldId, String chatId, String playerId) {
+        WChat chat = chatService.findByWorldIdAndChatId(worldId, chatId).orElse(null);
+        if (chat == null || !playerId.equals(chat.getOwnerId())) {
+            if (chat != null) {
+                log.warn("Denied cross-player chat access: chatId={} owner={} caller={}",
+                        chatId, chat.getOwnerId(), playerId);
+            }
+            return null;
+        }
+        return chat;
     }
 
     private ChatResponse toChatResponse(WChat chat) {
