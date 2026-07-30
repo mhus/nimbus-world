@@ -1,10 +1,10 @@
 package de.mhus.nimbus.world.life.logic;
 
+import de.mhus.nimbus.world.shared.spel.SafeSpel;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.expression.MapAccessor;
+import org.springframework.expression.EvaluationContext;
 import org.springframework.expression.Expression;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
-import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
@@ -49,7 +49,7 @@ public class LogicSpelService {
     public void evaluateAssignment(String expression, LogicStateMap stateMap, String rulePackage) {
         String resolved = resolveShorthand(expression, rulePackage);
         try {
-            StandardEvaluationContext context = createContext(stateMap);
+            EvaluationContext context = SafeSpel.readWrite(buildRoot(stateMap));
             Expression expr = PARSER.parseExpression(resolved);
             expr.getValue(context);
         } catch (Exception e) {
@@ -72,7 +72,7 @@ public class LogicSpelService {
         }
         String resolved = resolveShorthand(spelCondition, rulePackage);
         try {
-            StandardEvaluationContext context = createContext(stateMap);
+            EvaluationContext context = SafeSpel.readOnly(buildRoot(stateMap));
             Expression expr = PARSER.parseExpression(resolved);
             Boolean result = expr.getValue(context, Boolean.class);
             return result != null && result;
@@ -108,13 +108,9 @@ public class LogicSpelService {
                 .replaceAll("state." + rulePackage + ".$1");
     }
 
-    private StandardEvaluationContext createContext(LogicStateMap stateMap) {
+    private Map<String, Object> buildRoot(LogicStateMap stateMap) {
         Map<String, Object> root = new HashMap<>();
         root.put("state", stateMap);
-
-        StandardEvaluationContext context = new StandardEvaluationContext();
-        context.addPropertyAccessor(new MapAccessor());
-        context.setRootObject(root);
-        return context;
+        return root;
     }
 }

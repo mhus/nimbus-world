@@ -409,7 +409,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, nextTick, computed } from 'vue';
-import { marked } from 'marked';
+import { renderMarkdown } from '@/utils/markdown';
 import { useModal } from '@/composables/useModal';
 import { apiService } from '@/services/ApiService';
 import SpeechPlayer from '@/components/SpeechPlayer.vue';
@@ -924,11 +924,6 @@ const statusDotClass = (chat: Chat): string => {
     case 'INACTIVE':
     default:            return 'bg-error';           // red
   }
-};
-
-// Render markdown
-const renderMarkdown = (text: string): string => {
-  return marked.parse(text || '', { async: false }) as string;
 };
 
 // Format date

@@ -1,10 +1,10 @@
 package de.mhus.nimbus.world.generator.modelbuilder;
 
+import de.mhus.nimbus.world.shared.spel.SafeSpel;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.expression.MapAccessor;
+import org.springframework.expression.EvaluationContext;
 import org.springframework.expression.Expression;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
-import org.springframework.expression.spel.support.StandardEvaluationContext;
 
 import java.util.Map;
 
@@ -27,9 +27,7 @@ public final class ConditionEvaluator {
         if (condition == null || condition.isBlank()) return true;
 
         try {
-            StandardEvaluationContext context = new StandardEvaluationContext();
-            context.addPropertyAccessor(new MapAccessor());
-            context.setRootObject(variables);
+            EvaluationContext context = SafeSpel.readOnly(variables);
 
             String processed = preprocess(condition);
             Expression expr = PARSER.parseExpression(processed);

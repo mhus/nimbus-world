@@ -218,7 +218,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
-import { marked } from 'marked';
+import { renderMarkdown } from '@/utils/markdown';
 import { apiService } from '@/services/ApiService';
 
 interface LibraryItem {
@@ -301,7 +301,7 @@ async function loadRecipes() {
 
 const renderedContent = computed(() => {
   if (docFormat.value !== 'markdown') return '';
-  return marked.parse(docContent.value || '', { async: false }) as string;
+  return renderMarkdown(docContent.value);
 });
 
 const formatDate = (isoString: string): string => {

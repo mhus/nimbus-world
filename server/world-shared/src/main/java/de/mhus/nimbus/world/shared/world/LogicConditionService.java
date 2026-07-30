@@ -2,10 +2,10 @@ package de.mhus.nimbus.world.shared.world;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.expression.MapAccessor;
+import de.mhus.nimbus.world.shared.spel.SafeSpel;
+import org.springframework.expression.EvaluationContext;
 import org.springframework.expression.Expression;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
-import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -196,9 +196,7 @@ public class LogicConditionService {
         Map<String, Object> root = new HashMap<>();
         root.put("state", state);
 
-        StandardEvaluationContext context = new StandardEvaluationContext();
-        context.addPropertyAccessor(new MapAccessor());
-        context.setRootObject(root);
+        EvaluationContext context = SafeSpel.readOnly(root);
 
         Expression expr = PARSER.parseExpression(resolvedExpression);
         Boolean r = expr.getValue(context, Boolean.class);

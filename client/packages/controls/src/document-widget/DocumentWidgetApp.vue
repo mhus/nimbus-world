@@ -31,7 +31,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue';
-import { marked } from 'marked';
+import { renderMarkdown } from '@/utils/markdown';
 import { ApiService } from '@/services/ApiService';
 
 const apiService = new ApiService();
@@ -46,7 +46,7 @@ const isMarkdown = computed(() => format.value === 'markdown');
 
 const renderedContent = computed(() => {
   if (!isMarkdown.value) return '';
-  return marked.parse(content.value || '', { async: false }) as string;
+  return renderMarkdown(content.value);
 });
 
 interface DocumentResponse {
