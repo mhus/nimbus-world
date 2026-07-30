@@ -337,6 +337,10 @@ function closeWidget() {
 </script>
 
 <style scoped>
+/* Tailwind 4: scoped <style> blocks are processed in isolation, so @apply needs
+   a @reference to know the utility classes. */
+@reference "tailwindcss";
+
 .action-btn {
   @apply px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm font-medium transition-colors text-left;
 }

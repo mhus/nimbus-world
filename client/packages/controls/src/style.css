@@ -1,6 +1,13 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+/* Explicit source globs (paths relative to this file) so content detection is
+   deterministic across the monorepo instead of relying on cwd auto-detection. */
+@source "../index.html";
+@source "./**/*.{vue,js,ts,jsx,tsx}";
+
+@plugin "daisyui" {
+  themes: light --default, dark --prefersdark;
+}
 
 /* Custom styles */
 body {

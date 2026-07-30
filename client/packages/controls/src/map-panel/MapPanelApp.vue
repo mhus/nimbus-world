@@ -318,6 +318,10 @@ onMounted(() => {
 </script>
 
 <style scoped>
+/* Tailwind 4: scoped <style> blocks are processed in isolation, so @apply needs
+   a @reference to know the utility classes. */
+@reference "tailwindcss";
+
 .nav-btn {
   @apply px-3 py-1.5 rounded bg-amber-700/80 hover:bg-amber-600 text-white text-xs font-bold
          transition-colors shadow-lg border border-amber-500/50 backdrop-blur-sm;
