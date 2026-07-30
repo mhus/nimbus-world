@@ -270,4 +270,22 @@ public class WEntityModelService {
         return modelCount;
     }
 
+    /**
+     * Repair duplicate WEntityModel entries (unique: worldId + name).
+     * Owner-level operation so callers do not access the WEntityModel collection
+     * directly (data ownership). Matches the raw worldId exactly.
+     *
+     * @param worldId World identifier (raw stored worldId)
+     * @return neutral repair result with duplicate counts
+     */
+    public DuplicateRepairResult repairDuplicates(String worldId) {
+        return DuplicateRepairHelper.repairDuplicates(
+                mongoTemplate, WEntityModel.class, "entitymodel", worldId,
+                doc -> {
+                    String modelId = doc.getString("name");
+                    return modelId != null ? doc.getString("worldId") + "|" + modelId : null;
+                }
+        );
+    }
+
 }

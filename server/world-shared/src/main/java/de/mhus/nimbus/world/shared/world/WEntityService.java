@@ -495,4 +495,22 @@ public class WEntityService {
         return EpochArrayHelper.delete(mongoTemplate, WEntity.class, "entity", worldId, epoch);
     }
 
+    /**
+     * Repair duplicate WEntity entries (unique: worldId + entityId).
+     * Owner-level operation so callers do not access the WEntity collection
+     * directly (data ownership). Matches the raw worldId exactly.
+     *
+     * @param worldId World identifier (raw stored worldId)
+     * @return neutral repair result with duplicate counts
+     */
+    public DuplicateRepairResult repairDuplicates(String worldId) {
+        return DuplicateRepairHelper.repairDuplicates(
+                mongoTemplate, WEntity.class, "entity", worldId,
+                doc -> {
+                    String entityId = doc.getString("entityId");
+                    return entityId != null ? doc.getString("worldId") + "|" + entityId : null;
+                }
+        );
+    }
+
 }

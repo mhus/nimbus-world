@@ -519,4 +519,22 @@ public class WItemPositionService {
         return EpochArrayHelper.delete(mongoTemplate, WItemPosition.class, "item_position", worldId, epoch);
     }
 
+    /**
+     * Repair duplicate WItemPosition entries (unique: worldId + itemId).
+     * Owner-level operation so callers do not access the WItemPosition collection
+     * directly (data ownership). Matches the raw worldId exactly.
+     *
+     * @param worldId World identifier (raw stored worldId)
+     * @return neutral repair result with duplicate counts
+     */
+    public DuplicateRepairResult repairDuplicates(String worldId) {
+        return DuplicateRepairHelper.repairDuplicates(
+                mongoTemplate, WItemPosition.class, "itemposition", worldId,
+                doc -> {
+                    String itemId = doc.getString("itemId");
+                    return itemId != null ? doc.getString("worldId") + "|" + itemId : null;
+                }
+        );
+    }
+
 }

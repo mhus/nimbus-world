@@ -383,4 +383,22 @@ public class WItemService {
                 })
                 .collect(java.util.stream.Collectors.toList());
     }
+
+    /**
+     * Repair duplicate WItem entries (unique: worldId + name).
+     * Owner-level operation so callers do not access the WItem collection
+     * directly (data ownership). Matches the raw worldId exactly.
+     *
+     * @param worldId World identifier (raw stored worldId)
+     * @return neutral repair result with duplicate counts
+     */
+    public DuplicateRepairResult repairDuplicates(String worldId) {
+        return DuplicateRepairHelper.repairDuplicates(
+                mongoTemplate, WItem.class, "item", worldId,
+                doc -> {
+                    String itemId = doc.getString("name");
+                    return itemId != null ? doc.getString("worldId") + "|" + itemId : null;
+                }
+        );
+    }
 }

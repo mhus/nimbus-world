@@ -634,4 +634,22 @@ public class WHexGridService {
     public EpochProcessResult deleteEpoch(String worldId, int epoch) {
         return EpochArrayHelper.delete(mongoTemplate, WHexGrid.class, "hexgrid", worldId, epoch);
     }
+
+    /**
+     * Repair duplicate WHexGrid entries (unique: worldId + position).
+     * Owner-level operation so callers do not access the WHexGrid collection
+     * directly (data ownership). Matches the raw worldId exactly.
+     *
+     * @param worldId World identifier (raw stored worldId)
+     * @return neutral repair result with duplicate counts
+     */
+    public DuplicateRepairResult repairDuplicates(String worldId) {
+        return DuplicateRepairHelper.repairDuplicates(
+                mongoTemplate, WHexGrid.class, "hexgrid", worldId,
+                doc -> {
+                    String position = doc.getString("position");
+                    return position != null ? doc.getString("worldId") + "|" + position : null;
+                }
+        );
+    }
 }

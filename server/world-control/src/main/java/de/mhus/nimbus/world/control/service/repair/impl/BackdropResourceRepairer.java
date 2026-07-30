@@ -3,18 +3,20 @@ package de.mhus.nimbus.world.control.service.repair.impl;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.control.service.repair.ResourceRepairService;
 import de.mhus.nimbus.world.control.service.repair.ResourceRepairer;
+import de.mhus.nimbus.world.shared.world.DuplicateRepairResult;
+import de.mhus.nimbus.world.shared.world.WBackdropService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.stereotype.Service;
 
 /**
  * Repairs duplicate WBackdrop entries (unique: worldId + backdropId).
+ * Delegates to the owner service which has data ownership over WBackdrop.
  */
 @Service
 @RequiredArgsConstructor
 public class BackdropResourceRepairer implements ResourceRepairer {
 
-    private final MongoTemplate mongoTemplate;
+    private final WBackdropService backdropService;
 
     @Override
     public String name() {
@@ -23,12 +25,8 @@ public class BackdropResourceRepairer implements ResourceRepairer {
 
     @Override
     public ResourceRepairService.ProcessResult repair(WorldId worldId) {
-        return DuplicateRepairHelper.repairDuplicates(
-                mongoTemplate, "w_backdrops", worldId.getId(), name(),
-                doc -> {
-                    String backdropId = doc.getString("backdropId");
-                    return backdropId != null ? doc.getString("worldId") + "|" + backdropId : null;
-                }
-        );
+        DuplicateRepairResult result = backdropService.repairDuplicates(worldId.getId());
+        return new ResourceRepairService.ProcessResult(
+                result.typeName(), result.success(), result.message(), result.timestamp());
     }
 }

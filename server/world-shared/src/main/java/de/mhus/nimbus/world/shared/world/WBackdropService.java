@@ -237,4 +237,22 @@ public class WBackdropService {
                 .collect(java.util.stream.Collectors.toList());
     }
 
+    /**
+     * Repair duplicate WBackdrop entries (unique: worldId + backdropId).
+     * Owner-level operation so callers do not access the WBackdrop collection
+     * directly (data ownership). Matches the raw worldId exactly.
+     *
+     * @param worldId World identifier (raw stored worldId)
+     * @return neutral repair result with duplicate counts
+     */
+    public DuplicateRepairResult repairDuplicates(String worldId) {
+        return DuplicateRepairHelper.repairDuplicates(
+                mongoTemplate, WBackdrop.class, "backdrop", worldId,
+                doc -> {
+                    String backdropId = doc.getString("backdropId");
+                    return backdropId != null ? doc.getString("worldId") + "|" + backdropId : null;
+                }
+        );
+    }
+
 }

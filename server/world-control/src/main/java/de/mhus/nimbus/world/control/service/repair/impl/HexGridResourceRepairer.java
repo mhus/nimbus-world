@@ -3,18 +3,20 @@ package de.mhus.nimbus.world.control.service.repair.impl;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.control.service.repair.ResourceRepairService;
 import de.mhus.nimbus.world.control.service.repair.ResourceRepairer;
+import de.mhus.nimbus.world.shared.world.DuplicateRepairResult;
+import de.mhus.nimbus.world.shared.world.WHexGridService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.stereotype.Service;
 
 /**
  * Repairs duplicate WHexGrid entries (unique: worldId + position).
+ * Delegates to the owner service which has data ownership over WHexGrid.
  */
 @Service
 @RequiredArgsConstructor
 public class HexGridResourceRepairer implements ResourceRepairer {
 
-    private final MongoTemplate mongoTemplate;
+    private final WHexGridService hexGridService;
 
     @Override
     public String name() {
@@ -23,12 +25,8 @@ public class HexGridResourceRepairer implements ResourceRepairer {
 
     @Override
     public ResourceRepairService.ProcessResult repair(WorldId worldId) {
-        return DuplicateRepairHelper.repairDuplicates(
-                mongoTemplate, "w_hexgrids", worldId.getId(), name(),
-                doc -> {
-                    String position = doc.getString("position");
-                    return position != null ? doc.getString("worldId") + "|" + position : null;
-                }
-        );
+        DuplicateRepairResult result = hexGridService.repairDuplicates(worldId.getId());
+        return new ResourceRepairService.ProcessResult(
+                result.typeName(), result.success(), result.message(), result.timestamp());
     }
 }

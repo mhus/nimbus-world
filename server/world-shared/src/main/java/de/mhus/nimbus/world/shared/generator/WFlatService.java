@@ -1,5 +1,7 @@
 package de.mhus.nimbus.world.shared.generator;
 
+import de.mhus.nimbus.world.shared.world.DuplicateRepairHelper;
+import de.mhus.nimbus.world.shared.world.DuplicateRepairResult;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.bson.Document;
@@ -246,5 +248,25 @@ public class WFlatService {
         log.info("Duplicated {} flats from world {} to {}",
                 duplicatedCount, sourceWorldId, targetWorldId);
         return duplicatedCount;
+    }
+
+    /**
+     * Repair duplicate WFlat entries (unique: worldId + layerDataId + flatId).
+     * Owner-level operation so callers do not access the WFlat collection
+     * directly (data ownership). Matches the raw worldId exactly.
+     *
+     * @param worldId World identifier (raw stored worldId)
+     * @return neutral repair result with duplicate counts
+     */
+    public DuplicateRepairResult repairDuplicates(String worldId) {
+        return DuplicateRepairHelper.repairDuplicates(
+                mongoTemplate, WFlat.class, "flat", worldId,
+                doc -> {
+                    String layerDataId = doc.getString("layerDataId");
+                    String flatId = doc.getString("flatId");
+                    if (flatId == null) return null;
+                    return doc.getString("worldId") + "|" + (layerDataId != null ? layerDataId : "") + "|" + flatId;
+                }
+        );
     }
 }

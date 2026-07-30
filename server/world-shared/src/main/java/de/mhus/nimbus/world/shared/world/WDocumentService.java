@@ -412,4 +412,22 @@ public class WDocumentService {
         log.info("Duplicated {} documents from world {} to {}", targets.size(), sourceWorldId, targetWorldId);
         return targets.size();
     }
+
+    /**
+     * Repair duplicate WDocument entries (unique: worldId + documentId).
+     * Owner-level operation so callers do not access the WDocument collection
+     * directly (data ownership). Matches the raw worldId exactly.
+     *
+     * @param worldId World identifier (raw stored worldId)
+     * @return neutral repair result with duplicate counts
+     */
+    public DuplicateRepairResult repairDuplicates(String worldId) {
+        return DuplicateRepairHelper.repairDuplicates(
+                mongoTemplate, WDocument.class, "document", worldId,
+                doc -> {
+                    String documentId = doc.getString("documentId");
+                    return documentId != null ? doc.getString("worldId") + "|" + documentId : null;
+                }
+        );
+    }
 }

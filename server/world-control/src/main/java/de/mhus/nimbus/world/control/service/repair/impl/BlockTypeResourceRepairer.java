@@ -3,18 +3,20 @@ package de.mhus.nimbus.world.control.service.repair.impl;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.control.service.repair.ResourceRepairService;
 import de.mhus.nimbus.world.control.service.repair.ResourceRepairer;
+import de.mhus.nimbus.world.shared.world.DuplicateRepairResult;
+import de.mhus.nimbus.world.shared.world.WBlockTypeService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.stereotype.Service;
 
 /**
- * Repairs duplicate WBlockType entries (unique: worldId + blockId).
+ * Repairs duplicate WBlockType entries (unique: worldId + name).
+ * Delegates to the owner service which has data ownership over WBlockType.
  */
 @Service
 @RequiredArgsConstructor
 public class BlockTypeResourceRepairer implements ResourceRepairer {
 
-    private final MongoTemplate mongoTemplate;
+    private final WBlockTypeService blockTypeService;
 
     @Override
     public String name() {
@@ -23,12 +25,8 @@ public class BlockTypeResourceRepairer implements ResourceRepairer {
 
     @Override
     public ResourceRepairService.ProcessResult repair(WorldId worldId) {
-        return DuplicateRepairHelper.repairDuplicates(
-                mongoTemplate, "w_blocktypes", worldId.getId(), name(),
-                doc -> {
-                    Object name = doc.get("name");
-                    return name != null ? doc.getString("worldId") + "|" + name : null;
-                }
-        );
+        DuplicateRepairResult result = blockTypeService.repairDuplicates(worldId.getId());
+        return new ResourceRepairService.ProcessResult(
+                result.typeName(), result.success(), result.message(), result.timestamp());
     }
 }

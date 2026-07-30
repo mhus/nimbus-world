@@ -260,4 +260,24 @@ public class WAnythingService {
                 duplicatedCount, sourceWorldId, targetWorldId);
         return duplicatedCount;
     }
+
+    /**
+     * Repair duplicate WAnything entries (unique: worldId + collection + name).
+     * Owner-level operation so callers do not access the WAnything collection
+     * directly (data ownership). Matches the raw worldId exactly.
+     *
+     * @param worldId World identifier (raw stored worldId)
+     * @return neutral repair result with duplicate counts
+     */
+    public DuplicateRepairResult repairDuplicates(String worldId) {
+        return DuplicateRepairHelper.repairDuplicates(
+                mongoTemplate, WAnything.class, "anything", worldId,
+                doc -> {
+                    String collection = doc.getString("collection");
+                    String docName = doc.getString("name");
+                    if (docName == null) return null;
+                    return doc.getString("worldId") + "|" + (collection != null ? collection : "") + "|" + docName;
+                }
+        );
+    }
 }

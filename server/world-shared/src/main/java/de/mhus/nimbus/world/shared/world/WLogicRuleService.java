@@ -261,4 +261,22 @@ public class WLogicRuleService {
     public EpochProcessResult deleteEpoch(String worldId, int epoch) {
         return EpochArrayHelper.delete(mongoTemplate, WLogicRule.class, "logic-rule", worldId, epoch);
     }
+
+    /**
+     * Repair duplicate WLogicRule entries (unique: worldId + name).
+     * Owner-level operation so callers do not access the WLogicRule collection
+     * directly (data ownership). Matches the raw worldId exactly.
+     *
+     * @param worldId World identifier (raw stored worldId)
+     * @return neutral repair result with duplicate counts
+     */
+    public DuplicateRepairResult repairDuplicates(String worldId) {
+        return DuplicateRepairHelper.repairDuplicates(
+                mongoTemplate, WLogicRule.class, "logic-rule", worldId,
+                doc -> {
+                    String name = doc.getString("name");
+                    return name != null ? doc.getString("worldId") + "|" + name : null;
+                }
+        );
+    }
 }

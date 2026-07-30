@@ -1,6 +1,5 @@
-package de.mhus.nimbus.world.control.service.repair.impl;
+package de.mhus.nimbus.world.shared.world;
 
-import de.mhus.nimbus.world.control.service.repair.ResourceRepairService;
 import lombok.extern.slf4j.Slf4j;
 import org.bson.Document;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -15,8 +14,14 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
- * Helper for finding and removing duplicate documents based on a unique key.
- * Used by entity-specific ResourceRepairer implementations.
+ * Shared repair engine for finding and removing duplicate documents based on a
+ * unique business key. Invoked by owner services (data ownership) to deduplicate
+ * their own collections.
+ * <p>
+ * Operates on raw {@link Document} instances so that legacy rows lacking the
+ * {@code _schema} field are still detected. Duplicates are removed precisely by
+ * {@code _id}, keeping one document per key group (prefer the one with a
+ * {@code _schema} field, otherwise the latest {@code createdAt}).
  */
 @Slf4j
 public final class DuplicateRepairHelper {
@@ -24,22 +29,23 @@ public final class DuplicateRepairHelper {
     private DuplicateRepairHelper() {}
 
     /**
-     * Find and remove duplicate documents in a collection.
+     * Find and remove duplicate documents in the collection backing the given entity class.
      *
-     * @param mongoTemplate  MongoTemplate instance
-     * @param collectionName MongoDB collection name
-     * @param worldId        World ID to scope the repair
-     * @param typeName       Type name for logging/result
-     * @param keyExtractor   Function to extract the unique key from a document
-     * @return ProcessResult with repair details
+     * @param mongoTemplate MongoTemplate instance
+     * @param entityClass   entity class whose backing collection is repaired
+     * @param typeName      type name for logging/result
+     * @param worldId       World ID to scope the repair (raw stored worldId)
+     * @param keyExtractor  function to extract the unique key from a document
+     * @return neutral repair result with details
      */
-    public static ResourceRepairService.ProcessResult repairDuplicates(
+    public static DuplicateRepairResult repairDuplicates(
             MongoTemplate mongoTemplate,
-            String collectionName,
-            String worldId,
+            Class<?> entityClass,
             String typeName,
+            String worldId,
             Function<Document, String> keyExtractor
     ) {
+        String collectionName = mongoTemplate.getCollectionName(entityClass);
         log.info("Starting {} repair for world {}", typeName, worldId);
 
         Query query = new Query(Criteria.where("worldId").is(worldId));
@@ -77,19 +83,24 @@ public final class DuplicateRepairHelper {
 
         log.info("{} repair completed: {} duplicates found, {} removed", typeName, duplicatesFound, duplicatesRemoved);
 
-        return new ResourceRepairService.ProcessResult(
+        return new DuplicateRepairResult(
                 typeName,
                 true,
                 String.format("Duplicates found: %d, removed: %d", duplicatesFound, duplicatesRemoved),
-                System.currentTimeMillis()
+                System.currentTimeMillis(),
+                duplicatesFound,
+                duplicatesRemoved
         );
     }
 
     /**
      * Select which document to keep when duplicates are found.
      * Priority: 1. Document with _schema field, 2. Latest createdAt, 3. First in list.
+     * <p>
+     * Package-private so owner services with bespoke dedup logic (e.g. asset
+     * repair) can reuse the exact same selection rule.
      */
-    private static Document selectDocumentToKeep(List<Document> documents) {
+    static Document selectDocumentToKeep(List<Document> documents) {
         Optional<Document> withSchema = documents.stream()
                 .filter(doc -> doc.containsKey("_schema"))
                 .findFirst();

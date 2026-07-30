@@ -370,4 +370,22 @@ public class WBlockTypeService {
         return duplicatedCount;
     }
 
+    /**
+     * Repair duplicate WBlockType entries (unique: worldId + name).
+     * Owner-level operation so callers do not access the WBlockType collection
+     * directly (data ownership). Matches the raw worldId exactly.
+     *
+     * @param worldId World identifier (raw stored worldId)
+     * @return neutral repair result with duplicate counts
+     */
+    public DuplicateRepairResult repairDuplicates(String worldId) {
+        return DuplicateRepairHelper.repairDuplicates(
+                mongoTemplate, WBlockType.class, "blocktype", worldId,
+                doc -> {
+                    Object name = doc.get("name");
+                    return name != null ? doc.getString("worldId") + "|" + name : null;
+                }
+        );
+    }
+
 }

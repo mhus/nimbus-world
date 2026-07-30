@@ -79,6 +79,34 @@ public abstract class StorageService {
      */
     public abstract String duplicate(String sourceStorageId, String targetWorldId);
 
+    /**
+     * List distinct storage uuids of FINAL chunks for a world, created before the given date.
+     * Used by repair to determine which stored objects are candidates for orphan detection.
+     *
+     * @param worldId   the world identifier to scope by
+     * @param olderThan only entries created strictly before this date are returned
+     * @return distinct storage uuids of final chunks
+     */
+    public abstract List<String> findFinalStorageUuids(String worldId, Date olderThan);
+
+    /**
+     * List distinct storage uuids of ALL chunks for a world, created before the given date.
+     * Used by repair to detect incomplete (non-final) uploads.
+     *
+     * @param worldId   the world identifier to scope by
+     * @param olderThan only entries created strictly before this date are returned
+     * @return distinct storage uuids of all chunks
+     */
+    public abstract List<String> findStorageUuids(String worldId, Date olderThan);
+
+    /**
+     * Hard-delete all chunks belonging to a storage uuid immediately.
+     * Used by repair to remove incomplete uploads that never received a final chunk.
+     *
+     * @param storageId the storage uuid whose chunks are removed
+     */
+    public abstract void deleteChunksByUuid(String storageId);
+
     public boolean exists(String storageId) {
         try {
             return info(storageId) != null;

@@ -3,18 +3,20 @@ package de.mhus.nimbus.world.control.service.repair.impl;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.control.service.repair.ResourceRepairService;
 import de.mhus.nimbus.world.control.service.repair.ResourceRepairer;
+import de.mhus.nimbus.world.shared.world.DuplicateRepairResult;
+import de.mhus.nimbus.world.shared.world.WEntityModelService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.stereotype.Service;
 
 /**
- * Repairs duplicate WEntityModel entries (unique: worldId + modelId).
+ * Repairs duplicate WEntityModel entries (unique: worldId + name).
+ * Delegates to the owner service which has data ownership over WEntityModel.
  */
 @Service
 @RequiredArgsConstructor
 public class EntityModelResourceRepairer implements ResourceRepairer {
 
-    private final MongoTemplate mongoTemplate;
+    private final WEntityModelService entityModelService;
 
     @Override
     public String name() {
@@ -23,12 +25,8 @@ public class EntityModelResourceRepairer implements ResourceRepairer {
 
     @Override
     public ResourceRepairService.ProcessResult repair(WorldId worldId) {
-        return DuplicateRepairHelper.repairDuplicates(
-                mongoTemplate, "w_entity_models", worldId.getId(), name(),
-                doc -> {
-                    String modelId = doc.getString("name");
-                    return modelId != null ? doc.getString("worldId") + "|" + modelId : null;
-                }
-        );
+        DuplicateRepairResult result = entityModelService.repairDuplicates(worldId.getId());
+        return new ResourceRepairService.ProcessResult(
+                result.typeName(), result.success(), result.message(), result.timestamp());
     }
 }

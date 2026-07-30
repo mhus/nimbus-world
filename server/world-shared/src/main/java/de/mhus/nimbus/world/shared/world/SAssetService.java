@@ -7,11 +7,13 @@ import io.micrometer.common.util.StringUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
+import org.bson.Document;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -952,6 +954,151 @@ public class SAssetService implements StorageProvider {
                 "storageId",
                 SAsset.class,
                 String.class
+        );
+    }
+
+    /**
+     * Repair duplicate assets (unique: worldId + path) and sweep orphaned storage.
+     * Owner-level operation so callers do not access the SAsset collection or the
+     * storage layer directly (data ownership). Matches the raw worldId exactly.
+     * <p>
+     * Operates on raw {@link Document} instances so that legacy rows lacking the
+     * {@code _schema} field are still detected; duplicates are removed precisely
+     * by {@code _id}. When a duplicate's storage is not referenced by the kept
+     * document nor any other asset, the external storage is deleted as well.
+     * Finally, any storageId that is no longer referenced by any asset document
+     * is removed from storage.
+     *
+     * @param worldId World identifier (raw stored worldId)
+     * @return neutral asset repair result with duplicate and orphaned-storage counts
+     */
+    public AssetRepairResult repairDuplicates(String worldId) {
+        String collectionName = mongoTemplate.getCollectionName(SAsset.class);
+        log.info("Starting asset repair for world {}", worldId);
+
+        int duplicatesFound = 0;
+        int duplicatesRemoved = 0;
+        int orphanedStorageFound = 0;
+        int orphanedStorageRemoved = 0;
+
+        // Find all assets for this world
+        Query query = new Query(Criteria.where("worldId").is(worldId));
+        List<Document> documents = mongoTemplate.find(query, Document.class, collectionName);
+
+        log.info("Found {} total asset documents for world {}", documents.size(), worldId);
+
+        // Group by worldId + path to find duplicates
+        Map<String, List<Document>> groupedByPath = documents.stream()
+                .filter(doc -> doc.getString("path") != null)
+                .collect(Collectors.groupingBy(doc -> {
+                    String wId = doc.getString("worldId");
+                    String path = doc.getString("path");
+                    return wId + "|" + path;
+                }));
+
+        // Find and handle duplicates
+        for (Map.Entry<String, List<Document>> entry : groupedByPath.entrySet()) {
+            List<Document> duplicates = entry.getValue();
+
+            if (duplicates.size() > 1) {
+                duplicatesFound += duplicates.size() - 1;
+                log.warn("Found {} duplicates for key: {}", duplicates.size(), entry.getKey());
+
+                // Keep the document with _schema field (most recent), or highest createdAt
+                Document toKeep = DuplicateRepairHelper.selectDocumentToKeep(duplicates);
+                log.info("Keeping document with _id: {} (has _schema: {})",
+                        toKeep.get("_id"),
+                        toKeep.containsKey("_schema"));
+
+                // Remove duplicates
+                for (Document doc : duplicates) {
+                    if (doc.get("_id").equals(toKeep.get("_id"))) {
+                        continue; // Skip the one we want to keep
+                    }
+
+                    Object docId = doc.get("_id");
+                    String storageId = doc.getString("storageId");
+
+                    log.info("Removing duplicate document _id: {} (has _schema: {}, storageId: {})",
+                            docId, doc.containsKey("_schema"), storageId);
+
+                    // Check if storageId is used by the document we're keeping or any other document
+                    boolean storageInUse = false;
+                    if (storageId != null) {
+                        String keptStorageId = toKeep.getString("storageId");
+                        storageInUse = storageId.equals(keptStorageId);
+
+                        // Check if any other document uses this storageId
+                        if (!storageInUse) {
+                            Query storageQuery = new Query(
+                                    Criteria.where("storageId").is(storageId)
+                                            .and("_id").ne(docId)
+                            );
+                            storageInUse = mongoTemplate.exists(storageQuery, collectionName);
+                        }
+                    }
+
+                    // Delete the storage if not in use
+                    if (storageId != null && !storageInUse) {
+                        log.info("Deleting orphaned storage: {}", storageId);
+                        try {
+                            storageService.delete(storageId);
+                            orphanedStorageRemoved++;
+                        } catch (Exception e) {
+                            log.warn("Failed to delete storage {}: {}", storageId, e.getMessage());
+                        }
+                    }
+
+                    // Delete the duplicate document
+                    Query deleteQuery = new Query(Criteria.where("_id").is(docId));
+                    mongoTemplate.remove(deleteQuery, collectionName);
+                    duplicatesRemoved++;
+
+                }
+            }
+        }
+
+        // Find orphaned storage IDs (storageId exists but not referenced by kept document)
+        Set<String> allStorageIds = documents.stream()
+                .map(doc -> doc.getString("storageId"))
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        log.info("Checking {} unique storage IDs for orphans", allStorageIds.size());
+
+        for (String storageId : allStorageIds) {
+            Query storageQuery = new Query(Criteria.where("storageId").is(storageId));
+            long count = mongoTemplate.count(storageQuery, collectionName);
+
+            if (count == 0) {
+                orphanedStorageFound++;
+                log.warn("Found orphaned storage (no document references it): {}", storageId);
+
+                try {
+                    storageService.delete(storageId);
+                    orphanedStorageRemoved++;
+                    log.info("Deleted orphaned storage: {}", storageId);
+                } catch (Exception e) {
+                    log.warn("Failed to delete orphaned storage {}: {}", storageId, e.getMessage());
+                }
+            }
+        }
+
+        log.info("Asset repair completed: {} duplicates found, {} removed, {} orphaned storage found, {} removed",
+                duplicatesFound, duplicatesRemoved, orphanedStorageFound, orphanedStorageRemoved);
+
+        return new AssetRepairResult(
+                "asset",
+                true,
+                String.format("Duplicates found: %d, removed: %d; Orphaned storage found: %d, removed: %d",
+                        duplicatesFound, duplicatesRemoved,
+                        orphanedStorageFound, orphanedStorageRemoved
+                ),
+                System.currentTimeMillis(),
+                duplicatesFound,
+                duplicatesRemoved,
+                orphanedStorageFound,
+                orphanedStorageRemoved
         );
     }
 }

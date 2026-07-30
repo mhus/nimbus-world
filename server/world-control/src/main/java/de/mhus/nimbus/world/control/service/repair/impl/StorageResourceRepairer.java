@@ -1,19 +1,12 @@
 package de.mhus.nimbus.world.control.service.repair.impl;
 
-import de.mhus.nimbus.shared.storage.StorageDataRepository;
 import de.mhus.nimbus.shared.storage.StorageService;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.control.service.repair.ResourceRepairService;
 import de.mhus.nimbus.world.control.service.repair.ResourceRepairer;
-import de.mhus.nimbus.world.shared.layer.WLayerService;
-import de.mhus.nimbus.world.shared.world.SAssetService;
 import de.mhus.nimbus.world.shared.world.StorageProvider;
-import de.mhus.nimbus.world.shared.world.WChunkService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -27,19 +20,17 @@ import java.util.*;
  * - Non-final storage entries (incomplete uploads)
  *
  * Only processes storage entries older than 2 hours to avoid conflicts with ongoing uploads.
- * Uses services with data ownership (SAssetService, WChunkService, WLayerService) to get referenced storageIds.
+ * Uses StorageProviders (data ownership) to get referenced storageIds and delegates all
+ * storage_data queries/deletes to the StorageService (data ownership over storage_data).
  */
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class StorageResourceRepairer implements ResourceRepairer {
 
-    private static final String STORAGE_COLLECTION = "storage_data";
     private static final long MIN_AGE_HOURS = 2;
 
-    private final MongoTemplate mongoTemplate;
     private final StorageService storageService;
-    private final StorageDataRepository storageDataRepository;
 
     // Services with data ownership
     private final List<StorageProvider> storageProviders;
@@ -94,7 +85,7 @@ public class StorageResourceRepairer implements ResourceRepairer {
             for (String storageId : nonFinalStorageIds) {
                 try {
                     // Delete all chunks for this storageId
-                    storageDataRepository.deleteByUuid(storageId);
+                    storageService.deleteChunksByUuid(storageId);
                     nonFinalStorageRemoved++;
                     log.debug("Deleted non-final storage: {}", storageId);
                 } catch (Exception e) {
@@ -120,23 +111,12 @@ public class StorageResourceRepairer implements ResourceRepairer {
 
     /**
      * Find orphaned storage IDs (no entity references).
-     * Returns storage IDs that exist in storage_data but are not referenced by any entity.
+     * Returns storage IDs that exist in storage but are not referenced by any entity.
      * Uses services with data ownership to get referenced storageIds.
      */
     private Set<String> findOrphanedStorageIds(WorldId worldId, Date minAgeDate) {
         // Get all final storage IDs for this world (older than 2 hours)
-        Query storageQuery = new Query(
-                Criteria.where("worldId").is(worldId.getId())
-                        .and("isFinal").is(true)
-                        .and("createdAt").lt(minAgeDate)
-        );
-
-        List<String> allStorageIds = mongoTemplate.findDistinct(
-                storageQuery,
-                "uuid",
-                STORAGE_COLLECTION,
-                String.class
-        );
+        List<String> allStorageIds = storageService.findFinalStorageUuids(worldId.getId(), minAgeDate);
 
         log.debug("Found {} final storage entries older than {} for world {}",
                 allStorageIds.size(), minAgeDate, worldId);
@@ -172,34 +152,13 @@ public class StorageResourceRepairer implements ResourceRepairer {
      */
     private Set<String> findNonFinalStorageIds(WorldId worldId, Date minAgeDate) {
         // Get all storage IDs for this world (older than 2 hours)
-        Query allStorageQuery = new Query(
-                Criteria.where("worldId").is(worldId.getId())
-                        .and("createdAt").lt(minAgeDate)
-        );
-
-        List<String> allStorageIds = mongoTemplate.findDistinct(
-                allStorageQuery,
-                "uuid",
-                STORAGE_COLLECTION,
-                String.class
-        );
+        List<String> allStorageIds = storageService.findStorageUuids(worldId.getId(), minAgeDate);
 
         log.debug("Found {} total storage entries older than {} for world {}",
                 allStorageIds.size(), minAgeDate, worldId);
 
         // Get all final storage IDs
-        Query finalStorageQuery = new Query(
-                Criteria.where("worldId").is(worldId.getId())
-                        .and("isFinal").is(true)
-                        .and("createdAt").lt(minAgeDate)
-        );
-
-        Set<String> finalStorageIds = new HashSet<>(mongoTemplate.findDistinct(
-                finalStorageQuery,
-                "uuid",
-                STORAGE_COLLECTION,
-                String.class
-        ));
+        Set<String> finalStorageIds = new HashSet<>(storageService.findFinalStorageUuids(worldId.getId(), minAgeDate));
 
         log.debug("Found {} final storage entries for world {}", finalStorageIds.size(), worldId);
 

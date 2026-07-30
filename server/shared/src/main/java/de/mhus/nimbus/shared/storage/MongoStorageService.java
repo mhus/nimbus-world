@@ -286,6 +286,31 @@ public class MongoStorageService extends StorageService {
     }
 
     @Override
+    public List<String> findFinalStorageUuids(String worldId, Date olderThan) {
+        Query query = new Query(
+                Criteria.where("worldId").is(worldId)
+                        .and("isFinal").is(true)
+                        .and("createdAt").lt(olderThan)
+        );
+        return mongoTemplate.findDistinct(query, "uuid", StorageData.class, String.class);
+    }
+
+    @Override
+    public List<String> findStorageUuids(String worldId, Date olderThan) {
+        Query query = new Query(
+                Criteria.where("worldId").is(worldId)
+                        .and("createdAt").lt(olderThan)
+        );
+        return mongoTemplate.findDistinct(query, "uuid", StorageData.class, String.class);
+    }
+
+    @Override
+    @Transactional
+    public void deleteChunksByUuid(String storageId) {
+        storageDataRepository.deleteByUuid(storageId);
+    }
+
+    @Override
     @Transactional
     public String duplicate(String sourceStorageId, String targetWorldId) {
         if (sourceStorageId == null || sourceStorageId.isBlank()) {
