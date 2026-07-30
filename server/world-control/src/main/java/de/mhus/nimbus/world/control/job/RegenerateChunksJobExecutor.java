@@ -7,7 +7,7 @@ import de.mhus.nimbus.world.shared.job.WJob;
 import de.mhus.nimbus.world.shared.layer.WDirtyChunkService;
 import de.mhus.nimbus.world.shared.layer.WLayer;
 import de.mhus.nimbus.world.shared.layer.WLayerService;
-import de.mhus.nimbus.world.shared.world.WChunkRepository;
+import de.mhus.nimbus.world.shared.world.WChunkService;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
 import de.mhus.nimbus.world.shared.world.WHexGridService;
 import de.mhus.nimbus.world.shared.world.WWorld;
@@ -49,7 +49,7 @@ public class RegenerateChunksJobExecutor implements JobExecutor {
     private final WWorldService worldService;
     private final WHexGridService hexGridService;
     private final WLayerService layerService;
-    private final WChunkRepository chunkRepository;
+    private final WChunkService chunkService;
 
     @Override
     public String getExecutorName() {
@@ -165,7 +165,7 @@ public class RegenerateChunksJobExecutor implements JobExecutor {
         // Determine affected chunks and mark dirty
         List<String> chunkKeys;
         if (layer.isAllChunks()) {
-            chunkKeys = chunkRepository.findByWorldId(worldId).stream()
+            chunkKeys = chunkService.findChunksByWorldId(worldId).stream()
                     .map(c -> c.getChunk())
                     .collect(Collectors.toList());
             log.info("Layer '{}' affects all chunks, marking {} existing chunks dirty", layerName, chunkKeys.size());

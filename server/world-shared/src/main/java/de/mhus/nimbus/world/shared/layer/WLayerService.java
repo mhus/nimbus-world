@@ -1923,6 +1923,14 @@ public class WLayerService implements StorageProvider {
     }
 
     /**
+     * Find all models (full content) for a layerDataId, ordered by order.
+     */
+    @Transactional(readOnly = true)
+    public List<WLayerModel> findModelsByLayerDataId(String layerDataId) {
+        return modelRepository.findByLayerDataIdOrderByOrder(layerDataId);
+    }
+
+    /**
      * Find a model (full content) by layerDataId and name.
      */
     @Transactional(readOnly = true)

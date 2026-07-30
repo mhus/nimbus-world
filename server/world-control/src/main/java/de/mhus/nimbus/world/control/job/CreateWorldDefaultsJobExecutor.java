@@ -19,7 +19,7 @@ import de.mhus.nimbus.world.shared.layer.WDirtyChunkService;
 import de.mhus.nimbus.world.shared.layer.WLayer;
 import de.mhus.nimbus.world.shared.layer.WLayerService;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
-import de.mhus.nimbus.world.shared.world.WHexGridRepository;
+import de.mhus.nimbus.world.shared.world.WHexGridService;
 import de.mhus.nimbus.world.shared.world.WWorldService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -47,7 +47,7 @@ import java.util.Map;
 public class CreateWorldDefaultsJobExecutor implements JobExecutor {
 
     private final WLayerService layerService;
-    private final WHexGridRepository hexGridRepository;
+    private final WHexGridService hexGridService;
     private final WWorldService worldService;
     private final WDirtyChunkService dirtyChunkService;
 
@@ -109,9 +109,10 @@ public class CreateWorldDefaultsJobExecutor implements JobExecutor {
                         .enabled(true)
                         .build();
 
-                hexGrid.syncPositionKey();
-                hexGrid.touchCreate();
-                hexGridRepository.save(hexGrid);
+                // WHexGridService.save runs syncPositionKey + touchCreate/touchUpdate
+                // (and epoch pull, a no-op here since the grid has no epoches) itself,
+                // so the previous manual syncPositionKey()/touchCreate() calls are redundant.
+                hexGridService.save(hexGrid);
                 resultMessage.append("- Hex grid at 0:0 created\n");
                 log.debug("Created default hex grid at 0:0 for world {}", worldId);
 

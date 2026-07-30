@@ -7,7 +7,7 @@ import de.mhus.nimbus.world.shared.layer.*;
 import de.mhus.nimbus.world.shared.redis.WorldRedisService;
 import de.mhus.nimbus.world.shared.session.EditState;
 import de.mhus.nimbus.world.shared.session.WSessionService;
-import de.mhus.nimbus.world.shared.world.WChunkRepository;
+import de.mhus.nimbus.world.shared.world.WChunkService;
 import dev.langchain4j.agent.tool.Tool;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
@@ -33,35 +33,32 @@ import java.util.stream.Collectors;
 public class LayerToolService {
 
     private final WLayerService layerService;
-    private final WLayerModelRepository modelRepository;
     private final WSessionService sessionService;
     private final WorldRedisService redisService;
     private final WEditCacheService editCacheService;
     private final WEditCacheDirtyService editCacheDirtyService;
     private final WJobService jobService;
     private final WDirtyChunkService dirtyChunkService;
-    private final WChunkRepository chunkRepository;
+    private final WChunkService chunkService;
     private final BlockUpdateService blockUpdateService;
 
     public LayerToolService(WLayerService layerService,
-                            WLayerModelRepository modelRepository,
                             WSessionService sessionService,
                             WorldRedisService redisService,
                             WEditCacheService editCacheService,
                             WEditCacheDirtyService editCacheDirtyService,
                             WJobService jobService,
                             WDirtyChunkService dirtyChunkService,
-                            WChunkRepository chunkRepository,
+                            WChunkService chunkService,
                             BlockUpdateService blockUpdateService) {
         this.layerService = layerService;
-        this.modelRepository = modelRepository;
         this.sessionService = sessionService;
         this.redisService = redisService;
         this.editCacheService = editCacheService;
         this.editCacheDirtyService = editCacheDirtyService;
         this.jobService = jobService;
         this.dirtyChunkService = dirtyChunkService;
-        this.chunkRepository = chunkRepository;
+        this.chunkService = chunkService;
         this.blockUpdateService = blockUpdateService;
         log.info("LayerToolService created");
     }
@@ -212,7 +209,7 @@ public class LayerToolService {
                 return String.format("ERROR: Layer '%s' is not a MODEL layer (type: %s)", layerName, layer.getLayerType());
             }
 
-            List<WLayerModel> models = modelRepository.findByLayerDataIdOrderByOrder(layer.getLayerDataId());
+            List<WLayerModel> models = layerService.findModelsByLayerDataId(layer.getLayerDataId());
 
             if (models.isEmpty()) {
                 return String.format("No models found in layer '%s'", layerName);
@@ -405,15 +402,10 @@ public class LayerToolService {
                 return String.format("ERROR: Layer '%s' is not a MODEL layer (type: %s)", layerName, layer.getLayerType());
             }
 
-            // Check if model with same name already exists
-            List<WLayerModel> existing = modelRepository.findByWorldIdAndName(lookupWorldId, modelName);
-            if (!existing.isEmpty()) {
-                // Check if any of the models belongs to this layer
-                for (WLayerModel existingModel : existing) {
-                    if (layer.getLayerDataId().equals(existingModel.getLayerDataId())) {
-                        return String.format("ERROR: Model with name '%s' already exists in layer '%s'", modelName, layerName);
-                    }
-                }
+            // Check if model with same name already exists in this layer
+            Optional<WLayerModel> existing = layerService.findModelByLayerDataIdAndName(layer.getLayerDataId(), modelName);
+            if (existing.isPresent()) {
+                return String.format("ERROR: Model with name '%s' already exists in layer '%s'", modelName, layerName);
             }
 
             // Create model
@@ -430,7 +422,7 @@ public class LayerToolService {
                     .build();
             model.touchCreate();
 
-            WLayerModel saved = modelRepository.save(model);
+            WLayerModel saved = layerService.saveModel(model);
 
             log.info("AI Tool: createLayerModel - created model: name={} in layer={}", modelName, layerName);
             return String.format("SUCCESS: Model '%s' created successfully in layer '%s'\nMount Point: (%d, %d, %d)\nModel ID: %s",
@@ -501,7 +493,7 @@ public class LayerToolService {
                 // For GROUND layers: Mark chunks as dirty
                 List<String> affectedChunks;
                 if (layer.isAllChunks()) {
-                    affectedChunks = chunkRepository.findByWorldId(lookupWorldId)
+                    affectedChunks = chunkService.findChunksByWorldId(lookupWorldId)
                             .stream()
                             .map(chunk -> chunk.getChunk())
                             .collect(Collectors.toList());
