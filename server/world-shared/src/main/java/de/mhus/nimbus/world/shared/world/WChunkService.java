@@ -984,6 +984,36 @@ public class WChunkService implements StorageProvider {
     }
 
     /**
+     * Delete ALL chunks of a world, including their external storage and the
+     * associated WChunkInfo documents. Owner-level bulk operation so callers do
+     * not touch WChunk/WChunkInfo repositories directly (data ownership) and
+     * WChunkInfo is not left orphaned.
+     *
+     * @return number of deleted chunks
+     */
+    @Transactional
+    public int deleteAllByWorldId(String worldId) {
+        List<WChunk> chunks = repository.findByWorldId(worldId);
+        for (WChunk chunk : chunks) {
+            if (chunk.getStorageId() != null) {
+                safeDeleteExternal(storageService, chunk.getStorageId());
+            }
+        }
+        repository.deleteAll(chunks);
+        chunkInfoRepository.deleteByWorldId(worldId);
+        log.info("Deleted {} chunks (incl. storage + chunk-info) for world {}", chunks.size(), worldId);
+        return chunks.size();
+    }
+
+    /**
+     * Distinct world IDs that have chunks (owner-level; avoids callers querying
+     * the WChunk collection directly).
+     */
+    public List<String> findDistinctWorldIds() {
+        return mongoTemplate.findDistinct(new Query(), "worldId", WChunk.class, String.class);
+    }
+
+    /**
      * Search chunk metadata by chunk key substring.
      */
     public List<WChunk> findChunksByWorldIdAndQuery(String worldId, String query) {

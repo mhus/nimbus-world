@@ -1,29 +1,25 @@
 package de.mhus.nimbus.world.control.service.delete.impl;
 
-import de.mhus.nimbus.shared.storage.StorageService;
 import de.mhus.nimbus.world.control.service.delete.DeleteWorldResources;
-import de.mhus.nimbus.world.shared.world.WChunk;
-import de.mhus.nimbus.world.shared.world.WChunkRepository;
+import de.mhus.nimbus.world.shared.world.WChunkService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 /**
  * Service to delete chunks for a given world.
- * Also deletes associated storage data if present.
+ * Delegates to WChunkService (the owner of WChunk) so external storage and the
+ * associated WChunkInfo documents are cleaned up consistently, instead of
+ * touching the WChunk repository / MongoTemplate directly (data ownership).
  */
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class DeleteChunksService implements DeleteWorldResources {
 
-    private final WChunkRepository chunkRepository;
-    private final StorageService storageService;
-    private final MongoTemplate mongoTemplate;
+    private final WChunkService chunkService;
 
     @Override
     public String name() {
@@ -33,40 +29,12 @@ public class DeleteChunksService implements DeleteWorldResources {
     @Override
     public void deleteWorldResources(String worldId) throws Exception {
         log.info("Deleting chunks for world {}", worldId);
-
-        List<WChunk> chunks = chunkRepository.findByWorldId(worldId);
-        log.info("Found {} chunks in world {}", chunks.size(), worldId);
-
-        int deletedCount = 0;
-        int storageCount = 0;
-
-        for (WChunk chunk : chunks) {
-            // Delete storage data if present
-            if (chunk.getStorageId() != null) {
-                try {
-                    storageService.delete(chunk.getStorageId());
-                    storageCount++;
-                } catch (Exception e) {
-                    log.warn("Failed to delete storage {} for chunk {}: {}",
-                            chunk.getStorageId(), chunk.getChunk(), e.getMessage());
-                }
-            }
-
-            chunkRepository.delete(chunk);
-            deletedCount++;
-        }
-
-        log.info("Deleted {} chunks (including {} storage items) for world {}",
-                deletedCount, storageCount, worldId);
+        int deleted = chunkService.deleteAllByWorldId(worldId);
+        log.info("Deleted {} chunks for world {}", deleted, worldId);
     }
 
     @Override
     public List<String> getKnownWorldIds() throws Exception {
-        return mongoTemplate.findDistinct(
-                new Query(),
-                "worldId",
-                WChunk.class,
-                String.class
-        );
+        return chunkService.findDistinctWorldIds();
     }
 }
