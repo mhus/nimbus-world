@@ -7,7 +7,9 @@ import de.mhus.nimbus.shared.utils.TypeUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
+import org.bson.Document;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -651,5 +653,59 @@ public class WHexGridService {
                     return position != null ? doc.getString("worldId") + "|" + position : null;
                 }
         );
+    }
+
+    // ==================== SYNC DOCUMENT FACADE ====================
+    // Raw org.bson.Document access for the SYNC cluster (world-control). Keeps
+    // data ownership with this service while preserving the raw-document
+    // behavior sync requires: _schema/_class fields stay untouched and schema
+    // migration is applied externally on the raw JSON. worldId and the raw
+    // position String are matched exactly as stored.
+
+    /**
+     * Export all hex grid documents of a world as raw MongoDB Documents.
+     */
+    @Transactional(readOnly = true)
+    public List<Document> exportDocuments(String worldId) {
+        String collectionName = mongoTemplate.getCollectionName(WHexGrid.class);
+        return mongoTemplate.find(new Query(Criteria.where("worldId").is(worldId)), Document.class, collectionName);
+    }
+
+    /**
+     * Find a single hex grid document by worldId + position (unique key).
+     * The position is the raw stored {@code position} String used by sync.
+     */
+    @Transactional(readOnly = true)
+    public Optional<Document> findDocumentByWorldIdAndPosition(String worldId, String position) {
+        String collectionName = mongoTemplate.getCollectionName(WHexGrid.class);
+        Query query = new Query(Criteria.where("worldId").is(worldId).and("position").is(position));
+        return Optional.ofNullable(mongoTemplate.findOne(query, Document.class, collectionName));
+    }
+
+    /**
+     * Upsert a raw hex grid document, reconciling the {@code _id} by the unique
+     * key (worldId + position): reuse the existing document's {@code _id} when
+     * present, otherwise let MongoDB assign a new one.
+     */
+    @Transactional
+    public Document upsertDocument(Document doc) {
+        String collectionName = mongoTemplate.getCollectionName(WHexGrid.class);
+        Query query = new Query(Criteria.where("worldId").is(doc.getString("worldId"))
+                .and("position").is(doc.getString("position")));
+        Document existing = mongoTemplate.findOne(query, Document.class, collectionName);
+        doc.remove("_id");
+        if (existing != null) {
+            doc.put("_id", existing.get("_id"));
+        }
+        return mongoTemplate.save(doc, collectionName);
+    }
+
+    /**
+     * Delete a hex grid document by worldId + raw position String.
+     */
+    @Transactional
+    public void deleteByWorldIdAndPosition(String worldId, String position) {
+        String collectionName = mongoTemplate.getCollectionName(WHexGrid.class);
+        mongoTemplate.remove(new Query(Criteria.where("worldId").is(worldId).and("position").is(position)), collectionName);
     }
 }

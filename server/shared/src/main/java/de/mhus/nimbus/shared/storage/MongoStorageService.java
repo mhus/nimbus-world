@@ -311,6 +311,16 @@ public class MongoStorageService extends StorageService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public StoredSchema readStoredSchema(String storageId) {
+        StorageData firstChunk = storageDataRepository.findByUuidAndIndex(storageId, 0);
+        if (firstChunk == null) {
+            return null;
+        }
+        return new StoredSchema(firstChunk.getSchema(), firstChunk.getSchemaVersion());
+    }
+
+    @Override
     @Transactional
     public String duplicate(String sourceStorageId, String targetWorldId) {
         if (sourceStorageId == null || sourceStorageId.isBlank()) {

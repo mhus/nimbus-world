@@ -8,13 +8,11 @@ import de.mhus.nimbus.world.control.service.sync.DocumentTransformer;
 import de.mhus.nimbus.world.control.service.sync.ResourceSyncType;
 import de.mhus.nimbus.world.shared.dto.ExternalResourceDTO;
 import de.mhus.nimbus.world.shared.world.WDocument;
+import de.mhus.nimbus.world.shared.world.WDocumentService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.bson.Document;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -38,9 +36,7 @@ import java.util.stream.Stream;
 @Slf4j
 public class DocumentResourceSyncType implements ResourceSyncType {
 
-    private static final String COLLECTION_NAME = "w_documents";
-
-    private final MongoTemplate mongoTemplate;
+    private final WDocumentService documentService;
     private final SchemaMigrationService migrationService;
     private final DocumentTransformer documentTransformer;
     private final ObjectMapper objectMapper;
@@ -58,8 +54,7 @@ public class DocumentResourceSyncType implements ResourceSyncType {
         Path documentsDir = dataPath.resolve("documents");
         Files.createDirectories(documentsDir);
 
-        Query query = new Query(Criteria.where("worldId").is(worldId.getId()));
-        List<Document> documents = mongoTemplate.find(query, Document.class, COLLECTION_NAME);
+        List<Document> documents = documentService.exportDocuments(worldId.getId());
 
         Map<String, Set<String>> dbDocIds = new HashMap<>();
         int exported = 0;
@@ -162,11 +157,10 @@ public class DocumentResourceSyncType implements ResourceSyncType {
                             migratedDoc = documentTransformer.transformForImport(migratedDoc, definition);
 
                             // Find existing by unique constraint (worldId + documentId)
-                            Query findQuery = new Query(
-                                    Criteria.where("worldId").is(migratedDoc.getString("worldId"))
-                                            .and("documentId").is(migratedDoc.getString("documentId"))
-                            );
-                            Document existing = mongoTemplate.findOne(findQuery, Document.class, COLLECTION_NAME);
+                            Document existing = documentService.findDocumentByWorldIdAndDocumentId(
+                                    migratedDoc.getString("worldId"),
+                                    migratedDoc.getString("documentId")
+                            ).orElse(null);
 
                             if (!force && existing != null) {
                                 Object fileUpdatedAt = migratedDoc.get("updatedAt");
@@ -179,12 +173,8 @@ public class DocumentResourceSyncType implements ResourceSyncType {
                                 }
                             }
 
-                            migratedDoc.remove("_id");
-                            if (existing != null) {
-                                migratedDoc.put("_id", existing.get("_id"));
-                            }
-
-                            mongoTemplate.save(migratedDoc, COLLECTION_NAME);
+                            // Upsert through the owner (reconciles _id by the unique key)
+                            documentService.upsertDocument(migratedDoc);
                             log.debug("Imported WDocument: documentId={}", documentId);
                             imported++;
 
@@ -198,8 +188,7 @@ public class DocumentResourceSyncType implements ResourceSyncType {
 
         int deleted = 0;
         if (removeOvertaken) {
-            Query query = new Query(Criteria.where("worldId").is(worldId.getId()));
-            List<Document> dbDocuments = mongoTemplate.find(query, Document.class, COLLECTION_NAME);
+            List<Document> dbDocuments = documentService.exportDocuments(worldId.getId());
 
             for (Document doc : dbDocuments) {
                 String documentId = doc.getString("documentId");
@@ -210,10 +199,7 @@ public class DocumentResourceSyncType implements ResourceSyncType {
                 if (readOnly != null && readOnly) continue;
 
                 if (!filesystemDocIds.contains(documentId)) {
-                    mongoTemplate.remove(
-                            new Query(Criteria.where("_id").is(doc.get("_id"))),
-                            COLLECTION_NAME
-                    );
+                    documentService.deleteDocumentById(doc.get("_id"));
                     log.info("Deleted WDocument not in filesystem: documentId={}", documentId);
                     deleted++;
                 }

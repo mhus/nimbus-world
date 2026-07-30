@@ -12,9 +12,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.bson.Document;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -33,13 +30,7 @@ import java.util.stream.Stream;
 @Slf4j
 public class ModelLayerResourceSyncType implements ResourceSyncType {
 
-    private static final String LAYER_COLLECTION = "w_layers";
-    private static final String MODEL_COLLECTION = "w_layer_model";
-
     private final WLayerService layerService;
-    private final WLayerRepository layerRepository;
-    private final WLayerModelRepository modelRepository;
-    private final MongoTemplate mongoTemplate;
     private final SchemaMigrationService migrationService;
     private final DocumentTransformer documentTransformer;
     private final ObjectMapper objectMapper;
@@ -57,12 +48,8 @@ public class ModelLayerResourceSyncType implements ResourceSyncType {
         Path modelsDir = dataPath.resolve("models");
         Files.createDirectories(modelsDir);
 
-        // Get MODEL layers from MongoDB as Documents
-        Query layerQuery = Query.query(
-                Criteria.where("worldId").is(worldId.getId())
-                        .and("layerType").is("MODEL")
-        );
-        List<Document> layerDocs = mongoTemplate.find(layerQuery, Document.class, LAYER_COLLECTION);
+        // Get MODEL layer documents through the owner service
+        List<Document> layerDocs = layerService.exportLayerDocuments(worldId.getId(), LayerType.MODEL);
 
         Set<String> dbLayerNames = new HashSet<>();
         int exported = 0;
@@ -85,9 +72,8 @@ public class ModelLayerResourceSyncType implements ResourceSyncType {
                 yamlMapper.writeValue(infoFile.toFile(), layerDoc);
                 exported++;
 
-                // Export models for this layer
-                Query modelQuery = Query.query(Criteria.where("layerDataId").is(layerDataId));
-                List<Document> modelDocs = mongoTemplate.find(modelQuery, Document.class, MODEL_COLLECTION);
+                // Export models for this layer through the owner service
+                List<Document> modelDocs = layerService.exportModelDocumentsByLayerDataId(layerDataId);
 
                 for (Document modelDoc : modelDocs) {
                     String modelName = modelDoc.getString("title");
@@ -171,11 +157,7 @@ public class ModelLayerResourceSyncType implements ResourceSyncType {
                     String targetWorldId = migratedLayerDoc.getString("worldId");
                     String targetName = migratedLayerDoc.getString("title");
 
-                    Query findLayerQuery = new Query(
-                            Criteria.where("worldId").is(targetWorldId)
-                                    .and("title").is(targetName)
-                    );
-                    Document existingLayer = mongoTemplate.findOne(findLayerQuery, Document.class, LAYER_COLLECTION);
+                    Document existingLayer = layerService.findLayerDocumentByWorldIdAndName(targetWorldId, targetName).orElse(null);
 
                     // Check if should import
                     if (!force && existingLayer != null) {
@@ -189,16 +171,8 @@ public class ModelLayerResourceSyncType implements ResourceSyncType {
                         }
                     }
 
-                    // Always remove _id from imported document first (may be serialized incorrectly)
-                    migratedLayerDoc.remove("_id");
-
-                    // If existing, use its ObjectId to update in place
-                    if (existingLayer != null) {
-                        migratedLayerDoc.put("_id", existingLayer.get("_id"));
-                    }
-                    // else: _id is removed, MongoDB will generate a new ObjectId
-
-                    mongoTemplate.save(migratedLayerDoc, LAYER_COLLECTION);
+                    // Upsert the layer through the owner (reconciles _id by worldId + title)
+                    layerService.upsertLayerDocument(migratedLayerDoc);
                     imported++;
 
                     // Import models
@@ -225,12 +199,9 @@ public class ModelLayerResourceSyncType implements ResourceSyncType {
                                 String modelLayerDataId = migratedModelDoc.getString("layerDataId");
                                 String modelTargetName = migratedModelDoc.getString("title");
 
-                                Query findModelQuery = new Query(
-                                        Criteria.where("worldId").is(modelTargetWorldId)
-                                                .and("layerDataId").is(modelLayerDataId)
-                                                .and("title").is(modelTargetName)
-                                );
-                                Document existingModel = mongoTemplate.findOne(findModelQuery, Document.class, MODEL_COLLECTION);
+                                Document existingModel = layerService.findModelDocumentByWorldIdAndLayerDataIdAndName(
+                                        modelTargetWorldId, modelLayerDataId, modelTargetName
+                                ).orElse(null);
 
                                 // Check if should import
                                 if (!force && existingModel != null) {
@@ -244,16 +215,8 @@ public class ModelLayerResourceSyncType implements ResourceSyncType {
                                     }
                                 }
 
-                                // Always remove _id from imported document first (may be serialized incorrectly)
-                                migratedModelDoc.remove("_id");
-
-                                // If existing, use its ObjectId to update in place
-                                if (existingModel != null) {
-                                    migratedModelDoc.put("_id", existingModel.get("_id"));
-                                }
-                                // else: _id is removed, MongoDB will generate a new ObjectId
-
-                                mongoTemplate.save(migratedModelDoc, MODEL_COLLECTION);
+                                // Upsert the model through the owner (reconciles _id by worldId + layerDataId + title)
+                                layerService.upsertModelDocument(migratedModelDoc);
                                 imported++;
 
                             } catch (Exception e) {
@@ -285,10 +248,10 @@ public class ModelLayerResourceSyncType implements ResourceSyncType {
                 } else if (filesystemModelNames.containsKey(layer.getName())) {
                     // Remove models within this layer
                     Set<String> fsModels = filesystemModelNames.get(layer.getName());
-                    List<WLayerModel> dbModels = modelRepository.findByLayerDataIdOrderByOrder(layer.getLayerDataId());
+                    List<WLayerModel> dbModels = layerService.findModelsByLayerDataId(layer.getLayerDataId());
                     for (WLayerModel model : dbModels) {
                         if (!fsModels.contains(model.getName())) {
-                            modelRepository.delete(model);
+                            layerService.deleteModel(model);
                             log.info("Deleted model not in filesystem: {}/{}", layer.getName(), model.getName());
                             deleted++;
                         }

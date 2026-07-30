@@ -13,9 +13,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.bson.Document;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -38,10 +35,7 @@ import java.util.stream.Stream;
 @Slf4j
 public class AssetResourceSyncType implements ResourceSyncType {
 
-    private static final String COLLECTION_NAME = "s_assets";
-
     private final SAssetService assetService;
-    private final MongoTemplate mongoTemplate;
     private final SchemaMigrationService migrationService;
     private final DocumentTransformer documentTransformer;
     private final ObjectMapper objectMapper;
@@ -59,9 +53,8 @@ public class AssetResourceSyncType implements ResourceSyncType {
         Path assetsDir = dataPath.resolve("assets");
         Files.createDirectories(assetsDir);
 
-        // Get assets directly from MongoDB as Documents
-        Query query = new Query(Criteria.where("worldId").is(worldId.getId()));
-        List<Document> documents = mongoTemplate.find(query, Document.class, COLLECTION_NAME);
+        // Get asset metadata as raw Documents through the owner service
+        List<Document> documents = assetService.exportDocuments(worldId.getId());
 
         Set<String> dbAssetPaths = new HashSet<>();
         int exported = 0;
@@ -197,11 +190,7 @@ public class AssetResourceSyncType implements ResourceSyncType {
                     String targetWorldId = migratedDoc.getString("worldId");
                     String targetPath = migratedDoc.getString("path");
 
-                    Query findQuery = new Query(
-                            Criteria.where("worldId").is(targetWorldId)
-                                    .and("path").is(targetPath)
-                    );
-                    Document existing = mongoTemplate.findOne(findQuery, Document.class, COLLECTION_NAME);
+                    Document existing = assetService.findDocumentByWorldIdAndPath(targetWorldId, targetPath).orElse(null);
 
                     // Check if should import metadata
                     if (!force && existing != null) {
@@ -215,14 +204,8 @@ public class AssetResourceSyncType implements ResourceSyncType {
                         }
                     }
 
-                    // Always remove _id from imported document first (may be serialized incorrectly)
-                    migratedDoc.remove("_id");
-
                     if (existing != null) {
-                        // Asset exists - use existing _id (ObjectId) to update in place
-                        migratedDoc.put("_id", existing.get("_id"));
-
-                        // Preserve existing storageId if present (will be updated by updateContent)
+                        // Asset exists - preserve existing storageId (updated later by updateContent)
                         String existingStorageId = existing.getString("storageId");
                         if (existingStorageId != null) {
                             migratedDoc.put("storageId", existingStorageId);
@@ -231,10 +214,9 @@ public class AssetResourceSyncType implements ResourceSyncType {
                         // New asset - remove storageId so updateContent creates a new storage
                         migratedDoc.remove("storageId");
                     }
-                    // _id is removed, MongoDB will generate a new ObjectId for new assets
 
-                    // Save metadata
-                    mongoTemplate.save(migratedDoc, COLLECTION_NAME);
+                    // Upsert metadata through the owner (reconciles _id by worldId + path)
+                    assetService.upsertDocument(migratedDoc);
 
                     // Update binary content using transformed worldId and path
                     SAsset asset = assetService.findByPath(WorldId.of(targetWorldId).get(), targetPath).orElse(null);

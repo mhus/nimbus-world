@@ -1101,4 +1101,47 @@ public class SAssetService implements StorageProvider {
                 orphanedStorageRemoved
         );
     }
+
+    // ==================== SYNC DOCUMENT FACADE ====================
+    // Raw org.bson.Document access for the SYNC cluster (world-control). Keeps
+    // data ownership with this service while preserving the raw-document
+    // behavior sync requires: _schema/_class fields stay untouched and schema
+    // migration is applied externally on the raw JSON. Only the asset METADATA
+    // document read/upsert moves here; binary content still goes through
+    // loadContent/updateContent. worldId is matched exactly as stored.
+
+    /**
+     * Export all asset metadata documents of a world as raw MongoDB Documents.
+     */
+    public List<Document> exportDocuments(String worldId) {
+        String collectionName = mongoTemplate.getCollectionName(SAsset.class);
+        return mongoTemplate.find(new Query(Criteria.where("worldId").is(worldId)), Document.class, collectionName);
+    }
+
+    /**
+     * Find a single asset metadata document by worldId + path (unique key).
+     */
+    public Optional<Document> findDocumentByWorldIdAndPath(String worldId, String path) {
+        String collectionName = mongoTemplate.getCollectionName(SAsset.class);
+        Query query = new Query(Criteria.where("worldId").is(worldId).and("path").is(path));
+        return Optional.ofNullable(mongoTemplate.findOne(query, Document.class, collectionName));
+    }
+
+    /**
+     * Upsert a raw asset metadata document, reconciling the {@code _id} by the
+     * unique key (worldId + path): reuse the existing document's {@code _id}
+     * when present, otherwise let MongoDB assign a new one.
+     */
+    @Transactional
+    public Document upsertDocument(Document doc) {
+        String collectionName = mongoTemplate.getCollectionName(SAsset.class);
+        Query query = new Query(Criteria.where("worldId").is(doc.getString("worldId"))
+                .and("path").is(doc.getString("path")));
+        Document existing = mongoTemplate.findOne(query, Document.class, collectionName);
+        doc.remove("_id");
+        if (existing != null) {
+            doc.put("_id", existing.get("_id"));
+        }
+        return mongoTemplate.save(doc, collectionName);
+    }
 }

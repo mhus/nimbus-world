@@ -13,9 +13,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.bson.Document;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -35,10 +32,7 @@ import java.util.stream.Stream;
 @Slf4j
 public class BlockTypeResourceSyncType implements ResourceSyncType {
 
-    private static final String COLLECTION_NAME = "w_blocktypes";
-
     private final WBlockTypeService blockTypeService;
-    private final MongoTemplate mongoTemplate;
     private final SchemaMigrationService migrationService;
     private final DocumentTransformer documentTransformer;
     private final ObjectMapper objectMapper;
@@ -56,9 +50,8 @@ public class BlockTypeResourceSyncType implements ResourceSyncType {
         Path blocktypesDir = dataPath.resolve("blocktypes");
         Files.createDirectories(blocktypesDir);
 
-        // Get blocktypes directly from MongoDB as Documents
-        Query query = new Query(Criteria.where("worldId").is(worldId.getId()));
-        List<Document> documents = mongoTemplate.find(query, Document.class, COLLECTION_NAME);
+        // Get blocktypes as raw Documents through the owner service
+        List<Document> documents = blockTypeService.exportDocuments(worldId.getId());
 
         Set<String> dbBlockIds = new HashSet<>();
         int exported = 0;
@@ -170,11 +163,9 @@ public class BlockTypeResourceSyncType implements ResourceSyncType {
                     String transformedWorldId = migratedDoc.getString("worldId");
 
                     // Find existing by unique constraint (worldId + blockId)
-                    Query findQuery = new Query(
-                            Criteria.where("worldId").is(transformedWorldId)
-                                    .and("blockId").is(transformedBlockId)
-                    );
-                    Document existing = mongoTemplate.findOne(findQuery, Document.class, COLLECTION_NAME);
+                    Document existing = blockTypeService.findDocumentByWorldIdAndBlockId(
+                            transformedWorldId, transformedBlockId
+                    ).orElse(null);
 
                     log.debug("Checking for existing blocktype: worldId={}, blockId={}, found={}",
                             transformedWorldId, transformedBlockId, existing != null);
@@ -191,21 +182,15 @@ public class BlockTypeResourceSyncType implements ResourceSyncType {
                         }
                     }
 
-                    // Always remove _id from imported document first (may be serialized incorrectly)
-                    migratedDoc.remove("_id");
-
-                    // If existing, use its ObjectId to update in place
                     if (existing != null) {
-                        migratedDoc.put("_id", existing.get("_id"));
                         log.info("Updating existing blocktype: worldId={}, blockId={}, _id={}",
                                 transformedWorldId, transformedBlockId, existing.get("_id"));
                     } else {
                         log.info("Creating new blocktype: worldId={}, blockId={}", transformedWorldId, transformedBlockId);
                     }
-                    // else: _id is removed, MongoDB will generate a new ObjectId
 
-                    // Save to MongoDB
-                    mongoTemplate.save(migratedDoc, COLLECTION_NAME);
+                    // Upsert through the owner (reconciles _id by the unique key)
+                    blockTypeService.upsertDocument(migratedDoc);
                     log.debug("Imported blocktype: {}", transformedBlockId);
                     imported++;
 

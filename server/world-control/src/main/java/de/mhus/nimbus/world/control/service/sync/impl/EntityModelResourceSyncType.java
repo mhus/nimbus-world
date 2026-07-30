@@ -13,9 +13,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.bson.Document;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -35,10 +32,7 @@ import java.util.stream.Stream;
 @Slf4j
 public class EntityModelResourceSyncType implements ResourceSyncType {
 
-    private static final String COLLECTION_NAME = "w_entity_models";
-
     private final WEntityModelService entityModelService;
-    private final MongoTemplate mongoTemplate;
     private final SchemaMigrationService migrationService;
     private final DocumentTransformer documentTransformer;
     private final ObjectMapper objectMapper;
@@ -56,9 +50,8 @@ public class EntityModelResourceSyncType implements ResourceSyncType {
         Path entityModelsDir = dataPath.resolve("entitymodels");
         Files.createDirectories(entityModelsDir);
 
-        // Get entity models directly from MongoDB as Documents
-        Query query = new Query(Criteria.where("worldId").is(worldId.getId()));
-        List<Document> documents = mongoTemplate.find(query, Document.class, COLLECTION_NAME);
+        // Get entity models as raw Documents through the owner service
+        List<Document> documents = entityModelService.exportDocuments(worldId.getId());
 
         Set<String> dbEntityModelIds = new HashSet<>();
         int exported = 0;
@@ -145,12 +138,13 @@ public class EntityModelResourceSyncType implements ResourceSyncType {
                     // Transform document (worldId replacement + prefix mapping)
                     migratedDoc = documentTransformer.transformForImport(migratedDoc, definition);
 
-                    // Find existing by unique constraint (worldId + modelId)
-                    Query findQuery = new Query(
-                            Criteria.where("worldId").is(migratedDoc.getString("worldId"))
-                                    .and("modelId").is(migratedDoc.getString("name"))
-                    );
-                    Document existing = mongoTemplate.findOne(findQuery, Document.class, COLLECTION_NAME);
+                    // Find existing by unique constraint (worldId + name).
+                    // BUG FIX: the owner keys on the actual natural-key field 'name'
+                    // (the previous code queried a non-existent 'modelId' field).
+                    Document existing = entityModelService.findDocumentByWorldIdAndName(
+                            migratedDoc.getString("worldId"),
+                            migratedDoc.getString("name")
+                    ).orElse(null);
 
                     // Check if should import
                     if (!force && existing != null) {
@@ -164,17 +158,8 @@ public class EntityModelResourceSyncType implements ResourceSyncType {
                         }
                     }
 
-                    // Always remove _id from imported document first (may be serialized incorrectly)
-                    migratedDoc.remove("_id");
-
-                    // If existing, use its ObjectId to update in place
-                    if (existing != null) {
-                        migratedDoc.put("_id", existing.get("_id"));
-                    }
-                    // else: _id is removed, MongoDB will generate a new ObjectId
-
-                    // Save to MongoDB
-                    mongoTemplate.save(migratedDoc, COLLECTION_NAME);
+                    // Upsert through the owner (reconciles _id by the unique key)
+                    entityModelService.upsertDocument(migratedDoc);
                     log.debug("Imported entity model: {}", modelId);
                     imported++;
 

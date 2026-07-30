@@ -107,6 +107,22 @@ public abstract class StorageService {
      */
     public abstract void deleteChunksByUuid(String storageId);
 
+    /**
+     * Raw schema metadata (schema name and version) as stored on a chunk, kept as
+     * plain strings without {@link SchemaVersion} normalization.
+     */
+    public record StoredSchema(String schema, String schemaVersion) { }
+
+    /**
+     * Read the raw schema metadata from the first chunk (index 0) of a storage
+     * object. Owner-level accessor so callers do not query the storage_data
+     * collection directly (data ownership).
+     *
+     * @param storageId the storage uuid
+     * @return the stored schema/version, or {@code null} if the chunk is absent
+     */
+    public abstract StoredSchema readStoredSchema(String storageId);
+
     public boolean exists(String storageId) {
         try {
             return info(storageId) != null;

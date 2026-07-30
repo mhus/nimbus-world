@@ -5,7 +5,9 @@ import de.mhus.nimbus.shared.types.WorldId;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
+import org.bson.Document;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -400,5 +402,52 @@ public class WItemService {
                     return itemId != null ? doc.getString("worldId") + "|" + itemId : null;
                 }
         );
+    }
+
+    // ==================== SYNC DOCUMENT FACADE ====================
+    // Raw org.bson.Document access for the SYNC cluster (world-control). Keeps
+    // data ownership with this service while preserving the raw-document
+    // behavior sync requires: _schema/_class fields stay untouched and schema
+    // migration is applied externally on the raw JSON. worldId is matched
+    // exactly as stored.
+
+    /**
+     * Export all item documents of a world as raw MongoDB Documents.
+     */
+    @Transactional(readOnly = true)
+    public List<Document> exportDocuments(String worldId) {
+        String collectionName = mongoTemplate.getCollectionName(WItem.class);
+        return mongoTemplate.find(new Query(Criteria.where("worldId").is(worldId)), Document.class, collectionName);
+    }
+
+    /**
+     * Find a single item document by worldId + name (unique key).
+     * BUG FIX: the previous sync type queried the non-existent {@code itemId}
+     * field with the name value; the natural key is {@code name}.
+     */
+    @Transactional(readOnly = true)
+    public Optional<Document> findDocumentByWorldIdAndName(String worldId, String name) {
+        String collectionName = mongoTemplate.getCollectionName(WItem.class);
+        Query query = new Query(Criteria.where("worldId").is(worldId).and("name").is(name));
+        return Optional.ofNullable(mongoTemplate.findOne(query, Document.class, collectionName));
+    }
+
+    /**
+     * Upsert a raw item document, reconciling the {@code _id} by the unique key
+     * (worldId + name): reuse the existing document's {@code _id} when present,
+     * otherwise let MongoDB assign a new one.
+     * BUG FIX: reconciles on {@code name}, the actual natural key.
+     */
+    @Transactional
+    public Document upsertDocument(Document doc) {
+        String collectionName = mongoTemplate.getCollectionName(WItem.class);
+        Query query = new Query(Criteria.where("worldId").is(doc.getString("worldId"))
+                .and("name").is(doc.getString("name")));
+        Document existing = mongoTemplate.findOne(query, Document.class, collectionName);
+        doc.remove("_id");
+        if (existing != null) {
+            doc.put("_id", existing.get("_id"));
+        }
+        return mongoTemplate.save(doc, collectionName);
     }
 }

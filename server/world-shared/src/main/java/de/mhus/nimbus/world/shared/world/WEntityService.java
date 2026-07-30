@@ -6,7 +6,9 @@ import de.mhus.nimbus.shared.types.WorldId;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
+import org.bson.Document;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -511,6 +513,50 @@ public class WEntityService {
                     return entityId != null ? doc.getString("worldId") + "|" + entityId : null;
                 }
         );
+    }
+
+    // ==================== SYNC DOCUMENT FACADE ====================
+    // Raw org.bson.Document access for the SYNC cluster (world-control). Keeps
+    // data ownership with this service while preserving the raw-document
+    // behavior sync requires: _schema/_class fields stay untouched and schema
+    // migration is applied externally on the raw JSON. worldId is matched
+    // exactly as stored.
+
+    /**
+     * Export all entity documents of a world as raw MongoDB Documents.
+     */
+    @Transactional(readOnly = true)
+    public List<Document> exportDocuments(String worldId) {
+        String collectionName = mongoTemplate.getCollectionName(WEntity.class);
+        return mongoTemplate.find(new Query(Criteria.where("worldId").is(worldId)), Document.class, collectionName);
+    }
+
+    /**
+     * Find a single entity document by worldId + entityId (unique key).
+     */
+    @Transactional(readOnly = true)
+    public Optional<Document> findDocumentByWorldIdAndEntityId(String worldId, String entityId) {
+        String collectionName = mongoTemplate.getCollectionName(WEntity.class);
+        Query query = new Query(Criteria.where("worldId").is(worldId).and("entityId").is(entityId));
+        return Optional.ofNullable(mongoTemplate.findOne(query, Document.class, collectionName));
+    }
+
+    /**
+     * Upsert a raw entity document, reconciling the {@code _id} by the unique
+     * key (worldId + entityId): reuse the existing document's {@code _id} when
+     * present, otherwise let MongoDB assign a new one.
+     */
+    @Transactional
+    public Document upsertDocument(Document doc) {
+        String collectionName = mongoTemplate.getCollectionName(WEntity.class);
+        Query query = new Query(Criteria.where("worldId").is(doc.getString("worldId"))
+                .and("entityId").is(doc.getString("entityId")));
+        Document existing = mongoTemplate.findOne(query, Document.class, collectionName);
+        doc.remove("_id");
+        if (existing != null) {
+            doc.put("_id", existing.get("_id"));
+        }
+        return mongoTemplate.save(doc, collectionName);
     }
 
 }

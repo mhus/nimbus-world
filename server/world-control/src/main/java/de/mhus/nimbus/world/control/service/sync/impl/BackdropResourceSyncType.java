@@ -13,9 +13,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.bson.Document;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -35,10 +32,7 @@ import java.util.stream.Stream;
 @Slf4j
 public class BackdropResourceSyncType implements ResourceSyncType {
 
-    private static final String COLLECTION_NAME = "w_backdrops";
-
     private final WBackdropService backdropService;
-    private final MongoTemplate mongoTemplate;
     private final SchemaMigrationService migrationService;
     private final DocumentTransformer documentTransformer;
     private final ObjectMapper objectMapper;
@@ -56,9 +50,8 @@ public class BackdropResourceSyncType implements ResourceSyncType {
         Path backdropsDir = dataPath.resolve("backdrops");
         Files.createDirectories(backdropsDir);
 
-        // Get backdrops directly from MongoDB as Documents
-        Query query = new Query(Criteria.where("worldId").is(worldId.getId()));
-        List<Document> documents = mongoTemplate.find(query, Document.class, COLLECTION_NAME);
+        // Get backdrops as raw Documents through the owner service
+        List<Document> documents = backdropService.exportDocuments(worldId.getId());
 
         Set<String> dbBackdropIds = new HashSet<>();
         int exported = 0;
@@ -139,11 +132,10 @@ public class BackdropResourceSyncType implements ResourceSyncType {
                     migratedDoc = documentTransformer.transformForImport(migratedDoc, definition);
 
                     // Find existing by unique constraint (worldId + backdropId)
-                    Query findQuery = new Query(
-                            Criteria.where("worldId").is(migratedDoc.getString("worldId"))
-                                    .and("backdropId").is(migratedDoc.getString("backdropId"))
-                    );
-                    Document existing = mongoTemplate.findOne(findQuery, Document.class, COLLECTION_NAME);
+                    Document existing = backdropService.findDocumentByWorldIdAndBackdropId(
+                            migratedDoc.getString("worldId"),
+                            migratedDoc.getString("backdropId")
+                    ).orElse(null);
 
                     // Check if should import
                     if (!force && existing != null) {
@@ -157,17 +149,8 @@ public class BackdropResourceSyncType implements ResourceSyncType {
                         }
                     }
 
-                    // Always remove _id from imported document first (may be serialized incorrectly)
-                    migratedDoc.remove("_id");
-
-                    // If existing, use its ObjectId to update in place
-                    if (existing != null) {
-                        migratedDoc.put("_id", existing.get("_id"));
-                    }
-                    // else: _id is removed, MongoDB will generate a new ObjectId
-
-                    // Save to MongoDB
-                    mongoTemplate.save(migratedDoc, COLLECTION_NAME);
+                    // Upsert through the owner (reconciles _id by the unique key)
+                    backdropService.upsertDocument(migratedDoc);
                     log.debug("Imported backdrop: {}", backdropId);
                     imported++;
 

@@ -13,9 +13,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.bson.Document;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -36,10 +33,7 @@ import java.util.stream.Stream;
 @Slf4j
 public class HexGridResourceSyncType implements ResourceSyncType {
 
-    private static final String COLLECTION_NAME = "w_hexgrids";
-
     private final WHexGridService hexGridService;
-    private final MongoTemplate mongoTemplate;
     private final SchemaMigrationService migrationService;
     private final DocumentTransformer documentTransformer;
     private final ObjectMapper objectMapper;
@@ -57,9 +51,8 @@ public class HexGridResourceSyncType implements ResourceSyncType {
         Path hexGridsDir = dataPath.resolve("hexgrids");
         Files.createDirectories(hexGridsDir);
 
-        // Get hex grids directly from MongoDB as Documents
-        Query query = new Query(Criteria.where("worldId").is(worldId.getId()));
-        List<Document> documents = mongoTemplate.find(query, Document.class, COLLECTION_NAME);
+        // Get hex grids as raw Documents through the owner service
+        List<Document> documents = hexGridService.exportDocuments(worldId.getId());
 
         Set<String> dbPositions = new HashSet<>();
         int exported = 0;
@@ -144,11 +137,10 @@ public class HexGridResourceSyncType implements ResourceSyncType {
                     documentTransformer.ensureEpoches(migratedDoc);
 
                     // Find existing by unique constraint (worldId + position)
-                    Query findQuery = new Query(
-                            Criteria.where("worldId").is(migratedDoc.getString("worldId"))
-                                    .and("position").is(migratedDoc.getString("position"))
-                    );
-                    Document existing = mongoTemplate.findOne(findQuery, Document.class, COLLECTION_NAME);
+                    Document existing = hexGridService.findDocumentByWorldIdAndPosition(
+                            migratedDoc.getString("worldId"),
+                            migratedDoc.getString("position")
+                    ).orElse(null);
 
                     // Check if should import
                     if (!force && existing != null) {
@@ -162,17 +154,8 @@ public class HexGridResourceSyncType implements ResourceSyncType {
                         }
                     }
 
-                    // Always remove _id from imported document first (may be serialized incorrectly)
-                    migratedDoc.remove("_id");
-
-                    // If existing, use its ObjectId to update in place
-                    if (existing != null) {
-                        migratedDoc.put("_id", existing.get("_id"));
-                    }
-                    // else: _id is removed, MongoDB will generate a new ObjectId
-
-                    // Save to MongoDB
-                    mongoTemplate.save(migratedDoc, COLLECTION_NAME);
+                    // Upsert through the owner (reconciles _id by the unique key)
+                    hexGridService.upsertDocument(migratedDoc);
                     log.debug("Imported hex grid: {}", position);
                     imported++;
 
@@ -189,12 +172,8 @@ public class HexGridResourceSyncType implements ResourceSyncType {
 
             for (WHexGrid hexGrid : dbHexGrids) {
                 if (!filesystemPositions.contains(hexGrid.getPosition())) {
-                    // Delete using MongoDB directly since we have worldId and position
-                    Query deleteQuery = new Query(
-                            Criteria.where("worldId").is(worldId.getId())
-                                    .and("position").is(hexGrid.getPosition())
-                    );
-                    mongoTemplate.remove(deleteQuery, COLLECTION_NAME);
+                    // Delete through the owner using worldId + raw position String
+                    hexGridService.deleteByWorldIdAndPosition(worldId.getId(), hexGrid.getPosition());
                     log.info("Deleted hex grid not in filesystem: {}", hexGrid.getPosition());
                     deleted++;
                 }

@@ -13,9 +13,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.bson.Document;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -35,10 +32,7 @@ import java.util.stream.Stream;
 @Slf4j
 public class ItemPositionResourceSyncType implements ResourceSyncType {
 
-    private static final String COLLECTION_NAME = "w_item_positions";
-
     private final WItemPositionService itemPositionService;
-    private final MongoTemplate mongoTemplate;
     private final SchemaMigrationService migrationService;
     private final DocumentTransformer documentTransformer;
     private final ObjectMapper objectMapper;
@@ -56,9 +50,8 @@ public class ItemPositionResourceSyncType implements ResourceSyncType {
         Path itemPositionsDir = dataPath.resolve("itempositions");
         Files.createDirectories(itemPositionsDir);
 
-        // Get item positions directly from MongoDB as Documents
-        Query query = new Query(Criteria.where("worldId").is(worldId.getId()));
-        List<Document> documents = mongoTemplate.find(query, Document.class, COLLECTION_NAME);
+        // Get item positions as raw Documents through the owner service
+        List<Document> documents = itemPositionService.exportDocuments(worldId.getId());
 
         Set<Object> dbItemPositionIds = new HashSet<>();
         int exported = 0;
@@ -149,11 +142,10 @@ public class ItemPositionResourceSyncType implements ResourceSyncType {
                     documentTransformer.ensureEpoches(migratedDoc);
 
                     // Find existing by unique constraint (worldId + itemId)
-                    Query findQuery = new Query(
-                            Criteria.where("worldId").is(migratedDoc.getString("worldId"))
-                                    .and("itemId").is(migratedDoc.getString("itemId"))
-                    );
-                    Document existing = mongoTemplate.findOne(findQuery, Document.class, COLLECTION_NAME);
+                    Document existing = itemPositionService.findDocumentByWorldIdAndItemId(
+                            migratedDoc.getString("worldId"),
+                            migratedDoc.getString("itemId")
+                    ).orElse(null);
 
                     // Check if should import
                     if (!force && existing != null) {
@@ -167,17 +159,8 @@ public class ItemPositionResourceSyncType implements ResourceSyncType {
                         }
                     }
 
-                    // Always remove _id from imported document first (may be serialized incorrectly)
-                    migratedDoc.remove("_id");
-
-                    // If existing, use its ObjectId to update in place
-                    if (existing != null) {
-                        migratedDoc.put("_id", existing.get("_id"));
-                    }
-                    // else: _id is removed, MongoDB will generate a new ObjectId
-
-                    // Save to MongoDB
-                    mongoTemplate.save(migratedDoc, COLLECTION_NAME);
+                    // Upsert through the owner (reconciles _id by the unique key)
+                    itemPositionService.upsertDocument(migratedDoc);
                     log.debug("Imported item position: {}", idObj);
                     imported++;
 
@@ -190,17 +173,13 @@ public class ItemPositionResourceSyncType implements ResourceSyncType {
         // Remove overtaken if requested
         int deleted = 0;
         if (removeOvertaken) {
-            // Query MongoDB directly for item positions
-            Query query = new Query(Criteria.where("worldId").is(worldId.getId()));
-            List<Document> dbDocs = mongoTemplate.find(query, Document.class, COLLECTION_NAME);
+            // Get item positions as raw Documents through the owner service
+            List<Document> dbDocs = itemPositionService.exportDocuments(worldId.getId());
 
             for (Document dbDoc : dbDocs) {
                 Object idObj = dbDoc.get("_id");
                 if (idObj != null && !filesystemItemPositionIds.contains(idObj.toString())) {
-                    mongoTemplate.remove(
-                            new Query(Criteria.where("_id").is(idObj)),
-                            COLLECTION_NAME
-                    );
+                    itemPositionService.deleteDocumentById(idObj);
                     log.info("Deleted item position not in filesystem: {}", idObj);
                     deleted++;
                 }

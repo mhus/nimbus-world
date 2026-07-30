@@ -269,4 +269,60 @@ public class WFlatService {
                 }
         );
     }
+
+    // ==================== SYNC DOCUMENT FACADE ====================
+    // Raw org.bson.Document access for the SYNC cluster (world-control). Keeps
+    // data ownership with this service while preserving the raw-document
+    // behavior sync requires: _schema/_class fields stay untouched and schema
+    // migration is applied externally on the raw JSON. worldId is matched
+    // exactly as stored.
+
+    /**
+     * Export all WFlat documents of a world as raw MongoDB Documents.
+     */
+    @Transactional(readOnly = true)
+    public List<Document> exportDocuments(String worldId) {
+        String collectionName = mongoTemplate.getCollectionName(WFlat.class);
+        return mongoTemplate.find(new Query(Criteria.where("worldId").is(worldId)), Document.class, collectionName);
+    }
+
+    /**
+     * Find a single WFlat document by worldId + layerDataId + flatId (unique key).
+     */
+    @Transactional(readOnly = true)
+    public Optional<Document> findDocumentByWorldIdAndLayerDataIdAndFlatId(String worldId, String layerDataId, String flatId) {
+        String collectionName = mongoTemplate.getCollectionName(WFlat.class);
+        Query query = new Query(Criteria.where("worldId").is(worldId)
+                .and("layerDataId").is(layerDataId)
+                .and("flatId").is(flatId));
+        return Optional.ofNullable(mongoTemplate.findOne(query, Document.class, collectionName));
+    }
+
+    /**
+     * Upsert a raw WFlat document, reconciling the {@code _id} by the unique key
+     * (worldId + layerDataId + flatId): reuse the existing document's {@code _id}
+     * when present, otherwise let MongoDB assign a new one.
+     */
+    @Transactional
+    public Document upsertDocument(Document doc) {
+        String collectionName = mongoTemplate.getCollectionName(WFlat.class);
+        Query query = new Query(Criteria.where("worldId").is(doc.getString("worldId"))
+                .and("layerDataId").is(doc.getString("layerDataId"))
+                .and("flatId").is(doc.getString("flatId")));
+        Document existing = mongoTemplate.findOne(query, Document.class, collectionName);
+        doc.remove("_id");
+        if (existing != null) {
+            doc.put("_id", existing.get("_id"));
+        }
+        return mongoTemplate.save(doc, collectionName);
+    }
+
+    /**
+     * Delete a WFlat document by its raw MongoDB {@code _id}.
+     */
+    @Transactional
+    public void deleteDocumentById(Object id) {
+        String collectionName = mongoTemplate.getCollectionName(WFlat.class);
+        mongoTemplate.remove(new Query(Criteria.where("_id").is(id)), collectionName);
+    }
 }

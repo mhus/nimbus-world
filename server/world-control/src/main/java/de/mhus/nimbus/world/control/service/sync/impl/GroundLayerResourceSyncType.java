@@ -3,9 +3,6 @@ package de.mhus.nimbus.world.control.service.sync.impl;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
 import de.mhus.nimbus.shared.service.SchemaMigrationService;
-import de.mhus.nimbus.shared.storage.StorageData;
-import de.mhus.nimbus.shared.storage.StorageDataRepository;
-import de.mhus.nimbus.shared.storage.StorageService;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.control.service.sync.DocumentTransformer;
 import de.mhus.nimbus.world.control.service.sync.ResourceSyncType;
@@ -15,14 +12,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.bson.Document;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
@@ -38,14 +30,7 @@ import java.util.stream.Stream;
 @Slf4j
 public class GroundLayerResourceSyncType implements ResourceSyncType {
 
-    private static final String LAYER_COLLECTION = "w_layers";
-
     private final WLayerService layerService;
-    private final WLayerRepository layerRepository;
-    private final WLayerTerrainRepository terrainRepository;
-    private final StorageDataRepository storageDataRepository;
-    private final StorageService storageService;
-    private final MongoTemplate mongoTemplate;
     private final SchemaMigrationService migrationService;
     private final DocumentTransformer documentTransformer;
     private final ObjectMapper objectMapper;
@@ -63,12 +48,8 @@ public class GroundLayerResourceSyncType implements ResourceSyncType {
         Path groundDir = dataPath.resolve("ground");
         Files.createDirectories(groundDir);
 
-        // Get GROUND layers from MongoDB as Documents
-        Query layerQuery = Query.query(
-                Criteria.where("worldId").is(worldId.getId())
-                        .and("layerType").is("GROUND")
-        );
-        List<Document> layerDocs = mongoTemplate.find(layerQuery, Document.class, LAYER_COLLECTION);
+        // Get GROUND layer documents through the owner service
+        List<Document> layerDocs = layerService.exportLayerDocuments(worldId.getId(), LayerType.GROUND);
 
         Set<String> dbLayerNames = new HashSet<>();
         int exported = 0;
@@ -95,8 +76,8 @@ public class GroundLayerResourceSyncType implements ResourceSyncType {
                 Path schemaFile = layerDir.resolve("_schema.yaml");
                 exportSchemaInfo(worldId.getId(), layerDataId, schemaFile);
 
-                // Export terrain chunks (from StorageService)
-                List<WLayerTerrain> terrains = terrainRepository.findByWorldIdAndLayerDataId(worldId.getId(), layerDataId);
+                // Export terrain chunks (raw JSON through the owner service)
+                List<WLayerTerrain> terrains = layerService.findTerrainsByWorldIdAndLayerDataId(worldId.getId(), layerDataId);
                 for (WLayerTerrain terrain : terrains) {
                     try {
                         String[] parts = terrain.getChunkKey().split(":");
@@ -116,34 +97,20 @@ public class GroundLayerResourceSyncType implements ResourceSyncType {
 
                         Path chunkFile = subfolder.resolve("chunk_" + cx + "_" + cz + ".json");
 
-                        // Load chunk data directly from StorageService as JSON
+                        // Load chunk data through the owner as JSON (decompressed if needed)
                         if (terrain.getStorageId() == null) {
                             log.warn("Terrain chunk has no storageId: {}", terrain.getChunkKey());
                             continue;
                         }
 
-                        try (InputStream stream = storageService.load(terrain.getStorageId())) {
-                            // Read JSON from storage (may be compressed)
-                            byte[] data = stream.readAllBytes();
-                            String json;
+                        String json = layerService.loadTerrainChunkRawJson(terrain);
 
-                            if (terrain.isCompressed()) {
-                                // Decompress if needed
-                                try (java.io.ByteArrayInputStream bis = new java.io.ByteArrayInputStream(data);
-                                     java.util.zip.GZIPInputStream gzis = new java.util.zip.GZIPInputStream(bis)) {
-                                    json = new String(gzis.readAllBytes(), StandardCharsets.UTF_8);
-                                }
-                            } else {
-                                json = new String(data, StandardCharsets.UTF_8);
-                            }
+                        // Format JSON for better git diff (newlines, no spaces)
+                        String formattedJson = formatJsonForGit(json);
 
-                            // Format JSON for better git diff (newlines, no spaces)
-                            String formattedJson = formatJsonForGit(json);
-
-                            // Write formatted JSON to file
-                            Files.writeString(chunkFile, formattedJson);
-                            exported++;
-                        }
+                        // Write formatted JSON to file
+                        Files.writeString(chunkFile, formattedJson);
+                        exported++;
 
                     } catch (Exception e) {
                         log.warn("Failed to export terrain chunk: " + terrain.getChunkKey(), e);
@@ -220,11 +187,7 @@ public class GroundLayerResourceSyncType implements ResourceSyncType {
                     String targetWorldId = migratedLayerDoc.getString("worldId");
                     String targetName = migratedLayerDoc.getString("title");
 
-                    Query findLayerQuery = new Query(
-                            Criteria.where("worldId").is(targetWorldId)
-                                    .and("title").is(targetName)
-                    );
-                    Document existingLayer = mongoTemplate.findOne(findLayerQuery, Document.class, LAYER_COLLECTION);
+                    Document existingLayer = layerService.findLayerDocumentByWorldIdAndName(targetWorldId, targetName).orElse(null);
 
                     // Check if should import
                     if (!force && existingLayer != null) {
@@ -238,16 +201,8 @@ public class GroundLayerResourceSyncType implements ResourceSyncType {
                         }
                     }
 
-                    // Always remove _id from imported document first (may be serialized incorrectly)
-                    migratedLayerDoc.remove("_id");
-
-                    // If existing, use its ObjectId to update in place
-                    if (existingLayer != null) {
-                        migratedLayerDoc.put("_id", existingLayer.get("_id"));
-                    }
-                    // else: _id is removed, MongoDB will generate a new ObjectId
-
-                    mongoTemplate.save(migratedLayerDoc, LAYER_COLLECTION);
+                    // Upsert the layer through the owner (reconciles _id by worldId + title)
+                    layerService.upsertLayerDocument(migratedLayerDoc);
                     imported++;
 
                     // Get layerDataId for chunk import
@@ -321,11 +276,11 @@ public class GroundLayerResourceSyncType implements ResourceSyncType {
                 } else if (filesystemChunks.containsKey(layer.getName())) {
                     // Remove chunks
                     Set<String> fsChunks = filesystemChunks.get(layer.getName());
-                    List<WLayerTerrain> dbChunks = terrainRepository.findByWorldIdAndLayerDataId(layer.getWorldId(), layer.getLayerDataId());
+                    List<WLayerTerrain> dbChunks = layerService.findTerrainsByWorldIdAndLayerDataId(layer.getWorldId(), layer.getLayerDataId());
 
                     for (WLayerTerrain chunk : dbChunks) {
                         if (!fsChunks.contains(chunk.getChunkKey())) {
-                            terrainRepository.delete(chunk);
+                            layerService.deleteTerrain(chunk);
                             log.info("Deleted chunk not in filesystem: {}/{}", layer.getName(), chunk.getChunkKey());
                             deleted++;
                         }
@@ -343,34 +298,24 @@ public class GroundLayerResourceSyncType implements ResourceSyncType {
      */
     private void exportSchemaInfo(String worldId, String layerDataId, Path schemaFile) {
         try {
-            // Get first terrain chunk to extract schema info
-            List<WLayerTerrain> terrains = terrainRepository.findByWorldIdAndLayerDataId(worldId, layerDataId);
-            if (terrains.isEmpty()) {
-                log.debug("No terrain chunks found for layer, skipping schema export");
+            // Read schema info of the first terrain chunk through the owner service
+            Optional<WLayerService.TerrainChunkSchema> schemaOpt =
+                    layerService.readFirstTerrainChunkSchema(worldId, layerDataId);
+            if (schemaOpt.isEmpty()) {
+                log.debug("No terrain schema info available for layer, skipping schema export");
                 return;
             }
 
-            WLayerTerrain firstTerrain = terrains.get(0);
-            if (firstTerrain.getStorageId() == null) {
-                log.warn("First terrain chunk has no storageId, skipping schema export");
-                return;
-            }
-
-            // Load first StorageData chunk to get schema info
-            StorageData firstChunk = storageDataRepository.findByUuidAndIndex(firstTerrain.getStorageId(), 0);
-            if (firstChunk == null) {
-                log.warn("No storage data found for storageId: {}", firstTerrain.getStorageId());
-                return;
-            }
+            WLayerService.TerrainChunkSchema schema = schemaOpt.get();
 
             // Create schema document
             Map<String, String> schemaInfo = new HashMap<>();
-            schemaInfo.put("schema", firstChunk.getSchema());
-            schemaInfo.put("schemaVersion", firstChunk.getSchemaVersion());
+            schemaInfo.put("schema", schema.schema());
+            schemaInfo.put("schemaVersion", schema.schemaVersion());
 
             // Write to _schema.yaml
             yamlMapper.writeValue(schemaFile.toFile(), schemaInfo);
-            log.debug("Exported schema info: schema={} version={}", firstChunk.getSchema(), firstChunk.getSchemaVersion());
+            log.debug("Exported schema info: schema={} version={}", schema.schema(), schema.schemaVersion());
 
         } catch (Exception e) {
             log.warn("Failed to export schema info", e);

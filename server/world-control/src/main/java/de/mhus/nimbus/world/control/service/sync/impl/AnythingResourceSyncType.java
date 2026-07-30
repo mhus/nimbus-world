@@ -13,9 +13,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.bson.Document;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -39,10 +36,7 @@ import java.util.stream.Stream;
 @Slf4j
 public class AnythingResourceSyncType implements ResourceSyncType {
 
-    private static final String COLLECTION_NAME = "w_anything";
-
     private final WAnythingService anythingService;
-    private final MongoTemplate mongoTemplate;
     private final SchemaMigrationService migrationService;
     private final DocumentTransformer documentTransformer;
     private final ObjectMapper objectMapper;
@@ -60,9 +54,8 @@ public class AnythingResourceSyncType implements ResourceSyncType {
         Path anythingDir = dataPath.resolve("anything");
         Files.createDirectories(anythingDir);
 
-        // Get WAnything entities directly from MongoDB as Documents, filtered by worldId
-        Query query = new Query(Criteria.where("worldId").is(worldId.getId()));
-        List<Document> documents = mongoTemplate.find(query, Document.class, COLLECTION_NAME);
+        // Get WAnything entities as raw Documents through the owner service, filtered by worldId
+        List<Document> documents = anythingService.exportDocuments(worldId.getId());
 
         // Track exported entities by collection+title
         Map<String, Set<String>> dbAnythingIds = new HashMap<>();
@@ -180,12 +173,11 @@ public class AnythingResourceSyncType implements ResourceSyncType {
                             migratedDoc = documentTransformer.transformForImport(migratedDoc, definition);
 
                             // Find existing by unique constraint (worldId + collection + title)
-                            Query findQuery = new Query(
-                                    Criteria.where("worldId").is(migratedDoc.getString("worldId"))
-                                            .and("collection").is(migratedDoc.getString("collection"))
-                                            .and("title").is(migratedDoc.getString("title"))
-                            );
-                            Document existing = mongoTemplate.findOne(findQuery, Document.class, COLLECTION_NAME);
+                            Document existing = anythingService.findDocumentByWorldIdAndCollectionAndName(
+                                    migratedDoc.getString("worldId"),
+                                    migratedDoc.getString("collection"),
+                                    migratedDoc.getString("title")
+                            ).orElse(null);
 
                             // Check if should import
                             if (!force && existing != null) {
@@ -199,17 +191,8 @@ public class AnythingResourceSyncType implements ResourceSyncType {
                                 }
                             }
 
-                            // Always remove _id from imported document first (may be serialized incorrectly)
-                            migratedDoc.remove("_id");
-
-                            // If existing, use its ObjectId to update in place
-                            if (existing != null) {
-                                migratedDoc.put("_id", existing.get("_id"));
-                            }
-                            // else: _id is removed, MongoDB will generate a new ObjectId
-
-                            // Save to MongoDB
-                            mongoTemplate.save(migratedDoc, COLLECTION_NAME);
+                            // Upsert through the owner (reconciles _id by the unique key)
+                            anythingService.upsertDocument(migratedDoc);
                             log.debug("Imported WAnything: collection={}, title={}", docCollection, name);
                             imported++;
 
@@ -224,9 +207,8 @@ public class AnythingResourceSyncType implements ResourceSyncType {
         // Remove overtaken entities if requested
         int deleted = 0;
         if (removeOvertaken) {
-            // Get all WAnything entities for this world from database
-            Query query = new Query(Criteria.where("worldId").is(worldId.getId()));
-            List<Document> dbDocuments = mongoTemplate.find(query, Document.class, COLLECTION_NAME);
+            // Get all WAnything entities for this world through the owner service
+            List<Document> dbDocuments = anythingService.exportDocuments(worldId.getId());
 
             for (Document doc : dbDocuments) {
                 String collection = doc.getString("collection");

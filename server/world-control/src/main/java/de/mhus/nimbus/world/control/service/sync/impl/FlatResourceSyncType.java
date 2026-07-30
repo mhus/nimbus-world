@@ -7,13 +7,11 @@ import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.control.service.sync.DocumentTransformer;
 import de.mhus.nimbus.world.control.service.sync.ResourceSyncType;
 import de.mhus.nimbus.world.shared.dto.ExternalResourceDTO;
+import de.mhus.nimbus.world.shared.generator.WFlatService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.bson.Document;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -37,9 +35,7 @@ import java.util.stream.Stream;
 @Slf4j
 public class FlatResourceSyncType implements ResourceSyncType {
 
-    private static final String COLLECTION_NAME = "w_flats";
-
-    private final MongoTemplate mongoTemplate;
+    private final WFlatService flatService;
     private final SchemaMigrationService migrationService;
     private final DocumentTransformer documentTransformer;
     private final ObjectMapper objectMapper;
@@ -57,8 +53,7 @@ public class FlatResourceSyncType implements ResourceSyncType {
         Path flatsDir = dataPath.resolve("flats");
         Files.createDirectories(flatsDir);
 
-        Query query = new Query(Criteria.where("worldId").is(worldId.getId()));
-        List<Document> documents = mongoTemplate.find(query, Document.class, COLLECTION_NAME);
+        List<Document> documents = flatService.exportDocuments(worldId.getId());
 
         // Track exported IDs per layerDataId for removeOvertaken
         Map<String, Set<String>> dbFlatIds = new HashMap<>();
@@ -165,12 +160,11 @@ public class FlatResourceSyncType implements ResourceSyncType {
                             migratedDoc = documentTransformer.transformForImport(migratedDoc, definition);
 
                             // Find existing by unique constraint (worldId + layerDataId + flatId)
-                            Query findQuery = new Query(
-                                    Criteria.where("worldId").is(migratedDoc.getString("worldId"))
-                                            .and("layerDataId").is(migratedDoc.getString("layerDataId"))
-                                            .and("flatId").is(migratedDoc.getString("flatId"))
-                            );
-                            Document existing = mongoTemplate.findOne(findQuery, Document.class, COLLECTION_NAME);
+                            Document existing = flatService.findDocumentByWorldIdAndLayerDataIdAndFlatId(
+                                    migratedDoc.getString("worldId"),
+                                    migratedDoc.getString("layerDataId"),
+                                    migratedDoc.getString("flatId")
+                            ).orElse(null);
 
                             if (!force && existing != null) {
                                 Object fileUpdatedAt = migratedDoc.get("updatedAt");
@@ -183,12 +177,8 @@ public class FlatResourceSyncType implements ResourceSyncType {
                                 }
                             }
 
-                            migratedDoc.remove("_id");
-                            if (existing != null) {
-                                migratedDoc.put("_id", existing.get("_id"));
-                            }
-
-                            mongoTemplate.save(migratedDoc, COLLECTION_NAME);
+                            // Upsert through the owner (reconciles _id by the unique key)
+                            flatService.upsertDocument(migratedDoc);
                             log.debug("Imported WFlat: layerDataId={}, flatId={}", layerDataId, flatId);
                             imported++;
 
@@ -202,8 +192,7 @@ public class FlatResourceSyncType implements ResourceSyncType {
 
         int deleted = 0;
         if (removeOvertaken) {
-            Query query = new Query(Criteria.where("worldId").is(worldId.getId()));
-            List<Document> dbFlats = mongoTemplate.find(query, Document.class, COLLECTION_NAME);
+            List<Document> dbFlats = flatService.exportDocuments(worldId.getId());
 
             for (Document doc : dbFlats) {
                 String flatId = doc.getString("flatId");
@@ -212,10 +201,7 @@ public class FlatResourceSyncType implements ResourceSyncType {
 
                 String key = (layerDataId != null ? layerDataId : "_default") + ":" + flatId;
                 if (!filesystemKeys.contains(key)) {
-                    mongoTemplate.remove(
-                            new Query(Criteria.where("_id").is(doc.get("_id"))),
-                            COLLECTION_NAME
-                    );
+                    flatService.deleteDocumentById(doc.get("_id"));
                     log.info("Deleted WFlat not in filesystem: layerDataId={}, flatId={}", layerDataId, flatId);
                     deleted++;
                 }

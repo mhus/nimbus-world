@@ -4,6 +4,7 @@ import de.mhus.nimbus.shared.types.WorldId;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
+import org.bson.Document;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -429,5 +430,58 @@ public class WDocumentService {
                     return documentId != null ? doc.getString("worldId") + "|" + documentId : null;
                 }
         );
+    }
+
+    // ==================== SYNC DOCUMENT FACADE ====================
+    // Raw org.bson.Document access for the SYNC cluster (world-control). Keeps
+    // data ownership with this service while preserving the raw-document
+    // behavior sync requires: _schema/_class fields stay untouched and schema
+    // migration is applied externally on the raw JSON. worldId is matched
+    // exactly as stored.
+
+    /**
+     * Export all WDocument documents of a world as raw MongoDB Documents.
+     */
+    @Transactional(readOnly = true)
+    public List<Document> exportDocuments(String worldId) {
+        String collectionName = mongoTemplate.getCollectionName(WDocument.class);
+        return mongoTemplate.find(new Query(Criteria.where("worldId").is(worldId)), Document.class, collectionName);
+    }
+
+    /**
+     * Find a single WDocument document by worldId + documentId (unique key).
+     */
+    @Transactional(readOnly = true)
+    public Optional<Document> findDocumentByWorldIdAndDocumentId(String worldId, String documentId) {
+        String collectionName = mongoTemplate.getCollectionName(WDocument.class);
+        Query query = new Query(Criteria.where("worldId").is(worldId).and("documentId").is(documentId));
+        return Optional.ofNullable(mongoTemplate.findOne(query, Document.class, collectionName));
+    }
+
+    /**
+     * Upsert a raw WDocument document, reconciling the {@code _id} by the unique
+     * key (worldId + documentId): reuse the existing document's {@code _id} when
+     * present, otherwise let MongoDB assign a new one.
+     */
+    @Transactional
+    public Document upsertDocument(Document doc) {
+        String collectionName = mongoTemplate.getCollectionName(WDocument.class);
+        Query query = new Query(Criteria.where("worldId").is(doc.getString("worldId"))
+                .and("documentId").is(doc.getString("documentId")));
+        Document existing = mongoTemplate.findOne(query, Document.class, collectionName);
+        doc.remove("_id");
+        if (existing != null) {
+            doc.put("_id", existing.get("_id"));
+        }
+        return mongoTemplate.save(doc, collectionName);
+    }
+
+    /**
+     * Delete a WDocument document by its raw MongoDB {@code _id}.
+     */
+    @Transactional
+    public void deleteDocumentById(Object id) {
+        String collectionName = mongoTemplate.getCollectionName(WDocument.class);
+        mongoTemplate.remove(new Query(Criteria.where("_id").is(id)), collectionName);
     }
 }

@@ -16,6 +16,7 @@ import de.mhus.nimbus.world.shared.world.WWorldService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
+import org.bson.Document;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -2809,5 +2810,168 @@ public class WLayerService implements StorageProvider {
      */
     public EpochProcessResult deleteEpoch(String worldId, int epoch) {
         return EpochArrayHelper.delete(mongoTemplate, WLayer.class, "layer", worldId, epoch);
+    }
+
+    // ==================== SYNC DOCUMENT FACADE ====================
+    // Raw org.bson.Document access for the SYNC cluster (world-control). Keeps
+    // data ownership with this service (layers, terrain chunks incl. their
+    // storage, and models) while preserving the raw-document behavior sync
+    // requires: _schema/_class fields stay untouched and schema migration is
+    // applied externally on the raw JSON. worldId is matched exactly as stored.
+
+    /**
+     * Export all layer documents of a world filtered by layer type, as raw
+     * MongoDB Documents.
+     */
+    @Transactional(readOnly = true)
+    public List<Document> exportLayerDocuments(String worldId, LayerType type) {
+        String collectionName = mongoTemplate.getCollectionName(WLayer.class);
+        Query query = new Query(Criteria.where("worldId").is(worldId).and("layerType").is(type.name()));
+        return mongoTemplate.find(query, Document.class, collectionName);
+    }
+
+    /**
+     * Find a single layer document by worldId + title (the sync layer identity).
+     */
+    @Transactional(readOnly = true)
+    public Optional<Document> findLayerDocumentByWorldIdAndName(String worldId, String title) {
+        String collectionName = mongoTemplate.getCollectionName(WLayer.class);
+        Query query = new Query(Criteria.where("worldId").is(worldId).and("title").is(title));
+        return Optional.ofNullable(mongoTemplate.findOne(query, Document.class, collectionName));
+    }
+
+    /**
+     * Upsert a raw layer document, reconciling the {@code _id} by the sync
+     * unique key (worldId + title): reuse the existing document's {@code _id}
+     * when present, otherwise let MongoDB assign a new one.
+     */
+    @Transactional
+    public Document upsertLayerDocument(Document doc) {
+        String collectionName = mongoTemplate.getCollectionName(WLayer.class);
+        Query query = new Query(Criteria.where("worldId").is(doc.getString("worldId"))
+                .and("title").is(doc.getString("title")));
+        Document existing = mongoTemplate.findOne(query, Document.class, collectionName);
+        doc.remove("_id");
+        if (existing != null) {
+            doc.put("_id", existing.get("_id"));
+        }
+        return mongoTemplate.save(doc, collectionName);
+    }
+
+    /**
+     * Find all terrain chunk entities of a layer (by worldId + layerDataId).
+     */
+    @Transactional(readOnly = true)
+    public List<WLayerTerrain> findTerrainsByWorldIdAndLayerDataId(String worldId, String layerDataId) {
+        return terrainRepository.findByWorldIdAndLayerDataId(worldId, layerDataId);
+    }
+
+    /**
+     * Load the raw terrain chunk JSON from storage, decompressing when the
+     * chunk was stored compressed. Reproduces the sync export storage read
+     * (storageService.load + optional GZIP decode). The caller must ensure the
+     * terrain has a storageId.
+     */
+    @Transactional(readOnly = true)
+    public String loadTerrainChunkRawJson(WLayerTerrain terrain) throws java.io.IOException {
+        try (InputStream stream = storageService.load(terrain.getStorageId())) {
+            byte[] data = stream.readAllBytes();
+            if (terrain.isCompressed()) {
+                try (java.io.ByteArrayInputStream bis = new java.io.ByteArrayInputStream(data);
+                     GZIPInputStream gzis = new GZIPInputStream(bis)) {
+                    return new String(gzis.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+                }
+            }
+            return new String(data, java.nio.charset.StandardCharsets.UTF_8);
+        }
+    }
+
+    /**
+     * Schema information of a terrain chunk's first StorageData block.
+     */
+    public record TerrainChunkSchema(String schema, String schemaVersion) {}
+
+    /**
+     * Read the schema/schemaVersion from the first storage block of a layer's
+     * first terrain chunk. Reproduces the sync schema export; the raw index-0
+     * chunk read is delegated to the storage owner ({@link StorageService#readStoredSchema})
+     * so this service does not query the storage_data collection directly.
+     * Returns empty when there is no terrain, no storageId, or no storage block.
+     */
+    @Transactional(readOnly = true)
+    public Optional<TerrainChunkSchema> readFirstTerrainChunkSchema(String worldId, String layerDataId) {
+        List<WLayerTerrain> terrains = terrainRepository.findByWorldIdAndLayerDataId(worldId, layerDataId);
+        if (terrains.isEmpty()) {
+            return Optional.empty();
+        }
+        WLayerTerrain first = terrains.get(0);
+        if (first.getStorageId() == null) {
+            return Optional.empty();
+        }
+        StorageService.StoredSchema stored = storageService.readStoredSchema(first.getStorageId());
+        if (stored == null) {
+            return Optional.empty();
+        }
+        return Optional.of(new TerrainChunkSchema(stored.schema(), stored.schemaVersion()));
+    }
+
+    /**
+     * Delete a single terrain chunk entity (document only, matching the
+     * previous sync removeOvertaken behavior which did not touch storage).
+     */
+    @Transactional
+    public void deleteTerrain(WLayerTerrain terrain) {
+        terrainRepository.delete(terrain);
+    }
+
+    /**
+     * Export all model documents of a layer (by layerDataId) as raw Documents.
+     */
+    @Transactional(readOnly = true)
+    public List<Document> exportModelDocumentsByLayerDataId(String layerDataId) {
+        String collectionName = mongoTemplate.getCollectionName(WLayerModel.class);
+        Query query = new Query(Criteria.where("layerDataId").is(layerDataId));
+        return mongoTemplate.find(query, Document.class, collectionName);
+    }
+
+    /**
+     * Find a single model document by worldId + layerDataId + title (the sync
+     * model identity).
+     */
+    @Transactional(readOnly = true)
+    public Optional<Document> findModelDocumentByWorldIdAndLayerDataIdAndName(String worldId, String layerDataId, String name) {
+        String collectionName = mongoTemplate.getCollectionName(WLayerModel.class);
+        Query query = new Query(Criteria.where("worldId").is(worldId)
+                .and("layerDataId").is(layerDataId)
+                .and("title").is(name));
+        return Optional.ofNullable(mongoTemplate.findOne(query, Document.class, collectionName));
+    }
+
+    /**
+     * Upsert a raw model document, reconciling the {@code _id} by the sync
+     * unique key (worldId + layerDataId + title): reuse the existing document's
+     * {@code _id} when present, otherwise let MongoDB assign a new one.
+     */
+    @Transactional
+    public Document upsertModelDocument(Document doc) {
+        String collectionName = mongoTemplate.getCollectionName(WLayerModel.class);
+        Query query = new Query(Criteria.where("worldId").is(doc.getString("worldId"))
+                .and("layerDataId").is(doc.getString("layerDataId"))
+                .and("title").is(doc.getString("title")));
+        Document existing = mongoTemplate.findOne(query, Document.class, collectionName);
+        doc.remove("_id");
+        if (existing != null) {
+            doc.put("_id", existing.get("_id"));
+        }
+        return mongoTemplate.save(doc, collectionName);
+    }
+
+    /**
+     * Delete a single model entity (matching the previous sync removeOvertaken
+     * behavior which deleted the model document directly).
+     */
+    @Transactional
+    public void deleteModel(WLayerModel model) {
+        modelRepository.delete(model);
     }
 }

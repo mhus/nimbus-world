@@ -5,7 +5,9 @@ import de.mhus.nimbus.shared.types.WorldId;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
+import org.bson.Document;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -386,6 +388,52 @@ public class WBlockTypeService {
                     return name != null ? doc.getString("worldId") + "|" + name : null;
                 }
         );
+    }
+
+    // ==================== SYNC DOCUMENT FACADE ====================
+    // Raw org.bson.Document access for the SYNC cluster (world-control). Keeps
+    // data ownership with this service while preserving the raw-document
+    // behavior sync requires: _schema/_class fields stay untouched and schema
+    // migration is applied externally on the raw JSON. worldId is matched
+    // exactly as stored (no main-world resolution).
+
+    /**
+     * Export all block type documents of a world as raw MongoDB Documents.
+     */
+    @Transactional(readOnly = true)
+    public List<Document> exportDocuments(String worldId) {
+        String collectionName = mongoTemplate.getCollectionName(WBlockType.class);
+        return mongoTemplate.find(new Query(Criteria.where("worldId").is(worldId)), Document.class, collectionName);
+    }
+
+    /**
+     * Find a single block type document by worldId + blockId. The sync keys
+     * block types on the stored {@code blockId} field, matched here to preserve
+     * existing behavior.
+     */
+    @Transactional(readOnly = true)
+    public Optional<Document> findDocumentByWorldIdAndBlockId(String worldId, String blockId) {
+        String collectionName = mongoTemplate.getCollectionName(WBlockType.class);
+        Query query = new Query(Criteria.where("worldId").is(worldId).and("blockId").is(blockId));
+        return Optional.ofNullable(mongoTemplate.findOne(query, Document.class, collectionName));
+    }
+
+    /**
+     * Upsert a raw block type document, reconciling the {@code _id} by the sync
+     * unique key (worldId + blockId): reuse the existing document's {@code _id}
+     * when present, otherwise let MongoDB assign a new one.
+     */
+    @Transactional
+    public Document upsertDocument(Document doc) {
+        String collectionName = mongoTemplate.getCollectionName(WBlockType.class);
+        Query query = new Query(Criteria.where("worldId").is(doc.getString("worldId"))
+                .and("blockId").is(doc.getString("blockId")));
+        Document existing = mongoTemplate.findOne(query, Document.class, collectionName);
+        doc.remove("_id");
+        if (existing != null) {
+            doc.put("_id", existing.get("_id"));
+        }
+        return mongoTemplate.save(doc, collectionName);
     }
 
 }
