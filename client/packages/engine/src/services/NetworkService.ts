@@ -74,9 +74,6 @@ export class NetworkService {
   private shouldReconnect: boolean = true;
   private reconnectIntervalMs: number = 5000; // 5 seconds between reconnect attempts
 
-  // Authentication token for API requests (e.g., speech streaming)
-  private authToken: string = '';
-
   constructor(private appContext: AppContext) {
     // websocketUrl will be set after server config is loaded
     this.websocketUrl = appContext.config.websocketUrl || '';
@@ -781,12 +778,14 @@ export class NetworkService {
   }
 
   /**
-   * Get speech URL for streaming speech audio
+   * Get speech URL for streaming speech audio.
    *
-   * Constructs full URL with sessionId and authToken as query parameters
+   * The stream is authenticated via the session cookie (the consumer fetches
+   * with credentials:'include'), so no auth token is placed in the URL. Only
+   * the sessionId is passed as a query parameter for stream association.
    *
    * @param streamPath - Speech stream path (e.g., "welcome" or "tutorial/intro")
-   * @returns Full speech URL with authentication
+   * @returns Full speech URL
    */
   getSpeechUrl(streamPath: string): string {
     const worldId = this.appContext.worldInfo?.worldId;
@@ -800,28 +799,9 @@ export class NetworkService {
     if (sessionId) {
       params.append('sessionId', sessionId);
     }
-    if (this.authToken) {
-      params.append('authToken', this.authToken);
-    }
 
     const queryString = params.toString();
     return queryString ? `${baseUrl}?${queryString}` : baseUrl;
-  }
-
-  /**
-   * Set authentication token for API requests
-   * @param token Authentication token
-   */
-  setAuthToken(token: string): void {
-    this.authToken = token;
-    logger.debug('Auth token set', { hasToken: !!token });
-  }
-
-  /**
-   * Get authentication token
-   */
-  getAuthToken(): string {
-    return this.authToken;
   }
 
   /**
