@@ -1,5 +1,7 @@
 package de.mhus.nimbus.world.generator.flat;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.world.shared.generator.WFlat;
 import de.mhus.nimbus.world.shared.generator.WFlatService;
 import de.mhus.nimbus.world.shared.job.JobExecutionException;
@@ -42,6 +44,7 @@ public class FlatManipulateJobExecutor implements JobExecutor {
 
     private final FlatManipulatorService manipulatorService;
     private final WFlatService flatService;
+    private final ObjectMapper objectMapper;
 
     @Override
     public String getExecutorName() {
@@ -197,32 +200,18 @@ public class FlatManipulateJobExecutor implements JobExecutor {
      */
     private Map<String, String> parseParametersJson(String json) {
         Map<String, String> result = new HashMap<>();
-
-        // Remove braces and whitespace
-        json = json.trim();
-        if (json.startsWith("{")) json = json.substring(1);
-        if (json.endsWith("}")) json = json.substring(0, json.length() - 1);
-
-        if (json.isEmpty()) {
+        if (json == null || json.isBlank()) {
             return result;
         }
-
-        // Split by comma (simple parser, doesn't handle escaped commas in values)
-        String[] pairs = json.split(",");
-        for (String pair : pairs) {
-            // Split by colon
-            String[] keyValue = pair.split(":", 2);
-            if (keyValue.length != 2) {
-                throw new IllegalArgumentException("Invalid JSON pair: " + pair);
-            }
-
-            // Remove quotes and whitespace
-            String key = keyValue[0].trim().replaceAll("^\"|\"$", "");
-            String value = keyValue[1].trim().replaceAll("^\"|\"$", "");
-
-            result.put(key, value);
+        try {
+            JsonNode node = objectMapper.readTree(json);
+            node.fields().forEachRemaining(entry -> {
+                JsonNode value = entry.getValue();
+                result.put(entry.getKey(), value.isTextual() ? value.asText() : value.toString());
+            });
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Invalid parameters JSON: " + e.getMessage(), e);
         }
-
         return result;
     }
 }

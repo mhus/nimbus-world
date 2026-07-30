@@ -421,7 +421,7 @@ export class SelectService {
 
       // Get camera rotation from CameraService via reflection
       // (PlayerService doesn't expose rotation directly)
-      const cameraService = (this.playerService as any).cameraService;
+      const cameraService = this.appContext.services.camera;
       if (!cameraService) {
         logger.warn('CameraService not available');
         return null;
@@ -460,7 +460,7 @@ export class SelectService {
       eyePosition.y += this.playerEyeHeight;
 
       // Get camera rotation
-      const cameraService = (this.playerService as any).cameraService;
+      const cameraService = this.appContext.services.camera;
       if (!cameraService) {
         return null;
       }
@@ -1431,7 +1431,7 @@ export class SelectService {
       const playerPosition = this.playerService.getPosition();
 
       // Get camera rotation
-      const cameraService = (this.playerService as any).cameraService;
+      const cameraService = this.appContext.services.camera;
       if (!cameraService) {
         logger.warn('CameraService not available for shortcut');
         return;

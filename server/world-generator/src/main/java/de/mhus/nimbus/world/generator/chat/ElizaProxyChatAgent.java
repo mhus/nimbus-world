@@ -8,9 +8,7 @@ import de.mhus.nimbus.world.shared.chat.WChatMessage;
 import de.mhus.nimbus.world.shared.chat.WChatService;
 import org.springframework.stereotype.Component;
 
-import java.time.Instant;
 import java.util.List;
-import java.util.UUID;
 
 /**
  * Proxy agent on world-generator that delegates to the eliza agent on world-control.
@@ -46,17 +44,6 @@ public class ElizaProxyChatAgent extends ProxyChatAgent {
     @Override
     public List<WChatMessage> chatWithSession(WorldId worldId, String chatId, String playerId,
                                                String message, String sessionId, WChatContext context) {
-        // Test: respond locally when message contains "proxy"
-        if (message != null && message.toLowerCase().contains("proxy")) {
-            WChatMessage response = WChatMessage.builder()
-                    .messageId(UUID.randomUUID().toString())
-                    .senderId(getName() + "-agent")
-                    .message("Hello from the proxy! I intercepted your message locally on world-generator. No forwarding to eliza.")
-                    .type("text")
-                    .createdAt(Instant.now())
-                    .build();
-            return List.of(response);
-        }
         return super.chatWithSession(worldId, chatId, playerId, message, sessionId, context);
     }
 }

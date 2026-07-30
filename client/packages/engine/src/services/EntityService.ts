@@ -599,19 +599,25 @@ export class EntityService {
     // Update model reference on entity
     clientEntity.entity.model = newModelId;
 
-    // Remove from render cache so it gets re-created with new model
-    this.emit('removed', entityId);
-
-    // Clear cached model so it gets re-fetched
-    clientEntity.model = undefined as any;
-
-    // Re-trigger rendering by emitting a pathway event with current position
-    const pathway = this.entityPathwayCache.get(entityId);
-    if (pathway) {
-      this.emit('pathway', pathway);
-    }
-
-    logger.info('Entity model reload triggered', { entityId, newModelId });
+    // Load the new model first and only then swap it in and re-render. The old
+    // model stays in place until the new one is ready, so `clientEntity.model`
+    // is never undefined (avoids undefined access in e.g. getEntityDimensions).
+    this.getEntityModel(newModelId)
+      .then((model) => {
+        if (!model) {
+          logger.warn('Entity model not found for reload', { entityId, newModelId });
+          return;
+        }
+        clientEntity.model = model;
+        // Recreate the render mesh with the new model.
+        this.emit('removed', entityId);
+        const pathway = this.entityPathwayCache.get(entityId);
+        if (pathway) {
+          this.emit('pathway', pathway);
+        }
+        logger.info('Entity model reloaded', { entityId, newModelId });
+      })
+      .catch((error) => ExceptionHandler.handle(error, 'EntityService.reloadEntityModel', { entityId, newModelId }));
   }
 
   /**
