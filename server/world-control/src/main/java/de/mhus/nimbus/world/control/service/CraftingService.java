@@ -206,8 +206,9 @@ public class CraftingService {
         String title = recipeEntity.map(WAnything::getTitle).orElse(recipeName);
         learnRecipe(worldId, playerId, recipeName, title);
 
-        // Grant spell word XP
-        if (spellWords != null && recipe.getSpellWordXpReward() > 0) {
+        // Grant spell word XP (only when the recipe actually allows spells, consistent
+        // with the spell-item-suffix logic above)
+        if (spellWords != null && recipe.isAllowSpells() && recipe.getSpellWordXpReward() > 0) {
             for (String word : spellWords) {
                 spellWordService.addWordXp(characterId, word, recipe.getSpellWordXpReward());
             }

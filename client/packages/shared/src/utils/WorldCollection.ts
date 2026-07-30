@@ -49,22 +49,21 @@ export class WorldCollection {
             case 'w':
                 return new WorldCollection(WorldCollectionType.WORLD, worldId, path);
             case 'r':
-                // Annahme: WorldId.of('COLLECTION_REGION', worldId.getRegionId())
                 return new WorldCollection(
                     WorldCollectionType.REGION,
-                    WorldId.of('COLLECTION_REGION', worldId.getRegionId())!,
+                    WorldId.of(WorldId.COLLECTION_REGION, worldId.getRegionId())!,
                     path
                 );
             case 'rp':
                 return new WorldCollection(
                     WorldCollectionType.PUBLIC,
-                    WorldId.of('COLLECTION_PUBLIC', worldId.getRegionId())!,
+                    WorldId.of(WorldId.COLLECTION_PUBLIC, worldId.getRegionId())!,
                     path
                 );
             default:
                 return new WorldCollection(
                     WorldCollectionType.SHARED,
-                    WorldId.of('COLLECTION_SHARED', group)!,
+                    WorldId.of(WorldId.COLLECTION_SHARED, group)!,
                     path
                 );
         }

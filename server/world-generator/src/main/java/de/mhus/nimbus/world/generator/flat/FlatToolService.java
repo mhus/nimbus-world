@@ -513,10 +513,7 @@ public class FlatToolService {
      * @return List of manipulator names
      */
     public List<String> getAvailableManipulators() {
-        // This would require exposing manipulator names from FlatManipulatorService
-        // For now, return empty list - can be implemented later
-        log.warn("getAvailableManipulators() not yet fully implemented");
-        return List.of();
+        return List.copyOf(flatManipulatorService.getAvailableManipulators());
     }
 
     // ========== AI Tool Methods (for langchain4j) ==========

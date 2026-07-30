@@ -86,7 +86,7 @@ public class PlayerChestWidgetController extends BaseEditorController {
         }
 
         // Load and validate WProgress
-        var resolveResult = resolveChestFromLease(progressId, worldId, userId);
+        var resolveResult = resolveChestFromLease(progressId, worldId, "@" + userId + ":" + characterId);
         if (resolveResult.error != null) {
             return resolveResult.error;
         }
@@ -150,15 +150,16 @@ public class PlayerChestWidgetController extends BaseEditorController {
 
         String worldId = (String) request.getAttribute(AccessFilterBase.ATTR_WORLD_ID);
         String userId = (String) request.getAttribute(AccessFilterBase.ATTR_USER_ID);
+        String characterId = (String) request.getAttribute(AccessFilterBase.ATTR_CHARACTER_ID);
 
-        if (Strings.isBlank(worldId) || Strings.isBlank(userId)) {
+        if (Strings.isBlank(worldId) || Strings.isBlank(userId) || Strings.isBlank(characterId)) {
             return bad("Not authenticated");
         }
         if (body == null || Strings.isBlank(body.progressId()) || Strings.isBlank(body.pin())) {
             return bad("progressId and pin required");
         }
 
-        var resolveResult = resolveChestFromLease(body.progressId(), worldId, userId);
+        var resolveResult = resolveChestFromLease(body.progressId(), worldId, "@" + userId + ":" + characterId);
         if (resolveResult.error != null) {
             return resolveResult.error;
         }
@@ -200,7 +201,7 @@ public class PlayerChestWidgetController extends BaseEditorController {
             return bad("progressId, itemId and amount (> 0) required");
         }
 
-        var resolveResult = resolveChestFromLease(body.progressId(), worldId, userId);
+        var resolveResult = resolveChestFromLease(body.progressId(), worldId, "@" + userId + ":" + characterId);
         if (resolveResult.error != null) {
             return resolveResult.error;
         }
@@ -293,7 +294,7 @@ public class PlayerChestWidgetController extends BaseEditorController {
             return bad("progressId, itemId and amount (> 0) required");
         }
 
-        var resolveResult = resolveChestFromLease(body.progressId(), worldId, userId);
+        var resolveResult = resolveChestFromLease(body.progressId(), worldId, "@" + userId + ":" + characterId);
         if (resolveResult.error != null) {
             return resolveResult.error;
         }
@@ -379,8 +380,8 @@ public class PlayerChestWidgetController extends BaseEditorController {
      * Validates that the lease belongs to the requesting player and world,
      * and is of type "chest-access".
      */
-    private ChestResolveResult resolveChestFromLease(String leaseId, String worldId, String userId) {
-        var leaseOpt = leaseService.validate(leaseId, worldId, userId, "chest-access");
+    private ChestResolveResult resolveChestFromLease(String leaseId, String worldId, String playerId) {
+        var leaseOpt = leaseService.validate(leaseId, worldId, playerId, "chest-access");
         if (leaseOpt.isEmpty()) {
             return ChestResolveResult.ofError(notFound("Lease not found or access denied"));
         }

@@ -50,6 +50,8 @@ export class FileLogTransport {
   private options: Required<FileLogTransportOptions>;
   private buffer: string[] = [];
   private bufferSize = 0;
+  /** Accumulated log content for the download fallback (emitted once on close) */
+  private downloadBuffer = '';
   private fileHandle: FileSystemFileHandle | null = null;
   private writable: FileSystemWritableFileStream | null = null;
   private flushTimer: number | null = null;
@@ -222,12 +224,13 @@ export class FileLogTransport {
           await this.writable.write(content);
         } catch (error) {
           console.error('[FileLogTransport] Failed to write:', error);
-          // Fallback to download
-          this.downloadLog(content);
+          // Fallback: accumulate for a single download on close
+          this.downloadBuffer += content;
         }
       } else {
-        // Fallback: append to download buffer
-        this.downloadLog(content);
+        // Fallback: accumulate for a single download on close instead of
+        // triggering a separate download per flush
+        this.downloadBuffer += content;
       }
     } catch (error) {
       ExceptionHandler.handle(error, 'FileLogTransport.flush');
@@ -281,6 +284,12 @@ export class FileLogTransport {
 
       // Flush remaining buffer
       await this.flush();
+
+      // Emit accumulated download-fallback content as a single file
+      if (this.downloadBuffer.length > 0) {
+        this.downloadLog(this.downloadBuffer);
+        this.downloadBuffer = '';
+      }
 
       // Close writable stream
       if (this.writable) {

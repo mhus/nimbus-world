@@ -408,7 +408,9 @@ export class NetworkService {
         return;
       }
       if (event.data instanceof Blob) {
-        event.data.arrayBuffer().then(ab => this.handleBinaryChunkMessage(ab));
+        event.data.arrayBuffer()
+          .then(ab => this.handleBinaryChunkMessage(ab))
+          .catch(err => ExceptionHandler.handle(err, 'NetworkService.onMessage.blob'));
         return;
       }
 
@@ -732,6 +734,13 @@ export class NetworkService {
    * @param additionalData Optional additional data to include in the message
    */
   sendSimpleInteraction(action: string, shortcutKey: string, additionalData?: Record<string, any>): void {
+    // Discrete fire-and-forget interaction: silently drop it while
+    // disconnected instead of letting send() throw into an event/modifier
+    // callback that has no error handling.
+    if (!this.isConnected()) {
+      logger.debug('Skipping simple interaction, not connected', { action, shortcutKey });
+      return;
+    }
     const message: BaseMessage<any> = {
       i: this.generateMessageId(),
       t: MessageType.SIMPLE_INTERACTION,

@@ -379,6 +379,11 @@ export class PhysicsService {
    * Check if teleportation target is ready (chunk + heightData + blocks exist)
    */
   private checkTeleportationReady(entityId: string): void {
+    // Guard against a stray interval tick after teleportation already completed
+    if (!this.teleportationPending) {
+      return;
+    }
+
     const entity = this.entities.get(entityId);
     if (!entity) {
       logger.warn('Entity not found for teleportation check', { entityId });
@@ -426,7 +431,16 @@ export class PhysicsService {
 
     entity.velocity.y = 0; // Reset vertical velocity
 
-    // Clear timer and re-enable physics after 1 second delay
+    // Stop the check interval immediately (and mark teleportation no longer
+    // pending) so it cannot fire another check/re-snap during the 1 second
+    // render delay below.
+    this.teleportationPending = false;
+    if (this.teleportCheckTimer) {
+      clearInterval(this.teleportCheckTimer);
+      this.teleportCheckTimer = null;
+    }
+
+    // Re-enable physics after 1 second delay
     // This gives the engine time to render the new position
     setTimeout(() => {
       this.cancelTeleportation();

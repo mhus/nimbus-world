@@ -912,7 +912,7 @@ public class AssetImageGeneratorExecutor implements JobExecutor {
 
             int totalPixels = width * height;
             float transparentPercent = (transparentCount * 100.0f) / totalPixels;
-            log.info("Made {} pixels transparent ({:.1f}% of image)", transparentCount, transparentPercent);
+            log.info("Made {} pixels transparent ({}% of image)", transparentCount, String.format("%.1f", transparentPercent));
 
             // Encode to bytes as PNG (PNG supports transparency)
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();

@@ -5,7 +5,10 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationContext;
-import org.springframework.stereotype.Service;import java.util.HashMap;import java.util.Map;
+import org.springframework.stereotype.Service;
+
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 @Slf4j
@@ -17,7 +20,7 @@ public class StaticApplicationProvider {
 
     private final ApplicationContext context;
 
-    private final Map<String, Long> propertiesCacheLong = new HashMap<>();
+    private final Map<String, Long> propertiesCacheLong = new ConcurrentHashMap<>();
 
     @PostConstruct
     private void init() {

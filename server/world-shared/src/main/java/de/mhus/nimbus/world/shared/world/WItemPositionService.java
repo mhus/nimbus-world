@@ -66,7 +66,8 @@ public class WItemPositionService {
         Vector3 position = itemBlockRef.getPosition();
         // Editor instances: write directly to base world (no COW)
         WorldId lookupWorld = worldId.isEditorInstance() ? worldId.toBaseWorldId() : worldId;
-        WWorld world = worldService.getByWorldId(worldId.toBaseWorldId().getId()).get();
+        WWorld world = worldService.getByWorldId(worldId.toBaseWorldId().getId())
+                .orElseThrow(() -> new IllegalArgumentException("World not found: " + worldId));
         String chunk = world.getChunkKey((int)position.getX(), (int)position.getZ());
 
         // For player instance worlds: write to instance layer (COW)

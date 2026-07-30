@@ -1443,9 +1443,14 @@ export class ChunkService {
       return; // AudioService not available
     }
 
-    // Initialize permanent audio map if needed
+    // Initialize permanent audio map if needed.
+    // On a chunk update the previous sounds were already disposed via
+    // resourcesToDispose (unloadChunk), so clear the map to drop stale
+    // disposed references for positions that no longer have permanent audio.
     if (!clientChunk.permanentAudioSounds) {
       clientChunk.permanentAudioSounds = new Map();
+    } else {
+      clientChunk.permanentAudioSounds.clear();
     }
 
     // Iterate over all blocks in the chunk

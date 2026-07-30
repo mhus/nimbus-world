@@ -292,6 +292,23 @@ class AudioPool {
       logger.debug('Pool full, creating new instance', { path: this.path });
       const blobUrl = await loadAudioUrlWithCredentials(this.audioUrl);
       const newSound = await CreateSoundAsync(this.path, blobUrl);
+
+      // Re-check capacity after the awaits: a concurrent getAvailableItem()
+      // call may have grown the pool while this one was loading, so avoid
+      // pushing beyond POOL_MAX_SIZE.
+      if (this.items.length >= POOL_MAX_SIZE) {
+        newSound.dispose();
+        const freeItem = this.items.find(existing => existing.isAvailable());
+        if (freeItem) {
+          return freeItem;
+        }
+        logger.warn('Pool at maximum capacity after concurrent growth, sound skipped', {
+          path: this.path,
+          maxSize: POOL_MAX_SIZE
+        });
+        return null;
+      }
+
       item = new AudioPoolItem(newSound);
       this.items.push(item);
       logger.debug('Pool grown', { path: this.path, newSize: this.items.length });
@@ -342,6 +359,7 @@ export class AudioService implements IDisposable {
   private currentAmbientSound?: any; // Current ambient music sound
   private currentAmbientPath?: string; // Current ambient music path
   private ambientFadeInterval?: number; // Fade in/out interval ID
+  private ambientFadeResolve?: () => void; // Resolver of the currently running fade
   private pendingAmbientPath?: string; // Pending ambient music path (waiting for engine ready)
   private pendingAmbientVolume?: number; // Pending ambient music volume
   private pendingAmbientLoop?: boolean; // Pending ambient music loop flag
@@ -1638,10 +1656,16 @@ export class AudioService implements IDisposable {
       let currentStep = 0;
       sound.volume = startVolume;
 
-      // Clear any existing fade interval
+      // Clear any existing fade interval and resolve its promise so an
+      // interrupted fade does not leave a dangling, never-settled promise.
       if (this.ambientFadeInterval) {
         clearInterval(this.ambientFadeInterval);
+        this.ambientFadeInterval = undefined;
+        this.ambientFadeResolve?.();
+        this.ambientFadeResolve = undefined;
       }
+
+      this.ambientFadeResolve = resolve;
 
       this.ambientFadeInterval = window.setInterval(() => {
         currentStep++;
@@ -1650,6 +1674,7 @@ export class AudioService implements IDisposable {
           sound.volume = endVolume;
           clearInterval(this.ambientFadeInterval!);
           this.ambientFadeInterval = undefined;
+          this.ambientFadeResolve = undefined;
           resolve();
         } else {
           sound.volume = startVolume + (volumeStep * currentStep);

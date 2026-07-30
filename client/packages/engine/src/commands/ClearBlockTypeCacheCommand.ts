@@ -11,6 +11,7 @@ import { CommandHandler } from './CommandHandler';
 import type { BlockTypeService } from '../services/BlockTypeService';
 import { getLogger } from '@nimbus/shared';
 import {AppContext} from "../AppContext";
+import { clearModifierCache } from '../utils/BlockModifierMerge';
 
 const logger = getLogger('ClearBlockTypeCacheCommand');
 
@@ -30,6 +31,7 @@ export class ClearBlockTypeCacheCommand extends CommandHandler {
   async execute(parameters: any[]): Promise<any> {
     try {
       this.appContext.services.blockType?.clearCache();
+      clearModifierCache();
 
       logger.debug('BlockType cache cleared');
 

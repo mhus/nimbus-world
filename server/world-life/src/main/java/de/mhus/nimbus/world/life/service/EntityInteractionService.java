@@ -67,7 +67,7 @@ public class EntityInteractionService {
     }
 
     private void handleDialogStart(WorldId worldId, String entityId, String playerId) {
-        SimulationState state = simulatorService.getSimulationState(worldId, entityId);
+        SimulationState state = simulatorService.findSimulationState(worldId, entityId);
         if (state == null) {
             log.warn("World {}: dialog_start for unknown entity: {}", worldId, entityId);
             return;
@@ -83,7 +83,7 @@ public class EntityInteractionService {
     }
 
     private void handleDialogEnd(WorldId worldId, String entityId, String playerId) {
-        SimulationState state = simulatorService.getSimulationState(worldId, entityId);
+        SimulationState state = simulatorService.findSimulationState(worldId, entityId);
         if (state == null) {
             log.warn("World {}: dialog_end for unknown entity: {}", worldId, entityId);
             return;

@@ -720,19 +720,21 @@ export class PrecipitationService {
     strandIndex: number,
     brightness: number
   ): void {
+    // Get camera environment root for relative positioning.
+    // Checked before allocating any texture/particle system so an early
+    // return cannot leak scene-registered resources.
+    const cameraRoot = this.cameraService.getCameraEnvironmentRoot();
+    if (!cameraRoot) {
+      logger.error('Camera environment root not available');
+      return;
+    }
+
     // Reuse the shared lightning texture (identical for every strand)
     const texture = this.getLightningTexture();
 
     const particleCount = Math.floor(400 * brightness); // Main flash has more particles
     const ps = new ParticleSystem(`lightning_${Date.now()}_${strandIndex}`, particleCount + 100, this.scene);
     ps.particleTexture = texture;
-
-    // Get camera environment root for relative positioning
-    const cameraRoot = this.cameraService.getCameraEnvironmentRoot();
-    if (!cameraRoot) {
-      logger.error('Camera environment root not available');
-      return;
-    }
 
     // Lightning emitter - RELATIVE position to camera
     ps.emitter = startPos.clone();

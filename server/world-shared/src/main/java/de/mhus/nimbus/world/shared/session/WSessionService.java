@@ -112,10 +112,10 @@ public class WSessionService {
             java.util.List<String> modelSelector = null;
             Object modelSelectorObj = map.get(FIELD_MODEL_SELECTOR);
             if (modelSelectorObj instanceof String modelSelectorStr && !modelSelectorStr.isBlank()) {
-                // Stored as JSON array string
-                com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
-                modelSelector = mapper.readValue(modelSelectorStr,
-                    new com.fasterxml.jackson.core.type.TypeReference<java.util.List<String>>() {});
+                // Stored as JSON array string; reuse the injected mapper instead of
+                // creating a new ObjectMapper per call.
+                String[] modelSelectorArr = mapper.readValue(modelSelectorStr, String[].class);
+                modelSelector = new java.util.ArrayList<>(java.util.Arrays.asList(modelSelectorArr));
             }
 
             WSession session = WSession.builder()
@@ -281,8 +281,8 @@ public class WSessionService {
         }
         if (session.getModelSelector() != null) {
             try {
-                // Store as JSON array string
-                com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+                // Store as JSON array string; reuse the injected mapper instead of
+                // creating a new ObjectMapper per call.
                 String modelSelectorJson = mapper.writeValueAsString(session.getModelSelector());
                 ops.put(k, FIELD_MODEL_SELECTOR, modelSelectorJson);
             } catch (Exception e) {

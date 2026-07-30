@@ -113,6 +113,30 @@ public class ChunkSenderService {
 
                 var chunk = chunkOpt.get();
 
+                // Handle EDITOR overlays from WEditCache. These require the uncompressed
+                // ChunkData, so build the transfer object directly from the loaded
+                // ChunkData instead of calling toTransferObject() first (which would load
+                // the chunk a second time only to have its result overwritten here).
+                if (session.isEditActor() && hasOverlayData(session.getWorldId(), chunkKey)) {
+                    var chunkDataOpt = chunkService.loadChunkData(session.getWorldId(), chunkKey, false, session.getEpoch());
+                    if (chunkDataOpt.isPresent()) {
+                        var chunkData = chunkDataOpt.get();
+                        // Apply WEditCache overlays (decompresses, merges, sets c=null)
+                        applyWEditCacheOverlays(session.getWorldId().getId(), chunkData);
+                        ChunkDataTransferObject overlayDto =
+                                chunkService.chunkDataToTransferObject(session.getWorldId(), chunkData);
+                        if (overlayDto == null) {
+                            log.warn("Failed to convert overlaid chunk to transfer object: chunkKey={}", chunkKey);
+                            continue;
+                        }
+                        // Apply block status overrides and send as JSON (uncompressed)
+                        applyBlockStatus(overlayDto, blockStatusMap, chunkKey);
+                        overlayDto.setC(null);
+                        responseChunks.add(objectMapper.valueToTree(overlayDto));
+                        continue;
+                    }
+                }
+
                 // Convert to transfer object (uses compressed storage if available)
                 ChunkDataTransferObject dto = chunkService.toTransferObject(session.getWorldId(), chunk);
                 if (dto == null) {
@@ -122,24 +146,6 @@ public class ChunkSenderService {
 
                 // Apply block status overrides
                 applyBlockStatus(dto, blockStatusMap, chunkKey);
-
-                // Handle EDITOR overlays from WEditCache (requires loading ChunkData)
-                if (session.isEditActor() && hasOverlayData(session.getWorldId(), chunkKey)) {
-                    var chunkDataOpt = chunkService.loadChunkData(session.getWorldId(), chunkKey, false, session.getEpoch()); // laod 2 times ... hmm
-                    if (chunkDataOpt.isPresent()) {
-                        var chunkData = chunkDataOpt.get();
-                        // Apply WEditCache overlays (decompresses, merges, sets c=null)
-                        applyWEditCacheOverlays(session.getWorldId().getId(), chunkData);
-                        // send as JSON (uncompressed)
-                        dto.setBackdrop(chunkService.convertBackdrop(chunkData.getBackdrop()));
-                        dto.setB(chunkData.getBlocks());
-                        dto.setH(chunkData.getHeightData());
-                        dto.setDeny(chunkData.getDeny());
-                        dto.setC(null);
-                        responseChunks.add(objectMapper.valueToTree(dto));
-                        continue;
-                    }
-                }
 
                 // Send as binary frame if compressed, otherwise add to JSON array
                 if (dto.getC() != null && dto.getC().length > 0) {

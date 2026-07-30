@@ -378,9 +378,9 @@ public class WItemService {
                     Item publicData = item.getPublicData();
                     if (publicData == null) return false;
 
-                    // Match query against itemId, name, or description
+                    // Match query against name, title, or description
                     return (publicData.getName() != null && publicData.getName().toLowerCase().contains(lowerQuery)) ||
-                            (publicData.getName() != null && publicData.getName().toLowerCase().contains(lowerQuery)) ||
+                            (publicData.getTitle() != null && publicData.getTitle().toLowerCase().contains(lowerQuery)) ||
                             (publicData.getDescription() != null && publicData.getDescription().toLowerCase().contains(lowerQuery));
                 })
                 .collect(java.util.stream.Collectors.toList());

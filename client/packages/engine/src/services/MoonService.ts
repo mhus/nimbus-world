@@ -504,6 +504,7 @@ export class MoonService {
     for (const moon of this.moons) {
       moon.mesh?.dispose();
       moon.material?.dispose();
+      moon.textureObject?.dispose();
       moon.root?.dispose();
     }
 

@@ -377,18 +377,9 @@ public abstract class AccessFilterBase extends OncePerRequestFilter {
      */
     private SessionTokenClaims validateSessionToken(String token) {
         try {
-            // Parse token to extract regionId (needed for validation)
-            String[] parts = token.split("\\.");
-            if (parts.length != 3) {
-                log.warn("Invalid token format");
-                return null;
-            }
-
-            // Decode payload to extract regionId
-            String payloadJson = new String(java.util.Base64.getUrlDecoder().decode(parts[1]));
-            String regionId = extractRegionIdFromJson(payloadJson);
-
-            // Validate token with regionId
+            // Validate token signature. The signing key is selected via the sector
+            // server id, so the regionId claim is read from the validated claims below
+            // (no manual parsing of the unsigned payload).
             Optional<Jws<Claims>> jwsOpt = jwtService.validateTokenWithPublicKey(
                     token,
                     KeyType.SECTOR,
@@ -409,6 +400,7 @@ public abstract class AccessFilterBase extends OncePerRequestFilter {
             String characterId = claims.get("characterId", String.class);
             String role = claims.get("role", String.class);
             String sessionId = claims.get("sessionId", String.class);
+            String regionId = claims.get("regionId", String.class);
 
             if (agent == null || worldId == null || userId == null) {
                 log.warn("Token missing required claims");
@@ -422,25 +414,6 @@ public abstract class AccessFilterBase extends OncePerRequestFilter {
             log.warn("Token validation error: {}", e.getMessage());
             return null;
         }
-    }
-
-    /**
-     * Extracts regionId from JSON payload.
-     */
-    private String extractRegionIdFromJson(String json) {
-        int regionIdIndex = json.indexOf("\"regionId\"");
-        if (regionIdIndex == -1) {
-            return null;
-        }
-
-        int valueStart = json.indexOf("\"", regionIdIndex + 11);
-        int valueEnd = json.indexOf("\"", valueStart + 1);
-
-        if (valueStart == -1 || valueEnd == -1) {
-            return null;
-        }
-
-        return json.substring(valueStart + 1, valueEnd);
     }
 
     /**
@@ -509,15 +482,6 @@ public abstract class AccessFilterBase extends OncePerRequestFilter {
      */
     private boolean validateBearerToken(String token, HttpServletRequest request) {
         try {
-            // Decode JWT payload to extract regionId
-//            String[] parts = token.split("\\.");
-//            if (parts.length != 3) {
-//                log.warn("Invalid bearer token format");
-//                return false;
-//            }
-//
-//            String payloadJson = new String(java.util.Base64.getUrlDecoder().decode(parts[1]));
-
             // Validate token with JWT service
             var intent = KeyIntent.of(regionProperties.getSectorServerId(), KeyIntent.SECTOR_SERVER_JWT_TOKEN);
             Optional<Jws<Claims>> jwsOpt = jwtService.validateTokenWithPublicKey(

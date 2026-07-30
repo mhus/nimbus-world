@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.URI;
 import java.nio.file.Files;
@@ -53,7 +54,9 @@ public class SharedClientService {
 
     public Optional<SharedKeyDto> getKey(String baseUrl, String token, String id) {
         try {
-            URI uri = URI.create(baseUrl + "/shared/key/" + id);
+            URI uri = UriComponentsBuilder.fromUriString(baseUrl)
+                    .path("/shared/key").pathSegment(id)
+                    .build().encode().toUri();
             var restTemplate = RestTemplateUtil.create(token);
             ResponseEntity<SharedKeyDto> resp = restTemplate.getForEntity(uri, SharedKeyDto.class);
             if (resp.getStatusCode().is2xxSuccessful() && resp.getBody() != null) return Optional.of(resp.getBody());
@@ -65,7 +68,9 @@ public class SharedClientService {
 
     public boolean updateKeyName(String baseUrl, String token, String id, String newName) {
         try {
-            URI uri = URI.create(baseUrl + "/shared/key/" + id);
+            URI uri = UriComponentsBuilder.fromUriString(baseUrl)
+                    .path("/shared/key").pathSegment(id)
+                    .build().encode().toUri();
             var body = java.util.Map.of("name", newName);
             var restTemplate = RestTemplateUtil.create(token);
             restTemplate.put(uri, body);
@@ -78,7 +83,9 @@ public class SharedClientService {
 
     public boolean deleteKey(String baseUrl, String token, String id) {
         try {
-            URI uri = URI.create(baseUrl + "/shared/key/" + id);
+            URI uri = UriComponentsBuilder.fromUriString(baseUrl)
+                    .path("/shared/key").pathSegment(id)
+                    .build().encode().toUri();
             var restTemplate = RestTemplateUtil.create(token);
             restTemplate.delete(uri);
             return true;
@@ -90,7 +97,13 @@ public class SharedClientService {
 
     public boolean existsKey(String baseUrl, String token, String type, String kind, String owner, String intent) {
         try {
-            URI uri = URI.create(baseUrl + "/shared/key/exists?type=" + type + "&kind=" + kind + "&owner=" + owner + "&intent=" + intent);
+            URI uri = UriComponentsBuilder.fromUriString(baseUrl)
+                    .path("/shared/key/exists")
+                    .queryParam("type", type)
+                    .queryParam("kind", kind)
+                    .queryParam("owner", owner)
+                    .queryParam("intent", intent)
+                    .build().encode().toUri();
             var restTemplate = RestTemplateUtil.create(token);
 
             ResponseEntity<Map> resp = restTemplate.getForEntity(uri, Map.class);

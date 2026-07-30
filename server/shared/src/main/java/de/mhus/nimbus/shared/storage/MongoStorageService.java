@@ -219,8 +219,8 @@ public class MongoStorageService extends StorageService {
             List<StorageData> finalChunks = storageDataRepository.findAllByUuidAndIsFinalTrue(storageId);
             // sort by created
             finalChunks.sort((o1, o2) -> o2.getCreatedAt().compareTo(o1.getCreatedAt()));
-            // get youngest and delete the rest
-            var finalChunk = finalChunks.removeLast();
+            // get youngest (list is sorted newest-first) and delete the rest
+            var finalChunk = finalChunks.removeFirst();
             finalChunks.forEach(chunk -> {
                 log.info("Deleting duplicate final chunk id={} createdAt={}", chunk.getId(), chunk.getCreatedAt());
                 storageDataRepository.delete(chunk);

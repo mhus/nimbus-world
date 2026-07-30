@@ -26,7 +26,7 @@ import java.util.Optional;
  * - "validate": Validate Git configuration and connectivity
  *
  * Parameters:
- * - title (required): Name of the ExternalResource in WAnything collection 'externalResource'
+ * - name (required): Name of the ExternalResource in WAnything collection 'externalResource'
  * - force (optional): "true" or "false" (default: "false") - force sync even if timestamps unchanged
  * - remove (optional): "true" or "false" (default: "false") - remove overtaken entities/files
  * - worldId: Provided by job.getWorldId()
@@ -72,7 +72,7 @@ public class ExternalResourceSyncJobExecutor implements JobExecutor {
             Map<String, String> params = job.getParameters();
             String name = params.get("name");
             if (name == null || name.isBlank()) {
-                throw new JobExecutionException("Missing required parameter: title");
+                throw new JobExecutionException("Missing required parameter: name");
             }
 
             boolean force = parseBooleanParameter(params, "force", false);
@@ -140,7 +140,7 @@ public class ExternalResourceSyncJobExecutor implements JobExecutor {
             Map<String, String> params = job.getParameters();
             String name = params.get("name");
             if (name == null || name.isBlank()) {
-                throw new JobExecutionException("Missing required parameter: title");
+                throw new JobExecutionException("Missing required parameter: name");
             }
 
             boolean force = parseBooleanParameter(params, "force", false);
@@ -209,7 +209,7 @@ public class ExternalResourceSyncJobExecutor implements JobExecutor {
             Map<String, String> params = job.getParameters();
             String name = params.get("name");
             if (name == null || name.isBlank()) {
-                throw new JobExecutionException("Missing required parameter: title");
+                throw new JobExecutionException("Missing required parameter: name");
             }
 
             String worldIdStr = job.getWorldId();
@@ -248,25 +248,6 @@ public class ExternalResourceSyncJobExecutor implements JobExecutor {
         } catch (Exception e) {
             log.error("Failed to execute validate job", e);
             throw new JobExecutionException("Validate job failed: " + e.getMessage(), e);
-        }
-    }
-
-    /**
-     * Get and validate WorldId from job.
-     */
-    private WorldId getWorldId(WJob job) throws JobExecutionException {
-        String worldIdStr = job.getWorldId();
-        if (worldIdStr == null || worldIdStr.isBlank()) {
-            throw new JobExecutionException("Missing worldId on job");
-        }
-
-        try {
-            WorldId.validate(worldIdStr);
-            return WorldId.of(worldIdStr).orElseThrow(
-                    () -> new JobExecutionException("Invalid worldId: " + worldIdStr)
-            );
-        } catch (Exception e) {
-            throw new JobExecutionException("Invalid worldId: " + worldIdStr, e);
         }
     }
 

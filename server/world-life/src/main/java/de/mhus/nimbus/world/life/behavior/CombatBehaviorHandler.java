@@ -8,6 +8,7 @@ import de.mhus.nimbus.generated.types.Waypoint;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.life.model.SimulationState;
 import de.mhus.nimbus.world.life.movement.BlockBasedMovement;
+import de.mhus.nimbus.world.life.util.EntityServerData;
 import de.mhus.nimbus.world.shared.gameplay.CombatStat;
 import de.mhus.nimbus.world.shared.gameplay.CombatStrategy;
 import de.mhus.nimbus.world.shared.gameplay.EntityCombatData;
@@ -65,7 +66,7 @@ public class CombatBehaviorHandler {
         if (entityPos == null) return null;
 
         // Check if attacker is too far away — exit combat
-        double maxRange = getServerDouble(entity, "combat_maxRange", 30.0);
+        double maxRange = EntityServerData.getDouble(entity, "combat_maxRange", 30.0);
         double distToAttacker = distance(entityPos, attackerPos);
         if (distToAttacker > maxRange) {
             log.debug("World {}: Entity {} attacker too far (dist={}, max={}), exiting combat",
@@ -112,7 +113,7 @@ public class CombatBehaviorHandler {
     private EntityPathway generateAttackFleePathway(WEntity entity, SimulationState state,
                                                      Vector3 entityPos, Vector3 attackerPos,
                                                      long currentTime, WorldId worldId, int epoch) {
-        double attackRange = getServerDouble(entity, "combat_attackRange", DEFAULT_ATTACK_RANGE);
+        double attackRange = EntityServerData.getDouble(entity, "combat_attackRange", DEFAULT_ATTACK_RANGE);
         if (state.getCombatAttackCount() == 0) {
             // First phase: move towards attacker and attack
             double distance = distance(entityPos, attackerPos);
@@ -135,7 +136,7 @@ public class CombatBehaviorHandler {
     private EntityPathway generateAttackRepeatPathway(WEntity entity, SimulationState state,
                                                        Vector3 entityPos, Vector3 attackerPos,
                                                        long currentTime, WorldId worldId, int epoch) {
-        double attackRange = getServerDouble(entity, "combat_attackRange", DEFAULT_ATTACK_RANGE);
+        double attackRange = EntityServerData.getDouble(entity, "combat_attackRange", DEFAULT_ATTACK_RANGE);
         double distance = distance(entityPos, attackerPos);
 
         if (distance > attackRange) {
@@ -335,18 +336,6 @@ public class CombatBehaviorHandler {
         rotation.setY(Math.toDegrees(yawRad));
         rotation.setP(0.0);
         return rotation;
-    }
-
-    private static double getServerDouble(WEntity entity, String key, double defaultValue) {
-        var server = entity.getServer();
-        if (server == null) return defaultValue;
-        String val = server.get(key);
-        if (val == null || val.isBlank()) return defaultValue;
-        try {
-            return Double.parseDouble(val.trim());
-        } catch (NumberFormatException e) {
-            return defaultValue;
-        }
     }
 
     private double distance(Vector3 a, Vector3 b) {

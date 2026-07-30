@@ -78,6 +78,8 @@ public class ELogicStateController extends BaseEditorController {
             @PathVariable String worldId,
             @PathVariable String id) {
 
+        var wid = WorldId.of(worldId).orElseThrow(
+                () -> new IllegalStateException("Invalid worldId: " + worldId));
         var validation = validateId(id, "id");
         if (validation != null) return validation;
 
@@ -85,7 +87,7 @@ public class ELogicStateController extends BaseEditorController {
         if (opt.isEmpty()) return notFound("state definition not found");
 
         WLogicStateDef flag = opt.get();
-        if (!flag.getWorldId().equals(worldId)) return notFound("state definition not found");
+        if (!flag.getWorldId().equals(wid.toBaseWorldId().getId())) return notFound("state definition not found");
 
         return ResponseEntity.ok(toDto(flag));
     }
@@ -130,6 +132,8 @@ public class ELogicStateController extends BaseEditorController {
             @PathVariable String id,
             @RequestBody Map<String, Object> request) {
 
+        var wid = WorldId.of(worldId).orElseThrow(
+                () -> new IllegalStateException("Invalid worldId: " + worldId));
         var validation = validateId(id, "id");
         if (validation != null) return validation;
 
@@ -137,7 +141,7 @@ public class ELogicStateController extends BaseEditorController {
         if (opt.isEmpty()) return notFound("state definition not found");
 
         WLogicStateDef flag = opt.get();
-        if (!flag.getWorldId().equals(worldId)) return notFound("state definition not found");
+        if (!flag.getWorldId().equals(wid.toBaseWorldId().getId())) return notFound("state definition not found");
 
         boolean changed = false;
         if (request.containsKey("defaultValue")) {
@@ -166,6 +170,8 @@ public class ELogicStateController extends BaseEditorController {
             @PathVariable String worldId,
             @PathVariable String id) {
 
+        var wid = WorldId.of(worldId).orElseThrow(
+                () -> new IllegalStateException("Invalid worldId: " + worldId));
         var validation = validateId(id, "id");
         if (validation != null) return validation;
 
@@ -173,7 +179,7 @@ public class ELogicStateController extends BaseEditorController {
         if (opt.isEmpty()) return notFound("state definition not found");
 
         WLogicStateDef flag = opt.get();
-        if (!flag.getWorldId().equals(worldId)) return notFound("state definition not found");
+        if (!flag.getWorldId().equals(wid.toBaseWorldId().getId())) return notFound("state definition not found");
 
         stateService.delete(flag);
         log.info("Deleted logic state: id={}, name={}", id, flag.getName());

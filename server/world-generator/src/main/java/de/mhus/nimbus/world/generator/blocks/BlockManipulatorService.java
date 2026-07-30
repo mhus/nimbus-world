@@ -217,10 +217,6 @@ public class BlockManipulatorService {
         } catch (Exception e) {
             log.error("Manipulator '{}' execution failed", manipulatorName, e);
 
-            ManipulatorResult errorResult = ManipulatorResult.error(
-                    "Execution failed: " + e.getMessage()
-            );
-
             throw new BlockManipulatorException("Execution failed: " + e.getMessage(), e);
         }
     }

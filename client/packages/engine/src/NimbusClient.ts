@@ -232,13 +232,21 @@ async function initializeCoreServices(appContext: AppContext): Promise<void> {
 
     // Wait for login response and world info
     await new Promise<void>((resolve, reject) => {
+      // Add timeout, cleared as soon as login resolves or fails so the timer
+      // and its closure are not kept alive after login completes.
+      const loginTimeout = window.setTimeout(() => {
+        reject(new Error('Login timeout'));
+      }, 30000);
+
       // Add error handler
       networkService.once('login:error', (error) => {
+        clearTimeout(loginTimeout);
         logger.error('Login failed', undefined, error);
         reject(error);
       });
 
       networkService.once('login:success', () => {
+        clearTimeout(loginTimeout);
         logger.debug('Login successful');
 
         // Start ping interval after successful login
@@ -249,11 +257,6 @@ async function initializeCoreServices(appContext: AppContext): Promise<void> {
 
         resolve();
       });
-
-      // Add timeout
-      setTimeout(() => {
-        reject(new Error('Login timeout'));
-      }, 30000);
     });
 
     // Initialize ModifierService FIRST (before other services that depend on it)

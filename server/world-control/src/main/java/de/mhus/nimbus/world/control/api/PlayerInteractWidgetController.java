@@ -503,11 +503,14 @@ public class PlayerInteractWidgetController extends BaseEditorController {
      */
     private ResponseEntity<?> checkCooldown(String playerName, String targetEntityId, String action) {
         String cooldownKey = playerName + ">" + targetEntityId + ":" + action;
+        long now = System.currentTimeMillis();
         Long lastSent = actionCooldowns.get(cooldownKey);
-        if (lastSent != null && System.currentTimeMillis() - lastSent < EMOJI_COOLDOWN_MS) {
+        if (lastSent != null && now - lastSent < EMOJI_COOLDOWN_MS) {
             return bad("Please wait before repeating this action");
         }
-        actionCooldowns.put(cooldownKey, System.currentTimeMillis());
+        // Prune expired entries to keep the map bounded (every entry expires after EMOJI_COOLDOWN_MS).
+        actionCooldowns.values().removeIf(ts -> now - ts >= EMOJI_COOLDOWN_MS);
+        actionCooldowns.put(cooldownKey, now);
         return null;
     }
 }

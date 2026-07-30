@@ -3,6 +3,7 @@ package de.mhus.nimbus.shared.types;
 import lombok.Getter;
 import org.apache.logging.log4j.util.Strings;
 
+import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -22,9 +23,13 @@ public class SchemaVersion implements Comparable<SchemaVersion> {
     public SchemaVersion(String version) {
         if (Strings.isNotEmpty(version)) {
             String[] parts = version.trim().split("\\.");
-            this.major = parts.length > 0 ? Integer.parseInt(parts[0]) : 0;
-            this.minor = parts.length > 1 ? Integer.parseInt(parts[1]) : 0;
-            this.patch = parts.length > 2 ? Integer.parseInt(parts[2]) : 0;
+            try {
+                this.major = parts.length > 0 ? Integer.parseInt(parts[0]) : 0;
+                this.minor = parts.length > 1 ? Integer.parseInt(parts[1]) : 0;
+                this.patch = parts.length > 2 ? Integer.parseInt(parts[2]) : 0;
+            } catch (NumberFormatException e) {
+                throw new IllegalArgumentException("Invalid schema version: " + version, e);
+            }
         }
     }
 
@@ -32,6 +37,7 @@ public class SchemaVersion implements Comparable<SchemaVersion> {
         return major == 0 && minor == 0 && patch == 0;
     }
 
+    @Override
     public boolean equals(Object other) {
         if (other == null) return false;
         if (other instanceof SchemaVersion schemaVersion) {
@@ -43,6 +49,11 @@ public class SchemaVersion implements Comparable<SchemaVersion> {
         return this.major == otherVersion.major &&
                 this.minor == otherVersion.minor &&
                 this.patch == otherVersion.patch;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(major, minor, patch);
     }
 
     public static SchemaVersion create(String version) {

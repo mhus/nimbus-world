@@ -47,6 +47,10 @@ export function normalizeBlockTypeIds(ids: (number | string)[]): string[] {
  * @returns true if the ID represents air/empty
  */
 export function isAirBlockTypeId(id: number | string): boolean {
+  // Legacy numeric air-ID 0 (a raw number does not carry a group prefix)
+  if (id === 0) {
+    return true;
+  }
   const normalized = normalizeBlockTypeId(id);
   return normalized === '0' || normalized === 'n:0' || normalized === '';
 }

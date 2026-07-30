@@ -58,7 +58,7 @@ public class PlayerCraftingWidgetController extends BaseEditorController {
         }
 
         // Validate lease
-        var lease = validateLease(progressId, worldId, userId);
+        var lease = validateLease(progressId, worldId, "@" + userId + ":" + characterId);
         if (lease == null) {
             return notFound("Crafting station not found");
         }
@@ -126,7 +126,7 @@ public class PlayerCraftingWidgetController extends BaseEditorController {
             return bad("Not authenticated");
         }
 
-        var lease = validateLease(progressId, worldId, userId);
+        var lease = validateLease(progressId, worldId, "@" + userId + ":" + characterId);
         if (lease == null) return notFound("Crafting station not found");
 
         var parsedWorldId = WorldId.of(worldId).orElse(null);
@@ -196,7 +196,7 @@ public class PlayerCraftingWidgetController extends BaseEditorController {
             return bad("recipeName required");
         }
 
-        var lease = validateLease(progressId, worldId, userId);
+        var lease = validateLease(progressId, worldId, "@" + userId + ":" + characterId);
         if (lease == null) return notFound("Crafting station not found");
 
         var parsedWorldId = WorldId.of(worldId).orElse(null);
@@ -260,7 +260,7 @@ public class PlayerCraftingWidgetController extends BaseEditorController {
 
             // Load item details for texture and title
             var wItem = wItemService.findByItemId(worldId, entry.getKey());
-            if (wItem.isPresent()) {
+            if (wItem.isPresent() && wItem.get().getPublicData() != null) {
                 Item publicData = wItem.get().getPublicData();
                 itemInfo.put("name", publicData.getTitle() != null ? publicData.getTitle() : entry.getKey());
                 itemInfo.put("texture", publicData.getTexture());
@@ -273,8 +273,8 @@ public class PlayerCraftingWidgetController extends BaseEditorController {
         return items;
     }
 
-    private WLease validateLease(String leaseId, String worldId, String userId) {
-        return leaseService.validate(leaseId, worldId, userId, "crafting-station").orElse(null);
+    private WLease validateLease(String leaseId, String worldId, String playerId) {
+        return leaseService.validate(leaseId, worldId, playerId, "crafting-station").orElse(null);
     }
 
     record CraftRequest(String recipeName, List<String> spellWords) {}

@@ -59,6 +59,13 @@ public class FlatExportService {
             {-1, 1},  {0, 1},  {1, 1}
     };
 
+    // Block type ids that represent water and must not be used as the surface block of a NOT_SET column.
+    private static final Set<String> WATER_BLOCK_TYPE_IDS = Set.of("n:o", "n:w", "5000", "w:5000");
+
+    private static boolean isWaterBlockTypeId(String blockTypeId) {
+        return WATER_BLOCK_TYPE_IDS.contains(blockTypeId);
+    }
+
     /**
      * Export WFlat to a WLayer of type GROUND.
      * Only exports columns that are set (not 0/NOT_SET and not 255).
@@ -287,7 +294,7 @@ public class FlatExportService {
             return;
         }
         BlockDef topBlockDef = topBlockDefOpt.get();
-        if ("n:o".equals(topBlockDef.getBlockTypeId()) || "n:w".equals(topBlockDef.getBlockTypeId()) || "5000".equals(topBlockDef.getBlockTypeId()) || "w:5000".equals(topBlockDef.getBlockTypeId())) { // TODO hack for water
+        if (isWaterBlockTypeId(topBlockDef.getBlockTypeId())) {
             log.debug("Top block is water for NOT_SET column at ({},{}), using bedrock instead", worldX, worldZ);
             topBlockDef = BlockDef.of(flat.getMaterial(FlatMaterialService.BEDROCK).getBlockDef()).orElseThrow();
         }
@@ -566,7 +573,7 @@ public class FlatExportService {
         if (heightData != null && !heightData.isEmpty()) {
             var key = BlockUtil.positionKey(worldX, worldZ);
             int[] heights = heightData.get(key);
-            if (heights != null) {
+            if (heights != null && heights.length > 0) {
                 return heights[0];
             }
         }

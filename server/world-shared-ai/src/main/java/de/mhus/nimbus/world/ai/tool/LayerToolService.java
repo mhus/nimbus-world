@@ -1,10 +1,8 @@
 package de.mhus.nimbus.world.ai.tool;
 
 import de.mhus.nimbus.shared.types.WorldId;
-import de.mhus.nimbus.world.shared.edit.BlockUpdateService;
 import de.mhus.nimbus.world.shared.job.WJobService;
 import de.mhus.nimbus.world.shared.layer.*;
-import de.mhus.nimbus.world.shared.redis.WorldRedisService;
 import de.mhus.nimbus.world.shared.session.EditState;
 import de.mhus.nimbus.world.shared.session.WSessionService;
 import de.mhus.nimbus.world.shared.world.WChunkService;
@@ -34,32 +32,26 @@ public class LayerToolService {
 
     private final WLayerService layerService;
     private final WSessionService sessionService;
-    private final WorldRedisService redisService;
     private final WEditCacheService editCacheService;
     private final WEditCacheDirtyService editCacheDirtyService;
     private final WJobService jobService;
     private final WDirtyChunkService dirtyChunkService;
     private final WChunkService chunkService;
-    private final BlockUpdateService blockUpdateService;
 
     public LayerToolService(WLayerService layerService,
                             WSessionService sessionService,
-                            WorldRedisService redisService,
                             WEditCacheService editCacheService,
                             WEditCacheDirtyService editCacheDirtyService,
                             WJobService jobService,
                             WDirtyChunkService dirtyChunkService,
-                            WChunkService chunkService,
-                            BlockUpdateService blockUpdateService) {
+                            WChunkService chunkService) {
         this.layerService = layerService;
         this.sessionService = sessionService;
-        this.redisService = redisService;
         this.editCacheService = editCacheService;
         this.editCacheDirtyService = editCacheDirtyService;
         this.jobService = jobService;
         this.dirtyChunkService = dirtyChunkService;
         this.chunkService = chunkService;
-        this.blockUpdateService = blockUpdateService;
         log.info("LayerToolService created");
     }
 

@@ -122,7 +122,7 @@ public class ELogicRuleController extends BaseEditorController {
             @Parameter(description = "World identifier") @PathVariable String worldId,
             @Parameter(description = "Rule identifier") @PathVariable String id) {
 
-        WorldId.of(worldId).orElseThrow(
+        var wid = WorldId.of(worldId).orElseThrow(
                 () -> new IllegalStateException("Invalid worldId: " + worldId)
         );
         var validation = validateId(id, "id");
@@ -134,7 +134,7 @@ public class ELogicRuleController extends BaseEditorController {
         }
 
         WLogicRule rule = opt.get();
-        if (!rule.getWorldId().equals(worldId)) {
+        if (!rule.getWorldId().equals(wid.toBaseWorldId().getId())) {
             return notFound("rule not found");
         }
 
@@ -198,7 +198,7 @@ public class ELogicRuleController extends BaseEditorController {
             @Parameter(description = "Rule identifier") @PathVariable String id,
             @RequestBody Map<String, Object> request) {
 
-        WorldId.of(worldId).orElseThrow(
+        var wid = WorldId.of(worldId).orElseThrow(
                 () -> new IllegalStateException("Invalid worldId: " + worldId)
         );
         var validation = validateId(id, "id");
@@ -210,7 +210,7 @@ public class ELogicRuleController extends BaseEditorController {
         }
 
         WLogicRule rule = opt.get();
-        if (!rule.getWorldId().equals(worldId)) {
+        if (!rule.getWorldId().equals(wid.toBaseWorldId().getId())) {
             return notFound("rule not found");
         }
 
@@ -275,7 +275,7 @@ public class ELogicRuleController extends BaseEditorController {
             @Parameter(description = "World identifier") @PathVariable String worldId,
             @Parameter(description = "Rule identifier") @PathVariable String id) {
 
-        WorldId.of(worldId).orElseThrow(
+        var wid = WorldId.of(worldId).orElseThrow(
                 () -> new IllegalStateException("Invalid worldId: " + worldId)
         );
         var validation = validateId(id, "id");
@@ -287,7 +287,7 @@ public class ELogicRuleController extends BaseEditorController {
         }
 
         WLogicRule rule = opt.get();
-        if (!rule.getWorldId().equals(worldId)) {
+        if (!rule.getWorldId().equals(wid.toBaseWorldId().getId())) {
             return notFound("rule not found");
         }
 

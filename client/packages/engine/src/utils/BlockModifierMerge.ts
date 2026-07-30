@@ -197,6 +197,17 @@ function deepMergeModifiers(target: BlockModifier | undefined, source: BlockModi
 const modifierCache = new Map<string, BlockModifier>();
 
 /**
+ * Clear the merged-modifier cache.
+ *
+ * Must be called whenever BlockType definitions are reloaded (e.g. via
+ * /clearBlockTypeCache), otherwise blocks without instance modifiers keep
+ * rendering with stale merged modifiers.
+ */
+export function clearModifierCache(): void {
+  modifierCache.clear();
+}
+
+/**
  * Merge BlockModifier according to priority rules
  *
  * Each field (visibility, physics, etc.) is merged independently.

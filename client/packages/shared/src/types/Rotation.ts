@@ -99,7 +99,23 @@ export namespace RotationUtils {
   }
 
   /**
-   * Linearly interpolate between two rotations
+   * Interpolate a single angle (degrees) along the shortest path,
+   * handling the 0/360 wrap-around correctly.
+   * @param a Start angle (degrees)
+   * @param b End angle (degrees)
+   * @param t Interpolation factor (0-1)
+   * @returns Interpolated angle (degrees)
+   */
+  function lerpAngle(a: number, b: number, t: number): number {
+    // Shortest signed delta in range (-180, 180]
+    const delta = ((((b - a) % 360) + 540) % 360) - 180;
+    return a + delta * t;
+  }
+
+  /**
+   * Interpolate between two rotations.
+   * Yaw and roll use shortest-angle interpolation (wrap-aware),
+   * pitch is interpolated linearly (limited range, no wrap).
    * @param a Start rotation
    * @param b End rotation
    * @param t Interpolation factor (0-1)
@@ -107,11 +123,11 @@ export namespace RotationUtils {
    */
   export function lerp(a: Rotation, b: Rotation, t: number): Rotation {
     return {
-      y: a.y + (b.y - a.y) * t,
+      y: lerpAngle(a.y, b.y, t),
       p: a.p + (b.p - a.p) * t,
       r:
         a.r !== undefined && b.r !== undefined
-          ? a.r + (b.r - a.r) * t
+          ? lerpAngle(a.r, b.r, t)
           : undefined,
     };
   }

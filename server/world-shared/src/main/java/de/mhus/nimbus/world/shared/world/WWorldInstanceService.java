@@ -33,6 +33,7 @@ public class WWorldInstanceService {
     private final List<WWorldInstanceListener> listeners;
     private final WorldRedisMessagingService redisMessaging;
     private final InstanceIdGenerator instanceIdGenerator;
+    private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
 
     /**
      * Constructor with lazy initialization to avoid circular dependencies.
@@ -50,7 +51,8 @@ public class WWorldInstanceService {
             @Lazy Optional<WJobService> jobService,
             @Lazy List<WWorldInstanceListener> listeners,
             WorldRedisMessagingService redisMessaging,
-            InstanceIdGenerator instanceIdGenerator) {
+            InstanceIdGenerator instanceIdGenerator,
+            com.fasterxml.jackson.databind.ObjectMapper objectMapper) {
         this.repository = repository;
         this.mongoTemplate = mongoTemplate;
         this.worldService = worldService;
@@ -58,6 +60,7 @@ public class WWorldInstanceService {
         this.listeners = listeners;
         this.redisMessaging = redisMessaging;
         this.instanceIdGenerator = instanceIdGenerator;
+        this.objectMapper = objectMapper;
     }
 
     /**
@@ -750,8 +753,14 @@ public class WWorldInstanceService {
         String baseWorldId = instanceOpt.get().getWorldId();
         log.info("Epoch switch: instanceId={}, newEpoch={}, baseWorldId={}", instanceId, newEpoch, baseWorldId);
 
-        // Publish epoch switch event via Redis
-        redisMessaging.publish(baseWorldId, "epoch.switch", "{\"epoch\":" + newEpoch + "}");
+        // Publish epoch switch event via Redis (typed DTO instead of hand-built JSON)
+        try {
+            String payload = objectMapper.writeValueAsString(new EpochSwitchMessage(newEpoch));
+            redisMessaging.publish(baseWorldId, "epoch.switch", payload);
+        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+            log.error("Failed to serialize epoch switch event: instanceId={}, newEpoch={}", instanceId, newEpoch, e);
+            return false;
+        }
 
         return true;
     }

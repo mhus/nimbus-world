@@ -198,7 +198,8 @@ public class PlayerTeleportController {
 
                 // Determine entry position - use world entry point or fallback to world start or default
                 Vector3 position;
-                var entryPoint = targetWorld.getPublicData().getEntryPoint();
+                var targetPublicData = targetWorld.getPublicData();
+                var entryPoint = targetPublicData == null ? null : targetPublicData.getEntryPoint();
                 if (entryPoint != null && entryPoint.getArea() != null && entryPoint.getArea().getPosition() != null) {
                     // Use configured entry point
                     var entryPosition = entryPoint.getArea().getPosition();
@@ -208,9 +209,9 @@ public class PlayerTeleportController {
                             .z(entryPosition.getZ())
                             .build();
                     log.debug("Using world entry point for cross-world teleport: {}", position);
-                } else if (targetWorld.getPublicData().getStart() != null) {
+                } else if (targetPublicData != null && targetPublicData.getStart() != null) {
                     // Fallback to world start position
-                    position = targetWorld.getPublicData().getStart();
+                    position = targetPublicData.getStart();
                     log.debug("Using world start position as fallback for cross-world teleport: {}", position);
                 } else {
                     // Fallback to default spawn position

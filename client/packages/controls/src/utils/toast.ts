@@ -80,10 +80,17 @@ export function showToast(message: string, options: ToastOptions = {}) {
     </svg>`
   };
 
-  toast.innerHTML = `
-    ${icons[type]}
-    <span style="flex: 1;">${message}</span>
-  `;
+  // Icon markup is static/trusted; render it via innerHTML into its own element
+  const iconSpan = document.createElement('span');
+  iconSpan.style.cssText = 'display: flex; align-items: center;';
+  iconSpan.innerHTML = icons[type];
+  toast.appendChild(iconSpan);
+
+  // Message is untrusted; use textContent to avoid HTML injection
+  const messageSpan = document.createElement('span');
+  messageSpan.style.flex = '1';
+  messageSpan.textContent = message;
+  toast.appendChild(messageSpan);
 
   // Add animation styles if not already added
   if (!document.getElementById('toast-animations')) {

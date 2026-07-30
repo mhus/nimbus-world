@@ -33,6 +33,10 @@ public class WebSearchToolService {
     private final SSettingsService settingsService;
     private final ObjectMapper objectMapper;
 
+    // Reusable client: each HttpClient instance holds its own selector/connection-pool
+    // threads, so creating one per request leaks resources until GC.
+    private final HttpClient httpClient = HttpClient.newHttpClient();
+
     private SettingString apiKey;
 
     @PostConstruct
@@ -44,8 +48,7 @@ public class WebSearchToolService {
     public boolean isAvailable() {
         String key = apiKey.get();
         boolean available = key != null && !key.isBlank();
-        log.debug("WebSearchToolService.isAvailable(): key={}, available={}",
-                key != null ? key.substring(0, Math.min(4, key.length())) + "..." : "null", available);
+        log.debug("WebSearchToolService.isAvailable(): available={}", available);
         return available;
     }
 
@@ -54,8 +57,7 @@ public class WebSearchToolService {
             @P("Search query") String query
     ) {
         if (!isAvailable()) {
-            log.warn("Serper API key not configured, raw value from settings: '{}'",
-                    settingsService.getStringValue("serper.apiKey"));
+            log.warn("Serper API key not configured");
             return "Error: Serper API key not configured";
         }
         log.info("Searching Serper for: {}", query);
@@ -73,7 +75,7 @@ public class WebSearchToolService {
                     .POST(HttpRequest.BodyPublishers.ofString(requestBody, StandardCharsets.UTF_8))
                     .build();
 
-            HttpResponse<String> response = HttpClient.newHttpClient()
+            HttpResponse<String> response = httpClient
                     .send(request, HttpResponse.BodyHandlers.ofString());
 
             if (response.statusCode() != 200) {

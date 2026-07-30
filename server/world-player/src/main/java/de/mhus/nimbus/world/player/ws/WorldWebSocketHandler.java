@@ -77,14 +77,9 @@ public class WorldWebSocketHandler extends TextWebSocketHandler {
         log.info("WebSocket connection closed: session={}, status={}",
                 webSocketSession.getId(), status);
 
-        // Get player session BEFORE removal
-        PlayerSession playerSession = sessionManager.getByWebSocketId(webSocketSession.getId())
-                .orElse(null);
-        // Mark session as deprecated first (allows reconnect with same sessionId)
-        sessionManager.deprecateSession(webSocketSession.getId());
-
-        // Remove session after grace period (handled by cleanup job)
-        // For now, remove immediately
+        // Remove session immediately. removeSession updates the Redis status to CLOSED
+        // and notifies world-control exactly once (a preceding deprecateSession would
+        // duplicate both the Redis status update and the fire-and-forget notification).
         sessionManager.removeSession(webSocketSession.getId());
     }
 

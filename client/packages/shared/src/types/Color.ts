@@ -58,6 +58,12 @@ export class ColorRGBA {
     // Remove # if present
     const cleanHex = hex.replace(/^#/, '');
 
+    // Validate length and hex digits before parsing to avoid NaN components
+    if (!ColorUtils.isValidHex(cleanHex)) {
+      console.warn(`Invalid hex color: ${hex}`);
+      return new ColorRGBA(0, 0, 0, 1);
+    }
+
     // Parse components
     let r = 0,
       g = 0,

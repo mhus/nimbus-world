@@ -85,7 +85,8 @@ public class AccessSettings {
                 "access.devLoginAccessKey",
                 UUID.randomUUID() + "-" + UUID.randomUUID()
         );
-        log.warn("dev-login access key: {}", devLoginAccessKey.get());
+        // Do not log the dev-login access key itself (secret). Only note that one is configured.
+        log.warn("dev-login access key configured (value hidden)");
     }
 
     /**

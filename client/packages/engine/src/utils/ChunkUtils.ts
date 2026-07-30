@@ -55,37 +55,3 @@ export function chunkToWorld(
 export function getChunkKey(cx: number, cz: number): string {
   return `${cx},${cz}`;
 }
-
-// /**
-//  * Get browser-specific render distance
-//  *
-//  * Safari needs higher render distance for acceptable performance.
-//  *
-//  * @returns Recommended render distance in chunks
-//  */
-// export function getBrowserSpecificRenderDistance(): number {
-//   if (typeof navigator === 'undefined') {
-//     return 1; // Default for tests
-//   }
-//
-//   const ua = navigator.userAgent.toLowerCase();
-//
-//   // Safari (but not Chrome which also contains 'safari' in UA)
-//   if (ua.includes('safari') && !ua.includes('chrome')) {
-//     return 3;
-//   }
-//
-//   // Chrome, Firefox, Edge, etc.
-//   return 1;
-// }
-//
-// /**
-//  * Get browser-specific unload distance
-//  *
-//  * Chunks beyond this distance from player will be unloaded.
-//  *
-//  * @returns Unload distance in chunks (renderDistance + 1)
-//  */
-// export function getBrowserSpecificUnloadDistance(): number {
-//   return getBrowserSpecificRenderDistance() + 1;
-// }

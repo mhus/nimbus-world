@@ -37,8 +37,14 @@ type BackdropKey = string;
  */
 export class BackdropService {
   private scene: Scene;
+  private appContext: AppContext;
   private chunkService: ChunkService;
   private materialManager: BackdropMaterialManager;
+
+  /** Bound chunk event handler, kept so it can be removed on dispose */
+  private readonly onChunkChanged = (): void => {
+    this.updateBackdrops();
+  };
 
   /** Backdrop meshes by key (format: "cx,cz:direction") */
   private backdropMeshes = new Map<BackdropKey, Mesh>();
@@ -57,6 +63,7 @@ export class BackdropService {
 
   constructor(scene: Scene, appContext: AppContext) {
     this.scene = scene;
+    this.appContext = appContext;
     this.chunkService = appContext.services.chunk as ChunkService;
     this.materialManager = new BackdropMaterialManager(scene, appContext);
 
@@ -72,13 +79,8 @@ export class BackdropService {
    * Setup chunk event listeners
    */
   private setupEventListeners(): void {
-    this.chunkService.on('chunk:loaded', () => {
-      this.updateBackdrops();
-    });
-
-    this.chunkService.on('chunk:unloaded', () => {
-      this.updateBackdrops();
-    });
+    this.chunkService.on('chunk:loaded', this.onChunkChanged);
+    this.chunkService.on('chunk:unloaded', this.onChunkChanged);
 
     logger.debug('Chunk event listeners registered');
   }
@@ -385,7 +387,7 @@ export class BackdropService {
    */
   private async fetchBackdropType(id: string): Promise<Backdrop | undefined> {
     try {
-      const networkService = this.chunkService['appContext'].services.network;
+      const networkService = this.appContext.services.network;
       if (!networkService) {
         throw new Error('NetworkService not available');
       }
@@ -440,7 +442,7 @@ export class BackdropService {
   ): Mesh | null {
     try {
       // Get chunk size from world info
-      const chunkSize = this.chunkService['appContext'].worldInfo?.chunkSize || 16;
+      const chunkSize = this.appContext.worldInfo?.chunkSize || 16;
 
       // Calculate world coordinates of chunk origin
       const worldX = cx * chunkSize;
@@ -782,6 +784,10 @@ export class BackdropService {
     logger.debug('Disposing BackdropService', {
       backdropCount: this.backdropMeshes.size,
     });
+
+    // Remove chunk event listeners
+    this.chunkService.off('chunk:loaded', this.onChunkChanged);
+    this.chunkService.off('chunk:unloaded', this.onChunkChanged);
 
     // Dispose all meshes
     for (const mesh of this.backdropMeshes.values()) {

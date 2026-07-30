@@ -1,6 +1,7 @@
 package de.mhus.nimbus.world.life.model;
 
 import de.mhus.nimbus.generated.types.EntityPathway;
+import de.mhus.nimbus.world.life.util.EntityServerData;
 import de.mhus.nimbus.world.shared.gameplay.CombatStrategy;
 import de.mhus.nimbus.world.shared.gameplay.EntityCombatData;
 import de.mhus.nimbus.world.shared.world.WEntity;
@@ -158,15 +159,7 @@ public class SimulationState {
     }
 
     private long getServerLong(String key, long defaultValue) {
-        var server = entity.getServer();
-        if (server == null) return defaultValue * 1000 / 1000; // just defaultValue
-        String val = server.get(key);
-        if (val == null || val.isBlank()) return defaultValue;
-        try {
-            return Long.parseLong(val.trim());
-        } catch (NumberFormatException e) {
-            return defaultValue;
-        }
+        return EntityServerData.getLong(entity, key, defaultValue);
     }
 
     /**

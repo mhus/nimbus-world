@@ -145,19 +145,24 @@ public class KeyService {
     }
 
     public Optional<SecretKey> getSecretKey(KeyType keyType, @NonNull String keyId) {
-        return getSecretKey(keyType, parseKeyId(keyId).get());
+        return getSecretKey(keyType, requireKeyId(keyId));
     }
 
     public Optional<PublicKey> getPublicKey(KeyType keyType, @NonNull String keyId) {
-        return getPublicKey(keyType, parseKeyId(keyId).get());
+        return getPublicKey(keyType, requireKeyId(keyId));
     }
 
     public Optional<PrivateKey> getPrivateKey(KeyType keyType, @NonNull String keyId) {
-        return getPrivateKey(keyType, parseKeyId(keyId).get());
+        return getPrivateKey(keyType, requireKeyId(keyId));
+    }
+
+    private KeyId requireKeyId(String keyId) {
+        return parseKeyId(keyId).orElseThrow(() ->
+                new IllegalArgumentException("Invalid keyId format (expected 'owner;intent;id'): " + keyId));
     }
 
     /**
-     * Parses a string in the form "owner:id" into a KeyId.
+     * Parses a string in the form "owner;intent;id" into a KeyId.
      * Returns Optional.empty() if the input is null, blank, or malformed.
      */
     public Optional<KeyId> parseKeyId(String keyId) {

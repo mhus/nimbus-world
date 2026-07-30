@@ -825,7 +825,6 @@ public class FlatCreateService {
         int outsideColumns = 0;
         int emptyColumns = 0;
 
-        long pointCnt = sizeX * sizeZ;
         // Step 1: Import ALL columns from layer and set material to 255
         for (int localX = 0; localX < sizeX; localX++) {
             for (int localZ = 0; localZ < sizeZ; localZ++) {

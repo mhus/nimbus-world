@@ -8,6 +8,7 @@ import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.life.config.WorldLifeSettings;
 import de.mhus.nimbus.world.life.model.SimulationState;
 import de.mhus.nimbus.world.life.movement.BlockBasedMovement;
+import de.mhus.nimbus.world.life.util.EntityServerData;
 import de.mhus.nimbus.world.shared.world.WEntity;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -143,7 +144,7 @@ public class PreyAnimalBehavior implements EntityBehavior {
         Vector3 homePos = entity.getMiddlePoint() != null ? entity.getMiddlePoint() : entity.getPosition();
         if (homePos == null) return blockMovement.getRandomDirection();
 
-        double roamRadius = getServerDouble(entity, "roam_radius", DEFAULT_ROAM_RADIUS);
+        double roamRadius = EntityServerData.getDouble(entity, "roam_radius", DEFAULT_ROAM_RADIUS);
         if (roamRadius <= 0) return blockMovement.getRandomDirection();
 
         double dx = currentPos.getX() - homePos.getX();
@@ -163,18 +164,6 @@ public class PreyAnimalBehavior implements EntityBehavior {
         }
 
         return blockMovement.getRandomDirection();
-    }
-
-    private static double getServerDouble(WEntity entity, String key, double defaultValue) {
-        var server = entity.getServer();
-        if (server == null) return defaultValue;
-        String val = server.get(key);
-        if (val == null || val.isBlank()) return defaultValue;
-        try {
-            return Double.parseDouble(val.trim());
-        } catch (NumberFormatException e) {
-            return defaultValue;
-        }
     }
 
     /**

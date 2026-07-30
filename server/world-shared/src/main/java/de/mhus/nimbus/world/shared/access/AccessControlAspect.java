@@ -8,10 +8,10 @@ import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.lang.reflect.Method;
 
@@ -52,8 +52,9 @@ public class AccessControlAspect {
         // Get current HTTP request
         ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
         if (attributes == null) {
-            log.warn("No request attributes found - skipping access control");
-            return joinPoint.proceed();
+            // Fail-closed: without a request context we cannot evaluate access annotations.
+            log.warn("No request attributes found - denying access (fail-closed)");
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No request context available for access control");
         }
 
         HttpServletRequest request = attributes.getRequest();
@@ -79,14 +80,15 @@ public class AccessControlAspect {
             accessDeniedReason = checkMethodAnnotations(method, request);
         }
 
-        // If access denied, return 403 Forbidden
+        // If access denied, respond 403 Forbidden regardless of the handler's return type.
+        // Throwing (instead of returning a ResponseEntity) avoids a ClassCastException in the
+        // AOP proxy for handlers that declare a non-ResponseEntity return type.
         if (accessDeniedReason != null) {
             log.warn("Access denied: {} - method: {}.{}",
                     accessDeniedReason,
                     method.getDeclaringClass().getSimpleName(),
                     method.getName());
-            return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(new AccessDeniedResponse(accessDeniedReason));
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, accessDeniedReason);
         }
 
         // Access granted - proceed with method execution
@@ -182,9 +184,4 @@ public class AccessControlAspect {
 
         return null; // Access granted
     }
-
-    /**
-     * DTO for access denied response.
-     */
-    private record AccessDeniedResponse(String reason) {}
 }

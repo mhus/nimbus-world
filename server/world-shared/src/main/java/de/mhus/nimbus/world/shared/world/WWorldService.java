@@ -349,6 +349,14 @@ public class WWorldService {
     public WorldSearchResult searchWorlds(String searchQuery, int offset, int limit) {
         log.debug("Searching worlds: query='{}', offset={}, limit={}", searchQuery, offset, limit);
 
+        // Guard against invalid pagination limits (avoid division by zero)
+        if (limit < 1) {
+            limit = 1;
+        }
+        if (offset < 0) {
+            offset = 0;
+        }
+
         // Calculate page number from offset
         int pageNumber = offset / limit;
         Pageable pageable = PageRequest.of(pageNumber, limit);

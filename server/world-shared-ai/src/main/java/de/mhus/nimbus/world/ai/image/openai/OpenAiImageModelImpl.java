@@ -19,6 +19,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.time.Duration;
 import java.util.Base64;
 
 /**
@@ -33,6 +34,11 @@ public class OpenAiImageModelImpl implements AiImageModel {
     private final ImageModel imageModel;
     private final AiImageOptions options;
     private final SimpleRateLimiter rateLimiter;
+
+    // Reusable client (each HttpClient holds its own selector/pool threads).
+    private final HttpClient httpClient = HttpClient.newBuilder()
+            .connectTimeout(Duration.ofSeconds(30))
+            .build();
 
     @Override
     public String getName() {
@@ -170,13 +176,13 @@ public class OpenAiImageModelImpl implements AiImageModel {
      * @throws InterruptedException if download is interrupted
      */
     private byte[] downloadImage(String url) throws IOException, InterruptedException {
-        HttpClient client = HttpClient.newHttpClient();
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(url))
+                .timeout(Duration.ofSeconds(60))
                 .GET()
                 .build();
 
-        HttpResponse<byte[]> response = client.send(request, HttpResponse.BodyHandlers.ofByteArray());
+        HttpResponse<byte[]> response = httpClient.send(request, HttpResponse.BodyHandlers.ofByteArray());
 
         if (response.statusCode() != 200) {
             throw new IOException("Failed to download image: HTTP " + response.statusCode());

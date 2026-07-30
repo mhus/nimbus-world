@@ -94,6 +94,9 @@ export class ModalService {
   private modalsByReferenceKey: Map<string, ModalReference> = new Map();
   private nextModalId: number = 1;
   private baseZIndex: number = 10000;
+  /** Monotonically increasing z-index offset so a reopened modal never
+   * collides with a still-open one (modals.size can shrink on close). */
+  private nextZIndexOffset: number = 0;
   private messageHandler: ((event: MessageEvent<IFrameMessageFromChild>) => void) | null = null;
 
   constructor(appContext: AppContext) {
@@ -217,7 +220,16 @@ export class ModalService {
       try {
         if (ref.iframe.contentWindow) {
           const msg: IFrameMessageFromParent = { type: IFrameParentMessageType.CLOSING, reason };
-          ref.iframe.contentWindow.postMessage(msg, '*');
+          // Target the concrete origin of the loaded component URL instead of
+          // '*' so the close message is never delivered to a foreign origin the
+          // IFrame may have navigated to.
+          let targetOrigin = '*';
+          try {
+            targetOrigin = new URL(ref.iframe.src, window.location.href).origin;
+          } catch {
+            // Fall back to '*' if the src cannot be parsed into an origin
+          }
+          ref.iframe.contentWindow.postMessage(msg, targetOrigin);
         }
       } catch (e) {
         // IFrame may already be unloaded
@@ -307,8 +319,11 @@ export class ModalService {
     preset: ModalSizePreset,
     flags: number
   ): { backdrop: HTMLElement; modalContainer: HTMLElement; iframe: HTMLIFrameElement } {
-    // Calculate z-index (each modal gets higher z-index)
-    const zIndex = this.baseZIndex + this.modals.size * 2;
+    // Calculate z-index (each newly opened modal gets a higher z-index).
+    // A monotonic counter is used instead of modals.size, which would shrink
+    // when a modal is closed and could hand out a colliding z-index.
+    const zIndex = this.baseZIndex + this.nextZIndexOffset;
+    this.nextZIndexOffset += 2;
 
     // Get preset configuration
     const presetConfig = SIZE_PRESETS[preset];

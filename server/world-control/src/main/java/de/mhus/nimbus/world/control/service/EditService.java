@@ -123,12 +123,12 @@ public class EditService {
             WLayer layer = layerOpt.get();
             state.setLayerDataId(layer.getLayerDataId());
 
-            // If MODEL layer and modelId is set, get modelName
+            // If MODEL layer and modelId is set, resolve the actual model name
             if (layer.getLayerType() == LayerType.MODEL && state.getSelectedModelId() != null) {
-                // Get modelName from WLayerModel
-                // For now, just use selectedModelId as modelName
-                // TODO: Load from WLayerModelService when available
-                state.setModelName(state.getSelectedModelId());
+                Optional<de.mhus.nimbus.world.shared.layer.WLayerModel> modelOpt =
+                        layerService.loadModelById(state.getSelectedModelId());
+                state.setModelName(modelOpt.map(de.mhus.nimbus.world.shared.layer.WLayerModel::getName)
+                        .orElse(state.getSelectedModelId()));
             } else {
                 state.setModelName(null);
             }
@@ -713,66 +713,6 @@ public class EditService {
 
     private String editStateKey(String sessionId) {
         return EDIT_STATE_PREFIX + sessionId + ":";
-    }
-
-    private void saveEditState(String worldId, String sessionId, EditState state) {
-        String key = editStateKey(sessionId);
-
-        redisService.putValue(worldId, key + "editMode", String.valueOf(state.isEditMode()), EDIT_STATE_TTL);
-
-        if (state.getEditAction() != null) {
-            redisService.putValue(worldId, key + "editAction", state.getEditAction().name(), EDIT_STATE_TTL);
-        }
-
-        if (state.getSelectedLayer() != null) {
-            redisService.putValue(worldId, key + "selectedLayer", state.getSelectedLayer(), EDIT_STATE_TTL);
-        } else {
-            redisService.deleteValue(worldId, key + "selectedLayer");
-        }
-
-        if (state.getSelectedModelId() != null) {
-            redisService.putValue(worldId, key + "selectedModelId", state.getSelectedModelId(), EDIT_STATE_TTL);
-        } else {
-            redisService.deleteValue(worldId, key + "selectedModelId");
-        }
-
-        if (state.getMountX() != null) {
-            redisService.putValue(worldId, key + "mountX", String.valueOf(state.getMountX()), EDIT_STATE_TTL);
-        }
-        if (state.getMountY() != null) {
-            redisService.putValue(worldId, key + "mountY", String.valueOf(state.getMountY()), EDIT_STATE_TTL);
-        }
-        if (state.getMountZ() != null) {
-            redisService.putValue(worldId, key + "mountZ", String.valueOf(state.getMountZ()), EDIT_STATE_TTL);
-        }
-
-        redisService.putValue(worldId, key + "selectedGroup", String.valueOf(state.getSelectedGroup()), EDIT_STATE_TTL);
-
-        log.trace("Edit state saved: session={} layer={}",
-                sessionId, state.getSelectedLayer());
-    }
-
-    private boolean parseBoolean(String value, boolean defaultValue) {
-        if (value == null) return defaultValue;
-        return "true".equalsIgnoreCase(value);
-    }
-
-    private EditAction parseEditAction(String value) {
-        if (value == null) return EditAction.OPEN_CONFIG_DIALOG;
-        try {
-            return EditAction.valueOf(value);
-        } catch (IllegalArgumentException e) {
-            return EditAction.OPEN_CONFIG_DIALOG;
-        }
-    }
-
-    private Integer parseInt(String value) {
-        if (value == null) return null;
-        try {
-            return Integer.parseInt(value);
-        } catch (NumberFormatException e) {
-            return null;
-        }
     }
 
     /**

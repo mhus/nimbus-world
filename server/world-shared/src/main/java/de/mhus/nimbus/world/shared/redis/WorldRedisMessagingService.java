@@ -30,7 +30,6 @@ public class WorldRedisMessagingService {
 
     public void subscribe(String worldId, String channel, BiConsumer<String,String> handler) {
         String t = topic(worldId, channel);
-        if (listeners.containsKey(t)) return; // already subscribed
         MessageListener listener = (msg, pattern) -> {
             try {
                 String body = new String(msg.getBody());
@@ -39,8 +38,10 @@ public class WorldRedisMessagingService {
                 log.warn("Failed to process redis message on {}: {}", t, e.getMessage(), e);
             }
         };
+        // Atomic check-and-put so concurrent subscribers cannot both register a
+        // listener (which would leak the loser and duplicate message delivery).
+        if (listeners.putIfAbsent(t, listener) != null) return; // already subscribed
         container.addMessageListener(listener, ChannelTopic.of(t));
-        listeners.put(t, listener);
     }
 
     public void unsubscribe(String worldId, String channel) {
@@ -60,7 +61,6 @@ public class WorldRedisMessagingService {
      */
     public void subscribeToAllWorlds(String channel, BiConsumer<String,String> handler) {
         String pattern = "world:*:" + channel;
-        if (listeners.containsKey(pattern)) return; // already subscribed
 
         MessageListener listener = (msg, patternBytes) -> {
             try {
@@ -72,8 +72,9 @@ public class WorldRedisMessagingService {
             }
         };
 
+        // Atomic check-and-put (see subscribe()).
+        if (listeners.putIfAbsent(pattern, listener) != null) return; // already subscribed
         container.addMessageListener(listener, new org.springframework.data.redis.listener.PatternTopic(pattern));
-        listeners.put(pattern, listener);
         log.info("Subscribed to Redis pattern: {}", pattern);
     }
 
@@ -105,7 +106,6 @@ public class WorldRedisMessagingService {
      */
     public void subscribeGlobal(String channel, BiConsumer<String, String> handler) {
         String t = "world:global:" + channel;
-        if (listeners.containsKey(t)) return;
         MessageListener listener = (msg, pattern) -> {
             try {
                 String body = new String(msg.getBody());
@@ -114,8 +114,9 @@ public class WorldRedisMessagingService {
                 log.warn("Failed to process redis message on {}: {}", t, e.getMessage(), e);
             }
         };
+        // Atomic check-and-put (see subscribe()).
+        if (listeners.putIfAbsent(t, listener) != null) return;
         container.addMessageListener(listener, ChannelTopic.of(t));
-        listeners.put(t, listener);
         log.info("Subscribed to global Redis channel: {}", t);
     }
 

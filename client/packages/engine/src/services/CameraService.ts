@@ -340,23 +340,12 @@ export class CameraService {
 
   /**
    * Check if camera is in ego-view (first-person)
+   *
+   * Read-only: the active view mode is driven by the ViewMode stack in
+   * PlayerService (isEgoView), not by this field.
    */
   get egoView(): boolean {
     return this._egoView;
-  }
-
-  /**
-   * Set ego-view mode
-   *
-   * Note: Third-person view is not implemented yet
-   */
-  set egoView(value: boolean) {
-    if (!value) {
-      logger.warn('Third-person view not implemented yet');
-      return;
-    }
-
-    this._egoView = value;
   }
 
   /**

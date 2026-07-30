@@ -171,6 +171,15 @@ export class PingMessageHandler extends MessageHandler {
         },
       };
 
+      // Drop stale pending pings whose pong was never received (lost packet,
+      // reconnect) so the map cannot grow unbounded over a long session.
+      const staleThreshold = this._pingIntervalMs * 2;
+      for (const [pendingId, pendingTs] of this.pendingPings) {
+        if (clientTimestamp - pendingTs > staleThreshold) {
+          this.pendingPings.delete(pendingId);
+        }
+      }
+
       // Store client timestamp for RTT calculation
       this.pendingPings.set(messageId, clientTimestamp);
 

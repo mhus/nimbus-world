@@ -162,7 +162,7 @@ class DevLoginService {
   async authorize(accessUrls: string[], accessToken: string): Promise<void> {
     const authPromises = accessUrls.map(async (url) => {
       try {
-        const response = await fetch(`${url}?token=${accessToken}`, {
+        const response = await fetch(`${url}?token=${encodeURIComponent(accessToken)}`, {
           method: 'GET',
           credentials: 'include', // Important: allows setting cookies cross-origin
           mode: 'cors',

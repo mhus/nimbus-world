@@ -65,6 +65,7 @@ public class AccessService {
     private final Base64Service base64Service;
     private final de.mhus.nimbus.shared.utils.LocationService locationService;
     private final RegionSettings regionProperties;
+    private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
 
     @Autowired
     @Lazy
@@ -696,17 +697,9 @@ public class AccessService {
             throw new IllegalArgumentException("Access token is required");
         }
 
-        // Parse token to extract regionId from claims (unverified)
-        String[] parts = token.split("\\.");
-        if (parts.length != 3) {
-            throw new IllegalArgumentException("Invalid token format");
-        }
-
-        // Decode payload to extract regionId
-        String payloadJson = new String(java.util.Base64.getUrlDecoder().decode(parts[1]));
-        String regionId = extractRegionIdFromJson(payloadJson);
-
-        // Now validate token with correct regionId
+        // Validate token signature. The signing key is selected via the sector server id,
+        // so the regionId claim is not needed for validation and is read from the
+        // validated claims below (no manual parsing of the unsigned payload).
         Optional<Jws<Claims>> jwsOpt = jwtService.validateTokenWithPublicKey(
                 token,
                 KeyType.SECTOR,
@@ -726,10 +719,14 @@ public class AccessService {
         String characterId = claims.get("characterId", String.class);
         String role = claims.get("role", String.class);
         String sessionId = claims.get("sessionId", String.class);
+        String regionId = claims.get("regionId", String.class);
 
         // Validate required fields
         if (agent == null || worldId == null || userId == null) {
             throw new IllegalArgumentException("Access token missing required claims");
+        }
+        if (regionId == null || regionId.isBlank()) {
+            throw new IllegalArgumentException("Token missing regionId claim");
         }
 
         // Session tokens require additional fields
@@ -738,25 +735,6 @@ public class AccessService {
         }
 
         return new AccessTokenClaims(agent, worldId, userId, characterId, role, sessionId, regionId);
-    }
-
-    /**
-     * Extracts regionId from JSON payload (simple string matching).
-     */
-    private String extractRegionIdFromJson(String json) {
-        int regionIdIndex = json.indexOf("\"regionId\"");
-        if (regionIdIndex == -1) {
-            throw new IllegalArgumentException("Token missing regionId claim");
-        }
-
-        int valueStart = json.indexOf("\"", regionIdIndex + 11);
-        int valueEnd = json.indexOf("\"", valueStart + 1);
-
-        if (valueStart == -1 || valueEnd == -1) {
-            throw new IllegalArgumentException("Invalid regionId claim format");
-        }
-
-        return json.substring(valueStart + 1, valueEnd);
     }
 
     /**
@@ -914,23 +892,34 @@ public class AccessService {
     }
 
     /**
-     * Builds JSON string for sessionData cookie.
+     * Builds JSON string for sessionData cookie using a typed DTO and Jackson
+     * (proper escaping instead of manual string concatenation).
      */
     private String buildSessionDataJson(AccessTokenClaims claims) {
-        StringBuilder json = new StringBuilder("{");
-        json.append("\"worldId\":\"").append(claims.worldId()).append("\"");
-        json.append(",\"userId\":\"").append(claims.userId()).append("\"");
-        json.append(",\"agent\":").append(claims.agent());
-
-        if (!claims.agent()) {
-            json.append(",\"sessionId\":\"").append(claims.sessionId()).append("\"");
-            json.append(",\"characterId\":\"").append(claims.characterId()).append("\"");
-            json.append(",\"role\":\"").append(claims.role()).append("\"");
+        SessionDataDto dto = claims.agent()
+                ? new SessionDataDto(claims.worldId(), claims.userId(), true, null, null, null)
+                : new SessionDataDto(claims.worldId(), claims.userId(), false,
+                        claims.sessionId(), claims.characterId(), claims.role());
+        try {
+            return objectMapper.writeValueAsString(dto);
+        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+            throw new IllegalStateException("Failed to serialize sessionData", e);
         }
-
-        json.append("}");
-        return json.toString();
     }
+
+    /**
+     * Typed payload for the sessionData cookie. Non-agent-only fields are omitted
+     * when null (agent tokens) via {@code NON_NULL}.
+     */
+    @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
+    private record SessionDataDto(
+            String worldId,
+            String userId,
+            boolean agent,
+            String sessionId,
+            String characterId,
+            String role
+    ) {}
 
     // ===== 7. getSessionStatus =====
 
@@ -978,15 +967,6 @@ public class AccessService {
 
         // Parse and validate token
         try {
-            // Decode JWT payload to extract regionId
-//            String[] parts = sessionToken.split("\\.");
-//            if (parts.length != 3) {
-//                throw new IllegalArgumentException("Invalid token format");
-//            }
-//
-//            String payloadJson = new String(Base64.getUrlDecoder().decode(parts[1]));
-//            String regionId = extractJsonField(payloadJson, "regionId");
-
             // Validate token with JWT service
             var jwsOpt = jwtService.validateTokenWithPublicKey(
                     sessionToken,
@@ -1055,15 +1035,6 @@ public class AccessService {
      */
     private SessionStatusResponse getStatusFromBearerToken(String bearerToken) {
         try {
-//            // Decode JWT payload to extract regionId
-//            String[] parts = bearerToken.split("\\.");
-//            if (parts.length != 3) {
-//                throw new IllegalArgumentException("Invalid bearer token format");
-//            }
-//
-//            String payloadJson = new String(Base64.getUrlDecoder().decode(parts[1]));
-//            String regionId = extractJsonField(payloadJson, "regionId");
-
             // Validate token with JWT service
             var jwsOpt = jwtService.validateTokenWithPublicKey(
                     bearerToken,
@@ -1139,22 +1110,6 @@ public class AccessService {
         }
 
         return allRoles;
-    }
-
-    /**
-     * Simple JSON field extractor.
-     */
-    private String extractJsonField(String json, String fieldName) {
-        int fieldIndex = json.indexOf("\"" + fieldName + "\"");
-        if (fieldIndex == -1) {
-            return null;
-        }
-        int valueStart = json.indexOf("\"", fieldIndex + fieldName.length() + 3);
-        int valueEnd = json.indexOf("\"", valueStart + 1);
-        if (valueStart == -1 || valueEnd == -1) {
-            return null;
-        }
-        return json.substring(valueStart + 1, valueEnd);
     }
 
     // ===== 8. logout =====

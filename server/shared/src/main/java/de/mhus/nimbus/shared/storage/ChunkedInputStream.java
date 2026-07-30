@@ -144,8 +144,8 @@ public class ChunkedInputStream extends InputStream {
                 // get all
                 List<StorageData> chunks = repository.findAllByUuidAndIndex(uuid, currentChunkIndex);
                 chunks.sort((o1, o2) -> o2.getCreatedAt().compareTo(o1.getCreatedAt()));
-                // get youngest and delete the rest
-                chunk = chunks.removeLast();
+                // get youngest (list is sorted newest-first) and delete the rest
+                chunk = chunks.removeFirst();
                 chunks.forEach(c -> {
                     log.info("Deleting duplicate final chunk id={} createdAt={}", c.getId(), c.getCreatedAt());
                     repository.delete(c);

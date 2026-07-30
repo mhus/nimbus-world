@@ -101,10 +101,11 @@ public class WAnythingService {
      */
     @Transactional
     public WAnything create(String worldId, String collection, String name, String title, String description, String type, Object data) {
-        WorldId world = WorldId.of(worldId).orElseThrow().toBaseWorldId();
-        if (world.isInstance()) {
+        WorldId parsed = WorldId.of(worldId).orElseThrow();
+        if (parsed.isInstance()) {
             throw new IllegalArgumentException("worldId must not contain instance part: " + worldId);
         }
+        WorldId world = parsed.toBaseWorldId();
 
         if (repository.existsByWorldIdAndCollectionAndName(world.getId(), collection, name)) {
             throw new IllegalStateException("Entity already exists: worldId=" + worldId +
@@ -163,10 +164,11 @@ public class WAnythingService {
      */
     @Transactional
     public void deleteByWorldIdAndCollectionAndName(String worldId, String collection, String name) {
-        WorldId world = WorldId.of(worldId).orElseThrow().toBaseWorldId();
-        if (world.isInstance()) {
+        WorldId parsed = WorldId.of(worldId).orElseThrow();
+        if (parsed.isInstance()) {
             throw new IllegalArgumentException("worldId must not contain instance part: " + worldId);
         }
+        WorldId world = parsed.toBaseWorldId();
         repository.deleteByWorldIdAndCollectionAndName(world.getId(), collection, name);
         log.debug("WAnythingEntity deleted: worldId={}, collection={}, name={}", worldId, collection, name);
     }

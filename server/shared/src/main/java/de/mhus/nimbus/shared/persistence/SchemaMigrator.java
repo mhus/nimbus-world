@@ -97,7 +97,12 @@ public interface SchemaMigrator extends Comparable<SchemaMigrator> {
     default int compareTo(SchemaMigrator other) {
         int entityComp = this.getEntityType().compareTo(other.getEntityType());
         if (entityComp != 0) return entityComp;
-        return this.getFromVersion().compareTo(other.getFromVersion());
+        int fromComp = this.getFromVersion().compareTo(other.getFromVersion());
+        if (fromComp != 0) return fromComp;
+        // Include the target version so that two distinct migration edges with the
+        // same (entityType, fromVersion) but different toVersion are not silently
+        // collapsed when stored in a TreeSet.
+        return this.getToVersion().compareTo(other.getToVersion());
     }
 
 }

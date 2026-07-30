@@ -892,7 +892,8 @@ public class WChatService {
             throw new IllegalArgumentException("command required");
         }
 
-        var sessionId = String.valueOf(params.get("sessionId"));
+        Object sessionIdRaw = params.get("sessionId");
+        String sessionId = sessionIdRaw == null ? null : sessionIdRaw.toString();
         if (Strings.isBlank(sessionId)) {
             throw new IllegalArgumentException("sessionId required in params");
         }

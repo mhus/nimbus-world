@@ -1301,6 +1301,15 @@ export class ScrawlExecutor {
     this.effectId = effectId;
     this.affectedChunks = affectedChunks;
     this.sendToServer = sendToServer;
+
+    // Re-classify local executors now that the real sendToServer value is
+    // known (the constructor runs before this and always sees the default
+    // true). Remote executors keep their REMOTE_CONTROLLED type.
+    if (this.controlType !== ExecutorControlType.REMOTE_CONTROLLED) {
+      this.controlType = sendToServer
+        ? ExecutorControlType.LOCAL_CONTROLLED
+        : ExecutorControlType.LOCAL_ONLY;
+    }
   }
 
   /**

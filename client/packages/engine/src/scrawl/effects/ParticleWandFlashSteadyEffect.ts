@@ -717,11 +717,13 @@ export class ParticleWandFlashSteadyEffect extends ScrawlEffectHandler<ParticleW
           animMultiplier = 1.0;
       }
 
-      for (const particle of particles) {
+      // Iterate backwards so splicing dead particles does not skip the next one
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const particle = particles[i];
         particle.age += this.scene!.getEngine().getDeltaTime() / 1000;
 
         if (particle.age >= particle.lifeTime) {
-          particles.splice(particles.indexOf(particle), 1);
+          particles.splice(i, 1);
           continue;
         }
 
@@ -789,11 +791,13 @@ export class ParticleWandFlashSteadyEffect extends ScrawlEffectHandler<ParticleW
         fadeMultiplier = elapsed / fadeInDuration;
       }
 
-      for (const particle of particles) {
+      // Iterate backwards so splicing dead particles does not skip the next one
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const particle = particles[i];
         particle.age += this.scene!.getEngine().getDeltaTime() / 1000;
 
         if (particle.age >= particle.lifeTime) {
-          particles.splice(particles.indexOf(particle), 1);
+          particles.splice(i, 1);
           continue;
         }
 

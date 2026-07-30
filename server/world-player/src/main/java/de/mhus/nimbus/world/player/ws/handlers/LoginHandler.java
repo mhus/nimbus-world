@@ -65,10 +65,24 @@ public class LoginHandler implements MessageHandler {
         }
         var wSession = wSessionOpt.get();
         var worldIdOpt = WorldId.of(wSession.getWorldId());
+        if (worldIdOpt.isEmpty()) {
+            log.warn("Invalid worldId in session: {}, login failed", wSession.getWorldId());
+            sendLoginResponse(session, message.getI(), false, "Invalid world", null, null);
+            return;
+        }
         var playerId = PlayerId.of(wSession.getPlayerId());
         var actor = wSession.getActor();
 
-        var webClientType = ClientType.valueOf(clientTypeStr.trim().toUpperCase());
+        // Parse client type defensively: an unknown value must not abort the login
+        // silently (the router only logs uncaught exceptions), leaving the client
+        // waiting forever without a response.
+        ClientType webClientType;
+        try {
+            webClientType = ClientType.valueOf(clientTypeStr.trim().toUpperCase());
+        } catch (IllegalArgumentException e) {
+            log.warn("Unknown clientType '{}', defaulting to WEB", clientTypeStr);
+            webClientType = ClientType.WEB;
+        }
 
         if (playerId.isEmpty()) {
             log.warn("Invalid player ID, login failed");

@@ -123,7 +123,7 @@ public class SessionManager {
 
                 // Update WSession to DEPRECATED in Redis
                 wSessionService.updateStatus(sessionId, WSessionStatus.CLOSED);
-                log.info("Updated WSession to DEPRECATED on disconnect: sessionId={}", sessionId);
+                log.info("Updated WSession to CLOSED on disconnect: sessionId={}", sessionId);
 
                 // Notify world-control for instance cleanup (fire-and-forget)
                 if (session.getWorldId() != null && session.getEntityId() != null) {
@@ -180,7 +180,7 @@ public class SessionManager {
             String sessionId = session.getSessionId();
             if (sessionId != null) {
                 wSessionService.updateStatus(sessionId, WSessionStatus.CLOSED);
-                log.info("Updated WSession to DEPRECATED: sessionId={}", sessionId);
+                log.info("Updated WSession to CLOSED (deprecated locally): sessionId={}", sessionId);
 
                 // Notify world-control for instance cleanup (fire-and-forget)
                 if (session.getWorldId() != null && session.getEntityId() != null) {

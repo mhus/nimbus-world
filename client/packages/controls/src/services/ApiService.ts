@@ -172,9 +172,9 @@ export class ApiService {
    * Generic GET request
    */
   async get<T>(url: string, params?: any): Promise<T> {
-    console.log('[ApiService] GET request', { url, params, fullUrl: `${this.apiUrl}${url}` });
+    logger.debug('GET request', { url, params, fullUrl: `${this.apiUrl}${url}` });
     const response = await this.client.get<T>(url, { params });
-    console.log('[ApiService] GET response', { url, status: response.status, data: response.data });
+    logger.debug('GET response', { url, status: response.status });
     return response.data;
   }
 

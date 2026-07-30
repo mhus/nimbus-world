@@ -1392,7 +1392,7 @@ export class EntityService {
     const isInRange = distance < effectiveRange;
 
     // Check for state change
-    if (isInRange && !wasInRange) {
+    if (isInRange && !wasInRange && this.networkService.isConnected()) {
       // Entered range - send notification
       this.entityProximityState.set(clientEntity.id, true);
 
@@ -1443,7 +1443,7 @@ export class EntityService {
     }
 
     // Check if entity wants collision notifications
-    if (clientEntity.entity.notifyOnCollision === true) {
+    if (clientEntity.entity.notifyOnCollision === true && this.networkService.isConnected()) {
       // Send collision event to server
       const messageId = `collision_${Date.now()}_${Math.random().toString(36).substring(7)}`;
       this.networkService.send({

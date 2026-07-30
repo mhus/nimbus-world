@@ -9,6 +9,7 @@ import de.mhus.nimbus.world.life.behavior.CombatBehaviorHandler;
 import de.mhus.nimbus.world.life.behavior.EntityBehavior;
 import de.mhus.nimbus.world.life.model.ChunkCoordinate;
 import de.mhus.nimbus.world.life.model.SimulationState;
+import de.mhus.nimbus.world.life.util.EntityServerData;
 import de.mhus.nimbus.world.life.behavior.RemotePathwayQueue;
 import de.mhus.nimbus.world.life.redis.PathwayPublisher;
 import de.mhus.nimbus.world.life.redis.RemoteCombatFeedbackPublisher;
@@ -656,15 +657,6 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
     }
 
     /**
-     * Get the simulation state for an entity (used by EntityInteractionService).
-     */
-    public SimulationState getSimulationState(WorldId worldId, String entityId) {
-        Map<String, SimulationState> worldStates = worldSimulationStates.get(worldId);
-        if (worldStates == null) return null;
-        return worldStates.get(entityId);
-    }
-
-    /**
      * Force an entity to idle at its current position and publish the pathway immediately.
      * Used when a dialog starts to stop the entity from moving.
      */
@@ -872,7 +864,7 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
         SimulationState attackedState = worldStates.get(attackedEntityId);
         if (attackedState == null) return;
 
-        double spreadRadius = getServerDouble(attackedState, "combat_spreadRadius", 0);
+        double spreadRadius = EntityServerData.getDouble(attackedState.getEntity(), "combat_spreadRadius", 0);
         if (spreadRadius <= 0) return;
 
         Vector3 attackedPos = getCurrentEntityPosition(attackedState);
@@ -940,18 +932,6 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
         double dy = b.getY() - a.getY();
         double dz = b.getZ() - a.getZ();
         return Math.sqrt(dx * dx + dy * dy + dz * dz);
-    }
-
-    private static double getServerDouble(SimulationState state, String key, double defaultValue) {
-        var server = state.getEntity().getServer();
-        if (server == null) return defaultValue;
-        String val = server.get(key);
-        if (val == null || val.isBlank()) return defaultValue;
-        try {
-            return Double.parseDouble(val.trim());
-        } catch (NumberFormatException e) {
-            return defaultValue;
-        }
     }
 
     public int getEntityCount() {

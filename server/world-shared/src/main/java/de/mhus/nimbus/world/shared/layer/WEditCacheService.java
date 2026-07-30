@@ -325,8 +325,15 @@ public class WEditCacheService {
         }
 
         if (results.size() > 1) {
+            // Build the argument array generically so the placeholders in logPattern
+            // ("Found {}" + logPattern + "deleting {}") always match the arguments,
+            // regardless of how many values logArgs carries.
+            Object[] args = new Object[logArgs.length + 2];
+            args[0] = results.size();
+            System.arraycopy(logArgs, 0, args, 1, logArgs.length);
+            args[args.length - 1] = results.size() - 1;
             log.warn("Found {} duplicate cache entries for " + logPattern + ", keeping first and deleting {} duplicates",
-                    results.size(), logArgs[0], logArgs[1], logArgs[2], logArgs[3], results.size() - 1);
+                    args);
             for (int i = 1; i < results.size(); i++) {
                 repository.delete(results.get(i));
             }

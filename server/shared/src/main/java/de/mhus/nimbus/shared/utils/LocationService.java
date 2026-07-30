@@ -101,7 +101,7 @@ public class LocationService {
                 externalAddress = "http://" + getServerIp() + ":" + getServerPort();
             }
         }
-        return getServerIp() + ":" + getServerPort();
+        return externalAddress;
     }
 
     /**

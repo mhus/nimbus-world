@@ -110,6 +110,12 @@ public class WLeaseService {
         WLease lease = mongoTemplate.findOne(query, WLease.class);
         if (lease == null) return Optional.empty();
 
+        // Reject expired leases explicitly: the MongoDB TTL reaper only removes
+        // documents periodically, so an expired lease may still be present here.
+        if (lease.getExpiresAt() == null || !lease.getExpiresAt().isAfter(Instant.now())) {
+            return Optional.empty();
+        }
+
         // Validate player (supports multiple formats like "userId", "@userId", "userId:xxx")
         String lpid = lease.getPlayerId();
         if (!lpid.equals(playerId)

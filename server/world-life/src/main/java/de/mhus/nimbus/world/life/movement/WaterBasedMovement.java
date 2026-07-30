@@ -112,6 +112,10 @@ public class WaterBasedMovement {
         double dirX = direction.getX() / dirLength;
         double dirZ = direction.getZ() / dirLength;
 
+        // Clamp speed to a minimal positive value to avoid division by zero,
+        // which would produce Long.MAX_VALUE durations and corrupt waypoint timestamps.
+        double effectiveSpeed = Math.max(speed, 0.1);
+
         for (int i = 0; i < waypointCount; i++) {
             // Random step distance (1.5 to 2.5 blocks - fish swim in smaller steps)
             double stepDistance = 1.5 + random.nextDouble();
@@ -143,7 +147,7 @@ public class WaterBasedMovement {
 
             // Calculate movement duration based on 3D distance
             double distance = distance(currentX, currentY, currentZ, nextX, waterY, nextZ);
-            long movementDuration = (long) ((distance / speed) * 1000);
+            long movementDuration = (long) ((distance / effectiveSpeed) * 1000);
             waypointTime += movementDuration;
 
             // Create waypoint (fish use WALK pose, could be SWIM later)

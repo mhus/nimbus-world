@@ -653,7 +653,11 @@ export class SunService {
     this.lensFlareEnabled = enabled;
 
     if (this.lensFlareSystem) {
-      this.lensFlareSystem.isEnabled = enabled;
+      // Only show the lens flare if the sun itself is enabled and above the
+      // horizon, mirroring the visibility logic in setEnabled/updateSunPosition.
+      const sunY = this.sunRoot?.position.y ?? 0;
+      const isBelowHorizon = sunY < 0;
+      this.lensFlareSystem.isEnabled = enabled && this.enabled && !isBelowHorizon;
     }
 
     logger.debug('Lens flare visibility changed', { enabled });

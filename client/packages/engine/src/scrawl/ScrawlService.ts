@@ -272,8 +272,11 @@ export class ScrawlService {
         const executor = this.runningExecutors.get(executorId);
         if (executor) {
           executor.setMultiplayerData(effectId, affectedChunks, shouldSendToServer);
-          // Map effectId to executorId for parameter updates
+          // Map effectId to executorId for parameter updates. Set both
+          // directions so cleanupExecutor (which looks up via
+          // executorIdToEffectId) can remove the effectIdToExecutorId entry.
           this.effectIdToExecutorId.set(effectId, executorId);
+          this.executorIdToEffectId.set(executorId, effectId);
         }
       }
 
