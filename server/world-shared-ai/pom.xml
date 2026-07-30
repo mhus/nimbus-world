@@ -12,6 +12,10 @@
     <name>world-shared-ai</name>
     <packaging>jar</packaging>
 
+    <properties>
+        <graaljs.version>25.0.3</graaljs.version>
+    </properties>
+
     <dependencies>
         <!-- Reference to shared module -->
         <dependency>
@@ -76,16 +80,18 @@
             <version>1.18.1</version>
         </dependency>
 
-        <!-- Rhino JavaScript engine -->
+        <!-- GraalVM polyglot + GraalJS (sandboxed JavaScript engine, replaces Rhino) -->
         <dependency>
-            <groupId>org.mozilla</groupId>
-            <artifactId>rhino</artifactId>
-            <version>1.7.15</version>
+            <groupId>org.graalvm.polyglot</groupId>
+            <artifactId>polyglot</artifactId>
+            <version>${graaljs.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.mozilla</groupId>
-            <artifactId>rhino-engine</artifactId>
-            <version>1.7.15</version>
+            <groupId>org.graalvm.polyglot</groupId>
+            <artifactId>js-community</artifactId>
+            <version>${graaljs.version}</version>
+            <type>pom</type>
+            <scope>runtime</scope>
         </dependency>
 
         <!-- Spring Boot Starter Test -->
