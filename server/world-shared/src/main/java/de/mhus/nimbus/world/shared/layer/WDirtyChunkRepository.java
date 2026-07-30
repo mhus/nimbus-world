@@ -1,5 +1,6 @@
 package de.mhus.nimbus.world.shared.layer;
 
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.data.mongodb.repository.Query;
 import org.springframework.stereotype.Repository;
@@ -22,6 +23,12 @@ public interface WDirtyChunkRepository extends MongoRepository<WDirtyChunk, Stri
      * Find all dirty chunks for a world, ordered by timestamp (oldest first).
      */
     List<WDirtyChunk> findByWorldIdOrderByTimestampAsc(String worldId);
+
+    /**
+     * Find dirty chunks for a world, ordered by timestamp (oldest first), limited
+     * database-side via {@link Pageable} (avoids loading the whole collection).
+     */
+    List<WDirtyChunk> findByWorldIdOrderByTimestampAsc(String worldId, Pageable pageable);
 
     /**
      * Check if chunk is dirty.

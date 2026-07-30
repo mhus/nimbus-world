@@ -19,6 +19,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Behavior for entities with a daily schedule (timetable).
@@ -43,6 +44,27 @@ public class ScheduledBehavior implements EntityBehavior {
     private final EntityStatusPublisher entityStatusPublisher;
     private final EntityStateRedisService entityStateRedisService;
 
+    // Short-TTL cache for WWorld: update() runs every simulation tick per entity,
+    // but WorldInfo (time config etc.) is effectively static, so a per-tick
+    // uncached getByWorldId per scheduled entity is wasteful.
+    private static final long WORLD_CACHE_TTL_MS = 30_000;
+    private final Map<String, CachedWorld> worldCache = new ConcurrentHashMap<>();
+
+    private record CachedWorld(WWorld world, long expiresAt) {}
+
+    private WWorld getCachedWorld(WorldId worldId) {
+        long now = System.currentTimeMillis();
+        CachedWorld cached = worldCache.get(worldId.getId());
+        if (cached != null && cached.expiresAt() > now) {
+            return cached.world();
+        }
+        WWorld world = worldService.getByWorldId(worldId.getId()).orElse(null);
+        if (world != null) {
+            worldCache.put(worldId.getId(), new CachedWorld(world, now + WORLD_CACHE_TTL_MS));
+        }
+        return world;
+    }
+
     @Override
     public String getBehaviorType() {
         return BEHAVIOR_TYPE;
@@ -56,8 +78,8 @@ public class ScheduledBehavior implements EntityBehavior {
             return delegateToBehavior(entity.getBehaviorModel(), entity, state, currentTime, worldId, epoch);
         }
 
-        // Get current world hour
-        WWorld world = worldService.getByWorldId(worldId.getId()).orElse(null);
+        // Get current world hour (cached; WorldInfo is static config)
+        WWorld world = getCachedWorld(worldId);
         if (world == null || world.getPublicData() == null) {
             return delegateToBehavior(entity.getBehaviorModel(), entity, state, currentTime, worldId, epoch);
         }

@@ -4,13 +4,19 @@ import de.mhus.nimbus.world.shared.world.WHexGrid;
 import de.mhus.nimbus.world.shared.world.WWorld;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.mongodb.core.BulkOperations;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * Central service for dirty chunk management.
@@ -22,6 +28,7 @@ import java.util.stream.Collectors;
 public class WDirtyChunkService {
 
     private final WDirtyChunkRepository dirtyChunkRepository;
+    private final MongoTemplate mongoTemplate;
 
     /**
      * Mark a chunk as dirty (needs regeneration).
@@ -71,9 +78,20 @@ public class WDirtyChunkService {
             return;
         }
 
+        // Single unordered bulk upsert instead of a find+save per chunk (was
+        // O(2N) round-trips; callers can pass thousands of chunks).
+        Instant now = Instant.now();
+        BulkOperations bulk = mongoTemplate.bulkOps(BulkOperations.BulkMode.UNORDERED, WDirtyChunk.class);
         for (String chunkKey : chunkKeys) {
-            markChunkDirty(worldId, chunkKey, reason);
+            Query query = new Query(Criteria.where("worldId").is(worldId).and("chunkKey").is(chunkKey));
+            Update update = new Update()
+                    .set("worldId", worldId)
+                    .set("chunkKey", chunkKey)
+                    .set("timestamp", now)
+                    .set("reason", reason);
+            bulk.upsert(query, update);
         }
+        bulk.execute();
 
         log.info("Marked {} chunks dirty: world={} reason={}",
                 chunkKeys.size(), worldId, reason);
@@ -113,10 +131,8 @@ public class WDirtyChunkService {
      */
     @Transactional(readOnly = true)
     public List<WDirtyChunk> getDirtyChunks(String worldId, int limit) {
-        return dirtyChunkRepository.findByWorldIdOrderByTimestampAsc(worldId)
-                .stream()
-                .limit(limit)
-                .collect(Collectors.toList());
+        // Limit database-side instead of loading the whole collection into memory.
+        return dirtyChunkRepository.findByWorldIdOrderByTimestampAsc(worldId, PageRequest.of(0, limit));
     }
 
     /**

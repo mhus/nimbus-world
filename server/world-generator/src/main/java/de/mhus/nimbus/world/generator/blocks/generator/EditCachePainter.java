@@ -4,10 +4,15 @@ import de.mhus.nimbus.generated.types.Block;
 import de.mhus.nimbus.generated.types.Vector3Int;
 import de.mhus.nimbus.shared.types.BlockDef;
 import de.mhus.nimbus.world.generator.blocks.ManipulatorContext;
+import de.mhus.nimbus.world.shared.layer.WEditCache;
 import de.mhus.nimbus.world.shared.layer.WEditCacheService;
 import de.mhus.nimbus.world.shared.world.WWorld;
 import lombok.Getter;
 import lombok.Setter;
+
+import java.util.HashSet;
+import java.util.Objects;
+import java.util.Set;
 
 /**
  * EditCache-based painter that writes blocks through WEditCacheService.
@@ -67,14 +72,7 @@ public class EditCachePainter extends EditBlockPainter implements BlockWriteTarg
 
         @Override
         public void paint(EditCachePainter painter, int x, int y, int z) {
-            boolean blockExists = painter.editService.findByCoordinates(
-                    painter.world.getWorldId(),
-                    painter.layerDataId,
-                    painter.modelName,
-                    x, y, z
-            ).isPresent();
-
-            if (!blockExists) {
+            if (!painter.blockExistsCached(x, y, z)) {
                 wrappedPainter.paint(painter, x, y, z);
             }
         }
@@ -93,6 +91,13 @@ public class EditCachePainter extends EditBlockPainter implements BlockWriteTarg
     @Getter
     private ManipulatorContext context;
 
+    /**
+     * In-memory snapshot of existing block positions ("x,y,z") for the current
+     * (world, layer, model), loaded once per operation. Avoids a per-block
+     * findByCoordinates DB round-trip for no-overwrite / hasBlock checks.
+     */
+    private Set<String> existingBlockKeys;
+
     public EditCachePainter(WEditCacheService editService) {
         this.editService = editService;
         setWriteTarget(this);
@@ -102,8 +107,29 @@ public class EditCachePainter extends EditBlockPainter implements BlockWriteTarg
         this.world = world;
         this.layerDataId = layerDataId;
         this.modelName = modelName;
+        this.existingBlockKeys = null; // reset snapshot for the new operation/context
         setBlockDef(blockDef);
         setGroupId(groupId);
+    }
+
+    private static String posKey(int x, int y, int z) {
+        return x + "," + y + "," + z;
+    }
+
+    /**
+     * Existence check backed by a lazily-loaded in-memory snapshot instead of a
+     * DB query per block. The snapshot is kept in sync by {@link #writeBlock}.
+     */
+    boolean blockExistsCached(int x, int y, int z) {
+        if (existingBlockKeys == null) {
+            existingBlockKeys = new HashSet<>();
+            for (WEditCache cache : editService.findByWorldIdAndLayerDataId(world.getWorldId(), layerDataId)) {
+                if (Objects.equals(cache.getModelName(), modelName)) {
+                    existingBlockKeys.add(posKey(cache.getX(), cache.getY(), cache.getZ()));
+                }
+            }
+        }
+        return existingBlockKeys.contains(posKey(x, y, z));
     }
 
     public void setManipulatorContext(ManipulatorContext context) {
@@ -128,6 +154,11 @@ public class EditCachePainter extends EditBlockPainter implements BlockWriteTarg
             block.setLevel(level);
         }
         editService.doSetAndSendBlock(world, layerDataId, modelName, block, groupId);
+        // Keep the existence snapshot in sync so a no-overwrite pass within the
+        // same operation sees blocks written earlier in this pass.
+        if (existingBlockKeys != null) {
+            existingBlockKeys.add(posKey(x, y, z));
+        }
 
         if (context != null && context.getModelSelector() != null) {
             String color = context.getModelSelector().getDefaultColor();
@@ -140,9 +171,7 @@ public class EditCachePainter extends EditBlockPainter implements BlockWriteTarg
 
     @Override
     public boolean hasBlock(int x, int y, int z) {
-        return editService.findByCoordinates(
-                world.getWorldId(), layerDataId, modelName, x, y, z
-        ).isPresent();
+        return blockExistsCached(x, y, z);
     }
 
     public static class BlockPainter {
