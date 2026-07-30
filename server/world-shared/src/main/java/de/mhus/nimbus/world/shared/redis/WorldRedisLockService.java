@@ -144,6 +144,20 @@ public class WorldRedisLockService {
     }
 
     /**
+     * Refresh/extend a generic lock, atomically, only if it still holds our token.
+     *
+     * @param lockKey Custom lock key (same value passed to {@link #acquireGenericLock})
+     * @param token Lock token from acquisition
+     * @param ttl New TTL
+     * @return true if refreshed, false if the lock was lost (token mismatch or expired)
+     */
+    public boolean refreshGenericLock(String lockKey, String token, Duration ttl) {
+        String fullKey = "world:lock:" + lockKey;
+        Long result = redis.execute(REFRESH_SCRIPT, List.of(fullKey), token, String.valueOf(ttl.toMillis()));
+        return result != null && result == 1L;
+    }
+
+    /**
      * Release a generic lock.
      *
      * @param lockKey Full lock key

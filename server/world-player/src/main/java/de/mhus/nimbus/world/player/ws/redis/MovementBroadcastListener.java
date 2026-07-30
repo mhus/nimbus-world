@@ -57,11 +57,21 @@ public class MovementBroadcastListener {
             return;
         }
 
-        subscribedWorlds.add(baseWorldId);
-        redisMessaging.subscribe(baseWorldId, "u.m", (topic, message) -> {
-            handleMovementUpdate(baseWorldId, message);
-        });
-        log.info("Subscribed to movement updates for world: {}", baseWorldId);
+        // Synchronized double-check (same pattern as the other broadcast
+        // listeners) so quasi-simultaneous auths on the same pod do not create a
+        // duplicate subscription to the movement channel.
+        synchronized (subscribedWorlds) {
+            if (subscribedWorlds.contains(baseWorldId)) {
+                return;
+            }
+
+            redisMessaging.subscribe(baseWorldId, "u.m", (topic, message) -> {
+                handleMovementUpdate(baseWorldId, message);
+            });
+
+            subscribedWorlds.add(baseWorldId);
+            log.info("Subscribed to movement updates for world: {}", baseWorldId);
+        }
     }
 
     /**

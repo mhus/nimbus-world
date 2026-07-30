@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.life.config.WorldLifeSettings;
 import de.mhus.nimbus.world.life.model.EntityOwnership;
+import de.mhus.nimbus.world.shared.redis.WorldRedisLockService;
 import de.mhus.nimbus.world.shared.redis.WorldRedisMessagingService;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
@@ -13,6 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -38,6 +40,13 @@ public class EntityOwnershipService {
     private final WorldRedisMessagingService redisMessaging;
     private final WorldLifeSettings properties;
     private final ObjectMapper objectMapper;
+    private final WorldRedisLockService lockService;
+
+    /**
+     * Redis lock token per owned entity (entityKey → token). The lock is the
+     * authoritative, atomic claim; the pub/sub registry below is only advisory.
+     */
+    private final Map<String, String> entityLockTokens = new ConcurrentHashMap<>();
 
     /**
      * Registry of all known entity ownerships (from all pods).
@@ -81,6 +90,16 @@ public class EntityOwnershipService {
         return worldId + ":" + entityId;
     }
 
+    /** Redis lock key backing an entity's ownership claim. */
+    private String ownershipLockKey(String entityKey) {
+        return "life:owner:" + entityKey;
+    }
+
+    /** Ownership lease TTL — the stale threshold, refreshed by the heartbeat. */
+    private Duration ownershipTtl() {
+        return Duration.ofMillis(properties.getOwnershipStaleThresholdMs());
+    }
+
     /**
      * Claim ownership of an entity.
      * Checks if entity is already owned by another pod (non-stale).
@@ -95,7 +114,12 @@ public class EntityOwnershipService {
         long timestamp = System.currentTimeMillis();
         String entityKey = makeEntityKey(worldId, entityId);
 
-        // Check if already owned by another pod (non-stale)
+        // Already owned by this pod → nothing to do (heartbeat keeps the lease).
+        if (ownedEntities.contains(entityKey)) {
+            return true;
+        }
+
+        // Fast-path: registry says another pod owns it (non-stale) → skip.
         EntityOwnership existing = ownershipRegistry.get(entityKey);
         if (existing != null &&
                 !existing.getPodId().equals(podId) &&
@@ -104,6 +128,16 @@ public class EntityOwnershipService {
             log.trace("World {}: Entity {} already owned by pod {}", worldId, entityId, existing.getPodId());
             return false;
         }
+
+        // Authoritative, ATOMIC claim: SET NX PX via the Redis lock. Even if two
+        // pods both consider the entity orphaned (eventual-consistent registry),
+        // only one wins the lock and simulates it (prevents double-simulation).
+        String token = lockService.acquireGenericLock(ownershipLockKey(entityKey), ownershipTtl());
+        if (token == null) {
+            log.trace("World {}: Entity {} claim lost (lock held by another pod)", worldId, entityId);
+            return false;
+        }
+        entityLockTokens.put(entityKey, token);
 
         // Claim entity
         EntityOwnership ownership = new EntityOwnership(entityId, worldId.getId(), podId, timestamp, timestamp, chunk);
@@ -117,6 +151,13 @@ public class EntityOwnershipService {
         return true;
     }
 
+    /** Relinquish local ownership of an entity (e.g. after losing the Redis lease). */
+    private void relinquishLocalOwnership(String entityKey) {
+        ownedEntities.remove(entityKey);
+        ownershipRegistry.remove(entityKey);
+        entityLockTokens.remove(entityKey);
+    }
+
     /**
      * Release ownership of an entity.
      * Publishes release announcement to Redis.
@@ -128,6 +169,12 @@ public class EntityOwnershipService {
         String entityKey = makeEntityKey(worldId, entityId);
         EntityOwnership ownership = ownershipRegistry.remove(entityKey);
         ownedEntities.remove(entityKey);
+
+        // Release the atomic ownership lease so another pod can claim immediately.
+        String token = entityLockTokens.remove(entityKey);
+        if (token != null) {
+            lockService.releaseGenericLock(ownershipLockKey(entityKey), token);
+        }
 
         if (ownership != null) {
             publishOwnershipAnnouncement(worldId, "release", entityId, ownership.getCurrentChunk());
@@ -149,10 +196,22 @@ public class EntityOwnershipService {
 
         for (String entityKey : ownedEntities) {
             EntityOwnership ownership = ownershipRegistry.get(entityKey);
-            if (ownership != null) {
-                ownership.setLastHeartbeat(timestamp);
-                publishOwnershipAnnouncement(WorldId.unchecked(ownership.getWorldId()), "claim", ownership.getEntityId(), ownership.getCurrentChunk());
+            if (ownership == null) {
+                continue;
             }
+            // Refresh the ownership lease. If we lost it (e.g. this pod stalled
+            // longer than the TTL and another pod claimed the entity), relinquish
+            // it locally and stop simulating instead of double-simulating.
+            String token = entityLockTokens.get(entityKey);
+            boolean held = token != null
+                    && lockService.refreshGenericLock(ownershipLockKey(entityKey), token, ownershipTtl());
+            if (!held) {
+                log.warn("Lost ownership lease for {}, relinquishing", entityKey);
+                relinquishLocalOwnership(entityKey);
+                continue;
+            }
+            ownership.setLastHeartbeat(timestamp);
+            publishOwnershipAnnouncement(WorldId.unchecked(ownership.getWorldId()), "claim", ownership.getEntityId(), ownership.getCurrentChunk());
         }
 
         log.trace("Sent heartbeats for {} entities", ownedEntities.size());
