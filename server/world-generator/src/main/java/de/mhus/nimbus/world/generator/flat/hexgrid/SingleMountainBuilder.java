@@ -1,6 +1,6 @@
 package de.mhus.nimbus.world.generator.flat.hexgrid;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.world.generator.composer.point.MountainPoint;
 import de.mhus.nimbus.world.generator.flat.FlatMaterialService;
 import de.mhus.nimbus.world.generator.flat.FlatPainter;
@@ -9,6 +9,8 @@ import de.mhus.nimbus.world.shared.world.WHexGrid;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Random;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.DeserializationFeature;
 
 /**
  * SingleMountainBuilder builds a single mountain from MountainPoint configuration.
@@ -21,7 +23,7 @@ import java.util.Random;
 @Slf4j
 public class SingleMountainBuilder extends HexGridBuilder {
 
-    private static final ObjectMapper objectMapper = new ObjectMapper();
+    private static final ObjectMapper objectMapper = JsonMapper.builder().disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES).build();
 
     private static final int MIN_HEIGHT = 5;
     private static final int MAX_RECURSION = 6;

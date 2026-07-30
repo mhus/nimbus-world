@@ -1,8 +1,8 @@
 package de.mhus.nimbus.world.generator.translator;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JsonParser;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.generator.composer.build.CompositionResult;
 import de.mhus.nimbus.world.generator.composer.build.HexCompositeBuilder;
@@ -27,6 +27,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.core.json.JsonReadFeature;
 
 /**
  * Job executor for applying translated instructions (generating composed world model).
@@ -295,10 +297,11 @@ public class ApplyTranslatedInstructionJobExecutor implements JobExecutor {
         }
 
         // Parse composition directly from document content (no wrapper)
-        ObjectMapper compMapper = new ObjectMapper();
-        compMapper.registerModule(new com.fasterxml.jackson.datatype.jsr310.JavaTimeModule());
-        compMapper.enable(JsonParser.Feature.ALLOW_COMMENTS);
-        compMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        ObjectMapper compMapper = JsonMapper.builder()
+                    .disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES)
+                .enable(JsonReadFeature.ALLOW_JAVA_COMMENTS)
+                .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                .build();
 
         HexComposition composition = compMapper.readValue(content, HexComposition.class);
 

@@ -1,6 +1,6 @@
 package de.mhus.nimbus.world.generator.composer.town;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.world.generator.composer.build.HexGridCompositeImageCreator;
 import de.mhus.nimbus.world.generator.composer.image.CrossOverlay;
@@ -10,6 +10,8 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.awt.*;
 import java.util.Map;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.DeserializationFeature;
 
 /**
  * Helper class for adding debug overlays to composite images for village slots.
@@ -19,7 +21,7 @@ import java.util.Map;
 @Slf4j
 public class TownDebugOverlayHelper {
 
-    private static final ObjectMapper objectMapper = new ObjectMapper();
+    private static final ObjectMapper objectMapper = JsonMapper.builder().disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES).build();
 
     /**
      * Adds debug overlays for village slots to the composite image creator.

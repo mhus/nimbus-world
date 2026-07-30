@@ -330,8 +330,8 @@ public class VillagePoint extends Point {
      */
     private String serializeToJson(TownGridConfig config) {
         try {
-            com.fasterxml.jackson.databind.ObjectMapper mapper =
-                new com.fasterxml.jackson.databind.ObjectMapper();
+            tools.jackson.databind.ObjectMapper mapper =
+                new tools.jackson.databind.ObjectMapper();
             return mapper.writeValueAsString(config);
         } catch (Exception e) {
             log.error("Failed to serialize TownGridConfig to JSON", e);

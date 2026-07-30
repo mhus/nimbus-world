@@ -1,9 +1,9 @@
 package de.mhus.nimbus.world.generator.mcp.tools;
 
 import de.mhus.nimbus.world.generator.mcp.McpToolBean;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectReader;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectReader;
 import de.mhus.nimbus.generated.types.Block;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.generator.mcp.McpToolException;
@@ -315,7 +315,7 @@ public class LayerModelTools implements McpToolBean {
                     .readerFor(WLayerModel.class)
                     .without(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
             sourceModel = reader.readValue(jsonData);
-        } catch (IOException e) {
+        } catch (Exception e) {
             throw new McpToolException("Failed to parse JSON: " + e.getMessage());
         }
 

@@ -3,6 +3,7 @@ package de.mhus.nimbus.world.shared.redis;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
 import org.springframework.data.redis.listener.RedisMessageListenerContainer;
@@ -30,7 +31,10 @@ public class WorldRedisConfig {
         return new StringRedisTemplate(factory);
     }
 
+    // @Primary: Boot 4's Redis auto-configuration also contributes a
+    // RedisMessageListenerContainer bean, so injection by type would be ambiguous.
     @Bean
+    @Primary
     public RedisMessageListenerContainer worldRedisMessageListenerContainer(RedisConnectionFactory factory) {
         RedisMessageListenerContainer container = new RedisMessageListenerContainer();
         container.setConnectionFactory(factory);

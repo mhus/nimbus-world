@@ -1,6 +1,6 @@
 package de.mhus.nimbus.world.player.service;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import de.mhus.nimbus.world.player.session.PlayerSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -11,7 +11,7 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class PlayerRedisSenderService {
 
-    private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
+    private final tools.jackson.databind.ObjectMapper objectMapper;
     private final de.mhus.nimbus.world.shared.redis.WorldRedisMessagingService redisMessaging;
 
     /**
@@ -38,7 +38,7 @@ public class PlayerRedisSenderService {
     public void publishEntityInteraction(PlayerSession session, String entityId, String action,
                                          Long timestamp, JsonNode params) {
         try {
-            com.fasterxml.jackson.databind.node.ObjectNode message = objectMapper.createObjectNode();
+            tools.jackson.databind.node.ObjectNode message = objectMapper.createObjectNode();
             message.put("entityId", entityId);
             message.put("action", action);
             message.put("timestamp", timestamp != null ? timestamp : System.currentTimeMillis());

@@ -1,7 +1,7 @@
 package de.mhus.nimbus.world.shared.team;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ObjectNode;
 import de.mhus.nimbus.world.shared.redis.WorldRedisMessagingService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.mongodb.core.MongoTemplate;

@@ -9,10 +9,9 @@ spring:
         version: 1.0.0
         type: SYNC
         protocol: STATELESS
-  data:
-    mongodb:
-      uri: ${MONGODB_URI:mongodb://root:example@localhost:27017/world?authSource=admin}
-      database: world
+  mongodb:
+    uri: ${MONGODB_URI:mongodb://root:example@localhost:27017/world?authSource=admin}
+    database: world
 #      auto-index-creation: true
 
 nimbus:

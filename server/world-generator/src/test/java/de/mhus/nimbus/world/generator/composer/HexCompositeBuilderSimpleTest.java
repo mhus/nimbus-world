@@ -1,6 +1,6 @@
 package de.mhus.nimbus.world.generator.composer;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
@@ -13,6 +13,8 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.DeserializationFeature;
 
 /**
  * Tests for HexCompositeBuilder - orchestrates complete composition pipeline.
@@ -47,14 +49,14 @@ public class HexCompositeBuilderSimpleTest extends HexCompositeBuilderAbstract {
     @Test
     public void testSimpleRoad() throws Exception {
         var res = composite("simple-test-road");
-        var hexGridString = new ObjectMapper().writeValueAsString(res.getWHexGrids());
+        var hexGridString = JsonMapper.builder().disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES).build().writeValueAsString(res.getWHexGrids());
         assertTrue(hexGridString.contains("g_road"), "HexGrids should contain road parameters");
     }
 
     @Test
     public void testSimpleRiverRoad() throws Exception {
         var res = composite("simple-test-river-road");
-        var hexGridString = new ObjectMapper().writeValueAsString(res.getWHexGrids());
+        var hexGridString = JsonMapper.builder().disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES).build().writeValueAsString(res.getWHexGrids());
         assertTrue(hexGridString.contains("g_road"), "HexGrids should contain road parameters");
         assertTrue(hexGridString.contains("g_river"), "HexGrids should contain river parameters");
     }
@@ -62,21 +64,21 @@ public class HexCompositeBuilderSimpleTest extends HexCompositeBuilderAbstract {
     @Test
     public void testSimpleWall() throws Exception {
         var res = composite("simple-test-wall");
-        var hexGridString = new ObjectMapper().writeValueAsString(res.getWHexGrids());
+        var hexGridString = JsonMapper.builder().disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES).build().writeValueAsString(res.getWHexGrids());
         assertTrue(hexGridString.contains("g_wall"), "HexGrids should contain wall parameters");
     }
 
     @Test
     public void testSimpleSmallTown() throws Exception {
         var res = composite("simple-test-small-town");
-        var hexGridString = new ObjectMapper().writeValueAsString(res.getWHexGrids());
+        var hexGridString = JsonMapper.builder().disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES).build().writeValueAsString(res.getWHexGrids());
         assertTrue(hexGridString.contains("g_village"), "HexGrids should contain village parameters");
     }
 
     @Test
     public void testSimpleVillagePoint() throws Exception {
         var res = composite("simple-test-village-point");
-        var hexGridString = new ObjectMapper().writeValueAsString(res.getWHexGrids());
+        var hexGridString = JsonMapper.builder().disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES).build().writeValueAsString(res.getWHexGrids());
         assertTrue(hexGridString.contains("g_village"), "HexGrids should contain village parameters");
     }
 
@@ -84,7 +86,7 @@ public class HexCompositeBuilderSimpleTest extends HexCompositeBuilderAbstract {
     public void testSimpleMountainPoint() throws Exception {
         log.info("=== Testing MountainPoint ===");
         var res = composite("simple-test-mountain-point");
-        var hexGridString = new ObjectMapper().writeValueAsString(res.getWHexGrids());
+        var hexGridString = JsonMapper.builder().disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES).build().writeValueAsString(res.getWHexGrids());
         assertTrue(hexGridString.contains("g_mountain"), "HexGrids should contain mountain parameters");
         assertTrue(hexGridString.contains("mountainName"), "HexGrids should contain mountain configuration");
     }
@@ -93,7 +95,7 @@ public class HexCompositeBuilderSimpleTest extends HexCompositeBuilderAbstract {
     public void testSimpleSpikesPoint() throws Exception {
         log.info("=== Testing SpikesPoint ===");
         var res = composite("simple-test-spikes-point");
-        var hexGridString = new ObjectMapper().writeValueAsString(res.getWHexGrids());
+        var hexGridString = JsonMapper.builder().disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES).build().writeValueAsString(res.getWHexGrids());
         assertTrue(hexGridString.contains("g_spikes"), "HexGrids should contain spikes parameters");
         assertTrue(hexGridString.contains("spikesName"), "HexGrids should contain spikes configuration");
     }
@@ -102,7 +104,7 @@ public class HexCompositeBuilderSimpleTest extends HexCompositeBuilderAbstract {
     public void testSimpleMountainFacePoint() throws Exception {
         log.info("=== Testing MountainFacePoint ===");
         var res = composite("simple-test-mountain-face-point");
-        var hexGridString = new ObjectMapper().writeValueAsString(res.getWHexGrids());
+        var hexGridString = JsonMapper.builder().disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES).build().writeValueAsString(res.getWHexGrids());
         assertTrue(hexGridString.contains("g_mountain_face"), "HexGrids should contain mountain face parameters");
         assertTrue(hexGridString.contains("faceName"), "HexGrids should contain mountain face configuration");
     }
@@ -111,7 +113,7 @@ public class HexCompositeBuilderSimpleTest extends HexCompositeBuilderAbstract {
     public void testSimpleLakesPoint() throws Exception {
         log.info("=== Testing LakesPoint ===");
         var res = composite("simple-test-lakes-point");
-        var hexGridString = new ObjectMapper().writeValueAsString(res.getWHexGrids());
+        var hexGridString = JsonMapper.builder().disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES).build().writeValueAsString(res.getWHexGrids());
         assertTrue(hexGridString.contains("g_lakes"), "HexGrids should contain lakes parameters");
         assertTrue(hexGridString.contains("lakesName"), "HexGrids should contain lakes configuration");
     }
@@ -133,7 +135,7 @@ public class HexCompositeBuilderSimpleTest extends HexCompositeBuilderAbstract {
     public void testForestBiomeDense() throws Exception {
         log.info("=== Testing Forest Biome with DENSE density ===");
         var res = composite("simple-test-forest-dense");
-        var hexGridString = new ObjectMapper().writeValueAsString(res.getWHexGrids());
+        var hexGridString = JsonMapper.builder().disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES).build().writeValueAsString(res.getWHexGrids());
         assertTrue(hexGridString.contains("g_builder\":\"forest\""), "HexGrids should use forest builder");
         assertNotNull(res.getFillResult(), "Fill result should not be null");
     }
@@ -142,7 +144,7 @@ public class HexCompositeBuilderSimpleTest extends HexCompositeBuilderAbstract {
     public void testForestBiomeSparse() throws Exception {
         log.info("=== Testing Forest Biome with SPARSE density ===");
         var res = composite("simple-test-forest-sparse");
-        var hexGridString = new ObjectMapper().writeValueAsString(res.getWHexGrids());
+        var hexGridString = JsonMapper.builder().disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES).build().writeValueAsString(res.getWHexGrids());
         assertTrue(hexGridString.contains("g_builder\":\"forest\""), "HexGrids should use forest builder");
     }
 
@@ -150,7 +152,7 @@ public class HexCompositeBuilderSimpleTest extends HexCompositeBuilderAbstract {
     public void testPlainsBiomeRolling() throws Exception {
         log.info("=== Testing Plains Biome with ROLLING variation ===");
         var res = composite("simple-test-plains-rolling");
-        var hexGridString = new ObjectMapper().writeValueAsString(res.getWHexGrids());
+        var hexGridString = JsonMapper.builder().disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES).build().writeValueAsString(res.getWHexGrids());
         assertTrue(hexGridString.contains("g_builder\":\"plains\""), "HexGrids should use plains builder");
         assertTrue(hexGridString.contains("enableLakes"), "Plains should have lakes enabled");
     }
@@ -159,7 +161,7 @@ public class HexCompositeBuilderSimpleTest extends HexCompositeBuilderAbstract {
     public void testPlainsBiomeMeadow() throws Exception {
         log.info("=== Testing Plains Biome with MEADOW variation ===");
         var res = composite("simple-test-plains-meadow");
-        var hexGridString = new ObjectMapper().writeValueAsString(res.getWHexGrids());
+        var hexGridString = JsonMapper.builder().disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES).build().writeValueAsString(res.getWHexGrids());
         assertTrue(hexGridString.contains("g_builder\":\"plains\""), "HexGrids should use plains builder");
     }
 
@@ -167,7 +169,7 @@ public class HexCompositeBuilderSimpleTest extends HexCompositeBuilderAbstract {
     public void testDesertBiomeDunes() throws Exception {
         log.info("=== Testing Desert Biome with DUNES terrain ===");
         var res = composite("simple-test-desert-dunes");
-        var hexGridString = new ObjectMapper().writeValueAsString(res.getWHexGrids());
+        var hexGridString = JsonMapper.builder().disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES).build().writeValueAsString(res.getWHexGrids());
         assertTrue(hexGridString.contains("g_builder\":\"desert\""), "HexGrids should use desert builder");
     }
 
@@ -175,7 +177,7 @@ public class HexCompositeBuilderSimpleTest extends HexCompositeBuilderAbstract {
     public void testDesertBiomeBadlands() throws Exception {
         log.info("=== Testing Desert Biome with BADLANDS terrain ===");
         var res = composite("simple-test-desert-badlands");
-        var hexGridString = new ObjectMapper().writeValueAsString(res.getWHexGrids());
+        var hexGridString = JsonMapper.builder().disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES).build().writeValueAsString(res.getWHexGrids());
         assertTrue(hexGridString.contains("g_builder\":\"desert\""), "HexGrids should use desert builder");
         assertTrue(hexGridString.contains("stoneRatio"), "Desert should have stone ratio parameter");
     }
@@ -184,7 +186,7 @@ public class HexCompositeBuilderSimpleTest extends HexCompositeBuilderAbstract {
     public void testSwampBiomeDeep() throws Exception {
         log.info("=== Testing Swamp Biome with DEEP depth ===");
         var res = composite("simple-test-swamp-deep");
-        var hexGridString = new ObjectMapper().writeValueAsString(res.getWHexGrids());
+        var hexGridString = JsonMapper.builder().disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES).build().writeValueAsString(res.getWHexGrids());
         assertTrue(hexGridString.contains("g_builder\":\"swamp\""), "HexGrids should use swamp builder");
         assertTrue(hexGridString.contains("swampDepth"), "Swamp should have depth parameter");
     }
@@ -193,7 +195,7 @@ public class HexCompositeBuilderSimpleTest extends HexCompositeBuilderAbstract {
     public void testSwampBiomeBog() throws Exception {
         log.info("=== Testing Swamp Biome with BOG depth ===");
         var res = composite("simple-test-swamp-bog");
-        var hexGridString = new ObjectMapper().writeValueAsString(res.getWHexGrids());
+        var hexGridString = JsonMapper.builder().disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES).build().writeValueAsString(res.getWHexGrids());
         assertTrue(hexGridString.contains("g_builder\":\"swamp\""), "HexGrids should use swamp builder");
     }
 
@@ -201,7 +203,7 @@ public class HexCompositeBuilderSimpleTest extends HexCompositeBuilderAbstract {
     public void testMarshBiomeTidal() throws Exception {
         log.info("=== Testing Marsh Biome with TIDAL water level ===");
         var res = composite("simple-test-marsh-tidal");
-        var hexGridString = new ObjectMapper().writeValueAsString(res.getWHexGrids());
+        var hexGridString = JsonMapper.builder().disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES).build().writeValueAsString(res.getWHexGrids());
         assertTrue(hexGridString.contains("g_builder\":\"swamp\""), "HexGrids should use swamp builder (marsh uses swamp builder)");
     }
 
@@ -211,7 +213,7 @@ public class HexCompositeBuilderSimpleTest extends HexCompositeBuilderAbstract {
     public void testGroundTypeSnowy() throws Exception {
         log.info("=== Testing GroundType SNOWY ===");
         var res = composite("simple-test-groundtype-snowy");
-        var hexGridString = new ObjectMapper().writeValueAsString(res.getWHexGrids());
+        var hexGridString = JsonMapper.builder().disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES).build().writeValueAsString(res.getWHexGrids());
         assertTrue(hexGridString.contains("snowMaterial") || hexGridString.contains("groundType"),
             "HexGrids should contain snow material or groundType parameter");
     }
@@ -220,7 +222,7 @@ public class HexCompositeBuilderSimpleTest extends HexCompositeBuilderAbstract {
     public void testGroundTypeSandy() throws Exception {
         log.info("=== Testing GroundType SANDY ===");
         var res = composite("simple-test-groundtype-sandy");
-        var hexGridString = new ObjectMapper().writeValueAsString(res.getWHexGrids());
+        var hexGridString = JsonMapper.builder().disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES).build().writeValueAsString(res.getWHexGrids());
         assertTrue(hexGridString.contains("desertSandMaterial") || hexGridString.contains("groundType"),
             "HexGrids should contain desert sand material or groundType parameter");
     }
@@ -229,7 +231,7 @@ public class HexCompositeBuilderSimpleTest extends HexCompositeBuilderAbstract {
     public void testGroundTypeVolcanic() throws Exception {
         log.info("=== Testing GroundType VOLCANIC ===");
         var res = composite("simple-test-groundtype-volcanic");
-        var hexGridString = new ObjectMapper().writeValueAsString(res.getWHexGrids());
+        var hexGridString = JsonMapper.builder().disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES).build().writeValueAsString(res.getWHexGrids());
         assertTrue(hexGridString.contains("bedrockMaterial") || hexGridString.contains("groundType"),
             "HexGrids should contain bedrock material or groundType parameter");
     }
@@ -238,7 +240,7 @@ public class HexCompositeBuilderSimpleTest extends HexCompositeBuilderAbstract {
     public void testGroundTypeIcy() throws Exception {
         log.info("=== Testing GroundType ICY ===");
         var res = composite("simple-test-groundtype-icy");
-        var hexGridString = new ObjectMapper().writeValueAsString(res.getWHexGrids());
+        var hexGridString = JsonMapper.builder().disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES).build().writeValueAsString(res.getWHexGrids());
         assertTrue(hexGridString.contains("iceMaterial") || hexGridString.contains("groundType"),
             "HexGrids should contain ice material or groundType parameter");
     }
@@ -247,7 +249,7 @@ public class HexCompositeBuilderSimpleTest extends HexCompositeBuilderAbstract {
     public void testMountainBiomeSnowy() throws Exception {
         log.info("=== Testing Mountain Biome with SNOWY groundType ===");
         var res = composite("simple-test-mountain-snowy");
-        var hexGridString = new ObjectMapper().writeValueAsString(res.getWHexGrids());
+        var hexGridString = JsonMapper.builder().disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES).build().writeValueAsString(res.getWHexGrids());
         assertTrue(hexGridString.contains("g_builder\":\"mountain\""), "HexGrids should use mountain builder");
         assertTrue(hexGridString.contains("groundType") || hexGridString.contains("snowMaterial"),
             "HexGrids should contain groundType or snow material");

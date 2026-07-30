@@ -163,8 +163,8 @@ public class MountainPoint extends Point {
      */
     private String serializeToJson(MountainConfig config) {
         try {
-            com.fasterxml.jackson.databind.ObjectMapper mapper =
-                new com.fasterxml.jackson.databind.ObjectMapper();
+            tools.jackson.databind.ObjectMapper mapper =
+                new tools.jackson.databind.ObjectMapper();
             return mapper.writeValueAsString(config);
         } catch (Exception e) {
             log.error("Failed to serialize MountainConfig to JSON", e);

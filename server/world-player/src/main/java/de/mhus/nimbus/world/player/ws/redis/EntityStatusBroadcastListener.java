@@ -1,7 +1,7 @@
 package de.mhus.nimbus.world.player.ws.redis;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.generated.types.EntityStatusUpdate;
 import de.mhus.nimbus.world.player.ws.BroadcastService;
 import de.mhus.nimbus.world.shared.redis.WorldRedisMessagingService;

@@ -214,8 +214,8 @@ public class SpikesPoint extends Point {
      */
     private String serializeToJson(SpikesConfig config) {
         try {
-            com.fasterxml.jackson.databind.ObjectMapper mapper =
-                new com.fasterxml.jackson.databind.ObjectMapper();
+            tools.jackson.databind.ObjectMapper mapper =
+                new tools.jackson.databind.ObjectMapper();
             return mapper.writeValueAsString(config);
         } catch (Exception e) {
             log.error("Failed to serialize SpikesConfig to JSON", e);

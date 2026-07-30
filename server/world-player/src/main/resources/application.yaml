@@ -2,10 +2,9 @@ spring:
   application:
     name: WorldPlayer
     host: localhost
-  data:
-    mongodb:
-      database: world
-      uri: ${MONGODB_URI:mongodb://root:example@localhost:27017/world?authSource=admin}
+  mongodb:
+    database: world
+    uri: ${MONGODB_URI:mongodb://root:example@localhost:27017/world?authSource=admin}
   redis:
     url: ${REDIS_URL:redis://localhost:6379}
 

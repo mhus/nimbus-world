@@ -1,7 +1,7 @@
 package de.mhus.nimbus.world.generator.blocks;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.ObjectNode;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -77,7 +77,7 @@ public class DefaultsBlockManipulator implements BlockManipulator {
 
         // Set all parameters as defaults
         List<String> setParameters = new ArrayList<>();
-        Iterator<Map.Entry<String, JsonNode>> fields = params.fields();
+        Iterator<Map.Entry<String, JsonNode>> fields = params.properties().iterator();
         while (fields.hasNext()) {
             Map.Entry<String, JsonNode> entry = fields.next();
             String key = entry.getKey();

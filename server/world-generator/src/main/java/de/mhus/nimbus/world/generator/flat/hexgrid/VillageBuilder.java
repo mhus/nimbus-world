@@ -1,6 +1,6 @@
 package de.mhus.nimbus.world.generator.flat.hexgrid;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.generated.types.Vector2Int;
 import de.mhus.nimbus.shared.utils.TypeUtil;
@@ -14,6 +14,8 @@ import de.mhus.nimbus.world.shared.world.WHexGrid;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.DeserializationFeature;
 
 /**
  * VillageBuilder builds villages from the new district/place-based configuration.
@@ -30,7 +32,7 @@ import java.util.List;
 @Slf4j
 public class VillageBuilder extends HexGridBuilder {
 
-    private static final ObjectMapper objectMapper = new ObjectMapper();
+    private static final ObjectMapper objectMapper = JsonMapper.builder().disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES).build();
 
     @Override
     public void buildFlat() {

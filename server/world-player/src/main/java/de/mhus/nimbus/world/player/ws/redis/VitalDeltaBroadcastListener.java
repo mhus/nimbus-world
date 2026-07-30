@@ -1,6 +1,6 @@
 package de.mhus.nimbus.world.player.ws.redis;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.world.player.gameplay.AdventureData;
 import de.mhus.nimbus.world.player.gameplay.AdventureGameplay;
 import de.mhus.nimbus.world.player.service.ClientService;

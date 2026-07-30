@@ -1,6 +1,6 @@
 package de.mhus.nimbus.shared.config;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.shared.persistence.ActualSchemaVersion;
 import de.mhus.nimbus.shared.service.SchemaMigrationService;
 import de.mhus.nimbus.shared.types.Identifiable;

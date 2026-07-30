@@ -1,6 +1,6 @@
 package de.mhus.nimbus.world.player.gameplay.adventure.handler;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.generated.types.Vector3;
 import de.mhus.nimbus.shared.utils.TypeUtil;

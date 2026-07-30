@@ -1,6 +1,6 @@
 package de.mhus.nimbus.world.generator.genesis;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.shared.utils.LocationService;

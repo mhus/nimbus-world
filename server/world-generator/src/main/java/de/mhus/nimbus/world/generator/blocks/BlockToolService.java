@@ -1,7 +1,7 @@
 package de.mhus.nimbus.world.generator.blocks;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ObjectNode;
 import de.mhus.nimbus.world.shared.util.ModelSelector;
 import dev.langchain4j.agent.tool.Tool;
 import lombok.Builder;

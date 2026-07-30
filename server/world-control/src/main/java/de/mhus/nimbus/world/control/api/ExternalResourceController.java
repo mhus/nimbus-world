@@ -1,6 +1,6 @@
 package de.mhus.nimbus.world.control.api;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.control.service.sync.ExternalResourcePathValidator;
 import de.mhus.nimbus.world.control.service.sync.ResourceSyncService;

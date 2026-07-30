@@ -1,7 +1,7 @@
 package de.mhus.nimbus.world.generator.structures;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.world.generator.composer.town.BuildingDefinition;
 import de.mhus.nimbus.world.generator.composer.town.StructuresIndex;
 import de.mhus.nimbus.world.generator.composer.town.TownGridConfig;
@@ -18,6 +18,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import tools.jackson.databind.json.JsonMapper;
 
 /**
  * Places structure models (buildings) into a world layer based on the
@@ -76,8 +77,10 @@ public class StructurePlacer {
 
         TownGridConfig config;
         try {
-            ObjectMapper mapper = new ObjectMapper();
-            mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+            ObjectMapper mapper = JsonMapper.builder()
+                    .disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES)
+                    .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                    .build();
             config = mapper.readValue(villageJson, TownGridConfig.class);
         } catch (Exception e) {
             log.error("Failed to parse g_village JSON for hexGrid {}", hexGrid.getPosition(), e);

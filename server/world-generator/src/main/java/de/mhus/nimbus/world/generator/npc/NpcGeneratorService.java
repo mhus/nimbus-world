@@ -1,7 +1,7 @@
 package de.mhus.nimbus.world.generator.npc;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.generated.types.Entity;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.shared.utils.TypeUtil;
@@ -14,6 +14,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.DeserializationFeature;
 
 /**
  * Generates NPCs with Entity, NPC-Profile, and Dialog-Playbook using AI.
@@ -24,7 +26,7 @@ import java.util.*;
 @Slf4j
 public class NpcGeneratorService {
 
-    private static final ObjectMapper MAPPER = new ObjectMapper();
+    private static final ObjectMapper MAPPER = JsonMapper.builder().disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES).build();
     private static final String DEFAULT_AI_MODEL = "default:dialog";
 
     private final WEntityService entityService;

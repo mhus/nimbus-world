@@ -1921,7 +1921,7 @@ public class FlowComposer {
             config.put("respectRoad", sideWall.isEffectiveRespectRoad());
             config.put("respectRiver", sideWall.isEffectiveRespectRiver());
 
-            return new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(config);
+            return new tools.jackson.databind.ObjectMapper().writeValueAsString(config);
         } catch (Exception e) {
             log.error("Failed to build sidewall JSON", e);
             return "{}";

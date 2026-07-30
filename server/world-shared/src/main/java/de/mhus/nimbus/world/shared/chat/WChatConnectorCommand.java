@@ -1,7 +1,7 @@
 package de.mhus.nimbus.world.shared.chat;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.shared.commands.Command;
 import de.mhus.nimbus.world.shared.commands.CommandContext;
@@ -82,7 +82,7 @@ public class WChatConnectorCommand implements Command {
      * Execute agent-list subcommand.
      * Returns JSON array with name, title, and scope in streamMessages.
      */
-    private CommandResult executeAgentList(WorldId worldId, String sessionId) throws JsonProcessingException {
+    private CommandResult executeAgentList(WorldId worldId, String sessionId) throws JacksonException {
         List<WChatAgent> agents = localProvider.getAvailableAgents();
 
         List<Map<String, String>> agentList = new ArrayList<>();
@@ -104,7 +104,7 @@ public class WChatConnectorCommand implements Command {
      * Execute chat subcommand.
      * Returns agent responses as JSON in streamMessages.
      */
-    private CommandResult executeChat(CommandContext context, List<String> args) throws JsonProcessingException {
+    private CommandResult executeChat(CommandContext context, List<String> args) throws JacksonException {
         if (args.size() < 3) {
             return CommandResult.error("Usage: chat <agentName> <message>");
         }
@@ -154,7 +154,7 @@ public class WChatConnectorCommand implements Command {
      * Execute execute-command subcommand.
      * Returns agent command responses as JSON in streamMessages.
      */
-    private CommandResult executeAgentCommand(CommandContext context, List<String> args) throws JsonProcessingException {
+    private CommandResult executeAgentCommand(CommandContext context, List<String> args) throws JacksonException {
         if (args.size() < 4) {
             return CommandResult.error("Usage: execute-command <agentName> <command> <paramsJson>");
         }
@@ -213,7 +213,7 @@ public class WChatConnectorCommand implements Command {
      * Deserializes WChatSessionMessage from args and enqueues it locally.
      * Used for inter-pod routing of async chat messages.
      */
-    private CommandResult executeEnqueue(List<String> args) throws JsonProcessingException {
+    private CommandResult executeEnqueue(List<String> args) throws JacksonException {
         if (args.size() < 2) {
             return CommandResult.error("Usage: enqueue <sessionMessageJson>");
         }

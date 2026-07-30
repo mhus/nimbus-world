@@ -1,8 +1,8 @@
 package de.mhus.nimbus.world.generator.composer.build;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.node.ArrayNode;
 import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.world.generator.composer.flow.RouteDefinition;
 import de.mhus.nimbus.world.generator.composer.flow.BoundaryRoadDefinition;
@@ -17,6 +17,8 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
 import java.util.List;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.DeserializationFeature;
 
 /**
  * Configuration for a single HexGrid
@@ -80,7 +82,7 @@ public class HexGridConfig {
      */
     public String toVillageParameter() {
         try {
-            ObjectMapper mapper = new ObjectMapper();
+            ObjectMapper mapper = JsonMapper.builder().disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES).build();
             ObjectNode root = mapper.createObjectNode();
 
             root.put("level", baseLevel);
@@ -151,7 +153,7 @@ public class HexGridConfig {
      */
     public String toRoadParameter() {
         try {
-            ObjectMapper mapper = new ObjectMapper();
+            ObjectMapper mapper = JsonMapper.builder().disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES).build();
             ObjectNode root = mapper.createObjectNode();
 
             if (roadConfig == null) {

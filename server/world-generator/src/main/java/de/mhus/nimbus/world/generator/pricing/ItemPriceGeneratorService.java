@@ -1,8 +1,8 @@
 package de.mhus.nimbus.world.generator.pricing;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.ai.model.AiChat;
 import de.mhus.nimbus.world.ai.model.AiChatOptions;
@@ -13,6 +13,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.DeserializationFeature;
 
 /**
  * Service that uses AI to categorize items and calculate base prices.
@@ -24,7 +26,7 @@ import java.util.*;
 @Slf4j
 public class ItemPriceGeneratorService {
 
-    private static final ObjectMapper MAPPER = new ObjectMapper();
+    private static final ObjectMapper MAPPER = JsonMapper.builder().disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES).build();
     private static final String DEFAULT_AI_MODEL = "default:chat";
 
     private final WItemService itemService;

@@ -1,7 +1,7 @@
 package de.mhus.nimbus.world.generator.flat.hexgrid;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.shared.utils.FastNoiseLite;
 import de.mhus.nimbus.world.generator.flat.FlatMaterialService;
 import de.mhus.nimbus.world.shared.generator.WFlat;
@@ -12,6 +12,8 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.DeserializationFeature;
 
 /**
  * RiverBuilder manipulator builder.
@@ -47,7 +49,7 @@ import java.util.Map;
 @Slf4j
 public class RiverBuilder extends HexGridBuilder {
 
-    private static final ObjectMapper objectMapper = new ObjectMapper();
+    private static final ObjectMapper objectMapper = JsonMapper.builder().disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES).build();
     private static final int DEFAULT_CURVATURE = 30;  // Default maximum lateral offset for curves
     /**
      * Extra pixels added to hexGridSize when computing edge endpoint coordinates.

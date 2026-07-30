@@ -1,6 +1,6 @@
 package de.mhus.nimbus.world.control.config;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.generated.network.ClientType;
 import de.mhus.nimbus.shared.types.PlayerData;
 import de.mhus.nimbus.shared.types.PlayerId;

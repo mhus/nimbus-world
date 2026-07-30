@@ -162,8 +162,8 @@ public class LakesPoint extends Point {
      */
     private String serializeToJson(LakesConfig config) {
         try {
-            com.fasterxml.jackson.databind.ObjectMapper mapper =
-                new com.fasterxml.jackson.databind.ObjectMapper();
+            tools.jackson.databind.ObjectMapper mapper =
+                new tools.jackson.databind.ObjectMapper();
             return mapper.writeValueAsString(config);
         } catch (Exception e) {
             log.error("Failed to serialize LakesConfig to JSON", e);

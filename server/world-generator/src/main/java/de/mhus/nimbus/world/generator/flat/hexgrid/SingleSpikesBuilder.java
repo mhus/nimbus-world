@@ -1,6 +1,6 @@
 package de.mhus.nimbus.world.generator.flat.hexgrid;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.world.generator.composer.point.SpikesPoint;
 import de.mhus.nimbus.world.generator.flat.FlatMaterialService;
 import de.mhus.nimbus.world.generator.flat.manipulator.SpikesManipulator;
@@ -10,6 +10,8 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.HashMap;
 import java.util.Map;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.DeserializationFeature;
 
 /**
  * SingleSpikesBuilder builds a field of spikes from SpikesPoint configuration.
@@ -21,7 +23,7 @@ import java.util.Map;
 @Slf4j
 public class SingleSpikesBuilder extends HexGridBuilder {
 
-    private static final ObjectMapper objectMapper = new ObjectMapper();
+    private static final ObjectMapper objectMapper = JsonMapper.builder().disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES).build();
 
     @Override
     public void buildFlat() {

@@ -1,6 +1,6 @@
 package de.mhus.nimbus.world.life.service;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.life.behavior.BehaviorRegistry;
 import de.mhus.nimbus.world.life.config.WorldLifeSettings;

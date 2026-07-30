@@ -1,6 +1,6 @@
 package de.mhus.nimbus.world.generator.flat.hexgrid;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.world.generator.composer.point.LakesPoint;
 import de.mhus.nimbus.world.generator.flat.manipulator.LakesManipulator;
 import de.mhus.nimbus.world.shared.generator.WFlat;
@@ -9,6 +9,8 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.HashMap;
 import java.util.Map;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.DeserializationFeature;
 
 /**
  * LakesBuilder builds a lake system from LakesPoint configuration.
@@ -20,7 +22,7 @@ import java.util.Map;
 @Slf4j
 public class LakesBuilder extends HexGridBuilder {
 
-    private static final ObjectMapper objectMapper = new ObjectMapper();
+    private static final ObjectMapper objectMapper = JsonMapper.builder().disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES).build();
 
     @Override
     public void buildFlat() {

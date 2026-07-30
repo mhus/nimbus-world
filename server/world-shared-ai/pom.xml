@@ -40,7 +40,7 @@
         <!-- Spring Web for RestTemplate and HTTP client -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-web</artifactId>
+            <artifactId>spring-boot-starter-webmvc</artifactId>
         </dependency>
 
         <!-- Dependency on generated module -->

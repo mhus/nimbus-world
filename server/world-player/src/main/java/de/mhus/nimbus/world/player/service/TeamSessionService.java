@@ -1,6 +1,6 @@
 package de.mhus.nimbus.world.player.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.generated.network.MessageType;
 import de.mhus.nimbus.generated.types.TeamData;
 import de.mhus.nimbus.generated.types.TeamMember;
@@ -220,8 +220,8 @@ public class TeamSessionService implements SessionAuthenticatedConsumer, Session
         try {
             NetworkMessage networkMessage = NetworkMessage.builder()
                     .t(messageType)
-                    .d(data instanceof com.fasterxml.jackson.databind.JsonNode ?
-                            (com.fasterxml.jackson.databind.JsonNode) data :
+                    .d(data instanceof tools.jackson.databind.JsonNode ?
+                            (tools.jackson.databind.JsonNode) data :
                             objectMapper.valueToTree(data))
                     .build();
             String json = objectMapper.writeValueAsString(networkMessage);

@@ -53,7 +53,7 @@ public class WLayerTerrainStorageMigrator_1_0_0_to_1_0_1 implements SchemaMigrat
     /**
      * Verarbeitet einen LayerTerrain-Block-Knoten mit dem zusätzlichen 'block'-Knoten
      */
-    private static void processLayerTerrainBlock(com.fasterxml.jackson.databind.JsonNode blockNode, EngineMapper mapper) {
+    private static void processLayerTerrainBlock(tools.jackson.databind.JsonNode blockNode, EngineMapper mapper) {
         var blockBlockNode = blockNode.get("block");
         if (blockBlockNode == null) return;
 

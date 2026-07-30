@@ -45,7 +45,7 @@ public class WChatService {
     private final WChatMessageRepository messageRepository;
     private final List<WChatAgentProvider> agentProviders;
     private final List<WChatMessageProcessor> messageProcessors;
-    private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
+    private final tools.jackson.databind.ObjectMapper objectMapper;
     private final de.mhus.nimbus.world.shared.client.WorldClientService worldClientService;
     private final StringRedisTemplate redis;
     private final WChatExecutorService chatExecutorService;
@@ -61,7 +61,7 @@ public class WChatService {
                        WChatMessageRepository messageRepository,
                        List<WChatAgentProvider> agentProviders,
                        List<WChatMessageProcessor> messageProcessors,
-                       com.fasterxml.jackson.databind.ObjectMapper objectMapper,
+                       tools.jackson.databind.ObjectMapper objectMapper,
                        de.mhus.nimbus.world.shared.client.WorldClientService worldClientService,
                        StringRedisTemplate redis,
                        @Lazy WChatExecutorService chatExecutorService,

@@ -1,8 +1,8 @@
 package de.mhus.nimbus.world.generator.chat;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ObjectNode;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.generator.flat.FlatToolService;
 import de.mhus.nimbus.world.shared.chat.WChatAgent;

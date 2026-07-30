@@ -1,7 +1,7 @@
 package de.mhus.nimbus.world.generator.blocks;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ObjectNode;
 import de.mhus.nimbus.shared.types.BlockDef;
 import de.mhus.nimbus.world.generator.blocks.generator.EditCachePainter;
 import de.mhus.nimbus.world.shared.layer.WEditCacheService;

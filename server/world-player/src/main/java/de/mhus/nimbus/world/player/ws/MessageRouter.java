@@ -1,6 +1,6 @@
 package de.mhus.nimbus.world.player.ws;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.world.player.session.PlayerSession;
 import de.mhus.nimbus.world.player.ws.handlers.MessageHandler;
 import lombok.extern.slf4j.Slf4j;

@@ -13,7 +13,7 @@ import java.util.Date;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.test.context.TestPropertySource;
 
@@ -45,22 +45,22 @@ class WChunkCompressionIntegrationTest {
     @Autowired(required = false)
     private WChunkService chunkService;
 
-    @MockBean
+    @MockitoBean
     private WChunkRepository repository;
 
-    @MockBean
+    @MockitoBean
     private StorageService storageService;
 
-    @MockBean
+    @MockitoBean
     private WWorldService worldService;
 
-    @MockBean
+    @MockitoBean
     private WItemPositionService itemRegistryService;
 
-    @MockBean
+    @MockitoBean
     private WChunkInfoRepository chunkInfoRepository;
 
-    @MockBean
+    @MockitoBean
     private MongoTemplate mongoTemplate;
 
     @Test

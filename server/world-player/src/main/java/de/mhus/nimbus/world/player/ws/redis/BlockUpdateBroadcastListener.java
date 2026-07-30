@@ -1,6 +1,6 @@
 package de.mhus.nimbus.world.player.ws.redis;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.generated.types.Block;
 import de.mhus.nimbus.shared.engine.EngineMapper;
 import de.mhus.nimbus.world.player.session.PlayerSession;

@@ -1,8 +1,8 @@
 package de.mhus.nimbus.world.player.ws.redis;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ObjectNode;
 import de.mhus.nimbus.world.player.ws.BroadcastService;
 import de.mhus.nimbus.world.shared.redis.WorldRedisMessagingService;
 import jakarta.annotation.PostConstruct;

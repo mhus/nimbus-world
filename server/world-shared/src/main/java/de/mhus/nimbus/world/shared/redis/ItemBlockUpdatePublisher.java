@@ -1,6 +1,6 @@
 package de.mhus.nimbus.world.shared.redis;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.generated.types.ItemBlockRef;
 import de.mhus.nimbus.generated.types.Vector3;
 import de.mhus.nimbus.shared.types.WorldId;

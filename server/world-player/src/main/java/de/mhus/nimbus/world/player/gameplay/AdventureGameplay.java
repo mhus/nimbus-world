@@ -1,8 +1,8 @@
 package de.mhus.nimbus.world.player.gameplay;
 
 import java.util.Arrays;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.generated.types.Vector3;
 import de.mhus.nimbus.shared.utils.TypeUtil;

@@ -1,7 +1,7 @@
 package de.mhus.nimbus.world.player.ws.handlers;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.world.player.ws.NetworkMessage;
 import de.mhus.nimbus.world.player.session.PlayerSession;
 import lombok.RequiredArgsConstructor;
@@ -85,7 +85,7 @@ public class InteractionRequestHandler implements MessageHandler {
      */
     private void sendFailureResponse(PlayerSession session, String requestId, int errorCode, String errorMessage) {
         try {
-            com.fasterxml.jackson.databind.node.ObjectNode responseData = objectMapper.createObjectNode();
+            tools.jackson.databind.node.ObjectNode responseData = objectMapper.createObjectNode();
             responseData.put("successful", false);
             responseData.put("errorCode", errorCode);
             responseData.put("errorMessage", errorMessage);
@@ -112,7 +112,7 @@ public class InteractionRequestHandler implements MessageHandler {
     @SuppressWarnings("unused")
     private void sendSuccessResponse(PlayerSession session, String requestId) {
         try {
-            com.fasterxml.jackson.databind.node.ObjectNode responseData = objectMapper.createObjectNode();
+            tools.jackson.databind.node.ObjectNode responseData = objectMapper.createObjectNode();
             responseData.put("successful", true);
 
             NetworkMessage response = NetworkMessage.builder()

@@ -1,6 +1,6 @@
 package de.mhus.nimbus.world.player.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.shared.types.PlayerId;
 import org.junit.jupiter.api.Test;
 

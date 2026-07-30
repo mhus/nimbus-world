@@ -165,7 +165,7 @@ public class HexGridParameterSync {
      */
     private String mergeRoadParameters(String existingRoad, String flowRoad, String position) {
         try {
-            com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+            tools.jackson.databind.ObjectMapper mapper = new tools.jackson.databind.ObjectMapper();
 
             // Parse both JSONs
             @SuppressWarnings("unchecked")

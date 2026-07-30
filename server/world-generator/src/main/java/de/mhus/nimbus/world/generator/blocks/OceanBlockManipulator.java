@@ -1,6 +1,6 @@
 package de.mhus.nimbus.world.generator.blocks;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import de.mhus.nimbus.shared.types.BlockDef;
 import de.mhus.nimbus.world.generator.blocks.generator.EditCachePainter;
 import de.mhus.nimbus.world.shared.util.ModelSelector;
