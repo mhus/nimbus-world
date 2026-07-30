@@ -248,6 +248,14 @@ export class EntityService {
   }
 
   /**
+   * Synchronous O(1) cache lookup (no loading). For hot paths like the
+   * per-frame pick predicate that must not allocate or scan all entities.
+   */
+  getCachedEntity(entityId: string): ClientEntity | null {
+    return this.entityCache.get(entityId) ?? null;
+  }
+
+  /**
    * Get entity by ID (lazy loading with cache)
    */
   async getEntity(entityId: string): Promise<ClientEntity | null> {

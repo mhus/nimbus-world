@@ -85,6 +85,9 @@ export class SelectService {
   // Label rendering
   private guiTexture?: AdvancedDynamicTexture;
   private labelTextBlock?: TextBlock;
+  // Single reusable anchor mesh for the entity label; reused every frame instead
+  // of creating (and leaking) a new box mesh per frame.
+  private labelAnchorMesh?: Mesh;
 
   // Edit block selection (green highlight)
   private selectedEditBlock: Vector3 | null = null;
@@ -483,9 +486,9 @@ export class SelectService {
           return false;
         }
 
-        // Get entity from cache to check properties
-        const entities = this.entityService!.getAllEntities();
-        const entity = entities.find(e => e.id === meshEntityId);
+        // Get entity from cache to check properties (O(1) lookup, no per-mesh
+        // allocation/scan in this per-frame hot path).
+        const entity = this.entityService!.getCachedEntity(meshEntityId);
 
         if (!entity) {
           return false;
@@ -870,16 +873,16 @@ export class SelectService {
     // Update label text
     this.labelTextBlock.text = displayName;
 
-    // Link to world position
-    this.labelTextBlock.linkWithMesh(null); // Unlink first
+    // Reuse a single anchor mesh (created once) and only update its position,
+    // instead of creating a new box mesh every frame (which was never disposed).
+    if (!this.labelAnchorMesh || this.labelAnchorMesh.isDisposed()) {
+      this.labelAnchorMesh = MeshBuilder.CreateBox('labelAnchor', { size: 0.1 }, this.scene);
+      this.labelAnchorMesh.isVisible = false;
+      this.labelAnchorMesh.isPickable = false;
+    }
+    this.labelAnchorMesh.position.copyFrom(labelWorldPos);
 
-    // Create temporary mesh for label positioning
-    const tempMesh = MeshBuilder.CreateBox('labelAnchor', { size: 0.1 }, this.scene);
-    tempMesh.position.copyFrom(labelWorldPos);
-    tempMesh.isVisible = false;
-    tempMesh.isPickable = false;
-
-    this.labelTextBlock.linkWithMesh(tempMesh);
+    this.labelTextBlock.linkWithMesh(this.labelAnchorMesh);
     this.labelTextBlock.linkOffsetY = -30; // Offset above entity
 
     // Show label
@@ -1624,6 +1627,7 @@ export class SelectService {
     this.highlightMaterial?.dispose();
     this.editHighlightMesh?.dispose();
     this.editHighlightMaterial?.dispose();
+    this.labelAnchorMesh?.dispose();
 
     // Dispose model selector resources (meshes and materials)
     this.modelSelectorMeshes.forEach(({ mesh, material }) => {

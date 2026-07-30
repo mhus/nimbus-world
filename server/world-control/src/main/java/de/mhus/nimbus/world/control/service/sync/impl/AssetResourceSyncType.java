@@ -24,6 +24,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -65,6 +66,11 @@ public class AssetResourceSyncType implements ResourceSyncType {
         Set<String> dbAssetPaths = new HashSet<>();
         int exported = 0;
 
+        // Load all assets once and index by id (findByWorldId loads ALL assets;
+        // calling it per document was O(n^2) in DB load and memory).
+        Map<String, SAsset> assetsById = assetService.findByWorldId(worldId).stream()
+                .collect(java.util.stream.Collectors.toMap(SAsset::getId, a -> a, (a, b) -> a));
+
         for (Document doc : documents) {
             try {
                 String path = doc.getString("path");
@@ -82,12 +88,8 @@ public class AssetResourceSyncType implements ResourceSyncType {
                 // Create parent directories
                 Files.createDirectories(targetBinary.getParent());
 
-                // Find SAsset entity for binary data
-                List<SAsset> assets = assetService.findByWorldId(worldId);
-                SAsset asset = assets.stream()
-                        .filter(a -> assetId.equals(a.getId()))
-                        .findFirst()
-                        .orElse(null);
+                // Find SAsset entity for binary data (map lookup, not a full reload)
+                SAsset asset = assetsById.get(assetId);
 
                 if (asset == null) {
                     log.warn("Asset entity not found for document: {}", assetId);

@@ -56,6 +56,8 @@ public class PathwayBroadcastService implements SessionPingConsumer, SessionClos
     private final WWorldService worldService;
 
     private static final String CACHE_KEY_PREFIX = "pathway:";
+    /** Per-world set of session ids that currently have a cached player pathway. */
+    private static final String PATHWAY_SESSIONS_SET = "pathway-sessions";
 
     /**
      * Scheduled task: Generate and broadcast entity pathways every 100ms.
@@ -264,6 +266,8 @@ public class PathwayBroadcastService implements SessionPingConsumer, SessionClos
             // TTL = pingInterval + 20 seconds buffer
             long ttlSeconds = pingInterval + 20;
             redisTemplate.opsForValue().set(cacheKey, json, Duration.ofSeconds(ttlSeconds));
+            // Track the session id so readers don't need a blocking KEYS scan.
+            worldRedisService.addToSet(worldId, PATHWAY_SESSIONS_SET, sessionId);
 
             log.trace("Cached pathway for session {} in world {} (TTL={}s)", sessionId, worldId, ttlSeconds);
         } catch (Exception e) {
@@ -301,18 +305,21 @@ public class PathwayBroadcastService implements SessionPingConsumer, SessionClos
             var world = worldService.getByWorldId(WorldId.unchecked(worldId));
             int chunkSize = world.isPresent() ? world.get().getPublicData().getChunkSize() : 16;
 
-            String pattern = CACHE_KEY_PREFIX + worldId + ":*";
-            Set<String> keys = redisTemplate.keys(pattern);
-
-            if (keys != null) {
-                for (String key : keys) {
-                    String json = redisTemplate.opsForValue().get(key);
-                    if (json != null) {
-                        EntityPathway pathway = engineMapper.readValue(json, EntityPathway.class);
-                        if (pathwayAffectsChunk(pathway, cx, cz, chunkSize)) {
-                            pathways.add(pathway);
-                        }
-                    }
+            // Read the maintained set of active pathway session ids and load each
+            // pathway directly, instead of a blocking Redis KEYS scan over the
+            // whole keyspace (O(N), blocks the single-threaded Redis for all pods).
+            Set<String> sessionIds = worldRedisService.getSetMembers(worldId, PATHWAY_SESSIONS_SET);
+            for (String sessionId : sessionIds) {
+                String key = CACHE_KEY_PREFIX + worldId + ":" + sessionId;
+                String json = redisTemplate.opsForValue().get(key);
+                if (json == null) {
+                    // Pathway TTL expired: drop the stale session id (self-healing).
+                    worldRedisService.removeFromSet(worldId, PATHWAY_SESSIONS_SET, sessionId);
+                    continue;
+                }
+                EntityPathway pathway = engineMapper.readValue(json, EntityPathway.class);
+                if (pathwayAffectsChunk(pathway, cx, cz, chunkSize)) {
+                    pathways.add(pathway);
                 }
             }
 
@@ -356,6 +363,7 @@ public class PathwayBroadcastService implements SessionPingConsumer, SessionClos
         try {
             String cacheKey = CACHE_KEY_PREFIX + worldId + ":" + sessionId;
             redisTemplate.delete(cacheKey);
+            worldRedisService.removeFromSet(worldId, PATHWAY_SESSIONS_SET, sessionId);
             log.debug("Deleted cached pathway for session {} in world {}", sessionId, worldId);
         } catch (Exception e) {
             log.error("Failed to delete cached pathway for session {}", sessionId, e);

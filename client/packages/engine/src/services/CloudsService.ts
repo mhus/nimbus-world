@@ -95,6 +95,9 @@ interface CloudInstance {
 
   // Animation state
   fadeAlpha: number;
+  // Milliseconds this cloud has been fully faded out (used to remove drifted-away
+  // animation clouds so they don't accumulate forever).
+  fadedMs: number;
 
   // BabylonJS objects
   root?: TransformNode;
@@ -191,6 +194,7 @@ export class CloudsService {
       speed: config.speed,
       direction: config.direction,
       fadeAlpha: 1.0,
+      fadedMs: 0,
     };
 
     try {
@@ -544,6 +548,11 @@ export class CloudsService {
     const cameraPos = this.cameraService.getPosition();
     if (!cameraPos) return;
 
+    // Moving clouds that have been fully faded (out of view) for this long are
+    // removed so animation jobs don't accumulate clouds unbounded.
+    const FADED_REMOVE_MS = 10000;
+    let toRemove: string[] | null = null;
+
     for (const cloud of this.clouds.values()) {
       if (!cloud.enabled) continue;
 
@@ -580,6 +589,23 @@ export class CloudsService {
       // Apply fade to material
       if (cloud.material) {
         cloud.material.alpha = cloud.fadeAlpha;
+      }
+
+      // Track how long a moving cloud has been fully faded, and schedule removal
+      // once it has drifted out of view for long enough (static clouds are kept).
+      if (cloud.speed > 0 && cloud.fadeAlpha <= 0) {
+        cloud.fadedMs += deltaTime * 1000;
+        if (cloud.fadedMs >= FADED_REMOVE_MS) {
+          (toRemove ??= []).push(cloud.id);
+        }
+      } else {
+        cloud.fadedMs = 0;
+      }
+    }
+
+    if (toRemove) {
+      for (const id of toRemove) {
+        this.removeCloud(id);
       }
     }
   }

@@ -59,6 +59,9 @@ export class PrecipitationService {
 
   // Lightning system
   private lightningParticleSystems: ParticleSystem[] = [];
+  // Shared lightning particle texture — identical for every strand, so it is
+  // created once and reused instead of allocating a fresh RawTexture per strand.
+  private cachedLightningTexture?: RawTexture;
 
   // Thunder sound system
   private thunderSoundPaths: string[] = [];
@@ -517,6 +520,8 @@ export class PrecipitationService {
     this.disposeParticleSystem();
     this.disposeLightning();
     this.particleTexture?.dispose();
+    this.cachedLightningTexture?.dispose();
+    this.cachedLightningTexture = undefined;
     logger.debug('PrecipitationService disposed');
   }
 
@@ -715,8 +720,8 @@ export class PrecipitationService {
     strandIndex: number,
     brightness: number
   ): void {
-    // Create fresh texture for each strand
-    const texture = this.createFreshLightningTexture();
+    // Reuse the shared lightning texture (identical for every strand)
+    const texture = this.getLightningTexture();
 
     const particleCount = Math.floor(400 * brightness); // Main flash has more particles
     const ps = new ParticleSystem(`lightning_${Date.now()}_${strandIndex}`, particleCount + 100, this.scene);
@@ -804,8 +809,18 @@ export class PrecipitationService {
       if (index > -1) {
         this.lightningParticleSystems.splice(index, 1);
       }
-      ps.dispose();
+      ps.dispose(false); // keep the shared lightning texture alive
     }, flashDuration * 1000);
+  }
+
+  /**
+   * Returns the shared lightning texture, creating it once on first use.
+   */
+  private getLightningTexture(): RawTexture {
+    if (!this.cachedLightningTexture) {
+      this.cachedLightningTexture = this.createFreshLightningTexture();
+    }
+    return this.cachedLightningTexture;
   }
 
   /**
@@ -848,7 +863,7 @@ export class PrecipitationService {
    */
   private disposeLightning(): void {
     for (const ps of this.lightningParticleSystems) {
-      ps.dispose();
+      ps.dispose(false); // keep the shared lightning texture alive
     }
     this.lightningParticleSystems = [];
   }
