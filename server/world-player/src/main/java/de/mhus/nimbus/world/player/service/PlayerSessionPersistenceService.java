@@ -75,7 +75,11 @@ public class PlayerSessionPersistenceService implements SessionAuthenticatedCons
         AtomicInteger counter = new AtomicInteger(0);
         tickCounters.put(sessionId, counter);
 
-        Thread tickThread = new Thread(() -> {
+        // Virtual thread instead of a platform thread per session: a pod with
+        // thousands of sessions would otherwise create thousands of blocking
+        // platform threads (~1MB stack each). Virtual threads are cheap and
+        // still support interrupt() for the stop path.
+        Thread tickThread = Thread.ofVirtual().name("session-tick-" + sessionId).unstarted(() -> {
             log.debug("Tick thread started for session: {}", sessionId);
             try {
                 while (!Thread.currentThread().isInterrupted()) {
@@ -110,9 +114,8 @@ public class PlayerSessionPersistenceService implements SessionAuthenticatedCons
             } finally {
                 log.debug("Tick thread stopped for session: {}", sessionId);
             }
-        }, "session-tick-" + sessionId);
+        });
 
-        tickThread.setDaemon(true);
         tickThread.start();
         tickThreads.put(sessionId, tickThread);
 

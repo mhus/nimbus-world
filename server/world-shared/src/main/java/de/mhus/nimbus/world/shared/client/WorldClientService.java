@@ -28,6 +28,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -46,6 +48,12 @@ public class WorldClientService {
     private final LocationService locationService;
     private final AccessService accessService;
     private final WorldRedisService worldRedisService;
+
+    // Dedicated executor for the blocking inter-server REST calls. Virtual threads
+    // are cheap and suited to blocking I/O; running these on the shared
+    // ForkJoinPool.commonPool() risked starving it (blocking calls held its few
+    // worker threads until the socket timeout).
+    private final ExecutorService restExecutor = Executors.newVirtualThreadPerTaskExecutor();
 
     /**
      * Command response DTO.
@@ -277,7 +285,7 @@ public class WorldClientService {
                 log.error("Unexpected error sending command", e);
                 return new CommandResponse(-4, "Internal error: " + e.getMessage(), null);
             }
-        })
+        }, restExecutor)
         .orTimeout(properties.getCommandTimeoutMs(), TimeUnit.MILLISECONDS)
         .exceptionally(throwable -> {
             if (throwable instanceof TimeoutException) {
@@ -343,7 +351,7 @@ public class WorldClientService {
                 log.warn("Failed to send session-closed notification to world-control: worldId={}, playerId={}, error={}",
                         worldId, playerId, e.getMessage());
             }
-        });
+        }, restExecutor);
     }
 
     /**
@@ -382,6 +390,6 @@ public class WorldClientService {
                 log.warn("Failed to send LogicEvent: worldId={}, eval={}, error={}",
                         worldId, eval, e.getMessage());
             }
-        });
+        }, restExecutor);
     }
 }
