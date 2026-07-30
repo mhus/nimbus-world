@@ -2,10 +2,9 @@ spring:
   application:
     name: WorldEditor
     host: localhost
-  data:
-    mongodb:
-      uri: ${MONGODB_URI:mongodb://root:example@host.docker.internal:27017/world?authSource=admin}
-      database: world
+  mongodb:
+    uri: ${MONGODB_URI:mongodb://root:example@host.docker.internal:27017/world?authSource=admin}
+    database: world
 
 world:
   client:
