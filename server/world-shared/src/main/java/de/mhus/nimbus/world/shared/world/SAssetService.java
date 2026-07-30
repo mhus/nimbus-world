@@ -851,6 +851,90 @@ public class SAssetService implements StorageProvider {
     }
 
     /**
+     * Delete ALL assets of a world, including their external storage data.
+     * Owner-level bulk operation so callers do not touch the SAsset repository
+     * or the storage layer directly (data ownership). Storage deletion failures
+     * are logged and skipped (best-effort), matching the previous caller behaviour.
+     *
+     * @param worldId World identifier (raw stored worldId)
+     * @return number of deleted assets
+     */
+    @Transactional
+    public int deleteAllByWorldId(String worldId) {
+        List<SAsset> assets = repository.findByWorldId(worldId);
+        log.info("Found {} assets in world {}", assets.size(), worldId);
+
+        int deletedCount = 0;
+        int storageCount = 0;
+
+        for (SAsset asset : assets) {
+            // Delete storage data if present
+            if (asset.getStorageId() != null) {
+                try {
+                    storageService.delete(asset.getStorageId());
+                    storageCount++;
+                } catch (Exception e) {
+                    log.warn("Failed to delete storage {} for asset {}: {}",
+                            asset.getStorageId(), asset.getId(), e.getMessage());
+                }
+            }
+
+            repository.delete(asset);
+            deletedCount++;
+        }
+
+        log.info("Deleted {} assets (including {} storage items) for world {}",
+                deletedCount, storageCount, worldId);
+        return deletedCount;
+    }
+
+    /**
+     * Duplicate ALL assets from a source world to a target world, including
+     * their external storage data. Owner-level bulk operation so callers do not
+     * touch the SAsset repository or the storage layer directly (data ownership).
+     *
+     * @param sourceWorldId source world identifier (raw stored worldId)
+     * @param targetWorldId target world identifier (raw stored worldId)
+     * @return number of duplicated assets
+     */
+    @Transactional
+    public int duplicateToWorld(String sourceWorldId, String targetWorldId) {
+        List<SAsset> sourceAssets = repository.findByWorldId(sourceWorldId);
+        log.info("Found {} assets in source world {}", sourceAssets.size(), sourceWorldId);
+
+        int duplicatedCount = 0;
+        int storageCount = 0;
+
+        for (SAsset sourceAsset : sourceAssets) {
+            SAsset targetAsset = SAsset.builder()
+                    .path(sourceAsset.getPath())
+                    .name(sourceAsset.getName())
+                    .size(sourceAsset.getSize())
+                    .compressed(sourceAsset.isCompressed())
+                    .publicData(sourceAsset.getPublicData())
+                    .createdAt(Instant.now())
+                    .createdBy(sourceAsset.getCreatedBy())
+                    .enabled(sourceAsset.isEnabled())
+                    .worldId(targetWorldId)
+                    .build();
+
+            // Duplicate storage data if present
+            if (sourceAsset.getStorageId() != null) {
+                String newStorageId = storageService.duplicate(sourceAsset.getStorageId(), targetWorldId);
+                targetAsset.setStorageId(newStorageId);
+                storageCount++;
+            }
+
+            repository.save(targetAsset);
+            duplicatedCount++;
+        }
+
+        log.info("Duplicated {} assets (including {} storage items) from world {} to {}",
+                duplicatedCount, storageCount, sourceWorldId, targetWorldId);
+        return duplicatedCount;
+    }
+
+    /**
      * Find all distinct storageIds for a given world.
      * Returns a list of unique storageId values from SAsset documents.
      *

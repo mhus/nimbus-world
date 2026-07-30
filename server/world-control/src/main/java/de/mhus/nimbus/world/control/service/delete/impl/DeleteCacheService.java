@@ -1,14 +1,11 @@
 package de.mhus.nimbus.world.control.service.delete.impl;
 
 import de.mhus.nimbus.world.control.service.delete.DeleteWorldResources;
-import de.mhus.nimbus.world.shared.layer.WDirtyChunk;
-import de.mhus.nimbus.world.shared.layer.WEditCache;
-import de.mhus.nimbus.world.shared.layer.WEditCacheDirty;
+import de.mhus.nimbus.world.shared.layer.WDirtyChunkService;
+import de.mhus.nimbus.world.shared.layer.WEditCacheDirtyService;
+import de.mhus.nimbus.world.shared.layer.WEditCacheService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 
 import java.util.HashSet;
@@ -17,13 +14,16 @@ import java.util.Set;
 
 /**
  * Deletes transient cache data: dirty chunks, edit cache, and edit cache dirty markers.
+ * Delegates all data access to the owner services (data ownership).
  */
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class DeleteCacheService implements DeleteWorldResources {
 
-    private final MongoTemplate mongoTemplate;
+    private final WDirtyChunkService dirtyChunkService;
+    private final WEditCacheService editCacheService;
+    private final WEditCacheDirtyService editCacheDirtyService;
 
     @Override
     public String name() {
@@ -33,22 +33,21 @@ public class DeleteCacheService implements DeleteWorldResources {
     @Override
     public void deleteWorldResources(String worldId) throws Exception {
         log.info("Deleting cache data for world {}", worldId);
-        Query query = new Query(Criteria.where("worldId").is(worldId));
 
-        var dirtyChunks = mongoTemplate.remove(query, WDirtyChunk.class);
-        var editCache = mongoTemplate.remove(new Query(Criteria.where("worldId").is(worldId)), WEditCache.class);
-        var editCacheDirty = mongoTemplate.remove(new Query(Criteria.where("worldId").is(worldId)), WEditCacheDirty.class);
+        long dirtyChunks = dirtyChunkService.deleteByWorldId(worldId);
+        long editCache = editCacheService.deleteByWorldId(worldId);
+        long editCacheDirty = editCacheDirtyService.deleteByWorldId(worldId);
 
         log.info("Deleted cache for world {}: {} dirty chunks, {} edit cache, {} edit cache dirty",
-                worldId, dirtyChunks.getDeletedCount(), editCache.getDeletedCount(), editCacheDirty.getDeletedCount());
+                worldId, dirtyChunks, editCache, editCacheDirty);
     }
 
     @Override
     public List<String> getKnownWorldIds() throws Exception {
         Set<String> worldIds = new HashSet<>();
-        worldIds.addAll(mongoTemplate.findDistinct(new Query(), "worldId", WDirtyChunk.class, String.class));
-        worldIds.addAll(mongoTemplate.findDistinct(new Query(), "worldId", WEditCache.class, String.class));
-        worldIds.addAll(mongoTemplate.findDistinct(new Query(), "worldId", WEditCacheDirty.class, String.class));
+        worldIds.addAll(dirtyChunkService.findDistinctWorldIds());
+        worldIds.addAll(editCacheService.findDistinctWorldIds());
+        worldIds.addAll(editCacheDirtyService.findDistinctWorldIds());
         return worldIds.stream().sorted().toList();
     }
 }

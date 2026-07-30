@@ -7,6 +7,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,6 +35,7 @@ public class WEditCacheDirtyService {
     private final WorldRedisLockService lockService;
     private final WLayerService layerService;
     private final WLayerModelRepository modelRepository;
+    private final MongoTemplate mongoTemplate;
 
     private static final Duration LOCK_TTL = Duration.ofMinutes(5);
     private static final int MAX_ENTRIES_PER_CYCLE = 10;
@@ -103,6 +107,33 @@ public class WEditCacheDirtyService {
     @Transactional(readOnly = true)
     public List<WEditCacheDirty> getAllDirtyLayers() {
         return dirtyRepository.findAllByOrderByCreatedAtAsc();
+    }
+
+    /**
+     * Delete ALL dirty markers of a world (regardless of layer). Owner-level bulk
+     * operation so callers do not query the WEditCacheDirty collection directly
+     * (data ownership).
+     *
+     * @param worldId World identifier
+     * @return number of deleted dirty markers
+     */
+    @Transactional
+    public long deleteByWorldId(String worldId) {
+        long deleted = mongoTemplate.remove(
+                new Query(Criteria.where("worldId").is(worldId)), WEditCacheDirty.class).getDeletedCount();
+        log.info("Deleted {} edit cache dirty markers for world {}", deleted, worldId);
+        return deleted;
+    }
+
+    /**
+     * Distinct world IDs that have dirty markers (owner-level; avoids callers
+     * querying the WEditCacheDirty collection directly).
+     *
+     * @return List of world IDs with dirty markers
+     */
+    @Transactional(readOnly = true)
+    public List<String> findDistinctWorldIds() {
+        return mongoTemplate.findDistinct(new Query(), "worldId", WEditCacheDirty.class, String.class);
     }
 
     /**

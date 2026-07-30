@@ -1,12 +1,9 @@
 package de.mhus.nimbus.world.control.service.delete.impl;
 
 import de.mhus.nimbus.world.control.service.delete.DeleteWorldResources;
-import de.mhus.nimbus.world.shared.world.WTrader;
+import de.mhus.nimbus.world.shared.world.WTraderService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -16,7 +13,7 @@ import java.util.List;
 @Slf4j
 public class DeleteTradersService implements DeleteWorldResources {
 
-    private final MongoTemplate mongoTemplate;
+    private final WTraderService traderService;
 
     @Override
     public String name() {
@@ -26,15 +23,12 @@ public class DeleteTradersService implements DeleteWorldResources {
     @Override
     public void deleteWorldResources(String worldId) throws Exception {
         log.info("Deleting traders for world {}", worldId);
-        var result = mongoTemplate.remove(
-                new Query(Criteria.where("worldId").is(worldId)),
-                WTrader.class
-        );
-        log.info("Deleted {} traders for world {}", result.getDeletedCount(), worldId);
+        int deleted = traderService.deleteAllByWorldId(worldId);
+        log.info("Deleted {} traders for world {}", deleted, worldId);
     }
 
     @Override
     public List<String> getKnownWorldIds() throws Exception {
-        return mongoTemplate.findDistinct(new Query(), "worldId", WTrader.class, String.class);
+        return traderService.findDistinctWorldIds();
     }
 }

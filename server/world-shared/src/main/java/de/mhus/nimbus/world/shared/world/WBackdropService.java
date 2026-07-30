@@ -5,6 +5,9 @@ import de.mhus.nimbus.shared.types.WorldId;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,6 +26,7 @@ import java.util.function.Consumer;
 public class WBackdropService {
 
     private final WBackdropRepository repository;
+    private final MongoTemplate mongoTemplate;
 
     /**
      * Find backdrop by ID.
@@ -169,6 +173,58 @@ public class WBackdropService {
         }
 
         return all;
+    }
+
+    /**
+     * Delete ALL backdrops of a world (matched by the raw stored worldId, no
+     * main-world resolution). Owner-level bulk operation so callers do not touch
+     * the WBackdrop collection directly (data ownership).
+     *
+     * @return number of deleted backdrops
+     */
+    @Transactional
+    public int deleteByWorldId(String worldId) {
+        var result = mongoTemplate.remove(
+                new Query(Criteria.where("worldId").is(worldId)),
+                WBackdrop.class
+        );
+        long deleted = result.getDeletedCount();
+        log.info("Deleted {} backdrops for world {}", deleted, worldId);
+        return (int) deleted;
+    }
+
+    /**
+     * Distinct world IDs that have backdrops (owner-level; avoids callers
+     * querying the WBackdrop collection directly).
+     */
+    public List<String> findDistinctWorldIds() {
+        return mongoTemplate.findDistinct(new Query(), "worldId", WBackdrop.class, String.class);
+    }
+
+    /**
+     * Duplicate all backdrops from a source world into a target world (matched by
+     * the raw stored worldId, no main-world resolution). Owner-level bulk
+     * operation so callers do not touch the WBackdrop collection directly.
+     *
+     * @return number of duplicated backdrops
+     */
+    @Transactional
+    public int duplicateToWorld(String sourceWorldId, String targetWorldId) {
+        List<WBackdrop> sourceBackdrops = repository.findByWorldId(sourceWorldId);
+        int duplicatedCount = 0;
+        for (WBackdrop source : sourceBackdrops) {
+            WBackdrop target = WBackdrop.builder()
+                    .worldId(targetWorldId)
+                    .backdropId(source.getBackdropId())
+                    .publicData(source.getPublicData())
+                    .enabled(source.isEnabled())
+                    .build();
+            target.touchCreate();
+            repository.save(target);
+            duplicatedCount++;
+        }
+        log.info("Duplicated {} backdrops from world {} to {}", duplicatedCount, sourceWorldId, targetWorldId);
+        return duplicatedCount;
     }
 
     private List<WBackdrop> filterByQuery(List<WBackdrop> backdrops, String query) {

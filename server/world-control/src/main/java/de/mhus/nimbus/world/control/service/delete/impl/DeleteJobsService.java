@@ -1,13 +1,10 @@
 package de.mhus.nimbus.world.control.service.delete.impl;
 
 import de.mhus.nimbus.world.control.service.delete.DeleteWorldResources;
-import de.mhus.nimbus.world.shared.job.WJob;
-import de.mhus.nimbus.world.shared.workflow.WWorkflowJournalRecord;
+import de.mhus.nimbus.world.shared.job.WJobService;
+import de.mhus.nimbus.world.shared.workflow.WWorkflowJournalService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 
 import java.util.HashSet;
@@ -16,13 +13,16 @@ import java.util.Set;
 
 /**
  * Deletes jobs and workflow journal records for a world.
+ * Delegates to the owner services (WJobService / WWorkflowJournalService) instead
+ * of touching the collections / MongoTemplate directly (data ownership).
  */
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class DeleteJobsService implements DeleteWorldResources {
 
-    private final MongoTemplate mongoTemplate;
+    private final WJobService jobService;
+    private final WWorkflowJournalService workflowJournalService;
 
     @Override
     public String name() {
@@ -32,20 +32,19 @@ public class DeleteJobsService implements DeleteWorldResources {
     @Override
     public void deleteWorldResources(String worldId) throws Exception {
         log.info("Deleting jobs and workflow records for world {}", worldId);
-        Query query = new Query(Criteria.where("worldId").is(worldId));
 
-        var jobs = mongoTemplate.remove(query, WJob.class);
-        var records = mongoTemplate.remove(new Query(Criteria.where("worldId").is(worldId)), WWorkflowJournalRecord.class);
+        int jobs = jobService.deleteByWorldId(worldId);
+        int records = workflowJournalService.deleteByWorldId(worldId);
 
         log.info("Deleted for world {}: {} jobs, {} workflow records",
-                worldId, jobs.getDeletedCount(), records.getDeletedCount());
+                worldId, jobs, records);
     }
 
     @Override
     public List<String> getKnownWorldIds() throws Exception {
         Set<String> worldIds = new HashSet<>();
-        worldIds.addAll(mongoTemplate.findDistinct(new Query(), "worldId", WJob.class, String.class));
-        worldIds.addAll(mongoTemplate.findDistinct(new Query(), "worldId", WWorkflowJournalRecord.class, String.class));
+        worldIds.addAll(jobService.findDistinctWorldIds());
+        worldIds.addAll(workflowJournalService.findDistinctWorldIds());
         return worldIds.stream().sorted().toList();
     }
 }

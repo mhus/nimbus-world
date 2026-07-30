@@ -1014,6 +1014,53 @@ public class WChunkService implements StorageProvider {
     }
 
     /**
+     * Duplicate ALL chunks of a source world to a target world, including their
+     * external storage data. Owner-level bulk operation so callers do not touch
+     * the WChunk repository directly (data ownership).
+     * <p>
+     * For each source chunk a new WChunk document is created carrying the same
+     * chunk key, compression flag and server-info; if the source chunk references
+     * external storage it is duplicated via {@link StorageService#duplicate} and
+     * the new storage id is assigned to the copy.
+     *
+     * @param sourceWorldId world id to copy chunks from
+     * @param targetWorldId world id to copy chunks to (must already exist)
+     * @return number of duplicated chunks
+     */
+    @Transactional
+    public int duplicateToWorld(String sourceWorldId, String targetWorldId) {
+        List<WChunk> sourceChunks = repository.findByWorldId(sourceWorldId);
+        log.info("Found {} chunks in source world {}", sourceChunks.size(), sourceWorldId);
+
+        int duplicatedCount = 0;
+        int storageCount = 0;
+
+        for (WChunk sourceChunk : sourceChunks) {
+            WChunk targetChunk = WChunk.builder()
+                    .worldId(targetWorldId)
+                    .chunk(sourceChunk.getChunk())
+                    .compressed(sourceChunk.isCompressed())
+                    .infoServer(sourceChunk.getInfoServer())
+                    .build();
+
+            // Duplicate storage data if present
+            if (sourceChunk.getStorageId() != null) {
+                String newStorageId = storageService.duplicate(sourceChunk.getStorageId(), targetWorldId);
+                targetChunk.setStorageId(newStorageId);
+                storageCount++;
+            }
+
+            targetChunk.touchCreate();
+            repository.save(targetChunk);
+            duplicatedCount++;
+        }
+
+        log.info("Duplicated {} chunks (including {} storage items) from world {} to {}",
+                duplicatedCount, storageCount, sourceWorldId, targetWorldId);
+        return duplicatedCount;
+    }
+
+    /**
      * Search chunk metadata by chunk key substring.
      */
     public List<WChunk> findChunksByWorldIdAndQuery(String worldId, String query) {

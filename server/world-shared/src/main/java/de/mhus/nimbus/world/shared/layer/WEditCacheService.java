@@ -7,6 +7,9 @@ import de.mhus.nimbus.world.shared.world.BlockUtil;
 import de.mhus.nimbus.world.shared.world.WWorld;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,6 +32,7 @@ public class WEditCacheService {
 
     private final WEditCacheRepository repository;
     private final BlockUpdateService blockUpdateService;
+    private final MongoTemplate mongoTemplate;
 
     /**
      * Find specific cached block by world, layer, model, and coordinates.
@@ -397,5 +401,32 @@ public class WEditCacheService {
                 .map(WEditCache::getWorldId)
                 .distinct()
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * Delete ALL cached blocks of a world (regardless of layer). Owner-level bulk
+     * operation so callers do not query the WEditCache collection directly
+     * (data ownership).
+     *
+     * @param worldId World identifier
+     * @return number of deleted cache entries
+     */
+    @Transactional
+    public long deleteByWorldId(String worldId) {
+        long deleted = mongoTemplate.remove(
+                new Query(Criteria.where("worldId").is(worldId)), WEditCache.class).getDeletedCount();
+        log.info("Deleted {} edit cache entries for world {}", deleted, worldId);
+        return deleted;
+    }
+
+    /**
+     * Distinct world IDs that have cached blocks (owner-level; avoids callers
+     * querying the WEditCache collection directly).
+     *
+     * @return List of world IDs with cached blocks
+     */
+    @Transactional(readOnly = true)
+    public List<String> findDistinctWorldIds() {
+        return mongoTemplate.findDistinct(new Query(), "worldId", WEditCache.class, String.class);
     }
 }

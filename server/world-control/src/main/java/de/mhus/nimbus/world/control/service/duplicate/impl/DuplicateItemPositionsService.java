@@ -1,13 +1,10 @@
 package de.mhus.nimbus.world.control.service.duplicate.impl;
 
 import de.mhus.nimbus.world.control.service.duplicate.DuplicateToWorld;
-import de.mhus.nimbus.world.shared.world.WItemPosition;
-import de.mhus.nimbus.world.shared.world.WItemPositionRepository;
+import de.mhus.nimbus.world.shared.world.WItemPositionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
 
 /**
  * Service to duplicate item positions from source world to target world.
@@ -17,7 +14,7 @@ import java.util.List;
 @Slf4j
 public class DuplicateItemPositionsService implements DuplicateToWorld {
 
-    private final WItemPositionRepository itemPositionRepository;
+    private final WItemPositionService itemPositionService;
 
     @Override
     public String name() {
@@ -27,26 +24,7 @@ public class DuplicateItemPositionsService implements DuplicateToWorld {
     @Override
     public void duplicate(String sourceWorldId, String targetWorldId) throws Exception {
         log.info("Duplicating item positions from world {} to {}", sourceWorldId, targetWorldId);
-
-        List<WItemPosition> sourceItemPositions = itemPositionRepository.findByWorldId(sourceWorldId);
-        log.info("Found {} item positions in source world {}", sourceItemPositions.size(), sourceWorldId);
-
-        int duplicatedCount = 0;
-
-        for (WItemPosition sourceItemPosition : sourceItemPositions) {
-            WItemPosition targetItemPosition = WItemPosition.builder()
-                    .worldId(targetWorldId)
-                    .itemId(sourceItemPosition.getItemId())
-                    .chunk(sourceItemPosition.getChunk())
-                    .publicData(sourceItemPosition.getPublicData())
-                    .enabled(sourceItemPosition.isEnabled())
-                    .build();
-
-            targetItemPosition.touchCreate();
-            itemPositionRepository.save(targetItemPosition);
-            duplicatedCount++;
-        }
-
+        int duplicatedCount = itemPositionService.duplicateToWorld(sourceWorldId, targetWorldId);
         log.info("Duplicated {} item positions from world {} to {}",
                 duplicatedCount, sourceWorldId, targetWorldId);
     }

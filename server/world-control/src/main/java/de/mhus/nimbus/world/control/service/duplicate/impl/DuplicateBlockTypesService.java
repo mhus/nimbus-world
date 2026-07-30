@@ -1,13 +1,10 @@
 package de.mhus.nimbus.world.control.service.duplicate.impl;
 
 import de.mhus.nimbus.world.control.service.duplicate.DuplicateToWorld;
-import de.mhus.nimbus.world.shared.world.WBlockType;
-import de.mhus.nimbus.world.shared.world.WBlockTypeRepository;
+import de.mhus.nimbus.world.shared.world.WBlockTypeService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
 
 /**
  * Service to duplicate block types from source world to target world.
@@ -18,7 +15,7 @@ import java.util.List;
 @Slf4j
 public class DuplicateBlockTypesService implements DuplicateToWorld {
 
-    private final WBlockTypeRepository blockTypeRepository;
+    private final WBlockTypeService blockTypeService;
 
     @Override
     public String name() {
@@ -29,24 +26,7 @@ public class DuplicateBlockTypesService implements DuplicateToWorld {
     public void duplicate(String sourceWorldId, String targetWorldId) throws Exception {
         log.info("Duplicating block types from world {} to {}", sourceWorldId, targetWorldId);
 
-        List<WBlockType> sourceBlockTypes = blockTypeRepository.findByWorldId(sourceWorldId);
-        log.info("Found {} block types in source world {}", sourceBlockTypes.size(), sourceWorldId);
-
-        int duplicatedCount = 0;
-
-        for (WBlockType sourceBlockType : sourceBlockTypes) {
-            WBlockType targetBlockType = WBlockType.builder()
-                    .name(sourceBlockType.getName())
-                    .publicData(sourceBlockType.getPublicData())
-                    .worldId(targetWorldId)
-                    .enabled(sourceBlockType.isEnabled())
-                    .build();
-
-            targetBlockType.touchCreate();
-
-            blockTypeRepository.save(targetBlockType);
-            duplicatedCount++;
-        }
+        int duplicatedCount = blockTypeService.duplicateToWorld(sourceWorldId, targetWorldId);
 
         log.info("Duplicated {} block types from world {} to {}",
                 duplicatedCount, sourceWorldId, targetWorldId);

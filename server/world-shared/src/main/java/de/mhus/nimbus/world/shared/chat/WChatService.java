@@ -5,6 +5,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,9 +18,11 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -44,6 +49,7 @@ public class WChatService {
     private final de.mhus.nimbus.world.shared.client.WorldClientService worldClientService;
     private final StringRedisTemplate redis;
     private final WChatExecutorService chatExecutorService;
+    private final MongoTemplate mongoTemplate;
 
     private volatile Map<String, WChatAgent> globalAgentMap;
     private volatile long agentMapTimestamp;
@@ -58,7 +64,8 @@ public class WChatService {
                        com.fasterxml.jackson.databind.ObjectMapper objectMapper,
                        de.mhus.nimbus.world.shared.client.WorldClientService worldClientService,
                        StringRedisTemplate redis,
-                       @Lazy WChatExecutorService chatExecutorService) {
+                       @Lazy WChatExecutorService chatExecutorService,
+                       MongoTemplate mongoTemplate) {
         this.repository = repository;
         this.messageRepository = messageRepository;
         this.agentProviders = agentProviders;
@@ -67,6 +74,7 @@ public class WChatService {
         this.worldClientService = worldClientService;
         this.redis = redis;
         this.chatExecutorService = chatExecutorService;
+        this.mongoTemplate = mongoTemplate;
 
         log.info("WChatService initialized with {} agent providers, {} message processors",
                 agentProviders.size(), messageProcessors.size());
@@ -705,6 +713,39 @@ public class WChatService {
         var lookupWorld = worldId.toBaseWorldId();
         messageRepository.deleteByWorldIdAndChatId(lookupWorld.getId(), chatId);
         log.debug("Deleted all messages in chat: world={}, chatId={}", lookupWorld, chatId);
+    }
+
+    /**
+     * Delete ALL chat channels and messages of a world. Owner-level bulk
+     * operation so callers do not touch the WChat/WChatMessage collections
+     * directly (data ownership). The given worldId is used verbatim (no base
+     * normalization) to match the resource-cleanup contract.
+     *
+     * @param worldId World identifier (exact value)
+     * @return total number of deleted documents (messages + channels)
+     */
+    @Transactional
+    public int deleteByWorldId(String worldId) {
+        Query query = new Query(Criteria.where("worldId").is(worldId));
+        var messages = mongoTemplate.remove(query, WChatMessage.class);
+        var chats = mongoTemplate.remove(new Query(Criteria.where("worldId").is(worldId)), WChat.class);
+
+        log.info("Deleted chat for world {}: {} messages, {} channels",
+                worldId, messages.getDeletedCount(), chats.getDeletedCount());
+        return (int) (messages.getDeletedCount() + chats.getDeletedCount());
+    }
+
+    /**
+     * Distinct world IDs that have chat channels or messages (owner-level;
+     * avoids callers querying the WChat/WChatMessage collections directly).
+     *
+     * @return sorted list of distinct world IDs
+     */
+    public List<String> findDistinctWorldIds() {
+        Set<String> worldIds = new HashSet<>();
+        worldIds.addAll(mongoTemplate.findDistinct(new Query(), "worldId", WChat.class, String.class));
+        worldIds.addAll(mongoTemplate.findDistinct(new Query(), "worldId", WChatMessage.class, String.class));
+        return worldIds.stream().sorted().toList();
     }
 
     // ==================== Agent Management ====================

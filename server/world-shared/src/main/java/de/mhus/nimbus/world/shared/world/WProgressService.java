@@ -353,4 +353,33 @@ public class WProgressService {
         repository.deleteByWorldId(worldId);
         log.info("Deleted all progress for worldId={}", worldId);
     }
+
+    /**
+     * Delete all progress entries for a world and return the number of removed documents.
+     * Used by world-resource cleanup which needs the deleted count for reporting.
+     *
+     * @param worldId World identifier
+     * @return number of deleted progress entries
+     */
+    @Transactional
+    public int deleteAllByWorldId(String worldId) {
+        var result = mongoTemplate.remove(
+                new Query(Criteria.where("worldId").is(worldId)),
+                WProgress.class
+        );
+        long deleted = result.getDeletedCount();
+        log.info("Deleted {} progress entries for worldId={}", deleted, worldId);
+        return (int) deleted;
+    }
+
+    /**
+     * Return all distinct worldIds that have at least one progress entry.
+     * Used to enumerate worlds known to the progress subsystem.
+     *
+     * @return list of distinct worldIds
+     */
+    @Transactional(readOnly = true)
+    public List<String> findDistinctWorldIds() {
+        return mongoTemplate.findDistinct(new Query(), "worldId", WProgress.class, String.class);
+    }
 }

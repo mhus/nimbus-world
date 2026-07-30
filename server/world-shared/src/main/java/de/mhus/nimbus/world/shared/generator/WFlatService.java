@@ -2,9 +2,14 @@ package de.mhus.nimbus.world.shared.generator;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.bson.Document;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -17,7 +22,10 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class WFlatService {
 
+    private static final String COLLECTION_NAME = "w_flats";
+
     private final WFlatRepository wFlatRepository;
+    private final MongoTemplate mongoTemplate;
 
     /**
      * Create a new flat and persist it to database.
@@ -170,5 +178,73 @@ public class WFlatService {
     public void delete(String worldId, String flatId) {
         log.debug("Deleting flat: worldId={}, flatId={}", worldId, flatId);
         wFlatRepository.deleteByWorldIdAndFlatId(worldId, flatId);
+    }
+
+    /**
+     * Delete ALL flats of a world. Owner-level bulk operation so callers do not
+     * touch the WFlat collection directly (data ownership). WFlat stores all data
+     * (height maps, columns, extra blocks) inline in MongoDB, so there is no
+     * external storage to clean up.
+     *
+     * @param worldId World identifier
+     * @return number of deleted flats
+     */
+    @Transactional
+    public int deleteByWorldId(String worldId) {
+        log.info("Deleting flats for world {}", worldId);
+        var result = mongoTemplate.remove(
+                new Query(Criteria.where("worldId").is(worldId)),
+                WFlat.class
+        );
+        long deleted = result.getDeletedCount();
+        log.info("Deleted {} flats for world {}", deleted, worldId);
+        return (int) deleted;
+    }
+
+    /**
+     * Distinct world IDs that have flats (owner-level; avoids callers querying the
+     * WFlat collection directly).
+     *
+     * @return list of distinct world IDs
+     */
+    public List<String> findDistinctWorldIds() {
+        return mongoTemplate.findDistinct(new Query(), "worldId", WFlat.class, String.class);
+    }
+
+    /**
+     * Duplicate ALL flats of a source world to a target world. Owner-level bulk
+     * operation so callers do not touch the WFlat collection directly (data
+     * ownership). Uses raw Documents to preserve byte arrays (levels/columns) and
+     * nested structures (materials, groups, extraBlocks) exactly.
+     *
+     * @param sourceWorldId world id to copy flats from
+     * @param targetWorldId world id to copy flats to (must already exist)
+     * @return number of duplicated flats
+     */
+    @Transactional
+    public int duplicateToWorld(String sourceWorldId, String targetWorldId) {
+        log.info("Duplicating flats from world {} to {}", sourceWorldId, targetWorldId);
+
+        Query query = new Query(Criteria.where("worldId").is(sourceWorldId));
+        List<Document> sourceDocuments = mongoTemplate.find(query, Document.class, COLLECTION_NAME);
+        log.info("Found {} flats in source world {}", sourceDocuments.size(), sourceWorldId);
+
+        int duplicatedCount = 0;
+        Instant now = Instant.now();
+
+        for (Document source : sourceDocuments) {
+            Document target = new Document(source);
+            target.remove("_id");
+            target.put("worldId", targetWorldId);
+            target.put("createdAt", now);
+            target.put("updatedAt", now);
+
+            mongoTemplate.save(target, COLLECTION_NAME);
+            duplicatedCount++;
+        }
+
+        log.info("Duplicated {} flats from world {} to {}",
+                duplicatedCount, sourceWorldId, targetWorldId);
+        return duplicatedCount;
     }
 }

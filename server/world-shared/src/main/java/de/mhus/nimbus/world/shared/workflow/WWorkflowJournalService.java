@@ -6,6 +6,9 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,6 +32,7 @@ public class WWorkflowJournalService {
     private final WWorkflowRecordRepository repository;
     @Getter
     private final ObjectMapper objectMapper;
+    private final MongoTemplate mongoTemplate;
 
     /**
      * Get all journal entries for a specific workflow, sorted by creation time ascending.
@@ -143,6 +147,31 @@ public class WWorkflowJournalService {
                     repository.save(entry);
                     log.debug("Migrated journal entry id={} to new worldId={}", entry.getId(), newWorldId);
                 });
+    }
+
+    /**
+     * Delete all workflow journal records belonging to a world. Owner-level bulk
+     * operation so callers do not touch the WWorkflowJournalRecord collection /
+     * MongoTemplate directly (data ownership).
+     *
+     * @param worldId World identifier
+     * @return number of deleted journal records
+     */
+    @Transactional
+    public int deleteByWorldId(String worldId) {
+        Query query = new Query(Criteria.where("worldId").is(worldId));
+        var result = mongoTemplate.remove(query, WWorkflowJournalRecord.class);
+        long deleted = result.getDeletedCount();
+        log.info("Deleted {} workflow journal records for world {}", deleted, worldId);
+        return (int) deleted;
+    }
+
+    /**
+     * Distinct world IDs that have workflow journal records (owner-level; avoids
+     * callers querying the WWorkflowJournalRecord collection directly).
+     */
+    public List<String> findDistinctWorldIds() {
+        return mongoTemplate.findDistinct(new Query(), "worldId", WWorkflowJournalRecord.class, String.class);
     }
 
     public void compact(String worldId, String workflowId, int maxSize, String type) {

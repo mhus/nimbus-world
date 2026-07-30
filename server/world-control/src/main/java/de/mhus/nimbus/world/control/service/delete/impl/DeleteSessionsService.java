@@ -1,13 +1,10 @@
 package de.mhus.nimbus.world.control.service.delete.impl;
 
 import de.mhus.nimbus.world.control.service.delete.DeleteWorldResources;
-import de.mhus.nimbus.world.shared.session.WPlayerSession;
-import de.mhus.nimbus.world.shared.world.WWorldInstance;
+import de.mhus.nimbus.world.shared.session.WPlayerSessionService;
+import de.mhus.nimbus.world.shared.world.WWorldInstanceService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 
 import java.util.HashSet;
@@ -22,7 +19,8 @@ import java.util.Set;
 @Slf4j
 public class DeleteSessionsService implements DeleteWorldResources {
 
-    private final MongoTemplate mongoTemplate;
+    private final WPlayerSessionService playerSessionService;
+    private final WWorldInstanceService worldInstanceService;
 
     @Override
     public String name() {
@@ -32,20 +30,19 @@ public class DeleteSessionsService implements DeleteWorldResources {
     @Override
     public void deleteWorldResources(String worldId) throws Exception {
         log.info("Deleting sessions for world {}", worldId);
-        Query query = new Query(Criteria.where("worldId").is(worldId));
 
-        var playerSessions = mongoTemplate.remove(query, WPlayerSession.class);
-        var worldInstances = mongoTemplate.remove(new Query(Criteria.where("worldId").is(worldId)), WWorldInstance.class);
+        int playerSessions = playerSessionService.deleteByWorldId(worldId);
+        int worldInstances = worldInstanceService.deleteByWorldId(worldId);
 
         log.info("Deleted sessions for world {}: {} player sessions, {} world instances",
-                worldId, playerSessions.getDeletedCount(), worldInstances.getDeletedCount());
+                worldId, playerSessions, worldInstances);
     }
 
     @Override
     public List<String> getKnownWorldIds() throws Exception {
         Set<String> worldIds = new HashSet<>();
-        worldIds.addAll(mongoTemplate.findDistinct(new Query(), "worldId", WPlayerSession.class, String.class));
-        worldIds.addAll(mongoTemplate.findDistinct(new Query(), "worldId", WWorldInstance.class, String.class));
+        worldIds.addAll(playerSessionService.findDistinctWorldIds());
+        worldIds.addAll(worldInstanceService.findDistinctWorldIds());
         return worldIds.stream().sorted().toList();
     }
 }

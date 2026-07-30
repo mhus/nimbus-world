@@ -1,12 +1,9 @@
 package de.mhus.nimbus.world.control.service.delete.impl;
 
 import de.mhus.nimbus.world.control.service.delete.DeleteWorldResources;
-import de.mhus.nimbus.world.shared.world.WBackdrop;
+import de.mhus.nimbus.world.shared.world.WBackdropService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -16,7 +13,7 @@ import java.util.List;
 @Slf4j
 public class DeleteBackdropsService implements DeleteWorldResources {
 
-    private final MongoTemplate mongoTemplate;
+    private final WBackdropService backdropService;
 
     @Override
     public String name() {
@@ -26,15 +23,12 @@ public class DeleteBackdropsService implements DeleteWorldResources {
     @Override
     public void deleteWorldResources(String worldId) throws Exception {
         log.info("Deleting backdrops for world {}", worldId);
-        var result = mongoTemplate.remove(
-                new Query(Criteria.where("worldId").is(worldId)),
-                WBackdrop.class
-        );
-        log.info("Deleted {} backdrops for world {}", result.getDeletedCount(), worldId);
+        int deleted = backdropService.deleteByWorldId(worldId);
+        log.info("Deleted {} backdrops for world {}", deleted, worldId);
     }
 
     @Override
     public List<String> getKnownWorldIds() throws Exception {
-        return mongoTemplate.findDistinct(new Query(), "worldId", WBackdrop.class, String.class);
+        return backdropService.findDistinctWorldIds();
     }
 }

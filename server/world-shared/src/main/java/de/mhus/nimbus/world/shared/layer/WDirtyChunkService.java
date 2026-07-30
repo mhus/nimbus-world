@@ -156,6 +156,33 @@ public class WDirtyChunkService {
         return dirtyChunkRepository.countByWorldId(worldId);
     }
 
+    /**
+     * Delete ALL dirty chunk markers of a world. Owner-level bulk operation so
+     * callers do not query the WDirtyChunk collection directly (data ownership).
+     *
+     * @param worldId World identifier
+     * @return number of deleted dirty chunk markers
+     */
+    @Transactional
+    public long deleteByWorldId(String worldId) {
+        long deleted = mongoTemplate.remove(
+                new Query(Criteria.where("worldId").is(worldId)), WDirtyChunk.class).getDeletedCount();
+        log.info("Deleted {} dirty chunks for world {}", deleted, worldId);
+        return deleted;
+    }
+
+    /**
+     * Distinct world IDs that have dirty chunks (owner-level; avoids callers
+     * querying the WDirtyChunk collection directly). Alias for
+     * {@link #getWorldIdsWithDirtyChunks()} following the shared naming convention.
+     *
+     * @return List of world IDs with dirty chunks
+     */
+    @Transactional(readOnly = true)
+    public List<String> findDistinctWorldIds() {
+        return dirtyChunkRepository.findDistinctWorldIds();
+    }
+
     public Set<String> markHexGridDirty(WWorld world, WHexGrid hexGrid, String reason) {
         // Get all affected chunk keys
         java.util.Set<String> affectedChunks = hexGrid.getAffectedChunkKeys(world);

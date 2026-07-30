@@ -490,6 +490,30 @@ public class WJobService {
     }
 
     /**
+     * Delete all jobs belonging to a world. Owner-level bulk operation so callers
+     * do not touch the WJob collection / MongoTemplate directly (data ownership).
+     *
+     * @param worldId World identifier
+     * @return number of deleted jobs
+     */
+    @Transactional
+    public int deleteByWorldId(String worldId) {
+        Query query = new Query(Criteria.where("worldId").is(worldId));
+        var result = mongoTemplate.remove(query, WJob.class);
+        long deleted = result.getDeletedCount();
+        log.info("Deleted {} jobs for world {}", deleted, worldId);
+        return (int) deleted;
+    }
+
+    /**
+     * Distinct world IDs that have jobs (owner-level; avoids callers querying the
+     * WJob collection directly).
+     */
+    public List<String> findDistinctWorldIds() {
+        return mongoTemplate.findDistinct(new Query(), "worldId", WJob.class, String.class);
+    }
+
+    /**
      * Atomically migrate a job to a different world.
      * Only updates if the job currently belongs to the specified worldId.
      */

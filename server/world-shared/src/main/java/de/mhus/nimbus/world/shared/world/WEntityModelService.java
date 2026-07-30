@@ -4,6 +4,8 @@ import de.mhus.nimbus.generated.types.EntityModel;
 import de.mhus.nimbus.shared.types.WorldId;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,6 +25,7 @@ import java.util.function.Consumer;
 public class WEntityModelService {
 
     private final WEntityModelRepository repository;
+    private final MongoTemplate mongoTemplate;
 
     /**
      * Find entity model by modelId.
@@ -207,6 +210,64 @@ public class WEntityModelService {
                     return (modelId != null && modelId.toLowerCase().contains(lowerQuery));
                 })
                 .collect(java.util.stream.Collectors.toList());
+    }
+
+    /**
+     * Delete ALL entity models stored directly under the given raw world id and
+     * return the number of deleted documents. Owner-level bulk operation so callers
+     * do not touch the WEntityModel repository directly (data ownership).
+     *
+     * @param worldId the raw world id whose entity models should be deleted
+     * @return number of deleted entity models
+     */
+    @Transactional
+    public int deleteAllByWorldId(String worldId) {
+        List<WEntityModel> models = repository.findByWorldId(worldId);
+        repository.deleteAll(models);
+        log.info("Deleted {} entity models for world {}", models.size(), worldId);
+        return models.size();
+    }
+
+    /**
+     * Distinct world IDs that have entity models (owner-level; avoids callers
+     * querying the WEntityModel collection directly).
+     */
+    public List<String> findDistinctWorldIds() {
+        return mongoTemplate.findDistinct(new Query(), "worldId", WEntityModel.class, String.class);
+    }
+
+    /**
+     * Duplicate ALL entity models stored directly under the source world id to the
+     * target world id. Owner-level bulk operation so callers do not touch the
+     * WEntityModel repository directly (data ownership). Each copy carries the same
+     * name, public data and enabled flag as the source.
+     *
+     * @param sourceWorldId world id to copy entity models from
+     * @param targetWorldId world id to copy entity models to (must already exist)
+     * @return number of duplicated entity models
+     */
+    @Transactional
+    public int duplicateToWorld(String sourceWorldId, String targetWorldId) {
+        List<WEntityModel> sourceModels = repository.findByWorldId(sourceWorldId);
+        log.info("Found {} entity models in source world {}", sourceModels.size(), sourceWorldId);
+
+        int modelCount = 0;
+        for (WEntityModel sourceModel : sourceModels) {
+            WEntityModel targetModel = WEntityModel.builder()
+                    .name(sourceModel.getName())
+                    .publicData(sourceModel.getPublicData())
+                    .worldId(targetWorldId)
+                    .enabled(sourceModel.isEnabled())
+                    .build();
+
+            targetModel.touchCreate();
+            repository.save(targetModel);
+            modelCount++;
+        }
+
+        log.info("Duplicated {} entity models from world {} to {}",
+                modelCount, sourceWorldId, targetWorldId);
+        return modelCount;
     }
 
 }

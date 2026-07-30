@@ -564,4 +564,72 @@ public class WChestService {
         repository.deleteByWorldId(worldId);
         log.info("Deleted all chests for worldId={}", worldId);
     }
+
+    // ===== Bulk operations for world resource management (delete / duplicate) =====
+
+    /**
+     * Delete all chests belonging to the given worldId and return the number of deleted documents.
+     * Used by world resource deletion. Operates directly on the chest collection (no COW resolution).
+     *
+     * @param worldId the world whose chests are removed
+     * @return the number of deleted chest documents
+     */
+    @Transactional
+    public long deleteAllByWorldId(String worldId) {
+        var result = mongoTemplate.remove(
+                new Query(Criteria.where("worldId").is(worldId)),
+                WChest.class
+        );
+        log.info("Deleted {} chests for world {}", result.getDeletedCount(), worldId);
+        return result.getDeletedCount();
+    }
+
+    /**
+     * Return all distinct worldIds that currently have at least one chest document.
+     * Used to enumerate worlds known to the chest subsystem.
+     */
+    @Transactional(readOnly = true)
+    public List<String> findDistinctWorldIds() {
+        return mongoTemplate.findDistinct(new Query(), "worldId", WChest.class, String.class);
+    }
+
+    /**
+     * Duplicate all chests from a source world into a target world.
+     * Creates independent copies (new documents with deep-copied item lists) in the target world.
+     * Operates directly on the chest collection (no COW resolution) to mirror a raw world copy.
+     *
+     * @param sourceWorldId the world to copy chests from
+     * @param targetWorldId the world to copy chests into
+     * @return the number of duplicated chests
+     */
+    @Transactional
+    public int duplicateToWorld(String sourceWorldId, String targetWorldId) {
+        List<WChest> sourceChests = repository.findByWorldId(sourceWorldId);
+        log.info("Found {} chests in source world {}", sourceChests.size(), sourceWorldId);
+
+        int duplicatedCount = 0;
+        for (WChest source : sourceChests) {
+            WChest target = WChest.builder()
+                    .worldId(targetWorldId)
+                    .name(source.getName())
+                    .title(source.getTitle())
+                    .description(source.getDescription())
+                    .playerId(source.getPlayerId())
+                    .type(source.getType())
+                    .pin(source.getPin())
+                    .capacity(source.getCapacity())
+                    .keyId(source.getKeyId())
+                    .lockPickingDifficulty(source.getLockPickingDifficulty())
+                    .items(source.getItems() != null ? new ArrayList<>(source.getItems()) : new ArrayList<>())
+                    .enabled(source.isEnabled())
+                    .build();
+            target.touchCreate();
+            repository.save(target);
+            duplicatedCount++;
+        }
+
+        log.info("Duplicated {} chests from world {} to {}",
+                duplicatedCount, sourceWorldId, targetWorldId);
+        return duplicatedCount;
+    }
 }

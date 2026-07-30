@@ -81,6 +81,81 @@ public class WTraderService {
         log.info("Deleted all traders for worldId={}", worldId);
     }
 
+    /**
+     * Delete all traders belonging to the given world and return the number of removed documents.
+     *
+     * @param worldId the world whose traders should be removed
+     * @return number of deleted trader documents
+     */
+    @Transactional
+    public int deleteAllByWorldId(String worldId) {
+        var result = mongoTemplate.remove(
+                new Query(Criteria.where("worldId").is(worldId)),
+                WTrader.class
+        );
+        long deleted = result.getDeletedCount();
+        log.info("Deleted {} traders for worldId={}", deleted, worldId);
+        return (int) deleted;
+    }
+
+    /**
+     * Return the distinct worldIds that currently have traders stored.
+     *
+     * @return distinct worldIds
+     */
+    @Transactional(readOnly = true)
+    public List<String> findDistinctWorldIds() {
+        return mongoTemplate.findDistinct(new Query(), "worldId", WTrader.class, String.class);
+    }
+
+    /**
+     * Duplicate all traders from the source world to the target world.
+     * Each trader is copied field-by-field with the target worldId and a fresh creation timestamp.
+     * The target world must already exist.
+     *
+     * @param sourceWorldId world to copy from
+     * @param targetWorldId world to copy to
+     * @return number of duplicated traders
+     */
+    @Transactional
+    public int duplicateToWorld(String sourceWorldId, String targetWorldId) {
+        List<WTrader> sourceTraders = repository.findByWorldId(sourceWorldId);
+        log.info("Found {} traders in source world {}", sourceTraders.size(), sourceWorldId);
+
+        int duplicatedCount = 0;
+
+        for (WTrader source : sourceTraders) {
+            WTrader target = WTrader.builder()
+                    .worldId(targetWorldId)
+                    .entityId(source.getEntityId())
+                    .traderType(source.getTraderType())
+                    .categories(source.getCategories() != null ? new ArrayList<>(source.getCategories()) : new ArrayList<>())
+                    .personalityModifier(source.getPersonalityModifier())
+                    .silverAmount(source.getSilverAmount())
+                    .chestId(source.getChestId())
+                    .poolChestId(source.getPoolChestId())
+                    .questItems(source.getQuestItems() != null ? new ArrayList<>(source.getQuestItems()) : new ArrayList<>())
+                    .maxDisplayItems(source.getMaxDisplayItems())
+                    .goldExchangeRate(source.getGoldExchangeRate())
+                    .trainableSkills(source.getTrainableSkills() != null ? new ArrayList<>(source.getTrainableSkills()) : new ArrayList<>())
+                    .maxSkillPoints(source.getMaxSkillPoints())
+                    .costPerSkillPoint(source.getCostPerSkillPoint())
+                    .repairTypes(source.getRepairTypes() != null ? new ArrayList<>(source.getRepairTypes()) : new ArrayList<>())
+                    .repairCostPerPoint(source.getRepairCostPerPoint())
+                    .poolSyncIntervalSeconds(source.getPoolSyncIntervalSeconds())
+                    .enabled(source.isEnabled())
+                    .build();
+
+            target.touchCreate();
+            repository.save(target);
+            duplicatedCount++;
+        }
+
+        log.info("Duplicated {} traders from world {} to {}",
+                duplicatedCount, sourceWorldId, targetWorldId);
+        return duplicatedCount;
+    }
+
     // ===== Atomic silver operations =====
 
     /**

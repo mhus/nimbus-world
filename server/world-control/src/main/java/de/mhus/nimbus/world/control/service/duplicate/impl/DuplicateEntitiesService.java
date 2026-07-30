@@ -1,15 +1,11 @@
 package de.mhus.nimbus.world.control.service.duplicate.impl;
 
 import de.mhus.nimbus.world.control.service.duplicate.DuplicateToWorld;
-import de.mhus.nimbus.world.shared.world.WEntity;
-import de.mhus.nimbus.world.shared.world.WEntityModel;
-import de.mhus.nimbus.world.shared.world.WEntityModelRepository;
-import de.mhus.nimbus.world.shared.world.WEntityRepository;
+import de.mhus.nimbus.world.shared.world.WEntityModelService;
+import de.mhus.nimbus.world.shared.world.WEntityService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
 
 /**
  * Service to duplicate entities from source world to target world.
@@ -20,8 +16,8 @@ import java.util.List;
 @Slf4j
 public class DuplicateEntitiesService implements DuplicateToWorld {
 
-    private final WEntityRepository entityRepository;
-    private final WEntityModelRepository entityModelRepository;
+    private final WEntityService entityService;
+    private final WEntityModelService entityModelService;
 
     @Override
     public String name() {
@@ -33,48 +29,10 @@ public class DuplicateEntitiesService implements DuplicateToWorld {
         log.info("Duplicating entities from world {} to {}", sourceWorldId, targetWorldId);
 
         // Duplicate entity models first
-        List<WEntityModel> sourceModels = entityModelRepository.findByWorldId(sourceWorldId);
-        log.info("Found {} entity models in source world {}", sourceModels.size(), sourceWorldId);
-
-        int modelCount = 0;
-        for (WEntityModel sourceModel : sourceModels) {
-            WEntityModel targetModel = WEntityModel.builder()
-                    .name(sourceModel.getName())
-                    .publicData(sourceModel.getPublicData())
-                    .worldId(targetWorldId)
-                    .enabled(sourceModel.isEnabled())
-                    .build();
-
-            targetModel.touchCreate();
-            entityModelRepository.save(targetModel);
-            modelCount++;
-        }
+        int modelCount = entityModelService.duplicateToWorld(sourceWorldId, targetWorldId);
 
         // Duplicate entity instances
-        List<WEntity> sourceEntities = entityRepository.findByWorldId(sourceWorldId);
-        log.info("Found {} entity instances in source world {}", sourceEntities.size(), sourceWorldId);
-
-        int entityCount = 0;
-        for (WEntity sourceEntity : sourceEntities) {
-            WEntity targetEntity = WEntity.builder()
-                    .worldId(targetWorldId)
-                    .name(sourceEntity.getName())
-                    .publicData(sourceEntity.getPublicData())
-                    .chunks(sourceEntity.getChunks())
-                    .modelId(sourceEntity.getModelId())
-                    .position(sourceEntity.getPosition())
-                    .rotation(sourceEntity.getRotation())
-                    .middlePoint(sourceEntity.getMiddlePoint())
-                    .speed(sourceEntity.getSpeed())
-                    .behaviorModel(sourceEntity.getBehaviorModel())
-                    .behaviorConfig(sourceEntity.getBehaviorConfig())
-                    .enabled(sourceEntity.isEnabled())
-                    .build();
-
-            targetEntity.touchCreate();
-            entityRepository.save(targetEntity);
-            entityCount++;
-        }
+        int entityCount = entityService.duplicateToWorld(sourceWorldId, targetWorldId);
 
         log.info("Duplicated {} entity models and {} entity instances from world {} to {}",
                 modelCount, entityCount, sourceWorldId, targetWorldId);

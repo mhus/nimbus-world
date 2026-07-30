@@ -4,6 +4,9 @@ import de.mhus.nimbus.generated.types.Rotation;
 import de.mhus.nimbus.generated.types.Vector3;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,6 +24,7 @@ import java.util.Optional;
 public class WPlayerSessionService {
 
     private final WPlayerSessionRepository repository;
+    private final MongoTemplate mongoTemplate;
 
     /**
      * Normalize playerId to ensure it always starts with '@'.
@@ -316,5 +320,32 @@ public class WPlayerSessionService {
             log.debug("No gameplay data to merge: oldWorldId={}, newWorldId={}, playerId={}",
                     oldSession.getWorldId(), newSession.getWorldId(), newSession.getPlayerId());
         }
+    }
+
+    /**
+     * Delete all player sessions belonging to a specific worldId.
+     * Bulk operation used for world resource cleanup.
+     *
+     * @param worldId The full worldId (including instance)
+     * @return Number of deleted player sessions
+     */
+    @Transactional
+    public int deleteByWorldId(String worldId) {
+        Query query = new Query(Criteria.where("worldId").is(worldId));
+        var result = mongoTemplate.remove(query, WPlayerSession.class);
+        long deleted = result.getDeletedCount();
+        log.info("Deleted {} player sessions for world {}", deleted, worldId);
+        return (int) deleted;
+    }
+
+    /**
+     * Find all distinct worldIds that have at least one player session.
+     * Used to enumerate worlds with known player-session resources.
+     *
+     * @return List of distinct worldIds
+     */
+    @Transactional(readOnly = true)
+    public List<String> findDistinctWorldIds() {
+        return mongoTemplate.findDistinct(new Query(), "worldId", WPlayerSession.class, String.class);
     }
 }

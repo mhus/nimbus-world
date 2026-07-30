@@ -4,6 +4,9 @@ import de.mhus.nimbus.shared.types.WorldId;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,6 +24,7 @@ import java.util.stream.Collectors;
 public class WDocumentService {
 
     private final WDocumentRepository repository;
+    private final MongoTemplate mongoTemplate;
 
     /**
      * Find document by documentId.
@@ -338,5 +342,74 @@ public class WDocumentService {
         return lookupDocuments(worldId, collection).stream()
                 .map(WDocumentMetadata::fromDocument)
                 .collect(Collectors.toList());
+    }
+
+    // ========== Bulk World Operations (data ownership) ==========
+
+    /**
+     * Delete ALL documents of a world (identified by its raw worldId string,
+     * which may also be a collection id). Owner-level bulk operation so callers
+     * do not query the WDocument collection directly (data ownership).
+     *
+     * @return number of deleted documents
+     */
+    @Transactional
+    public int deleteAllByWorldId(String worldId) {
+        var result = mongoTemplate.remove(
+                new Query(Criteria.where("worldId").is(worldId)),
+                WDocument.class
+        );
+        log.info("Deleted {} documents for world {}", result.getDeletedCount(), worldId);
+        return (int) result.getDeletedCount();
+    }
+
+    /**
+     * Distinct world IDs that have documents (owner-level; avoids callers
+     * querying the WDocument collection directly).
+     */
+    public List<String> findDistinctWorldIds() {
+        return mongoTemplate.findDistinct(new Query(), "worldId", WDocument.class, String.class);
+    }
+
+    /**
+     * Duplicate ALL documents from a source world to a target world. Copies each
+     * document as a new entity (fresh create timestamps) preserving all business
+     * fields. Owner-level bulk operation so callers do not touch the WDocument
+     * repository directly (data ownership).
+     *
+     * @return number of duplicated documents
+     */
+    @Transactional
+    public int duplicateToWorld(String sourceWorldId, String targetWorldId) {
+        List<WDocument> sourceDocuments = repository.findByWorldId(sourceWorldId);
+        log.info("Found {} documents in source world {}", sourceDocuments.size(), sourceWorldId);
+
+        List<WDocument> targets = new ArrayList<>();
+        for (WDocument source : sourceDocuments) {
+            WDocument target = WDocument.builder()
+                    .worldId(targetWorldId)
+                    .collection(source.getCollection())
+                    .documentId(source.getDocumentId())
+                    .name(source.getName())
+                    .title(source.getTitle())
+                    .language(source.getLanguage())
+                    .format(source.getFormat())
+                    .content(source.getContent())
+                    .summary(source.getSummary())
+                    .metadata(source.getMetadata() != null ? new HashMap<>(source.getMetadata()) : null)
+                    .parentDocumentId(source.getParentDocumentId())
+                    .isMain(source.isMain())
+                    .readOnly(source.isReadOnly())
+                    .hash(source.getHash())
+                    .type(source.getType())
+                    .childType(source.getChildType())
+                    .build();
+            target.touchCreate();
+            targets.add(target);
+        }
+
+        repository.saveAll(targets);
+        log.info("Duplicated {} documents from world {} to {}", targets.size(), sourceWorldId, targetWorldId);
+        return targets.size();
     }
 }

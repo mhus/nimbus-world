@@ -448,6 +448,33 @@ public class WWorldInstanceService {
     }
 
     /**
+     * Delete all world instances belonging to a specific worldId.
+     * Bulk operation used for world resource cleanup.
+     *
+     * @param worldId The base worldId
+     * @return Number of deleted world instances
+     */
+    @Transactional
+    public int deleteByWorldId(String worldId) {
+        Query query = new Query(Criteria.where("worldId").is(worldId));
+        var result = mongoTemplate.remove(query, WWorldInstance.class);
+        long deleted = result.getDeletedCount();
+        log.info("Deleted {} world instances for world {}", deleted, worldId);
+        return (int) deleted;
+    }
+
+    /**
+     * Find all distinct worldIds that have at least one world instance.
+     * Used to enumerate worlds with known instance resources.
+     *
+     * @return List of distinct worldIds
+     */
+    @Transactional(readOnly = true)
+    public List<String> findDistinctWorldIds() {
+        return mongoTemplate.findDistinct(new Query(), "worldId", WWorldInstance.class, String.class);
+    }
+
+    /**
      * Count instances by worldId.
      *
      * @param worldId The worldId

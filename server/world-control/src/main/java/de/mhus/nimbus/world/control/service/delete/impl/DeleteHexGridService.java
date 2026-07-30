@@ -1,12 +1,9 @@
 package de.mhus.nimbus.world.control.service.delete.impl;
 
 import de.mhus.nimbus.world.control.service.delete.DeleteWorldResources;
-import de.mhus.nimbus.world.shared.world.WHexGrid;
-import de.mhus.nimbus.world.shared.world.WHexGridRepository;
+import de.mhus.nimbus.world.shared.world.WHexGridService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -20,8 +17,7 @@ import java.util.List;
 @Slf4j
 public class DeleteHexGridService implements DeleteWorldResources {
 
-    private final WHexGridRepository hexGridRepository;
-    private final MongoTemplate mongoTemplate;
+    private final WHexGridService hexGridService;
 
     @Override
     public String name() {
@@ -32,21 +28,13 @@ public class DeleteHexGridService implements DeleteWorldResources {
     public void deleteWorldResources(String worldId) throws Exception {
         log.info("Deleting hex grids for world {}", worldId);
 
-        List<WHexGrid> hexGrids = hexGridRepository.findByWorldId(worldId);
-        log.info("Found {} hex grids in world {}", hexGrids.size(), worldId);
+        int deleted = hexGridService.deleteAllByWorldId(worldId);
 
-        hexGridRepository.deleteAll(hexGrids);
-
-        log.info("Deleted {} hex grids for world {}", hexGrids.size(), worldId);
+        log.info("Deleted {} hex grids for world {}", deleted, worldId);
     }
 
     @Override
     public List<String> getKnownWorldIds() throws Exception {
-        return mongoTemplate.findDistinct(
-                new Query(),
-                "worldId",
-                WHexGrid.class,
-                String.class
-        );
+        return hexGridService.findDistinctWorldIds();
     }
 }

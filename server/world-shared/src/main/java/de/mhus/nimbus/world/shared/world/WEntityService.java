@@ -6,6 +6,8 @@ import de.mhus.nimbus.shared.types.WorldId;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,6 +29,7 @@ public class WEntityService {
 
     private final WEntityRepository repository;
     private final WWorldService worldService;
+    private final MongoTemplate mongoTemplate;
 
     // EPOCH-UNFILTERED: returns data across all epochs. Use the epoch-filtered overload for player/gameplay context.
     /**
@@ -401,6 +404,72 @@ public class WEntityService {
     public void deleteByWorldId(String worldId) {
         repository.deleteByWorldId(worldId);
         log.info("Deleted all entities for worldId={}", worldId);
+    }
+
+    /**
+     * Delete ALL entity instances of a world and return the number of deleted
+     * documents. Owner-level bulk operation so callers do not touch the WEntity
+     * repository directly (data ownership).
+     *
+     * @param worldId the raw world id whose entity instances should be deleted
+     * @return number of deleted entity instances
+     */
+    @Transactional
+    public int deleteAllByWorldId(String worldId) {
+        List<WEntity> entities = repository.findByWorldId(worldId);
+        repository.deleteAll(entities);
+        log.info("Deleted {} entity instances for world {}", entities.size(), worldId);
+        return entities.size();
+    }
+
+    /**
+     * Distinct world IDs that have entity instances (owner-level; avoids callers
+     * querying the WEntity collection directly).
+     */
+    public List<String> findDistinctWorldIds() {
+        return mongoTemplate.findDistinct(new Query(), "worldId", WEntity.class, String.class);
+    }
+
+    /**
+     * Duplicate ALL entity instances of a source world to a target world. Owner-level
+     * bulk operation so callers do not touch the WEntity repository directly
+     * (data ownership). Each copy carries the same public data, chunks, model,
+     * position, rotation, behavior and enabled flag as the source.
+     *
+     * @param sourceWorldId world id to copy entity instances from
+     * @param targetWorldId world id to copy entity instances to (must already exist)
+     * @return number of duplicated entity instances
+     */
+    @Transactional
+    public int duplicateToWorld(String sourceWorldId, String targetWorldId) {
+        List<WEntity> sourceEntities = repository.findByWorldId(sourceWorldId);
+        log.info("Found {} entity instances in source world {}", sourceEntities.size(), sourceWorldId);
+
+        int entityCount = 0;
+        for (WEntity sourceEntity : sourceEntities) {
+            WEntity targetEntity = WEntity.builder()
+                    .worldId(targetWorldId)
+                    .name(sourceEntity.getName())
+                    .publicData(sourceEntity.getPublicData())
+                    .chunks(sourceEntity.getChunks())
+                    .modelId(sourceEntity.getModelId())
+                    .position(sourceEntity.getPosition())
+                    .rotation(sourceEntity.getRotation())
+                    .middlePoint(sourceEntity.getMiddlePoint())
+                    .speed(sourceEntity.getSpeed())
+                    .behaviorModel(sourceEntity.getBehaviorModel())
+                    .behaviorConfig(sourceEntity.getBehaviorConfig())
+                    .enabled(sourceEntity.isEnabled())
+                    .build();
+
+            targetEntity.touchCreate();
+            repository.save(targetEntity);
+            entityCount++;
+        }
+
+        log.info("Duplicated {} entity instances from world {} to {}",
+                entityCount, sourceWorldId, targetWorldId);
+        return entityCount;
     }
 
 }

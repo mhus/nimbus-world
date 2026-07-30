@@ -5,6 +5,8 @@ import de.mhus.nimbus.shared.types.WorldId;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,6 +26,7 @@ import java.util.stream.Collectors;
 public class WBlockTypeService {
 
     private final WBlockTypeRepository repository;
+    private final MongoTemplate mongoTemplate;
 
     /**
      * Find block type by blockId.
@@ -310,6 +313,61 @@ public class WBlockTypeService {
                                     publicData.getType().name().toLowerCase().contains(lowerQuery));
                 })
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * Delete ALL block types stored under the given (raw) worldId collection.
+     * Owner-level bulk operation so callers do not touch the WBlockType
+     * repository directly (data ownership). Block types have no external
+     * storage or sub-collections, so only the entities themselves are removed.
+     *
+     * @param worldId the raw world/collection id as stored on the entities
+     * @return number of deleted block types
+     */
+    @Transactional
+    public int deleteAllByWorldId(String worldId) {
+        List<WBlockType> blockTypes = repository.findByWorldId(worldId);
+        repository.deleteAll(blockTypes);
+        log.info("Deleted {} block types for world {}", blockTypes.size(), worldId);
+        return blockTypes.size();
+    }
+
+    /**
+     * Distinct world IDs that have block types (owner-level; avoids callers
+     * querying the WBlockType collection directly).
+     */
+    public List<String> findDistinctWorldIds() {
+        return mongoTemplate.findDistinct(new Query(), "worldId", WBlockType.class, String.class);
+    }
+
+    /**
+     * Duplicate ALL block types from a source (raw) worldId collection into a
+     * target world. Owner-level bulk operation preserving the exact copy
+     * semantics: name, publicData and enabled flag are carried over, a fresh
+     * create-timestamp is set on the target entity.
+     *
+     * @param sourceWorldId the raw source world/collection id
+     * @param targetWorldId the raw target world/collection id
+     * @return number of duplicated block types
+     */
+    @Transactional
+    public int duplicateToWorld(String sourceWorldId, String targetWorldId) {
+        List<WBlockType> sourceBlockTypes = repository.findByWorldId(sourceWorldId);
+        int duplicatedCount = 0;
+        for (WBlockType sourceBlockType : sourceBlockTypes) {
+            WBlockType targetBlockType = WBlockType.builder()
+                    .name(sourceBlockType.getName())
+                    .publicData(sourceBlockType.getPublicData())
+                    .worldId(targetWorldId)
+                    .enabled(sourceBlockType.isEnabled())
+                    .build();
+            targetBlockType.touchCreate();
+            repository.save(targetBlockType);
+            duplicatedCount++;
+        }
+        log.info("Duplicated {} block types from world {} to {}",
+                duplicatedCount, sourceWorldId, targetWorldId);
+        return duplicatedCount;
     }
 
 }

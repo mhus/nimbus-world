@@ -3,10 +3,14 @@ package de.mhus.nimbus.world.shared.world;
 import de.mhus.nimbus.shared.types.WorldId;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.bson.Document;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -191,5 +195,69 @@ public class WAnythingService {
         return collections.stream()
                 .sorted()
                 .toList();
+    }
+
+    /**
+     * Delete ALL WAnything entities of a world. Owner-level bulk operation so
+     * callers do not access the WAnything collection directly (data ownership).
+     * <p>
+     * Matches the raw worldId exactly (no base-world normalization) to preserve
+     * the previous caller semantics.
+     *
+     * @return number of deleted entities
+     */
+    @Transactional
+    public int deleteAllByWorldId(String worldId) {
+        var result = mongoTemplate.remove(
+                new Query(Criteria.where("worldId").is(worldId)),
+                WAnything.class
+        );
+        long deleted = result.getDeletedCount();
+        log.info("Deleted {} anythings for world {}", deleted, worldId);
+        return (int) deleted;
+    }
+
+    /**
+     * Distinct world IDs that have WAnything entities (owner-level; avoids
+     * callers querying the WAnything collection directly).
+     */
+    @Transactional(readOnly = true)
+    public List<String> findDistinctWorldIds() {
+        return mongoTemplate.findDistinct(new Query(), "worldId", WAnything.class, String.class);
+    }
+
+    /**
+     * Duplicate all WAnything entities from a source world to a target world.
+     * <p>
+     * Uses raw MongoDB Documents to preserve the dynamic {@code data} field
+     * structure exactly. New copies get a fresh id and updated timestamps.
+     *
+     * @return number of duplicated entities
+     */
+    @Transactional
+    public int duplicateToWorld(String sourceWorldId, String targetWorldId) {
+        String collectionName = mongoTemplate.getCollectionName(WAnything.class);
+
+        Query query = new Query(Criteria.where("worldId").is(sourceWorldId));
+        List<Document> sourceDocuments = mongoTemplate.find(query, Document.class, collectionName);
+        log.info("Found {} anythings in source world {}", sourceDocuments.size(), sourceWorldId);
+
+        int duplicatedCount = 0;
+        Instant now = Instant.now();
+
+        for (Document source : sourceDocuments) {
+            Document target = new Document(source);
+            target.remove("_id");
+            target.put("worldId", targetWorldId);
+            target.put("createdAt", now);
+            target.put("updatedAt", now);
+
+            mongoTemplate.save(target, collectionName);
+            duplicatedCount++;
+        }
+
+        log.info("Duplicated {} anythings from world {} to {}",
+                duplicatedCount, sourceWorldId, targetWorldId);
+        return duplicatedCount;
     }
 }

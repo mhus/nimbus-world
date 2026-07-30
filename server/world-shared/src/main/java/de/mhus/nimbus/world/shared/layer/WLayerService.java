@@ -2506,4 +2506,240 @@ public class WLayerService implements StorageProvider {
     public long countTerrainChunks(String worldId, String layerDataId) {
         return terrainRepository.countByWorldIdAndLayerDataId(worldId, layerDataId);
     }
+
+    // ==================== WORLD-LEVEL BULK OPERATIONS ====================
+
+    /**
+     * Delete ALL layers of a world, including their associated layer-type data
+     * (WLayerModel for MODEL layers, WLayerTerrain plus external storage for
+     * GROUND layers). Owner-level bulk operation so callers do not touch the
+     * WLayer/WLayerModel/WLayerTerrain repositories directly (data ownership).
+     *
+     * @param worldId World identifier (used as-is, no instance normalization)
+     * @return number of deleted layers
+     */
+    @Transactional
+    public int deleteByWorldId(String worldId) {
+        log.info("Deleting layers for world {}", worldId);
+
+        List<WLayer> layers = layerRepository.findByWorldIdOrderByOrderAsc(worldId);
+        log.info("Found {} layers in world {}", layers.size(), worldId);
+
+        int layerCount = 0;
+        int modelCount = 0;
+        int terrainCount = 0;
+        int storageCount = 0;
+
+        for (WLayer layer : layers) {
+            String layerDataId = layer.getLayerDataId();
+
+            // Delete layer-specific data based on type
+            if (layer.getLayerType() == LayerType.MODEL) {
+                // Delete WLayerModel entities
+                List<WLayerModel> models = modelRepository.findByLayerDataIdOrderByOrder(layerDataId);
+                log.debug("Deleting {} model entities for layer {}", models.size(), layer.getName());
+
+                modelRepository.deleteAll(models);
+                modelCount += models.size();
+
+            } else if (layer.getLayerType() == LayerType.GROUND) {
+                // Delete WLayerTerrain entities
+                List<WLayerTerrain> terrains = terrainRepository.findByWorldIdAndLayerDataId(worldId, layerDataId);
+                log.debug("Deleting {} terrain chunks for layer {}", terrains.size(), layer.getName());
+
+                for (WLayerTerrain terrain : terrains) {
+                    // Delete storage data if present
+                    if (terrain.getStorageId() != null) {
+                        try {
+                            storageService.delete(terrain.getStorageId());
+                            storageCount++;
+                        } catch (Exception e) {
+                            log.warn("Failed to delete storage {} for terrain chunk {}: {}",
+                                    terrain.getStorageId(), terrain.getChunkKey(), e.getMessage());
+                        }
+                    }
+                }
+
+                terrainRepository.deleteAll(terrains);
+                terrainCount += terrains.size();
+            }
+
+            // Delete the layer itself
+            layerRepository.delete(layer);
+            layerCount++;
+        }
+
+        log.info("Deleted {} layers ({} models, {} terrain chunks, {} storage items) for world {}",
+                layerCount, modelCount, terrainCount, storageCount, worldId);
+        return layerCount;
+    }
+
+    /**
+     * Distinct world IDs that have layers (owner-level; avoids callers querying
+     * the WLayer collection directly).
+     */
+    @Transactional(readOnly = true)
+    public List<String> findDistinctWorldIds() {
+        return mongoTemplate.findDistinct(new Query(), "worldId", WLayer.class, String.class);
+    }
+
+    /**
+     * Duplicate ALL layers of a source world into a target world, including their
+     * associated layer-type data (WLayerModel for MODEL layers, WLayerTerrain plus
+     * external storage for GROUND layers). Owner-level bulk operation so callers do
+     * not touch the WLayer/WLayerModel/WLayerTerrain repositories directly
+     * (data ownership).
+     *
+     * The layerDataId values are re-mapped to the newly created documents.
+     *
+     * @param sourceWorldId source world identifier (used as-is, no instance normalization)
+     * @param targetWorldId target world identifier (must already exist)
+     * @return number of duplicated layers
+     */
+    @Transactional
+    public int duplicateToWorld(String sourceWorldId, String targetWorldId) {
+        log.info("Duplicating layers from world {} to {}", sourceWorldId, targetWorldId);
+
+        List<WLayer> sourceLayers = layerRepository.findByWorldIdOrderByOrderAsc(sourceWorldId);
+        log.info("Found {} layers in source world {}", sourceLayers.size(), sourceWorldId);
+
+        // Track old layerDataId -> new layerDataId mapping
+        Map<String, String> layerDataIdMapping = new HashMap<>();
+
+        int layerCount = 0;
+        int modelCount = 0;
+        int terrainCount = 0;
+        int storageCount = 0;
+
+        for (WLayer sourceLayer : sourceLayers) {
+            String oldLayerDataId = sourceLayer.getLayerDataId();
+            String newLayerDataId = null;
+
+            // Duplicate layer-specific data based on type
+            if (sourceLayer.getLayerType() == LayerType.MODEL) {
+                // Duplicate WLayerModel entities
+                List<WLayerModel> sourceModels = modelRepository.findByLayerDataIdOrderByOrder(oldLayerDataId);
+                log.debug("Duplicating {} model entities for layer {}", sourceModels.size(), sourceLayer.getName());
+
+                for (WLayerModel sourceModel : sourceModels) {
+                    WLayerModel targetModel = WLayerModel.builder()
+                            .worldId(targetWorldId)
+                            .name(sourceModel.getName())
+                            .title(sourceModel.getTitle())
+                            .layerDataId(oldLayerDataId) // Keep same for now
+                            .mountX(sourceModel.getMountX())
+                            .mountY(sourceModel.getMountY())
+                            .mountZ(sourceModel.getMountZ())
+                            .rotation(sourceModel.getRotation())
+                            .referenceModelId(sourceModel.getReferenceModelId())
+                            .order(sourceModel.getOrder())
+                            .content(sourceModel.getContent())
+                            .groups(sourceModel.getGroups())
+                            .build();
+
+                    targetModel.touchCreate();
+                    modelRepository.save(targetModel);
+
+                    // Use the new MongoDB id as the new layerDataId
+                    if (newLayerDataId == null) {
+                        newLayerDataId = targetModel.getId();
+                        layerDataIdMapping.put(oldLayerDataId, newLayerDataId);
+                    }
+
+                    modelCount++;
+                }
+
+            } else if (sourceLayer.getLayerType() == LayerType.GROUND) {
+                // Duplicate WLayerTerrain entities
+                List<WLayerTerrain> sourceTerrains = terrainRepository.findByWorldIdAndLayerDataId(sourceWorldId, oldLayerDataId);
+                log.debug("Duplicating {} terrain chunks for layer {}", sourceTerrains.size(), sourceLayer.getName());
+
+                for (WLayerTerrain sourceTerrain : sourceTerrains) {
+                    WLayerTerrain targetTerrain = WLayerTerrain.builder()
+                            .worldId(targetWorldId)
+                            .layerDataId(oldLayerDataId) // Keep same for now
+                            .chunkKey(sourceTerrain.getChunkKey())
+                            .compressed(sourceTerrain.isCompressed())
+                            .build();
+
+                    // Duplicate storage data if present
+                    if (sourceTerrain.getStorageId() != null) {
+                        String newStorageId = storageService.duplicate(sourceTerrain.getStorageId(), targetWorldId);
+                        targetTerrain.setStorageId(newStorageId);
+                        storageCount++;
+                    }
+
+                    targetTerrain.touchCreate();
+                    terrainRepository.save(targetTerrain);
+
+                    // Use the new MongoDB id as the new layerDataId
+                    if (newLayerDataId == null) {
+                        newLayerDataId = targetTerrain.getId();
+                        layerDataIdMapping.put(oldLayerDataId, newLayerDataId);
+                    }
+
+                    terrainCount++;
+                }
+            }
+
+            // Duplicate WLayer entity
+            WLayer targetLayer = WLayer.builder()
+                    .worldId(targetWorldId)
+                    .name(sourceLayer.getName())
+                    .title(sourceLayer.getTitle())
+                    .layerType(sourceLayer.getLayerType())
+                    .layerDataId(newLayerDataId != null ? newLayerDataId : oldLayerDataId)
+                    .allChunks(sourceLayer.isAllChunks())
+                    .affectedChunks(sourceLayer.getAffectedChunks())
+                    .order(sourceLayer.getOrder())
+                    .enabled(sourceLayer.isEnabled())
+                    .groups(sourceLayer.getGroups())
+                    .baseGround(sourceLayer.isBaseGround())
+                    .build();
+
+            targetLayer.touchCreate();
+            layerRepository.save(targetLayer);
+            layerCount++;
+        }
+
+        // Update layerDataId references in duplicated models/terrains
+        updateDuplicatedLayerDataIdReferences(targetWorldId, layerDataIdMapping);
+
+        log.info("Duplicated {} layers ({} models, {} terrains, {} storage items) from world {} to {}",
+                layerCount, modelCount, terrainCount, storageCount, sourceWorldId, targetWorldId);
+        return layerCount;
+    }
+
+    /**
+     * Update layerDataId references in duplicated WLayerModel and WLayerTerrain
+     * entities to use the new layerDataId values.
+     */
+    private void updateDuplicatedLayerDataIdReferences(String targetWorldId, Map<String, String> layerDataIdMapping) {
+        // Update WLayerModel layerDataId
+        // Note: WLayerModelRepository doesn't have findByWorldId(), so we need to iterate through all layers
+        List<WLayer> targetLayers = layerRepository.findByWorldIdOrderByOrderAsc(targetWorldId);
+        for (WLayer layer : targetLayers) {
+            if (layer.getLayerType() != LayerType.MODEL) continue;
+            List<WLayerModel> targetModels = modelRepository.findByLayerDataIdOrderByOrder(layer.getLayerDataId());
+            for (WLayerModel model : targetModels) {
+                String newLayerDataId = layerDataIdMapping.get(model.getLayerDataId());
+                if (newLayerDataId != null) {
+                    model.setLayerDataId(newLayerDataId);
+                    model.touchUpdate();
+                    modelRepository.save(model);
+                }
+            }
+        }
+
+        // Update WLayerTerrain layerDataId
+        List<WLayerTerrain> targetTerrains = terrainRepository.findByWorldId(targetWorldId);
+        for (WLayerTerrain terrain : targetTerrains) {
+            String newLayerDataId = layerDataIdMapping.get(terrain.getLayerDataId());
+            if (newLayerDataId != null) {
+                terrain.setLayerDataId(newLayerDataId);
+                terrain.touchUpdate();
+                terrainRepository.save(terrain);
+            }
+        }
+    }
 }

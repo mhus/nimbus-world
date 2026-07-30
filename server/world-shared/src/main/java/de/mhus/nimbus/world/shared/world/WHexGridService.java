@@ -7,6 +7,8 @@ import de.mhus.nimbus.shared.utils.TypeUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,6 +35,7 @@ import java.util.function.Consumer;
 public class WHexGridService {
 
     private final WHexGridRepository repository;
+    private final MongoTemplate mongoTemplate;
 
     // --- Find by position ---
 
@@ -468,6 +471,64 @@ public class WHexGridService {
         repository.deleteAll(all);
         log.info("Deleted {} WHexGrid variants at worldId={}, position={}", all.size(), parsedWorldId.getId(), positionKey);
         return all.size();
+    }
+
+    // --- Owner-level bulk operations (data ownership) ---
+
+    /**
+     * Deletes ALL hex grids of a world (all positions, all epochs).
+     * Owner-level bulk operation so callers (e.g. world deletion) do not touch
+     * the WHexGrid repository directly (data ownership). WHexGrid has no external
+     * storage or related sub-collections, so no additional cleanup is required.
+     *
+     * @return number of deleted hex grids
+     */
+    @Transactional
+    public int deleteAllByWorldId(String worldId) {
+        List<WHexGrid> hexGrids = repository.findByWorldId(worldId);
+        repository.deleteAll(hexGrids);
+        log.info("Deleted {} hex grids for world {}", hexGrids.size(), worldId);
+        return hexGrids.size();
+    }
+
+    /**
+     * Distinct world IDs that have hex grids (owner-level; avoids callers
+     * querying the WHexGrid collection directly).
+     */
+    public List<String> findDistinctWorldIds() {
+        return mongoTemplate.findDistinct(new Query(), "worldId", WHexGrid.class, String.class);
+    }
+
+    /**
+     * Duplicates all hex grids from a source world into a target world.
+     * Owner-level bulk operation; replicates each grid's position, public data,
+     * parameters, areas and enabled flag under the target world id. Documents are
+     * persisted directly (no epoch pull/validate) to preserve the caller's
+     * copy-as-is semantics.
+     *
+     * @return number of duplicated hex grids
+     */
+    @Transactional
+    public int duplicateToWorld(String sourceWorldId, String targetWorldId) {
+        List<WHexGrid> sourceHexGrids = repository.findByWorldId(sourceWorldId);
+        int duplicatedCount = 0;
+        for (WHexGrid sourceHexGrid : sourceHexGrids) {
+            WHexGrid targetHexGrid = WHexGrid.builder()
+                    .worldId(targetWorldId)
+                    .position(sourceHexGrid.getPosition())
+                    .publicData(sourceHexGrid.getPublicData())
+                    .parameters(sourceHexGrid.getParameters())
+                    .areas(sourceHexGrid.getAreas())
+                    .enabled(sourceHexGrid.isEnabled())
+                    .build();
+
+            targetHexGrid.touchCreate();
+            repository.save(targetHexGrid);
+            duplicatedCount++;
+        }
+        log.info("Duplicated {} hex grids from world {} to {}",
+                duplicatedCount, sourceWorldId, targetWorldId);
+        return duplicatedCount;
     }
 
     // --- Epoch Pull/Validate ---

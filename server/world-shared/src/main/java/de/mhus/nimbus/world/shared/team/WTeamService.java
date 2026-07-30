@@ -282,6 +282,28 @@ public class WTeamService {
         log.info("Deleted all teams for worldId {}", worldId);
     }
 
+    /**
+     * Bulk-delete all teams of a world and return the number of deleted documents.
+     * Owns the WTeam collection, so callers must not touch the collection directly.
+     */
+    @Transactional
+    public long deleteAllByWorldId(String worldId) {
+        var result = mongoTemplate.remove(
+                new Query(Criteria.where("worldId").is(worldId)),
+                WTeam.class);
+        long deleted = result.getDeletedCount();
+        log.info("Deleted {} teams for worldId {}", deleted, worldId);
+        return deleted;
+    }
+
+    /**
+     * Return all distinct worldIds that currently have at least one team.
+     */
+    @Transactional(readOnly = true)
+    public List<String> findDistinctWorldIds() {
+        return mongoTemplate.findDistinct(new Query(), "worldId", WTeam.class, String.class);
+    }
+
     @Transactional
     public WTeam emigrateToInstance(String teamId, String instanceWorldId) {
         WTeam team = teamRepository.findByTeamId(teamId)

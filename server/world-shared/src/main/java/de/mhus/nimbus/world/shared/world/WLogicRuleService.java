@@ -2,6 +2,8 @@ package de.mhus.nimbus.world.shared.world;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -24,6 +26,8 @@ import java.util.regex.Pattern;
 public class WLogicRuleService {
 
     private final WLogicRuleRepository repository;
+    private final WLogicStateDefRepository stateDefRepository;
+    private final MongoTemplate mongoTemplate;
 
     /**
      * Matches fully qualified state references: "state.pkg.key"
@@ -74,6 +78,95 @@ public class WLogicRuleService {
 
     public void deleteByWorldId(String worldId) {
         repository.deleteByWorldId(worldId);
+    }
+
+    /**
+     * Bulk-delete all logic rules AND state definitions of a world.
+     * Owner bulk operation used for world teardown; keeps the two related
+     * collections ({@code w_logic_rules}, {@code w_logic_states}) consistent.
+     *
+     * @param worldId the world whose logic data should be removed
+     * @return the total number of deleted documents (rules + state definitions)
+     */
+    public int deleteAllByWorldId(String worldId) {
+        List<WLogicRule> rules = repository.findByWorldId(worldId);
+        repository.deleteAll(rules);
+
+        List<WLogicStateDef> flags = stateDefRepository.findByWorldId(worldId);
+        stateDefRepository.deleteAll(flags);
+
+        log.info("Deleted {} logic rules and {} state definitions for world {}",
+                rules.size(), flags.size(), worldId);
+        return rules.size() + flags.size();
+    }
+
+    /**
+     * Distinct worldIds that own any logic data (rules or state definitions).
+     * Replaces direct {@code MongoTemplate.findDistinct} access by callers.
+     *
+     * @return sorted, de-duplicated list of worldIds
+     */
+    public List<String> findDistinctWorldIds() {
+        Set<String> worldIds = new LinkedHashSet<>();
+        worldIds.addAll(mongoTemplate.findDistinct(
+                new Query(), "worldId", WLogicRule.class, String.class));
+        worldIds.addAll(mongoTemplate.findDistinct(
+                new Query(), "worldId", WLogicStateDef.class, String.class));
+        return worldIds.stream().sorted().toList();
+    }
+
+    /**
+     * Duplicate all logic rules AND state definitions from a source world into a
+     * target world. Copies preserve the original {@code affected} flags and are
+     * persisted via the repository directly (no re-computation), matching the
+     * historical duplication semantics.
+     *
+     * @param sourceWorldId world to copy from
+     * @param targetWorldId world to copy to (must already exist)
+     * @return the total number of duplicated documents (rules + state definitions)
+     */
+    public int duplicateToWorld(String sourceWorldId, String targetWorldId) {
+        List<WLogicRule> sourceRules = repository.findByWorldId(sourceWorldId);
+        int ruleCount = 0;
+        for (WLogicRule source : sourceRules) {
+            WLogicRule target = WLogicRule.builder()
+                    .worldId(targetWorldId)
+                    .name(source.getName())
+                    .description(source.getDescription())
+                    .rulePackage(source.getRulePackage())
+                    .affected(source.getAffected() != null ? new ArrayList<>(source.getAffected()) : null)
+                    .spelCondition(source.getSpelCondition())
+                    .effects(source.getEffects() != null ? new ArrayList<>(source.getEffects()) : null)
+                    .epoches(source.getEpoches() != null ? new ArrayList<>(source.getEpoches()) : null)
+                    .enabled(source.isEnabled())
+                    .priority(source.getPriority())
+                    .testFlags(source.getTestFlags())
+                    .createdAt(Instant.now())
+                    .updatedAt(Instant.now())
+                    .build();
+            repository.save(target);
+            ruleCount++;
+        }
+
+        List<WLogicStateDef> sourceFlags = stateDefRepository.findByWorldId(sourceWorldId);
+        int flagCount = 0;
+        for (WLogicStateDef source : sourceFlags) {
+            WLogicStateDef target = WLogicStateDef.builder()
+                    .worldId(targetWorldId)
+                    .name(source.getName())
+                    .defaultValue(source.getDefaultValue())
+                    .type(source.getType())
+                    .description(source.getDescription())
+                    .autoCreated(source.isAutoCreated())
+                    .createdAt(Instant.now())
+                    .build();
+            stateDefRepository.save(target);
+            flagCount++;
+        }
+
+        log.info("Duplicated {} logic rules and {} state definitions from {} to {}",
+                ruleCount, flagCount, sourceWorldId, targetWorldId);
+        return ruleCount + flagCount;
     }
 
     /**

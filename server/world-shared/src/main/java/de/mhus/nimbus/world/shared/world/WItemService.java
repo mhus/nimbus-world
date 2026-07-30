@@ -5,6 +5,8 @@ import de.mhus.nimbus.shared.types.WorldId;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,6 +28,7 @@ import java.util.UUID;
 public class WItemService {
 
     private final WItemRepository repository;
+    private final MongoTemplate mongoTemplate;
 
     /**
      * Find all items for the region.
@@ -312,6 +315,58 @@ public class WItemService {
             log.debug("Updated parameters for item: itemId={}", itemId);
             return repository.save(item);
         });
+    }
+
+    /**
+     * Delete ALL items stored under the given raw worldId. Owner-level bulk
+     * operation so callers do not touch the WItem collection directly (data
+     * ownership). Operates on the raw worldId as-is (no region-collection
+     * resolution) to match world-cleanup semantics.
+     *
+     * @return number of deleted items
+     */
+    @Transactional
+    public int deleteAllByWorldId(String worldId) {
+        List<WItem> items = repository.findByWorldId(worldId);
+        repository.deleteAll(items);
+        log.info("Deleted {} items for world {}", items.size(), worldId);
+        return items.size();
+    }
+
+    /**
+     * Distinct world IDs that have items (owner-level; avoids callers querying
+     * the WItem collection directly).
+     */
+    public List<String> findDistinctWorldIds() {
+        return mongoTemplate.findDistinct(new Query(), "worldId", WItem.class, String.class);
+    }
+
+    /**
+     * Duplicate ALL items from a source world into a target world. Owner-level
+     * bulk operation operating on raw worldIds as-is (no region-collection
+     * resolution) to match world-duplication semantics. Copies name, publicData,
+     * server parameters and enabled flag into freshly created items.
+     *
+     * @return number of duplicated items
+     */
+    @Transactional
+    public int duplicateToWorld(String sourceWorldId, String targetWorldId) {
+        List<WItem> sourceItems = repository.findByWorldId(sourceWorldId);
+        int duplicatedCount = 0;
+        for (WItem source : sourceItems) {
+            WItem target = WItem.builder()
+                    .worldId(targetWorldId)
+                    .name(source.getName())
+                    .publicData(source.getPublicData())
+                    .server(source.getServer() != null ? new HashMap<>(source.getServer()) : null)
+                    .enabled(source.isEnabled())
+                    .build();
+            target.touchCreate();
+            repository.save(target);
+            duplicatedCount++;
+        }
+        log.info("Duplicated {} items from world {} to {}", duplicatedCount, sourceWorldId, targetWorldId);
+        return duplicatedCount;
     }
 
     private List<WItem> filterByQuery(List<WItem> items, String query) {

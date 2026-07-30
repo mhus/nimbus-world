@@ -6,6 +6,8 @@ import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.shared.utils.TypeUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,6 +30,7 @@ public class WItemPositionService {
 
     private final WItemPositionRepository repository;
     private final WWorldService worldService;
+    private final MongoTemplate mongoTemplate;
 
     /**
      * Save or update an item position.
@@ -431,6 +434,66 @@ public class WItemPositionService {
     public void deleteByWorldId(String worldId) {
         repository.deleteByWorldId(worldId);
         log.info("Deleted all item positions for worldId={}", worldId);
+    }
+
+    /**
+     * Delete ALL item positions of a world. Owner-level bulk operation so callers
+     * do not touch the WItemPosition repository directly (data ownership).
+     *
+     * @param worldId World identifier
+     * @return number of deleted item positions
+     */
+    @Transactional
+    public int deleteAllByWorldId(String worldId) {
+        List<WItemPosition> itemPositions = repository.findByWorldId(worldId);
+        repository.deleteAll(itemPositions);
+        log.info("Deleted {} item positions for world {}", itemPositions.size(), worldId);
+        return itemPositions.size();
+    }
+
+    /**
+     * Duplicate ALL item positions from a source world into a target world.
+     * Owner-level bulk operation so callers do not touch the WItemPosition
+     * repository directly (data ownership).
+     *
+     * @param sourceWorldId Source world identifier
+     * @param targetWorldId Target world identifier
+     * @return number of duplicated item positions
+     */
+    @Transactional
+    public int duplicateToWorld(String sourceWorldId, String targetWorldId) {
+        List<WItemPosition> sourceItemPositions = repository.findByWorldId(sourceWorldId);
+        int duplicatedCount = 0;
+        for (WItemPosition sourceItemPosition : sourceItemPositions) {
+            WItemPosition targetItemPosition = WItemPosition.builder()
+                    .worldId(targetWorldId)
+                    .itemId(sourceItemPosition.getItemId())
+                    .chunk(sourceItemPosition.getChunk())
+                    .publicData(sourceItemPosition.getPublicData())
+                    .enabled(sourceItemPosition.isEnabled())
+                    .build();
+            targetItemPosition.touchCreate();
+            repository.save(targetItemPosition);
+            duplicatedCount++;
+        }
+        log.info("Duplicated {} item positions from world {} to {}",
+                duplicatedCount, sourceWorldId, targetWorldId);
+        return duplicatedCount;
+    }
+
+    /**
+     * Distinct world IDs that have item positions (owner-level; avoids callers
+     * querying the WItemPosition collection directly).
+     *
+     * @return list of distinct world identifiers
+     */
+    public List<String> findDistinctWorldIds() {
+        return mongoTemplate.findDistinct(
+                new Query(),
+                "worldId",
+                WItemPosition.class,
+                String.class
+        );
     }
 
 }

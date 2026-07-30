@@ -1,13 +1,10 @@
 package de.mhus.nimbus.world.control.service.duplicate.impl;
 
 import de.mhus.nimbus.world.control.service.duplicate.DuplicateToWorld;
-import de.mhus.nimbus.world.shared.world.WHexGrid;
-import de.mhus.nimbus.world.shared.world.WHexGridRepository;
+import de.mhus.nimbus.world.shared.world.WHexGridService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
 
 /**
  * Service to duplicate hex grids from source world to target world.
@@ -18,7 +15,7 @@ import java.util.List;
 @Slf4j
 public class DuplicateHexGridService implements DuplicateToWorld {
 
-    private final WHexGridRepository hexGridRepository;
+    private final WHexGridService hexGridService;
 
     @Override
     public String name() {
@@ -29,25 +26,7 @@ public class DuplicateHexGridService implements DuplicateToWorld {
     public void duplicate(String sourceWorldId, String targetWorldId) throws Exception {
         log.info("Duplicating hex grids from world {} to {}", sourceWorldId, targetWorldId);
 
-        List<WHexGrid> sourceHexGrids = hexGridRepository.findByWorldId(sourceWorldId);
-        log.info("Found {} hex grids in source world {}", sourceHexGrids.size(), sourceWorldId);
-
-        int duplicatedCount = 0;
-
-        for (WHexGrid sourceHexGrid : sourceHexGrids) {
-            WHexGrid targetHexGrid = WHexGrid.builder()
-                    .worldId(targetWorldId)
-                    .position(sourceHexGrid.getPosition())
-                    .publicData(sourceHexGrid.getPublicData())
-                    .parameters(sourceHexGrid.getParameters())
-                    .areas(sourceHexGrid.getAreas())
-                    .enabled(sourceHexGrid.isEnabled())
-                    .build();
-
-            targetHexGrid.touchCreate();
-            hexGridRepository.save(targetHexGrid);
-            duplicatedCount++;
-        }
+        int duplicatedCount = hexGridService.duplicateToWorld(sourceWorldId, targetWorldId);
 
         log.info("Duplicated {} hex grids from world {} to {}",
                 duplicatedCount, sourceWorldId, targetWorldId);
