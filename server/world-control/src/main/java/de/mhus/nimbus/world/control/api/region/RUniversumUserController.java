@@ -1,5 +1,6 @@
 package de.mhus.nimbus.world.control.api.region;
 
+import de.mhus.nimbus.world.shared.access.RequireAgent;
 import de.mhus.nimbus.world.shared.sector.RUser;
 import de.mhus.nimbus.world.shared.sector.RUserService;
 import org.springframework.http.ResponseEntity;
@@ -16,6 +17,7 @@ import java.util.Optional;
 @RestController
 @RequestMapping(RUniversumUserController.BASE_PATH)
 @Tag(name = "QUsers", description = "Universum access to region users")
+@RequireAgent
 public class RUniversumUserController {
 
     public static final String BASE_PATH = "/region/universum/user";

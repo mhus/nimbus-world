@@ -1,6 +1,7 @@
 package de.mhus.nimbus.world.control.api.region;
 
 import de.mhus.nimbus.generated.types.RegionItemInfo;
+import de.mhus.nimbus.world.shared.access.RequireAgent;
 import de.mhus.nimbus.world.shared.region.RCharacterService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.validation.annotation.Validated;
@@ -10,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping(RUserCharacterController.BASE_PATH)
 @Validated
 @Slf4j
+@RequireAgent
 public class RUserCharacterController {
 
     public static final String BASE_PATH = "/region/user/character";

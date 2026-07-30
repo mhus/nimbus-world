@@ -2,6 +2,7 @@ package de.mhus.nimbus.world.control.api;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.shared.types.WorldId;
+import de.mhus.nimbus.world.control.service.sync.ExternalResourcePathValidator;
 import de.mhus.nimbus.world.control.service.sync.ResourceSyncService;
 import de.mhus.nimbus.world.shared.dto.ExternalResourceDTO;
 import de.mhus.nimbus.world.shared.access.AccessValidator;
@@ -35,6 +36,7 @@ public class ExternalResourceController extends BaseEditorController {
     private final ResourceSyncService syncService;
     private final ObjectMapper objectMapper;
     private final AccessValidator accessValidator;
+    private final ExternalResourcePathValidator pathValidator;
 
     private ResponseEntity<?> checkWorldAccess(String worldId, HttpServletRequest request) {
         if (!accessValidator.hasEditorAccess(request, worldId))
@@ -101,6 +103,11 @@ public class ExternalResourceController extends BaseEditorController {
         }
         if (Strings.isBlank(request.worldId())) {
             return bad("World ID is required");
+        }
+        try {
+            pathValidator.confine(request.localPath());
+        } catch (IllegalArgumentException e) {
+            return bad(e.getMessage());
         }
         var accessCheck = checkWorldAccess(request.worldId(), httpRequest);
         if (accessCheck != null) return accessCheck;
@@ -188,6 +195,13 @@ public class ExternalResourceController extends BaseEditorController {
                                     HttpServletRequest httpRequest) {
         if (Strings.isBlank(worldId)) {
             return bad("World ID is required");
+        }
+        if (request.localPath() != null) {
+            try {
+                pathValidator.confine(request.localPath());
+            } catch (IllegalArgumentException e) {
+                return bad(e.getMessage());
+            }
         }
         var accessCheck = checkWorldAccess(worldId, httpRequest);
         if (accessCheck != null) return accessCheck;

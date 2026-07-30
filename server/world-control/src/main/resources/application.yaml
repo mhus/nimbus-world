@@ -31,6 +31,9 @@ nimbus:
       enabled: ${ASSET_COMPRESSION_ENABLED:true}
   schema:
     auto-migrate: ${NIMBUS_SCHEMA_AUTO_MIGRATE:true}
+  external-resources:
+    # Base directory external-resource import/export paths are confined to (path-traversal guard).
+    base-dir: ${NIMBUS_EXTERNAL_RESOURCES_BASE_DIR:/data/external-resources}
   access:
     accessUrls: ${NIMBUS_ACCESS_URLS:}
     jumpUrlAgent: ${NIMBUS_JUMP_URL_AGENT:}

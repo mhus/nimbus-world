@@ -1,5 +1,6 @@
 package de.mhus.nimbus.world.control.api.region;
 
+import de.mhus.nimbus.world.shared.access.RequireAgent;
 import de.mhus.nimbus.world.shared.region.RRegion;
 import de.mhus.nimbus.world.shared.region.RRegionService;
 import org.springframework.http.HttpStatus;
@@ -9,8 +10,14 @@ import org.springframework.web.bind.annotation.*;
 import java.net.URI;
 import java.util.List;
 
+/**
+ * Universe-to-sector endpoint for region management. Reachable only by the
+ * universe server (bypasses the access aspect via the {@code universe:} principal)
+ * or an authenticated agent; all interactive sessions are denied.
+ */
 @RestController
 @RequestMapping(RRegionUserController.BASE_PATH)
+@RequireAgent
 public class RRegionUserController {
 
     public static final String BASE_PATH = "/region/user/region";

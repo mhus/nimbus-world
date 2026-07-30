@@ -9,7 +9,6 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -33,6 +32,7 @@ public class ResourceSyncService {
 
     private final List<ResourceSyncType> syncTypes;
     private final GitHelper gitHelper;
+    private final ExternalResourcePathValidator pathValidator;
 
     @Qualifier("syncYamlMapper")
     private final YAMLMapper yamlMapper;
@@ -51,7 +51,11 @@ public class ResourceSyncService {
                 worldId, definition.getLocalPath(), force, removeOvertaken);
 
         try {
-            Path dataPath = Paths.get(definition.getLocalPath());
+            // Confine the caller-supplied path to the configured base directory and
+            // write the normalized absolute form back, so git and all sync types
+            // operate on a path that cannot escape the sandbox (path-traversal guard).
+            Path dataPath = pathValidator.confine(definition.getLocalPath());
+            definition.setLocalPath(dataPath.toString());
 
             // Initialize or clone repository if needed
             if (definition.isAutoGit()) {
@@ -138,7 +142,11 @@ public class ResourceSyncService {
                 worldId, definition.getLocalPath(), force, removeOvertaken);
 
         try {
-            Path dataPath = Paths.get(definition.getLocalPath());
+            // Confine the caller-supplied path to the configured base directory and
+            // write the normalized absolute form back, so git and all sync types
+            // operate on a path that cannot escape the sandbox (path-traversal guard).
+            Path dataPath = pathValidator.confine(definition.getLocalPath());
+            definition.setLocalPath(dataPath.toString());
 
             // Initialize or clone repository if needed
             if (definition.isAutoGit()) {

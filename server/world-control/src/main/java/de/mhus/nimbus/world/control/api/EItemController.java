@@ -2,6 +2,8 @@ package de.mhus.nimbus.world.control.api;
 
 import de.mhus.nimbus.generated.types.Item;
 import de.mhus.nimbus.shared.types.WorldId;
+import de.mhus.nimbus.shared.user.WorldRoles;
+import de.mhus.nimbus.world.shared.access.RequireWorldRole;
 import de.mhus.nimbus.world.shared.rest.BaseEditorController;
 import de.mhus.nimbus.world.shared.world.ItemTier;
 import de.mhus.nimbus.world.shared.world.RarityCategory;
@@ -42,6 +44,7 @@ import static org.springframework.http.ResponseEntity.badRequest;
 @RequiredArgsConstructor
 @Slf4j
 @Tag(name = "Items", description = "Item management (inventory/template items)")
+@RequireWorldRole(WorldRoles.EDITOR)
 public class EItemController extends BaseEditorController {
 
     private final WItemService itemService;
