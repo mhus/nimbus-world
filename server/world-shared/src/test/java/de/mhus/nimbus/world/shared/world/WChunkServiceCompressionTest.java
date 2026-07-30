@@ -217,9 +217,9 @@ class WChunkServiceCompressionTest {
                 .compressed(false)  // Old chunk
                 .build();
 
-        // Mock repository
-        when(repository.findByWorldIdAndChunk(eq(worldId.getId()), eq(chunkKey)))
-                .thenReturn(Optional.of(oldChunk));
+        // Mock repository (getStream resolves the newest chunk across epochs)
+        when(repository.findAllByWorldIdAndChunk(eq(worldId.getId()), eq(chunkKey)))
+                .thenReturn(List.of(oldChunk));
 
         // Mock storage service - return uncompressed JSON
         String json = objectMapper.writeValueAsString(chunkData);
@@ -298,9 +298,9 @@ class WChunkServiceCompressionTest {
                 .compressed(true)
                 .build();
 
-        // Mock repository
-        when(repository.findByWorldIdAndChunk(eq(worldId.getId()), eq(chunkKey)))
-                .thenReturn(Optional.of(chunk));
+        // Mock repository (getCompressedStream resolves the newest chunk across epochs)
+        when(repository.findAllByWorldIdAndChunk(eq(worldId.getId()), eq(chunkKey)))
+                .thenReturn(List.of(chunk));
 
         // Mock storage service - return compressed stream
         when(storageService.load(eq("storage-compressed")))
