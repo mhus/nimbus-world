@@ -15,6 +15,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -26,9 +27,11 @@ import java.security.MessageDigest;
  * Extends AccessFilterBase to validate sessionToken cookies and attach
  * session information to requests.
  *
- * MCP endpoints (/sse, /mcp/) are protected by a configurable API token
- * from SSettingsService ("mcp.token"). If the token is blank, MCP access
- * is unrestricted.
+ * MCP endpoints (/sse, /mcp/) are gated the same way as dev-login:
+ * - while dev-login is enabled (dev environment) MCP is open (no token),
+ * - once dev-login is disabled (production) MCP requires an API token
+ *   ("mcp.token" from SSettingsService, presented as {@code Authorization: Bearer <token>}).
+ *   If no token is configured in that case, access is denied (fail-closed).
  *
  * All other endpoints require standard session authentication.
  */
@@ -38,6 +41,10 @@ public class GeneratorAccessFilter extends AccessFilterBase {
 
     private final AccessSettings accessProperties;
     private final SSettingsService settingsService;
+
+    /** Environment hard-gate for dev-login, mirrors ControlAaaController. */
+    @Value("${nimbus.devlogin.enabled:false}")
+    private boolean devLoginEnvEnabled;
 
     private SettingString settingMcpToken;
 
@@ -51,9 +58,19 @@ public class GeneratorAccessFilter extends AccessFilterBase {
     private void init() {
         settingMcpToken = settingsService.getString("mcp.token", "");
         if (Strings.isBlank(settingMcpToken.get())) {
-            log.warn("SECURITY: 'mcp.token' is not set - MCP endpoints (/sse, /mcp/) are exposed "
-                    + "WITHOUT authentication. Set 'mcp.token' or restrict network access to this port.");
+            log.warn("SECURITY: 'mcp.token' is not set - MCP endpoints (/sse, /mcp/) are open only "
+                    + "while dev-login is enabled and DENIED otherwise. Set 'mcp.token' before "
+                    + "disabling dev-login (production), or restrict network access to this port.");
         }
+    }
+
+    /**
+     * Dev-login gate, identical to ControlAaaController: the environment hard-gate
+     * ({@code nimbus.devlogin.enabled}) AND the runtime soft-gate
+     * ({@code access.devLoginEnabled}) must both be on.
+     */
+    private boolean isDevLoginEnabled() {
+        return devLoginEnvEnabled && accessProperties.isDevLoginEnabled();
     }
 
     /**
@@ -82,13 +99,20 @@ public class GeneratorAccessFilter extends AccessFilterBase {
 
         String requestUri = request.getRequestURI();
 
-        // MCP endpoints: check MCP token instead of session auth
+        // MCP endpoints: gated like dev-login, not by session auth.
         if (isMcpPath(requestUri)) {
-            String mcpToken = settingMcpToken.get();
-
-            if (Strings.isBlank(mcpToken)) {
-                log.warn("MCP: unauthenticated access to {} (mcp.token not set)", requestUri);
+            // Dev environment: dev-login on => MCP is open (no token required).
+            if (isDevLoginEnabled()) {
+                log.debug("MCP: open access to {} (dev-login enabled)", requestUri);
                 filterChain.doFilter(request, response);
+                return;
+            }
+
+            // Production: dev-login off => a token is required.
+            String mcpToken = settingMcpToken.get();
+            if (Strings.isBlank(mcpToken)) {
+                log.warn("MCP: denied {} - dev-login is disabled and no 'mcp.token' is configured", requestUri);
+                writeUnauthorized(response);
                 return;
             }
 
@@ -98,9 +122,7 @@ public class GeneratorAccessFilter extends AccessFilterBase {
             }
 
             log.warn("MCP: Unauthorized request to {}", requestUri);
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.setContentType("application/json");
-            response.getWriter().write("{\"error\":\"Unauthorized\"}");
+            writeUnauthorized(response);
             return;
         }
 
@@ -117,5 +139,11 @@ public class GeneratorAccessFilter extends AccessFilterBase {
     @Override
     protected String getLoginUrl() {
         return accessProperties.getLoginUrl();
+    }
+
+    private void writeUnauthorized(HttpServletResponse response) throws IOException {
+        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        response.setContentType("application/json");
+        response.getWriter().write("{\"error\":\"Unauthorized\"}");
     }
 }
