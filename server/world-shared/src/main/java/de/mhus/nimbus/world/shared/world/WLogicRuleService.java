@@ -26,7 +26,7 @@ import java.util.regex.Pattern;
 public class WLogicRuleService {
 
     private final WLogicRuleRepository repository;
-    private final WLogicStateDefRepository stateDefRepository;
+    private final WLogicStateService logicStateService;
     private final MongoTemplate mongoTemplate;
 
     /**
@@ -53,6 +53,24 @@ public class WLogicRuleService {
 
     public List<WLogicRule> findByWorldId(String worldId) {
         return repository.findByWorldId(worldId);
+    }
+
+    public List<WLogicRule> findByWorldIdAndRulePackage(String worldId, String rulePackage) {
+        return repository.findByWorldIdAndRulePackage(worldId, rulePackage);
+    }
+
+    /**
+     * Find all enabled rules that are affected by any of the changed flags and
+     * match the given epoch. Used by the Logic Machine cascade.
+     *
+     * @param worldId      world identifier
+     * @param changedFlags qualified flag names that changed
+     * @param epoch        current epoch of the world instance
+     * @return affected, enabled rules for the epoch
+     */
+    public List<WLogicRule> findAffectedRules(String worldId, List<String> changedFlags, int epoch) {
+        return repository.findByWorldIdAndAffectedInAndEnabledTrueAndEpochesContaining(
+                worldId, changedFlags, epoch);
     }
 
     /**
@@ -92,12 +110,12 @@ public class WLogicRuleService {
         List<WLogicRule> rules = repository.findByWorldId(worldId);
         repository.deleteAll(rules);
 
-        List<WLogicStateDef> flags = stateDefRepository.findByWorldId(worldId);
-        stateDefRepository.deleteAll(flags);
+        // Delegate state definition teardown to its owner service.
+        int flagCount = logicStateService.deleteAllByWorldId(worldId);
 
         log.info("Deleted {} logic rules and {} state definitions for world {}",
-                rules.size(), flags.size(), worldId);
-        return rules.size() + flags.size();
+                rules.size(), flagCount, worldId);
+        return rules.size() + flagCount;
     }
 
     /**
@@ -148,21 +166,8 @@ public class WLogicRuleService {
             ruleCount++;
         }
 
-        List<WLogicStateDef> sourceFlags = stateDefRepository.findByWorldId(sourceWorldId);
-        int flagCount = 0;
-        for (WLogicStateDef source : sourceFlags) {
-            WLogicStateDef target = WLogicStateDef.builder()
-                    .worldId(targetWorldId)
-                    .name(source.getName())
-                    .defaultValue(source.getDefaultValue())
-                    .type(source.getType())
-                    .description(source.getDescription())
-                    .autoCreated(source.isAutoCreated())
-                    .createdAt(Instant.now())
-                    .build();
-            stateDefRepository.save(target);
-            flagCount++;
-        }
+        // Delegate state definition duplication to its owner service.
+        int flagCount = logicStateService.duplicateToWorld(sourceWorldId, targetWorldId);
 
         log.info("Duplicated {} logic rules and {} state definitions from {} to {}",
                 ruleCount, flagCount, sourceWorldId, targetWorldId);

@@ -5,14 +5,20 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.IncorrectResultSizeDataAccessException;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
+import java.util.regex.Pattern;
 
 /**
  * MongoDB-based storage service with automatic chunking support.
@@ -33,6 +39,7 @@ public class MongoStorageService extends StorageService {
 
     private final StorageDataRepository storageDataRepository;
     private final StorageDeleteRepository storageDeleteRepository;
+    private final MongoTemplate mongoTemplate;
 
     @Value("${nimbus.storage.chunk-size:524288}")
     private int chunkSize; // 512KB default
@@ -228,6 +235,54 @@ public class MongoStorageService extends StorageService {
                     SchemaVersion.create(finalChunk.getSchemaVersion())
             );
         }
+    }
+
+    @Override
+    public StorageListResult listFinal(String query, int offset, int limit) {
+        // Build MongoDB query restricted to final chunks (one per stored object).
+        Query mongoQuery = new Query();
+        mongoQuery.addCriteria(Criteria.where("isFinal").is(true));
+
+        // Add search criteria if a query is provided.
+        if (query != null && !query.trim().isEmpty()) {
+            // Escape the user input to a literal pattern so regex metacharacters
+            // cannot inject a catastrophic/backtracking expression (ReDoS) or
+            // a ".*" match-all against the shared MongoDB instance.
+            String searchTerm = Pattern.quote(query.trim());
+            Criteria searchCriteria = new Criteria().orOperator(
+                    Criteria.where("uuid").regex(searchTerm, "i"),
+                    Criteria.where("path").regex(searchTerm, "i"),
+                    Criteria.where("schema").regex(searchTerm, "i"),
+                    Criteria.where("worldId").regex(searchTerm, "i")
+            );
+            mongoQuery.addCriteria(searchCriteria);
+        }
+
+        // Sort by createdAt descending (newest first).
+        mongoQuery.with(Sort.by(Sort.Direction.DESC, "createdAt"));
+
+        // Count total matching documents before pagination is applied.
+        long total = mongoTemplate.count(mongoQuery, StorageData.class);
+
+        // Apply pagination.
+        mongoQuery.skip(offset).limit(limit);
+
+        // Execute query and map to metadata records.
+        List<StorageData> storageList = mongoTemplate.find(mongoQuery, StorageData.class);
+        List<StorageInfo> items = new ArrayList<>(storageList.size());
+        for (StorageData storage : storageList) {
+            items.add(new StorageInfo(
+                    storage.getUuid(),
+                    storage.getSize(),
+                    storage.getCreatedAt(),
+                    storage.getWorldId(),
+                    storage.getPath(),
+                    storage.getSchema(),
+                    SchemaVersion.create(storage.getSchemaVersion())
+            ));
+        }
+
+        return new StorageListResult(items, total);
     }
 
     @Override

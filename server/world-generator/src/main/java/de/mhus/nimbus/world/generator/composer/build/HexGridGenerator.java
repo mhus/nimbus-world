@@ -9,7 +9,7 @@ import de.mhus.nimbus.world.generator.composer.feature.FeatureStatus;
 import de.mhus.nimbus.world.generator.composer.flow.FlowSegment;
 import de.mhus.nimbus.world.generator.composer.flow.FlowType;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
-import de.mhus.nimbus.world.shared.world.WHexGridRepository;
+import de.mhus.nimbus.world.shared.world.WHexGridService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -31,7 +31,7 @@ import java.util.*;
 @RequiredArgsConstructor
 public class HexGridGenerator {
 
-    private final WHexGridRepository hexGridRepository;
+    private final WHexGridService hexGridService;
 
     @lombok.Data
     @lombok.Builder
@@ -166,8 +166,8 @@ public class HexGridGenerator {
 
             for (FeatureHexGrid config : hexGridConfigs) {
                 String positionKey = config.getPositionKey();
-                boolean existing = !hexGridRepository
-                    .findAllByWorldIdAndPosition(worldId, positionKey).isEmpty();
+                boolean existing = !hexGridService
+                    .findAllByWorldIdAndPosition(worldId, config.getCoordinate()).isEmpty();
 
                 if (existing) {
                     log.debug("HexGrid already exists at {}, skipping", positionKey);
@@ -180,7 +180,7 @@ public class HexGridGenerator {
             }
 
             if (!gridsToCreate.isEmpty()) {
-                List<WHexGrid> saved = hexGridRepository.saveAll(gridsToCreate);
+                List<WHexGrid> saved = hexGridService.saveAll(gridsToCreate);
                 createdCount = saved.size();
                 log.info("Created {} WHexGrids for feature {}", createdCount, feature.getName());
             }

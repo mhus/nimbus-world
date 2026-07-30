@@ -6,7 +6,6 @@ import de.mhus.nimbus.world.shared.access.RequireWorldRole;
 import de.mhus.nimbus.world.shared.rest.BaseEditorController;
 import de.mhus.nimbus.world.shared.world.LogicEffect;
 import de.mhus.nimbus.world.shared.world.WLogicRule;
-import de.mhus.nimbus.world.shared.world.WLogicRuleRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -38,7 +37,6 @@ import java.util.stream.Collectors;
 @RequireWorldRole(WorldRoles.EDITOR)
 public class ELogicRuleController extends BaseEditorController {
 
-    private final WLogicRuleRepository ruleRepository;
     private final de.mhus.nimbus.world.shared.world.WLogicRuleService ruleService;
     private final de.mhus.nimbus.world.shared.world.LogicConditionService conditionService;
     private final de.mhus.nimbus.world.shared.client.WorldClientService worldClientService;
@@ -69,9 +67,9 @@ public class ELogicRuleController extends BaseEditorController {
 
         List<WLogicRule> all;
         if (!Strings.isBlank(rulePackage)) {
-            all = ruleRepository.findByWorldIdAndRulePackage(lookupWorldId, rulePackage);
+            all = ruleService.findByWorldIdAndRulePackage(lookupWorldId, rulePackage);
         } else {
-            all = ruleRepository.findByWorldId(lookupWorldId);
+            all = ruleService.findByWorldId(lookupWorldId);
         }
 
         // Filter by query (name contains)
@@ -98,7 +96,7 @@ public class ELogicRuleController extends BaseEditorController {
                 .collect(Collectors.toList());
 
         // Collect distinct packages from ALL rules (unfiltered) for dropdown
-        List<String> packages = ruleRepository.findByWorldId(lookupWorldId).stream()
+        List<String> packages = ruleService.findByWorldId(lookupWorldId).stream()
                 .map(WLogicRule::getRulePackage)
                 .filter(p -> p != null && !p.isBlank())
                 .distinct()
@@ -130,7 +128,7 @@ public class ELogicRuleController extends BaseEditorController {
         var validation = validateId(id, "id");
         if (validation != null) return validation;
 
-        Optional<WLogicRule> opt = ruleRepository.findById(id);
+        Optional<WLogicRule> opt = ruleService.findById(id);
         if (opt.isEmpty()) {
             return notFound("rule not found");
         }
@@ -165,7 +163,7 @@ public class ELogicRuleController extends BaseEditorController {
 
         String lookupWorldId = wid.toBaseWorldId().getId();
 
-        if (ruleRepository.findByWorldIdAndName(lookupWorldId, name).isPresent()) {
+        if (ruleService.findByWorldIdAndName(lookupWorldId, name).isPresent()) {
             return conflict("rule name already exists");
         }
 
@@ -206,7 +204,7 @@ public class ELogicRuleController extends BaseEditorController {
         var validation = validateId(id, "id");
         if (validation != null) return validation;
 
-        Optional<WLogicRule> opt = ruleRepository.findById(id);
+        Optional<WLogicRule> opt = ruleService.findById(id);
         if (opt.isEmpty()) {
             return notFound("rule not found");
         }
@@ -283,7 +281,7 @@ public class ELogicRuleController extends BaseEditorController {
         var validation = validateId(id, "id");
         if (validation != null) return validation;
 
-        Optional<WLogicRule> opt = ruleRepository.findById(id);
+        Optional<WLogicRule> opt = ruleService.findById(id);
         if (opt.isEmpty()) {
             return notFound("rule not found");
         }
@@ -293,7 +291,7 @@ public class ELogicRuleController extends BaseEditorController {
             return notFound("rule not found");
         }
 
-        ruleRepository.delete(rule);
+        ruleService.delete(rule.getId());
         log.info("Deleted logic rule: id={}, name={}", id, rule.getName());
         return ResponseEntity.noContent().build();
     }
@@ -316,7 +314,7 @@ public class ELogicRuleController extends BaseEditorController {
             return bad("worldInstanceId required");
         }
         String ruleId = (String) request.get("ruleId");
-        return ResponseEntity.ok(conditionService.testCondition(instanceId, ruleId, ruleRepository, request));
+        return ResponseEntity.ok(conditionService.testCondition(instanceId, ruleId, request));
     }
 
     /**
@@ -336,7 +334,7 @@ public class ELogicRuleController extends BaseEditorController {
             return bad("ruleId required");
         }
         Map<String, Object> flags = (Map<String, Object>) request.get("flags");
-        return ResponseEntity.ok(conditionService.simulate(ruleId, ruleRepository, flags));
+        return ResponseEntity.ok(conditionService.simulate(ruleId, flags));
     }
 
     /**

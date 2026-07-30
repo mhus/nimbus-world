@@ -1,19 +1,9 @@
 package de.mhus.nimbus.world.control.api;
 
-import de.mhus.nimbus.shared.storage.StorageData;
 import de.mhus.nimbus.shared.storage.StorageService;
 import jakarta.servlet.http.HttpServletResponse;
-import java.util.regex.Pattern;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
-import org.springframework.data.support.PageableExecutionUtils;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -35,7 +25,6 @@ import java.util.Map;
 public class StorageController {
 
     private final StorageService storageService;
-    private final MongoTemplate mongoTemplate;
 
     /**
      * List storage entries (grouped by UUID, showing only final chunks)
@@ -56,55 +45,29 @@ public class StorageController {
         if (limit < 1) limit = 1;
         if (offset < 0) offset = 0;
 
-        // Build MongoDB query for final chunks only
-        Query mongoQuery = new Query();
-        mongoQuery.addCriteria(Criteria.where("isFinal").is(true));
-
-        // Add search criteria if query provided
-        if (query != null && !query.trim().isEmpty()) {
-            // Escape the user input to a literal pattern so regex metacharacters
-            // cannot inject a catastrophic/backtracking expression (ReDoS) or
-            // a ".*" match-all against the shared MongoDB instance.
-            String searchTerm = Pattern.quote(query.trim());
-            Criteria searchCriteria = new Criteria().orOperator(
-                    Criteria.where("uuid").regex(searchTerm, "i"),
-                    Criteria.where("path").regex(searchTerm, "i"),
-                    Criteria.where("schema").regex(searchTerm, "i"),
-                    Criteria.where("worldId").regex(searchTerm, "i")
-            );
-            mongoQuery.addCriteria(searchCriteria);
-        }
-
-        // Sort by createdAt descending (newest first)
-        mongoQuery.with(Sort.by(Sort.Direction.DESC, "createdAt"));
-
-        // Count total matching documents
-        long total = mongoTemplate.count(mongoQuery, StorageData.class);
-
-        // Apply pagination
-        mongoQuery.skip(offset).limit(limit);
-
-        // Execute query
-        List<StorageData> storageList = mongoTemplate.find(mongoQuery, StorageData.class);
+        // Delegate the actual data access (filter/regex-escaping/sort/pagination)
+        // to the owner service; the controller only validates inbound parameters
+        // and shapes the response.
+        StorageService.StorageListResult result = storageService.listFinal(query, offset, limit);
 
         // Build response DTOs
         List<Map<String, Object>> items = new ArrayList<>();
-        for (StorageData storage : storageList) {
+        for (StorageService.StorageInfo info : result.items()) {
             Map<String, Object> item = new HashMap<>();
-            item.put("uuid", storage.getUuid());
-            item.put("schema", storage.getSchema());
-            item.put("schemaVersion", storage.getSchemaVersion());
-            item.put("worldId", storage.getWorldId());
-            item.put("path", storage.getPath());
-            item.put("size", storage.getSize());
-            item.put("createdAt", storage.getCreatedAt());
+            item.put("uuid", info.id());
+            item.put("schema", info.schema());
+            item.put("schemaVersion", info.schemaVersion());
+            item.put("worldId", info.worldId());
+            item.put("path", info.path());
+            item.put("size", info.size());
+            item.put("createdAt", info.createdAt());
             items.add(item);
         }
 
         // Build paginated response
         Map<String, Object> response = new HashMap<>();
         response.put("items", items);
-        response.put("count", total);
+        response.put("count", result.total());
         response.put("offset", offset);
         response.put("limit", limit);
 

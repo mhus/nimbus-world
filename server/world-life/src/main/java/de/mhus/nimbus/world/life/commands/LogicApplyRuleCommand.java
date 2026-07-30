@@ -3,7 +3,7 @@ package de.mhus.nimbus.world.life.commands;
 import de.mhus.nimbus.world.shared.commands.Command;
 import de.mhus.nimbus.world.shared.commands.CommandContext;
 import de.mhus.nimbus.world.shared.world.WLogicRule;
-import de.mhus.nimbus.world.shared.world.WLogicRuleRepository;
+import de.mhus.nimbus.world.shared.world.WLogicRuleService;
 import de.mhus.nimbus.world.life.logic.LogicMachineService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -21,7 +21,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class LogicApplyRuleCommand implements Command {
 
-    private final WLogicRuleRepository ruleRepository;
+    private final WLogicRuleService ruleService;
     private final LogicMachineService logicMachineService;
 
     @Override
@@ -42,7 +42,7 @@ public class LogicApplyRuleCommand implements Command {
         String ruleName = args.get(0);
 
         // Find rule by worldId and name
-        WLogicRule rule = ruleRepository.findByWorldIdAndName(worldId, ruleName).orElse(null);
+        WLogicRule rule = ruleService.findByWorldIdAndName(worldId, ruleName).orElse(null);
         if (rule == null) {
             return CommandResult.error("Rule not found: " + ruleName + " in world " + worldId);
         }

@@ -4,6 +4,7 @@ import de.mhus.nimbus.shared.types.SchemaVersion;
 
 import java.io.InputStream;
 import java.util.Date;
+import java.util.List;
 
 /**
  * Abstraktion eines externen Speichers (aktuell Dateisystem). Große Assets werden hier gespeichert.
@@ -55,6 +56,20 @@ public abstract class StorageService {
     public abstract StorageInfo info(String storageId);
 
     /**
+     * Lists metadata of the FINAL chunks of stored objects, filtered and paginated.
+     *
+     * The optional query is matched case-insensitively against the uuid, path,
+     * schema and worldId fields. Results are ordered by creation date descending
+     * (newest first) and paginated via offset/limit.
+     *
+     * @param query  optional search term (null or blank returns all final objects)
+     * @param offset pagination offset (0-based, must be &gt;= 0)
+     * @param limit  maximum number of items to return
+     * @return the paged list of final storage metadata plus the total match count
+     */
+    public abstract StorageListResult listFinal(String query, int offset, int limit);
+
+    /**
      * Duplicate existing stored data with a new worldId.
      * Loads the data from the source storageId and stores it with the target worldId.
      *
@@ -73,6 +88,14 @@ public abstract class StorageService {
     }
 
     public record StorageInfo(String id, long size, Date createdAt, String worldId, String path, String schema, SchemaVersion schemaVersion) { }
+
+    /**
+     * Paged result of a {@link #listFinal(String, int, int)} query.
+     *
+     * @param items the storage metadata of the requested page
+     * @param total the total number of matching objects across all pages
+     */
+    public record StorageListResult(List<StorageInfo> items, long total) { }
 
 }
 

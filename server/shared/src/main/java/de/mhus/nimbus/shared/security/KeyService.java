@@ -5,6 +5,9 @@ import de.mhus.nimbus.shared.persistence.SKeyRepository;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
@@ -17,6 +20,7 @@ import java.security.PublicKey;
 import java.security.spec.ECGenParameterSpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.security.spec.PKCS8EncodedKeySpec;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import java.util.Optional;
@@ -34,6 +38,7 @@ public class KeyService {
     private static final String KIND_SECRET = KeyKind.SECRET.name();
 
     private final SKeyRepository repository;
+    private final MongoTemplate mongoTemplate;
 
     public Optional<PublicKey> getPublicKey(KeyType type, KeyId id) {
         return repository
@@ -268,5 +273,101 @@ public class KeyService {
             log.error("storePublicKey: Fehler beim Speichern des Public Keys type={} owner={} intent={} keyId={}: {}", type, ownerStr, intentStr, keyId.id(), e.toString());
             throw new IllegalStateException("Speichern des Public Keys fehlgeschlagen", e);
         }
+    }
+
+    /**
+     * Dynamic administrative search over the owned SKey entities. All filter
+     * parameters are optional (null means "no restriction"). The type and kind
+     * values are upper-cased to match the stored enum names.
+     *
+     * @param type      optional key type (case-insensitive)
+     * @param kind      optional key kind (case-insensitive)
+     * @param name      optional keyId (matched exactly)
+     * @param algorithm optional algorithm (matched exactly)
+     * @return all matching keys
+     */
+    public List<SKey> searchKeys(String type, String kind, String name, String algorithm) {
+        Query query = new Query();
+        List<Criteria> criteria = new ArrayList<>();
+        if (type != null) criteria.add(Criteria.where("type").is(type.toUpperCase()));
+        if (kind != null) criteria.add(Criteria.where("kind").is(kind.toUpperCase()));
+        if (name != null) criteria.add(Criteria.where("keyId").is(name));
+        if (algorithm != null) criteria.add(Criteria.where("algorithm").is(algorithm));
+        if (!criteria.isEmpty()) {
+            query.addCriteria(new Criteria().andOperator(criteria.toArray(new Criteria[0])));
+        }
+        return mongoTemplate.find(query, SKey.class);
+    }
+
+    /** Loads a single owned key by its database id. */
+    public Optional<SKey> findKeyById(String id) {
+        return repository.findById(id);
+    }
+
+    /**
+     * Creates and persists a new key entity. The owner and intent are either
+     * taken from the explicit parameters or, when missing, parsed from the name
+     * in the form "owner;intent;id".
+     *
+     * @param type      key type (must be non-null)
+     * @param kind      key kind (must be non-null)
+     * @param algorithm key algorithm
+     * @param name      key name (mapped to keyId)
+     * @param key       Base64-encoded key content
+     * @param owner     explicit owner (optional)
+     * @param intent    explicit intent (optional)
+     * @return the persisted key
+     */
+    public SKey createKey(KeyType type, KeyKind kind, String algorithm, String name, String key, String owner, String intent) {
+        SKey e = new SKey();
+        e.setType(type);
+        e.setKind(kind);
+        e.setAlgorithm(algorithm);
+        e.setKeyId(name);
+        e.setKey(key);
+        // owner & intent explicitly provided or parsed from the name (owner;intent;id)
+        if (owner != null && !owner.isBlank()) e.setOwner(owner.trim());
+        if (intent != null && !intent.isBlank()) e.setIntent(intent.trim());
+        if ((e.getOwner() == null || e.getIntent() == null) && name != null) {
+            String[] parts = name.split(";", 3);
+            if (parts.length == 3) {
+                if (e.getOwner() == null) e.setOwner(parts[0]);
+                if (e.getIntent() == null) e.setIntent(parts[1]);
+                // keyId keeps the full name; parts[2] is intentionally not applied.
+            }
+        }
+        return repository.save(e);
+    }
+
+    /**
+     * Renames (updates the keyId of) an existing key.
+     *
+     * @param id      the database id of the key
+     * @param newName the new keyId value
+     * @return the updated key or empty if no key exists for the id
+     */
+    public Optional<SKey> renameKey(String id, String newName) {
+        Optional<SKey> opt = repository.findById(id);
+        if (opt.isEmpty()) return Optional.empty();
+        SKey e = opt.get();
+        e.setKeyId(newName);
+        return Optional.of(repository.save(e));
+    }
+
+    /**
+     * Deletes an existing key.
+     *
+     * @param id the database id of the key
+     * @return true if a key was deleted, false if none existed for the id
+     */
+    public boolean deleteKey(String id) {
+        if (!repository.existsById(id)) return false;
+        repository.deleteById(id);
+        return true;
+    }
+
+    /** Passthrough existence check by type/kind/owner/intent. */
+    public boolean existsByTypeKindOwnerIntent(String type, String kind, String owner, String intent) {
+        return repository.existsByTypeAndKindAndOwnerAndIntent(type, kind, owner, intent);
     }
 }

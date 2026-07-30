@@ -10,7 +10,7 @@ import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.world.shared.world.WDocument;
 import de.mhus.nimbus.world.shared.world.WDocumentService;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
-import de.mhus.nimbus.world.shared.world.WHexGridRepository;
+import de.mhus.nimbus.world.shared.world.WHexGridService;
 import de.mhus.nimbus.world.shared.world.WWorld;
 import de.mhus.nimbus.world.shared.world.WWorldService;
 import de.mhus.nimbus.generated.types.WorldInfo;
@@ -38,7 +38,7 @@ public class GenerateHexGridFromCompositeJobTest {
     private ApplyTranslatedInstructionJobExecutor applyJobExecutor;
     private WDocumentService documentService;
     private WWorldService worldService;
-    private WHexGridRepository hexGridRepository;
+    private WHexGridService hexGridService;
     private ObjectMapper objectMapper;
 
     // In-memory document storage for test
@@ -73,9 +73,9 @@ public class GenerateHexGridFromCompositeJobTest {
         worldService = mock(WWorldService.class);
         setupWorldServiceMock();
 
-        // Mock WHexGridRepository
-        hexGridRepository = mock(WHexGridRepository.class);
-        setupHexGridRepositoryMock();
+        // Mock WHexGridService
+        hexGridService = mock(WHexGridService.class);
+        setupHexGridServiceMock();
 
         // Load test document with generated composition
         loadTestDocument();
@@ -83,7 +83,7 @@ public class GenerateHexGridFromCompositeJobTest {
         // Create job executors
         generateJobExecutor = new GenerateHexGridFromCompositeJobExecutor(
                 documentService,
-                hexGridRepository,
+                hexGridService,
                 objectMapper
         );
 
@@ -936,14 +936,15 @@ public class GenerateHexGridFromCompositeJobTest {
     }
 
     /**
-     * Setup WHexGridRepository mock to track created/existing grids
+     * Setup WHexGridService mock to track created/existing grids
      */
-    private void setupHexGridRepositoryMock() {
+    private void setupHexGridServiceMock() {
         // Mock findAllByWorldIdAndPosition (used for both existence checks and lookups)
-        when(hexGridRepository.findAllByWorldIdAndPosition(any(String.class), any(String.class)))
+        when(hexGridService.findAllByWorldIdAndPosition(any(String.class), any(HexVector2.class)))
                 .thenAnswer(invocation -> {
                     String worldId = invocation.getArgument(0);
-                    String position = invocation.getArgument(1);
+                    HexVector2 hexPos = invocation.getArgument(1);
+                    String position = hexPos.getQ() + ";" + hexPos.getR();
 
                     String key = worldId + ":" + position;
 
@@ -961,14 +962,6 @@ public class GenerateHexGridFromCompositeJobTest {
                     if (existingHexGridKeys.contains(key)) {
                         // Return a mock grid with EMPTY parameters to simulate the bug
                         // where grids exist but have no g_builder
-                        String[] parts = position.split(";");
-                        int q = Integer.parseInt(parts[0]);
-                        int r = Integer.parseInt(parts[1]);
-
-                        HexVector2 hexPos = HexVector2.builder()
-                                .q(q)
-                                .r(r)
-                                .build();
                         HexGrid publicData = HexGrid.builder()
                                 .position(hexPos)
                                 .build();
@@ -986,7 +979,7 @@ public class GenerateHexGridFromCompositeJobTest {
                 });
 
         // Mock save
-        when(hexGridRepository.save(any(WHexGrid.class)))
+        when(hexGridService.save(any(WHexGrid.class)))
                 .thenAnswer(invocation -> {
                     WHexGrid grid = invocation.getArgument(0);
 

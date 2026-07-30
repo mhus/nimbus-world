@@ -2,7 +2,7 @@ package de.mhus.nimbus.world.life.logic;
 
 import de.mhus.nimbus.world.shared.world.LogicEffect;
 import de.mhus.nimbus.world.shared.world.WLogicRule;
-import de.mhus.nimbus.world.shared.world.WLogicRuleRepository;
+import de.mhus.nimbus.world.shared.world.WLogicRuleService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
@@ -30,14 +30,14 @@ public class LogicRuleApplyHandler implements LogicEffectHandler {
 
     public static final String TYPE = "apply_rule";
 
-    private final WLogicRuleRepository ruleRepository;
+    private final WLogicRuleService ruleService;
     private final LogicSpelService spelService;
     private final LogicEffectRegistry effectRegistry;
 
-    public LogicRuleApplyHandler(WLogicRuleRepository ruleRepository,
+    public LogicRuleApplyHandler(WLogicRuleService ruleService,
                                  LogicSpelService spelService,
                                  @Lazy LogicEffectRegistry effectRegistry) {
-        this.ruleRepository = ruleRepository;
+        this.ruleService = ruleService;
         this.spelService = spelService;
         this.effectRegistry = effectRegistry;
     }
@@ -57,7 +57,7 @@ public class LogicRuleApplyHandler implements LogicEffectHandler {
 
         // Find the target rule by worldId and name
         // Rules are stored with the base worldId, but we look up by the full worldId first
-        WLogicRule targetRule = ruleRepository.findByWorldIdAndName(worldId, ruleName).orElse(null);
+        WLogicRule targetRule = ruleService.findByWorldIdAndName(worldId, ruleName).orElse(null);
         if (targetRule == null) {
             log.warn("apply_rule: rule '{}' not found for worldId={}", ruleName, worldId);
             return Set.of();

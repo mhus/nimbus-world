@@ -15,8 +15,9 @@ import de.mhus.nimbus.world.generator.composer.area.RelativePosition;
 import de.mhus.nimbus.world.generator.composer.flow.River;
 import de.mhus.nimbus.world.generator.composer.flow.Road;
 import de.mhus.nimbus.world.generator.composer.flow.RoadType;
+import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
-import de.mhus.nimbus.world.shared.world.WHexGridRepository;
+import de.mhus.nimbus.world.shared.world.WHexGridService;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -38,19 +39,19 @@ import static org.mockito.Mockito.when;
 @Slf4j
 public class FlowComposerTest {
 
-    private WHexGridRepository mockRepository;
+    private WHexGridService mockHexGridService;
 
     @BeforeEach
     public void setup() {
-        // Mock repository
-        mockRepository = Mockito.mock(WHexGridRepository.class);
+        // Mock owner service
+        mockHexGridService = Mockito.mock(WHexGridService.class);
 
-        // Mock repository to return empty for all lookups (simulate no existing grids)
-        when(mockRepository.findAllByWorldIdAndPosition(anyString(), anyString()))
+        // Mock service to return empty for all lookups (simulate no existing grids)
+        when(mockHexGridService.findAllByWorldIdAndPosition(anyString(), any(HexVector2.class)))
             .thenReturn(List.of());
 
         // Mock saveAll to return what was passed in
-        when(mockRepository.saveAll(any())).thenAnswer(invocation -> {
+        when(mockHexGridService.saveAll(any())).thenAnswer(invocation -> {
             List<WHexGrid> grids = invocation.getArgument(0);
             log.info("Mock repository saved {} grids", grids.size());
             return grids;
@@ -74,7 +75,7 @@ public class FlowComposerTest {
             .compose();
 
         // Generate WHexGrids for testing
-        result = HexCompositeTestHelper.generateWHexGridsForResult(result, composition, mockRepository);
+        result = HexCompositeTestHelper.generateWHexGridsForResult(result, composition, mockHexGridService);
 
         // Verify composition successful
         assertTrue(result.isSuccess(), "Composition should succeed");
@@ -152,7 +153,7 @@ public class FlowComposerTest {
             .compose();
 
         // Generate WHexGrids for testing
-        result = HexCompositeTestHelper.generateWHexGridsForResult(result, composition, mockRepository);
+        result = HexCompositeTestHelper.generateWHexGridsForResult(result, composition, mockHexGridService);
 
         // Verify composition successful
         assertTrue(result.isSuccess(), "Composition should succeed");

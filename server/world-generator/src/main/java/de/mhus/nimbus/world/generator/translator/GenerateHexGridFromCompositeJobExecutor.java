@@ -13,7 +13,7 @@ import de.mhus.nimbus.world.shared.job.JobExecutor;
 import de.mhus.nimbus.world.shared.job.WJob;
 import de.mhus.nimbus.world.shared.world.WDocument;
 import de.mhus.nimbus.world.shared.world.WDocumentService;
-import de.mhus.nimbus.world.shared.world.WHexGridRepository;
+import de.mhus.nimbus.world.shared.world.WHexGridService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -44,7 +44,7 @@ import static de.mhus.nimbus.world.generator.translator.TranslateInstructionJobE
  * - failure: Error message
  *
  * This job creates or updates all WHexGrids described in the composition.
- * WHexGrids are created in the database via WHexGridRepository.
+ * WHexGrids are created in the database via WHexGridService (data ownership).
  */
 @Component
 @Slf4j
@@ -54,7 +54,7 @@ public class GenerateHexGridFromCompositeJobExecutor implements JobExecutor {
     private static final String EXECUTOR_NAME = "generator-generate-hexgrid-from-composite";
 
     private final WDocumentService documentService;
-    private final WHexGridRepository hexGridRepository;
+    private final WHexGridService hexGridService;
     private final ObjectMapper objectMapper;
 
     @Override
@@ -142,7 +142,7 @@ public class GenerateHexGridFromCompositeJobExecutor implements JobExecutor {
 
                 // Check if grid already exists in database
                 var existingList =
-                    hexGridRepository.findAllByWorldIdAndPosition(composition.getWorldId(), position);
+                    hexGridService.findAllByWorldIdAndPosition(composition.getWorldId(), coord);
 
                 de.mhus.nimbus.world.shared.world.WHexGrid wHexGrid;
 
@@ -215,8 +215,13 @@ public class GenerateHexGridFromCompositeJobExecutor implements JobExecutor {
                     createdGrids++;
                 }
 
-                // Save to repository
-                hexGridRepository.save(wHexGrid);
+                // Save through the owner service (data ownership).
+                // NOTE: Behavioral change vs. the former raw repository.save — the owner
+                // save runs the epoch pull/validate step (pullConflictingEpochs). For a
+                // newly created grid at a position with no existing document this is a
+                // no-op; for an updated grid it silently pulls overlapping epochs from
+                // any other document at the same position.
+                hexGridService.save(wHexGrid);
             }
 
             log.info("WHexGrid creation/update complete: created={}, updated={}, total={}",
@@ -228,8 +233,11 @@ public class GenerateHexGridFromCompositeJobExecutor implements JobExecutor {
 
             // Iterate over unique coordinates only (use Set instead of List to avoid duplicates)
             for (String position : allCoordinateStrings) {
+                // Parse coordinate from position string
+                HexVector2 coord = TypeUtil.parseHexCoord(position);
+
                 var gridList =
-                    hexGridRepository.findAllByWorldIdAndPosition(composition.getWorldId(), position);
+                    hexGridService.findAllByWorldIdAndPosition(composition.getWorldId(), coord);
 
                 if (gridList.isEmpty()) {
                     continue;
@@ -237,9 +245,6 @@ public class GenerateHexGridFromCompositeJobExecutor implements JobExecutor {
 
                 de.mhus.nimbus.world.shared.world.WHexGrid grid = gridList.getFirst();
                 boolean modified = false;
-
-                // Parse coordinate from position string
-                HexVector2 coord = TypeUtil.parseHexCoord(position);
 
 // Note: In the actual BLENDER builder, it calculates neighbor flat IDs based on the center flat's coordinates.
 //                // For each hex side, check if neighbor exists and add edge_flat parameter
@@ -268,7 +273,10 @@ public class GenerateHexGridFromCompositeJobExecutor implements JobExecutor {
                 modified = true;
 
                 if (modified) {
-                    hexGridRepository.save(grid);
+                    // Save through the owner service (data ownership). As above, this now
+                    // runs the epoch pull/validate step; the grid already exists so the
+                    // pull is performed silently.
+                    hexGridService.save(grid);
                     edgeParamsAdded++;
                 }
             }

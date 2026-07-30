@@ -531,6 +531,23 @@ public class WHexGridService {
         return duplicatedCount;
     }
 
+    /**
+     * Owner-level bulk save. Persists the given hex grids as-is so callers do not
+     * touch the WHexGrid repository directly (data ownership). The caller is
+     * responsible for having applied touchCreate/syncPositionKey; these are NOT
+     * re-applied here. No epoch pull/validate is performed, matching the caller's
+     * bulk create semantics for freshly built grids without epoches.
+     *
+     * @return the saved hex grids
+     */
+    @Transactional
+    public List<WHexGrid> saveAll(List<WHexGrid> entities) {
+        if (entities == null) {
+            throw new IllegalArgumentException("entities required");
+        }
+        return repository.saveAll(entities);
+    }
+
     // --- Epoch Pull/Validate ---
     // See readme/EPOCH_ENTITY_MANAGEMENT.md – Epoch Pull/Validate Pattern
 

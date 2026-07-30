@@ -22,7 +22,6 @@ import java.util.stream.Collectors;
 public class TerrainTools implements McpToolBean {
 
     private final WLayerService layerService;
-    private final WLayerTerrainRepository terrainRepository;
     private final WWorldService worldService;
 
     @Tool(name = "list_terrain_chunk_keys", description = "List chunk keys (cx:cz) that have terrain data for a specific layer")
@@ -81,8 +80,8 @@ public class TerrainTools implements McpToolBean {
         result.put("cx", cx);
         result.put("cz", cz);
 
-        Optional<WLayerTerrain> terrainOpt = terrainRepository
-                .findByWorldIdAndLayerDataIdAndChunkKey(worldId, layer.getLayerDataId(), chunkKey);
+        Optional<WLayerTerrain> terrainOpt = layerService
+                .findTerrainChunk(worldId, layer.getLayerDataId(), chunkKey);
 
         if (terrainOpt.isEmpty()) {
             result.put("exists", false);

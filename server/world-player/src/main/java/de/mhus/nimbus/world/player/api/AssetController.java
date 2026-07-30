@@ -5,7 +5,6 @@ import de.mhus.nimbus.world.shared.access.AccessValidator;
 import de.mhus.nimbus.world.shared.world.SAssetService;
 import de.mhus.nimbus.world.shared.world.AssetMetadata;
 import de.mhus.nimbus.world.shared.world.SAsset;
-import de.mhus.nimbus.world.shared.world.SAssetRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -40,7 +39,6 @@ import java.util.Map;
 public class AssetController {
 
     private final SAssetService assetService;
-    private final SAssetRepository assetRepository;
     private final AccessValidator accessUtil;
 
     /**

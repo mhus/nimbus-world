@@ -27,7 +27,6 @@ import java.util.stream.Collectors;
 public class LayerModelTools implements McpToolBean {
 
     private final WLayerService layerService;
-    private final WLayerModelRepository modelRepository;
     private final ObjectMapper objectMapper;
 
     @Tool(name = "get_layer_blocks", description = "Get blocks from a MODEL layer")
@@ -58,7 +57,7 @@ public class LayerModelTools implements McpToolBean {
             return Map.of("blocks", List.of(), "count", 0);
         }
 
-        Optional<WLayerModel> modelOpt = modelRepository.findFirstByLayerDataId(layer.getLayerDataId());
+        Optional<WLayerModel> modelOpt = layerService.findFirstModelByLayerDataId(layer.getLayerDataId());
         if (modelOpt.isEmpty()) {
             return Map.of("blocks", List.of(), "count", 0);
         }
@@ -111,7 +110,7 @@ public class LayerModelTools implements McpToolBean {
         }
 
         // Load or create model
-        WLayerModel model = modelRepository.findFirstByLayerDataId(layer.getLayerDataId())
+        WLayerModel model = layerService.findFirstModelByLayerDataId(layer.getLayerDataId())
                 .orElseGet(() -> {
                     WLayerModel newModel = WLayerModel.builder()
                             .worldId(worldId)
@@ -148,7 +147,7 @@ public class LayerModelTools implements McpToolBean {
         model.setContent(allBlocks);
         model.touchUpdate();
 
-        modelRepository.save(model);
+        layerService.saveModel(model);
 
         log.info("MCP: Added {} blocks to layer: id={}", newBlocks.size(), layerId);
         return Map.of(
@@ -250,12 +249,12 @@ public class LayerModelTools implements McpToolBean {
         }
 
         // Check for duplicate name in layer
-        if (modelRepository.existsByLayerDataIdAndName(layer.getLayerDataId(), model.getName())) {
+        if (layerService.existsModelByLayerDataIdAndName(layer.getLayerDataId(), model.getName())) {
             throw new McpToolException("Model with name '" + model.getName() + "' already exists in this layer");
         }
 
         model.touchCreate();
-        WLayerModel saved = modelRepository.save(model);
+        WLayerModel saved = layerService.saveModel(model);
 
         log.info("MCP: Imported layer model: id={}, name={}, blocks={}", saved.getId(), saved.getName(), saved.getContent().size());
 
@@ -362,12 +361,12 @@ public class LayerModelTools implements McpToolBean {
         }
 
         // Check for duplicate name in layer
-        if (modelRepository.existsByLayerDataIdAndName(layer.getLayerDataId(), sourceModel.getName())) {
+        if (layerService.existsModelByLayerDataIdAndName(layer.getLayerDataId(), sourceModel.getName())) {
             throw new McpToolException("Model with name '" + sourceModel.getName() + "' already exists in this layer");
         }
 
         sourceModel.touchCreate();
-        WLayerModel saved = modelRepository.save(sourceModel);
+        WLayerModel saved = layerService.saveModel(sourceModel);
 
         log.info("MCP: Imported layer model from JSON: id={}, name={}, blocks={}",
                 saved.getId(), saved.getName(), saved.getContent().size());
@@ -410,7 +409,7 @@ public class LayerModelTools implements McpToolBean {
 
         int touched = 0;
         if (!Strings.isBlank(modelName)) {
-            Optional<WLayerModel> modelOpt = modelRepository.findByLayerDataIdAndName(layer.getLayerDataId(), modelName);
+            Optional<WLayerModel> modelOpt = layerService.findModelByLayerDataIdAndName(layer.getLayerDataId(), modelName);
             if (modelOpt.isEmpty()) {
                 throw new McpToolException("model not found: " + modelName);
             }
@@ -420,7 +419,7 @@ public class LayerModelTools implements McpToolBean {
             // Load only IDs first to avoid heavy memory load, then process one by one
             List<String> modelIds = layerService.getModelIds(layer.getLayerDataId());
             for (String modelId : modelIds) {
-                Optional<WLayerModel> modelOpt = modelRepository.findById(modelId);
+                Optional<WLayerModel> modelOpt = layerService.loadModelById(modelId);
                 if (modelOpt.isPresent()) {
                     layerService.saveModel(modelOpt.get());
                     touched++;

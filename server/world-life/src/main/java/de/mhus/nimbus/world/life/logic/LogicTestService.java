@@ -2,7 +2,7 @@ package de.mhus.nimbus.world.life.logic;
 
 import de.mhus.nimbus.world.shared.world.LogicConditionService;
 import de.mhus.nimbus.world.shared.world.WLogicRule;
-import de.mhus.nimbus.world.shared.world.WLogicRuleRepository;
+import de.mhus.nimbus.world.shared.world.WLogicRuleService;
 import de.mhus.nimbus.world.shared.world.WProgressService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,18 +25,18 @@ public class LogicTestService {
     private static final String LOGIC_FLAG_TYPE = "logic-flag";
 
     private final WProgressService progressService;
-    private final WLogicRuleRepository ruleRepository;
+    private final WLogicRuleService ruleService;
     private final LogicConditionService conditionService;
     private final LogicMachineService logicMachineService;
     private final LogicSpelService spelService;
 
     public Map<String, Object> testCondition(String worldId, String ruleId,
                                               Map<String, Object> inlineData) {
-        return conditionService.testCondition(worldId, ruleId, ruleRepository, inlineData);
+        return conditionService.testCondition(worldId, ruleId, inlineData);
     }
 
     public Map<String, Object> simulate(String ruleId, Map<String, Object> flags) {
-        return conditionService.simulate(ruleId, ruleRepository, flags);
+        return conditionService.simulate(ruleId, flags);
     }
 
     public Map<String, Object> execute(String worldId, String ruleId) {
@@ -45,7 +45,7 @@ public class LogicTestService {
         result.put("worldId", worldId);
 
         try {
-            WLogicRule rule = ruleRepository.findById(ruleId).orElse(null);
+            WLogicRule rule = ruleService.findById(ruleId).orElse(null);
             if (rule == null) {
                 result.put("error", "Rule not found: " + ruleId);
                 return result;

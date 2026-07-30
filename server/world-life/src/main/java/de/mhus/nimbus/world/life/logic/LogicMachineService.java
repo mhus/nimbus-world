@@ -4,9 +4,9 @@ import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.shared.redis.WorldRedisLockService;
 import de.mhus.nimbus.world.shared.world.LogicEffect;
 import de.mhus.nimbus.world.shared.world.WLogicStateDef;
-import de.mhus.nimbus.world.shared.world.WLogicStateDefRepository;
+import de.mhus.nimbus.world.shared.world.WLogicStateService;
 import de.mhus.nimbus.world.shared.world.WLogicRule;
-import de.mhus.nimbus.world.shared.world.WLogicRuleRepository;
+import de.mhus.nimbus.world.shared.world.WLogicRuleService;
 import de.mhus.nimbus.world.shared.world.WProgressService;
 import de.mhus.nimbus.world.shared.world.WWorldInstanceService;
 import lombok.RequiredArgsConstructor;
@@ -44,8 +44,8 @@ public class LogicMachineService {
     private static final Duration LOCK_TTL = Duration.ofSeconds(30);
 
     private final WProgressService progressService;
-    private final WLogicRuleRepository ruleRepository;
-    private final WLogicStateDefRepository stateDefRepository;
+    private final WLogicRuleService ruleService;
+    private final WLogicStateService logicStateService;
     private final LogicEffectRegistry effectRegistry;
     private final LogicSpelService spelService;
     private final WorldRedisLockService lockService;
@@ -219,9 +219,8 @@ public class LogicMachineService {
         }
 
         // Find rules affected by the changed flags, filtered by epoch
-        List<WLogicRule> affectedRules = ruleRepository
-                .findByWorldIdAndAffectedInAndEnabledTrueAndEpochesContaining(
-                        worldId, List.copyOf(changedFlags), epoch);
+        List<WLogicRule> affectedRules = ruleService
+                .findAffectedRules(worldId, List.copyOf(changedFlags), epoch);
 
         // Sort by priority (lower = first)
         affectedRules.sort((a, b) -> Integer.compare(a.getPriority(), b.getPriority()));
@@ -259,7 +258,7 @@ public class LogicMachineService {
                         rule.getName(), e.getMessage());
                 rule.setEnabled(false);
                 rule.setUpdatedAt(Instant.now());
-                ruleRepository.save(rule);
+                ruleService.save(rule);
             } catch (Exception e) {
                 metricsService.recordRuleError(worldId, rule.getName());
                 log.error("Logic Machine: error executing rule '{}': {}",
@@ -368,7 +367,7 @@ public class LogicMachineService {
      */
     private void autoCreateFlagDefinitions(String worldId, Set<String> names) {
         for (String name : names) {
-            if (stateDefRepository.findByWorldIdAndName(worldId, name).isEmpty()) {
+            if (logicStateService.findByWorldIdAndName(worldId, name).isEmpty()) {
                 WLogicStateDef flag = WLogicStateDef.builder()
                         .worldId(worldId)
                         .name(name)
@@ -376,7 +375,7 @@ public class LogicMachineService {
                         .description("auto-created")
                         .createdAt(Instant.now())
                         .build();
-                stateDefRepository.save(flag);
+                logicStateService.save(flag);
                 log.info("Logic Machine: auto-created flag definition '{}' for worldId={}", name, worldId);
             }
         }

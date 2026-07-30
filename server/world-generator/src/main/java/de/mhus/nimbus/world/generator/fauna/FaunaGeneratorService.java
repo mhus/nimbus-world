@@ -1,6 +1,7 @@
 package de.mhus.nimbus.world.generator.fauna;
 
 import de.mhus.nimbus.generated.types.Entity;
+import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.generated.types.Vector2Int;
 import de.mhus.nimbus.generated.types.Vector3;
 import de.mhus.nimbus.shared.types.WorldId;
@@ -13,7 +14,7 @@ import de.mhus.nimbus.world.shared.world.WAnythingService;
 import de.mhus.nimbus.world.shared.world.WEntity;
 import de.mhus.nimbus.world.shared.world.WEntityService;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
-import de.mhus.nimbus.world.shared.world.WHexGridRepository;
+import de.mhus.nimbus.world.shared.world.WHexGridService;
 import de.mhus.nimbus.world.shared.world.WWorld;
 import de.mhus.nimbus.world.shared.world.WWorldService;
 import de.mhus.nimbus.world.shared.dto.HeightDataDto;
@@ -47,7 +48,7 @@ public class FaunaGeneratorService {
     public static final String SOURCE = "fauna-generator";
 
     private final WWorldService worldService;
-    private final WHexGridRepository hexGridRepository;
+    private final WHexGridService hexGridService;
     private final WAnythingService anythingService;
     private final WLayerService layerService;
     private final WEntityService entityService;
@@ -67,8 +68,8 @@ public class FaunaGeneratorService {
                 .orElseThrow(() -> new RuntimeException("World not found: " + worldId));
 
         String position = hexQ + ";" + hexR;
-        WHexGrid hexGrid = hexGridRepository.findAllByWorldIdAndPosition(worldId, position)
-                .stream().findFirst()
+        HexVector2 hexPos = HexVector2.builder().q(hexQ).r(hexR).build();
+        WHexGrid hexGrid = hexGridService.findByWorldIdAndPosition(worldId, hexPos)
                 .orElseThrow(() -> new RuntimeException("HexGrid not found: " + position));
 
         Map<String, String> params = hexGrid.getParameters();

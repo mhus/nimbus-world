@@ -4,6 +4,7 @@ import de.mhus.nimbus.shared.persistence.SKey;
 import de.mhus.nimbus.shared.persistence.SKeyRepository;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
+import org.springframework.data.mongodb.core.MongoTemplate;
 
 import java.security.KeyPair;
 import java.security.PrivateKey;
@@ -20,7 +21,7 @@ class KeyServiceTest {
     @Test
     void createECCKeys_generatesEcKeys() {
         SKeyRepository repo = Mockito.mock(SKeyRepository.class);
-        KeyService service = new KeyService(repo);
+        KeyService service = new KeyService(repo, Mockito.mock(MongoTemplate.class));
         KeyPair pair = service.createECCKeys();
         assertNotNull(pair.getPrivate());
         assertNotNull(pair.getPublic());
@@ -31,7 +32,7 @@ class KeyServiceTest {
     @Test
     void getLatestPrivateKey_filtersExpiredDisabled() {
         SKeyRepository repo = Mockito.mock(SKeyRepository.class);
-        KeyService service = new KeyService(repo);
+        KeyService service = new KeyService(repo, Mockito.mock(MongoTemplate.class));
         SKey good = new SKey();
         good.setId("1");
         good.setType(KeyType.UNIVERSE); good.setKind(KeyKind.PRIVATE); good.setOwner("system"); good.setIntent("auth"); good.setKeyId("kid");
@@ -48,7 +49,7 @@ class KeyServiceTest {
     @Test
     void parseKeyId_valid() {
         SKeyRepository repo = Mockito.mock(SKeyRepository.class);
-        KeyService service = new KeyService(repo);
+        KeyService service = new KeyService(repo, Mockito.mock(MongoTemplate.class));
         Optional<KeyId> id = service.parseKeyId("owner;intent;uuid");
         assertTrue(id.isPresent());
         assertEquals("owner", id.get().owner());
@@ -58,7 +59,7 @@ class KeyServiceTest {
 
     @Test
     void parseKeyId_invalid() {
-        KeyService service = new KeyService(Mockito.mock(SKeyRepository.class));
+        KeyService service = new KeyService(Mockito.mock(SKeyRepository.class), Mockito.mock(MongoTemplate.class));
         assertTrue(service.parseKeyId(";x;x").isEmpty()); // missing owner
         assertTrue(service.parseKeyId("x;;x").isEmpty()); // missing intent
         assertTrue(service.parseKeyId("x;x;").isEmpty()); // missing id

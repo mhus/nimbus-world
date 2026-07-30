@@ -1,13 +1,10 @@
 package de.mhus.nimbus.world.control.api;
 
 import de.mhus.nimbus.shared.persistence.SKey;
-import de.mhus.nimbus.shared.persistence.SKeyRepository;
 import de.mhus.nimbus.shared.security.KeyKind;
+import de.mhus.nimbus.shared.security.KeyService;
 import de.mhus.nimbus.shared.security.KeyType;
 import jakarta.validation.Valid;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -23,9 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 import de.mhus.nimbus.shared.user.SectorRoles;
 import de.mhus.nimbus.world.shared.access.RequireSectorRole;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 /**
  * Shared REST Controller für Schlüsselverwaltung unter /shared/key.
@@ -37,12 +32,10 @@ import java.util.Optional;
 @RequireSectorRole(SectorRoles.ADMIN)
 public class SharedKeyController {
 
-    private final SKeyRepository repository;
-    private final MongoTemplate mongoTemplate;
+    private final KeyService keyService;
 
-    public SharedKeyController(SKeyRepository repository, MongoTemplate mongoTemplate) {
-        this.repository = repository;
-        this.mongoTemplate = mongoTemplate;
+    public SharedKeyController(KeyService keyService) {
+        this.keyService = keyService;
     }
 
     @GetMapping
@@ -50,24 +43,16 @@ public class SharedKeyController {
                               @RequestParam(name = "kind", required = false) String kind,
                               @RequestParam(name = "name", required = false) String name,
                               @RequestParam(name = "algorithm", required = false) String algorithm) {
-        Query query = new Query();
-        List<Criteria> criteria = new ArrayList<>();
-        if (type != null) criteria.add(Criteria.where("type").is(type.toUpperCase()));
-        if (kind != null) criteria.add(Criteria.where("kind").is(kind.toUpperCase()));
-        if (name != null) criteria.add(Criteria.where("keyId").is(name));
-        if (algorithm != null) criteria.add(Criteria.where("algorithm").is(algorithm));
-        if (!criteria.isEmpty()) {
-            query.addCriteria(new Criteria().andOperator(criteria.toArray(new Criteria[0])));
-        }
-        return mongoTemplate.find(query, SKey.class).stream()
+        return keyService.searchKeys(type, kind, name, algorithm).stream()
                 .map(this::toDto)
                 .toList();
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<SharedSKeyDto> get(@PathVariable("id") String id) {
-        Optional<SKey> opt = repository.findById(id);
-        return opt.map(e -> ResponseEntity.ok(toDto(e))).orElseGet(() -> ResponseEntity.notFound().build());
+        return keyService.findKeyById(id)
+                .map(e -> ResponseEntity.ok(toDto(e)))
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @PostMapping
@@ -81,41 +66,20 @@ public class SharedKeyController {
         } catch (Exception ex) {
             return ResponseEntity.badRequest().build();
         }
-        SKey e = new SKey();
-        e.setType(keyType);
-        e.setKind(keyKind);
-        e.setAlgorithm(req.getAlgorithm());
-        e.setKeyId(req.getName());
-        e.setKey(req.getKey());
-        // owner & intent explizit oder aus title parsen
-        if (req.getOwner() != null && !req.getOwner().isBlank()) e.setOwner(req.getOwner().trim());
-        if (req.getIntent() != null && !req.getIntent().isBlank()) e.setIntent(req.getIntent().trim());
-        if ((e.getOwner() == null || e.getIntent() == null) && req.getName() != null) {
-            String[] parts = req.getName().split(";",3);
-            if (parts.length == 3) {
-                if (e.getOwner() == null) e.setOwner(parts[0]);
-                if (e.getIntent() == null) e.setIntent(parts[1]);
-                // keyId bleibt voller title; alternativ parts[2] als keyId setzen? Nur ändern falls gewünscht
-            }
-        }
-        SKey saved = repository.save(e);
+        SKey saved = keyService.createKey(keyType, keyKind, req.getAlgorithm(), req.getName(), req.getKey(), req.getOwner(), req.getIntent());
         return ResponseEntity.ok(toDto(saved));
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<SharedSKeyDto> updateName(@PathVariable("id") String id, @Valid @RequestBody SharedUpdateSKeyNameRequest req) {
-        Optional<SKey> opt = repository.findById(id);
-        if (opt.isEmpty()) return ResponseEntity.notFound().build();
-        SKey e = opt.get();
-        e.setKeyId(req.getName());
-        SKey saved = repository.save(e);
-        return ResponseEntity.ok(toDto(saved));
+        return keyService.renameKey(id, req.getName())
+                .map(e -> ResponseEntity.ok(toDto(e)))
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable("id") String id) {
-        if (!repository.existsById(id)) return ResponseEntity.notFound().build();
-        repository.deleteById(id);
+        if (!keyService.deleteKey(id)) return ResponseEntity.notFound().build();
         return ResponseEntity.noContent().build();
     }
 
@@ -124,7 +88,7 @@ public class SharedKeyController {
                                                @RequestParam("kind") String kind,
                                                @RequestParam("owner") String owner,
                                                @RequestParam("intent") String intent) {
-        boolean ex = repository.existsByTypeAndKindAndOwnerAndIntent(type.toUpperCase(), kind.toUpperCase(), owner, intent);
+        boolean ex = keyService.existsByTypeKindOwnerIntent(type.toUpperCase(), kind.toUpperCase(), owner, intent);
         return java.util.Map.of("exists", ex);
     }
 

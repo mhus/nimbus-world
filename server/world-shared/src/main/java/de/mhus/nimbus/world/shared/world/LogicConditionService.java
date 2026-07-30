@@ -39,6 +39,7 @@ public class LogicConditionService {
             "state\\.([a-zA-Z_]\\w*)(?![\\w.])");
 
     private final WProgressService progressService;
+    private final WLogicRuleService ruleService;
 
     /**
      * Evaluate a SpEL condition against the current logic state of a world.
@@ -67,7 +68,6 @@ public class LogicConditionService {
      * Read-only, no state changes.
      */
     public Map<String, Object> testCondition(String worldId, String ruleId,
-                                              WLogicRuleRepository ruleRepository,
                                               Map<String, Object> inlineData) {
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("mode", "test");
@@ -77,7 +77,7 @@ public class LogicConditionService {
             String spelCondition;
             String rulePackage;
             if (ruleId != null) {
-                WLogicRule rule = ruleRepository.findById(ruleId).orElse(null);
+                WLogicRule rule = ruleService.findById(ruleId).orElse(null);
                 if (rule == null) {
                     result.put("error", "Rule not found: " + ruleId);
                     return result;
@@ -113,19 +113,17 @@ public class LogicConditionService {
      * Simulate: dry-run a rule with user-provided state (pure sandbox).
      * No DB access, no persistence, no broadcasts.
      *
-     * @param ruleId         rule ID
-     * @param ruleRepository repository for rule lookup
-     * @param userState      user-provided state as nested map: {"pkg": {"key": value}}
+     * @param ruleId    rule ID
+     * @param userState user-provided state as nested map: {"pkg": {"key": value}}
      */
     @SuppressWarnings("unchecked")
     public Map<String, Object> simulate(String ruleId,
-                                        WLogicRuleRepository ruleRepository,
                                         Map<String, Object> userState) {
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("mode", "simulate");
 
         try {
-            WLogicRule rule = ruleRepository.findById(ruleId).orElse(null);
+            WLogicRule rule = ruleService.findById(ruleId).orElse(null);
             if (rule == null) {
                 result.put("error", "Rule not found: " + ruleId);
                 return result;

@@ -5,7 +5,7 @@ import de.mhus.nimbus.shared.user.WorldRoles;
 import de.mhus.nimbus.world.shared.access.RequireWorldRole;
 import de.mhus.nimbus.world.shared.rest.BaseEditorController;
 import de.mhus.nimbus.world.shared.world.WLogicStateDef;
-import de.mhus.nimbus.world.shared.world.WLogicStateDefRepository;
+import de.mhus.nimbus.world.shared.world.WLogicStateService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -31,7 +31,7 @@ import java.util.stream.Collectors;
 @RequireWorldRole(WorldRoles.EDITOR)
 public class ELogicStateController extends BaseEditorController {
 
-    private final WLogicStateDefRepository stateDefRepository;
+    private final WLogicStateService stateService;
 
     @GetMapping
     @Operation(summary = "List all Logic State definitions")
@@ -47,7 +47,7 @@ public class ELogicStateController extends BaseEditorController {
         if (validation != null) return validation;
 
         String lookupWorldId = wid.toBaseWorldId().getId();
-        List<WLogicStateDef> all = stateDefRepository.findByWorldId(lookupWorldId);
+        List<WLogicStateDef> all = stateService.findByWorldId(lookupWorldId);
 
         if (!Strings.isBlank(query)) {
             String lowerQuery = query.toLowerCase();
@@ -81,7 +81,7 @@ public class ELogicStateController extends BaseEditorController {
         var validation = validateId(id, "id");
         if (validation != null) return validation;
 
-        Optional<WLogicStateDef> opt = stateDefRepository.findById(id);
+        Optional<WLogicStateDef> opt = stateService.findById(id);
         if (opt.isEmpty()) return notFound("state definition not found");
 
         WLogicStateDef flag = opt.get();
@@ -104,7 +104,7 @@ public class ELogicStateController extends BaseEditorController {
 
         String lookupWorldId = wid.toBaseWorldId().getId();
 
-        if (stateDefRepository.findByWorldIdAndName(lookupWorldId, name).isPresent()) {
+        if (stateService.findByWorldIdAndName(lookupWorldId, name).isPresent()) {
             return conflict("state name already exists");
         }
 
@@ -118,7 +118,7 @@ public class ELogicStateController extends BaseEditorController {
                 .createdAt(Instant.now())
                 .build();
 
-        WLogicStateDef saved = stateDefRepository.save(flag);
+        WLogicStateDef saved = stateService.save(flag);
         log.info("Created logic state: id={}, name={}, worldId={}", saved.getId(), saved.getName(), lookupWorldId);
         return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("id", saved.getId()));
     }
@@ -133,7 +133,7 @@ public class ELogicStateController extends BaseEditorController {
         var validation = validateId(id, "id");
         if (validation != null) return validation;
 
-        Optional<WLogicStateDef> opt = stateDefRepository.findById(id);
+        Optional<WLogicStateDef> opt = stateService.findById(id);
         if (opt.isEmpty()) return notFound("state definition not found");
 
         WLogicStateDef flag = opt.get();
@@ -155,7 +155,7 @@ public class ELogicStateController extends BaseEditorController {
 
         if (!changed) return bad("at least one field required for update");
 
-        WLogicStateDef saved = stateDefRepository.save(flag);
+        WLogicStateDef saved = stateService.save(flag);
         log.info("Updated logic state: id={}, name={}", id, saved.getName());
         return ResponseEntity.ok(toDto(saved));
     }
@@ -169,13 +169,13 @@ public class ELogicStateController extends BaseEditorController {
         var validation = validateId(id, "id");
         if (validation != null) return validation;
 
-        Optional<WLogicStateDef> opt = stateDefRepository.findById(id);
+        Optional<WLogicStateDef> opt = stateService.findById(id);
         if (opt.isEmpty()) return notFound("state definition not found");
 
         WLogicStateDef flag = opt.get();
         if (!flag.getWorldId().equals(worldId)) return notFound("state definition not found");
 
-        stateDefRepository.delete(flag);
+        stateService.delete(flag);
         log.info("Deleted logic state: id={}, name={}", id, flag.getName());
         return ResponseEntity.noContent().build();
     }

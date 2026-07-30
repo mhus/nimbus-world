@@ -565,6 +565,16 @@ public class WLayerService implements StorageProvider {
     }
 
     /**
+     * Find a terrain chunk entity by world, layerDataId and chunkKey.
+     * Returns the entity (not the stored block content) so callers can read
+     * metadata such as storageId, compressed flag and created/updated timestamps.
+     */
+    @Transactional(readOnly = true)
+    public Optional<WLayerTerrain> findTerrainChunk(String worldId, String layerDataId, String chunkKey) {
+        return terrainRepository.findByWorldIdAndLayerDataIdAndChunkKey(worldId, layerDataId, chunkKey);
+    }
+
+    /**
      * Core logic for deleting terrain chunk (without dirty marking).
      */
     private boolean deleteTerrainChunkCore(String worldId, String layerDataId, String chunkKey) {
@@ -1902,6 +1912,30 @@ public class WLayerService implements StorageProvider {
     @Transactional(readOnly = true)
     public Optional<WLayerModel> loadModelById(String modelId) {
         return modelRepository.findById(modelId);
+    }
+
+    /**
+     * Find the first model (full content) for a layerDataId.
+     */
+    @Transactional(readOnly = true)
+    public Optional<WLayerModel> findFirstModelByLayerDataId(String layerDataId) {
+        return modelRepository.findFirstByLayerDataId(layerDataId);
+    }
+
+    /**
+     * Find a model (full content) by layerDataId and name.
+     */
+    @Transactional(readOnly = true)
+    public Optional<WLayerModel> findModelByLayerDataIdAndName(String layerDataId, String name) {
+        return modelRepository.findByLayerDataIdAndName(layerDataId, name);
+    }
+
+    /**
+     * Check whether a model with the given layerDataId and name exists.
+     */
+    @Transactional(readOnly = true)
+    public boolean existsModelByLayerDataIdAndName(String layerDataId, String name) {
+        return modelRepository.existsByLayerDataIdAndName(layerDataId, name);
     }
 
     /**

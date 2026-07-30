@@ -11,7 +11,7 @@ import de.mhus.nimbus.world.shared.job.WJob;
 import de.mhus.nimbus.world.shared.layer.WLayer;
 import de.mhus.nimbus.world.shared.layer.WLayerService;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
-import de.mhus.nimbus.world.shared.world.WHexGridRepository;
+import de.mhus.nimbus.world.shared.world.WHexGridService;
 import de.mhus.nimbus.world.shared.world.WWorld;
 import de.mhus.nimbus.world.shared.world.WWorldService;
 import lombok.RequiredArgsConstructor;
@@ -41,7 +41,7 @@ public class HexGridStructurePlacerJobExecutor implements JobExecutor {
 
     public static final String EXECUTOR_NAME = "hexgrid-place-structures";
 
-    private final WHexGridRepository hexGridRepository;
+    private final WHexGridService hexGridService;
     private final WFlatService wFlatService;
     private final WWorldService worldService;
     private final WLayerService layerService;
@@ -79,8 +79,8 @@ public class HexGridStructurePlacerJobExecutor implements JobExecutor {
 
             // Load hex grid
             String position = hexQ + ";" + hexR;
-            WHexGrid hexGrid = hexGridRepository.findAllByWorldIdAndPosition(worldId, position)
-                    .stream().findFirst()
+            HexVector2 hexPos = HexVector2.builder().q(hexQ).r(hexR).build();
+            WHexGrid hexGrid = hexGridService.findByWorldIdAndPosition(worldId, hexPos)
                     .orElseThrow(() -> new JobExecutionException("HexGrid not found: " + position));
 
             // Load flat for coordinate mapping

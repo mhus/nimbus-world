@@ -1,5 +1,6 @@
 package de.mhus.nimbus.world.generator.flora;
 
+import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.generated.types.Vector2Int;
 import de.mhus.nimbus.generated.types.Vector3Int;
 import de.mhus.nimbus.shared.types.WorldId;
@@ -15,7 +16,7 @@ import de.mhus.nimbus.world.shared.layer.WLayerService;
 import de.mhus.nimbus.world.shared.world.WAnything;
 import de.mhus.nimbus.world.shared.world.WAnythingService;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
-import de.mhus.nimbus.world.shared.world.WHexGridRepository;
+import de.mhus.nimbus.world.shared.world.WHexGridService;
 import de.mhus.nimbus.world.shared.world.WWorld;
 import de.mhus.nimbus.world.shared.world.WWorldService;
 import de.mhus.nimbus.world.shared.dto.HeightDataDto;
@@ -52,7 +53,7 @@ public class FloraGeneratorService {
     private static final double DENSITY_DIVIDER = 10.0; // reduce density by this factor to avoid overpopulation
 
     private final WWorldService worldService;
-    private final WHexGridRepository hexGridRepository;
+    private final WHexGridService hexGridService;
     private final WAnythingService anythingService;
     private final WLayerService layerService;
     private final ModelBuilderService modelBuilderService;
@@ -75,8 +76,8 @@ public class FloraGeneratorService {
                 .orElseThrow(() -> new ModelBuilderException("World not found: " + worldId));
 
         String position = hexQ + ";" + hexR;
-        WHexGrid hexGrid = hexGridRepository.findAllByWorldIdAndPosition(worldId, position)
-                .stream().findFirst()
+        HexVector2 hexPos = HexVector2.builder().q(hexQ).r(hexR).build();
+        WHexGrid hexGrid = hexGridService.findByWorldIdAndPosition(worldId, hexPos)
                 .orElseThrow(() -> new ModelBuilderException("HexGrid not found: " + position));
 
         Map<String, String> params = hexGrid.getParameters();
