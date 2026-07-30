@@ -12,6 +12,12 @@ public class FlatPainter {
     @Getter
     private final WFlat flat;
     private int definition = DO_NOT_SET;
+    /**
+     * Whether column values are written. Enabled when a caller configures a
+     * column painter (or an explicit definition). Without this, setColumnPainter
+     * had no effect because the guards checked the never-set {@code definition}.
+     */
+    private boolean paintColumns = false;
 
     private Painter painter = DEFAULT_PAINTER;
 
@@ -73,8 +79,22 @@ public class FlatPainter {
     }
 
     public void setColumnPainter(ColumnPainter columnPainter) {
-        if (columnPainter == null) this.columnPainter = DEFAULT_COLUMN_PAINTER;
-        else this.columnPainter = columnPainter;
+        if (columnPainter == null) {
+            this.columnPainter = DEFAULT_COLUMN_PAINTER;
+        } else {
+            this.columnPainter = columnPainter;
+            // A configured column painter means the caller wants columns written.
+            this.paintColumns = true;
+        }
+    }
+
+    /**
+     * Sets a fixed column definition value and enables column painting. Used with
+     * the default column painter, which writes this value directly.
+     */
+    public void setColumnDefinition(int definition) {
+        this.definition = definition;
+        this.paintColumns = true;
     }
 
     public void line(int x1, int z1, int x2, int z2, int level) {
@@ -88,7 +108,7 @@ public class FlatPainter {
             // Check bounds for single point
             if (isInBounds(x1, z1)) {
                 flat.setLevel(x1, z1, painter.getLevel(flat, x1, z1, level));
-                if (definition > DO_NOT_SET) {
+                if (paintColumns) {
                     flat.setColumn(x1, z1, columnPainter.getColumn(flat, x1, z1, level, definition));
                 }
             }
@@ -104,7 +124,7 @@ public class FlatPainter {
             // Skip points outside bounds
             if (isInBounds(xi, zi)) {
                 flat.setLevel(xi, zi, painter.getLevel(flat, xi, zi, level));
-                if (definition > DO_NOT_SET) {
+                if (paintColumns) {
                     flat.setColumn(xi, zi, columnPainter.getColumn(flat, xi, zi, level, definition));
                 }
             }
@@ -133,7 +153,7 @@ public class FlatPainter {
                     int zi = z + dz;
                     if (isInBounds(xi, zi)) {
                         flat.setLevel(xi, zi, painter.getLevel(flat, xi, zi, level));
-                        if (definition > DO_NOT_SET) {
+                        if (paintColumns) {
                             flat.setColumn(xi, zi, columnPainter.getColumn(flat, xi, zi, level, definition));
                         }
                     }
@@ -154,7 +174,7 @@ public class FlatPainter {
             int zi = z + (int) Math.round(Math.sin(angle) * radius);
             if (isInBounds(xi, zi)) {
                 flat.setLevel(xi, zi, painter.getLevel(flat, xi, zi, level));
-                if (definition > DO_NOT_SET) {
+                if (paintColumns) {
                     flat.setColumn(xi, zi, columnPainter.getColumn(flat, xi, zi, level, definition));
                 }
             }
@@ -173,7 +193,7 @@ public class FlatPainter {
             for (int x = xmin; x <= xmax; x++) {
                 if (isInBounds(x, z)) {
                     flat.setLevel(x, z, painter.getLevel(flat, x, z, level));
-                    if (definition > DO_NOT_SET) {
+                    if (paintColumns) {
                         flat.setColumn(x, z, columnPainter.getColumn(flat, x, z, level, definition));
                     }
                 }
@@ -193,22 +213,22 @@ public class FlatPainter {
         for (int x = xmin; x <= xmax; x++) {
             if (isInBounds(x, zmin)) {
                 flat.setLevel(x, zmin, painter.getLevel(flat, x, zmin, level));
-                if (definition > DO_NOT_SET) flat.setColumn(x, zmin, columnPainter.getColumn(flat, x, zmin, level, definition));
+                if (paintColumns) flat.setColumn(x, zmin, columnPainter.getColumn(flat, x, zmin, level, definition));
             }
             if (zmin != zmax && isInBounds(x, zmax)) {
                 flat.setLevel(x, zmax, painter.getLevel(flat, x, zmax, level));
-                if (definition > DO_NOT_SET) flat.setColumn(x, zmax, columnPainter.getColumn(flat, x, zmax, level, definition));
+                if (paintColumns) flat.setColumn(x, zmax, columnPainter.getColumn(flat, x, zmax, level, definition));
             }
         }
         // linke und rechte Kante (ohne Ecken, da schon gesetzt)
         for (int z = zmin + 1; z < zmax; z++) {
             if (isInBounds(xmin, z)) {
                 flat.setLevel(xmin, z, painter.getLevel(flat, xmin, z, level));
-                if (definition > DO_NOT_SET) flat.setColumn(xmin, z, columnPainter.getColumn(flat, xmin, z, level, definition));
+                if (paintColumns) flat.setColumn(xmin, z, columnPainter.getColumn(flat, xmin, z, level, definition));
             }
             if (xmin != xmax && isInBounds(xmax, z)) {
                 flat.setLevel(xmax, z, painter.getLevel(flat, xmax, z, level));
-                if (definition > DO_NOT_SET) flat.setColumn(xmax, z, columnPainter.getColumn(flat, xmax, z, level, definition));
+                if (paintColumns) flat.setColumn(xmax, z, columnPainter.getColumn(flat, xmax, z, level, definition));
             }
         }
     }
@@ -373,7 +393,7 @@ public class FlatPainter {
     public void paint(int x, int z, int level, Painter painter) {
         if (isInBounds(x, z)) {
             flat.setLevel(x, z, painter.getLevel(flat, x, z, level));
-            if (definition > DO_NOT_SET) {
+            if (paintColumns) {
                 flat.setColumn(x, z, columnPainter.getColumn(flat, x, z, level, definition));
             }
         }
@@ -401,7 +421,7 @@ public class FlatPainter {
                         int l2 = flat.getLevel(nx, nz);
                         flat.setLevel(x, z, l2);
                         flat.setLevel(nx, nz, l1);
-                        if (definition > DO_NOT_SET) {
+                        if (paintColumns) {
                             int c1 = flat.getColumn(x, z);
                             int c2 = flat.getColumn(nx, nz);
                             flat.setColumn(x, z, c2);

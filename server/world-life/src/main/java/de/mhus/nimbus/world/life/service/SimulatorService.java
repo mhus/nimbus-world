@@ -504,7 +504,7 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
             entity.setPosition(lastWaypoint.getTarget());
             var world = getCachedWorld(worldId);
             if (world != null) {
-                updateEntityChunk(world, entity);
+                updateEntityChunk(worldId, world, entity);
             }
         }
 
@@ -574,7 +574,7 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
                     .build());
             var world = getCachedWorld(worldId);
             if (world != null) {
-                updateEntityChunk(world, entity);
+                updateEntityChunk(worldId, world, entity);
             }
         }
 
@@ -1153,12 +1153,33 @@ public class SimulatorService implements MultiWorldChunkService.WorldChunkChange
         }
     }
 
-    private void updateEntityChunk(WWorld world, WEntity entity) {
+    /**
+     * Keeps an entity's active-chunk references in sync with its position after it
+     * moved (pathway finished / respawn). Without this a wandering entity keeps
+     * only the chunk refs it was originally loaded with; once those deactivate it
+     * is unloaded even though it has walked into another still-active chunk.
+     */
+    private void updateEntityChunk(WorldId worldId, WWorld world, WEntity entity) {
         if (entity.getPosition() == null) return;
         var chunkSize = world.getPublicData().getChunkSize();
 
         int cx = (int) Math.floor(entity.getPosition().getX() / chunkSize);
         int cz = (int) Math.floor(entity.getPosition().getZ() / chunkSize);
         String newChunk = cx + ":" + cz;
+
+        Map<String, Set<String>> chunkRefs = entityActiveChunkRefs.get(worldId);
+        if (chunkRefs == null) return;
+        Set<String> entityChunks = chunkRefs.get(entity.getName());
+        if (entityChunks == null || entityChunks.contains(newChunk)) return;
+
+        // Only reference a chunk that is actually active, otherwise the entity
+        // could never be unloaded (no deactivation event would ever remove it).
+        boolean chunkActive = multiWorldChunkService.getActiveChunks(worldId).stream()
+                .anyMatch(c -> newChunk.equals(c.toKey()));
+        if (chunkActive) {
+            entityChunks.add(newChunk);
+            log.trace("World {}: entity {} moved into active chunk {}, tracking it",
+                    worldId, entity.getName(), newChunk);
+        }
     }
 }
