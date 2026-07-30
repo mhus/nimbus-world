@@ -1,6 +1,6 @@
 package de.mhus.nimbus.world.generator.chat;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.shared.utils.LocationService;
 import de.mhus.nimbus.world.shared.chat.RemoteWChatAgentProvider;
 import de.mhus.nimbus.world.shared.client.WorldClientService;

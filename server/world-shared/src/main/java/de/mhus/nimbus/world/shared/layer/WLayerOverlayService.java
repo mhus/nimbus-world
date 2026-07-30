@@ -1,6 +1,6 @@
 package de.mhus.nimbus.world.shared.layer;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.generated.types.Area;
 import de.mhus.nimbus.generated.types.AreaData;
 import de.mhus.nimbus.generated.types.Block;

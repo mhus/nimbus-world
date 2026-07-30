@@ -29,7 +29,13 @@
         <!-- Spring Web for RestTemplate and HTTP client -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-web</artifactId>
+            <artifactId>spring-boot-starter-webmvc</artifactId>
+        </dependency>
+
+        <!-- Boot 4: RestTemplateBuilder + its auto-configuration live in the restclient module -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-restclient</artifactId>
         </dependency>
 
         <!-- Spring Data Redis -->
@@ -44,10 +50,12 @@
             <artifactId>spring-boot-starter-data-mongodb</artifactId>
         </dependency>
 
-        <!-- Spring AOP for access control aspects -->
+        <!-- Spring AOP for access control aspects.
+             Boot 4 removed spring-boot-starter-aop; AopAutoConfiguration activates when
+             AspectJ weaver is on the classpath. Spring AOP itself comes via spring-context. -->
         <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-aop</artifactId>
+            <groupId>org.aspectj</groupId>
+            <artifactId>aspectjweaver</artifactId>
         </dependency>
 
         <!-- Dependency on generated module -->

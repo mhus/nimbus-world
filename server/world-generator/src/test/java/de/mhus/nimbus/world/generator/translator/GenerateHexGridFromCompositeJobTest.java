@@ -1,7 +1,7 @@
 package de.mhus.nimbus.world.generator.translator;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.shared.job.JobExecutor;
 import de.mhus.nimbus.world.shared.job.WJob;
@@ -26,6 +26,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.DeserializationFeature;
 
 /**
  * Manual test for GenerateHexGridFromCompositeJobExecutor.
@@ -62,8 +64,9 @@ public class GenerateHexGridFromCompositeJobTest {
         existingHexGridKeys.clear();
 
         // Create ObjectMapper with JavaTimeModule for Instant serialization
-        objectMapper = new ObjectMapper();
-        objectMapper.registerModule(new com.fasterxml.jackson.datatype.jsr310.JavaTimeModule());
+        objectMapper = JsonMapper.builder()
+                    .disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES)
+                .build();
 
         // Mock WDocumentService
         documentService = mock(WDocumentService.class);
@@ -663,8 +666,8 @@ public class GenerateHexGridFromCompositeJobTest {
      * Deduplicates by coordinate (last writer wins for same q,r).
      */
     private String enrichCompositionJsonWithFeatureHexGrids(String rawJson) throws Exception {
-        com.fasterxml.jackson.databind.node.ObjectNode root =
-                (com.fasterxml.jackson.databind.node.ObjectNode) objectMapper.readTree(rawJson);
+        tools.jackson.databind.node.ObjectNode root =
+                (tools.jackson.databind.node.ObjectNode) objectMapper.readTree(rawJson);
 
         // Collect all hexGrids from features, deduplicating by coordinate
         Map<String, JsonNode> uniqueGrids = new LinkedHashMap<>();
@@ -688,7 +691,7 @@ public class GenerateHexGridFromCompositeJobTest {
         }
 
         // Add featureHexGrids array to root
-        com.fasterxml.jackson.databind.node.ArrayNode featureHexGridsArray =
+        tools.jackson.databind.node.ArrayNode featureHexGridsArray =
                 objectMapper.createArrayNode();
         for (JsonNode grid : uniqueGrids.values()) {
             featureHexGridsArray.add(grid);

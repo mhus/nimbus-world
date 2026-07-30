@@ -1,6 +1,6 @@
 package de.mhus.nimbus.shared.engine;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.generated.types.ENTITY_POSES;
 import de.mhus.nimbus.generated.types.EntityPathway;
 import de.mhus.nimbus.generated.types.Rotation;

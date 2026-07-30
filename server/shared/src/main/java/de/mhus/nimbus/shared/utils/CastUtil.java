@@ -1,16 +1,14 @@
 package de.mhus.nimbus.shared.utils;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 import java.util.Map;
 
 public class CastUtil {
 
-    private static ObjectMapper mapper = new ObjectMapper();
-    static {
-        mapper.findAndRegisterModules();
-    }
+    // Jackson 3: ObjectMapper is immutable and auto-registers built-in modules (incl. java.time).
+    private static final ObjectMapper mapper = new ObjectMapper();
 
 
     public static int toint(Object value, int defaultValue) {
@@ -76,7 +74,7 @@ public class CastUtil {
     public static String mapToString(Map<String, Object> resultData) {
         try {
             return mapper.writeValueAsString(resultData);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new RuntimeException("Failed to serialize resultData map to JSON", e);
         }
     }

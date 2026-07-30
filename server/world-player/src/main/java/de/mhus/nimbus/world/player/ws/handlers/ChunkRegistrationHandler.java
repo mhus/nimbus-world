@@ -1,8 +1,8 @@
 package de.mhus.nimbus.world.player.ws.handlers;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ArrayNode;
 import de.mhus.nimbus.generated.network.messages.ChunkRegisterData;
 import de.mhus.nimbus.generated.types.EntityPathway;
 import de.mhus.nimbus.world.player.ws.ChunkSenderService;
@@ -160,12 +160,12 @@ public class ChunkRegistrationHandler implements MessageHandler {
      */
     private void publishChunkRegistrationUpdate(String worldId, String action, List<ChunkCoord> chunks) {
         try {
-            com.fasterxml.jackson.databind.node.ObjectNode message = objectMapper.createObjectNode();
+            tools.jackson.databind.node.ObjectNode message = objectMapper.createObjectNode();
             message.put("action", action);
 
             ArrayNode chunksArray = message.putArray("chunks");
             for (ChunkCoord chunk : chunks) {
-                com.fasterxml.jackson.databind.node.ObjectNode chunkObj = chunksArray.addObject();
+                tools.jackson.databind.node.ObjectNode chunkObj = chunksArray.addObject();
                 chunkObj.put("cx", chunk.cx());
                 chunkObj.put("cz", chunk.cz());
             }

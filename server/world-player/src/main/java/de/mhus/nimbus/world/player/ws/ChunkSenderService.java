@@ -1,7 +1,7 @@
 package de.mhus.nimbus.world.player.ws;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ArrayNode;
 import de.mhus.nimbus.generated.network.messages.ChunkDataTransferObject;
 import de.mhus.nimbus.generated.types.Block;
 import de.mhus.nimbus.generated.types.ChunkData;

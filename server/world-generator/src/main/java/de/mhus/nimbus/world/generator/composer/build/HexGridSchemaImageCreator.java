@@ -1,6 +1,6 @@
 package de.mhus.nimbus.world.generator.composer.build;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.world.generator.composer.feature.Feature;
 import de.mhus.nimbus.world.generator.composer.feature.FeatureHexGrid;
@@ -19,6 +19,8 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.DeserializationFeature;
 
 /**
  * Creates a schematic overview image showing which hex grids are filled with which biomes.
@@ -64,7 +66,7 @@ public class HexGridSchemaImageCreator {
     private static final Color TOWN_SLOT_CROSS_COLOR = new Color(255, 80, 80);
     private static final Color TOWN_SLOT_LABEL_COLOR = new Color(255, 255, 100);
 
-    private static final ObjectMapper objectMapper = new ObjectMapper();
+    private static final ObjectMapper objectMapper = JsonMapper.builder().disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES).build();
 
     private final HexComposition composition;
 

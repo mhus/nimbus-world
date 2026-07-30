@@ -51,11 +51,11 @@ public class WChunkStorageMigrator_1_0_0_to_1_0_1 implements SchemaMigrator {
     /**
      * Verarbeitet die Modifikatoren eines Block-Knotens
      */
-    public static void processBlockModifiers(com.fasterxml.jackson.databind.JsonNode blockNode, EngineMapper mapper) {
+    public static void processBlockModifiers(tools.jackson.databind.JsonNode blockNode, EngineMapper mapper) {
         var modifiersMap = blockNode.get("modifiers"); // object status
         // every value is modifier
         if (modifiersMap != null && modifiersMap.isObject()) {
-            var fields = modifiersMap.fields();
+            var fields = modifiersMap.properties().iterator();
             while (fields.hasNext()) {
                 var entry = fields.next();
                 var modifierValue = entry.getValue();
@@ -70,8 +70,8 @@ public class WChunkStorageMigrator_1_0_0_to_1_0_1 implements SchemaMigrator {
     /**
      * Verarbeitet die Sichtbarkeits-Modifikatoren
      */
-    public static void processVisibilityModifiers(com.fasterxml.jackson.databind.JsonNode blockNode,
-                                                   com.fasterxml.jackson.databind.JsonNode visibility,
+    public static void processVisibilityModifiers(tools.jackson.databind.JsonNode blockNode,
+                                                   tools.jackson.databind.JsonNode visibility,
                                                    EngineMapper mapper) {
         processRotationFix(blockNode, visibility, mapper);
         processTextureFix(visibility);
@@ -80,8 +80,8 @@ public class WChunkStorageMigrator_1_0_0_to_1_0_1 implements SchemaMigrator {
     /**
      * Behandelt die Rotation-Korrektur: verschiebt rotationX/Y vom visibility-Modifier zum Block
      */
-    private static void processRotationFix(com.fasterxml.jackson.databind.JsonNode blockNode,
-                                          com.fasterxml.jackson.databind.JsonNode visibility,
+    private static void processRotationFix(tools.jackson.databind.JsonNode blockNode,
+                                          tools.jackson.databind.JsonNode visibility,
                                           EngineMapper mapper) {
         double rotationX = visibility.get("rotationX") != null ? visibility.get("rotationX").asDouble(0) : 0;
         double rotationY = visibility.get("rotationY") != null ? visibility.get("rotationY").asDouble(0) : 0;
@@ -91,21 +91,21 @@ public class WChunkStorageMigrator_1_0_0_to_1_0_1 implements SchemaMigrator {
             var rotationNode = mapper.createObjectNode();
             rotationNode.put("x", rotationX);
             rotationNode.put("y", rotationY);
-            ((com.fasterxml.jackson.databind.node.ObjectNode) blockNode).set("rotation", rotationNode);
+            ((tools.jackson.databind.node.ObjectNode) blockNode).set("rotation", rotationNode);
         }
 
         // Remove rotation values from visibility
-        ((com.fasterxml.jackson.databind.node.ObjectNode) visibility).remove("rotationX");
-        ((com.fasterxml.jackson.databind.node.ObjectNode) visibility).remove("rotationY");
+        ((tools.jackson.databind.node.ObjectNode) visibility).remove("rotationX");
+        ((tools.jackson.databind.node.ObjectNode) visibility).remove("rotationY");
     }
 
     /**
      * Behandelt die Textur-Korrektur: fügt 'w/' Präfix zu Textur-Pfaden hinzu
      */
-    private static void processTextureFix(com.fasterxml.jackson.databind.JsonNode visibility) {
+    private static void processTextureFix(tools.jackson.databind.JsonNode visibility) {
         var texturesMap = visibility.get("textures");
         if (texturesMap != null && texturesMap.isObject()) {
-            var textureFields = texturesMap.fields();
+            var textureFields = texturesMap.properties().iterator();
             while (textureFields.hasNext()) {
                 var textureEntry = textureFields.next();
                 var textureValue = textureEntry.getValue();
@@ -122,25 +122,25 @@ public class WChunkStorageMigrator_1_0_0_to_1_0_1 implements SchemaMigrator {
     /**
      * Verarbeitet textuelle Textur-Werte
      */
-    private static void processTextualTexture(com.fasterxml.jackson.databind.JsonNode texturesMap,
-                                             java.util.Map.Entry<String, com.fasterxml.jackson.databind.JsonNode> textureEntry) {
+    private static void processTextualTexture(tools.jackson.databind.JsonNode texturesMap,
+                                             java.util.Map.Entry<String, tools.jackson.databind.JsonNode> textureEntry) {
         String textureStr = textureEntry.getValue().asText();
         if (!textureStr.startsWith("w/")) {
             // Add prefix 'w/'
-            ((com.fasterxml.jackson.databind.node.ObjectNode) texturesMap).put(textureEntry.getKey(), "w/" + textureStr);
+            ((tools.jackson.databind.node.ObjectNode) texturesMap).put(textureEntry.getKey(), "w/" + textureStr);
         }
     }
 
     /**
      * Verarbeitet Objekt-Textur-Werte (mit path-Eigenschaft)
      */
-    private static void processObjectTexture(com.fasterxml.jackson.databind.JsonNode textureValue) {
+    private static void processObjectTexture(tools.jackson.databind.JsonNode textureValue) {
         var pathNode = textureValue.get("path");
         if (pathNode != null && pathNode.isTextual()) {
             String pathStr = pathNode.asText();
             if (!pathStr.startsWith("w/")) {
                 // Add prefix 'w/'
-                ((com.fasterxml.jackson.databind.node.ObjectNode) textureValue).put("path", "w/" + pathStr);
+                ((tools.jackson.databind.node.ObjectNode) textureValue).put("path", "w/" + pathStr);
             }
         }
     }

@@ -4,7 +4,7 @@ import de.mhus.nimbus.world.shared.access.AccessService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.boot.web.client.RestTemplateBuilder;
+import org.springframework.boot.restclient.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpRequest;
@@ -32,8 +32,8 @@ public class WorldClientConfig {
     public RestTemplate worldRestTemplate(WorldClientSettings properties, RestTemplateBuilder builder) {
         // RestTemplate with automatic Bearer token authentication
         return builder
-                .setConnectTimeout(Duration.ofMillis(properties.getCommandTimeoutMs()))
-                .setReadTimeout(Duration.ofMillis(properties.getCommandTimeoutMs()))
+                .connectTimeout(Duration.ofMillis(properties.getCommandTimeoutMs()))
+                .readTimeout(Duration.ofMillis(properties.getCommandTimeoutMs()))
                 .additionalInterceptors(new BearerTokenInterceptor(accessService))
                 .build();
     }

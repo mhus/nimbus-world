@@ -1,8 +1,8 @@
 package de.mhus.nimbus.world.generator.genesis;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JsonParser;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.shared.utils.CastUtil;
 import de.mhus.nimbus.world.generator.composer.build.HexComposition;
@@ -21,6 +21,8 @@ import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
 import java.util.Map;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.core.json.JsonReadFeature;
 
 @Service
 @Slf4j
@@ -164,10 +166,11 @@ public class Day2Planning extends MethodBasedWorkflow {
         try {
             documentService.save(wid, collection, documentId, doc -> {
                 try {
-                    ObjectMapper mapper = new ObjectMapper();
-                    mapper.registerModule(new com.fasterxml.jackson.datatype.jsr310.JavaTimeModule());
-                    mapper.enable(JsonParser.Feature.ALLOW_COMMENTS);
-                    mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+                    ObjectMapper mapper = JsonMapper.builder()
+                    .disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES)
+                            .enable(JsonReadFeature.ALLOW_JAVA_COMMENTS)
+                            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                            .build();
 
                     HexComposition composition = mapper.readValue(doc.getContent(), HexComposition.class);
                     composition.setEpoch(epoch);

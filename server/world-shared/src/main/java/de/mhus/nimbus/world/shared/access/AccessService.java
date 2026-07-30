@@ -65,7 +65,7 @@ public class AccessService {
     private final Base64Service base64Service;
     private final de.mhus.nimbus.shared.utils.LocationService locationService;
     private final RegionSettings regionProperties;
-    private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
+    private final tools.jackson.databind.ObjectMapper objectMapper;
 
     @Autowired
     @Lazy
@@ -902,7 +902,7 @@ public class AccessService {
                         claims.sessionId(), claims.characterId(), claims.role());
         try {
             return objectMapper.writeValueAsString(dto);
-        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+        } catch (tools.jackson.core.JacksonException e) {
             throw new IllegalStateException("Failed to serialize sessionData", e);
         }
     }

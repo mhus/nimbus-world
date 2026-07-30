@@ -1,7 +1,7 @@
 package de.mhus.nimbus.world.generator.translator;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JsonParser;
+import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.generator.composer.build.HexComposition;
 import de.mhus.nimbus.world.generator.fauna.FaunaIndex;
@@ -29,6 +29,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.core.json.JsonReadFeature;
+import tools.jackson.databind.DeserializationFeature;
 
 /**
  * Service for translating textual instructions into Composer Model JSON format.
@@ -516,8 +519,10 @@ public class TranslatorService {
         // Step 2: Parse JSON to HexComposition
         try {
             // Configure ObjectMapper to allow comments (like in the test)
-            ObjectMapper mapper = new ObjectMapper();
-            mapper.enable(JsonParser.Feature.ALLOW_COMMENTS);
+            ObjectMapper mapper = JsonMapper.builder()
+                    .disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES)
+                    .enable(JsonReadFeature.ALLOW_JAVA_COMMENTS)
+                    .build();
 
             // Parse JSON to HexComposition
             HexComposition composition = mapper.readValue(json, HexComposition.class);

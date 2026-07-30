@@ -14,18 +14,12 @@
 
     <dependencies>
 
-        <!-- Jackson annotations for @JsonInclude used in generated sources -->
+        <!-- Jackson annotations for @JsonProperty/@JsonInclude used in generated sources.
+             In Jackson 3 the annotations artifact keeps the com.fasterxml.jackson.core groupId;
+             version is managed by the Spring Boot BOM (jackson-2-bom). -->
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-annotations</artifactId>
-            <version>2.20</version>
-        </dependency>
-
-        <!-- Jackson databind for JsonNode used in generated sources -->
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-            <version>2.18.2</version>
         </dependency>
 
         <!-- Spring context for @Service and DI annotations -->

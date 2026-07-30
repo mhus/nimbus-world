@@ -1,7 +1,7 @@
 package de.mhus.nimbus.world.generator.composer;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JsonParser;
+import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.world.generator.composer.build.HexComposition;
 import de.mhus.nimbus.world.generator.composer.build.HexGridSchemaImageCreator;
 import lombok.extern.slf4j.Slf4j;
@@ -14,6 +14,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import static org.junit.jupiter.api.Assertions.*;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.core.json.JsonReadFeature;
+import tools.jackson.databind.DeserializationFeature;
 
 @Slf4j
 public class HexGridSchemaImageCreatorTest {
@@ -32,9 +35,10 @@ public class HexGridSchemaImageCreatorTest {
         File jsonFile = new File("src/test/resources/composed-example.json");
         assertTrue(jsonFile.exists(), "composed-example.json should exist");
 
-        ObjectMapper mapper = new ObjectMapper();
-        mapper.enable(JsonParser.Feature.ALLOW_COMMENTS);
-        mapper.registerModule(new com.fasterxml.jackson.datatype.jsr310.JavaTimeModule());
+        ObjectMapper mapper = JsonMapper.builder()
+                    .disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES)
+                .enable(JsonReadFeature.ALLOW_JAVA_COMMENTS)
+                .build();
         HexComposition composition = mapper.readValue(jsonFile, HexComposition.class);
 
         assertNotNull(composition, "Composition should be loaded");

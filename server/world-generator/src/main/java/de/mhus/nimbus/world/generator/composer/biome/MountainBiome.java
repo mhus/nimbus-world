@@ -1,7 +1,7 @@
 package de.mhus.nimbus.world.generator.composer.biome;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.shared.utils.TypeUtil;
 import de.mhus.nimbus.world.generator.composer.feature.FeatureHexGrid;
@@ -13,6 +13,8 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.DeserializationFeature;
 
 /**
  * Mountain biome with configurable height levels.
@@ -192,7 +194,7 @@ public class MountainBiome extends Biome {
             // Add ridge configuration if there are connected neighbors
             if (!ridgeEntries.isEmpty()) {
                 try {
-                    ObjectMapper mapper = new ObjectMapper();
+                    ObjectMapper mapper = JsonMapper.builder().disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES).build();
                     String ridgeJson = mapper.writeValueAsString(ridgeEntries);
                     hexGrid.addParameter("g_ridge", ridgeJson);
                     log.debug("Added ridge config to grid {}: {} neighbors",

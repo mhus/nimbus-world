@@ -1,6 +1,6 @@
 package de.mhus.nimbus.world.generator.modelbuilder;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.generated.types.Vector3Int;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.shared.layer.WLayer;

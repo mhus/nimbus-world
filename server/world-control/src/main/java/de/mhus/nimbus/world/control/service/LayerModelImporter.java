@@ -1,6 +1,6 @@
 package de.mhus.nimbus.world.control.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.world.shared.layer.LayerBlock;
 import de.mhus.nimbus.world.shared.layer.WLayer;
 import de.mhus.nimbus.world.shared.layer.WLayerModel;
@@ -77,9 +77,9 @@ public class LayerModelImporter {
             WLayerModel sourceModel;
             if (jsonData != null) {
                 // Configure ObjectMapper to ignore unknown fields (for flexibility with different JSON formats)
-                com.fasterxml.jackson.databind.ObjectReader reader = objectMapper
+                tools.jackson.databind.ObjectReader reader = objectMapper
                         .readerFor(WLayerModel.class)
-                        .without(com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
+                        .without(tools.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
 
                 sourceModel = reader.readValue(jsonData);
                 log.debug("Parsed layer model from JSON: name={} blocks={}",
@@ -152,9 +152,6 @@ public class LayerModelImporter {
 
             return created;
 
-        } catch (IOException e) {
-            log.error("Failed to parse JSON data for layer model import", e);
-            throw new IllegalStateException("Failed to parse JSON data: " + e.getMessage(), e);
         } catch (Exception e) {
             log.error("Failed to import layer model: worldId={} layerDataId={}", worldId, layerDataId, e);
             throw new IllegalStateException("Failed to import layer model: " + e.getMessage(), e);

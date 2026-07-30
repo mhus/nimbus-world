@@ -1,7 +1,7 @@
 package de.mhus.nimbus.world.generator.composer;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JsonParser;
+import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.shared.utils.TypeUtil;
 import de.mhus.nimbus.world.generator.composer.build.CompositionResult;
@@ -58,6 +58,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.core.json.JsonReadFeature;
+import tools.jackson.databind.DeserializationFeature;
 
 /**
  * Tests for HexCompositeBuilder - orchestrates complete composition pipeline.
@@ -103,8 +106,10 @@ public abstract class HexCompositeBuilderAbstract {
         File jsonFile = new File("src/test/resources/%s.json".formatted(name));
         assertTrue(jsonFile.exists(), "Continent test JSON file '%s' should exist".formatted(name));
 
-        ObjectMapper mapper = new ObjectMapper();
-        mapper.enable(JsonParser.Feature.ALLOW_COMMENTS);
+        ObjectMapper mapper = JsonMapper.builder()
+                    .disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES)
+                .enable(JsonReadFeature.ALLOW_JAVA_COMMENTS)
+                .build();
         HexComposition composition = mapper.readValue(jsonFile, HexComposition.class);
 
         assertNotNull(composition, "Composition %s should be loaded".formatted(name));
@@ -753,7 +758,7 @@ public abstract class HexCompositeBuilderAbstract {
         }
         model.put("grids", grids);
 
-        ObjectMapper mapper = new ObjectMapper();
+        ObjectMapper mapper = JsonMapper.builder().disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES).build();
         mapper.writerWithDefaultPrettyPrinter().writeValue(outputFile, model);
 
         log.info("Exported generated model to: {}", outputFile.getAbsolutePath());
@@ -762,8 +767,9 @@ public abstract class HexCompositeBuilderAbstract {
     private void exportInputComposition(HexComposition composition, String name) throws Exception {
         File outputFile = outputDir.resolve(name + "-input-composition.json").toFile();
 
-        ObjectMapper mapper = new ObjectMapper();
-        mapper.registerModule(new com.fasterxml.jackson.datatype.jsr310.JavaTimeModule());
+        ObjectMapper mapper = JsonMapper.builder()
+                    .disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES)
+                .build();
         mapper.writerWithDefaultPrettyPrinter().writeValue(outputFile, composition);
 
         log.info("Exported input composition to: {}", outputFile.getAbsolutePath());

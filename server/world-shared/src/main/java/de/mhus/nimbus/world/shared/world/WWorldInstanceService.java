@@ -33,7 +33,7 @@ public class WWorldInstanceService {
     private final List<WWorldInstanceListener> listeners;
     private final WorldRedisMessagingService redisMessaging;
     private final InstanceIdGenerator instanceIdGenerator;
-    private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
+    private final tools.jackson.databind.ObjectMapper objectMapper;
 
     /**
      * Constructor with lazy initialization to avoid circular dependencies.
@@ -52,7 +52,7 @@ public class WWorldInstanceService {
             @Lazy List<WWorldInstanceListener> listeners,
             WorldRedisMessagingService redisMessaging,
             InstanceIdGenerator instanceIdGenerator,
-            com.fasterxml.jackson.databind.ObjectMapper objectMapper) {
+            tools.jackson.databind.ObjectMapper objectMapper) {
         this.repository = repository;
         this.mongoTemplate = mongoTemplate;
         this.worldService = worldService;
@@ -757,7 +757,7 @@ public class WWorldInstanceService {
         try {
             String payload = objectMapper.writeValueAsString(new EpochSwitchMessage(newEpoch));
             redisMessaging.publish(baseWorldId, "epoch.switch", payload);
-        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+        } catch (tools.jackson.core.JacksonException e) {
             log.error("Failed to serialize epoch switch event: instanceId={}, newEpoch={}", instanceId, newEpoch, e);
             return false;
         }

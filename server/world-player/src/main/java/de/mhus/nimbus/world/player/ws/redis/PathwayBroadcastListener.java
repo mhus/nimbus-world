@@ -1,6 +1,6 @@
 package de.mhus.nimbus.world.player.ws.redis;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import de.mhus.nimbus.generated.types.EntityPathway;
 import de.mhus.nimbus.shared.engine.EngineMapper;
 import de.mhus.nimbus.world.player.ws.BroadcastService;

@@ -1,24 +1,32 @@
 package de.mhus.nimbus.world.control.config;
 
-import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.StreamReadConstraints;
-import com.fasterxml.jackson.databind.*;
-import com.fasterxml.jackson.databind.deser.BeanDeserializerModifier;
-import com.fasterxml.jackson.databind.exc.InvalidFormatException;
-import com.fasterxml.jackson.databind.module.SimpleModule;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import de.mhus.nimbus.types.TsEnum;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
-
-import java.io.IOException;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.StreamReadConstraints;
+import tools.jackson.core.json.JsonFactory;
+import tools.jackson.databind.BeanDescription;
+import tools.jackson.databind.DeserializationConfig;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.JavaType;
+import tools.jackson.databind.MapperFeature;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.ValueDeserializer;
+import tools.jackson.databind.ValueSerializer;
+import tools.jackson.databind.cfg.DateTimeFeature;
+import tools.jackson.databind.deser.ValueDeserializerModifier;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.module.SimpleModule;
 
 /**
  * Jackson configuration for proper Java 8 date/time serialization and TsEnum support.
- * Enables support for Instant, LocalDateTime, etc.
+ * Enables support for Instant, LocalDateTime, etc. (java.time is built-in in Jackson 3).
  * Configures increased limits for large JSON payloads (model imports).
  * Registers custom serializer/deserializer for TsEnum enums (e.g., BlockEffect).
  */
@@ -42,27 +50,14 @@ public class JacksonConfig {
                 .maxStringLength(200_000_000) // 200MB (up from 20MB default)
                 .build();
 
-        // Create JsonFactory with custom constraints
+        // Create JsonFactory with custom constraints (Jackson 3: factory is immutable, use builder)
         JsonFactory jsonFactory = JsonFactory.builder()
                 .streamReadConstraints(constraints)
                 .build();
 
-        // Create ObjectMapper with custom factory
-        ObjectMapper mapper = new ObjectMapper(jsonFactory);
-
-        // Register JavaTimeModule for Java 8 date/time types (Instant, LocalDateTime, etc.)
-        mapper.registerModule(new JavaTimeModule());
-
-        // Write dates as ISO-8601 strings instead of timestamps
-        mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-
-        // Configure case-insensitive enum mapping
-        mapper.configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS, true);
-        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-
-        // Add custom TsEnum serializer
+        // Custom TsEnum serializer (Jackson 3: ValueSerializer replaces JsonSerializer)
         SimpleModule enumModule = new SimpleModule();
-        enumModule.addSerializer(new JsonSerializer<Enum<?>>() {
+        enumModule.addSerializer(new ValueSerializer<Enum<?>>() {
             @Override
             @SuppressWarnings("unchecked")
             public Class<Enum<?>> handledType() {
@@ -70,7 +65,7 @@ public class JacksonConfig {
             }
 
             @Override
-            public void serialize(Enum<?> value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
+            public void serialize(Enum<?> value, JsonGenerator gen, SerializationContext ctxt) {
                 if (value instanceof TsEnum) {
                     gen.writeString(((TsEnum) value).tsString());
                 } else {
@@ -78,25 +73,23 @@ public class JacksonConfig {
                 }
             }
         });
-        mapper.registerModule(enumModule);
 
-        // Add custom TsEnum deserializer
+        // Custom TsEnum deserializer (Jackson 3: ValueDeserializerModifier)
         SimpleModule deserializerModule = new SimpleModule();
-        deserializerModule.setDeserializerModifier(new BeanDeserializerModifier() {
+        deserializerModule.setDeserializerModifier(new ValueDeserializerModifier() {
             @Override
             @SuppressWarnings({"unchecked", "rawtypes"})
-            public JsonDeserializer<?> modifyEnumDeserializer(
+            public ValueDeserializer<?> modifyEnumDeserializer(
                     DeserializationConfig config,
                     JavaType type,
-                    BeanDescription beanDesc,
-                    JsonDeserializer<?> deserializer) {
+                    BeanDescription.Supplier beanDescRef,
+                    ValueDeserializer<?> deserializer) {
 
                 if (type.isEnumType()) {
-                    return new JsonDeserializer<Enum<?>>() {
+                    return new ValueDeserializer<Enum<?>>() {
                         @Override
-                        public Enum<?> deserialize(com.fasterxml.jackson.core.JsonParser p,
-                                                   DeserializationContext ctxt) throws IOException {
-                            String text = p.getText();
+                        public Enum<?> deserialize(JsonParser p, DeserializationContext ctxt) {
+                            String text = p.getString();
                             if (text == null) return null;
 
                             Class<? extends Enum> enumClass = (Class<? extends Enum>) type.getRawClass();
@@ -130,8 +123,17 @@ public class JacksonConfig {
                 return deserializer;
             }
         });
-        mapper.registerModule(deserializerModule);
 
-        return mapper;
+        // Jackson 3: ObjectMapper is immutable, configure through the builder.
+        // java.time support (jsr310) is built-in and registered automatically.
+        return JsonMapper.builder(jsonFactory)
+                .configure(DateTimeFeature.WRITE_DATES_AS_TIMESTAMPS, false)
+                .enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS)
+                .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                // Jackson 3 defaults FAIL_ON_NULL_FOR_PRIMITIVES to true; keep Jackson 2 lenient behavior
+                .disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES)
+                .addModule(enumModule)
+                .addModule(deserializerModule)
+                .build();
     }
 }

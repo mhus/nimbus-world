@@ -1,6 +1,6 @@
 package de.mhus.nimbus.world.player.ws.handlers;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import de.mhus.nimbus.generated.types.ENTITY_POSES;
 import de.mhus.nimbus.generated.types.Rotation;
 import de.mhus.nimbus.generated.types.Vector3;

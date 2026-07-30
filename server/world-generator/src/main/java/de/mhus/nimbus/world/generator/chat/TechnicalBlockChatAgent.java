@@ -1,8 +1,8 @@
 package de.mhus.nimbus.world.generator.chat;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ObjectNode;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.generator.blocks.BlockManipulatorService;
 import de.mhus.nimbus.world.generator.blocks.BlockToolService;
@@ -117,7 +117,7 @@ public class TechnicalBlockChatAgent implements WChatAgent {
 
         // Extract manipulator name and params
         // Expected format: { "manipulatorName": { params } }
-        String manipulatorName = jsonObject.fieldNames().next();
+        String manipulatorName = jsonObject.propertyNames().iterator().next();
         JsonNode paramsNode = jsonObject.get(manipulatorName);
 
         if (!paramsNode.isObject()) {
@@ -297,7 +297,7 @@ public class TechnicalBlockChatAgent implements WChatAgent {
                 // Parse ModelSelector data from message field (JSON array of strings)
                 List<String> modelSelectorData = objectMapper.readValue(
                         commandMessage.getMessage(),
-                        new com.fasterxml.jackson.core.type.TypeReference<List<String>>() {}
+                        new tools.jackson.core.type.TypeReference<List<String>>() {}
                 );
 
                 // Store in Redis

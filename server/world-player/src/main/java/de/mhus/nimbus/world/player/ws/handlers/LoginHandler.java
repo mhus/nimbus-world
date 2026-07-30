@@ -1,8 +1,8 @@
 package de.mhus.nimbus.world.player.ws.handlers;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ObjectNode;
 import de.mhus.nimbus.generated.network.ClientType;
 import de.mhus.nimbus.generated.types.WorldInfo;
 import de.mhus.nimbus.shared.types.PlayerId;

@@ -1,6 +1,6 @@
 package de.mhus.nimbus.world.generator.composer.build;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.world.generator.composer.flow.RiverConfigPart;
 import de.mhus.nimbus.world.generator.composer.area.Area;
 import de.mhus.nimbus.world.generator.composer.area.Composite;
@@ -18,6 +18,8 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.DeserializationFeature;
 
 /**
  * Phase 2: Assembles road={} JSON parameters on FeatureHexGrids from collected RoadConfigParts.
@@ -35,7 +37,7 @@ import java.util.stream.Collectors;
 @Slf4j
 public class HexGridRoadConfigurator {
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper = JsonMapper.builder().disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES).build();
 
     /**
      * Index for fast lookup of Area grids by coordinate.

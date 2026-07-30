@@ -1,6 +1,6 @@
 package de.mhus.nimbus.world.generator.modelbuilder;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.generated.types.Vector3Int;
 import de.mhus.nimbus.generated.types.WorldInfo;
 import de.mhus.nimbus.world.shared.layer.LayerChunkData;
@@ -14,6 +14,8 @@ import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.DeserializationFeature;
 
 class ModelBuilderServiceTest {
 
@@ -29,7 +31,7 @@ class ModelBuilderServiceTest {
                 new LogModelPartBuilder(),
                 new LeafModelPartBuilder()
         );
-        service = new ModelBuilderService(builders, new ObjectMapper(), null);
+        service = new ModelBuilderService(builders, JsonMapper.builder().disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES).build(), null);
 
         // Real WWorld with chunkSize 16
         WorldInfo worldInfo = new WorldInfo();
@@ -207,7 +209,7 @@ class ModelBuilderServiceTest {
             }
         };
 
-        ModelBuilderService svc = new ModelBuilderService(List.of(levelSetter), new ObjectMapper(), null);
+        ModelBuilderService svc = new ModelBuilderService(List.of(levelSetter), JsonMapper.builder().disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES).build(), null);
 
         ModelBuilderModel model = ModelBuilderModel.builder()
                 .definitions(List.of(

@@ -1,6 +1,6 @@
 package de.mhus.nimbus.world.shared.world;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.generated.network.messages.ChunkDataTransferObject;
 import de.mhus.nimbus.generated.types.Block;
 import de.mhus.nimbus.generated.types.ChunkData;

@@ -1,7 +1,7 @@
 package de.mhus.nimbus.world.player.ws;
 
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 import de.mhus.nimbus.generated.types.EntityPathway;
 import de.mhus.nimbus.generated.types.Waypoint;
 import de.mhus.nimbus.generated.types.Vector3;

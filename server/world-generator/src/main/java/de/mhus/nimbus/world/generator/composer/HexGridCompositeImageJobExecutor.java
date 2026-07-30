@@ -1,8 +1,8 @@
 package de.mhus.nimbus.world.generator.composer;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JsonParser;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.shared.utils.TypeUtil;
@@ -37,6 +37,8 @@ import java.util.*;
 import java.util.List;
 
 import static de.mhus.nimbus.world.generator.translator.TranslateInstructionJobExecutor.COMPOSED_COLLECTION;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.core.json.JsonReadFeature;
 
 /**
  * Job executor for creating composite images from hex grids.
@@ -245,10 +247,11 @@ public class HexGridCompositeImageJobExecutor implements JobExecutor {
             WDocument document = documentOpt.get();
 
             // Parse composition from document content
-            ObjectMapper mapper = new ObjectMapper();
-            mapper.registerModule(new com.fasterxml.jackson.datatype.jsr310.JavaTimeModule());
-            mapper.enable(JsonParser.Feature.ALLOW_COMMENTS);
-            mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+            ObjectMapper mapper = JsonMapper.builder()
+                    .disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES)
+                    .enable(JsonReadFeature.ALLOW_JAVA_COMMENTS)
+                    .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                    .build();
 
             HexComposition composition = mapper.readValue(document.getContent(), HexComposition.class);
 

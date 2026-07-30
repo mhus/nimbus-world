@@ -1,6 +1,6 @@
 package de.mhus.nimbus.world.shared.client;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.shared.utils.LocationService;
 import de.mhus.nimbus.shared.utils.LocationService.SERVER;
 import de.mhus.nimbus.world.shared.access.AccessService;

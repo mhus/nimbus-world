@@ -1,6 +1,6 @@
 package de.mhus.nimbus.world.player.gameplay;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.player.session.PlayerSession;
 import de.mhus.nimbus.world.shared.world.WDocument;

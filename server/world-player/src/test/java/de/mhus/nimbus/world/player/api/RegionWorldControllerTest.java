@@ -5,16 +5,14 @@ import de.mhus.nimbus.world.shared.world.WWorld;
 import de.mhus.nimbus.world.shared.world.WWorldService;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
-import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
+import org.springframework.http.converter.json.JacksonJsonHttpMessageConverter;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.time.Instant;
 import java.util.Optional;
@@ -40,9 +38,8 @@ class RegionWorldControllerTest {
         // Default: return empty for getByWorldId to simulate non-existing worlds
         Mockito.when(localService.getByWorldId(Mockito.any(String.class))).thenReturn(Optional.empty());
 
-        ObjectMapper mapper = new ObjectMapper();
         mockMvc = MockMvcBuilders.standaloneSetup(new RegionWorldController(localService))
-                .setMessageConverters(new MappingJackson2HttpMessageConverter(mapper))
+                .setMessageConverters(new JacksonJsonHttpMessageConverter())
                 .build();
     }
 

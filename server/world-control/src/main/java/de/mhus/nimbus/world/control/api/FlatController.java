@@ -670,7 +670,7 @@ public class FlatController extends BaseEditorController {
     private Map<String, Object> parseSimpleJson(String json) {
         // Use Jackson ObjectMapper for proper JSON parsing
         try {
-            com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+            tools.jackson.databind.ObjectMapper mapper = new tools.jackson.databind.ObjectMapper();
             return mapper.readValue(json, Map.class);
         } catch (Exception e) {
             throw new RuntimeException("Failed to parse JSON", e);

@@ -1,6 +1,6 @@
 package de.mhus.nimbus.world.player.gameplay;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import de.mhus.nimbus.world.player.session.PlayerSession;
 import de.mhus.nimbus.world.shared.world.WTrader;
 import lombok.extern.slf4j.Slf4j;

@@ -1,8 +1,8 @@
 package de.mhus.nimbus.world.generator.flat;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ObjectNode;
 import de.mhus.nimbus.world.shared.generator.WFlat;
 import de.mhus.nimbus.world.shared.generator.WFlatService;
 import dev.langchain4j.agent.tool.Tool;
@@ -379,7 +379,7 @@ public class FlatToolService {
         Map<String, String> parameters = new HashMap<>();
         if (params.has("parameters") && params.get("parameters").isObject()) {
             JsonNode paramsNode = params.get("parameters");
-            paramsNode.fields().forEachRemaining(entry -> {
+            paramsNode.properties().forEach(entry -> {
                 String value = entry.getValue().isTextual()
                         ? entry.getValue().asText()
                         : entry.getValue().toString();

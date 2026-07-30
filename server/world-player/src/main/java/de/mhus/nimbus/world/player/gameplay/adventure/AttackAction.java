@@ -1,6 +1,6 @@
 package de.mhus.nimbus.world.player.gameplay.adventure;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import de.mhus.nimbus.generated.configs.WEARABLE_SLOT;
 import de.mhus.nimbus.world.player.service.GameplayUtil;
 import de.mhus.nimbus.world.player.gameplay.AdventureData;

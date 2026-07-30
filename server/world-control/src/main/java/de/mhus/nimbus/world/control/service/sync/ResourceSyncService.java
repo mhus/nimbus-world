@@ -1,6 +1,6 @@
 package de.mhus.nimbus.world.control.service.sync;
 
-import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
+import tools.jackson.dataformat.yaml.YAMLMapper;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.shared.dto.ExternalResourceDTO;
 import lombok.RequiredArgsConstructor;

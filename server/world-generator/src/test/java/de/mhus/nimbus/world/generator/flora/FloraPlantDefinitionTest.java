@@ -1,6 +1,6 @@
 package de.mhus.nimbus.world.generator.flora;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.world.generator.modelbuilder.FloraConstraints;
 import org.junit.jupiter.api.Test;
 
@@ -8,10 +8,12 @@ import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.DeserializationFeature;
 
 class FloraPlantDefinitionTest {
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper = JsonMapper.builder().disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES).build();
 
     @Test
     void toConstraints_allFieldsSet() {

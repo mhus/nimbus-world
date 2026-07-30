@@ -1,7 +1,7 @@
 package de.mhus.nimbus.world.generator.flat;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.world.shared.generator.WFlat;
 import de.mhus.nimbus.world.shared.generator.WFlatService;
 import de.mhus.nimbus.world.shared.job.JobExecutionException;
@@ -205,7 +205,7 @@ public class FlatManipulateJobExecutor implements JobExecutor {
         }
         try {
             JsonNode node = objectMapper.readTree(json);
-            node.fields().forEachRemaining(entry -> {
+            node.properties().forEach(entry -> {
                 JsonNode value = entry.getValue();
                 result.put(entry.getKey(), value.isTextual() ? value.asText() : value.toString());
             });

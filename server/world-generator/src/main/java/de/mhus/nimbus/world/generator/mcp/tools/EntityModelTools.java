@@ -1,7 +1,7 @@
 package de.mhus.nimbus.world.generator.mcp.tools;
 
 import de.mhus.nimbus.world.generator.mcp.McpToolBean;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import de.mhus.nimbus.generated.types.EntityModel;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.world.generator.mcp.McpToolException;
