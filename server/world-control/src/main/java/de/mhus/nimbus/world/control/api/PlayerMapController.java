@@ -143,6 +143,14 @@ public class PlayerMapController extends BaseEditorController {
 
     private Map<String, Object> buildHexInfo(String worldId, String playerId, HexVector2 hexPos, WHexGrid hexGrid, int hexGridSize) {
         WorldId wid = WorldId.of(worldId).orElse(null);
+
+        // Load the player's explored hexes once, then check membership in-memory,
+        // instead of one progress query per neighbor.
+        Set<String> exploredHexKeys = new HashSet<>();
+        for (var progress : progressService.findByWorldIdAndPlayerIdAndType(worldId, playerId, "EXPLORED_HEX")) {
+            exploredHexKeys.add(progress.getQuest());
+        }
+
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("q", hexPos.getQ());
         result.put("r", hexPos.getR());
@@ -180,12 +188,9 @@ public class PlayerMapController extends BaseEditorController {
                 neighborInfo.put("mapImage", EMPTY_MAP_IMAGE);
             }
 
-            // Check if player has explored this neighbor
+            // Check if player has explored this neighbor (in-memory, batched above)
             String hexKey = neighborPos.getQ() + ";" + neighborPos.getR();
-            var explored = progressService.findByWorldIdAndPlayerIdAndTypeAndQuest(
-                    worldId, playerId, "EXPLORED_HEX", hexKey
-            );
-            neighborInfo.put("explored", explored.isPresent());
+            neighborInfo.put("explored", exploredHexKeys.contains(hexKey));
 
             neighbors.add(neighborInfo);
         }
