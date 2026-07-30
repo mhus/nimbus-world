@@ -19,6 +19,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -478,6 +479,93 @@ public class WChunkService implements StorageProvider {
         log.debug("Chunk gelöscht (alle {} Epoch-Varianten) chunkKey={} world={}",
                 variants.size(), chunkKey, lookupWorld.getId());
         return true;
+    }
+
+    /**
+     * Delete a chunk only for the given epoch, preserving it in the other epochs its
+     * document belongs to. Reads are flat (no cross-epoch inheritance), so pulling the
+     * epoch makes find(...,epoch) resolve to empty = "deleted for that epoch" while the
+     * remaining epochs are untouched.
+     *
+     * <p>The document is read once (cheap — the heavy payload lives in external storage
+     * behind storageId), then mutated directly in the database rather than via an entity
+     * save: a single {@code $pull} when other epochs remain, or a direct document remove
+     * when this was the last epoch (then the external storage and the mirroring WChunkInfo
+     * are cleaned up too). The remove is guarded by {@code epoches == [epoch]} so a
+     * concurrent epoch add ({@code $addToSet}) between the read and the delete cannot be
+     * clobbered — if the guard misses, it falls back to a plain pull and keeps the storage.
+     *
+     * @return true if a matching document was found and updated/removed
+     */
+    @Transactional
+    public boolean delete(WorldId worldId, String chunkKey, int epoch) {
+        if (worldId.isCollection()) {
+            throw new IllegalArgumentException("Chunks can't be in Collections");
+        }
+        String wid = worldId.toBaseWorldId().getId();
+
+        WChunk chunk = repository.findByWorldIdAndChunkAndEpochesContaining(wid, chunkKey, epoch).orElse(null);
+        if (chunk == null) {
+            return false; // already absent for this epoch
+        }
+
+        boolean lastEpoch = chunk.getEpoches() != null
+                && chunk.getEpoches().size() == 1
+                && chunk.getEpoches().contains(epoch);
+
+        if (lastEpoch) {
+            // Remove the whole document, but only if it still holds exactly [epoch]
+            // (guards against a concurrent $addToSet after our read).
+            Query guarded = new Query(Criteria.where("id").is(chunk.getId())
+                    .and("epoches").is(List.of(epoch)));
+            long removed = mongoTemplate.remove(guarded, WChunk.class).getDeletedCount();
+            if (removed == 1) {
+                if (chunk.getStorageId() != null) {
+                    safeDeleteExternal(storageService, chunk.getStorageId());
+                }
+                pullChunkInfoEpoch(wid, chunkKey, epoch);
+                log.debug("Chunk in Epoche {} gelöscht (letzte Epoche → Dokument + Storage entfernt) chunkKey={} world={}",
+                        epoch, chunkKey, wid);
+                return true;
+            }
+            // Concurrent add repopulated epoches → fall through to a plain pull.
+        }
+
+        // Other epochs remain: atomically pull just this epoch; storage stays (shared).
+        mongoTemplate.updateFirst(
+                new Query(Criteria.where("id").is(chunk.getId())),
+                new Update().pull("epoches", epoch),
+                WChunk.class);
+        pullChunkInfoEpoch(wid, chunkKey, epoch);
+        log.debug("Chunk-Epoche {} entfernt (weitere Epochen bleiben) chunkKey={} world={}",
+                epoch, chunkKey, wid);
+        return true;
+    }
+
+    /**
+     * Mirror an epoch-scoped delete on the WChunkInfo document: pull the epoch, or remove
+     * the info document when this was its last epoch (guarded against concurrent adds).
+     */
+    private void pullChunkInfoEpoch(String worldId, String chunkKey, int epoch) {
+        WChunkInfo info = chunkInfoRepository
+                .findByWorldIdAndChunkAndEpochesContaining(worldId, chunkKey, epoch).orElse(null);
+        if (info == null) {
+            return;
+        }
+        boolean lastEpoch = info.getEpoches() != null
+                && info.getEpoches().size() == 1
+                && info.getEpoches().contains(epoch);
+        if (lastEpoch) {
+            Query guarded = new Query(Criteria.where("id").is(info.getId())
+                    .and("epoches").is(List.of(epoch)));
+            if (mongoTemplate.remove(guarded, WChunkInfo.class).getDeletedCount() == 1) {
+                return;
+            }
+        }
+        mongoTemplate.updateFirst(
+                new Query(Criteria.where("id").is(info.getId())),
+                new Update().pull("epoches", epoch),
+                WChunkInfo.class);
     }
 
     /**
