@@ -116,8 +116,10 @@ public class ChunkedOutputStream extends OutputStream {
             if (bufferPosition > 0) {
                 flushChunk(true);
             } else if (lastChunk != null) {
-                // Buffer is empty but we have saved chunks - create updated final chunk
+                // Buffer is empty but we have saved chunks - update the existing
+                // last chunk to final (reuse its id -> update, not a duplicate insert).
                 StorageData finalChunk = StorageData.builder()
+                        .id(lastChunk.getId())
                         .uuid(uuid)
                         .path(path)
                         .index(lastChunk.getIndex())
@@ -181,8 +183,12 @@ public class ChunkedOutputStream extends OutputStream {
                 .build();
 
         try {
-            repository.save(chunk);
-            lastChunk = chunk; // Track last saved chunk
+            // Keep the persisted entity (with its assigned id) so a later
+            // "mark as final" in close() updates this chunk instead of inserting
+            // a duplicate (uuid,index). Fall back to the passed instance, whose id
+            // is also populated by Spring Data on save.
+            StorageData saved = repository.save(chunk);
+            lastChunk = (saved != null) ? saved : chunk;
             log.trace("Saved chunk: uuid={} index={} size={} final={}",
                     uuid, chunkIndex, chunkData.length, isFinal);
 

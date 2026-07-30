@@ -165,8 +165,21 @@ public class PlayerChestController extends BaseEditorController {
         // Atomic backpack update: add or increase item
         boolean backpackUpdated = characterService.addBackpackItem(character.getId(), body.itemId(), transferAmount);
         if (!backpackUpdated) {
-            log.error("Backpack update failed after chest was already modified! chestId={}, itemId={}, amount={}",
-                    chest.getId(), body.itemId(), transferAmount);
+            // Compensate: the chest was already reduced, so return the amount to
+            // the chest to avoid losing the item.
+            boolean restored;
+            if (chestItem.getAmount() <= transferAmount) {
+                restored = chestService.addItemAtomic(chest.getId(), ItemRef.builder()
+                        .itemId(body.itemId())
+                        .name(chestItem.getName())
+                        .texture(chestItem.getTexture())
+                        .amount(transferAmount)
+                        .build());
+            } else {
+                restored = chestService.incItemAmountAtomic(chest.getId(), body.itemId(), transferAmount);
+            }
+            log.error("Backpack update failed after chest was modified; chest restore={}. chestId={}, itemId={}, amount={}",
+                    restored, chest.getId(), body.itemId(), transferAmount);
             return bad("Failed to update backpack");
         }
 
@@ -262,8 +275,11 @@ public class PlayerChestController extends BaseEditorController {
             chestUpdated = chestService.addItemAtomic(chest.getId(), newRef);
         }
         if (!chestUpdated) {
-            log.error("Chest update failed after backpack was already modified! chestId={}, itemId={}, amount={}",
-                    chest.getId(), body.itemId(), transferAmount);
+            // Compensate: the backpack was already reduced, so return the amount
+            // to the backpack to avoid losing the item.
+            boolean restored = characterService.addBackpackItem(character.getId(), body.itemId(), transferAmount);
+            log.error("Chest update failed after backpack was modified; backpack restore={}. chestId={}, itemId={}, amount={}",
+                    restored, chest.getId(), body.itemId(), transferAmount);
             return bad("Failed to update chest");
         }
 

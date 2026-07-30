@@ -15,6 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -150,11 +151,36 @@ public class CraftingService {
         }
         var recipe = recipeDef.get();
 
-        // Remove materials from backpack
+        // Verify ALL materials are available before consuming any. MongoTemplate
+        // writes commit immediately (no active Mongo transaction), so a per-item
+        // removal loop that fails midway would irreversibly lose already-removed
+        // materials without producing a result item.
+        var craftingChar = characterService.getCharacter(characterId).orElse(null);
+        if (craftingChar == null) {
+            log.warn("Crafting failed: character not found: {}", characterId);
+            return Optional.empty();
+        }
+        Map<String, Integer> backpackItems = craftingChar.getBackpack() != null
+                ? craftingChar.getBackpack().getItemIds() : Map.of();
         for (var entry : recipe.getMaterials().entrySet()) {
-            boolean removed = characterService.removeBackpackItem(characterId, entry.getKey(), entry.getValue());
-            if (!removed) {
+            if (backpackItems.getOrDefault(entry.getKey(), 0) < entry.getValue()) {
                 log.warn("Crafting failed: insufficient material {} x{} for character {}",
+                        entry.getKey(), entry.getValue(), characterId);
+                return Optional.empty();
+            }
+        }
+
+        // Remove materials. If a concurrent backpack change makes a removal fail,
+        // restore the already-removed materials and abort (compensation).
+        List<Map.Entry<String, Integer>> removedMaterials = new ArrayList<>();
+        for (var entry : recipe.getMaterials().entrySet()) {
+            if (characterService.removeBackpackItem(characterId, entry.getKey(), entry.getValue())) {
+                removedMaterials.add(entry);
+            } else {
+                for (var done : removedMaterials) {
+                    characterService.addBackpackItem(characterId, done.getKey(), done.getValue());
+                }
+                log.warn("Crafting aborted: insufficient material {} x{} for character {} (concurrent change)",
                         entry.getKey(), entry.getValue(), characterId);
                 return Optional.empty();
             }

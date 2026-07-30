@@ -17,6 +17,7 @@ import de.mhus.nimbus.world.shared.world.WItem;
 import de.mhus.nimbus.world.shared.world.WItemService;
 import de.mhus.nimbus.world.shared.world.WLease;
 import de.mhus.nimbus.world.shared.world.WLeaseService;
+import de.mhus.nimbus.world.shared.redis.WorldRedisLockService;
 import de.mhus.nimbus.world.shared.util.ForbiddenWordFilter;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -27,6 +28,7 @@ import org.apache.logging.log4j.util.Strings;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Duration;
 import java.util.*;
 
 /**
@@ -53,6 +55,7 @@ public class PlayerExchangeWidgetController extends BaseEditorController {
     private final RUserService userService;
     private final SessionCommandService sessionCommandService;
     private final ForbiddenWordFilter forbiddenWordFilter;
+    private final WorldRedisLockService redisLockService;
 
     // --- DTOs ---
 
@@ -248,27 +251,48 @@ public class PlayerExchangeWidgetController extends BaseEditorController {
             return ResponseEntity.ok(Map.of("accepted", true, "completed", false));
         }
 
-        // Both accepted → reload leases fresh for transfer
-        myLease = leaseService.findByLeaseId(myLease.getLeaseId()).orElse(myLease);
-        WLease partnerLease = partnerLeaseOpt.get();
+        // Both accepted → claim exclusive completion of this exchange pair.
+        // A per-pair NX lock guarantees that when both players accept nearly
+        // simultaneously only ONE request runs executeTransfer, preventing a
+        // double currency/item transfer (double-spend).
+        String pairLockKey = "exchange:" + pairLockKey(myLease.getLeaseId(), partnerLeaseId);
+        String lockToken = redisLockService.acquireGenericLock(pairLockKey, Duration.ofSeconds(30));
+        if (lockToken == null) {
+            // The partner's concurrent accept is already completing this exchange.
+            return ResponseEntity.ok(Map.of("accepted", true, "completed", false));
+        }
+        try {
+            // Re-read both leases inside the lock: if either is gone the exchange
+            // was already completed (leases are released on completion).
+            var myFresh = leaseService.findByLeaseId(myLease.getLeaseId());
+            var partnerFresh = leaseService.findByLeaseId(partnerLeaseId);
+            if (myFresh.isEmpty() || partnerFresh.isEmpty()) {
+                return ResponseEntity.ok(Map.of("accepted", true, "completed", false));
+            }
+            if (!toBool(partnerFresh.get().getLeaseData().get("accepted"))) {
+                return ResponseEntity.ok(Map.of("accepted", true, "completed", false));
+            }
 
-        var result = executeTransfer(worldId, myLease, partnerLease);
-        if (result != null) return result;
+            var result = executeTransfer(worldId, myFresh.get(), partnerFresh.get());
+            if (result != null) return result;
 
-        leaseService.release(myLease.getLeaseId());
-        leaseService.release(partnerLeaseId);
+            leaseService.release(myLease.getLeaseId());
+            leaseService.release(partnerLeaseId);
 
-        sessionCommandService.sendNotification(
-                SessionCommandTarget.PLAYER, partnerEntityId,
-                1, characterId, "Exchange complete!"
-        );
-        sessionCommandService.sendNotification(
-                SessionCommandTarget.PLAYER, playerName,
-                0, "", "Exchange complete!"
-        );
+            sessionCommandService.sendNotification(
+                    SessionCommandTarget.PLAYER, partnerEntityId,
+                    1, characterId, "Exchange complete!"
+            );
+            sessionCommandService.sendNotification(
+                    SessionCommandTarget.PLAYER, playerName,
+                    0, "", "Exchange complete!"
+            );
 
-        log.info("Exchange completed between {} and {}", playerName, partnerEntityId);
-        return ResponseEntity.ok(Map.of("accepted", true, "completed", true));
+            log.info("Exchange completed between {} and {}", playerName, partnerEntityId);
+            return ResponseEntity.ok(Map.of("accepted", true, "completed", true));
+        } finally {
+            redisLockService.releaseGenericLock(pairLockKey, lockToken);
+        }
     }
 
     /**
@@ -490,6 +514,15 @@ public class PlayerExchangeWidgetController extends BaseEditorController {
         if (value == null) return false;
         if (value instanceof Boolean b) return b;
         return "true".equals(value.toString());
+    }
+
+    /**
+     * Builds a stable lock key for an exchange pair independent of which of the
+     * two players calls accept (the ids are sorted), so both concurrent accepts
+     * contend for the same lock.
+     */
+    private static String pairLockKey(String leaseA, String leaseB) {
+        return leaseA.compareTo(leaseB) <= 0 ? leaseA + ":" + leaseB : leaseB + ":" + leaseA;
     }
 
     private String toString(Object value) {

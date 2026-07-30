@@ -4,9 +4,12 @@ import de.mhus.nimbus.shared.types.WorldId;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
+import org.springframework.data.redis.core.script.RedisScript;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -22,6 +25,16 @@ public class WorldRedisLockService {
 
     private static final Duration DEFAULT_LOCK_TTL = Duration.ofMinutes(1);
     private static final String LOCK_PREFIX = "lock:chunk-update:";
+
+    /** Atomic compare-and-delete: only delete the key if it still holds our token. */
+    private static final RedisScript<Long> RELEASE_SCRIPT = new DefaultRedisScript<>(
+            "if redis.call('get', KEYS[1]) == ARGV[1] then return redis.call('del', KEYS[1]) else return 0 end",
+            Long.class);
+
+    /** Atomic compare-and-refresh: only extend the TTL if it still holds our token. */
+    private static final RedisScript<Long> REFRESH_SCRIPT = new DefaultRedisScript<>(
+            "if redis.call('get', KEYS[1]) == ARGV[1] then return redis.call('pexpire', KEYS[1], ARGV[2]) else return 0 end",
+            Long.class);
 
     /**
      * Acquire a lock for chunk updates.
@@ -67,10 +80,8 @@ public class WorldRedisLockService {
      */
     public boolean refreshLock(String worldId, String token, Duration ttl) {
         String lockKey = lockKey(worldId);
-        String currentToken = redis.opsForValue().get(lockKey);
-
-        if (token.equals(currentToken)) {
-            redis.expire(lockKey, ttl);
+        Long result = redis.execute(REFRESH_SCRIPT, List.of(lockKey), token, String.valueOf(ttl.toMillis()));
+        if (result != null && result == 1L) {
             log.trace("Refreshed chunk update lock: world={} ttl={}ms", worldId, ttl.toMillis());
             return true;
         }
@@ -88,10 +99,8 @@ public class WorldRedisLockService {
      */
     public boolean releaseLock(String worldId, String token) {
         String lockKey = lockKey(worldId);
-        String currentToken = redis.opsForValue().get(lockKey);
-
-        if (token.equals(currentToken)) {
-            redis.delete(lockKey);
+        Long result = redis.execute(RELEASE_SCRIPT, List.of(lockKey), token);
+        if (result != null && result == 1L) {
             log.trace("Released chunk update lock: world={}", worldId);
             return true;
         }
@@ -143,10 +152,8 @@ public class WorldRedisLockService {
      */
     public boolean releaseGenericLock(String lockKey, String token) {
         String fullKey = "world:lock:" + lockKey;
-        String currentToken = redis.opsForValue().get(fullKey);
-
-        if (token.equals(currentToken)) {
-            redis.delete(fullKey);
+        Long result = redis.execute(RELEASE_SCRIPT, List.of(fullKey), token);
+        if (result != null && result == 1L) {
             log.trace("Released lock: key={}", lockKey);
             return true;
         }

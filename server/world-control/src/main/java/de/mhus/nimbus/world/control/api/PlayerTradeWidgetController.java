@@ -202,19 +202,26 @@ public class PlayerTradeWidgetController extends BaseEditorController {
             return bad("Trader does not have enough silver");
         }
 
-        // Check gold
+        // Check gold. Resolve the user's DB id up front: changeGold filters by the
+        // MongoDB document id, not the username, so passing userId (the username)
+        // would never match and the gold exchange would always fail.
+        String userDbId = null;
         if (goldAmount > 0) {
-            long userGold = userService.getByUsername(userId).map(u -> u.getGold()).orElse(0L);
-            if (userGold < goldAmount) {
+            var userOpt = userService.getByUsername(userId);
+            if (userOpt.isEmpty()) {
+                return bad("User not found");
+            }
+            if (userOpt.get().getGold() < goldAmount) {
                 return bad("Not enough gold");
             }
+            userDbId = userOpt.get().getId();
         }
 
         // === Phase 1: Take resources (can fail — validates availability) ===
 
         // 1a. Take gold from user
         if (goldAmount > 0) {
-            if (!userService.changeGold(userId, -goldAmount)) {
+            if (!userService.changeGold(userDbId, -goldAmount)) {
                 return bad("Not enough gold");
             }
         }
@@ -222,7 +229,7 @@ public class PlayerTradeWidgetController extends BaseEditorController {
         // 1b. Take silver from player
         if (totalBuyCost > 0) {
             if (!characterService.changeSilver(character.getId(), -totalBuyCost)) {
-                if (goldAmount > 0) userService.changeGold(userId, goldAmount);
+                if (goldAmount > 0) userService.changeGold(userDbId, goldAmount);
                 return bad("Not enough silver");
             }
         }
@@ -232,16 +239,29 @@ public class PlayerTradeWidgetController extends BaseEditorController {
             if (!traderService.changeSilverAmount(trader.getId(), -totalSellRevenue)) {
                 // Rollback player silver and gold
                 if (totalBuyCost > 0) characterService.changeSilver(character.getId(), totalBuyCost);
-                if (goldAmount > 0) userService.changeGold(userId, goldAmount);
+                if (goldAmount > 0) userService.changeGold(userDbId, goldAmount);
                 return bad("Trader does not have enough silver");
             }
         }
 
-        // 1d. Take items from player backpack (sells)
+        // 1d. Take items from player backpack (sells). If any removal fails
+        // (e.g. concurrent backpack change), roll back everything taken so far
+        // and abort — otherwise the player would keep the item AND receive the
+        // silver (item duplication).
+        List<TradeItem> removedSells = new ArrayList<>();
         for (TradeItem sell : sells) {
-            if (!characterService.removeBackpackItem(character.getId(), sell.itemId(), sell.amount())) {
-                log.error("Trade partial failure: could not remove backpack item {}x{} for player={}",
+            if (characterService.removeBackpackItem(character.getId(), sell.itemId(), sell.amount())) {
+                removedSells.add(sell);
+            } else {
+                for (TradeItem done : removedSells) {
+                    characterService.addBackpackItem(character.getId(), done.itemId(), done.amount());
+                }
+                if (totalSellRevenue > 0) traderService.changeSilverAmount(trader.getId(), totalSellRevenue);
+                if (totalBuyCost > 0) characterService.changeSilver(character.getId(), totalBuyCost);
+                if (goldAmount > 0) userService.changeGold(userDbId, goldAmount);
+                log.error("Trade aborted: could not remove backpack item {}x{} for player={}",
                         sell.itemId(), sell.amount(), userId);
+                return bad("Could not remove item from backpack: " + sell.itemId());
             }
         }
 

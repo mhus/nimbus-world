@@ -136,20 +136,16 @@ public class MongoRawDocumentService {
     public boolean replaceDocument(String collectionName, String id, String jsonContent) {
         Document newDocument = Document.parse(jsonContent);
 
-        Query query;
-        if (ObjectId.isValid(id)) {
-            query = new Query(Criteria.where("_id").is(new ObjectId(id)));
-            // Ensure _id is correct in the document
-            newDocument.put("_id", new ObjectId(id));
-        } else {
-            query = new Query(Criteria.where("_id").is(id));
-            newDocument.put("_id", id);
-        }
+        Object idValue = ObjectId.isValid(id) ? new ObjectId(id) : id;
+        newDocument.put("_id", idValue);
 
-        // Remove the old document and insert the new one
-        Document oldDocument = mongoTemplate.findAndRemove(query, Document.class, collectionName);
-        if (oldDocument != null) {
-            mongoTemplate.insert(newDocument, collectionName);
+        // Atomic in-place replace (single operation, no upsert): avoids the
+        // remove-then-insert window where a failed insert would leave the
+        // original permanently deleted and readers would see no document.
+        com.mongodb.client.result.UpdateResult result = mongoTemplate.getCollection(collectionName)
+                .replaceOne(com.mongodb.client.model.Filters.eq("_id", idValue), newDocument);
+
+        if (result.getMatchedCount() > 0) {
             log.debug("Replaced document in {}: {}", collectionName, id);
             return true;
         }
