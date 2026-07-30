@@ -630,23 +630,17 @@ public class LayerToolService {
                 return String.format("WARNING: No cached changes to commit for layer '%s'", layerName);
             }
 
-            // For MODEL layers, merge cache into models
-            if (layer.getLayerType() == LayerType.MODEL) {
-                // TODO: Implement merge logic for MODEL layers
-                log.warn("Commit for MODEL layers not yet fully implemented");
-            }
+            // Merge the cached edits into the layer's models/terrain and clear the
+            // cache via the same path the interactive editor uses
+            // (WEditCacheDirtyService.applyChanges -> processLayer). This actually
+            // persists MODEL and GROUND layer edits instead of silently discarding
+            // them (the previous code deleted the cache without merging for MODEL).
+            // The cache is keyed by the base worldId here, matching the writes above.
+            editCacheDirtyService.applyChanges(lookupWorldId, layerDataId);
 
-            // Clear edit cache
-            long deleted = editCacheService.deleteByWorldIdAndLayerDataId(lookupWorldId, layerDataId);
-
-            // Clear dirty cache using clearDirty method
-            if (editCacheDirtyService.isDirty(lookupWorldId, layerDataId)) {
-                editCacheDirtyService.clearDirty(lookupWorldId, layerDataId);
-            }
-
-            log.info("AI Tool: commitLayerChanges - committed {} changes for layer: name={}", deleted, layerName);
-            return String.format("SUCCESS: Committed %d changes to layer '%s'\nLayer Type: %s\nCache cleared: %d blocks",
-                    cachedBlocks, layerName, layer.getLayerType(), deleted);
+            log.info("AI Tool: commitLayerChanges - committed {} changes for layer: name={}", cachedBlocks, layerName);
+            return String.format("SUCCESS: Committed %d changes to layer '%s'\nLayer Type: %s",
+                    cachedBlocks, layerName, layer.getLayerType());
 
         } catch (Exception e) {
             log.error("AI Tool: commitLayerChanges failed", e);

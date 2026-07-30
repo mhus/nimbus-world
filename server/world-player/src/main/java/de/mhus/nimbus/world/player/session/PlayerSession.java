@@ -3,6 +3,7 @@ package de.mhus.nimbus.world.player.session;
 import de.mhus.nimbus.generated.network.ClientType;
 import de.mhus.nimbus.generated.types.ENTITY_POSES;
 import de.mhus.nimbus.generated.types.Rotation;
+import de.mhus.nimbus.generated.types.ItemBlockRef;
 import de.mhus.nimbus.generated.types.Vector3;
 import de.mhus.nimbus.shared.types.PlayerData;
 import de.mhus.nimbus.shared.types.WorldId;
@@ -103,6 +104,8 @@ public class PlayerSession {
     private String occupiedModelId;
     /** WItemPosition itemId if occupation is from a world item (null = backpack overlay) */
     private String occupiedItemId;
+    /** Cached ItemBlockRef of the occupied world item, used to recreate it on release/disconnect */
+    private ItemBlockRef occupiedItemRef;
 
     private final Object sendLock = new Object();
 

@@ -3,7 +3,9 @@ package de.mhus.nimbus.world.player.service;
 import de.mhus.nimbus.generated.types.Entity;
 import de.mhus.nimbus.generated.types.EntityModel;
 import de.mhus.nimbus.generated.types.EntityStatusUpdate;
+import de.mhus.nimbus.generated.types.ItemBlockRef;
 import de.mhus.nimbus.world.player.session.PlayerSession;
+import de.mhus.nimbus.world.player.session.SessionClosedConsumer;
 import de.mhus.nimbus.world.shared.redis.EntityStatusPublisher;
 import de.mhus.nimbus.world.shared.world.WEntityModelService;
 import de.mhus.nimbus.world.shared.world.WItemPosition;
@@ -31,7 +33,7 @@ import java.util.Optional;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class OccupationService {
+public class OccupationService implements SessionClosedConsumer {
 
     private final WItemPositionService itemPositionService;
     private final WEntityModelService entityModelService;
@@ -79,6 +81,12 @@ public class OccupationService {
             return false;
         }
 
+        // Capture the item's full data BEFORE removing it, so it can be recreated
+        // faithfully (texture/scale/title/...) on release or disconnect.
+        ItemBlockRef occupiedRef = itemPositionService.findItem(worldId, itemId)
+                .map(WItemPosition::getPublicData)
+                .orElse(null);
+
         // Disable the WItemPosition (item disappears from world)
         boolean deleted = itemPositionService.deleteItemPosition(worldId, itemId);
         if (!deleted) {
@@ -89,6 +97,7 @@ public class OccupationService {
 
         // Set occupation state on session
         session.setOccupiedItemId(itemId);
+        session.setOccupiedItemRef(occupiedRef);
         session.setOccupiedModelId(overlayModelId);
 
         // Broadcast entity update: player now has overlay model
@@ -154,6 +163,7 @@ public class OccupationService {
 
         // Clear occupation state
         session.setOccupiedItemId(null);
+        session.setOccupiedItemRef(null);
         session.setOccupiedModelId(null);
 
         // Broadcast: player no longer has overlay
@@ -162,16 +172,6 @@ public class OccupationService {
         log.info("Player {} released occupation (model={}, item={})",
                 session.getEntityId(), occupiedModelId, occupiedItemId);
         return true;
-    }
-
-    /**
-     * Called when player session closes while in occupation.
-     * Ensures the item is placed back in the world.
-     */
-    public void onSessionClose(PlayerSession session) {
-        if (session.getOccupiedModelId() != null) {
-            release(session);
-        }
     }
 
     /**
@@ -208,10 +208,34 @@ public class OccupationService {
     }
 
     private void recreateItemAtPosition(PlayerSession session, String itemId, String modelId) {
-        // TODO: Recreate WItemPosition at player's current position
-        // This requires knowledge of the original item's data (texture, scale, etc.)
-        // For now, log a warning — the item data needs to be cached in session or looked up
-        log.warn("Item recreation at new position not yet fully implemented: itemId={}, position={}",
-                itemId, session.getLastPosition());
+        ItemBlockRef ref = session.getOccupiedItemRef();
+        if (ref == null) {
+            log.warn("Cannot recreate occupied item {} — no cached item data in session (item stays removed)", itemId);
+            return;
+        }
+        // Recreate the item at the player's current position, preserving all other
+        // data (texture/scale/title/...) captured when the item was occupied.
+        ref.setName(itemId);
+        ref.setPosition(session.getLastPosition());
+        try {
+            itemPositionService.saveItemPosition(session.getWorldId(), ref);
+            log.info("Recreated occupied item {} at position {} for player {}",
+                    itemId, session.getLastPosition(), session.getEntityId());
+        } catch (Exception e) {
+            log.error("Failed to recreate occupied item {} for player {}", itemId, session.getEntityId(), e);
+        }
+    }
+
+    // --- SessionClosedConsumer ---
+
+    /**
+     * On disconnect, place any occupied world item back so it is not lost when the
+     * (in-memory) session ends.
+     */
+    @Override
+    public void onSessionClosed(PlayerSession session) {
+        if (session.getOccupiedModelId() != null) {
+            release(session);
+        }
     }
 }

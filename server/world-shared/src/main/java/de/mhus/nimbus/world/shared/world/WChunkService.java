@@ -26,7 +26,9 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -79,7 +81,18 @@ public class WChunkService implements StorageProvider {
     @Transactional(readOnly = true)
     public Optional<WChunk> find(WorldId worldId, String chunkKey) {
         var lookupWorld = worldId.toBaseWorldId();
-        return repository.findByWorldIdAndChunk(lookupWorld.getId(), chunkKey);
+        return findNewest(lookupWorld.getId(), chunkKey);
+    }
+
+    /**
+     * Epoch-unfiltered single-chunk lookup. Because the same worldId+chunk may
+     * have multiple documents (one per epoch grouping), the derived Optional
+     * query would throw {@code IncorrectResultSizeDataAccessException}; instead we
+     * load all variants and return the most recently updated one.
+     */
+    private Optional<WChunk> findNewest(String worldId, String chunkKey) {
+        return repository.findAllByWorldIdAndChunk(worldId, chunkKey).stream()
+                .max(Comparator.comparing(c -> c.getUpdatedAt() != null ? c.getUpdatedAt() : Instant.EPOCH));
     }
 
     // EPOCH-UNFILTERED: returns data across all epochs. Use the epoch-filtered overload for player/gameplay context.
@@ -192,7 +205,7 @@ public class WChunkService implements StorageProvider {
         }
         var lookupWorld = worldId.toBaseWorldId();
 
-        WChunk chunk = repository.findByWorldIdAndChunk(lookupWorld.getId(), chunkKey).orElse(null);
+        WChunk chunk = findNewest(lookupWorld.getId(), chunkKey).orElse(null);
 
         if (chunk == null || chunk.getStorageId() == null) {
             return new ByteArrayInputStream(new byte[0]);
@@ -230,7 +243,7 @@ public class WChunkService implements StorageProvider {
         }
         var lookupWorld = worldId.toBaseWorldId();
 
-        WChunk chunk = repository.findByWorldIdAndChunk(lookupWorld.getId(), chunkKey).orElse(null);
+        WChunk chunk = findNewest(lookupWorld.getId(), chunkKey).orElse(null);
 
         if (chunk == null || chunk.getStorageId() == null) {
             return new ByteArrayInputStream(new byte[0]);
@@ -253,7 +266,7 @@ public class WChunkService implements StorageProvider {
         }
         var lookupWorld = worldId.toBaseWorldId();
 
-        Optional<WChunk> chunkOpt = repository.findByWorldIdAndChunk(lookupWorld.getId(), chunkKey);
+        Optional<WChunk> chunkOpt = findNewest(lookupWorld.getId(), chunkKey);
 
         if (chunkOpt.isPresent()) {
             // Chunk exists in database - load it
@@ -441,8 +454,9 @@ public class WChunkService implements StorageProvider {
     }
 
     /**
-     * Delete chunk.
-     * Filters out instances.
+     * Delete chunk. Removes ALL epoch variants of the chunk (an unfiltered delete
+     * cannot target a single epoch, and the same worldId+chunk may have several
+     * documents). Filters out instances.
      */
     @Transactional
     public boolean delete(WorldId worldId, String chunkKey) {
@@ -450,15 +464,20 @@ public class WChunkService implements StorageProvider {
             throw new IllegalArgumentException("Chunks can't be in Collections");
         }
         var lookupWorld = worldId.toBaseWorldId();
-        return repository.findByWorldIdAndChunk(lookupWorld.getId(), chunkKey).map(c -> {
+        List<WChunk> variants = repository.findAllByWorldIdAndChunk(lookupWorld.getId(), chunkKey);
+        if (variants.isEmpty()) {
+            return false;
+        }
+        for (WChunk c : variants) {
             if (c.getStorageId() != null) {
                 safeDeleteExternal(storageService, c.getStorageId());
             }
             repository.delete(c);
-            chunkInfoRepository.deleteByWorldIdAndChunk(lookupWorld.getId(), chunkKey);
-            log.debug("Chunk gelöscht chunkKey={} world={}", chunkKey, lookupWorld.getId());
-            return true;
-        }).orElse(false);
+        }
+        chunkInfoRepository.deleteByWorldIdAndChunk(lookupWorld.getId(), chunkKey);
+        log.debug("Chunk gelöscht (alle {} Epoch-Varianten) chunkKey={} world={}",
+                variants.size(), chunkKey, lookupWorld.getId());
+        return true;
     }
 
     /**
@@ -975,7 +994,7 @@ public class WChunkService implements StorageProvider {
      * Find single chunk metadata by world and chunk key.
      */
     public Optional<WChunk> findChunkByWorldIdAndKey(String worldId, String chunkKey) {
-        return repository.findByWorldIdAndChunk(worldId, chunkKey);
+        return findNewest(worldId, chunkKey);
     }
 
     // --- WChunkInfo management ---
