@@ -1,7 +1,5 @@
-package de.mhus.nimbus.world.control.service.epoch.impl;
+package de.mhus.nimbus.world.shared.world;
 
-import de.mhus.nimbus.world.control.service.epoch.ResourceEpochService;
-import de.mhus.nimbus.world.shared.world.WEpochMeta;
 import lombok.extern.slf4j.Slf4j;
 import org.bson.Document;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -14,19 +12,24 @@ import java.util.stream.Collectors;
 
 /**
  * Shared logic for epoch validation and creation across all epoch-aware entity types.
+ * Owner services delegate to this helper so no other module manipulates their
+ * collections directly (data ownership). The collection name is resolved from the
+ * owning entity class, never hardcoded.
  */
 @Slf4j
-public final class EpochTypeHelper {
+public final class EpochArrayHelper {
 
-    private EpochTypeHelper() {}
+    private EpochArrayHelper() {}
 
     /**
      * Validate epoch consistency for a collection.
      * Auto-repairs: removes duplicate epoch entries and undefined epochs from documents.
      */
-    public static ResourceEpochService.ProcessResult validate(
-            MongoTemplate mongoTemplate, String collection, String typeName,
+    public static EpochProcessResult validate(
+            MongoTemplate mongoTemplate, Class<?> entityClass, String typeName,
             String worldId, List<WEpochMeta> epochMetas) {
+
+        String collection = mongoTemplate.getCollectionName(entityClass);
 
         Set<Integer> definedEpochs = epochMetas.stream()
                 .map(WEpochMeta::getEpoch)
@@ -130,7 +133,7 @@ public final class EpochTypeHelper {
         }
 
         boolean success = issues.isEmpty();
-        return new ResourceEpochService.ProcessResult(typeName, success,
+        return new EpochProcessResult(typeName, success,
                 message.toString(), System.currentTimeMillis());
     }
 
@@ -138,9 +141,11 @@ public final class EpochTypeHelper {
      * Delete an epoch by removing it from all documents.
      * Documents that would end up with an empty epoches array are reported but not deleted.
      */
-    public static ResourceEpochService.ProcessResult delete(
-            MongoTemplate mongoTemplate, String collection, String typeName,
+    public static EpochProcessResult delete(
+            MongoTemplate mongoTemplate, Class<?> entityClass, String typeName,
             String worldId, int epoch) {
+
+        String collection = mongoTemplate.getCollectionName(entityClass);
 
         // $pull epoch from all documents that contain it
         Query query = new Query(Criteria.where("worldId").is(worldId)
@@ -167,16 +172,18 @@ public final class EpochTypeHelper {
         if (emptyCount > 0) {
             message += " (WARNING: " + emptyCount + " documents now have empty epoches)";
         }
-        return new ResourceEpochService.ProcessResult(typeName, true, message, System.currentTimeMillis());
+        return new EpochProcessResult(typeName, true, message, System.currentTimeMillis());
     }
 
     /**
      * Create a new epoch by adding it to all documents that contain the source epoch.
      * Uses $addToSet to avoid duplicates. Documents that already have newEpoch are safely skipped.
      */
-    public static ResourceEpochService.ProcessResult create(
-            MongoTemplate mongoTemplate, String collection, String typeName,
+    public static EpochProcessResult create(
+            MongoTemplate mongoTemplate, Class<?> entityClass, String typeName,
             String worldId, int sourceEpoch, int newEpoch) {
+
+        String collection = mongoTemplate.getCollectionName(entityClass);
 
         // Use $and to avoid duplicate key in Criteria, and $addToSet to prevent duplicate epoch values
         Query query = new Query(new Criteria().andOperator(
@@ -191,7 +198,7 @@ public final class EpochTypeHelper {
         log.info("Epoch create for {}: world={}, sourceEpoch={}, newEpoch={}, updated={} documents",
                 typeName, worldId, sourceEpoch, newEpoch, modifiedCount);
 
-        return new ResourceEpochService.ProcessResult(typeName, true,
+        return new EpochProcessResult(typeName, true,
                 "Added epoch " + newEpoch + " to " + modifiedCount + " documents (from epoch " + sourceEpoch + ")",
                 System.currentTimeMillis());
     }

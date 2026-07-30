@@ -1129,4 +1129,27 @@ public class WChunkService implements StorageProvider {
         }
     }
 
+    // ==================== EPOCH MANAGEMENT (data ownership) ====================
+
+    /**
+     * Validate epoch consistency for this world's chunk documents.
+     */
+    public EpochProcessResult validateEpochs(String worldId, List<WEpochMeta> epochMetas) {
+        return EpochArrayHelper.validate(mongoTemplate, WChunk.class, "chunk", worldId, epochMetas);
+    }
+
+    /**
+     * Propagate a new epoch by copying it into documents that hold the source epoch.
+     */
+    public EpochProcessResult createEpoch(String worldId, int sourceEpoch, int newEpoch) {
+        return EpochArrayHelper.create(mongoTemplate, WChunk.class, "chunk", worldId, sourceEpoch, newEpoch);
+    }
+
+    /**
+     * Remove an epoch from all of this world's chunk documents.
+     */
+    public EpochProcessResult deleteEpoch(String worldId, int epoch) {
+        return EpochArrayHelper.delete(mongoTemplate, WChunk.class, "chunk", worldId, epoch);
+    }
+
 }

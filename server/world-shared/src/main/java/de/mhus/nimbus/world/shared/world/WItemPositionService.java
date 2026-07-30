@@ -496,4 +496,27 @@ public class WItemPositionService {
         );
     }
 
+    // ==================== EPOCH MANAGEMENT (data ownership) ====================
+
+    /**
+     * Validate epoch consistency for this world's item-position documents.
+     */
+    public EpochProcessResult validateEpochs(String worldId, List<WEpochMeta> epochMetas) {
+        return EpochArrayHelper.validate(mongoTemplate, WItemPosition.class, "item_position", worldId, epochMetas);
+    }
+
+    /**
+     * Propagate a new epoch by copying it into documents that hold the source epoch.
+     */
+    public EpochProcessResult createEpoch(String worldId, int sourceEpoch, int newEpoch) {
+        return EpochArrayHelper.create(mongoTemplate, WItemPosition.class, "item_position", worldId, sourceEpoch, newEpoch);
+    }
+
+    /**
+     * Remove an epoch from all of this world's item-position documents.
+     */
+    public EpochProcessResult deleteEpoch(String worldId, int epoch) {
+        return EpochArrayHelper.delete(mongoTemplate, WItemPosition.class, "item_position", worldId, epoch);
+    }
+
 }

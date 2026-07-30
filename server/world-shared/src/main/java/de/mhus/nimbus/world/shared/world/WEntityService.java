@@ -472,4 +472,27 @@ public class WEntityService {
         return entityCount;
     }
 
+    // ==================== EPOCH MANAGEMENT (data ownership) ====================
+
+    /**
+     * Validate epoch consistency for this world's entity documents.
+     */
+    public EpochProcessResult validateEpochs(String worldId, List<WEpochMeta> epochMetas) {
+        return EpochArrayHelper.validate(mongoTemplate, WEntity.class, "entity", worldId, epochMetas);
+    }
+
+    /**
+     * Propagate a new epoch by copying it into documents that hold the source epoch.
+     */
+    public EpochProcessResult createEpoch(String worldId, int sourceEpoch, int newEpoch) {
+        return EpochArrayHelper.create(mongoTemplate, WEntity.class, "entity", worldId, sourceEpoch, newEpoch);
+    }
+
+    /**
+     * Remove an epoch from all of this world's entity documents.
+     */
+    public EpochProcessResult deleteEpoch(String worldId, int epoch) {
+        return EpochArrayHelper.delete(mongoTemplate, WEntity.class, "entity", worldId, epoch);
+    }
+
 }

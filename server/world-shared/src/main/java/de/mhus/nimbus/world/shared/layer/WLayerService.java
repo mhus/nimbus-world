@@ -6,7 +6,10 @@ import de.mhus.nimbus.shared.types.SchemaVersion;
 import de.mhus.nimbus.shared.types.WorldId;
 import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.world.shared.util.HexMathUtil;
+import de.mhus.nimbus.world.shared.world.EpochArrayHelper;
+import de.mhus.nimbus.world.shared.world.EpochProcessResult;
 import de.mhus.nimbus.world.shared.world.StorageProvider;
+import de.mhus.nimbus.world.shared.world.WEpochMeta;
 import de.mhus.nimbus.world.shared.world.WHexGrid;
 import de.mhus.nimbus.world.shared.world.WWorld;
 import de.mhus.nimbus.world.shared.world.WWorldService;
@@ -2783,5 +2786,28 @@ public class WLayerService implements StorageProvider {
                 terrainRepository.save(terrain);
             }
         }
+    }
+
+    // ==================== EPOCH MANAGEMENT (data ownership) ====================
+
+    /**
+     * Validate epoch consistency for this world's layer documents.
+     */
+    public EpochProcessResult validateEpochs(String worldId, List<WEpochMeta> epochMetas) {
+        return EpochArrayHelper.validate(mongoTemplate, WLayer.class, "layer", worldId, epochMetas);
+    }
+
+    /**
+     * Propagate a new epoch by copying it into documents that hold the source epoch.
+     */
+    public EpochProcessResult createEpoch(String worldId, int sourceEpoch, int newEpoch) {
+        return EpochArrayHelper.create(mongoTemplate, WLayer.class, "layer", worldId, sourceEpoch, newEpoch);
+    }
+
+    /**
+     * Remove an epoch from all of this world's layer documents.
+     */
+    public EpochProcessResult deleteEpoch(String worldId, int epoch) {
+        return EpochArrayHelper.delete(mongoTemplate, WLayer.class, "layer", worldId, epoch);
     }
 }
