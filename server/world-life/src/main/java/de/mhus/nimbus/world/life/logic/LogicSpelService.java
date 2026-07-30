@@ -37,7 +37,7 @@ public class LogicSpelService {
      * state.key1 == true  -> match on "state.key1"
      */
     private static final Pattern UNQUALIFIED_STATE = Pattern.compile(
-            "state\\.([a-zA-Z_]\\w*)(?!\\.)");
+            "state\\.([a-zA-Z_]\\w*)(?![\\w.])");
 
     /**
      * Evaluate an assignment expression with package-scoped shorthand resolution.

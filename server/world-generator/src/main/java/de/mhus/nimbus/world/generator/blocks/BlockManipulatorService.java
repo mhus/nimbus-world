@@ -35,7 +35,9 @@ public class BlockManipulatorService {
     private final WWorldService worldService;
     private Map<String, BlockManipulator> manipulatorMap;
     private Map<String, de.mhus.nimbus.world.generator.blocks.painter.BlockPainterProvider> painterProviderMap;
-    private final Map<String, Object> defaultParameters = new HashMap<>();
+    // Concurrent map: mutated (setDefaultParameter/remove/clear) and iterated
+    // (applyDefaultParameters) from parallel chat/AI and REST requests.
+    private final Map<String, Object> defaultParameters = new java.util.concurrent.ConcurrentHashMap<>();
 
     /**
      * Constructor with lazy-loaded list of manipulators and painter providers.
@@ -249,7 +251,12 @@ public class BlockManipulatorService {
      * @param value parameter value
      */
     public void setDefaultParameter(String key, Object value) {
-        defaultParameters.put(key, value);
+        // ConcurrentHashMap forbids null values; a null value means "unset".
+        if (value == null) {
+            defaultParameters.remove(key);
+        } else {
+            defaultParameters.put(key, value);
+        }
         log.debug("Set default parameter: {} = {}", key, value);
     }
 

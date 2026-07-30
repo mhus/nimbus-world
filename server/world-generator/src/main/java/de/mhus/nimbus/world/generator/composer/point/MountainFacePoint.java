@@ -189,27 +189,32 @@ public class MountainFacePoint extends Point {
      * Apply dimension-based defaults for branches, length, and sub-branches
      */
     private void applyDimensionDefaults() {
+        // Derive randomness from the seed so identical seeds produce identical
+        // dimensions (reproducible worlds); Math.random() would make the
+        // serialized config non-deterministic despite the seed.
+        java.util.Random rng = new java.util.Random(seed != null ? seed : System.currentTimeMillis());
+
         if (branches == null) {
             branches = switch (dimension) {
-                case SMALL -> 3 + (int) (Math.random() * 2);   // 3-4
-                case MEDIUM -> 5 + (int) (Math.random() * 2);  // 5-6
-                case LARGE -> 7 + (int) (Math.random() * 3);   // 7-9
+                case SMALL -> 3 + rng.nextInt(2);   // 3-4
+                case MEDIUM -> 5 + rng.nextInt(2);  // 5-6
+                case LARGE -> 7 + rng.nextInt(3);   // 7-9
             };
         }
 
         if (branchLength == null) {
             branchLength = switch (dimension) {
-                case SMALL -> 30 + (int) (Math.random() * 11);  // 30-40
-                case MEDIUM -> 50 + (int) (Math.random() * 11); // 50-60
-                case LARGE -> 70 + (int) (Math.random() * 21);  // 70-90
+                case SMALL -> 30 + rng.nextInt(11);  // 30-40
+                case MEDIUM -> 50 + rng.nextInt(11); // 50-60
+                case LARGE -> 70 + rng.nextInt(21);  // 70-90
             };
         }
 
         if (subBranches == null) {
             subBranches = switch (dimension) {
-                case SMALL -> 1;                                 // 1
-                case MEDIUM -> 2 + (int) (Math.random() * 2);   // 2-3
-                case LARGE -> 3 + (int) (Math.random() * 2);    // 3-4
+                case SMALL -> 1;                     // 1
+                case MEDIUM -> 2 + rng.nextInt(2);   // 2-3
+                case LARGE -> 3 + rng.nextInt(2);    // 3-4
             };
         }
     }

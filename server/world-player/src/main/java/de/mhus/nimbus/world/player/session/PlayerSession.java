@@ -69,7 +69,9 @@ public class PlayerSession {
      * Registered chunks (cx, cz coordinates as "cx:cz" format).
      * Client receives updates only for these chunks.
      */
-    private final Set<String> registeredChunks = new HashSet<>();
+    // Concurrent set: mutated by the WebSocket message thread while scheduled
+    // publisher / epoch-switch / broadcast threads iterate or read it.
+    private final Set<String> registeredChunks = java.util.concurrent.ConcurrentHashMap.newKeySet();
 
     /**
      * Ping interval in seconds (from world settings).

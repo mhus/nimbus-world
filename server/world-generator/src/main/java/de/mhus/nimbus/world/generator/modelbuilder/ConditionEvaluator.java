@@ -44,8 +44,11 @@ public final class ConditionEvaluator {
      */
     private static String preprocess(String condition) {
         String result = condition;
-        result = result.replaceAll("set\\(([^)]+)\\)", "$1 != null");
+        // notset(x) MUST be replaced before set(x): 'notset(x)' contains the
+        // substring 'set(x)', so replacing set() first would corrupt it into
+        // 'notx != null' and the notset() replacement would never match.
         result = result.replaceAll("notset\\(([^)]+)\\)", "$1 == null");
+        result = result.replaceAll("set\\(([^)]+)\\)", "$1 != null");
         return result;
     }
 }

@@ -36,7 +36,7 @@ public class LogicConditionService {
      * Matches unqualified state references: "state.xxx" NOT followed by ".yyy"
      */
     private static final Pattern UNQUALIFIED_STATE = Pattern.compile(
-            "state\\.([a-zA-Z_]\\w*)(?!\\.)");
+            "state\\.([a-zA-Z_]\\w*)(?![\\w.])");
 
     private final WProgressService progressService;
 

@@ -14,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -159,6 +160,14 @@ public class MoveSelectedBlockManipulator implements BlockManipulator {
                 .autoSelectName(autoSelectName)
                 .build();
 
+        // Compute all moves in-memory first, then apply in two phases (delete all
+        // sources, then write all targets). Doing delete+set per block would let a
+        // later iteration's delete remove a target already written by an earlier
+        // iteration when source and target regions overlap (small offsets).
+        record PendingSet(Block block, int x, int y, int z, String color) {}
+        List<int[]> sourcesToDelete = new ArrayList<>();
+        List<PendingSet> pendingSets = new ArrayList<>();
+
         for (String blockEntry : blocks) {
             try {
                 // Parse block entry: "x,y,z,#color"
@@ -211,17 +220,12 @@ public class MoveSelectedBlockManipulator implements BlockManipulator {
                         .source(originalBlock.getSource())
                         .build();
 
-                // Delete old block
-                editCacheService.doDeleteAndSendBlock(world, layerDataId, x, y, z);
-
-                // Set new block at new position
-                editCacheService.doSetAndSendBlock(world, layerDataId, modelName, newBlock, groupId);
-
-                // Add to new ModelSelector
-                newModelSelector.addBlock(newX, newY, newZ, color);
+                // Queue for two-phase apply (see below)
+                sourcesToDelete.add(new int[]{x, y, z});
+                pendingSets.add(new PendingSet(newBlock, newX, newY, newZ, color));
 
                 movedCount++;
-                log.debug("Moved block from ({},{},{}) to ({},{},{})",
+                log.debug("Queued move from ({},{},{}) to ({},{},{})",
                         x, y, z, newX, newY, newZ);
 
             } catch (NumberFormatException e) {
@@ -231,6 +235,17 @@ public class MoveSelectedBlockManipulator implements BlockManipulator {
                 log.error("Failed to move block from entry: {}", blockEntry, e);
                 errorCount++;
             }
+        }
+
+        // Phase 1: delete all source blocks.
+        for (int[] src : sourcesToDelete) {
+            editCacheService.doDeleteAndSendBlock(world, layerDataId, src[0], src[1], src[2]);
+        }
+        // Phase 2: write all target blocks (after all deletes, so overlapping
+        // regions do not lose already-written targets).
+        for (PendingSet set : pendingSets) {
+            editCacheService.doSetAndSendBlock(world, layerDataId, modelName, set.block(), groupId);
+            newModelSelector.addBlock(set.x(), set.y(), set.z(), set.color());
         }
 
         // Update ModelSelector in session with new positions

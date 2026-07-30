@@ -117,7 +117,7 @@ public class PlayerTeamController extends BaseEditorController {
         Optional<RCharacter> charOpt = characterService.findByRegionAndName(regionId, characterName);
         if (charOpt.isEmpty()) return null;
         RCharacter c = charOpt.get();
-        return "@" + c.getName() + ":" + c.getName();
+        return "@" + c.getUserId() + ":" + c.getName();
     }
 
     /**

@@ -33,7 +33,7 @@ public class UserWorldEditorController {
     public record UpdateChildWorldRequest(Boolean enabled, Boolean publicFlag, Set<String> editor, Set<String> player, Set<String> supporter, Set<String> owners) {}
 
     private String currentUserId(HttpServletRequest req) {
-        Object attr = req.getAttribute("currentUserId");
+        Object attr = req.getAttribute(de.mhus.nimbus.world.shared.access.AccessFilterBase.ATTR_USER_ID);
         return attr instanceof String s ? s : null;
     }
 

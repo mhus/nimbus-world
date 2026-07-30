@@ -363,8 +363,11 @@ public class FlatToolService {
 
         WFlat flat = flatOpt.get();
 
-        // Extract manipulator name
-        String manipulatorName = params.get("manipulator").asText();
+        // Extract manipulator name (null-safe)
+        String manipulatorName = params.has("manipulator") ? params.get("manipulator").asText() : null;
+        if (manipulatorName == null || manipulatorName.isBlank()) {
+            return FlatToolResult.error("manipulator required for manipulator command");
+        }
 
         // Extract region (with defaults to entire flat)
         int x = params.has("x") ? params.get("x").asInt() : 0;
@@ -416,15 +419,14 @@ public class FlatToolService {
     public FlatToolResult executeCreate(ObjectNode params, String defaultWorldId) {
         // Extract required parameters
         String worldIdParam = params.has("worldId") ? params.get("worldId").asText() : defaultWorldId;
-        String layerDataId = params.has("layerDataId") ? params.get("layerDataId").asText() : null;
+        // layerDataId is optional for flats ("Empty for flats"); default to empty
+        // so the create tool is not rejected when it is not supplied.
+        String layerDataId = params.has("layerDataId") ? params.get("layerDataId").asText() : "";
         String flatId = params.has("flatId") ? params.get("flatId").asText() : null;
         Integer sizeX = params.has("sizeX") ? params.get("sizeX").asInt() : null;
         Integer sizeZ = params.has("sizeZ") ? params.get("sizeZ").asInt() : null;
 
         // Validate required parameters
-        if (layerDataId == null || layerDataId.isBlank()) {
-            return FlatToolResult.error("layerDataId required for create command");
-        }
         if (flatId == null || flatId.isBlank()) {
             return FlatToolResult.error("flatId required for create command");
         }
@@ -590,9 +592,9 @@ public class FlatToolService {
             return "ERROR: Invalid parameters JSON: " + e.getMessage();
         }
 
-        // Add flatId and manipulatorName to params
+        // Add flatId and manipulator name to params (key must match executeManipulator's reader)
         params.put("flatId", flatId);
-        params.put("manipulatorName", manipulatorName);
+        params.put("manipulator", manipulatorName);
 
         // Execute
         FlatToolResult result = executeManipulator(params);

@@ -15,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -205,6 +206,14 @@ public class RotateSelectedBlockManipulator implements BlockManipulator {
                 .autoSelectName(autoSelectName)
                 .build();
 
+        // Compute all rotations in-memory first, then apply in two phases (delete
+        // all sources, then write all targets). A rotation's targets overlap the
+        // source region, so per-block delete+set would let a later delete remove a
+        // target already written by an earlier set.
+        record PendingSet(Block block, int x, int y, int z, String color) {}
+        List<int[]> sourcesToDelete = new ArrayList<>();
+        List<PendingSet> pendingSets = new ArrayList<>();
+
         for (String blockEntry : blocks) {
             try {
                 // Parse block entry: "x,y,z,#color"
@@ -254,17 +263,13 @@ public class RotateSelectedBlockManipulator implements BlockManipulator {
                         .source(originalBlock.getSource())
                         .build();
 
-                // Delete old block
-                editCacheService.doDeleteAndSendBlock(world, layerDataId, x, y, z);
-
-                // Set new block at new position
-                editCacheService.doSetAndSendBlock(world, layerDataId, modelName, newBlock, groupId);
-
-                // Add to new ModelSelector
-                newModelSelector.addBlock(newPosition.getX(), newPosition.getY(), newPosition.getZ(), color);
+                // Queue for two-phase apply (see below)
+                sourcesToDelete.add(new int[]{x, y, z});
+                pendingSets.add(new PendingSet(newBlock,
+                        newPosition.getX(), newPosition.getY(), newPosition.getZ(), color));
 
                 rotatedCount++;
-                log.debug("Rotated block from ({},{},{}) to ({},{},{})",
+                log.debug("Queued rotation from ({},{},{}) to ({},{},{})",
                         x, y, z, newPosition.getX(), newPosition.getY(), newPosition.getZ());
 
             } catch (NumberFormatException e) {
@@ -274,6 +279,17 @@ public class RotateSelectedBlockManipulator implements BlockManipulator {
                 log.error("Failed to rotate block from entry: {}", blockEntry, e);
                 errorCount++;
             }
+        }
+
+        // Phase 1: delete all source blocks.
+        for (int[] src : sourcesToDelete) {
+            editCacheService.doDeleteAndSendBlock(world, layerDataId, src[0], src[1], src[2]);
+        }
+        // Phase 2: write all rotated target blocks (after all deletes, so
+        // overlapping regions do not lose already-written targets).
+        for (PendingSet set : pendingSets) {
+            editCacheService.doSetAndSendBlock(world, layerDataId, modelName, set.block(), groupId);
+            newModelSelector.addBlock(set.x(), set.y(), set.z(), set.color());
         }
 
         // Update ModelSelector in session with new positions
