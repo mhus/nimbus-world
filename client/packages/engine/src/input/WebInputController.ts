@@ -365,8 +365,28 @@ export class WebInputController implements InputController {
           this.moveUpHandler.activate();
           event.preventDefault();
         }
+      } else if (mode === 'fly') {
+        // Fly mode: Move up
+        if (this.moveUpHandler && !this.moveUpHandler.isActive()) {
+          logger.info('Activating moveUp handler for fly');
+          this.moveUpHandler.activate();
+          event.preventDefault();
+        }
       } else {
         logger.info('Space key ignored - wrong movement mode', { mode });
+      }
+      return;
+    }
+
+    // Handle Shift key for Fly mode down movement (mirrors the keyup handler)
+    if (event.key === 'Shift') {
+      const mode = this.playerService.getMovementMode();
+      if (mode === 'fly') {
+        if (this.moveDownHandler && !this.moveDownHandler.isActive()) {
+          logger.info('Activating moveDown handler for fly');
+          this.moveDownHandler.activate();
+          event.preventDefault();
+        }
       }
       return;
     }

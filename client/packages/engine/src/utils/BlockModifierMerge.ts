@@ -423,7 +423,10 @@ export function switchSeason(
   let n = xi * 374761393 + yi * 668265263 + zi * 2147483647;
   n = (n ^ (n >> 13)) >>> 0;
   n = (n * 1274126177) >>> 0;
-  const rand = (n & 0xffffffff) / 0xffffffff;
+  // n is already an unsigned 32-bit value (>>> 0). Do NOT apply `& 0xffffffff`:
+  // that re-interprets n as a signed int32 (negative for n >= 2^31), producing a
+  // negative rand for ~50% of blocks and making `eased >= rand` always true.
+  const rand = n / 0xffffffff;
 
   // Position switches when eased progress surpasses its threshold.
   return eased >= rand;

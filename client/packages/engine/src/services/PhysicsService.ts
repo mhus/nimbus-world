@@ -511,13 +511,9 @@ export class PhysicsService {
         dimensions,
         deltaTime
       );
-      // Reset jump flag after processing
-      entity.jumpRequested = false;
     } else if (useFreeFlyController && this.flyController) {
       // Use new modular fly controller (no physics, no collisions)
       this.flyController.update(entity, entity.wishMove, deltaTime);
-      // Reset jump flag (not used in free fly mode)
-      entity.jumpRequested = false;
     } else {
       // Fallback to old system (should not happen)
       this.checkUnderwaterStateIfMoved(entity);
@@ -527,7 +523,6 @@ export class PhysicsService {
       } else if (entity.movementMode === 'fly' || entity.movementMode === 'free_fly') {
         this.updateFlyMode(entity, deltaTime);
       }
-      entity.jumpRequested = false;
     }
 
     // Clamp entity to loaded and accessible chunks (prevents movement into denied chunks)
@@ -545,8 +540,12 @@ export class PhysicsService {
     // Reset wishMove for next frame
     entity.wishMove.set(0, 0, 0);
 
-    // Update movement state modifiers based on physics state
+    // Update movement state modifiers based on physics state (reads jumpRequested)
     this.updateMovementStateModifiers(entity, deltaTime);
+
+    // Reset the jump request only after the movement-state modifiers have been
+    // evaluated, otherwise the JUMP state/pose would never activate.
+    entity.jumpRequested = false;
   }
 
   /**
