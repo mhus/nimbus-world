@@ -3,7 +3,6 @@ package de.mhus.nimbus.world.shared.access;
 import de.mhus.nimbus.shared.service.SSettingsService;
 import de.mhus.nimbus.shared.settings.SettingBoolean;
 import de.mhus.nimbus.shared.settings.SettingInteger;
-import de.mhus.nimbus.shared.settings.SettingString;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -11,6 +10,9 @@ import org.apache.logging.log4j.util.Strings;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
@@ -32,7 +34,7 @@ public class AccessSettings {
     private SettingBoolean secureCookies;
     private SettingInteger closeSessionTimeoutSeconds;
     private SettingBoolean devLoginEnabled;
-    private SettingString devLoginAccessKey;
+    private String devLoginAccessKey;
 
     @Value( "${nimbus.access.accessUrls:}")
     private String accessUrls;
@@ -81,12 +83,48 @@ public class AccessSettings {
                 "access.devLoginEnabled",
                 true
         );
-        devLoginAccessKey = settingsService.getString(
-                "access.devLoginAccessKey",
-                UUID.randomUUID() + "-" + UUID.randomUUID()
-        );
-        // Do not log the dev-login access key itself (secret). Only note that one is configured.
-        log.warn("dev-login access key configured (value hidden)");
+        devLoginAccessKey = resolveDevLoginAccessKey();
+    }
+
+    /** Confidential file holding the dev-login access key (git-ignored, written in the process CWD). */
+    private static final Path DEV_LOGIN_KEY_FILE = Path.of("confidential", "dev-login-key.txt");
+    private static final int DEV_LOGIN_KEY_MIN_LENGTH = 16;
+
+    /**
+     * Resolves the dev-login access key from {@link #DEV_LOGIN_KEY_FILE}: if the file exists,
+     * its single non-empty line is used (validated for length); otherwise a new key is generated
+     * and written to the file. The key value itself is never written to the log.
+     */
+    private String resolveDevLoginAccessKey() {
+        try {
+            if (Files.exists(DEV_LOGIN_KEY_FILE)) {
+                List<String> lines = Files.readAllLines(DEV_LOGIN_KEY_FILE).stream()
+                        .map(String::strip)
+                        .filter(s -> !s.isEmpty())
+                        .toList();
+                if (lines.size() != 1) {
+                    throw new IllegalStateException("Dev-login key file must contain exactly one non-empty line: "
+                            + DEV_LOGIN_KEY_FILE.toAbsolutePath());
+                }
+                String key = lines.get(0);
+                if (key.length() < DEV_LOGIN_KEY_MIN_LENGTH) {
+                    throw new IllegalStateException("Dev-login key is too short (min " + DEV_LOGIN_KEY_MIN_LENGTH
+                            + " characters): " + DEV_LOGIN_KEY_FILE.toAbsolutePath());
+                }
+                log.info("Using dev-login access key from {}", DEV_LOGIN_KEY_FILE.toAbsolutePath());
+                return key;
+            }
+            String key = UUID.randomUUID() + "-" + UUID.randomUUID();
+            if (DEV_LOGIN_KEY_FILE.getParent() != null) {
+                Files.createDirectories(DEV_LOGIN_KEY_FILE.getParent());
+            }
+            Files.writeString(DEV_LOGIN_KEY_FILE, key + System.lineSeparator());
+            log.warn("Generated new dev-login access key -> {}", DEV_LOGIN_KEY_FILE.toAbsolutePath());
+            return key;
+        } catch (IOException e) {
+            throw new IllegalStateException("Failed to access dev-login key file "
+                    + DEV_LOGIN_KEY_FILE.toAbsolutePath(), e);
+        }
     }
 
     /**
@@ -227,9 +265,9 @@ public class AccessSettings {
 
     /**
      * Access key required in addition to a valid dev-login request.
-     * Generated on first startup and logged at WARN level if not set.
+     * Read from (or generated into) the confidential dev-login key file at startup.
      */
     public String getDevLoginAccessKey() {
-        return devLoginAccessKey.get();
+        return devLoginAccessKey;
     }
 }

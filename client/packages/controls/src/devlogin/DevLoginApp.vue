@@ -28,7 +28,7 @@
               />
             </form>
             <p class="text-xs text-base-content/60 mt-1">
-              Aus dem Server-Log beim Start (WARN: "Generated new dev-login access key: ...").
+              Zu finden in der vertraulichen Datei auf dem Server.
             </p>
           </div>
         </div>
