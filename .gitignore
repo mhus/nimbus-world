@@ -37,3 +37,6 @@ node_modules
 dist
 tmp/
 venv/
+
+# Runtime-generated server key artifact (written to CWD during app/test runs)
+confidential/
