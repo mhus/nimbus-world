@@ -40,6 +40,12 @@ public abstract class AccessFilterBase extends OncePerRequestFilter {
     public static final String ATTR_SESSION_ID = "accessSessionId";
     public static final String ATTR_IS_AGENT = "accessIsAgent";
     public static final String ATTR_IS_AUTHENTICATED = "accessIsAuthenticated";
+    /**
+     * Marks a request as a dev-mode full-access session. Only ever set by ControlAccessFilter when
+     * dev-login is enabled and the dev-login key was presented as a Bearer token. Honored by
+     * AccessControlAspect to bypass role/region checks. Never set in production (dev-login disabled).
+     */
+    public static final String ATTR_DEV_FULL_ACCESS = "accessDevFullAccess";
 
     private static final String METRIC_NAME = "access.filter.denied";
 

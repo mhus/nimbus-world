@@ -1,0 +1,461 @@
+{
+  "meta": {
+    "regionId": "duskmoor",
+    "title": "Duskmoor — The Mist-Wreathed Moors",
+    "language": "en",
+    "version": 1,
+    "author": "mhus",
+    "controls": {
+      "maxItems": 45,
+      "maxCreatures": 12,
+      "chatModel": "default:chat",
+      "imageModel": "default:generate",
+      "overwrite": false,
+      "blocksFromShared": ["@shared:mc", "@shared:n"]
+    }
+  },
+  "vision": "Low-magic Folk-Fantasy in the style of Celtic moorlands. Duskmoor is a vast, misty-damp high moor between rugged rock ridges and black peat lakes. The mood is melancholic, mysterious, and down-to-earth at the same time: hard, industrious Moorfolk villages on one side — the unpredictable, ancient fairy world of the \"Hollow Court\" on the other. Magic is rare, subtle, and dangerous. Tone: earthy, legendary, a hint of creepiness.",
+  "lore": [
+    {
+      "title": "History / Myth",
+      "kind": "history",
+      "content": "A thousand years ago, the kingdom of Aldmerrow sank in the \"Great Rain\" and became the moor. What remained are the Standing Stones — stone circles that are considered gates to the fairy world. The Moorfolk settled later, dug peat, and smelted bog iron. A fragile pact maintains peace with the Hollow Court: one only takes from the moor what it freely gives."
+    },
+    {
+      "title": "Geography",
+      "kind": "geography",
+      "content": "The High Moor: endless heathlands, peat cuttings, black lakes, fog banks. The Grey Teeth: isolated rock ridges and cliffs with caves. The Standing Stones: scattered stone circles, glowing at night. Peat Villages: small settlements of dark wood and fieldstone."
+    },
+    {
+      "title": "Factions / Peoples",
+      "kind": "faction",
+      "content": "The Moorfolk — farmers, peat cutters, iron smiths. Tough, superstitious, hospitable. The Hollow Court — fairy beings; beautiful and cruel, bound by rules and pacts. The Iron Wardens — half militia, half priestly order; protect the villages from what comes out of the mist."
+    },
+    {
+      "title": "Legends / Artifacts",
+      "kind": "legend",
+      "content": "The Mistglass — shimmering fairy-glass shards that show paths through the mist. The Peat King — a figure preserved in the moor; whoever awakens him reaps favor or curse."
+    }
+  ],
+  "style": {
+    "artStyle": "hand-painted 2D-item-icon, slightly stylized/comic-like, soft watercolor texture, clear dark outline, no text, no frame.",
+    "palette": "muted — moss green, peat brown, fog gray, cold blue-green; occasionally matte bronze/iron accents; diffuse, cool light.",
+    "iconSize": 64,
+    "promptPrefix": "hand-painted fantasy game item icon, muted celtic moorland palette, soft watercolor shading, bold dark outline, centered, transparent background",
+    "promptNegative": "no text, no frame, no drop shadow on ground, no photographic realism",
+    "transparentBackground": true
+  },
+  "blockPalette": [
+    {
+      "sharedCollection": "@shared:mc",
+      "theme": "Moorland and village building blocks"
+    },
+    {
+      "sharedCollection": "@shared:n",
+      "theme": "Natural and basic construction materials"
+    }
+  ],
+  "items": [
+    {
+      "name": "Peat Brick",
+      "type": "material",
+      "tier": null,
+      "rarity": "COMMON",
+      "description": "Dried peat brick, fuel.",
+      "useEffect": null,
+      "slot": null,
+      "priceHint": null,
+      "loreBound": false
+    },
+    {
+      "name": "Bog Iron",
+      "type": "material",
+      "tier": null,
+      "rarity": "UNCOMMON",
+      "description": "Spongy bog iron, raw material for smithing.",
+      "useEffect": null,
+      "slot": null,
+      "priceHint": null,
+      "loreBound": false
+    },
+    {
+      "name": "Mistglass Shard",
+      "type": "material",
+      "tier": null,
+      "rarity": "RARE",
+      "description": "Shimmering fairy-glass shard.",
+      "useEffect": null,
+      "slot": null,
+      "priceHint": null,
+      "loreBound": false
+    },
+    {
+      "name": "Heather Bundle",
+      "type": "material",
+      "tier": null,
+      "rarity": "COMMON",
+      "description": "Dried heather, for potions/dyeing.",
+      "useEffect": null,
+      "slot": null,
+      "priceHint": null,
+      "loreBound": false
+    },
+    {
+      "name": "Peat Moss",
+      "type": "material",
+      "tier": null,
+      "rarity": "COMMON",
+      "description": "Damp peat moss, base for healing remedies.",
+      "useEffect": null,
+      "slot": null,
+      "priceHint": null,
+      "loreBound": false
+    },
+    {
+      "name": "Peat Spade",
+      "type": "tool",
+      "tier": "IRON",
+      "rarity": null,
+      "description": "Wide peat spade.",
+      "useEffect": "Digs peat.",
+      "slot": null,
+      "priceHint": null,
+      "loreBound": false
+    },
+    {
+      "name": "Warden's Lantern",
+      "type": "placeable",
+      "tier": null,
+      "rarity": "UNCOMMON",
+      "description": "Iron lantern with mistglass; illuminates in the fog.",
+      "useEffect": null,
+      "slot": null,
+      "priceHint": null,
+      "loreBound": false
+    },
+    {
+      "name": "Fen Sickle",
+      "type": "tool",
+      "tier": "IRON",
+      "rarity": null,
+      "description": "Sickle for cutting heather/reeds.",
+      "useEffect": null,
+      "slot": null,
+      "priceHint": null,
+      "loreBound": false
+    },
+    {
+      "name": "Bog-Iron Spear",
+      "type": "weapon",
+      "tier": "IRON",
+      "rarity": "COMMON",
+      "description": "Simple bog-iron spear of the Wardens.",
+      "useEffect": null,
+      "slot": "HAND",
+      "priceHint": null,
+      "loreBound": false
+    },
+    {
+      "name": "Thornbound Dagger",
+      "type": "weapon",
+      "tier": null,
+      "rarity": "RARE",
+      "description": "Fairy-forged thorn dagger.",
+      "useEffect": null,
+      "slot": "HAND",
+      "priceHint": null,
+      "loreBound": false
+    },
+    {
+      "name": "Warden's Oilcoat",
+      "type": "armor",
+      "tier": "IRON",
+      "rarity": "COMMON",
+      "description": "Wax-impregnated coat against moor dampness.",
+      "useEffect": null,
+      "slot": "CHEST",
+      "priceHint": null,
+      "loreBound": false
+    },
+    {
+      "name": "Reedweave Boots",
+      "type": "armor",
+      "tier": null,
+      "rarity": "UNCOMMON",
+      "description": "Woven reed boots, quiet in the moor.",
+      "useEffect": null,
+      "slot": "FEET",
+      "priceHint": null,
+      "loreBound": false
+    },
+    {
+      "name": "Smoked Eel",
+      "type": "food",
+      "tier": null,
+      "rarity": "COMMON",
+      "description": "Smoked moor eel, food.",
+      "useEffect": null,
+      "slot": null,
+      "priceHint": null,
+      "loreBound": false
+    },
+    {
+      "name": "Bilberry Loaf",
+      "type": "food",
+      "tier": null,
+      "rarity": "COMMON",
+      "description": "Bilberry bread.",
+      "useEffect": null,
+      "slot": null,
+      "priceHint": null,
+      "loreBound": false
+    },
+    {
+      "name": "Fenroot Tonic",
+      "type": "potion",
+      "tier": null,
+      "rarity": "UNCOMMON",
+      "description": "Healing potion from peat moss & fenroot.",
+      "useEffect": "Heals.",
+      "slot": null,
+      "priceHint": null,
+      "loreBound": false
+    },
+    {
+      "name": "Mistward Draught",
+      "type": "potion",
+      "tier": null,
+      "rarity": "RARE",
+      "description": "Potion that clears the mist (sight).",
+      "useEffect": null,
+      "slot": null,
+      "priceHint": null,
+      "loreBound": false
+    },
+    {
+      "name": "Standing Stone Marker",
+      "type": "placeable",
+      "tier": null,
+      "rarity": null,
+      "description": "Small menhir as a waypoint.",
+      "useEffect": null,
+      "slot": null,
+      "priceHint": null,
+      "loreBound": false
+    },
+    {
+      "name": "Bundle of Rushes",
+      "type": "decoration",
+      "tier": null,
+      "rarity": null,
+      "description": "Reed bundle decoration.",
+      "useEffect": null,
+      "slot": null,
+      "priceHint": null,
+      "loreBound": false
+    },
+    {
+      "name": "Iron Warden Sigil",
+      "type": "decoration",
+      "tier": null,
+      "rarity": null,
+      "description": "Forged protective sign for hanging.",
+      "useEffect": null,
+      "slot": null,
+      "priceHint": null,
+      "loreBound": false
+    },
+    {
+      "name": "Heather Seed",
+      "type": "seed",
+      "tier": null,
+      "rarity": null,
+      "description": "Heather seed, for cultivation on moorland.",
+      "useEffect": null,
+      "slot": null,
+      "priceHint": null,
+      "loreBound": false
+    },
+    {
+      "name": "Bilberry Seed",
+      "type": "seed",
+      "tier": null,
+      "rarity": null,
+      "description": "Bilberry seed, for cultivation on moorland.",
+      "useEffect": null,
+      "slot": null,
+      "priceHint": null,
+      "loreBound": false
+    }
+  ],
+  "creatures": [
+    {
+      "name": "Moor Pony",
+      "type": "animal",
+      "modelPath": "n:models/animals/horse.glb",
+      "behavior": "Shy.",
+      "modifiers": {
+        "scale": "small",
+        "coatColor": "shaggy-brown"
+      }
+    },
+    {
+      "name": "Bog Hound",
+      "type": "animal",
+      "modelPath": "n:models/animals/wolf.glb",
+      "behavior": "Territorial/aggressive at night.",
+      "modifiers": {
+        "bodyColor": "dark"
+      }
+    },
+    {
+      "name": "Peat Sheep",
+      "type": "animal",
+      "modelPath": "n:models/animals/sheep.glb",
+      "behavior": "Peaceful, herd animal.",
+      "modifiers": {}
+    },
+    {
+      "name": "Will-o'-Wisp",
+      "type": "other",
+      "modelPath": null,
+      "behavior": "Floats, lures off the path. Only at night.",
+      "modifiers": {
+        "effect": "glowing"
+      }
+    },
+    {
+      "name": "Fenfolk (Fae)",
+      "type": "avatar",
+      "modelPath": "n:models/people/*",
+      "behavior": null,
+      "modifiers": {
+        "bodyShape": "slender",
+        "skinTone": "pale, cool"
+      }
+    }
+  ],
+  "npcs": [
+    {
+      "role": "Peat Cutter (Moorfolk Trader)",
+      "faction": "Moorfolk",
+      "tone": "terse, warm-hearted, dialectal."
+    },
+    {
+      "role": "Iron Warden (Guardian)",
+      "faction": "Iron Wardens",
+      "tone": "serious, dutiful."
+    },
+    {
+      "role": "Hollow Court Emissary (Fae)",
+      "faction": "Hollow Court",
+      "tone": "elegant, ambiguous, dangerous."
+    }
+  ],
+  "rules": [
+    {
+      "name": "Crafting Tools",
+      "kind": "craft",
+      "when": "Peat Spade + Bog Iron at Anvil",
+      "effects": ["Create better tools"],
+      "description": "Combine a Peat Spade and Bog Iron at an anvil to craft improved tools."
+    },
+    {
+      "name": "Crafting Fenroot Tonic",
+      "kind": "craft",
+      "when": "Peat Moss + Fenroot",
+      "effects": ["Create Fenroot Tonic"],
+      "description": "Craft Fenroot Tonic from Peat Moss and Fenroot."
+    },
+    {
+      "name": "Standing Stone Marker Placement",
+      "kind": "constraint",
+      "when": "Placing a Standing Stone Marker",
+      "effects": ["Can only be placed on rock/fieldstone, not peat"],
+      "description": "Standing Stone Markers can only be placed on rock or fieldstone surfaces, not on peat."
+    },
+    {
+      "name": "Night Dangers",
+      "kind": "logic",
+      "when": "time == NIGHT",
+      "effects": ["Will-o'-Wisps appear", "Bog Hounds become aggressive"],
+      "description": "At night, Will-o'-Wisps appear, and Bog Hounds become aggressive."
+    },
+    {
+      "name": "Enhanced Mistward Draught",
+      "kind": "logic",
+      "when": "flags.nearStandingStone == true",
+      "effects": ["Mistward Draught effect lasts twice as long"],
+      "description": "The effect of Mistward Draught is doubled when near Standing Stones."
+    },
+    {
+      "name": "Moor Harvest Pact",
+      "kind": "constraint",
+      "when": "flags.moorHarvest > threshold (excessive harvesting)",
+      "effects": ["Angers the Hollow Court (triggers an event)"],
+      "description": "Excessive harvesting from the moor will anger the Hollow Court, potentially triggering negative events."
+    }
+  ],
+  "economy": {
+    "currency": "Silver",
+    "tiers": ["IRON", "fairy-forged"],
+    "rarityMix": "Mostly COMMON (materials/food), few RARE (mistglass/thornbound).",
+    "priceBands": {
+      "material": "1-10",
+      "tool": "15-60",
+      "weapon": "20-120",
+      "armor": "20-120",
+      "potion": "10-40"
+    }
+  },
+  "environment": {
+    "weather": "Predominantly fog and drizzle, rarely clear twilight; occasionally \"Moorlights\" (cold aurora) at night.",
+    "dayNight": "Long blue twilights; night is dangerous (see rules).",
+    "seasons": "Mild, wet spring/autumn; harsh, frozen winter (moor lakes bear weight).",
+    "backdrop": "Flat horizon, fog banks, silhouettes of Standing Stones."
+  },
+  "worldTemplates": [
+    {
+      "name": "Blackfen Hollow",
+      "summary": "Small starting moor with a peat village and a stone circle; calm, suitable for tutorials.",
+      "biomeFocus": "Moorland, village, stone circle",
+      "danger": "Low"
+    },
+    {
+      "name": "The Grey Teeth",
+      "summary": "Rocky cliff world with caves and bog-iron deposits; medium danger.",
+      "biomeFocus": "Cliffs, caves, bog-iron",
+      "danger": "Medium"
+    },
+    {
+      "name": "Mistmere",
+      "summary": "Large black moor lake with a fairy island and strong Hollow Court presence; high danger.",
+      "biomeFocus": "Moor lake, fairy island",
+      "danger": "High"
+    }
+  ],
+  "specialItems": [
+    {
+      "name": "The Mistglass Compass",
+      "type": "accessory",
+      "tier": null,
+      "rarity": "LEGENDARY",
+      "description": "Unique artifact from the quest \"The Sinking Path\". Guides paths through the mist.",
+      "useEffect": "Guides through mist.",
+      "slot": null,
+      "priceHint": null,
+      "loreBound": true
+    },
+    {
+      "name": "Peat King's Crown",
+      "type": "accessory",
+      "tier": null,
+      "rarity": "LEGENDARY",
+      "description": "Unique item from \"Waking the Peat King\".",
+      "useEffect": null,
+      "slot": null,
+      "priceHint": null,
+      "loreBound": true
+    }
+  ]
+}

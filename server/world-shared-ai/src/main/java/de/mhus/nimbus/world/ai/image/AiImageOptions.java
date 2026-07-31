@@ -59,12 +59,41 @@ public class AiImageOptions {
     private int numberOfImages = 1;
 
     /**
+     * Whether the generated image should have a transparent background (a real alpha channel),
+     * i.e. the subject is cut out. Required for item/decoration icons that are composited into
+     * the 3D world.
+     * <p>
+     * This is a request for <b>native</b> transparency from the model (e.g. OpenAI
+     * {@code gpt-image-1} with {@code background=transparent}). Providers that support it must
+     * emit a PNG with a genuine alpha channel. Providers that do not support native transparency
+     * must ignore this flag rather than fake it by making a fixed color transparent (color-keying),
+     * which produces fringing and holes in the subject.
+     */
+    @Builder.Default
+    private boolean transparentBackground = false;
+
+    /**
      * Create default options.
      *
      * @return Default image generation options
      */
     public static AiImageOptions defaults() {
         return AiImageOptions.builder().build();
+    }
+
+    /**
+     * Create options for a freestanding, square item/decoration icon with a transparent
+     * background (native alpha). Intended for reality/item image generation.
+     *
+     * @param size Icon edge length in pixels (width == height)
+     * @return Options requesting a transparent-background image of the given size
+     */
+    public static AiImageOptions iconTransparent(int size) {
+        return AiImageOptions.builder()
+                .width(size)
+                .height(size)
+                .transparentBackground(true)
+                .build();
     }
 
     /**

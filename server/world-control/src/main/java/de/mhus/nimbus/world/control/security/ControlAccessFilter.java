@@ -40,6 +40,12 @@ public class ControlAccessFilter extends AccessFilterBase {
     private final AccessSettings accessProperties;
     private final JwtService jwtService;
     private final SSettingsService settingsService;
+    /**
+     * Whether dev-login is enabled via {@code nimbus.devlogin.enabled} (default false; set true in
+     * application-default.yaml for local dev). This is the primary, off-by-default gate for the
+     * dev-key Bearer shortcut — same flag that gates the dev-login endpoints.
+     */
+    private final boolean devLoginEnvEnabled;
 
     /**
      * Pattern for public asset paths: /control/worlds/{worldId}/assets/{p|rp}:**
@@ -52,15 +58,25 @@ public class ControlAccessFilter extends AccessFilterBase {
             "^/control/worlds/[^/]+/assets/(p|rp):.*$"
     );
 
-    public ControlAccessFilter(JwtService jwtService, WSessionService sessionService, AccessSettings accessProperties, RegionSettings regionProperties, SSettingsService settingsService, MetricService metricService) {
+    public ControlAccessFilter(JwtService jwtService, WSessionService sessionService, AccessSettings accessProperties,
+                               RegionSettings regionProperties, SSettingsService settingsService, MetricService metricService,
+                               @org.springframework.beans.factory.annotation.Value("${nimbus.devlogin.enabled:false}") boolean devLoginEnvEnabled) {
         super(jwtService, sessionService, regionProperties, metricService);
         this.accessProperties = accessProperties;
         this.jwtService = jwtService;
         this.settingsService = settingsService;
+        this.devLoginEnvEnabled = devLoginEnvEnabled;
     }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
+        // Dev-mode convenience: when dev-login is enabled, the dev-login key (from
+        // confidential/dev-login-key.txt) may be presented as a Bearer token to gain full dev
+        // access. Gated by nimbus/access dev-login being enabled, so it is inert in production.
+        if (!"OPTIONS".equals(request.getMethod()) && validateDevLoginBearer(request)) {
+            filterChain.doFilter(request, response);
+            return;
+        }
         // Universe-to-sector communication: validate Universe Bearer token separately
         if (request.getRequestURI().startsWith("/control/universe/") && !"OPTIONS".equals(request.getMethod())) {
             if (validateUniverseBearer(request)) {
@@ -70,6 +86,42 @@ public class ControlAccessFilter extends AccessFilterBase {
             // Fall through to normal auth (allows admin UI access via session cookie)
         }
         super.doFilterInternal(request, response, filterChain);
+    }
+
+    /**
+     * Dev-only Bearer authentication: if dev-login is enabled and the presented Bearer token equals
+     * the dev-login access key (from {@code confidential/dev-login-key.txt}), grant full dev access.
+     * This is a development convenience — it is only active while dev-login is enabled and therefore
+     * has no effect in production. The comparison is constant-time to avoid leaking the key via timing.
+     */
+    boolean validateDevLoginBearer(HttpServletRequest request) {
+        // Off by default: requires nimbus.devlogin.enabled=true (application-default.yaml) AND the
+        // dev-login toggle — same gating as the dev-login endpoints. Inert in production.
+        if (!devLoginEnvEnabled || !accessProperties.isDevLoginEnabled()) {
+            return false;
+        }
+        String auth = request.getHeader("Authorization");
+        if (auth == null || !auth.startsWith("Bearer ")) {
+            return false;
+        }
+        String token = auth.substring(7).trim();
+        String expected = accessProperties.getDevLoginAccessKey();
+        if (token.isEmpty() || expected == null || expected.isBlank()) {
+            return false;
+        }
+        if (!java.security.MessageDigest.isEqual(
+                token.getBytes(java.nio.charset.StandardCharsets.UTF_8),
+                expected.getBytes(java.nio.charset.StandardCharsets.UTF_8))) {
+            return false;
+        }
+        log.warn("DEV-LOGIN Bearer token accepted — granting FULL dev access (dev-login enabled). uri={}",
+                request.getRequestURI());
+        request.setAttribute(AccessFilterBase.ATTR_IS_AUTHENTICATED, true);
+        request.setAttribute(AccessFilterBase.ATTR_IS_AGENT, true);
+        request.setAttribute(AccessFilterBase.ATTR_USER_ID, "dev");
+        request.setAttribute(AccessFilterBase.ATTR_ROLE, "EDITOR");
+        request.setAttribute(AccessFilterBase.ATTR_DEV_FULL_ACCESS, true);
+        return true;
     }
 
     private boolean validateUniverseBearer(HttpServletRequest request) {

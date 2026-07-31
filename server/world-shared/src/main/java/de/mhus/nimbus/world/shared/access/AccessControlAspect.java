@@ -65,6 +65,14 @@ public class AccessControlAspect {
             return joinPoint.proceed();
         }
 
+        // Skip access control for dev-mode full-access sessions. This attribute is only ever set by
+        // ControlAccessFilter when dev-login is enabled and the dev-login key was presented as a
+        // Bearer token — inert in production (dev-login disabled).
+        if (Boolean.TRUE.equals(request.getAttribute(AccessFilterBase.ATTR_DEV_FULL_ACCESS))) {
+            log.debug("Dev full-access bypass for {}", request.getRequestURI());
+            return joinPoint.proceed();
+        }
+
         // Skip access control for public asset paths (p: and rp: prefixes)
         String requestUri = request.getRequestURI();
         if (requestUri != null && requestUri.matches(".*/assets/(p|rp):.*")) {

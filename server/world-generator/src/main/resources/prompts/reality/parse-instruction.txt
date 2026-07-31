@@ -1,0 +1,142 @@
+You convert a free-text "Reality Instruction Document" for a voxel game region into a single
+structured JSON object (the "Reality Plan"). The reality is the content library of a region: items
+(with icons), creatures, NPCs, lore, building/logic rules, economy, environment and world templates.
+
+## Output rules
+
+- Output ONLY the JSON object. No prose, no explanation, no markdown code fences.
+- Use exactly the field names below. Omit a field or use null if the document does not specify it.
+- Do NOT invent large amounts of content that is not implied by the document; extract and normalize
+  what is there. It is fine to lightly complete obvious gaps (e.g. a missing item `type`).
+- Enum-like fields must use one of the listed values; map free text to the closest one.
+- LANGUAGE: write ALL human-readable text (vision, lore.content, descriptions, style.*, blockPalette.theme,
+  economy.*, environment.*, worldTemplates.*, tone, behavior, ...) consistently in the language given by
+  `meta.language`. If the source document mixes languages, translate everything into `meta.language`.
+  Keep technical identifiers, enum values and collection ids (e.g. "@shared:mc", "n:models/...") unchanged.
+- blockPalette: emit ONE entry per shared collection and do NOT repeat the same `theme` text across
+  entries. Assign each collection only the blocks/materials that actually belong to it; if the document
+  does not split them, put the shared theme on the primary collection and give the others a short,
+  distinct theme (or omit the duplicate).
+- ITEM CLASSES: always define `itemClasses` — the material/tier ladder (e.g. leather, iron, steel, ...)
+  with ascending `rank` and a valid `tier`. Every tier-bearing item (weapon/armor/tool) SHOULD set
+  `itemClass` referencing one of them instead of a raw `tier`. Regions may rename classes thematically
+  but must keep the rank order.
+- CATALOG COMPLETENESS: extract the items named in the document AND fill out the catalog so each
+  category has a coherent set across the item classes (respect `controls.categoryCoverage` /
+  `targetItemCount` if given). Keep the world logic consistent: every crafted item's `recipe` references
+  only items you also emit, and every `material` has a plausible `source`.
+- SUPER ITEMS: include the power-ups from `controls.superItems`. `one_up` = consumable extra-life
+  (rarity EPIC, consumable=true, persistent=false). `one_up_forever` = permanent, NEVER consumed
+  (rarity MYTHIC, consumable=false, persistent=true), type "super", effect "extra_life".
+
+## Target JSON structure
+
+{
+  "meta": {
+    "regionId": string,            // technical id, [a-z0-9_]
+    "title": string,
+    "language": string,            // e.g. "en", "de"
+    "version": integer,
+    "author": string,
+    "controls": {
+      "maxItems": integer,
+      "maxCreatures": integer,
+      "chatModel": string,         // optional, e.g. "default:chat"
+      "imageModel": string,        // optional, e.g. "default:generate"
+      "overwrite": boolean,
+      "blocksFromShared": [string],// shared collections to reuse, e.g. "@shared:mc"
+      "presetRef": string,         // baseline preset to inherit (optional)
+      "expandCatalog": boolean,    // fill the catalog from the preset beyond named items (default true)
+      "targetItemCount": integer,  // target total item count (cap)
+      "categoryCoverage": { string: integer },  // per-category target counts, e.g. {"weapon": 30}
+      "superItems": [string]       // active super-items, e.g. ["one_up", "one_up_forever"]
+    }
+  },
+  "vision": string,                // 1-2 sentences: genre, mood, tone
+  "itemClasses": [                 // material/tier classes = the progression ladder (Ultima/Minecraft style)
+    {
+      "name": string,             // canonical id, e.g. "iron"
+      "title": string,            // themed display name, e.g. "Bog Iron"
+      "rank": integer,            // ascending progression order
+      "tier": "NONE|LEATHER|IRON|STEEL|SILVER|GOLD|MYTHRIL|ADAMANT|ORICHALCUM",
+      "description": string,
+      "appliesTo": [string],      // categories, e.g. ["weapon","armor","tool"]
+      "material": string          // base material slug, e.g. "iron_ingot"
+    }
+  ],
+  "lore": [
+    { "title": string, "kind": "history|geography|faction|legend|quest|other", "content": string }
+  ],
+  "style": {
+    "artStyle": string,
+    "palette": string,
+    "iconSize": integer,           // e.g. 64
+    "promptPrefix": string,        // prepended to every image prompt
+    "promptNegative": string,
+    "transparentBackground": boolean
+  },
+  "blockPalette": [
+    { "sharedCollection": string, "theme": string }
+  ],
+  "items": [
+    {
+      "name": string,
+      "type": "material|tool|weapon|armor|food|potion|decoration|placeable|seed|book|accessory|dye|vehicle|super|other",
+      "itemClass": string,         // references an itemClasses[].name, e.g. "iron" (drives tier)
+      "tier": string,              // e.g. "IRON"; omit if itemClass already implies it
+      "rarity": "COMMON|UNCOMMON|RARE|EPIC|LEGENDARY|MYTHIC" or null,
+      "description": string,       // also used to build the image prompt
+      "useEffect": string,         // optional behavior description
+      "slot": string,              // e.g. "HAND", "CHEST", "FEET" or null
+      "priceHint": integer,        // rough base price or null
+      "source": string,            // where the raw material comes from (block/creature/crop)
+      "recipe": [string],          // ingredient item slugs (crafting), referencing existing items
+      "loreBound": boolean,        // true only for unique/lore-bound items
+      // super-item mechanics (type "super"):
+      "consumable": boolean,       // consumed on use (false for a permanent power-up)
+      "persistent": boolean,       // never consumed (e.g. "one-up forever") -> becomes exclusive
+      "effect": string             // effect key, e.g. "extra_life"
+    }
+  ],
+  "creatures": [
+    {
+      "name": string,
+      "type": "animal|avatar|other",
+      "modelPath": string,         // shared model reference, e.g. "n:models/animals/wolf.glb"
+      "behavior": string,
+      "modifiers": { string: string }  // e.g. {"bodyColor": "dark"}
+    }
+  ],
+  "npcs": [
+    { "role": string, "faction": string, "tone": string }
+  ],
+  "rules": [
+    { "name": string, "kind": "craft|build|logic|constraint", "when": string, "effects": [string], "description": string }
+  ],
+  "economy": {
+    "currency": string,
+    "tiers": [string],
+    "rarityMix": string,
+    "priceBands": { string: string }   // e.g. {"weapon": "20-120"}
+  },
+  "environment": {
+    "weather": string,
+    "dayNight": string,
+    "seasons": string,
+    "backdrop": string
+  },
+  "worldTemplates": [
+    { "name": string, "summary": string, "biomeFocus": string, "danger": string }
+  ],
+  "specialItems": [
+    // same shape as items[]; unique / lore-bound items generated on demand. Set "loreBound": true.
+  ]
+}
+
+{{previousErrorSection}}
+
+## Reality Instruction Document
+
+{{instruction}}
+
+## Now output the Reality Plan JSON

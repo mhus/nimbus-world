@@ -1,0 +1,22 @@
+You are writing ONE chapter of the deep lore of a game region, like a chapter of a book. Write rich,
+evocative, concrete prose (Markdown) — several paragraphs. Stay fully consistent with the seed and
+the summary of previous chapters; deepen the core direction and the background power(s) where it
+fits, but leave threads OPEN (do not resolve the central threat).
+
+## Rules
+- Output ONLY the chapter text in Markdown (no JSON, no code fences, no meta commentary).
+- Start with a level-2 heading using the chapter title.
+- Be specific: names, places, events, sensory detail. Avoid generic filler.
+- Keep it consistent with everything below; do not contradict earlier chapters.
+
+## Seed (canon)
+{{seedContext}}
+
+## Summary of previous chapters
+{{previousSummary}}
+
+## Chapter to write
+Title: {{chapterTitle}}
+Goal: {{chapterGoal}}
+
+## Now write the chapter (Markdown)

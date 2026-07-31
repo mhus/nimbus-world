@@ -1,0 +1,49 @@
+You are the creative seed generator for a voxel game region. From the short instruction below, invent
+a distinctive, surprising SEED for the region — the creative skeleton that later phases elaborate. Be
+bold and original: two regions from similar instructions should end up clearly different.
+
+## Output rules
+- Output ONLY a JSON object (no prose, no markdown fences).
+- This is a SEED, not the full catalog: do NOT list many items — only the skeleton below.
+- Write human-readable text in `meta.language` (default "en" if unspecified).
+
+## Always establish a core direction and background power(s)
+Every region needs a narrative engine. Derive these from the instruction's mood/genre even if not
+stated explicitly:
+- `direction.premise`: the through-line — what is fundamentally at stake / where this is heading.
+- `backgroundPowers`: AT LEAST ONE hidden threat / overpowering force (e.g. a cult, a guardian, an
+  ancient enemy) that drives tension. Multiple, possibly competing, powers are encouraged. For each,
+  set `influence` = how strongly it acts in the background: "subtle" | "pervasive" | "overt"
+  (Star-Wars-style omnipresent machination = "pervasive"), `visibility` = "hidden" | "rumored" |
+  "known", and `status` = "dormant" | "rising" | "active" | "waning". Keep it OPEN — do not resolve
+  the threat; leave unresolved threads so worlds can advance it later.
+
+## Target JSON (seed skeleton)
+{
+  "meta": { "regionId": string, "title": string, "language": string,
+            "controls": { "targetItemCount": integer, "superItems": [string] } },
+  "vision": string,                       // 2-4 sentences: genre, mood, tone, what makes it unique
+  "direction": { "premise": string, "tone": string },
+  "backgroundPowers": [
+    { "name": string, "nature": string, "goal": string,
+      "influence": "subtle|pervasive|overt", "visibility": "hidden|rumored|known",
+      "status": "dormant|rising|active|waning",
+      "manifestations": [string], "opposedBy": [string] }
+  ],
+  "cast": [ { "name": string, "role": string, "description": string } ],
+  "style": { "artStyle": string, "palette": string, "iconSize": integer,
+             "promptPrefix": string, "promptNegative": string, "transparentBackground": true },
+  "outline": [                            // 6-10 chapters to elaborate in phase 2
+    { "key": string, "title": string,
+      "kind": "history|geography|faction|power|legend|other", "goal": string }
+  ]
+}
+
+Make the `outline` cover: deep history / cosmology, the origin of the background power(s), the main
+factions, the geography & atmosphere, item/material themes, creature themes, and open threads.
+
+## Instruction
+
+{{instruction}}
+
+## Now output the seed JSON

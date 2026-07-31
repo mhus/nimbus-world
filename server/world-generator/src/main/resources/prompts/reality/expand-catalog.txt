@@ -1,0 +1,60 @@
+You expand a partial "Reality Plan" (JSON) for a voxel game region into a COMPLETE, coherent catalog
+of Minecraft scale, while staying faithful to the region's vision, lore and visual style.
+
+## Rules
+
+- Output ONLY the full expanded Reality Plan as a single JSON object. No prose, no markdown fences.
+- Use the SAME schema and field names as the input plan. Keep ALL existing entries (meta, vision, lore,
+  style, blockPalette, npcs, rules, economy, environment, worldTemplates, specialItems) unchanged unless
+  you are adding to them. NEVER drop items or classes that are already present.
+- Write all human-readable text in `meta.language`. Theme every new name/description to the region
+  vision, lore and style. Keep technical ids/enums/collection ids unchanged.
+
+## Item classes (the progression ladder — always define these)
+
+Provide `itemClasses` covering the tier ladder, each with ascending `rank` and a valid `tier`:
+`NONE → LEATHER → IRON → STEEL → SILVER → GOLD → MYTHRIL → ADAMANT → ORICHALCUM`.
+Each class MUST have a canonical lowercase `name` (id, e.g. "iron" or "bog_iron") AND a themed
+display `title` (e.g. "Bog Iron"). Regions may theme the `title` but must keep the rank order.
+Tier-bearing items (weapon/armor/tool) reference a class via `itemClass` = the class **`name`**
+(not the title), instead of a raw `tier`. Example:
+`itemClasses: [{ "name": "bog_iron", "title": "Bog Iron", "rank": 2, "tier": "IRON", "material": "bog_iron_ingot" }]`
+and an item `{ "name": "Bog-Iron Spear", "type": "weapon", "itemClass": "bog_iron" }`.
+
+## Category coverage (fill the catalog)
+
+Add items so each category has a coherent set across the classes. Target counts:
+
+{{coverageDirective}}
+
+Default preset ranges if not overridden: material 80-140, tool 50-90, weapon 25-45, armor 40-70,
+food 40-70, potion 15-30, decoration 10-25, placeable 10-25, seed 6-15, dye 8-16, vehicle 6-15,
+book 3-8, accessory 3-10, ammo 2-6.
+
+## World-logic coherence (required)
+
+- Every `material` item has a plausible `source` (a block type, creature or crop).
+- Every crafted item sets `recipe` (ingredient item slugs) referencing ONLY items that also exist in
+  the plan. Do not invent dead ingredients.
+- Every tool/weapon/armor tier has a matching material class + base material.
+- Seeds couple to foods; raw foods have a cooked form if fire exists.
+
+## Super items
+
+{{superItemsDirective}}
+`one_up` = consumable extra-life (type "super", rarity EPIC, consumable true, persistent false,
+effect "extra_life"). `one_up_forever` = permanent, NEVER consumed (rarity MYTHIC, consumable false,
+persistent true, effect "extra_life").
+
+## Item fields (per items[] / specialItems[] entry)
+
+name, type (material|tool|weapon|armor|food|potion|decoration|placeable|seed|book|accessory|dye|
+vehicle|ammo|super|other), itemClass, tier, rarity (COMMON|UNCOMMON|RARE|EPIC|LEGENDARY|MYTHIC),
+description, useEffect, slot, priceHint (int), source, recipe (string[]), loreBound (bool),
+consumable (bool), persistent (bool), effect.
+
+## Current (partial) plan
+
+{{currentPlan}}
+
+## Now output the complete expanded Reality Plan JSON

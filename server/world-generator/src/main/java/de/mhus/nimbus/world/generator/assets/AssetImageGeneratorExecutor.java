@@ -47,19 +47,25 @@ import java.util.Optional;
  *     <li>crop (optional) - Square crop preset: "squareTop", "squareCenter", "squareBottom". Uses image width as height. Skipped if image is wider than tall.</li>
  *     <li>cropBorder (optional) - Crop pixels from each side before resize (default: 0, e.g., "70" crops 70px from each side)</li>
  *     <li>resize (optional) - Resize image to requested size if different (default: true)</li>
- *     <li>transparency (optional) - Make color transparent: "false" (default), "true"/"black", "white", "blue", "red", "green"</li>
+ *     <li>transparent (optional) - Request a real transparent background (alpha channel) from the
+ *         image model (default: false). Provider-dependent: native for models that support it
+ *         (e.g. gpt-image-1), or via background removal for models that don't (e.g. Gemini).
+ *         Preferred over the legacy color-key "transparency" below.</li>
+ *     <li>transparency (optional, legacy color-key fallback) - Make a fixed color transparent:
+ *         "false" (default), "true"/"black", "white", "blue", "red", "green". Ignored when
+ *         transparent=true. Fragile (fringing/holes); use "transparent" instead where possible.</li>
  *     <li>generateDescription (optional) - Generate AI description after saving (default: true)</li>
  *     <li>overwrite (optional) - Overwrite existing asset if path exists (default: false)</li>
  * </ul>
  * <p>
  * Processing order:
  * <ol>
- *     <li>Generate image with AI</li>
+ *     <li>Generate image with AI (with a transparent background if transparent=true)</li>
  *     <li>Archive original image</li>
  *     <li>Crop border if cropBorder > 0</li>
  *     <li>Square crop if crop preset is set (squareTop/squareCenter/squareBottom)</li>
- *     <li>Resize to target size if resize=true</li>
- *     <li>Make color transparent if transparency != "false"</li>
+ *     <li>Resize to target size if resize=true (alpha preserved)</li>
+ *     <li>Legacy color-key transparency if transparency != "false" AND transparent=false</li>
  *     <li>Save to assets</li>
  *     <li>Generate description if generateDescription=true</li>
  * </ol>
@@ -140,6 +146,7 @@ public class AssetImageGeneratorExecutor implements JobExecutor {
             boolean overwrite = Boolean.parseBoolean(job.getParameters().getOrDefault("overwrite", "false"));
             int cropBorder = Integer.parseInt(job.getParameters().getOrDefault("cropBorder", "0"));
             String crop = job.getParameters().get("crop"); // squareTop, squareCenter, squareBottom
+            boolean transparent = Boolean.parseBoolean(job.getParameters().getOrDefault("transparent", "false"));
             String transparency = job.getParameters().getOrDefault("transparency", "false");
 
             // Find unique path if requested path already exists (unless overwrite=true)
@@ -161,8 +168,8 @@ public class AssetImageGeneratorExecutor implements JobExecutor {
             // Determine which model to use
             String modelToUse = (model != null && !model.isBlank()) ? model : aiModelName;
 
-            log.info("Generating image: world={}, path={}, model={}, prompt='{}', size={}x{}, quality={}, style={}",
-                    worldId.getId(), uniquePath, modelToUse, prompt, width, height, quality, style);
+            log.info("Generating image: world={}, path={}, model={}, prompt='{}', size={}x{}, quality={}, style={}, transparent={}",
+                    worldId.getId(), uniquePath, modelToUse, prompt, width, height, quality, style, transparent);
 
             // Create AI image model
             AiImageOptions options = AiImageOptions.builder()
@@ -171,6 +178,7 @@ public class AssetImageGeneratorExecutor implements JobExecutor {
                     .quality(quality)
                     .style(style)
                     .responseFormat("url") // Download bytes for storage
+                    .transparentBackground(transparent)
                     .timeoutSeconds(timeoutSeconds.get())
                     .logRequests(false)
                     .build();
@@ -204,8 +212,9 @@ public class AssetImageGeneratorExecutor implements JobExecutor {
                 image = resizeImageIfNeeded(image, width, height, uniquePath);
             }
 
-            // Make color transparent if requested
-            if (transparency != null && !transparency.equalsIgnoreCase("false")) {
+            // Legacy color-key transparency (fallback only). Skipped when a real transparent
+            // background was requested, because the model already returns a genuine alpha channel then.
+            if (!transparent && transparency != null && !transparency.equalsIgnoreCase("false")) {
                 image = makeColorTransparent(image, transparency, uniquePath);
             }
 

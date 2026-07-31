@@ -1,0 +1,20 @@
+You revise a Reality Plan (JSON) to fix the reported issues while keeping everything else intact.
+
+## Rules
+
+- Output ONLY the corrected full Reality Plan JSON (same schema as the input). No prose, no fences.
+- Keep ALL existing content; change only what the issues require. Do NOT drop items or item classes.
+- Apply the fixes concretely and minimally. Keep ids, enum values and `meta.language` consistent.
+- Preserve world-logic coherence: `recipe` references only existing item slugs, every tier-bearing
+  item resolves an item class/tier, every `material` has a `source`, super-items keep their mechanics
+  (`one_up_forever`: persistent=true, consumable=false).
+
+## Issues to fix
+
+{{issues}}
+
+## Current plan
+
+{{plan}}
+
+## Now output the corrected Reality Plan JSON

@@ -175,9 +175,10 @@ public class GeminiLangchainModel implements LangchainModel {
             return 64000;
         }
 
-        // Gemini 2.5 Flash/Flash-Lite: 8,000-32,000 tokens (use 32,000 as safe upper limit)
+        // Gemini 2.5 Flash/Flash-Lite: up to 65,536 output tokens (thinking models need the headroom,
+        // otherwise reasoning tokens eat the budget and large JSON responses get truncated).
         if (lowerName.contains("2.5") && (lowerName.contains("flash") || lowerName.contains("lite"))) {
-            return 32000;
+            return 65536;
         }
 
         // Gemini 2.0 (deprecated, will be shut down March 31, 2026): 8,192 tokens
