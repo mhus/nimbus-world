@@ -57,6 +57,14 @@ public class AccessSettings {
     @Value( "${nimbus.access.editorUrl:}")
     private String editorUrl;
 
+    /**
+     * Off-by-default env gate for the whole dev-login feature ({@code nimbus.devlogin.enabled}, same
+     * flag {@code ControlAccessFilter} uses). The dev-login key is only ever needed when this is on;
+     * when off (the production default) we never touch the filesystem for the key.
+     */
+    @Value("${nimbus.devlogin.enabled:false}")
+    private boolean devLoginEnvEnabled;
+
     @PostConstruct
     private void init() {
         tokenExpirationSeconds = settingsService.getInteger(
@@ -83,7 +91,10 @@ public class AccessSettings {
                 "access.devLoginEnabled",
                 true
         );
-        devLoginAccessKey = resolveDevLoginAccessKey();
+        // Only resolve/generate the key file when dev-login is actually enabled for this process.
+        // In production (dev-login off) we must not write to the filesystem: a read-only container FS
+        // would otherwise fail bean init and crash-loop the pod for a feature that is never used.
+        devLoginAccessKey = devLoginEnvEnabled ? resolveDevLoginAccessKey() : null;
     }
 
     /** Confidential file holding the dev-login access key (git-ignored, written in the process CWD). */
@@ -264,8 +275,9 @@ public class AccessSettings {
     }
 
     /**
-     * Access key required in addition to a valid dev-login request.
-     * Read from (or generated into) the confidential dev-login key file at startup.
+     * Access key required in addition to a valid dev-login request. Read from (or generated into) the
+     * confidential dev-login key file at startup, but only when dev-login is enabled
+     * ({@code nimbus.devlogin.enabled=true}); {@code null} in production.
      */
     public String getDevLoginAccessKey() {
         return devLoginAccessKey;
