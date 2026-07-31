@@ -1,0 +1,13 @@
+# Template for the local dev profile.
+# Copy to application-default.yaml (git-ignored) and fill in your local secrets.
+
+nimbus:
+  encryption:
+    password: CHANGE_ME_LOCAL_DEV_SECRET
+
+# Dev logging: all nimbus logs at TRACE into a fixed local file (git-ignored).
+logging:
+  file:
+    name: log/world-player.log
+  level:
+    de.mhus.nimbus: TRACE
