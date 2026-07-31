@@ -9,13 +9,10 @@ import dev.langchain4j.model.input.PromptTemplate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
 
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -41,8 +38,6 @@ public class RealityCatalogExpander {
     private final RealityPlanParser parser; // reuse parseJson
 
     private static final ObjectMapper MAPPER = JsonMapper.builder().build();
-
-    private String cachedTemplate;
 
     /**
      * Expand the catalog of a plan. If {@code controls.expandCatalog} is explicitly false, the plan
@@ -71,7 +66,7 @@ public class RealityCatalogExpander {
             return RealityPlanResult.success(plan, null);
         }
 
-        Optional<String> templateOpt = loadTemplate();
+        Optional<String> templateOpt = RealityAiSupport.loadTemplate(PROMPT_TEMPLATE_PATH);
         if (templateOpt.isEmpty()) {
             return RealityPlanResult.failure("Expansion prompt template not found: " + PROMPT_TEMPLATE_PATH);
         }
@@ -105,7 +100,7 @@ public class RealityCatalogExpander {
             return RealityPlanResult.failure("AI returned empty response");
         }
 
-        RealityPlanResult result = parser.parseJson(cleanJsonResponse(response));
+        RealityPlanResult result = parser.parseJson(RealityAiSupport.extractJson(response));
         if (result.isSuccessful()) {
             RealityPlan expanded = result.getPlan();
             log.info("Catalog expanded: items {} -> {}, classes {} -> {}",
@@ -171,45 +166,7 @@ public class RealityCatalogExpander {
                 .maxTokens(0)         // model maximum for a large plan
                 .timeoutSeconds(300)  // full-catalog output is large and slow
                 .build();
-        if (!Strings.isBlank(modelName)) {
-            return aiModelService.createChat(modelName, options);
-        }
-        Optional<AiChat> chat = aiModelService.createChat("default:reality", options);
-        if (chat.isPresent()) {
-            return chat;
-        }
-        return aiModelService.createChat("default:chat", options);
-    }
-
-    private Optional<String> loadTemplate() {
-        if (cachedTemplate != null) {
-            return Optional.of(cachedTemplate);
-        }
-        try {
-            ClassPathResource resource = new ClassPathResource(PROMPT_TEMPLATE_PATH);
-            if (!resource.exists()) {
-                log.error("Expansion prompt template not found: {}", PROMPT_TEMPLATE_PATH);
-                return Optional.empty();
-            }
-            cachedTemplate = new String(resource.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
-            return Optional.of(cachedTemplate);
-        } catch (IOException e) {
-            log.error("Failed to load expansion prompt template", e);
-            return Optional.empty();
-        }
-    }
-
-    private String cleanJsonResponse(String response) {
-        String cleaned = response.trim();
-        if (cleaned.startsWith("```json")) {
-            cleaned = cleaned.substring("```json".length());
-        } else if (cleaned.startsWith("```")) {
-            cleaned = cleaned.substring("```".length());
-        }
-        if (cleaned.endsWith("```")) {
-            cleaned = cleaned.substring(0, cleaned.length() - 3);
-        }
-        return cleaned.trim();
+        return RealityAiSupport.createChat(aiModelService, modelName, options);
     }
 
     private static int size(List<?> list) {

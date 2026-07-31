@@ -9,15 +9,12 @@ import dev.langchain4j.model.input.PromptTemplate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 import tools.jackson.core.json.JsonReadFeature;
 import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
 
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -45,8 +42,6 @@ public class RealityJudge {
             .enable(JsonReadFeature.ALLOW_TRAILING_COMMA)
             .build();
 
-    private String cachedTemplate;
-
     /**
      * Judge the balance of a plan.
      *
@@ -69,7 +64,7 @@ public class RealityJudge {
             return JudgeVerdict.failure("RealityPlan is null");
         }
 
-        Optional<String> templateOpt = loadTemplate();
+        Optional<String> templateOpt = RealityAiSupport.loadTemplate(PROMPT_TEMPLATE_PATH);
         if (templateOpt.isEmpty()) {
             return JudgeVerdict.failure("Judge prompt template not found: " + PROMPT_TEMPLATE_PATH);
         }
@@ -102,7 +97,7 @@ public class RealityJudge {
         }
 
         try {
-            JudgeVerdict verdict = VERDICT_MAPPER.readValue(cleanJsonResponse(response), JudgeVerdict.class);
+            JudgeVerdict verdict = VERDICT_MAPPER.readValue(RealityAiSupport.extractJson(response), JudgeVerdict.class);
             if (verdict == null) {
                 return JudgeVerdict.failure("Judge returned null verdict");
             }
@@ -123,44 +118,6 @@ public class RealityJudge {
                 .maxTokens(0)
                 .timeoutSeconds(180)
                 .build();
-        if (!Strings.isBlank(modelName)) {
-            return aiModelService.createChat(modelName, options);
-        }
-        Optional<AiChat> chat = aiModelService.createChat("default:reality", options);
-        if (chat.isPresent()) {
-            return chat;
-        }
-        return aiModelService.createChat("default:chat", options);
-    }
-
-    private Optional<String> loadTemplate() {
-        if (cachedTemplate != null) {
-            return Optional.of(cachedTemplate);
-        }
-        try {
-            ClassPathResource resource = new ClassPathResource(PROMPT_TEMPLATE_PATH);
-            if (!resource.exists()) {
-                log.error("Judge prompt template not found: {}", PROMPT_TEMPLATE_PATH);
-                return Optional.empty();
-            }
-            cachedTemplate = new String(resource.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
-            return Optional.of(cachedTemplate);
-        } catch (IOException e) {
-            log.error("Failed to load judge prompt template", e);
-            return Optional.empty();
-        }
-    }
-
-    private String cleanJsonResponse(String response) {
-        String cleaned = response.trim();
-        if (cleaned.startsWith("```json")) {
-            cleaned = cleaned.substring("```json".length());
-        } else if (cleaned.startsWith("```")) {
-            cleaned = cleaned.substring("```".length());
-        }
-        if (cleaned.endsWith("```")) {
-            cleaned = cleaned.substring(0, cleaned.length() - 3);
-        }
-        return cleaned.trim();
+        return RealityAiSupport.createChat(aiModelService, modelName, options);
     }
 }

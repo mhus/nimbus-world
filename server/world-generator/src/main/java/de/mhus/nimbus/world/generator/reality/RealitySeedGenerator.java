@@ -9,11 +9,8 @@ import dev.langchain4j.model.input.PromptTemplate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -36,8 +33,6 @@ public class RealitySeedGenerator {
     private final AiModelService aiModelService;
     private final RealityPlanParser parser; // reuse the lenient JSON -> RealityPlan mapping
 
-    private String cachedTemplate;
-
     public RealityPlanResult generate(String instruction) {
         return generate(instruction, null);
     }
@@ -51,7 +46,7 @@ public class RealitySeedGenerator {
         if (Strings.isBlank(instruction)) {
             return RealityPlanResult.failure("Instruction cannot be empty");
         }
-        Optional<String> templateOpt = loadTemplate();
+        Optional<String> templateOpt = RealityAiSupport.loadTemplate(PROMPT_TEMPLATE_PATH);
         if (templateOpt.isEmpty()) {
             return RealityPlanResult.failure("Seed prompt template not found: " + PROMPT_TEMPLATE_PATH);
         }
@@ -75,7 +70,7 @@ public class RealitySeedGenerator {
             return RealityPlanResult.failure("AI returned empty seed");
         }
 
-        RealityPlanResult result = parser.parseJson(cleanJsonResponse(response));
+        RealityPlanResult result = parser.parseJson(RealityAiSupport.extractJson(response));
         if (result.isSuccessful()) {
             RealityPlan p = result.getPlan();
             log.info("Seed generated: region={}, powers={}, outline chapters={}",
@@ -92,40 +87,6 @@ public class RealitySeedGenerator {
                 .maxTokens(0)
                 .timeoutSeconds(180)
                 .build();
-        if (!Strings.isBlank(modelName)) {
-            return aiModelService.createChat(modelName, options);
-        }
-        Optional<AiChat> chat = aiModelService.createChat("default:reality", options);
-        return chat.isPresent() ? chat : aiModelService.createChat("default:chat", options);
-    }
-
-    private Optional<String> loadTemplate() {
-        if (cachedTemplate != null) {
-            return Optional.of(cachedTemplate);
-        }
-        try {
-            ClassPathResource resource = new ClassPathResource(PROMPT_TEMPLATE_PATH);
-            if (!resource.exists()) {
-                return Optional.empty();
-            }
-            cachedTemplate = new String(resource.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
-            return Optional.of(cachedTemplate);
-        } catch (IOException e) {
-            log.error("Failed to load seed prompt template", e);
-            return Optional.empty();
-        }
-    }
-
-    private String cleanJsonResponse(String response) {
-        String cleaned = response.trim();
-        if (cleaned.startsWith("```json")) {
-            cleaned = cleaned.substring("```json".length());
-        } else if (cleaned.startsWith("```")) {
-            cleaned = cleaned.substring("```".length());
-        }
-        if (cleaned.endsWith("```")) {
-            cleaned = cleaned.substring(0, cleaned.length() - 3);
-        }
-        return cleaned.trim();
+        return RealityAiSupport.createChat(aiModelService, modelName, options);
     }
 }

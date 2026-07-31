@@ -9,13 +9,10 @@ import dev.langchain4j.model.input.PromptTemplate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
 
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -45,8 +42,6 @@ public class RealityRefiner {
     private final RealityJudge judge;
 
     private static final ObjectMapper SERIALIZE_MAPPER = JsonMapper.builder().build();
-
-    private String cachedTemplate;
 
     public RefineResult refine(RealityPlan plan) {
         return refine(plan, RefineOptions.defaults());
@@ -142,7 +137,7 @@ public class RealityRefiner {
     }
 
     private Optional<RealityPlan> revise(RealityPlan current, String feedback, String modelName) {
-        Optional<String> templateOpt = loadTemplate();
+        Optional<String> templateOpt = RealityAiSupport.loadTemplate(PROMPT_TEMPLATE_PATH);
         if (templateOpt.isEmpty()) {
             log.error("Refine prompt template not found: {}", PROMPT_TEMPLATE_PATH);
             return Optional.empty();
@@ -175,7 +170,7 @@ public class RealityRefiner {
         if (Strings.isBlank(response)) {
             return Optional.empty();
         }
-        RealityPlanResult result = parser.parseJson(cleanJsonResponse(response));
+        RealityPlanResult result = parser.parseJson(RealityAiSupport.extractJson(response));
         return result.isSuccessful() ? Optional.of(result.getPlan()) : Optional.empty();
     }
 
@@ -185,14 +180,7 @@ public class RealityRefiner {
                 .maxTokens(0)
                 .timeoutSeconds(300) // revise emits the full plan
                 .build();
-        if (!Strings.isBlank(modelName)) {
-            return aiModelService.createChat(modelName, options);
-        }
-        Optional<AiChat> chat = aiModelService.createChat("default:reality", options);
-        if (chat.isPresent()) {
-            return chat;
-        }
-        return aiModelService.createChat("default:chat", options);
+        return RealityAiSupport.createChat(aiModelService, modelName, options);
     }
 
     private String describe(int iteration, ValidationReport report, JudgeVerdict verdict) {
@@ -207,33 +195,4 @@ public class RealityRefiner {
         return sb.toString();
     }
 
-    private Optional<String> loadTemplate() {
-        if (cachedTemplate != null) {
-            return Optional.of(cachedTemplate);
-        }
-        try {
-            ClassPathResource resource = new ClassPathResource(PROMPT_TEMPLATE_PATH);
-            if (!resource.exists()) {
-                return Optional.empty();
-            }
-            cachedTemplate = new String(resource.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
-            return Optional.of(cachedTemplate);
-        } catch (IOException e) {
-            log.error("Failed to load refine prompt template", e);
-            return Optional.empty();
-        }
-    }
-
-    private String cleanJsonResponse(String response) {
-        String cleaned = response.trim();
-        if (cleaned.startsWith("```json")) {
-            cleaned = cleaned.substring("```json".length());
-        } else if (cleaned.startsWith("```")) {
-            cleaned = cleaned.substring("```".length());
-        }
-        if (cleaned.endsWith("```")) {
-            cleaned = cleaned.substring(0, cleaned.length() - 3);
-        }
-        return cleaned.trim();
-    }
 }
