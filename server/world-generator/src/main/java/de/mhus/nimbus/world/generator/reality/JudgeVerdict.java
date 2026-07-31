@@ -44,7 +44,7 @@ public class JudgeVerdict {
         List<JudgeFinding> out = new ArrayList<>();
         if (findings != null) {
             for (JudgeFinding f : findings) {
-                if (f.getSeverity() != null && f.getSeverity().trim().equalsIgnoreCase("major")) {
+                if (f != null && f.getSeverity() != null && f.getSeverity().trim().equalsIgnoreCase("major")) {
                     out.add(f);
                 }
             }

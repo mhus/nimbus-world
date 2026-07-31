@@ -128,6 +128,9 @@ public class RealityRefiner {
         if (verdict != null && verdict.isConclusive() && verdict.getFindings() != null) {
             sb.append("Balance findings:\n");
             for (JudgeFinding f : verdict.getFindings()) {
+                if (f == null) {
+                    continue;
+                }
                 sb.append("- [").append(f.getSeverity()).append("] ").append(f.getRef())
                         .append(": ").append(f.getIssue()).append(" -> ").append(f.getSuggestion()).append('\n');
             }
