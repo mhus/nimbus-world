@@ -15,7 +15,6 @@ import tools.jackson.databind.DeserializationContext;
 import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.JavaType;
 import tools.jackson.databind.MapperFeature;
-import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.SerializationContext;
 import tools.jackson.databind.ValueDeserializer;
 import tools.jackson.databind.ValueSerializer;
@@ -42,9 +41,12 @@ public class JacksonConfig {
      * Default maxStringLength is 20MB, but large model imports can exceed this.
      * Increased to 200MB to support large model layer imports.
      */
+    // Return type is JsonMapper (not ObjectMapper) so Boot 4's
+    // JacksonAutoConfiguration#jacksonJsonMapper (@ConditionalOnMissingBean JsonMapper)
+    // backs off — otherwise there would be two @Primary ObjectMapper beans.
     @Bean
     @Primary
-    public ObjectMapper objectMapper() {
+    public JsonMapper objectMapper() {
         // Configure StreamReadConstraints with increased limits
         StreamReadConstraints constraints = StreamReadConstraints.builder()
                 .maxStringLength(200_000_000) // 200MB (up from 20MB default)
