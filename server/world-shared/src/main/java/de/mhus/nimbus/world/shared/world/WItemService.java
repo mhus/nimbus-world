@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Consumer;
 
 /**
  * Service for managing WItem entities (inventory/template items without position).
@@ -114,6 +115,17 @@ public class WItemService {
      */
     @Transactional
     public WItem save(WorldId worldId, String itemId, Item publicData) {
+        return save(worldId, itemId, publicData, null);
+    }
+
+    /**
+     * Save a new item or update existing, optionally customizing entity-level fields (which are not
+     * part of the public {@link Item} data, e.g. tier / rarity / base price) before the single
+     * persist. Keeps data ownership in this service and avoids a second save round-trip.
+     * Always saves to region collection (shared across entire region).
+     */
+    @Transactional
+    public WItem save(WorldId worldId, String itemId, Item publicData, Consumer<WItem> entityCustomizer) {
         if (worldId == null) {
             throw new IllegalArgumentException("worldId is required");
         }
@@ -127,23 +139,26 @@ public class WItemService {
         }
 
         Optional<WItem> existing = repository.findByWorldIdAndName(regionWorldId.getId(), itemId);
+        WItem item;
         if (existing.isPresent()) {
-            WItem item = existing.get();
+            item = existing.get();
             item.setPublicData(publicData);
             item.touchUpdate();
             log.debug("Updated item: regionWorldId={}, itemId={}", regionWorldId, itemId);
-            return repository.save(item);
+        } else {
+            item = WItem.builder()
+                    .worldId(regionWorldId.getId())
+                    .name(itemId)
+                    .publicData(publicData)
+                    .enabled(true)
+                    .build();
+            item.touchCreate();
+            log.debug("Created item: regionWorldId={}, itemId={}", regionWorldId, itemId);
         }
 
-        WItem item = WItem.builder()
-                .worldId(regionWorldId.getId())
-                .name(itemId)
-                .publicData(publicData)
-                .enabled(true)
-                .build();
-        item.touchCreate();
-
-        log.debug("Created item: regionWorldId={}, itemId={}", regionWorldId, itemId);
+        if (entityCustomizer != null) {
+            entityCustomizer.accept(item);
+        }
         return repository.save(item);
     }
 

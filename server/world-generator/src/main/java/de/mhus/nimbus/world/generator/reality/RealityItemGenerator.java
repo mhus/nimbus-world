@@ -132,14 +132,15 @@ public class RealityItemGenerator {
                 .parameters(params.isEmpty() ? null : params)
                 .build();
 
-        WItem saved = itemService.save(worldId, itemId, dto);
-
-        saved.setItemTier(resolveTier(spec, classes));
-        saved.setRarityCategory(mapRarity(spec.getRarity()));
-        if (spec.getPriceHint() != null) {
-            saved.setBasePrice(spec.getPriceHint().doubleValue());
-        }
-        itemService.saveEntity(saved);
+        // Trading fields live on the WItem entity (not the public Item DTO), so set them via the
+        // customizer overload -> a single persist instead of save + saveEntity.
+        itemService.save(worldId, itemId, dto, saved -> {
+            saved.setItemTier(resolveTier(spec, classes));
+            saved.setRarityCategory(mapRarity(spec.getRarity()));
+            if (spec.getPriceHint() != null) {
+                saved.setBasePrice(spec.getPriceHint().doubleValue());
+            }
+        });
     }
 
     private static void putIfSet(Map<String, String> map, String key, String value) {

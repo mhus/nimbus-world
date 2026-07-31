@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.util.List;
+import java.util.function.Consumer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -62,8 +63,14 @@ class RealityItemGeneratorTest {
     }
 
     private void stubHappyPath() throws Exception {
-        when(itemService.save(any(), anyString(), any())).thenAnswer(inv ->
-                WItem.builder().name(inv.getArgument(1)).publicData(inv.getArgument(2)).build());
+        when(itemService.save(any(), anyString(), any(), any())).thenAnswer(inv -> {
+            WItem item = WItem.builder().name(inv.getArgument(1)).publicData(inv.getArgument(2)).build();
+            Consumer<WItem> customizer = inv.getArgument(3);
+            if (customizer != null) {
+                customizer.accept(item);
+            }
+            return item;
+        });
         when(imageGenerator.execute(any())).thenReturn(JobExecutor.JobResult.success());
     }
 
@@ -82,9 +89,12 @@ class RealityItemGeneratorTest {
         assertThat(result.getErrors()).isEmpty();
         assertThat(result.getCreatedItemIds()).containsExactly("peat_spade", "mistglass_shard");
 
-        // Item DTOs saved with slug name, type and deterministic texture path.
+        // Item DTOs saved with slug name, type and deterministic texture path; trading fields applied
+        // via the entity customizer in the same save call.
         ArgumentCaptor<Item> itemCap = ArgumentCaptor.forClass(Item.class);
-        verify(itemService, times(2)).save(any(), anyString(), itemCap.capture());
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Consumer<WItem>> custCap = ArgumentCaptor.forClass(Consumer.class);
+        verify(itemService, times(2)).save(any(), anyString(), itemCap.capture(), custCap.capture());
         Item first = itemCap.getAllValues().get(0);
         assertThat(first.getName()).isEqualTo("peat_spade");
         assertThat(first.getType()).isEqualTo("tool");
@@ -92,14 +102,14 @@ class RealityItemGeneratorTest {
         assertThat(first.getTitle()).isEqualTo("Peat Spade");
         assertThat(first.getTexture()).isEqualTo("textures/items/peat_spade.png");
 
-        // Trading fields mapped and persisted.
-        ArgumentCaptor<WItem> entityCap = ArgumentCaptor.forClass(WItem.class);
-        verify(itemService, times(2)).saveEntity(entityCap.capture());
-        WItem spade = entityCap.getAllValues().get(0);
+        // Trading fields mapped via the customizer.
+        WItem spade = WItem.builder().build();
+        custCap.getAllValues().get(0).accept(spade);
         assertThat(spade.getItemTier()).isEqualTo(ItemTier.IRON);
         assertThat(spade.getRarityCategory()).isEqualTo(RarityCategory.COMMON);
         assertThat(spade.getBasePrice()).isEqualTo(20.0);
-        WItem shard = entityCap.getAllValues().get(1);
+        WItem shard = WItem.builder().build();
+        custCap.getAllValues().get(1).accept(shard);
         assertThat(shard.getItemTier()).isEqualTo(ItemTier.NONE);            // null tier -> NONE
         assertThat(shard.getRarityCategory()).isEqualTo(RarityCategory.RARE);
         assertThat(shard.getBasePrice()).isNull();                            // no priceHint
@@ -130,12 +140,12 @@ class RealityItemGeneratorTest {
         RealityItemResult result = generator.generateItems(worldId, plan);
 
         assertThat(result.getItemsCreated()).isEqualTo(1);
-        verify(itemService, times(1)).save(any(), anyString(), any());
+        verify(itemService, times(1)).save(any(), anyString(), any(), any());
     }
 
     @Test
     void recordsIconFailureButKeepsItem() throws Exception {
-        when(itemService.save(any(), anyString(), any())).thenAnswer(inv ->
+        when(itemService.save(any(), anyString(), any(), any())).thenAnswer(inv ->
                 WItem.builder().name(inv.getArgument(1)).publicData(inv.getArgument(2)).build());
         when(imageGenerator.execute(any())).thenReturn(JobExecutor.JobResult.failure("boom"));
 
@@ -171,14 +181,17 @@ class RealityItemGeneratorTest {
         RealityItemResult result = generator.generateItems(worldId, plan);
         assertThat(result.getItemsCreated()).isEqualTo(2);
 
+        ArgumentCaptor<Item> itemCap = ArgumentCaptor.forClass(Item.class);
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Consumer<WItem>> custCap = ArgumentCaptor.forClass(Consumer.class);
+        verify(itemService, times(2)).save(any(), anyString(), itemCap.capture(), custCap.capture());
+
         // Tier resolved from the item class (no explicit tier on the item).
-        ArgumentCaptor<WItem> entityCap = ArgumentCaptor.forClass(WItem.class);
-        verify(itemService, times(2)).saveEntity(entityCap.capture());
-        assertThat(entityCap.getAllValues().get(0).getItemTier()).isEqualTo(ItemTier.IRON);
+        WItem swordEntity = WItem.builder().build();
+        custCap.getAllValues().get(0).accept(swordEntity);
+        assertThat(swordEntity.getItemTier()).isEqualTo(ItemTier.IRON);
 
         // The persistent super-item becomes exclusive and carries its mechanics in parameters.
-        ArgumentCaptor<Item> itemCap = ArgumentCaptor.forClass(Item.class);
-        verify(itemService, times(2)).save(any(), anyString(), itemCap.capture());
         Item superDto = itemCap.getAllValues().get(1);
         assertThat(superDto.getExclusive()).isTrue();
         assertThat(superDto.getParameters())
