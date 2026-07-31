@@ -2,6 +2,9 @@
 # Copy to application-default.yaml (git-ignored) and fill in your local secrets.
 
 nimbus:
+  # Local dev: dev-login enabled (default is off, see application.yaml).
+  devlogin:
+    enabled: true
   encryption:
     password: CHANGE_ME_LOCAL_DEV_SECRET
 
