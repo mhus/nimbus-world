@@ -40,3 +40,6 @@ venv/
 
 # Runtime-generated server key artifact (written to CWD during app/test runs)
 confidential/
+
+# Local dev log files (application-default trace logging)
+log/
