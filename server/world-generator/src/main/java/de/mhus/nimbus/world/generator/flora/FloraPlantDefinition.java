@@ -2,6 +2,7 @@ package de.mhus.nimbus.world.generator.flora;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import de.mhus.nimbus.world.generator.modelbuilder.FloraConstraints;
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -19,7 +20,7 @@ import java.util.OptionalInt;
 @Data
 @Builder(toBuilder = true)
 @NoArgsConstructor
-@AllArgsConstructor
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class FloraPlantDefinition {
 

@@ -2,6 +2,7 @@ package de.mhus.nimbus.world.generator.composer.flow;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -16,7 +17,10 @@ import java.util.List;
 @Data
 @Builder
 @NoArgsConstructor
-@AllArgsConstructor
+// PRIVATE on purpose: a public all-args constructor is picked up by Jackson 3 as a
+// properties-based creator, which bypasses the no-args constructor and thus every
+// @Builder.Default value. Only the builder needs this constructor.
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class RoadConfig {

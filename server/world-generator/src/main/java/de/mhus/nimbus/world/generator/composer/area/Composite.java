@@ -3,6 +3,7 @@ package de.mhus.nimbus.world.generator.composer.area;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import de.mhus.nimbus.world.generator.composer.feature.Feature;
 import de.mhus.nimbus.world.generator.composer.flow.Flow;
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -16,7 +17,10 @@ import java.util.stream.Collectors;
 @Data
 @Builder
 @NoArgsConstructor
-@AllArgsConstructor
+// PRIVATE on purpose: a public all-args constructor is picked up by Jackson 3 as a
+// properties-based creator, which bypasses the no-args constructor and thus every
+// @Builder.Default value. Only the builder needs this constructor.
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 @EqualsAndHashCode(callSuper = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class Composite extends Area {

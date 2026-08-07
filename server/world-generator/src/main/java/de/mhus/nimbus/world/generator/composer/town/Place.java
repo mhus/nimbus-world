@@ -3,6 +3,7 @@ package de.mhus.nimbus.world.generator.composer.town;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -23,7 +24,10 @@ import lombok.experimental.SuperBuilder;
 @Data
 @SuperBuilder
 @NoArgsConstructor
-@AllArgsConstructor
+// PRIVATE on purpose: a public all-args constructor is picked up by Jackson 3 as a
+// properties-based creator, which bypasses the no-args constructor and thus every
+// @Builder.Default value. Only the builder needs this constructor.
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "placeType")
 @JsonSubTypes({

@@ -13,6 +13,7 @@ import de.mhus.nimbus.world.generator.composer.flow.River;
 import de.mhus.nimbus.world.generator.composer.flow.Road;
 import de.mhus.nimbus.world.generator.composer.flow.Wall;
 import de.mhus.nimbus.world.generator.composer.town.Town;
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -30,7 +31,10 @@ import java.util.stream.Collectors;
 @Data
 @Builder
 @NoArgsConstructor
-@AllArgsConstructor
+// PRIVATE on purpose: a public all-args constructor is picked up by Jackson 3 as a properties-based
+// creator, which bypasses the no-args constructor and therefore all @Builder.Default values —
+// featureHexGridRegistry would come out null. Only the builder needs this constructor.
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class HexComposition implements BuildFeature {
 
@@ -123,7 +127,9 @@ public class HexComposition implements BuildFeature {
         }
 
         String key = TypeUtil.toStringHexCoord(coordinate);
-        return featureHexGridRegistry.computeIfAbsent(key, k ->
+        // Via the accessor, not the field: it guarantees a non-null registry even for instances that
+        // were built without it (e.g. deserialized by a creator that skipped the default).
+        return getFeatureHexGridRegistry().computeIfAbsent(key, k ->
             de.mhus.nimbus.world.generator.composer.feature.FeatureHexGrid.builder()
                 .coordinate(coordinate)
                 .build()
@@ -143,7 +149,7 @@ public class HexComposition implements BuildFeature {
         }
 
         String key = TypeUtil.toStringHexCoord(coordinate);
-        return featureHexGridRegistry.get(key);
+        return getFeatureHexGridRegistry().get(key);
     }
 
     /**

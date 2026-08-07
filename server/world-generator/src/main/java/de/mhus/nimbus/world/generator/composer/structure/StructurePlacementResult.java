@@ -1,6 +1,7 @@
 package de.mhus.nimbus.world.generator.composer.structure;
 
 import de.mhus.nimbus.world.generator.composer.town.PlacedStructure;
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -15,7 +16,10 @@ import java.util.List;
 @Data
 @Builder
 @NoArgsConstructor
-@AllArgsConstructor
+// PRIVATE on purpose: a public all-args constructor is picked up by Jackson 3 as a
+// properties-based creator, which bypasses the no-args constructor and thus every
+// @Builder.Default value. Only the builder needs this constructor.
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class StructurePlacementResult {
 
     /**
