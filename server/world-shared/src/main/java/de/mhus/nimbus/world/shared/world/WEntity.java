@@ -5,6 +5,7 @@ import de.mhus.nimbus.generated.types.Rotation;
 import de.mhus.nimbus.generated.types.Vector3;
 import de.mhus.nimbus.shared.persistence.ActualSchemaVersion;
 import de.mhus.nimbus.shared.types.Identifiable;
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -35,7 +36,7 @@ import java.util.Set;
 @Data
 @Builder
 @NoArgsConstructor
-@AllArgsConstructor
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class WEntity implements Identifiable, CowEntity, EpochEntity {
 
     @Id

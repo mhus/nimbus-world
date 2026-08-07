@@ -9,6 +9,7 @@ import de.mhus.nimbus.shared.user.ActorRoles;
 import de.mhus.nimbus.shared.user.WorldRoles;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import org.springframework.data.annotation.Id;
@@ -22,7 +23,7 @@ import java.util.Set;
 @Data
 @Builder
 @NoArgsConstructor
-@AllArgsConstructor
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Document(collection = "worlds")
 @ActualSchemaVersion("1.0.0")
 // @GenerateTypeScript("entities") - need to clarify WEntryPoint type

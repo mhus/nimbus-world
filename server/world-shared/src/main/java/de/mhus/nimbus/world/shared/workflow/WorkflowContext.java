@@ -2,6 +2,7 @@ package de.mhus.nimbus.world.shared.workflow;
 
 import de.mhus.nimbus.shared.utils.CastUtil;
 import de.mhus.nimbus.world.shared.job.JobExecutor;
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -19,7 +20,7 @@ import java.util.Optional;
 @Data
 @Builder
 @NoArgsConstructor
-@AllArgsConstructor
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class WorkflowContext {
 
     WWorkflowJournalService  journalService;

@@ -5,6 +5,7 @@ import de.mhus.nimbus.shared.annotations.TypeScript;
 import de.mhus.nimbus.shared.persistence.ActualSchemaVersion;
 import de.mhus.nimbus.shared.types.Identifiable;
 import de.mhus.nimbus.shared.types.WorldId;
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -33,7 +34,7 @@ import java.util.List;
 @Data
 @Builder
 @NoArgsConstructor
-@AllArgsConstructor
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 @GenerateTypeScript("entities")
 public class WWorldInstance implements Identifiable {
 

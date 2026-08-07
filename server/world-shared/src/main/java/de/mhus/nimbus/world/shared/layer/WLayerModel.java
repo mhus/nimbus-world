@@ -4,6 +4,7 @@ import de.mhus.nimbus.shared.annotations.GenerateTypeScript;
 import de.mhus.nimbus.shared.annotations.TypeScript;
 import de.mhus.nimbus.shared.persistence.ActualSchemaVersion;
 import de.mhus.nimbus.shared.types.Identifiable;
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -37,7 +38,7 @@ import java.util.stream.Stream;
 @Data
 @Builder
 @NoArgsConstructor
-@AllArgsConstructor
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 @GenerateTypeScript("entities")
 public class WLayerModel implements Identifiable {
 

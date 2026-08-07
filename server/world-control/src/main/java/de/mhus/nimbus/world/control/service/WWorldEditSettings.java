@@ -1,6 +1,7 @@
 package de.mhus.nimbus.world.control.service;
 
 import de.mhus.nimbus.shared.persistence.ActualSchemaVersion;
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -26,7 +27,7 @@ import java.util.List;
 @Data
 @Builder
 @NoArgsConstructor
-@AllArgsConstructor
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class WWorldEditSettings {
 
     @Id

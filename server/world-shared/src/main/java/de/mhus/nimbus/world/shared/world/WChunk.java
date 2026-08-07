@@ -6,6 +6,7 @@ import de.mhus.nimbus.shared.types.StorageEntity;
 import lombok.Data;
 import lombok.Builder;
 import lombok.NoArgsConstructor;
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
@@ -32,7 +33,7 @@ import java.util.Map;
 @Data
 @Builder
 @NoArgsConstructor
-@AllArgsConstructor
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class WChunk implements Identifiable, EpochEntity, StorageEntity {
 
     @Id

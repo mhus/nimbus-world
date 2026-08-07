@@ -1,6 +1,7 @@
 package de.mhus.nimbus.world.shared.session;
 
 import de.mhus.nimbus.generated.types.EditAction;
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -15,7 +16,7 @@ import java.time.Instant;
 @Data
 @Builder
 @NoArgsConstructor
-@AllArgsConstructor
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class EditState {
 
     /**

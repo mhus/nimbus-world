@@ -3,6 +3,7 @@ package de.mhus.nimbus.world.shared.world;
 import de.mhus.nimbus.generated.types.ItemBlockRef;
 import de.mhus.nimbus.shared.persistence.ActualSchemaVersion;
 import de.mhus.nimbus.shared.types.Identifiable;
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -32,7 +33,7 @@ import java.util.List;
 @Data
 @Builder
 @NoArgsConstructor
-@AllArgsConstructor
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class WItemPosition implements Identifiable, CowEntity, EpochEntity {
 
     @Id

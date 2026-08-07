@@ -3,6 +3,7 @@ package de.mhus.nimbus.world.shared.dto;
 import de.mhus.nimbus.shared.annotations.GenerateTypeScript;
 import de.mhus.nimbus.shared.annotations.TypeScript;
 import de.mhus.nimbus.world.shared.world.WEpochMeta;
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -15,7 +16,7 @@ import java.util.List;
  */
 @Data
 @NoArgsConstructor
-@AllArgsConstructor
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Builder
 @GenerateTypeScript("dto")
 public class WorldInfoDto {

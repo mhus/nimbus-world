@@ -3,6 +3,7 @@ package de.mhus.nimbus.world.shared.generator;
 import de.mhus.nimbus.generated.types.HexVector2;
 import de.mhus.nimbus.shared.persistence.ActualSchemaVersion;
 import de.mhus.nimbus.shared.types.Identifiable;
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -32,7 +33,7 @@ import java.util.Set;
 })
 @Builder
 @NoArgsConstructor
-@AllArgsConstructor
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class WFlat implements Identifiable {
 
     public static final int MATERIAL_NOT_SET = 0;
@@ -278,6 +279,8 @@ public class WFlat implements Identifiable {
     @Data
     @Builder
     @NoArgsConstructor
+    // Stays public: it has real callers (FlatController), and every initializer here equals the JVM
+    // default, so there is nothing for Jackson's constructor creator to lose.
     @AllArgsConstructor
     public static class OffsetDefinition {
         private double one = 0;
@@ -289,7 +292,7 @@ public class WFlat implements Identifiable {
     @Data
     @Builder
     @NoArgsConstructor
-    @AllArgsConstructor
+    @AllArgsConstructor(access = AccessLevel.PRIVATE)
     public static class MaterialDefinition {
         private String blockDef; // id + "@s:" + state e.g. n:s@s:100, n:s@s:101 - siehe BlockDef
         private String nextBlockDef; // id + "@" + state
