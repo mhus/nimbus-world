@@ -82,11 +82,19 @@ public class RealityRefiner {
         }
 
         boolean converged = isConverged(report, verdict);
+        boolean balanceChecked = verdict != null && verdict.isConclusive();
         log.add(converged ? "converged" : "not converged (limit reached or revise failed)");
+        if (options.isUseJudge() && !balanceChecked) {
+            log.add("WARNING: balance was never judged" + (verdict == null ? ""
+                    : " (" + String.join("; ", verdict.getErrors()) + ")"));
+        }
         return RefineResult.builder()
                 .plan(current)
                 .iterations(iterations)
                 .converged(converged)
+                .balanceChecked(balanceChecked)
+                .judgeErrors(verdict == null || verdict.isConclusive()
+                        ? new ArrayList<>() : new ArrayList<>(verdict.getErrors()))
                 .finalReport(report)
                 .finalVerdict(verdict)
                 .log(log)

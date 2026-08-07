@@ -3,6 +3,7 @@ package de.mhus.nimbus.world.shared.access;
 import de.mhus.nimbus.shared.service.SSettingsService;
 import de.mhus.nimbus.shared.settings.SettingBoolean;
 import de.mhus.nimbus.shared.settings.SettingInteger;
+import de.mhus.nimbus.shared.settings.SettingString;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -34,7 +35,9 @@ public class AccessSettings {
     private SettingBoolean secureCookies;
     private SettingInteger closeSessionTimeoutSeconds;
     private SettingBoolean devLoginEnabled;
-    private String devLoginAccessKey;
+    private SettingString devLoginAccessKeySetting;
+    /** Key read from (or generated into) the key file; only used when nothing is configured explicitly. */
+    private String devLoginAccessKeyFromFile;
 
     @Value( "${nimbus.access.accessUrls:}")
     private String accessUrls;
@@ -65,6 +68,15 @@ public class AccessSettings {
     @Value("${nimbus.devlogin.enabled:false}")
     private boolean devLoginEnvEnabled;
 
+    /**
+     * Explicitly configured dev-login access key ({@code nimbus.devlogin.key} /
+     * {@code NIMBUS_DEVLOGIN_KEY}). Highest precedence — this is the way to inject the key into a
+     * container (Secret/ConfigMap) or a test harness, where the key file is not available and the
+     * filesystem may be read-only. Empty = not configured.
+     */
+    @Value("${nimbus.devlogin.key:}")
+    private String devLoginKeyProperty;
+
     @PostConstruct
     private void init() {
         tokenExpirationSeconds = settingsService.getInteger(
@@ -91,10 +103,27 @@ public class AccessSettings {
                 "access.devLoginEnabled",
                 true
         );
-        // Only resolve/generate the key file when dev-login is actually enabled for this process.
-        // In production (dev-login off) we must not write to the filesystem: a read-only container FS
-        // would otherwise fail bean init and crash-loop the pod for a feature that is never used.
-        devLoginAccessKey = devLoginEnvEnabled ? resolveDevLoginAccessKey() : null;
+        devLoginAccessKeySetting = settingsService.getString(
+                "access.devLoginAccessKey",
+                ""
+        );
+        // Only fall back to the key file when dev-login is enabled for this process AND no key is
+        // configured explicitly. In production (dev-login off) we must not touch the filesystem at
+        // all: a read-only container FS would otherwise fail bean init and crash-loop the pod for a
+        // feature that is never used.
+        String configured = devLoginEnvEnabled ? configuredDevLoginAccessKey() : "";
+        if (Strings.isNotBlank(configured)) {
+            // Warn instead of failing: an explicitly configured key is a deliberate operator choice,
+            // and a hard failure here would take the whole service down over a dev-only feature.
+            if (configured.length() < DEV_LOGIN_KEY_MIN_LENGTH) {
+                log.warn("SECURITY: configured dev-login access key is shorter than {} characters",
+                        DEV_LOGIN_KEY_MIN_LENGTH);
+            }
+            log.info("Using explicitly configured dev-login access key (key file not used)");
+            devLoginAccessKeyFromFile = null;
+        } else {
+            devLoginAccessKeyFromFile = devLoginEnvEnabled ? resolveDevLoginAccessKeyFromFile() : null;
+        }
     }
 
     /** Confidential file holding the dev-login access key (git-ignored, written in the process CWD). */
@@ -102,11 +131,24 @@ public class AccessSettings {
     private static final int DEV_LOGIN_KEY_MIN_LENGTH = 16;
 
     /**
+     * The explicitly configured key, in precedence order: the {@code nimbus.devlogin.key} property
+     * (env {@code NIMBUS_DEVLOGIN_KEY}) wins over the {@code access.devLoginAccessKey} setting.
+     * Blank when nothing is configured — then the key file is used.
+     */
+    private String configuredDevLoginAccessKey() {
+        if (Strings.isNotBlank(devLoginKeyProperty)) {
+            return devLoginKeyProperty.strip();
+        }
+        String fromSettings = devLoginAccessKeySetting == null ? null : devLoginAccessKeySetting.get();
+        return Strings.isBlank(fromSettings) ? "" : fromSettings.strip();
+    }
+
+    /**
      * Resolves the dev-login access key from {@link #DEV_LOGIN_KEY_FILE}: if the file exists,
      * its single non-empty line is used (validated for length); otherwise a new key is generated
      * and written to the file. The key value itself is never written to the log.
      */
-    private String resolveDevLoginAccessKey() {
+    private String resolveDevLoginAccessKeyFromFile() {
         try {
             if (Files.exists(DEV_LOGIN_KEY_FILE)) {
                 List<String> lines = Files.readAllLines(DEV_LOGIN_KEY_FILE).stream()
@@ -275,11 +317,22 @@ public class AccessSettings {
     }
 
     /**
-     * Access key required in addition to a valid dev-login request. Read from (or generated into) the
-     * confidential dev-login key file at startup, but only when dev-login is enabled
-     * ({@code nimbus.devlogin.enabled=true}); {@code null} in production.
+     * Access key required in addition to a valid dev-login request. Resolved in this order:
+     * <ol>
+     *   <li>{@code nimbus.devlogin.key} property / {@code NIMBUS_DEVLOGIN_KEY} env — for containers
+     *       and test harnesses (Secret/ConfigMap), read live;</li>
+     *   <li>{@code access.devLoginAccessKey} setting — same purpose, configurable at runtime;</li>
+     *   <li>the confidential dev-login key file, read or generated once at startup — the local
+     *       development convenience path.</li>
+     * </ol>
+     * Always {@code null} when dev-login is disabled ({@code nimbus.devlogin.enabled=false}, the
+     * production default), so the feature cannot be reached and the filesystem is never touched.
      */
     public String getDevLoginAccessKey() {
-        return devLoginAccessKey;
+        if (!devLoginEnvEnabled) {
+            return null;
+        }
+        String configured = configuredDevLoginAccessKey();
+        return Strings.isNotBlank(configured) ? configured : devLoginAccessKeyFromFile;
     }
 }

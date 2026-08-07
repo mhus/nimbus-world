@@ -95,17 +95,20 @@ public class GeminiImageModelImpl implements AiImageModel {
                 rateLimiter.waitIfNeeded();
             }
 
-            byte[] imageBytes = requestImage(effectivePrompt);
+            GeneratedImage generated = requestImage(effectivePrompt);
 
             if (rateLimiter != null) {
                 rateLimiter.recordRequest();
             }
 
             if (transparent) {
-                imageBytes = BackgroundRemover.removePng(imageBytes, backgroundThreshold);
+                // Background removal always re-encodes as PNG with an alpha channel, whatever the
+                // model delivered.
+                return toAiImage(BackgroundRemover.removePng(generated.bytes(), backgroundThreshold),
+                        "image/png");
             }
 
-            return toAiImage(imageBytes);
+            return toAiImage(generated.bytes(), generated.mimeType());
 
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -123,7 +126,7 @@ public class GeminiImageModelImpl implements AiImageModel {
         return apiKey != null && !apiKey.isBlank();
     }
 
-    private byte[] requestImage(String prompt) throws Exception {
+    private GeneratedImage requestImage(String prompt) throws Exception {
         // Typed request body -> JSON (no manual string building).
         GenerateContentRequest body = new GenerateContentRequest(
                 List.of(new Content(List.of(new Part(prompt)))),
@@ -148,9 +151,14 @@ public class GeminiImageModelImpl implements AiImageModel {
         JsonNode parts = root.path("candidates").path(0).path("content").path("parts");
         if (parts.isArray()) {
             for (JsonNode part : parts) {
-                JsonNode data = part.path("inlineData").path("data");
+                JsonNode inlineData = part.path("inlineData");
+                JsonNode data = inlineData.path("data");
                 if (!data.isMissingNode() && !data.asString("").isBlank()) {
-                    return Base64.getDecoder().decode(data.asString(""));
+                    // Honour the mime type the model reports — Gemini does not always return PNG,
+                    // and mislabelling it would store e.g. JPEG bytes under a .png asset path.
+                    String mimeType = inlineData.path("mimeType").asString("");
+                    return new GeneratedImage(Base64.getDecoder().decode(data.asString("")),
+                            mimeType.isBlank() ? "image/png" : mimeType);
                 }
             }
         }
@@ -162,10 +170,10 @@ public class GeminiImageModelImpl implements AiImageModel {
                 + (text.isBlank() ? "" : ": " + abbreviate(text)));
     }
 
-    private AiImage toAiImage(byte[] imageBytes) {
+    private AiImage toAiImage(byte[] imageBytes, String mimeType) {
         AiImage.AiImageBuilder builder = AiImage.builder()
                 .bytes(imageBytes)
-                .mimeType("image/png");
+                .mimeType(mimeType);
         try {
             BufferedImage img = ImageIO.read(new ByteArrayInputStream(imageBytes));
             if (img != null) {
@@ -182,6 +190,10 @@ public class GeminiImageModelImpl implements AiImageModel {
             return "";
         }
         return s.length() <= 300 ? s : s.substring(0, 300) + "…";
+    }
+
+    /** Raw image as returned by the model, with the mime type the model reported for it. */
+    private record GeneratedImage(byte[] bytes, String mimeType) {
     }
 
     // ---- Typed request DTOs (serialized to the Gemini generateContent body) ----

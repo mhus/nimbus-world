@@ -145,6 +145,54 @@ class RealityValidatorTest {
         assertThat(r.errors()).as(r.summary()).isEmpty();
     }
 
+    /**
+     * The title of one item class equals the name of another. The lookup map keeps the first entry,
+     * so validator and materializer would silently resolve the same reference to different classes
+     * (and thus different tiers). The validator must reject that instead of hiding it.
+     */
+    @Test
+    void reportsItemClassNameTitleCollision() {
+        RealityPlan.ItemClass bronze = clazz("bronze", 1, "BRONZE");
+        RealityPlan.ItemClass steel = clazz("steel", 2, "STEEL");
+        steel.setTitle("Bronze"); // collides with the NAME of the first class
+        RealityPlan p = plan(new ArrayList<>(List.of(bronze, steel)), new ArrayList<>());
+
+        ValidationReport r = validator.validate(p);
+
+        assertThat(hasCode(r, "item_class_key_collision")).as(r.summary()).isTrue();
+        assertThat(r.hasErrors()).isTrue();
+    }
+
+    /** Name and title of the SAME class must not be reported as a collision with itself. */
+    @Test
+    void acceptsClassWithBothNameAndTitle() {
+        RealityPlan.ItemClass bronze = clazz("bronze", 1, "BRONZE");
+        bronze.setTitle("Moorbronze");
+        RealityPlan p = plan(new ArrayList<>(List.of(bronze)), new ArrayList<>());
+
+        ValidationReport r = validator.validate(p);
+
+        assertThat(hasCode(r, "item_class_key_collision")).as(r.summary()).isFalse();
+    }
+
+    /**
+     * The validator must resolve item-class references through the same index the materializer uses,
+     * including by title — otherwise it flags a reference the generator resolves just fine.
+     */
+    @Test
+    void resolvesItemClassReferenceByTitle() {
+        RealityPlan.ItemClass bronze = clazz("bronze", 1, "BRONZE");
+        bronze.setTitle("Moorbronze");
+        RealityPlan.ItemSpec sword = item("Moor Sword", "weapon");
+        sword.setItemClass("Moorbronze"); // references the TITLE
+        RealityPlan p = plan(new ArrayList<>(List.of(bronze)), new ArrayList<>(List.of(sword)));
+
+        ValidationReport r = validator.validate(p);
+
+        assertThat(hasCode(r, "unknown_item_class")).as(r.summary()).isFalse();
+        assertThat(hasCode(r, "untiered_gear")).as(r.summary()).isFalse();
+    }
+
     @Test
     void handlesNullAndEmpty() {
         assertThat(validator.validate(null).hasErrors()).isTrue();

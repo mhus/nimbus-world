@@ -61,8 +61,10 @@ public class RealityValidator {
     // ---- item classes ----
 
     private Map<String, RealityPlan.ItemClass> validateClasses(RealityPlan plan, ValidationReport report) {
-        // Lookup map keyed by BOTH name and title (AI may reference either).
-        Map<String, RealityPlan.ItemClass> classes = new HashMap<>();
+        // Lookup map keyed by BOTH name and title (AI may reference either). Built by the SAME
+        // helper the materializer uses, so validation and materialization can never resolve a
+        // reference to different item classes.
+        Map<String, RealityPlan.ItemClass> classes = RealityItemGenerator.indexClasses(plan.getItemClasses());
         Set<String> identities = new HashSet<>();
         Map<Integer, String> ranks = new HashMap<>();
         if (plan.getItemClasses() == null) {
@@ -82,12 +84,11 @@ public class RealityValidator {
             if (!identities.add(identity)) {
                 report.error("duplicate_item_class", "Duplicate item class '" + identity + "'", identity);
             }
-            if (name != null) {
-                classes.put(name, c);
-            }
-            if (title != null) {
-                classes.put(title, c);
-            }
+            // A key that resolves to a DIFFERENT class than this one means two classes collide on a
+            // name/title. Silently resolving that would make the generator pick another class than
+            // the one validated here, so it is an error the AI has to fix.
+            reportKeyCollision(report, classes, name, identity, c);
+            reportKeyCollision(report, classes, title, identity, c);
 
             if (!Strings.isBlank(c.getTier()) && !isValidTier(c.getTier())) {
                 report.warning("bad_class_tier",
@@ -102,6 +103,26 @@ public class RealityValidator {
             }
         }
         return classes;
+    }
+
+    /**
+     * Report an ERROR when {@code key} does not resolve back to {@code owner} — that means an
+     * earlier item class already claimed this name/title, so the two collide. The shared lookup map
+     * keeps the first entry, so without this check the collision would be invisible here and only
+     * surface later as a wrong tier on the materialized item.
+     */
+    private void reportKeyCollision(ValidationReport report, Map<String, RealityPlan.ItemClass> classes,
+                                    String key, String identity, RealityPlan.ItemClass owner) {
+        if (key == null) {
+            return;
+        }
+        RealityPlan.ItemClass resolved = classes.get(key);
+        if (resolved != null && resolved != owner) {
+            report.error("item_class_key_collision",
+                    "Item class '" + identity + "' collides on '" + key + "' with item class '"
+                            + (Strings.isBlank(resolved.getName()) ? resolved.getTitle() : resolved.getName()) + "'",
+                    identity);
+        }
     }
 
     // ---- items ----

@@ -30,6 +30,19 @@ public class RefineResult {
     /** Final balance verdict of {@link #plan} (null if judge disabled). */
     private JudgeVerdict finalVerdict;
 
+    /**
+     * Whether the balance judge actually produced a verdict. False when the judge was disabled or
+     * every attempt failed on infrastructure (no model configured, chat error, unparsable answer).
+     * {@link #converged} does not distinguish those cases — it treats an inconclusive judge as "not
+     * blocking" — so this flag is what tells "balance checked and fine" apart from "never checked".
+     */
+    @Builder.Default
+    private boolean balanceChecked = false;
+
+    /** Infrastructure errors of the last judge attempt (empty if the judge ran or was disabled). */
+    @Builder.Default
+    private List<String> judgeErrors = new ArrayList<>();
+
     /** Human-readable per-step trace. */
     @Builder.Default
     private List<String> log = new ArrayList<>();

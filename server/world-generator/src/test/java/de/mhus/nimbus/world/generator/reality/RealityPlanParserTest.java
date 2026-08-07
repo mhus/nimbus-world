@@ -1,11 +1,19 @@
 package de.mhus.nimbus.world.generator.reality;
 
+import de.mhus.nimbus.shared.types.WorldId;
+import de.mhus.nimbus.world.shared.world.WDocument;
+import de.mhus.nimbus.world.shared.world.WDocumentService;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.io.ClassPathResource;
 
 import java.nio.charset.StandardCharsets;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * Offline tests for the JSON → {@link RealityPlan} mapping ({@link RealityPlanParser#parseJson}).
@@ -133,5 +141,25 @@ class RealityPlanParserTest {
         assertThat(plan.getCreatures()).isNotEmpty();
         assertThat(plan.getWorldTemplates()).isNotEmpty();
         assertThat(plan.getEconomy().getPriceBands()).isNotEmpty();
+    }
+
+    /**
+     * {@code WDocumentService.save} de-duplicates by name: on a re-run it updates the document that
+     * already carries the name "reality-plan" and returns THAT one, whose documentId differs from
+     * the freshly generated one. savePlan must report the id of the persisted document, otherwise
+     * the caller (and the reality manifest) keep a reference that resolves to nothing.
+     */
+    @Test
+    void savePlanReturnsTheIdOfThePersistedDocument() {
+        WDocumentService documentService = mock(WDocumentService.class);
+        WDocument existing = mock(WDocument.class);
+        when(existing.getDocumentId()).thenReturn("existing-plan-doc");
+        when(documentService.save(any(), eq(RealityPlanParser.PLAN_COLLECTION), anyString(), any()))
+                .thenReturn(existing);
+        RealityPlanParser saving = new RealityPlanParser(null, documentService);
+
+        String documentId = saving.savePlan(WorldId.of("@region:duskmoor").orElseThrow(), "{}");
+
+        assertThat(documentId).isEqualTo("existing-plan-doc");
     }
 }

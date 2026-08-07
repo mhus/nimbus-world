@@ -127,6 +127,7 @@ public class RealityWorkflow {
         RealityWorkflowResult.RealityWorkflowResultBuilder result = RealityWorkflowResult.builder()
                 .success(true)
                 .converged(refine.isConverged())
+                .balanceChecked(refine.isBalanceChecked())
                 .plan(plan)
                 .report(report)
                 .verdict(verdict)
@@ -137,7 +138,14 @@ public class RealityWorkflow {
             log.add("materialize=false: plan-only, no DB writes");
             return result.materialized(false).build();
         }
-        if (report != null && report.hasErrors()) {
+        // No report means "not validated" — that must block materialization just like a failed
+        // validation does, otherwise an unvalidated plan would be written to the DB.
+        if (report == null) {
+            log.add("gate: no validation report -> NOT materialized");
+            return result.materialized(false)
+                    .errors(new ArrayList<>(List.of("no validation report available"))).build();
+        }
+        if (report.hasErrors()) {
             log.add("gate: " + report.errors().size() + " structural error(s) -> NOT materialized");
             List<String> errors = new ArrayList<>();
             report.errors().forEach(e -> errors.add(e.getCode() + ": " + e.getMessage()));
@@ -185,12 +193,25 @@ public class RealityWorkflow {
                     + docsResult.getErrors().size() + " errors");
         }
 
+        // Collect the per-entry errors of every enabled Stage-D step. A run that wrote entities but
+        // hit errors is "partial", not successful — reporting it as success would hide a region
+        // whose items point at textures that were never generated.
+        List<String> stageErrors = collectStageErrors(itemResult, loreResult, creatureResult,
+                ruleResult, docsResult);
+
         String manifestDocId = saveManifest(region, plan, report, verdict, itemResult,
-                loreResult, creatureResult, ruleResult, planDocId, refine.isConverged());
+                loreResult, creatureResult, ruleResult, planDocId, refine.isConverged(),
+                refine.isBalanceChecked(), refine.getJudgeErrors());
         log.add("manifest: saved reality_manifest " + manifestDocId);
+        if (!stageErrors.isEmpty()) {
+            log.add("PARTIAL: " + stageErrors.size() + " error(s) during materialization");
+        }
 
         return result
+                .success(stageErrors.isEmpty())
+                .partial(!stageErrors.isEmpty())
                 .materialized(true)
+                .errors(stageErrors)
                 .itemResult(itemResult)
                 .loreResult(loreResult)
                 .creatureResult(creatureResult)
@@ -201,11 +222,31 @@ public class RealityWorkflow {
                 .build();
     }
 
+    /** Flatten the error lists of all Stage-D results that actually ran. */
+    private static List<String> collectStageErrors(RealityItemResult itemResult,
+                                                   MaterializeResult... materializeResults) {
+        List<String> errors = new ArrayList<>();
+        if (itemResult != null) {
+            errors.addAll(itemResult.getErrors());
+        }
+        for (MaterializeResult r : materializeResults) {
+            if (r != null) {
+                errors.addAll(r.getErrors());
+            }
+        }
+        return errors;
+    }
+
     private String saveManifest(WorldId region, RealityPlan plan, ValidationReport report,
                                 JudgeVerdict verdict, RealityItemResult itemResult,
                                 MaterializeResult loreResult, MaterializeResult creatureResult,
-                                MaterializeResult ruleResult, String planDocId, boolean converged) {
+                                MaterializeResult ruleResult, String planDocId, boolean converged,
+                                boolean balanceChecked, List<String> judgeErrors) {
         Manifest manifest = new Manifest();
+        manifest.setBalanceChecked(balanceChecked);
+        if (judgeErrors != null && !judgeErrors.isEmpty()) {
+            manifest.setJudgeErrors(judgeErrors);
+        }
         manifest.setRegionId(region.getId());
         manifest.setPlanDocId(planDocId);
         manifest.setConverged(converged);
@@ -234,16 +275,17 @@ public class RealityWorkflow {
         } catch (Exception e) {
             json = "{\"error\":\"failed to serialize manifest\"}";
         }
-        String documentId = UUID.randomUUID().toString();
         final String content = json;
-        documentService.save(region, MANIFEST_COLLECTION, documentId, doc -> {
+        // Use the id of the persisted document: save() de-duplicates by name, so on a re-run the
+        // existing manifest is updated and keeps its original documentId.
+        WDocument saved = documentService.save(region, MANIFEST_COLLECTION, UUID.randomUUID().toString(), doc -> {
             doc.setName("reality-manifest");
             doc.setTitle("Reality Manifest");
             doc.setContent(content);
             doc.setFormat("json");
             doc.setType("reality_manifest");
         });
-        return documentId;
+        return saved.getDocumentId();
     }
 
     private static int count(List<?> list) {
@@ -268,8 +310,16 @@ public class RealityWorkflow {
         private int rulesCreated;
         private int validationErrors;
         private int validationWarnings;
+        /**
+         * Whether the balance judge produced a verdict at all. When false, {@code balanceScore} and
+         * {@code balanceAcceptable} are absent because the balance was never assessed — not because
+         * it was assessed and found unremarkable.
+         */
+        private boolean balanceChecked;
         private Integer balanceScore;
         private Boolean balanceAcceptable;
+        /** Why the judge could not produce a verdict (empty/absent when it ran). */
+        private List<String> judgeErrors;
         private List<String> itemErrors;
     }
 }

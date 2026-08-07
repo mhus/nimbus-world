@@ -83,6 +83,18 @@ class RealityWorkflowTest {
                 .finalReport(report).finalVerdict(acceptable()).build());
     }
 
+    /**
+     * Stub {@code documentService.save} to return the document it persisted, as the real service
+     * does. The returned id deliberately differs from the generated one: save() de-duplicates by
+     * name, so on a re-run it updates the existing document and keeps ITS id — the workflow must
+     * report that id, not the UUID it generated.
+     */
+    private void stubManifestSave(String persistedDocumentId) {
+        WDocument saved = mock(WDocument.class);
+        when(saved.getDocumentId()).thenReturn(persistedDocumentId);
+        when(documentService.save(any(), anyString(), anyString(), any())).thenReturn(saved);
+    }
+
     private void stubMaterializers() {
         when(itemGenerator.generateItems(any(), any())).thenReturn(RealityItemResult.builder()
                 .createdItemIds(new ArrayList<>(List.of("rock"))).iconsGenerated(1).build());
@@ -97,14 +109,17 @@ class RealityWorkflowTest {
         stubDocFound();
         stubPlanningHappy(validReport());
         when(parser.savePlan(any(), anyString())).thenReturn("plan-1");
+        stubManifestSave("manifest-existing");
         stubMaterializers();
 
         RealityWorkflowResult result = workflow.generate(region, "doc1", RealityWorkflowOptions.defaults());
 
         assertThat(result.isSuccess()).isTrue();
+        assertThat(result.isPartial()).isFalse();
         assertThat(result.isMaterialized()).isTrue();
         assertThat(result.getPlanDocId()).isEqualTo("plan-1");
-        assertThat(result.getManifestDocId()).isNotNull();
+        // The id of the PERSISTED manifest, not the UUID the workflow generated for the save call.
+        assertThat(result.getManifestDocId()).isEqualTo("manifest-existing");
         assertThat(result.getItemResult().getItemsCreated()).isEqualTo(1);
         assertThat(result.getLoreResult().getCreated()).isEqualTo(2);
         assertThat(result.getRuleResult().getCreated()).isEqualTo(3);
@@ -116,6 +131,72 @@ class RealityWorkflowTest {
         verify(itemGenerator).generateItems(any(), any());
         verify(docsMaterializer).materialize(any(), any());
         verify(documentService).save(any(), eq("reality_manifest"), anyString(), any());
+    }
+
+    @Test
+    void reportsPartialWhenAStageDStepHitsErrors() {
+        stubDocFound();
+        stubPlanningHappy(validReport());
+        when(parser.savePlan(any(), anyString())).thenReturn("plan-1");
+        stubManifestSave("manifest-1");
+        stubMaterializers();
+        // Icons failed for two items: entities were written, but the run is not a success.
+        RealityItemResult withErrors = RealityItemResult.builder()
+                .createdItemIds(new ArrayList<>(List.of("rock"))).iconsGenerated(0).build();
+        withErrors.addError("Icon 'rock': quota exceeded");
+        withErrors.addError("Icon 'stick': quota exceeded");
+        when(itemGenerator.generateItems(any(), any())).thenReturn(withErrors);
+
+        RealityWorkflowResult result = workflow.generate(region, "doc1", RealityWorkflowOptions.defaults());
+
+        assertThat(result.isMaterialized()).isTrue();
+        assertThat(result.isPartial()).isTrue();
+        assertThat(result.isSuccess()).isFalse();
+        assertThat(result.getErrors()).containsExactly(
+                "Icon 'rock': quota exceeded", "Icon 'stick': quota exceeded");
+    }
+
+    @Test
+    void marksBalanceAsUncheckedWhenTheJudgeCouldNotRun() {
+        stubDocFound();
+        RealityPlan p = plan();
+        when(seedGenerator.generate(anyString(), any())).thenReturn(RealityPlanResult.success(p, "{}"));
+        when(loreElaborator.elaborate(any(), any())).thenReturn(RealityPlanResult.success(p, null));
+        when(expander.expand(any(), any())).thenReturn(RealityPlanResult.success(p, "{}"));
+        // Judge failed on infrastructure -> inconclusive; that must not read as "balance is fine".
+        when(refiner.refine(any(), any())).thenReturn(RefineResult.builder()
+                .plan(p).converged(true).iterations(1).balanceChecked(false)
+                .judgeErrors(new ArrayList<>(List.of("AI chat error: timeout")))
+                .finalReport(validReport()).finalVerdict(JudgeVerdict.failure("AI chat error: timeout"))
+                .build());
+        when(parser.savePlan(any(), anyString())).thenReturn("plan-1");
+        stubManifestSave("manifest-1");
+        stubMaterializers();
+
+        RealityWorkflowResult result = workflow.generate(region, "doc1", RealityWorkflowOptions.defaults());
+
+        assertThat(result.isConverged()).isTrue();
+        assertThat(result.isBalanceChecked()).isFalse();
+    }
+
+    @Test
+    void doesNotMaterializeWithoutAValidationReport() {
+        stubDocFound();
+        RealityPlan p = plan();
+        when(seedGenerator.generate(anyString(), any())).thenReturn(RealityPlanResult.success(p, "{}"));
+        when(loreElaborator.elaborate(any(), any())).thenReturn(RealityPlanResult.success(p, null));
+        when(expander.expand(any(), any())).thenReturn(RealityPlanResult.success(p, "{}"));
+        // No report at all -> "not validated", which must block the commit just like a failed one.
+        when(refiner.refine(any(), any())).thenReturn(RefineResult.builder()
+                .plan(p).converged(false).iterations(0).build());
+
+        RealityWorkflowResult result = workflow.generate(region, "doc1", RealityWorkflowOptions.defaults());
+
+        assertThat(result.isMaterialized()).isFalse();
+        assertThat(result.getErrors()).isNotEmpty();
+        verify(parser, never()).savePlan(any(), anyString());
+        verify(itemGenerator, never()).generateItems(any(), any());
+        verify(documentService, never()).save(any(), eq("reality_manifest"), anyString(), any());
     }
 
     @Test
@@ -180,6 +261,7 @@ class RealityWorkflowTest {
         stubDocFound();
         stubPlanningHappy(validReport());
         when(parser.savePlan(any(), anyString())).thenReturn("plan-1");
+        stubManifestSave("manifest-1");
         stubMaterializers();
         String model = "cortecs:deepseek-v4-pro";
 

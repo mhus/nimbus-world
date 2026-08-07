@@ -172,19 +172,20 @@ public class RealityPlanParser {
      *
      * @param regionId the region collection world id
      * @param json     the plan JSON to store
-     * @return the documentId of the stored plan
+     * @return the documentId of the stored plan — the id of the <b>persisted</b> document, which on
+     *         a re-run is the existing one: {@code WDocumentService.save} de-duplicates by name and
+     *         updates that document instead of creating a second one under a fresh id.
      */
     public String savePlan(WorldId regionId, String json) {
-        String documentId = UUID.randomUUID().toString();
-        documentService.save(regionId, PLAN_COLLECTION, documentId, doc -> {
+        WDocument saved = documentService.save(regionId, PLAN_COLLECTION, UUID.randomUUID().toString(), doc -> {
             doc.setName("reality-plan");
             doc.setTitle("Reality Plan");
             doc.setContent(json);
             doc.setFormat("json");
             doc.setType("reality_plan");
         });
-        log.info("Saved reality plan: worldId={}, documentId={}", regionId.getId(), documentId);
-        return documentId;
+        log.info("Saved reality plan: worldId={}, documentId={}", regionId.getId(), saved.getDocumentId());
+        return saved.getDocumentId();
     }
 
     private Optional<AiChat> createChatModel(String modelName) {
