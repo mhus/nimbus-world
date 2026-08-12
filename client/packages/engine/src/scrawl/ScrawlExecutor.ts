@@ -306,14 +306,30 @@ export class ScrawlExecutor {
 
   private async execStepPlay(ctx: ScrawlExecContext, step: any): Promise<void> {
     // Merge context with step context
-    // All parameters (including source, target, targets) come through ctx.vars
+    // All parameters (including source, target, targets) come through ctx.vars.
+    //
+    // !! RESTORED 2026-08-12 — reason for removal unknown !!
+    // Subject reference resolution ("$actor", "$patient[1]", ...) was missing in this
+    // code path: resolveSubject() was only reachable from executeAndTrackEffect(), and
+    // that method still reads the step.source/step.target fields which no longer exist
+    // on StepPlay. Consequence: "$patient" reached effects as a raw string and could
+    // never resolve (see CircleMarkerEffect.resolvePosition, which expects a subject
+    // object with a .position). The unit test "should resolve $patient[N] reference"
+    // documented the original behaviour and was failing.
+    // If the removal was in fact intentional, revert this block and instead drop
+    // resolveSubject(), the dead branch in executeAndTrackEffect() and the "$patient"
+    // examples in the effect docs — but do not leave the three in conflict.
+    const stepCtx = this.resolveStepCtxSubjects(ctx, step.ctx);
+
     const effectCtx: ScrawlExecContext = {
       ...ctx,
       vars: {
         ...ctx.vars,
-        ...(step.ctx || {}),
+        ...stepCtx,
       },
     };
+
+    this.applyResolvedSubjects(effectCtx, stepCtx);
 
     // Check if effect needs player direction updates (ONLY for local scripts)
     // Remote effects (isLocal === false) NEVER activate player direction
@@ -345,7 +361,7 @@ export class ScrawlExecutor {
     }
 
     try {
-      await this.effectFactory.play(step.effectId, step.ctx || {}, effectCtx);
+      await this.effectFactory.play(step.effectId, stepCtx, effectCtx);
     } finally {
       // Disable broadcast after effect ends (if we enabled it)
       if (needsPlayerDirection && this.playerDirectionBroadcastActive) {
@@ -635,6 +651,60 @@ export class ScrawlExecutor {
 
     // Handle context variables
     return this.resolveValue(ctx, ref);
+  }
+
+  /**
+   * Resolve subject references inside a step context.
+   *
+   * Only the 'source' and 'target' entries carry subject references; string values are
+   * replaced by the resolved subject(s), everything else is passed through untouched.
+   * Unresolvable references are left as-is so effects can log a meaningful value.
+   */
+  private resolveStepCtxSubjects(
+    ctx: ScrawlExecContext,
+    stepCtx?: Record<string, any>
+  ): Record<string, any> {
+    const resolved: Record<string, any> = { ...(stepCtx || {}) };
+
+    for (const key of ['source', 'target'] as const) {
+      const ref = resolved[key];
+      if (typeof ref !== 'string') continue;
+
+      const subject = this.resolveSubject(ctx, ref);
+      if (subject !== undefined) {
+        resolved[key] = subject;
+      } else {
+        logger.warn('Unresolved subject reference in Play step', { key, ref });
+      }
+    }
+
+    return resolved;
+  }
+
+  /**
+   * Apply resolved source/target subjects to the effect context.
+   *
+   * A source is the acting subject, a target becomes the patient list. Arrays are
+   * taken over as-is so effects can act on multiple subjects.
+   */
+  private applyResolvedSubjects(
+    effectCtx: ScrawlExecContext,
+    stepCtx: Record<string, any>
+  ): void {
+    const source = stepCtx.source;
+    const target = stepCtx.target;
+
+    if (source && typeof source === 'object') {
+      if (Array.isArray(source)) {
+        effectCtx.patients = source;
+      } else {
+        effectCtx.actor = source;
+      }
+    }
+
+    if (target && typeof target === 'object') {
+      effectCtx.patients = Array.isArray(target) ? target : [target];
+    }
   }
 
   /**
@@ -1217,32 +1287,20 @@ export class ScrawlExecutor {
    * Executes a Play step and tracks the handler
    */
   private async executeAndTrackEffect(ctx: ScrawlExecContext, step: any): Promise<any> {
-    // Resolve source and target (like in execStepPlay)
-    const source = this.resolveSubject(ctx, step.source);
-    const target = this.resolveSubject(ctx, step.target);
+    // Resolve source and target (like in execStepPlay).
+    // Previously read from step.source/step.target — fields that no longer exist on
+    // StepPlay, so this never resolved anything. They now live in step.ctx.
+    const stepCtx = this.resolveStepCtxSubjects(ctx, step.ctx);
 
     const effectCtx: ScrawlExecContext = {
       ...ctx,
-      ...(step.ctx || {}),
+      ...stepCtx,
     };
 
-    if (source) {
-      if (Array.isArray(source)) {
-        effectCtx.patients = source;
-      } else {
-        effectCtx.actor = source;
-      }
-    }
-    if (target) {
-      if (Array.isArray(target)) {
-        effectCtx.patients = target;
-      } else {
-        effectCtx.patients = [target];
-      }
-    }
+    this.applyResolvedSubjects(effectCtx, stepCtx);
 
     // Create and execute effect
-    const handler = this.effectFactory.create(step.effectId, step.ctx || {});
+    const handler = this.effectFactory.create(step.effectId, stepCtx);
     const effectId = `effect_${this.executorId}_${Date.now()}_${Math.random()}`;
 
     // Register in running effects
