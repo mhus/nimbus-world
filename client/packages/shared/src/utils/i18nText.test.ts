@@ -1,5 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import { i18n, setI18nLanguage, getI18nLanguage, isI18nText, detectBrowserLanguage } from './i18nText';
+import { i18n, setI18nLanguage, isI18nText } from './i18nText';
 
 describe('i18nText', () => {
 

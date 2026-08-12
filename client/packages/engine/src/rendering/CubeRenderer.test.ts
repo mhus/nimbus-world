@@ -9,7 +9,7 @@ import { RenderContext } from '../services/RenderService';
 import { DisposableResources } from './DisposableResources';
 import type { ClientBlock, ClientBlockType } from '../types';
 import type { Block, BlockType, BlockModifier, TextureDefinition } from '@nimbus/shared';
-import { FaceVisibilityHelper, Shape, FaceFlag } from '@nimbus/shared';
+import { FaceVisibilityHelper, Shape, FaceFlag, BlockStatus } from '@nimbus/shared';
 import type { TextureAtlas, AtlasUV } from './TextureAtlas';
 
 // Mock TextureAtlas
@@ -115,14 +115,14 @@ describe('CubeRenderer', () => {
       position: { x, y, z },
       blockTypeId: '1',
       faceVisibility,
-      status: 0
+      status: BlockStatus.DEFAULT
     };
 
     const blockType: BlockType = {
-      id: '1',
-      initialStatus: 0,
+      name: '1',
+      initialStatus: BlockStatus.DEFAULT,
       modifiers: {
-        0: {
+        [BlockStatus.DEFAULT]: {
           visibility: {
             shape: Shape.CUBE,
             textures: textures || {
@@ -140,7 +140,7 @@ describe('CubeRenderer', () => {
       }
     };
 
-    const currentModifier = blockType.modifiers[0];
+    const currentModifier = blockType.modifiers[BlockStatus.DEFAULT];
 
     const clientBlock: ClientBlock = {
       block,
@@ -419,13 +419,12 @@ describe('CubeRenderer', () => {
     it('should apply rotation transformation', async () => {
       const block = createTestBlock();
 
-      // Add 45-degree rotation around Y axis
-      block.currentModifier.visibility = {
-        ...block.currentModifier.visibility,
-        rotation: {
-          x: 0,
-          y: 45
-        }
+      // Add 45-degree rotation around Y axis.
+      // Rotation is read from the block instance: BlockModifierMerge copies
+      // visibility.rotation onto Block.rotation before rendering.
+      block.block.rotation = {
+        x: 0,
+        y: 45
       };
 
       await cubeRenderer.render(renderContext, block);

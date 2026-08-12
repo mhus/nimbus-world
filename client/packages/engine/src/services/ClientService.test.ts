@@ -12,13 +12,14 @@ describe('ClientService', () => {
 
   beforeEach(() => {
     mockConfig = {
-      username: 'testuser',
-      password: 'testpass',
       websocketUrl: 'ws://localhost:3000',
       apiUrl: 'http://localhost:3000',
       worldId: 'test-world',
       logToConsole: true,
       exitUrl: 'http://localhost:3000/exit',
+      renderDistance: 2,
+      unloadDistance: 2,
+      quality: 1,
     };
 
     // Reset TransportManager
@@ -218,7 +219,7 @@ describe('ClientService', () => {
       const config = service.getConfig();
 
       expect(config).toEqual(mockConfig);
-      expect(config.username).toBe('testuser');
+      expect(config.worldId).toBe('test-world');
       expect(config.websocketUrl).toBe('ws://localhost:3000');
     });
   });

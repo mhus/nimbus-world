@@ -54,6 +54,7 @@ describe('ScrawlExecutor', () => {
       worldInfo: null,
       playerInfo: null,
       sessionId: null,
+      defaultHardwareScaling: 1,
     };
 
     // Create effect dependencies
@@ -640,8 +641,7 @@ describe('ScrawlExecutor', () => {
         root: {
           kind: 'Play',
           effectId: 'test',
-          source: '$actor',
-          ctx: { value: 'actor-effect' },
+          ctx: { source: '$actor', value: 'actor-effect' },
         },
       };
 
@@ -670,8 +670,7 @@ describe('ScrawlExecutor', () => {
         root: {
           kind: 'Play',
           effectId: 'test',
-          target: '$patient[1]',
-          ctx: { value: 'targeted' },
+          ctx: { target: '$patient[1]', value: 'targeted' },
         },
       };
 

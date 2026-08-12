@@ -20,7 +20,7 @@ export default {
         tsconfig: {
           module: 'esnext',
           target: 'ES2022',
-          lib: ['ES2022'],
+          lib: ['ES2022', 'DOM'],
         },
       },
     ],
