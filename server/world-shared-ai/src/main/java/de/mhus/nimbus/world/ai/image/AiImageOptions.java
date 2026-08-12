@@ -30,13 +30,22 @@ public class AiImageOptions {
 
     /**
      * Image style (e.g., "vivid", "natural" for DALL-E).
+     *
+     * @deprecated langchain4j dropped this builder option when the image API moved to the
+     * gpt-image-1 generation; the value is no longer sent to the provider. Kept so existing
+     * configurations keep deserializing.
      */
+    @Deprecated
     @Builder.Default
     private String style = "vivid";
 
     /**
      * Response format (e.g., "url", "b64_json").
+     *
+     * @deprecated langchain4j dropped this builder option and now decides the transport
+     * format itself. Kept so existing configurations keep deserializing.
      */
+    @Deprecated
     @Builder.Default
     private String responseFormat = "url";
 

@@ -63,17 +63,14 @@ public class OpenAiImageModelProvider implements LangchainImageModel {
                     .logRequests(options.isLogRequests())
                     .logResponses(options.isLogRequests());
 
-            // Add DALL-E 3 specific options (quality and style are only supported by DALL-E 3)
+            // Add DALL-E 3 specific options (quality is only supported by DALL-E 3).
+            // AiImageOptions.style and .responseFormat are deprecated: langchain4j removed both
+            // builder options with the gpt-image-1 generation of its image API, so they cannot
+            // be forwarded any more.
             if (modelName.contains("dall-e-3")) {
                 if (options.getQuality() != null) {
                     builder.quality(options.getQuality());
                 }
-                if (options.getStyle() != null) {
-                    builder.style(options.getStyle());
-                }
-            }
-            if (options.getResponseFormat() != null) {
-                builder.responseFormat(options.getResponseFormat());
             }
 
             // Set size - DALL-E supports specific sizes

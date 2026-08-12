@@ -14,6 +14,10 @@
 
     <properties>
         <graaljs.version>25.2.4</graaljs.version>
+        <!-- Keep all langchain4j artifacts on one version; mixing them breaks at runtime.
+             The agentic extension is still beta and carries its own suffix. -->
+        <langchain4j.version>1.18.1</langchain4j.version>
+        <langchain4j.agentic.version>1.18.1-beta28</langchain4j.agentic.version>
     </properties>
 
     <dependencies>
@@ -50,27 +54,27 @@
             <version>${project.version}</version>
         </dependency>
 
-        <!-- LangChain4j dependencies - Upgraded to 1.10.0 for agentic API support -->
+        <!-- LangChain4j dependencies - all on ${langchain4j.version} -->
         <dependency>
             <groupId>dev.langchain4j</groupId>
             <artifactId>langchain4j</artifactId>
-            <version>1.10.0</version>
+            <version>${langchain4j.version}</version>
         </dependency>
         <dependency>
             <groupId>dev.langchain4j</groupId>
             <artifactId>langchain4j-open-ai</artifactId>
-            <version>1.12.2</version>
+            <version>${langchain4j.version}</version>
         </dependency>
         <dependency>
             <groupId>dev.langchain4j</groupId>
             <artifactId>langchain4j-google-ai-gemini</artifactId>
-            <version>1.10.0</version>
+            <version>${langchain4j.version}</version>
         </dependency>
         <!-- Agentic Extension for declarative multi-agent systems -->
         <dependency>
             <groupId>dev.langchain4j</groupId>
             <artifactId>langchain4j-agentic</artifactId>
-            <version>1.10.0-beta18</version>
+            <version>${langchain4j.agentic.version}</version>
         </dependency>
 
         <!-- Jsoup for web crawling -->
