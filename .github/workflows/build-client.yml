@@ -51,3 +51,6 @@ jobs:
       - name: Build controls
         run: pnpm --filter @nimbus/controls... build
         working-directory: ./client
+      - name: Run unit tests
+        run: pnpm test
+        working-directory: ./client
