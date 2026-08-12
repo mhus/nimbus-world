@@ -34,7 +34,7 @@
     "@babylonjs/materials": "^8.45.3",
     "@nimbus/shared": "workspace:*",
     "dotenv": "^17.2.3",
-    "fflate": "^0.8.2"
+    "fflate": "^0.8.3"
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",
