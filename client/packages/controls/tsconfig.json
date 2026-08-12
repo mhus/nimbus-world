@@ -22,7 +22,6 @@
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
     "types": ["vite/client", "node"],
-    "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"],
       "@nimbus/shared": ["../shared/src/index.ts"],

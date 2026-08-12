@@ -21,6 +21,8 @@ export default {
           module: 'esnext',
           target: 'ES2022',
           lib: ['ES2022', 'DOM'],
+          // tsconfig.json restricts types to node for the build; the tests need jest too
+          types: ['node', 'jest'],
         },
       },
     ],
