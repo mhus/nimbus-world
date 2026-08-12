@@ -13,7 +13,7 @@
     <packaging>jar</packaging>
 
     <properties>
-        <graaljs.version>25.0.3</graaljs.version>
+        <graaljs.version>25.2.4</graaljs.version>
     </properties>
 
     <dependencies>
