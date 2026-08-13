@@ -1064,7 +1064,7 @@ const handleSyncUniverse = async () => {
   universeWarning.value = null;
   successMessage.value = null;
   try {
-    const data = await apiService.get<any>(`/control/universe/user/${encodeURIComponent(user.value.username)}/sync`);
+    const data = await apiService.get<any>(`/control/universe/user/${encodeURIComponent(user.value.name)}/sync`);
     if (data.found) {
       formData.value.email = data.email;
       successMessage.value = 'Synced with Universe — email updated';

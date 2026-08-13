@@ -80,7 +80,7 @@
           <span class="label-text text-xs">Rotation X</span>
         </label>
         <input
-          v-model.number="localValue.rotation.x"
+          v-model.number="localValue.rotation!.x"
           type="number"
           class="input input-bordered input-sm"
           placeholder="0"
@@ -91,7 +91,7 @@
           <span class="label-text text-xs">Rotation Y</span>
         </label>
         <input
-          v-model.number="localValue.rotation.y"
+          v-model.number="localValue.rotation!.y"
           type="number"
           class="input input-bordered input-sm"
           placeholder="0"
@@ -244,13 +244,13 @@
       <div v-for="key in existingTextureKeys" :key="key" class="space-y-2">
         <!-- Texture Row -->
         <div class="flex items-center gap-2">
-          <span class="text-sm w-24 text-base-content/70">{{ textureKeyOptions[key] }}:</span>
+          <span class="text-sm w-24 text-base-content/70">{{ textureKeyOptions[key as TextureKey] }}:</span>
           <input
             :value="getTexturePathValue(key)"
             @input="setTexturePath(key, ($event.target as HTMLInputElement).value)"
             type="text"
             class="input input-bordered input-sm flex-1"
-            :placeholder="`textures/block/my_${textureKeyOptions[key]}.png`"
+            :placeholder="`textures/block/my_${textureKeyOptions[key as TextureKey]}.png`"
           />
           <!-- Asset Picker Button -->
           <button
@@ -677,7 +677,7 @@
           @click="addTexture(key)"
         >
           <span class="font-mono text-xs text-base-content/50 w-8">{{ key }}</span>
-          <span class="flex-1 text-left">{{ textureKeyOptions[key] }}</span>
+          <span class="flex-1 text-left">{{ textureKeyOptions[key as TextureKey] }}</span>
         </button>
       </div>
       <div class="mt-4 flex justify-end">
@@ -713,7 +713,7 @@
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue';
 import type { VisibilityModifier } from '@nimbus/shared';
-import { ShapeNames, TextureKeyNames } from '@nimbus/shared';
+import { ShapeNames, TextureKey, TextureKeyNames } from '@nimbus/shared';
 import AssetPickerDialog from '@components/AssetPickerDialog.vue';
 import CollapsibleSection from '@components/CollapsibleSection.vue';
 import OffsetsEditor from './OffsetsEditor.vue';

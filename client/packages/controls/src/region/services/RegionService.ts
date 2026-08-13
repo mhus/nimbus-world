@@ -3,6 +3,8 @@ import { apiService } from '@/services/ApiService';
 export interface Region {
   id: string;
   name: string;
+  /** Display title. RRegionController requires it on create ("title is required"). */
+  title?: string;
   enabled: boolean;
   maintainers: string[];
 }

@@ -598,7 +598,7 @@
               :key="world.worldId"
               :value="world.worldId"
             >
-              {{ world.name }} ({{ world.worldId }})
+              {{ world.title }} ({{ world.worldId }})
             </option>
           </select>
           <label class="label">
@@ -732,7 +732,7 @@
               :key="world.worldId"
               :value="world.worldId"
             >
-              {{ world.name }} ({{ world.worldId }})
+              {{ world.title }} ({{ world.worldId }})
             </option>
           </select>
           <label class="label">
@@ -903,11 +903,12 @@ if (props.model) {
  */
 const addGroup = () => {
   const groups = formData.value.groups || {};
-  const maxId = Math.max(0, ...Object.values(groups).map(v => typeof v === 'number' ? v : 0));
+  // Group ids are numeric in the UI, but the contract stores them as strings
+  const maxId = Math.max(0, ...Object.values(groups).map(v => Number(v) || 0));
   const newId = maxId + 1;
   formData.value.groups = {
     ...groups,
-    [`group${newId}`]: newId
+    [`group${newId}`]: String(newId)
   };
 };
 
@@ -938,7 +939,7 @@ const updateGroupName = (oldName: string, newName: string) => {
 const updateGroupId = (groupName: string, newId: number) => {
   formData.value.groups = {
     ...formData.value.groups,
-    [groupName]: newId
+    [groupName]: String(newId)
   };
 };
 
@@ -1422,6 +1423,7 @@ const loadModelsForWorld = async () => {
 
     const allModels: LayerModelDto[] = [];
     for (const layer of modelLayers) {
+      if (!layer.id) continue;
       try {
         const modelsResponse = await layerModelService.getModels(referenceSearch.value.worldId, layer.id);
         allModels.push(...modelsResponse.models.filter(m => m.name)); // Only models with names
