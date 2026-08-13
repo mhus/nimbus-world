@@ -242,15 +242,6 @@ const SelectSetting = defineComponent({
   },
 });
 
-const screenQualityOptions = [
-  { value: '0.5', label: 'Sehr hoch' },
-  { value: '1', label: 'Hoch' },
-  { value: '2', label: 'Normal' },
-  { value: '3', label: 'Niedrig' },
-  { value: '4', label: 'Sehr niedrig' },
-  { value: '5', label: 'Minimal' },
-];
-
 const viewRangeOptions = [
   { value: '2', label: 'Nah' },
   { value: '3', label: 'Normal' },

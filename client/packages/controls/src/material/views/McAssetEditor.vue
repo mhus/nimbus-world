@@ -43,7 +43,7 @@ import type { Asset } from '@/services/AssetService';
 
 const logger = getLogger('McAssetEditor');
 
-const { currentWorldId, worlds, loadWorlds } = useWorld();
+const { worlds, loadWorlds } = useWorld();
 
 // LocalStorage keys for panel world selections
 const LEFT_PANEL_WORLD_KEY = 'nimbus.mcAssetEditor.leftWorldId';
@@ -62,8 +62,6 @@ const leftSelectedFiles = ref<Asset[]>([]);
 const rightSelectedFiles = ref<Asset[]>([]);
 
 // Trigger keys to force reload
-const leftTrigger = ref(0);
-const rightTrigger = ref(0);
 
 // Read worldId from Local Storage
 const getWorldIdFromStorage = (key: string): string | null => {

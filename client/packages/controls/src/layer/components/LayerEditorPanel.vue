@@ -568,7 +568,6 @@ const terrainMountZ = ref<number | null>(0);
 
 // Grid editor state
 // Removed: selectedModelForGrid - no longer needed
-const showGridEditor = ref(false);
 
 // Initialize form data
 if (props.layer) {

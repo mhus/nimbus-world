@@ -454,10 +454,6 @@ async function doCraft() {
   }
 }
 
-function closeWidget() {
-  window.close();
-}
-
 onMounted(async () => {
   if (!progressId) {
     error.value = 'Kein progressId angegeben';

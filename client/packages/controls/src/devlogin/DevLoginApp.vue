@@ -469,8 +469,7 @@ import {
   type Character,
   type ActorType,
   type LoginRequest,
-  type WorldInstance,
-  type EpochMeta
+  type WorldInstance
 } from './services/DevLoginService';
 
 // ===== LOCAL STORAGE KEYS =====

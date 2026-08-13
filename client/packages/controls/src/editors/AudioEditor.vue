@@ -171,11 +171,6 @@ const isAssetPickerOpen = ref(false);
 const selectedAudioIndex = ref<number | null>(null);
 
 // Get audio type display name
-const getAudioTypeName = (type: AudioType): string => {
-  const option = audioTypeOptions.find(opt => opt.value === type);
-  return option?.label || type;
-};
-
 // Add new audio definition
 const addAudio = () => {
   const newAudio: AudioDefinition = {

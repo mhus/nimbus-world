@@ -93,8 +93,6 @@ const emit = defineEmits<{
 
 // Hex geometry constants
 const HEX_SIZE = 50;
-const HEX_WIDTH = Math.sqrt(3) * HEX_SIZE;
-const HEX_HEIGHT = 2 * HEX_SIZE;
 
 // SVG dimensions
 const svgWidth = ref(1200);
@@ -180,13 +178,6 @@ const hasHexAt = (q: number, r: number): boolean => {
 /**
  * Get hex grid at position
  */
-const getHexAt = (q: number, r: number): HexGridWithId | null => {
-  return props.hexGrids.find(hex => {
-    const pos = parsePosition(hex.position);
-    return pos.q === q && pos.r === r;
-  }) || null;
-};
-
 /**
  * Compute all hexagons to display (existing + empty neighbors)
  */

@@ -301,21 +301,6 @@ function updateCanvasSize() {
 }
 
 // Grid bounds (dynamically calculated from blocks)
-const gridBounds = computed(() => {
-  if (blockCoordinates.value.length === 0) {
-    return { minX: 0, maxX: 0, minY: 0, maxY: 0, minZ: 0, maxZ: 0 };
-  }
-
-  const minX = Math.min(...blockCoordinates.value.map(b => b.x));
-  const maxX = Math.max(...blockCoordinates.value.map(b => b.x));
-  const minY = Math.min(...blockCoordinates.value.map(b => b.y));
-  const maxY = Math.max(...blockCoordinates.value.map(b => b.y));
-  const minZ = Math.min(...blockCoordinates.value.map(b => b.z));
-  const maxZ = Math.max(...blockCoordinates.value.map(b => b.z));
-
-  return { minX, maxX, minY, maxY, minZ, maxZ };
-});
-
 // Rotate a block's coordinates around Y-axis based on viewRotation
 // Rotation is performed around viewCenter, not origin
 function rotateBlock(x: number, y: number, z: number): { x: number; y: number; z: number } {
@@ -368,17 +353,6 @@ function worldToScreen(x: number, y: number, z: number): { x: number; y: number 
 
 // Convert 2D screen coordinates to approximate 3D world coordinates
 // This is an approximation - for accurate picking, we need ray casting
-function screenToWorld(screenX: number, screenY: number, y: number = 0): { x: number; y: number; z: number } {
-  // Inverse isometric projection
-  const relX = screenX - offsetX.value;
-  const relY = screenY - offsetY.value + y * tileHeight.value;
-
-  const x = (relX / (tileWidth.value / 2) + relY / (tileHeight.value / 2)) / 2;
-  const z = (relY / (tileHeight.value / 2) - relX / (tileWidth.value / 2)) / 2;
-
-  return { x: Math.round(x), y, z: Math.round(z) };
-}
-
 // Draw the isometric grid
 function drawGrid() {
   const canvas = canvasRef.value;
@@ -463,8 +437,6 @@ function drawGrid() {
   // Draw each block as a wireframe cube
   for (const blockData of sortedBlocks) {
     const { x, y, z } = blockData.x !== undefined ? blockData : blockData.original;
-    const block = blockData.original || blockData;
-    const color = block.color || '#3b82f6';
     const isSelected = selectedBlock.value?.x === x && selectedBlock.value?.y === y && selectedBlock.value?.z === z;
 
     // Calculate 8 corner points of the cube

@@ -75,7 +75,6 @@
       <div class="file-list-container border border-base-300 rounded overflow-y-auto overflow-x-hidden">
         <FileList
           v-if="localWorldId"
-          ref="fileListRef"
           :key="localWorldId + '-' + localCurrentPath + '-' + reloadKey"
           :world-id="localWorldId"
           :folder-path="localCurrentPath"
@@ -141,7 +140,6 @@ const emit = defineEmits<{
 const { worlds, loading: worldsLoading } = useWorld();
 
 // Refs
-const fileListRef = ref<any>(null);
 const folderTreeRef = ref<any>(null);
 const reloadKey = ref(0);
 

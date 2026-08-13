@@ -342,7 +342,6 @@
       <div v-if="entityModelData && entityModelData.modelPath" class="card bg-base-100 shadow-xl sticky top-2 z-10">
         <div class="card-body p-3">
           <ModelPreview
-            ref="modelPreviewRef"
             :model-url="previewModelUrl"
             :modifier-mapping="modifierMapping"
             :modifier-values="entityData?.modelModifier || {}"
@@ -582,7 +581,6 @@ const epochesText = ref('');
 const schedulePhases = ref<SchedulePhase[]>([]);
 
 // Model preview
-const modelPreviewRef = ref<InstanceType<typeof ModelPreview> | null>(null);
 const entityModelData = ref<any>(null);
 const loadingModel = ref(false);
 

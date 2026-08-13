@@ -31,6 +31,7 @@
         <ScriptListView
           @select="openScript"
           @duplicate="duplicateScript"
+          @delete="(script) => deleteScript(script.id)"
         />
       </div>
 

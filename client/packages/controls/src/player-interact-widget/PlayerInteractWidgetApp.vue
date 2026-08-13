@@ -117,7 +117,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted } from 'vue';
 import { ApiService } from '@/services/ApiService';
 import { useModal } from '@/composables/useModal';
 
@@ -177,7 +177,6 @@ function showStatus(msg: string, isError = false) {
   setTimeout(() => { statusMessage.value = ''; }, 3000);
 }
 
-const cooldownRemainingComputed = computed(() => cooldownRemaining.value);
 
 onMounted(async () => {
   const params = new URLSearchParams(window.location.search);

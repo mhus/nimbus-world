@@ -212,10 +212,6 @@ const effectiveWorldId = computed(() => {
   return currentWorldId.value + '::x' + selectedEpoch.value;
 });
 
-// Read sessionId from URL query parameter
-const params = new URLSearchParams(window.location.search);
-const sessionId = ref(params.get('sessionId') || '');
-
 const statistics = ref<EditCacheStat[]>([]);
 const loading = ref(false);
 const error = ref<string | null>(null);
