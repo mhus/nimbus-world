@@ -16,6 +16,7 @@ export * from './Area';
 
 // Block types
 export * from './Block';
+export * from './BlockMetadata';
 export * from './BlockType';
 export * from './BlockModifier';
 

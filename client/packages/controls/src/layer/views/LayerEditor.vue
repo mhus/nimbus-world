@@ -132,7 +132,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue';
-import type { WLayer, LayerModelDto } from '@nimbus/shared';
+import type { LayerDto, LayerModelDto } from '@nimbus/shared';
 import { useWorld } from '@/composables/useWorld';
 import { useLayers } from '@/composables/useLayers';
 import SearchInput from '@components/SearchInput.vue';
@@ -168,7 +168,7 @@ const hasNextPage = computed(() => layersComposable.value?.hasNextPage.value || 
 const hasPreviousPage = computed(() => layersComposable.value?.hasPreviousPage.value || false);
 
 const isEditorOpen = ref(false);
-const selectedLayer = ref<WLayer | null>(null);
+const selectedLayer = ref<LayerDto | null>(null);
 const layerEditorRef = ref<InstanceType<typeof LayerEditorPanel> | null>(null);
 
 // Model editor state
@@ -227,7 +227,7 @@ const openCreateDialog = () => {
 /**
  * Open edit dialog
  */
-const openEditDialog = (layer: WLayer) => {
+const openEditDialog = (layer: LayerDto) => {
   selectedLayer.value = layer;
   isEditorOpen.value = true;
 };
@@ -254,13 +254,14 @@ const handleSaved = async () => {
 /**
  * Handle delete
  */
-const handleDelete = async (layer: WLayer) => {
+const handleDelete = async (layer: LayerDto) => {
   if (!layersComposable.value) return;
 
   if (!confirm(`Are you sure you want to delete layer "${layer.name}"?`)) {
     return;
   }
 
+  if (!layer.id) return;
   await layersComposable.value.deleteLayer(layer.id);
 };
 

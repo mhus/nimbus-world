@@ -480,7 +480,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue';
-import type { WLayer, LayerModelDto, CreateLayerRequest, UpdateLayerRequest } from '@nimbus/shared';
+import type { LayerDto, LayerModelDto, CreateLayerRequest, UpdateLayerRequest } from '@nimbus/shared';
 import ErrorAlert from '@components/ErrorAlert.vue';
 import LoadingSpinner from '@components/LoadingSpinner.vue';
 import JobWatch from '@components/JobWatch.vue';
@@ -495,7 +495,7 @@ import type { Job } from '@/composables/useJobs';
 const logger = getLogger('LayerEditorPanel');
 
 interface Props {
-  layer: WLayer | null;
+  layer: LayerDto | null;
   worldId: string;
   currentEpoch?: number;
 }
@@ -504,7 +504,7 @@ const props = defineProps<Props>();
 
 const emit = defineEmits<{
   (e: 'close'): void;
-  (e: 'saved', layer: WLayer): void;
+  (e: 'saved', layer: LayerDto): void;
   (e: 'openModelEditor', layerId: string, layerDataId: string, model: LayerModelDto | null): void;
   (e: 'openGridEditor', params: {
     sourceType: 'terrain' | 'model';
@@ -520,7 +520,7 @@ const isEditMode = computed(() => !!props.layer);
 // Use layers composable for API calls
 const { createLayer, updateLayer } = useLayers(computed(() => props.worldId).value);
 
-const formData = ref<Partial<WLayer>>({
+const formData = ref<Partial<LayerDto>>({
   name: '',
   layerType: undefined,
   order: 0,
@@ -603,11 +603,12 @@ watch(epochesText, (newValue) => {
  */
 const addGroup = () => {
   const groups = formData.value.groups || {};
-  const maxId = Math.max(0, ...Object.values(groups).map(v => typeof v === 'number' ? v : 0));
+  // Group ids are numeric in the UI, but the contract stores them as strings
+  const maxId = Math.max(0, ...Object.values(groups).map(v => Number(v) || 0));
   const newId = maxId + 1;
   formData.value.groups = {
     ...groups,
-    [`group${newId}`]: newId
+    [`group${newId}`]: String(newId)
   };
 };
 
@@ -638,7 +639,7 @@ const updateGroupName = (oldName: string, newName: string) => {
 const updateGroupId = (groupName: string, newId: number) => {
   formData.value.groups = {
     ...formData.value.groups,
-    [groupName]: newId
+    [groupName]: String(newId)
   };
 };
 
@@ -922,7 +923,7 @@ const handleSave = async () => {
       }
     }
 
-    emit('saved', formData.value as WLayer);
+    emit('saved', formData.value as LayerDto);
   } catch (error: any) {
     errorMessage.value = error.message || 'Failed to save layer';
   } finally {
@@ -952,7 +953,7 @@ const handleRegenerate = async () => {
     await layerService.regenerate(props.worldId, props.layer.id);
     logger.info('Layer regeneration triggered', { layerId: props.layer.id });
 
-    emit('saved', formData.value as WLayer);
+    emit('saved', formData.value as LayerDto);
   } catch (error: any) {
     logger.error('Failed to trigger regeneration', {}, error);
     errorMessage.value = error.message || 'Failed to trigger layer regeneration';

@@ -9,7 +9,7 @@
     </div>
 
     <!-- Error State -->
-    <ErrorAlert v-else-if="error" :error="error" />
+    <ErrorAlert v-else-if="error" :message="error" />
 
     <!-- No Coordinates -->
     <div v-else-if="!blockCoordinates" class="text-center py-12">
@@ -349,7 +349,7 @@
                   <span class="label-text-alt">Unique identifier</span>
                 </label>
                 <input
-                  v-model="blockData.metadata.id"
+                  v-model="blockData.metadata!.id"
                   type="text"
                   class="input input-bordered input-sm"
                   placeholder="Optional ID"
@@ -363,7 +363,7 @@
                   <span class="label-text-alt">Display name</span>
                 </label>
                 <input
-                  v-model="blockData.metadata.title"
+                  v-model="blockData.metadata!.title"
                   type="text"
                   class="input input-bordered input-sm"
                   placeholder="Optional title"
@@ -377,7 +377,7 @@
                   <span class="label-text-alt">Group identifier</span>
                 </label>
                 <input
-                  v-model="blockData.metadata.groupId"
+                  v-model="blockData.metadata!.groupId"
                   type="text"
                   class="input input-bordered input-sm"
                   placeholder="Optional group ID"
@@ -393,9 +393,9 @@
                 </label>
 
                 <!-- Existing server properties -->
-                <div v-if="blockData.metadata.server && Object.keys(blockData.metadata.server).length > 0" class="space-y-2">
+                <div v-if="blockData.metadata!.server && Object.keys(blockData.metadata!.server).length > 0" class="space-y-2">
                   <div
-                    v-for="(value, key) in blockData.metadata.server"
+                    v-for="(value, key) in blockData.metadata!.server"
                     :key="`server-${key}`"
                     class="flex gap-2 items-center"
                   >
@@ -407,7 +407,7 @@
                       placeholder="Key"
                     />
                     <input
-                      v-model="blockData.metadata.server[key]"
+                      v-model="blockData.metadata!.server[key]"
                       type="text"
                       class="input input-bordered input-sm flex-1"
                       placeholder="Value"
@@ -441,9 +441,9 @@
                 </label>
 
                 <!-- Existing client properties -->
-                <div v-if="blockData.metadata.client && Object.keys(blockData.metadata.client).length > 0" class="space-y-2">
+                <div v-if="blockData.metadata!.client && Object.keys(blockData.metadata!.client).length > 0" class="space-y-2">
                   <div
-                    v-for="(value, key) in blockData.metadata.client"
+                    v-for="(value, key) in blockData.metadata!.client"
                     :key="`client-${key}`"
                     class="flex gap-2 items-center"
                   >
@@ -455,7 +455,7 @@
                       placeholder="Key"
                     />
                     <input
-                      v-model="blockData.metadata.client[key]"
+                      v-model="blockData.metadata!.client[key]"
                       type="text"
                       class="input input-bordered input-sm flex-1"
                       placeholder="Value"
@@ -721,7 +721,7 @@ const blockCoordinates = ref<{ x: number; y: number; z: number } | null>(parseBl
 
 // Get worldId from URL (once, not reactive - needed for composables)
 const params = new URLSearchParams(window.location.search);
-const worldId = params.get('world');
+const worldId = params.get('world') ?? '';
 
 // Modal composable
 const {
@@ -777,7 +777,6 @@ const loadingOrigin = ref(false);
 const showNavigator = ref(false);
 
 // Save as BlockType dialog state
-const showSaveAsBlockTypeDialog = ref(false);
 const saveAsBlockTypeDialog = ref<HTMLDialogElement | null>(null);
 const newBlockTypeId = ref('');
 const savingAsBlockType = ref(false);
@@ -1284,9 +1283,6 @@ async function saveBlock(closeAfter: boolean = false) {
       offsets: blockData.value.offsets && blockData.value.offsets.length > 0
         ? blockData.value.offsets
         : undefined,
-      cornerHeights: blockData.value.cornerHeights && blockData.value.cornerHeights.length > 0
-        ? blockData.value.cornerHeights
-        : undefined,
       rotation: blockData.value.rotation || undefined,
       level: blockData.value.level !== undefined && blockData.value.level >= 0
         ? blockData.value.level
@@ -1356,7 +1352,6 @@ async function deleteBlock() {
   error.value = null;
 
   try {
-    const { x, y, z } = blockCoordinates.value;
     const apiUrl = apiService.getBaseUrl();
 
     // Get sessionId from URL
@@ -1622,12 +1617,8 @@ const showBlockOrigin = async () => {
     }
 
     console.log('\nBlock Properties:');
-    console.log('Override:', origin.override);
-    if (origin.group && origin.group > 0) {
+    if (origin.group) {
       console.log('Group:', origin.group, origin.groupName ? `(${origin.groupName})` : '');
-    }
-    if (origin.weight && origin.weight > 0) {
-      console.log('Weight:', origin.weight);
     }
     if (origin.metadata) {
       console.log('Metadata:', origin.metadata);
@@ -1653,18 +1644,13 @@ const showBlockOrigin = async () => {
     }
 
     message += `Block Properties:\n`;
-    message += `Override: ${origin.override ? 'Yes' : 'No'}\n`;
 
-    if (origin.group && origin.group > 0) {
+    if (origin.group) {
       message += `Group: ${origin.group}`;
       if (origin.groupName) {
         message += ` (${origin.groupName})`;
       }
       message += `\n`;
-    }
-
-    if (origin.weight && origin.weight > 0) {
-      message += `Weight: ${origin.weight}\n`;
     }
 
     if (origin.metadata) {
